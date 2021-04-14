@@ -16,26 +16,18 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/paac"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/paac"
 	"github.com/spf13/cobra"
 )
 
-var payload, token string
+func Root(p cli.Params) *cobra.Command {
+	var cmd = &cobra.Command{
+		Short:        "Pipeline as Code entrypoint",
+		Long:         ``,
+		SilenceUsage: true,
+	}
+	cmd.AddCommand(paac.Command(p))
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "pipelines-as-code",
-	Short: "Pipelines as code CLI",
-	Run: func(cmd *cobra.Command, args []string) {
-		paac.PipelineAsCode(token, payload)
-	},
-}
-
-func Execute() {
-	cobra.CheckErr(rootCmd.Execute())
-}
-
-func init() {
-	rootCmd.PersistentFlags().StringVar(&token, "token", "", "Token used to interact with API")
-	rootCmd.PersistentFlags().StringVar(&payload, "payload", "", "Webhook payload")
+	return cmd
 }
