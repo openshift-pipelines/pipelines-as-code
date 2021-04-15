@@ -1,8 +1,12 @@
 package cli
 
 import (
+	"log"
+
 	"github.com/pkg/errors"
 	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+
+	paac "github.com/openshift-pipelines/pipelines-as-code/pkg/clientset/v1alpha1"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -70,6 +74,15 @@ func (p *PacParams) tektonClient(config *rest.Config) (versioned.Interface, erro
 	return cs, nil
 }
 
+func (p *PacParams) pacClient(config *rest.Config) (paac.RepositoryV1Alpha1Interface, error) {
+	cs, err := paac.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return cs, nil
+}
+
 // Only returns kube client, not tekton client
 func (p *PacParams) KubeClient() (k8s.Interface, error) {
 
@@ -107,6 +120,11 @@ func (p *PacParams) Clients() (*Clients, error) {
 		return nil, err
 	}
 
+	pacc, err := p.pacClient(config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	dynamic, err := p.dynamicClient(config)
 	if err != nil {
 		return nil, err
@@ -116,6 +134,7 @@ func (p *PacParams) Clients() (*Clients, error) {
 		Tekton:  tekton,
 		Kube:    kube,
 		Dynamic: dynamic,
+		Pac:     pacc,
 	}
 
 	return p.clients, nil

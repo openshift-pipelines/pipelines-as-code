@@ -8,5 +8,6 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/tektoncd/pipeline v0.23.0
 	golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013
+	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v0.19.7
 )

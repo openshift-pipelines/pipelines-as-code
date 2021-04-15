@@ -22,9 +22,11 @@ type RunInfo struct {
 	Repository    string
 	DefaultBranch string
 	SHA           string
+	URL           string
+	Branch        string
 }
 
-func NewGithubVCS(token, payload string) GithubVCS {
+func NewGithubVCS(token string) GithubVCS {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
@@ -34,7 +36,6 @@ func NewGithubVCS(token, payload string) GithubVCS {
 		Client:  github.NewClient(tc),
 		Context: ctx,
 	}
-	vcs.ParsePayload(payload)
 	return vcs
 }
 
@@ -43,14 +44,17 @@ func (v GithubVCS) ParsePayload(payload string) (RunInfo, error) {
 	json.Unmarshal([]byte(payload), prMap)
 
 	if prMap.PullRequest == nil {
-		return RunInfo{}, errors.New("Cannot parse pauload as PR")
+		return RunInfo{}, errors.New("Cannot parse payload as PR")
 	}
 
 	return RunInfo{
 		Owner:         prMap.GetRepo().Owner.GetLogin(),
 		Repository:    prMap.GetRepo().GetName(),
+		URL:           prMap.GetRepo().GetHTMLURL(),
 		DefaultBranch: prMap.GetRepo().GetDefaultBranch(),
-		SHA:           prMap.PullRequest.Head.GetSHA(),
+		// TODO: this is going to be different on merge
+		SHA:    prMap.PullRequest.Head.GetSHA(),
+		Branch: prMap.PullRequest.Base.GetRef(),
 	}, nil
 
 	/// TODO: We are going to have multiple handle here, if we have a payload

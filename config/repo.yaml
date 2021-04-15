@@ -1,0 +1,9 @@
+apiVersion: "pac.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: scratchpad
+spec:
+  url: "https://github.com/chmouel/scratchpad"
+  branch: "master"
+  event_type: "pull_request"
+  namespace: "scratch-my-back"

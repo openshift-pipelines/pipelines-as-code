@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/paac"
+	pac "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/pac"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,7 @@ func Root(p cli.Params) *cobra.Command {
 		Long:         ``,
 		SilenceUsage: true,
 	}
-	cmd.AddCommand(paac.Command(p))
+	cmd.AddCommand(pac.Command(p))
 
 	return cmd
 }
