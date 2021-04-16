@@ -11,8 +11,8 @@ import (
 )
 
 type pacOptions struct {
-	github_token   string
-	github_payload string
+	githubToken   string
+	githubPayload string
 }
 
 // InitParams initialises cli.Params based on flags defined in command
@@ -42,27 +42,27 @@ func Command(p cli.Params) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if opts.github_payload == "" {
-				return fmt.Errorf("github_payload needs to be set")
+			if opts.githubPayload == "" {
+				return fmt.Errorf("github-payload needs to be set")
 			}
-			if opts.github_token == "" {
-				return fmt.Errorf("github_token needs to be set")
+			if opts.githubToken == "" {
+				return fmt.Errorf("github-token needs to be set")
 			}
 			return run(p, opts)
 		},
 	}
-	cmd.Flags().StringVarP(&opts.github_token, "github-token", "", "", "Github Token used for operations")
-	cmd.Flags().StringVarP(&opts.github_payload, "github-payload", "", "", "Github Payload from webhook")
+	cmd.Flags().StringVarP(&opts.githubToken, "github-token", "", "", "Github Token used for operations")
+	cmd.Flags().StringVarP(&opts.githubPayload, "github-payload", "", "", "Github Payload from webhook")
 	return cmd
 }
 
 func run(p cli.Params, opts *pacOptions) error {
-	gvcs := webvcs.NewGithubVCS(opts.github_token)
+	gvcs := webvcs.NewGithubVCS(opts.githubToken)
 	cs, err := p.Clients()
 	if err != nil {
 		return err
 	}
-	payload, err := gvcs.ParsePayload(opts.github_payload)
+	payload, err := gvcs.ParsePayload(opts.githubPayload)
 	if err != nil {
 		return err
 	}

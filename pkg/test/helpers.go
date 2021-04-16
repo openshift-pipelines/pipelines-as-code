@@ -25,6 +25,9 @@ type Data struct {
 	Repositories []*v1alpha1.Repository
 }
 
+// SeedTestData returns Clients and Informers populated with the
+// given Data.
+// nolint: golint
 func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers) {
 	c := Clients{
 		PipelineAsCode: fakepacclient.Get(ctx),

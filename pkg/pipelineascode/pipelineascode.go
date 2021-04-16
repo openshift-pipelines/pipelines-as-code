@@ -12,14 +12,14 @@ type PipelineAsCode struct {
 	Client pacclient.PipelinesascodeV1alpha1Interface
 }
 
-func (p PipelineAsCode) FilterBy(url, branch, event_type string) (apipac.Repository, error) {
+func (p PipelineAsCode) FilterBy(url, branch, eventType string) (apipac.Repository, error) {
 	var repository apipac.Repository
 	repositories, err := p.Client.Repositories("").List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return repository, err
 	}
 	for _, value := range repositories.Items {
-		if value.Spec.URL == url && value.Spec.Branch == branch && value.Spec.EventType == event_type {
+		if value.Spec.URL == url && value.Spec.Branch == branch && value.Spec.EventType == eventType {
 			return value, nil
 		}
 	}

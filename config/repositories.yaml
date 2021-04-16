@@ -13,10 +13,10 @@ spec:
           type: string
         - jsonPath: .spec.branch
           name: Branch
-          type: string          
+          type: string
         - jsonPath: .spec.namespace
           name: Namespace
-          type: string 
+          type: string
       served: true
       storage: true
       schema:
@@ -46,7 +46,7 @@ spec:
                   type: string
                 event_type:
                   description: Event Type
-                  type: string                  
+                  type: string
                 namespace:
                   description: Namespace
                   type: string
