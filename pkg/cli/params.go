@@ -6,8 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
-	paac "github.com/openshift-pipelines/pipelines-as-code/pkg/clientset/v1alpha1"
-	"k8s.io/client-go/dynamic"
+	pacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/typed/pipelinesascode/v1alpha1"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -56,15 +55,6 @@ func (p *PacParams) config() (*rest.Config, error) {
 	return config, nil
 }
 
-func (p *PacParams) dynamicClient(config *rest.Config) (dynamic.Interface, error) {
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create dynamic client from config")
-
-	}
-	return dynamicClient, err
-}
-
 func (p *PacParams) tektonClient(config *rest.Config) (versioned.Interface, error) {
 	cs, err := versioned.NewForConfig(config)
 	if err != nil {
@@ -74,8 +64,8 @@ func (p *PacParams) tektonClient(config *rest.Config) (versioned.Interface, erro
 	return cs, nil
 }
 
-func (p *PacParams) pacClient(config *rest.Config) (paac.RepositoryV1Alpha1Interface, error) {
-	cs, err := paac.NewForConfig(config)
+func (p *PacParams) pacClient(config *rest.Config) (*pacclient.PipelinesascodeV1alpha1Client, error) {
+	cs, err := pacclient.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -125,16 +115,10 @@ func (p *PacParams) Clients() (*Clients, error) {
 		log.Fatal(err)
 	}
 
-	dynamic, err := p.dynamicClient(config)
-	if err != nil {
-		return nil, err
-	}
-
 	p.clients = &Clients{
-		Tekton:  tekton,
-		Kube:    kube,
-		Dynamic: dynamic,
-		Pac:     pacc,
+		Tekton: tekton,
+		Kube:   kube,
+		Pac:    pacc,
 	}
 
 	return p.clients, nil

@@ -2,9 +2,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: repositories.pac.tekton.dev
+  name: repositories.pipelinesascode.tekton.dev
 spec:
-  group: pac.tekton.dev
+  group: pipelinesascode.tekton.dev
   versions:
     - name: v1alpha1
       additionalPrinterColumns:
