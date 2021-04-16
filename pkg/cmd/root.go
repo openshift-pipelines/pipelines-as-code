@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	pac "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/pac"
+	pac "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/pipelineascode"
 	"github.com/spf13/cobra"
 )
 

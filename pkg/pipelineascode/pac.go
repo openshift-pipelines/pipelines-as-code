@@ -1,4 +1,4 @@
-package pac
+package pipelineascode
 
 import (
 	"context"
