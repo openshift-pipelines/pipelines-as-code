@@ -34,34 +34,39 @@ func Command(p cli.Params) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			github_token, err := cmd.LocalFlags().GetString("github-token")
-			if err != nil {
-				return fmt.Errorf("github token is not set properly: %v", err)
+			if opts.github_payload == "" {
+				return fmt.Errorf("github_payload needs to be set")
 			}
-			github_payload, err := cmd.LocalFlags().GetString("github-payload")
-			if err != nil {
-				return fmt.Errorf("github payload is not set properly: %v", err)
+			if opts.github_token == "" {
+				return fmt.Errorf("github_token needs to be set")
 			}
-			gvcs := webvcs.NewGithubVCS(github_token)
-			cs, err := p.Clients()
-			if err != nil {
-				return err
-			}
-			payload, err := gvcs.ParsePayload(github_payload)
-			if err != nil {
-				return err
-			}
-			op := pacpkg.Pac{Client: cs.Pac}
-			repo, err := op.FilterBy(payload.URL, payload.Branch, "pull_request")
-			if err != nil {
-				return err
-			}
-
-			fmt.Println("Namespace for repository: " + payload.Owner + "/" + payload.Repository + " is " + repo.Spec.Namespace)
-			return nil
+			return run(p, opts)
 		},
 	}
 	cmd.Flags().StringVarP(&opts.github_token, "github-token", "", "", "Github Token used for operations")
 	cmd.Flags().StringVarP(&opts.github_payload, "github-payload", "", "", "Github Payload from webhook")
 	return cmd
+}
+
+func run(p cli.Params, opts *pacOptions) error {
+	gvcs := webvcs.NewGithubVCS(opts.github_token)
+	cs, err := p.Clients()
+	if err != nil {
+		return err
+	}
+	payload, err := gvcs.ParsePayload(opts.github_payload)
+	if err != nil {
+		return err
+	}
+	op := pacpkg.Pac{Client: cs.Pac}
+	repo, err := op.FilterBy(payload.URL, payload.Branch, "pull_request")
+	if err != nil {
+		return err
+	}
+	if repo.Spec.Namespace != "" {
+		return nil
+	}
+
+	fmt.Println("Namespace for repository: " + payload.Owner + "/" + payload.Repository + " is " + repo.Spec.Namespace)
+	return nil
 }
