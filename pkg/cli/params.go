@@ -116,9 +116,9 @@ func (p *PacParams) Clients() (*Clients, error) {
 	}
 
 	p.clients = &Clients{
-		Tekton: tekton,
-		Kube:   kube,
-		Pac:    pacc,
+		Tekton:         tekton,
+		Kube:           kube,
+		PipelineAsCode: pacc,
 	}
 
 	return p.clients, nil

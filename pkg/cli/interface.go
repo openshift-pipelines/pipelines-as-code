@@ -9,10 +9,10 @@ import (
 )
 
 type Clients struct {
-	Pac        *pacclient.PipelinesascodeV1alpha1Client
-	Tekton     versioned.Interface
-	Kube       k8s.Interface
-	HTTPClient http.Client
+	PipelineAsCode *pacclient.PipelinesascodeV1alpha1Client
+	Tekton         versioned.Interface
+	Kube           k8s.Interface
+	HTTPClient     http.Client
 }
 
 type Params interface {

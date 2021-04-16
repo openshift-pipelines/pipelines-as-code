@@ -66,7 +66,7 @@ func run(p cli.Params, opts *pacOptions) error {
 	if err != nil {
 		return err
 	}
-	op := pacpkg.Pac{Client: cs.Pac}
+	op := pacpkg.PipelineAsCode{Client: cs.PipelineAsCode}
 	repo, err := op.FilterBy(payload.URL, payload.Branch, "pull_request")
 	if err != nil {
 		return err

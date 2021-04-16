@@ -8,11 +8,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Pac struct {
+type PipelineAsCode struct {
 	Client pacclient.PipelinesascodeV1alpha1Interface
 }
 
-func (p Pac) FilterBy(url, branch, event_type string) (apipac.Repository, error) {
+func (p PipelineAsCode) FilterBy(url, branch, event_type string) (apipac.Repository, error) {
 	var repository apipac.Repository
 	repositories, err := p.Client.Repositories("").List(context.Background(), metav1.ListOptions{})
 	if err != nil {
