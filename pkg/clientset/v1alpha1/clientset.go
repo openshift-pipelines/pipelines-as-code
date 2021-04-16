@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/api/types/v1apha1"
+	v1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/api/types/v1alpha1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 )

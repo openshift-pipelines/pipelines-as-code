@@ -3,7 +3,7 @@ package pac
 import (
 	"context"
 
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/api/types/v1apha1"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/api/types/v1alpha1"
 	pacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/clientset/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
