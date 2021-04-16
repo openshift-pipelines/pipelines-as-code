@@ -19,11 +19,19 @@ set -o nounset
 set -o pipefail
 
 SCRIPT_ROOT="$(git rev-parse --show-toplevel)"
-CODEGEN_PKG=${CODEGEN_PKG:-${SCRIPT_ROOT}/vendor/k8s.io/code-generator}
+CODEGEN_PKG=${CODEGEN_PKG:-}
 
-bash -x "${CODEGEN_PKG}"/generate-groups.sh "deepcopy,client,informer,lister" \
+DEBUG=${DEBUG:+-x}
+
+bash ${DEBUG} ${SCRIPT_ROOT}/hack/generate-groups.sh "deepcopy,client,informer,lister" \
      github.com/openshift-pipelines/pipelines-as-code/pkg/generated \
      github.com/openshift-pipelines/pipelines-as-code/pkg/apis \
-  pipelinesascode:v1alpha1 \
-  --output-base "${SCRIPT_ROOT}/../../../" \
-  --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt
+     pipelinesascode:v1alpha1 \
+     --output-base "${SCRIPT_ROOT}/../../../" \
+     --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt
+
+bash ${DEBUG} ${SCRIPT_ROOT}/hack/generate-knative.sh "injection" \
+     github.com/openshift-pipelines/pipelines-as-code/pkg/generated \
+     github.com/openshift-pipelines/pipelines-as-code/pkg/apis \
+     "pipelinesascode:v1alpha1" \
+     --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt
