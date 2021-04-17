@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"k8s.io/client-go/kubernetes/scheme"
+	k8scheme "k8s.io/client-go/kubernetes/scheme"
 )
 
 type Types struct {
@@ -60,9 +62,7 @@ func getPipelineByName(name string, tasks []*v1beta1.Pipeline) (*v1beta1.Pipelin
 	return &v1beta1.Pipeline{}, fmt.Errorf("Cannot find pipeline %s in input", name)
 }
 
-// Resolve gets a set of bytes which contains Pipeline/PipelineRuns/Tasks and
-// resolve them inline as a single PipelineRun
-func Resolve(data []byte) ([]*v1beta1.PipelineRun, error) {
+func resolve(data []byte, generateName bool) ([]*v1beta1.PipelineRun, error) {
 	types, err := readTypes(data)
 	if err != nil {
 		return []*v1beta1.PipelineRun{}, err
@@ -97,6 +97,22 @@ func Resolve(data []byte) ([]*v1beta1.PipelineRun, error) {
 			pipelinerun.Spec.PipelineSpec = &pipelineResolved.Spec
 
 		}
+		if generateName && pipelinerun.ObjectMeta.GenerateName == "" {
+			pipelinerun.ObjectMeta.GenerateName = pipelinerun.ObjectMeta.Name + "-"
+			pipelinerun.ObjectMeta.Name = ""
+		}
 	}
 	return types.PipelineRuns, nil
+}
+
+// Resolve gets a large string which is a yaml multi documents containing
+// Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
+// generateName can be set as True to set the name as a generateName + "-" for
+// unique pipelinerun
+func Resolve(all_templates string, generateName bool) ([]*v1beta1.PipelineRun, error) {
+	s := k8scheme.Scheme
+	if err := tektonv1beta1.AddToScheme(s); err != nil {
+		return []*v1beta1.PipelineRun{}, err
+	}
+	return resolve([]byte(all_templates), generateName)
 }

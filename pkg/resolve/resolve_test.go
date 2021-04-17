@@ -27,12 +27,12 @@ func setup() {
 }
 
 // Not sure how to get testParams fixtures working
-func readTDfile(testname string) (*v1beta1.PipelineRun, error) {
+func readTDfile(testname string, generateName bool) (*v1beta1.PipelineRun, error) {
 	data, err := ioutil.ReadFile("testdata/" + testname + ".yaml")
 	if err != nil {
 		return &v1beta1.PipelineRun{}, err
 	}
-	resolved, err := Resolve(data)
+	resolved, err := resolve(data, generateName)
 	if err != nil {
 		return &v1beta1.PipelineRun{}, err
 	}
@@ -40,7 +40,7 @@ func readTDfile(testname string) (*v1beta1.PipelineRun, error) {
 }
 
 func TestPipelineRunPipelineTask(t *testing.T) {
-	resolved, err := readTDfile("pipelinerun-pipeline-task")
+	resolved, err := readTDfile("pipelinerun-pipeline-task", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,8 +51,23 @@ func TestPipelineRunPipelineTask(t *testing.T) {
 	assert.Equal(t, resolved.Spec.Params[0].Value.StringVal, "{{value}}")
 }
 
+func TestGenerateName(t *testing.T) {
+	resolved, err := readTDfile("pipelinerun-pipeline-task", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
+
+	resolved, err = readTDfile("with-generatename", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
+}
+
 func TestPipelineRunPipelineSpecTaskSpec(t *testing.T) {
-	resolved, err := readTDfile("pipelinerun-pipelinespec-taskspec")
+	resolved, err := readTDfile("pipelinerun-pipelinespec-taskspec", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +76,7 @@ func TestPipelineRunPipelineSpecTaskSpec(t *testing.T) {
 
 func TestPipelineRunPipelineSpecTaskRef(t *testing.T) {
 	t.Skip("TODO") // TODO: Not working ATM
-	resolved, err := readTDfile("pipelinerun-pipelinespec-taskref")
+	resolved, err := readTDfile("pipelinerun-pipelinespec-taskref", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +84,7 @@ func TestPipelineRunPipelineSpecTaskRef(t *testing.T) {
 }
 
 func TestPipelineRunPipelineRefTaskSpec(t *testing.T) {
-	resolved, err := readTDfile("pipelinerun-pipelineref-taskspec")
+	resolved, err := readTDfile("pipelinerun-pipelineref-taskspec", false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,21 +92,21 @@ func TestPipelineRunPipelineRefTaskSpec(t *testing.T) {
 }
 
 func TestNoPipelineRuns(t *testing.T) {
-	_, err := readTDfile("no-pipelinerun")
+	_, err := readTDfile("no-pipelinerun", false)
 	assert.Error(t, err, "We need at least one pipelinerun to start with")
 }
 
 func TestReferencedTaskNotInRepo(t *testing.T) {
-	_, err := readTDfile("referenced-task-not-in-repo")
+	_, err := readTDfile("referenced-task-not-in-repo", false)
 	assert.Error(t, err, "Cannot find task nothere in input")
 }
 
 func TestReferencedPipelineNotInRepo(t *testing.T) {
-	_, err := readTDfile("referenced-pipeline-not-in-repo")
+	_, err := readTDfile("referenced-pipeline-not-in-repo", false)
 	assert.Error(t, err, "Cannot find pipeline pipeline-test1 in input")
 }
 
 func TestIgnoreDocSpace(t *testing.T) {
-	_, err := readTDfile("empty-spaces")
+	_, err := readTDfile("empty-spaces", false)
 	assert.NilError(t, err)
 }
