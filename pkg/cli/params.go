@@ -1,10 +1,9 @@
 package cli
 
 import (
-	"log"
-
 	"github.com/pkg/errors"
 	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	"go.uber.org/zap"
 
 	pacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/typed/pipelinesascode/v1alpha1"
 	k8s "k8s.io/client-go/kubernetes"
@@ -95,6 +94,10 @@ func (p *PacParams) Clients() (*Clients, error) {
 		return p.clients, nil
 	}
 
+	prod, _ := zap.NewProduction()
+	logger := prod.Sugar()
+	defer logger.Sync() // flushes buffer, if any
+
 	config, err := p.config()
 	if err != nil {
 		return nil, err
@@ -112,13 +115,14 @@ func (p *PacParams) Clients() (*Clients, error) {
 
 	pacc, err := p.pacClient(config)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	p.clients = &Clients{
 		Tekton:         tekton,
 		Kube:           kube,
 		PipelineAsCode: pacc,
+		Log:            logger,
 	}
 
 	return p.clients, nil
