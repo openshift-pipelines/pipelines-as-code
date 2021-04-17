@@ -99,6 +99,7 @@ func run(p cli.Params, opts *pacOptions) error {
 	var ns *kcorev1.Namespace
 	ns, err = kcs.CoreV1().Namespaces().Get(context.Background(), repo.Spec.Namespace, v1.GetOptions{})
 	if err != nil {
+		fmt.Printf("Creating Namespace: %s", ns.Name)
 		ns, err = kcs.CoreV1().Namespaces().Create(context.Background(), &kcorev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: repo.Spec.Namespace,
@@ -108,7 +109,6 @@ func run(p cli.Params, opts *pacOptions) error {
 			return (err)
 		}
 	}
-	fmt.Printf("%+v\n", ns)
 
 	return nil
 }
