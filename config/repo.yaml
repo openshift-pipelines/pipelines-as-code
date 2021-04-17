@@ -1,3 +1,4 @@
+---
 apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
 kind: Repository
 metadata:
@@ -7,3 +8,14 @@ spec:
   branch: "master"
   event_type: "pull_request"
   namespace: "scratch-my-back"
+
+---
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: scratchpad
+spec:
+  url: "https://github.com/openshift/pipelines-catalog"
+  branch: "release-next"
+  event_type: "pull_request"
+  namespace: "pipelines-catalog"
