@@ -90,3 +90,8 @@ func TestReferencedPipelineNotInRepo(t *testing.T) {
 	_, err := readTDfile("referenced-pipeline-not-in-repo")
 	assert.Error(t, err, "Cannot find pipeline pipeline-test1 in input")
 }
+
+func TestIgnoreDocSpace(t *testing.T) {
+	_, err := readTDfile("empty-spaces")
+	assert.NilError(t, err)
+}

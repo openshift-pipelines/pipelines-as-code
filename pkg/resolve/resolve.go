@@ -3,7 +3,6 @@ package resolve
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -22,6 +21,10 @@ func readTypes(data []byte) (Types, error) {
 	decoder := scheme.Codecs.UniversalDeserializer()
 
 	for _, doc := range strings.Split(strings.Trim(string(data), "-"), "---") {
+		if strings.TrimSpace(doc) == "" {
+			continue
+		}
+
 		obj, _, err := decoder.Decode([]byte(doc), nil, nil)
 		if err != nil {
 			return types, err
@@ -62,7 +65,7 @@ func getPipelineByName(name string, tasks []*v1beta1.Pipeline) (*v1beta1.Pipelin
 func Resolve(data []byte) ([]*v1beta1.PipelineRun, error) {
 	types, err := readTypes(data)
 	if err != nil {
-		log.Fatal(err)
+		return []*v1beta1.PipelineRun{}, err
 	}
 	if len(types.PipelineRuns) == 0 {
 		return []*v1beta1.PipelineRun{}, errors.New("We need at least one pipelinerun to start with")
