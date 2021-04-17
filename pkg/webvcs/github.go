@@ -32,11 +32,10 @@ func NewGithubVCS(token string) GithubVCS {
 		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-	vcs := GithubVCS{
+	return GithubVCS{
 		Client:  github.NewClient(tc),
 		Context: ctx,
 	}
-	return vcs
 }
 
 func (v GithubVCS) ParsePayload(payload string) (RunInfo, error) {
@@ -67,7 +66,6 @@ func (v GithubVCS) GetTektonDir(path string, runinfo RunInfo) ([]*github.Reposit
 	if fp != nil {
 		return nil, fmt.Errorf("The object %s is a file instead of a directory", path)
 	}
-
 	if resp.Response.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
