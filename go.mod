@@ -9,6 +9,7 @@ require (
 	github.com/tektoncd/pipeline v0.23.0
 	golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013
 	gotest.tools v2.2.0+incompatible
+	k8s.io/api v0.20.0
 	k8s.io/apimachinery v0.21.0
 	k8s.io/client-go v0.20.0
 	k8s.io/code-generator v0.21.0

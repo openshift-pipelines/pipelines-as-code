@@ -452,6 +452,7 @@ gotest.tools/internal/difflib
 gotest.tools/internal/format
 gotest.tools/internal/source
 # k8s.io/api v0.20.0
+## explicit
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apiserverinternal/v1alpha1

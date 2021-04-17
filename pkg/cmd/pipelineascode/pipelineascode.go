@@ -1,6 +1,7 @@
 package pipelineascode
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -8,6 +9,9 @@ import (
 	pacpkg "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/spf13/cobra"
+	kcorev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type pacOptions struct {
@@ -73,9 +77,38 @@ func run(p cli.Params, opts *pacOptions) error {
 	}
 
 	if repo.Spec.Namespace == "" {
+		fmt.Printf("Could not find a namespace match for %s/%s on %s\n", payload.Owner, payload.Repository, payload.Branch)
 		return nil
 	}
 
-	fmt.Println("Namespace for repository: " + payload.Owner + "/" + payload.Repository + " is " + repo.Spec.Namespace)
+	objects, err := gvcs.GetTektonDir(".tekton", payload)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Payload: url: %s  branch: %s event_type: %s ", payload.URL, payload.Branch, "pull_request")
+	fmt.Printf("Target Namespace is: %s\n\n", repo.Spec.Namespace)
+	fmt.Printf("Templates in .tekton directory: \n")
+	for _, value := range objects {
+		fmt.Println(value.GetName())
+	}
+	kcs, err := p.KubeClient()
+	if err != nil {
+		return (err)
+	}
+	var ns *kcorev1.Namespace
+	ns, err = kcs.CoreV1().Namespaces().Get(context.Background(), repo.Spec.Namespace, v1.GetOptions{})
+	if err != nil {
+		ns, err = kcs.CoreV1().Namespaces().Create(context.Background(), &kcorev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: repo.Spec.Namespace,
+			},
+		}, v1.CreateOptions{})
+		if err != nil {
+			return (err)
+		}
+	}
+	fmt.Printf("%+v\n", ns)
+
 	return nil
 }
