@@ -13,7 +13,7 @@ spec:
 apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
 kind: Repository
 metadata:
-  name: scratchpad
+  name: pipelines-catalog
 spec:
   url: "https://github.com/openshift/pipelines-catalog"
   branch: "release-next"
