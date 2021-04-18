@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/google/go-github/v34/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	k8pac "github.com/openshift-pipelines/pipelines-as-code/pkg/kubernetes"
 	pacpkg "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
@@ -20,6 +19,8 @@ type pacOptions struct {
 	githubToken   string
 	githubPayload string
 }
+
+var TektonDir = ".tekton"
 
 // InitParams initialises cli.Params based on flags defined in command
 func InitParams(p cli.Params, cmd *cobra.Command) error {
@@ -86,12 +87,14 @@ func run(p cli.Params, opts *pacOptions) error {
 	}
 
 	if repo.Spec.Namespace == "" {
+		gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "neutral", "Could not find a configuration for this repository", "https://tenor.com/search/sad-cat-gifs")
 		cs.Log.Infof("Could not find a namespace match for %s/%s on %s", runinfo.Owner, runinfo.Repository, runinfo.Branch)
 		return nil
 	}
 
-	objects, err := gvcs.GetTektonDir(".tekton", runinfo)
+	objects, err := gvcs.GetTektonDir(TektonDir, runinfo)
 	if err != nil {
+		gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "neutral", "😿 Could not find a .tekton directory for this repository", "https://tenor.com/search/sad-cat-gifs")
 		return err
 	}
 
@@ -131,15 +134,7 @@ func run(p cli.Params, opts *pacOptions) error {
 		return err
 	}
 
-	title := "CI Run Report"
-	summary := "✅ CI has succeeded"
-	text := "TODO"
-	checkRunOutput := github.CheckRunOutput{
-		Title:   &title,
-		Summary: &summary,
-		Text:    &text,
-	}
-	gvcs.CreateStatus("completed", *checkRun.ID, "success", "", &checkRunOutput, runinfo)
+	gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "success", "TODO", "")
 
 	return nil
 }

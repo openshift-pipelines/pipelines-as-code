@@ -132,14 +132,31 @@ func (v GithubVCS) CreateCheckRun(status string, runinfo RunInfo) (*github.Check
 	return checkRun, err
 }
 
-func (v GithubVCS) CreateStatus(status string, checkrunid int64, conclusion string, detailURL string, checkRunOutput *github.CheckRunOutput, runinfo RunInfo) (*github.CheckRun, error) {
+func (v GithubVCS) CreateStatus(runinfo RunInfo, checkrunid int64, status, conclusion, text, detailURL string) (*github.CheckRun, error) {
 	now := github.Timestamp{Time: time.Now()}
+
+	var summary, title string
+
+	if status == "success" {
+		title = "CI Run Report"
+		summary = "✅ CI has succeeded"
+	} else if status == "neutral" {
+		title = "CI Run: Skipped"
+		summary = "🤷 Skipping this check"
+	}
+
+	checkRunOutput := github.CheckRunOutput{
+		Title:   &title,
+		Summary: &summary,
+		Text:    &text,
+	}
+
 	opts := github.UpdateCheckRunOptions{
 		Name:        "Tekton Pipeline as Code CI",
 		Status:      &status,
 		Conclusion:  &conclusion,
 		CompletedAt: &now,
-		Output:      checkRunOutput,
+		Output:      &checkRunOutput,
 	}
 
 	if detailURL != "" {
