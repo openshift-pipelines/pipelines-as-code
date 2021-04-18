@@ -1,7 +1,10 @@
 package tektoncli
 
 import (
+	"bytes"
 	"os"
+
+	"io"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	cliinterface "github.com/tektoncd/cli/pkg/cli"
@@ -10,7 +13,9 @@ import (
 	clioptions "github.com/tektoncd/cli/pkg/options"
 )
 
-func FollowLogs(prName string, namespace string, cs *cli.Clients) error {
+func FollowLogs(prName string, namespace string, cs *cli.Clients) (string, error) {
+	var outputBuffer bytes.Buffer
+
 	cliparam := cliinterface.TektonParams{}
 	cliparam.SetNamespace(namespace)
 	cliparam.Clients()
@@ -25,15 +30,17 @@ func FollowLogs(prName string, namespace string, cs *cli.Clients) error {
 
 	logC, errC, err := lr.Read()
 	if err != nil {
-		return err
+		return "", err
 	}
+
+	mwr := io.MultiWriter(os.Stdout, &outputBuffer)
 
 	cs.Log.Infof("Watching PipelineRun %s", prName)
 	cliopts.Stream = &cliinterface.Stream{
-		Out: os.Stdout,
-		Err: os.Stderr,
+		Out: mwr,
+		Err: mwr,
 	}
 
 	log.NewWriter(log.LogTypePipeline).Write(cliopts.Stream, logC, errC)
-	return nil
+	return outputBuffer.String(), nil
 }

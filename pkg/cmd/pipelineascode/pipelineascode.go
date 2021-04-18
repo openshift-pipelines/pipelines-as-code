@@ -94,7 +94,7 @@ func run(p cli.Params, opts *pacOptions) error {
 
 	objects, err := gvcs.GetTektonDir(TektonDir, runinfo)
 	if err != nil {
-		gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "neutral", "😿 Could not find a .tekton directory for this repository", "https://tenor.com/search/sad-cat-gifs")
+		gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "neutral", "😿 Could not find a <b>.tekton/</b> directory for this repository", "https://tenor.com/search/sad-cat-gifs")
 		return err
 	}
 
@@ -129,12 +129,12 @@ func run(p cli.Params, opts *pacOptions) error {
 		return err
 	}
 
-	err = tektoncli.FollowLogs(pr.Name, repo.Spec.Namespace, cs)
+	log, err := tektoncli.FollowLogs(pr.Name, repo.Spec.Namespace, cs)
 	if err != nil {
 		return err
 	}
 
-	gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "success", "TODO", "")
+	gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "success", "<h2>Log output:</h2><pre>"+log+"</pre>", "")
 
 	return nil
 }

@@ -138,14 +138,16 @@ func (v GithubVCS) CreateStatus(runinfo RunInfo, checkrunid int64, status, concl
 	var summary, title string
 
 	if status == "success" {
-		title = "CI Run Report"
+		title = "CI Run Report: Success"
 		summary = "✅ CI has succeeded"
+	} else if status == "failed" {
+		title = "CI Run: Failed"
+		summary = "❌ CI has failed"
 	} else if status == "neutral" {
 		title = "CI Run: Skipped"
-		summary = "🤷 Skipping this check"
+		summary = "❔ Skipping this check"
 	}
-
-	checkRunOutput := github.CheckRunOutput{
+	checkRunOutput := &github.CheckRunOutput{
 		Title:   &title,
 		Summary: &summary,
 		Text:    &text,
@@ -156,7 +158,7 @@ func (v GithubVCS) CreateStatus(runinfo RunInfo, checkrunid int64, status, concl
 		Status:      &status,
 		Conclusion:  &conclusion,
 		CompletedAt: &now,
-		Output:      &checkRunOutput,
+		Output:      checkRunOutput,
 	}
 
 	if detailURL != "" {
