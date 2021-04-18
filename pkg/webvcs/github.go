@@ -145,8 +145,11 @@ func (v GithubVCS) CreateStatus(runinfo RunInfo, checkrunid int64, status, concl
 		title = "😞 CI Run: Failed"
 		summary = "Tekon CI has failed."
 	case "skipped":
-		title = "🤨 CI Run: Skipped"
-		summary = "Tekton CI is skipping this commit"
+		title = "🤫 CI Run: Skipped"
+		summary = "Tekton CI is skipping this commit."
+	case "neutral":
+		title = "🤨 CI Run: Unknown"
+		summary = "Tekton CI doesn't know what happend with this commit."
 	}
 
 	checkRunOutput := &github.CheckRunOutput{

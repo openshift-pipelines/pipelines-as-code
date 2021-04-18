@@ -5,6 +5,8 @@ import (
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	pacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/typed/pipelinesascode/v1alpha1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -24,4 +26,15 @@ func (p PipelineAsCode) FilterBy(url, branch, eventType string) (apipac.Reposito
 		}
 	}
 	return repository, nil
+}
+
+/// PipelineRunHasFailed return status of PR  success failed or skipped
+func (p PipelineAsCode) PipelineRunHasFailed(pr *tektonv1beta1.PipelineRun) string {
+	if len(pr.Status.Conditions) == 0 {
+		return "neutral"
+	}
+	if pr.Status.Conditions[0].Status == corev1.ConditionFalse {
+		return "failure"
+	}
+	return "success"
 }

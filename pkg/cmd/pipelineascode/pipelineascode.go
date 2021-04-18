@@ -138,8 +138,9 @@ func run(p cli.Params, opts *pacOptions) error {
 	if err != nil {
 		return err
 	}
+	pr, err = cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Get(ctx, pr.Name, v1.GetOptions{})
 
-	_, err = gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "success", "<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
+	_, err = gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", op.PipelineRunHasFailed(pr), "<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
 
 	return err
 }
