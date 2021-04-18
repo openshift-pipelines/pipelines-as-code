@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v34/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -115,4 +116,36 @@ func (v GithubVCS) GetObject(sha string, runinfo RunInfo) ([]byte, error) {
 	}
 
 	return decoded, err
+}
+
+func (v GithubVCS) CreateCheckRun(status string, runinfo RunInfo) (*github.CheckRun, error) {
+	now := github.Timestamp{Time: time.Now()}
+	checkrunoption := github.CreateCheckRunOptions{
+		Name:    "Tekton Pipeline as Code CI",
+		HeadSHA: runinfo.SHA,
+		Status:  &status,
+		// DetailsURL: "http://todo", // TODO: OpenShift or Tekton Dashboard Target
+		StartedAt: &now,
+	}
+
+	checkRun, _, err := v.Client.Checks.CreateCheckRun(v.Context, runinfo.Owner, runinfo.Repository, checkrunoption)
+	return checkRun, err
+}
+
+func (v GithubVCS) CreateStatus(status string, checkrunid int64, conclusion string, detailURL string, checkRunOutput *github.CheckRunOutput, runinfo RunInfo) (*github.CheckRun, error) {
+	now := github.Timestamp{Time: time.Now()}
+	opts := github.UpdateCheckRunOptions{
+		Name:        "Tekton Pipeline as Code CI",
+		Status:      &status,
+		Conclusion:  &conclusion,
+		CompletedAt: &now,
+		Output:      checkRunOutput,
+	}
+
+	if detailURL != "" {
+		opts.DetailsURL = &detailURL
+	}
+
+	checkRun, _, err := v.Client.Checks.UpdateCheckRun(v.Context, runinfo.Owner, runinfo.Repository, checkrunid, opts)
+	return checkRun, err
 }

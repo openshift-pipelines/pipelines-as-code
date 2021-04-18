@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/google/go-github/v34/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	k8pac "github.com/openshift-pipelines/pipelines-as-code/pkg/kubernetes"
 	pacpkg "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
@@ -72,6 +73,12 @@ func run(p cli.Params, opts *pacOptions) error {
 	if err != nil {
 		return err
 	}
+
+	checkRun, err := gvcs.CreateCheckRun("in_progress", runinfo)
+	if err != nil {
+		return err
+	}
+
 	op := pacpkg.PipelineAsCode{Client: cs.PipelineAsCode}
 	repo, err := op.FilterBy(runinfo.URL, runinfo.Branch, "pull_request")
 	if err != nil {
@@ -104,12 +111,12 @@ func run(p cli.Params, opts *pacOptions) error {
 		return err
 	}
 
-	all_templates, err := gvcs.GetTektonDirTemplate(cs, objects, runinfo)
+	allTemplates, err := gvcs.GetTektonDirTemplate(cs, objects, runinfo)
 	if err != nil {
 		return err
 	}
 
-	prun, err := resolve.Resolve(all_templates, true)
+	prun, err := resolve.Resolve(allTemplates, true)
 	if err != nil {
 		return err
 	}
@@ -123,5 +130,16 @@ func run(p cli.Params, opts *pacOptions) error {
 	if err != nil {
 		return err
 	}
+
+	title := "CI Run Report"
+	summary := "✅ CI has succeeded"
+	text := "TODO"
+	checkRunOutput := github.CheckRunOutput{
+		Title:   &title,
+		Summary: &summary,
+		Text:    &text,
+	}
+	gvcs.CreateStatus("completed", *checkRun.ID, "success", "", &checkRunOutput, runinfo)
+
 	return nil
 }
