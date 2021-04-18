@@ -15,6 +15,9 @@
 /pipelines-as-code
 /bin/*
 
+# ignore tmp files
+tmp/*
+
 # emacs tempfiles
 \#*
 *~

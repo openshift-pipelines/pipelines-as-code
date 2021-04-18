@@ -40,6 +40,11 @@ test-unit: ./vendor ## run unit tests
 	@echo "Running unit tests..."
 	@go test -failfast -v -cover ./...
 
+.PHONY: html-coverage
+html-coverage: ./vendor ## generate html coverage
+	@mkdir -p tmp
+	@go test -coverprofile=tmp/c.out ./.../ && go tool cover -html=tmp/c.out
+
 .PHONY: clean
 clean: ## clean build artifacts
 	rm -fR bin VERSION
