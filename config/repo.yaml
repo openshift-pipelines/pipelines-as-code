@@ -7,6 +7,17 @@ spec:
   url: "https://github.com/chmouel/scratchpad"
   branch: "master"
   event_type: "pull_request"
+  namespace: "scratchpad"
+
+---
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: scratch-my-back
+spec:
+  url: "https://github.com/chmouel/scratchmyback"
+  branch: "main"
+  event_type: "pull_request"
   namespace: "scratch-my-back"
 
 ---
