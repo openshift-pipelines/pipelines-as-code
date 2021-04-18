@@ -15,17 +15,20 @@ import (
 )
 
 // setupCliOpts setup clip options for a prName in a namespace
-func setupCliOpts(namespace, prName string) clioptions.LogOptions {
+func setupCliOpts(namespace, prName string) (clioptions.LogOptions, error) {
 	cliparam := cliinterface.TektonParams{}
 	cliparam.SetNamespace(namespace)
-	cliparam.Clients()
+	_, err := cliparam.Clients()
+	if err != nil {
+		return clioptions.LogOptions{}, err
+	}
 	cliparam.SetNoColour(true)
 	return clioptions.LogOptions{
 		Params:          &cliparam,
 		AllSteps:        true,
 		PipelineRunName: prName,
 		Follow:          true,
-	}
+	}, nil
 }
 
 // FollowLogs follow log of a PR `prName` into the namesapce `namespace`. Output
@@ -33,9 +36,14 @@ func setupCliOpts(namespace, prName string) clioptions.LogOptions {
 func FollowLogs(prName, namespace string, cs *cli.Clients) (string, error) {
 	var outputBuffer bytes.Buffer
 
-	cliopts := setupCliOpts(namespace, prName)
+	cliopts, err := setupCliOpts(namespace, prName)
+	if err != nil {
+		return "", err
+	}
 	lr, err := clilog.NewReader(clilog.LogTypePipeline, &cliopts)
-
+	if err != nil {
+		return "", err
+	}
 	logC, errC, err := lr.Read()
 	if err != nil {
 		return "", err
@@ -55,13 +63,16 @@ func FollowLogs(prName, namespace string, cs *cli.Clients) (string, error) {
 
 func PipelineRunDescribe(prName, namespace string) (string, error) {
 	var outputBuffer bytes.Buffer
-	cliopts := setupCliOpts(namespace, prName)
+	cliopts, err := setupCliOpts(namespace, prName)
+	if err != nil {
+		return "", err
+	}
 	mwr := io.MultiWriter(os.Stdout, &outputBuffer)
 	cliopts.Stream = &cliinterface.Stream{
 		Out: mwr,
 		Err: mwr,
 	}
 
-	err := cliprdesc.PrintPipelineRunDescription(cliopts.Stream, prName, cliopts.Params)
+	err = cliprdesc.PrintPipelineRunDescription(cliopts.Stream, prName, cliopts.Params)
 	return outputBuffer.String(), err
 }

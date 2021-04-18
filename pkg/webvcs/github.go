@@ -81,28 +81,28 @@ func (v GithubVCS) GetTektonDir(path string, runinfo RunInfo) ([]*github.Reposit
 }
 
 func (v GithubVCS) GetTektonDirTemplate(cs *cli.Clients, objects []*github.RepositoryContent, runinfo RunInfo) (string, error) {
-	var all_objects string
-	var all_templates string
+	var allObjects string
+	var allTemplates string
 
 	for _, value := range objects {
-		if all_objects != "" {
-			all_objects += ", "
+		if allObjects != "" {
+			allObjects += ", "
 		}
-		all_objects += value.GetName()
+		allObjects += value.GetName()
 		if value.GetName() != "tekton.yaml" && (strings.HasSuffix(value.GetName(), ".yaml") ||
 			strings.HasSuffix(value.GetName(), ".yml")) {
 			data, err := v.GetObject(value.GetSHA(), runinfo)
 			if err != nil {
 				return "", err
 			}
-			if all_templates != "" && !strings.HasPrefix(string(data), "---") {
-				all_templates += "---"
+			if allTemplates != "" && !strings.HasPrefix(string(data), "---") {
+				allTemplates += "---"
 			}
-			all_templates += "\n" + string(data)
+			allTemplates += "\n" + string(data)
 		}
 	}
-	cs.Log.Infof("Templates in .tekton directory: %s", all_objects)
-	return all_templates, nil
+	cs.Log.Infof("Templates in .tekton directory: %s", allObjects)
+	return allTemplates, nil
 }
 
 func (v GithubVCS) GetObject(sha string, runinfo RunInfo) ([]byte, error) {
@@ -137,16 +137,18 @@ func (v GithubVCS) CreateStatus(runinfo RunInfo, checkrunid int64, status, concl
 
 	var summary, title string
 
-	if status == "success" {
+	switch status {
+	case "success":
 		title = "CI Run Report: Success"
 		summary = "✅ CI has succeeded"
-	} else if status == "failed" {
+	case "failed":
 		title = "CI Run: Failed"
 		summary = "❌ CI has failed"
-	} else if status == "neutral" {
+	case "neutral":
 		title = "CI Run: Skipped"
 		summary = "❔ Skipping this check"
 	}
+
 	checkRunOutput := &github.CheckRunOutput{
 		Title:   &title,
 		Summary: &summary,

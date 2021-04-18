@@ -87,14 +87,14 @@ func run(p cli.Params, opts *pacOptions) error {
 	}
 
 	if repo.Spec.Namespace == "" {
-		gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "neutral", "Could not find a configuration for this repository", "https://tenor.com/search/sad-cat-gifs")
+		_, _ = gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "neutral", "Could not find a configuration for this repository", "https://tenor.com/search/sad-cat-gifs")
 		cs.Log.Infof("Could not find a namespace match for %s/%s on %s", runinfo.Owner, runinfo.Repository, runinfo.Branch)
 		return nil
 	}
 
 	objects, err := gvcs.GetTektonDir(TektonDir, runinfo)
 	if err != nil {
-		gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "neutral", "😿 Could not find a <b>.tekton/</b> directory for this repository", "https://tenor.com/search/sad-cat-gifs")
+		_, _ = gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "neutral", "😿 Could not find a <b>.tekton/</b> directory for this repository", "https://tenor.com/search/sad-cat-gifs")
 		return err
 	}
 
@@ -139,7 +139,7 @@ func run(p cli.Params, opts *pacOptions) error {
 		return err
 	}
 
-	gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "success", "<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
+	_, err = gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "success", "<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
 
-	return nil
+	return err
 }

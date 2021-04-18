@@ -96,8 +96,9 @@ func (p *PacParams) Clients() (*Clients, error) {
 
 	prod, _ := zap.NewProduction()
 	logger := prod.Sugar()
-	defer logger.Sync() // flushes buffer, if any
-
+	defer func() {
+		_ = logger.Sync() // flushes buffer, if any
+	}()
 	config, err := p.config()
 	if err != nil {
 		return nil, err

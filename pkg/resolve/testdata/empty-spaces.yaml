@@ -1,4 +1,3 @@
-
 ---
 apiVersion: tekton.dev/v1beta1
 kind: Task
@@ -246,7 +245,6 @@ spec:
         image: busybox
         command: ['sh', '-c', 'echo "Hello, Kubernetes!" && sleep 3600']
       restartPolicy: OnFailure
-    # The pod template ends here
 ---
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
@@ -276,12 +274,12 @@ spec:
       runAfter: [lint]
       params:
         - name: IMAGE
-          value: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/testing      
+          value: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/testing
         - name: TLSVERIFY
           value: "false"
 
       workspaces:
-        - name: source          
+        - name: source
           workspace: source
     - name: lint
       runAfter: [fetch]
@@ -312,8 +310,8 @@ spec:
         - name: source
           workspace: source
 
+---
 
-          
 ---
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
@@ -336,4 +334,3 @@ spec:
         resources:
           requests:
             storage: 1Gi
-

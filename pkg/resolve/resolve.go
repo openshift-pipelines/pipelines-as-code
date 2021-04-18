@@ -109,10 +109,10 @@ func resolve(data []byte, generateName bool) ([]*v1beta1.PipelineRun, error) {
 // Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
 // generateName can be set as True to set the name as a generateName + "-" for
 // unique pipelinerun
-func Resolve(all_templates string, generateName bool) ([]*v1beta1.PipelineRun, error) {
+func Resolve(allTemplates string, generateName bool) ([]*v1beta1.PipelineRun, error) {
 	s := k8scheme.Scheme
 	if err := tektonv1beta1.AddToScheme(s); err != nil {
 		return []*v1beta1.PipelineRun{}, err
 	}
-	return resolve([]byte(all_templates), generateName)
+	return resolve([]byte(allTemplates), generateName)
 }
