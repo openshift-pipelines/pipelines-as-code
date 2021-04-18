@@ -3,20 +3,15 @@ package pipelineascode
 import (
 	"context"
 	"errors"
-	"os"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	k8pac "github.com/openshift-pipelines/pipelines-as-code/pkg/kubernetes"
 	pacpkg "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/tektoncli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/spf13/cobra"
-	cliinterface "github.com/tektoncd/cli/pkg/cli"
-	"github.com/tektoncd/cli/pkg/log"
-	clilog "github.com/tektoncd/cli/pkg/log"
-	clioptions "github.com/tektoncd/cli/pkg/options"
-	kcorev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -99,44 +94,19 @@ func run(p cli.Params, opts *pacOptions) error {
 		"sha", runinfo.SHA,
 		"event_type", "pull_request")
 
-	cs.Log.Infof("Target Namespace is: %s", repo.Spec.Namespace)
-	var all_objects string
-	var all_templates string
-	// I miss map/lambda :(
-	for _, value := range objects {
-		if all_objects != "" {
-			all_objects += ", "
-		}
-		all_objects += value.GetName()
-		if value.GetName() != "tekton.yaml" && (strings.HasSuffix(value.GetName(), ".yaml") ||
-			strings.HasSuffix(value.GetName(), ".yml")) {
-			data, err := gvcs.GetObject(value.GetSHA(), runinfo)
-			if err != nil {
-				cs.Log.Fatal(err)
-			}
-			if all_templates != "" && !strings.HasPrefix(string(data), "---") {
-				all_templates += "---"
-			}
-			all_templates += "\n" + string(data)
-		}
-	}
-	cs.Log.Infof("Templates in .tekton directory: %s", all_objects)
 	kcs, err := p.KubeClient()
 	if err != nil {
 		return err
 	}
 
-	_, err = kcs.CoreV1().Namespaces().Get(context.Background(), repo.Spec.Namespace, v1.GetOptions{})
+	err = k8pac.CreateNamespace(kcs, cs, repo.Spec.Namespace)
 	if err != nil {
-		cs.Log.Infof("Creating Namespace: %s", repo.Spec.Namespace)
-		_, err = kcs.CoreV1().Namespaces().Create(context.Background(), &kcorev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: repo.Spec.Namespace,
-			},
-		}, v1.CreateOptions{})
-		if err != nil {
-			return (err)
-		}
+		return err
+	}
+
+	all_templates, err := gvcs.GetTektonDirTemplate(cs, objects, runinfo)
+	if err != nil {
+		return err
 	}
 
 	prun, err := resolve.Resolve(all_templates, true)
@@ -149,31 +119,9 @@ func run(p cli.Params, opts *pacOptions) error {
 		return err
 	}
 
-	cliparam := cliinterface.TektonParams{}
-	cliparam.SetNamespace(repo.Spec.Namespace)
-	cliparam.Clients()
-	cliparam.SetNoColour(true)
-	cliopts := clioptions.LogOptions{
-		Params:          &cliparam,
-		AllSteps:        true,
-		PipelineRunName: pr.Name,
-		Follow:          true,
-	}
-	lr, err := clilog.NewReader(clilog.LogTypePipeline, &cliopts)
-
-	logC, errC, err := lr.Read()
+	err = tektoncli.FollowLogs(pr.Name, repo.Spec.Namespace, cs)
 	if err != nil {
 		return err
 	}
-
-	cs.Log.Infof("Watching PipelineRun %s", pr.Name)
-
-	cliopts.Stream = &cliinterface.Stream{
-		Out: os.Stdout,
-		Err: os.Stderr,
-	}
-
-	log.NewWriter(log.LogTypePipeline).Write(cliopts.Stream, logC, errC)
-
 	return nil
 }

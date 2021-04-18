@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-github/v34/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"golang.org/x/oauth2"
 )
 
@@ -75,6 +77,31 @@ func (v GithubVCS) GetTektonDir(path string, runinfo RunInfo) ([]*github.Reposit
 	}
 
 	return objects, nil
+}
+
+func (v GithubVCS) GetTektonDirTemplate(cs *cli.Clients, objects []*github.RepositoryContent, runinfo RunInfo) (string, error) {
+	var all_objects string
+	var all_templates string
+
+	for _, value := range objects {
+		if all_objects != "" {
+			all_objects += ", "
+		}
+		all_objects += value.GetName()
+		if value.GetName() != "tekton.yaml" && (strings.HasSuffix(value.GetName(), ".yaml") ||
+			strings.HasSuffix(value.GetName(), ".yml")) {
+			data, err := v.GetObject(value.GetSHA(), runinfo)
+			if err != nil {
+				return "", err
+			}
+			if all_templates != "" && !strings.HasPrefix(string(data), "---") {
+				all_templates += "---"
+			}
+			all_templates += "\n" + string(data)
+		}
+	}
+	cs.Log.Infof("Templates in .tekton directory: %s", all_objects)
+	return all_templates, nil
 }
 
 func (v GithubVCS) GetObject(sha string, runinfo RunInfo) ([]byte, error) {
