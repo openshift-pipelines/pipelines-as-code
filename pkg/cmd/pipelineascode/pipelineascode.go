@@ -134,7 +134,12 @@ func run(p cli.Params, opts *pacOptions) error {
 		return err
 	}
 
-	gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "success", "<h2>Log output:</h2><pre>"+log+"</pre>", "")
+	describe, err := tektoncli.PipelineRunDescribe(pr.Name, repo.Spec.Namespace)
+	if err != nil {
+		return err
+	}
+
+	gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "success", "<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
 
 	return nil
 }
