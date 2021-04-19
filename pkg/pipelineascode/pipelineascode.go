@@ -18,7 +18,7 @@ import (
 
 var TektonDir = ".tekton"
 
-type PipelineAsCode struct {
+type pipelineAsCode struct {
 	Client pacclient.PipelinesascodeV1alpha1Interface
 }
 
@@ -26,7 +26,7 @@ type Options struct {
 	GithubPayLoad string
 }
 
-func (p PipelineAsCode) FilterBy(url, branch, eventType string) (apipac.Repository, error) {
+func (p pipelineAsCode) filterBy(url, branch, eventType string) (apipac.Repository, error) {
 	var repository apipac.Repository
 	repositories, err := p.Client.Repositories("").List(context.Background(), metav1.ListOptions{})
 	if err != nil {
@@ -40,8 +40,8 @@ func (p PipelineAsCode) FilterBy(url, branch, eventType string) (apipac.Reposito
 	return repository, nil
 }
 
-// PipelineRunStatus return status of PR  success failed or skipped
-func (p PipelineAsCode) PipelineRunStatus(pr *tektonv1beta1.PipelineRun) string {
+// pipelineRunStatus return status of PR  success failed or skipped
+func (p pipelineAsCode) pipelineRunStatus(pr *tektonv1beta1.PipelineRun) string {
 	if len(pr.Status.Conditions) == 0 {
 		return "neutral"
 	}
@@ -60,8 +60,8 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 	}
 	runinfo.CheckRunID = checkRun.ID
 
-	op := PipelineAsCode{Client: cs.PipelineAsCode}
-	repo, err := op.FilterBy(runinfo.URL, runinfo.Branch, "pull_request")
+	op := pipelineAsCode{Client: cs.PipelineAsCode}
+	repo, err := op.filterBy(runinfo.URL, runinfo.Branch, "pull_request")
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 		return err
 	}
 
-	_, err = cs.GithubClient.CreateStatus(runinfo, "completed", op.PipelineRunStatus(pr),
+	_, err = cs.GithubClient.CreateStatus(runinfo, "completed", op.pipelineRunStatus(pr),
 		"<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
 
 	return err

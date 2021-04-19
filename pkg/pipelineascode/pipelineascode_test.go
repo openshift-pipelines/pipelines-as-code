@@ -54,8 +54,8 @@ func TestFilterBy(t *testing.T) {
 				Repositories: tp.repositories,
 			}
 			cs, _ := test.SeedTestData(t, ctx, d)
-			pac := PipelineAsCode{Client: cs.PipelineAsCode.PipelinesascodeV1alpha1()}
-			repo, err := pac.FilterBy(tp.url, tp.branch, tp.eventType)
+			pac := pipelineAsCode{Client: cs.PipelineAsCode.PipelinesascodeV1alpha1()}
+			repo, err := pac.filterBy(tp.url, tp.branch, tp.eventType)
 			if err != nil {
 				t.Fatal(err)
 			}
