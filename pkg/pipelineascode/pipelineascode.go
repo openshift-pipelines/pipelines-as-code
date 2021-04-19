@@ -106,7 +106,7 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 			if err != nil {
 				return err
 			}
-			yamlConfig, err = processTektonYaml(cs, string(data))
+			yamlConfig, err = processTektonYaml(cs, runinfo, string(data))
 			if err != nil {
 				return err
 			}

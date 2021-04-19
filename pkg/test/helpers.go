@@ -13,7 +13,6 @@ import (
 
 	"github.com/google/go-github/v34/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	fakepacclientset "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/fake"
 	informersv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/informers/externalversions/pipelinesascode/v1alpha1"
 	fakepacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/client/fake"
@@ -113,7 +112,7 @@ func newHttpTestClient(fn roundTripFunc) *http.Client {
 	}
 }
 
-func MakeHttpTestClient(t *testing.T, statusCode int, body string) *cli.Clients {
+func MakeHttpTestClient(t *testing.T, statusCode int, body string) *http.Client {
 	httpTestClient := newHttpTestClient(func(req *http.Request) *http.Response {
 		// Test request parameters
 		return &http.Response{
@@ -124,5 +123,5 @@ func MakeHttpTestClient(t *testing.T, statusCode int, body string) *cli.Clients 
 			Header: make(http.Header),
 		}
 	})
-	return &cli.Clients{HTTPClient: *httpTestClient}
+	return httpTestClient
 }

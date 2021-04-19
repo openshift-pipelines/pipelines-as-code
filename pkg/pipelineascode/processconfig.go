@@ -7,6 +7,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 )
 
 type tektonYaml struct {
@@ -17,7 +18,7 @@ type TektonYamlConfig struct {
 	RemoteTasks string
 }
 
-func processTektonYaml(cs *cli.Clients, data string) (TektonYamlConfig, error) {
+func processTektonYaml(cs *cli.Clients, runinfo *webvcs.RunInfo, data string) (TektonYamlConfig, error) {
 	tyConfig := TektonYamlConfig{}
 	ty := tektonYaml{}
 	err := yaml.Unmarshal([]byte(data), &ty)
@@ -27,7 +28,6 @@ func processTektonYaml(cs *cli.Clients, data string) (TektonYamlConfig, error) {
 
 	for _, task := range ty.Tasks {
 		if strings.HasPrefix(task, "https://") || strings.HasPrefix(task, "http://") {
-
 			res, err := cs.HTTPClient.Get(task)
 			if err != nil {
 				return tyConfig, err
@@ -37,7 +37,15 @@ func processTektonYaml(cs *cli.Clients, data string) (TektonYamlConfig, error) {
 			if !strings.HasPrefix(string(data), "---") {
 				tyConfig.RemoteTasks = fmt.Sprintf("%s\n---\n", tyConfig.RemoteTasks)
 			}
-			tyConfig.RemoteTasks = strings.TrimSpace(tyConfig.RemoteTasks + string(data))
+			tyConfig.RemoteTasks = strings.TrimSpace(tyConfig.RemoteTasks + strings.TrimSpace(string(data)))
+			// If it's not an http URL but we have slash in URL assume it's a
+			// reference from inside the tekton directory.
+		} else if strings.Contains(task, "/") {
+			data, err := cs.GithubClient.GetFileInsideRepo(task, runinfo)
+			if err != nil {
+				return tyConfig, err
+			}
+			tyConfig.RemoteTasks = strings.TrimSpace(tyConfig.RemoteTasks + strings.TrimSpace(string(data)))
 		}
 	}
 	return tyConfig, nil

@@ -80,6 +80,26 @@ func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.Reposi
 	return objects, nil
 }
 
+func (v GithubVCS) GetFileInsideRepo(path string, runinfo *RunInfo) (string, error) {
+	fp, objects, resp, err := v.Client.Repositories.GetContents(v.Context, runinfo.Owner,
+		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: runinfo.SHA})
+	if err != nil {
+		return "", err
+	}
+	if objects != nil {
+		return "", fmt.Errorf("Referenced file inside the Github Repository %s is a directory", path)
+	}
+	if resp.Response.StatusCode == http.StatusNotFound {
+		return "", fmt.Errorf("Cannot find %s in this repository", path)
+	}
+	getobj, err := v.GetObject(fp.GetSHA(), runinfo)
+	if err != nil {
+		return "", err
+	}
+
+	return string(getobj), nil
+}
+
 func (v GithubVCS) GetTektonDirTemplate(objects []*github.RepositoryContent, runinfo *RunInfo) (string, error) {
 	var allTemplates string
 
