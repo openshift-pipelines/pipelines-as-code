@@ -16,7 +16,10 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var TektonDir = ".tekton"
+const (
+	tektonDir               = ".tekton"
+	tektonConfigurationFile = "tekton.yaml"
+)
 
 type pipelineAsCode struct {
 	Client pacclient.PipelinesascodeV1alpha1Interface
@@ -73,7 +76,7 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 		return nil
 	}
 
-	objects, err := cs.GithubClient.GetTektonDir(TektonDir, runinfo)
+	objects, err := cs.GithubClient.GetTektonDir(tektonDir, runinfo)
 	if err != nil {
 		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "skipped",
 			"😿 Could not find a <b>.tekton/</b> directory for this repository", "https://tenor.com/search/sad-cat-gifs")
@@ -96,6 +99,21 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 		return err
 	}
 
+	var yamlConfig = TektonYamlConfig{}
+	for _, file := range objects {
+		if file.GetName() == tektonConfigurationFile {
+			data, err := cs.GithubClient.GetObject(file.GetSHA(), runinfo)
+			if err != nil {
+				return err
+			}
+			yamlConfig, err = processTektonYaml(cs, string(data))
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+
 	allTemplates, err := cs.GithubClient.GetTektonDirTemplate(objects, runinfo)
 	if err != nil {
 		return err
@@ -105,6 +123,11 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 		"revision": runinfo.SHA,
 		"repo_url": runinfo.URL,
 	})
+
+	// Do not do place holders replacement on remote tasks, who knows maybe not good!
+	if yamlConfig.RemoteTasks != "" {
+		allTemplates = allTemplates + yamlConfig.RemoteTasks
+	}
 
 	prun, err := resolve.Resolve(allTemplates, true)
 	if err != nil {

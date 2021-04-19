@@ -1,8 +1,10 @@
 package test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/google/go-github/v34/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	fakepacclientset "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/fake"
 	informersv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/informers/externalversions/pipelinesascode/v1alpha1"
 	fakepacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/client/fake"
@@ -93,4 +96,33 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 
 	c.PipelineAsCode.ClearActions()
 	return c, i
+}
+
+// roundTripFunc .
+type roundTripFunc func(req *http.Request) *http.Response
+
+// RoundTrip .
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req), nil
+}
+
+//NewTestClient returns *http.Client with Transport replaced to avoid making real calls
+func newHttpTestClient(fn roundTripFunc) *http.Client {
+	return &http.Client{
+		Transport: roundTripFunc(fn),
+	}
+}
+
+func MakeHttpTestClient(t *testing.T, statusCode int, body string) *cli.Clients {
+	httpTestClient := newHttpTestClient(func(req *http.Request) *http.Response {
+		// Test request parameters
+		return &http.Response{
+			StatusCode: statusCode,
+			// Send response to be tested
+			Body: ioutil.NopCloser(bytes.NewBufferString(body)),
+			// Must be set to non-nil value or it panics
+			Header: make(http.Header),
+		}
+	})
+	return &cli.Clients{HTTPClient: *httpTestClient}
 }
