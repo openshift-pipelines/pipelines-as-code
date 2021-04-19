@@ -1,5 +1,5 @@
 {
-  "action": "opened",
+  "action": "synchronize",
   "number": 1,
   "pull_request": {
     "url": "https://api.github.com/repos/chmouel/scratchmyback/pulls/1",
@@ -35,10 +35,10 @@
     },
     "body": "Signed-off-by: Chmouel Boudjnah <chmouel@chmouel.com>",
     "created_at": "2021-04-18T11:26:57Z",
-    "updated_at": "2021-04-18T11:26:57Z",
+    "updated_at": "2021-04-19T11:41:04Z",
     "closed_at": null,
     "merged_at": null,
-    "merge_commit_sha": null,
+    "merge_commit_sha": "12c6c652487efa04be204ec1ac3f54dd28bf0793",
     "assignee": null,
     "assignees": [
 
@@ -58,11 +58,11 @@
     "review_comments_url": "https://api.github.com/repos/chmouel/scratchmyback/pulls/1/comments",
     "review_comment_url": "https://api.github.com/repos/chmouel/scratchmyback/pulls/comments{/number}",
     "comments_url": "https://api.github.com/repos/chmouel/scratchmyback/issues/1/comments",
-    "statuses_url": "https://api.github.com/repos/chmouel/scratchmyback/statuses/08e9f15745d1ab4704ceb3eacf1f8845088716e7",
+    "statuses_url": "https://api.github.com/repos/chmouel/scratchmyback/statuses/c08c58b71ea6983803ba08a2945c31527682cc68",
     "head": {
       "label": "chmouel:tektonci",
       "ref": "tektonci",
-      "sha": "08e9f15745d1ab4704ceb3eacf1f8845088716e7",
+      "sha": "c08c58b71ea6983803ba08a2945c31527682cc68",
       "user": {
         "login": "chmouel",
         "id": 98980,
@@ -151,13 +151,13 @@
         "deployments_url": "https://api.github.com/repos/chmouel/scratchmyback/deployments",
         "created_at": "2021-04-18T10:57:45Z",
         "updated_at": "2021-04-18T10:57:47Z",
-        "pushed_at": "2021-04-18T11:26:57Z",
+        "pushed_at": "2021-04-19T11:41:03Z",
         "git_url": "git://github.com/chmouel/scratchmyback.git",
         "ssh_url": "git@github.com:chmouel/scratchmyback.git",
         "clone_url": "https://github.com/chmouel/scratchmyback.git",
         "svn_url": "https://github.com/chmouel/scratchmyback",
         "homepage": null,
-        "size": 0,
+        "size": 16,
         "stargazers_count": 0,
         "watchers_count": 0,
         "language": null,
@@ -280,13 +280,13 @@
         "deployments_url": "https://api.github.com/repos/chmouel/scratchmyback/deployments",
         "created_at": "2021-04-18T10:57:45Z",
         "updated_at": "2021-04-18T10:57:47Z",
-        "pushed_at": "2021-04-18T11:26:57Z",
+        "pushed_at": "2021-04-19T11:41:03Z",
         "git_url": "git://github.com/chmouel/scratchmyback.git",
         "ssh_url": "git@github.com:chmouel/scratchmyback.git",
         "clone_url": "https://github.com/chmouel/scratchmyback.git",
         "svn_url": "https://github.com/chmouel/scratchmyback",
         "homepage": null,
-        "size": 0,
+        "size": 16,
         "stargazers_count": 0,
         "watchers_count": 0,
         "language": null,
@@ -340,7 +340,7 @@
         "href": "https://api.github.com/repos/chmouel/scratchmyback/pulls/1/commits"
       },
       "statuses": {
-        "href": "https://api.github.com/repos/chmouel/scratchmyback/statuses/08e9f15745d1ab4704ceb3eacf1f8845088716e7"
+        "href": "https://api.github.com/repos/chmouel/scratchmyback/statuses/c08c58b71ea6983803ba08a2945c31527682cc68"
       }
     },
     "author_association": "OWNER",
@@ -354,11 +354,13 @@
     "comments": 0,
     "review_comments": 0,
     "maintainer_can_modify": false,
-    "commits": 1,
+    "commits": 3,
     "additions": 76,
     "deletions": 0,
     "changed_files": 5
   },
+  "before": "3859c6d9c40f5eb581f927ad43be24589de9ff8f",
+  "after": "c08c58b71ea6983803ba08a2945c31527682cc68",
   "repository": {
     "id": 359117785,
     "node_id": "MDEwOlJlcG9zaXRvcnkzNTkxMTc3ODU=",
@@ -427,13 +429,13 @@
     "deployments_url": "https://api.github.com/repos/chmouel/scratchmyback/deployments",
     "created_at": "2021-04-18T10:57:45Z",
     "updated_at": "2021-04-18T10:57:47Z",
-    "pushed_at": "2021-04-18T11:26:57Z",
+    "pushed_at": "2021-04-19T11:41:03Z",
     "git_url": "git://github.com/chmouel/scratchmyback.git",
     "ssh_url": "git@github.com:chmouel/scratchmyback.git",
     "clone_url": "https://github.com/chmouel/scratchmyback.git",
     "svn_url": "https://github.com/chmouel/scratchmyback",
     "homepage": null,
-    "size": 0,
+    "size": 16,
     "stargazers_count": 0,
     "watchers_count": 0,
     "language": null,
