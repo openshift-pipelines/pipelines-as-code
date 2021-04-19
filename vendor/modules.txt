@@ -152,6 +152,7 @@ github.com/google/cel-go/interpreter/functions
 github.com/google/cel-go/parser
 github.com/google/cel-go/parser/gen
 # github.com/google/go-cmp v0.5.4
+## explicit
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/cmpopts
 github.com/google/go-cmp/cmp/internal/diff
@@ -958,5 +959,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 # github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
 # github.com/kr/pty => github.com/creack/pty v1.1.10
-# k8s.io/cli-runtime => k8s.io/cli-runtime v0.19.7
 # k8s.io/apimachinery => k8s.io/apimachinery v0.19.7
+# k8s.io/cli-runtime => k8s.io/cli-runtime v0.19.7

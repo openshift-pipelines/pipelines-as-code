@@ -4,14 +4,26 @@ import (
 	"context"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	pacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/typed/pipelinesascode/v1alpha1"
+	k8pac "github.com/openshift-pipelines/pipelines-as-code/pkg/kubernetes"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/tektoncli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var TektonDir = ".tekton"
 
 type PipelineAsCode struct {
 	Client pacclient.PipelinesascodeV1alpha1Interface
+}
+
+type Options struct {
+	GithubPayLoad string
 }
 
 func (p PipelineAsCode) FilterBy(url, branch, eventType string) (apipac.Repository, error) {
@@ -37,4 +49,90 @@ func (p PipelineAsCode) PipelineRunStatus(pr *tektonv1beta1.PipelineRun) string 
 		return "failure"
 	}
 	return "success"
+}
+
+func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) error {
+	ctx := context.Background()
+	runinfo, err := cs.GithubClient.ParsePayload(opts.GithubPayLoad)
+	if err != nil {
+		return err
+	}
+
+	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
+	if err != nil {
+		return err
+	}
+	runinfo.CheckRunID = checkRun.ID
+
+	op := PipelineAsCode{Client: cs.PipelineAsCode}
+	repo, err := op.FilterBy(runinfo.URL, runinfo.Branch, "pull_request")
+	if err != nil {
+		return err
+	}
+
+	if repo.Spec.Namespace == "" {
+		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "skipped",
+			"Could not find a configuration for this repository", "https://tenor.com/search/sad-cat-gifs")
+		cs.Log.Infof("Could not find a namespace match for %s/%s on %s", runinfo.Owner, runinfo.Repository, runinfo.Branch)
+		return nil
+	}
+
+	objects, err := cs.GithubClient.GetTektonDir(TektonDir, runinfo)
+	if err != nil {
+		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "skipped",
+			"😿 Could not find a <b>.tekton/</b> directory for this repository", "https://tenor.com/search/sad-cat-gifs")
+		return err
+	}
+
+	cs.Log.Infow("Loading payload",
+		"url", runinfo.URL,
+		"branch", runinfo.Branch,
+		"sha", runinfo.SHA,
+		"event_type", "pull_request")
+
+	kcs, err := p.KubeClient()
+	if err != nil {
+		return err
+	}
+
+	err = k8pac.CreateNamespace(kcs, cs, repo.Spec.Namespace)
+	if err != nil {
+		return err
+	}
+
+	allTemplates, err := cs.GithubClient.GetTektonDirTemplate(objects, runinfo)
+	if err != nil {
+		return err
+	}
+
+	allTemplates = ReplacePlaceHoldersVariables(allTemplates, map[string]string{
+		"revision": runinfo.SHA,
+		"repo_url": runinfo.URL,
+	})
+
+	prun, err := resolve.Resolve(allTemplates, true)
+	if err != nil {
+		return err
+	}
+
+	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun[0], v1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	log, err := tektoncli.FollowLogs(pr.Name, repo.Spec.Namespace, cs)
+	if err != nil {
+		return err
+	}
+
+	describe, err := tektoncli.PipelineRunDescribe(pr.Name, repo.Spec.Namespace)
+	if err != nil {
+		return err
+	}
+	pr, err = cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Get(ctx, pr.Name, v1.GetOptions{})
+
+	_, err = cs.GithubClient.CreateStatus(runinfo, "completed", op.PipelineRunStatus(pr),
+		"<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
+
+	return err
 }
