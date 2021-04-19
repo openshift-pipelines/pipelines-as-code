@@ -143,7 +143,7 @@ func (v GithubVCS) CreateStatus(runinfo *RunInfo, status, conclusion, text, deta
 		summary = "Tekton CI is skipping this commit."
 	case "neutral":
 		title = "🤨 CI Run: Unknown"
-		summary = "Tekton CI doesn't know what happend with this commit."
+		summary = "Tekton CI doesn't know what happened with this commit."
 	}
 
 	checkRunOutput := &github.CheckRunOutput{

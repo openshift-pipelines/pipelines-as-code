@@ -8,7 +8,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
 	pacpkg "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/spf13/cobra"
 )
 
@@ -45,8 +44,12 @@ func Command(p cli.Params) *cobra.Command {
 
 // Wrap around a Run, create a CheckStatusID if there is a failure.
 func runWrap(p cli.Params, opts *pacpkg.Options) error {
-	var runInfo = &webvcs.RunInfo{}
 	cs, err := p.Clients()
+	if err != nil {
+		return err
+	}
+
+	runInfo, err := cs.GithubClient.ParsePayload(opts.GithubPayLoad)
 	if err != nil {
 		return err
 	}

@@ -40,7 +40,7 @@ func (p PipelineAsCode) FilterBy(url, branch, eventType string) (apipac.Reposito
 	return repository, nil
 }
 
-/// PipelineRunStatus return status of PR  success failed or skipped
+// PipelineRunStatus return status of PR  success failed or skipped
 func (p PipelineAsCode) PipelineRunStatus(pr *tektonv1beta1.PipelineRun) string {
 	if len(pr.Status.Conditions) == 0 {
 		return "neutral"
@@ -52,12 +52,8 @@ func (p PipelineAsCode) PipelineRunStatus(pr *tektonv1beta1.PipelineRun) string 
 }
 
 func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) error {
+	var err error
 	ctx := context.Background()
-	runinfo, err := cs.GithubClient.ParsePayload(opts.GithubPayLoad)
-	if err != nil {
-		return err
-	}
-
 	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
 	if err != nil {
 		return err
@@ -130,6 +126,9 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 		return err
 	}
 	pr, err = cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Get(ctx, pr.Name, v1.GetOptions{})
+	if err != nil {
+		return err
+	}
 
 	_, err = cs.GithubClient.CreateStatus(runinfo, "completed", op.PipelineRunStatus(pr),
 		"<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
