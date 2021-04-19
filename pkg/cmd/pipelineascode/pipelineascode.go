@@ -124,6 +124,11 @@ func run(p cli.Params, cs *cli.Clients, opts *pacOptions, runinfo *webvcs.RunInf
 		return err
 	}
 
+	allTemplates = pacpkg.ReplacePlaceHoldersVariables(allTemplates, map[string]string{
+		"revision": runinfo.SHA,
+		"repo_url": runinfo.URL,
+	})
+
 	prun, err := resolve.Resolve(allTemplates, true)
 	if err != nil {
 		return err
