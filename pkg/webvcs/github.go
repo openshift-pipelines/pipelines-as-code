@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/google/go-github/v34/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"golang.org/x/oauth2"
 )
 
@@ -27,6 +26,7 @@ type RunInfo struct {
 	SHA           string
 	URL           string
 	Branch        string
+	CheckRunID    *int64
 }
 
 func NewGithubVCS(token string) GithubVCS {
@@ -41,18 +41,18 @@ func NewGithubVCS(token string) GithubVCS {
 	}
 }
 
-func (v GithubVCS) ParsePayload(payload string) (RunInfo, error) {
+func (v GithubVCS) ParsePayload(payload string) (*RunInfo, error) {
 	prMap := &github.PullRequestEvent{}
 	err := json.Unmarshal([]byte(payload), prMap)
 	if err != nil {
-		return RunInfo{}, err
+		return &RunInfo{}, err
 	}
 
 	if prMap.PullRequest == nil {
-		return RunInfo{}, errors.New("Cannot parse payload as PR")
+		return &RunInfo{}, errors.New("Cannot parse payload as PR")
 	}
 
-	return RunInfo{
+	return &RunInfo{
 		Owner:         prMap.GetRepo().Owner.GetLogin(),
 		Repository:    prMap.GetRepo().GetName(),
 		URL:           prMap.GetRepo().GetHTMLURL(),
@@ -63,7 +63,7 @@ func (v GithubVCS) ParsePayload(payload string) (RunInfo, error) {
 	}, nil
 }
 
-func (v GithubVCS) GetTektonDir(path string, runinfo RunInfo) ([]*github.RepositoryContent, error) {
+func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.RepositoryContent, error) {
 	fp, objects, resp, err := v.Client.Repositories.GetContents(v.Context, runinfo.Owner,
 		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: runinfo.SHA})
 	if fp != nil {
@@ -80,15 +80,10 @@ func (v GithubVCS) GetTektonDir(path string, runinfo RunInfo) ([]*github.Reposit
 	return objects, nil
 }
 
-func (v GithubVCS) GetTektonDirTemplate(cs *cli.Clients, objects []*github.RepositoryContent, runinfo RunInfo) (string, error) {
-	var allObjects string
+func (v GithubVCS) GetTektonDirTemplate(objects []*github.RepositoryContent, runinfo *RunInfo) (string, error) {
 	var allTemplates string
 
 	for _, value := range objects {
-		if allObjects != "" {
-			allObjects += ", "
-		}
-		allObjects += value.GetName()
 		if value.GetName() != "tekton.yaml" && (strings.HasSuffix(value.GetName(), ".yaml") ||
 			strings.HasSuffix(value.GetName(), ".yml")) {
 			data, err := v.GetObject(value.GetSHA(), runinfo)
@@ -101,11 +96,10 @@ func (v GithubVCS) GetTektonDirTemplate(cs *cli.Clients, objects []*github.Repos
 			allTemplates += "\n" + string(data)
 		}
 	}
-	cs.Log.Infof("Templates in .tekton directory: %s", allObjects)
 	return allTemplates, nil
 }
 
-func (v GithubVCS) GetObject(sha string, runinfo RunInfo) ([]byte, error) {
+func (v GithubVCS) GetObject(sha string, runinfo *RunInfo) ([]byte, error) {
 	blob, _, err := v.Client.Git.GetBlob(v.Context, runinfo.Owner, runinfo.Repository, sha)
 	if err != nil {
 		return nil, err
@@ -118,7 +112,7 @@ func (v GithubVCS) GetObject(sha string, runinfo RunInfo) ([]byte, error) {
 	return decoded, err
 }
 
-func (v GithubVCS) CreateCheckRun(status string, runinfo RunInfo) (*github.CheckRun, error) {
+func (v GithubVCS) CreateCheckRun(status string, runinfo *RunInfo) (*github.CheckRun, error) {
 	now := github.Timestamp{Time: time.Now()}
 	checkrunoption := github.CreateCheckRunOptions{
 		Name:    "Tekton Pipeline as Code CI",
@@ -132,7 +126,7 @@ func (v GithubVCS) CreateCheckRun(status string, runinfo RunInfo) (*github.Check
 	return checkRun, err
 }
 
-func (v GithubVCS) CreateStatus(runinfo RunInfo, checkrunid int64, status, conclusion, text, detailURL string) (*github.CheckRun, error) {
+func (v GithubVCS) CreateStatus(runinfo *RunInfo, status, conclusion, text, detailURL string) (*github.CheckRun, error) {
 	now := github.Timestamp{Time: time.Now()}
 
 	var summary, title string
@@ -170,6 +164,6 @@ func (v GithubVCS) CreateStatus(runinfo RunInfo, checkrunid int64, status, concl
 		opts.DetailsURL = &detailURL
 	}
 
-	checkRun, _, err := v.Client.Checks.UpdateCheckRun(v.Context, runinfo.Owner, runinfo.Repository, checkrunid, opts)
+	checkRun, _, err := v.Client.Checks.UpdateCheckRun(v.Context, runinfo.Owner, runinfo.Repository, *runinfo.CheckRunID, opts)
 	return checkRun, err
 }

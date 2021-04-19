@@ -3,9 +3,11 @@ package pipelineascode
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
 	k8pac "github.com/openshift-pipelines/pipelines-as-code/pkg/kubernetes"
 	pacpkg "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
@@ -16,20 +18,10 @@ import (
 )
 
 type pacOptions struct {
-	githubToken   string
 	githubPayload string
 }
 
 var TektonDir = ".tekton"
-
-// InitParams initialises cli.Params based on flags defined in command
-func InitParams(p cli.Params, cmd *cobra.Command) error {
-	// ensure that the config is valid by creating a client
-	if _, err := p.Clients(); err != nil {
-		return err
-	}
-	return nil
-}
 
 func Command(p cli.Params) *cobra.Command {
 	opts := &pacOptions{}
@@ -37,7 +29,7 @@ func Command(p cli.Params) *cobra.Command {
 		Use:   "run",
 		Short: "Run pipelines as code",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if err := InitParams(p, cmd); err != nil {
+			if err := flags.InitParams(p, cmd); err != nil {
 				// this check allows tkn version to be run without
 				// a kubeconfig so users can verify the tkn version
 				noConfigErr := strings.Contains(err.Error(), "no configuration has been provided")
@@ -52,33 +44,44 @@ func Command(p cli.Params) *cobra.Command {
 			if opts.githubPayload == "" {
 				return errors.New("github-payload needs to be set")
 			}
-			if opts.githubToken == "" {
-				return errors.New("github-token needs to be set")
-			}
-			return run(p, opts)
+			return runWrap(p, opts)
 		},
 	}
-	cmd.Flags().StringVarP(&opts.githubToken, "github-token", "", "", "Github Token used for operations")
+
+	flags.AddPacOptions(cmd)
+
 	cmd.Flags().StringVarP(&opts.githubPayload, "github-payload", "", "", "Github Payload from webhook")
 	return cmd
 }
 
-func run(p cli.Params, opts *pacOptions) error {
-	ctx := context.Background()
-	gvcs := webvcs.NewGithubVCS(opts.githubToken)
+func runWrap(p cli.Params, opts *pacOptions) error {
+	var runInfo = &webvcs.RunInfo{}
 	cs, err := p.Clients()
 	if err != nil {
 		return err
 	}
-	runinfo, err := gvcs.ParsePayload(opts.githubPayload)
+
+	err = run(p, cs, opts, runInfo)
+	if err != nil {
+		_, _ = cs.GithubClient.CreateStatus(runInfo, "completed", "failure",
+			fmt.Sprintf("There was an issue validating the commit: %q", err),
+			"https://tenor.com/search/sad-cat-gifs")
+	}
+	return err
+}
+
+func run(p cli.Params, cs *cli.Clients, opts *pacOptions, runinfo *webvcs.RunInfo) error {
+	ctx := context.Background()
+	runinfo, err := cs.GithubClient.ParsePayload(opts.githubPayload)
 	if err != nil {
 		return err
 	}
 
-	checkRun, err := gvcs.CreateCheckRun("in_progress", runinfo)
+	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
 	if err != nil {
 		return err
 	}
+	runinfo.CheckRunID = checkRun.ID
 
 	op := pacpkg.PipelineAsCode{Client: cs.PipelineAsCode}
 	repo, err := op.FilterBy(runinfo.URL, runinfo.Branch, "pull_request")
@@ -87,14 +90,16 @@ func run(p cli.Params, opts *pacOptions) error {
 	}
 
 	if repo.Spec.Namespace == "" {
-		_, _ = gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "skipped", "Could not find a configuration for this repository", "https://tenor.com/search/sad-cat-gifs")
+		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "skipped",
+			"Could not find a configuration for this repository", "https://tenor.com/search/sad-cat-gifs")
 		cs.Log.Infof("Could not find a namespace match for %s/%s on %s", runinfo.Owner, runinfo.Repository, runinfo.Branch)
 		return nil
 	}
 
-	objects, err := gvcs.GetTektonDir(TektonDir, runinfo)
+	objects, err := cs.GithubClient.GetTektonDir(TektonDir, runinfo)
 	if err != nil {
-		_, _ = gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", "skipped", "😿 Could not find a <b>.tekton/</b> directory for this repository", "https://tenor.com/search/sad-cat-gifs")
+		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "skipped",
+			"😿 Could not find a <b>.tekton/</b> directory for this repository", "https://tenor.com/search/sad-cat-gifs")
 		return err
 	}
 
@@ -114,7 +119,7 @@ func run(p cli.Params, opts *pacOptions) error {
 		return err
 	}
 
-	allTemplates, err := gvcs.GetTektonDirTemplate(cs, objects, runinfo)
+	allTemplates, err := cs.GithubClient.GetTektonDirTemplate(objects, runinfo)
 	if err != nil {
 		return err
 	}
@@ -140,7 +145,8 @@ func run(p cli.Params, opts *pacOptions) error {
 	}
 	pr, err = cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Get(ctx, pr.Name, v1.GetOptions{})
 
-	_, err = gvcs.CreateStatus(runinfo, *checkRun.ID, "completed", op.PipelineRunHasFailed(pr), "<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
+	_, err = cs.GithubClient.CreateStatus(runinfo, "completed", op.PipelineRunStatus(pr),
+		"<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
 
 	return err
 }

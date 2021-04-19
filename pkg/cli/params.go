@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 
 	pacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/typed/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -16,9 +17,18 @@ type PacParams struct {
 	kubeConfigPath string
 	kubeContext    string
 	namespace      string
+	githubToken    string
 }
 
 var _ Params = (*PacParams)(nil)
+
+func (p *PacParams) SetKubeConfigPath(path string) {
+	p.kubeConfigPath = path
+}
+
+func (p *PacParams) SetGitHubToken(token string) {
+	p.githubToken = token
+}
 
 // Set kube client based on config
 func (p *PacParams) kubeClient(config *rest.Config) (k8s.Interface, error) {
@@ -61,6 +71,10 @@ func (p *PacParams) tektonClient(config *rest.Config) (versioned.Interface, erro
 	}
 
 	return cs, nil
+}
+
+func (p *PacParams) githubClient(config *rest.Config) (webvcs.GithubVCS, error) {
+	return webvcs.NewGithubVCS(p.githubToken), nil
 }
 
 func (p *PacParams) pacClient(config *rest.Config) (*pacclient.PipelinesascodeV1alpha1Client, error) {
@@ -119,11 +133,17 @@ func (p *PacParams) Clients() (*Clients, error) {
 		return nil, err
 	}
 
+	ghClient, err := p.githubClient(config)
+	if err != nil {
+		return nil, err
+	}
+
 	p.clients = &Clients{
 		Tekton:         tekton,
 		Kube:           kube,
 		PipelineAsCode: pacc,
 		Log:            logger,
+		GithubClient:   ghClient,
 	}
 
 	return p.clients, nil

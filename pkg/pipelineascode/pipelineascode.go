@@ -28,8 +28,8 @@ func (p PipelineAsCode) FilterBy(url, branch, eventType string) (apipac.Reposito
 	return repository, nil
 }
 
-/// PipelineRunHasFailed return status of PR  success failed or skipped
-func (p PipelineAsCode) PipelineRunHasFailed(pr *tektonv1beta1.PipelineRun) string {
+/// PipelineRunStatus return status of PR  success failed or skipped
+func (p PipelineAsCode) PipelineRunStatus(pr *tektonv1beta1.PipelineRun) string {
 	if len(pr.Status.Conditions) == 0 {
 		return "neutral"
 	}

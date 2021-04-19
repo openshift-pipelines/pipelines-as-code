@@ -70,7 +70,7 @@ func TestWebVCS(t *testing.T) {
 		Context: ctx,
 	}
 
-	runinfo := RunInfo{
+	runinfo := &RunInfo{
 		Owner:         "foo",
 		Repository:    "bar",
 		DefaultBranch: "master",
@@ -83,7 +83,7 @@ func TestWebVCS(t *testing.T) {
 
 	// Do not print error if not here because it's okay to not have a .tekton
 	// dir
-	runinfo = RunInfo{
+	runinfo = &RunInfo{
 		Owner:         "pas",
 		Repository:    "la",
 		DefaultBranch: "master",
