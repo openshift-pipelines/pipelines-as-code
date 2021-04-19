@@ -3,11 +3,13 @@ module github.com/openshift-pipelines/pipelines-as-code
 go 1.15
 
 require (
+	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-cmp v0.5.4
 	github.com/google/go-github/v34 v34.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.1.3
 	github.com/tektoncd/cli v0.17.2
+	github.com/tektoncd/hub/api v0.0.0-20210208113044-f2a63f81502c
 	github.com/tektoncd/pipeline v0.23.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013

@@ -83,6 +83,8 @@ github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
 github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/dimfeld/httptreemux/v5 v5.2.2
+github.com/dimfeld/httptreemux/v5
 # github.com/emicklei/go-restful v2.15.0+incompatible
 github.com/emicklei/go-restful
 github.com/emicklei/go-restful/log
@@ -104,6 +106,7 @@ github.com/gdamore/tcell/terminfo/v/vt102
 github.com/gdamore/tcell/terminfo/v/vt220
 github.com/gdamore/tcell/terminfo/x/xterm
 # github.com/ghodss/yaml v1.0.0
+## explicit
 github.com/ghodss/yaml
 # github.com/go-logr/logr v0.4.0
 github.com/go-logr/logr
@@ -178,6 +181,8 @@ github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 github.com/googleapis/gnostic/jsonschema
 github.com/googleapis/gnostic/openapiv2
+# github.com/gorilla/websocket v1.4.2
+github.com/gorilla/websocket
 # github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7
 github.com/gregjones/httpcache
 github.com/gregjones/httpcache/diskcache
@@ -281,6 +286,12 @@ github.com/tektoncd/cli/pkg/taskrun
 github.com/tektoncd/cli/pkg/taskrun/description
 github.com/tektoncd/cli/pkg/taskrun/list
 github.com/tektoncd/cli/pkg/taskrun/sort
+# github.com/tektoncd/hub/api v0.0.0-20210208113044-f2a63f81502c
+## explicit
+github.com/tektoncd/hub/api/gen/http/resource/client
+github.com/tektoncd/hub/api/gen/resource
+github.com/tektoncd/hub/api/gen/resource/views
+github.com/tektoncd/hub/api/pkg/cli/hub
 # github.com/tektoncd/pipeline v0.23.0
 ## explicit
 github.com/tektoncd/pipeline/pkg/apis/config
@@ -348,6 +359,9 @@ go.uber.org/zap/internal/exit
 go.uber.org/zap/internal/ztest
 go.uber.org/zap/zapcore
 go.uber.org/zap/zaptest
+# goa.design/goa/v3 v3.2.2
+goa.design/goa/v3/http
+goa.design/goa/v3/pkg
 # golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp

@@ -11,6 +11,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+
+	//hubtest "github.com/tektoncd/hub/api/pkg/cli/test"
 	"gotest.tools/assert"
 )
 

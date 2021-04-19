@@ -2,6 +2,7 @@ package cli
 
 import (
 	"github.com/pkg/errors"
+	"github.com/tektoncd/hub/api/pkg/cli/hub"
 	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 
@@ -73,6 +74,11 @@ func (p *PacParams) tektonClient(config *rest.Config) (versioned.Interface, erro
 	return cs, nil
 }
 
+func (p *PacParams) hubClient(config *rest.Config) hub.Client {
+	cs := hub.NewClient()
+	return cs
+}
+
 func (p *PacParams) githubClient(config *rest.Config) (webvcs.GithubVCS, error) {
 	return webvcs.NewGithubVCS(p.githubToken), nil
 }
@@ -133,6 +139,8 @@ func (p *PacParams) Clients() (*Clients, error) {
 		return nil, err
 	}
 
+	hub := p.hubClient(config)
+
 	ghClient, err := p.githubClient(config)
 	if err != nil {
 		return nil, err
@@ -144,6 +152,7 @@ func (p *PacParams) Clients() (*Clients, error) {
 		PipelineAsCode: pacc,
 		Log:            logger,
 		GithubClient:   ghClient,
+		Hub:            hub,
 	}
 
 	return p.clients, nil

@@ -864,6 +864,7 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/tektoncd/cli v0.17.2 h1:lzCAualfdQtyG7wM+OGJzTgFX22PF8Y2fmpw2rGlnYY=
 github.com/tektoncd/cli v0.17.2/go.mod h1:Kd2vsYGl9IXQYCx1DpdmNxN2UwABk1TgMEvWMhY0YKA=
+github.com/tektoncd/hub/api v0.0.0-20210208113044-f2a63f81502c h1:gnQOsgmHUIapCDKX9TqWBRobYd8MzF3cSnu7v8I0Hvo=
 github.com/tektoncd/hub/api v0.0.0-20210208113044-f2a63f81502c/go.mod h1:R0o3ZROwHynXLi4+1e+9xEVkPhtrIL+J4hrEN1Yp98E=
 github.com/tektoncd/pipeline v0.20.1-0.20210203144343-1b7a37f0d21d/go.mod h1:GwdfGGt/5VhZL8JvJu8kFz8friKufcJ/TJkJmK6uc0U=
 github.com/tektoncd/pipeline v0.20.1-0.20210204110343-8c5a751b53ea/go.mod h1:GwdfGGt/5VhZL8JvJu8kFz8friKufcJ/TJkJmK6uc0U=
@@ -943,6 +944,7 @@ go.uber.org/zap v1.16.0 h1:uFRZXykJGK9lLY4HtgSw44DnIcAM+kRBP7x5m+NpAOM=
 go.uber.org/zap v1.16.0/go.mod h1:MA8QOfq0BHJwdXa996Y4dYkAqRKB8/1K1QMMZVaNZjQ=
 goa.design/goa/v3 v3.0.9/go.mod h1:oJR8VOFa4HV7wCQv4XhPtvyknz0B3VFFRUWDdEmI0FI=
 goa.design/goa/v3 v3.1.3/go.mod h1:GEog3KvHosQPKrrZSlpXDSnm7PpmzZEiy3mLxI/FtXM=
+goa.design/goa/v3 v3.2.2 h1:DDFof4YcjgRPJsl5T/iayigCX/nO857hEcVXdwvsSJM=
 goa.design/goa/v3 v3.2.2/go.mod h1:3SDdN/ynQsyXW4Zl6A5YA2yXi9KyqmTH577z5P4bnAs=
 goa.design/plugins/v3 v3.1.3/go.mod h1:j4gOWwZpEBsNmONKitV/tBlxG6Yu7unFCU1HJmqjiC8=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=

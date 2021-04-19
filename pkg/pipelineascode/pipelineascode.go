@@ -154,7 +154,7 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 	}
 
 	_, err = cs.GithubClient.CreateStatus(runinfo, "completed", op.pipelineRunStatus(pr),
-		"<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><pre>"+log+"</pre>", "")
+		"<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><code>"+log+"</code>", "")
 
 	return err
 }
