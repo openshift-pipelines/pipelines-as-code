@@ -10,8 +10,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/tektoncli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -41,17 +39,6 @@ func (p pipelineAsCode) filterBy(url, branch, eventType string) (apipac.Reposito
 		}
 	}
 	return repository, nil
-}
-
-// pipelineRunStatus return status of PR  success failed or skipped
-func (p pipelineAsCode) pipelineRunStatus(pr *tektonv1beta1.PipelineRun) string {
-	if len(pr.Status.Conditions) == 0 {
-		return "neutral"
-	}
-	if pr.Status.Conditions[0].Status == corev1.ConditionFalse {
-		return "failure"
-	}
-	return "success"
 }
 
 func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) error {
@@ -153,7 +140,7 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 		return err
 	}
 
-	_, err = cs.GithubClient.CreateStatus(runinfo, "completed", op.pipelineRunStatus(pr),
+	_, err = cs.GithubClient.CreateStatus(runinfo, "completed", pipelineRunStatus(pr),
 		"<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><code>"+log+"</code>", "")
 
 	return err
