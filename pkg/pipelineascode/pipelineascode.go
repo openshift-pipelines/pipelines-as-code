@@ -113,7 +113,7 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 
 	// Do not do place holders replacement on remote tasks, who knows maybe not good!
 	if yamlConfig.RemoteTasks != "" {
-		allTemplates = allTemplates + yamlConfig.RemoteTasks
+		allTemplates += yamlConfig.RemoteTasks
 	}
 
 	prun, err := resolve.Resolve(allTemplates, true)

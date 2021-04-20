@@ -12,7 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 
-	//hubtest "github.com/tektoncd/hub/api/pkg/cli/test"
+	// hubtest "github.com/tektoncd/hub/api/pkg/cli/test"
 	"gotest.tools/assert"
 )
 
@@ -21,7 +21,7 @@ func TestProcessTektonYamlRemoteTask(t *testing.T) {
 - https://foo.bar
 - https://hello.moto
 `
-	httpTestClient := test.MakeHttpTestClient(t, 200, "HELLO")
+	httpTestClient := test.MakeHTTPTestClient(t, 200, "HELLO")
 	cs := cli.Clients{HTTPClient: *httpTestClient}
 	expected := `
 ---
@@ -54,14 +54,14 @@ func TestProcessTektonYamlRefInternal(t *testing.T) {
   "sha": "takepicture"}`)
 	})
 	mux.HandleFunc("/repos/git/blobs/takepicture", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, fmt.Sprintf(`{
+		fmt.Fprintf(w, `{
   "name": "healthy",
   "path": "be/healthy",
   "sha": "takepicture",
   "size": 68,
   "content": "%s\n",
   "encoding": "base64"}`,
-			base64.StdEncoding.EncodeToString([]byte(expected))))
+			base64.StdEncoding.EncodeToString([]byte(expected)))
 	})
 	mux.HandleFunc("/repos/pas/la/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
