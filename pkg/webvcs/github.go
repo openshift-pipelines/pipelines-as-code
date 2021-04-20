@@ -132,7 +132,6 @@ func (v GithubVCS) GetObject(sha string, runinfo *RunInfo) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return decoded, err
 }
 

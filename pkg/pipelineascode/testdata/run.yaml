@@ -5,4 +5,4 @@ metadata:
   name: hello-test-pipeline
 spec:
   pipelineRef:
-   name: pipeline1
+    name: pipeline1
