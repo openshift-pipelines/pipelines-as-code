@@ -3,17 +3,17 @@ package cli
 import (
 	"net/http"
 
-	pacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/typed/pipelinesascode/v1alpha1"
+	pacversioned "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/tektoncd/hub/api/pkg/cli/hub"
-	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	k8s "k8s.io/client-go/kubernetes"
 )
 
 type Clients struct {
-	PipelineAsCode *pacclient.PipelinesascodeV1alpha1Client
-	Tekton         versioned.Interface
+	PipelineAsCode pacversioned.Interface
+	Tekton         tektonversioned.Interface
 	Hub            hub.Client
 	Kube           k8s.Interface
 	HTTPClient     http.Client

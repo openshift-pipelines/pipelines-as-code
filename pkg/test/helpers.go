@@ -17,11 +17,18 @@ import (
 	informersv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/informers/externalversions/pipelinesascode/v1alpha1"
 	fakepacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/client/fake"
 	fakerepositoryinformers "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/informers/pipelinesascode/v1alpha1/repository/fake"
+	fakepipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
+	fakepipelineclient "github.com/tektoncd/pipeline/pkg/client/injection/client/fake"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 )
 
 type Clients struct {
+	Pipeline       *fakepipelineclientset.Clientset
 	PipelineAsCode *fakepacclientset.Clientset
+	Kube           *fakekubeclientset.Clientset
 }
 
 // Informers holds references to informers which are useful for reconciler tests.
@@ -31,6 +38,7 @@ type Informers struct {
 
 type Data struct {
 	Repositories []*v1alpha1.Repository
+	Namespaces   []*corev1.Namespace
 }
 
 const (
@@ -78,6 +86,8 @@ func SetupGH() (client *github.Client, mux *http.ServeMux, serverURL string, tea
 func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers) {
 	c := Clients{
 		PipelineAsCode: fakepacclient.Get(ctx),
+		Kube:           fakekubeclient.Get(ctx),
+		Pipeline:       fakepipelineclient.Get(ctx),
 	}
 	i := Informers{
 		Repository: fakerepositoryinformers.Get(ctx),

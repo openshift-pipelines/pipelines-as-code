@@ -3,11 +3,11 @@ package cli
 import (
 	"github.com/pkg/errors"
 	"github.com/tektoncd/hub/api/pkg/cli/hub"
-	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
-	"go.uber.org/zap"
+	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
-	pacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/typed/pipelinesascode/v1alpha1"
+	pacversioned "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"go.uber.org/zap"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -65,8 +65,17 @@ func (p *PacParams) config() (*rest.Config, error) {
 	return config, nil
 }
 
-func (p *PacParams) tektonClient(config *rest.Config) (versioned.Interface, error) {
-	cs, err := versioned.NewForConfig(config)
+func (p *PacParams) tektonClient(config *rest.Config) (tektonversioned.Interface, error) {
+	cs, err := tektonversioned.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return cs, nil
+}
+
+func (p *PacParams) pacClient(config *rest.Config) (pacversioned.Interface, error) {
+	cs, err := pacversioned.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -81,15 +90,6 @@ func (p *PacParams) hubClient(config *rest.Config) hub.Client {
 
 func (p *PacParams) githubClient(config *rest.Config) (webvcs.GithubVCS, error) {
 	return webvcs.NewGithubVCS(p.githubToken), nil
-}
-
-func (p *PacParams) pacClient(config *rest.Config) (*pacclient.PipelinesascodeV1alpha1Client, error) {
-	cs, err := pacclient.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return cs, nil
 }
 
 // Only returns kube client, not tekton client

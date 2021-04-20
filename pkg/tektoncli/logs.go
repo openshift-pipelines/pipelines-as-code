@@ -32,7 +32,7 @@ func setupCliOpts(namespace, prName string) (clioptions.LogOptions, error) {
 
 // FollowLogs follow log of a PR `prName` into the namesapce `namespace`. Output
 // stdin and stderr to stdout and as a string
-func FollowLogs(prName, namespace string, cs *cli.Clients) (string, error) {
+func FollowLogs(cs *cli.Clients, prName, namespace string) (string, error) {
 	var outputBuffer bytes.Buffer
 
 	cliopts, err := setupCliOpts(namespace, prName)

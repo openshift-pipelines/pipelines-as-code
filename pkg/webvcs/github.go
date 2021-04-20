@@ -66,6 +66,7 @@ func (v GithubVCS) ParsePayload(payload string) (*RunInfo, error) {
 func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.RepositoryContent, error) {
 	fp, objects, resp, err := v.Client.Repositories.GetContents(v.Context, runinfo.Owner,
 		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: runinfo.SHA})
+
 	if fp != nil {
 		return nil, fmt.Errorf("The object %s is a file instead of a directory", path)
 	}
@@ -83,6 +84,7 @@ func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.Reposi
 func (v GithubVCS) GetFileInsideRepo(path string, runinfo *RunInfo) (string, error) {
 	fp, objects, resp, err := v.Client.Repositories.GetContents(v.Context, runinfo.Owner,
 		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: runinfo.SHA})
+
 	if err != nil {
 		return "", err
 	}
@@ -92,6 +94,7 @@ func (v GithubVCS) GetFileInsideRepo(path string, runinfo *RunInfo) (string, err
 	if resp.Response.StatusCode == http.StatusNotFound {
 		return "", fmt.Errorf("Cannot find %s in this repository", path)
 	}
+
 	getobj, err := v.GetObject(fp.GetSHA(), runinfo)
 	if err != nil {
 		return "", err
@@ -124,6 +127,7 @@ func (v GithubVCS) GetObject(sha string, runinfo *RunInfo) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	decoded, err := base64.StdEncoding.DecodeString(blob.GetContent())
 	if err != nil {
 		return nil, err

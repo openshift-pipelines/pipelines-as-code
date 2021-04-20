@@ -5,7 +5,6 @@ import (
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	pacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/typed/pipelinesascode/v1alpha1"
 	k8pac "github.com/openshift-pipelines/pipelines-as-code/pkg/kubernetes"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/tektoncli"
@@ -19,17 +18,15 @@ const (
 	tektonConfigurationFile = "tekton.yaml"
 )
 
-type pipelineAsCode struct {
-	Client pacclient.PipelinesascodeV1alpha1Interface
-}
-
 type Options struct {
 	GithubPayLoad string
 }
 
-func (p pipelineAsCode) filterBy(url, branch, eventType string) (apipac.Repository, error) {
+func getRepoByCRD(cs *cli.Clients, url, branch, eventType string) (apipac.Repository, error) {
 	var repository apipac.Repository
-	repositories, err := p.Client.Repositories("").List(context.Background(), metav1.ListOptions{})
+
+	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
+		context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return repository, err
 	}
@@ -41,17 +38,16 @@ func (p pipelineAsCode) filterBy(url, branch, eventType string) (apipac.Reposito
 	return repository, nil
 }
 
-func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) error {
+func Run(p cli.Params, cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 	var err error
-	ctx := context.Background()
+	var ctx = context.Background()
 	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
 	if err != nil {
 		return err
 	}
 	runinfo.CheckRunID = checkRun.ID
 
-	op := pipelineAsCode{Client: cs.PipelineAsCode}
-	repo, err := op.filterBy(runinfo.URL, runinfo.Branch, "pull_request")
+	repo, err := getRepoByCRD(cs, runinfo.URL, runinfo.Branch, "pull_request")
 	if err != nil {
 		return err
 	}
@@ -76,12 +72,7 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 		"sha", runinfo.SHA,
 		"event_type", "pull_request")
 
-	kcs, err := p.KubeClient()
-	if err != nil {
-		return err
-	}
-
-	err = k8pac.CreateNamespace(kcs, cs, repo.Spec.Namespace)
+	err = k8pac.CreateNamespace(cs, repo.Spec.Namespace)
 	if err != nil {
 		return err
 	}
@@ -93,6 +84,7 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 			if err != nil {
 				return err
 			}
+
 			yamlConfig, err = processTektonYaml(cs, runinfo, string(data))
 			if err != nil {
 				return err
@@ -115,7 +107,6 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 	if yamlConfig.RemoteTasks != "" {
 		allTemplates += yamlConfig.RemoteTasks
 	}
-
 	prun, err := resolve.Resolve(allTemplates, true)
 	if err != nil {
 		return err
@@ -126,10 +117,12 @@ func Run(p cli.Params, cs *cli.Clients, opts *Options, runinfo *webvcs.RunInfo) 
 		return err
 	}
 
-	log, err := tektoncli.FollowLogs(pr.Name, repo.Spec.Namespace, cs)
+	log, err := tektoncli.FollowLogs(cs, pr.Name, repo.Spec.Namespace)
 	if err != nil {
 		return err
 	}
+
+	return nil
 
 	describe, err := tektoncli.PipelineRunDescribe(pr.Name, repo.Spec.Namespace)
 	if err != nil {
