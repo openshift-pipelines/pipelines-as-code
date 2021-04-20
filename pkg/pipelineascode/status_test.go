@@ -10,9 +10,6 @@ import (
 )
 
 func Test_pipelineRunStatus(t *testing.T) {
-	type args struct {
-		pr *tektonv1beta1.PipelineRun
-	}
 	tests := []struct {
 		name string
 		pr   tektonv1beta1.PipelineRun
