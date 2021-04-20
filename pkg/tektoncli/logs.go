@@ -11,7 +11,6 @@ import (
 	"github.com/tektoncd/cli/pkg/log"
 	clilog "github.com/tektoncd/cli/pkg/log"
 	clioptions "github.com/tektoncd/cli/pkg/options"
-	cliprdesc "github.com/tektoncd/cli/pkg/pipelinerun/description"
 )
 
 // setupCliOpts setup clip options for a prName in a namespace
@@ -59,20 +58,4 @@ func FollowLogs(prName, namespace string, cs *cli.Clients) (string, error) {
 
 	log.NewWriter(log.LogTypePipeline).Write(cliopts.Stream, logC, errC)
 	return outputBuffer.String(), nil
-}
-
-func PipelineRunDescribe(prName, namespace string) (string, error) {
-	var outputBuffer bytes.Buffer
-	cliopts, err := setupCliOpts(namespace, prName)
-	if err != nil {
-		return "", err
-	}
-	mwr := io.MultiWriter(os.Stdout, &outputBuffer)
-	cliopts.Stream = &cliinterface.Stream{
-		Out: mwr,
-		Err: mwr,
-	}
-
-	err = cliprdesc.PrintPipelineRunDescription(cliopts.Stream, prName, cliopts.Params)
-	return outputBuffer.String(), err
 }
