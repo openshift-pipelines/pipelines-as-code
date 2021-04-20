@@ -23,10 +23,13 @@ func TestProcessTektonYamlRemoteTask(t *testing.T) {
 `
 	httpTestClient := test.MakeHttpTestClient(t, 200, "HELLO")
 	cs := cli.Clients{HTTPClient: *httpTestClient}
-	expected := `---
-HELLO
+	expected := `
 ---
-HELLO`
+HELLO
+
+---
+HELLO
+`
 
 	ret, err := processTektonYaml(&cs, &webvcs.RunInfo{}, data)
 	assert.NilError(t, err)
@@ -73,7 +76,7 @@ func TestProcessTektonYamlRefInternal(t *testing.T) {
 	ret, err := processTektonYaml(cs, &webvcs.RunInfo{}, data)
 	assert.NilError(t, err)
 
-	if d := cmp.Diff(ret.RemoteTasks, expected); d != "" {
+	if d := cmp.Diff(ret.RemoteTasks, "\n---\n"+expected+"\n"); d != "" {
 		t.Fatalf("-got, +want: %v", d)
 	}
 
