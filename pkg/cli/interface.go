@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	pacversioned "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/tektoncli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/tektoncd/hub/api/pkg/cli/hub"
 	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
@@ -14,6 +15,7 @@ import (
 type Clients struct {
 	PipelineAsCode pacversioned.Interface
 	Tekton         tektonversioned.Interface
+	TektonCli      tektoncli.Interface
 	Hub            hub.Client
 	Kube           k8s.Interface
 	HTTPClient     http.Client

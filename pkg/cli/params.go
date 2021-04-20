@@ -6,6 +6,7 @@ import (
 	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
 	pacversioned "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/tektoncli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"go.uber.org/zap"
 	k8s "k8s.io/client-go/kubernetes"
@@ -83,6 +84,14 @@ func (p *PacParams) pacClient(config *rest.Config) (pacversioned.Interface, erro
 	return cs, nil
 }
 
+func (p *PacParams) tektoncliClient(config *rest.Config) (tektoncli.Interface, error) {
+	cs, err := tektoncli.New(p.namespace)
+	if err != nil {
+		return nil, err
+	}
+	return cs, nil
+}
+
 func (p *PacParams) hubClient(config *rest.Config) hub.Client {
 	cs := hub.NewClient()
 	return cs
@@ -146,8 +155,14 @@ func (p *PacParams) Clients() (*Clients, error) {
 		return nil, err
 	}
 
+	tektoncli, err := p.tektoncliClient(config)
+	if err != nil {
+		return nil, err
+	}
+
 	p.clients = &Clients{
 		Tekton:         tekton,
+		TektonCli:      tektoncli,
 		Kube:           kube,
 		PipelineAsCode: pacc,
 		Log:            logger,

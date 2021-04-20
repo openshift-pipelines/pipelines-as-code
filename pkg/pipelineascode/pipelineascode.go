@@ -7,7 +7,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	k8pac "github.com/openshift-pipelines/pipelines-as-code/pkg/kubernetes"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/tektoncli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -117,17 +116,16 @@ func Run(p cli.Params, cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 		return err
 	}
 
-	log, err := tektoncli.FollowLogs(cs, pr.Name, repo.Spec.Namespace)
+	log, err := cs.TektonCli.FollowLogs(pr.Name, repo.Spec.Namespace)
 	if err != nil {
 		return err
 	}
 
-	return nil
-
-	describe, err := tektoncli.PipelineRunDescribe(pr.Name, repo.Spec.Namespace)
+	describe, err := cs.TektonCli.PipelineRunDescribe(pr.Name, repo.Spec.Namespace)
 	if err != nil {
 		return err
 	}
+
 	pr, err = cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Get(ctx, pr.Name, v1.GetOptions{})
 	if err != nil {
 		return err

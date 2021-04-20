@@ -2,11 +2,13 @@ package pipelineascode
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
+	"github.com/google/go-github/v34/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test"
@@ -19,6 +21,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+type FakeTektonClient struct {
+	logOutput      string
+	describeOutput string
+}
+
+func (t *FakeTektonClient) FollowLogs(string, string) (string, error) {
+	return t.logOutput, nil
+}
+
+func (t *FakeTektonClient) PipelineRunDescribe(string, string) (string, error) {
+	return t.describeOutput, nil
+}
 
 func newRepo(name, url, branch, eventType, namespace string) *v1alpha1.Repository {
 	return &v1alpha1.Repository{
@@ -101,10 +116,6 @@ func TestRun(t *testing.T) {
 	}
 
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/check-runs", runinfo.Owner, runinfo.Repository),
-		`{"id": 26}`)
-
-	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/contents/.tekton", runinfo.Owner, runinfo.Repository),
 		`[{
 
@@ -162,10 +173,17 @@ func TestRun(t *testing.T) {
 		fmt.Sprintf(`{"encoding": "base64","content": "%s=="}`,
 			base64.RawStdEncoding.EncodeToString(pB)))
 
-	// mux.HandleFunc("/",
-	//	func(w http.ResponseWriter, r *http.Request) {
-	//		fmt.Println(r.URL)
-	//	})
+	replyString(mux,
+		fmt.Sprintf("/repos/%s/%s/check-runs", runinfo.Owner, runinfo.Repository),
+		`{"id": 26}`)
+
+	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/26", runinfo.Owner, runinfo.Repository),
+		func(w http.ResponseWriter, r *http.Request) {
+			body, _ := ioutil.ReadAll(r.Body)
+			created := github.CreateCheckRunOptions{}
+			json.Unmarshal(body, &created)
+			assert.Equal(t, created.GetConclusion(), "neutral")
+		})
 
 	gcvs := webvcs.GithubVCS{
 		Client:  fakeclient,
@@ -199,6 +217,7 @@ func TestRun(t *testing.T) {
 		Log:            logger,
 		Kube:           stdata.Kube,
 		Tekton:         stdata.Pipeline,
+		TektonCli:      &FakeTektonClient{logOutput: "HELLO MOTO", describeOutput: "DESCRIBE ZEMODO"},
 	}
 
 	params := &cli.PacParams{}
