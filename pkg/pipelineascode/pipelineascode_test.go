@@ -224,8 +224,7 @@ func TestRun(t *testing.T) {
 		TektonCli:      &FakeTektonClient{logOutput: "HELLO MOTO", describeOutput: "DESCRIBE ZEMODO"},
 	}
 
-	params := &cli.PacParams{}
-	err = Run(params, cs, runinfo)
+	err = Run(cs, runinfo)
 	assert.NilError(t, err)
 	assert.Assert(t, len(log.TakeAll()) > 0)
 }

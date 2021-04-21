@@ -37,7 +37,7 @@ func getRepoByCRD(cs *cli.Clients, url, branch, eventType string) (apipac.Reposi
 	return repository, nil
 }
 
-func Run(p cli.Params, cs *cli.Clients, runinfo *webvcs.RunInfo) error {
+func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 	var err error
 	var ctx = context.Background()
 	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
@@ -116,23 +116,12 @@ func Run(p cli.Params, cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 		return err
 	}
 
-	log, err := cs.TektonCli.FollowLogs(pr.Name, repo.Spec.Namespace)
+	fullLog, err := cs.TektonCli.FollowLogs(pr.Name, repo.Spec.Namespace)
 	if err != nil {
 		return err
 	}
 
-	describe, err := cs.TektonCli.PipelineRunDescribe(pr.Name, repo.Spec.Namespace)
-	if err != nil {
-		return err
-	}
-
-	pr, err = cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Get(ctx, pr.Name, v1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	_, err = cs.GithubClient.CreateStatus(runinfo, "completed", pipelineRunStatus(pr),
-		"<h2>Describe output:</h2><pre>"+describe+"</pre><h2>Log output:</h2><hr><code>"+log+"</code>", "")
+	err = postFinalStatus(ctx, cs, runinfo, pr.Name, repo.Spec.Namespace, fullLog)
 
 	return err
 }

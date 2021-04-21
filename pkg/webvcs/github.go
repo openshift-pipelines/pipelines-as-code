@@ -160,7 +160,7 @@ func (v GithubVCS) CreateStatus(runinfo *RunInfo, status, conclusion, text, deta
 		summary = "Tekton CI has successfully validated your commit."
 	case "failure":
 		title = "😞 CI Run: Failed"
-		summary = "Tekon CI has failed."
+		summary = "Tekon CI has <b>failed</b>."
 	case "skipped":
 		title = "🤫 CI Run: Skipped"
 		summary = "Tekton CI is skipping this commit."

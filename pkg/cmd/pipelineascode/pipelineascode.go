@@ -54,7 +54,7 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 		return err
 	}
 
-	err = pacpkg.Run(p, cs, runInfo)
+	err = pacpkg.Run(cs, runInfo)
 	if err != nil {
 		_, _ = cs.GithubClient.CreateStatus(runInfo, "completed", "failure",
 			fmt.Sprintf("There was an issue validating the commit: %q", err),
