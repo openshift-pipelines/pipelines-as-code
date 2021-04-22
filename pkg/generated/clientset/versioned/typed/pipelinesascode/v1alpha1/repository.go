@@ -33,13 +33,14 @@ import (
 // RepositoriesGetter has a method to return a RepositoryInterface.
 // A group's client should implement this interface.
 type RepositoriesGetter interface {
-	Repositories(namespace string) RepositoryInterface
+	Repositories() RepositoryInterface
 }
 
 // RepositoryInterface has methods to work with Repository resources.
 type RepositoryInterface interface {
 	Create(ctx context.Context, repository *v1alpha1.Repository, opts v1.CreateOptions) (*v1alpha1.Repository, error)
 	Update(ctx context.Context, repository *v1alpha1.Repository, opts v1.UpdateOptions) (*v1alpha1.Repository, error)
+	UpdateStatus(ctx context.Context, repository *v1alpha1.Repository, opts v1.UpdateOptions) (*v1alpha1.Repository, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
 	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.Repository, error)
@@ -52,14 +53,12 @@ type RepositoryInterface interface {
 // repositories implements RepositoryInterface
 type repositories struct {
 	client rest.Interface
-	ns     string
 }
 
 // newRepositories returns a Repositories
-func newRepositories(c *PipelinesascodeV1alpha1Client, namespace string) *repositories {
+func newRepositories(c *PipelinesascodeV1alpha1Client) *repositories {
 	return &repositories{
 		client: c.RESTClient(),
-		ns:     namespace,
 	}
 }
 
@@ -67,7 +66,6 @@ func newRepositories(c *PipelinesascodeV1alpha1Client, namespace string) *reposi
 func (c *repositories) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Repository, err error) {
 	result = &v1alpha1.Repository{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("repositories").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -84,7 +82,6 @@ func (c *repositories) List(ctx context.Context, opts v1.ListOptions) (result *v
 	}
 	result = &v1alpha1.RepositoryList{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("repositories").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -101,7 +98,6 @@ func (c *repositories) Watch(ctx context.Context, opts v1.ListOptions) (watch.In
 	}
 	opts.Watch = true
 	return c.client.Get().
-		Namespace(c.ns).
 		Resource("repositories").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -112,7 +108,6 @@ func (c *repositories) Watch(ctx context.Context, opts v1.ListOptions) (watch.In
 func (c *repositories) Create(ctx context.Context, repository *v1alpha1.Repository, opts v1.CreateOptions) (result *v1alpha1.Repository, err error) {
 	result = &v1alpha1.Repository{}
 	err = c.client.Post().
-		Namespace(c.ns).
 		Resource("repositories").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(repository).
@@ -125,9 +120,23 @@ func (c *repositories) Create(ctx context.Context, repository *v1alpha1.Reposito
 func (c *repositories) Update(ctx context.Context, repository *v1alpha1.Repository, opts v1.UpdateOptions) (result *v1alpha1.Repository, err error) {
 	result = &v1alpha1.Repository{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("repositories").
 		Name(repository.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Body(repository).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *repositories) UpdateStatus(ctx context.Context, repository *v1alpha1.Repository, opts v1.UpdateOptions) (result *v1alpha1.Repository, err error) {
+	result = &v1alpha1.Repository{}
+	err = c.client.Put().
+		Resource("repositories").
+		Name(repository.Name).
+		SubResource("status").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(repository).
 		Do(ctx).
@@ -138,7 +147,6 @@ func (c *repositories) Update(ctx context.Context, repository *v1alpha1.Reposito
 // Delete takes name of the repository and deletes it. Returns an error if one occurs.
 func (c *repositories) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("repositories").
 		Name(name).
 		Body(&opts).
@@ -153,7 +161,6 @@ func (c *repositories) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("repositories").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -166,7 +173,6 @@ func (c *repositories) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 func (c *repositories) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Repository, err error) {
 	result = &v1alpha1.Repository{}
 	err = c.client.Patch(pt).
-		Namespace(c.ns).
 		Resource("repositories").
 		Name(name).
 		SubResource(subresources...).

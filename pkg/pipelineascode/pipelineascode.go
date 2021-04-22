@@ -15,6 +15,7 @@ import (
 const (
 	tektonDir               = ".tekton"
 	tektonConfigurationFile = "tekton.yaml"
+	maxPipelineRunStatusRun = 3
 )
 
 type Options struct {
@@ -24,7 +25,7 @@ type Options struct {
 func getRepoByCRD(cs *cli.Clients, url, branch, eventType string) (apipac.Repository, error) {
 	var repository apipac.Repository
 
-	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
+	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories().List(
 		context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return repository, err
@@ -121,7 +122,30 @@ func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 		return err
 	}
 
-	err = postFinalStatus(ctx, cs, runinfo, pr.Name, repo.Spec.Namespace, fullLog)
+	newPr, err := postFinalStatus(ctx, cs, runinfo, pr.Name, repo.Spec.Namespace, fullLog)
+	if err != nil {
+		return err
 
+	}
+
+	repoStatus := apipac.RepositoryRunStatus{
+		Status:          newPr.Status.Status,
+		PipelineRunName: newPr.Name,
+		StartTime:       newPr.Status.StartTime,
+		CompletionTime:  newPr.Status.CompletionTime,
+	}
+
+	if len(repo.Status) >= maxPipelineRunStatusRun {
+		copy(repo.Status, repo.Status[len(repo.Status)-maxPipelineRunStatusRun+1:])
+		repo.Status = repo.Status[:maxPipelineRunStatusRun-1]
+	}
+	repo.Status = append(repo.Status, repoStatus)
+	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories().Update(
+		ctx, &repo, v1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+
+	cs.Log.Infof("Repository status of %s has been updated", nrepo.Name)
 	return err
 }

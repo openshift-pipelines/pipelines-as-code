@@ -7,6 +7,8 @@ spec:
   group: pipelinesascode.tekton.dev
   versions:
     - name: v1alpha1
+      subresources:
+        status: {}
       additionalPrinterColumns:
         - jsonPath: .spec.url
           name: URL
@@ -21,6 +23,7 @@ spec:
       storage: true
       schema:
         openAPIV3Schema:
+          x-kubernetes-preserve-unknown-fields: true
           description: Schema for the repository API
           properties:
             apiVersion:

@@ -33,7 +33,6 @@ import (
 // FakeRepositories implements RepositoryInterface
 type FakeRepositories struct {
 	Fake *FakePipelinesascodeV1alpha1
-	ns   string
 }
 
 var repositoriesResource = schema.GroupVersionResource{Group: "pipelinesascode.tekton.dev", Version: "v1alpha1", Resource: "repositories"}
@@ -43,8 +42,7 @@ var repositoriesKind = schema.GroupVersionKind{Group: "pipelinesascode.tekton.de
 // Get takes name of the repository, and returns the corresponding repository object, and an error if there is any.
 func (c *FakeRepositories) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Repository, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(repositoriesResource, c.ns, name), &v1alpha1.Repository{})
-
+		Invokes(testing.NewRootGetAction(repositoriesResource, name), &v1alpha1.Repository{})
 	if obj == nil {
 		return nil, err
 	}
@@ -54,8 +52,7 @@ func (c *FakeRepositories) Get(ctx context.Context, name string, options v1.GetO
 // List takes label and field selectors, and returns the list of Repositories that match those selectors.
 func (c *FakeRepositories) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.RepositoryList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(repositoriesResource, repositoriesKind, c.ns, opts), &v1alpha1.RepositoryList{})
-
+		Invokes(testing.NewRootListAction(repositoriesResource, repositoriesKind, opts), &v1alpha1.RepositoryList{})
 	if obj == nil {
 		return nil, err
 	}
@@ -76,15 +73,13 @@ func (c *FakeRepositories) List(ctx context.Context, opts v1.ListOptions) (resul
 // Watch returns a watch.Interface that watches the requested repositories.
 func (c *FakeRepositories) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(repositoriesResource, c.ns, opts))
-
+		InvokesWatch(testing.NewRootWatchAction(repositoriesResource, opts))
 }
 
 // Create takes the representation of a repository and creates it.  Returns the server's representation of the repository, and an error, if there is any.
 func (c *FakeRepositories) Create(ctx context.Context, repository *v1alpha1.Repository, opts v1.CreateOptions) (result *v1alpha1.Repository, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(repositoriesResource, c.ns, repository), &v1alpha1.Repository{})
-
+		Invokes(testing.NewRootCreateAction(repositoriesResource, repository), &v1alpha1.Repository{})
 	if obj == nil {
 		return nil, err
 	}
@@ -94,8 +89,18 @@ func (c *FakeRepositories) Create(ctx context.Context, repository *v1alpha1.Repo
 // Update takes the representation of a repository and updates it. Returns the server's representation of the repository, and an error, if there is any.
 func (c *FakeRepositories) Update(ctx context.Context, repository *v1alpha1.Repository, opts v1.UpdateOptions) (result *v1alpha1.Repository, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(repositoriesResource, c.ns, repository), &v1alpha1.Repository{})
+		Invokes(testing.NewRootUpdateAction(repositoriesResource, repository), &v1alpha1.Repository{})
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.Repository), err
+}
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+func (c *FakeRepositories) UpdateStatus(ctx context.Context, repository *v1alpha1.Repository, opts v1.UpdateOptions) (*v1alpha1.Repository, error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewRootUpdateSubresourceAction(repositoriesResource, "status", repository), &v1alpha1.Repository{})
 	if obj == nil {
 		return nil, err
 	}
@@ -105,14 +110,13 @@ func (c *FakeRepositories) Update(ctx context.Context, repository *v1alpha1.Repo
 // Delete takes name of the repository and deletes it. Returns an error if one occurs.
 func (c *FakeRepositories) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(repositoriesResource, c.ns, name), &v1alpha1.Repository{})
-
+		Invokes(testing.NewRootDeleteAction(repositoriesResource, name), &v1alpha1.Repository{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeRepositories) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(repositoriesResource, c.ns, listOpts)
+	action := testing.NewRootDeleteCollectionAction(repositoriesResource, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.RepositoryList{})
 	return err
@@ -121,8 +125,7 @@ func (c *FakeRepositories) DeleteCollection(ctx context.Context, opts v1.DeleteO
 // Patch applies the patch and returns the patched repository.
 func (c *FakeRepositories) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Repository, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(repositoriesResource, c.ns, name, pt, data, subresources...), &v1alpha1.Repository{})
-
+		Invokes(testing.NewRootPatchSubresourceAction(repositoriesResource, name, pt, data, subresources...), &v1alpha1.Repository{})
 	if obj == nil {
 		return nil, err
 	}

@@ -132,22 +132,23 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun) (string, erro
 	return outputBuffer.String(), nil
 }
 
-func postFinalStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, prName, namespace, fullLog string) error {
+func postFinalStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, prName, namespace, fullLog string) (*tektonv1beta1.PipelineRun, error) {
+	var pr = &tektonv1beta1.PipelineRun{}
 	var outputBuffer bytes.Buffer
 
 	tknDescribeOutput, err := cs.TektonCli.PipelineRunDescribe(prName, namespace)
 	if err != nil {
-		return err
+		return pr, err
 	}
 
-	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(namespace).Get(ctx, prName, v1.GetOptions{})
+	pr, err = cs.Tekton.TektonV1beta1().PipelineRuns(namespace).Get(ctx, prName, v1.GetOptions{})
 	if err != nil {
-		return err
+		return pr, err
 	}
 
 	taskStatus, err := statusOfAllTaskListForCheckRun(pr)
 	if err != nil {
-		return err
+		return pr, err
 	}
 
 	data := map[string]string{
@@ -159,12 +160,12 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunIn
 	t := template.Must(template.New("Pipeline Status").Parse(checkStatustmpl))
 	if err := t.Execute(&outputBuffer, data); err != nil {
 		fmt.Fprintf(&outputBuffer, "failed to execute template: ")
-		return err
+		return pr, err
 	}
 
 	_, err = cs.GithubClient.CreateStatus(runinfo,
 		"completed", pipelineRunStatus(pr),
 		outputBuffer.String(), "")
 
-	return err
+	return pr, err
 }

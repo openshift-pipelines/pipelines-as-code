@@ -31,8 +31,9 @@ type RepositoryLister interface {
 	// List lists all Repositories in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.Repository, err error)
-	// Repositories returns an object that can list and get Repositories.
-	Repositories(namespace string) RepositoryNamespaceLister
+	// Get retrieves the Repository from the index for a given name.
+	// Objects returned here must be treated as read-only.
+	Get(name string) (*v1alpha1.Repository, error)
 	RepositoryListerExpansion
 }
 
@@ -54,41 +55,9 @@ func (s *repositoryLister) List(selector labels.Selector) (ret []*v1alpha1.Repos
 	return ret, err
 }
 
-// Repositories returns an object that can list and get Repositories.
-func (s *repositoryLister) Repositories(namespace string) RepositoryNamespaceLister {
-	return repositoryNamespaceLister{indexer: s.indexer, namespace: namespace}
-}
-
-// RepositoryNamespaceLister helps list and get Repositories.
-// All objects returned here must be treated as read-only.
-type RepositoryNamespaceLister interface {
-	// List lists all Repositories in the indexer for a given namespace.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.Repository, err error)
-	// Get retrieves the Repository from the indexer for a given namespace and name.
-	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.Repository, error)
-	RepositoryNamespaceListerExpansion
-}
-
-// repositoryNamespaceLister implements the RepositoryNamespaceLister
-// interface.
-type repositoryNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all Repositories in the indexer for a given namespace.
-func (s repositoryNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.Repository, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Repository))
-	})
-	return ret, err
-}
-
-// Get retrieves the Repository from the indexer for a given namespace and name.
-func (s repositoryNamespaceLister) Get(name string) (*v1alpha1.Repository, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
+// Get retrieves the Repository from the index for a given name.
+func (s *repositoryLister) Get(name string) (*v1alpha1.Repository, error) {
+	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err
 	}

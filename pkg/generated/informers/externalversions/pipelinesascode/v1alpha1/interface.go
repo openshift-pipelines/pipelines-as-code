@@ -41,5 +41,5 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 
 // Repositories returns a RepositoryInformer.
 func (v *version) Repositories() RepositoryInformer {
-	return &repositoryInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &repositoryInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }

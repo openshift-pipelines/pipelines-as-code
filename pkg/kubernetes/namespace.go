@@ -23,6 +23,6 @@ func CreateNamespace(cs *cli.Clients, namespace string) error {
 			return (err)
 		}
 	}
-	cs.Log.Infof("Using Namespace is: %s", namespace)
+	cs.Log.Infof("Namespace is: %s", namespace)
 	return nil
 }

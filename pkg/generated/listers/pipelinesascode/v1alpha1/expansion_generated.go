@@ -21,7 +21,3 @@ package v1alpha1
 // RepositoryListerExpansion allows custom methods to be added to
 // RepositoryLister.
 type RepositoryListerExpansion interface{}
-
-// RepositoryNamespaceListerExpansion allows custom methods to be added to
-// RepositoryNamespaceLister.
-type RepositoryNamespaceListerExpansion interface{}

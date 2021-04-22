@@ -42,33 +42,32 @@ type RepositoryInformer interface {
 type repositoryInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
-	namespace        string
 }
 
 // NewRepositoryInformer constructs a new informer for Repository type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewRepositoryInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredRepositoryInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewRepositoryInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredRepositoryInformer(client, resyncPeriod, indexers, nil)
 }
 
 // NewFilteredRepositoryInformer constructs a new informer for Repository type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredRepositoryInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredRepositoryInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.PipelinesascodeV1alpha1().Repositories(namespace).List(context.TODO(), options)
+				return client.PipelinesascodeV1alpha1().Repositories().List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.PipelinesascodeV1alpha1().Repositories(namespace).Watch(context.TODO(), options)
+				return client.PipelinesascodeV1alpha1().Repositories().Watch(context.TODO(), options)
 			},
 		},
 		&pipelinesascodev1alpha1.Repository{},
@@ -78,7 +77,7 @@ func NewFilteredRepositoryInformer(client versioned.Interface, namespace string,
 }
 
 func (f *repositoryInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredRepositoryInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+	return NewFilteredRepositoryInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *repositoryInformer) Informer() cache.SharedIndexInformer {
