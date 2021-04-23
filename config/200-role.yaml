@@ -1,0 +1,90 @@
+# Copyright 2021 Red Hat
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# NOTE:  when multi-tenant EventListener progresses, moving this Role
+# to a ClusterRole is not the advisable path.  Additional Roles that
+# adds access to Secrets to the Namespaces managed by the multi-tenant
+# EventListener is what should be done.  While not as simple, it avoids
+# giving access to K8S system level, cluster admin privileged level Secrets
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openshift-pipelines-ascode-sa-el
+  namespace: openshift-pipelines-ascode
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openshift-pipelines-ascode-binding
+  namespace: openshift-pipelines-ascode
+subjects:
+  - kind: ServiceAccount
+    name: openshift-pipelines-ascode-sa-el
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: openshift-pipelines-ascode-role-el
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openshift-pipelines-ascode-role-el
+  namespace: openshift-pipelines-ascode
+rules:
+  # Permissions for every EventListener deployment to function
+  - apiGroups: ["triggers.tekton.dev"]
+    resources: ["eventlisteners", "triggerbindings", "triggertemplates", "triggers"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    # secrets are only needed for Github/Gitlab interceptors, serviceaccounts only for per trigger authorization
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+  # Permissions to create resources in associated TriggerTemplates
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns", "pipelineresources", "taskruns"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["impersonate"]
+  - apiGroups: ["policy"]
+    resources: ["podsecuritypolicies"]
+    resourceNames: ["tekton-triggers"]
+    verbs: ["use"]
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: openshift-pipeline-as-code-clusterrole
+  namespace: openshift-pipelines-ascode
+rules:
+  - apiGroups: ["triggers.tekton.dev"]
+    resources: ["clustertriggerbindings", "clusterinterceptors"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openshift-pipelines-ascode-clusterbinding
+  namespace: openshift-pipelines-ascode
+subjects:
+- kind: ServiceAccount
+  name: openshift-pipelines-ascode-sa-el
+  namespace: openshift-pipelines-ascode
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: openshift-pipeline-as-code-clusterrole
