@@ -116,7 +116,7 @@ func (v GithubVCS) GetTektonDirTemplate(objects []*github.RepositoryContent, run
 			if allTemplates != "" && !strings.HasPrefix(string(data), "---") {
 				allTemplates += "---"
 			}
-			allTemplates += "\n" + string(data)
+			allTemplates += "\n" + string(data) + "\n"
 		}
 	}
 	return allTemplates, nil

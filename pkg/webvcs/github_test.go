@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v34/github"
 	testhelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test"
 	"gotest.tools/assert"
@@ -33,31 +33,76 @@ func TestParsePayload(t *testing.T) {
 	assert.Error(t, err, "Cannot parse payload as PR")
 }
 
-func TestGetTektonDir(t *testing.T) {
-	ctx := context.Background()
+func setupFakesURLS() (client GithubVCS, teardown func()) {
 	fakeclient, mux, _, teardown := testhelper.SetupGH()
-	defer teardown()
 
-	mux.HandleFunc("/repos/foo/bar/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/repos/check/run/check-runs", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"id": 555}`)
+	})
+
+	mux.HandleFunc("/repos/check/run/check-runs/2026", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"id": 666}`)
+	})
+
+	mux.HandleFunc("/repos/foo/bar/contents/README.md", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{
+"name": "README.md",
+"sha": "readmemdsha",
+"type": "file"
+}`)
+	})
+
+	mux.HandleFunc("/repos/foo/bar/git/blobs/readmemdsha", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{
+"name": "README.md",
+"content": "aGVsbG8gbW90bwo=",
+"encoding": "base64"
+}`)
+	})
+
+	mux.HandleFunc("/repos/tekton/dir/git/blobs/pipelineyaml", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{
+"name": "README.md",
+"content": "aGVsbG8gcGlwZWxpbmV5YW1s",
+"encoding": "base64"
+}`)
+	})
+
+	mux.HandleFunc("/repos/tekton/dir/git/blobs/runyaml", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{
+"name": "README.md",
+"content": "aGVsbG8gcnVueWFtbA==",
+"encoding": "base64"
+}`)
+	})
+
+	mux.HandleFunc("/repos/tekton/dir/git/blobs/tektonyaml", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{
+"name": "README.md",
+"content": "aGVsbG8gdGVrdG9ueWFtbA==",
+"encoding": "base64"
+}`)
+	})
+
+	mux.HandleFunc("/repos/tekton/dir/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `[{
 
 				  "name": "pipeline.yaml",
 				  "path": ".tekton/pipeline.yaml",
-				  "sha": "5f44631b24c740288924767c608af932756d6c1a",
-				  "size": 1186,
+				  "sha": "pipelineyaml",
 				  "type": "file"
 				},
 				{
 				  "name": "run.yaml",
 				  "path": ".tekton/run.yaml",
-				  "sha": "9085026cd00516d1db7101191d61a4371933c735",
-				  "size": 464,
+				  "sha": "runyaml",
 				  "type": "file"
 				},
 				{
 				  "name": "tekton.yaml",
 				  "path": ".tekton/tekton.yaml",
-				  "sha": "yolo"
+				  "sha": "tektonyaml",
+				  "type": "file"
 		     }]`)
 	})
 	mux.HandleFunc("/repos/throw/error/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
@@ -75,17 +120,99 @@ func TestGetTektonDir(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 
+	ctx := context.Background()
 	gcvs := GithubVCS{
 		Client:  fakeclient,
 		Context: ctx,
 	}
+
+	return gcvs, teardown
+}
+func TestGetFileInsideRepo(t *testing.T) {
+	gcvs, teardown := setupFakesURLS()
+	defer teardown()
+	type args struct {
+		path      string
+		runinfo   *RunInfo
+		assertion func(t *testing.T, got string, err error)
+	}
+
+	testGetTektonDir := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "testgood",
+			args: args{
+				assertion: func(t *testing.T, got string, err error) {
+					assert.NilError(t, err)
+				},
+				path: "README.md",
+				runinfo: &RunInfo{
+					Owner:      "foo",
+					Repository: "bar",
+				},
+			},
+		},
+		{
+			name: "notfound",
+			args: args{
+				assertion: func(t *testing.T, got string, err error) {
+					assert.ErrorContains(t, err, "404")
+				},
+				path: ".tekton",
+				runinfo: &RunInfo{
+					Owner:      "pas",
+					Repository: "la",
+				},
+			},
+		},
+		{
+			name: "file_should_be_a_dir",
+			args: args{
+				assertion: func(t *testing.T, got string, err error) {
+					assert.ErrorContains(t, err, "is a directory")
+				},
+				path: ".tekton",
+				runinfo: &RunInfo{
+					Owner:      "tekton",
+					Repository: "dir",
+				},
+			},
+		},
+		{
+			name: "throwerror",
+			args: args{
+				assertion: func(t *testing.T, got string, err error) {
+					assert.ErrorContains(t, err, "invalid character")
+				},
+				path: ".tekton",
+				runinfo: &RunInfo{
+					Owner:      "throw",
+					Repository: "error",
+				},
+			},
+		},
+	}
+	for _, tt := range testGetTektonDir {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := gcvs.GetFileInsideRepo(tt.args.path, tt.args.runinfo)
+			tt.args.assertion(t, got, err)
+		})
+	}
+}
+
+func TestGetTektonDir(t *testing.T) {
+	gcvs, teardown := setupFakesURLS()
+	defer teardown()
 
 	type args struct {
 		path      string
 		runinfo   *RunInfo
 		assertion func(t *testing.T, got []*github.RepositoryContent, err error)
 	}
-	tests := []struct {
+
+	testGetTektonDir := []struct {
 		name string
 		args args
 	}{
@@ -98,8 +225,8 @@ func TestGetTektonDir(t *testing.T) {
 				},
 				path: ".tekton",
 				runinfo: &RunInfo{
-					Owner:      "foo",
-					Repository: "bar",
+					Owner:      "tekton",
+					Repository: "dir",
 				},
 			},
 		},
@@ -146,7 +273,7 @@ func TestGetTektonDir(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for _, tt := range testGetTektonDir {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := gcvs.GetTektonDir(tt.args.path, tt.args.runinfo)
 			tt.args.assertion(t, got, err)
@@ -154,185 +281,52 @@ func TestGetTektonDir(t *testing.T) {
 	}
 }
 
-func TestGetFileInsideRepo(t *testing.T) {
-	type fields struct {
-		Context context.Context
-		Client  *github.Client
-	}
-	type args struct {
-		path    string
-		runinfo *RunInfo
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    string
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v := GithubVCS{
-				Context: tt.fields.Context,
-				Client:  tt.fields.Client,
-			}
-			got, err := v.GetFileInsideRepo(tt.args.path, tt.args.runinfo)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GithubVCS.GetFileInsideRepo() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("GithubVCS.GetFileInsideRepo() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+func TestGetTektonDirTemplate(t *testing.T) {
+	const expected = `
+hello pipelineyaml
+---
+hello runyaml
+`
+	gcvs, teardown := setupFakesURLS()
+	defer teardown()
 
-func TestGithubVCS_GetTektonDirTemplate(t *testing.T) {
-	type fields struct {
-		Context context.Context
-		Client  *github.Client
+	runinfo := &RunInfo{
+		Owner:      "tekton",
+		Repository: "dir",
 	}
-	type args struct {
-		objects []*github.RepositoryContent
-		runinfo *RunInfo
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    string
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v := GithubVCS{
-				Context: tt.fields.Context,
-				Client:  tt.fields.Client,
-			}
-			got, err := v.GetTektonDirTemplate(tt.args.objects, tt.args.runinfo)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GithubVCS.GetTektonDirTemplate() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("GithubVCS.GetTektonDirTemplate() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
-func TestGithubVCS_GetObject(t *testing.T) {
-	type fields struct {
-		Context context.Context
-		Client  *github.Client
-	}
-	type args struct {
-		sha     string
-		runinfo *RunInfo
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    []byte
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v := GithubVCS{
-				Context: tt.fields.Context,
-				Client:  tt.fields.Client,
-			}
-			got, err := v.GetObject(tt.args.sha, tt.args.runinfo)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GithubVCS.GetObject() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GithubVCS.GetObject() = %v, want %v", got, tt.want)
-			}
-		})
+	ghr, err := gcvs.GetTektonDir(".tekton", runinfo)
+	assert.NilError(t, err)
+
+	got, err := gcvs.GetTektonDirTemplate(ghr, runinfo)
+	assert.NilError(t, err)
+	if d := cmp.Diff(got, expected); d != "" {
+		t.Fatalf("-got, +want: %v", d)
 	}
 }
 
 func TestGithubVCS_CreateCheckRun(t *testing.T) {
-	type fields struct {
-		Context context.Context
-		Client  *github.Client
+	gcvs, teardown := setupFakesURLS()
+	defer teardown()
+	runinfo := &RunInfo{
+		Owner:      "check",
+		Repository: "run",
 	}
-	type args struct {
-		status  string
-		runinfo *RunInfo
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *github.CheckRun
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v := GithubVCS{
-				Context: tt.fields.Context,
-				Client:  tt.fields.Client,
-			}
-			got, err := v.CreateCheckRun(tt.args.status, tt.args.runinfo)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GithubVCS.CreateCheckRun() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GithubVCS.CreateCheckRun() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	cr, err := gcvs.CreateCheckRun("hello moto", runinfo)
+	assert.NilError(t, err)
+	assert.Equal(t, cr.GetID(), int64(555))
 }
 
-func TestGithubVCS_CreateStatus(t *testing.T) {
-	type fields struct {
-		Context context.Context
-		Client  *github.Client
+func TestCreateStatus(t *testing.T) {
+	gcvs, teardown := setupFakesURLS()
+	var checkrunid = int64(2026)
+	defer teardown()
+	runinfo := &RunInfo{
+		Owner:      "check",
+		Repository: "run",
+		CheckRunID: &checkrunid,
 	}
-	type args struct {
-		runinfo    *RunInfo
-		status     string
-		conclusion string
-		text       string
-		detailURL  string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    *github.CheckRun
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v := GithubVCS{
-				Context: tt.fields.Context,
-				Client:  tt.fields.Client,
-			}
-			got, err := v.CreateStatus(tt.args.runinfo, tt.args.status, tt.args.conclusion, tt.args.text, tt.args.detailURL)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GithubVCS.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GithubVCS.CreateStatus() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	cr, err := gcvs.CreateStatus(runinfo, "completed", "success", "Yay", "https://foo/bar")
+	assert.NilError(t, err)
+	assert.Equal(t, cr.GetID(), int64(666))
 }
