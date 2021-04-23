@@ -13,12 +13,21 @@ spec:
         - jsonPath: .spec.url
           name: URL
           type: string
-        - jsonPath: .spec.branch
-          name: Branch
-          type: string
         - jsonPath: .spec.namespace
           name: Namespace
           type: string
+        - name: Succeeded
+          type: string
+          jsonPath: ".pipelinerun_status[-1].conditions[?(@.type==\"Succeeded\")].status"
+        - name: Reason
+          type: string
+          jsonPath: ".pipelinerun_status[-1].conditions[?(@.type==\"Succeeded\")].reason"
+        - name: StartTime
+          type: date
+          jsonPath: ".pipelinerun_status[-1].startTime"
+        - name: CompletionTime
+          type: date
+          jsonPath: ".pipelinerun_status[-1].completionTime"
       served: true
       storage: true
       schema:

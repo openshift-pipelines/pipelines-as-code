@@ -15,7 +15,7 @@ import (
 const (
 	tektonDir               = ".tekton"
 	tektonConfigurationFile = "tekton.yaml"
-	maxPipelineRunStatusRun = 3
+	maxPipelineRunStatusRun = 5
 )
 
 type Options struct {
@@ -135,6 +135,7 @@ func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 		CompletionTime:  newPr.Status.CompletionTime,
 	}
 
+	// TODO: Reversed?
 	if len(repo.Status) >= maxPipelineRunStatusRun {
 		copy(repo.Status, repo.Status[len(repo.Status)-maxPipelineRunStatusRun+1:])
 		repo.Status = repo.Status[:maxPipelineRunStatusRun-1]
