@@ -76,8 +76,23 @@ spec:
                   workspace: secrets
             - name: openshift-pipelines-ascode
               runAfter: [get-token]
-              taskRef:
-                name: openshift-pipelines-ascode
+              taskSpec:
+                params:
+                - name: json
+                  type: string
+                - name: token
+                  type: string
+                steps:
+                  - name: apply-and-launch
+                    env:
+                      - name: PAC_PIPELINERUN
+                        valueFrom:
+                          fieldRef:
+                            fieldPath: metadata.labels['tekton.dev/pipelineRun']
+                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+                    args:
+                      - "$(params.json)"
+                      - "$(params.token)"
               params:
               - name: token
                 value: "$(tasks.get-token.results.token)"
