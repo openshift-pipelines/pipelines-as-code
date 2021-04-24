@@ -1,13 +1,15 @@
 package flags
 
 import (
+	"os"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/spf13/cobra"
 )
 
 const (
-	kubeConfig  = "kubeconfig"
-	githubToken = "github-token"
+	kubeConfig = "kubeconfig"
+	token      = "token"
 )
 
 type PacOptions struct {
@@ -22,7 +24,7 @@ func InitParams(p cli.Params, cmd *cobra.Command) error {
 	}
 	p.SetKubeConfigPath(kcPath)
 
-	githubToken, err := cmd.Flags().GetString(githubToken)
+	githubToken, err := cmd.Flags().GetString(token)
 	if err != nil {
 		return err
 	}
@@ -41,7 +43,8 @@ func AddPacOptions(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP(
 		kubeConfig, "k", "",
 		"kubectl config file (default: $HOME/.kube/config)")
+
 	cmd.PersistentFlags().StringP(
-		githubToken, "", "",
-		"GitHub Token")
+		token, "", os.Getenv("PAS_TOKEN"),
+		"Web VCS (ie: GitHub) Token")
 }
