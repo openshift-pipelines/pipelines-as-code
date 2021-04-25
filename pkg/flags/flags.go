@@ -12,11 +12,12 @@ const (
 	token      = "token"
 )
 
+// PacOptions holds struct of Pipeline as code Options
 type PacOptions struct {
 	KubeConfig, GithubToken string
 }
 
-// InitParams initialises cli.Params based on flags defined in command
+// InitParams initializes cli.Params based on flags defined in command
 func InitParams(p cli.Params, cmd *cobra.Command) error {
 	kcPath, err := cmd.Flags().GetString(kubeConfig)
 	if err != nil {
@@ -38,7 +39,7 @@ func InitParams(p cli.Params, cmd *cobra.Command) error {
 	return nil
 }
 
-// AddTektonOptions amends command to add flags required to initialise a cli.Param
+// AddPacOptions amends command to add flags required to initialize a cli.Param
 func AddPacOptions(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP(
 		kubeConfig, "k", "",
