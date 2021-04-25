@@ -7,6 +7,7 @@ require (
 	github.com/google/go-cmp v0.5.4
 	github.com/google/go-github/v34 v34.0.0
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
+	github.com/jonboulle/clockwork v0.1.1-0.20190114141812-62fb9bc030d1
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.1.3

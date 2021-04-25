@@ -7,8 +7,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/v34/github"
+	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test"
@@ -19,6 +21,7 @@ import (
 	"gotest.tools/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis/duck/v1beta1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -36,13 +39,42 @@ func (t *FakeTektonClient) PipelineRunDescribe(string, string) (string, error) {
 }
 
 func newRepo(name, url, branch, eventType, namespace string) *v1alpha1.Repository {
+	cw := clockwork.NewFakeClock()
 	return &v1alpha1.Repository{
+		TypeMeta:   metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{Name: name},
-		Spec: v1alpha1.RepositorySpec{
-			Namespace: namespace,
-			URL:       url,
-			Branch:    branch,
-			EventType: eventType,
+		Spec:       v1alpha1.RepositorySpec{Namespace: namespace, URL: url, Branch: branch, EventType: eventType},
+		Status: []v1alpha1.RepositoryRunStatus{
+			{
+				Status:          v1beta1.Status{},
+				PipelineRunName: "pipelinerun5",
+				StartTime:       &metav1.Time{Time: cw.Now().Add(-56 * time.Minute)},
+				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-55 * time.Minute)},
+			},
+			{
+				Status:          v1beta1.Status{},
+				PipelineRunName: "pipelinerun4",
+				StartTime:       &metav1.Time{Time: cw.Now().Add(-46 * time.Minute)},
+				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-45 * time.Minute)},
+			},
+			{
+				Status:          v1beta1.Status{},
+				PipelineRunName: "pipelinerun3",
+				StartTime:       &metav1.Time{Time: cw.Now().Add(-36 * time.Minute)},
+				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-35 * time.Minute)},
+			},
+			{
+				Status:          v1beta1.Status{},
+				PipelineRunName: "pipelinerun2",
+				StartTime:       &metav1.Time{Time: cw.Now().Add(-26 * time.Minute)},
+				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-25 * time.Minute)},
+			},
+			{
+				Status:          v1beta1.Status{},
+				PipelineRunName: "pipelinerun1",
+				StartTime:       &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
+				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
+			},
 		},
 	}
 }
@@ -227,4 +259,10 @@ func TestRun(t *testing.T) {
 	err = Run(cs, runinfo)
 	assert.NilError(t, err)
 	assert.Assert(t, len(log.TakeAll()) > 0)
+	got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories().Get(ctx, "test-run", metav1.GetOptions{})
+	assert.NilError(t, err)
+	// TODO: we could not fake creation, so it's empty
+	// but we can test that the last one doesn't match to what we had
+	// set at first so it got properly updated
+	assert.Assert(t, got.Status[len(got.Status)-1].PipelineRunName != "pipelinerun1")
 }
