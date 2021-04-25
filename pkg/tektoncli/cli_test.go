@@ -13,5 +13,4 @@ func TestPipelineRunDescribe(t *testing.T) {
 	assert.NilError(t, err)
 
 	assert.Assert(t, nt.cliOpts.Params.Namespace() == "testns")
-	nt.PipelineRunDescribe("hello", "testns")
 }
