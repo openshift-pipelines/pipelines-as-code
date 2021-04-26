@@ -43,7 +43,7 @@ func Command(p cli.Params) *cobra.Command {
 
 	flags.AddPacOptions(cmd)
 
-	cmd.Flags().StringVarP(&opts.Payload, "payload", "", os.Getenv("PAS_PAYLOAD"), "The payload from webhook")
+	cmd.Flags().StringVarP(&opts.Payload, "payload", "", os.Getenv("PAC_PAYLOAD"), "The payload from webhook")
 	return cmd
 }
 

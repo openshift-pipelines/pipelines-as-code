@@ -46,6 +46,6 @@ func AddPacOptions(cmd *cobra.Command) {
 		"kubectl config file (default: $HOME/.kube/config)")
 
 	cmd.PersistentFlags().StringP(
-		token, "", os.Getenv("PAS_TOKEN"),
+		token, "", os.Getenv("PAC_TOKEN"),
 		"Web VCS (ie: GitHub) Token")
 }
