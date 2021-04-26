@@ -32,7 +32,7 @@ func Command(p cli.Params) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := cmd.LocalFlags().GetString("token")
 			if token == "" || err != nil {
-				return fmt.Errorf("token option is not set properly.")
+				return fmt.Errorf("token option is not set properly")
 			}
 			if opts.Payload == "" {
 				return errors.New("payload needs to be set")

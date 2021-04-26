@@ -6,7 +6,7 @@ metadata:
   namespace: pipelines-ascode
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode  
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
 spec:
   serviceAccountName: openshift-pipelines-ascode-sa-el
   triggers:
@@ -22,7 +22,7 @@ spec:
         filter: "body.action in ['created', 'opened', 'synchronize'] && 'installation' in body"
     template:
       ref: openshift-pipelines-ascode-template
-        
+
 # Triggers >0.13 Changed almost everything for EventListener
 # ---
 # apiVersion: triggers.tekton.dev/v1alpha1
@@ -30,9 +30,9 @@ spec:
 # metadata:
 #   name: openshift-pipelines-ascode-interceptor
 #   namespace: pipelines-ascode
-  # labels:
-  #   app.kubernetes.io/instance: default
-  #   app.kubernetes.io/part-of: openshift-pipelines-ascode
+#   labels:
+#     app.kubernetes.io/instance: default
+#     app.kubernetes.io/part-of: openshift-pipelines-ascode
 # spec:
 #   triggers:
 #     - name: github-listener
@@ -70,7 +70,7 @@ metadata:
     triggers.tekton.dev/old-escape-quotes: "true"
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode    
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
 spec:
   params:
     - name: installation_id
@@ -124,7 +124,7 @@ spec:
                       - name: PAC_PAYLOAD
                         value: "$(params.payload)"
                       - name: PAC_TOKEN
-                        value: "$(params.token)"                        
+                        value: "$(params.token)"
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
               params:
               - name: token
@@ -143,7 +143,7 @@ metadata:
   namespace: pipelines-ascode
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode  
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
 spec:
   params:
     - name: payload

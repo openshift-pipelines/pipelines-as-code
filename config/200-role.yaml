@@ -22,7 +22,7 @@ metadata:
   namespace: pipelines-ascode
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode  
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
@@ -31,7 +31,7 @@ metadata:
   namespace: pipelines-ascode
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode  
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
 rules:
   - apiGroups: ["triggers.tekton.dev"]
     resources: ["eventlisteners", "triggerbindings", "triggertemplates", "triggers"]
@@ -60,7 +60,7 @@ metadata:
   namespace: pipelines-ascode
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode  
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
 subjects:
   - kind: ServiceAccount
     name: openshift-pipelines-ascode-sa-el
@@ -77,19 +77,19 @@ metadata:
   namespace: pipelines-ascode
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode  
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
 rules:
-    # Permissions to list repositories on cluster
+  # Permissions to list repositories on cluster
   - apiGroups: [""]
     resources: ["namespaces", "pods", "pods/log"]
-    verbs: ["get", "list", "watch"]  
+    verbs: ["get", "list", "watch"]
   # Permissions to list repositories on cluster
   - apiGroups: ["pipelinesascode.tekton.dev"]
     resources: ["repositories"]
-    verbs: ["get", "list", "update"]  
+    verbs: ["get", "list", "update"]
   - apiGroups: ["tekton.dev"]
     resources: ["pipelinerun"]
-    verbs: ["create"]    
+    verbs: ["create"]
   - apiGroups: ["triggers.tekton.dev"]
     resources: ["clustertriggerbindings", "clusterinterceptors"]
     verbs: ["get", "list", "watch"]
@@ -102,7 +102,7 @@ metadata:
   namespace: pipelines-ascode
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode  
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
 subjects:
 - kind: ServiceAccount
   name: openshift-pipelines-ascode-sa-el
@@ -111,4 +111,3 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: openshift-pipeline-as-code-clusterrole
-
