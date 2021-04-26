@@ -3,6 +3,7 @@ package pipelineascode
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -29,8 +30,12 @@ func Command(p cli.Params) *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if opts.GithubPayLoad == "" {
-				return errors.New("github-payload needs to be set")
+			token, err := cmd.LocalFlags().GetString("token")
+			if token == "" || err != nil {
+				return fmt.Errorf("token option is not set properly.")
+			}
+			if opts.Payload == "" {
+				return errors.New("payload needs to be set")
 			}
 			return runWrap(p, opts)
 		},
@@ -38,7 +43,7 @@ func Command(p cli.Params) *cobra.Command {
 
 	flags.AddPacOptions(cmd)
 
-	cmd.Flags().StringVarP(&opts.GithubPayLoad, "github-payload", "", "", "Github Payload from webhook")
+	cmd.Flags().StringVarP(&opts.Payload, "payload", "", os.Getenv("PAS_PAYLOAD"), "The payload from webhook")
 	return cmd
 }
 
@@ -49,7 +54,7 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 		return err
 	}
 
-	runInfo, err := cs.GithubClient.ParsePayload(opts.GithubPayLoad)
+	runInfo, err := cs.GithubClient.ParsePayload(opts.Payload)
 	if err != nil {
 		return err
 	}

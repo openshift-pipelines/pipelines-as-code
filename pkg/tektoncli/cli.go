@@ -21,8 +21,7 @@ type TektonCLI struct {
 	cliOpts clioptions.LogOptions
 }
 
-func New(namespace string) (*TektonCLI, error) {
-	var cliParam cliinterface.TektonParams
+func New(namespace string, cliParam cliinterface.Params) (*TektonCLI, error) {
 	cliParam.SetNamespace(namespace)
 
 	_, err := cliParam.Clients()
@@ -32,7 +31,7 @@ func New(namespace string) (*TektonCLI, error) {
 	cliParam.SetNoColour(true)
 	return &TektonCLI{
 		cliOpts: clioptions.LogOptions{
-			Params:   &cliParam,
+			Params:   cliParam,
 			AllSteps: true,
 			Follow:   true,
 		},

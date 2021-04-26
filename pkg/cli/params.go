@@ -5,6 +5,8 @@ import (
 	"github.com/tektoncd/hub/api/pkg/cli/hub"
 	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
+	cliinterface "github.com/tektoncd/cli/pkg/cli"
+
 	pacversioned "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/tektoncli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
@@ -85,7 +87,8 @@ func (p *PacParams) pacClient(config *rest.Config) (pacversioned.Interface, erro
 }
 
 func (p *PacParams) tektoncliClient(config *rest.Config) (tektoncli.Interface, error) {
-	cs, err := tektoncli.New(p.namespace)
+	cliparams := &cliinterface.TektonParams{}
+	cs, err := tektoncli.New(p.namespace, cliparams)
 	if err != nil {
 		return nil, err
 	}

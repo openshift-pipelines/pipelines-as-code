@@ -52,14 +52,13 @@ func (cml *ConfigMapLock) Get(ctx context.Context) (*LeaderElectionRecord, []byt
 	if cml.cm.Annotations == nil {
 		cml.cm.Annotations = make(map[string]string)
 	}
-	recordStr, found := cml.cm.Annotations[LeaderElectionRecordAnnotationKey]
-	recordBytes := []byte(recordStr)
+	recordBytes, found := cml.cm.Annotations[LeaderElectionRecordAnnotationKey]
 	if found {
-		if err := json.Unmarshal(recordBytes, &record); err != nil {
+		if err := json.Unmarshal([]byte(recordBytes), &record); err != nil {
 			return nil, nil, err
 		}
 	}
-	return &record, recordBytes, nil
+	return &record, []byte(recordBytes), nil
 }
 
 // Create attempts to create a LeaderElectionRecord annotation

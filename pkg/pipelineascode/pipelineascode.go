@@ -19,7 +19,7 @@ const (
 )
 
 type Options struct {
-	GithubPayLoad string
+	Payload string
 }
 
 func getRepoByCRD(cs *cli.Clients, url, branch, eventType string) (apipac.Repository, error) {
