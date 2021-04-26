@@ -15,7 +15,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: openshift-pipelines-ascode
+  name: pipelines-ascode
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: openshift-pipelines-ascode

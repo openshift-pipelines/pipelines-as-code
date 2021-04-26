@@ -12,38 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NOTE:  when multi-tenant EventListener progresses, moving this Role
-# to a ClusterRole is not the advisable path.  Additional Roles that
-# adds access to Secrets to the Namespaces managed by the multi-tenant
-# EventListener is what should be done.  While not as simple, it avoids
-# giving access to K8S system level, cluster admin privileged level Secrets
+# TODO: We should probably split between the SA running the trigger and the SA
+# running the pipelinerun as code
 
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: openshift-pipelines-ascode-sa-el
-  namespace: openshift-pipelines-ascode
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: openshift-pipelines-ascode-binding
-  namespace: openshift-pipelines-ascode
-subjects:
-  - kind: ServiceAccount
-    name: openshift-pipelines-ascode-sa-el
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: openshift-pipelines-ascode-role-el
+  namespace: pipelines-ascode
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: openshift-pipelines-ascode  
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openshift-pipelines-ascode-role-el
-  namespace: openshift-pipelines-ascode
+  namespace: pipelines-ascode
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: openshift-pipelines-ascode  
 rules:
-  # Permissions for every EventListener deployment to function
   - apiGroups: ["triggers.tekton.dev"]
     resources: ["eventlisteners", "triggerbindings", "triggertemplates", "triggers"]
     verbs: ["get", "list", "watch"]
@@ -53,8 +42,9 @@ rules:
     verbs: ["get", "list", "watch"]
   # Permissions to create resources in associated TriggerTemplates
   - apiGroups: ["tekton.dev"]
-    resources: ["pipelineruns", "pipelineresources", "taskruns"]
+    resources: ["pipelineruns", "taskruns"]
     verbs: ["create"]
+  # Permissions to get and update repositories
   - apiGroups: [""]
     resources: ["serviceaccounts"]
     verbs: ["impersonate"]
@@ -62,14 +52,44 @@ rules:
     resources: ["podsecuritypolicies"]
     resourceNames: ["tekton-triggers"]
     verbs: ["use"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openshift-pipelines-ascode-binding
+  namespace: pipelines-ascode
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: openshift-pipelines-ascode  
+subjects:
+  - kind: ServiceAccount
+    name: openshift-pipelines-ascode-sa-el
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: openshift-pipelines-ascode-role-el
 
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openshift-pipeline-as-code-clusterrole
-  namespace: openshift-pipelines-ascode
+  namespace: pipelines-ascode
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: openshift-pipelines-ascode  
 rules:
+    # Permissions to list repositories on cluster
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "pods/log"]
+    verbs: ["get", "list", "watch"]  
+  # Permissions to list repositories on cluster
+  - apiGroups: ["pipelinesascode.tekton.dev"]
+    resources: ["repositories"]
+    verbs: ["get", "list", "update"]  
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelinerun"]
+    verbs: ["create"]    
   - apiGroups: ["triggers.tekton.dev"]
     resources: ["clustertriggerbindings", "clusterinterceptors"]
     verbs: ["get", "list", "watch"]
@@ -79,12 +99,16 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: openshift-pipelines-ascode-clusterbinding
-  namespace: openshift-pipelines-ascode
+  namespace: pipelines-ascode
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: openshift-pipelines-ascode  
 subjects:
 - kind: ServiceAccount
   name: openshift-pipelines-ascode-sa-el
-  namespace: openshift-pipelines-ascode
+  namespace: pipelines-ascode
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: openshift-pipeline-as-code-clusterrole
+

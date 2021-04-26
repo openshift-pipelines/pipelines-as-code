@@ -1,10 +1,13 @@
+# TODO: Submit this in catalog upstream
+---
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: github-app-token
-  namespace: openshift-pipelines-ascode
+  namespace: pipelines-ascode
   labels:
-    app.kubernetes.io/version: "0.1"
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: openshift-pipelines-ascode    
   annotations:
     tekton.dev/pipelines.minVersion: "0.12.1"
     tekton.dev/tags: github
@@ -55,7 +58,7 @@ spec:
         - name: GITHUBAPP_KEY_PATH
           value: $(workspaces.secrets.path)/$(inputs.params.private_key_path)
         - name: GITHUBAPP_APP_ID_PATH
-          value: $(workspaces.secrets.path)/$(inputs.params.private_key_path)
+          value: $(workspaces.secrets.path)/$(inputs.params.application_id_path)
         - name: GITHUBAPP_APP_ID
           value: $(inputs.params.application_id)
         - name: GITHUBAPP_INSTALLATION_ID
@@ -147,12 +150,13 @@ spec:
             else:
                 raise Exception("application id is not set")
 
+            print(f"Getting user token for application_id: {app_id}")
             github_app = GitHub(
                 key,
                 app_id=app_id,
                 installation_id=os.environ.get('GITHUBAPP_INSTALLATION_ID'))
             open(os.environ.get('GITHUBAPP_RESULT_PATH'), 'w').write(github_app.token)
-            print(github_app.token)
+            print(f"TOKEN={github_app.token}")
 
 
         if __name__ == '__main__':
