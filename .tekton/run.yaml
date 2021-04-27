@@ -21,12 +21,12 @@ spec:
             value: $(params.revision)
         workspaces:
           - name: output
-            workspace: source    
+            workspace: source
       - name: check
         runAfter: [fetchit]
         taskSpec:
           workspaces:
-          - name: source        
+          - name: source
           steps:
             - name: check
               workingdir: $(workspaces.source.path)
@@ -35,7 +35,7 @@ spec:
                 make test lint
         workspaces:
           - name: source
-            workspace: source    
+            workspace: source
   params:
     - name: repo_url
       value: {{repo_url}}
@@ -50,4 +50,3 @@ spec:
         resources:
           requests:
             storage: 1Gi
-            
