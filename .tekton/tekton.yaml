@@ -1,2 +1,2 @@
 tasks:
-  - git-clone
+  - https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.3/git-clone.yaml
