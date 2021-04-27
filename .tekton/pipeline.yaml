@@ -1,0 +1,37 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipelines-as-code-test
+spec:
+  workspaces:
+  - name: source
+  params:
+    - name: repo_url
+    - name: revision
+  tasks:
+    - name: fetchit
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.repo_url)
+        - name: revision
+          value: $(params.revision)
+      workspaces:
+        - name: output
+          workspace: source
+    - name: check
+      runAfter: [fetchit]
+      taskSpec:
+        workspaces:
+        - name: source
+        steps:
+          - name: check
+            workingDir: $(workspaces.source.path)
+            image: gcr.io/tekton-releases/dogfooding/test-runner
+            script: |
+              make test lint
+      workspaces:
+        - name: source
+          workspace: source

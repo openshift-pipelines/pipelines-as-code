@@ -1,0 +1,22 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pipelines-as-code-test-run
+spec:
+  pipelineRef:
+    name: pipelines-as-code-test
+  params:
+    - name: repo_url
+      value: {{repo_url}}
+    - name: revision
+      value: {{revision}}
+  workspaces:
+  - name: source
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
