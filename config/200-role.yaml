@@ -44,7 +44,6 @@ rules:
   - apiGroups: ["tekton.dev"]
     resources: ["pipelineruns", "taskruns"]
     verbs: ["create"]
-  # Permissions to get and update repositories
   - apiGroups: [""]
     resources: ["serviceaccounts"]
     verbs: ["impersonate"]
@@ -87,13 +86,12 @@ rules:
   - apiGroups: ["pipelinesascode.tekton.dev"]
     resources: ["repositories"]
     verbs: ["get", "list", "update"]
-  - apiGroups: ["tekton.dev"]
-    resources: ["pipelinerun"]
-    verbs: ["create"]
   - apiGroups: ["triggers.tekton.dev"]
     resources: ["clustertriggerbindings", "clusterinterceptors"]
     verbs: ["get", "list", "watch"]
-
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns"]
+    verbs: ["create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
