@@ -41,10 +41,7 @@ func readTDfile(testname string, generateName bool) (*v1beta1.PipelineRun, error
 
 func TestPipelineRunPipelineTask(t *testing.T) {
 	resolved, err := readTDfile("pipelinerun-pipeline-task", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "first-step")
 
 	//TODO: we should do templates substitions for those values here?
@@ -53,42 +50,36 @@ func TestPipelineRunPipelineTask(t *testing.T) {
 
 func TestGenerateName(t *testing.T) {
 	resolved, err := readTDfile("pipelinerun-pipeline-task", true)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	assert.NilError(t, err)
 	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
 
 	resolved, err = readTDfile("with-generatename", true)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NilError(t, err)
 	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
 }
 
 func TestPipelineRunPipelineSpecTaskSpec(t *testing.T) {
 	resolved, err := readTDfile("pipelinerun-pipelinespec-taskspec", false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "hello-moto")
 }
 
 func TestPipelineRunPipelineSpecTaskRef(t *testing.T) {
-	t.Skip("TODO") // TODO: Not working ATM
 	resolved, err := readTDfile("pipelinerun-pipelinespec-taskref", false)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "task1")
 }
 
-func TestPipelineRunPipelineRefTaskSpec(t *testing.T) {
-	resolved, err := readTDfile("pipelinerun-pipelineref-taskspec", false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "first-step")
+func TestNotTektonDocumentIgnore(t *testing.T) {
+	resolved, err := readTDfile("not-a-tekton-document", false)
+	assert.NilError(t, err)
+	assert.Assert(t, resolved.Spec.PipelineSpec != nil)
+}
+
+func TestNotKubernetesDocumentIgnore(t *testing.T) {
+	resolved, err := readTDfile("not-a-kubernetes-yaml", false)
+	assert.NilError(t, err)
+	assert.Assert(t, resolved.Spec.PipelineSpec != nil)
 }
 
 func TestNoPipelineRuns(t *testing.T) {

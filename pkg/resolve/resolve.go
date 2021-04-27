@@ -29,7 +29,8 @@ func readTypes(data []byte) (Types, error) {
 
 		obj, _, err := decoder.Decode([]byte(doc), nil, nil)
 		if err != nil {
-			return types, err
+			// If it's not a Kubernetes style yaml just ignore it.
+			continue
 		}
 		switch o := obj.(type) {
 		case *v1beta1.Pipeline:
@@ -71,6 +72,7 @@ func resolve(data []byte, generateName bool) ([]*v1beta1.PipelineRun, error) {
 		return []*v1beta1.PipelineRun{}, errors.New("We need at least one pipelinerun to start with")
 	}
 
+	// Resolve TaskRef inside Pipeline
 	for _, pipeline := range types.Pipelines {
 		pipelineTasks := []v1beta1.PipelineTask{}
 		for _, task := range pipeline.Spec.Tasks {
@@ -88,6 +90,24 @@ func resolve(data []byte, generateName bool) ([]*v1beta1.PipelineRun, error) {
 	}
 
 	for _, pipelinerun := range types.PipelineRuns {
+		// Resolve taskRef inside PipelineSpec inside PipelineRun
+		if pipelinerun.Spec.PipelineSpec != nil {
+			pipelineTasksResolve := []v1beta1.PipelineTask{}
+			for _, task := range pipelinerun.Spec.PipelineSpec.Tasks {
+				if task.TaskRef != nil {
+					taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
+					if err != nil {
+						return []*v1beta1.PipelineRun{}, err
+					}
+					task.TaskRef = nil
+					task.TaskSpec = &v1beta1.EmbeddedTask{TaskSpec: taskResolved.Spec}
+				}
+				pipelineTasksResolve = append(pipelineTasksResolve, task)
+			}
+			pipelinerun.Spec.PipelineSpec.Tasks = pipelineTasksResolve
+
+		}
+		// Resolve PipelineRef inside PipelineRef
 		if pipelinerun.Spec.PipelineRef != nil {
 			pipelineResolved, err := getPipelineByName(pipelinerun.Spec.PipelineRef.Name, types.Pipelines)
 			if err != nil {
@@ -97,6 +117,7 @@ func resolve(data []byte, generateName bool) ([]*v1beta1.PipelineRun, error) {
 			pipelinerun.Spec.PipelineSpec = &pipelineResolved.Spec
 
 		}
+		// Add a generateName based on name if we want it
 		if generateName && pipelinerun.ObjectMeta.GenerateName == "" {
 			pipelinerun.ObjectMeta.GenerateName = pipelinerun.ObjectMeta.Name + "-"
 			pipelinerun.ObjectMeta.Name = ""
