@@ -8,6 +8,7 @@ metadata:
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/version: "0.2"
   annotations:
     tekton.dev/pipelines.minVersion: "0.12.1"
     tekton.dev/tags: github
@@ -56,15 +57,15 @@ spec:
       image: quay.io/chmouel/github-app-token@sha256:bc45937ae588df876555ebb56c36350ed74592c7f55f2df255cabef39c926a88
       env:
         - name: GITHUBAPP_KEY_PATH
-          value: $(workspaces.secrets.path)/$(inputs.params.private_key_path)
+          value: $(workspaces.secrets.path)/$(params.private_key_path)
         - name: GITHUBAPP_APP_ID_PATH
-          value: $(workspaces.secrets.path)/$(inputs.params.application_id_path)
+          value: $(workspaces.secrets.path)/$(params.application_id_path)
         - name: GITHUBAPP_APP_ID
-          value: $(inputs.params.application_id)
+          value: $(params.application_id)
         - name: GITHUBAPP_INSTALLATION_ID
-          value: $(inputs.params.installation_id)
+          value: $(params.installation_id)
         - name: GITHUBAPP_TOKEN_EXPIRATION_MINUTES
-          value: $(inputs.params.token_expiration_minutes)
+          value: $(params.token_expiration_minutes)
         - name: GITHUBAPP_RESULT_PATH
           value: $(results.token.path)
       script: |
@@ -156,8 +157,6 @@ spec:
                 app_id=app_id,
                 installation_id=os.environ.get('GITHUBAPP_INSTALLATION_ID'))
             open(os.environ.get('GITHUBAPP_RESULT_PATH'), 'w').write(github_app.token)
-            print(f"TOKEN={github_app.token}")
-
 
         if __name__ == '__main__':
             main()
