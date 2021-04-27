@@ -42,6 +42,9 @@ func NewGithubVCS(token string) GithubVCS {
 }
 
 func (v GithubVCS) ParsePayload(payload string) (*RunInfo, error) {
+	// Triggers send some \r\n which can't get parsed 🤷
+	payload = strings.Replace(payload, "\r\n", "", -1)
+
 	prMap := &github.PullRequestEvent{}
 	err := json.Unmarshal([]byte(payload), prMap)
 	if err != nil {
