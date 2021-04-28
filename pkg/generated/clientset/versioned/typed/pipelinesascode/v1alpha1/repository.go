@@ -33,7 +33,7 @@ import (
 // RepositoriesGetter has a method to return a RepositoryInterface.
 // A group's client should implement this interface.
 type RepositoriesGetter interface {
-	Repositories() RepositoryInterface
+	Repositories(namespace string) RepositoryInterface
 }
 
 // RepositoryInterface has methods to work with Repository resources.
@@ -53,12 +53,14 @@ type RepositoryInterface interface {
 // repositories implements RepositoryInterface
 type repositories struct {
 	client rest.Interface
+	ns     string
 }
 
 // newRepositories returns a Repositories
-func newRepositories(c *PipelinesascodeV1alpha1Client) *repositories {
+func newRepositories(c *PipelinesascodeV1alpha1Client, namespace string) *repositories {
 	return &repositories{
 		client: c.RESTClient(),
+		ns:     namespace,
 	}
 }
 
@@ -66,6 +68,7 @@ func newRepositories(c *PipelinesascodeV1alpha1Client) *repositories {
 func (c *repositories) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Repository, err error) {
 	result = &v1alpha1.Repository{}
 	err = c.client.Get().
+		Namespace(c.ns).
 		Resource("repositories").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -82,6 +85,7 @@ func (c *repositories) List(ctx context.Context, opts v1.ListOptions) (result *v
 	}
 	result = &v1alpha1.RepositoryList{}
 	err = c.client.Get().
+		Namespace(c.ns).
 		Resource("repositories").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -98,6 +102,7 @@ func (c *repositories) Watch(ctx context.Context, opts v1.ListOptions) (watch.In
 	}
 	opts.Watch = true
 	return c.client.Get().
+		Namespace(c.ns).
 		Resource("repositories").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -108,6 +113,7 @@ func (c *repositories) Watch(ctx context.Context, opts v1.ListOptions) (watch.In
 func (c *repositories) Create(ctx context.Context, repository *v1alpha1.Repository, opts v1.CreateOptions) (result *v1alpha1.Repository, err error) {
 	result = &v1alpha1.Repository{}
 	err = c.client.Post().
+		Namespace(c.ns).
 		Resource("repositories").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(repository).
@@ -120,6 +126,7 @@ func (c *repositories) Create(ctx context.Context, repository *v1alpha1.Reposito
 func (c *repositories) Update(ctx context.Context, repository *v1alpha1.Repository, opts v1.UpdateOptions) (result *v1alpha1.Repository, err error) {
 	result = &v1alpha1.Repository{}
 	err = c.client.Put().
+		Namespace(c.ns).
 		Resource("repositories").
 		Name(repository.Name).
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -134,6 +141,7 @@ func (c *repositories) Update(ctx context.Context, repository *v1alpha1.Reposito
 func (c *repositories) UpdateStatus(ctx context.Context, repository *v1alpha1.Repository, opts v1.UpdateOptions) (result *v1alpha1.Repository, err error) {
 	result = &v1alpha1.Repository{}
 	err = c.client.Put().
+		Namespace(c.ns).
 		Resource("repositories").
 		Name(repository.Name).
 		SubResource("status").
@@ -147,6 +155,7 @@ func (c *repositories) UpdateStatus(ctx context.Context, repository *v1alpha1.Re
 // Delete takes name of the repository and deletes it. Returns an error if one occurs.
 func (c *repositories) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
+		Namespace(c.ns).
 		Resource("repositories").
 		Name(name).
 		Body(&opts).
@@ -161,6 +170,7 @@ func (c *repositories) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
+		Namespace(c.ns).
 		Resource("repositories").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -173,6 +183,7 @@ func (c *repositories) DeleteCollection(ctx context.Context, opts v1.DeleteOptio
 func (c *repositories) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Repository, err error) {
 	result = &v1alpha1.Repository{}
 	err = c.client.Patch(pt).
+		Namespace(c.ns).
 		Resource("repositories").
 		Name(name).
 		SubResource(subresources...).

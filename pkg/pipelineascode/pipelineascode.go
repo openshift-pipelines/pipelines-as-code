@@ -2,6 +2,7 @@ package pipelineascode
 
 import (
 	"context"
+	"fmt"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -25,13 +26,22 @@ type Options struct {
 func getRepoByCRD(cs *cli.Clients, url, branch, eventType string) (apipac.Repository, error) {
 	var repository apipac.Repository
 
-	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories().List(
+	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
 		context.Background(), metav1.ListOptions{})
+
 	if err != nil {
 		return repository, err
 	}
 	for _, value := range repositories.Items {
 		if value.Spec.URL == url && value.Spec.Branch == branch && value.Spec.EventType == eventType {
+			// If the installed CRD is not cofnigured on the Namespace we
+			// target, disallow it. So user can't hijack
+			if value.Namespace != value.Spec.Namespace {
+				return repository, fmt.Errorf("Repo CRD %s matches but belongs to \"%s\" while it should be in \"%s\"",
+					value.Name,
+					value.Namespace,
+					value.Spec.Namespace)
+			}
 			return value, nil
 		}
 	}
@@ -140,7 +150,7 @@ func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 		repo.Status = repo.Status[:maxPipelineRunStatusRun-1]
 	}
 	repo.Status = append(repo.Status, repoStatus)
-	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories().Update(
+	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Namespace).Update(
 		ctx, &repo, v1.UpdateOptions{})
 	if err != nil {
 		return err

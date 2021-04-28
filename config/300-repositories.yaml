@@ -67,7 +67,7 @@ spec:
                   type: string
               type: object
           type: object
-  scope: Cluster
+  scope: Namespaced
   names:
     plural: repositories
     singular: repository

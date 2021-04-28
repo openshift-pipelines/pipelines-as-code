@@ -34,8 +34,8 @@ type PipelinesascodeV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *PipelinesascodeV1alpha1Client) Repositories() RepositoryInterface {
-	return newRepositories(c)
+func (c *PipelinesascodeV1alpha1Client) Repositories(namespace string) RepositoryInterface {
+	return newRepositories(c, namespace)
 }
 
 // NewForConfig creates a new PipelinesascodeV1alpha1Client for the given config.
