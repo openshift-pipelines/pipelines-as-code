@@ -9,6 +9,7 @@ import (
 	"github.com/tektoncd/hub/api/pkg/cli/hub"
 	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
+	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
 )
 
@@ -21,6 +22,7 @@ type Clients struct {
 	HTTPClient     http.Client
 	Log            *zap.SugaredLogger
 	GithubClient   webvcs.GithubVCS
+	Dynamic        dynamic.Interface
 }
 
 type Params interface {

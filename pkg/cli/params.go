@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/tektoncli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"go.uber.org/zap"
+	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -42,6 +43,15 @@ func (p *PacParams) kubeClient(config *rest.Config) (k8s.Interface, error) {
 	}
 
 	return k8scs, nil
+}
+
+func (p *PacParams) dynamicClient(config *rest.Config) (dynamic.Interface, error) {
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create dynamic client from config")
+
+	}
+	return dynamicClient, err
 }
 
 func (p *PacParams) config() (*rest.Config, error) {
@@ -163,6 +173,11 @@ func (p *PacParams) Clients() (*Clients, error) {
 		return nil, err
 	}
 
+	dynamic, err := p.dynamicClient(config)
+	if err != nil {
+		return nil, err
+	}
+
 	p.clients = &Clients{
 		Tekton:         tekton,
 		TektonCli:      tektoncli,
@@ -171,6 +186,7 @@ func (p *PacParams) Clients() (*Clients, error) {
 		Log:            logger,
 		GithubClient:   ghClient,
 		Hub:            hub,
+		Dynamic:        dynamic,
 	}
 
 	return p.clients, nil
