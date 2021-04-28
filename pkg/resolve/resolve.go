@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -18,7 +19,7 @@ type Types struct {
 	Tasks        []*v1beta1.Task
 }
 
-func readTypes(data []byte) (Types, error) {
+func readTypes(cs *cli.Clients, data []byte) (Types, error) {
 	var types = Types{}
 	decoder := scheme.Codecs.UniversalDeserializer()
 
@@ -29,7 +30,7 @@ func readTypes(data []byte) (Types, error) {
 
 		obj, _, err := decoder.Decode([]byte(doc), nil, nil)
 		if err != nil {
-			// If it's not a Kubernetes style yaml just ignore it.
+			cs.Log.Info("Skipping document not looking like a kubernetes resources")
 			continue
 		}
 		switch o := obj.(type) {
@@ -39,6 +40,8 @@ func readTypes(data []byte) (Types, error) {
 			types.PipelineRuns = append(types.PipelineRuns, o)
 		case *v1beta1.Task:
 			types.Tasks = append(types.Tasks, o)
+		default:
+			cs.Log.Info("Skipping document not looking like a tekton resource we can Resolve.")
 		}
 	}
 
@@ -63,8 +66,8 @@ func getPipelineByName(name string, tasks []*v1beta1.Pipeline) (*v1beta1.Pipelin
 	return &v1beta1.Pipeline{}, fmt.Errorf("Cannot find pipeline %s in input", name)
 }
 
-func resolve(data []byte, generateName bool) ([]*v1beta1.PipelineRun, error) {
-	types, err := readTypes(data)
+func resolve(cs *cli.Clients, data []byte, generateName bool) ([]*v1beta1.PipelineRun, error) {
+	types, err := readTypes(cs, data)
 	if err != nil {
 		return []*v1beta1.PipelineRun{}, err
 	}
@@ -130,10 +133,10 @@ func resolve(data []byte, generateName bool) ([]*v1beta1.PipelineRun, error) {
 // Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
 // generateName can be set as True to set the name as a generateName + "-" for
 // unique pipelinerun
-func Resolve(allTemplates string, generateName bool) ([]*v1beta1.PipelineRun, error) {
+func Resolve(cs *cli.Clients, allTemplates string, generateName bool) ([]*v1beta1.PipelineRun, error) {
 	s := k8scheme.Scheme
 	if err := tektonv1beta1.AddToScheme(s); err != nil {
 		return []*v1beta1.PipelineRun{}, err
 	}
-	return resolve([]byte(allTemplates), generateName)
+	return resolve(cs, []byte(allTemplates), generateName)
 }

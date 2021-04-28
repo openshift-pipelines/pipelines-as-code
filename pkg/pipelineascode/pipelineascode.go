@@ -107,7 +107,7 @@ func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 	if yamlConfig.RemoteTasks != "" {
 		allTemplates += yamlConfig.RemoteTasks
 	}
-	prun, err := resolve.Resolve(allTemplates, true)
+	prun, err := resolve.Resolve(cs, allTemplates, true)
 	if err != nil {
 		return err
 	}
