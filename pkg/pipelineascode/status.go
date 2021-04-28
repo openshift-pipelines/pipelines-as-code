@@ -8,6 +8,7 @@ import (
 	"text/template"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubernetes"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/tektoncd/cli/pkg/formatted"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -146,6 +147,8 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunIn
 		return pr, err
 	}
 
+	webConsoleURL := kubernetes.GetConsoleUI(cs, namespace, pr.Name)
+
 	taskStatus, err := statusOfAllTaskListForCheckRun(pr)
 	if err != nil {
 		return pr, err
@@ -165,7 +168,7 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunIn
 
 	_, err = cs.GithubClient.CreateStatus(runinfo,
 		"completed", pipelineRunStatus(pr),
-		outputBuffer.String(), "")
+		outputBuffer.String(), webConsoleURL)
 
 	return pr, err
 }

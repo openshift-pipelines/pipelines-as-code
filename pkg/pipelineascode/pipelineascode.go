@@ -65,7 +65,6 @@ func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 			"😿 Could not find a <b>.tekton/</b> directory for this repository", "https://tenor.com/search/sad-cat-gifs")
 		return err
 	}
-
 	cs.Log.Infow("Loading payload",
 		"url", runinfo.URL,
 		"branch", runinfo.Branch,

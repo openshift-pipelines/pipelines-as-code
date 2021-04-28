@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	testDynamic "github.com/tektoncd/cli/pkg/test/dynamic"
+
 	"github.com/google/go-github/v34/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -247,6 +249,9 @@ func TestRun(t *testing.T) {
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 
+	tdc := testDynamic.Options{}
+	dc, _ := tdc.Client()
+
 	cs := &cli.Clients{
 		GithubClient:   gcvs,
 		PipelineAsCode: stdata.PipelineAsCode,
@@ -254,6 +259,7 @@ func TestRun(t *testing.T) {
 		Kube:           stdata.Kube,
 		Tekton:         stdata.Pipeline,
 		TektonCli:      &FakeTektonClient{logOutput: "HELLO MOTO", describeOutput: "DESCRIBE ZEMODO"},
+		Dynamic:        dc,
 	}
 
 	err = Run(cs, runinfo)
