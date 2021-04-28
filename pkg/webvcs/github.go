@@ -41,10 +41,25 @@ func NewGithubVCS(token string) GithubVCS {
 	}
 }
 
-func (v GithubVCS) ParsePayload(payload string) (*RunInfo, error) {
-	// Triggers send some \r\n which can't get parsed 🤷
-	payload = strings.Replace(payload, "\r\n", "", -1)
+// We got a bunch of \r\n or \n and others from triggers/github, so let just
+// workaround it. Originally from https://stackoverflow.com/a/52600147
+func payloadFix(payload string) string {
+	var replacement = " "
+	var replacer = strings.NewReplacer(
+		"\r\n", replacement,
+		"\r", replacement,
+		"\n", replacement,
+		"\v", replacement,
+		"\f", replacement,
+		"\u0085", replacement,
+		"\u2028", replacement,
+		"\u2029", replacement,
+	)
+	return replacer.Replace(payload)
+}
 
+func (v GithubVCS) ParsePayload(payload string) (*RunInfo, error) {
+	payload = payloadFix(payload)
 	prMap := &github.PullRequestEvent{}
 	err := json.Unmarshal([]byte(payload), prMap)
 	if err != nil {

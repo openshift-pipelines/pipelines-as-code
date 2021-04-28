@@ -13,6 +13,16 @@ import (
 	"gotest.tools/assert"
 )
 
+func TestPayLoadFix(t *testing.T) {
+	b, err := ioutil.ReadFile("testdata/pull_request_with_newlines.json")
+	assert.NilError(t, err)
+	gvcs := NewGithubVCS("none")
+	_, err = gvcs.ParsePayload(payloadFix(string(b)))
+	// would bomb out on "assertion failed: error is not nil: invalid character
+	// '\n' in string literal" if we don't payloadfix
+	assert.NilError(t, err)
+}
+
 func TestParsePayload(t *testing.T) {
 	b, err := ioutil.ReadFile("testdata/pull_request.json")
 	assert.NilError(t, err)
