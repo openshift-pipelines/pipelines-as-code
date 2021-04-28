@@ -60,7 +60,7 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 	}
 
 	err = pacpkg.Run(cs, runInfo)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "403 Resource not accessible by integration") {
 		_, _ = cs.GithubClient.CreateStatus(runInfo, "completed", "failure",
 			fmt.Sprintf("There was an issue validating the commit: %q", err),
 			"https://tenor.com/search/sad-cat-gifs")
