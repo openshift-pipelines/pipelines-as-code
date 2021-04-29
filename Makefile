@@ -1,3 +1,6 @@
+QUAY_REPOSITORY=quay.io/openshift-pipeline/pipelines-as-code
+QUAY_REPOSITORY_BRANCH=main
+
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
 
 ifneq ($(FLAGS),)
@@ -13,6 +16,11 @@ vendor:
 
 bin/%: cmd/% FORCE
 	go build -mod=vendor $(LDFLAGS) -v -o $@ ./$<
+
+.PHONY: releaseyaml
+releaseyaml: ## Generate release.yaml, use it like this `make releaseyaml|kubectl apply -f-`
+	@env TARGET_REPO=$(QUAY_REPOSITORY) TARGET_BRANCH=$(QUAY_REPOSITORY_BRANCH) \
+		bash ./hack/generate-releaseyaml.sh
 
 check: lint test
 
