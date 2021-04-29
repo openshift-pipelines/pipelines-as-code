@@ -1,5 +1,6 @@
 QUAY_REPOSITORY=quay.io/openshift-pipeline/pipelines-as-code
 QUAY_REPOSITORY_BRANCH=main
+GO_TEST_FLAGS=-v -cover
 
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
 
@@ -46,7 +47,7 @@ lint-yaml: ${YAML_FILES} ## runs yamllint on all yaml files
 .PHONY: test-unit
 test-unit: ./vendor ## run unit tests
 	@echo "Running unit tests..."
-	@go test -failfast -v -cover ./...
+	@go test -failfast $(GO_TEST_FLAGS) ./...
 
 .PHONY: html-coverage
 html-coverage: ./vendor ## generate html coverage
