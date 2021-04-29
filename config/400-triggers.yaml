@@ -10,18 +10,21 @@ metadata:
 spec:
   serviceAccountName: openshift-pipelines-ascode-sa-el
   triggers:
-  - name: github
-    bindings:
-    - ref: openshift-pipelines-ascode-bindings
-    interceptors:
-    - github:
-        eventTypes:
-        - pull_request
-        - issue_comment
-    - cel:
-        filter: "body.action in ['created', 'opened', 'synchronize'] && 'installation' in body"
-    template:
-      ref: openshift-pipelines-ascode-template
+    - name: github
+      bindings:
+        - ref: openshift-pipelines-ascode-bindings
+      interceptors:
+        - github:
+            secretRef:
+              secretName: "github-app-secret"
+              secretKey: "webhook.secret"
+            eventTypes:
+              - pull_request
+              - issue_comment
+        - cel:
+            filter: "body.action in ['created', 'opened', 'synchronize'] && 'installation' in body"
+      template:
+        ref: openshift-pipelines-ascode-template
 
 # Triggers >0.13 Changed almost everything for EventListener
 # ---
@@ -85,10 +88,10 @@ spec:
       spec:
         serviceAccountName: openshift-pipelines-ascode-sa-el
         params:
-        - name: installation_id
-          value: $(tt.params.installation_id)
-        - name: payload
-          value: $(tt.params.payload)
+          - name: installation_id
+            value: $(tt.params.installation_id)
+          - name: payload
+            value: $(tt.params.payload)
 
         pipelineSpec:
           params:
@@ -110,10 +113,10 @@ spec:
               runAfter: [get-token]
               taskSpec:
                 params:
-                - name: payload
-                  type: string
-                - name: token
-                  type: string
+                  - name: payload
+                    type: string
+                  - name: token
+                    type: string
                 steps:
                   - name: apply-and-launch
                     env:
@@ -127,14 +130,14 @@ spec:
                         value: "$(params.token)"
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
               params:
-              - name: token
-                value: "$(tasks.get-token.results.token)"
-              - name: payload
-                value: "$(params.payload)"
+                - name: token
+                  value: "$(tasks.get-token.results.token)"
+                - name: payload
+                  value: "$(params.payload)"
         workspaces:
-        - name: secrets
-          secret:
-            secretName: github-app-secret
+          - name: secrets
+            secret:
+              secretName: github-app-secret
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
