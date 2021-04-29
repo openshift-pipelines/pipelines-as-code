@@ -110,7 +110,7 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun) (string, erro
 
 	if len(pr.Status.TaskRuns) != 0 {
 		trl = newTaskrunListFromMap(pr.Status.TaskRuns)
-		sort.Sort(trl)
+		sort.Sort(sort.Reverse(trl))
 	}
 
 	funcMap := template.FuncMap{
