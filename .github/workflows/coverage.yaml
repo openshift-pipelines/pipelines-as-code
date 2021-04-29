@@ -15,15 +15,11 @@
 # This file is automagically synced here from github.com/knative-sandbox/.github
 # repo by knobots: https://github.com/knative-sandbox/knobots and will be overwritten.
 
-name: Test
+name: Coverage
 
 on:
-
   push:
     branches: ['main', 'master']
-
-  pull_request:
-    branches: ['main', 'master', 'release-*']
 
 jobs:
 
