@@ -29,13 +29,13 @@ func getOpenshiftConsole(cs *cli.Clients, ns, pr string) (string, error) {
 
 	spec, ok := route.Object["spec"].(map[string]interface{})
 	if !ok {
-		// this condition is satisfied if there's no metadata at all in the provided CRD
+		// this condition is satisfied if there's no metadata at all in the provided CR
 		return "", fmt.Errorf("couldn't find \"spec\" in the OpenShift Console route")
 	}
 
 	host, ok := spec["host"].(string)
 	if !ok {
-		// this condition is satisfied if there's no metadata at all in the provided CRD
+		// this condition is satisfied if there's no metadata at all in the provided CR
 		return "", fmt.Errorf("couldn't find \"spec.host\" in the OpenShift Console route")
 	}
 

@@ -110,7 +110,7 @@ func TestFilterByGood(t *testing.T) {
 	}
 	cs, _ := test.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCRD(client, url, branch, eventType, "")
+	repo, err := getRepoByCR(client, url, branch, eventType, "")
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Spec.Namespace, targetNamespace)
 }
@@ -131,13 +131,13 @@ func TestFilterByNotMatch(t *testing.T) {
 	}
 	cs, _ := test.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCRD(client, otherurl, branch, eventType, "")
+	repo, err := getRepoByCR(client, otherurl, branch, eventType, "")
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Spec.Namespace, "")
 }
 
 func TestFilterByNotInItsNamespace(t *testing.T) {
-	// The CRD should belong to the namespace it target
+	// The CR should belong to the namespace it target
 	ctx, _ := rtesting.SetupFakeContext(t)
 	testname := "test-not-in-its-namespace"
 	eventType := "pull_request"
@@ -152,13 +152,13 @@ func TestFilterByNotInItsNamespace(t *testing.T) {
 	}
 	cs, _ := test.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCRD(client, url, branch, eventType, "")
-	assert.ErrorContains(t, err, fmt.Sprintf("Repo CRD %s matches but belongs to", testname))
+	repo, err := getRepoByCR(client, url, branch, eventType, "")
+	assert.ErrorContains(t, err, fmt.Sprintf("Repo CR %s matches but belongs to", testname))
 	assert.Equal(t, repo.Spec.Namespace, "")
 }
 
 func TestFilterForceNamespace(t *testing.T) {
-	// The CRD should belong to the namespace it target
+	// The CR should belong to the namespace it target
 	ctx, _ := rtesting.SetupFakeContext(t)
 	testname := "test-not-in-its-namespace"
 	eventType := "pull_request"
@@ -174,7 +174,7 @@ func TestFilterForceNamespace(t *testing.T) {
 	}
 	cs, _ := test.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	_, err := getRepoByCRD(client, url, branch, eventType, forcedNamespace)
+	_, err := getRepoByCR(client, url, branch, eventType, forcedNamespace)
 	assert.ErrorContains(t, err, "as configured from tekton.yaml on the main branch")
 }
 
@@ -229,7 +229,7 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	err := Run(cs, runinfo)
 
 	assert.Error(t, err,
-		fmt.Sprintf("Repo CRD matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
+		fmt.Sprintf("Repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
 			forcedNamespace))
 }
 

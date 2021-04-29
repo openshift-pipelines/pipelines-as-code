@@ -24,7 +24,7 @@ type Options struct {
 	Payload string
 }
 
-func getRepoByCRD(cs *cli.Clients, url, branch, eventType, forceNamespace string) (apipac.Repository, error) {
+func getRepoByCR(cs *cli.Clients, url, branch, eventType, forceNamespace string) (apipac.Repository, error) {
 	var repository apipac.Repository
 
 	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
@@ -37,14 +37,14 @@ func getRepoByCRD(cs *cli.Clients, url, branch, eventType, forceNamespace string
 		if value.Spec.URL == url && value.Spec.Branch == branch && value.Spec.EventType == eventType {
 			if forceNamespace != "" && value.Namespace != forceNamespace {
 				return repository, fmt.Errorf(
-					"Repo CRD matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
+					"Repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
 					forceNamespace)
 			}
 
 			// Disallow attempts for hijacks. If the installed CR is not configured on the
 			// Namespace the Spec is targeting then disallow it.
 			if value.Namespace != value.Spec.Namespace {
-				return repository, fmt.Errorf("Repo CRD %s matches but belongs to \"%s\" while it should be in \"%s\"",
+				return repository, fmt.Errorf("Repo CR %s matches but belongs to \"%s\" while it should be in \"%s\"",
 					value.Name,
 					value.Namespace,
 					value.Spec.Namespace)
@@ -75,7 +75,7 @@ func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 		}
 	}
 
-	repo, err := getRepoByCRD(cs, runinfo.URL, runinfo.Branch, "pull_request", maintekton.Namespace)
+	repo, err := getRepoByCR(cs, runinfo.URL, runinfo.Branch, "pull_request", maintekton.Namespace)
 	if err != nil {
 		return err
 	}
