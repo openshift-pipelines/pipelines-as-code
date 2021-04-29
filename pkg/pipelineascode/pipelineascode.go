@@ -2,6 +2,8 @@ package pipelineascode
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -22,16 +24,31 @@ type Options struct {
 	Payload string
 }
 
-func getRepoByCRD(cs *cli.Clients, url, branch, eventType string) (apipac.Repository, error) {
+func getRepoByCR(cs *cli.Clients, url, branch, eventType, forceNamespace string) (apipac.Repository, error) {
 	var repository apipac.Repository
 
-	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories().List(
+	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
 		context.Background(), metav1.ListOptions{})
+
 	if err != nil {
 		return repository, err
 	}
 	for _, value := range repositories.Items {
 		if value.Spec.URL == url && value.Spec.Branch == branch && value.Spec.EventType == eventType {
+			if forceNamespace != "" && value.Namespace != forceNamespace {
+				return repository, fmt.Errorf(
+					"Repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
+					forceNamespace)
+			}
+
+			// Disallow attempts for hijacks. If the installed CR is not configured on the
+			// Namespace the Spec is targeting then disallow it.
+			if value.Namespace != value.Spec.Namespace {
+				return repository, fmt.Errorf("Repo CR %s matches but belongs to \"%s\" while it should be in \"%s\"",
+					value.Name,
+					value.Namespace,
+					value.Spec.Namespace)
+			}
 			return value, nil
 		}
 	}
@@ -40,14 +57,25 @@ func getRepoByCRD(cs *cli.Clients, url, branch, eventType string) (apipac.Reposi
 
 func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 	var err error
+	var maintekton TektonYamlConfig
+
 	var ctx = context.Background()
+
 	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
 	if err != nil {
 		return err
 	}
 	runinfo.CheckRunID = checkRun.ID
 
-	repo, err := getRepoByCRD(cs, runinfo.URL, runinfo.Branch, "pull_request")
+	maintektonyaml, _ := cs.GithubClient.GetFileFromDefaultBranch(filepath.Join(tektonDir, tektonConfigurationFile), runinfo)
+	if maintektonyaml != "" {
+		maintekton, err = processTektonYaml(cs, runinfo, maintektonyaml)
+		if err != nil {
+			return err
+		}
+	}
+
+	repo, err := getRepoByCR(cs, runinfo.URL, runinfo.Branch, "pull_request", maintekton.Namespace)
 	if err != nil {
 		return err
 	}
@@ -140,7 +168,7 @@ func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 		repo.Status = repo.Status[:maxPipelineRunStatusRun-1]
 	}
 	repo.Status = append(repo.Status, repoStatus)
-	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories().Update(
+	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Namespace).Update(
 		ctx, &repo, v1.UpdateOptions{})
 	if err != nil {
 		return err

@@ -206,7 +206,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 	}
 	for _, tt := range testGetTektonDir {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gcvs.GetFileInsideRepo(tt.args.path, tt.args.runinfo)
+			got, err := gcvs.GetFileInsideRepo(tt.args.path, false, tt.args.runinfo)
 			tt.args.assertion(t, got, err)
 		})
 	}

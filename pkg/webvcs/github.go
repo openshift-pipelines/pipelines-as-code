@@ -29,6 +29,11 @@ type RunInfo struct {
 	CheckRunID    *int64
 }
 
+// DeepCopyInto deep copy runinfo in another instance
+func (r *RunInfo) DeepCopyInto(out *RunInfo) {
+	*out = *r
+}
+
 func NewGithubVCS(token string) GithubVCS {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
@@ -99,9 +104,16 @@ func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.Reposi
 	return objects, nil
 }
 
-func (v GithubVCS) GetFileInsideRepo(path string, runinfo *RunInfo) (string, error) {
+// GetFileInsideRepo Get a file via Github API using the runinfo information, we
+// branch is true, the user the branch as ref isntead of the SHA
+func (v GithubVCS) GetFileInsideRepo(path string, branch bool, runinfo *RunInfo) (string, error) {
+	ref := runinfo.SHA
+	if branch {
+		ref = runinfo.Branch
+	}
+
 	fp, objects, resp, err := v.Client.Repositories.GetContents(v.Context, runinfo.Owner,
-		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: runinfo.SHA})
+		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: ref})
 
 	if err != nil {
 		return "", err
@@ -119,6 +131,20 @@ func (v GithubVCS) GetFileInsideRepo(path string, runinfo *RunInfo) (string, err
 	}
 
 	return string(getobj), nil
+}
+
+// GetFileFromDefaultBranch will get a file directly from the Default Branch as
+// configured in runinfo which is directly set in webhook by Github
+func (v GithubVCS) GetFileFromDefaultBranch(path string, runinfo *RunInfo) (string, error) {
+	var runInfoOnMain = &RunInfo{}
+	runinfo.DeepCopyInto(runInfoOnMain)
+	runInfoOnMain.Branch = runInfoOnMain.DefaultBranch
+
+	tektonyaml, err := v.GetFileInsideRepo(path, true, runInfoOnMain)
+	if err != nil {
+		return "", fmt.Errorf("Cannot find %s inside the \"%s\" branch: %s", path, runInfoOnMain.Branch, err)
+	}
+	return tektonyaml, err
 }
 
 func (v GithubVCS) GetTektonDirTemplate(objects []*github.RepositoryContent, runinfo *RunInfo) (string, error) {

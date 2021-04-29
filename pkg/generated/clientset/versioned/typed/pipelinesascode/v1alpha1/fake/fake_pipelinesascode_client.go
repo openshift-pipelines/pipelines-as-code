@@ -28,8 +28,8 @@ type FakePipelinesascodeV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakePipelinesascodeV1alpha1) Repositories() v1alpha1.RepositoryInterface {
-	return &FakeRepositories{c}
+func (c *FakePipelinesascodeV1alpha1) Repositories(namespace string) v1alpha1.RepositoryInterface {
+	return &FakeRepositories{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

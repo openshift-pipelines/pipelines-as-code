@@ -112,7 +112,7 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 		if err := i.Repository.Informer().GetIndexer().Add(repo); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := c.PipelineAsCode.PipelinesascodeV1alpha1().Repositories().Create(ctx, repo, metav1.CreateOptions{}); err != nil {
+		if _, err := c.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Namespace).Create(ctx, repo, metav1.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
 
