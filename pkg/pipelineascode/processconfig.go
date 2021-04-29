@@ -11,11 +11,13 @@ import (
 )
 
 type tektonYaml struct {
-	Tasks []string `yaml:"metadata,omitempty"`
+	Tasks     []string `yaml:"metadata,omitempty"`
+	Namespace string   `yaml:"namespace,omitempty"`
 }
 
 type TektonYamlConfig struct {
 	RemoteTasks string
+	Namespace   string
 }
 
 const (
@@ -34,6 +36,8 @@ func processTektonYaml(cs *cli.Clients, runinfo *webvcs.RunInfo, data string) (T
 		return tyConfig, err
 	}
 
+	tyConfig.Namespace = ty.Namespace
+
 	// parse tasks syntax:
 	// - http(s)?://foo -> url
 	// - foo/bar -> internal file inside repo
@@ -51,7 +55,7 @@ func processTektonYaml(cs *cli.Clients, runinfo *webvcs.RunInfo, data string) (T
 			defer res.Body.Close()
 			tyConfig.RemoteTasks += addTaskYamlDocuments(string(data))
 		case strings.Contains(task, "/"):
-			data, err := cs.GithubClient.GetFileInsideRepo(task, runinfo)
+			data, err := cs.GithubClient.GetFileInsideRepo(task, false, runinfo)
 			if err != nil {
 				return tyConfig, err
 			}

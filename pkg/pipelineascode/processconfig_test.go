@@ -16,6 +16,15 @@ import (
 	"gotest.tools/assert"
 )
 
+func TestProcessTektonYamlNamespace(t *testing.T) {
+	namespace := "liguedestalents"
+	data := "namespace: " + namespace
+	cs := cli.Clients{}
+	ret, err := processTektonYaml(&cs, &webvcs.RunInfo{}, data)
+	assert.NilError(t, err)
+	assert.Equal(t, ret.Namespace, namespace)
+}
+
 func TestProcessTektonYamlRemoteTask(t *testing.T) {
 	data := `tasks:
 - https://foo.bar

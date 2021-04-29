@@ -40,13 +40,13 @@ func (t *FakeTektonClient) PipelineRunDescribe(string, string) (string, error) {
 	return t.describeOutput, nil
 }
 
-func newRepo(name, url, branch, eventType, install_namespace, namespace string) *v1alpha1.Repository {
+func newRepo(name, url, branch, eventType, installNamespace, namespace string) *v1alpha1.Repository {
 	cw := clockwork.NewFakeClock()
 	return &v1alpha1.Repository{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: install_namespace,
+			Namespace: installNamespace,
 		},
 		Spec: v1alpha1.RepositorySpec{
 			Namespace: namespace,
@@ -110,7 +110,7 @@ func TestFilterByGood(t *testing.T) {
 	}
 	cs, _ := test.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCRD(client, url, branch, eventType)
+	repo, err := getRepoByCRD(client, url, branch, eventType, "")
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Spec.Namespace, targetNamespace)
 }
@@ -131,7 +131,7 @@ func TestFilterByNotMatch(t *testing.T) {
 	}
 	cs, _ := test.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCRD(client, otherurl, branch, eventType)
+	repo, err := getRepoByCRD(client, otherurl, branch, eventType, "")
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Spec.Namespace, "")
 }
@@ -152,9 +152,85 @@ func TestFilterByNotInItsNamespace(t *testing.T) {
 	}
 	cs, _ := test.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCRD(client, url, branch, eventType)
+	repo, err := getRepoByCRD(client, url, branch, eventType, "")
 	assert.ErrorContains(t, err, fmt.Sprintf("Repo CRD %s matches but belongs to", testname))
 	assert.Equal(t, repo.Spec.Namespace, "")
+}
+
+func TestFilterForceNamespace(t *testing.T) {
+	// The CRD should belong to the namespace it target
+	ctx, _ := rtesting.SetupFakeContext(t)
+	testname := "test-not-in-its-namespace"
+	eventType := "pull_request"
+	branch := "mainone"
+	targetNamespace := "namespace"
+	forcedNamespace := "asmonaco"
+
+	url := "https://psg.fr"
+	d := test.Data{
+		Repositories: []*v1alpha1.Repository{
+			newRepo(testname, url, branch, eventType, targetNamespace, targetNamespace),
+		},
+	}
+	cs, _ := test.SeedTestData(t, ctx, d)
+	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
+	_, err := getRepoByCRD(client, url, branch, eventType, forcedNamespace)
+	assert.ErrorContains(t, err, "as configured from tekton.yaml on the main branch")
+}
+
+func TestRunDeniedFromForcedNamespace(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	fakeclient, mux, _, teardown := testhelper.SetupGH()
+	defer teardown()
+	var defaultBranch = "default"
+	var forcedNamespace = "laotronamspace"
+	var installedNamespace = "nomespace"
+	var runinfo = &webvcs.RunInfo{
+		SHA:           "principale",
+		Owner:         "chmouel",
+		Repository:    "repo",
+		URL:           "https://service/documentation",
+		Branch:        "press",
+		DefaultBranch: defaultBranch,
+	}
+	replyString(mux,
+		fmt.Sprintf("/repos/%s/%s/check-runs", runinfo.Owner, runinfo.Repository),
+		`{"id": 26}`)
+
+	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/contents/.tekton/tekton.yaml", runinfo.Owner, runinfo.Repository),
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Query().Get("ref") != defaultBranch {
+				fmt.Fprint(w, `{}`)
+			} else {
+				fmt.Fprint(w, `{"sha": "shaofmaintektonyaml"}`)
+			}
+		})
+
+	forcedNamespaceContent := base64.RawStdEncoding.EncodeToString([]byte("namespace: "+forcedNamespace+"\n")) + "="
+	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/blobs/shaofmaintektonyaml", runinfo.Owner, runinfo.Repository),
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, `{"content": "%s"}`, forcedNamespaceContent)
+		})
+
+	gcvs := webvcs.GithubVCS{
+		Client:  fakeclient,
+		Context: ctx,
+	}
+	datas := test.Data{
+		Repositories: []*v1alpha1.Repository{
+			newRepo("repo", runinfo.URL, runinfo.Branch, "pull_request", installedNamespace, installedNamespace),
+		},
+	}
+	stdata, _ := test.SeedTestData(t, ctx, datas)
+	cs := &cli.Clients{
+		GithubClient:   gcvs,
+		PipelineAsCode: stdata.PipelineAsCode,
+	}
+	err := Run(cs, runinfo)
+
+	assert.Error(t, err,
+		fmt.Sprintf("Repo CRD matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
+			forcedNamespace))
 }
 
 func TestRun(t *testing.T) {
