@@ -22,6 +22,7 @@ require (
 	k8s.io/client-go v0.19.7
 	k8s.io/code-generator v0.19.7
 	knative.dev/pkg v0.0.0-20210208131226-4b2ae073fa06
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
