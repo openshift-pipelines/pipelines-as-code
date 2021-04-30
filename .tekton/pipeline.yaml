@@ -5,7 +5,7 @@ metadata:
   name: pipelines-as-code-test
 spec:
   workspaces:
-  - name: source
+    - name: source
   params:
     - name: repo_url
     - name: revision
@@ -25,13 +25,25 @@ spec:
       runAfter: [fetchit]
       taskSpec:
         workspaces:
-        - name: source
+          - name: source
         steps:
           - name: check
             workingDir: $(workspaces.source.path)
             image: gcr.io/tekton-releases/dogfooding/test-runner
             script: |
-              make test lint
+              make test lint GO_TEST_FLAGS="-coverprofile=coverage.txt -covermode=atomic"
+      workspaces:
+        - name: source
+          workspace: source
+    - name: codecov
+      runAfter: [check]
+      taskRef:
+        name: codecov
+      params:
+        - name: codecov-token-secret
+          value: "pipelines-as-code-codecov-token"
+        - name: codecov-token-secret-key
+          value: "token"
       workspaces:
         - name: source
           workspace: source
