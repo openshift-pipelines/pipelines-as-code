@@ -1,0 +1,3 @@
+tasks:
+  - git-clone
+  - codecov

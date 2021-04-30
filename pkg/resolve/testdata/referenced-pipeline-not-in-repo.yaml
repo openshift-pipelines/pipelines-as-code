@@ -1,0 +1,8 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pr-test1
+spec:
+  pipelineRef:
+    name: pipeline-test1
