@@ -13,7 +13,7 @@ func main() {
 
 	cmd, _, err := tkn.Find(os.Args[1:])
 	// default cmd if no cmd is given
-	if err != nil || cmd.Args == nil {
+	if err != nil || cmd.Use == "" {
 		args := append([]string{"run"}, os.Args[1:]...)
 		tkn.SetArgs(args)
 	}
