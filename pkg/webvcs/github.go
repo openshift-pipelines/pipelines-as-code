@@ -29,6 +29,15 @@ type RunInfo struct {
 	CheckRunID    *int64
 }
 
+func (r RunInfo) Check() error {
+	if r.SHA != "" && r.Branch != "" &&
+		r.Repository != "" && r.DefaultBranch != "" &&
+		r.Owner != "" && r.URL != "" {
+		return nil
+	}
+	return fmt.Errorf("Missing values in runInfo")
+}
+
 // DeepCopyInto deep copy runinfo in another instance
 func (r *RunInfo) DeepCopyInto(out *RunInfo) {
 	*out = *r
