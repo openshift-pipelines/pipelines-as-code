@@ -7,7 +7,6 @@ import (
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	k8pac "github.com/openshift-pipelines/pipelines-as-code/pkg/kubernetes"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,18 +55,16 @@ func getRepoByCR(cs *cli.Clients, url, branch, eventType, forceNamespace string)
 	return repository, nil
 }
 
-func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
+func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo) error {
 	var err error
 	var maintekton TektonYamlConfig
 
 	var ctx = context.Background()
-
 	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
 	if err != nil {
 		return err
 	}
 	runinfo.CheckRunID = checkRun.ID
-
 	maintektonyaml, _ := cs.GithubClient.GetFileFromDefaultBranch(filepath.Join(tektonDir, tektonConfigurationFile), runinfo)
 	if maintektonyaml != "" {
 		maintekton, err = processTektonYaml(cs, runinfo, maintektonyaml)
@@ -75,7 +72,6 @@ func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 			return err
 		}
 	}
-
 	repo, err := getRepoByCR(cs, runinfo.URL, runinfo.Branch, "pull_request", maintekton.Namespace)
 	if err != nil {
 		return err
@@ -100,7 +96,7 @@ func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 		"sha", runinfo.SHA,
 		"event_type", "pull_request")
 
-	err = k8pac.CreateNamespace(cs, repo.Spec.Namespace)
+	err = k8int.GetNamespace(repo.Spec.Namespace)
 	if err != nil {
 		return err
 	}
@@ -139,21 +135,14 @@ func Run(cs *cli.Clients, runinfo *webvcs.RunInfo) error {
 	if err != nil {
 		return err
 	}
-
 	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun[0], v1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
-	fullLog, err := cs.TektonCli.FollowLogs(pr.Name, repo.Spec.Namespace)
+	newPr, err := postFinalStatus(ctx, cs, k8int, runinfo, pr.Name, repo.Spec.Namespace)
 	if err != nil {
 		return err
-	}
-
-	newPr, err := postFinalStatus(ctx, cs, runinfo, pr.Name, repo.Spec.Namespace, fullLog)
-	if err != nil {
-		return err
-
 	}
 
 	repoStatus := apipac.RepositoryRunStatus{

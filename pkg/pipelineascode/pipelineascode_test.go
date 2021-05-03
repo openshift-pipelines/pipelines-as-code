@@ -27,19 +27,6 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-type FakeTektonClient struct {
-	logOutput      string
-	describeOutput string
-}
-
-func (t *FakeTektonClient) FollowLogs(string, string) (string, error) {
-	return t.logOutput, nil
-}
-
-func (t *FakeTektonClient) PipelineRunDescribe(string, string) (string, error) {
-	return t.describeOutput, nil
-}
-
 func newRepo(name, url, branch, eventType, installNamespace, namespace string) *v1alpha1.Repository {
 	cw := clockwork.NewFakeClock()
 	return &v1alpha1.Repository{
@@ -226,7 +213,9 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 		GithubClient:   gcvs,
 		PipelineAsCode: stdata.PipelineAsCode,
 	}
-	err := Run(cs, runinfo)
+	k8int := test.KinterfaceTest{}
+
+	err := Run(cs, &k8int, runinfo)
 
 	assert.Error(t, err,
 		fmt.Sprintf("Repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
@@ -355,11 +344,14 @@ func TestRun(t *testing.T) {
 		Log:            logger,
 		Kube:           stdata.Kube,
 		Tekton:         stdata.Pipeline,
-		TektonCli:      &FakeTektonClient{logOutput: "HELLO MOTO", describeOutput: "DESCRIBE ZEMODO"},
 		Dynamic:        dc,
 	}
 
-	err = Run(cs, runinfo)
+	k8int := test.KinterfaceTest{
+		ConsoleURL: "https://console.url",
+	}
+
+	err = Run(cs, &k8int, runinfo)
 	assert.NilError(t, err)
 	assert.Assert(t, len(log.TakeAll()) > 0)
 	got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(

@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	pacpkg "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/spf13/cobra"
@@ -84,7 +85,12 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 		return err
 	}
 
-	err = pacpkg.Run(cs, runinfo)
+	kinteract, err := kubeinteraction.NewKubernetesInteraction(cs)
+	if err != nil {
+		return err
+	}
+
+	err = pacpkg.Run(cs, kinteract, runinfo)
 	if err != nil && !strings.Contains(err.Error(), "403 Resource not accessible by integration") {
 		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "failure",
 			fmt.Sprintf("There was an issue validating the commit: %q", err),

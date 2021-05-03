@@ -8,7 +8,6 @@ import (
 	"text/template"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubernetes"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/tektoncd/cli/pkg/formatted"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -133,11 +132,16 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun) (string, erro
 	return outputBuffer.String(), nil
 }
 
-func postFinalStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, prName, namespace, fullLog string) (*tektonv1beta1.PipelineRun, error) {
+func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo, prName, namespace string) (*tektonv1beta1.PipelineRun, error) {
 	var pr = &tektonv1beta1.PipelineRun{}
 	var outputBuffer bytes.Buffer
 
-	tknDescribeOutput, err := cs.TektonCli.PipelineRunDescribe(prName, namespace)
+	fullLog, err := k8int.TektonCliFollowLogs(prName, namespace)
+	if err != nil {
+		return pr, err
+	}
+
+	tknDescribeOutput, err := k8int.TektonCliPRDescribe(prName, namespace)
 	if err != nil {
 		return pr, err
 	}
@@ -147,7 +151,7 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunIn
 		return pr, err
 	}
 
-	webConsoleURL := kubernetes.GetConsoleUI(cs, namespace, pr.Name)
+	webConsoleURL := k8int.GetConsoleUI(namespace, pr.Name)
 
 	taskStatus, err := statusOfAllTaskListForCheckRun(pr)
 	if err != nil {
