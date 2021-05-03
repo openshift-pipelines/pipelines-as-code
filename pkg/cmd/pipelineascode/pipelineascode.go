@@ -80,7 +80,7 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 	}
 
 	runinfo, err := getRunInfoFromArgsOrPayload(cs, opts.Payload, &opts.RunInfo)
-	if err == nil {
+	if err != nil {
 		return err
 	}
 

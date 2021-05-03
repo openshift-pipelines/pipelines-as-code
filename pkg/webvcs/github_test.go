@@ -340,3 +340,54 @@ func TestCreateStatus(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, cr.GetID(), int64(666))
 }
+
+func TestRunInfoCheck(t *testing.T) {
+	type fields struct {
+		Owner         string
+		Repository    string
+		DefaultBranch string
+		SHA           string
+		URL           string
+		Branch        string
+		CheckRunID    *int64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantErr bool
+	}{
+		{
+			name:    "testerr",
+			fields:  fields{Owner: "hello"},
+			wantErr: true,
+		},
+		{
+			name: "testgood",
+			fields: fields{
+				Owner:         "hello",
+				Repository:    "moto",
+				DefaultBranch: "default",
+				SHA:           "1d1",
+				URL:           "https://anywhere",
+				Branch:        "main",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := RunInfo{
+				Owner:         tt.fields.Owner,
+				Repository:    tt.fields.Repository,
+				DefaultBranch: tt.fields.DefaultBranch,
+				SHA:           tt.fields.SHA,
+				URL:           tt.fields.URL,
+				Branch:        tt.fields.Branch,
+				CheckRunID:    tt.fields.CheckRunID,
+			}
+			if err := r.Check(); (err != nil) != tt.wantErr {
+				t.Errorf("RunInfo.Check() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
