@@ -1,7 +1,6 @@
 package pipelineascode
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -9,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
 	pacpkg "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/spf13/cobra"
 )
 
@@ -34,17 +34,42 @@ func Command(p cli.Params) *cobra.Command {
 			if token == "" || err != nil {
 				return fmt.Errorf("token option is not set properly")
 			}
-			if opts.Payload == "" {
-				return errors.New("payload needs to be set")
-			}
+
 			return runWrap(p, opts)
 		},
 	}
 
 	flags.AddPacOptions(cmd)
 
+	cmd.Flags().StringVarP(&opts.RunInfo.SHA, "webhook-sha", "", os.Getenv("PAC_SHA"), "SHA to test")
+	cmd.Flags().StringVarP(&opts.RunInfo.Owner, "webhook-owner", "", os.Getenv("PAC_OWNER"), "Owner of the of the repository to test")
+	cmd.Flags().StringVarP(&opts.RunInfo.Repository, "webhook-repository", "", os.Getenv("PAC_REPOSITORY_NAME"), "Repository Name of the repository to test")
+	cmd.Flags().StringVarP(&opts.RunInfo.DefaultBranch, "webhook-defaultbranch", "", os.Getenv("PAC_DEFAULTBRANCH"), "DefaultBranch of the repository to test")
+	cmd.Flags().StringVarP(&opts.RunInfo.Branch, "webhook-target-branch", "", os.Getenv("PAC_BRANCH"), "Target branch of the repository to test")
+	cmd.Flags().StringVarP(&opts.RunInfo.URL, "webhook-url", "", os.Getenv("PAC_URL"), "URL of the repository to test")
+
 	cmd.Flags().StringVarP(&opts.Payload, "payload", "", os.Getenv("PAC_PAYLOAD"), "The payload from webhook")
 	return cmd
+}
+
+func getRunInfoFromArgsOrPayload(cs *cli.Clients, payload string, runinfo *webvcs.RunInfo) (*webvcs.RunInfo, error) {
+	err := runinfo.Check()
+	if err == nil {
+		return runinfo, err
+	} else if payload == "" {
+		return &webvcs.RunInfo{}, fmt.Errorf("No payload or not enough params set properly")
+	}
+
+	payloadinfo, err := cs.GithubClient.ParsePayload(payload)
+	if err != nil {
+		return &webvcs.RunInfo{}, err
+	}
+
+	if err := payloadinfo.Check(); err != nil {
+		return &webvcs.RunInfo{}, fmt.Errorf("Invalid Payload, missing some values : %+v", runinfo)
+	}
+
+	return payloadinfo, nil
 }
 
 // Wrap around a Run, create a CheckStatusID if there is a failure.
@@ -54,14 +79,14 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 		return err
 	}
 
-	runInfo, err := cs.GithubClient.ParsePayload(opts.Payload)
+	runinfo, err := getRunInfoFromArgsOrPayload(cs, opts.Payload, &opts.RunInfo)
 	if err != nil {
 		return err
 	}
 
-	err = pacpkg.Run(cs, runInfo)
+	err = pacpkg.Run(cs, runinfo)
 	if err != nil && !strings.Contains(err.Error(), "403 Resource not accessible by integration") {
-		_, _ = cs.GithubClient.CreateStatus(runInfo, "completed", "failure",
+		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "failure",
 			fmt.Sprintf("There was an issue validating the commit: %q", err),
 			"https://tenor.com/search/sad-cat-gifs")
 	}
