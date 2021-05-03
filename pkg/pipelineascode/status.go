@@ -25,11 +25,6 @@ const checkStatustmpl = `{{.taskStatus}}
  <pre>{{.tknDescribeOutput}}</pre>
 </details>
 
-<details>
- <summary>📜 Full logs of Pipeline</summary>
- <pre>{{.fullLog}}</pre>
-</details>
-
 `
 
 const taskStatustmpl = `
