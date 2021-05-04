@@ -36,7 +36,7 @@ type Params interface {
 }
 
 type KubeInteractionIntf interface {
-	GetConsoleUI(string, string) string
+	GetConsoleUI(string, string) (string, error)
 	GetNamespace(string) error
 	TektonCliPRDescribe(string, string) (string, error)
 	TektonCliFollowLogs(string, string) (string, error)

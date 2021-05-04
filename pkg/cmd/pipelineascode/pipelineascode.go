@@ -13,6 +13,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	defaultURL = "https://giphy.com/explore/cat"
+)
+
 func Command(p cli.Params) *cobra.Command {
 	opts := &pacpkg.Options{}
 	var cmd = &cobra.Command{
@@ -91,7 +95,12 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 	}
 
 	// Get webconsole url as soon as possible to have a link to click there
-	runinfo.WebConsoleURL = kinteract.GetConsoleUI("", "")
+	url, err := kinteract.GetConsoleUI("", "")
+	if err != nil {
+		cs.Log.Error(err)
+		url = defaultURL
+	}
+	runinfo.WebConsoleURL = url
 
 	err = pacpkg.Run(cs, kinteract, runinfo)
 	if err != nil && !strings.Contains(err.Error(), "403 Resource not accessible by integration") {

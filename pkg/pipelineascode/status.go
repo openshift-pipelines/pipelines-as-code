@@ -141,7 +141,10 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 		return pr, err
 	}
 
-	runinfo.WebConsoleURL = k8int.GetConsoleUI(namespace, pr.Name)
+	consoleURL, err := k8int.GetConsoleUI(namespace, pr.Name)
+	if err != nil {
+		consoleURL = "https://giphy.com/search/cat-reading"
+	}
 
 	taskStatus, err := statusOfAllTaskListForCheckRun(pr)
 	if err != nil {
@@ -161,7 +164,7 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 
 	_, err = cs.GithubClient.CreateStatus(runinfo,
 		"completed", pipelineRunStatus(pr),
-		outputBuffer.String(), runinfo.WebConsoleURL)
+		outputBuffer.String(), consoleURL)
 
 	return pr, err
 }
