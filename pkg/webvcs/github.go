@@ -230,15 +230,19 @@ func (v GithubVCS) CreateStatus(runinfo *RunInfo, status, conclusion, text, deta
 	}
 
 	opts := github.UpdateCheckRunOptions{
-		Name:        "Tekton Pipeline as Code CI",
-		Status:      &status,
-		Conclusion:  &conclusion,
-		CompletedAt: &now,
-		Output:      checkRunOutput,
+		Name:   "Tekton Pipeline as Code CI",
+		Status: &status,
+		Output: checkRunOutput,
 	}
 
 	if detailsURL != "" {
 		opts.DetailsURL = &detailsURL
+	}
+
+	// Only set completed-at if conclusion is set (which means finished)
+	if conclusion != "" {
+		opts.CompletedAt = &now
+		opts.Conclusion = &conclusion
 	}
 
 	checkRun, _, err := v.Client.Checks.UpdateCheckRun(v.Context, runinfo.Owner, runinfo.Repository, *runinfo.CheckRunID, opts)
