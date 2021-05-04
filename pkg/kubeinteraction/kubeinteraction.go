@@ -12,7 +12,7 @@ type Interaction struct {
 	TektonCliLogsOptions clioptions.LogOptions
 }
 
-func (k Interaction) GetConsoleUI(ns, pr string) string {
+func (k Interaction) GetConsoleUI(ns, pr string) (string, error) {
 	return consoleui.GetConsoleUI(k.Clients, ns, pr)
 }
 

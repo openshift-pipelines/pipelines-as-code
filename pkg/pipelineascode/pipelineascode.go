@@ -146,10 +146,16 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		return err
 	}
 
-	runinfo.WebConsoleURL = k8int.GetConsoleUI(repo.Spec.Namespace, pr.GetName())
+	consoleURL, err := k8int.GetConsoleUI(repo.Spec.Namespace, pr.GetName())
+	if err != nil {
+		// Don't bomb out if we can't get the console UI
+		consoleURL = "https://giphy.com/explore/cat-exercise-wheel"
+	}
+
 	_, err = cs.GithubClient.CreateStatus(runinfo, "in_progress", "",
-		fmt.Sprintf("Starting Pipelinerun <b>%s</b> in namespace <b>%s</b>", pr.GetName(), repo.Spec.Namespace),
-		runinfo.WebConsoleURL)
+		fmt.Sprintf(`Starting Pipelinerun <b>%s</b> in namespace <b>%s</b><br><br>You can follow the execution on the command line with : <br><br><code>tkn pr logs -f -n %s %s</code>`,
+			pr.GetName(), repo.Spec.Namespace, repo.Spec.Namespace, pr.GetName()),
+		consoleURL)
 	if err != nil {
 		return nil
 	}

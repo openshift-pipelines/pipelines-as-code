@@ -9,8 +9,8 @@ type KinterfaceTest struct {
 	prDescribe string
 }
 
-func (k *KinterfaceTest) GetConsoleUI(ns string, pr string) string {
-	return k.ConsoleURL
+func (k *KinterfaceTest) GetConsoleUI(ns string, pr string) (string, error) {
+	return k.ConsoleURL, nil
 }
 
 func (k *KinterfaceTest) GetNamespace(ns string) error {

@@ -23,6 +23,7 @@ const (
 func getOpenshiftConsole(cs *cli.Clients, ns, pr string) (string, error) {
 	gvr := schema.GroupVersionResource{Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource}
 	route, err := cs.Dynamic.Resource(gvr).Namespace(openShiftConsoleNS).Get(context.Background(), openShiftConsoleRouteName, metav1.GetOptions{})
+
 	if err != nil {
 		return "", err
 	}
@@ -49,14 +50,13 @@ func getOpenshiftConsole(cs *cli.Clients, ns, pr string) (string, error) {
 
 // GetConsoleURL Get a Console URL, OpenShift Console or Tekton Dashboard.
 // don't error if we can't find it.
-func GetConsoleUI(cs *cli.Clients, ns, pr string) string {
+func GetConsoleUI(cs *cli.Clients, ns, pr string) (string, error) {
 	var url string
 	var err error
-	if url, err = getOpenshiftConsole(cs, ns, pr); err != nil {
-		cs.Log.Debug("cannot find an openshift console on this cluster: %v", err)
+	url, err = getOpenshiftConsole(cs, ns, pr)
+	if err != nil {
+		return "", err
 	}
-
-	cs.Log.Info(url)
-
-	return url
+	cs.Log.Info("Console view url: %s", url)
+	return url, nil
 }
