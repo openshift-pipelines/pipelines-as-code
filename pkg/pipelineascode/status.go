@@ -131,11 +131,6 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 	var pr = &tektonv1beta1.PipelineRun{}
 	var outputBuffer bytes.Buffer
 
-	fullLog, err := k8int.TektonCliFollowLogs(prName, namespace)
-	if err != nil {
-		return pr, err
-	}
-
 	tknDescribeOutput, err := k8int.TektonCliPRDescribe(prName, namespace)
 	if err != nil {
 		return pr, err
@@ -146,7 +141,7 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 		return pr, err
 	}
 
-	webConsoleURL := k8int.GetConsoleUI(namespace, pr.Name)
+	runinfo.WebConsoleURL = k8int.GetConsoleUI(namespace, pr.Name)
 
 	taskStatus, err := statusOfAllTaskListForCheckRun(pr)
 	if err != nil {
@@ -156,7 +151,6 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 	data := map[string]string{
 		"taskStatus":        taskStatus,
 		"tknDescribeOutput": tknDescribeOutput,
-		"fullLog":           fullLog,
 	}
 
 	t := template.Must(template.New("Pipeline Status").Parse(checkStatustmpl))
@@ -167,7 +161,7 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 
 	_, err = cs.GithubClient.CreateStatus(runinfo,
 		"completed", pipelineRunStatus(pr),
-		outputBuffer.String(), webConsoleURL)
+		outputBuffer.String(), runinfo.WebConsoleURL)
 
 	return pr, err
 }

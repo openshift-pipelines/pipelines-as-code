@@ -101,6 +101,13 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		return err
 	}
 
+	_, err = cs.GithubClient.CreateStatus(runinfo, "in_progress", "",
+		fmt.Sprintf("Creating pipelinerun in namespace <b>%s</b>", repo.Spec.Namespace),
+		"https://tenor.com/search/sad-cat-gifs")
+	if err != nil {
+		return err
+	}
+
 	var yamlConfig = TektonYamlConfig{}
 	for _, file := range objects {
 		if file.GetName() == tektonConfigurationFile {
@@ -136,6 +143,20 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		return err
 	}
 	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun[0], v1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	runinfo.WebConsoleURL = k8int.GetConsoleUI(repo.Spec.Namespace, pr.GetName())
+	_, err = cs.GithubClient.CreateStatus(runinfo, "in_progress", "",
+		fmt.Sprintf("Starting Pipelinerun <b>%s</b> in namespace <b>%s</b>", pr.GetName(), repo.Spec.Namespace),
+		runinfo.WebConsoleURL)
+	if err != nil {
+		return nil
+	}
+
+	// Use this as a wait holder until the logs is finished, maybe we would do something with the log output.
+	_, err = k8int.TektonCliFollowLogs(repo.Spec.Namespace, pr.GetName())
 	if err != nil {
 		return err
 	}

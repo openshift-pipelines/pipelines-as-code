@@ -20,7 +20,7 @@ func (k *KinterfaceTest) GetNamespace(ns string) error {
 	return nil
 }
 
-func (k *KinterfaceTest) TektonCliPRDescribe(prName, namespace string) (string, error) {
+func (k *KinterfaceTest) TektonCliPRDescribe(namespace, prName string) (string, error) {
 	return k.prDescribe, nil
 }
 
