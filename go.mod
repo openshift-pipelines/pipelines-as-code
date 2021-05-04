@@ -16,7 +16,7 @@ require (
 	github.com/tektoncd/pipeline v0.23.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013
-	gotest.tools v2.2.0+incompatible
+	gotest.tools/v3 v3.0.2
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v0.19.7

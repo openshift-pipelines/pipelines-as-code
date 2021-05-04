@@ -12,7 +12,7 @@ import (
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
 )
 

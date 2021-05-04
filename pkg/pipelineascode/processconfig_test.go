@@ -13,7 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 
 	// hubtest "github.com/tektoncd/hub/api/pkg/cli/test"
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 )
 
 func TestProcessTektonYamlNamespace(t *testing.T) {
