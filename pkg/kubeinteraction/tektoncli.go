@@ -54,7 +54,7 @@ func (s SidestepTektonCliParams) Time() clockwork.Clock {
 	return nil
 }
 
-func (k Interaction) TektonCliFollowLogs(prName, namespace string) (string, error) {
+func (k Interaction) TektonCliFollowLogs(namespace, prName string) (string, error) {
 	var outputBuffer bytes.Buffer
 
 	k.TektonCliLogsOptions.Params.SetNamespace(namespace)

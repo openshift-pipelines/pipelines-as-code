@@ -30,16 +30,21 @@ func getOpenshiftConsole(cs *cli.Clients, ns, pr string) (string, error) {
 	spec, ok := route.Object["spec"].(map[string]interface{})
 	if !ok {
 		// this condition is satisfied if there's no metadata at all in the provided CR
-		return "", fmt.Errorf("couldn't find \"spec\" in the OpenShift Console route")
+		return "", fmt.Errorf("couldn't find spec in the OpenShift Console route")
 	}
 
 	host, ok := spec["host"].(string)
 	if !ok {
 		// this condition is satisfied if there's no metadata at all in the provided CR
-		return "", fmt.Errorf("couldn't find \"spec.host\" in the OpenShift Console route")
+		return "", fmt.Errorf("couldn't find spec.host in the OpenShift Console route")
 	}
 
-	return fmt.Sprintf(openShiftPipelineViewURL, host, ns, pr), err
+	// If we don't have a target ns/pr just print it.
+	if ns == "" && pr == "" {
+		return fmt.Sprintf("https://%s", host), nil
+	}
+
+	return fmt.Sprintf(openShiftPipelineViewURL, host, ns, pr), nil
 }
 
 // GetConsoleURL Get a Console URL, OpenShift Console or Tekton Dashboard.

@@ -27,6 +27,7 @@ type RunInfo struct {
 	URL           string
 	Branch        string
 	CheckRunID    *int64
+	WebConsoleURL string
 }
 
 func (r RunInfo) Check() error {
@@ -191,18 +192,18 @@ func (v GithubVCS) GetObject(sha string, runinfo *RunInfo) ([]byte, error) {
 func (v GithubVCS) CreateCheckRun(status string, runinfo *RunInfo) (*github.CheckRun, error) {
 	now := github.Timestamp{Time: time.Now()}
 	checkrunoption := github.CreateCheckRunOptions{
-		Name:    "Tekton Pipeline as Code CI",
-		HeadSHA: runinfo.SHA,
-		Status:  &status,
-		// DetailsURL: "http://todo", // TODO: OpenShift or Tekton Dashboard Target
-		StartedAt: &now,
+		Name:       "Tekton Pipeline as Code CI",
+		HeadSHA:    runinfo.SHA,
+		Status:     &status,
+		DetailsURL: &runinfo.WebConsoleURL,
+		StartedAt:  &now,
 	}
 
 	checkRun, _, err := v.Client.Checks.CreateCheckRun(v.Context, runinfo.Owner, runinfo.Repository, checkrunoption)
 	return checkRun, err
 }
 
-func (v GithubVCS) CreateStatus(runinfo *RunInfo, status, conclusion, text, detailURL string) (*github.CheckRun, error) {
+func (v GithubVCS) CreateStatus(runinfo *RunInfo, status, conclusion, text, detailsURL string) (*github.CheckRun, error) {
 	now := github.Timestamp{Time: time.Now()}
 
 	var summary, title string
@@ -236,8 +237,8 @@ func (v GithubVCS) CreateStatus(runinfo *RunInfo, status, conclusion, text, deta
 		Output:      checkRunOutput,
 	}
 
-	if detailURL != "" {
-		opts.DetailsURL = &detailURL
+	if detailsURL != "" {
+		opts.DetailsURL = &detailsURL
 	}
 
 	checkRun, _, err := v.Client.Checks.UpdateCheckRun(v.Context, runinfo.Owner, runinfo.Repository, *runinfo.CheckRunID, opts)

@@ -90,11 +90,14 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 		return err
 	}
 
+	// Get webconsole url as soon as possible to have a link to click there
+	runinfo.WebConsoleURL = kinteract.GetConsoleUI("", "")
+
 	err = pacpkg.Run(cs, kinteract, runinfo)
 	if err != nil && !strings.Contains(err.Error(), "403 Resource not accessible by integration") {
 		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "failure",
 			fmt.Sprintf("There was an issue validating the commit: %q", err),
-			"https://tenor.com/search/sad-cat-gifs")
+			runinfo.WebConsoleURL)
 	}
 	return err
 }

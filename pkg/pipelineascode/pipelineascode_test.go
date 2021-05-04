@@ -305,7 +305,12 @@ func TestRun(t *testing.T) {
 			created := github.CreateCheckRunOptions{}
 			err := json.Unmarshal(body, &created)
 			assert.NilError(t, err)
-			assert.Equal(t, created.GetConclusion(), "neutral")
+
+			// We created multiple status but the last one should be completed.
+			// TODO: we could maybe refine this test
+			if created.GetStatus() == "completed" {
+				assert.Equal(t, created.GetConclusion(), "neutral")
+			}
 		})
 
 	gcvs := webvcs.GithubVCS{
@@ -357,8 +362,5 @@ func TestRun(t *testing.T) {
 	got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(
 		ctx, "test-run", metav1.GetOptions{})
 	assert.NilError(t, err)
-	// TODO: we could not fake creation, so it's empty
-	// but we can test that the last one doesn't match to what we had
-	// set at first so it got properly updated
 	assert.Assert(t, got.Status[len(got.Status)-1].PipelineRunName != "pipelinerun1")
 }
