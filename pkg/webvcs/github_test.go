@@ -2,9 +2,12 @@ package webvcs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -327,20 +330,6 @@ func TestGithubVCS_CreateCheckRun(t *testing.T) {
 	assert.Equal(t, cr.GetID(), int64(555))
 }
 
-func TestCreateStatus(t *testing.T) {
-	gcvs, teardown := setupFakesURLS()
-	var checkrunid = int64(2026)
-	defer teardown()
-	runinfo := &RunInfo{
-		Owner:      "check",
-		Repository: "run",
-		CheckRunID: &checkrunid,
-	}
-	cr, err := gcvs.CreateStatus(runinfo, "completed", "success", "Yay", "https://foo/bar")
-	assert.NilError(t, err)
-	assert.Equal(t, cr.GetID(), int64(666))
-}
-
 func TestRunInfoCheck(t *testing.T) {
 	type fields struct {
 		Owner         string
@@ -387,6 +376,147 @@ func TestRunInfoCheck(t *testing.T) {
 			}
 			if err := r.Check(); (err != nil) != tt.wantErr {
 				t.Errorf("RunInfo.Check() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCreateStatus(t *testing.T) {
+	gcvs, teardown := setupFakesURLS()
+	var checkrunid = int64(2026)
+	defer teardown()
+	runinfo := &RunInfo{
+		Owner:      "check",
+		Repository: "run",
+		CheckRunID: &checkrunid,
+	}
+	cr, err := gcvs.CreateStatus(runinfo, "completed", "success", "Yay", "https://foo/bar")
+	assert.NilError(t, err)
+	assert.Equal(t, cr.GetID(), int64(666))
+}
+
+func TestGithubVCS_CreateStatus(t *testing.T) {
+	var checkrunid = int64(2026)
+	var resultid = int64(666)
+	var runinfo = &RunInfo{Owner: "check", Repository: "run", CheckRunID: &checkrunid}
+
+	type args struct {
+		runinfo            *RunInfo
+		status             string
+		conclusion         string
+		text               string
+		detailsURL         string
+		titleSubstr        string
+		nilCompletedAtDate bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *github.CheckRun
+		wantErr bool
+	}{
+		{
+			name: "success",
+			args: args{
+				runinfo:     runinfo,
+				status:      "completed",
+				conclusion:  "success",
+				text:        "Yay",
+				detailsURL:  "https://cireport.com",
+				titleSubstr: "Success",
+			},
+			want:    &github.CheckRun{ID: &resultid},
+			wantErr: false,
+		},
+		{
+			name: "in_progress",
+			args: args{
+				runinfo:            runinfo,
+				status:             "in_progress",
+				conclusion:         "",
+				text:               "Yay",
+				detailsURL:         "https://cireport.com",
+				nilCompletedAtDate: true,
+			},
+			want:    &github.CheckRun{ID: &resultid},
+			wantErr: false,
+		},
+		{
+			name: "failure",
+			args: args{
+				runinfo:     runinfo,
+				status:      "completed",
+				conclusion:  "failure",
+				text:        "Nay",
+				detailsURL:  "https://cireport.com",
+				titleSubstr: "Failed",
+			},
+			want:    &github.CheckRun{ID: &resultid},
+			wantErr: false,
+		},
+		{
+			name: "skipped",
+			args: args{
+				runinfo:     runinfo,
+				status:      "completed",
+				conclusion:  "skipped",
+				text:        "Skipit",
+				detailsURL:  "https://cireport.com",
+				titleSubstr: "Skipped",
+			},
+			want:    &github.CheckRun{ID: &resultid},
+			wantErr: false,
+		},
+		{
+			name: "unknown",
+			args: args{
+				runinfo:     runinfo,
+				status:      "completed",
+				conclusion:  "neutral",
+				text:        "Je sais pas ce qui se passe wesh",
+				detailsURL:  "https://cireport.com",
+				titleSubstr: "Unknown",
+			},
+			want:    &github.CheckRun{ID: &resultid},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, _, teardown := testhelper.SetupGH()
+			defer teardown()
+
+			ctx := context.Background()
+			gcvs := GithubVCS{
+				Client:  fakeclient,
+				Context: ctx,
+			}
+			mux.HandleFunc(fmt.Sprintf("/repos/check/run/check-runs/%d", checkrunid), func(rw http.ResponseWriter, r *http.Request) {
+				bit, _ := ioutil.ReadAll(r.Body)
+				checkRun := &github.CheckRun{}
+				err := json.Unmarshal(bit, checkRun)
+				assert.NilError(t, err)
+
+				if tt.args.nilCompletedAtDate {
+					// I guess that's the way you check for an undefined year,
+					// or maybe i don't understand fully how go works😅
+					assert.Assert(t, checkRun.GetCompletedAt().Year() == 0001)
+				}
+				assert.Equal(t, checkRun.GetStatus(), tt.args.status)
+				assert.Equal(t, checkRun.GetConclusion(), tt.args.conclusion)
+				assert.Equal(t, checkRun.Output.GetText(), tt.args.text)
+				assert.Equal(t, checkRun.GetDetailsURL(), tt.args.detailsURL)
+				assert.Assert(t, strings.Contains(checkRun.Output.GetTitle(), tt.args.titleSubstr))
+				fmt.Fprintf(rw, `{"id": %d}`, resultid)
+			})
+
+			got, err := gcvs.CreateStatus(tt.args.runinfo, tt.args.status, tt.args.conclusion, tt.args.text, tt.args.detailsURL)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GithubVCS.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GithubVCS.CreateStatus() = %v, want %v", got, tt.want)
 			}
 		})
 	}

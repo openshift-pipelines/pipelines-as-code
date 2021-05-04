@@ -100,7 +100,6 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	if err != nil {
 		return err
 	}
-
 	_, err = cs.GithubClient.CreateStatus(runinfo, "in_progress", "",
 		fmt.Sprintf("Creating pipelinerun in namespace <b>%s</b>", repo.Spec.Namespace),
 		"https://tenor.com/search/sad-cat-gifs")
