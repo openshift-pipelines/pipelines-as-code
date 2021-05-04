@@ -13,7 +13,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v34/github"
 	testhelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test"
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 )
 
 func TestPayLoadFix(t *testing.T) {

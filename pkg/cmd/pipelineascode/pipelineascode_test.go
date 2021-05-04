@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	testhelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 )
 
 func TestGetInfo(t *testing.T) {
