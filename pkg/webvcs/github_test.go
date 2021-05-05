@@ -13,17 +13,51 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v34/github"
 	testhelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 )
+
+func getLogger() (*zap.SugaredLogger, *zapobserver.ObservedLogs) {
+	observer, logobserver := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+	return logger, logobserver
+}
 
 func TestPayLoadFix(t *testing.T) {
 	b, err := ioutil.ReadFile("testdata/pull_request_with_newlines.json")
 	assert.NilError(t, err)
 	gvcs := NewGithubVCS("none")
-	_, err = gvcs.ParsePayload(payloadFix(string(b)))
+	logger, _ := getLogger()
+	_, err = gvcs.ParsePayload(logger, payloadFix(string(b)))
 	// would bomb out on "assertion failed: error is not nil: invalid character
 	// '\n' in string literal" if we don't payloadfix
 	assert.NilError(t, err)
+}
+
+func TestParsePayloadRerequest(t *testing.T) {
+	repoOwner := "openshift"
+	repoName := "pipelines"
+	prNumber := "123"
+	checkrunEvent := fmt.Sprintf(`{"action": "rerequested", 
+	"check_run": {"check_suite": {"pull_requests": [{"number": %s}]}}, 
+	"repository": {"name": "%s", "owner": {"login": "%s"}}}`, prNumber, repoName, repoOwner)
+	fakeclient, mux, _, teardown := testhelper.SetupGH()
+	defer teardown()
+	mux.HandleFunc("/repos/"+repoOwner+"/"+repoName+"/pulls/"+prNumber, func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(rw, `{"repo": {"name": "%s", "owner": {"login": "%s"}}}`, repoName, repoOwner)
+	})
+	gvcs := GithubVCS{
+		Client:  fakeclient,
+		Context: context.Background(),
+	}
+	logger, observer := getLogger()
+	runinfo, err := gvcs.ParsePayload(logger, checkrunEvent)
+	assert.NilError(t, err)
+	assert.Equal(t, repoOwner, runinfo.Owner)
+	assert.Equal(t, repoName, runinfo.Repository)
+	assert.Equal(t, repoOwner, runinfo.Owner)
+	assert.Assert(t, strings.Contains(observer.TakeAll()[0].Message, "Recheck of PR"))
 }
 
 func TestParsePayload(t *testing.T) {
@@ -31,18 +65,18 @@ func TestParsePayload(t *testing.T) {
 	assert.NilError(t, err)
 
 	gvcs := NewGithubVCS("none")
+	logger, _ := getLogger()
 
-	runinfo, err := gvcs.ParsePayload(string(b))
+	runinfo, err := gvcs.ParsePayload(logger, string(b))
 	assert.NilError(t, err)
 	assert.Assert(t, runinfo.Branch == "master")
 	assert.Assert(t, runinfo.Owner == "chmouel")
 	assert.Assert(t, runinfo.Repository == "scratchpad")
 	assert.Assert(t, runinfo.URL == "https://github.com/chmouel/scratchpad")
-
-	_, err = gvcs.ParsePayload("hello moto")
+	_, err = gvcs.ParsePayload(logger, "hello moto")
 	assert.ErrorContains(t, err, "invalid character")
 
-	_, err = gvcs.ParsePayload("{\"hello\": \"moto\"}")
+	_, err = gvcs.ParsePayload(logger, "{\"hello\": \"moto\"}")
 	assert.Error(t, err, "Cannot parse payload as PR")
 }
 

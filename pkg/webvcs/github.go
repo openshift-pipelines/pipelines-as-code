@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v34/github"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
 
@@ -73,12 +74,33 @@ func payloadFix(payload string) string {
 	return replacer.Replace(payload)
 }
 
-func (v GithubVCS) ParsePayload(payload string) (*RunInfo, error) {
+func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, payload string) (*RunInfo, error) {
 	payload = payloadFix(payload)
 	prMap := &github.PullRequestEvent{}
 	err := json.Unmarshal([]byte(payload), prMap)
 	if err != nil {
 		return &RunInfo{}, err
+	}
+
+	checkrunEvent := new(github.CheckRunEvent)
+	err = json.Unmarshal([]byte(payload), &checkrunEvent)
+	if err != nil {
+		return &RunInfo{}, err
+	}
+
+	// If the user  has requested a recheck then fetch the pr link and use that.
+	if checkrunEvent.GetAction() == "rerequested" {
+		owner := checkrunEvent.GetRepo().Owner.GetLogin()
+		repo := checkrunEvent.GetRepo().GetName()
+		prNumber := checkrunEvent.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
+		log.Info("Recheck of PR %s/%s#%s has been requested", owner, repo, prNumber)
+		// There should be only one pull_request, I am not quite sure how a
+		// checksuite with multiple PR can be done 🤔
+		pr, _, err := v.Client.PullRequests.Get(context.Background(), owner, repo, prNumber)
+		if err != nil {
+			return &RunInfo{}, err
+		}
+		prMap.PullRequest = pr
 	}
 
 	if prMap.PullRequest == nil {
