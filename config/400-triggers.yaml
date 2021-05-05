@@ -22,7 +22,7 @@ spec:
               - pull_request
               - issue_comment
         - cel:
-            filter: "body.action in ['created', 'opened', 'synchronize'] && 'installation' in body"
+            filter: "body.action in ['created', 'rerequested', 'opened', 'synchronize'] && 'installation' in body"
       template:
         ref: openshift-pipelines-ascode-template
 
