@@ -15,16 +15,15 @@
 # This file is automagically synced here from github.com/knative-sandbox/.github
 # repo by knobots: https://github.com/knative-sandbox/knobots and will be overwritten.
 
-name: Coverage
+name: Artifacts Upload
 
 on:
   push:
-    branches: ['main', 'master']
+    branches: ["main", "master"]
 
 jobs:
-
   test:
-    name: Unit Tests
+    name: Artifacts Upload
     strategy:
       matrix:
         go-version: [1.15.x]
@@ -33,7 +32,6 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-
       - name: Set up Go ${{ matrix.go-version }}
         uses: actions/setup-go@v2
         with:
@@ -53,9 +51,16 @@ jobs:
         name: Produce Go Coverage
         run: echo 'COVER_OPTS=-coverprofile=coverage.txt -covermode=atomic' >> $GITHUB_ENV
 
+      - name: generate-release-yaml
+        run: ./hack/generate-releaseyaml.sh > release.yaml
+
+      - name: Upload release.yaml
+        uses: wei/curl@v1
+        with:
+          args: -F 'path=/pipelines-as-code/release-nightly.yaml' -F 'file=@release.yaml' -u "${{ secrets.UPLOADER_CREDS }}" -X POST https://uploader-cron.svc.ci.openshift.org/upload
+
       - name: Test
         run: go test -race $COVER_OPTS ./...
-
       - if: steps.codecov-enabled.outputs.files_exists == 'true'
         name: Codecov
         uses: codecov/codecov-action@v1
