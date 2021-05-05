@@ -2,6 +2,7 @@ package pipelineascode
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -54,6 +55,7 @@ func Command(p cli.Params) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.RunInfo.URL, "webhook-url", "", os.Getenv("PAC_URL"), "URL of the repository to test")
 
 	cmd.Flags().StringVarP(&opts.Payload, "payload", "", os.Getenv("PAC_PAYLOAD"), "The payload from webhook")
+	cmd.Flags().StringVarP(&opts.PayloadFile, "payload-file", "", os.Getenv("PAC_PAYLOAD_FILE"), "A file which contains the webhook payload")
 	return cmd
 }
 
@@ -82,6 +84,19 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 	cs, err := p.Clients()
 	if err != nil {
 		return err
+	}
+
+	if opts.PayloadFile != "" {
+		_, err := os.Stat(opts.PayloadFile)
+		if err != nil {
+			return err
+		}
+
+		b, err := ioutil.ReadFile(opts.PayloadFile)
+		if err != nil {
+			return err
+		}
+		opts.Payload = string(b)
 	}
 
 	runinfo, err := getRunInfoFromArgsOrPayload(cs, opts.Payload, &opts.RunInfo)

@@ -20,8 +20,9 @@ const (
 )
 
 type Options struct {
-	Payload string
-	RunInfo webvcs.RunInfo
+	Payload     string
+	PayloadFile string
+	RunInfo     webvcs.RunInfo
 }
 
 func getRepoByCR(cs *cli.Clients, url, branch, eventType, forceNamespace string) (apipac.Repository, error) {
