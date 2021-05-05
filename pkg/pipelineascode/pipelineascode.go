@@ -179,14 +179,21 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		CompletionTime:  newPr.Status.CompletionTime,
 	}
 
-	// TODO: Reversed?
-	if len(repo.Status) >= maxPipelineRunStatusRun {
-		copy(repo.Status, repo.Status[len(repo.Status)-maxPipelineRunStatusRun+1:])
-		repo.Status = repo.Status[:maxPipelineRunStatusRun-1]
+	// TODO: Get another time the repo in case it was updated, there may be a
+	// locking problem we should solve here but we are talking miliseconds race.
+	lastrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Spec.Namespace).Get(ctx, repo.Name, v1.GetOptions{})
+	if err != nil {
+		return err
 	}
-	repo.Status = append(repo.Status, repoStatus)
-	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Namespace).Update(
-		ctx, &repo, v1.UpdateOptions{})
+
+	// TODO: Reversed?
+	if len(lastrepo.Status) >= maxPipelineRunStatusRun {
+		copy(lastrepo.Status, lastrepo.Status[len(lastrepo.Status)-maxPipelineRunStatusRun+1:])
+		lastrepo.Status = lastrepo.Status[:maxPipelineRunStatusRun-1]
+	}
+	lastrepo.Status = append(lastrepo.Status, repoStatus)
+	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
+		ctx, lastrepo, v1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
