@@ -30,7 +30,6 @@ func getRepoByCR(cs *cli.Clients, url, branch, eventType, forceNamespace string)
 
 	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
 		context.Background(), metav1.ListOptions{})
-
 	if err != nil {
 		return repository, err
 	}
@@ -60,7 +59,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	var err error
 	var maintekton TektonYamlConfig
 
-	var ctx = context.Background()
+	ctx := context.Background()
 	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
 	if err != nil {
 		return err
@@ -108,7 +107,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		return err
 	}
 
-	var yamlConfig = TektonYamlConfig{}
+	yamlConfig := TektonYamlConfig{}
 	for _, file := range objects {
 		if file.GetName() == tektonConfigurationFile {
 			data, err := cs.GithubClient.GetObject(file.GetSHA(), runinfo)

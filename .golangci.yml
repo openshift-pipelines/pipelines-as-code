@@ -9,10 +9,11 @@ linters-settings:
 linters:
   enable:
   - errcheck
-  - gofmt
+  - gofumpt
   - goimports
   - gosec
   - gocritic
   - golint
   - misspell
   - deadcode
+  - gomnd

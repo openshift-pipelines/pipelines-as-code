@@ -17,7 +17,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-
 	setup()
 	ret := m.Run()
 	os.Exit(ret)
@@ -53,7 +52,7 @@ func TestPipelineRunPipelineTask(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "first-step")
 
-	//TODO: we should do templates substitions for those values here?
+	// TODO: we should do templates substitions for those values here?
 	assert.Equal(t, resolved.Spec.Params[0].Value.StringVal, "{{value}}")
 }
 

@@ -60,8 +60,8 @@ func NewGithubVCS(token string) GithubVCS {
 // We got a bunch of \r\n or \n and others from triggers/github, so let just
 // workaround it. Originally from https://stackoverflow.com/a/52600147
 func payloadFix(payload string) string {
-	var replacement = " "
-	var replacer = strings.NewReplacer(
+	replacement := " "
+	replacer := strings.NewReplacer(
 		"\r\n", replacement,
 		"\r", replacement,
 		"\n", replacement,
@@ -146,7 +146,6 @@ func (v GithubVCS) GetFileInsideRepo(path string, branch bool, runinfo *RunInfo)
 
 	fp, objects, resp, err := v.Client.Repositories.GetContents(v.Context, runinfo.Owner,
 		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: ref})
-
 	if err != nil {
 		return "", err
 	}
@@ -168,7 +167,7 @@ func (v GithubVCS) GetFileInsideRepo(path string, branch bool, runinfo *RunInfo)
 // GetFileFromDefaultBranch will get a file directly from the Default Branch as
 // configured in runinfo which is directly set in webhook by Github
 func (v GithubVCS) GetFileFromDefaultBranch(path string, runinfo *RunInfo) (string, error) {
-	var runInfoOnMain = &RunInfo{}
+	runInfoOnMain := &RunInfo{}
 	runinfo.DeepCopyInto(runInfoOnMain)
 	runInfoOnMain.Branch = runInfoOnMain.DefaultBranch
 

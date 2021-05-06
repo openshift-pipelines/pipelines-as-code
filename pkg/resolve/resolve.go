@@ -20,7 +20,7 @@ type Types struct {
 }
 
 func readTypes(cs *cli.Clients, data []byte) (Types, error) {
-	var types = Types{}
+	types := Types{}
 	decoder := scheme.Codecs.UniversalDeserializer()
 
 	for _, doc := range strings.Split(strings.Trim(string(data), "-"), "---") {

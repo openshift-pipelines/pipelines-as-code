@@ -46,7 +46,6 @@ func (p *PacParams) dynamicClient(config *rest.Config) (dynamic.Interface, error
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create dynamic client from config")
-
 	}
 	return dynamicClient, err
 }
@@ -104,14 +103,12 @@ func (p *PacParams) githubClient(config *rest.Config) (webvcs.GithubVCS, error) 
 
 // Only returns kube client, not tekton client
 func (p *PacParams) KubeClient() (k8s.Interface, error) {
-
 	config, err := p.config()
 	if err != nil {
 		return nil, err
 	}
 
 	kube, err := p.kubeClient(config)
-
 	if err != nil {
 		return nil, err
 	}

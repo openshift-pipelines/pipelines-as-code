@@ -169,10 +169,10 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeclient, mux, _, teardown := testhelper.SetupGH()
 	defer teardown()
-	var defaultBranch = "default"
-	var forcedNamespace = "laotronamspace"
-	var installedNamespace = "nomespace"
-	var runinfo = &webvcs.RunInfo{
+	defaultBranch := "default"
+	forcedNamespace := "laotronamspace"
+	installedNamespace := "nomespace"
+	runinfo := &webvcs.RunInfo{
 		SHA:           "principale",
 		Owner:         "chmouel",
 		Repository:    "repo",
@@ -326,13 +326,14 @@ func TestRun(t *testing.T) {
 				},
 			},
 		},
-		Repositories: []*v1alpha1.Repository{newRepo(
-			"test-run",
-			runinfo.URL,
-			runinfo.Branch,
-			"pull_request",
-			"namespace",
-			"namespace"),
+		Repositories: []*v1alpha1.Repository{
+			newRepo(
+				"test-run",
+				runinfo.URL,
+				runinfo.Branch,
+				"pull_request",
+				"namespace",
+				"namespace"),
 		},
 	}
 	stdata, _ := test.SeedTestData(t, ctx, repo)

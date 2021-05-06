@@ -62,7 +62,7 @@ func processTektonYaml(cs *cli.Clients, runinfo *webvcs.RunInfo, data string) (T
 			tyConfig.RemoteTasks += addTaskYamlDocuments(string(data))
 		default:
 			var version string
-			var taskName = task
+			taskName := task
 			if strings.Contains(task, ":") {
 				split := strings.Split(task, ":")
 				version = split[len(split)-1]

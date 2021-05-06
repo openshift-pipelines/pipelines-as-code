@@ -14,7 +14,7 @@ import (
 )
 
 func Command(p cli.Params) *cobra.Command {
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "resolve",
 		Short: "Resolve a bunch of yaml file in a single PipelineRun",
 		RunE: func(cmd *cobra.Command, args []string) error {

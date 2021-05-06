@@ -20,7 +20,7 @@ const (
 
 func Command(p cli.Params) *cobra.Command {
 	opts := &pacpkg.Options{}
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run pipelines as code",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
