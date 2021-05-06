@@ -21,3 +21,8 @@ linters:
   - gosimple
   - govet
   - ifshort
+  - importas
+  - makezero
+  - nakedret
+  - predeclared
+  - revive

@@ -95,7 +95,7 @@ func TestFilterByGood(t *testing.T) {
 			newRepo("test-good", url, branch, eventType, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(t, ctx, d)
+	cs, _ := test.SeedTestData(ctx, t, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	repo, err := getRepoByCR(client, url, branch, eventType, "")
 	assert.NilError(t, err)
@@ -116,7 +116,7 @@ func TestFilterByNotMatch(t *testing.T) {
 			newRepo("test-notmatch", url, branch, eventType, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(t, ctx, d)
+	cs, _ := test.SeedTestData(ctx, t, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	repo, err := getRepoByCR(client, otherurl, branch, eventType, "")
 	assert.NilError(t, err)
@@ -137,7 +137,7 @@ func TestFilterByNotInItsNamespace(t *testing.T) {
 			newRepo(testname, url, branch, eventType, installNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(t, ctx, d)
+	cs, _ := test.SeedTestData(ctx, t, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	repo, err := getRepoByCR(client, url, branch, eventType, "")
 	assert.ErrorContains(t, err, fmt.Sprintf("Repo CR %s matches but belongs to", testname))
@@ -159,7 +159,7 @@ func TestFilterForceNamespace(t *testing.T) {
 			newRepo(testname, url, branch, eventType, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(t, ctx, d)
+	cs, _ := test.SeedTestData(ctx, t, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	_, err := getRepoByCR(client, url, branch, eventType, forcedNamespace)
 	assert.ErrorContains(t, err, "as configured from tekton.yaml on the main branch")
@@ -208,7 +208,7 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 			newRepo("repo", runinfo.URL, runinfo.Branch, "pull_request", installedNamespace, installedNamespace),
 		},
 	}
-	stdata, _ := test.SeedTestData(t, ctx, datas)
+	stdata, _ := test.SeedTestData(ctx, t, datas)
 	cs := &cli.Clients{
 		GithubClient:   gcvs,
 		PipelineAsCode: stdata.PipelineAsCode,
@@ -336,7 +336,7 @@ func TestRun(t *testing.T) {
 				"namespace"),
 		},
 	}
-	stdata, _ := test.SeedTestData(t, ctx, repo)
+	stdata, _ := test.SeedTestData(ctx, t, repo)
 
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
