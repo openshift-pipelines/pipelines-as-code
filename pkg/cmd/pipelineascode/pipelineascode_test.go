@@ -70,13 +70,13 @@ func TestGetInfo(t *testing.T) {
 			desc:    "Good json but bad payload",
 			runinfo: webvcs.RunInfo{},
 			payload: "{}",
-			errmsg:  "Cannot parse payload",
+			errmsg:  "cannot parse payload",
 		},
 		{
 			desc:    "No payload no runcheck",
 			runinfo: webvcs.RunInfo{},
 			payload: "",
-			errmsg:  "No payload or not enough params",
+			errmsg:  "no payload or not enough params",
 		},
 		{
 			desc: "Bad runinfo with missing infos",
@@ -84,7 +84,7 @@ func TestGetInfo(t *testing.T) {
 				Owner: "foo",
 			},
 			payload: "",
-			errmsg:  "No payload or not enough params",
+			errmsg:  "no payload or not enough params",
 		},
 		{
 			desc:    "Missing values payload",

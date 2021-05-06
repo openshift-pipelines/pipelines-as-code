@@ -18,8 +18,7 @@ func (k Interaction) GetConsoleUI(ns, pr string) (string, error) {
 
 func NewKubernetesInteraction(c *cli.Clients) (*Interaction, error) {
 	cliparams := &cliinterface.TektonParams{}
-	_, err := cliparams.Clients()
-	if err != nil {
+	if _, err := cliparams.Clients(); err != nil {
 		return nil, err
 	}
 	cliparams.SetNoColour(true)

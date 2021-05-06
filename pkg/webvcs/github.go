@@ -37,7 +37,7 @@ func (r RunInfo) Check() error {
 		r.Owner != "" && r.URL != "" {
 		return nil
 	}
-	return fmt.Errorf("Missing values in runInfo")
+	return fmt.Errorf("missing values in runInfo")
 }
 
 // DeepCopyInto deep copy runinfo in another instance
@@ -60,8 +60,8 @@ func NewGithubVCS(token string) GithubVCS {
 // We got a bunch of \r\n or \n and others from triggers/github, so let just
 // workaround it. Originally from https://stackoverflow.com/a/52600147
 func payloadFix(payload string) string {
-	var replacement = " "
-	var replacer = strings.NewReplacer(
+	replacement := " "
+	replacer := strings.NewReplacer(
 		"\r\n", replacement,
 		"\r", replacement,
 		"\n", replacement,
@@ -104,7 +104,7 @@ func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, payload string) (*RunInf
 	}
 
 	if prMap.PullRequest == nil {
-		return &RunInfo{}, errors.New("Cannot parse payload as PR")
+		return &RunInfo{}, errors.New("cannot parse payload as PR")
 	}
 
 	return &RunInfo{
@@ -123,7 +123,7 @@ func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.Reposi
 		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: runinfo.SHA})
 
 	if fp != nil {
-		return nil, fmt.Errorf("The object %s is a file instead of a directory", path)
+		return nil, fmt.Errorf("the object %s is a file instead of a directory", path)
 	}
 	if resp.Response.StatusCode == http.StatusNotFound {
 		return nil, nil
@@ -146,15 +146,14 @@ func (v GithubVCS) GetFileInsideRepo(path string, branch bool, runinfo *RunInfo)
 
 	fp, objects, resp, err := v.Client.Repositories.GetContents(v.Context, runinfo.Owner,
 		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: ref})
-
 	if err != nil {
 		return "", err
 	}
 	if objects != nil {
-		return "", fmt.Errorf("Referenced file inside the Github Repository %s is a directory", path)
+		return "", fmt.Errorf("referenced file inside the Github Repository %s is a directory", path)
 	}
 	if resp.Response.StatusCode == http.StatusNotFound {
-		return "", fmt.Errorf("Cannot find %s in this repository", path)
+		return "", fmt.Errorf("cannot find %s in this repository", path)
 	}
 
 	getobj, err := v.GetObject(fp.GetSHA(), runinfo)
@@ -168,13 +167,13 @@ func (v GithubVCS) GetFileInsideRepo(path string, branch bool, runinfo *RunInfo)
 // GetFileFromDefaultBranch will get a file directly from the Default Branch as
 // configured in runinfo which is directly set in webhook by Github
 func (v GithubVCS) GetFileFromDefaultBranch(path string, runinfo *RunInfo) (string, error) {
-	var runInfoOnMain = &RunInfo{}
+	runInfoOnMain := &RunInfo{}
 	runinfo.DeepCopyInto(runInfoOnMain)
 	runInfoOnMain.Branch = runInfoOnMain.DefaultBranch
 
 	tektonyaml, err := v.GetFileInsideRepo(path, true, runInfoOnMain)
 	if err != nil {
-		return "", fmt.Errorf("Cannot find %s inside the \"%s\" branch: %s", path, runInfoOnMain.Branch, err)
+		return "", fmt.Errorf("cannot find %s inside the \"%s\" branch: %s", path, runInfoOnMain.Branch, err)
 	}
 	return tektonyaml, err
 }

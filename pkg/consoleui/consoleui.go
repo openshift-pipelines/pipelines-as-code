@@ -23,7 +23,6 @@ const (
 func getOpenshiftConsole(cs *cli.Clients, ns, pr string) (string, error) {
 	gvr := schema.GroupVersionResource{Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource}
 	route, err := cs.Dynamic.Resource(gvr).Namespace(openShiftConsoleNS).Get(context.Background(), openShiftConsoleRouteName, metav1.GetOptions{})
-
 	if err != nil {
 		return "", err
 	}

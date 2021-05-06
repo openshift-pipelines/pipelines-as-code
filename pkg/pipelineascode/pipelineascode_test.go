@@ -15,7 +15,6 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test"
 	testhelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"go.uber.org/zap"
@@ -27,7 +26,7 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func newRepo(name, url, branch, eventType, installNamespace, namespace string) *v1alpha1.Repository {
+func newRepo(name, url, branch, installNamespace, namespace string) *v1alpha1.Repository {
 	cw := clockwork.NewFakeClock()
 	return &v1alpha1.Repository{
 		TypeMeta: metav1.TypeMeta{},
@@ -38,7 +37,6 @@ func newRepo(name, url, branch, eventType, installNamespace, namespace string) *
 		Spec: v1alpha1.RepositorySpec{
 			Namespace: namespace,
 			URL:       url,
-			EventType: eventType,
 			Branch:    branch,
 		},
 		Status: []v1alpha1.RepositoryRunStatus{
@@ -86,18 +84,17 @@ func TestFilterByGood(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 
 	// Good and matching
-	eventType := "pull_request"
 	branch := "mainone"
 	targetNamespace := "namespace"
 	url := "https://psg.fr"
-	d := test.Data{
+	d := testhelper.Data{
 		Repositories: []*v1alpha1.Repository{
-			newRepo("test-good", url, branch, eventType, targetNamespace, targetNamespace),
+			newRepo("test-good", url, branch, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(t, ctx, d)
+	cs, _ := testhelper.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCR(client, url, branch, eventType, "")
+	repo, err := getRepoByCR(client, url, branch, "")
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Spec.Namespace, targetNamespace)
 }
@@ -106,19 +103,18 @@ func TestFilterByNotMatch(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 
 	// Not matching
-	eventType := "pull_request"
 	branch := "mainone"
 	targetNamespace := "namespace"
 	url := "https://psg.com"
 	otherurl := "https://marseille.com"
-	d := test.Data{
+	d := testhelper.Data{
 		Repositories: []*v1alpha1.Repository{
-			newRepo("test-notmatch", url, branch, eventType, targetNamespace, targetNamespace),
+			newRepo("test-notmatch", url, branch, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(t, ctx, d)
+	cs, _ := testhelper.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCR(client, otherurl, branch, eventType, "")
+	repo, err := getRepoByCR(client, otherurl, branch, "")
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Spec.Namespace, "")
 }
@@ -127,20 +123,19 @@ func TestFilterByNotInItsNamespace(t *testing.T) {
 	// The CR should belong to the namespace it target
 	ctx, _ := rtesting.SetupFakeContext(t)
 	testname := "test-not-in-its-namespace"
-	eventType := "pull_request"
 	branch := "mainone"
 	targetNamespace := "namespace"
 	installNamespace := "olympiquelyon"
 	url := "https://psg.fr"
-	d := test.Data{
+	d := testhelper.Data{
 		Repositories: []*v1alpha1.Repository{
-			newRepo(testname, url, branch, eventType, installNamespace, targetNamespace),
+			newRepo(testname, url, branch, installNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(t, ctx, d)
+	cs, _ := testhelper.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCR(client, url, branch, eventType, "")
-	assert.ErrorContains(t, err, fmt.Sprintf("Repo CR %s matches but belongs to", testname))
+	repo, err := getRepoByCR(client, url, branch, "")
+	assert.ErrorContains(t, err, fmt.Sprintf("repo CR %s matches but belongs to", testname))
 	assert.Equal(t, repo.Spec.Namespace, "")
 }
 
@@ -148,20 +143,19 @@ func TestFilterForceNamespace(t *testing.T) {
 	// The CR should belong to the namespace it target
 	ctx, _ := rtesting.SetupFakeContext(t)
 	testname := "test-not-in-its-namespace"
-	eventType := "pull_request"
 	branch := "mainone"
 	targetNamespace := "namespace"
 	forcedNamespace := "asmonaco"
 
 	url := "https://psg.fr"
-	d := test.Data{
+	d := testhelper.Data{
 		Repositories: []*v1alpha1.Repository{
-			newRepo(testname, url, branch, eventType, targetNamespace, targetNamespace),
+			newRepo(testname, url, branch, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(t, ctx, d)
+	cs, _ := testhelper.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	_, err := getRepoByCR(client, url, branch, eventType, forcedNamespace)
+	_, err := getRepoByCR(client, url, branch, forcedNamespace)
 	assert.ErrorContains(t, err, "as configured from tekton.yaml on the main branch")
 }
 
@@ -169,10 +163,10 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeclient, mux, _, teardown := testhelper.SetupGH()
 	defer teardown()
-	var defaultBranch = "default"
-	var forcedNamespace = "laotronamspace"
-	var installedNamespace = "nomespace"
-	var runinfo = &webvcs.RunInfo{
+	defaultBranch := "default"
+	forcedNamespace := "laotronamspace"
+	installedNamespace := "nomespace"
+	runinfo := &webvcs.RunInfo{
 		SHA:           "principale",
 		Owner:         "chmouel",
 		Repository:    "repo",
@@ -203,22 +197,22 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 		Client:  fakeclient,
 		Context: ctx,
 	}
-	datas := test.Data{
+	datas := testhelper.Data{
 		Repositories: []*v1alpha1.Repository{
-			newRepo("repo", runinfo.URL, runinfo.Branch, "pull_request", installedNamespace, installedNamespace),
+			newRepo("repo", runinfo.URL, runinfo.Branch, installedNamespace, installedNamespace),
 		},
 	}
-	stdata, _ := test.SeedTestData(t, ctx, datas)
+	stdata, _ := testhelper.SeedTestData(t, ctx, datas)
 	cs := &cli.Clients{
 		GithubClient:   gcvs,
 		PipelineAsCode: stdata.PipelineAsCode,
 	}
-	k8int := test.KinterfaceTest{}
+	k8int := testhelper.KinterfaceTest{}
 
 	err := Run(cs, &k8int, runinfo)
 
 	assert.Error(t, err,
-		fmt.Sprintf("Repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
+		fmt.Sprintf("repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
 			forcedNamespace))
 }
 
@@ -318,7 +312,7 @@ func TestRun(t *testing.T) {
 		Context: ctx,
 	}
 
-	repo := test.Data{
+	repo := testhelper.Data{
 		Namespaces: []*corev1.Namespace{
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -326,16 +320,16 @@ func TestRun(t *testing.T) {
 				},
 			},
 		},
-		Repositories: []*v1alpha1.Repository{newRepo(
-			"test-run",
-			runinfo.URL,
-			runinfo.Branch,
-			"pull_request",
-			"namespace",
-			"namespace"),
+		Repositories: []*v1alpha1.Repository{
+			newRepo(
+				"test-run",
+				runinfo.URL,
+				runinfo.Branch,
+				"namespace",
+				"namespace"),
 		},
 	}
-	stdata, _ := test.SeedTestData(t, ctx, repo)
+	stdata, _ := testhelper.SeedTestData(t, ctx, repo)
 
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
@@ -352,7 +346,7 @@ func TestRun(t *testing.T) {
 		Dynamic:        dc,
 	}
 
-	k8int := test.KinterfaceTest{
+	k8int := testhelper.KinterfaceTest{
 		ConsoleURL: "https://console.url",
 	}
 

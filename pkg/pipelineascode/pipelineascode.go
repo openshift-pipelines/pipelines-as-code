@@ -10,7 +10,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -25,27 +24,26 @@ type Options struct {
 	RunInfo     webvcs.RunInfo
 }
 
-func getRepoByCR(cs *cli.Clients, url, branch, eventType, forceNamespace string) (apipac.Repository, error) {
+func getRepoByCR(cs *cli.Clients, url, branch, forceNamespace string) (apipac.Repository, error) {
 	var repository apipac.Repository
 
 	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
 		context.Background(), metav1.ListOptions{})
-
 	if err != nil {
 		return repository, err
 	}
 	for _, value := range repositories.Items {
-		if value.Spec.URL == url && value.Spec.Branch == branch && value.Spec.EventType == eventType {
+		if value.Spec.URL == url && value.Spec.Branch == branch {
 			if forceNamespace != "" && value.Namespace != forceNamespace {
 				return repository, fmt.Errorf(
-					"Repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
+					"repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
 					forceNamespace)
 			}
 
 			// Disallow attempts for hijacks. If the installed CR is not configured on the
 			// Namespace the Spec is targeting then disallow it.
 			if value.Namespace != value.Spec.Namespace {
-				return repository, fmt.Errorf("Repo CR %s matches but belongs to \"%s\" while it should be in \"%s\"",
+				return repository, fmt.Errorf("repo CR %s matches but belongs to \"%s\" while it should be in \"%s\"",
 					value.Name,
 					value.Namespace,
 					value.Spec.Namespace)
@@ -60,7 +58,6 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	var err error
 	var maintekton TektonYamlConfig
 
-	var ctx = context.Background()
 	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
 	if err != nil {
 		return err
@@ -73,7 +70,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 			return err
 		}
 	}
-	repo, err := getRepoByCR(cs, runinfo.URL, runinfo.Branch, "pull_request", maintekton.Namespace)
+	repo, err := getRepoByCR(cs, runinfo.URL, runinfo.Branch, maintekton.Namespace)
 	if err != nil {
 		return err
 	}
@@ -108,7 +105,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		return err
 	}
 
-	var yamlConfig = TektonYamlConfig{}
+	yamlConfig := TektonYamlConfig{}
 	for _, file := range objects {
 		if file.GetName() == tektonConfigurationFile {
 			data, err := cs.GithubClient.GetObject(file.GetSHA(), runinfo)
@@ -142,7 +139,9 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	if err != nil {
 		return err
 	}
-	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun[0], v1.CreateOptions{})
+
+	ctx := context.Background()
+	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun[0], metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -181,7 +180,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 
 	// TODO: Get another time the repo in case it was updated, there may be a
 	// locking problem we should solve here but we are talking miliseconds race.
-	lastrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Spec.Namespace).Get(ctx, repo.Name, v1.GetOptions{})
+	lastrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Spec.Namespace).Get(ctx, repo.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -193,7 +192,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	}
 	lastrepo.Status = append(lastrepo.Status, repoStatus)
 	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
-		ctx, lastrepo, v1.UpdateOptions{})
+		ctx, lastrepo, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -17,7 +16,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-
 	setup()
 	ret := m.Run()
 	os.Exit(ret)
@@ -31,10 +29,10 @@ func setup() {
 }
 
 // Not sure how to get testParams fixtures working
-func readTDfile(testname string, generateName bool) (*v1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
+func readTDfile(testname string, generateName bool) (*tektonv1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
 	data, err := ioutil.ReadFile("testdata/" + testname + ".yaml")
 	if err != nil {
-		return &v1beta1.PipelineRun{}, nil, err
+		return &tektonv1beta1.PipelineRun{}, nil, err
 	}
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
@@ -43,7 +41,7 @@ func readTDfile(testname string, generateName bool) (*v1beta1.PipelineRun, *zapo
 	}
 	resolved, err := resolve(cs, data, generateName)
 	if err != nil {
-		return &v1beta1.PipelineRun{}, nil, err
+		return &tektonv1beta1.PipelineRun{}, nil, err
 	}
 	return resolved[0], log, nil
 }
@@ -53,7 +51,7 @@ func TestPipelineRunPipelineTask(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "first-step")
 
-	//TODO: we should do templates substitions for those values here?
+	// TODO: we should do templates substitions for those values here?
 	assert.Equal(t, resolved.Spec.Params[0].Value.StringVal, "{{value}}")
 }
 
@@ -100,17 +98,17 @@ func TestNotKubernetesDocumentIgnore(t *testing.T) {
 
 func TestNoPipelineRuns(t *testing.T) {
 	_, _, err := readTDfile("no-pipelinerun", false)
-	assert.Error(t, err, "We need at least one pipelinerun to start with")
+	assert.Error(t, err, "we need at least one pipelinerun to start with")
 }
 
 func TestReferencedTaskNotInRepo(t *testing.T) {
 	_, _, err := readTDfile("referenced-task-not-in-repo", false)
-	assert.Error(t, err, "Cannot find task nothere in input")
+	assert.Error(t, err, "cannot find task nothere in input")
 }
 
 func TestReferencedPipelineNotInRepo(t *testing.T) {
 	_, _, err := readTDfile("referenced-pipeline-not-in-repo", false)
-	assert.Error(t, err, "Cannot find pipeline pipeline-test1 in input")
+	assert.Error(t, err, "cannot find pipeline pipeline-test1 in input")
 }
 
 func TestIgnoreDocSpace(t *testing.T) {

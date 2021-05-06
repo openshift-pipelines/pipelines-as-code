@@ -77,7 +77,7 @@ func TestParsePayload(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid character")
 
 	_, err = gvcs.ParsePayload(logger, "{\"hello\": \"moto\"}")
-	assert.Error(t, err, "Cannot parse payload as PR")
+	assert.Error(t, err, "cannot parse payload as PR")
 }
 
 func setupFakesURLS() (client GithubVCS, teardown func()) {
@@ -175,6 +175,7 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 
 	return gcvs, teardown
 }
+
 func TestGetFileInsideRepo(t *testing.T) {
 	gcvs, teardown := setupFakesURLS()
 	defer teardown()
@@ -295,7 +296,7 @@ func TestGetTektonDir(t *testing.T) {
 			name: "tektondirisafile",
 			args: args{
 				assertion: func(t *testing.T, got []*github.RepositoryContent, err error) {
-					assert.Error(t, err, "The object .tekton is a file instead of a directory")
+					assert.Error(t, err, "the object .tekton is a file instead of a directory")
 					assert.Assert(t, got == nil)
 				},
 				path: ".tekton",
@@ -417,7 +418,7 @@ func TestRunInfoCheck(t *testing.T) {
 
 func TestCreateStatus(t *testing.T) {
 	gcvs, teardown := setupFakesURLS()
-	var checkrunid = int64(2026)
+	checkrunid := int64(2026)
 	defer teardown()
 	runinfo := &RunInfo{
 		Owner:      "check",
@@ -430,9 +431,9 @@ func TestCreateStatus(t *testing.T) {
 }
 
 func TestGithubVCS_CreateStatus(t *testing.T) {
-	var checkrunid = int64(2026)
-	var resultid = int64(666)
-	var runinfo = &RunInfo{Owner: "check", Repository: "run", CheckRunID: &checkrunid}
+	checkrunid := int64(2026)
+	resultid := int64(666)
+	runinfo := &RunInfo{Owner: "check", Repository: "run", CheckRunID: &checkrunid}
 
 	type args struct {
 		runinfo            *RunInfo
@@ -534,7 +535,7 @@ func TestGithubVCS_CreateStatus(t *testing.T) {
 				if tt.args.nilCompletedAtDate {
 					// I guess that's the way you check for an undefined year,
 					// or maybe i don't understand fully how go works😅
-					assert.Assert(t, checkRun.GetCompletedAt().Year() == 0001)
+					assert.Assert(t, checkRun.GetCompletedAt().Year() == 0o001)
 				}
 				assert.Equal(t, checkRun.GetStatus(), tt.args.status)
 				assert.Equal(t, checkRun.GetConclusion(), tt.args.conclusion)

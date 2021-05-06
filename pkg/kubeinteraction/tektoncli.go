@@ -7,7 +7,6 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	cliinterface "github.com/tektoncd/cli/pkg/cli"
-	"github.com/tektoncd/cli/pkg/log"
 	clilog "github.com/tektoncd/cli/pkg/log"
 	cliprdesc "github.com/tektoncd/cli/pkg/pipelinerun/description"
 	k8s "k8s.io/client-go/kubernetes"
@@ -75,7 +74,7 @@ func (k Interaction) TektonCliFollowLogs(namespace, prName string) (string, erro
 		Err: mwr,
 	}
 
-	log.NewWriter(log.LogTypePipeline).Write(k.TektonCliLogsOptions.Stream, logC, errC)
+	clilog.NewWriter(clilog.LogTypePipeline).Write(k.TektonCliLogsOptions.Stream, logC, errC)
 	return outputBuffer.String(), nil
 }
 

@@ -112,7 +112,7 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun) (string, erro
 		"formatCondition": ConditionEmoji,
 	}
 
-	var data = struct {
+	data := struct {
 		TaskrunList taskrunList
 	}{
 		TaskrunList: trl,
@@ -128,7 +128,7 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun) (string, erro
 }
 
 func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo, prName, namespace string) (*tektonv1beta1.PipelineRun, error) {
-	var pr = &tektonv1beta1.PipelineRun{}
+	pr := &tektonv1beta1.PipelineRun{}
 	var outputBuffer bytes.Buffer
 
 	tknDescribeOutput, err := k8int.TektonCliPRDescribe(prName, namespace)

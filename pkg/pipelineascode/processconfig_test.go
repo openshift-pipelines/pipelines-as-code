@@ -88,5 +88,4 @@ func TestProcessTektonYamlRefInternal(t *testing.T) {
 	if d := cmp.Diff(ret.RemoteTasks, "\n---\n"+expected+"\n"); d != "" {
 		t.Fatalf("-got, +want: %v", d)
 	}
-
 }

@@ -46,7 +46,6 @@ func (p *PacParams) dynamicClient(config *rest.Config) (dynamic.Interface, error
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create dynamic client from config")
-
 	}
 	return dynamicClient, err
 }
@@ -93,25 +92,23 @@ func (p *PacParams) pacClient(config *rest.Config) (pacversioned.Interface, erro
 	return cs, nil
 }
 
-func (p *PacParams) hubClient(config *rest.Config) hub.Client {
+func (p *PacParams) hubClient() hub.Client {
 	cs := hub.NewClient()
 	return cs
 }
 
-func (p *PacParams) githubClient(config *rest.Config) (webvcs.GithubVCS, error) {
-	return webvcs.NewGithubVCS(p.githubToken), nil
+func (p *PacParams) githubClient() webvcs.GithubVCS {
+	return webvcs.NewGithubVCS(p.githubToken)
 }
 
 // Only returns kube client, not tekton client
 func (p *PacParams) KubeClient() (k8s.Interface, error) {
-
 	config, err := p.config()
 	if err != nil {
 		return nil, err
 	}
 
 	kube, err := p.kubeClient(config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -149,12 +146,9 @@ func (p *PacParams) Clients() (*Clients, error) {
 		return nil, err
 	}
 
-	hub := p.hubClient(config)
+	hub := p.hubClient()
 
-	ghClient, err := p.githubClient(config)
-	if err != nil {
-		return nil, err
-	}
+	ghClient := p.githubClient()
 
 	dynamic, err := p.dynamicClient(config)
 	if err != nil {

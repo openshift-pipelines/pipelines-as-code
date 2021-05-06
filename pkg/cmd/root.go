@@ -23,7 +23,7 @@ import (
 )
 
 func Root(p cli.Params) *cobra.Command {
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Short:        "Pipeline as Code entrypoint",
 		Long:         ``,
 		SilenceUsage: true,
