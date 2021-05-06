@@ -30,6 +30,7 @@ func TestGetInfo(t *testing.T) {
 		SHA:           "d0d0",
 		URL:           "http://chmouel.com",
 		Branch:        "goodRuninfoBranch",
+		Sender:        "ElSender",
 	}
 
 	b, err := ioutil.ReadFile("testdata/pull_request.json")
