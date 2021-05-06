@@ -98,17 +98,17 @@ func TestNotKubernetesDocumentIgnore(t *testing.T) {
 
 func TestNoPipelineRuns(t *testing.T) {
 	_, _, err := readTDfile("no-pipelinerun", false)
-	assert.Error(t, err, "We need at least one pipelinerun to start with")
+	assert.Error(t, err, "we need at least one pipelinerun to start with")
 }
 
 func TestReferencedTaskNotInRepo(t *testing.T) {
 	_, _, err := readTDfile("referenced-task-not-in-repo", false)
-	assert.Error(t, err, "Cannot find task nothere in input")
+	assert.Error(t, err, "cannot find task nothere in input")
 }
 
 func TestReferencedPipelineNotInRepo(t *testing.T) {
 	_, _, err := readTDfile("referenced-pipeline-not-in-repo", false)
-	assert.Error(t, err, "Cannot find pipeline pipeline-test1 in input")
+	assert.Error(t, err, "cannot find pipeline pipeline-test1 in input")
 }
 
 func TestIgnoreDocSpace(t *testing.T) {

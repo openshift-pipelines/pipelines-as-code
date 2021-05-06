@@ -77,7 +77,7 @@ func TestParsePayload(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid character")
 
 	_, err = gvcs.ParsePayload(logger, "{\"hello\": \"moto\"}")
-	assert.Error(t, err, "Cannot parse payload as PR")
+	assert.Error(t, err, "cannot parse payload as PR")
 }
 
 func setupFakesURLS() (client GithubVCS, teardown func()) {
@@ -296,7 +296,7 @@ func TestGetTektonDir(t *testing.T) {
 			name: "tektondirisafile",
 			args: args{
 				assertion: func(t *testing.T, got []*github.RepositoryContent, err error) {
-					assert.Error(t, err, "The object .tekton is a file instead of a directory")
+					assert.Error(t, err, "the object .tekton is a file instead of a directory")
 					assert.Assert(t, got == nil)
 				},
 				path: ".tekton",

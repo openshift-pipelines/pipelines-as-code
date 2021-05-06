@@ -28,3 +28,5 @@ linters:
   - revive
   - staticcheck
   - stylecheck
+  - unused
+  - unparam

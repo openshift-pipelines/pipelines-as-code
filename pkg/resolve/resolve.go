@@ -17,7 +17,7 @@ type Types struct {
 	Tasks        []*tektonv1beta1.Task
 }
 
-func readTypes(cs *cli.Clients, data []byte) (Types, error) {
+func readTypes(cs *cli.Clients, data []byte) Types {
 	types := Types{}
 	decoder := k8scheme.Codecs.UniversalDeserializer()
 
@@ -43,7 +43,7 @@ func readTypes(cs *cli.Clients, data []byte) (Types, error) {
 		}
 	}
 
-	return types, nil
+	return types
 }
 
 func getTaskByName(name string, tasks []*tektonv1beta1.Task) (*tektonv1beta1.Task, error) {
@@ -65,10 +65,7 @@ func getPipelineByName(name string, tasks []*tektonv1beta1.Pipeline) (*tektonv1b
 }
 
 func resolve(cs *cli.Clients, data []byte, generateName bool) ([]*tektonv1beta1.PipelineRun, error) {
-	types, err := readTypes(cs, data)
-	if err != nil {
-		return []*tektonv1beta1.PipelineRun{}, err
-	}
+	types := readTypes(cs, data)
 	if len(types.PipelineRuns) == 0 {
 		return []*tektonv1beta1.PipelineRun{}, errors.New("we need at least one pipelinerun to start with")
 	}

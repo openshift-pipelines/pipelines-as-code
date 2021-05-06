@@ -87,8 +87,8 @@ func SetupGH() (client *github.Client, mux *http.ServeMux, serverURL string, tea
 
 // SeedTestData returns Clients and Informers populated with the
 // given Data.
-// nolint: golint
-func SeedTestData(ctx context.Context, t *testing.T, d Data) (Clients, Informers) {
+// nolint: golint, revive
+func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers) {
 	c := Clients{
 		PipelineAsCode: fakepacclient.Get(ctx),
 		Kube:           fakekubeclient.Get(ctx),

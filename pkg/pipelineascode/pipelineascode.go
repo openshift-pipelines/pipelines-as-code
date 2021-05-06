@@ -24,7 +24,7 @@ type Options struct {
 	RunInfo     webvcs.RunInfo
 }
 
-func getRepoByCR(cs *cli.Clients, url, branch, eventType, forceNamespace string) (apipac.Repository, error) {
+func getRepoByCR(cs *cli.Clients, url, branch, forceNamespace string) (apipac.Repository, error) {
 	var repository apipac.Repository
 
 	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
@@ -33,7 +33,7 @@ func getRepoByCR(cs *cli.Clients, url, branch, eventType, forceNamespace string)
 		return repository, err
 	}
 	for _, value := range repositories.Items {
-		if value.Spec.URL == url && value.Spec.Branch == branch && value.Spec.EventType == eventType {
+		if value.Spec.URL == url && value.Spec.Branch == branch {
 			if forceNamespace != "" && value.Namespace != forceNamespace {
 				return repository, fmt.Errorf(
 					"repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
@@ -58,7 +58,6 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	var err error
 	var maintekton TektonYamlConfig
 
-	ctx := context.Background()
 	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
 	if err != nil {
 		return err
@@ -71,7 +70,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 			return err
 		}
 	}
-	repo, err := getRepoByCR(cs, runinfo.URL, runinfo.Branch, "pull_request", maintekton.Namespace)
+	repo, err := getRepoByCR(cs, runinfo.URL, runinfo.Branch, maintekton.Namespace)
 	if err != nil {
 		return err
 	}
@@ -140,6 +139,8 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	if err != nil {
 		return err
 	}
+
+	ctx := context.Background()
 	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun[0], metav1.CreateOptions{})
 	if err != nil {
 		return err
