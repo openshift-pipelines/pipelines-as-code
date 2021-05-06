@@ -86,8 +86,8 @@ func SetupGH() (client *github.Client, mux *http.ServeMux, serverURL string, tea
 }
 
 // SeedTestData returns Clients and Informers populated with the
-// given Data.
-// nolint: golint, revive
+// given Data. TODO: enable revive linter nolint
+// nolint: golint
 func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers) {
 	c := Clients{
 		PipelineAsCode: fakepacclient.Get(ctx),
