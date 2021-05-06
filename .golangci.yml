@@ -17,3 +17,7 @@ linters:
   - misspell
   - deadcode
   - gomnd
+  - gosec
+  - gosimple
+  - govet
+  - ifshort
