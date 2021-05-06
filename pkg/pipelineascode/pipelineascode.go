@@ -10,7 +10,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -37,14 +36,14 @@ func getRepoByCR(cs *cli.Clients, url, branch, eventType, forceNamespace string)
 		if value.Spec.URL == url && value.Spec.Branch == branch && value.Spec.EventType == eventType {
 			if forceNamespace != "" && value.Namespace != forceNamespace {
 				return repository, fmt.Errorf(
-					"Repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
+					"repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
 					forceNamespace)
 			}
 
 			// Disallow attempts for hijacks. If the installed CR is not configured on the
 			// Namespace the Spec is targeting then disallow it.
 			if value.Namespace != value.Spec.Namespace {
-				return repository, fmt.Errorf("Repo CR %s matches but belongs to \"%s\" while it should be in \"%s\"",
+				return repository, fmt.Errorf("repo CR %s matches but belongs to \"%s\" while it should be in \"%s\"",
 					value.Name,
 					value.Namespace,
 					value.Spec.Namespace)
@@ -141,7 +140,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	if err != nil {
 		return err
 	}
-	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun[0], v1.CreateOptions{})
+	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun[0], metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -180,7 +179,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 
 	// TODO: Get another time the repo in case it was updated, there may be a
 	// locking problem we should solve here but we are talking miliseconds race.
-	lastrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Spec.Namespace).Get(ctx, repo.Name, v1.GetOptions{})
+	lastrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Spec.Namespace).Get(ctx, repo.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -192,7 +191,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	}
 	lastrepo.Status = append(lastrepo.Status, repoStatus)
 	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
-		ctx, lastrepo, v1.UpdateOptions{})
+		ctx, lastrepo, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}

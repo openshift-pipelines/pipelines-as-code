@@ -63,7 +63,7 @@ func getRunInfoFromArgsOrPayload(cs *cli.Clients, payload string, runinfo *webvc
 	if err := runinfo.Check(); err != nil {
 		return runinfo, err
 	} else if payload == "" {
-		return &webvcs.RunInfo{}, fmt.Errorf("No payload or not enough params set properly")
+		return &webvcs.RunInfo{}, fmt.Errorf("no payload or not enough params set properly")
 	}
 
 	payloadinfo, err := cs.GithubClient.ParsePayload(cs.Log, payload)
@@ -72,7 +72,7 @@ func getRunInfoFromArgsOrPayload(cs *cli.Clients, payload string, runinfo *webvc
 	}
 
 	if err := payloadinfo.Check(); err != nil {
-		return &webvcs.RunInfo{}, fmt.Errorf("Invalid Payload, missing some values : %+v", runinfo)
+		return &webvcs.RunInfo{}, fmt.Errorf("invalid Payload, missing some values : %+v", runinfo)
 	}
 
 	return payloadinfo, nil

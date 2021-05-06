@@ -15,7 +15,6 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test"
 	testhelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"go.uber.org/zap"
@@ -90,12 +89,12 @@ func TestFilterByGood(t *testing.T) {
 	branch := "mainone"
 	targetNamespace := "namespace"
 	url := "https://psg.fr"
-	d := test.Data{
+	d := testhelper.Data{
 		Repositories: []*v1alpha1.Repository{
 			newRepo("test-good", url, branch, eventType, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(ctx, t, d)
+	cs, _ := testhelper.SeedTestData(ctx, t, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	repo, err := getRepoByCR(client, url, branch, eventType, "")
 	assert.NilError(t, err)
@@ -111,12 +110,12 @@ func TestFilterByNotMatch(t *testing.T) {
 	targetNamespace := "namespace"
 	url := "https://psg.com"
 	otherurl := "https://marseille.com"
-	d := test.Data{
+	d := testhelper.Data{
 		Repositories: []*v1alpha1.Repository{
 			newRepo("test-notmatch", url, branch, eventType, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(ctx, t, d)
+	cs, _ := testhelper.SeedTestData(ctx, t, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	repo, err := getRepoByCR(client, otherurl, branch, eventType, "")
 	assert.NilError(t, err)
@@ -132,12 +131,12 @@ func TestFilterByNotInItsNamespace(t *testing.T) {
 	targetNamespace := "namespace"
 	installNamespace := "olympiquelyon"
 	url := "https://psg.fr"
-	d := test.Data{
+	d := testhelper.Data{
 		Repositories: []*v1alpha1.Repository{
 			newRepo(testname, url, branch, eventType, installNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(ctx, t, d)
+	cs, _ := testhelper.SeedTestData(ctx, t, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	repo, err := getRepoByCR(client, url, branch, eventType, "")
 	assert.ErrorContains(t, err, fmt.Sprintf("Repo CR %s matches but belongs to", testname))
@@ -154,12 +153,12 @@ func TestFilterForceNamespace(t *testing.T) {
 	forcedNamespace := "asmonaco"
 
 	url := "https://psg.fr"
-	d := test.Data{
+	d := testhelper.Data{
 		Repositories: []*v1alpha1.Repository{
 			newRepo(testname, url, branch, eventType, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := test.SeedTestData(ctx, t, d)
+	cs, _ := testhelper.SeedTestData(ctx, t, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	_, err := getRepoByCR(client, url, branch, eventType, forcedNamespace)
 	assert.ErrorContains(t, err, "as configured from tekton.yaml on the main branch")
@@ -203,17 +202,17 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 		Client:  fakeclient,
 		Context: ctx,
 	}
-	datas := test.Data{
+	datas := testhelper.Data{
 		Repositories: []*v1alpha1.Repository{
 			newRepo("repo", runinfo.URL, runinfo.Branch, "pull_request", installedNamespace, installedNamespace),
 		},
 	}
-	stdata, _ := test.SeedTestData(ctx, t, datas)
+	stdata, _ := testhelper.SeedTestData(ctx, t, datas)
 	cs := &cli.Clients{
 		GithubClient:   gcvs,
 		PipelineAsCode: stdata.PipelineAsCode,
 	}
-	k8int := test.KinterfaceTest{}
+	k8int := testhelper.KinterfaceTest{}
 
 	err := Run(cs, &k8int, runinfo)
 
@@ -318,7 +317,7 @@ func TestRun(t *testing.T) {
 		Context: ctx,
 	}
 
-	repo := test.Data{
+	repo := testhelper.Data{
 		Namespaces: []*corev1.Namespace{
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -336,7 +335,7 @@ func TestRun(t *testing.T) {
 				"namespace"),
 		},
 	}
-	stdata, _ := test.SeedTestData(ctx, t, repo)
+	stdata, _ := testhelper.SeedTestData(ctx, t, repo)
 
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
@@ -353,7 +352,7 @@ func TestRun(t *testing.T) {
 		Dynamic:        dc,
 	}
 
-	k8int := test.KinterfaceTest{
+	k8int := testhelper.KinterfaceTest{
 		ConsoleURL: "https://console.url",
 	}
 

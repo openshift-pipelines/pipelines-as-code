@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -30,10 +29,10 @@ func setup() {
 }
 
 // Not sure how to get testParams fixtures working
-func readTDfile(testname string, generateName bool) (*v1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
+func readTDfile(testname string, generateName bool) (*tektonv1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
 	data, err := ioutil.ReadFile("testdata/" + testname + ".yaml")
 	if err != nil {
-		return &v1beta1.PipelineRun{}, nil, err
+		return &tektonv1beta1.PipelineRun{}, nil, err
 	}
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
@@ -42,7 +41,7 @@ func readTDfile(testname string, generateName bool) (*v1beta1.PipelineRun, *zapo
 	}
 	resolved, err := resolve(cs, data, generateName)
 	if err != nil {
-		return &v1beta1.PipelineRun{}, nil, err
+		return &tektonv1beta1.PipelineRun{}, nil, err
 	}
 	return resolved[0], log, nil
 }

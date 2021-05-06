@@ -7,13 +7,11 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
-	knative1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 func TestPipelineRunStatus(t *testing.T) {
@@ -29,7 +27,7 @@ func TestPipelineRunStatus(t *testing.T) {
 						Conditions: duckv1beta1.Conditions{
 							{
 								Status:  corev1.ConditionTrue,
-								Reason:  v1beta1.PipelineRunReasonSuccessful.String(),
+								Reason:  tektonv1beta1.PipelineRunReasonSuccessful.String(),
 								Message: "Completed",
 							},
 						},
@@ -45,7 +43,7 @@ func TestPipelineRunStatus(t *testing.T) {
 						Conditions: duckv1beta1.Conditions{
 							{
 								Status:  corev1.ConditionFalse,
-								Reason:  v1beta1.PipelineRunReasonSuccessful.String(),
+								Reason:  tektonv1beta1.PipelineRunReasonSuccessful.String(),
 								Message: "Completed",
 							},
 						},
@@ -127,7 +125,7 @@ func TestTaskRunListMapSort(t *testing.T) {
 func TestConditionEmoji(t *testing.T) {
 	tests := []struct {
 		name      string
-		condition knative1.Conditions
+		condition duckv1beta1.Conditions
 		substr    string
 	}{
 		{

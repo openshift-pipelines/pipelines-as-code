@@ -26,3 +26,5 @@ linters:
   - nakedret
   - predeclared
   - revive
+  - staticcheck
+  - stylecheck

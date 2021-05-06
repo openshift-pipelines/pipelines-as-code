@@ -15,7 +15,7 @@ func (k *KinterfaceTest) GetConsoleUI(ns string, pr string) (string, error) {
 
 func (k *KinterfaceTest) GetNamespace(ns string) error {
 	if k.NamespaceError {
-		return errors.New("Cannot find Namespace")
+		return errors.New("cannot find Namespace")
 	}
 	return nil
 }
