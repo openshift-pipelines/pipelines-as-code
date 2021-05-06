@@ -36,12 +36,15 @@ func TestPayLoadFix(t *testing.T) {
 }
 
 func TestParsePayloadRerequest(t *testing.T) {
+	repoSender := "jean-pierre"
 	repoOwner := "openshift"
 	repoName := "pipelines"
 	prNumber := "123"
 	checkrunEvent := fmt.Sprintf(`{"action": "rerequested", 
+	"sender": {"login": "%s"},
 	"check_run": {"check_suite": {"pull_requests": [{"number": %s}]}}, 
-	"repository": {"name": "%s", "owner": {"login": "%s"}}}`, prNumber, repoName, repoOwner)
+	"repository": {"name": "%s", "owner": {"login": "%s"}}}`,
+		repoSender, prNumber, repoName, repoOwner)
 	fakeclient, mux, _, teardown := testhelper.SetupGH()
 	defer teardown()
 	mux.HandleFunc("/repos/"+repoOwner+"/"+repoName+"/pulls/"+prNumber, func(rw http.ResponseWriter, r *http.Request) {
@@ -54,9 +57,10 @@ func TestParsePayloadRerequest(t *testing.T) {
 	logger, observer := getLogger()
 	runinfo, err := gvcs.ParsePayload(logger, checkrunEvent)
 	assert.NilError(t, err)
+
 	assert.Equal(t, repoOwner, runinfo.Owner)
 	assert.Equal(t, repoName, runinfo.Repository)
-	assert.Equal(t, repoOwner, runinfo.Owner)
+	assert.Equal(t, repoSender, runinfo.Sender)
 	assert.Assert(t, strings.Contains(observer.TakeAll()[0].Message, "Recheck of PR"))
 }
 
@@ -373,6 +377,7 @@ func TestRunInfoCheck(t *testing.T) {
 		SHA           string
 		URL           string
 		Branch        string
+		Sender        string
 		CheckRunID    *int64
 	}
 	tests := []struct {
@@ -394,6 +399,7 @@ func TestRunInfoCheck(t *testing.T) {
 				SHA:           "1d1",
 				URL:           "https://anywhere",
 				Branch:        "main",
+				Sender:        "beeboo",
 			},
 			wantErr: false,
 		},
@@ -408,6 +414,7 @@ func TestRunInfoCheck(t *testing.T) {
 				URL:           tt.fields.URL,
 				Branch:        tt.fields.Branch,
 				CheckRunID:    tt.fields.CheckRunID,
+				Sender:        tt.fields.Sender,
 			}
 			if err := r.Check(); (err != nil) != tt.wantErr {
 				t.Errorf("RunInfo.Check() error = %v, wantErr %v", err, tt.wantErr)

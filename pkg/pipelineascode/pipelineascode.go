@@ -63,6 +63,20 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		return err
 	}
 	runinfo.CheckRunID = checkRun.ID
+
+	allowed, err := aclCheck(cs, runinfo)
+	if err != nil {
+		return err
+	}
+
+	if !allowed {
+		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "skipped",
+			fmt.Sprintf("User %s is not allowed to run CI on this repo.", runinfo.Sender),
+			"https://tenor.com/search/police-cat-gifs")
+		cs.Log.Infof("User %s is not allowed to run CI on this repo", runinfo.Sender)
+		return nil
+	}
+
 	maintektonyaml, _ := cs.GithubClient.GetFileFromDefaultBranch(filepath.Join(tektonDir, tektonConfigurationFile), runinfo)
 	if maintektonyaml != "" {
 		maintekton, err = processTektonYaml(cs, runinfo, maintektonyaml)

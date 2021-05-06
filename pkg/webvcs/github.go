@@ -27,6 +27,7 @@ type RunInfo struct {
 	SHA           string
 	URL           string
 	Branch        string
+	Sender        string
 	CheckRunID    *int64
 	WebConsoleURL string
 }
@@ -34,7 +35,7 @@ type RunInfo struct {
 func (r RunInfo) Check() error {
 	if r.SHA != "" && r.Branch != "" &&
 		r.Repository != "" && r.DefaultBranch != "" &&
-		r.Owner != "" && r.URL != "" {
+		r.Owner != "" && r.URL != "" && r.Sender != "" {
 		return nil
 	}
 	return fmt.Errorf("missing values in runInfo")
@@ -75,28 +76,32 @@ func payloadFix(payload string) string {
 }
 
 func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, payload string) (*RunInfo, error) {
+	runinfo := &RunInfo{}
 	payload = payloadFix(payload)
 	prMap := &github.PullRequestEvent{}
 	err := json.Unmarshal([]byte(payload), prMap)
 	if err != nil {
-		return &RunInfo{}, err
+		return runinfo, err
 	}
 
 	checkrunEvent := new(github.CheckRunEvent)
+
 	err = json.Unmarshal([]byte(payload), &checkrunEvent)
 	if err != nil {
-		return &RunInfo{}, err
+		return runinfo, err
 	}
 
 	// If the user  has requested a recheck then fetch the pr link and use that.
 	if checkrunEvent.GetAction() == "rerequested" {
-		owner := checkrunEvent.GetRepo().Owner.GetLogin()
-		repo := checkrunEvent.GetRepo().GetName()
+		runinfo.Owner = checkrunEvent.GetRepo().Owner.GetLogin()
+		runinfo.Sender = checkrunEvent.GetSender().GetLogin()
+		runinfo.Repository = checkrunEvent.GetRepo().GetName()
 		prNumber := checkrunEvent.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
-		log.Info("Recheck of PR %s/%s#%s has been requested", owner, repo, prNumber)
+
+		log.Info("Recheck of PR %s/%s#%s has been requested", runinfo.Owner, runinfo.Repository, prNumber)
 		// There should be only one pull_request, I am not quite sure how a
 		// checksuite with multiple PR can be done 🤔
-		pr, _, err := v.Client.PullRequests.Get(context.Background(), owner, repo, prNumber)
+		pr, _, err := v.Client.PullRequests.Get(context.Background(), runinfo.Owner, runinfo.Repository, prNumber)
 		if err != nil {
 			return &RunInfo{}, err
 		}
@@ -107,15 +112,42 @@ func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, payload string) (*RunInf
 		return &RunInfo{}, errors.New("cannot parse payload as PR")
 	}
 
-	return &RunInfo{
-		Owner:         prMap.GetRepo().Owner.GetLogin(),
-		Repository:    prMap.GetRepo().GetName(),
-		URL:           prMap.GetRepo().GetHTMLURL(),
-		DefaultBranch: prMap.GetRepo().GetDefaultBranch(),
-		// TODO: this is going to be different on merge
-		SHA:    prMap.PullRequest.Head.GetSHA(),
-		Branch: prMap.PullRequest.Base.GetRef(),
-	}, nil
+	// This should already been set from the rerequest event
+	if runinfo.Sender == "" {
+		runinfo.Sender = prMap.GetPullRequest().GetUser().GetLogin()
+	}
+	if runinfo.Repository == "" {
+		runinfo.Repository = prMap.GetRepo().GetName()
+	}
+	if runinfo.Owner == "" {
+		runinfo.Owner = prMap.GetRepo().Owner.GetLogin()
+	}
+
+	runinfo.DefaultBranch = prMap.GetRepo().GetDefaultBranch()
+	runinfo.URL = prMap.GetRepo().GetHTMLURL()
+	runinfo.SHA = prMap.PullRequest.Head.GetSHA()
+	runinfo.Branch = prMap.PullRequest.Base.GetRef()
+
+	return runinfo, nil
+}
+
+// CheckSenderOrgMembership Get sender user's organization. We can
+// only get the one that the user sets as public 🤷
+func (v GithubVCS) CheckSenderOrgMembership(runinfo *RunInfo) (bool, error) {
+	users, _, err := v.Client.Organizations.ListMembers(v.Context, runinfo.Owner,
+		&github.ListMembersOptions{
+			PublicOnly: true, // We can't list private member in a org
+		})
+	if err != nil {
+		return false, err
+	}
+	for _, v := range users {
+		if v.GetLogin() == runinfo.Sender {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.RepositoryContent, error) {

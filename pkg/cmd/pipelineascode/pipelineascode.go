@@ -52,6 +52,7 @@ func Command(p cli.Params) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.RunInfo.Repository, "webhook-repository", "", os.Getenv("PAC_REPOSITORY_NAME"), "Repository Name of the repository to test")
 	cmd.Flags().StringVarP(&opts.RunInfo.DefaultBranch, "webhook-defaultbranch", "", os.Getenv("PAC_DEFAULTBRANCH"), "DefaultBranch of the repository to test")
 	cmd.Flags().StringVarP(&opts.RunInfo.Branch, "webhook-target-branch", "", os.Getenv("PAC_BRANCH"), "Target branch of the repository to test")
+	cmd.Flags().StringVarP(&opts.RunInfo.Sender, "webhook-sender", "", os.Getenv("PAC_Sender"), "Sender for the commit/pr")
 	cmd.Flags().StringVarP(&opts.RunInfo.URL, "webhook-url", "", os.Getenv("PAC_URL"), "URL of the repository to test")
 
 	cmd.Flags().StringVarP(&opts.Payload, "payload", "", os.Getenv("PAC_PAYLOAD"), "The payload from webhook")

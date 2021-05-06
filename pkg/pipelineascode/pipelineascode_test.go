@@ -168,11 +168,12 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	installedNamespace := "nomespace"
 	runinfo := &webvcs.RunInfo{
 		SHA:           "principale",
-		Owner:         "chmouel",
+		Owner:         "organizatione",
 		Repository:    "repo",
 		URL:           "https://service/documentation",
 		Branch:        "press",
 		DefaultBranch: defaultBranch,
+		Sender:        "carlos_valderama",
 	}
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/check-runs", runinfo.Owner, runinfo.Repository),
@@ -192,6 +193,10 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 		func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, `{"content": "%s"}`, forcedNamespaceContent)
 		})
+
+	mux.HandleFunc("/orgs/"+runinfo.Owner+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(rw, `[{"login": "%s"}]`, runinfo.Sender)
+	})
 
 	gcvs := webvcs.GithubVCS{
 		Client:  fakeclient,
@@ -222,10 +227,11 @@ func TestRun(t *testing.T) {
 	defer teardown()
 	runinfo := &webvcs.RunInfo{
 		SHA:        "principale",
-		Owner:      "gaston",
+		Owner:      "organizationes",
 		Repository: "lagaffe",
 		URL:        "https://service/documentation",
 		Branch:     "press",
+		Sender:     "fantasio",
 	}
 
 	replyString(mux,
@@ -256,6 +262,10 @@ func TestRun(t *testing.T) {
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/contents/internal/task", runinfo.Owner, runinfo.Repository),
 		`{"sha": "internaltasksha"}`)
+
+	mux.HandleFunc("/orgs/"+runinfo.Owner+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(rw, `[{"login": "%s"}]`, runinfo.Sender)
+	})
 
 	// Internal task referenced in tekton.yaml
 	taskB, err := ioutil.ReadFile("testdata/task.yaml")
