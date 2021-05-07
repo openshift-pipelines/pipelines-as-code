@@ -20,12 +20,12 @@ linters:
   - gosec
   - gosimple
   - govet
-  #- ifshort
-  #- importas
-  #- makezero
+  - ifshort
+  - importas
+  - makezero
   - nakedret
-  # - predeclared
-  # - revive
+  - predeclared
+  - revive
   - staticcheck
   - stylecheck
   - unused
