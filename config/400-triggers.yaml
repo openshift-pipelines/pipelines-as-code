@@ -21,6 +21,7 @@ spec:
             eventTypes:
               - pull_request
               - issue_comment
+              - check_run
         - cel:
             filter: "body.action in ['created', 'rerequested', 'opened', 'synchronize'] && 'installation' in body"
       template:
