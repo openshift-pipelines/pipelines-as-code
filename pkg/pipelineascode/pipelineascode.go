@@ -36,14 +36,14 @@ func getRepoByCR(cs *cli.Clients, url, branch, forceNamespace string) (apipac.Re
 		if value.Spec.URL == url && value.Spec.Branch == branch {
 			if forceNamespace != "" && value.Namespace != forceNamespace {
 				return repository, fmt.Errorf(
-					"repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
+					"repo CR matches but should be installed in %s as configured from tekton.yaml on the main branch",
 					forceNamespace)
 			}
 
 			// Disallow attempts for hijacks. If the installed CR is not configured on the
 			// Namespace the Spec is targeting then disallow it.
 			if value.Namespace != value.Spec.Namespace {
-				return repository, fmt.Errorf("repo CR %s matches but belongs to \"%s\" while it should be in \"%s\"",
+				return repository, fmt.Errorf("repo CR %s matches but belongs to %s while it should be in %s",
 					value.Name,
 					value.Namespace,
 					value.Spec.Namespace)

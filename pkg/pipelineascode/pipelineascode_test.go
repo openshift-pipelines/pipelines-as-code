@@ -219,7 +219,7 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	err := Run(cs, &k8int, runinfo)
 
 	assert.Error(t, err,
-		fmt.Sprintf("repo CR matches but should be installed in \"%s\" as configured from tekton.yaml on the main branch",
+		fmt.Sprintf("repo CR matches but should be installed in %s as configured from tekton.yaml on the main branch",
 			forcedNamespace))
 }
 
