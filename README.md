@@ -40,7 +40,7 @@ Pipelines as code leverage on this technologies :
   - Use GitHUB blobs and objects API to get configuration files directly.
     (instead of checking the repo locally)
 
-## Usage
+## User usage
 
 ### GitHub apps Configuration
 
@@ -104,7 +104,9 @@ into the same namespace are where we want to execute them.
   the same namespace without risk of conflicts.
 
 - Everything that runs your pipeline should be self contained inside the
-  `.tekton/` directory including the tasks. Optionally it supports a file called
+  `.tekton/` directory including the tasks. If pipelines as code cannot resolve the referenced tasks in the `Pipeline` or `PipelineSpec` it will fails.
+
+- Optionally `Pipelines as Code` supports a configuration file called
   `tekton.yaml` which allows you to integrate *remote* tasks directly on your
   pipeline. For example if you have this :
 
@@ -128,10 +130,13 @@ into the same namespace are where we want to execute them.
 
 ### Running the Pipeline
 
-You simply send your Pull Request and Pipelines as Run will apply your pipeline
-and run it.
+User create a Pull Request.
 
-You can follow the execution of your pipeline with the
+If the user sending the Pull Request is not the owner of the repository or not a public member of the organization where the repository belong to, `Pipeline as Code` will not run.
+
+If the user is allowed, `Pipelines as Code` will start creating the `PipelineRun` in the target user namespace.
+
+The user can follow the execution of your pipeline with the
 [tkn](https://github.com/tektoncd/cli) cli :
 
 ```bash

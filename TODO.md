@@ -1,4 +1,6 @@
-# Pipelines as Code - TODO List
+# Pipelines as Code 
+
+See GitHub issue for more details
 
 ## Installation
 
