@@ -72,7 +72,7 @@ func resolve(cs *cli.Clients, data []byte, generateName bool) ([]*tektonv1beta1.
 
 	// Resolve TaskRef inside Pipeline
 	for _, pipeline := range types.Pipelines {
-		pipelineTasks := []tektonv1beta1.PipelineTask{}
+		var pipelineTasks []tektonv1beta1.PipelineTask
 		for _, task := range pipeline.Spec.Tasks {
 			if task.TaskRef != nil {
 				taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
@@ -90,7 +90,7 @@ func resolve(cs *cli.Clients, data []byte, generateName bool) ([]*tektonv1beta1.
 	for _, pipelinerun := range types.PipelineRuns {
 		// Resolve taskRef inside PipelineSpec inside PipelineRun
 		if pipelinerun.Spec.PipelineSpec != nil {
-			pipelineTasksResolve := []tektonv1beta1.PipelineTask{}
+			var pipelineTasksResolve []tektonv1beta1.PipelineTask
 			for _, task := range pipelinerun.Spec.PipelineSpec.Tasks {
 				if task.TaskRef != nil {
 					taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
