@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"testing"
 
+	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 
 	// hubtest "github.com/tektoncd/hub/api/pkg/cli/test"
@@ -30,7 +32,7 @@ func TestProcessTektonYamlRemoteTask(t *testing.T) {
 - https://foo.bar
 - https://hello.moto
 `
-	httpTestClient := test.MakeHTTPTestClient(t, 200, "HELLO")
+	httpTestClient := httptesthelper.MakeHTTPTestClient(t, 200, "HELLO")
 	cs := cli.Clients{HTTPClient: *httpTestClient}
 	expected := `
 ---
@@ -53,7 +55,7 @@ func TestProcessTektonYamlRefInternal(t *testing.T) {
 	data := `tasks:
 - be/healthy
 `
-	fakeclient, mux, _, teardown := test.SetupGH()
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 
 	mux.HandleFunc("/repos/contents/be/healthy", func(w http.ResponseWriter, r *http.Request) {

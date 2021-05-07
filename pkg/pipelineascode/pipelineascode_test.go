@@ -15,7 +15,9 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	testhelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -87,12 +89,12 @@ func TestFilterByGood(t *testing.T) {
 	branch := "mainone"
 	targetNamespace := "namespace"
 	url := "https://psg.fr"
-	d := testhelper.Data{
+	d := testclient.Data{
 		Repositories: []*v1alpha1.Repository{
 			newRepo("test-good", url, branch, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := testhelper.SeedTestData(t, ctx, d)
+	cs, _ := testclient.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	repo, err := getRepoByCR(client, url, branch, "")
 	assert.NilError(t, err)
@@ -107,12 +109,12 @@ func TestFilterByNotMatch(t *testing.T) {
 	targetNamespace := "namespace"
 	url := "https://psg.com"
 	otherurl := "https://marseille.com"
-	d := testhelper.Data{
+	d := testclient.Data{
 		Repositories: []*v1alpha1.Repository{
 			newRepo("test-notmatch", url, branch, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := testhelper.SeedTestData(t, ctx, d)
+	cs, _ := testclient.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	repo, err := getRepoByCR(client, otherurl, branch, "")
 	assert.NilError(t, err)
@@ -127,12 +129,12 @@ func TestFilterByNotInItsNamespace(t *testing.T) {
 	targetNamespace := "namespace"
 	installNamespace := "olympiquelyon"
 	url := "https://psg.fr"
-	d := testhelper.Data{
+	d := testclient.Data{
 		Repositories: []*v1alpha1.Repository{
 			newRepo(testname, url, branch, installNamespace, targetNamespace),
 		},
 	}
-	cs, _ := testhelper.SeedTestData(t, ctx, d)
+	cs, _ := testclient.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	repo, err := getRepoByCR(client, url, branch, "")
 	assert.ErrorContains(t, err, fmt.Sprintf("repo CR %s matches but belongs to", testname))
@@ -148,12 +150,12 @@ func TestFilterForceNamespace(t *testing.T) {
 	forcedNamespace := "asmonaco"
 
 	url := "https://psg.fr"
-	d := testhelper.Data{
+	d := testclient.Data{
 		Repositories: []*v1alpha1.Repository{
 			newRepo(testname, url, branch, targetNamespace, targetNamespace),
 		},
 	}
-	cs, _ := testhelper.SeedTestData(t, ctx, d)
+	cs, _ := testclient.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
 	_, err := getRepoByCR(client, url, branch, forcedNamespace)
 	assert.ErrorContains(t, err, "as configured from tekton.yaml on the main branch")
@@ -161,7 +163,7 @@ func TestFilterForceNamespace(t *testing.T) {
 
 func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	fakeclient, mux, _, teardown := testhelper.SetupGH()
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 	defaultBranch := "default"
 	forcedNamespace := "laotronamspace"
@@ -202,17 +204,17 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 		Client:  fakeclient,
 		Context: ctx,
 	}
-	datas := testhelper.Data{
+	datas := testclient.Data{
 		Repositories: []*v1alpha1.Repository{
 			newRepo("repo", runinfo.URL, runinfo.Branch, installedNamespace, installedNamespace),
 		},
 	}
-	stdata, _ := testhelper.SeedTestData(t, ctx, datas)
+	stdata, _ := testclient.SeedTestData(t, ctx, datas)
 	cs := &cli.Clients{
 		GithubClient:   gcvs,
 		PipelineAsCode: stdata.PipelineAsCode,
 	}
-	k8int := testhelper.KinterfaceTest{}
+	k8int := kitesthelper.KinterfaceTest{}
 
 	err := Run(cs, &k8int, runinfo)
 
@@ -223,7 +225,7 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	fakeclient, mux, _, teardown := testhelper.SetupGH()
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 	runinfo := &webvcs.RunInfo{
 		SHA:        "principale",
@@ -322,7 +324,7 @@ func TestRun(t *testing.T) {
 		Context: ctx,
 	}
 
-	repo := testhelper.Data{
+	repo := testclient.Data{
 		Namespaces: []*corev1.Namespace{
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -339,7 +341,7 @@ func TestRun(t *testing.T) {
 				"namespace"),
 		},
 	}
-	stdata, _ := testhelper.SeedTestData(t, ctx, repo)
+	stdata, _ := testclient.SeedTestData(t, ctx, repo)
 
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
@@ -356,7 +358,7 @@ func TestRun(t *testing.T) {
 		Dynamic:        dc,
 	}
 
-	k8int := testhelper.KinterfaceTest{
+	k8int := kitesthelper.KinterfaceTest{
 		ConsoleURL: "https://console.url",
 	}
 

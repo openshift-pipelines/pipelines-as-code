@@ -7,13 +7,16 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	testhelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test"
+	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"gotest.tools/v3/assert"
 )
 
+func TestRunWrap(t *testing.T) {
+}
+
 func TestGetInfo(t *testing.T) {
-	fakeclient, mux, _, teardown := testhelper.SetupGH()
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, ``)

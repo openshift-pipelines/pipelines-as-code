@@ -10,9 +10,10 @@ import (
 	"strings"
 	"testing"
 
+	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-github/v34/github"
-	testhelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -45,7 +46,7 @@ func TestParsePayloadRerequest(t *testing.T) {
 	"check_run": {"check_suite": {"pull_requests": [{"number": %s}]}}, 
 	"repository": {"name": "%s", "owner": {"login": "%s"}}}`,
 		repoSender, prNumber, repoName, repoOwner)
-	fakeclient, mux, _, teardown := testhelper.SetupGH()
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 	mux.HandleFunc("/repos/"+repoOwner+"/"+repoName+"/pulls/"+prNumber, func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(rw, `{"repo": {"name": "%s", "owner": {"login": "%s"}}}`, repoName, repoOwner)
@@ -85,7 +86,7 @@ func TestParsePayload(t *testing.T) {
 }
 
 func setupFakesURLS() (client GithubVCS, teardown func()) {
-	fakeclient, mux, _, teardown := testhelper.SetupGH()
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 
 	mux.HandleFunc("/repos/check/run/check-runs", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, `{"id": 555}`)
@@ -525,7 +526,7 @@ func TestGithubVCS_CreateStatus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fakeclient, mux, _, teardown := testhelper.SetupGH()
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 
 			ctx := context.Background()
