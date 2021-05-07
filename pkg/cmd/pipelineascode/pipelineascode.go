@@ -40,8 +40,16 @@ func Command(p cli.Params) *cobra.Command {
 			if token == "" || err != nil {
 				return fmt.Errorf("token option is not set properly")
 			}
+			cs, err := p.Clients()
+			if err != nil {
+				return err
+			}
+			kinteract, err := kubeinteraction.NewKubernetesInteraction(cs)
+			if err != nil {
+				return err
+			}
 
-			return runWrap(p, opts)
+			return runWrap(opts, cs, kinteract)
 		},
 	}
 
@@ -80,12 +88,7 @@ func getRunInfoFromArgsOrPayload(cs *cli.Clients, payload string, runinfo *webvc
 }
 
 // Wrap around a Run, create a CheckStatusID if there is a failure.
-func runWrap(p cli.Params, opts *pacpkg.Options) error {
-	cs, err := p.Clients()
-	if err != nil {
-		return err
-	}
-
+func runWrap(opts *pacpkg.Options, cs *cli.Clients, kinteract cli.KubeInteractionIntf) error {
 	if opts.PayloadFile != "" {
 		_, err := os.Stat(opts.PayloadFile)
 		if err != nil {
@@ -104,11 +107,6 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 		return err
 	}
 
-	kinteract, err := kubeinteraction.NewKubernetesInteraction(cs)
-	if err != nil {
-		return err
-	}
-
 	// Get webconsole url as soon as possible to have a link to click there
 	url, err := kinteract.GetConsoleUI("", "")
 	if err != nil {
@@ -118,7 +116,7 @@ func runWrap(p cli.Params, opts *pacpkg.Options) error {
 	runinfo.WebConsoleURL = url
 
 	err = pacpkg.Run(cs, kinteract, runinfo)
-	if err != nil && !strings.Contains(err.Error(), "403 Resource not accessible by integration") {
+	if err != nil && runinfo.CheckRunID != nil && !strings.Contains(err.Error(), "403 Resource not accessible by integration") {
 		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "failure",
 			fmt.Sprintf("There was an issue validating the commit: %q", err),
 			runinfo.WebConsoleURL)

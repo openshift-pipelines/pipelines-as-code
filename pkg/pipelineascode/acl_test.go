@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	testhelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test"
+	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 )
 
 func TestAclCheck(t *testing.T) {
-	fakeclient, mux, _, teardown := testhelper.SetupGH()
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 
 	orgallowed := "allowed"
