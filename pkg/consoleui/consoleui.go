@@ -56,6 +56,6 @@ func GetConsoleUI(cs *cli.Clients, ns, pr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cs.Log.Info("Console view url: %s", url)
+	cs.Log.Infof("Web Console PR url: %s", url)
 	return url, nil
 }
