@@ -18,7 +18,7 @@ const (
 	openShiftRouteResource    = "routes"
 )
 
-// getOpenshiftConsole use dynamic client to get the route of the openshit
+// getOpenshiftConsole use dynamic client to get the route of the openshift
 // console where we can point to.
 func getOpenshiftConsole(cs *cli.Clients, ns, pr string) (string, error) {
 	gvr := schema.GroupVersionResource{Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource}
@@ -47,7 +47,7 @@ func getOpenshiftConsole(cs *cli.Clients, ns, pr string) (string, error) {
 	return fmt.Sprintf(openShiftPipelineViewURL, host, ns, pr), nil
 }
 
-// GetConsoleURL Get a Console URL, OpenShift Console or Tekton Dashboard.
+// GetConsoleUI Get a Console URL, OpenShift Console or Tekton Dashboard.
 // don't error if we can't find it.
 func GetConsoleUI(cs *cli.Clients, ns, pr string) (string, error) {
 	var url string

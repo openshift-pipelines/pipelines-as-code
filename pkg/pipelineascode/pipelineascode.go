@@ -205,7 +205,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	}
 
 	// TODO: Get another time the repo in case it was updated, there may be a
-	// locking problem we should solve here but we are talking miliseconds race.
+	// locking problem we should solve here but we are talking milliseconds race.
 	lastrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Spec.Namespace).Get(ctx, repo.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
