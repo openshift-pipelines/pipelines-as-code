@@ -39,8 +39,8 @@ type Data struct {
 }
 
 // SeedTestData returns Clients and Informers populated with the
-// given Data. TODO: enable revive linter nolint
-// nolint: golint
+// given Data.
+// nolint: golint, revive
 func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers) {
 	c := Clients{
 		PipelineAsCode: fakepacclient.Get(ctx),
