@@ -360,6 +360,9 @@ func TestRun(t *testing.T) {
 		ConsoleURL: "https://console.url",
 	}
 
+	// TODO: I am not sure why querying stdata.Tekton.PipelineRun.List doesn't
+	// give back anything while it works for repo, we will need to investigate
+	// this to make better testing.
 	err = Run(cs, &k8int, runinfo)
 	assert.NilError(t, err)
 	assert.Assert(t, len(log.TakeAll()) > 0)

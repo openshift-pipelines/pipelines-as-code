@@ -149,13 +149,25 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	if yamlConfig.RemoteTasks != "" {
 		allTemplates += yamlConfig.RemoteTasks
 	}
-	prun, err := resolve.Resolve(cs, allTemplates, true)
+
+	pruns, err := resolve.Resolve(cs, allTemplates, true)
 	if err != nil {
 		return err
 	}
 
+	// TODO: Should we support multiples pipeline runs?
+	prun := pruns[0]
+
+	prun.Labels = map[string]string{
+		"tekton.dev/pipeline-ascode-owner":      runinfo.Owner,
+		"tekton.dev/pipeline-ascode-repository": runinfo.Repository,
+		"tekton.dev/pipeline-ascode-sha":        runinfo.SHA,
+		"tekton.dev/pipeline-ascode-sender":     runinfo.Sender,
+		"tekton.dev/pipeline-ascode-branch":     runinfo.Branch,
+	}
+
 	ctx := context.Background()
-	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun[0], metav1.CreateOptions{})
+	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
