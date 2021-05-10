@@ -134,10 +134,16 @@ func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, payload string) (*RunInf
 // CheckSenderOrgMembership Get sender user's organization. We can
 // only get the one that the user sets as public 🤷
 func (v GithubVCS) CheckSenderOrgMembership(runinfo *RunInfo) (bool, error) {
-	users, _, err := v.Client.Organizations.ListMembers(v.Context, runinfo.Owner,
+	users, resp, err := v.Client.Organizations.ListMembers(v.Context, runinfo.Owner,
 		&github.ListMembersOptions{
 			PublicOnly: true, // We can't list private member in a org
 		})
+
+	// If we are 404 it means we are checking a repo owner and not a org so let's bail out with grace
+	if resp.Response.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
+
 	if err != nil {
 		return false, err
 	}
