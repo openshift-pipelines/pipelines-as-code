@@ -134,6 +134,14 @@ User create a Pull Request.
 
 If the user sending the Pull Request is not the owner of the repository or not a public member of the organization where the repository belong to, `Pipeline as Code` will not run.
 
+If the user sending the Pull Request is inside an OWNER file located in the repository root in the main branch (the main branch as defined in the Github configuration for the repo) in the `approvers` or `reviewers` section like this :  
+
+```yaml
+approvers:
+  - approved
+```
+then the user `approved` will be allowed.
+
 If the user is allowed, `Pipelines as Code` will start creating the `PipelineRun` in the target user namespace.
 
 The user can follow the execution of your pipeline with the

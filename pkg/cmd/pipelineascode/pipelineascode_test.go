@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	pacpkg "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
@@ -29,13 +27,6 @@ func TestRunWrapOld(t *testing.T) {
 	checkid := 1234
 	defer teardown()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(os.Stderr, `
-		============================================
-		%s
-		============================================
-		`, spew.Sdump(r.URL))
-	})
 	mux.HandleFunc("/repos/chmouel/scratchmyback/check-runs", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `{"id": %d}`, checkid)
 	})

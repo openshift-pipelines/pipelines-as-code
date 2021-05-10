@@ -2,6 +2,7 @@ package pipelineascode
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"testing"
@@ -17,6 +18,8 @@ func TestAclCheck(t *testing.T) {
 
 	orgallowed := "allowed"
 	orgdenied := "denied"
+	repoOwnerFileAllowed := "repoOwnerAllowed"
+
 	errit := "err"
 
 	mux.HandleFunc("/orgs/"+orgallowed+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
@@ -26,8 +29,21 @@ func TestAclCheck(t *testing.T) {
 	mux.HandleFunc("/orgs/"+orgdenied+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(rw, `[]`)
 	})
+
 	mux.HandleFunc("/orgs/"+errit+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(rw, `x1x`)
+	})
+
+	mux.HandleFunc("/orgs/"+repoOwnerFileAllowed+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(rw, `[]`)
+	})
+
+	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/contents/OWNERS", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(rw, `{"name": "OWNERS", "path": "OWNERS", "sha": "ownerssha"}`)
+	})
+
+	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/git/blobs/ownerssha", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(rw, `{"content": "%s"}`, base64.RawStdEncoding.EncodeToString([]byte("approvers:\n  - approved\n")))
 	})
 
 	gvcs := webvcs.GithubVCS{
@@ -46,6 +62,15 @@ func TestAclCheck(t *testing.T) {
 			runinfo: &webvcs.RunInfo{
 				Owner:  orgallowed,
 				Sender: "login_allowed",
+			},
+			allowed: true,
+			wantErr: false,
+		},
+		{
+			name: "sender allowed from owner file",
+			runinfo: &webvcs.RunInfo{
+				Owner:  repoOwnerFileAllowed,
+				Sender: "approved",
 			},
 			allowed: true,
 			wantErr: false,
