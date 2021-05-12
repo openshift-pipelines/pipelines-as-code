@@ -79,6 +79,7 @@ spec:
   params:
     - name: installation_id
     - name: payload
+    - name: event_type
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
@@ -93,11 +94,13 @@ spec:
             value: $(tt.params.installation_id)
           - name: payload
             value: $(tt.params.payload)
-
+          - name: event_type
+            value: $(tt.params.event_type)
         pipelineSpec:
           params:
             - name: installation_id
             - name: payload
+            - name: event_type
           workspaces:
             - name: secrets
           tasks:
@@ -116,6 +119,8 @@ spec:
                 params:
                   - name: payload
                     type: string
+                  - name: event_type
+                    type: string
                   - name: token
                     type: string
                 steps:
@@ -127,6 +132,8 @@ spec:
                             fieldPath: metadata.labels['tekton.dev/pipelineRun']
                       - name: PAC_PAYLOAD
                         value: "$(params.payload)"
+                      - name: PAC_EVENT_TYPE
+                        value: "$(params.event_type)"
                       - name: PAC_TOKEN
                         value: "$(params.token)"
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
@@ -135,6 +142,8 @@ spec:
                   value: "$(tasks.get-token.results.token)"
                 - name: payload
                   value: "$(params.payload)"
+                - name: event_type
+                  value: "$(params.event_type)"
         workspaces:
           - name: secrets
             secret:
@@ -152,5 +161,7 @@ spec:
   params:
     - name: payload
       value: $(body)
+    - name: event_type
+      value: $(header.X-GitHub-Event)
     - name: installation_id
       value: $(body.installation.id)
