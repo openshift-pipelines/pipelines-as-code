@@ -72,8 +72,9 @@ func TestGetInfo(t *testing.T) {
 		Repository:    "bar",
 		DefaultBranch: "main",
 		SHA:           "d0d0",
-		URL:           "http://chmouel.com",
-		Branch:        "goodRuninfoBranch",
+		URL:           "https://chmouel.com",
+		BaseBranch:    "goodRuninfoBranch",
+		HeadBranch:    "headRunInfoBranch",
 		Sender:        "ElSender",
 		EventType:     "pull_request",
 	}
@@ -155,7 +156,7 @@ func TestGetInfo(t *testing.T) {
 				assert.ErrorContains(t, err, tC.errmsg)
 			} else {
 				assert.NilError(t, err)
-				assert.Equal(t, runinfo.Branch, tC.branchShouldBe)
+				assert.Equal(t, runinfo.BaseBranch, tC.branchShouldBe)
 			}
 		})
 	}

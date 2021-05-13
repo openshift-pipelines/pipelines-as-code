@@ -169,11 +169,12 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	forcedNamespace := "laotronamspace"
 	installedNamespace := "nomespace"
 	runinfo := &webvcs.RunInfo{
-		SHA:           "principale",
+		SHA:           "sha",
 		Owner:         "organizatione",
 		Repository:    "repo",
 		URL:           "https://service/documentation",
-		Branch:        "press",
+		HeadBranch:    "press",
+		BaseBranch:    "main",
 		DefaultBranch: defaultBranch,
 		Sender:        "carlos_valderama",
 	}
@@ -206,7 +207,7 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	}
 	datas := testclient.Data{
 		Repositories: []*v1alpha1.Repository{
-			newRepo("repo", runinfo.URL, runinfo.Branch, installedNamespace, installedNamespace),
+			newRepo("repo", runinfo.URL, runinfo.BaseBranch, installedNamespace, installedNamespace),
 		},
 	}
 	stdata, _ := testclient.SeedTestData(t, ctx, datas)
@@ -232,7 +233,8 @@ func TestRun(t *testing.T) {
 		Owner:      "organizationes",
 		Repository: "lagaffe",
 		URL:        "https://service/documentation",
-		Branch:     "press",
+		HeadBranch: "press",
+		BaseBranch: "main",
 		Sender:     "fantasio",
 	}
 
@@ -336,7 +338,7 @@ func TestRun(t *testing.T) {
 			newRepo(
 				"test-run",
 				runinfo.URL,
-				runinfo.Branch,
+				runinfo.BaseBranch,
 				"namespace",
 				"namespace"),
 		},

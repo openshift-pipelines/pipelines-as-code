@@ -68,6 +68,8 @@ def main(args):
         event_type = "pull_request"
     elif jeez["action"] in ("rerequested") and "check_run" in jeez:
         event_type = "check_run"
+    elif jeez["action"] in ("created") and "issue" in jeez:
+        event_type = "issue_comment"
     else:
         raise Exception("Unknown event_type")
 

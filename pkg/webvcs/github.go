@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,9 +23,10 @@ type GithubVCS struct {
 }
 
 type RunInfo struct {
-	Branch        string
-	CheckRunID    *int64
+	BaseBranch    string // branch against where we are making the PR
+	HeadBranch    string // branch from where our SHA get tested
 	DefaultBranch string
+	CheckRunID    *int64
 	EventType     string
 	Owner         string
 	Repository    string
@@ -34,10 +37,10 @@ type RunInfo struct {
 }
 
 func (r RunInfo) Check() error {
-	if r.SHA != "" && r.Branch != "" &&
+	if r.SHA != "" && r.BaseBranch != "" &&
 		r.Repository != "" && r.DefaultBranch != "" &&
-		r.Owner != "" && r.URL != "" && r.Sender != "" &&
-		r.EventType != "" {
+		r.HeadBranch != "" && r.Owner != "" && r.URL != "" &&
+		r.Sender != "" && r.EventType != "" {
 		return nil
 	}
 	return fmt.Errorf("missing values in runInfo")
@@ -60,7 +63,7 @@ func NewGithubVCS(token string) GithubVCS {
 	}
 }
 
-// We got a bunch of \r\n or \n and others from triggers/github, so let just
+// payloadFix since we are getting a bunch of \r\n or \n and others from triggers/github, so let just
 // workaround it. Originally from https://stackoverflow.com/a/52600147
 func payloadFix(payload string) string {
 	replacement := " "
@@ -84,11 +87,37 @@ func (v GithubVCS) handleReRequestEvent(log *zap.SugaredLogger, event *github.Ch
 	}
 	prNumber := event.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
 	log.Infof("Recheck of PR %s/%s#%d has been requested", runinfo.Owner, runinfo.Repository, prNumber)
+	return v.getPullRequest(runinfo, prNumber)
+}
+
+func (v GithubVCS) handleIssueCommentEvent(log *zap.SugaredLogger, event *github.IssueCommentEvent) (RunInfo, error) {
+	runinfo := RunInfo{
+		Owner:      event.GetRepo().GetOwner().GetLogin(),
+		Repository: event.GetRepo().GetName(),
+	}
+	if !event.GetIssue().IsPullRequest() {
+		return RunInfo{}, fmt.Errorf("issue comment is not coming from a pull_request")
+	}
+
+	// We are getting the full URL so we have to get the last part to get the PR number,
+	// we don't have to care about URL query string/hash and other stuff because
+	// that comes up from the API.
+	prNumber, err := strconv.Atoi(path.Base(event.GetIssue().GetPullRequestLinks().GetHTMLURL()))
+	if err != nil {
+		return RunInfo{}, err
+	}
+
+	log.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runinfo.Owner, runinfo.Repository, prNumber)
+	return v.getPullRequest(runinfo, prNumber)
+}
+
+// getPullRequest get a pull request details
+func (v GithubVCS) getPullRequest(runinfo RunInfo, prNumber int) (RunInfo, error) {
 	pr, _, err := v.Client.PullRequests.Get(context.Background(), runinfo.Owner, runinfo.Repository, prNumber)
 	if err != nil {
 		return runinfo, err
 	}
-	// Make sure to use the Base for Default Branch or there would be a potential hijack
+	// Make sure to use the Base for Default BaseBranch or there would be a potential hijack
 	runinfo.DefaultBranch = pr.GetBase().GetRepo().GetDefaultBranch()
 	runinfo.URL = pr.GetBase().GetRepo().GetHTMLURL()
 	runinfo.SHA = pr.GetHead().GetSHA()
@@ -96,7 +125,8 @@ func (v GithubVCS) handleReRequestEvent(log *zap.SugaredLogger, event *github.Ch
 	// would use the CheckRun Sender instead of the rerequest sender, could it
 	// be a room for abuse? 🤔
 	runinfo.Sender = pr.GetUser().GetLogin()
-	runinfo.Branch = pr.GetHead().GetRef()
+	runinfo.HeadBranch = pr.GetHead().GetRef()
+	runinfo.BaseBranch = pr.GetBase().GetRef()
 	return runinfo, nil
 }
 
@@ -120,6 +150,12 @@ func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, eventType, payload strin
 			if err != nil {
 				return &runinfo, err
 			}
+
+		}
+	case *github.IssueCommentEvent:
+		runinfo, err = v.handleIssueCommentEvent(log, event)
+		if err != nil {
+			return &runinfo, err
 		}
 	case *github.PullRequestEvent:
 		runinfo = RunInfo{
@@ -128,7 +164,8 @@ func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, eventType, payload strin
 			DefaultBranch: event.GetRepo().GetDefaultBranch(),
 			SHA:           event.GetPullRequest().Head.GetSHA(),
 			URL:           event.GetRepo().GetHTMLURL(),
-			Branch:        event.GetPullRequest().Base.GetRef(),
+			BaseBranch:    event.GetPullRequest().Base.GetRef(),
+			HeadBranch:    event.GetPullRequest().Head.GetRef(),
 			Sender:        event.GetPullRequest().GetUser().GetLogin(),
 		}
 	default:
@@ -147,7 +184,7 @@ func (v GithubVCS) CheckSenderOrgMembership(runinfo *RunInfo) (bool, error) {
 		})
 
 	// If we are 404 it means we are checking a repo owner and not a org so let's bail out with grace
-	if resp.Response.StatusCode == http.StatusNotFound {
+	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
 		return false, nil
 	}
 
@@ -170,7 +207,7 @@ func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.Reposi
 	if fp != nil {
 		return nil, fmt.Errorf("the object %s is a file instead of a directory", path)
 	}
-	if resp.Response.StatusCode == http.StatusNotFound {
+	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
 		return nil, nil
 	}
 
@@ -182,11 +219,11 @@ func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.Reposi
 }
 
 // GetFileInsideRepo Get a file via Github API using the runinfo information, we
-// branch is true, the user the branch as ref isntead of the SHA
+// branch is true, the user the branch as ref instead of the SHA
 func (v GithubVCS) GetFileInsideRepo(path string, branch bool, runinfo *RunInfo) (string, error) {
 	ref := runinfo.SHA
 	if branch {
-		ref = runinfo.Branch
+		ref = runinfo.BaseBranch
 	}
 
 	fp, objects, resp, err := v.Client.Repositories.GetContents(v.Context, runinfo.Owner,
@@ -209,16 +246,16 @@ func (v GithubVCS) GetFileInsideRepo(path string, branch bool, runinfo *RunInfo)
 	return string(getobj), nil
 }
 
-// GetFileFromDefaultBranch will get a file directly from the Default Branch as
+// GetFileFromDefaultBranch will get a file directly from the Default BaseBranch as
 // configured in runinfo which is directly set in webhook by Github
 func (v GithubVCS) GetFileFromDefaultBranch(path string, runinfo *RunInfo) (string, error) {
 	runInfoOnMain := &RunInfo{}
 	runinfo.DeepCopyInto(runInfoOnMain)
-	runInfoOnMain.Branch = runInfoOnMain.DefaultBranch
+	runInfoOnMain.BaseBranch = runInfoOnMain.DefaultBranch
 
 	tektonyaml, err := v.GetFileInsideRepo(path, true, runInfoOnMain)
 	if err != nil {
-		return "", fmt.Errorf("cannot find %s inside the %s branch: %s", path, runInfoOnMain.Branch, err)
+		return "", fmt.Errorf("cannot find %s inside the %s branch: %s", path, runInfoOnMain.BaseBranch, err)
 	}
 	return tektonyaml, err
 }
