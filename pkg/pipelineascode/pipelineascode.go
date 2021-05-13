@@ -84,7 +84,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 			return err
 		}
 	}
-	repo, err := getRepoByCR(cs, runinfo.URL, runinfo.Branch, maintekton.Namespace)
+	repo, err := getRepoByCR(cs, runinfo.URL, runinfo.BaseBranch, maintekton.Namespace)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	if repo.Spec.Namespace == "" {
 		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "skipped",
 			"Could not find a configuration for this repository", "https://tenor.com/search/sad-cat-gifs")
-		cs.Log.Infof("Could not find a namespace match for %s/%s on %s", runinfo.Owner, runinfo.Repository, runinfo.Branch)
+		cs.Log.Infof("Could not find a namespace match for %s/%s on %s", runinfo.Owner, runinfo.Repository, runinfo.BaseBranch)
 		return nil
 	}
 
@@ -104,7 +104,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	}
 	cs.Log.Infow("Loading payload",
 		"url", runinfo.URL,
-		"branch", runinfo.Branch,
+		"branch", runinfo.BaseBranch,
 		"sha", runinfo.SHA,
 		"event_type", "pull_request")
 
@@ -163,7 +163,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		"tekton.dev/pipeline-ascode-repository": runinfo.Repository,
 		"tekton.dev/pipeline-ascode-sha":        runinfo.SHA,
 		"tekton.dev/pipeline-ascode-sender":     runinfo.Sender,
-		"tekton.dev/pipeline-ascode-branch":     runinfo.Branch,
+		"tekton.dev/pipeline-ascode-branch":     runinfo.BaseBranch,
 	}
 
 	ctx := context.Background()

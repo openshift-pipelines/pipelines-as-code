@@ -10,7 +10,44 @@ metadata:
 spec:
   serviceAccountName: openshift-pipelines-ascode-sa-el
   triggers:
-    - name: github
+    - name: github-issue-comment-retest
+      bindings:
+        - ref: openshift-pipelines-ascode-bindings
+      interceptors:
+        - github:
+            secretRef:
+              secretName: "github-app-secret"
+              secretKey: "webhook.secret"
+            eventTypes:
+              - issue_comment
+        - cel:
+            filter: >-
+              body.action == 'created' &&
+              'pull_request' in body.issue &&
+              body.issue.state == 'open' &&
+              body.comment.body.matches('^/retest($| [^ ]*[ ]*$)')
+      template:
+        ref: openshift-pipelines-ascode-template
+
+    # When using the UI and clicking on Re-run failed test
+    - name: github-check-run-recheck
+      bindings:
+        - ref: openshift-pipelines-ascode-bindings
+      interceptors:
+        - github:
+            secretRef:
+              secretName: "github-app-secret"
+              secretKey: "webhook.secret"
+            eventTypes:
+              - check_run
+        - cel:
+            filter: >-
+              body.action in ['rerequested'] && 'check_run' in body && 'installation' in body
+      template:
+        ref: openshift-pipelines-ascode-template
+
+    # When sending a new Pull Request
+    - name: github-pull-request
       bindings:
         - ref: openshift-pipelines-ascode-bindings
       interceptors:
@@ -20,10 +57,9 @@ spec:
               secretKey: "webhook.secret"
             eventTypes:
               - pull_request
-              - issue_comment
-              - check_run
         - cel:
-            filter: "body.action in ['created', 'rerequested', 'opened', 'synchronize'] && 'installation' in body"
+            filter: >-
+              body.action in ['created', 'synchronize', 'opened'] && 'installation' in body
       template:
         ref: openshift-pipelines-ascode-template
 
