@@ -30,38 +30,39 @@ func TestPayLoadFix(t *testing.T) {
 	assert.NilError(t, err)
 	gvcs := NewGithubVCS("none")
 	logger, _ := getLogger()
-	_, err = gvcs.ParsePayload(logger, payloadFix(string(b)))
+	_, err = gvcs.ParsePayload(logger, "pull_request", payloadFix(string(b)))
 	// would bomb out on "assertion failed: error is not nil: invalid character
 	// '\n' in string literal" if we don't payloadfix
 	assert.NilError(t, err)
 }
 
 func TestParsePayloadRerequest(t *testing.T) {
-	repoSender := "jean-pierre"
-	repoOwner := "openshift"
+	checkrunSender := "jean-pierre"
+	prOwner := "openshift"
 	repoName := "pipelines"
 	prNumber := "123"
 	checkrunEvent := fmt.Sprintf(`{"action": "rerequested", 
 	"sender": {"login": "%s"},
 	"check_run": {"check_suite": {"pull_requests": [{"number": %s}]}}, 
 	"repository": {"name": "%s", "owner": {"login": "%s"}}}`,
-		repoSender, prNumber, repoName, repoOwner)
+		checkrunSender, prNumber, repoName, prOwner)
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
-	mux.HandleFunc("/repos/"+repoOwner+"/"+repoName+"/pulls/"+prNumber, func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(rw, `{"repo": {"name": "%s", "owner": {"login": "%s"}}}`, repoName, repoOwner)
+	mux.HandleFunc("/repos/"+prOwner+"/"+repoName+"/pulls/"+prNumber, func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(rw, `{"head": {"ref": "123"}, "user": {"login": "%s"}}`, prOwner)
 	})
 	gvcs := GithubVCS{
 		Client:  fakeclient,
 		Context: context.Background(),
 	}
 	logger, observer := getLogger()
-	runinfo, err := gvcs.ParsePayload(logger, checkrunEvent)
+	runinfo, err := gvcs.ParsePayload(logger, "check_run", checkrunEvent)
 	assert.NilError(t, err)
 
-	assert.Equal(t, repoOwner, runinfo.Owner)
+	assert.Equal(t, prOwner, runinfo.Owner)
 	assert.Equal(t, repoName, runinfo.Repository)
-	assert.Equal(t, repoSender, runinfo.Sender)
+	assert.Assert(t, checkrunSender != runinfo.Sender)
+
 	assert.Assert(t, strings.Contains(observer.TakeAll()[0].Message, "Recheck of PR"))
 }
 
@@ -72,17 +73,33 @@ func TestParsePayload(t *testing.T) {
 	gvcs := NewGithubVCS("none")
 	logger, _ := getLogger()
 
-	runinfo, err := gvcs.ParsePayload(logger, string(b))
+	runinfo, err := gvcs.ParsePayload(logger, "pull_request", string(b))
 	assert.NilError(t, err)
 	assert.Assert(t, runinfo.Branch == "master")
 	assert.Assert(t, runinfo.Owner == "chmouel")
 	assert.Assert(t, runinfo.Repository == "scratchpad")
 	assert.Assert(t, runinfo.URL == "https://github.com/chmouel/scratchpad")
-	_, err = gvcs.ParsePayload(logger, "hello moto")
-	assert.ErrorContains(t, err, "invalid character")
+}
 
-	_, err = gvcs.ParsePayload(logger, "{\"hello\": \"moto\"}")
-	assert.Error(t, err, "cannot parse payload as PR")
+func TestParsePayloadInvalid(t *testing.T) {
+	gvcs := NewGithubVCS("none")
+	logger, _ := getLogger()
+	_, err := gvcs.ParsePayload(logger, "pull_request", "hello moto")
+	assert.ErrorContains(t, err, "invalid character")
+}
+
+func TestParsePayloadUnkownEvent(t *testing.T) {
+	gvcs := NewGithubVCS("none")
+	logger, _ := getLogger()
+	_, err := gvcs.ParsePayload(logger, "foo", "{\"hello\": \"moto\"}")
+	assert.ErrorContains(t, err, "unknown X-Github-Event")
+}
+
+func TestParsePayCannotParse(t *testing.T) {
+	gvcs := NewGithubVCS("none")
+	logger, _ := getLogger()
+	_, err := gvcs.ParsePayload(logger, "gollum", "{}")
+	assert.Error(t, err, "this event is not supported")
 }
 
 func setupFakesURLS() (client GithubVCS, teardown func()) {
@@ -416,6 +433,7 @@ func TestRunInfoCheck(t *testing.T) {
 				Branch:        tt.fields.Branch,
 				CheckRunID:    tt.fields.CheckRunID,
 				Sender:        tt.fields.Sender,
+				EventType:     "pull_request",
 			}
 			if err := r.Check(); (err != nil) != tt.wantErr {
 				t.Errorf("RunInfo.Check() error = %v, wantErr %v", err, tt.wantErr)

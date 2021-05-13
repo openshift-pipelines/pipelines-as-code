@@ -21,21 +21,23 @@ type GithubVCS struct {
 }
 
 type RunInfo struct {
+	Branch        string
+	CheckRunID    *int64
+	DefaultBranch string
+	EventType     string
 	Owner         string
 	Repository    string
-	DefaultBranch string
+	Sender        string
 	SHA           string
 	URL           string
-	Branch        string
-	Sender        string
-	CheckRunID    *int64
 	WebConsoleURL string
 }
 
 func (r RunInfo) Check() error {
 	if r.SHA != "" && r.Branch != "" &&
 		r.Repository != "" && r.DefaultBranch != "" &&
-		r.Owner != "" && r.URL != "" && r.Sender != "" {
+		r.Owner != "" && r.URL != "" && r.Sender != "" &&
+		r.EventType != "" {
 		return nil
 	}
 	return fmt.Errorf("missing values in runInfo")
@@ -75,60 +77,65 @@ func payloadFix(payload string) string {
 	return replacer.Replace(payload)
 }
 
-func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, payload string) (*RunInfo, error) {
-	runinfo := &RunInfo{}
-	payload = payloadFix(payload)
-	prMap := &github.PullRequestEvent{}
-	err := json.Unmarshal([]byte(payload), prMap)
+func (v GithubVCS) handleReRequestEvent(log *zap.SugaredLogger, event *github.CheckRunEvent) (RunInfo, error) {
+	runinfo := RunInfo{
+		Owner:      event.GetRepo().GetOwner().GetLogin(),
+		Repository: event.GetRepo().GetName(),
+	}
+	prNumber := event.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
+	log.Infof("Recheck of PR %s/%s#%d has been requested", runinfo.Owner, runinfo.Repository, prNumber)
+	pr, _, err := v.Client.PullRequests.Get(context.Background(), runinfo.Owner, runinfo.Repository, prNumber)
 	if err != nil {
 		return runinfo, err
 	}
-
-	checkrunEvent := new(github.CheckRunEvent)
-
-	err = json.Unmarshal([]byte(payload), &checkrunEvent)
-	if err != nil {
-		return runinfo, err
-	}
-
-	// If the user  has requested a recheck then fetch the pr link and use that.
-	if checkrunEvent.GetAction() == "rerequested" {
-		runinfo.Owner = checkrunEvent.GetRepo().Owner.GetLogin()
-		runinfo.Sender = checkrunEvent.GetSender().GetLogin()
-		runinfo.Repository = checkrunEvent.GetRepo().GetName()
-		prNumber := checkrunEvent.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
-
-		log.Info("Recheck of PR %s/%s#%s has been requested", runinfo.Owner, runinfo.Repository, prNumber)
-		// There should be only one pull_request, I am not quite sure how a
-		// checksuite with multiple PR can be done 🤔
-		pr, _, err := v.Client.PullRequests.Get(context.Background(), runinfo.Owner, runinfo.Repository, prNumber)
-		if err != nil {
-			return &RunInfo{}, err
-		}
-		prMap.PullRequest = pr
-	}
-
-	if prMap.PullRequest == nil {
-		return &RunInfo{}, errors.New("cannot parse payload as PR")
-	}
-
-	// This should already been set from the rerequest event
-	if runinfo.Sender == "" {
-		runinfo.Sender = prMap.GetPullRequest().GetUser().GetLogin()
-	}
-	if runinfo.Repository == "" {
-		runinfo.Repository = prMap.GetRepo().GetName()
-	}
-	if runinfo.Owner == "" {
-		runinfo.Owner = prMap.GetRepo().Owner.GetLogin()
-	}
-
-	runinfo.DefaultBranch = prMap.GetRepo().GetDefaultBranch()
-	runinfo.URL = prMap.GetRepo().GetHTMLURL()
-	runinfo.SHA = prMap.PullRequest.Head.GetSHA()
-	runinfo.Branch = prMap.PullRequest.Base.GetRef()
-
+	// Make sure to use the Base for Default Branch or there would be a potential hijack
+	runinfo.DefaultBranch = pr.GetBase().GetRepo().GetDefaultBranch()
+	runinfo.URL = pr.GetBase().GetRepo().GetHTMLURL()
+	runinfo.SHA = pr.GetHead().GetSHA()
+	// TODO: Maybe if we wanted to allow rerequest from non approved user we
+	// would use the CheckRun Sender instead of the rerequest sender, could it
+	// be a room for abuse? 🤔
+	runinfo.Sender = pr.GetUser().GetLogin()
+	runinfo.Branch = pr.GetHead().GetRef()
 	return runinfo, nil
+}
+
+// ParsePayload parse payload event
+func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, eventType, payload string) (*RunInfo, error) {
+	var runinfo RunInfo
+	payload = payloadFix(payload)
+	event, err := github.ParseWebHook(eventType, []byte(payloadFix(payload)))
+	if err != nil {
+		return &runinfo, err
+	}
+	err = json.Unmarshal([]byte(payload), &event)
+	if err != nil {
+		return &runinfo, err
+	}
+
+	switch event := event.(type) {
+	case *github.CheckRunEvent:
+		if event.GetAction() == "rerequested" {
+			runinfo, err = v.handleReRequestEvent(log, event)
+			if err != nil {
+				return &runinfo, err
+			}
+		}
+	case *github.PullRequestEvent:
+		runinfo = RunInfo{
+			Owner:         event.GetRepo().Owner.GetLogin(),
+			Repository:    event.GetRepo().GetName(),
+			DefaultBranch: event.GetRepo().GetDefaultBranch(),
+			SHA:           event.GetPullRequest().Head.GetSHA(),
+			URL:           event.GetRepo().GetHTMLURL(),
+			Branch:        event.GetPullRequest().Base.GetRef(),
+			Sender:        event.GetPullRequest().GetUser().GetLogin(),
+		}
+	default:
+		return &runinfo, errors.New("this event is not supported")
+	}
+	runinfo.EventType = eventType
+	return &runinfo, nil
 }
 
 // CheckSenderOrgMembership Get sender user's organization. We can
