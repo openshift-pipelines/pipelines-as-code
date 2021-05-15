@@ -20,9 +20,9 @@ const (
 
 // getOpenshiftConsole use dynamic client to get the route of the openshift
 // console where we can point to.
-func getOpenshiftConsole(cs *cli.Clients, ns, pr string) (string, error) {
+func getOpenshiftConsole(ctx context.Context, cs *cli.Clients, ns, pr string) (string, error) {
 	gvr := schema.GroupVersionResource{Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource}
-	route, err := cs.Dynamic.Resource(gvr).Namespace(openShiftConsoleNS).Get(context.Background(), openShiftConsoleRouteName, metav1.GetOptions{})
+	route, err := cs.Dynamic.Resource(gvr).Namespace(openShiftConsoleNS).Get(ctx, openShiftConsoleRouteName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -49,10 +49,10 @@ func getOpenshiftConsole(cs *cli.Clients, ns, pr string) (string, error) {
 
 // GetConsoleUI Get a Console URL, OpenShift Console or Tekton Dashboard.
 // don't error if we can't find it.
-func GetConsoleUI(cs *cli.Clients, ns, pr string) (string, error) {
+func GetConsoleUI(ctx context.Context, cs *cli.Clients, ns, pr string) (string, error) {
 	var url string
 	var err error
-	url, err = getOpenshiftConsole(cs, ns, pr)
+	url, err = getOpenshiftConsole(ctx, cs, ns, pr)
 	if err != nil {
 		return "", err
 	}

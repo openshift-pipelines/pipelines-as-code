@@ -1,6 +1,8 @@
 package kubeinteraction
 
 import (
+	"context"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	cliinterface "github.com/tektoncd/cli/pkg/cli"
@@ -12,8 +14,8 @@ type Interaction struct {
 	TektonCliLogsOptions clioptions.LogOptions
 }
 
-func (k Interaction) GetConsoleUI(ns, pr string) (string, error) {
-	return consoleui.GetConsoleUI(k.Clients, ns, pr)
+func (k Interaction) GetConsoleUI(ctx context.Context, ns, pr string) (string, error) {
+	return consoleui.GetConsoleUI(ctx, k.Clients, ns, pr)
 }
 
 func NewKubernetesInteraction(c *cli.Clients) (*Interaction, error) {

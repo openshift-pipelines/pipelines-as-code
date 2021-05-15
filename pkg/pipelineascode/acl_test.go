@@ -1,7 +1,6 @@
 package pipelineascode
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestAclCheck(t *testing.T) {
@@ -46,9 +46,9 @@ func TestAclCheck(t *testing.T) {
 		fmt.Fprintf(rw, `{"content": "%s"}`, base64.RawStdEncoding.EncodeToString([]byte("approvers:\n  - approved\n")))
 	})
 
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gvcs := webvcs.GithubVCS{
-		Client:  fakeclient,
-		Context: context.Background(),
+		Client: fakeclient,
 	}
 
 	tests := []struct {
@@ -109,7 +109,7 @@ func TestAclCheck(t *testing.T) {
 				GithubClient: gvcs,
 			}
 
-			got, err := aclCheck(&cs, tt.runinfo)
+			got, err := aclCheck(ctx, &cs, tt.runinfo)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("aclCheck() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -7,8 +7,8 @@ import (
 )
 
 // GetNamespace get a namespace
-func (k Interaction) GetNamespace(namespace string) error {
-	_, err := k.Clients.Kube.CoreV1().Namespaces().Get(context.Background(), namespace, v1.GetOptions{})
+func (k Interaction) GetNamespace(ctx context.Context, namespace string) error {
+	_, err := k.Clients.Kube.CoreV1().Namespaces().Get(ctx, namespace, v1.GetOptions{})
 	if err != nil {
 		k.Clients.Log.Infof("Namespace: %s cannot be found", namespace)
 		return err

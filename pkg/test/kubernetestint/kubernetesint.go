@@ -1,6 +1,9 @@
 package kubernetestint
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type KinterfaceTest struct {
 	ConsoleURL     string
@@ -9,11 +12,11 @@ type KinterfaceTest struct {
 	prDescribe string
 }
 
-func (k *KinterfaceTest) GetConsoleUI(ns string, pr string) (string, error) {
+func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string) (string, error) {
 	return k.ConsoleURL, nil
 }
 
-func (k *KinterfaceTest) GetNamespace(ns string) error {
+func (k *KinterfaceTest) GetNamespace(ctx context.Context, ns string) error {
 	if k.NamespaceError {
 		return errors.New("cannot find Namespace")
 	}

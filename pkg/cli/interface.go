@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"net/http"
 
 	pacversioned "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
@@ -36,8 +37,8 @@ type Params interface {
 }
 
 type KubeInteractionIntf interface {
-	GetConsoleUI(string, string) (string, error)
-	GetNamespace(string) error
+	GetConsoleUI(context.Context, string, string) (string, error)
+	GetNamespace(context.Context, string) error
 	TektonCliPRDescribe(string, string) (string, error)
 	TektonCliFollowLogs(string, string) (string, error)
 }

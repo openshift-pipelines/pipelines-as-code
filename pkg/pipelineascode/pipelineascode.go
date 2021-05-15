@@ -24,11 +24,11 @@ type Options struct {
 	RunInfo     webvcs.RunInfo
 }
 
-func getRepoByCR(cs *cli.Clients, url, branch, forceNamespace string) (apipac.Repository, error) {
+func getRepoByCR(ctx context.Context, cs *cli.Clients, url, branch, forceNamespace string) (apipac.Repository, error) {
 	var repository apipac.Repository
 
 	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
-		context.Background(), metav1.ListOptions{})
+		ctx, metav1.ListOptions{})
 	if err != nil {
 		return repository, err
 	}
@@ -54,51 +54,53 @@ func getRepoByCR(cs *cli.Clients, url, branch, forceNamespace string) (apipac.Re
 	return repository, nil
 }
 
-func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo) error {
+// Run over the main loop
+func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo) error {
 	var err error
 	var maintekton TektonYamlConfig
 
-	checkRun, err := cs.GithubClient.CreateCheckRun("in_progress", runinfo)
+	checkRun, err := cs.GithubClient.CreateCheckRun(ctx, "in_progress", runinfo)
 	if err != nil {
 		return err
 	}
 	runinfo.CheckRunID = checkRun.ID
 
-	allowed, err := aclCheck(cs, runinfo)
+	allowed, err := aclCheck(ctx, cs, runinfo)
 	if err != nil {
 		return err
 	}
 
 	if !allowed {
-		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "skipped",
+		_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "skipped",
 			fmt.Sprintf("User %s is not allowed to run CI on this repo.", runinfo.Sender),
 			"https://tenor.com/search/police-cat-gifs")
 		cs.Log.Infof("User %s is not allowed to run CI on this repo", runinfo.Sender)
 		return nil
 	}
 
-	maintektonyaml, _ := cs.GithubClient.GetFileFromDefaultBranch(filepath.Join(tektonDir, tektonConfigurationFile), runinfo)
+	maintektonyaml, _ := cs.GithubClient.GetFileFromDefaultBranch(ctx, filepath.Join(tektonDir, tektonConfigurationFile), runinfo)
 	if maintektonyaml != "" {
-		maintekton, err = processTektonYaml(cs, runinfo, maintektonyaml)
+		maintekton, err = processTektonYaml(ctx, cs, runinfo, maintektonyaml)
 		if err != nil {
 			return err
 		}
 	}
-	repo, err := getRepoByCR(cs, runinfo.URL, runinfo.BaseBranch, maintekton.Namespace)
+
+	repo, err := getRepoByCR(ctx, cs, runinfo.URL, runinfo.BaseBranch, maintekton.Namespace)
 	if err != nil {
 		return err
 	}
 
 	if repo.Spec.Namespace == "" {
-		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "skipped",
+		_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "skipped",
 			"Could not find a configuration for this repository", "https://tenor.com/search/sad-cat-gifs")
 		cs.Log.Infof("Could not find a namespace match for %s/%s on %s", runinfo.Owner, runinfo.Repository, runinfo.BaseBranch)
 		return nil
 	}
 
-	objects, err := cs.GithubClient.GetTektonDir(tektonDir, runinfo)
+	objects, err := cs.GithubClient.GetTektonDir(ctx, tektonDir, runinfo)
 	if err != nil {
-		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "skipped",
+		_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "skipped",
 			"😿 Could not find a <b>.tekton/</b> directory for this repository", "https://tenor.com/search/sad-cat-gifs")
 		return err
 	}
@@ -108,11 +110,11 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		"sha", runinfo.SHA,
 		"event_type", "pull_request")
 
-	err = k8int.GetNamespace(repo.Spec.Namespace)
+	err = k8int.GetNamespace(ctx, repo.Spec.Namespace)
 	if err != nil {
 		return err
 	}
-	_, err = cs.GithubClient.CreateStatus(runinfo, "in_progress", "",
+	_, err = cs.GithubClient.CreateStatus(ctx, runinfo, "in_progress", "",
 		fmt.Sprintf("Creating pipelinerun in namespace <b>%s</b>", repo.Spec.Namespace),
 		"https://tenor.com/search/sad-cat-gifs")
 	if err != nil {
@@ -122,12 +124,12 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 	yamlConfig := TektonYamlConfig{}
 	for _, file := range objects {
 		if file.GetName() == tektonConfigurationFile {
-			data, err := cs.GithubClient.GetObject(file.GetSHA(), runinfo)
+			data, err := cs.GithubClient.GetObject(ctx, file.GetSHA(), runinfo)
 			if err != nil {
 				return err
 			}
 
-			yamlConfig, err = processTektonYaml(cs, runinfo, string(data))
+			yamlConfig, err = processTektonYaml(ctx, cs, runinfo, string(data))
 			if err != nil {
 				return err
 			}
@@ -135,7 +137,7 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		}
 	}
 
-	allTemplates, err := cs.GithubClient.GetTektonDirTemplate(objects, runinfo)
+	allTemplates, err := cs.GithubClient.GetTektonDirTemplate(ctx, objects, runinfo)
 	if err != nil {
 		return err
 	}
@@ -166,19 +168,18 @@ func Run(cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo
 		"tekton.dev/pipeline-ascode-branch":     runinfo.BaseBranch,
 	}
 
-	ctx := context.Background()
 	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
-	consoleURL, err := k8int.GetConsoleUI(repo.Spec.Namespace, pr.GetName())
+	consoleURL, err := k8int.GetConsoleUI(ctx, repo.Spec.Namespace, pr.GetName())
 	if err != nil {
 		// Don't bomb out if we can't get the console UI
 		consoleURL = "https://giphy.com/explore/cat-exercise-wheel"
 	}
 
-	_, err = cs.GithubClient.CreateStatus(runinfo, "in_progress", "",
+	_, err = cs.GithubClient.CreateStatus(ctx, runinfo, "in_progress", "",
 		fmt.Sprintf(`Starting Pipelinerun <b>%s</b> in namespace <b>%s</b><br><br>You can follow the execution on the command line with : <br><br><code>tkn pr logs -f -n %s %s</code>`,
 			pr.GetName(), repo.Spec.Namespace, repo.Spec.Namespace, pr.GetName()),
 		consoleURL)
