@@ -1,6 +1,7 @@
 package pipelineascode
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -49,7 +50,8 @@ func Command(p cli.Params) *cobra.Command {
 				return err
 			}
 
-			return runWrap(opts, cs, kinteract)
+			ctx := context.Background()
+			return runWrap(ctx, opts, cs, kinteract)
 		},
 	}
 
@@ -70,14 +72,14 @@ func Command(p cli.Params) *cobra.Command {
 	return cmd
 }
 
-func getRunInfoFromArgsOrPayload(cs *cli.Clients, payload string, runinfo *webvcs.RunInfo) (*webvcs.RunInfo, error) {
+func getRunInfoFromArgsOrPayload(ctx context.Context, cs *cli.Clients, payload string, runinfo *webvcs.RunInfo) (*webvcs.RunInfo, error) {
 	if err := runinfo.Check(); err == nil {
 		return runinfo, err
 	} else if payload == "" {
 		return &webvcs.RunInfo{}, fmt.Errorf("no payload or not enough params set properly")
 	}
 
-	payloadinfo, err := cs.GithubClient.ParsePayload(cs.Log, runinfo.EventType, payload)
+	payloadinfo, err := cs.GithubClient.ParsePayload(ctx, cs.Log, runinfo.EventType, payload)
 	if err != nil {
 		return &webvcs.RunInfo{}, err
 	}
@@ -90,7 +92,7 @@ func getRunInfoFromArgsOrPayload(cs *cli.Clients, payload string, runinfo *webvc
 }
 
 // Wrap around a Run, create a CheckStatusID if there is a failure.
-func runWrap(opts *pacpkg.Options, cs *cli.Clients, kinteract cli.KubeInteractionIntf) error {
+func runWrap(ctx context.Context, opts *pacpkg.Options, cs *cli.Clients, kinteract cli.KubeInteractionIntf) error {
 	if opts.PayloadFile != "" {
 		_, err := os.Stat(opts.PayloadFile)
 		if err != nil {
@@ -104,22 +106,22 @@ func runWrap(opts *pacpkg.Options, cs *cli.Clients, kinteract cli.KubeInteractio
 		opts.Payload = string(b)
 	}
 
-	runinfo, err := getRunInfoFromArgsOrPayload(cs, opts.Payload, &opts.RunInfo)
+	runinfo, err := getRunInfoFromArgsOrPayload(ctx, cs, opts.Payload, &opts.RunInfo)
 	if err != nil {
 		return err
 	}
 
 	// Get webconsole url as soon as possible to have a link to click there
-	url, err := kinteract.GetConsoleUI("", "")
+	url, err := kinteract.GetConsoleUI(ctx, "", "")
 	if err != nil {
 		cs.Log.Error(err)
 		url = defaultURL
 	}
 	runinfo.WebConsoleURL = url
 
-	err = pacpkg.Run(cs, kinteract, runinfo)
+	err = pacpkg.Run(ctx, cs, kinteract, runinfo)
 	if err != nil && runinfo.CheckRunID != nil && !strings.Contains(err.Error(), "403 Resource not accessible by integration") {
-		_, _ = cs.GithubClient.CreateStatus(runinfo, "completed", "failure",
+		_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "failure",
 			fmt.Sprintf("There was an issue validating the commit: %q", err),
 			runinfo.WebConsoleURL)
 	}

@@ -1,6 +1,7 @@
 package pipelineascode
 
 import (
+	"context"
 	"io/ioutil"
 	"strings"
 
@@ -28,7 +29,7 @@ func addTaskYamlDocuments(data string) string {
 	return "\n---\n" + strings.TrimSpace(data) + "\n"
 }
 
-func processTektonYaml(cs *cli.Clients, runinfo *webvcs.RunInfo, data string) (TektonYamlConfig, error) {
+func processTektonYaml(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data string) (TektonYamlConfig, error) {
 	tyConfig := TektonYamlConfig{}
 	ty := tektonYaml{}
 	err := yaml.Unmarshal([]byte(data), &ty)
@@ -55,7 +56,7 @@ func processTektonYaml(cs *cli.Clients, runinfo *webvcs.RunInfo, data string) (T
 			defer res.Body.Close()
 			tyConfig.RemoteTasks += addTaskYamlDocuments(string(data))
 		case strings.Contains(task, "/"):
-			data, err := cs.GithubClient.GetFileInsideRepo(task, false, runinfo)
+			data, err := cs.GithubClient.GetFileInsideRepo(ctx, task, false, runinfo)
 			if err != nil {
 				return tyConfig, err
 			}

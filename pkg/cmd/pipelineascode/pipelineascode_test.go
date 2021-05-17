@@ -19,9 +19,9 @@ import (
 )
 
 func TestRunWrapOld(t *testing.T) {
-	fakectx, _ := rtesting.SetupFakeContext(t)
+	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeghclient, mux, _, teardown := ghtesthelper.SetupGH()
-	stdata, _ := testclient.SeedTestData(t, fakectx, testclient.Data{})
+	stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	fakelogger := zap.New(observer).Sugar()
 	checkid := 1234
@@ -32,8 +32,7 @@ func TestRunWrapOld(t *testing.T) {
 	})
 	cs := &cli.Clients{
 		GithubClient: webvcs.GithubVCS{
-			Client:  fakeghclient,
-			Context: fakectx,
+			Client: fakeghclient,
 		},
 		Log:            fakelogger,
 		PipelineAsCode: stdata.PipelineAsCode,
@@ -47,11 +46,11 @@ func TestRunWrapOld(t *testing.T) {
 			EventType: "pull_request",
 		},
 	}
-	err := runWrap(options, cs, k8int)
+	err := runWrap(ctx, options, cs, k8int)
 	assert.ErrorContains(t, err, "no payload")
 
 	options.PayloadFile = "testdata/pull_request.json"
-	err = runWrap(options, cs, k8int)
+	err = runWrap(ctx, options, cs, k8int)
 	assert.NilError(t, err)
 }
 
@@ -62,6 +61,7 @@ func TestGetInfo(t *testing.T) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, ``)
 	})
+	ctx, _ := rtesting.SetupFakeContext(t)
 	cs := &cli.Clients{
 		GithubClient: webvcs.GithubVCS{
 			Client: fakeclient,
@@ -151,7 +151,7 @@ func TestGetInfo(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			runinfo, err := getRunInfoFromArgsOrPayload(cs, tC.payload, &tC.runinfo)
+			runinfo, err := getRunInfoFromArgsOrPayload(ctx, cs, tC.payload, &tC.runinfo)
 			if tC.errmsg != "" {
 				assert.ErrorContains(t, err, tC.errmsg)
 			} else {
@@ -163,9 +163,9 @@ func TestGetInfo(t *testing.T) {
 }
 
 func TestRunWrap(t *testing.T) {
-	fakectx, _ := rtesting.SetupFakeContext(t)
+	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeghclient, mux, _, teardown := ghtesthelper.SetupGH()
-	stdata, _ := testclient.SeedTestData(t, fakectx, testclient.Data{})
+	stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	fakelogger := zap.New(observer).Sugar()
 	checkid := 1234
@@ -179,8 +179,7 @@ func TestRunWrap(t *testing.T) {
 	defer teardown()
 	cs := &cli.Clients{
 		GithubClient: webvcs.GithubVCS{
-			Client:  fakeghclient,
-			Context: fakectx,
+			Client: fakeghclient,
 		},
 		Log:            fakelogger,
 		PipelineAsCode: stdata.PipelineAsCode,
@@ -211,7 +210,7 @@ func TestRunWrap(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := runWrap(tt.opts, cs, kinteract)
+			err := runWrap(ctx, tt.opts, cs, kinteract)
 			if tt.substrErr != "" {
 				assert.ErrorContains(t, err, tt.substrErr)
 			} else {

@@ -1,7 +1,6 @@
 package webvcs
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -30,15 +29,15 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 
 	mux.HandleFunc("/repos/check/run/check-runs", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{"id": 555}`)
+		_, _ = fmt.Fprint(w, `{"id": 555}`)
 	})
 
 	mux.HandleFunc("/repos/check/run/check-runs/2026", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{"id": 666}`)
+		_, _ = fmt.Fprint(w, `{"id": 666}`)
 	})
 
 	mux.HandleFunc("/repos/foo/bar/contents/README.md", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{
+		_, _ = fmt.Fprint(w, `{
 "name": "README.md",
 "sha": "readmemdsha",
 "type": "file"
@@ -46,7 +45,7 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 	})
 
 	mux.HandleFunc("/repos/foo/bar/git/blobs/readmemdsha", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{
+		_, _ = fmt.Fprint(w, `{
 "name": "README.md",
 "content": "aGVsbG8gbW90bwo=",
 "encoding": "base64"
@@ -54,7 +53,7 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 	})
 
 	mux.HandleFunc("/repos/tekton/dir/git/blobs/pipelineyaml", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{
+		_, _ = fmt.Fprint(w, `{
 "name": "README.md",
 "content": "aGVsbG8gcGlwZWxpbmV5YW1s",
 "encoding": "base64"
@@ -62,7 +61,7 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 	})
 
 	mux.HandleFunc("/repos/tekton/dir/git/blobs/runyaml", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{
+		_, _ = fmt.Fprint(w, `{
 "name": "README.md",
 "content": "aGVsbG8gcnVueWFtbA==",
 "encoding": "base64"
@@ -70,7 +69,7 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 	})
 
 	mux.HandleFunc("/repos/tekton/dir/git/blobs/tektonyaml", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{
+		_, _ = fmt.Fprint(w, `{
 "name": "README.md",
 "content": "aGVsbG8gdGVrdG9ueWFtbA==",
 "encoding": "base64"
@@ -78,7 +77,7 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 	})
 
 	mux.HandleFunc("/repos/tekton/dir/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `[{
+		_, _ = fmt.Fprint(w, `[{
 
 				  "name": "pipeline.yaml",
 				  "path": ".tekton/pipeline.yaml",
@@ -99,11 +98,11 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 		     }]`)
 	})
 	mux.HandleFunc("/repos/throw/error/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "ERRROR")
+		_, _ = fmt.Fprint(w, "ERRROR")
 	})
 
 	mux.HandleFunc("/repos/its/afile/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{
+		_, _ = fmt.Fprint(w, `{
 "name": ".tekton",
 "sha": "decfae2653959f7c6c25f21f026c3819bea41ecf",
 "type": "file",
@@ -113,21 +112,19 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 
-	ctx := context.Background()
 	gcvs := GithubVCS{
-		Client:  fakeclient,
-		Context: ctx,
+		Client: fakeclient,
 	}
-
 	return gcvs, teardown
 }
 
 func TestPayLoadFix(t *testing.T) {
 	b, err := ioutil.ReadFile("testdata/pull_request_with_newlines.json")
 	assert.NilError(t, err)
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gvcs := NewGithubVCS("none")
 	logger, _ := getLogger()
-	_, err = gvcs.ParsePayload(logger, "pull_request", payloadFix(string(b)))
+	_, err = gvcs.ParsePayload(ctx, logger, "pull_request", payloadFix(string(b)))
 	// would bomb out on "assertion failed: error is not nil: invalid character
 	// '\n' in string literal" if we don't payloadfix
 	assert.NilError(t, err)
@@ -146,14 +143,14 @@ func TestParsePayloadRerequest(t *testing.T) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 	mux.HandleFunc("/repos/"+prOwner+"/"+repoName+"/pulls/"+prNumber, func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(rw, `{"head": {"ref": "123"}, "user": {"login": "%s"}}`, prOwner)
+		_, _ = fmt.Fprintf(rw, `{"head": {"ref": "123"}, "user": {"login": "%s"}}`, prOwner)
 	})
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gvcs := GithubVCS{
-		Client:  fakeclient,
-		Context: context.Background(),
+		Client: fakeclient,
 	}
 	logger, observer := getLogger()
-	runinfo, err := gvcs.ParsePayload(logger, "check_run", checkrunEvent)
+	runinfo, err := gvcs.ParsePayload(ctx, logger, "check_run", checkrunEvent)
 	assert.NilError(t, err)
 
 	assert.Equal(t, prOwner, runinfo.Owner)
@@ -173,7 +170,7 @@ func TestParsePayLoadRetest(t *testing.T) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 	mux.HandleFunc("/repos/"+prOwner+"/"+repoName+"/pulls/"+prNumber, func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(rw, `{"head": {"ref": "123"}, "user": {"login": "%s"}}`, prOwner)
+		_, _ = fmt.Fprintf(rw, `{"head": {"ref": "123"}, "user": {"login": "%s"}}`, prOwner)
 	})
 
 	issueEvent := fmt.Sprintf(`{
@@ -196,11 +193,10 @@ func TestParsePayLoadRetest(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	logger, observer := getLogger()
 	gvcs := GithubVCS{
-		Client:  fakeclient,
-		Context: ctx,
+		Client: fakeclient,
 	}
 
-	runinfo, err := gvcs.ParsePayload(logger, "issue_comment", issueEvent)
+	runinfo, err := gvcs.ParsePayload(ctx, logger, "issue_comment", issueEvent)
 	assert.NilError(t, err)
 	assert.Equal(t, prOwner, runinfo.Owner)
 	// Make sure the PR owner is the runinfo.Owner and not the issueSender
@@ -213,10 +209,11 @@ func TestParsePayload(t *testing.T) {
 	b, err := ioutil.ReadFile("testdata/pull_request.json")
 	assert.NilError(t, err)
 
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gvcs := NewGithubVCS("none")
 	logger, _ := getLogger()
 
-	runinfo, err := gvcs.ParsePayload(logger, "pull_request", string(b))
+	runinfo, err := gvcs.ParsePayload(ctx, logger, "pull_request", string(b))
 	assert.NilError(t, err)
 	assert.Assert(t, runinfo.BaseBranch == "master")
 	assert.Assert(t, runinfo.Owner == "chmouel")
@@ -225,27 +222,31 @@ func TestParsePayload(t *testing.T) {
 }
 
 func TestParsePayloadInvalid(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gvcs := NewGithubVCS("none")
 	logger, _ := getLogger()
-	_, err := gvcs.ParsePayload(logger, "pull_request", "hello moto")
+	_, err := gvcs.ParsePayload(ctx, logger, "pull_request", "hello moto")
 	assert.ErrorContains(t, err, "invalid character")
 }
 
 func TestParsePayloadUnkownEvent(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gvcs := NewGithubVCS("none")
 	logger, _ := getLogger()
-	_, err := gvcs.ParsePayload(logger, "foo", "{\"hello\": \"moto\"}")
+	_, err := gvcs.ParsePayload(ctx, logger, "foo", "{\"hello\": \"moto\"}")
 	assert.ErrorContains(t, err, "unknown X-Github-Event")
 }
 
 func TestParsePayCannotParse(t *testing.T) {
 	gvcs := NewGithubVCS("none")
+	ctx, _ := rtesting.SetupFakeContext(t)
 	logger, _ := getLogger()
-	_, err := gvcs.ParsePayload(logger, "gollum", "{}")
+	_, err := gvcs.ParsePayload(ctx, logger, "gollum", "{}")
 	assert.Error(t, err, "this event is not supported")
 }
 
 func TestGetFileInsideRepo(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gcvs, teardown := setupFakesURLS()
 	defer teardown()
 	type args struct {
@@ -313,13 +314,14 @@ func TestGetFileInsideRepo(t *testing.T) {
 	}
 	for _, tt := range testGetTektonDir {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gcvs.GetFileInsideRepo(tt.args.path, false, tt.args.runinfo)
+			got, err := gcvs.GetFileInsideRepo(ctx, tt.args.path, false, tt.args.runinfo)
 			tt.args.assertion(t, got, err)
 		})
 	}
 }
 
 func TestGetTektonDir(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gcvs, teardown := setupFakesURLS()
 	defer teardown()
 
@@ -392,7 +394,7 @@ func TestGetTektonDir(t *testing.T) {
 	}
 	for _, tt := range testGetTektonDir {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gcvs.GetTektonDir(tt.args.path, tt.args.runinfo)
+			got, err := gcvs.GetTektonDir(ctx, tt.args.path, tt.args.runinfo)
 			tt.args.assertion(t, got, err)
 		})
 	}
@@ -404,18 +406,18 @@ hello pipelineyaml
 ---
 hello runyaml
 `
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gcvs, teardown := setupFakesURLS()
 	defer teardown()
-
 	runinfo := &RunInfo{
 		Owner:      "tekton",
 		Repository: "dir",
 	}
 
-	ghr, err := gcvs.GetTektonDir(".tekton", runinfo)
+	ghr, err := gcvs.GetTektonDir(ctx, ".tekton", runinfo)
 	assert.NilError(t, err)
 
-	got, err := gcvs.GetTektonDirTemplate(ghr, runinfo)
+	got, err := gcvs.GetTektonDirTemplate(ctx, ghr, runinfo)
 	assert.NilError(t, err)
 	if d := cmp.Diff(got, expected); d != "" {
 		t.Fatalf("-got, +want: %v", d)
@@ -423,13 +425,14 @@ hello runyaml
 }
 
 func TestGithubVCS_CreateCheckRun(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gcvs, teardown := setupFakesURLS()
 	defer teardown()
 	runinfo := &RunInfo{
 		Owner:      "check",
 		Repository: "run",
 	}
-	cr, err := gcvs.CreateCheckRun("hello moto", runinfo)
+	cr, err := gcvs.CreateCheckRun(ctx, "hello moto", runinfo)
 	assert.NilError(t, err)
 	assert.Equal(t, cr.GetID(), int64(555))
 }
@@ -493,6 +496,7 @@ func TestRunInfoCheck(t *testing.T) {
 }
 
 func TestCreateStatus(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
 	gcvs, teardown := setupFakesURLS()
 	checkrunid := int64(2026)
 	defer teardown()
@@ -501,7 +505,7 @@ func TestCreateStatus(t *testing.T) {
 		Repository: "run",
 		CheckRunID: &checkrunid,
 	}
-	cr, err := gcvs.CreateStatus(runinfo, "completed", "success", "Yay", "https://foo/bar")
+	cr, err := gcvs.CreateStatus(ctx, runinfo, "completed", "success", "Yay", "https://foo/bar")
 	assert.NilError(t, err)
 	assert.Equal(t, cr.GetID(), int64(666))
 }
@@ -597,10 +601,9 @@ func TestGithubVCS_CreateStatus(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 
-			ctx := context.Background()
+			ctx, _ := rtesting.SetupFakeContext(t)
 			gcvs := GithubVCS{
-				Client:  fakeclient,
-				Context: ctx,
+				Client: fakeclient,
 			}
 			mux.HandleFunc(fmt.Sprintf("/repos/check/run/check-runs/%d", checkrunid), func(rw http.ResponseWriter, r *http.Request) {
 				bit, _ := ioutil.ReadAll(r.Body)
@@ -618,10 +621,11 @@ func TestGithubVCS_CreateStatus(t *testing.T) {
 				assert.Equal(t, checkRun.Output.GetText(), tt.args.text)
 				assert.Equal(t, checkRun.GetDetailsURL(), tt.args.detailsURL)
 				assert.Assert(t, strings.Contains(checkRun.Output.GetTitle(), tt.args.titleSubstr))
-				fmt.Fprintf(rw, `{"id": %d}`, resultid)
+				_, err = fmt.Fprintf(rw, `{"id": %d}`, resultid)
+				assert.NilError(t, err)
 			})
 
-			got, err := gcvs.CreateStatus(tt.args.runinfo, tt.args.status, tt.args.conclusion, tt.args.text, tt.args.detailsURL)
+			got, err := gcvs.CreateStatus(ctx, tt.args.runinfo, tt.args.status, tt.args.conclusion, tt.args.text, tt.args.detailsURL)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GithubVCS.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
 				return

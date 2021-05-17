@@ -96,7 +96,7 @@ func TestFilterByGood(t *testing.T) {
 	}
 	cs, _ := testclient.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCR(client, url, branch, "")
+	repo, err := getRepoByCR(ctx, client, url, branch, "")
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Spec.Namespace, targetNamespace)
 }
@@ -116,7 +116,7 @@ func TestFilterByNotMatch(t *testing.T) {
 	}
 	cs, _ := testclient.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCR(client, otherurl, branch, "")
+	repo, err := getRepoByCR(ctx, client, otherurl, branch, "")
 	assert.NilError(t, err)
 	assert.Equal(t, repo.Spec.Namespace, "")
 }
@@ -136,7 +136,7 @@ func TestFilterByNotInItsNamespace(t *testing.T) {
 	}
 	cs, _ := testclient.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	repo, err := getRepoByCR(client, url, branch, "")
+	repo, err := getRepoByCR(ctx, client, url, branch, "")
 	assert.ErrorContains(t, err, fmt.Sprintf("repo CR %s matches but belongs to", testname))
 	assert.Equal(t, repo.Spec.Namespace, "")
 }
@@ -157,7 +157,7 @@ func TestFilterForceNamespace(t *testing.T) {
 	}
 	cs, _ := testclient.SeedTestData(t, ctx, d)
 	client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-	_, err := getRepoByCR(client, url, branch, forcedNamespace)
+	_, err := getRepoByCR(ctx, client, url, branch, forcedNamespace)
 	assert.ErrorContains(t, err, "as configured from tekton.yaml on the main branch")
 }
 
@@ -202,8 +202,7 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	})
 
 	gcvs := webvcs.GithubVCS{
-		Client:  fakeclient,
-		Context: ctx,
+		Client: fakeclient,
 	}
 	datas := testclient.Data{
 		Repositories: []*v1alpha1.Repository{
@@ -217,7 +216,7 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	}
 	k8int := kitesthelper.KinterfaceTest{}
 
-	err := Run(cs, &k8int, runinfo)
+	err := Run(ctx, cs, &k8int, runinfo)
 
 	assert.Error(t, err,
 		fmt.Sprintf("repo CR matches but should be installed in %s as configured from tekton.yaml on the main branch",
@@ -322,8 +321,7 @@ func TestRun(t *testing.T) {
 		})
 
 	gcvs := webvcs.GithubVCS{
-		Client:  fakeclient,
-		Context: ctx,
+		Client: fakeclient,
 	}
 
 	repo := testclient.Data{
@@ -367,7 +365,7 @@ func TestRun(t *testing.T) {
 	// TODO: I am not sure why querying stdata.Tekton.PipelineRun.List doesn't
 	// give back anything while it works for repo, we will need to investigate
 	// this to make better testing.
-	err = Run(cs, &k8int, runinfo)
+	err = Run(ctx, cs, &k8int, runinfo)
 	assert.NilError(t, err)
 	assert.Assert(t, len(log.TakeAll()) > 0)
 	got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(

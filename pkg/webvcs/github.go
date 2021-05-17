@@ -18,10 +18,10 @@ import (
 )
 
 type GithubVCS struct {
-	Context context.Context
-	Client  *github.Client
+	Client *github.Client
 }
 
+// RunInfo Information about current run
 type RunInfo struct {
 	BaseBranch    string // branch against where we are making the PR
 	HeadBranch    string // branch from where our SHA get tested
@@ -36,6 +36,7 @@ type RunInfo struct {
 	WebConsoleURL string
 }
 
+// Check check if the runinfo is properly set
 func (r RunInfo) Check() error {
 	if r.SHA != "" && r.BaseBranch != "" &&
 		r.Repository != "" && r.DefaultBranch != "" &&
@@ -51,15 +52,14 @@ func (r *RunInfo) DeepCopyInto(out *RunInfo) {
 	*out = *r
 }
 
+// NewGithubVCS Create a new GitHub VCS object for token
 func NewGithubVCS(token string) GithubVCS {
-	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
-	tc := oauth2.NewClient(ctx, ts)
+	tc := oauth2.NewClient(context.Background(), ts)
 	return GithubVCS{
-		Client:  github.NewClient(tc),
-		Context: ctx,
+		Client: github.NewClient(tc),
 	}
 }
 
@@ -80,17 +80,17 @@ func payloadFix(payload string) string {
 	return replacer.Replace(payload)
 }
 
-func (v GithubVCS) handleReRequestEvent(log *zap.SugaredLogger, event *github.CheckRunEvent) (RunInfo, error) {
+func (v GithubVCS) handleReRequestEvent(ctx context.Context, log *zap.SugaredLogger, event *github.CheckRunEvent) (RunInfo, error) {
 	runinfo := RunInfo{
 		Owner:      event.GetRepo().GetOwner().GetLogin(),
 		Repository: event.GetRepo().GetName(),
 	}
 	prNumber := event.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
 	log.Infof("Recheck of PR %s/%s#%d has been requested", runinfo.Owner, runinfo.Repository, prNumber)
-	return v.getPullRequest(runinfo, prNumber)
+	return v.getPullRequest(ctx, runinfo, prNumber)
 }
 
-func (v GithubVCS) handleIssueCommentEvent(log *zap.SugaredLogger, event *github.IssueCommentEvent) (RunInfo, error) {
+func (v GithubVCS) handleIssueCommentEvent(ctx context.Context, log *zap.SugaredLogger, event *github.IssueCommentEvent) (RunInfo, error) {
 	runinfo := RunInfo{
 		Owner:      event.GetRepo().GetOwner().GetLogin(),
 		Repository: event.GetRepo().GetName(),
@@ -108,12 +108,12 @@ func (v GithubVCS) handleIssueCommentEvent(log *zap.SugaredLogger, event *github
 	}
 
 	log.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runinfo.Owner, runinfo.Repository, prNumber)
-	return v.getPullRequest(runinfo, prNumber)
+	return v.getPullRequest(ctx, runinfo, prNumber)
 }
 
 // getPullRequest get a pull request details
-func (v GithubVCS) getPullRequest(runinfo RunInfo, prNumber int) (RunInfo, error) {
-	pr, _, err := v.Client.PullRequests.Get(context.Background(), runinfo.Owner, runinfo.Repository, prNumber)
+func (v GithubVCS) getPullRequest(ctx context.Context, runinfo RunInfo, prNumber int) (RunInfo, error) {
+	pr, _, err := v.Client.PullRequests.Get(ctx, runinfo.Owner, runinfo.Repository, prNumber)
 	if err != nil {
 		return runinfo, err
 	}
@@ -131,7 +131,7 @@ func (v GithubVCS) getPullRequest(runinfo RunInfo, prNumber int) (RunInfo, error
 }
 
 // ParsePayload parse payload event
-func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, eventType, payload string) (*RunInfo, error) {
+func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eventType, payload string) (*RunInfo, error) {
 	var runinfo RunInfo
 	payload = payloadFix(payload)
 	event, err := github.ParseWebHook(eventType, []byte(payloadFix(payload)))
@@ -146,14 +146,14 @@ func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, eventType, payload strin
 	switch event := event.(type) {
 	case *github.CheckRunEvent:
 		if event.GetAction() == "rerequested" {
-			runinfo, err = v.handleReRequestEvent(log, event)
+			runinfo, err = v.handleReRequestEvent(ctx, log, event)
 			if err != nil {
 				return &runinfo, err
 			}
 
 		}
 	case *github.IssueCommentEvent:
-		runinfo, err = v.handleIssueCommentEvent(log, event)
+		runinfo, err = v.handleIssueCommentEvent(ctx, log, event)
 		if err != nil {
 			return &runinfo, err
 		}
@@ -177,8 +177,8 @@ func (v GithubVCS) ParsePayload(log *zap.SugaredLogger, eventType, payload strin
 
 // CheckSenderOrgMembership Get sender user's organization. We can
 // only get the one that the user sets as public 🤷
-func (v GithubVCS) CheckSenderOrgMembership(runinfo *RunInfo) (bool, error) {
-	users, resp, err := v.Client.Organizations.ListMembers(v.Context, runinfo.Owner,
+func (v GithubVCS) CheckSenderOrgMembership(ctx context.Context, runinfo *RunInfo) (bool, error) {
+	users, resp, err := v.Client.Organizations.ListMembers(ctx, runinfo.Owner,
 		&github.ListMembersOptions{
 			PublicOnly: true, // We can't list private member in a org
 		})
@@ -200,8 +200,9 @@ func (v GithubVCS) CheckSenderOrgMembership(runinfo *RunInfo) (bool, error) {
 	return false, nil
 }
 
-func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.RepositoryContent, error) {
-	fp, objects, resp, err := v.Client.Repositories.GetContents(v.Context, runinfo.Owner,
+// GetTektonDir Get tekton directory from a repository
+func (v GithubVCS) GetTektonDir(ctx context.Context, path string, runinfo *RunInfo) ([]*github.RepositoryContent, error) {
+	fp, objects, resp, err := v.Client.Repositories.GetContents(ctx, runinfo.Owner,
 		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: runinfo.SHA})
 
 	if fp != nil {
@@ -219,14 +220,14 @@ func (v GithubVCS) GetTektonDir(path string, runinfo *RunInfo) ([]*github.Reposi
 }
 
 // GetFileInsideRepo Get a file via Github API using the runinfo information, we
-// branch is true, the user the branch as ref instead of the SHA
-func (v GithubVCS) GetFileInsideRepo(path string, branch bool, runinfo *RunInfo) (string, error) {
+// branch is true, the user the branch as ref isntead of the SHA
+func (v GithubVCS) GetFileInsideRepo(ctx context.Context, path string, branch bool, runinfo *RunInfo) (string, error) {
 	ref := runinfo.SHA
 	if branch {
 		ref = runinfo.BaseBranch
 	}
 
-	fp, objects, resp, err := v.Client.Repositories.GetContents(v.Context, runinfo.Owner,
+	fp, objects, resp, err := v.Client.Repositories.GetContents(ctx, runinfo.Owner,
 		runinfo.Repository, path, &github.RepositoryContentGetOptions{Ref: ref})
 	if err != nil {
 		return "", err
@@ -238,7 +239,7 @@ func (v GithubVCS) GetFileInsideRepo(path string, branch bool, runinfo *RunInfo)
 		return "", fmt.Errorf("cannot find %s in this repository", path)
 	}
 
-	getobj, err := v.GetObject(fp.GetSHA(), runinfo)
+	getobj, err := v.GetObject(ctx, fp.GetSHA(), runinfo)
 	if err != nil {
 		return "", err
 	}
@@ -248,25 +249,26 @@ func (v GithubVCS) GetFileInsideRepo(path string, branch bool, runinfo *RunInfo)
 
 // GetFileFromDefaultBranch will get a file directly from the Default BaseBranch as
 // configured in runinfo which is directly set in webhook by Github
-func (v GithubVCS) GetFileFromDefaultBranch(path string, runinfo *RunInfo) (string, error) {
+func (v GithubVCS) GetFileFromDefaultBranch(ctx context.Context, path string, runinfo *RunInfo) (string, error) {
 	runInfoOnMain := &RunInfo{}
 	runinfo.DeepCopyInto(runInfoOnMain)
 	runInfoOnMain.BaseBranch = runInfoOnMain.DefaultBranch
 
-	tektonyaml, err := v.GetFileInsideRepo(path, true, runInfoOnMain)
+	tektonyaml, err := v.GetFileInsideRepo(ctx, path, true, runInfoOnMain)
 	if err != nil {
 		return "", fmt.Errorf("cannot find %s inside the %s branch: %s", path, runInfoOnMain.BaseBranch, err)
 	}
 	return tektonyaml, err
 }
 
-func (v GithubVCS) GetTektonDirTemplate(objects []*github.RepositoryContent, runinfo *RunInfo) (string, error) {
+// GetTektonDirTemplate Get all templates in tekton directory
+func (v GithubVCS) GetTektonDirTemplate(ctx context.Context, objects []*github.RepositoryContent, runinfo *RunInfo) (string, error) {
 	var allTemplates string
 
 	for _, value := range objects {
 		if value.GetName() != "tekton.yaml" && (strings.HasSuffix(value.GetName(), ".yaml") ||
 			strings.HasSuffix(value.GetName(), ".yml")) {
-			data, err := v.GetObject(value.GetSHA(), runinfo)
+			data, err := v.GetObject(ctx, value.GetSHA(), runinfo)
 			if err != nil {
 				return "", err
 			}
@@ -279,8 +281,9 @@ func (v GithubVCS) GetTektonDirTemplate(objects []*github.RepositoryContent, run
 	return allTemplates, nil
 }
 
-func (v GithubVCS) GetObject(sha string, runinfo *RunInfo) ([]byte, error) {
-	blob, _, err := v.Client.Git.GetBlob(v.Context, runinfo.Owner, runinfo.Repository, sha)
+// GetObject Get an object from a repository
+func (v GithubVCS) GetObject(ctx context.Context, sha string, runinfo *RunInfo) ([]byte, error) {
+	blob, _, err := v.Client.Git.GetBlob(ctx, runinfo.Owner, runinfo.Repository, sha)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +295,7 @@ func (v GithubVCS) GetObject(sha string, runinfo *RunInfo) ([]byte, error) {
 	return decoded, err
 }
 
-func (v GithubVCS) CreateCheckRun(status string, runinfo *RunInfo) (*github.CheckRun, error) {
+func (v GithubVCS) CreateCheckRun(ctx context.Context, status string, runinfo *RunInfo) (*github.CheckRun, error) {
 	now := github.Timestamp{Time: time.Now()}
 	checkrunoption := github.CreateCheckRunOptions{
 		Name:       "Tekton Pipeline as Code CI",
@@ -302,11 +305,11 @@ func (v GithubVCS) CreateCheckRun(status string, runinfo *RunInfo) (*github.Chec
 		StartedAt:  &now,
 	}
 
-	checkRun, _, err := v.Client.Checks.CreateCheckRun(v.Context, runinfo.Owner, runinfo.Repository, checkrunoption)
+	checkRun, _, err := v.Client.Checks.CreateCheckRun(ctx, runinfo.Owner, runinfo.Repository, checkrunoption)
 	return checkRun, err
 }
 
-func (v GithubVCS) CreateStatus(runinfo *RunInfo, status, conclusion, text, detailsURL string) (*github.CheckRun, error) {
+func (v GithubVCS) CreateStatus(ctx context.Context, runinfo *RunInfo, status, conclusion, text, detailsURL string) (*github.CheckRun, error) {
 	now := github.Timestamp{Time: time.Now()}
 
 	var summary, title string
@@ -348,6 +351,6 @@ func (v GithubVCS) CreateStatus(runinfo *RunInfo, status, conclusion, text, deta
 		opts.Conclusion = &conclusion
 	}
 
-	checkRun, _, err := v.Client.Checks.UpdateCheckRun(v.Context, runinfo.Owner, runinfo.Repository, *runinfo.CheckRunID, opts)
+	checkRun, _, err := v.Client.Checks.UpdateCheckRun(ctx, runinfo.Owner, runinfo.Repository, *runinfo.CheckRunID, opts)
 	return checkRun, err
 }

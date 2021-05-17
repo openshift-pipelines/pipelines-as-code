@@ -1,7 +1,6 @@
 package pipelineascode
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -9,6 +8,7 @@ import (
 
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
+	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -19,15 +19,17 @@ import (
 )
 
 func TestProcessTektonYamlNamespace(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
 	namespace := "liguedestalents"
 	data := "namespace: " + namespace
 	cs := cli.Clients{}
-	ret, err := processTektonYaml(&cs, &webvcs.RunInfo{}, data)
+	ret, err := processTektonYaml(ctx, &cs, &webvcs.RunInfo{}, data)
 	assert.NilError(t, err)
 	assert.Equal(t, ret.Namespace, namespace)
 }
 
 func TestProcessTektonYamlRemoteTask(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
 	data := `tasks:
 - https://foo.bar
 - https://hello.moto
@@ -42,7 +44,7 @@ HELLO
 HELLO
 `
 
-	ret, err := processTektonYaml(&cs, &webvcs.RunInfo{}, data)
+	ret, err := processTektonYaml(ctx, &cs, &webvcs.RunInfo{}, data)
 	assert.NilError(t, err)
 	if d := cmp.Diff(ret.RemoteTasks, expected); d != "" {
 		t.Fatalf("-got, +want: %v", d)
@@ -50,7 +52,7 @@ HELLO
 }
 
 func TestProcessTektonYamlRefInternal(t *testing.T) {
-	ctx := context.Background()
+	ctx, _ := rtesting.SetupFakeContext(t)
 	expected := "EAT YOUR VEGGIES"
 	data := `tasks:
 - be/healthy
@@ -79,12 +81,11 @@ func TestProcessTektonYamlRefInternal(t *testing.T) {
 	})
 
 	gcvs := webvcs.GithubVCS{
-		Client:  fakeclient,
-		Context: ctx,
+		Client: fakeclient,
 	}
 	cs := &cli.Clients{GithubClient: gcvs}
 
-	ret, err := processTektonYaml(cs, &webvcs.RunInfo{}, data)
+	ret, err := processTektonYaml(ctx, cs, &webvcs.RunInfo{}, data)
 	assert.NilError(t, err)
 
 	if d := cmp.Diff(ret.RemoteTasks, "\n---\n"+expected+"\n"); d != "" {
