@@ -1,0 +1,86 @@
+package config
+
+import (
+	"errors"
+	"regexp"
+	"strings"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+)
+
+const (
+	onEventAnnotation        = "on-event"
+	onTargetBranchAnnotation = "on-target-branch"
+	reValidateTag            = `^\[(.*)\]$`
+)
+
+func getAnnotationList(annotation string) ([]string, error) {
+	re := regexp.MustCompile(reValidateTag)
+	match := re.Match([]byte(annotation))
+	if !match {
+		return nil, errors.New("annotations in pipeline are in wrong format")
+	}
+	splitted := strings.Split(re.FindStringSubmatch(annotation)[1], ",")
+	if splitted[0] == "" {
+		return nil, errors.New("annotations in pipeline are empty")
+	}
+
+	return strings.Split(re.FindStringSubmatch(annotation)[1], ","), nil
+}
+
+func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
+	runinfo *webvcs.RunInfo) (*v1beta1.PipelineRun, error) {
+	for _, prun := range pruns {
+		if prun.GetObjectMeta().GetAnnotations() == nil {
+			cs.Log.Warnf("PipelineRun %s does not have any annotations", prun.GetName())
+			continue
+		}
+
+		if targetEvent, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
+			GroupName+"/"+onEventAnnotation]; ok {
+			matched, err := matchOnAnnotation(targetEvent, runinfo.EventType)
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				continue
+			}
+		}
+
+		if targetBranch, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
+			GroupName+"/"+onTargetBranchAnnotation]; ok {
+			matched, err := matchOnAnnotation(targetBranch, runinfo.BaseBranch)
+			if err != nil {
+				return nil, err
+			}
+			if !matched {
+				continue
+			}
+		}
+
+		return prun, nil
+	}
+	// TODO: more descriptive error message
+	return nil, errors.New("cannot match any pipeline")
+}
+
+func matchOnAnnotation(targetBranchAnnotation string, match string) (bool, error) {
+	targets, err := getAnnotationList(targetBranchAnnotation)
+	if err != nil {
+		return false, err
+	}
+
+	var gotit string
+	for _, v := range targets {
+		if v == match {
+			gotit = v
+		}
+	}
+	if gotit == "" {
+		return false, nil
+	}
+	return true, nil
+}

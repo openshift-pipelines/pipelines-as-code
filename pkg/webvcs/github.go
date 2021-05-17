@@ -261,8 +261,9 @@ func (v GithubVCS) GetFileFromDefaultBranch(ctx context.Context, path string, ru
 	return tektonyaml, err
 }
 
-// GetTektonDirTemplate Get all templates in tekton directory
-func (v GithubVCS) GetTektonDirTemplate(ctx context.Context, objects []*github.RepositoryContent, runinfo *RunInfo) (string, error) {
+// ConcatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string
+// TODO: trash the tekton.yaml condition when we don't need it anymore
+func (v GithubVCS) ConcatAllYamlFiles(ctx context.Context, objects []*github.RepositoryContent, runinfo *RunInfo) (string, error) {
 	var allTemplates string
 
 	for _, value := range objects {

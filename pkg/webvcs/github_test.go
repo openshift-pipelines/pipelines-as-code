@@ -126,7 +126,7 @@ func TestPayLoadFix(t *testing.T) {
 	logger, _ := getLogger()
 	_, err = gvcs.ParsePayload(ctx, logger, "pull_request", payloadFix(string(b)))
 	// would bomb out on "assertion failed: error is not nil: invalid character
-	// '\n' in string literal" if we don't payloadfix
+	// '\n' in string literal" if we don't fix the payload
 	assert.NilError(t, err)
 }
 
@@ -135,9 +135,9 @@ func TestParsePayloadRerequest(t *testing.T) {
 	prOwner := "openshift"
 	repoName := "pipelines"
 	prNumber := "123"
-	checkrunEvent := fmt.Sprintf(`{"action": "rerequested", 
+	checkrunEvent := fmt.Sprintf(`{"action": "rerequested",
 	"sender": {"login": "%s"},
-	"check_run": {"check_suite": {"pull_requests": [{"number": %s}]}}, 
+	"check_run": {"check_suite": {"pull_requests": [{"number": %s}]}},
 	"repository": {"name": "%s", "owner": {"login": "%s"}}}`,
 		checkrunSender, prNumber, repoName, prOwner)
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
@@ -417,7 +417,7 @@ hello runyaml
 	ghr, err := gcvs.GetTektonDir(ctx, ".tekton", runinfo)
 	assert.NilError(t, err)
 
-	got, err := gcvs.GetTektonDirTemplate(ctx, ghr, runinfo)
+	got, err := gcvs.ConcatAllYamlFiles(ctx, ghr, runinfo)
 	assert.NilError(t, err)
 	if d := cmp.Diff(got, expected); d != "" {
 		t.Fatalf("-got, +want: %v", d)

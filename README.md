@@ -94,17 +94,41 @@ into the same namespace are where we want to execute them.
   - `{{revision}}`: The revision of the commit.
 
 - You need at least one `PipelineRun` with a `PipelineSpec` or a separated
-  `Pipeline` object. You can have as many yaml files as you want but only one
-  pipeline by repo is supported. You can have embedded `TaskSpec` inside
+  `Pipeline` object. You can have embedded `TaskSpec` inside
   `Pipeline` or you can have them defined separately as `Task`.
+
+- Each `PipelineRun` can match different vcs events via some special annotations
+  on the `PipelineRun`. For example when you have these metadatas in your `PipelineRun`:
+
+```yaml
+ metadata:
+ name: pipeline-pr-main
+ annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+```
+
+  `Pipelines as Code` will match the piplinerun `pipeline-pr-main` if the VCS
+  events target the branch `main`.
+
+  Multiple event or target branch can be specified separated by comma, i.e:
+
+  `[main, release-nightly]`
+
+  If there is multiple pipeline matching the event, it will match the first one.
+
+  matching annotations are currently mandated or `Pipeline as Code` will not
+  match your `PiplineRun`.
 
 - If `Pipelines as Code` sees multiple documents, it tries to *resolves* it as a
   single PiplineSpec embedded to a `PipelineRun`. It will add a `generateName`
   based on the Pipeline name as well. This allows you to have multiple runs in
   the same namespace without risk of conflicts.
 
-- Everything that runs your pipeline should be self contained inside the
-  `.tekton/` directory including the tasks. If pipelines as code cannot resolve the referenced tasks in the `Pipeline` or `PipelineSpec` it will fails.
+- Everything that runs your pipelinerun should be self contained inside the
+  `.tekton/` directory or from some remote tasks (see below).  If pipelines as
+  code cannot resolve the referenced tasks in the `Pipeline` or `PipelineSpec`
+  it will fails before applying the pipelinerun onto the cluster.
 
 - Optionally `Pipelines as Code` supports a configuration file called
   `tekton.yaml` which allows you to integrate *remote* tasks directly on your
@@ -134,12 +158,13 @@ User create a Pull Request.
 
 If the user sending the Pull Request is not the owner of the repository or not a public member of the organization where the repository belong to, `Pipeline as Code` will not run.
 
-If the user sending the Pull Request is inside an OWNER file located in the repository root in the main branch (the main branch as defined in the Github configuration for the repo) in the `approvers` or `reviewers` section like this :  
+If the user sending the Pull Request is inside an OWNER file located in the repository root in the main branch (the main branch as defined in the Github configuration for the repo) in the `approvers` or `reviewers` section like this :
 
 ```yaml
 approvers:
   - approved
 ```
+
 then the user `approved` will be allowed.
 
 If the user is allowed, `Pipelines as Code` will start creating the `PipelineRun` in the target user namespace.

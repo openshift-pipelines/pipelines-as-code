@@ -191,7 +191,7 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 			}
 		})
 
-	forcedNamespaceContent := base64.RawStdEncoding.EncodeToString([]byte("namespace: "+forcedNamespace+"\n")) + "="
+	forcedNamespaceContent := base64.StdEncoding.EncodeToString([]byte("namespace: " + forcedNamespace + "\n"))
 	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/blobs/shaofmaintektonyaml", runinfo.Owner, runinfo.Repository),
 		func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, `{"content": "%s"}`, forcedNamespaceContent)
@@ -235,6 +235,7 @@ func TestRun(t *testing.T) {
 		HeadBranch: "press",
 		BaseBranch: "main",
 		Sender:     "fantasio",
+		EventType:  "pull_request",
 	}
 
 	replyString(mux,
@@ -275,16 +276,16 @@ func TestRun(t *testing.T) {
 	assert.NilError(t, err)
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/git/blobs/internaltasksha", runinfo.Owner, runinfo.Repository),
-		fmt.Sprintf(`{"encoding": "base64","content": "%s="}`,
-			base64.RawStdEncoding.EncodeToString(taskB)))
+		fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
+			base64.StdEncoding.EncodeToString(taskB)))
 
 	// Tekton.yaml
 	tlB, err := ioutil.ReadFile("testdata/tekton.yaml")
 	assert.NilError(t, err)
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/git/blobs/eacad9fa044f3d9039bb04c9452eadf0c43e3195", runinfo.Owner, runinfo.Repository),
-		fmt.Sprintf(`{"encoding": "base64","content": "%s="}`,
-			base64.RawStdEncoding.EncodeToString(tlB)))
+		fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
+			base64.StdEncoding.EncodeToString(tlB)))
 
 	// Run.yaml
 	prB, err := ioutil.ReadFile("testdata/run.yaml")
@@ -292,15 +293,15 @@ func TestRun(t *testing.T) {
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/git/blobs/9085026cd00516d1db7101191d61a4371933c735", runinfo.Owner, runinfo.Repository),
 		fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
-			base64.RawStdEncoding.EncodeToString(prB)))
+			base64.StdEncoding.EncodeToString(prB)))
 
 	// Pipeline.yaml
 	pB, err := ioutil.ReadFile("testdata/pipeline.yaml")
 	assert.NilError(t, err)
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/git/blobs/5f44631b24c740288924767c608af932756d6c1a", runinfo.Owner, runinfo.Repository),
-		fmt.Sprintf(`{"encoding": "base64","content": "%s=="}`,
-			base64.RawStdEncoding.EncodeToString(pB)))
+		fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
+			base64.StdEncoding.EncodeToString(pB)))
 
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/check-runs", runinfo.Owner, runinfo.Repository),
