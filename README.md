@@ -2,14 +2,14 @@
 
 # Pipelines as Code
 
-Pipelines as code, an opinionated CI based on OpenShift Pipelines / Tekton.
+Pipelines as Code, an opinionated CI based on OpenShift Pipelines / Tekton.
 
 ## Introduction
 
-Pipelines as code let you use the pipelines as code flow directly with OpenShift
+Pipelines as Code let you use the pipelines as Code flow directly with OpenShift
 Pipelines.
 
-Pipelines as code technique can be described in this web page
+Pipelines as Code technique can be described in this web page
 [https://www.thoughtworks.com/radar/techniques/pipelines-as-code](https://www.thoughtworks.com/radar/techniques/pipelines-as-code) it allows you
 to have your pipelines "sits and live" inside the same repository where your
 code is.
@@ -20,13 +20,13 @@ as Code runs and reports the pipeline status on Pull Request or branch push.
 
 ## Components
 
-Pipelines as code leverage on this technologies :
+Pipelines as Code leverage on this technologies :
 
 - [Tekton Triggers](github.com/tektoncd/triggers): A Tekton Triggers
   EventListenner is spun up in a central namespace (`pipelines-as-code`). The
   EventListenner listen for webhook events and acts upon it.
 
-- Repository CRD: A new CRD introduced with Pipelines as code, It allows the
+- Repository CRD: A new CRD introduced with Pipelines as Code, It allows the
   user to specify which repo is started in which namespace they want.
 
 - Web VCS support. When iterating over a Pull Request, status and control is
@@ -79,7 +79,7 @@ into the same namespace are where we want to execute them.
 
 ### Write Tekton pipeline in `.tekton/` directory
 
-- Pipelines as code tries to be as close to the tekton template as possible.
+- Pipelines as Code tries to be as close to the tekton template as possible.
   Usually you write your template and save them with a ".yaml" extension  and
   Pipelines as Code will run them.
 
@@ -97,8 +97,10 @@ into the same namespace are where we want to execute them.
   `Pipeline` object. You can have embedded `TaskSpec` inside
   `Pipeline` or you can have them defined separately as `Task`.
 
-- Each `PipelineRun` can match different vcs events via some special annotations
-  on the `PipelineRun`. For example when you have these metadatas in your `PipelineRun`:
+#### Event matching to a Pipeline
+
+Each `PipelineRun` can match different vcs events via some special annotations
+on the `PipelineRun`. For example when you have these metadatas in your `PipelineRun`:
 
 ```yaml
  metadata:
@@ -117,46 +119,81 @@ into the same namespace are where we want to execute them.
 
   If there is multiple pipeline matching the event, it will match the first one.
 
-  matching annotations are currently mandated or `Pipeline as Code` will not
+  matching annotations are currently mandated or `Pipelines asCode` will not
   match your `PiplineRun`.
 
-- If `Pipelines as Code` sees multiple documents, it tries to *resolves* it as a
+#### Pipelines asCode resolver
+
+If `Pipelines as Code` sees multiple documents, it tries to *resolves* it as a
   single PiplineSpec embedded to a `PipelineRun`. It will add a `generateName`
   based on the Pipeline name as well. This allows you to have multiple runs in
   the same namespace without risk of conflicts.
 
-- Everything that runs your pipelinerun should be self contained inside the
-  `.tekton/` directory or from some remote tasks (see below).  If pipelines as
-  code cannot resolve the referenced tasks in the `Pipeline` or `PipelineSpec`
-  it will fails before applying the pipelinerun onto the cluster.
+Everything that runs your pipelinerun should be self contained inside the
+`.tekton/` directory or from some remote tasks (see below).  If pipelines as
+code cannot resolve the referenced tasks in the `Pipeline` or `PipelineSpec`
+it will fails before applying the pipelinerun onto the cluster.
 
-- Optionally `Pipelines as Code` supports a configuration file called
-  `tekton.yaml` which allows you to integrate *remote* tasks directly on your
-  pipeline. For example if you have this :
+#### Remote Task support
+
+`Pipelines asCode` support fetching remote tasks from remote location via  annotation on PipelineRun.
+
+If the resolver sees a PipelineRun referencing a remote task via its name in a  Pipeline or a PipelineSpec it will automatically inlines it.
+
+An annotation to a remote task looks like this :
 
   ```yaml
-  tasks:
-    - https://task.com/task1.yaml
-    - task/dir/task2.yaml
-    - git-clone
-    - buildah:0.2
+  pipelinesascode.tekton.dev/task: "[git-clone]"
   ```
 
-  - Everything that starts with https:// will be retrieved remotely.
-  - Everything that has a slash (/) into it will be retrieved from inside the repository.
-  - Everything else is a remote task from [the hub](https://hub.tekton.dev/). It
-    will grab the latest from Tekton hub unless there is `:VERSION_NUMBER` which
-    means we want that specific `version_number` to be grabbed for that task.
+this installs the [git-clone](https://github.com/tektoncd/catalog/tree/main/task/git-clone) task from the [tekton hub](https://hub.tekton.dev) repository via its API.
 
-  All those tasks will be resolved inside your Pipeline, so if you ref to it
-  from your pipeline they will be embedded directly into your `PipelineRun`
-  after being retrieved.
+You can have multiple tasks in there if you separate  them by a comma `,`:
+
+```yaml
+pipelinesascode.tekton.dev/task: "[git-clone, golang-test, tkn]"
+```
+
+You can have multiple lines if you add a `-NUMBER` prefix to the annotation, for example :
+
+```yaml
+  pipelinesascode.tekton.dev/task: "[git-clone]"
+  pipelinesascode.tekton.dev/task-1: "[golang-test]"
+  pipelinesascode.tekton.dev/task-2: "[tkn]"
+```
+
+By default `Pipelines as Code` will interpret the string as the `latest` task to grab from [tekton hub](https://hub.tekton.dev).
+
+If instead you want to have a specific task, you can add a colon `:` to the string and a version number, like in this example :
+
+```yaml
+  pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # will install git-clone 0.1 from tekton.hub
+  ```
+
+If you have a string starting with http:// or https://, `Pipelines asCode`
+will fetch the task directly from that remote url instead of going via the
+`tekton hub` :
+
+```yaml
+  pipelinesascode.tekton.dev/task: "[https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.3/git-clone.yaml]"
+```
+
+You can as well a reference to a task from a yaml file inside your repo if you specify the relative path to it, for example :
+
+  ```yaml
+  pipelinesascode.tekton.dev/task: "[.tekton/tasks/git-clone.yaml]"
+  ```
+
+will grab the `.tekton/tasks/git-clone.yaml` from the current repository on the `SHA` where the event come from (i.e: the current pull request or the current branch push).
+
+If there is any error fetching those resources, `Pipelines as Code` will error out and not process the pipeline.
+If the object fetched cannot be parsed as a Tekton `Task` it will error out.
 
 ### Running the Pipeline
 
-User create a Pull Request.
+A user create a Pull Request.
 
-If the user sending the Pull Request is not the owner of the repository or not a public member of the organization where the repository belong to, `Pipeline as Code` will not run.
+If the user sending the Pull Request is not the owner of the repository or not a public member of the organization where the repository belong to, `Pipelines as Code` will not run.
 
 If the user sending the Pull Request is inside an OWNER file located in the repository root in the main branch (the main branch as defined in the Github configuration for the repo) in the `approvers` or `reviewers` section like this :
 

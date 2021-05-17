@@ -3,7 +3,6 @@ package pipelineascode
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -15,7 +14,6 @@ import (
 
 const (
 	tektonDir               = ".tekton"
-	tektonConfigurationFile = "tekton.yaml"
 	maxPipelineRunStatusRun = 5
 )
 
@@ -58,7 +56,6 @@ func getRepoByCR(ctx context.Context, cs *cli.Clients, url, branch, forceNamespa
 // Run over the main loop
 func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo) error {
 	var err error
-	var maintekton TektonYamlConfig
 
 	// Create first check run to let know the user we have started the pipeline
 	checkRun, err := cs.GithubClient.CreateCheckRun(ctx, "in_progress", runinfo)
@@ -81,18 +78,9 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return nil
 	}
 
-	// Checkout the tekton.yaml from the main/default branch, we get configuration for there.
-	// TODO: to trash away
-	maintektonyaml, _ := cs.GithubClient.GetFileFromDefaultBranch(ctx, filepath.Join(tektonDir, tektonConfigurationFile), runinfo)
-	if maintektonyaml != "" {
-		maintekton, err = processTektonYaml(ctx, cs, runinfo, maintektonyaml)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Match the Event to a Repository Resource
-	repo, err := getRepoByCR(ctx, cs, runinfo.URL, runinfo.BaseBranch, maintekton.Namespace)
+	// Match the Event to a Repository Resource,
+	// TODO: we need to be able to force a Namespace from the configuration as annotation as an extra layer of security for // hijacking
+	repo, err := getRepoByCR(ctx, cs, runinfo.URL, runinfo.BaseBranch, "")
 	if err != nil {
 		return err
 	}
@@ -132,24 +120,6 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return err
 	}
 
-	// Process the tekton.yaml, we will get the extra tasks from there
-	// TODO: to trash when we get tasks inside annotations imp
-	var yamlConfig TektonYamlConfig
-	for _, file := range objects {
-		if file.GetName() == tektonConfigurationFile {
-			data, err := cs.GithubClient.GetObject(ctx, file.GetSHA(), runinfo)
-			if err != nil {
-				return err
-			}
-
-			yamlConfig, err = processTektonYaml(ctx, cs, runinfo, string(data))
-			if err != nil {
-				return err
-			}
-			break
-		}
-	}
-
 	// Concat all yaml files as one multi document yaml string
 	allTemplates, err := cs.GithubClient.ConcatAllYamlFiles(ctx, objects, runinfo)
 	if err != nil {
@@ -162,13 +132,8 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		"repo_url": runinfo.URL,
 	})
 
-	// Append the remote task to the big template, we don't do replacement on those, maybe we should?
-	if yamlConfig.RemoteTasks != "" {
-		allTemplates += yamlConfig.RemoteTasks
-	}
-
 	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
-	pipelineRuns, err := resolve.Resolve(cs, allTemplates, true)
+	pipelineRuns, err := resolve.Resolve(ctx, cs, runinfo, allTemplates, true)
 	if err != nil {
 		return err
 	}
@@ -195,7 +160,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return err
 	}
 
-	// Get the UI/webconsole URL for this pipeline to watch the log (only openshift console suppported atm)
+	// Get the UI/webconsole URL for this pipeline to watch the log (only openshift console supported atm)
 	consoleURL, err := k8int.GetConsoleUI(ctx, repo.Spec.Namespace, pr.GetName())
 	if err != nil {
 		// Don't bomb out if we can't get the console UI
