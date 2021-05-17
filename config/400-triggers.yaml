@@ -25,7 +25,7 @@ spec:
               body.action == 'created' &&
               'pull_request' in body.issue &&
               body.issue.state == 'open' &&
-              body.comment.body.matches('^/retest($| [^ ]*[ ]*$)')
+              body.comment.body.matches('(^|\\r\\n)/retest([ ]*$|$|\\r\\n)')
       template:
         ref: openshift-pipelines-ascode-template
 
