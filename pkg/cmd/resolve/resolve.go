@@ -1,6 +1,7 @@
 package resolve
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -29,7 +31,9 @@ func Command(p cli.Params) *cobra.Command {
 				"revision": "SHA",
 				"repo_url": "url",
 			})
-			prun, err := resolve.Resolve(cs, allTemplates, true)
+			ctx := context.Background()
+			runinfo := &webvcs.RunInfo{}
+			prun, err := resolve.Resolve(ctx, cs, runinfo, allTemplates, true)
 			if err != nil {
 				return err
 			}

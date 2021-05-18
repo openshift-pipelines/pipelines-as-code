@@ -162,6 +162,7 @@ func TestFilterForceNamespace(t *testing.T) {
 }
 
 func TestRunDeniedFromForcedNamespace(t *testing.T) {
+	t.Skip("TODO: Disabled until we reimplement this as annotation")
 	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()

@@ -17,7 +17,8 @@ const (
 	reValidateTag            = `^\[(.*)\]$`
 )
 
-func getAnnotationList(annotation string) ([]string, error) {
+// TODO: move to another file since it's common to all annotations_* files
+func getAnnotationValues(annotation string) ([]string, error) {
 	re := regexp.MustCompile(reValidateTag)
 	match := re.Match([]byte(annotation))
 	if !match {
@@ -68,7 +69,7 @@ func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 }
 
 func matchOnAnnotation(targetBranchAnnotation string, match string) (bool, error) {
-	targets, err := getAnnotationList(targetBranchAnnotation)
+	targets, err := getAnnotationValues(targetBranchAnnotation)
 	if err != nil {
 		return false, err
 	}

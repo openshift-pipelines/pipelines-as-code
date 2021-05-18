@@ -1,11 +1,14 @@
 package resolve
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/config"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
 )
@@ -17,11 +20,11 @@ type Types struct {
 	Tasks        []*tektonv1beta1.Task
 }
 
-func readTypes(cs *cli.Clients, data []byte) Types {
+func readTypes(cs *cli.Clients, data string) Types {
 	types := Types{}
 	decoder := k8scheme.Codecs.UniversalDeserializer()
 
-	for _, doc := range strings.Split(strings.Trim(string(data), "-"), "---") {
+	for _, doc := range strings.Split(strings.Trim(data, "-"), "---") {
 		if strings.TrimSpace(doc) == "" {
 			continue
 		}
@@ -64,10 +67,35 @@ func getPipelineByName(name string, tasks []*tektonv1beta1.Pipeline) (*tektonv1b
 	return &tektonv1beta1.Pipeline{}, fmt.Errorf("cannot find pipeline %s in input", name)
 }
 
-func resolve(cs *cli.Clients, data []byte, generateName bool) ([]*tektonv1beta1.PipelineRun, error) {
+// Resolve gets a large string which is a yaml multi documents containing
+// Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
+// generateName can be set as True to set the name as a generateName + "-" for
+// unique pipelinerun
+func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data string, generateName bool) ([]*tektonv1beta1.PipelineRun, error) {
+	s := k8scheme.Scheme
+	if err := tektonv1beta1.AddToScheme(s); err != nil {
+		return []*tektonv1beta1.PipelineRun{}, err
+	}
+
 	types := readTypes(cs, data)
 	if len(types.PipelineRuns) == 0 {
 		return []*tektonv1beta1.PipelineRun{}, errors.New("we need at least one pipelinerun to start with")
+	}
+
+	// First resolve Annotations Tasks
+	for _, pipelinerun := range types.PipelineRuns {
+		if pipelinerun.GetObjectMeta().GetAnnotations() != nil {
+			rt := config.RemoteTasks{
+				Clients: cs,
+				Runinfo: runinfo,
+			}
+			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, pipelinerun.GetObjectMeta().GetAnnotations())
+			if err != nil {
+				return []*tektonv1beta1.PipelineRun{}, err
+			}
+			// Merge remote tasks with local tasks
+			types.Tasks = append(types.Tasks, remoteTasks...)
+		}
 	}
 
 	// Resolve TaskRef inside Pipeline
@@ -103,8 +131,8 @@ func resolve(cs *cli.Clients, data []byte, generateName bool) ([]*tektonv1beta1.
 				pipelineTasksResolve = append(pipelineTasksResolve, task)
 			}
 			pipelinerun.Spec.PipelineSpec.Tasks = pipelineTasksResolve
-
 		}
+
 		// Resolve PipelineRef inside PipelineRef
 		if pipelinerun.Spec.PipelineRef != nil {
 			pipelineResolved, err := getPipelineByName(pipelinerun.Spec.PipelineRef.Name, types.Pipelines)
@@ -122,16 +150,4 @@ func resolve(cs *cli.Clients, data []byte, generateName bool) ([]*tektonv1beta1.
 		}
 	}
 	return types.PipelineRuns, nil
-}
-
-// Resolve gets a large string which is a yaml multi documents containing
-// Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
-// generateName can be set as True to set the name as a generateName + "-" for
-// unique pipelinerun
-func Resolve(cs *cli.Clients, allTemplates string, generateName bool) ([]*tektonv1beta1.PipelineRun, error) {
-	s := k8scheme.Scheme
-	if err := tektonv1beta1.AddToScheme(s); err != nil {
-		return []*tektonv1beta1.PipelineRun{}, err
-	}
-	return resolve(cs, []byte(allTemplates), generateName)
 }
