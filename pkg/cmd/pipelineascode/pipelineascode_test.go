@@ -30,6 +30,9 @@ func TestRunWrapOld(t *testing.T) {
 	mux.HandleFunc("/repos/chmouel/scratchmyback/check-runs", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `{"id": %d}`, checkid)
 	})
+	mux.HandleFunc(fmt.Sprintf("/repos/chmouel/scratchmyback/check-runs/%d", checkid), func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"id": %d}`, checkid)
+	})
 	cs := &cli.Clients{
 		GithubClient: webvcs.GithubVCS{
 			Client: fakeghclient,
@@ -170,6 +173,9 @@ func TestRunWrap(t *testing.T) {
 	fakelogger := zap.New(observer).Sugar()
 	checkid := 1234
 	mux.HandleFunc("/repos/chmouel/scratchmyback/check-runs", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, `{"id": %d}`, checkid)
+	})
+	mux.HandleFunc(fmt.Sprintf("/repos/chmouel/scratchmyback/check-runs/%d", checkid), func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `{"id": %d}`, checkid)
 	})
 	kinteract := &kitesthelper.KinterfaceTest{

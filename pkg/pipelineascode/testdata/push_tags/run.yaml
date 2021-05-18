@@ -1,0 +1,17 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[refs/tags/0.1]"
+    pipelinesascode.tekton.dev/on-event: "[push]"
+  name: push_branch
+spec:
+  pipelineSpec:
+    tasks:
+      - name: hello1
+        taskSpec:
+          steps:
+            - name: hello-moto
+              image: alpine:3.7
+              script: "echo hello moto"

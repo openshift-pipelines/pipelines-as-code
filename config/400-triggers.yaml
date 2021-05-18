@@ -10,6 +10,8 @@ metadata:
 spec:
   serviceAccountName: openshift-pipelines-ascode-sa-el
   triggers:
+
+    # When you have a /retest in a comment to reste a PR
     - name: github-issue-comment-retest
       bindings:
         - ref: openshift-pipelines-ascode-bindings
@@ -25,7 +27,26 @@ spec:
               body.action == 'created' &&
               'pull_request' in body.issue &&
               body.issue.state == 'open' &&
+              'installation' in body &&
               body.comment.body.matches('(^|\\r\\n)/retest([ ]*$|$|\\r\\n)')
+      template:
+        ref: openshift-pipelines-ascode-template
+
+    # Branch push
+    - name: github-branch-push
+      bindings:
+        - ref: openshift-pipelines-ascode-bindings
+      interceptors:
+        - github:
+            secretRef:
+              secretName: "github-app-secret"
+              secretKey: "webhook.secret"
+            eventTypes:
+              - push
+        - cel:
+            filter: >-
+              'installation' in body &&
+              'pusher' in body
       template:
         ref: openshift-pipelines-ascode-template
 

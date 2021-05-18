@@ -3,6 +3,7 @@ package pipelineascode
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -53,28 +54,46 @@ func getRepoByCR(ctx context.Context, cs *cli.Clients, url, branch, forceNamespa
 	return repository, nil
 }
 
+func createStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, status, conclusion, text, detailsURL string, logit bool) error {
+	if logit {
+		cs.Log.Infof(text)
+	}
+	// Do not create status on push, there is maybe going other event type we
+	// would run CI on but that are not tight to a PR
+	if runinfo.EventType == "push" {
+		return nil
+	}
+	_, err := cs.GithubClient.CreateStatus(ctx, runinfo, status, conclusion, text, detailsURL)
+	return err
+}
+
 // Run over the main loop
 func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo) error {
 	var err error
 
 	// Create first check run to let know the user we have started the pipeline
-	checkRun, err := cs.GithubClient.CreateCheckRun(ctx, "in_progress", runinfo)
-	if err != nil {
-		return err
+	// TODO: Refactor this bit in a function
+	if runinfo.EventType != "push" {
+		checkRun, err := cs.GithubClient.CreateCheckRun(ctx, "in_progress", runinfo)
+		if err != nil {
+			return err
+		}
+		// Set the runId on runInfo so if we have an error we can report it on UI (GH checks UI for GH PR)
+		runinfo.CheckRunID = checkRun.ID
 	}
-	// Set the runId on runInfo so if we have an error we can report it on UI (GH checks UI for GH PR)
-	runinfo.CheckRunID = checkRun.ID
 
 	// Check if submitted is allowed to run this.
 	allowed, err := aclCheck(ctx, cs, runinfo)
 	if err != nil {
 		return err
 	}
+
 	if !allowed {
-		_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "skipped",
-			fmt.Sprintf("User %s is not allowed to run CI on this repo.", runinfo.Sender),
-			"https://tenor.com/search/police-cat-gifs")
-		cs.Log.Infof("User %s is not allowed to run CI on this repo", runinfo.Sender)
+		msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", runinfo.Sender)
+		err = createStatus(ctx, cs, runinfo, "completed", "skipped", msg, "https://tenor.com/search/police-cat-gifs", true)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -85,17 +104,23 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return err
 	}
 	if repo.Spec.Namespace == "" {
-		_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "skipped",
-			"Could not find a configuration for this repository", "https://tenor.com/search/sad-cat-gifs")
-		cs.Log.Infof("Could not find a namespace match for %s/%s on %s", runinfo.Owner, runinfo.Repository, runinfo.BaseBranch)
+		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on %s", runinfo.Owner, runinfo.Repository, runinfo.BaseBranch)
+		err = createStatus(ctx, cs, runinfo, "completed", "skipped", msg, "https://tenor.com/search/sad-cat-gifs", true)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
 	// Get everything in tekton directory
 	objects, err := cs.GithubClient.GetTektonDir(ctx, tektonDir, runinfo)
-	if err != nil {
-		_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "skipped",
-			"😿 Could not find a <b>.tekton/</b> directory for this repository", "https://tenor.com/search/sad-cat-gifs")
+	if len(objects) == 0 || err != nil {
+		msg := "😿 Could not find a <b>.tekton/</b> directory for this repository"
+		err2 := createStatus(ctx, cs, runinfo, "completed", "skipped",
+			msg, "https://tenor.com/search/sad-cat-gifs", true)
+		if err2 != nil {
+			return err
+		}
 		return err
 	}
 	cs.Log.Infow("Loading payload",
@@ -113,9 +138,9 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	// Update status in UI
-	_, err = cs.GithubClient.CreateStatus(ctx, runinfo, "in_progress", "",
+	err = createStatus(ctx, cs, runinfo, "in_progress", "",
 		fmt.Sprintf("Getting pipelinerun configuration in namespace <b>%s</b>", repo.Spec.Namespace),
-		"https://tenor.com/search/sad-cat-gifs")
+		"https://tenor.com/search/sad-cat-gifs", true)
 	if err != nil {
 		return err
 	}
@@ -145,13 +170,16 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	// Add labels on the soon to be created pipelinerun so UI/CLI can easily
-	// query them.
+	// query them. Since K8s do not like slash in labels value and on push we
+	// have the full ref, we replace the "/" by "-". The tools probably need to
+	// be aware of it when querying.
+	refTomakeK8Happy := strings.ReplaceAll(runinfo.BaseBranch, "/", "-")
 	pipelineRun.Labels = map[string]string{
 		"tekton.dev/pipeline-ascode-owner":      runinfo.Owner,
 		"tekton.dev/pipeline-ascode-repository": runinfo.Repository,
 		"tekton.dev/pipeline-ascode-sha":        runinfo.SHA,
 		"tekton.dev/pipeline-ascode-sender":     runinfo.Sender,
-		"tekton.dev/pipeline-ascode-branch":     runinfo.BaseBranch,
+		"tekton.dev/pipeline-ascode-branch":     refTomakeK8Happy,
 	}
 
 	// Create the actual pipeline
@@ -168,10 +196,10 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	// Create status with the log url
-	_, err = cs.GithubClient.CreateStatus(ctx, runinfo, "in_progress", "",
+	err = createStatus(ctx, cs, runinfo, "in_progress", "",
 		fmt.Sprintf(`Starting Pipelinerun <b>%s</b> in namespace <b>%s</b><br><br>You can follow the execution on the command line with : <br><br><code>tkn pr logs -f -n %s %s</code>`,
 			pr.GetName(), repo.Spec.Namespace, repo.Spec.Namespace, pr.GetName()),
-		consoleURL)
+		consoleURL, false)
 	if err != nil {
 		return nil
 	}
@@ -189,7 +217,6 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	if err != nil {
 		return err
 	}
-
 	repoStatus := apipac.RepositoryRunStatus{
 		Status:          newPr.Status.Status,
 		PipelineRunName: newPr.Name,

@@ -162,9 +162,8 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 		return pr, err
 	}
 
-	_, err = cs.GithubClient.CreateStatus(ctx, runinfo,
-		"completed", pipelineRunStatus(pr),
-		outputBuffer.String(), consoleURL)
+	err = createStatus(ctx, cs, runinfo, "completed", pipelineRunStatus(pr),
+		outputBuffer.String(), consoleURL, false)
 
 	return pr, err
 }
