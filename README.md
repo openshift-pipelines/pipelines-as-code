@@ -110,17 +110,46 @@ on the `PipelineRun`. For example when you have these metadatas in your `Pipelin
     pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-  `Pipelines as Code` will match the piplinerun `pipeline-pr-main` if the VCS
-  events target the branch `main`.
+`Pipelines as Code` will match the piplinerun `pipeline-pr-main` if the VCS
+events target the branch `main` and it's coming from a `[pull_request]`
 
-  Multiple event or target branch can be specified separated by comma, i.e:
+Multiple target branch can be specified separated by comma, i.e:
 
-  `[main, release-nightly]`
+`[main, release-nightly]`
 
-  If there is multiple pipeline matching the event, it will match the first one.
+If there is multiple pipeline matching the event, it will match the first one.
 
-  matching annotations are currently mandated or `Pipelines asCode` will not
-  match your `PiplineRun`.
+You can match on `pull_request` events as above and on git `push` events to a
+repo.
+
+For example this will match the pipeline when there is a push to a commit in
+the `main` branch :
+
+```yaml
+ metadata:
+  name: pipeline-push-on-main
+  annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[refs/heads/main]"
+    pipelinesascode.tekton.dev/on-event: "[push]"
+```
+
+
+You need to specify the refs and not just the branch, this allows to as well
+match on tags. For example :
+
+```yaml
+ metadata:
+ name: pipeline-push-on-1.0-tags
+ annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[refs/tags/1.0]"
+    pipelinesascode.tekton.dev/on-event: "[push]"
+```
+
+will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0 tags
+into your repository.
+
+Matching annotations are currently mandated or `Pipelines as Code` will not
+match your `PiplineRun`.
 
 #### Pipelines asCode resolver
 

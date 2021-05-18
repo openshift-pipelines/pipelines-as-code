@@ -64,12 +64,16 @@ def main(args):
                      digestmod=hashlib.sha1).hexdigest()
 
     print("Replay event for repo " + jeez["repository"]["full_name"])
-    if jeez["action"] in ("opened", "synchronize") and "pull_request" in jeez:
+    if 'action' in jeez and jeez["action"] in (
+            "opened", "synchronize") and "pull_request" in jeez:
         event_type = "pull_request"
-    elif jeez["action"] in ("rerequested") and "check_run" in jeez:
+    elif 'action' in jeez and jeez[
+            "action"] == "rerequested" and "check_run" in jeez:
         event_type = "check_run"
-    elif jeez["action"] in ("created") and "issue" in jeez:
+    elif 'action' in jeez and jeez["action"] == "created" and "issue" in jeez:
         event_type = "issue_comment"
+    elif 'pusher' in jeez:
+        event_type = "push"
     else:
         raise Exception("Unknown event_type")
 

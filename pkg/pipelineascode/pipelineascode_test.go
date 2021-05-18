@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -224,85 +227,45 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 			forcedNamespace))
 }
 
-func TestRun(t *testing.T) {
-	ctx, _ := rtesting.SetupFakeContext(t)
-	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
-	defer teardown()
-	runinfo := &webvcs.RunInfo{
-		SHA:        "principale",
-		Owner:      "organizationes",
-		Repository: "lagaffe",
-		URL:        "https://service/documentation",
-		HeadBranch: "press",
-		BaseBranch: "main",
-		Sender:     "fantasio",
-		EventType:  "pull_request",
-	}
+func testSetupTektonDir(mux *http.ServeMux, runinfo *webvcs.RunInfo, directory string) {
+	var tektonDirContent string
+	_ = filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+		basename := filepath.Base(path)
+		trimmed := strings.TrimSuffix(basename, filepath.Ext(basename))
+		tektonDirContent += fmt.Sprintf(`{
+			"name": "%s",
+			"path": ".tekton/%s",
+			"sha": "shaof%s",
+			"size": %d,
+			"type": "file"
+		},`, basename, basename, trimmed, info.Size())
+
+		contentB, _ := ioutil.ReadFile(path)
+		replyString(mux,
+			fmt.Sprintf("/repos/%s/%s/git/blobs/shaof%s", runinfo.Owner, runinfo.Repository, trimmed),
+			fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
+				base64.StdEncoding.EncodeToString(contentB)))
+
+		return nil
+	})
 
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/contents/.tekton", runinfo.Owner, runinfo.Repository),
-		`[{
+		fmt.Sprintf("[%s]", strings.TrimSuffix(tektonDirContent, ",")))
+}
 
-				  "name": "pipeline.yaml",
-				  "path": ".tekton/pipeline.yaml",
-				  "sha": "5f44631b24c740288924767c608af932756d6c1a",
-				  "size": 1186,
-				  "type": "file"
-				},
-				{
-				  "name": "run.yaml",
-				  "path": ".tekton/run.yaml",
-				  "sha": "9085026cd00516d1db7101191d61a4371933c735",
-				  "size": 464,
-				  "type": "file"
-				},
-				{
-				  "name": "tekton.yaml",
-				  "path": ".tekton/tekton.yaml",
-				  "sha": "eacad9fa044f3d9039bb04c9452eadf0c43e3195",
-				  "size": 233,
-				  "type": "file"
-		 }]`)
-
+func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runinfo *webvcs.RunInfo, finalStatus, finalStatusText string,
+	noReplyOrgPublicMembers bool) {
+	// Take a directory and geneate replies as Github for it
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/contents/internal/task", runinfo.Owner, runinfo.Repository),
 		`{"sha": "internaltasksha"}`)
 
-	mux.HandleFunc("/orgs/"+runinfo.Owner+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(rw, `[{"login": "%s"}]`, runinfo.Sender)
-	})
-
-	// Internal task referenced in tekton.yaml
-	taskB, err := ioutil.ReadFile("testdata/task.yaml")
-	assert.NilError(t, err)
-	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/git/blobs/internaltasksha", runinfo.Owner, runinfo.Repository),
-		fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
-			base64.StdEncoding.EncodeToString(taskB)))
-
-	// Tekton.yaml
-	tlB, err := ioutil.ReadFile("testdata/tekton.yaml")
-	assert.NilError(t, err)
-	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/git/blobs/eacad9fa044f3d9039bb04c9452eadf0c43e3195", runinfo.Owner, runinfo.Repository),
-		fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
-			base64.StdEncoding.EncodeToString(tlB)))
-
-	// Run.yaml
-	prB, err := ioutil.ReadFile("testdata/run.yaml")
-	assert.NilError(t, err)
-	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/git/blobs/9085026cd00516d1db7101191d61a4371933c735", runinfo.Owner, runinfo.Repository),
-		fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
-			base64.StdEncoding.EncodeToString(prB)))
-
-	// Pipeline.yaml
-	pB, err := ioutil.ReadFile("testdata/pipeline.yaml")
-	assert.NilError(t, err)
-	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/git/blobs/5f44631b24c740288924767c608af932756d6c1a", runinfo.Owner, runinfo.Repository),
-		fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
-			base64.StdEncoding.EncodeToString(pB)))
+	if !noReplyOrgPublicMembers {
+		mux.HandleFunc("/orgs/"+runinfo.Owner+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(rw, `[{"login": "%s"}]`, runinfo.Sender)
+		})
+	}
 
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/check-runs", runinfo.Owner, runinfo.Repository),
@@ -314,64 +277,207 @@ func TestRun(t *testing.T) {
 			created := github.CreateCheckRunOptions{}
 			err := json.Unmarshal(body, &created)
 			assert.NilError(t, err)
-
 			// We created multiple status but the last one should be completed.
 			// TODO: we could maybe refine this test
 			if created.GetStatus() == "completed" {
-				assert.Equal(t, created.GetConclusion(), "neutral")
+				assert.Equal(t, created.GetConclusion(), finalStatus)
+				assert.Assert(t, strings.Contains(created.GetOutput().GetText(), finalStatusText), "GetStatus/CheckRun %s != %s", created.GetOutput().GetText(), finalStatusText)
 			}
 		})
+}
 
-	gcvs := webvcs.GithubVCS{
-		Client: fakeclient,
-	}
-
-	repo := testclient.Data{
-		Namespaces: []*corev1.Namespace{
-			{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "namespace",
-				},
-			},
-		},
-		Repositories: []*v1alpha1.Repository{
-			newRepo(
-				"test-run",
-				runinfo.URL,
-				runinfo.BaseBranch,
-				"namespace",
-				"namespace"),
-		},
-	}
-	stdata, _ := testclient.SeedTestData(t, ctx, repo)
-
+func TestRun(t *testing.T) {
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
+	tests := []struct {
+		name                         string
+		runinfo                      *webvcs.RunInfo
+		tektondir                    string
+		wantErr                      string
+		finalStatus                  string
+		finalStatusText              string
+		repositories                 []*v1alpha1.Repository
+		skipReplyingOrgPublicMembers bool
+	}{
+		{
+			name: "pull request",
+			runinfo: &webvcs.RunInfo{
+				SHA:        "principale",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				HeadBranch: "press",
+				BaseBranch: "main",
+				Sender:     "fantasio",
+				EventType:  "pull_request",
+			},
+			tektondir:       "testdata/pull_request",
+			finalStatus:     "neutral",
+			finalStatusText: "More detailed status",
+		},
+		{
+			name: "No match",
+			runinfo: &webvcs.RunInfo{
+				SHA:        "principale",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				HeadBranch: "press",
+				Sender:     "fantasio",
+				BaseBranch: "nomatch",
+				EventType:  "pull_request",
+			},
+			tektondir:   "testdata/pull_request",
+			wantErr:     "cannot match any pipeline",
+			finalStatus: "neutral",
+		},
+		{
+			name: "Push/branch",
+			runinfo: &webvcs.RunInfo{
+				SHA:        "principale",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				Sender:     "fantasio",
+				HeadBranch: "refs/heads/main",
+				BaseBranch: "refs/heads/main",
+				EventType:  "push",
+			},
+			tektondir:   "testdata/push_branch",
+			finalStatus: "neutral",
+		},
+		{
+			name: "Push/tags",
+			runinfo: &webvcs.RunInfo{
+				SHA:        "principale",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				Sender:     "fantasio",
+				HeadBranch: "refs/tags/0.1",
+				BaseBranch: "refs/tags/0.1",
+				EventType:  "push",
+			},
+			tektondir:   "testdata/push_tags",
+			finalStatus: "neutral",
+		},
 
-	tdc := testDynamic.Options{}
-	dc, _ := tdc.Client()
-
-	cs := &cli.Clients{
-		GithubClient:   gcvs,
-		PipelineAsCode: stdata.PipelineAsCode,
-		Log:            logger,
-		Kube:           stdata.Kube,
-		Tekton:         stdata.Pipeline,
-		Dynamic:        dc,
+		// Skipped
+		{
+			name: "Skipped/Test no tekton dir",
+			runinfo: &webvcs.RunInfo{
+				SHA:        "principale",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				HeadBranch: "press",
+				Sender:     "fantasio",
+				BaseBranch: "nomatch",
+				EventType:  "pull_request",
+			},
+			tektondir:       "",
+			finalStatus:     "skipped",
+			finalStatusText: "directory for this repository",
+		},
+		{
+			name: "Skipped/Test no repositories match",
+			runinfo: &webvcs.RunInfo{
+				SHA:        "principale",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				HeadBranch: "press",
+				Sender:     "fantasio",
+				BaseBranch: "nomatch",
+				EventType:  "pull_request",
+			},
+			tektondir:       "",
+			finalStatus:     "skipped",
+			finalStatusText: "not find a namespace match",
+			repositories: []*v1alpha1.Repository{
+				newRepo("test-run", "https://nowhere.com",
+					"a branch",
+					"namespace",
+					"namespace"),
+			},
+		},
+		{
+			name: "Skipped/User is not allowed",
+			runinfo: &webvcs.RunInfo{
+				SHA:        "principale",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				HeadBranch: "press",
+				Sender:     "evilbro",
+				BaseBranch: "nomatch",
+				EventType:  "pull_request",
+			},
+			tektondir:                    "testdata/pull_request",
+			finalStatus:                  "skipped",
+			finalStatusText:              "is not allowed to run CI on this repo",
+			skipReplyingOrgPublicMembers: true,
+		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			if tt.repositories == nil {
+				tt.repositories = []*v1alpha1.Repository{
+					newRepo("test-run", tt.runinfo.URL, tt.runinfo.BaseBranch, "namespace", "namespace"),
+				}
+			}
+			tdata := testclient.Data{
+				Namespaces: []*corev1.Namespace{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "namespace",
+						},
+					},
+				},
+				Repositories: tt.repositories,
+			}
 
-	k8int := kitesthelper.KinterfaceTest{
-		ConsoleURL: "https://console.url",
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+
+			testSetupCommonGhReplies(t, mux, tt.runinfo, tt.finalStatus, tt.finalStatusText, tt.skipReplyingOrgPublicMembers)
+			if tt.tektondir != "" {
+				testSetupTektonDir(mux, tt.runinfo, tt.tektondir)
+			}
+
+			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
+			tdc := testDynamic.Options{}
+			dc, _ := tdc.Client()
+			cs := &cli.Clients{
+				GithubClient: webvcs.GithubVCS{
+					Client: fakeclient,
+				},
+				PipelineAsCode: stdata.PipelineAsCode,
+				Log:            logger,
+				Kube:           stdata.Kube,
+				Tekton:         stdata.Pipeline,
+				Dynamic:        dc,
+			}
+			k8int := &kitesthelper.KinterfaceTest{
+				ConsoleURL: "https://console.url",
+			}
+			err := Run(ctx, cs, k8int, tt.runinfo)
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+
+			assert.NilError(t, err)
+			assert.Assert(t, len(log.TakeAll()) > 0)
+
+			if tt.finalStatus != "skipped" {
+				got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(
+					ctx, "test-run", metav1.GetOptions{})
+				assert.NilError(t, err)
+				assert.Assert(t, got.Status[len(got.Status)-1].PipelineRunName != "pipelinerun1")
+			}
+		})
 	}
-
-	// TODO: I am not sure why querying stdata.Tekton.PipelineRun.List doesn't
-	// give back anything while it works for repo, we will need to investigate
-	// this to make better testing.
-	err = Run(ctx, cs, &k8int, runinfo)
-	assert.NilError(t, err)
-	assert.Assert(t, len(log.TakeAll()) > 0)
-	got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(
-		ctx, "test-run", metav1.GetOptions{})
-	assert.NilError(t, err)
-	assert.Assert(t, got.Status[len(got.Status)-1].PipelineRunName != "pipelinerun1")
 }
