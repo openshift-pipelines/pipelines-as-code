@@ -3,20 +3,22 @@ apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   name: pipelines-as-code-test-run
+  pipelinesascode.tekton.dev/on-target-branch: "[main]"
+  pipelinesascode.tekton.dev/on-event: "[pull_request]"
 spec:
   pipelineRef:
     name: pipelines-as-code-test
   params:
     - name: repo_url
-      value: {{repo_url}}
+      value: "{{repo_url}}"
     - name: revision
-      value: {{revision}}
+      value: "{{revision}}"
   workspaces:
-  - name: source
-    volumeClaimTemplate:
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi

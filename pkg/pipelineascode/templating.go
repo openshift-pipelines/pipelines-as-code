@@ -7,6 +7,7 @@ import (
 
 var reTemplate = regexp.MustCompile(`{{([^}]{2,})}}`)
 
+// ReplacePlaceHoldersVariables Replace those {{var}} placeholders to the runinfo variable
 func ReplacePlaceHoldersVariables(template string, dico map[string]string) string {
 	return reTemplate.ReplaceAllStringFunc(template, func(s string) string {
 		parts := reTemplate.FindStringSubmatch(s)

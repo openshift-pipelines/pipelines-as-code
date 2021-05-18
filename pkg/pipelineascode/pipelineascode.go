@@ -7,6 +7,7 @@ import (
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/config"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,17 +60,19 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	var err error
 	var maintekton TektonYamlConfig
 
+	// Create first check run to let know the user we have started the pipeline
 	checkRun, err := cs.GithubClient.CreateCheckRun(ctx, "in_progress", runinfo)
 	if err != nil {
 		return err
 	}
+	// Set the runId on runInfo so if we have an error we can report it on UI (GH checks UI for GH PR)
 	runinfo.CheckRunID = checkRun.ID
 
+	// Check if submitted is allowed to run this.
 	allowed, err := aclCheck(ctx, cs, runinfo)
 	if err != nil {
 		return err
 	}
-
 	if !allowed {
 		_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "skipped",
 			fmt.Sprintf("User %s is not allowed to run CI on this repo.", runinfo.Sender),
@@ -78,6 +81,8 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return nil
 	}
 
+	// Checkout the tekton.yaml from the main/default branch, we get configuration for there.
+	// TODO: to trash away
 	maintektonyaml, _ := cs.GithubClient.GetFileFromDefaultBranch(ctx, filepath.Join(tektonDir, tektonConfigurationFile), runinfo)
 	if maintektonyaml != "" {
 		maintekton, err = processTektonYaml(ctx, cs, runinfo, maintektonyaml)
@@ -86,11 +91,11 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		}
 	}
 
+	// Match the Event to a Repository Resource
 	repo, err := getRepoByCR(ctx, cs, runinfo.URL, runinfo.BaseBranch, maintekton.Namespace)
 	if err != nil {
 		return err
 	}
-
 	if repo.Spec.Namespace == "" {
 		_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "skipped",
 			"Could not find a configuration for this repository", "https://tenor.com/search/sad-cat-gifs")
@@ -98,6 +103,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return nil
 	}
 
+	// Get everything in tekton directory
 	objects, err := cs.GithubClient.GetTektonDir(ctx, tektonDir, runinfo)
 	if err != nil {
 		_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "skipped",
@@ -110,18 +116,25 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		"sha", runinfo.SHA,
 		"event_type", "pull_request")
 
+	// Make sure we have the namespace already created or error it.
+	// TODO: this probably can be trashed since repo is only can be created in
+	// Namespace
 	err = k8int.GetNamespace(ctx, repo.Spec.Namespace)
 	if err != nil {
 		return err
 	}
+
+	// Update status in UI
 	_, err = cs.GithubClient.CreateStatus(ctx, runinfo, "in_progress", "",
-		fmt.Sprintf("Creating pipelinerun in namespace <b>%s</b>", repo.Spec.Namespace),
+		fmt.Sprintf("Getting pipelinerun configuration in namespace <b>%s</b>", repo.Spec.Namespace),
 		"https://tenor.com/search/sad-cat-gifs")
 	if err != nil {
 		return err
 	}
 
-	yamlConfig := TektonYamlConfig{}
+	// Process the tekton.yaml, we will get the extra tasks from there
+	// TODO: to trash when we get tasks inside annotations imp
+	var yamlConfig TektonYamlConfig
 	for _, file := range objects {
 		if file.GetName() == tektonConfigurationFile {
 			data, err := cs.GithubClient.GetObject(ctx, file.GetSHA(), runinfo)
@@ -137,30 +150,38 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		}
 	}
 
-	allTemplates, err := cs.GithubClient.GetTektonDirTemplate(ctx, objects, runinfo)
+	// Concat all yaml files as one multi document yaml string
+	allTemplates, err := cs.GithubClient.ConcatAllYamlFiles(ctx, objects, runinfo)
 	if err != nil {
 		return err
 	}
 
+	// Replace those {{var}} placeholders user has in her template to the runinfo variable
 	allTemplates = ReplacePlaceHoldersVariables(allTemplates, map[string]string{
 		"revision": runinfo.SHA,
 		"repo_url": runinfo.URL,
 	})
 
-	// Do not do place holders replacement on remote tasks, who knows maybe not good!
+	// Append the remote task to the big template, we don't do replacement on those, maybe we should?
 	if yamlConfig.RemoteTasks != "" {
 		allTemplates += yamlConfig.RemoteTasks
 	}
 
-	pruns, err := resolve.Resolve(cs, allTemplates, true)
+	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
+	pipelineRuns, err := resolve.Resolve(cs, allTemplates, true)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Should we support multiples pipeline runs?
-	prun := pruns[0]
+	// Match the pipelinerun with annotation
+	pipelineRun, err := config.MatchPipelinerunByAnnotation(pipelineRuns, cs, runinfo)
+	if err != nil {
+		return err
+	}
 
-	prun.Labels = map[string]string{
+	// Add labels on the soon to be created pipelinerun so UI/CLI can easily
+	// query them.
+	pipelineRun.Labels = map[string]string{
 		"tekton.dev/pipeline-ascode-owner":      runinfo.Owner,
 		"tekton.dev/pipeline-ascode-repository": runinfo.Repository,
 		"tekton.dev/pipeline-ascode-sha":        runinfo.SHA,
@@ -168,17 +189,20 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		"tekton.dev/pipeline-ascode-branch":     runinfo.BaseBranch,
 	}
 
-	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, prun, metav1.CreateOptions{})
+	// Create the actual pipeline
+	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, pipelineRun, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
+	// Get the UI/webconsole URL for this pipeline to watch the log (only openshift console suppported atm)
 	consoleURL, err := k8int.GetConsoleUI(ctx, repo.Spec.Namespace, pr.GetName())
 	if err != nil {
 		// Don't bomb out if we can't get the console UI
 		consoleURL = "https://giphy.com/explore/cat-exercise-wheel"
 	}
 
+	// Create status with the log url
 	_, err = cs.GithubClient.CreateStatus(ctx, runinfo, "in_progress", "",
 		fmt.Sprintf(`Starting Pipelinerun <b>%s</b> in namespace <b>%s</b><br><br>You can follow the execution on the command line with : <br><br><code>tkn pr logs -f -n %s %s</code>`,
 			pr.GetName(), repo.Spec.Namespace, repo.Spec.Namespace, pr.GetName()),
@@ -188,11 +212,14 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	// Use this as a wait holder until the logs is finished, maybe we would do something with the log output.
+	// TODO: to remove and use just a simple wait for deployment
 	_, err = k8int.TektonCliFollowLogs(repo.Spec.Namespace, pr.GetName())
 	if err != nil {
 		return err
 	}
 
+	// Post the final status to GitHub check status with a nice breakdown and
+	// tekton cli describe output.
 	newPr, err := postFinalStatus(ctx, cs, k8int, runinfo, pr.Name, repo.Spec.Namespace)
 	if err != nil {
 		return err
@@ -205,14 +232,15 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		CompletionTime:  newPr.Status.CompletionTime,
 	}
 
-	// TODO: Get another time the repo in case it was updated, there may be a
-	// locking problem we should solve here but we are talking milliseconds race.
+	// Get repo again in case it was updated while we were running the CI
+	// NOTE: there may be a race issue we should maybe solve here, between the Get and
+	// Update but we are talking sub-milliseconds issue here.
 	lastrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Spec.Namespace).Get(ctx, repo.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	// TODO: Reversed?
+	// Append pipelinerun status files to the repo status
 	if len(lastrepo.Status) >= maxPipelineRunStatusRun {
 		copy(lastrepo.Status, lastrepo.Status[len(lastrepo.Status)-maxPipelineRunStatusRun+1:])
 		lastrepo.Status = lastrepo.Status[:maxPipelineRunStatusRun-1]
