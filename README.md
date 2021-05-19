@@ -122,7 +122,7 @@ on the `PipelineRun`. For example when you have these metadatas in your `Pipelin
   matching annotations are currently mandated or `Pipelines asCode` will not
   match your `PiplineRun`.
 
-#### Pipelines asCode resolver
+#### Pipelines as Code resolver
 
 If `Pipelines as Code` sees multiple documents, it tries to *resolves* it as a
   single PiplineSpec embedded to a `PipelineRun`. It will add a `generateName`
@@ -136,7 +136,7 @@ it will fails before applying the pipelinerun onto the cluster.
 
 #### Remote Task support
 
-`Pipelines asCode` support fetching remote tasks from remote location via  annotation on PipelineRun.
+`Pipelines as Code` support fetching remote tasks from remote location via  annotation on PipelineRun.
 
 If the resolver sees a PipelineRun referencing a remote task via its name in a  Pipeline or a PipelineSpec it will automatically inlines it.
 
