@@ -3,7 +3,6 @@ module github.com/openshift-pipelines/pipelines-as-code
 go 1.15
 
 require (
-	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-cmp v0.5.4
 	github.com/google/go-github/v34 v34.0.0
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
@@ -16,7 +15,8 @@ require (
 	github.com/tektoncd/pipeline v0.23.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013
-	gotest.tools/v3 v3.0.2
+	gopkg.in/yaml.v2 v2.4.0
+	gotest.tools/v3 v3.0.3
 	k8s.io/api v0.19.7
 	k8s.io/apimachinery v0.19.7
 	k8s.io/client-go v0.19.7

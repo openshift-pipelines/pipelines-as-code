@@ -31,7 +31,7 @@ func readTypes(cs *cli.Clients, data string) Types {
 
 		obj, _, err := decoder.Decode([]byte(doc), nil, nil)
 		if err != nil {
-			cs.Log.Info("Skipping document not looking like a kubernetes resources")
+			cs.Log.Infof("Skipping document not looking like a kubernetes resources: %v", err)
 			continue
 		}
 		switch o := obj.(type) {
@@ -67,11 +67,27 @@ func getPipelineByName(name string, tasks []*tektonv1beta1.Pipeline) (*tektonv1b
 	return &tektonv1beta1.Pipeline{}, fmt.Errorf("cannot find pipeline %s in input", name)
 }
 
+func skippingTask(taskName string, skippedTasks []string) bool {
+	for _, value := range skippedTasks {
+		if value == taskName {
+			return true
+		}
+	}
+	return false
+}
+
+type Opts struct {
+	GenerateName bool     // wether to GenerateName
+	RemoteTasks  bool     // wether to parse annotation to fetch tasks from remote
+	SkipInlining []string // task to skip inlining
+}
+
 // Resolve gets a large string which is a yaml multi documents containing
 // Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
 // generateName can be set as True to set the name as a generateName + "-" for
 // unique pipelinerun
-func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data string, generateName bool) ([]*tektonv1beta1.PipelineRun, error) {
+func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data string, ropt *Opts) (
+	[]*tektonv1beta1.PipelineRun, error) {
 	s := k8scheme.Scheme
 	if err := tektonv1beta1.AddToScheme(s); err != nil {
 		return []*tektonv1beta1.PipelineRun{}, err
@@ -84,7 +100,7 @@ func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data
 
 	// First resolve Annotations Tasks
 	for _, pipelinerun := range types.PipelineRuns {
-		if pipelinerun.GetObjectMeta().GetAnnotations() != nil {
+		if ropt.RemoteTasks && pipelinerun.GetObjectMeta().GetAnnotations() != nil {
 			rt := config.RemoteTasks{
 				Clients: cs,
 				Runinfo: runinfo,
@@ -102,7 +118,7 @@ func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data
 	for _, pipeline := range types.Pipelines {
 		var pipelineTasks []tektonv1beta1.PipelineTask
 		for _, task := range pipeline.Spec.Tasks {
-			if task.TaskRef != nil {
+			if task.TaskRef != nil && !skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
 				taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
 				if err != nil {
 					return []*tektonv1beta1.PipelineRun{}, err
@@ -120,7 +136,7 @@ func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data
 		if pipelinerun.Spec.PipelineSpec != nil {
 			var pipelineTasksResolve []tektonv1beta1.PipelineTask
 			for _, task := range pipelinerun.Spec.PipelineSpec.Tasks {
-				if task.TaskRef != nil {
+				if task.TaskRef != nil && !skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
 					taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
 					if err != nil {
 						return []*tektonv1beta1.PipelineRun{}, err
@@ -144,7 +160,7 @@ func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data
 
 		}
 		// Add a generateName based on name if we want it
-		if generateName && pipelinerun.ObjectMeta.GenerateName == "" {
+		if ropt.GenerateName && pipelinerun.ObjectMeta.GenerateName == "" {
 			pipelinerun.ObjectMeta.GenerateName = pipelinerun.ObjectMeta.Name + "-"
 			pipelinerun.ObjectMeta.Name = ""
 		}

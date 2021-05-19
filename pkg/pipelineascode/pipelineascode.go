@@ -157,8 +157,12 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		"repo_url": runinfo.URL,
 	})
 
+	ropt := &resolve.Opts{
+		GenerateName: true,
+		RemoteTasks:  true,
+	}
 	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
-	pipelineRuns, err := resolve.Resolve(ctx, cs, runinfo, allTemplates, true)
+	pipelineRuns, err := resolve.Resolve(ctx, cs, runinfo, allTemplates, ropt)
 	if err != nil {
 		return err
 	}
