@@ -43,7 +43,11 @@ func readTDfile(t *testing.T, testname string, generateName bool) (*tektonv1beta
 		Log: logger,
 	}
 	runinfo := &webvcs.RunInfo{}
-	resolved, err := Resolve(ctx, cs, runinfo, string(data), generateName)
+	ropt := &Opts{
+		GenerateName: generateName,
+		RemoteTasks:  true,
+	}
+	resolved, err := Resolve(ctx, cs, runinfo, string(data), ropt)
 	if err != nil {
 		return &tektonv1beta1.PipelineRun{}, nil, err
 	}
