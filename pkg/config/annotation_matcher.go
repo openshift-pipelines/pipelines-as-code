@@ -24,12 +24,18 @@ func getAnnotationValues(annotation string) ([]string, error) {
 	if !match {
 		return nil, errors.New("annotations in pipeline are in wrong format")
 	}
+
+	// Split all tasks by comma and make sure to trim spaces in there
 	splitted := strings.Split(re.FindStringSubmatch(annotation)[1], ",")
+	for i := range splitted {
+		splitted[i] = strings.TrimSpace(splitted[i])
+	}
+
 	if splitted[0] == "" {
 		return nil, errors.New("annotations in pipeline are empty")
 	}
 
-	return strings.Split(re.FindStringSubmatch(annotation)[1], ","), nil
+	return splitted, nil
 }
 
 func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
