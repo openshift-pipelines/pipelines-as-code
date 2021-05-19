@@ -39,6 +39,8 @@ func (rt RemoteTasks) convertTotask(data string) (*tektonv1beta1.Task, error) {
 
 func (rt RemoteTasks) getTask(ctx context.Context, task string) (*tektonv1beta1.Task, error) {
 	var ret *tektonv1beta1.Task
+
+	// TODO: print a log info when getting the task from which location
 	switch {
 	case strings.HasPrefix(task, "https://"), strings.HasPrefix(task, "http://"):
 		res, err := rt.Clients.HTTPClient.Get(task)
@@ -62,15 +64,17 @@ func (rt RemoteTasks) getTask(ctx context.Context, task string) (*tektonv1beta1.
 			version = split[len(split)-1]
 			taskName = split[0]
 		}
-		resource := rt.Clients.Hub.GetResource(hub.ResourceOption{
+		resourceoption := hub.ResourceOption{
 			Name:    taskName,
 			Catalog: tektonCatalogHubName,
 			Kind:    "task",
 			Version: version,
-		})
+		}
+
+		resource := rt.Clients.Hub.GetResource(resourceoption)
 		data, err := resource.Manifest()
 		if err != nil {
-			return ret, err
+			return ret, fmt.Errorf("task %s hasn't been found: %s", taskName, err)
 		}
 		return rt.convertTotask(string(data))
 	}

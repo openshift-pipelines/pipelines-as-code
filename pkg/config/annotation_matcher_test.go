@@ -1,6 +1,7 @@
 package config
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -171,6 +172,61 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				logmsg := log.TakeAll()
 				assert.Assert(t, len(logmsg) > 0)
 				assert.Assert(t, strings.Contains(logmsg[0].Message, tt.wantLog))
+			}
+		})
+	}
+}
+
+func Test_getAnnotationValues(t *testing.T) {
+	type args struct {
+		annotation string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []string
+		wantErr bool
+	}{
+		{
+			name: "get-annotation-simple",
+			args: args{
+				annotation: "[foo]",
+			},
+			want:    []string{"foo"},
+			wantErr: false,
+		},
+		{
+			name: "get-annotation-multiples",
+			args: args{
+				annotation: "[foo, bar]",
+			},
+			want:    []string{"foo", "bar"},
+			wantErr: false,
+		},
+		{
+			name: "get-annotation-bad-syntax",
+			args: args{
+				annotation: "foo]",
+			},
+			wantErr: true,
+		},
+		{
+			name: "get-annotation-error-empty",
+			args: args{
+				annotation: "[]",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getAnnotationValues(tt.args.annotation)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getAnnotationValues() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getAnnotationValues() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
