@@ -3,9 +3,10 @@ apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   name: pipelines-as-code-test-run
-  pipelinesascode.tekton.dev/on-target-branch: "[main]"
-  pipelinesascode.tekton.dev/on-event: "[pull_request]"
-  pipelinesascode.tekton.dev/task: "[git-clone, codecov]"
+  annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+    pipelinesascode.tekton.dev/task: "[git-clone, codecov]"
 spec:
   pipelineRef:
     name: pipelines-as-code-test
