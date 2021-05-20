@@ -180,6 +180,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		"tekton.dev/pipeline-ascode-repository": runinfo.Repository,
 		"tekton.dev/pipeline-ascode-sha":        runinfo.SHA,
 		"tekton.dev/pipeline-ascode-sender":     runinfo.Sender,
+		"tekton.dev/pipeline-ascode-event-type": runinfo.EventType,
 		"tekton.dev/pipeline-ascode-branch":     refTomakeK8Happy,
 	}
 
