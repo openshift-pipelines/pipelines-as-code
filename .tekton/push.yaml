@@ -2,10 +2,10 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: pipeline-as-code-pull-request
+  name: pipeline-as-code-on-push
   annotations:
     pipelinesascode.tekton.dev/on-event: '[push]'
-    pipelinesascode.tekton.dev/on-target-branch: '[main]'
+    pipelinesascode.tekton.dev/on-target-branch: '[refs/heads/main]'
     pipelinesascode.tekton.dev/task: '[git-clone]'
 spec:
   params:
