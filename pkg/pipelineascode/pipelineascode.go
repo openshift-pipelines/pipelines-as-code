@@ -24,7 +24,7 @@ type Options struct {
 	RunInfo     webvcs.RunInfo
 }
 
-func getRepoByCR(ctx context.Context, cs *cli.Clients, url, branch, forceNamespace string) (apipac.Repository, error) {
+func getRepoByCR(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (apipac.Repository, error) {
 	var repository apipac.Repository
 
 	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
@@ -32,13 +32,17 @@ func getRepoByCR(ctx context.Context, cs *cli.Clients, url, branch, forceNamespa
 	if err != nil {
 		return repository, err
 	}
+
 	for _, value := range repositories.Items {
-		if value.Spec.URL == url && value.Spec.Branch == branch {
-			if forceNamespace != "" && value.Namespace != forceNamespace {
-				return repository, fmt.Errorf(
-					"repo CR matches but should be installed in %s as configured from tekton.yaml on the main branch",
-					forceNamespace)
-			}
+		if value.Spec.URL == runinfo.URL && value.Spec.Branch == runinfo.BaseBranch &&
+			value.Spec.EventType == runinfo.EventType {
+
+			// TODO: figure it out when we renable forceNamespace
+			// if forceNamespace != "" && value.Namespace != forceNamespace {
+			//	return repository, fmt.Errorf(
+			//		"repo CR matches but should be installed in %s as configured from tekton.yaml on the main branch",
+			//		forceNamespace)
+			// }
 
 			// Disallow attempts for hijacks. If the installed CR is not configured on the
 			// Namespace the Spec is targeting then disallow it.
@@ -99,7 +103,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 
 	// Match the Event to a Repository Resource,
 	// TODO: we need to be able to force a Namespace from the configuration as annotation as an extra layer of security for // hijacking
-	repo, err := getRepoByCR(ctx, cs, runinfo.URL, runinfo.BaseBranch, "")
+	repo, err := getRepoByCR(ctx, cs, runinfo)
 	if err != nil {
 		return err
 	}
