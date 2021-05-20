@@ -62,11 +62,6 @@ func createStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo,
 	if logit {
 		cs.Log.Infof(text)
 	}
-	// Do not create status on push, there is maybe going other event type we
-	// would run CI on but that are not tight to a PR
-	if runinfo.EventType == "push" {
-		return nil
-	}
 	_, err := cs.GithubClient.CreateStatus(ctx, runinfo, status, conclusion, text, detailsURL)
 	return err
 }
@@ -77,14 +72,12 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 
 	// Create first check run to let know the user we have started the pipeline
 	// TODO: Refactor this bit in a function
-	if runinfo.EventType != "push" {
-		checkRun, err := cs.GithubClient.CreateCheckRun(ctx, "in_progress", runinfo)
-		if err != nil {
-			return err
-		}
-		// Set the runId on runInfo so if we have an error we can report it on UI (GH checks UI for GH PR)
-		runinfo.CheckRunID = checkRun.ID
+	checkRun, err := cs.GithubClient.CreateCheckRun(ctx, "in_progress", runinfo)
+	if err != nil {
+		return err
 	}
+	// Set the runId on runInfo so if we have an error we can report it on UI (GH checks UI for GH PR)
+	runinfo.CheckRunID = checkRun.ID
 
 	// Check if submitted is allowed to run this.
 	allowed, err := aclCheck(ctx, cs, runinfo)
