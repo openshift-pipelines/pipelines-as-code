@@ -77,7 +77,7 @@ main into the namespace `my-pipeline-ci`
 For security reasons you need to make sure that the Repository CR is installed
 into the same namespace are where we want to execute them.
 
-### Write Tekton pipeline in `.tekton/` directory
+### Writting Tekton pipelines in `.tekton/` directory
 
 - Pipelines as Code tries to be as close to the tekton template as possible.
   Usually you write your template and save them with a ".yaml" extension  and
@@ -96,6 +96,10 @@ into the same namespace are where we want to execute them.
 - You need at least one `PipelineRun` with a `PipelineSpec` or a separated
   `Pipeline` object. You can have embedded `TaskSpec` inside
   `Pipeline` or you can have them defined separately as `Task`.
+
+#### Examples
+
+`Pipelines as code` test itself, you can see the examples in its [.tekton](.tekton/) repository.
 
 #### Event matching to a Pipeline
 
@@ -199,7 +203,7 @@ If instead you want to have a specific task, you can add a colon `:` to the stri
   pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # will install git-clone 0.1 from tekton.hub
   ```
 
-If you have a string starting with http:// or https://, `Pipelines asCode`
+If you have a string starting with http:// or https://, `Pipelines as Code`
 will fetch the task directly from that remote url instead of going via the
 `tekton hub` :
 
