@@ -95,7 +95,7 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 				  "path": ".tekton/tekton.yaml",
 				  "sha": "tektonyaml",
 				  "type": "file"
-		     }]`)
+			 }]`)
 	})
 	mux.HandleFunc("/repos/throw/error/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, "ERRROR")
@@ -156,7 +156,7 @@ func TestParsePayloadRerequest(t *testing.T) {
 	assert.Equal(t, prOwner, runinfo.Owner)
 	assert.Equal(t, repoName, runinfo.Repository)
 	assert.Assert(t, checkrunSender != runinfo.Sender)
-
+	assert.Equal(t, runinfo.EventType, "pull_request")
 	assert.Assert(t, strings.Contains(observer.TakeAll()[0].Message, "Recheck of PR"))
 }
 
@@ -175,18 +175,18 @@ func TestParsePayLoadRetest(t *testing.T) {
 
 	issueEvent := fmt.Sprintf(`{
   "sender": {
-    "login": "%s"
+	"login": "%s"
   },
   "repository": {
-    "name": "%s",
-    "owner": {
-      "login": "%s"
-    }
+	"name": "%s",
+	"owner": {
+	  "login": "%s"
+	}
   },
   "issue": {
-    "pull_request": {
-      "html_url": "https://github.com/%s/%s/pull/%s"
-    }
+	"pull_request": {
+	  "html_url": "https://github.com/%s/%s/pull/%s"
+	}
   }
 }`, issueSender, repoName, prOwner, repoName, repoOwner, prNumber)
 
@@ -203,6 +203,7 @@ func TestParsePayLoadRetest(t *testing.T) {
 	assert.Assert(t, issueSender != runinfo.Owner)
 	firstObservedMessage := observer.TakeAll()[0].Message
 	assert.Assert(t, strings.Contains(firstObservedMessage, "recheck"))
+	assert.Equal(t, runinfo.EventType, "pull_request")
 }
 
 func TestParsePayload(t *testing.T) {
@@ -218,6 +219,7 @@ func TestParsePayload(t *testing.T) {
 	assert.Assert(t, runinfo.BaseBranch == "master")
 	assert.Assert(t, runinfo.Owner == "chmouel")
 	assert.Assert(t, runinfo.Repository == "scratchpad")
+	assert.Equal(t, runinfo.EventType, "pull_request")
 	assert.Assert(t, runinfo.URL == "https://github.com/chmouel/scratchpad")
 }
 

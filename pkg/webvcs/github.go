@@ -127,6 +127,7 @@ func (v GithubVCS) getPullRequest(ctx context.Context, runinfo RunInfo, prNumber
 	runinfo.Sender = pr.GetUser().GetLogin()
 	runinfo.HeadBranch = pr.GetHead().GetRef()
 	runinfo.BaseBranch = pr.GetBase().GetRef()
+	runinfo.EventType = "pull_request"
 	return runinfo, nil
 }
 
@@ -150,7 +151,6 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			if err != nil {
 				return &runinfo, err
 			}
-
 		}
 	case *github.IssueCommentEvent:
 		runinfo, err = v.handleIssueCommentEvent(ctx, log, event)
@@ -166,6 +166,7 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			URL:           event.GetRepo().GetHTMLURL(),
 			Sender:        event.GetSender().GetLogin(),
 			BaseBranch:    event.GetRef(),
+			EventType:     eventType,
 		}
 		runinfo.HeadBranch = runinfo.BaseBranch // in push events Head Branch is the same as Basebranch
 	case *github.PullRequestEvent:
@@ -178,11 +179,11 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			BaseBranch:    event.GetPullRequest().Base.GetRef(),
 			HeadBranch:    event.GetPullRequest().Head.GetRef(),
 			Sender:        event.GetPullRequest().GetUser().GetLogin(),
+			EventType:     eventType,
 		}
 	default:
 		return &runinfo, errors.New("this event is not supported")
 	}
-	runinfo.EventType = eventType
 	return &runinfo, nil
 }
 
