@@ -4,7 +4,7 @@ coverage:
   status:
     project:
       default:
-        target: 80
+        target: 75
         threshold: 1%
     patch:
       # Disable the coverage threshold of the patch, so that PRs are
@@ -16,7 +16,7 @@ ignore:
   - "**/zz_generated*.go"
   - "**/*.pb.go"
   - "hack"
-  - "pkg/client"
+  - "pkg/generated"
   - "test"
   - "third_party"
   - "vendor"
