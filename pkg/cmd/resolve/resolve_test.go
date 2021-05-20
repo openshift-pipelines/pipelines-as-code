@@ -1,11 +1,13 @@
 package resolve
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	tparams "github.com/openshift-pipelines/pipelines-as-code/pkg/test/params"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -27,6 +29,18 @@ spec:
 			  image: alpine:3.7
 			  script: "echo hello moto"
 `
+
+func TestCommandFilenameSetProperly(t *testing.T) {
+	params := tparams.FakeParams{}
+	cmd := Command(params)
+	e := bytes.NewBufferString("")
+	o := bytes.NewBufferString("")
+	cmd.SetErr(e)
+	cmd.SetOut(o)
+	cmd.SetArgs([]string{""})
+	err := cmd.Execute()
+	assert.ErrorContains(t, err, "you need to at least specify a file")
+}
 
 func TestResolveFilenames(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
