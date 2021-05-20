@@ -1,6 +1,7 @@
 package pipelineascode
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
+	tparams "github.com/openshift-pipelines/pipelines-as-code/pkg/test/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -18,7 +20,19 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func TestRunWrapOld(t *testing.T) {
+func TestCommandTokenSetProperly(t *testing.T) {
+	params := tparams.FakeParams{}
+	cmd := Command(params)
+	e := bytes.NewBufferString("")
+	o := bytes.NewBufferString("")
+	cmd.SetErr(e)
+	cmd.SetOut(o)
+	cmd.SetArgs([]string{"--webhook-sha", "abcd"})
+	err := cmd.Execute()
+	assert.ErrorContains(t, err, "token option is not set properly")
+}
+
+func TestRunWrapPR(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeghclient, mux, _, teardown := ghtesthelper.SetupGH()
 	stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
@@ -88,17 +102,17 @@ func TestGetInfo(t *testing.T) {
 	missingValuesPayload := `
 	{
   "pull_request": {
-    "head": {
-      "sha": "sha"
+	"head": {
+	  "sha": "sha"
 	}
   },
   "repository": {
-    "default_branch": "main",
-    "html_url": "https://github.com/openshift/tektoncd-pipeline",
-    "name": "tektoncd-pipeline",
-    "owner": {
-      "login": "openshift"
-    }
+	"default_branch": "main",
+	"html_url": "https://github.com/openshift/tektoncd-pipeline",
+	"name": "tektoncd-pipeline",
+	"owner": {
+	  "login": "openshift"
+	}
   }
 }
 	`
