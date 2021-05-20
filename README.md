@@ -257,7 +257,17 @@ with a short recap of how long each task of your pipeline took and the output of
 `tkn pr describe`.
 
 If there was a failure you can click on the "Re-Run" button on the left to rerun
-the Pipeline.
+the Pipeline or you can issue a issue comment with a line starting and finishing
+with the string `/retest` to ask Pipeline as Code to retest the current PR.
+
+Example :
+
+```
+Thanks for contributing! This is a much needed bugfix! ❤️
+The failure is not with your PR but seems to be an infra issue.
+
+/retest
+```
 
 #### CRD
 
