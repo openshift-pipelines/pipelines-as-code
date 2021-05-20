@@ -16,8 +16,11 @@ spec:
         - jsonPath: .spec.url
           name: URL
           type: string
-        - jsonPath: .spec.namespace
-          name: Namespace
+        - jsonPath: .spec.event_type
+          name: EventType
+          type: string
+        - jsonPath: .spec.branch
+          name: Branch
           type: string
         - name: Succeeded
           type: string
