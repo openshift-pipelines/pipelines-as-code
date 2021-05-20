@@ -36,7 +36,6 @@ func getRepoByCR(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) 
 	for _, value := range repositories.Items {
 		if value.Spec.URL == runinfo.URL && value.Spec.Branch == runinfo.BaseBranch &&
 			value.Spec.EventType == runinfo.EventType {
-
 			// TODO: figure it out when we renable forceNamespace
 			// if forceNamespace != "" && value.Namespace != forceNamespace {
 			//	return repository, fmt.Errorf(
@@ -101,7 +100,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return err
 	}
 	if repo.Spec.Namespace == "" {
-		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on %s", runinfo.Owner, runinfo.Repository, runinfo.BaseBranch)
+		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on target-branch:%s event-type: %s", runinfo.Owner, runinfo.Repository, runinfo.BaseBranch, runinfo.EventType)
 		err = createStatus(ctx, cs, runinfo, "completed", "skipped", msg, "https://tenor.com/search/sad-cat-gifs", true)
 		if err != nil {
 			return err
