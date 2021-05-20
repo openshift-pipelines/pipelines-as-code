@@ -58,6 +58,7 @@ spec:
                   name: "pipelines-as-code-uploader"
                   key: "creds"
           script: |
+            set +x
             curl -F 'path=/pipelines-as-code/release-nightly.yaml' -F 'file=@release.yaml' -u "${UPLOADER_CREDS}" -X POST \
             https://uploader-cron.svc.ci.openshift.org/upload
           workingDir: $(workspaces.source.path)
