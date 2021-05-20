@@ -34,6 +34,9 @@ func Command(p cli.Params) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if len(filenames) == 0 {
+				return fmt.Errorf("you need to at least specify a file with -f")
+			}
 			s, err := resolveFilenames(cs, filenames)
 			fmt.Println(s)
 			return err
