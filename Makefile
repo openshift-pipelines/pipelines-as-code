@@ -21,7 +21,7 @@ bin/%: cmd/% FORCE
 .PHONY: releaseyaml
 releaseyaml: ## Generate release.yaml, use it like this `make releaseyaml|kubectl apply -f-`
 	@env TARGET_REPO=$(QUAY_REPOSITORY) TARGET_BRANCH=$(QUAY_REPOSITORY_BRANCH) \
-		bash ./hack/generate-releaseyaml.sh
+		sh ./hack/generate-releaseyaml.sh
 
 check: lint test
 
