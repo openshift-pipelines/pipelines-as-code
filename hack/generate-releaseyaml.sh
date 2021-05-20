@@ -1,7 +1,6 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 # Chmouel Boudjnah <chmouel@chmouel.com>
 set -euf
-cd $(git rev-parse --show-toplevel)
 
 export TARGET_REPO=${TARGET_REPO:-quay.io/openshift-pipeline/pipelines-as-code}
 export TARGET_BRANCH=${TARGET_BRANCH:-main}
