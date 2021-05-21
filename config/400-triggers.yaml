@@ -53,7 +53,7 @@ spec:
     # When using the UI and clicking on Re-run failed test
     - name: github-check-run-recheck
       bindings:
-        - ref: openshift-pipelines-ascode-bindings
+        - ref: openshift-pipelines-ascode-bindings-recheck
       interceptors:
         - github:
             secretRef:
@@ -65,7 +65,7 @@ spec:
             filter: >-
               body.action in ['rerequested'] && 'check_run' in body && 'installation' in body
       template:
-        ref: openshift-pipelines-ascode-template
+        ref: openshift-pipelines-ascode-template-recheck
 
     # When sending a new Pull Request
     - name: github-pull-request
