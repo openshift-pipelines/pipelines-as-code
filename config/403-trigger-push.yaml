@@ -18,7 +18,7 @@ spec:
     - name: "default_branch"
       value: $(body.repository.default_branch)
     - name: "sha"
-      value: $(body.head_commit.id)      
+      value: $(body.head_commit.id)
     - name: "url"
       value: $(body.repository.html_url)
     - name: "sender"
@@ -27,4 +27,3 @@ spec:
       value: $(body.ref)
     - name: "installation_id"
       value: $(body.installation.id)
-
