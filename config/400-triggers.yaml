@@ -31,10 +31,10 @@ spec:
       template:
         ref: openshift-pipelines-ascode-template
 
-    # Branch push
+    # Branch push using different binding but same triggertemplate as pullreq
     - name: github-branch-push
       bindings:
-        - ref: openshift-pipelines-ascode-bindings
+        - ref: openshift-pipelines-ascode-bindings-push
       interceptors:
         - github:
             secretRef:
@@ -47,7 +47,7 @@ spec:
               'installation' in body &&
               'pusher' in body
       template:
-        ref: openshift-pipelines-ascode-template
+        ref: openshift-pipelines-ascode-template-pullreq
 
     # When using the UI and clicking on Re-run failed test
     - name: github-check-run-recheck
