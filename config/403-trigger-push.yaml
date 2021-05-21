@@ -1,0 +1,29 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: openshift-pipelines-ascode-bindings-push
+  namespace: pipelines-ascode
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
+spec:
+  params:
+    - name: "event_type"
+      value: $(header.X-GitHub-Event)
+    - name: "owner"
+      value: $(body.repository.owner.login)
+    - name: "repository"
+      value: $(body.repository.name)
+    - name: "default_branch"
+      value: $(body.repository.default_branch)
+    - name: "sha"
+      value: $(body.head_commit.id)
+    - name: "url"
+      value: $(body.repository.html_url)
+    - name: "sender"
+      value: $(body.sender.login)
+    - name: "base_ref"
+      value: $(body.ref)
+    - name: "installation_id"
+      value: $(body.installation.id)

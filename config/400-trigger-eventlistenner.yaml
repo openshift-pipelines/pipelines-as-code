@@ -10,10 +10,10 @@ metadata:
 spec:
   serviceAccountName: openshift-pipelines-ascode-sa-el
   triggers:
-    # When you have a /retest in a comment to reste a PR
+    # When you have a /retest in a comment to retest a PR
     - name: github-issue-comment-retest
       bindings:
-        - ref: openshift-pipelines-ascode-bindings
+        - ref: openshift-pipelines-ascode-bindings-retest-comment
       interceptors:
         - github:
             secretRef:
@@ -29,12 +29,12 @@ spec:
               'installation' in body &&
               body.comment.body.matches('(^|\\r\\n)/retest([ ]*$|$|\\r\\n)')
       template:
-        ref: openshift-pipelines-ascode-template
+        ref: openshift-pipelines-ascode-template-retest-comment
 
-    # Branch push
+    # Branch push using different binding but same triggertemplate as pullreq
     - name: github-branch-push
       bindings:
-        - ref: openshift-pipelines-ascode-bindings
+        - ref: openshift-pipelines-ascode-bindings-push
       interceptors:
         - github:
             secretRef:
@@ -47,7 +47,7 @@ spec:
               'installation' in body &&
               'pusher' in body
       template:
-        ref: openshift-pipelines-ascode-template
+        ref: openshift-pipelines-ascode-template-pullreq
 
     # When using the UI and clicking on Re-run failed test
     - name: github-check-run-recheck
@@ -82,7 +82,6 @@ spec:
               body.action in ['created', 'synchronize', 'opened'] && 'installation' in body
       template:
         ref: openshift-pipelines-ascode-template-pullreq
-
 # Triggers >0.13 Changed almost everything for EventListener
 # ---
 # apiVersion: triggers.tekton.dev/v1alpha1
@@ -119,105 +118,3 @@ spec:
 #         template:
 #           spec:
 #             serviceAccountName: openshift-pipelines-ascode-sa-el
-
----
-apiVersion: triggers.tekton.dev/v1alpha1
-kind: TriggerTemplate
-metadata:
-  name: openshift-pipelines-ascode-template
-  namespace: pipelines-ascode
-  annotations:
-    triggers.tekton.dev/old-escape-quotes: "true"
-  labels:
-    app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
-spec:
-  params:
-    - name: installation_id
-    - name: payload
-    - name: event_type
-  resourcetemplates:
-    - apiVersion: tekton.dev/v1beta1
-      kind: PipelineRun
-      metadata:
-        generateName: openshift-pipelines-ascode-run-
-        labels:
-          tekton.dev/pipeline: openshift-pipelines-ascode
-      spec:
-        serviceAccountName: openshift-pipelines-ascode-sa-el
-        params:
-          - name: installation_id
-            value: $(tt.params.installation_id)
-          - name: payload
-            value: $(tt.params.payload)
-          - name: event_type
-            value: $(tt.params.event_type)
-        pipelineSpec:
-          params:
-            - name: installation_id
-            - name: payload
-            - name: event_type
-          workspaces:
-            - name: secrets
-          tasks:
-            - name: get-token
-              taskRef:
-                name: github-app-token
-              params:
-                - name: installation_id
-                  value: $(params.installation_id)
-              workspaces:
-                - name: secrets
-                  workspace: secrets
-            - name: openshift-pipelines-ascode
-              runAfter: [get-token]
-              taskSpec:
-                params:
-                  - name: payload
-                    type: string
-                  - name: event_type
-                    type: string
-                  - name: token
-                    type: string
-                steps:
-                  - name: apply-and-launch
-                    env:
-                      - name: PAC_PIPELINERUN
-                        valueFrom:
-                          fieldRef:
-                            fieldPath: metadata.labels['tekton.dev/pipelineRun']
-                      - name: PAC_PAYLOAD
-                        value: "$(params.payload)"
-                      - name: PAC_EVENT_TYPE
-                        value: "$(params.event_type)"
-                      - name: PAC_TOKEN
-                        value: "$(params.token)"
-                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
-              params:
-                - name: token
-                  value: "$(tasks.get-token.results.token)"
-                - name: payload
-                  value: "$(params.payload)"
-                - name: event_type
-                  value: "$(params.event_type)"
-        workspaces:
-          - name: secrets
-            secret:
-              secretName: github-app-secret
----
-apiVersion: triggers.tekton.dev/v1alpha1
-kind: TriggerBinding
-metadata:
-  name: openshift-pipelines-ascode-bindings
-  namespace: pipelines-ascode
-  labels:
-    app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
-spec:
-  params:
-    - name: payload
-      value: $(body)
-    - name: event_type
-      value: $(header.X-GitHub-Event)
-    - name: installation_id
-      value: $(body.installation.id)
