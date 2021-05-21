@@ -10,7 +10,6 @@ metadata:
 spec:
   serviceAccountName: openshift-pipelines-ascode-sa-el
   triggers:
-
     # When you have a /retest in a comment to reste a PR
     - name: github-issue-comment-retest
       bindings:
@@ -70,7 +69,7 @@ spec:
     # When sending a new Pull Request
     - name: github-pull-request
       bindings:
-        - ref: openshift-pipelines-ascode-bindings
+        - ref: openshift-pipelines-ascode-bindings-pullreq
       interceptors:
         - github:
             secretRef:
@@ -82,7 +81,7 @@ spec:
             filter: >-
               body.action in ['created', 'synchronize', 'opened'] && 'installation' in body
       template:
-        ref: openshift-pipelines-ascode-template
+        ref: openshift-pipelines-ascode-template-pullreq
 
 # Triggers >0.13 Changed almost everything for EventListener
 # ---
