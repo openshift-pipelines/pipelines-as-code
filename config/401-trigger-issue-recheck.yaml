@@ -11,6 +11,8 @@ spec:
   params:
     - name: action
       value: $(body.action)
+    - name: trigger_target
+      value: "issue-recheck"
     - name: event_type
       value: $(header.X-GitHub-Event)
     - name: owner
@@ -39,6 +41,7 @@ spec:
     - name: repository
     - name: pull_request_number
     - name: installation_id
+    - name: trigger_target
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
@@ -62,8 +65,11 @@ spec:
             value: $(tt.params.pull_request_number)
           - name: installation_id
             value: $(tt.params.installation_id)
+          - name: trigger_target
+            value: $(tt.params.trigger_target)
         pipelineSpec:
           params:
+            - name: trigger_target
             - name: action
             - name: event_type
             - name: owner
@@ -98,6 +104,8 @@ spec:
                     type: string
                   - name: token
                     type: string
+                  - name: trigger_target
+                    type: string
                 steps:
                   - name: apply-and-launch
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
@@ -122,10 +130,14 @@ spec:
                         }
                       }
                       EOF
-                      pipelines-as-code --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
+                      pipelines-as-code --trigger-action=$(params.trigger_target) \
+                        --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
+
               params:
                 - name: action
                   value: "$(params.action)"
+                - name: trigger_target
+                  value: "$(params.trigger_target)"
                 - name: event_type
                   value: "$(params.event_type)"
                 - name: owner

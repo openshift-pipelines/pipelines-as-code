@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -24,14 +25,16 @@ type GithubVCS struct {
 // RunInfo Information about current run
 type RunInfo struct {
 	BaseBranch    string // branch against where we are making the PR
-	HeadBranch    string // branch from where our SHA get tested
-	DefaultBranch string
 	CheckRunID    *int64
+	DefaultBranch string
+	Event         interface{}
 	EventType     string
+	HeadBranch    string // branch from where our SHA get tested
 	Owner         string
 	Repository    string
-	Sender        string
 	SHA           string
+	Sender        string
+	TriggerTarget string
 	URL           string
 	WebConsoleURL string
 }
@@ -41,7 +44,7 @@ func (r RunInfo) Check() error {
 	if r.SHA != "" && r.BaseBranch != "" &&
 		r.Repository != "" && r.DefaultBranch != "" &&
 		r.HeadBranch != "" && r.Owner != "" && r.URL != "" &&
-		r.Sender != "" && r.EventType != "" {
+		r.Sender != "" && r.EventType != "" && r.TriggerTarget != "" {
 		return nil
 	}
 	return fmt.Errorf("missing values in runInfo")
@@ -90,11 +93,20 @@ func (v GithubVCS) handleReRequestEvent(ctx context.Context, log *zap.SugaredLog
 	return v.getPullRequest(ctx, runinfo, prNumber)
 }
 
+func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
+	prNumber, err := strconv.Atoi(path.Base(pullRequest))
+	if err != nil {
+		return -1, err
+	}
+	return prNumber, nil
+}
+
 func (v GithubVCS) handleIssueCommentEvent(ctx context.Context, log *zap.SugaredLogger, event *github.IssueCommentEvent) (RunInfo, error) {
 	runinfo := RunInfo{
 		Owner:      event.GetRepo().GetOwner().GetLogin(),
 		Repository: event.GetRepo().GetName(),
 	}
+
 	if !event.GetIssue().IsPullRequest() {
 		return RunInfo{}, fmt.Errorf("issue comment is not coming from a pull_request")
 	}
@@ -102,7 +114,7 @@ func (v GithubVCS) handleIssueCommentEvent(ctx context.Context, log *zap.Sugared
 	// We are getting the full URL so we have to get the last part to get the PR number,
 	// we don't have to care about URL query string/hash and other stuff because
 	// that comes up from the API.
-	prNumber, err := strconv.Atoi(path.Base(event.GetIssue().GetPullRequestLinks().GetHTMLURL()))
+	prNumber, err := convertPullRequestURLtoNumber(event.GetIssue().GetPullRequestLinks().GetHTMLURL())
 	if err != nil {
 		return RunInfo{}, err
 	}
@@ -132,7 +144,7 @@ func (v GithubVCS) getPullRequest(ctx context.Context, runinfo RunInfo, prNumber
 }
 
 // ParsePayload parse payload event
-func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eventType, payload string) (*RunInfo, error) {
+func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eventType, triggerTarget, payload string) (*RunInfo, error) {
 	var runinfo RunInfo
 	payload = payloadFix(payload)
 	event, err := github.ParseWebHook(eventType, []byte(payloadFix(payload)))
@@ -146,7 +158,7 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 
 	switch event := event.(type) {
 	case *github.CheckRunEvent:
-		if event.GetAction() == "rerequested" {
+		if triggerTarget == "issue-recheck" {
 			runinfo, err = v.handleReRequestEvent(ctx, log, event)
 			if err != nil {
 				return &runinfo, err
@@ -184,6 +196,8 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 	default:
 		return &runinfo, errors.New("this event is not supported")
 	}
+	runinfo.Event = event
+	runinfo.TriggerTarget = triggerTarget
 	return &runinfo, nil
 }
 
@@ -210,6 +224,29 @@ func (v GithubVCS) CheckSenderOrgMembership(ctx context.Context, runinfo *RunInf
 	}
 
 	return false, nil
+}
+
+// GetStringPullRequestComment return the comment if we find a regexp in one of
+// the comments text of a pull request
+func (v GithubVCS) GetStringPullRequestComment(ctx context.Context, runinfo *RunInfo, reg string) ([]*github.IssueComment, error) {
+	var ret []*github.IssueComment
+	prNumber, err := convertPullRequestURLtoNumber(runinfo.URL)
+	if err != nil {
+		return nil, err
+	}
+	comments, _, err := v.Client.Issues.ListComments(ctx, runinfo.Owner, runinfo.Repository,
+		prNumber, &github.IssueListCommentsOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	re := regexp.MustCompile(reg)
+	for _, v := range comments {
+		if string(re.Find([]byte(v.GetBody()))) != "" {
+			ret = append(ret, v)
+		}
+	}
+	return ret, nil
 }
 
 // GetTektonDir Get tekton directory from a repository

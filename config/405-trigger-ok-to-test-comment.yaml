@@ -1,0 +1,27 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: openshift-pipelines-ascode-bindings-ok-to-test-comment
+  namespace: pipelines-ascode
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
+spec:
+  params:
+    - name: action
+      value: "$(body.action)"
+    - name: trigger_target
+      value: "ok-to-test-comment"
+    - name: event_type
+      value: $(header.X-GitHub-Event)
+    - name: owner
+      value: $(body.repository.owner.login)
+    - name: sender
+      value: $(body.sender.login)
+    - name: repository
+      value: $(body.repository.name)
+    - name: pull_request_url
+      value: $(body.issue.pull_request.html_url)
+    - name: installation_id
+      value: $(body.installation.id)

@@ -6,11 +6,85 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/google/go-github/v34/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func TestOkToTestComment(t *testing.T) {
+	tests := []struct {
+		name          string
+		commentsReply string
+		runinfo       *webvcs.RunInfo
+		allowed       bool
+		wantErr       bool
+	}{
+		{
+			name:          "good",
+			commentsReply: `[{"body": "/ok-to-test", "user": {"login": "owner"}}]`,
+			runinfo: &webvcs.RunInfo{
+				Owner:  "owner",
+				Sender: "nonowner",
+			},
+			allowed: true,
+			wantErr: false,
+		},
+		{
+			name:          "no-ok-to-test",
+			commentsReply: `[{"body": "Foo Bar", "user": {"login": "owner"}}]`,
+			runinfo: &webvcs.RunInfo{
+				Owner:  "owner",
+				Sender: "nonowner",
+			},
+			allowed: false,
+			wantErr: false,
+		},
+		{
+			name:          "ok-to-test-not-from-owner",
+			commentsReply: `[{"body": "/ok-to-test", "user": {"login": "notowner"}}]`,
+			runinfo: &webvcs.RunInfo{
+				Owner:  "owner",
+				Sender: "nonowner",
+			},
+			allowed: false,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repoOwnerURL := "http://url.com/owner/repo/1"
+			tt.runinfo.Event = &github.IssueCommentEvent{
+				Issue: &github.Issue{
+					PullRequestLinks: &github.PullRequestLinks{
+						HTMLURL: &repoOwnerURL,
+					},
+				},
+			}
+			tt.runinfo.TriggerTarget = "ok-to-test-comment"
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			mux.HandleFunc("/repos/owner/issues/1/comments", func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(rw, tt.commentsReply)
+			})
+			ctx, _ := rtesting.SetupFakeContext(t)
+			cs := &cli.Clients{
+				GithubClient: webvcs.GithubVCS{
+					Client: fakeclient,
+				},
+			}
+			got, err := aclCheck(ctx, cs, tt.runinfo)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("aclCheck() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.allowed {
+				t.Errorf("aclCheck() = %v, want %v", got, tt.allowed)
+			}
+		})
+	}
+}
 
 func TestAclCheck(t *testing.T) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()

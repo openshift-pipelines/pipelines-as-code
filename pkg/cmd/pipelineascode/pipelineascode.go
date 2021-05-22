@@ -66,6 +66,7 @@ func Command(p cli.Params) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.RunInfo.Sender, "webhook-sender", "", os.Getenv("PAC_Sender"), "Sender for the commit/pr")
 	cmd.Flags().StringVarP(&opts.RunInfo.URL, "webhook-url", "", os.Getenv("PAC_URL"), "URL of the repository to test")
 	cmd.Flags().StringVarP(&opts.RunInfo.EventType, "webhook-type", "", os.Getenv("PAC_EVENT_TYPE"), "Payload event type as set from Github")
+	cmd.Flags().StringVarP(&opts.RunInfo.TriggerTarget, "trigger-target", "", os.Getenv("PAC_TRIGGER_TARGET"), "The trigger target from where this event comes from")
 
 	cmd.Flags().StringVarP(&opts.Payload, "payload", "", os.Getenv("PAC_PAYLOAD"), "The payload from webhook as string")
 	cmd.Flags().StringVarP(&opts.PayloadFile, "payload-file", "", os.Getenv("PAC_PAYLOAD_FILE"), "A file containing the webhook payload")
@@ -79,7 +80,7 @@ func getRunInfoFromArgsOrPayload(ctx context.Context, cs *cli.Clients, payload s
 		return &webvcs.RunInfo{}, fmt.Errorf("no payload or not enough params set properly")
 	}
 
-	payloadinfo, err := cs.GithubClient.ParsePayload(ctx, cs.Log, runinfo.EventType, payload)
+	payloadinfo, err := cs.GithubClient.ParsePayload(ctx, cs.Log, runinfo.EventType, runinfo.TriggerTarget, payload)
 	if err != nil {
 		return &webvcs.RunInfo{}, err
 	}

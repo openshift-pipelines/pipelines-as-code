@@ -9,6 +9,8 @@ metadata:
     app.kubernetes.io/part-of: openshift-pipelines-ascode
 spec:
   params:
+    - name: trigger_target
+      value: "pull-request"
     - name: "event_type"
       value: $(header.X-GitHub-Event)
     - name: "owner"
@@ -51,6 +53,7 @@ spec:
     - name: sha
     - name: head_ref
     - name: installation_id
+    - name: trigger_target
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
@@ -64,6 +67,8 @@ spec:
         params:
           - name: event_type
             value: $(tt.params.event_type)
+          - name: trigger_target
+            value: $(tt.params.trigger_target)
           - name: owner
             value: $(tt.params.owner)
           - name: repository
@@ -85,6 +90,7 @@ spec:
         pipelineSpec:
           params:
             - name: event_type
+            - name: trigger_target
             - name: owner
             - name: repository
             - name: default_branch
@@ -110,6 +116,8 @@ spec:
               runAfter: [get-token]
               taskSpec:
                 params:
+                  - name: trigger_target
+                    type: string
                   - name: event_type
                     type: string
                   - name: owner
@@ -158,10 +166,13 @@ spec:
                           }
                       }
                       EOF
-                      pipelines-as-code --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
+                      pipelines-as-code --trigger-action=$(params.trigger_target) \
+                        --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
               params:
                 - name: event_type
                   value: $(params.event_type)
+                - name: trigger_target
+                  value: $(params.trigger_target)
                 - name: owner
                   value: $(params.owner)
                 - name: repository
@@ -180,6 +191,7 @@ spec:
                   value: $(params.head_ref)
                 - name: token
                   value: "$(tasks.get-token.results.token)"
+
         workspaces:
           - name: secrets
             secret:

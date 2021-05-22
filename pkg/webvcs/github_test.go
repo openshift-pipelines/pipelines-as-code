@@ -124,7 +124,7 @@ func TestPayLoadFix(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	gvcs := NewGithubVCS("none")
 	logger, _ := getLogger()
-	_, err = gvcs.ParsePayload(ctx, logger, "pull_request", payloadFix(string(b)))
+	_, err = gvcs.ParsePayload(ctx, logger, "pull_request", "pull_request", string(b))
 	// would bomb out on "assertion failed: error is not nil: invalid character
 	// '\n' in string literal" if we don't fix the payload
 	assert.NilError(t, err)
@@ -150,7 +150,8 @@ func TestParsePayloadRerequest(t *testing.T) {
 		Client: fakeclient,
 	}
 	logger, observer := getLogger()
-	runinfo, err := gvcs.ParsePayload(ctx, logger, "check_run", checkrunEvent)
+	// TODO
+	runinfo, err := gvcs.ParsePayload(ctx, logger, "check_run", "issue-recheck", checkrunEvent)
 	assert.NilError(t, err)
 
 	assert.Equal(t, prOwner, runinfo.Owner)
@@ -196,7 +197,8 @@ func TestParsePayLoadRetest(t *testing.T) {
 		Client: fakeclient,
 	}
 
-	runinfo, err := gvcs.ParsePayload(ctx, logger, "issue_comment", issueEvent)
+	// TODO
+	runinfo, err := gvcs.ParsePayload(ctx, logger, "issue_comment", "issue_comment", issueEvent)
 	assert.NilError(t, err)
 	assert.Equal(t, prOwner, runinfo.Owner)
 	// Make sure the PR owner is the runinfo.Owner and not the issueSender
@@ -214,7 +216,7 @@ func TestParsePayload(t *testing.T) {
 	gvcs := NewGithubVCS("none")
 	logger, _ := getLogger()
 
-	runinfo, err := gvcs.ParsePayload(ctx, logger, "pull_request", string(b))
+	runinfo, err := gvcs.ParsePayload(ctx, logger, "pull_request", "pull_request", string(b))
 	assert.NilError(t, err)
 	assert.Assert(t, runinfo.BaseBranch == "master")
 	assert.Assert(t, runinfo.Owner == "chmouel")
@@ -227,7 +229,7 @@ func TestParsePayloadInvalid(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	gvcs := NewGithubVCS("none")
 	logger, _ := getLogger()
-	_, err := gvcs.ParsePayload(ctx, logger, "pull_request", "hello moto")
+	_, err := gvcs.ParsePayload(ctx, logger, "pull_request", "pull_request", "hello moto")
 	assert.ErrorContains(t, err, "invalid character")
 }
 
@@ -235,7 +237,7 @@ func TestParsePayloadUnkownEvent(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	gvcs := NewGithubVCS("none")
 	logger, _ := getLogger()
-	_, err := gvcs.ParsePayload(ctx, logger, "foo", "{\"hello\": \"moto\"}")
+	_, err := gvcs.ParsePayload(ctx, logger, "foo", "foo", "{\"hello\": \"moto\"}")
 	assert.ErrorContains(t, err, "unknown X-Github-Event")
 }
 
@@ -243,7 +245,7 @@ func TestParsePayCannotParse(t *testing.T) {
 	gvcs := NewGithubVCS("none")
 	ctx, _ := rtesting.SetupFakeContext(t)
 	logger, _ := getLogger()
-	_, err := gvcs.ParsePayload(ctx, logger, "gollum", "{}")
+	_, err := gvcs.ParsePayload(ctx, logger, "gollum", "gollum", "{}")
 	assert.Error(t, err, "this event is not supported")
 }
 
@@ -489,6 +491,7 @@ func TestRunInfoCheck(t *testing.T) {
 				CheckRunID:    tt.fields.CheckRunID,
 				Sender:        tt.fields.Sender,
 				EventType:     "pull_request",
+				TriggerTarget: "pull_request",
 			}
 			if err := r.Check(); (err != nil) != tt.wantErr {
 				t.Errorf("RunInfo.Check() error = %v, wantErr %v", err, tt.wantErr)
