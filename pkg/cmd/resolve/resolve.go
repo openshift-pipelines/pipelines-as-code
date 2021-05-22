@@ -20,15 +20,27 @@ import (
 
 var (
 	filenames    []string
+	params       []string
 	skipInlining []string
 	generateName bool
 	remoteTask   bool
 )
 
+const example = `
+Resolve the .tekton/pulle-request as a single pipelinerun, fetching the remote
+tasks and apply the parameters substitions : 
+
+pipelines-as-code resolve \
+		-f .tekton/pull-request.yaml \
+		-p revision=main \
+		-p repo_url=https://github.com/openshift-pipelines/pipelines-as-code
+`
+
 func Command(p cli.Params) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "resolve",
-		Short: "Resolve a bunch of yaml file in a single PipelineRun",
+		Use:     "resolve",
+		Example: example,
+		Short:   "Resolve a bunch of yaml file in a single PipelineRun",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cs, err := p.Clients()
 			if err != nil {
@@ -37,11 +49,13 @@ func Command(p cli.Params) *cobra.Command {
 			if len(filenames) == 0 {
 				return fmt.Errorf("you need to at least specify a file with -f")
 			}
-			s, err := resolveFilenames(cs, filenames)
+			s, err := resolveFilenames(cs, filenames, params)
 			fmt.Println(s)
 			return err
 		},
 	}
+	cmd.Flags().StringSliceVarP(&params, "params", "p", filenames,
+		"Params to resolve")
 	cmd.Flags().StringSliceVarP(&filenames, "filename", "f", filenames,
 		"Filename, directory, or URL to files to use to create the resource")
 	cmd.Flags().StringSliceVarP(&skipInlining, "skip", "s", filenames,
@@ -55,15 +69,21 @@ func Command(p cli.Params) *cobra.Command {
 	return cmd
 }
 
-func resolveFilenames(cs *cli.Clients, filenames []string) (string, error) {
+func splitArgsInMap(args []string) map[string]string {
+	m := make(map[string]string)
+	for _, e := range args {
+		parts := strings.Split(e, "=")
+		m[parts[0]] = parts[1]
+	}
+	return m
+}
+
+func resolveFilenames(cs *cli.Clients, filenames []string, params []string) (string, error) {
 	var ret string
 
 	allTemplates := enumerateFiles(filenames)
 	// TODO: flags
-	allTemplates = pipelineascode.ReplacePlaceHoldersVariables(allTemplates, map[string]string{
-		"revision": "SHA",
-		"repo_url": "url",
-	})
+	allTemplates = pipelineascode.ReplacePlaceHoldersVariables(allTemplates, splitArgsInMap(params))
 	ctx := context.Background()
 	runinfo := &webvcs.RunInfo{}
 	ropt := &resolve.Opts{

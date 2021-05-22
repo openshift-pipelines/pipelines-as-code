@@ -22,13 +22,22 @@ metadata:
 spec:
   pipelineSpec:
 	tasks:
-	  - name: hello1
+	  - name: {{foo}}
 		taskSpec:
 		  steps:
 			- name: hello-moto
 			  image: alpine:3.7
 			  script: "echo hello moto"
 `
+
+func TestSplitArgsInMap(t *testing.T) {
+	args := []string{"ride=bike", "be=free", "of=car"}
+	ret := splitArgsInMap(args)
+
+	if _, ok := ret["ride"]; !ok {
+		t.Error("args hasn't been splitted")
+	}
+}
 
 func TestCommandFilenameSetProperly(t *testing.T) {
 	params := tparams.FakeParams{}
@@ -75,7 +84,7 @@ func TestResolveFilenames(t *testing.T) {
 			dir := assertfs.NewDir(t, "test-name",
 				assertfs.WithFile("file.yaml", strings.ReplaceAll(tt.tmpl, "\t", "    ")))
 			defer dir.Remove()
-			got, err := resolveFilenames(cs, []string{dir.Path()})
+			got, err := resolveFilenames(cs, []string{dir.Path()}, []string{"foo=bar"})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("resolveFilenames() error = %v, wantErr %v", err, tt.wantErr)
 				return
