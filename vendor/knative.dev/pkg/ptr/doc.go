@@ -14,19 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package system
-
-import (
-	"time"
-)
-
-// Mockable interface for time based testing
-type Clock interface {
-	Now() time.Time
-}
-
-type RealClock struct{}
-
-func (RealClock) Now() time.Time {
-	return time.Now()
-}
+// Package ptr holds utilities for taking pointer references to values.
+package ptr
