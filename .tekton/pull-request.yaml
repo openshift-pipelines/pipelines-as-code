@@ -4,69 +4,183 @@ kind: PipelineRun
 metadata:
   name: pipeline-as-code-on-pull-request
   annotations:
-    pipelinesascode.tekton.dev/on-event: '[pull_request]'
-    pipelinesascode.tekton.dev/on-target-branch: '[main]'
-    pipelinesascode.tekton.dev/task: '[git-clone, codecov]'
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/task: "[git-clone, codecov]"
 spec:
   params:
-  - name: repo_url
-    value: "{{repo_url}}"
-  - name: revision
-    value: "{{revision}}"
+    - name: repo_url
+      value: "{{repo_url}}"
+    - name: revision
+      value: "{{revision}}"
   pipelineSpec:
     params:
-    - name: repo_url
-    - name: revision
-    tasks:
-    - name: fetchit
-      params:
-      - name: url
-        value: $(params.repo_url)
+      - name: repo_url
       - name: revision
-        value: $(params.revision)
-      taskRef:
-        name: git-clone
-      workspaces:
-      - name: output
-        workspace: source
-    - name: check
-      runAfter:
-      - fetchit
-      taskSpec:
-        steps:
-        - image: gcr.io/tekton-releases/dogfooding/test-runner
-          name: check
-          script: |
-            make test lint GO_TEST_FLAGS="-coverprofile=coverage.txt -covermode=atomic"
-          workingDir: $(workspaces.source.path)
+    tasks:
+      - name: fetchit
+        params:
+          - name: url
+            value: $(params.repo_url)
+          - name: revision
+            value: $(params.revision)
+        taskRef:
+          name: git-clone
         workspaces:
-        - name: source
-      workspaces:
-      - name: source
-        workspace: source
-    - name: codecov
-      params:
-      - name: codecov-token-secret
-        value: pipelines-as-code-codecov-token
-      - name: codecov-token-secret-key
-        value: token
-      runAfter:
-      - check
-      taskRef:
-        name: codecov
-      workspaces:
-      - name: source
-        workspace: source
+          - name: output
+            workspace: source
+
+      - name: getcache
+        runAfter:
+          - fetchit
+        taskSpec:
+          steps:
+            - image: mirror.gcr.io/library/golang:latest
+              name: get-cache
+              script: |
+                #!/usr/bin/env bash
+                set -ex
+                mkdir -p go-build-cache;cd go-build-cache
+
+                curl -fsI http://uploader:8080/golang-cache.tar || {
+                    echo "no cache found"
+                    exit 0
+                }
+
+                echo "Getting cache"
+                curl http://uploader:8080/golang-cache.tar|tar -x -f-
+              workingDir: $(workspaces.source.path)
+          workspaces:
+            - name: source
+        workspaces:
+          - name: source
+            workspace: source
+
+      - name: yamllint
+        runAfter:
+          - fetchit
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: yaml-lint
+              image: quay.io/mhutter/yamllint
+              workingDir: $(workspaces.source.path)
+              script: |
+                yamllint -c .yamllint $(find . -type f -regex ".*y[a]ml" -print)
+        workspaces:
+          - name: source
+            workspace: source
+
+      - name: unit-test
+        runAfter:
+          - getcache
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: unittest
+              # we get bumped out when usingh the official image with docker.io
+              # ratelimit so workaround this.
+              image: mirror.gcr.io/library/golang:latest
+              workingDir: $(workspaces.source.path)
+              script: |
+                mkdir -p $HOME/.cache/ && ln -vs $(workspaces.source.path)/go-build-cache $HOME/.cache/go-build
+                make test
+        workspaces:
+          - name: source
+            workspace: source
+
+      - name: golint
+        runAfter: [fetchit]
+        taskSpec:
+          params:
+            - name: version
+          workspaces:
+            - name: source
+          steps:
+            - name: lint
+              # we get bumped out when usingh the official image with docker.io
+              # ratelimit so workaround this.
+              image: mirror.gcr.io/library/golang:latest
+              workingDir: $(workspaces.source.path)
+              script: |
+                mkdir -p $HOME/.cache/ && ln -vs $(workspaces.source.path)/go-build-cache $HOME/.cache/go-build
+                version=$(params.version)
+                mkdir -p /tmp/bin;export PATH=$PATH:/tmp/bin
+                curl -s -L -o- https://github.com/golangci/golangci-lint/releases/download/v${version}/golangci-lint-${version}-linux-amd64.tar.gz|tar xzf -  -C /tmp/bin --wildcards */golangci-lint  --strip-components=1
+                make lint-go
+        params:
+          - name: version
+            value: "1.39.0"
+        workspaces:
+          - name: source
+            workspace: source
+
+      - name: savecache
+        runAfter:
+          - golint
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: save-cache
+              # Has everything we need in there and we already fetched it!
+              image: mirror.gcr.io/library/golang:latest
+              workingDir: $(workspaces.source.path)
+              script: |
+                #!/usr/bin/env bash
+                curl -o/dev/null -s -f -X POST -F path=test -F file=@/etc/motd  http://uploader:8080/upload || {
+                    echo "No cache server found"
+                    exit 0
+                }
+
+                lm="$(curl -fsI http://uploader:8080/golang-cache.tar|sed -n '/Last-Modified/ { s/Last-Modified: //;s/\r//; p}')"
+                if [[ -n ${lm} ]];then
+                    expired=$(python -c "import datetime, sys;print(datetime.datetime.now() > datetime.datetime.strptime(sys.argv[1], '%a, %d %b %Y %X %Z') + datetime.timedelta(days=1))" "${lm}")
+                    [[ ${expired} == False ]] && {
+                    echo "Cache is younger than a day"
+                    exit
+                    }
+                fi
+
+                cd $(workspaces.source.path)/go-build-cache
+                tar cf - . |curl -# -L -f -F path=golang-cache.tar -X POST -F "file=@-" http://uploader:8080/upload
+
+      - name: codecov
+        runAfter:
+          - unit-test
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: codecov-run
+              # Has everything we need in there and we already fetched it!
+              image: mirror.gcr.io/library/golang:latest
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: CODECOV_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: pipelines-as-code-codecov-token
+                      key: token
+              script: |
+                #!/usr/bin/env bash
+                bash <(curl https://codecov.io/bash)
     workspaces:
-    - name: source
+      - name: source
   workspaces:
-  - name: source
-    volumeClaimTemplate:
-      metadata:
-        creationTimestamp: null
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
