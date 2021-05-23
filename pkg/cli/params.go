@@ -101,7 +101,7 @@ func (p *PacParams) githubClient() webvcs.GithubVCS {
 	return webvcs.NewGithubVCS(p.githubToken)
 }
 
-// Only returns kube client, not tekton client
+// KubeClient returns only the kube client, not the tekton client
 func (p *PacParams) KubeClient() (k8s.Interface, error) {
 	config, err := p.config()
 	if err != nil {
