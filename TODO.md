@@ -1,4 +1,4 @@
-# Pipelines as Code 
+# Pipelines as Code
 
 See GitHub issue for more details
 
@@ -8,7 +8,6 @@ See GitHub issue for more details
 
 ## Core
 
-* Add branch logic filtering
 * Produce debug information via events in user namespace.
 
 ## Integration
