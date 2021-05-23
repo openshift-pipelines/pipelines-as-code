@@ -1,6 +1,7 @@
 QUAY_REPOSITORY=quay.io/openshift-pipeline/pipelines-as-code
 QUAY_REPOSITORY_BRANCH=main
 GO_TEST_FLAGS=-v -cover
+GOLANGCI_LINT=golangci-lint
 
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
 
@@ -34,7 +35,7 @@ lint: lint-go lint-yaml ## run all linters
 .PHONY: lint-go
 lint-go: ## runs go linter on all go files
 	@echo "Linting go files..."
-	@golangci-lint run ./... --modules-download-mode=vendor \
+	@$(GOLANGCI_LINT) run ./... --modules-download-mode=vendor \
 							--max-issues-per-linter=0 \
 							--max-same-issues=0 \
 							--deadline 5m
