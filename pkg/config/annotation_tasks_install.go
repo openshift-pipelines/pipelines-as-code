@@ -43,6 +43,7 @@ func (rt RemoteTasks) getTask(ctx context.Context, task string) (*tektonv1beta1.
 	// TODO: print a log info when getting the task from which location
 	switch {
 	case strings.HasPrefix(task, "https://"), strings.HasPrefix(task, "http://"):
+		// nolint:  noctx // TODO: Add a context
 		res, err := rt.Clients.HTTPClient.Get(task)
 		if err != nil {
 			return ret, err
@@ -74,7 +75,7 @@ func (rt RemoteTasks) getTask(ctx context.Context, task string) (*tektonv1beta1.
 		resource := rt.Clients.Hub.GetResource(resourceoption)
 		data, err := resource.Manifest()
 		if err != nil {
-			return ret, fmt.Errorf("task %s hasn't been found: %s", taskName, err)
+			return ret, fmt.Errorf("task %s hasn't been found: %w", taskName, err)
 		}
 		return rt.convertTotask(string(data))
 	}

@@ -268,7 +268,7 @@ func (v GithubVCS) GetFileFromDefaultBranch(ctx context.Context, path string, ru
 
 	tektonyaml, err := v.GetFileInsideRepo(ctx, path, true, runInfoOnMain)
 	if err != nil {
-		return "", fmt.Errorf("cannot find %s inside the %s branch: %s", path, runInfoOnMain.BaseBranch, err)
+		return "", fmt.Errorf("cannot find %s inside the %s branch: %w", path, runInfoOnMain.BaseBranch, err)
 	}
 	return tektonyaml, err
 }

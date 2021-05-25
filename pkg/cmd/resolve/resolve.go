@@ -50,6 +50,7 @@ func Command(p cli.Params) *cobra.Command {
 				return fmt.Errorf("you need to at least specify a file with -f")
 			}
 			s, err := resolveFilenames(cs, filenames, params)
+			// nolint: forbidigo
 			fmt.Println(s)
 			return err
 		},

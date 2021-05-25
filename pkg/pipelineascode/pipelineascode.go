@@ -202,7 +202,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 			pr.GetName(), repo.Spec.Namespace, repo.Spec.Namespace, pr.GetName()),
 		consoleURL, false)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Use this as a wait holder until the logs is finished, maybe we would do something with the log output.

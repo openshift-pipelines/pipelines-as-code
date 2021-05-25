@@ -157,7 +157,6 @@ func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data
 			}
 			pipelinerun.Spec.PipelineRef = nil
 			pipelinerun.Spec.PipelineSpec = &pipelineResolved.Spec
-
 		}
 		// Add a generateName based on name if we want it
 		if ropt.GenerateName && pipelinerun.ObjectMeta.GenerateName == "" {

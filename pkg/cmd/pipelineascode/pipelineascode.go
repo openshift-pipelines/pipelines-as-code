@@ -74,7 +74,7 @@ func Command(p cli.Params) *cobra.Command {
 
 func getRunInfoFromArgsOrPayload(ctx context.Context, cs *cli.Clients, payload string, runinfo *webvcs.RunInfo) (*webvcs.RunInfo, error) {
 	if err := runinfo.Check(); err == nil {
-		return runinfo, err
+		return runinfo, nil
 	} else if payload == "" {
 		return &webvcs.RunInfo{}, fmt.Errorf("no payload or not enough params set properly")
 	}
