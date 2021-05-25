@@ -68,7 +68,6 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 		if _, err := c.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Namespace).Create(ctx, repo, metav1.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
-
 	}
 
 	c.PipelineAsCode.ClearActions()

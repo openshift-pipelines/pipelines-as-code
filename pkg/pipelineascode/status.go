@@ -57,7 +57,7 @@ func (trs taskrunList) Less(i, j int) bool {
 }
 
 func newTaskrunListFromMap(statusMap map[string]*tektonv1beta1.PipelineRunTaskRunStatus) taskrunList {
-	var trl taskrunList
+	trl := taskrunList{}
 	for taskrunName, taskrunStatus := range statusMap {
 		trl = append(trl, tkr{
 			taskrunName,

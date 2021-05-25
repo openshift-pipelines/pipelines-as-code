@@ -8,7 +8,20 @@ linters-settings:
     exclude: .errcheck.txt
 linters:
   enable:
+  - asciicheck
+  - bodyclose
+  - depguard
+  - dogsled
+  - durationcheck
+  - exhaustive
+  # - exhaustivestruct
+  - exportloopref
+  - forbidigo
+  - forcetypeassert
+  - gochecknoinits
+  - dupl
   - errcheck
+  - errorlint
   - gofumpt
   - goimports
   - gosec
@@ -29,3 +42,23 @@ linters:
   - stylecheck
   - unused
   - unparam
+  - gochecknoinits
+  - goconst
+  - gocyclo
+    # - goerr113
+  - gofmt
+  - goheader
+  - gomodguard
+  - goprintffuncname
+  - nestif
+  - nilerr
+  - noctx
+  - nolintlint
+  - prealloc
+  - promlinter
+  - rowserrcheck
+  - sqlclosecheck
+  - tparallel
+    #- unconvert
+  - wastedassign
+  - whitespace

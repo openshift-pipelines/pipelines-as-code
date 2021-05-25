@@ -137,7 +137,7 @@ spec:
                 lm="$(curl -fsI http://uploader:8080/golang-cache.tar|sed -n '/Last-Modified/ { s/Last-Modified: //;s/\r//; p}')"
                 if [[ -n ${lm} ]];then
                     expired=$(python -c "import datetime, sys;print(datetime.datetime.now() > datetime.datetime.strptime(sys.argv[1], '%a, %d %b %Y %X %Z') + datetime.timedelta(days=1))" "${lm}")
-                    [[ ${expired} == False ]] && {
+                    [[ ${expired} == "False" ]] && {
                     echo "Cache is younger than a day"
                     exit
                     }
