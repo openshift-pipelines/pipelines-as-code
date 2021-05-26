@@ -174,12 +174,13 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			Owner:         event.GetRepo().GetOwner().GetLogin(),
 			Repository:    event.GetRepo().GetName(),
 			DefaultBranch: event.GetRepo().GetDefaultBranch(),
-			SHA:           event.GetHeadCommit().GetID(),
 			URL:           event.GetRepo().GetHTMLURL(),
+			SHA:           event.GetHeadCommit().GetID(),
 			Sender:        event.GetSender().GetLogin(),
 			BaseBranch:    event.GetRef(),
 			EventType:     eventType,
 		}
+
 		runinfo.HeadBranch = runinfo.BaseBranch // in push events Head Branch is the same as Basebranch
 	case *github.PullRequestEvent:
 		runinfo = RunInfo{
