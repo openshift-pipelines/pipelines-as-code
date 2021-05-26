@@ -4,10 +4,13 @@ import (
 	"context"
 	"strings"
 
+	"github.com/google/go-github/v34/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"sigs.k8s.io/yaml"
 )
+
+var okToTestCommentRegexp = `(^|\n)/ok-to-test(\r\n|$)`
 
 // OwnersConfig prow owner, only supporting approvers or reviewers in yaml
 type OwnersConfig struct {
@@ -15,10 +18,36 @@ type OwnersConfig struct {
 	Reviewers []string `json:"reviewers,omitempty"`
 }
 
-// aclCheck check if we are allowed to run pipeline
+// allowedOkToTestFromAnOwner Goes on evry comments in a pull-request and sess
+// if there is a /ok-to-test in there running an aclCheck again on the commment
+// Sender if she is an OWNER and then allow it to run CI.
+// TODO: pull out the github logic from there in an agnostic way.
+func allowedOkToTestFromAnOwner(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (bool, error) {
+	rinfo := &webvcs.RunInfo{}
+	runinfo.DeepCopyInto(rinfo)
+	rinfo.EventType = ""
+	rinfo.TriggerTarget = ""
+	rinfo.URL = rinfo.Event.(*github.IssueCommentEvent).Issue.GetPullRequestLinks().GetHTMLURL()
+	comments, err := cs.GithubClient.GetStringPullRequestComment(ctx, rinfo, okToTestCommentRegexp)
+	if err != nil {
+		return false, err
+	}
+
+	for _, comment := range comments {
+		rinfo.Sender = comment.User.GetLogin()
+		allowed, err := aclCheck(ctx, cs, rinfo)
+		if err != nil {
+			return false, err
+		}
+		if allowed {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// aclCheck check if we are allowed to run the pipeline on that PR
 func aclCheck(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (bool, error) {
-	// If the user who submitted the PR is the same as the Owner of the repo
-	// then allow it.
 	if runinfo.Owner == runinfo.Sender {
 		return true, nil
 	}
@@ -51,6 +80,16 @@ func aclCheck(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (bo
 			if owner == runinfo.Sender {
 				return true, nil
 			}
+		}
+	}
+
+	if runinfo.TriggerTarget == "ok-to-test-comment" {
+		allowed, err := allowedOkToTestFromAnOwner(ctx, cs, runinfo)
+		if err != nil {
+			return false, err
+		}
+		if allowed {
+			return true, nil
 		}
 	}
 

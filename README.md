@@ -237,6 +237,8 @@ approvers:
 
 then the user `approved` will be allowed.
 
+If the sender of a PR is not allowed to run CI but one of allowed user issue a `/ok-to-test` in any line of a comment the PR will be allowed to run CI.
+
 If the user is allowed, `Pipelines as Code` will start creating the `PipelineRun` in the target user namespace.
 
 The user can follow the execution of your pipeline with the

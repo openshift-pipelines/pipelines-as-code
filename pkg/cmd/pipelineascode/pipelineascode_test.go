@@ -60,7 +60,8 @@ func TestRunWrapPR(t *testing.T) {
 
 	options := &pacpkg.Options{
 		RunInfo: webvcs.RunInfo{
-			EventType: "pull_request",
+			EventType:     "pull_request",
+			TriggerTarget: "pull_request",
 		},
 	}
 	err := runWrap(ctx, options, cs, k8int)
@@ -94,6 +95,7 @@ func TestGetInfo(t *testing.T) {
 		HeadBranch:    "headRunInfoBranch",
 		Sender:        "ElSender",
 		EventType:     "pull_request",
+		TriggerTarget: "pull_request",
 	}
 
 	b, err := ioutil.ReadFile("testdata/pull_request.json")
@@ -126,7 +128,7 @@ func TestGetInfo(t *testing.T) {
 	}{
 		{
 			desc:    "Error on bad payload",
-			runinfo: webvcs.RunInfo{EventType: "pull_request"},
+			runinfo: webvcs.RunInfo{EventType: "pull_request", TriggerTarget: "pull_request"},
 			payload: "foo bar",
 			errmsg:  "invalid character",
 		},
@@ -147,7 +149,7 @@ func TestGetInfo(t *testing.T) {
 		},
 		{
 			desc:    "Missing values payload",
-			runinfo: webvcs.RunInfo{EventType: "pull_request"},
+			runinfo: webvcs.RunInfo{EventType: "pull_request", TriggerTarget: "pull_request"},
 			payload: missingValuesPayload,
 			errmsg:  "missing some values",
 		},
@@ -160,7 +162,7 @@ func TestGetInfo(t *testing.T) {
 		},
 		{
 			desc:           "Good payload",
-			runinfo:        webvcs.RunInfo{EventType: "pull_request"},
+			runinfo:        webvcs.RunInfo{EventType: "pull_request", TriggerTarget: "pull_request"},
 			payload:        goodPayload,
 			errmsg:         "",
 			branchShouldBe: "goodInfoBranch",
@@ -213,7 +215,7 @@ func TestRunWrap(t *testing.T) {
 		{
 			name: "good",
 			opts: &pacpkg.Options{
-				RunInfo:     webvcs.RunInfo{EventType: "pull_request"},
+				RunInfo:     webvcs.RunInfo{EventType: "pull_request", TriggerTarget: "pull_request"},
 				PayloadFile: "testdata/pull_request.json",
 			},
 		},

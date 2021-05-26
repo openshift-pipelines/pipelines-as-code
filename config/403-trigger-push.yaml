@@ -11,6 +11,8 @@ spec:
   params:
     - name: "event_type"
       value: $(header.X-GitHub-Event)
+    - name: "trigger_target"
+      value: "push"
     - name: "owner"
       value: $(body.repository.owner.login)
     - name: "repository"

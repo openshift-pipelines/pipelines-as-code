@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -71,7 +72,7 @@ func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 		return prun, nil
 	}
 	// TODO: more descriptive error message
-	return nil, errors.New("cannot match any pipeline")
+	return nil, fmt.Errorf("cannot match any pipeline on EventType: %s, TargetBranch: %s", runinfo.EventType, runinfo.BaseBranch)
 }
 
 func matchOnAnnotation(targetBranchAnnotation string, match string) (bool, error) {

@@ -31,6 +31,28 @@ spec:
       template:
         ref: openshift-pipelines-ascode-template-retest-comment
 
+    # When you have a /ok-to-test in a comment to allow CI on a non owner sender
+    - name: github-issue-comment-retest
+      bindings:
+        - ref: openshift-pipelines-ascode-bindings-ok-to-test-comment
+      interceptors:
+        - github:
+            secretRef:
+              secretName: "github-app-secret"
+              secretKey: "webhook.secret"
+            eventTypes:
+              - issue_comment
+        - cel:
+            filter: >-
+              body.action == 'created' &&
+              'pull_request' in body.issue &&
+              body.issue.state == 'open' &&
+              'installation' in body &&
+              body.comment.body.matches('(^|\\r\\n)/ok-to-test([ ]*$|$|\\r\\n)')
+      template:
+        # Using retest comment since it was the first one
+        ref: openshift-pipelines-ascode-template-retest-comment
+
     # Branch push using different binding but same triggertemplate as pullreq
     - name: github-branch-push
       bindings:

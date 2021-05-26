@@ -9,19 +9,22 @@ metadata:
     app.kubernetes.io/part-of: openshift-pipelines-ascode
 spec:
   params:
+    - name: trigger_target
+      value: "retest-comment"
     - name: action
       value: $(body.action)
     - name: event_type
       value: $(header.X-GitHub-Event)
     - name: owner
       value: $(body.repository.owner.login)
+    - name: sender
+      value: $(body.sender.login)
     - name: repository
       value: $(body.repository.name)
     - name: pull_request_url
       value: $(body.issue.pull_request.html_url)
     - name: installation_id
       value: $(body.installation.id)
-
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
@@ -36,9 +39,11 @@ spec:
     - name: action
     - name: event_type
     - name: owner
+    - name: sender
     - name: repository
     - name: pull_request_url
     - name: installation_id
+    - name: trigger_target
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
@@ -56,17 +61,23 @@ spec:
             value: $(tt.params.event_type)
           - name: owner
             value: $(tt.params.owner)
+          - name: sender
+            value: $(tt.params.sender)
           - name: repository
             value: $(tt.params.repository)
           - name: pull_request_url
             value: $(tt.params.pull_request_url)
           - name: installation_id
             value: $(tt.params.installation_id)
+          - name: trigger_target
+            value: $(tt.params.trigger_target)
         pipelineSpec:
           params:
             - name: action
+            - name: trigger_target
             - name: event_type
             - name: owner
+            - name: sender
             - name: repository
             - name: pull_request_url
             - name: installation_id
@@ -92,11 +103,15 @@ spec:
                     type: string
                   - name: owner
                     type: string
+                  - name: sender
+                    type: string
                   - name: repository
                     type: string
                   - name: pull_request_url
                     type: string
                   - name: token
+                    type: string
+                  - name: trigger_target
                     type: string
                 steps:
                   - name: apply-and-launch
@@ -110,6 +125,9 @@ spec:
                             "html_url": "$(params.pull_request_url)"
                           }
                         },
+                        "sender": {
+                           "login": "$(params.sender)"
+                         },
                         "repository": {
                             "name": "$(params.repository)",
                             "owner": {
@@ -118,14 +136,19 @@ spec:
                         }
                       }
                       EOF
-                      pipelines-as-code --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
+                      pipelines-as-code --trigger-action=$(params.trigger_target) \
+                        --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
               params:
                 - name: action
                   value: "$(params.action)"
+                - name: trigger_target
+                  value: "$(params.trigger_target)"
                 - name: event_type
                   value: "$(params.event_type)"
                 - name: owner
                   value: "$(params.owner)"
+                - name: sender
+                  value: "$(params.sender)"
                 - name: repository
                   value: "$(params.repository)"
                 - name: pull_request_url
