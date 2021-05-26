@@ -56,7 +56,7 @@ kubectl create ns my-pipeline-ci
 
 ### Namespace Configuration
 
-User create a CustomResource definition inside the namespace my-pipeline-ci
+User create a CustomResource definition inside the namespace `my-pipeline-ci`
 
 ```yaml
 cat <<EOF|kubectl create -n my-pipeline-ci -f-
