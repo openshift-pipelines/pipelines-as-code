@@ -27,5 +27,167 @@ spec:
       value: $(body.sender.login)
     - name: "base_ref"
       value: $(body.ref)
+    - name: "head_ref"  # head ref is the same as base ref
+      value: $(body.ref)
     - name: "installation_id"
       value: $(body.installation.id)
+
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: openshift-pipelines-ascode-template-push
+  namespace: pipelines-ascode
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: openshift-pipelines-ascode
+spec:
+  params:
+    - name: event_type
+    - name: owner
+    - name: repository
+    - name: default_branch
+    - name: url
+    - name: sender
+    - name: base_ref
+    - name: sha
+    - name: head_ref
+    - name: installation_id
+    - name: trigger_target
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: openshift-pipelines-ascode-run-
+        labels:
+          tekton.dev/pipeline: openshift-pipelines-ascode
+          tekton.dev/pipelines-as-code-event: $(tt.params.event_type)
+      spec:
+        serviceAccountName: openshift-pipelines-ascode-sa-el
+        params:
+          - name: event_type
+            value: $(tt.params.event_type)
+          - name: trigger_target
+            value: $(tt.params.trigger_target)
+          - name: owner
+            value: $(tt.params.owner)
+          - name: repository
+            value: $(tt.params.repository)
+          - name: default_branch
+            value: $(tt.params.default_branch)
+          - name: url
+            value: $(tt.params.url)
+          - name: sender
+            value: $(tt.params.sender)
+          - name: base_ref
+            value: $(tt.params.base_ref)
+          - name: sha
+            value: $(tt.params.sha)
+          - name: head_ref
+            value: $(tt.params.head_ref)
+          - name: installation_id
+            value: $(tt.params.installation_id)
+        pipelineSpec:
+          params:
+            - name: event_type
+            - name: trigger_target
+            - name: owner
+            - name: repository
+            - name: default_branch
+            - name: url
+            - name: sender
+            - name: base_ref
+            - name: sha
+            - name: head_ref
+            - name: installation_id
+          workspaces:
+            - name: secrets
+          tasks:
+            - name: get-token
+              taskRef:
+                name: github-app-token
+              params:
+                - name: installation_id
+                  value: $(params.installation_id)
+              workspaces:
+                - name: secrets
+                  workspace: secrets
+            - name: openshift-pipelines-ascode
+              runAfter: [get-token]
+              taskSpec:
+                params:
+                  - name: trigger_target
+                    type: string
+                  - name: event_type
+                    type: string
+                  - name: owner
+                    type: string
+                  - name: repository
+                    type: string
+                  - name: default_branch
+                    type: string
+                  - name: url
+                    type: string
+                  - name: sender
+                    type: string
+                  - name: base_ref
+                    type: string
+                  - name: sha
+                    type: string
+                  - name: head_ref
+                    type: string
+                  - name: token
+                    type: string
+                steps:
+                  - name: apply-and-launch
+                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+                    script: |
+                      cat << EOF > /tmp/payload.json
+                      {
+                        "repository": {
+                          "owner": {
+                            "login": "$(params.owner)"
+                          },
+                          "name": "$(params.repository)",
+                          "default_branch": "$(params.default_branch)",
+                          "html_url": "$(params.url)"
+                        },
+                        "sender": {
+                          "login": "$(params.sender)"
+                        },
+                        "ref": "$(params.base_ref)",
+                        "head_commit": {
+                          "id": "$(params.sha)"
+                        }
+                      }
+                      EOF
+                      pipelines-as-code --trigger-target=$(params.trigger_target) \
+                        --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
+              params:
+                - name: event_type
+                  value: $(params.event_type)
+                - name: trigger_target
+                  value: $(params.trigger_target)
+                - name: owner
+                  value: $(params.owner)
+                - name: repository
+                  value: $(params.repository)
+                - name: default_branch
+                  value: $(params.default_branch)
+                - name: url
+                  value: $(params.url)
+                - name: sender
+                  value: $(params.sender)
+                - name: base_ref
+                  value: $(params.base_ref)
+                - name: sha
+                  value: $(params.sha)
+                - name: head_ref
+                  value: $(params.head_ref)
+                - name: token
+                  value: "$(tasks.get-token.results.token)"
+
+        workspaces:
+          - name: secrets
+            secret:
+              secretName: github-app-secret

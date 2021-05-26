@@ -69,7 +69,7 @@ spec:
               'installation' in body &&
               'pusher' in body
       template:
-        ref: openshift-pipelines-ascode-template-pullreq
+        ref: openshift-pipelines-ascode-template-push
 
     # When using the UI and clicking on Re-run failed test
     - name: github-check-run-recheck
