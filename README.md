@@ -2,32 +2,31 @@
 
 # Pipelines as Code
 
-Pipelines as Code, an opinionated CI based on OpenShift Pipelines / Tekton.
+Pipelines as Code is an opinionated CI based on OpenShift Pipelines / Tekton.
 
 ## Introduction
 
 Pipelines as Code let you use the pipelines as Code flow directly with OpenShift
 Pipelines.
 
-Pipelines as Code technique can be described in this web page
+The Pipelines as Code technique can be described in this web page
 [https://www.thoughtworks.com/radar/techniques/pipelines-as-code](https://www.thoughtworks.com/radar/techniques/pipelines-as-code) it allows you
 to have your pipelines "sits and live" inside the same repository where your
 code is.
 
-The goal of Pipelines as Code is to let you write your
-[Tekton](https://tekton.cd) templates within your repository and let Pipelines
-as Code runs and reports the pipeline status on Pull Request or branch push.
+The goal of Pipelines as Code is to let you define your
+[Tekton](https://tekton.cd) templates inside your source code repository and have the pipeline run and report the status of the execution when triggered by a Pull Request or a branch push.
 
 ## Components
 
-Pipelines as Code leverage on this technologies :
+Pipelines as Code is built on the following technologies :
 
 - [Tekton Triggers](github.com/tektoncd/triggers): A Tekton Triggers
-  EventListenner is spun up in a central namespace (`pipelines-as-code`). The
-  EventListenner listen for webhook events and acts upon it.
+  EventListener is spun up in a central namespace (`pipelines-as-code`). The
+  EventListener is the service responsible for listening to webhook events and acting upon it.
 
-- Repository CRD: A new CRD introduced with Pipelines as Code, It allows the
-  user to specify which repo is started in which namespace they want.
+- Repository CRD: The Repository CRD is a new API introduced in the Pipelines as Code project. This CRD is used to define the association between the source code repository and the 
+Kubernetes namespace in which the corresponding Pipelines are run.
 
 - Web VCS support. When iterating over a Pull Request, status and control is
   done on the platform.
@@ -74,19 +73,19 @@ EOF
 This will match all Pull Request coming to `github.com/linda/project` on branch
 main into the namespace `my-pipeline-ci`
 
-For security reasons you need to make sure that the Repository CR is installed
-into the same namespace are where we want to execute them.
+For security reasons, the Repository CR needs to be created
+in the namespace where Tekton Pipelines associated with the source code repository would be executed.
 
 ### Writting Tekton pipelines in `.tekton/` directory
 
 - Pipelines as Code tries to be as close to the tekton template as possible.
-  Usually you write your template and save them with a ".yaml" extension  and
+  Usually you would write your template and save them with a ".yaml" extension  and
   Pipelines as Code will run them.
 
-- Inside your pipeline you need to be able the commit as received from the
-  webhook by checking it out the repository from that ref. You usually will use
+- Inside your pipeline you would need to be able to consume the commit as received from the
+  webhook by checking it out the repository from that ref. You would usually use
   the [git-clone](https://github.com/tektoncd/catalog/blob/main/task/git-clone/)
-  task from catalog for this. To be able to specify those parameters, Pipelines
+  task from catalog for the same. To be able to specify those parameters, Pipelines
   as Code allows you to have those two variables filled between double brackets,
   i.e: `{{ var }}`:
 
@@ -224,11 +223,11 @@ If the object fetched cannot be parsed as a Tekton `Task` it will error out.
 
 ### Running the Pipeline
 
-A user create a Pull Request.
+* A user create a Pull Request.
 
-If the user sending the Pull Request is not the owner of the repository or not a public member of the organization where the repository belong to, `Pipelines as Code` will not run.
+* If the user sending the Pull Request is not the owner of the repository or not a public member of the organization where the repository belong to, `Pipelines as Code` will not run.
 
-If the user sending the Pull Request is inside an OWNER file located in the repository root in the main branch (the main branch as defined in the Github configuration for the repo) in the `approvers` or `reviewers` section like this :
+* If the user sending the Pull Request is inside an OWNER file located in the repository root in the main branch (the main branch as defined in the Github configuration for the repo) in the `approvers` or `reviewers` section like this :
 
 ```yaml
 approvers:
@@ -276,16 +275,16 @@ The failure is not with your PR but seems to be an infra issue.
 Status of  your pipeline execution is stored inside the Repo CustomResource :
 
 ```bash
-% kubectl get repo -n pipelines-ascode-ci
+% kubectl get repo -n pipelines-as-code-ci
 NAME                  URL                                                        NAMESPACE             SUCCEEDED   REASON      STARTTIME   COMPLETIONTIME
-pipelines-ascode-ci   https://github.com/openshift-pipelines/pipelines-as-code   pipelines-ascode-ci   True        Succeeded   59m         56m
+pipelines-as-code-ci   https://github.com/openshift-pipelines/pipelines-as-code   pipelines-as-code-ci   True        Succeeded   59m         56m
 ```
 
 The last 5 status are stored inside the CustomResource and can be accessed
 directly like this :
 
 ```json
-% kubectl get repo -n pipelines-ascode-ci -o json|jq .items[].pipelinerun_status
+% kubectl get repo -n pipelines-as-code-ci -o json|jq .items[].pipelinerun_status
 [
   {
     "completionTime": "2021-05-05T11:00:05Z",
@@ -334,7 +333,7 @@ the next steps on how to do that.
 
 ### Github configuration
 
-To setup Pipelines as Code on GitHUB you need a GitHUB Apps created.
+To setup Pipelines as Code on Github, you need to have a Github App created.
 
 You need the Webhook of the app pointing to your Ingress endpoint which would
 then go to the triggers enventlistenner/service.
@@ -367,7 +366,7 @@ When you have created the `github-app-secret` Secret, grab the private key the
 key in a file named for example `/tmp/github.app.key` and issue those commands :
 
 ```bash
-% kubectl -n openshift-pipelines-ascode create secret generic github-app-secret \
+% kubectl -n openshift-pipelines-as-code create secret generic github-app-secret \
         --from-literal private.key="$(cat /tmp/github.app.key)"
         --from-literal application_id="APPLICATION_ID_NUMBER" \
         --from-literal webhook.secret="WEBHOOK_SECRET"

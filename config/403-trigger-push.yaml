@@ -2,11 +2,11 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: openshift-pipelines-ascode-bindings-push
-  namespace: pipelines-ascode
+  name: openshift-pipelines-as-code-bindings-push
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/part-of: openshift-pipelines-as-code
 spec:
   params:
     - name: "event_type"
@@ -36,11 +36,11 @@ spec:
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: openshift-pipelines-ascode-template-push
-  namespace: pipelines-ascode
+  name: openshift-pipelines-as-code-template-push
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/part-of: openshift-pipelines-as-code
 spec:
   params:
     - name: event_type
@@ -58,12 +58,12 @@ spec:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
       metadata:
-        generateName: openshift-pipelines-ascode-run-
+        generateName: openshift-pipelines-as-code-run-
         labels:
-          tekton.dev/pipeline: openshift-pipelines-ascode
+          tekton.dev/pipeline: openshift-pipelines-as-code
           tekton.dev/pipelines-as-code-event: $(tt.params.event_type)
       spec:
-        serviceAccountName: openshift-pipelines-ascode-sa-el
+        serviceAccountName: openshift-pipelines-as-code-sa-el
         params:
           - name: event_type
             value: $(tt.params.event_type)
@@ -112,7 +112,7 @@ spec:
               workspaces:
                 - name: secrets
                   workspace: secrets
-            - name: openshift-pipelines-ascode
+            - name: openshift-pipelines-as-code
               runAfter: [get-token]
               taskSpec:
                 params:
