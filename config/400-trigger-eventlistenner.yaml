@@ -2,18 +2,18 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
-  name: openshift-pipelines-ascode-interceptor
-  namespace: pipelines-ascode
+  name: openshift-pipelines-as-code-interceptor
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/part-of: openshift-pipelines-as-code
 spec:
-  serviceAccountName: openshift-pipelines-ascode-sa-el
+  serviceAccountName: openshift-pipelines-as-code-sa-el
   triggers:
     # When you have a /retest in a comment to retest a PR
     - name: github-issue-comment-retest
       bindings:
-        - ref: openshift-pipelines-ascode-bindings-retest-comment
+        - ref: openshift-pipelines-as-code-bindings-retest-comment
       interceptors:
         - github:
             secretRef:
@@ -29,12 +29,12 @@ spec:
               'installation' in body &&
               body.comment.body.matches('(^|\\r\\n)/retest([ ]*$|$|\\r\\n)')
       template:
-        ref: openshift-pipelines-ascode-template-retest-comment
+        ref: openshift-pipelines-as-code-template-retest-comment
 
     # When you have a /ok-to-test in a comment to allow CI on a non owner sender
     - name: github-issue-comment-retest
       bindings:
-        - ref: openshift-pipelines-ascode-bindings-ok-to-test-comment
+        - ref: openshift-pipelines-as-code-bindings-ok-to-test-comment
       interceptors:
         - github:
             secretRef:
@@ -51,12 +51,12 @@ spec:
               body.comment.body.matches('(^|\\r\\n)/ok-to-test([ ]*$|$|\\r\\n)')
       template:
         # Using retest comment since it was the first one
-        ref: openshift-pipelines-ascode-template-retest-comment
+        ref: openshift-pipelines-as-code-template-retest-comment
 
     # Branch push using different binding but same triggertemplate as pullreq
     - name: github-branch-push
       bindings:
-        - ref: openshift-pipelines-ascode-bindings-push
+        - ref: openshift-pipelines-as-code-bindings-push
       interceptors:
         - github:
             secretRef:
@@ -69,12 +69,12 @@ spec:
               'installation' in body &&
               'pusher' in body
       template:
-        ref: openshift-pipelines-ascode-template-push
+        ref: openshift-pipelines-as-code-template-push
 
     # When using the UI and clicking on Re-run failed test
     - name: github-check-run-recheck
       bindings:
-        - ref: openshift-pipelines-ascode-bindings-recheck
+        - ref: openshift-pipelines-as-code-bindings-recheck
       interceptors:
         - github:
             secretRef:
@@ -86,12 +86,12 @@ spec:
             filter: >-
               body.action in ['rerequested'] && 'check_run' in body && 'installation' in body
       template:
-        ref: openshift-pipelines-ascode-template-recheck
+        ref: openshift-pipelines-as-code-template-recheck
 
     # When sending a new Pull Request
     - name: github-pull-request
       bindings:
-        - ref: openshift-pipelines-ascode-bindings-pullreq
+        - ref: openshift-pipelines-as-code-bindings-pullreq
       interceptors:
         - github:
             secretRef:
@@ -103,17 +103,17 @@ spec:
             filter: >-
               body.action in ['created', 'synchronize', 'opened'] && 'installation' in body
       template:
-        ref: openshift-pipelines-ascode-template-pullreq
+        ref: openshift-pipelines-as-code-template-pullreq
 # Triggers >0.13 Changed almost everything for EventListener
 # ---
 # apiVersion: triggers.tekton.dev/v1alpha1
 # kind: EventListener
 # metadata:
-#   name: openshift-pipelines-ascode-interceptor
-#   namespace: pipelines-ascode
+#   name: openshift-pipelines-as-code-interceptor
+#   namespace: pipelines-as-code
 #   labels:
 #     app.kubernetes.io/instance: default
-#     app.kubernetes.io/part-of: openshift-pipelines-ascode
+#     app.kubernetes.io/part-of: openshift-pipelines-as-code
 # spec:
 #   triggers:
 #     - name: github-listener
@@ -131,12 +131,12 @@ spec:
 #             - name: "filter"
 #               value: "body.action in ['created', 'opened', 'synchronize'] && 'installation' in body"
 #       bindings:
-#         - ref: openshift-pipelines-ascode-bindings
+#         - ref: openshift-pipelines-as-code-bindings
 #       template:
-#         ref: openshift-pipelines-ascode-template
+#         ref: openshift-pipelines-as-code-template
 #   resources:
 #     kubernetesResource:
 #       spec:
 #         template:
 #           spec:
-#             serviceAccountName: openshift-pipelines-ascode-sa-el
+#             serviceAccountName: openshift-pipelines-as-code-sa-el

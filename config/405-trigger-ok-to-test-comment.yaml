@@ -2,11 +2,11 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: openshift-pipelines-ascode-bindings-ok-to-test-comment
-  namespace: pipelines-ascode
+  name: openshift-pipelines-as-code-bindings-ok-to-test-comment
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/part-of: openshift-pipelines-as-code
 spec:
   params:
     - name: action

@@ -4,10 +4,10 @@ apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: github-app-token
-  namespace: pipelines-ascode
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/part-of: openshift-pipelines-as-code
     app.kubernetes.io/version: "0.2"
   annotations:
     tekton.dev/pipelines.minVersion: "0.12.1"

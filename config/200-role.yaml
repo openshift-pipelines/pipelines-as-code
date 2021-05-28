@@ -18,20 +18,20 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: openshift-pipelines-ascode-sa-el
-  namespace: pipelines-ascode
+  name: openshift-pipelines-as-code-sa-el
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/part-of: openshift-pipelines-as-code
 ---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: openshift-pipelines-ascode-role-el
-  namespace: pipelines-ascode
+  name: openshift-pipelines-as-code-role-el
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/part-of: openshift-pipelines-as-code
 rules:
   - apiGroups: ["triggers.tekton.dev"]
     resources: ["eventlisteners", "triggerbindings", "triggertemplates", "triggers"]
@@ -55,28 +55,28 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: openshift-pipelines-ascode-binding
-  namespace: pipelines-ascode
+  name: openshift-pipelines-as-code-binding
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/part-of: openshift-pipelines-as-code
 subjects:
   - kind: ServiceAccount
-    name: openshift-pipelines-ascode-sa-el
+    name: openshift-pipelines-as-code-sa-el
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: openshift-pipelines-ascode-role-el
+  name: openshift-pipelines-as-code-role-el
 
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: openshift-pipeline-as-code-clusterrole
-  namespace: pipelines-ascode
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/part-of: openshift-pipelines-as-code
 rules:
   # Permissions to list repositories on cluster
   - apiGroups: [""]
@@ -102,15 +102,15 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: openshift-pipelines-ascode-clusterbinding
-  namespace: pipelines-ascode
+  name: openshift-pipelines-as-code-clusterbinding
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-ascode
+    app.kubernetes.io/part-of: openshift-pipelines-as-code
 subjects:
 - kind: ServiceAccount
-  name: openshift-pipelines-ascode-sa-el
-  namespace: pipelines-ascode
+  name: openshift-pipelines-as-code-sa-el
+  namespace: pipelines-as-code
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
