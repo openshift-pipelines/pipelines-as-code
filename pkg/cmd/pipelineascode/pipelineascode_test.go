@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/fs"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -27,7 +28,7 @@ func TestCommandTokenSetProperly(t *testing.T) {
 	o := bytes.NewBufferString("")
 	cmd.SetErr(e)
 	cmd.SetOut(o)
-	cmd.SetArgs([]string{"--webhook-sha", "abcd"})
+	cmd.SetArgs([]string{"--trigger-target", "push"})
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, "token option is not set properly")
 }
@@ -85,18 +86,6 @@ func TestGetInfo(t *testing.T) {
 			Client: fakeclient,
 		},
 	}
-	goodRunInfo := webvcs.RunInfo{
-		Owner:         "foo",
-		Repository:    "bar",
-		DefaultBranch: "main",
-		SHA:           "d0d0",
-		URL:           "https://chmouel.com",
-		BaseBranch:    "goodRuninfoBranch",
-		HeadBranch:    "headRunInfoBranch",
-		Sender:        "ElSender",
-		EventType:     "pull_request",
-		TriggerTarget: "pull_request",
-	}
 
 	b, err := ioutil.ReadFile("testdata/pull_request.json")
 	assert.NilError(t, err)
@@ -136,7 +125,7 @@ func TestGetInfo(t *testing.T) {
 			desc:    "No payload no runcheck",
 			runinfo: webvcs.RunInfo{},
 			payload: "",
-			errmsg:  "no payload or not enough params",
+			errmsg:  "unknown X-Github-Event in message:",
 		},
 		{
 			desc: "Bad runinfo with missing infos",
@@ -145,20 +134,13 @@ func TestGetInfo(t *testing.T) {
 				EventType: "pull_request",
 			},
 			payload: "",
-			errmsg:  "no payload or not enough params",
+			errmsg:  "unexpected end of JSON input",
 		},
 		{
 			desc:    "Missing values payload",
 			runinfo: webvcs.RunInfo{EventType: "pull_request", TriggerTarget: "pull_request"},
 			payload: missingValuesPayload,
 			errmsg:  "missing some values",
-		},
-		{
-			desc:           "Good runinfo",
-			runinfo:        goodRunInfo,
-			payload:        "",
-			errmsg:         "",
-			branchShouldBe: "goodRuninfoBranch",
 		},
 		{
 			desc:           "Good payload",
@@ -170,7 +152,14 @@ func TestGetInfo(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			runinfo, err := getRunInfoFromArgsOrPayload(ctx, cs, tC.payload, &tC.runinfo)
+			file := fs.NewFile(t, "test-payload", fs.WithContent(tC.payload))
+			defer file.Remove()
+
+			opts := &pacpkg.Options{
+				PayloadFile: file.Path(),
+				RunInfo:     tC.runinfo,
+			}
+			runinfo, err := parsePayload(ctx, cs, opts)
 			if tC.errmsg != "" {
 				assert.ErrorContains(t, err, tC.errmsg)
 			} else {

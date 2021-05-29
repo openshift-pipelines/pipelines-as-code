@@ -57,36 +57,34 @@ func Command(p cli.Params) *cobra.Command {
 
 	flags.AddPacOptions(cmd)
 
-	cmd.Flags().StringVarP(&opts.RunInfo.SHA, "webhook-sha", "", os.Getenv("PAC_SHA"), "SHA to test")
-	cmd.Flags().StringVarP(&opts.RunInfo.Owner, "webhook-owner", "", os.Getenv("PAC_OWNER"), "Owner of the of the repository to test")
-	cmd.Flags().StringVarP(&opts.RunInfo.Repository, "webhook-repository", "", os.Getenv("PAC_REPOSITORY_NAME"), "Repository Name of the repository to test")
-	cmd.Flags().StringVarP(&opts.RunInfo.DefaultBranch, "webhook-defaultbranch", "", os.Getenv("PAC_DEFAULTBRANCH"), "DefaultBranch of the repository to test")
-	cmd.Flags().StringVarP(&opts.RunInfo.BaseBranch, "webhook-base-branch", "", os.Getenv("PAC_BASE_BRANCH"), "Base branch from where the SHA is based ie: main")
-	cmd.Flags().StringVarP(&opts.RunInfo.HeadBranch, "webhook-head-branch", "", os.Getenv("PAC_HEAD_BRANCH"), "Head branch of the SHA ie: pr")
-	cmd.Flags().StringVarP(&opts.RunInfo.Sender, "webhook-sender", "", os.Getenv("PAC_Sender"), "Sender for the commit/pr")
-	cmd.Flags().StringVarP(&opts.RunInfo.URL, "webhook-url", "", os.Getenv("PAC_URL"), "URL of the repository to test")
-	cmd.Flags().StringVarP(&opts.RunInfo.EventType, "webhook-type", "", os.Getenv("PAC_EVENT_TYPE"), "Payload event type as set from Github")
+	cmd.Flags().StringVarP(&opts.RunInfo.EventType, "webhook-type", "", os.Getenv("PAC_EVENT_TYPE"), "Payload event type as set from Github (ie: X-GitHub-Event header)")
 	cmd.Flags().StringVarP(&opts.RunInfo.TriggerTarget, "trigger-target", "", os.Getenv("PAC_TRIGGER_TARGET"), "The trigger target from where this event comes from")
-
-	cmd.Flags().StringVarP(&opts.Payload, "payload", "", os.Getenv("PAC_PAYLOAD"), "The payload from webhook as string")
 	cmd.Flags().StringVarP(&opts.PayloadFile, "payload-file", "", os.Getenv("PAC_PAYLOAD_FILE"), "A file containing the webhook payload")
 	return cmd
 }
 
-func getRunInfoFromArgsOrPayload(ctx context.Context, cs *cli.Clients, payload string, runinfo *webvcs.RunInfo) (*webvcs.RunInfo, error) {
-	if err := runinfo.Check(); err == nil {
-		return runinfo, nil
-	} else if payload == "" {
-		return &webvcs.RunInfo{}, fmt.Errorf("no payload or not enough params set properly")
+func parsePayload(ctx context.Context, cs *cli.Clients, opts *pacpkg.Options) (*webvcs.RunInfo, error) {
+	if opts.PayloadFile == "" {
+		return nil, fmt.Errorf("no payload file has been passed")
+	}
+	_, err := os.Stat(opts.PayloadFile)
+	if err != nil {
+		return nil, err
 	}
 
-	payloadinfo, err := cs.GithubClient.ParsePayload(ctx, cs.Log, runinfo.EventType, runinfo.TriggerTarget, payload)
+	payloadB, err := ioutil.ReadFile(opts.PayloadFile)
+	if err != nil {
+		return nil, err
+	}
+
+	payloadinfo, err := cs.GithubClient.ParsePayload(ctx, cs.Log, opts.RunInfo.EventType,
+		opts.RunInfo.TriggerTarget, string(payloadB))
 	if err != nil {
 		return &webvcs.RunInfo{}, err
 	}
 
 	if err := payloadinfo.Check(); err != nil {
-		return &webvcs.RunInfo{}, fmt.Errorf("invalid Payload, missing some values : %+v", runinfo)
+		return &webvcs.RunInfo{}, fmt.Errorf("invalid Payload, missing some values : %+v", payloadinfo)
 	}
 
 	return payloadinfo, nil
@@ -94,20 +92,7 @@ func getRunInfoFromArgsOrPayload(ctx context.Context, cs *cli.Clients, payload s
 
 // Wrap around a Run, create a CheckStatusID if there is a failure.
 func runWrap(ctx context.Context, opts *pacpkg.Options, cs *cli.Clients, kinteract cli.KubeInteractionIntf) error {
-	if opts.PayloadFile != "" {
-		_, err := os.Stat(opts.PayloadFile)
-		if err != nil {
-			return err
-		}
-
-		b, err := ioutil.ReadFile(opts.PayloadFile)
-		if err != nil {
-			return err
-		}
-		opts.Payload = string(b)
-	}
-
-	runinfo, err := getRunInfoFromArgsOrPayload(ctx, cs, opts.Payload, &opts.RunInfo)
+	runinfo, err := parsePayload(ctx, cs, opts)
 	if err != nil {
 		return err
 	}

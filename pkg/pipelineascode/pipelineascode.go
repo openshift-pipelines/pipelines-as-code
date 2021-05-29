@@ -19,7 +19,6 @@ const (
 )
 
 type Options struct {
-	Payload     string
 	PayloadFile string
 	RunInfo     webvcs.RunInfo
 }
