@@ -138,8 +138,8 @@ spec:
                 if [[ -n ${lm} ]];then
                     expired=$(python -c "import datetime, sys;print(datetime.datetime.now() > datetime.datetime.strptime(sys.argv[1], '%a, %d %b %Y %X %Z') + datetime.timedelta(days=1))" "${lm}")
                     [[ ${expired} == "False" ]] && {
-                    echo "Cache is younger than a day"
-                    exit
+                      echo "Cache is younger than a day"
+                      exit
                     }
                 fi
 
