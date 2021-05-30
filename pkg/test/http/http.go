@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"testing"
 )
 
@@ -14,18 +15,26 @@ func newHTTPTestClient(fn roundTripFunc) *http.Client {
 	}
 }
 
-func MakeHTTPTestClient(t *testing.T, statusCode int, body string) *http.Client {
-	httpTestClient := newHTTPTestClient(func(req *http.Request) *http.Response {
-		// Test request parameters
-		return &http.Response{
-			StatusCode: statusCode,
-			// Send response to be tested
-			Body: ioutil.NopCloser(bytes.NewBufferString(body)),
-			// Must be set to non-nil value or it panics
-			Header: make(http.Header),
+func MakeHTTPTestClient(t *testing.T, config map[string]map[string]string) *http.Client {
+	return newHTTPTestClient(func(req *http.Request) *http.Response {
+		resp := &http.Response{}
+		for k, v := range config {
+			if k == req.URL.String() {
+				code, _ := strconv.Atoi(v["code"])
+				resp = &http.Response{
+					StatusCode: code,
+					Header:     make(http.Header),
+				}
+				if body, ok := v["body"]; ok {
+					resp.Body = ioutil.NopCloser(bytes.NewBufferString(body))
+				}
+			}
 		}
+		if resp == nil {
+			t.Fatalf("No url matching config: %v", config)
+		}
+		return resp
 	})
-	return httpTestClient
 }
 
 // roundTripFunc .

@@ -2,7 +2,6 @@ package cli
 
 import (
 	"github.com/pkg/errors"
-	"github.com/tektoncd/hub/api/pkg/cli/hub"
 	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 
 	pacversioned "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
@@ -92,11 +91,6 @@ func (p *PacParams) pacClient(config *rest.Config) (pacversioned.Interface, erro
 	return cs, nil
 }
 
-func (p *PacParams) hubClient() hub.Client {
-	cs := hub.NewClient()
-	return cs
-}
-
 func (p *PacParams) githubClient() webvcs.GithubVCS {
 	return webvcs.NewGithubVCS(p.githubToken)
 }
@@ -146,8 +140,6 @@ func (p *PacParams) Clients() (*Clients, error) {
 		return nil, err
 	}
 
-	hub := p.hubClient()
-
 	ghClient := p.githubClient()
 
 	dynamic, err := p.dynamicClient(config)
@@ -161,7 +153,6 @@ func (p *PacParams) Clients() (*Clients, error) {
 		PipelineAsCode: pacc,
 		Log:            logger,
 		GithubClient:   ghClient,
-		Hub:            hub,
 		Dynamic:        dynamic,
 	}
 

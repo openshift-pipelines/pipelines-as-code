@@ -47,7 +47,6 @@ contrib.go.opencensus.io/exporter/stackdriver v0.13.5/go.mod h1:aXENhDJ1Y4lIg4EU
 contrib.go.opencensus.io/exporter/zipkin v0.1.2/go.mod h1:mP5xM3rrgOjpn79MM8fZbj3gsxcuytSqtH0dxSWW1RE=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 git.apache.org/thrift.git v0.12.0/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
-git.maze.io/go/duration v0.0.0-20160924141736-faac084b6075/go.mod h1:y9MVD7vG8A7scVb2MvTVxN0z+DHTzxnWgOisOnFe5kc=
 github.com/AlecAivazis/survey/v2 v2.0.4 h1:qzXnJSzXEvmUllWqMBWpZndvT2YfoAUzAMvZUax3L2M=
 github.com/AlecAivazis/survey/v2 v2.0.4/go.mod h1:WYBhg6f0y/fNYUuesWQc0PKbJcEliGcYHB9sNT3Bg74=
 github.com/Azure/azure-sdk-for-go v43.0.0+incompatible/go.mod h1:9XXNKU+eRnpl9moKnB4QOLf1HestfXbmab5FXxiDBjc=
@@ -221,7 +220,6 @@ github.com/dgryski/go-lttb v0.0.0-20180810165845-318fcdf10a77/go.mod h1:Va5MyIzk
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
 github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598/go.mod h1:0FpDmbrt36utu8jEmeU05dPC9AB5tsLYVVi+ZHfyuwI=
 github.com/dimfeld/httptreemux/v5 v5.0.2/go.mod h1:QeEylH57C0v3VO0tkKraVz9oD3Uu93CKPnTLbsidvSw=
-github.com/dimfeld/httptreemux/v5 v5.2.2 h1:8JAUcuNrLbL5uwmvQ4lZVCjuQ/Ioojc+7VGt89aMElU=
 github.com/dimfeld/httptreemux/v5 v5.2.2/go.mod h1:QeEylH57C0v3VO0tkKraVz9oD3Uu93CKPnTLbsidvSw=
 github.com/dnaeon/go-vcr v1.0.1/go.mod h1:aBB1+wY4s93YsC3HHjMBMrwTj2R9FHDzUr9KyGc8n1E=
 github.com/docker/cli v0.0.0-20191017083524-a8ff7f821017/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
@@ -511,7 +509,6 @@ github.com/gorilla/mux v1.7.4/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB7
 github.com/gorilla/websocket v0.0.0-20170926233335-4201258b820c/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
 github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoAMk2YaljkQ=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
-github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
 github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc h1:f8eY6cV/x1x+HLjOp4r72s/31/V2aTUtg5oKRRPf8/Q=
@@ -948,7 +945,6 @@ github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
 github.com/tektoncd/cli v0.18.0 h1:ORE2x89f55YsLqvvOl4l7WYgUYxMaZO/dSUuv7xPRr0=
 github.com/tektoncd/cli v0.18.0/go.mod h1:HzW7rWepYqVvNY0HoGSJoKa1R8yeXP2iDkWUdUfWKM8=
-github.com/tektoncd/hub/api v0.0.0-20210208113044-f2a63f81502c h1:gnQOsgmHUIapCDKX9TqWBRobYd8MzF3cSnu7v8I0Hvo=
 github.com/tektoncd/hub/api v0.0.0-20210208113044-f2a63f81502c/go.mod h1:R0o3ZROwHynXLi4+1e+9xEVkPhtrIL+J4hrEN1Yp98E=
 github.com/tektoncd/pipeline v0.20.1-0.20210203144343-1b7a37f0d21d/go.mod h1:GwdfGGt/5VhZL8JvJu8kFz8friKufcJ/TJkJmK6uc0U=
 github.com/tektoncd/pipeline v0.20.1-0.20210204110343-8c5a751b53ea/go.mod h1:GwdfGGt/5VhZL8JvJu8kFz8friKufcJ/TJkJmK6uc0U=
@@ -1035,7 +1031,6 @@ go.uber.org/zap v1.16.0 h1:uFRZXykJGK9lLY4HtgSw44DnIcAM+kRBP7x5m+NpAOM=
 go.uber.org/zap v1.16.0/go.mod h1:MA8QOfq0BHJwdXa996Y4dYkAqRKB8/1K1QMMZVaNZjQ=
 goa.design/goa/v3 v3.0.9/go.mod h1:oJR8VOFa4HV7wCQv4XhPtvyknz0B3VFFRUWDdEmI0FI=
 goa.design/goa/v3 v3.1.3/go.mod h1:GEog3KvHosQPKrrZSlpXDSnm7PpmzZEiy3mLxI/FtXM=
-goa.design/goa/v3 v3.2.2 h1:DDFof4YcjgRPJsl5T/iayigCX/nO857hEcVXdwvsSJM=
 goa.design/goa/v3 v3.2.2/go.mod h1:3SDdN/ynQsyXW4Zl6A5YA2yXi9KyqmTH577z5P4bnAs=
 goa.design/plugins/v3 v3.1.3/go.mod h1:j4gOWwZpEBsNmONKitV/tBlxG6Yu7unFCU1HJmqjiC8=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
@@ -1604,6 +1599,7 @@ knative.dev/pkg v0.0.0-20210203171706-6045ed499615/go.mod h1:X4NPrCo8NK3hbDVan9V
 knative.dev/pkg v0.0.0-20210208131226-4b2ae073fa06/go.mod h1:72bhCSsMqNteAB/T7gZN6w/bnMz+GwGE92+RUmhjzF8=
 knative.dev/pkg v0.0.0-20210331065221-952fdd90dbb0 h1:z05hcB4br0qz7JdwIoUSTXLTF+7ThuJ+R6NFfXd1Y4Q=
 knative.dev/pkg v0.0.0-20210331065221-952fdd90dbb0/go.mod h1:PD5g8hUCXq6iR3tILjmZeJBvQfXGnHMPKryq54qHJhg=
+maze.io/x/duration v0.0.0-20160924141736-faac084b6075/go.mod h1:1kfR2ph3CIvtfIQ8D8JhmAgePmnAUnR+AWYWUBo+l08=
 pgregory.net/rapid v0.3.3/go.mod h1:UYpPVyjFHzYBGHIxLFoupi8vwk6rXNzRY9OMvVxFIOU=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=

@@ -10,14 +10,13 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/hub"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
-	"github.com/tektoncd/hub/api/pkg/cli/hub"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
 )
 
 const (
-	tektonCatalogHubName  = "tekton"
 	taskAnnotationsRegexp = `task(-[0-9]+)?$`
 )
 
@@ -58,26 +57,11 @@ func (rt RemoteTasks) getTask(ctx context.Context, task string) (*tektonv1beta1.
 		}
 		return rt.convertTotask(string(data))
 	default:
-		var version string
-		taskName := task
-		if strings.Contains(task, ":") {
-			split := strings.Split(task, ":")
-			version = split[len(split)-1]
-			taskName = split[0]
-		}
-		resourceoption := hub.ResourceOption{
-			Name:    taskName,
-			Catalog: tektonCatalogHubName,
-			Kind:    "task",
-			Version: version,
-		}
-
-		resource := rt.Clients.Hub.GetResource(resourceoption)
-		data, err := resource.Manifest()
+		data, err := hub.GetTask(ctx, rt.Clients, task)
 		if err != nil {
-			return ret, fmt.Errorf("task %s hasn't been found: %w", taskName, err)
+			return nil, err
 		}
-		return rt.convertTotask(string(data))
+		return rt.convertTotask(data)
 	}
 }
 
