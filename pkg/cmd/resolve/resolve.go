@@ -26,21 +26,39 @@ var (
 	remoteTask   bool
 )
 
-const example = `
-Resolve the .tekton/pulle-request as a single pipelinerun, fetching the remote
-tasks and apply the parameters substitions : 
+const longhelp = `
+
+tknresolve - resolve a PipelineRun and all its referenced Pipeline/Tasks embedded.
+
+Resolve the .tekton/pull-request as a single pipelinerun, fetching the remote
+tasks according to the annotations in the pipelineRun, apply the parameters
+substitutions with -p flags. Output on the standard output the full PipelineRun
+resolved.
+
+A simple example that would parse the .tekton/pull-request.yaml with all the
+remote task embedded into it applying the parameters substitutions: 
 
 pipelines-as-code resolve \
 		-f .tekton/pull-request.yaml \
 		-p revision=main \
 		-p repo_url=https://github.com/openshift-pipelines/pipelines-as-code
-`
+
+You can specify multiple template files to combine :
+
+pipelines-as-code resolve -f .tekton/pull-request.yaml -f task/referenced.yaml
+
+or a directory where it will get all the files ending by .yaml  :
+
+pipelines-as-code resolve -f .tekton/
+
+*It does not support task from local directory referenced in annotations at the
+ moment*.`
 
 func Command(p cli.Params) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "resolve",
-		Example: example,
-		Short:   "Resolve a bunch of yaml file in a single PipelineRun",
+		Use:   "resolve",
+		Long:  longhelp,
+		Short: "Resolve a bunch of yaml file in a single PipelineRun",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cs, err := p.Clients()
 			if err != nil {
