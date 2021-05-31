@@ -25,10 +25,4 @@ require (
 	sigs.k8s.io/yaml v1.2.0
 )
 
-replace (
-	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
-	github.com/kr/pty => github.com/creack/pty v1.1.10
-)
-
-// Redirection not working
-replace maze.io/x/duration => git.maze.io/go/duration v0.0.0-20160924141736-faac084b6075
+replace github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
