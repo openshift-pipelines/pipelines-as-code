@@ -3,7 +3,7 @@ module github.com/openshift-pipelines/pipelines-as-code
 go 1.15
 
 require (
-	github.com/davecgh/go-spew v1.1.1
+	github.com/gobwas/glob v0.2.3
 	github.com/google/go-cmp v0.5.5
 	github.com/google/go-github/v34 v34.0.0
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
