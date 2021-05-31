@@ -122,10 +122,6 @@ Multiple target branch can be specified separated by comma, i.e:
 
 `[main, release-nightly]`
 
-If there is multiple pipeline matching the event, it will match the first one.
-We are currently not supporting multiple PipelineRuns on a single event but
-this may be something we can consider to implement in the future.
-
 You can match on `pull_request` events as above and you can as well match
 pipelineRuns on `push` events to a repository
 
@@ -140,9 +136,11 @@ the `main` branch :
     pipelinesascode.tekton.dev/on-event: "[push]"
 ```
 
-On `push` you need to specify the full [git
-refs](https://git-scm.com/docs/git-check-ref-format). You can then match a
-branch like `refs/heads/main` or tags. For example :
+You can specify the full refs like `refs/heads/main` or the shortref like
+`main`. You can as well specify globs, for example `refs/heads/*` will match any
+target branch or `refs/tags/1.*` will match all the tags starting from `1.`.
+
+A full example for a push of a tag :
 
 ```yaml
  metadata:
@@ -152,11 +150,15 @@ branch like `refs/heads/main` or tags. For example :
     pipelinesascode.tekton.dev/on-event: "[push]"
 ```
 
-will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0 tags
+This will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0 tags
 into your repository.
 
 Matching annotations are currently mandated or `Pipelines as Code` will not
 match your `PiplineRun`.
+
+If there is multiple pipeline matching an event, it will match the first one.
+We are currently not supporting multiple PipelineRuns on a single event but
+this may be something we can consider to implement in the future.
 
 #### Pipelines as Code resolver
 

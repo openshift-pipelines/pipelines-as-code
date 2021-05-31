@@ -23,39 +23,6 @@ type Options struct {
 	RunInfo     webvcs.RunInfo
 }
 
-func getRepoByCR(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (apipac.Repository, error) {
-	var repository apipac.Repository
-
-	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
-		ctx, metav1.ListOptions{})
-	if err != nil {
-		return repository, err
-	}
-
-	for _, value := range repositories.Items {
-		if value.Spec.URL == runinfo.URL && value.Spec.Branch == runinfo.BaseBranch &&
-			value.Spec.EventType == runinfo.EventType {
-			// TODO: figure it out when we renable forceNamespace
-			// if forceNamespace != "" && value.Namespace != forceNamespace {
-			//	return repository, fmt.Errorf(
-			//		"repo CR matches but should be installed in %s as configured from tekton.yaml on the main branch",
-			//		forceNamespace)
-			// }
-
-			// Disallow attempts for hijacks. If the installed CR is not configured on the
-			// Namespace the Spec is targeting then disallow it.
-			if value.Namespace != value.Spec.Namespace {
-				return repository, fmt.Errorf("repo CR %s matches but belongs to %s while it should be in %s",
-					value.Name,
-					value.Namespace,
-					value.Spec.Namespace)
-			}
-			return value, nil
-		}
-	}
-	return repository, nil
-}
-
 func createStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, status, conclusion, text, detailsURL string, logit bool) error {
 	if logit {
 		cs.Log.Infof(text)
