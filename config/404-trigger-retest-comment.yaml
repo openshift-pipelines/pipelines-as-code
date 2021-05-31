@@ -2,11 +2,11 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: openshift-pipelines-as-code-bindings-retest-comment
+  name: pipelines-as-code-bindings-retest-comment
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-as-code
+    app.kubernetes.io/part-of: pipelines-as-code
 spec:
   params:
     - name: trigger_target
@@ -29,11 +29,11 @@ spec:
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: openshift-pipelines-as-code-template-retest-comment
+  name: pipelines-as-code-template-retest-comment
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-as-code
+    app.kubernetes.io/part-of: pipelines-as-code
 spec:
   params:
     - name: action
@@ -48,12 +48,12 @@ spec:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
       metadata:
-        generateName: openshift-pipelines-as-code-run-
+        generateName: pipelines-as-code-run-
         labels:
-          tekton.dev/pipeline: openshift-pipelines-as-code
+          tekton.dev/pipeline: pipelines-as-code
           tekton.dev/pipelines-as-code-event: $(tt.params.event_type)
       spec:
-        serviceAccountName: openshift-pipelines-as-code-sa-el
+        serviceAccountName: pipelines-as-code-sa-el
         params:
           - name: action
             value: $(tt.params.action)
@@ -93,7 +93,7 @@ spec:
               workspaces:
                 - name: secrets
                   workspace: secrets
-            - name: openshift-pipelines-as-code
+            - name: pipelines-as-code
               runAfter: [get-token]
               taskSpec:
                 params:

@@ -25,8 +25,10 @@ Pipelines as Code is built on the following technologies :
   EventListener is spun up in a central namespace (`pipelines-as-code`). The
   EventListener is the service responsible for listening to webhook events and acting upon it.
 
-- Repository CRD: The Repository CRD is a new API introduced in the Pipelines as Code project. This CRD is used to define the association between the source code repository and the 
-Kubernetes namespace in which the corresponding Pipelines are run.
+- Repository CRD: The Repository CRD is a new API introduced in the Pipelines as
+  Code project. This CRD is used to define the association between the source
+  code repository and the Kubernetes namespace in which the corresponding
+  Pipelines are run.
 
 - Web VCS support. When iterating over a Pull Request, status and control is
   done on the platform.
@@ -120,10 +122,8 @@ Multiple target branch can be specified separated by comma, i.e:
 
 `[main, release-nightly]`
 
-If there is multiple pipeline matching the event, it will match the first one.
-
-You can match on `pull_request` events as above and on git `push` events to a
-repo.
+You can match on `pull_request` events as above and you can as well match
+pipelineRuns on `push` events to a repository
 
 For example this will match the pipeline when there is a push to a commit in
 the `main` branch :
@@ -136,9 +136,11 @@ the `main` branch :
     pipelinesascode.tekton.dev/on-event: "[push]"
 ```
 
+You can specify the full refs like `refs/heads/main` or the shortref like
+`main`. You can as well specify globs, for example `refs/heads/*` will match any
+target branch or `refs/tags/1.*` will match all the tags starting from `1.`.
 
-You need to specify the refs and not just the branch, this allows to as well
-match on tags. For example :
+A full example for a push of a tag :
 
 ```yaml
  metadata:
@@ -148,29 +150,51 @@ match on tags. For example :
     pipelinesascode.tekton.dev/on-event: "[push]"
 ```
 
-will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0 tags
+This will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0 tags
 into your repository.
 
 Matching annotations are currently mandated or `Pipelines as Code` will not
 match your `PiplineRun`.
 
+If there is multiple pipeline matching an event, it will match the first one.
+We are currently not supporting multiple PipelineRuns on a single event but
+this may be something we can consider to implement in the future.
+
 #### Pipelines as Code resolver
 
-If `Pipelines as Code` sees multiple documents, it tries to *resolves* it as a
-  single PiplineSpec embedded to a `PipelineRun`. It will add a `generateName`
-  based on the Pipeline name as well. This allows you to have multiple runs in
-  the same namespace without risk of conflicts.
+If `Pipelines as Code` sees a PipelineRun with a reference to a `Task` or a
+`Pipeline`, it will tries to *resolves* it as a single PipelineRun with an embedded `PipelineSpec` to a `PipelineRun`.
 
-Everything that runs your pipelinerun should be self contained inside the
-`.tekton/` directory or from some remote tasks (see below).  If pipelines as
-code cannot resolve the referenced tasks in the `Pipeline` or `PipelineSpec`
-it will fails before applying the pipelinerun onto the cluster.
+It will as well transform the Pipeline Name  to a `generateName`
+based on the Pipeline name as well.
+
+This allows you to have multiple runs in the same namespace from the same
+PipelineRun with no risk of conflicts.
+
+Everything that runs your pipelinerun and its references neeed to inside the
+`.tekton/` directory or referenced as remote tasks (see below on how the remote
+tasks are specified).  If pipelines as code cannot resolve the referenced tasks
+in the `Pipeline` or `PipelineSpec` it will fails before applying the
+pipelinerun onto the cluster.
+
+If you need to test your `PipelineRun` locally before sending it in a PR, you can use
+the `tkresolver` CLI, by installing it like this :
+
+```shell
+go install github.com/openshift-pipelines/pipelines-as-code/cmd/tknresolve
+```
+
+and you can use the tknresolve binary to generate the PipelineRun the say way it
+is generated on events. See the `--help` of the `tknresolve` to learn about how
+this CLI and on how to use it.
 
 #### Remote Task support
 
-`Pipelines as Code` support fetching remote tasks from remote location via  annotation on PipelineRun.
+`Pipelines as Code` support fetching remote tasks from remote location via
+annotations on PipelineRun.
 
-If the resolver sees a PipelineRun referencing a remote task via its name in a  Pipeline or a PipelineSpec it will automatically inlines it.
+If the resolver sees a PipelineRun referencing a remote task via its name in a
+Pipeline or a PipelineSpec it will automatically inlines it.
 
 An annotation to a remote task looks like this :
 
@@ -366,7 +390,7 @@ When you have created the `github-app-secret` Secret, grab the private key the
 key in a file named for example `/tmp/github.app.key` and issue those commands :
 
 ```bash
-% kubectl -n openshift-pipelines-as-code create secret generic github-app-secret \
+% kubectl -n pipelines-as-code create secret generic github-app-secret \
         --from-literal private.key="$(cat /tmp/github.app.key)"
         --from-literal application_id="APPLICATION_ID_NUMBER" \
         --from-literal webhook.secret="WEBHOOK_SECRET"
@@ -374,3 +398,9 @@ key in a file named for example `/tmp/github.app.key` and issue those commands :
 
 This secret is used to generate a token on behalf of the user running the event
 and make sure to validate the webhook via the webhook secret.
+
+You will then need to make sure to expose the `EventListenner` via a
+[Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) or a
+[OpenShift
+Route](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html)
+so GitHub can get send the webhook to it.

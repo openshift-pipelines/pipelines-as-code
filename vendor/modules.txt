@@ -115,6 +115,16 @@ github.com/go-openapi/jsonreference
 github.com/go-openapi/spec
 # github.com/go-openapi/swag v0.19.7
 github.com/go-openapi/swag
+# github.com/gobwas/glob v0.2.3
+## explicit
+github.com/gobwas/glob
+github.com/gobwas/glob/compiler
+github.com/gobwas/glob/match
+github.com/gobwas/glob/syntax
+github.com/gobwas/glob/syntax/ast
+github.com/gobwas/glob/syntax/lexer
+github.com/gobwas/glob/util/runes
+github.com/gobwas/glob/util/strings
 # github.com/gogo/protobuf v1.3.2
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
@@ -286,8 +296,6 @@ github.com/tektoncd/cli/pkg/taskrun/list
 github.com/tektoncd/cli/pkg/taskrun/sort
 github.com/tektoncd/cli/pkg/test/dynamic
 github.com/tektoncd/cli/pkg/test/dynamic/clientset
-# github.com/tektoncd/hub/api v0.0.0-20210208113044-f2a63f81502c
-## explicit
 # github.com/tektoncd/pipeline v0.24.1
 ## explicit
 github.com/tektoncd/pipeline/pkg/apis/config
@@ -1023,4 +1031,3 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit
 sigs.k8s.io/yaml
 # github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
-# github.com/kr/pty => github.com/creack/pty v1.1.10
