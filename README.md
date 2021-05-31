@@ -388,7 +388,7 @@ When you have created the `github-app-secret` Secret, grab the private key the
 key in a file named for example `/tmp/github.app.key` and issue those commands :
 
 ```bash
-% kubectl -n openshift-pipelines-as-code create secret generic github-app-secret \
+% kubectl -n pipelines-as-code create secret generic github-app-secret \
         --from-literal private.key="$(cat /tmp/github.app.key)"
         --from-literal application_id="APPLICATION_ID_NUMBER" \
         --from-literal webhook.secret="WEBHOOK_SECRET"
