@@ -28,16 +28,28 @@ const checkStatustmpl = `{{.taskStatus}}
 `
 
 const taskStatustmpl = `
-| Status | Duration | Name |
-| --- | --- | --- |
+<table>
+  <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
 
-{{- range $taskrun := .TaskrunList }}
-{{ formatCondition $taskrun.Status.Conditions }} | {{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }} | {{ $taskrun.PipelineTaskName }}
-{{- end }}`
+{{- range $taskrun := .TaskRunList }}
+<tr>
+<td>{{ formatCondition $taskrun.Status.Conditions }}</td>
+<td>{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}</td><td>
+
+{{ $taskrun.ConsoleLogURL }}
+
+</td></tr>
+{{- end }}
+</table>`
 
 type tkr struct {
 	TaskrunName string
+	LogURL      string
 	*tektonv1beta1.PipelineRunTaskRunStatus
+}
+
+func (t tkr) ConsoleLogURL() string {
+	return fmt.Sprintf("[%s](%s/%s)", t.PipelineTaskName, t.LogURL, t.PipelineTaskName)
 }
 
 type taskrunList []tkr
@@ -56,11 +68,12 @@ func (trs taskrunList) Less(i, j int) bool {
 	return trs[j].Status.StartTime.Before(trs[i].Status.StartTime)
 }
 
-func newTaskrunListFromMap(statusMap map[string]*tektonv1beta1.PipelineRunTaskRunStatus) taskrunList {
+func newTaskrunListFromMap(statusMap map[string]*tektonv1beta1.PipelineRunTaskRunStatus, consoleURL string) taskrunList {
 	trl := taskrunList{}
 	for taskrunName, taskrunStatus := range statusMap {
 		trl = append(trl, tkr{
 			taskrunName,
+			consoleURL,
 			taskrunStatus,
 		})
 	}
@@ -98,12 +111,12 @@ func ConditionEmoji(c knative1.Conditions) string {
 	return status
 }
 
-func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun) (string, error) {
+func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun, consoleURL string) (string, error) {
 	var trl taskrunList
 	var outputBuffer bytes.Buffer
 
 	if len(pr.Status.TaskRuns) != 0 {
-		trl = newTaskrunListFromMap(pr.Status.TaskRuns)
+		trl = newTaskrunListFromMap(pr.Status.TaskRuns, consoleURL)
 		sort.Sort(sort.Reverse(trl))
 	}
 
@@ -113,9 +126,9 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun) (string, erro
 	}
 
 	data := struct {
-		TaskrunList taskrunList
+		TaskRunList taskrunList
 	}{
-		TaskrunList: trl,
+		TaskRunList: trl,
 	}
 
 	t := template.Must(template.New("Task Status").Funcs(funcMap).Parse(taskStatustmpl))
@@ -146,7 +159,7 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 		consoleURL = "https://giphy.com/search/cat-reading"
 	}
 
-	taskStatus, err := statusOfAllTaskListForCheckRun(pr)
+	taskStatus, err := statusOfAllTaskListForCheckRun(pr, consoleURL)
 	if err != nil {
 		return pr, err
 	}

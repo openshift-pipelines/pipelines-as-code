@@ -103,7 +103,7 @@ func TestTaskRunListMapSort(t *testing.T) {
 		"middle": pstatus(10),
 	}
 
-	trlist := newTaskrunListFromMap(status)
+	trlist := newTaskrunListFromMap(status, "http://hello")
 	sort.Sort(trlist)
 	assert.Equal(t, trlist[0].TaskrunName, "last")
 	assert.Equal(t, trlist[1].TaskrunName, "middle")
@@ -111,13 +111,13 @@ func TestTaskRunListMapSort(t *testing.T) {
 
 	// Not sorting the middle one since no status, comes first then
 	status["middle"].Status.TaskRunStatusFields.StartTime = nil
-	trlist = newTaskrunListFromMap(status)
+	trlist = newTaskrunListFromMap(status, "http://moto")
 	sort.Sort(trlist)
 	assert.Equal(t, trlist[0].TaskrunName, "middle")
 
 	// Only last become sorted because middle and first has been removed
 	status["first"].Status.TaskRunStatusFields.StartTime = nil
-	trlist = newTaskrunListFromMap(status)
+	trlist = newTaskrunListFromMap(status, "http://moto")
 	sort.Sort(trlist)
 	assert.Equal(t, trlist[len(trlist)-1].TaskrunName, "last")
 }
