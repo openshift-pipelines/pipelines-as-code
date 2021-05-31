@@ -18,4 +18,4 @@ metadata:
   name: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/part-of: openshift-pipelines-as-code
+    app.kubernetes.io/part-of: pipelines-as-code

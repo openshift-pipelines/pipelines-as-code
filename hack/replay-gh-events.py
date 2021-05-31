@@ -27,7 +27,7 @@ import requests
 
 NAMESPACE = "pipelines-as-code"
 SECRET_NAME = "github-app-secret"
-ELNAME = "openshift-pipelines-as-code"
+ELNAME = "pipelines-as-code"
 
 
 def get_el_route():
