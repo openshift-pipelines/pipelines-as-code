@@ -24,6 +24,9 @@ func Command(p cli.Params) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run pipelines as code",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return flags.InitParams(p, cmd)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := cmd.LocalFlags().GetString("token")
 			if token == "" || err != nil {

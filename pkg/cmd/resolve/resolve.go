@@ -62,7 +62,12 @@ func Command(p cli.Params) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cs, err := p.Clients()
 			if err != nil {
-				return err
+				// this check allows resolve to be run without
+				// a kubeconfig so users can verify the tkn version
+				noConfigErr := strings.Contains(err.Error(), "Couldn't get kubeConfiguration namespace")
+				if !noConfigErr {
+					return err
+				}
 			}
 			if len(filenames) == 0 {
 				return fmt.Errorf("you need to at least specify a file with -f")
