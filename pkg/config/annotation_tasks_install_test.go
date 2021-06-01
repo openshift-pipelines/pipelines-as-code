@@ -40,7 +40,6 @@ spec:
       image: image
       script: |
        echo hello`
-	httpTestClient := httptesthelper.MakeHTTPTestClient(t, 200, "HELLO")
 
 	fakeGHclient, mux, _, ghTeardown := ghtesthelper.SetupGH()
 	defer ghTeardown()
@@ -65,53 +64,49 @@ spec:
 		w.WriteHeader(http.StatusNotFound)
 	})
 
-	cs := &cli.Clients{
-		HTTPClient: *httpTestClient,
-		GithubClient: webvcs.GithubVCS{
-			Client: fakeGHclient,
-		},
-	}
-	ctx, _ := rtesting.SetupFakeContext(t)
-
 	tests := []struct {
-		name        string
-		runinfo     *webvcs.RunInfo
-		annotations map[string]string
-		wantErr     string
-		httpReturn  string
-		gotTaskName string
+		name                string
+		runinfo             *webvcs.RunInfo
+		annotations         map[string]string
+		wantErr             string
+		remoteURLDataReturn string
+		remoteURL           string
+		gotTaskName         string
 	}{
 		{
 			name: "test-annotations-error-remote-http-not-k8",
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[http://remote.task]",
 			},
-			wantErr: "not looking like a kubernetes resource",
+			remoteURL: "http://remote.task",
+			wantErr:   "not looking like a kubernetes resource",
 		},
 		{
 			name: "test-annotations-remote-http",
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[http://remote.task]",
 			},
-			gotTaskName: "task",
-			httpReturn:  simpletask,
+			gotTaskName:         "task",
+			remoteURL:           "http://remote.task",
+			remoteURLDataReturn: simpletask,
 		},
 		{
 			name: "test-annotations-remote-https",
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[https://remote.task]",
 			},
-			gotTaskName: "task",
-			httpReturn:  simpletask,
+			gotTaskName:         "task",
+			remoteURL:           "https://remote.task",
+			remoteURLDataReturn: simpletask,
 		},
 		{
 			name: "test-annotations-inside-repo",
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[be/healthy]",
 			},
-			gotTaskName: "task",
-			httpReturn:  simpletask,
-			runinfo:     &webvcs.RunInfo{},
+			gotTaskName:         "task",
+			remoteURLDataReturn: simpletask,
+			runinfo:             &webvcs.RunInfo{},
 		},
 		{
 			name: "test-annotations-remote-http-skipping-notmatching",
@@ -119,8 +114,9 @@ spec:
 				pipelinesascode.GroupName + "/task":  "[http://remote.task]",
 				pipelinesascode.GroupName + "/taskA": "[http://other.task]", // That's wrong this would be skipped
 			},
-			gotTaskName: "task",
-			httpReturn:  simpletask,
+			gotTaskName:         "task",
+			remoteURL:           "http://remote.task",
+			remoteURLDataReturn: simpletask,
 		},
 		{
 			name: "test-annotations-remote-http-bad-annotation",
@@ -140,10 +136,19 @@ spec:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.httpReturn != "" {
-				cs.HTTPClient = *httptesthelper.MakeHTTPTestClient(t, 200, tt.httpReturn)
+			httpTestClient := httptesthelper.MakeHTTPTestClient(t, map[string]map[string]string{
+				tt.remoteURL: {
+					"body": tt.remoteURLDataReturn,
+					"code": "200",
+				},
+			})
+			cs := &cli.Clients{
+				HTTPClient: *httpTestClient,
+				GithubClient: webvcs.GithubVCS{
+					Client: fakeGHclient,
+				},
 			}
-
+			ctx, _ := rtesting.SetupFakeContext(t)
 			rt := RemoteTasks{
 				Clients: cs,
 				Runinfo: tt.runinfo,

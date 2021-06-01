@@ -24,18 +24,6 @@ func Command(p cli.Params) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Run pipelines as code",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			if err := flags.InitParams(p, cmd); err != nil {
-				// this check allows tkn version to be run without
-				// a kubeconfig so users can verify the tkn version
-				noConfigErr := strings.Contains(err.Error(), "no configuration has been provided")
-				if noConfigErr {
-					return nil
-				}
-				return err
-			}
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := cmd.LocalFlags().GetString("token")
 			if token == "" || err != nil {
