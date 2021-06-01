@@ -1031,3 +1031,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit
 sigs.k8s.io/yaml
 # github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
+# maze.io/x/duration => git.maze.io/go/duration v0.0.0-20160924141736-faac084b6075

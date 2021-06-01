@@ -35,7 +35,7 @@ spec:
           - fetchit
         taskSpec:
           steps:
-            - image: mirror.gcr.io/library/golang:latest
+            - image: public.ecr.aws/bitnami/golang:latest
               name: get-cache
               script: |
                 #!/usr/bin/env bash
@@ -79,7 +79,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: mirror.gcr.io/library/golang:latest
+            - image: public.ecr.aws/bitnami/golang:latest
               name: get-cache
               workingDir: $(workspaces.source.path)
               script: |
@@ -97,7 +97,7 @@ spec:
             - name: unittest
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
-              image: mirror.gcr.io/library/golang:latest
+              image: public.ecr.aws/bitnami/golang:latest
               workingDir: $(workspaces.source.path)
               script: |
                 mkdir -p $HOME/.cache/ && ln -vs $(workspaces.source.path)/go-build-cache $HOME/.cache/go-build
@@ -125,7 +125,7 @@ spec:
           steps:
             - name: save-cache
               # Has everything we need in there and we already fetched it!
-              image: mirror.gcr.io/library/golang:latest
+              image: public.ecr.aws/bitnami/golang:latest
               workingDir: $(workspaces.source.path)
               script: |
                 #!/usr/bin/env bash
@@ -158,7 +158,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: mirror.gcr.io/library/golang:latest
+              image: public.ecr.aws/bitnami/golang:latest
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN

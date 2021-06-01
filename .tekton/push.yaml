@@ -34,7 +34,7 @@ spec:
       - fetchit
       taskSpec:
         steps:
-        - image: alpine/make:latest
+        - image: public.ecr.aws/bitnami/golang:latest
           name: generate
           script: |
             sh hack/generate-releaseyaml.sh > release.yaml
@@ -49,7 +49,7 @@ spec:
       - generate-release-yaml
       taskSpec:
         steps:
-        - image: curlimages/curl:latest
+        - image: public.ecr.aws/bitnami/golang:latest
           name: release
           env:
             - name: UPLOADER_CREDS
