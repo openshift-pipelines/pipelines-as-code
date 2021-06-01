@@ -86,7 +86,7 @@ func TestOkToTestComment(t *testing.T) {
 	}
 }
 
-func TestAclCheck(t *testing.T) {
+func TestAclCheckAll(t *testing.T) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 
@@ -183,13 +183,13 @@ func TestAclCheck(t *testing.T) {
 				GithubClient: gvcs,
 			}
 
-			got, err := aclCheck(ctx, &cs, tt.runinfo)
+			got, err := aclCheckAll(ctx, &cs, tt.runinfo)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("aclCheck() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("aclCheckAll() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.allowed {
-				t.Errorf("aclCheck() = %v, want %v", got, tt.allowed)
+				t.Errorf("aclCheckAll() = %v, want %v", got, tt.allowed)
 			}
 		})
 	}
