@@ -25,4 +25,7 @@ require (
 	sigs.k8s.io/yaml v1.2.0
 )
 
-replace github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
+replace (
+	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
+	maze.io/x/duration => git.maze.io/go/duration v0.0.0-20160924141736-faac084b6075
+)
