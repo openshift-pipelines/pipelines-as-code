@@ -223,7 +223,7 @@ func TestRun(t *testing.T) {
 		tektondir                    string
 		wantErr                      string
 		finalStatus                  string
-		finalStatusText              string
+		finalLogText                 string
 		repositories                 []*v1alpha1.Repository
 		skipReplyingOrgPublicMembers bool
 	}{
@@ -239,9 +239,9 @@ func TestRun(t *testing.T) {
 				Sender:     "fantasio",
 				EventType:  "pull_request",
 			},
-			tektondir:       "testdata/pull_request",
-			finalStatus:     "neutral",
-			finalStatusText: "More detailed status",
+			tektondir:    "testdata/pull_request",
+			finalStatus:  "neutral",
+			finalLogText: "More detailed status",
 		},
 		{
 			name: "No match",
@@ -303,10 +303,31 @@ func TestRun(t *testing.T) {
 				BaseBranch: "nomatch",
 				EventType:  "pull_request",
 			},
-			tektondir:       "",
-			finalStatus:     "skipped",
-			finalStatusText: "directory for this repository",
+			tektondir:    "",
+			finalStatus:  "skipped",
+			finalLogText: "directory for this repository",
 		},
+		{
+			name: "Skipped/Test no repositories match on different event_type",
+			runinfo: &webvcs.RunInfo{
+				SHA:        "principale",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				HeadBranch: "press",
+				Sender:     "fantasio",
+				BaseBranch: "nomatch",
+				EventType:  "push",
+			},
+			tektondir:    "",
+			finalStatus:  "skipped",
+			finalLogText: "Skipping creating status check",
+			repositories: []*v1alpha1.Repository{
+				newRepo("test-run", "https://service/documentation",
+					"a branch", "namespace", "namespace", "pull_request"),
+			},
+		},
+
 		{
 			name: "Skipped/Test no repositories match",
 			runinfo: &webvcs.RunInfo{
@@ -319,14 +340,15 @@ func TestRun(t *testing.T) {
 				BaseBranch: "nomatch",
 				EventType:  "pull_request",
 			},
-			tektondir:       "",
-			finalStatus:     "skipped",
-			finalStatusText: "not find a namespace match",
+			tektondir:    "",
+			finalStatus:  "skipped",
+			finalLogText: "not find a namespace match",
 			repositories: []*v1alpha1.Repository{
 				newRepo("test-run", "https://nowhere.com",
 					"a branch", "namespace", "namespace", "pull_request"),
 			},
 		},
+
 		{
 			name: "Skipped/User is not allowed",
 			runinfo: &webvcs.RunInfo{
@@ -341,7 +363,7 @@ func TestRun(t *testing.T) {
 			},
 			tektondir:                    "testdata/pull_request",
 			finalStatus:                  "skipped",
-			finalStatusText:              "is not allowed to run CI on this repo",
+			finalLogText:                 "is not allowed to run CI on this repo",
 			skipReplyingOrgPublicMembers: true,
 		},
 	}
@@ -367,7 +389,7 @@ func TestRun(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 
-			testSetupCommonGhReplies(t, mux, tt.runinfo, tt.finalStatus, tt.finalStatusText, tt.skipReplyingOrgPublicMembers)
+			testSetupCommonGhReplies(t, mux, tt.runinfo, tt.finalStatus, tt.finalLogText, tt.skipReplyingOrgPublicMembers)
 			if tt.tektondir != "" {
 				testSetupTektonDir(mux, tt.runinfo, tt.tektondir)
 			}
