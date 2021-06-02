@@ -241,7 +241,7 @@ func TestRun(t *testing.T) {
 			},
 			tektondir:    "testdata/pull_request",
 			finalStatus:  "neutral",
-			finalLogText: "More detailed status",
+			finalLogText: "Full log available here",
 		},
 		{
 			name: "No match",
