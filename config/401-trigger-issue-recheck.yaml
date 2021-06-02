@@ -11,6 +11,10 @@ spec:
   params:
     - name: action
       value: $(body.action)
+    - name: head_branch
+      value: $(body.check_run.check_suite.head_branch)
+    - name: head_sha
+      value: $(body.check_run.check_suite.head_sha)
     - name: trigger_target
       value: "issue-recheck"
     - name: event_type
@@ -19,8 +23,14 @@ spec:
       value: $(body.repository.owner.login)
     - name: repository
       value: $(body.repository.name)
+    - name: url
+      value: $(body.repository.html_url)
+    - name: default_branch
+      value: $(body.repository.default_branch)
     - name: pull_request_number
-      value: $(body.check_run.check_suite.pull_requests[0].number)
+      value: $(body.check_run.check_suite.pull_requests[?(@.number)].number)
+    - name: sender
+      value: $(body.sender.login)
     - name: installation_id
       value: $(body.installation.id)
 
@@ -36,10 +46,15 @@ metadata:
 spec:
   params:
     - name: action
+    - name: head_branch
+    - name: head_sha
     - name: event_type
     - name: owner
     - name: repository
+    - name: default_branch
+    - name: url
     - name: pull_request_number
+    - name: sender
     - name: installation_id
     - name: trigger_target
   resourcetemplates:
@@ -57,12 +72,22 @@ spec:
             value: $(tt.params.action)
           - name: event_type
             value: $(tt.params.event_type)
+          - name: head_branch
+            value: $(tt.params.head_branch)
+          - name: head_sha
+            value: $(tt.params.head_sha)
           - name: owner
             value: $(tt.params.owner)
           - name: repository
             value: $(tt.params.repository)
+          - name: default_branch
+            value: $(tt.params.default_branch)
+          - name: url
+            value: $(tt.params.url)
           - name: pull_request_number
             value: $(tt.params.pull_request_number)
+          - name: sender
+            value: $(tt.params.sender)
           - name: installation_id
             value: $(tt.params.installation_id)
           - name: trigger_target
@@ -71,10 +96,15 @@ spec:
           params:
             - name: trigger_target
             - name: action
+            - name: head_branch
+            - name: head_sha
             - name: event_type
             - name: owner
             - name: repository
+            - name: default_branch
+            - name: url
             - name: pull_request_number
+            - name: sender
             - name: installation_id
           workspaces:
             - name: secrets
@@ -94,13 +124,24 @@ spec:
                 params:
                   - name: action
                     type: string
+                  - name: head_branch
+                    type: string
+                  - name: head_sha
+                    type: string
                   - name: event_type
                     type: string
                   - name: owner
                     type: string
                   - name: repository
                     type: string
+                  - name: default_branch
+                    type: string
+                  - name: url
+                    type: string
                   - name: pull_request_number
+                    type: string
+                    default: "000"
+                  - name: sender
                     type: string
                   - name: token
                     type: string
@@ -111,42 +152,60 @@ spec:
                     imagePullPolicy: Always
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
                     script: |
+                      #!/usr/bin/env bash
+                      set -eux
+                      prnumber=$(params.pull_request_number)
+                      [[ ${prnumber} != "[]" ]] && prnumber="[{\"number\": ${prnumber}}]"
                       cat << EOF > /tmp/payload.json
                       {
                         "action": "$(params.action)",
                         "check_run": {
                           "check_suite": {
-                            "pull_requests": [
-                              {
-                                "number": $(params.pull_request_number)
-                              }
-                            ]
+                            "head_branch": "$(params.head_branch)",
+                            "head_sha": "$(params.head_sha)",
+                            "pull_requests": ${prnumber}
                           }
                         },
                         "repository": {
+                          "default_branch": "$(params.default_branch)",
+                          "html_url": "$(params.url)",
                           "name": "$(params.repository)",
                           "owner": {
                             "login": "$(params.owner)"
                           }
+                        },
+                        "sender": {
+                          "login": "$(params.sender)"
                         }
                       }
                       EOF
+                      cat /tmp/payload.json
                       pipelines-as-code --trigger-target=$(params.trigger_target) \
                         --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
 
               params:
                 - name: action
                   value: "$(params.action)"
+                - name: head_branch
+                  value: "$(params.head_branch)"
+                - name: head_sha
+                  value: "$(params.head_sha)"
                 - name: trigger_target
                   value: "$(params.trigger_target)"
                 - name: event_type
                   value: "$(params.event_type)"
                 - name: owner
                   value: "$(params.owner)"
+                - name: url
+                  value: "$(params.url)"
                 - name: repository
                   value: "$(params.repository)"
+                - name: default_branch
+                  value: "$(params.default_branch)"
                 - name: pull_request_number
                   value: "$(params.pull_request_number)"
+                - name: sender
+                  value: "$(params.sender)"
                 - name: token
                   value: "$(tasks.get-token.results.token)"
         workspaces:

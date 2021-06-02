@@ -130,7 +130,7 @@ func TestPayLoadFix(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestParsePayloadRerequest(t *testing.T) {
+func TestParsePayloadRerequestFromPullRequest(t *testing.T) {
 	checkrunSender := "jean-pierre"
 	prOwner := "openshift"
 	repoName := "pipelines"
@@ -159,6 +159,49 @@ func TestParsePayloadRerequest(t *testing.T) {
 	assert.Assert(t, checkrunSender != runinfo.Sender)
 	assert.Equal(t, runinfo.EventType, "pull_request")
 	assert.Assert(t, strings.Contains(observer.TakeAll()[0].Message, "Recheck of PR"))
+}
+
+func TestParsePayloadRerequestFromPush(t *testing.T) {
+	sender := "jean-pierre"
+	headBranch := "tartonpion"
+	headSHA := "abcd"
+	owner := "owner"
+	repository := "repository"
+	url := fmt.Sprintf("https://github.com/%s/%s", owner, repository)
+	checkrunEvent := fmt.Sprintf(`{
+  "action": "rerequested",
+  "check_run": {
+    "check_suite": {
+      "head_branch": "%s",
+      "head_sha": "%s",
+      "pull_requests": []
+    }
+  },
+  "repository": {
+    "default_branch": "main",
+    "html_url": "%s",
+    "name": "%s",
+    "owner": {
+      "login": "%s"
+    }
+  },
+  "sender": {
+    "login": "%s"
+  }
+}`,
+		headBranch, headSHA, url, repository, owner, sender)
+	ctx, _ := rtesting.SetupFakeContext(t)
+	gvcs := GithubVCS{}
+	logger, _ := getLogger()
+	runinfo, err := gvcs.ParsePayload(ctx, logger, "check_run", "issue-recheck", checkrunEvent)
+	assert.NilError(t, err)
+
+	assert.Equal(t, runinfo.EventType, "push")
+	assert.Equal(t, runinfo.HeadBranch, headBranch)
+	assert.Equal(t, runinfo.Owner, owner)
+	assert.Equal(t, runinfo.Repository, repository)
+	assert.Equal(t, runinfo.URL, url)
+	assert.Assert(t, sender == runinfo.Sender) // TODO: should it be set to the push sender?
 }
 
 func TestParsePayLoadRetest(t *testing.T) {
