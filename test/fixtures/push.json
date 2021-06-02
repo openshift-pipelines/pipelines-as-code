@@ -1,7 +1,7 @@
- {
+{
   "ref": "refs/heads/main",
-  "before": "8830a4b3335c807e18fa7595c43b670f78777a59",
-  "after": "1e6b485a4a1348d19c8943cc71c54b6ed5fde503",
+  "before": "711d8e2572c4b097586626a28bf0babc7a86f0ba",
+  "after": "ef75c7db8a921a8c0adaabe2e309f2f9d7ce5bd4",
   "repository": {
     "id": 355197825,
     "node_id": "MDEwOlJlcG9zaXRvcnkzNTUxOTc4MjU=",
@@ -71,16 +71,16 @@
     "releases_url": "https://api.github.com/repos/openshift-pipelines/pipelines-as-code/releases{/id}",
     "deployments_url": "https://api.github.com/repos/openshift-pipelines/pipelines-as-code/deployments",
     "created_at": 1617715561,
-    "updated_at": "2021-05-20T14:48:24Z",
-    "pushed_at": 1621596688,
+    "updated_at": "2021-06-02T13:35:32Z",
+    "pushed_at": 1622641606,
     "git_url": "git://github.com/openshift-pipelines/pipelines-as-code.git",
     "ssh_url": "git@github.com:openshift-pipelines/pipelines-as-code.git",
     "clone_url": "https://github.com/openshift-pipelines/pipelines-as-code.git",
     "svn_url": "https://github.com/openshift-pipelines/pipelines-as-code",
     "homepage": null,
-    "size": 8472,
-    "stargazers_count": 1,
-    "watchers_count": 1,
+    "size": 9036,
+    "stargazers_count": 3,
+    "watchers_count": 3,
     "language": "Go",
     "has_issues": true,
     "has_projects": false,
@@ -101,9 +101,9 @@
     },
     "forks": 4,
     "open_issues": 10,
-    "watchers": 1,
+    "watchers": 3,
     "default_branch": "main",
-    "stargazers": 1,
+    "stargazers": 3,
     "master_branch": "main",
     "organization": "openshift-pipelines"
   },
@@ -153,15 +153,15 @@
   "deleted": false,
   "forced": false,
   "base_ref": null,
-  "compare": "https://github.com/openshift-pipelines/pipelines-as-code/compare/8830a4b3335c...1e6b485a4a13",
+  "compare": "https://github.com/openshift-pipelines/pipelines-as-code/compare/711d8e2572c4...ef75c7db8a92",
   "commits": [
     {
-      "id": "acf31f1e7b1f6982b596273b2492d86e5655c7f8",
-      "tree_id": "a5acb1d8b5e412723375ef7548d47d73502027a8",
+      "id": "ba677db1c9680f674213e76eed1dc3696d7f59a6",
+      "tree_id": "4bf257c4d62a867b78ee04d521d976634be76363",
       "distinct": true,
-      "message": "Define our own triggertemplate for recheck\n\nSince trigger bugs out everytime when passing the whole body and when we\nhave quotes, we defines our own triggertemplates for it and regenerate\na json with the payload we need to be parsed.\n\nThis works but this is stupid :\\",
-      "timestamp": "2021-05-21T11:21:24+02:00",
-      "url": "https://github.com/openshift-pipelines/pipelines-as-code/commit/acf31f1e7b1f6982b596273b2492d86e5655c7f8",
+      "message": "Seem like you don't need the @latest to go install\n\nSigned-off-by: Chmouel Boudjnah <chmouel@redhat.com>",
+      "timestamp": "2021-06-02T15:40:02+02:00",
+      "url": "https://github.com/openshift-pipelines/pipelines-as-code/commit/ba677db1c9680f674213e76eed1dc3696d7f59a6",
       "author": {
         "name": "Chmouel Boudjnah",
         "email": "chmouel@redhat.com",
@@ -173,51 +173,22 @@
         "username": "chmouel"
       },
       "added": [
-        "config/401-trigger-issue-recheck.yaml"
+
       ],
       "removed": [
 
       ],
       "modified": [
-        "config/400-triggers.yaml",
-        "test/fixtures/check_suite_rerequest_prcheck.json"
+        "README.md"
       ]
     },
     {
-      "id": "822b58e0e4171ea14a1f04a2c31c76e3e84e805b",
-      "tree_id": "95bb0e0a6c81e7a49d792370512ea31b6a91a169",
+      "id": "ef75c7db8a921a8c0adaabe2e309f2f9d7ce5bd4",
+      "tree_id": "4bf257c4d62a867b78ee04d521d976634be76363",
       "distinct": true,
-      "message": "Define pull request trigger template workaround\n\nTriggers bug on comment, so we rather avoided by reconstructing our own payload\nand using jsonpath.\n\nRather clunky but works at least.\n\nSigned-off-by: Chmouel Boudjnah <chmouel@redhat.com>",
-      "timestamp": "2021-05-21T13:20:07+02:00",
-      "url": "https://github.com/openshift-pipelines/pipelines-as-code/commit/822b58e0e4171ea14a1f04a2c31c76e3e84e805b",
-      "author": {
-        "name": "Chmouel Boudjnah",
-        "email": "chmouel@redhat.com",
-        "username": "chmouel"
-      },
-      "committer": {
-        "name": "Chmouel Boudjnah",
-        "email": "chmouel@redhat.com",
-        "username": "chmouel"
-      },
-      "added": [
-        "config/402-trigger-pull-request.yaml",
-        "test/fixtures/pull-req.json"
-      ],
-      "removed": [
-
-      ],
-      "modified": [
-        "config/400-triggers.yaml"
-      ]
-    },
-    {
-      "id": "1e6b485a4a1348d19c8943cc71c54b6ed5fde503",
-      "tree_id": "95bb0e0a6c81e7a49d792370512ea31b6a91a169",
-      "distinct": true,
-      "message": "Merge pull request #79 from chmouel/yamls-beurk",
-      "timestamp": "2021-05-21T13:31:28+02:00",
-      "url": "https://github.com/openshift-pipelines/pipelines-as-code/commit/1e6b485a4a1348d19c8943cc71c54b6ed5fde503",
+      "message": "Merge pull request #108 from chmouel/update-readme\n\nSeem like you don't need the @latest to go install",
+      "timestamp": "2021-06-02T15:46:46+02:00",
+      "url": "https://github.com/openshift-pipelines/pipelines-as-code/commit/ef75c7db8a921a8c0adaabe2e309f2f9d7ce5bd4",
       "author": {
         "name": "Chmouel Boudjnah",
         "email": "cboudjna@redhat.com",
@@ -229,26 +200,23 @@
         "username": "web-flow"
       },
       "added": [
-        "config/401-trigger-issue-recheck.yaml",
-        "config/402-trigger-pull-request.yaml",
-        "test/fixtures/pull-req.json"
+
       ],
       "removed": [
 
       ],
       "modified": [
-        "config/400-triggers.yaml",
-        "test/fixtures/check_suite_rerequest_prcheck.json"
+        "README.md"
       ]
     }
   ],
   "head_commit": {
-    "id": "1e6b485a4a1348d19c8943cc71c54b6ed5fde503",
-    "tree_id": "95bb0e0a6c81e7a49d792370512ea31b6a91a169",
+    "id": "ef75c7db8a921a8c0adaabe2e309f2f9d7ce5bd4",
+    "tree_id": "4bf257c4d62a867b78ee04d521d976634be76363",
     "distinct": true,
-    "message": "Merge pull request #79 from chmouel/yamls-beurk",
-    "timestamp": "2021-05-21T13:31:28+02:00",
-    "url": "https://github.com/openshift-pipelines/pipelines-as-code/commit/1e6b485a4a1348d19c8943cc71c54b6ed5fde503",
+    "message": "Merge pull request #108 from chmouel/update-readme\n\nSeem like you don't need the @latest to go install",
+    "timestamp": "2021-06-02T15:46:46+02:00",
+    "url": "https://github.com/openshift-pipelines/pipelines-as-code/commit/ef75c7db8a921a8c0adaabe2e309f2f9d7ce5bd4",
     "author": {
       "name": "Chmouel Boudjnah",
       "email": "cboudjna@redhat.com",
@@ -260,16 +228,13 @@
       "username": "web-flow"
     },
     "added": [
-      "config/401-trigger-issue-recheck.yaml",
-      "config/402-trigger-pull-request.yaml",
-      "test/fixtures/pull-req.json"
+
     ],
     "removed": [
 
     ],
     "modified": [
-      "config/400-triggers.yaml",
-      "test/fixtures/check_suite_rerequest_prcheck.json"
+      "README.md"
     ]
   }
 }
