@@ -3,10 +3,13 @@ package cli
 import (
 	"context"
 	"net/http"
+	"time"
 
 	pacversioned "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonversioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	tektonv1beta1client "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1beta1"
 	"go.uber.org/zap"
 	"k8s.io/client-go/dynamic"
 	k8s "k8s.io/client-go/kubernetes"
@@ -37,6 +40,5 @@ type Params interface {
 type KubeInteractionIntf interface {
 	GetConsoleUI(context.Context, string, string) (string, error)
 	GetNamespace(context.Context, string) error
-	TektonCliPRDescribe(string, string) (string, error)
-	TektonCliFollowLogs(string, string) (string, error)
+	WaitForPipelineRunSucceed(context.Context, tektonv1beta1client.TektonV1beta1Interface, *v1beta1.PipelineRun, time.Duration) error
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -23,12 +24,21 @@ type Options struct {
 	RunInfo     webvcs.RunInfo
 }
 
+// The time to wait for a pipelineRun, maybe we should not restrict this?
+const pipelineRunTimeout = 2 * time.Hour
+
 func createStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, status, conclusion, text, detailsURL string, logit bool) error {
 	if logit {
 		cs.Log.Infof(text)
 	}
 	_, err := cs.GithubClient.CreateStatus(ctx, runinfo, status, conclusion, text, detailsURL)
 	return err
+}
+
+func fmtDuration(d time.Duration) string {
+	d = d.Round(time.Minute)
+	m := d / time.Minute
+	return fmt.Sprintf("%02d", m)
 }
 
 // Run over the main loop
@@ -176,11 +186,9 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return err
 	}
 
-	// Use this as a wait holder until the logs is finished, maybe we would do something with the log output.
-	// TODO: to remove and use just a simple wait for deployment
-	_, err = k8int.TektonCliFollowLogs(repo.Spec.Namespace, pr.GetName())
-	if err != nil {
-		return err
+	cs.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes", pr.Namespace, pr.Name, fmtDuration(pipelineRunTimeout))
+	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Tekton.TektonV1beta1(), pr, pipelineRunTimeout); err != nil {
+		cs.Log.Info("PipelineRun has failed.")
 	}
 
 	// Post the final status to GitHub check status with a nice breakdown and

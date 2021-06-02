@@ -181,7 +181,7 @@ If you need to test your `PipelineRun` locally before sending it in a PR, you ca
 the `tkresolver` CLI, by installing it like this :
 
 ```shell
-go install github.com/openshift-pipelines/pipelines-as-code/cmd/tknresolve
+go install github.com/openshift-pipelines/pipelines-as-code/cmd/tknresolve@latest
 ```
 
 and you can use the tknresolve binary to generate the PipelineRun the say way it

@@ -20,11 +20,7 @@ const checkStatustmpl = `{{.taskStatus}}
 
 <hr>
 
-<details>
- <summary>🗒️ More detailed status</summary>
- <pre>{{.tknDescribeOutput}}</pre>
-</details>
-
+🗒️ Full log available here <a href="{{.consoleURL}}">here</a>.
 `
 
 const taskStatustmpl = `
@@ -141,15 +137,9 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun, consoleURL st
 }
 
 func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo, prName, namespace string) (*tektonv1beta1.PipelineRun, error) {
-	pr := &tektonv1beta1.PipelineRun{}
 	var outputBuffer bytes.Buffer
 
-	tknDescribeOutput, err := k8int.TektonCliPRDescribe(prName, namespace)
-	if err != nil {
-		return pr, err
-	}
-
-	pr, err = cs.Tekton.TektonV1beta1().PipelineRuns(namespace).Get(ctx, prName, v1.GetOptions{})
+	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(namespace).Get(ctx, prName, v1.GetOptions{})
 	if err != nil {
 		return pr, err
 	}
@@ -165,8 +155,8 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 	}
 
 	data := map[string]string{
-		"taskStatus":        taskStatus,
-		"tknDescribeOutput": tknDescribeOutput,
+		"taskStatus": taskStatus,
+		"consoleURL": consoleURL,
 	}
 
 	t := template.Must(template.New("Pipeline Status").Parse(checkStatustmpl))
