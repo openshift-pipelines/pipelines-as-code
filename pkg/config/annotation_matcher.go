@@ -49,7 +49,7 @@ func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 
 		if targetEvent, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onEventAnnotation]; ok {
-			matched, err := matchOnAnnotation(targetEvent, runinfo.EventType)
+			matched, err := matchOnAnnotation(targetEvent, runinfo.EventType, false)
 			if err != nil {
 				return nil, err
 			}
@@ -60,7 +60,7 @@ func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 
 		if targetBranch, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onTargetBranchAnnotation]; ok {
-			matched, err := matchOnAnnotation(targetBranch, runinfo.BaseBranch)
+			matched, err := matchOnAnnotation(targetBranch, runinfo.BaseBranch, true)
 			if err != nil {
 				return nil, err
 			}
@@ -75,15 +75,18 @@ func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 	return nil, fmt.Errorf("cannot match any pipeline on EventType: %s, TargetBranch: %s", runinfo.EventType, runinfo.BaseBranch)
 }
 
-func matchOnAnnotation(targetBranchAnnotation string, match string) (bool, error) {
-	targets, err := getAnnotationValues(targetBranchAnnotation)
+func matchOnAnnotation(annotations string, runinfoValue string, branchMatching bool) (bool, error) {
+	targets, err := getAnnotationValues(annotations)
 	if err != nil {
 		return false, err
 	}
 
 	var gotit string
 	for _, v := range targets {
-		if v == match {
+		if v == runinfoValue {
+			gotit = v
+		}
+		if branchMatching && branchMatch(v, runinfoValue) {
 			gotit = v
 		}
 	}

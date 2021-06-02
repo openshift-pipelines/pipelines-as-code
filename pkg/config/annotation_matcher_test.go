@@ -156,7 +156,62 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "match-branch-matching",
+			args: args{
+				runinfo: &webvcs.RunInfo{EventType: "push", BaseBranch: "refs/heads/main"},
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "branch-matching",
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onEventAnnotation:        "[push]",
+								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[main]",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "base-does-not-compare",
+			args: args{
+				runinfo: &webvcs.RunInfo{EventType: "push", BaseBranch: "refs/heads/main/foobar"},
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "branch-base-matching-not-compare",
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onEventAnnotation:        "[push]",
+								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[main]",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "branch-glob-matching",
+			args: args{
+				runinfo: &webvcs.RunInfo{EventType: "push", BaseBranch: "refs/heads/main"},
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "branch-base-matching-not-compare",
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onEventAnnotation:        "[push]",
+								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[refs/heads/*]",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := MatchPipelinerunByAnnotation(tt.args.pruns, cs, tt.args.runinfo)

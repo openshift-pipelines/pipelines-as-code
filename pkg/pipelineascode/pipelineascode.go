@@ -71,7 +71,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 
 	// Match the Event to a Repository Resource,
 	// TODO: we need to be able to force a Namespace from the configuration as annotation as an extra layer of security for // hijacking
-	repo, err := getRepoByCR(ctx, cs, runinfo)
+	repo, err := config.GetRepoByCR(ctx, cs, runinfo)
 	if err != nil {
 		return err
 	}

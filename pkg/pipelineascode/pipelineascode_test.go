@@ -10,12 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	testDynamic "github.com/tektoncd/cli/pkg/test/dynamic"
 
 	"github.com/google/go-github/v34/github"
-	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
@@ -27,64 +26,8 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis/duck/v1beta1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
-
-const (
-	mainBranch      = "mainBranch"
-	targetNamespace = "targetNamespace"
-	targetURL       = "http://nowhere.togo"
-)
-
-func newRepo(name, url, branch, installNamespace, namespace, eventtype string) *v1alpha1.Repository {
-	cw := clockwork.NewFakeClock()
-	return &v1alpha1.Repository{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: installNamespace,
-		},
-		Spec: v1alpha1.RepositorySpec{
-			Namespace: namespace,
-			URL:       url,
-			Branch:    branch,
-			EventType: eventtype,
-		},
-		Status: []v1alpha1.RepositoryRunStatus{
-			{
-				Status:          v1beta1.Status{},
-				PipelineRunName: "pipelinerun5",
-				StartTime:       &metav1.Time{Time: cw.Now().Add(-56 * time.Minute)},
-				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-55 * time.Minute)},
-			},
-			{
-				Status:          v1beta1.Status{},
-				PipelineRunName: "pipelinerun4",
-				StartTime:       &metav1.Time{Time: cw.Now().Add(-46 * time.Minute)},
-				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-45 * time.Minute)},
-			},
-			{
-				Status:          v1beta1.Status{},
-				PipelineRunName: "pipelinerun3",
-				StartTime:       &metav1.Time{Time: cw.Now().Add(-36 * time.Minute)},
-				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-35 * time.Minute)},
-			},
-			{
-				Status:          v1beta1.Status{},
-				PipelineRunName: "pipelinerun2",
-				StartTime:       &metav1.Time{Time: cw.Now().Add(-26 * time.Minute)},
-				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-25 * time.Minute)},
-			},
-			{
-				Status:          v1beta1.Status{},
-				PipelineRunName: "pipelinerun1",
-				StartTime:       &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
-				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
-			},
-		},
-	}
-}
 
 func replyString(mux *http.ServeMux, url, body string) {
 	mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +81,7 @@ func TestRunDeniedFromForcedNamespace(t *testing.T) {
 	}
 	datas := testclient.Data{
 		Repositories: []*v1alpha1.Repository{
-			newRepo("repo", runinfo.URL, runinfo.BaseBranch, installedNamespace, installedNamespace, "pull_request"),
+			repository.NewRepo("repo", runinfo.URL, runinfo.BaseBranch, installedNamespace, installedNamespace, "pull_request"),
 		},
 	}
 	stdata, _ := testclient.SeedTestData(t, ctx, datas)
@@ -184,7 +127,7 @@ func testSetupTektonDir(mux *http.ServeMux, runinfo *webvcs.RunInfo, directory s
 
 func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runinfo *webvcs.RunInfo, finalStatus, finalStatusText string,
 	noReplyOrgPublicMembers bool) {
-	// Take a directory and geneate replies as Github for it
+	// Take a directory and generate replies as Github for it
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/contents/internal/task", runinfo.Owner, runinfo.Repository),
 		`{"sha": "internaltasksha"}`)
@@ -323,7 +266,7 @@ func TestRun(t *testing.T) {
 			finalStatus:  "skipped",
 			finalLogText: "Skipping creating status check",
 			repositories: []*v1alpha1.Repository{
-				newRepo("test-run", "https://service/documentation",
+				repository.NewRepo("test-run", "https://service/documentation",
 					"a branch", "namespace", "namespace", "pull_request"),
 			},
 		},
@@ -344,7 +287,7 @@ func TestRun(t *testing.T) {
 			finalStatus:  "skipped",
 			finalLogText: "not find a namespace match",
 			repositories: []*v1alpha1.Repository{
-				newRepo("test-run", "https://nowhere.com",
+				repository.NewRepo("test-run", "https://nowhere.com",
 					"a branch", "namespace", "namespace", "pull_request"),
 			},
 		},
@@ -372,7 +315,7 @@ func TestRun(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			if tt.repositories == nil {
 				tt.repositories = []*v1alpha1.Repository{
-					newRepo("test-run", tt.runinfo.URL, tt.runinfo.BaseBranch, "namespace", "namespace", tt.runinfo.EventType),
+					repository.NewRepo("test-run", tt.runinfo.URL, tt.runinfo.BaseBranch, "namespace", "namespace", tt.runinfo.EventType),
 				}
 			}
 			tdata := testclient.Data{

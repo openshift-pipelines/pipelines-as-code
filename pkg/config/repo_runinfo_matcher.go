@@ -1,4 +1,4 @@
-package pipelineascode
+package config
 
 import (
 	"context"
@@ -24,7 +24,7 @@ func branchMatch(prunBranch, baseBranch string) bool {
 	return g.Match(baseBranch)
 }
 
-func getRepoByCR(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (apipac.Repository, error) {
+func GetRepoByCR(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (apipac.Repository, error) {
 	var repository apipac.Repository
 
 	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(

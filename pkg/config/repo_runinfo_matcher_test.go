@@ -1,4 +1,4 @@
-package pipelineascode
+package config
 
 import (
 	"testing"
@@ -6,9 +6,16 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
+)
+
+const (
+	mainBranch      = "mainBranch"
+	targetNamespace = "targetNamespace"
+	targetURL       = "https//nowhere.togo"
 )
 
 func Test_getRepoByCR(t *testing.T) {
@@ -27,7 +34,7 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						newRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
 				runinfo: &webvcs.RunInfo{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
@@ -36,11 +43,24 @@ func Test_getRepoByCR(t *testing.T) {
 			wantErr:      false,
 		},
 		{
+			name: "test-repo-not-installed-where-it-should",
+			args: args{
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, "paslebonns", targetNamespace, "pull_request"),
+					},
+				},
+				runinfo: &webvcs.RunInfo{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
+			},
+			wantTargetNS: "",
+			wantErr:      true,
+		},
+		{
 			name: "test-nomatch-event-type",
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						newRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
 				runinfo: &webvcs.RunInfo{URL: targetURL, BaseBranch: mainBranch, EventType: "push"},
@@ -53,7 +73,7 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						newRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
 				runinfo: &webvcs.RunInfo{URL: targetURL, BaseBranch: "anotherBaseBranch", EventType: "pull_request"},
@@ -66,7 +86,7 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						newRepo("test-good", "http://nottarget.url", mainBranch,
+						testnewrepo.NewRepo("test-good", "http://nottarget.url", mainBranch,
 							targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
@@ -80,7 +100,7 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						newRepo("test-good", targetURL, mainBranch,
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch,
 							targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
@@ -97,7 +117,7 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						newRepo("test-good", targetURL, "refs/tags/*",
+						testnewrepo.NewRepo("test-good", targetURL, "refs/tags/*",
 							targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
@@ -116,15 +136,15 @@ func Test_getRepoByCR(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			cs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
 			client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-			got, err := getRepoByCR(ctx, client, tt.args.runinfo)
-			if tt.wantErr {
-				assert.NilError(t, err, "getRepoByCR() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := GetRepoByCR(ctx, client, tt.args.runinfo)
+			if err == nil && tt.wantErr {
+				assert.NilError(t, err, "GetRepoByCR() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantTargetNS == "" && got.Spec.Namespace != "" {
-				t.Errorf("getRepoByCR() got = '%v', want '%v'", got.Spec.Namespace, tt.wantTargetNS)
+				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.Spec.Namespace, tt.wantTargetNS)
 			}
 			if tt.wantTargetNS != "" && tt.wantTargetNS != got.Spec.Namespace {
-				t.Errorf("getRepoByCR() got = '%v', want '%v'", got.Spec.Namespace, tt.wantTargetNS)
+				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.Spec.Namespace, tt.wantTargetNS)
 			}
 		})
 	}
