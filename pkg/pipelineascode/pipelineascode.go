@@ -67,9 +67,14 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 	if repo.Spec.Namespace == "" {
 		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on target-branch:%s event-type: %s", runinfo.Owner, runinfo.Repository, runinfo.BaseBranch, runinfo.EventType)
-		err = createStatus(ctx, cs, runinfo, "completed", "skipped", msg, "https://tenor.com/search/sad-cat-gifs", true)
-		if err != nil {
-			return err
+
+		if runinfo.EventType == "pull_request" {
+			err = createStatus(ctx, cs, runinfo, "completed", "skipped", msg, "https://tenor.com/search/sad-cat-gifs", true)
+			if err != nil {
+				return err
+			}
+		} else {
+			cs.Log.Infof("Skipping creating status check: %s", msg)
 		}
 		return nil
 	}
