@@ -22,11 +22,14 @@ type OwnersConfig struct {
 // if there is a /ok-to-test in there running an aclCheck again on the commment
 // Sender if she is an OWNER and then allow it to run CI.
 // TODO: pull out the github logic from there in an agnostic way.
-func allowedOkToTestFromAnOwner(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (bool, error) {
+func aclAllowedOkToTestFromAnOwner(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (bool, error) {
 	rinfo := &webvcs.RunInfo{}
 	runinfo.DeepCopyInto(rinfo)
 	rinfo.EventType = ""
 	rinfo.TriggerTarget = ""
+	if rinfo.Event == nil {
+		return false, nil
+	}
 	rinfo.URL = rinfo.Event.(*github.IssueCommentEvent).Issue.GetPullRequestLinks().GetHTMLURL()
 	comments, err := cs.GithubClient.GetStringPullRequestComment(ctx, rinfo, okToTestCommentRegexp)
 	if err != nil {
@@ -35,7 +38,7 @@ func allowedOkToTestFromAnOwner(ctx context.Context, cs *cli.Clients, runinfo *w
 
 	for _, comment := range comments {
 		rinfo.Sender = comment.User.GetLogin()
-		allowed, err := aclCheck(ctx, cs, rinfo)
+		allowed, err := aclCheckAll(ctx, cs, rinfo)
 		if err != nil {
 			return false, err
 		}
@@ -47,7 +50,7 @@ func allowedOkToTestFromAnOwner(ctx context.Context, cs *cli.Clients, runinfo *w
 }
 
 // aclCheck check if we are allowed to run the pipeline on that PR
-func aclCheck(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (bool, error) {
+func aclCheckAll(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (bool, error) {
 	if runinfo.Owner == runinfo.Sender {
 		return true, nil
 	}
@@ -83,15 +86,19 @@ func aclCheck(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (bo
 		}
 	}
 
-	if runinfo.TriggerTarget == "ok-to-test-comment" {
-		allowed, err := allowedOkToTestFromAnOwner(ctx, cs, runinfo)
-		if err != nil {
-			return false, err
-		}
-		if allowed {
-			return true, nil
-		}
+	return false, nil
+}
+
+func aclCheck(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (bool, error) {
+	// Do most of the checks first, if user is a owner or in a organisation
+	allowed, err := aclCheckAll(ctx, cs, runinfo)
+	if err != nil {
+		return false, err
+	}
+	if allowed {
+		return true, nil
 	}
 
-	return false, nil
+	// Finally try to parse all comments
+	return aclAllowedOkToTestFromAnOwner(ctx, cs, runinfo)
 }
