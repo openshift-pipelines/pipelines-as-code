@@ -108,6 +108,7 @@ spec:
                     type: string
                 steps:
                   - name: apply-and-launch
+                    imagePullPolicy: Always
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
                     script: |
                       cat << EOF > /tmp/payload.json
