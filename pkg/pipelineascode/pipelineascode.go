@@ -176,13 +176,6 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return err
 	}
 
-	// Use this as a wait holder until the logs is finished, maybe we would do something with the log output.
-	// TODO: to remove and use just a simple wait for deployment
-	_, err = k8int.TektonCliFollowLogs(repo.Spec.Namespace, pr.GetName())
-	if err != nil {
-		return err
-	}
-
 	// Post the final status to GitHub check status with a nice breakdown and
 	// tekton cli describe output.
 	newPr, err := postFinalStatus(ctx, cs, k8int, runinfo, pr.Name, repo.Spec.Namespace)
