@@ -118,7 +118,7 @@ func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data
 	for _, pipeline := range types.Pipelines {
 		var pipelineTasks []tektonv1beta1.PipelineTask
 		for _, task := range pipeline.Spec.Tasks {
-			if task.TaskRef != nil && !skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
+			if task.TaskRef != nil && task.TaskRef.Bundle == "" && !skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
 				taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
 				if err != nil {
 					return []*tektonv1beta1.PipelineRun{}, err
@@ -136,7 +136,7 @@ func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data
 		if pipelinerun.Spec.PipelineSpec != nil {
 			var pipelineTasksResolve []tektonv1beta1.PipelineTask
 			for _, task := range pipelinerun.Spec.PipelineSpec.Tasks {
-				if task.TaskRef != nil && !skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
+				if task.TaskRef != nil && task.TaskRef.Bundle == "" && !skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
 					taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
 					if err != nil {
 						return []*tektonv1beta1.PipelineRun{}, err

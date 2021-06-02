@@ -59,7 +59,7 @@ func TestPipelineRunPipelineTask(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "first-step")
 
-	// TODO: we should do templates substitions for those values here?
+	// TODO: we should do templates substitutions for those values here?
 	assert.Equal(t, resolved.Spec.Params[0].Value.StringVal, "{{value}}")
 }
 
@@ -71,6 +71,13 @@ func TestGenerateName(t *testing.T) {
 	resolved, _, err = readTDfile(t, "with-generatename", true)
 	assert.NilError(t, err)
 	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
+}
+
+func TestBundlesSkipped(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-with-a-bundle", false)
+	assert.NilError(t, err)
+	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].Name, "bundled")
+	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Bundle, "reg.io/ruben/barichello@sha256:1234")
 }
 
 func TestPipelineRunPipelineSpecTaskSpec(t *testing.T) {
