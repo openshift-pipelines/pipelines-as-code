@@ -25,12 +25,14 @@ class GitHub():
                  private_key,
                  app_id,
                  expiration_time,
+                 github_api_url,
                  installation_id=None):
         if not isinstance(private_key, bytes):
             raise ValueError(f'"{private_key}" parameter must be byte-string')
         self._private_key = private_key
         self.app_id = app_id
         self.expiration_time = expiration_time
+        self.github_api_url = github_api_url
         self.token = self._get_token(installation_id)
 
     def _load_private_key(self, pem_key_bytes):
@@ -61,12 +63,15 @@ class GitHub():
             f"/app/installations/{installation_id}/access_tokens",
             headers={
                 "Authorization": f"Bearer {app_token}",
-                "Accept": "application/vnd.github.machine-man-preview+json"
+                "Accept": "application/json"
             })
 
+        if not req.text.strip():
+            raise Exception("Not getting a json: code: %s reason: %s" %
+                            (req.status_code, req.reason))
         ret = req.json()
         if 'token' not in ret:
-            raise Exception("Authentication errors")
+            raise Exception("Authentication errors: %s" % (req.text))
 
         return ret['token']
 
@@ -74,19 +79,18 @@ class GitHub():
         if self.token and 'Authorization' not in headers:
             headers.update({"Authorization": "Bearer " + self.token})
         if not url.startswith("http"):
-            url = f"{GITHUB_API_URL}{url}"
+            url = f"{self.github_api_url}{url}"
         return requests.request(method,
                                 url,
                                 headers=headers,
                                 data=json.dumps(data))
 
 
-def get_private_key():
-    secret = subprocess.run(
-        f"kubectl get secret {SECRET_NAME} -n{NAMESPACE} -o json",
-        shell=True,
-        check=True,
-        capture_output=True)
+def get_private_key(ns):
+    secret = subprocess.run(f"kubectl get secret {SECRET_NAME} -n{ns} -o json",
+                            shell=True,
+                            check=True,
+                            capture_output=True)
     jeez = json.loads(secret.stdout)
     return (base64.b64decode(jeez["data"]["application_id"]).decode(),
             base64.b64decode(jeez["data"]["private.key"]))
@@ -97,15 +101,16 @@ def main(args):
         mtime = os.path.getmtime(args.cache_file)
         if datetime.datetime.fromtimestamp(mtime) < datetime.datetime.now(
         ) - datetime.timedelta(seconds=args.token_expiration_time):
-            os.path.remove(args.cache_file)
+            os.remove(args.cache_file)
         else:
             print(open(args.cache_file).read())
             return
 
-    application_id, private_key = get_private_key()
+    application_id, private_key = get_private_key(args.install_namespace)
     github_app = GitHub(private_key,
                         application_id,
                         expiration_time=args.token_expiration_time,
+                        github_api_url=args.api_url,
                         installation_id=args.installation_id)
     print(github_app.token)
     if args.cache_file:
@@ -123,7 +128,17 @@ def parse_args():
                         type=int,
                         help="Installation_ID",
                         required=True)
+    parser.add_argument("-n",
+                        "--install-namespace",
+                        help="Install Namespace",
+                        default=os.environ.get("PAC_NAMESPACE", NAMESPACE))
+    parser.add_argument("-a",
+                        "--api-url",
+                        help="Github API URL",
+                        default=os.environ.get("GITHUB_API_URL",
+                                               GITHUB_API_URL))
     parser.add_argument(
+        "-c",
         "--cache-file",
         help=("Cache file will only regenerate after the expiration time,"
               " default: %d minutes") % (EXPIRE_MINUTES_AS_SECONDS / 60),
