@@ -114,7 +114,7 @@ SETUP
 
   then generate a payload file out of it :
   ```json
-{
+   {
     "repository": {
         "owner": {
             "login": "${OWNER}"
@@ -135,8 +135,8 @@ SETUP
             "ref": "${HEAD_BRANCH}"
         }
     }
-}
-```
+    }
+    ```
 
   which you can the pass to a go run :
 
