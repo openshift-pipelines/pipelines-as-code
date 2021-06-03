@@ -10,11 +10,12 @@ import (
 const (
 	kubeConfig = "kubeconfig"
 	token      = "token"
+	apiURL     = "api-url"
 )
 
 // PacOptions holds struct of Pipeline as code Options
 type PacOptions struct {
-	KubeConfig, GithubToken string
+	KubeConfig, GithubToken, GithubAPIURL string
 }
 
 // InitParams initializes cli.Params based on flags defined in command
@@ -30,6 +31,12 @@ func InitParams(p cli.Params, cmd *cobra.Command) error {
 		return err
 	}
 	p.SetGitHubToken(githubToken)
+
+	githubAPIURL, err := cmd.Flags().GetString(apiURL)
+	if err != nil {
+		return err
+	}
+	p.SetGitHubAPIURL(githubAPIURL)
 
 	// ensure that the config is valid by creating a client
 	if _, err := p.Clients(); err != nil {
@@ -48,4 +55,8 @@ func AddPacOptions(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP(
 		token, "", os.Getenv("PAC_TOKEN"),
 		"Web VCS (ie: GitHub) Token")
+
+	cmd.PersistentFlags().StringP(
+		apiURL, "", os.Getenv("PAC_URL"),
+		"Web VCS (ie: GitHub Enteprise) API URL")
 }

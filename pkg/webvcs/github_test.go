@@ -122,7 +122,7 @@ func TestPayLoadFix(t *testing.T) {
 	b, err := ioutil.ReadFile("testdata/pull_request_with_newlines.json")
 	assert.NilError(t, err)
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := NewGithubVCS("none")
+	gvcs := NewGithubVCS("none", "")
 	logger, _ := getLogger()
 	_, err = gvcs.ParsePayload(ctx, logger, "pull_request", "pull_request", string(b))
 	// would bomb out on "assertion failed: error is not nil: invalid character
@@ -256,7 +256,7 @@ func TestParsePayload(t *testing.T) {
 	assert.NilError(t, err)
 
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := NewGithubVCS("none")
+	gvcs := NewGithubVCS("none", "")
 	logger, _ := getLogger()
 
 	runinfo, err := gvcs.ParsePayload(ctx, logger, "pull_request", "pull_request", string(b))
@@ -270,7 +270,7 @@ func TestParsePayload(t *testing.T) {
 
 func TestParsePayloadInvalid(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := NewGithubVCS("none")
+	gvcs := NewGithubVCS("none", "")
 	logger, _ := getLogger()
 	_, err := gvcs.ParsePayload(ctx, logger, "pull_request", "pull_request", "hello moto")
 	assert.ErrorContains(t, err, "invalid character")
@@ -278,14 +278,14 @@ func TestParsePayloadInvalid(t *testing.T) {
 
 func TestParsePayloadUnkownEvent(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := NewGithubVCS("none")
+	gvcs := NewGithubVCS("none", "")
 	logger, _ := getLogger()
 	_, err := gvcs.ParsePayload(ctx, logger, "foo", "foo", "{\"hello\": \"moto\"}")
 	assert.ErrorContains(t, err, "unknown X-Github-Event")
 }
 
 func TestParsePayCannotParse(t *testing.T) {
-	gvcs := NewGithubVCS("none")
+	gvcs := NewGithubVCS("none", "")
 	ctx, _ := rtesting.SetupFakeContext(t)
 	logger, _ := getLogger()
 	_, err := gvcs.ParsePayload(ctx, logger, "gollum", "gollum", "{}")
