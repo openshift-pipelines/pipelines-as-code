@@ -22,6 +22,7 @@ import hashlib
 import hmac
 import json
 import subprocess
+import os
 
 import requests
 
@@ -53,7 +54,7 @@ def get_installation_id_and_webhook_secret():
 
 def main(args):
     application_id, secret = get_installation_id_and_webhook_secret()
-    el = get_el_route()
+    el = args.eroute and args.eroute or get_el_route()
     text = open(args.json_file).read()
     jeez = json.loads(text)
     esha256 = hmac.new(secret.encode("utf-8"),
@@ -94,6 +95,10 @@ def main(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Replay a webhook')
+    parser.add_argument("--eventlistenner-route",
+                        dest="eroute",
+                        help="Route hostname (default to detect on openshift)",
+                        default=os.environ.get("EL_ROUTE"))
     parser.add_argument("json_file", help="json file name")
     return parser.parse_args()
 

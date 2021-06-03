@@ -85,8 +85,21 @@ func payloadFix(payload string) string {
 
 func (v GithubVCS) handleReRequestEvent(ctx context.Context, log *zap.SugaredLogger, event *github.CheckRunEvent) (RunInfo, error) {
 	runinfo := RunInfo{
-		Owner:      event.GetRepo().GetOwner().GetLogin(),
-		Repository: event.GetRepo().GetName(),
+		Owner:         event.GetRepo().GetOwner().GetLogin(),
+		Repository:    event.GetRepo().GetName(),
+		URL:           event.GetRepo().GetHTMLURL(),
+		DefaultBranch: event.GetRepo().GetDefaultBranch(),
+		SHA:           event.GetCheckRun().GetCheckSuite().GetHeadSHA(),
+		HeadBranch:    event.GetCheckRun().GetCheckSuite().GetHeadBranch(),
+	}
+	// If we don't have a pull_request in this it probably mean a push
+	if len(event.GetCheckRun().GetCheckSuite().PullRequests) == 0 {
+		runinfo.BaseBranch = runinfo.HeadBranch
+		runinfo.EventType = "push"
+		// we allow the rerequest user here, not the push user, i guess it's
+		// fine because you can't do a rereq without being a github owner?
+		runinfo.Sender = event.GetSender().GetLogin()
+		return runinfo, nil
 	}
 	prNumber := event.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
 	log.Infof("Recheck of PR %s/%s#%d has been requested", runinfo.Owner, runinfo.Repository, prNumber)
