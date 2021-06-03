@@ -18,6 +18,10 @@ func (p FakeParams) SetKubeConfigPath(string) {
 func (p FakeParams) SetGitHubToken(string) {
 }
 
+// SetGitHubAPIURL Set github token TODO: rename to a generic vcs
+func (p FakeParams) SetGitHubAPIURL(string) {
+}
+
 func (p FakeParams) Clients() (*cli.Clients, error) {
 	return p.Fakeclients, nil
 }

@@ -15,6 +15,8 @@ spec:
       value: $(body.action)
     - name: event_type
       value: $(header.X-GitHub-Event)
+    - name: "ghe_host"
+      value: $(header.X-GitHub-Enterprise-Host)
     - name: owner
       value: $(body.repository.owner.login)
     - name: sender
@@ -44,6 +46,8 @@ spec:
     - name: pull_request_url
     - name: installation_id
     - name: trigger_target
+    - name: ghe_host
+      default: "api.github.com"
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
@@ -59,6 +63,8 @@ spec:
             value: $(tt.params.action)
           - name: event_type
             value: $(tt.params.event_type)
+          - name: ghe_host
+            value: $(tt.params.ghe_host)
           - name: owner
             value: $(tt.params.owner)
           - name: sender
@@ -75,6 +81,7 @@ spec:
           params:
             - name: action
             - name: trigger_target
+            - name: ghe_host
             - name: event_type
             - name: owner
             - name: sender
@@ -88,6 +95,8 @@ spec:
               taskRef:
                 name: github-app-token
               params:
+                - name: github_api_url
+                  value: $(params.ghe_host)
                 - name: installation_id
                   value: $(params.installation_id)
               workspaces:
@@ -98,6 +107,8 @@ spec:
               taskSpec:
                 params:
                   - name: action
+                    type: string
+                  - name: ghe_host
                     type: string
                   - name: event_type
                     type: string
@@ -138,10 +149,13 @@ spec:
                       }
                       EOF
                       pipelines-as-code --trigger-target=$(params.trigger_target) \
+                        --api-url="$(params.ghe_host)" \
                         --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
               params:
                 - name: action
                   value: "$(params.action)"
+                - name: ghe_host
+                  value: "$(params.ghe_host)"
                 - name: trigger_target
                   value: "$(params.trigger_target)"
                 - name: event_type

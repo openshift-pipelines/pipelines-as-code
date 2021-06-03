@@ -11,6 +11,8 @@ spec:
   params:
     - name: "event_type"
       value: $(header.X-GitHub-Event)
+    - name: "ghe_host"
+      value: $(header.X-GitHub-Enterprise-Host)
     - name: "trigger_target"
       value: "push"
     - name: "owner"
@@ -44,6 +46,8 @@ metadata:
 spec:
   params:
     - name: event_type
+    - name: ghe_host
+      default: "api.github.com"
     - name: owner
     - name: repository
     - name: default_branch
@@ -65,6 +69,8 @@ spec:
       spec:
         serviceAccountName: pipelines-as-code-sa-el
         params:
+          - name: ghe_host
+            value: $(tt.params.ghe_host)
           - name: event_type
             value: $(tt.params.event_type)
           - name: trigger_target
@@ -89,6 +95,7 @@ spec:
             value: $(tt.params.installation_id)
         pipelineSpec:
           params:
+            - name: ghe_host
             - name: event_type
             - name: trigger_target
             - name: owner
@@ -107,6 +114,8 @@ spec:
               taskRef:
                 name: github-app-token
               params:
+                - name: github_api_url
+                  value: $(params.ghe_host)
                 - name: installation_id
                   value: $(params.installation_id)
               workspaces:
@@ -116,6 +125,8 @@ spec:
               runAfter: [get-token]
               taskSpec:
                 params:
+                  - name: ghe_host
+                    type: string
                   - name: trigger_target
                     type: string
                   - name: event_type
@@ -163,8 +174,11 @@ spec:
                       }
                       EOF
                       pipelines-as-code --trigger-target=$(params.trigger_target) \
+                        --api-url="$(params.ghe_host)" \
                         --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
               params:
+                - name: ghe_host
+                  value: $(params.ghe_host)
                 - name: event_type
                   value: $(params.event_type)
                 - name: trigger_target
