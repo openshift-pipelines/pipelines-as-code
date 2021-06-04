@@ -47,8 +47,8 @@ func TestOkToTestComment(t *testing.T) {
 			name:          "ok-to-test-not-from-owner",
 			commentsReply: `[{"body": "/ok-to-test", "user": {"login": "notowner"}}]`,
 			runinfo: &webvcs.RunInfo{
-				Owner:         "owner",
-				Sender:        "nonowner",
+				Owner:     "owner",
+				Sender:    "nonowner",
 				EventType: "issue_comment",
 			},
 			allowed: false,
