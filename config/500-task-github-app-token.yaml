@@ -35,7 +35,7 @@ spec:
     - name: application_id
       description: The application id for the GitHub application to request a token for.
       type: string
-      default: ""
+      default: "api.github.com"
 
     - name: private_key_path
       description: The key path inside the secret workspace

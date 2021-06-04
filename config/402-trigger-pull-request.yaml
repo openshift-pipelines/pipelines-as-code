@@ -57,6 +57,7 @@ spec:
     - name: installation_id
     - name: trigger_target
     - name: ghe_host
+      default: "api.github.com"
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
@@ -179,7 +180,7 @@ spec:
                       EOF
                       cat /tmp/payload.json
                       pipelines-as-code --trigger-target=$(params.trigger_target) \
-                        --api-url=$(params.ghe_host) \
+                        --api-url="$(params.ghe_host)" \
                         --payload-file=/tmp/payload.json --token="$(params.token)" \
                         --webhook-type="$(params.event_type)"
               params:
