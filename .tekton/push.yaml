@@ -96,7 +96,8 @@ spec:
             - image: public.ecr.aws/bitnami/golang:latest
               name: generate
               script: |
-                sh hack/generate-releaseyaml.sh > release.yaml
+                set -e
+                bash -x hack/generate-releaseyaml.sh > release.yaml
               workingDir: $(workspaces.source.path)
           workspaces:
             - name: source
