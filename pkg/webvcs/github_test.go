@@ -118,6 +118,15 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 	return gcvs, teardown
 }
 
+func TestNewGithubVCS(t *testing.T) {
+	ret := NewGithubVCS("token", "")
+	assert.Assert(t, ret.Client.BaseURL.String() == "https://api.github.com/")
+	ret = NewGithubVCS("token", "foo")
+	assert.Assert(t, ret.Client.BaseURL.String() == "https://foo/api/v3/")
+	ret = NewGithubVCS("token", "https://bar")
+	assert.Assert(t, ret.Client.BaseURL.String() == "https://bar/api/v3/")
+}
+
 func TestPayLoadFix(t *testing.T) {
 	b, err := ioutil.ReadFile("testdata/pull_request_with_newlines.json")
 	assert.NilError(t, err)
