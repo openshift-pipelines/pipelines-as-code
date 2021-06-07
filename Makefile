@@ -1,3 +1,4 @@
+TARGET_NAMESPACE=pipelines-as-code
 QUAY_REPOSITORY=quay.io/openshift-pipeline/pipelines-as-code
 QUAY_REPOSITORY_BRANCH=main
 GO_TEST_FLAGS=-v -cover
@@ -21,8 +22,13 @@ bin/%: cmd/% FORCE
 
 .PHONY: releaseyaml
 releaseyaml: ## Generate release.yaml, use it like this `make releaseyaml|kubectl apply -f-`
-	@env TARGET_REPO=$(QUAY_REPOSITORY) TARGET_BRANCH=$(QUAY_REPOSITORY_BRANCH) \
-		sh ./hack/generate-releaseyaml.sh
+	@env TARGET_REPO=$(QUAY_REPOSITORY) TARGET_BRANCH=$(QUAY_REPOSITORY_BRANCH) TARGET_NAMESPACE=$(TARGET_NAMESPACE) \
+		./hack/generate-releaseyaml.sh
+
+.PHONY: releaseko
+releaseko: ## Generate release.yaml with ko but changing the target_namespace and branch if needed
+	@env TARGET_BRANCH=$(QUAY_REPOSITORY_BRANCH) TARGET_NAMESPACE=$(TARGET_NAMESPACE) \
+		./hack/generate-releaseyaml.sh ko
 
 check: lint test
 
