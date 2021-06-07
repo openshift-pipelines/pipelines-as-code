@@ -250,6 +250,24 @@ func TestRun(t *testing.T) {
 			finalStatus:  "skipped",
 			finalLogText: "directory for this repository",
 		},
+		// Skipped
+		{
+			name: "Skipped/Test on check_run",
+			runinfo: &webvcs.RunInfo{
+				SHA:           "principale",
+				Owner:         "organizationes",
+				Repository:    "lagaffe",
+				URL:           "https://service/documentation",
+				HeadBranch:    "press",
+				Sender:        "fantasio",
+				BaseBranch:    "nomatch",
+				TriggerTarget: "check_run",
+				EventType:     "push",
+			},
+			tektondir:    "",
+			finalStatus:  "skipped",
+			finalLogText: "directory for this repository",
+		},
 		{
 			name: "Skipped/Test no repositories match on different event_type",
 			runinfo: &webvcs.RunInfo{
