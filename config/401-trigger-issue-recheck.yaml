@@ -19,6 +19,8 @@ spec:
       value: "issue-recheck"
     - name: event_type
       value: $(header.X-GitHub-Event)
+    - name: "ghe_host"
+      value: $(header.X-GitHub-Enterprise-Host)
     - name: owner
       value: $(body.repository.owner.login)
     - name: repository
@@ -57,6 +59,8 @@ spec:
     - name: sender
     - name: installation_id
     - name: trigger_target
+    - name: ghe_host
+      default: "api.github.com"
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
@@ -92,6 +96,8 @@ spec:
             value: $(tt.params.installation_id)
           - name: trigger_target
             value: $(tt.params.trigger_target)
+          - name: ghe_host
+            value: $(tt.params.ghe_host)
         pipelineSpec:
           params:
             - name: trigger_target
@@ -106,6 +112,7 @@ spec:
             - name: pull_request_number
             - name: sender
             - name: installation_id
+            - name: ghe_host
           workspaces:
             - name: secrets
           tasks:
@@ -113,6 +120,8 @@ spec:
               taskRef:
                 name: github-app-token
               params:
+                - name: github_api_url
+                  value: $(params.ghe_host)
                 - name: installation_id
                   value: $(params.installation_id)
               workspaces:
@@ -122,6 +131,8 @@ spec:
               runAfter: [get-token]
               taskSpec:
                 params:
+                  - name: ghe_host
+                    type: string
                   - name: action
                     type: string
                   - name: head_branch
@@ -181,9 +192,12 @@ spec:
                       EOF
                       cat /tmp/payload.json
                       pipelines-as-code --trigger-target=$(params.trigger_target) \
+                        --api-url="$(params.ghe_host)" \
                         --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
 
               params:
+                - name: ghe_host
+                  value: $(params.ghe_host)
                 - name: action
                   value: "$(params.action)"
                 - name: head_branch

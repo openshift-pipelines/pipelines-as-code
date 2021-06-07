@@ -55,7 +55,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=pipelinesascode.tekton.dev, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("repositories"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Pipelinesascode().V1alpha1().Repositories().Informer()}, nil
-
 	}
 
 	return nil, fmt.Errorf("no informer found for %v", resource)

@@ -56,13 +56,23 @@ func (r *RunInfo) DeepCopyInto(out *RunInfo) {
 }
 
 // NewGithubVCS Create a new GitHub VCS object for token
-func NewGithubVCS(token string) GithubVCS {
+func NewGithubVCS(token string, apiURL string) GithubVCS {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(context.Background(), ts)
+
+	var client *github.Client
+	if apiURL != "" {
+		if !strings.HasPrefix(apiURL, "https") {
+			apiURL = "https://" + apiURL
+		}
+		client, _ = github.NewEnterpriseClient(apiURL, apiURL, tc)
+	} else {
+		client = github.NewClient(tc)
+	}
 	return GithubVCS{
-		Client: github.NewClient(tc),
+		Client: client,
 	}
 }
 
@@ -222,7 +232,6 @@ func (v GithubVCS) CheckSenderOrgMembership(ctx context.Context, runinfo *RunInf
 		&github.ListMembersOptions{
 			PublicOnly: true, // We can't list private member in a org
 		})
-
 	// If we are 404 it means we are checking a repo owner and not a org so let's bail out with grace
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
 		return false, nil

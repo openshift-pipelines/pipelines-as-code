@@ -77,7 +77,6 @@ func (c *FakeRepositories) List(ctx context.Context, opts v1.ListOptions) (resul
 func (c *FakeRepositories) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(repositoriesResource, c.ns, opts))
-
 }
 
 // Create takes the representation of a repository and creates it.  Returns the server's representation of the repository, and an error, if there is any.

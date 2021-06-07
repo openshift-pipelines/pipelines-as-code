@@ -19,6 +19,7 @@ type PacParams struct {
 	kubeContext    string
 	namespace      string
 	githubToken    string
+	githubAPIURL   string
 }
 
 var _ Params = (*PacParams)(nil)
@@ -29,6 +30,10 @@ func (p *PacParams) SetKubeConfigPath(path string) {
 
 func (p *PacParams) SetGitHubToken(token string) {
 	p.githubToken = token
+}
+
+func (p *PacParams) SetGitHubAPIURL(url string) {
+	p.githubAPIURL = url
 }
 
 // Set kube client based on config
@@ -92,7 +97,7 @@ func (p *PacParams) pacClient(config *rest.Config) (pacversioned.Interface, erro
 }
 
 func (p *PacParams) githubClient() webvcs.GithubVCS {
-	return webvcs.NewGithubVCS(p.githubToken)
+	return webvcs.NewGithubVCS(p.githubToken, p.githubAPIURL)
 }
 
 // KubeClient returns only the kube client, not the tekton client

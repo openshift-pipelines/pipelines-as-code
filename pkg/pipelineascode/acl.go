@@ -30,7 +30,16 @@ func aclAllowedOkToTestFromAnOwner(ctx context.Context, cs *cli.Clients, runinfo
 	if rinfo.Event == nil {
 		return false, nil
 	}
-	rinfo.URL = rinfo.Event.(*github.IssueCommentEvent).Issue.GetPullRequestLinks().GetHTMLURL()
+
+	switch event := rinfo.Event.(type) {
+	case *github.IssueCommentEvent:
+		rinfo.URL = event.Issue.GetPullRequestLinks().GetHTMLURL()
+	case *github.PullRequestEvent:
+		rinfo.URL = event.GetPullRequest().GetHTMLURL()
+	default:
+		return false, nil
+	}
+
 	comments, err := cs.GithubClient.GetStringPullRequestComment(ctx, rinfo, okToTestCommentRegexp)
 	if err != nil {
 		return false, err

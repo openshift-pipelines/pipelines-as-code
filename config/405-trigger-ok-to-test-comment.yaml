@@ -15,6 +15,8 @@ spec:
       value: "ok-to-test-comment"
     - name: event_type
       value: $(header.X-GitHub-Event)
+    - name: "ghe_host"
+      value: $(header.X-GitHub-Enterprise-Host)
     - name: owner
       value: $(body.repository.owner.login)
     - name: sender
