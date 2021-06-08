@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package formatted
+package pipelineascode
 
 import (
 	"github.com/hako/durafmt"
@@ -22,7 +22,7 @@ import (
 
 func Age(t *metav1.Time, c clockwork.Clock) string {
 	if t.IsZero() {
-		return "---"
+		return NAStr
 	}
 
 	dur := c.Since(t.Time)
@@ -31,7 +31,7 @@ func Age(t *metav1.Time, c clockwork.Clock) string {
 
 func Duration(t1, t2 *metav1.Time) string {
 	if t1.IsZero() || t2.IsZero() {
-		return "---"
+		return NAStr
 	}
 
 	dur := t2.Time.Sub(t1.Time)
@@ -40,7 +40,7 @@ func Duration(t1, t2 *metav1.Time) string {
 
 func Timeout(t *metav1.Duration) string {
 	if t == nil {
-		return "---"
+		return NAStr
 	}
 
 	return durafmt.Parse(t.Duration).String()

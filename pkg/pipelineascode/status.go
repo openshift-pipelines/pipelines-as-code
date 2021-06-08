@@ -9,7 +9,6 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
-	"github.com/tektoncd/cli/pkg/formatted"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,6 +36,8 @@ const taskStatustmpl = `
 </td></tr>
 {{- end }}
 </table>`
+
+const NAStr = "---"
 
 type tkr struct {
 	TaskrunName string
@@ -90,7 +91,7 @@ func pipelineRunStatus(pr *tektonv1beta1.PipelineRun) string {
 func ConditionEmoji(c knative1.Conditions) string {
 	var status string
 	if len(c) == 0 {
-		return "---"
+		return NAStr
 	}
 
 	// TODO: there is other weird errors we need to handle.
@@ -117,7 +118,7 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun, consoleURL st
 	}
 
 	funcMap := template.FuncMap{
-		"formatDuration":  formatted.Duration,
+		"formatDuration":  Duration,
 		"formatCondition": ConditionEmoji,
 	}
 

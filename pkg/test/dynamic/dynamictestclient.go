@@ -15,7 +15,7 @@
 package dynamic
 
 import (
-	"github.com/tektoncd/cli/pkg/test/dynamic/clientset"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/dynamic/clientset"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
