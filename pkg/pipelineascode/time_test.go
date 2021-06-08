@@ -12,12 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package formatted
+package pipelineascode
 
-import "strings"
+import (
+	"testing"
+	"time"
 
-// Result will format a given result value
-func Result(value string) string {
-	// remove trailing new-line from value
-	return strings.TrimSuffix(value, "\n")
+	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func TestTimeout(t *testing.T) {
+	t1 := metav1.Duration{
+		Duration: 5 * time.Minute,
+	}
+
+	str := Timeout(&t1) // Timeout is defined
+	assert.Equal(t, str, "5 minutes")
+
+	str = Timeout(nil) // Timeout is not defined
+	assert.Equal(t, str, NAStr)
 }
