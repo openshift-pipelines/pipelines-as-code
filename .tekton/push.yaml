@@ -91,14 +91,14 @@ spec:
           - fetch
         taskSpec:
           steps:
-            - image: public.ecr.aws/bitnami/golang:latest
+            - image: public.ecr.aws/bitnami/python:latest
               name: release
               env:
                 - name: HUB_TOKEN
                   valueFrom:
                     secretKeyRef:
                       name: "nightly-ci-github-hub-token"
-                      key: "token"
+                      key: "hub-token"
               script: |
                 #!/usr/bin/env bash
                 set -eux
