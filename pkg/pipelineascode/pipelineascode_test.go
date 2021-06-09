@@ -184,7 +184,7 @@ func TestRun(t *testing.T) {
 			},
 			tektondir:    "testdata/pull_request",
 			finalStatus:  "neutral",
-			finalLogText: "Full log available here",
+			finalLogText: "<th>Status</th><th>Duration</th><th>Name</th>",
 		},
 		{
 			name: "No match",
