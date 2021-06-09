@@ -3,6 +3,7 @@
 # i.e: upload-file-to-github.py --branch-ref refs/heads/nightly \
 #    --owner-repository openshift-pipelines/pipelines-as-code \
 #    --token $(git config --get github.oauth-token) \
+#    --message "Automatically uploaded from branch blah" \
 #    --destination release.yaml --filename <(./hack/generate-releaseyaml.sh)
 import argparse
 import base64
@@ -47,7 +48,7 @@ def github_request(token: str,
     return (response, json.loads(response.read()))
 
 
-def upload_to_github(token, repository, src, dst, branch):
+def upload_to_github(token, repository, src, dst, branch, msg):
     # Get last commit SHA of a branch
     resp, jeez = github_request(token, "GET",
                                 f"/repos/{repository}/git/{branch}")
@@ -88,7 +89,7 @@ def upload_to_github(token, repository, src, dst, branch):
         "POST",
         f"/repos/{repository}/git/commits",
         data={
-            "message": "A third test from github v3 API",
+            "message": msg,
             "author": {
                 "name": "Tekton as a Code",
                 "email": "pipelines@redhat.com",
@@ -111,6 +112,7 @@ def upload_to_github(token, repository, src, dst, branch):
 def parse_args():
     parser = argparse.ArgumentParser(description='Upload a file to github ref')
     parser.add_argument("--filename", "-f", required=True)
+    parser.add_argument("--message", "-m", required=True)
     parser.add_argument("--destination", "-d", required=True)
     parser.add_argument("--branch-ref", "-r", required=True)
     parser.add_argument("--owner-repository", "-o", required=True)
@@ -121,7 +123,7 @@ def parse_args():
 def main(args):
     resp, jz = upload_to_github(args.token, args.owner_repository,
                                 args.filename, args.destination,
-                                args.branch_ref)
+                                args.branch_ref, args.message)
     print(resp.status)
 
 
