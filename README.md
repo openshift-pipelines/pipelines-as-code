@@ -404,3 +404,10 @@ You will then need to make sure to expose the `EventListenner` via a
 [OpenShift
 Route](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html)
 so GitHub can get send the webhook to it.
+
+### GitHub Enteprise
+
+Pipelines as Code supports Github Enterprise.
+
+You don't need to do anything special to get Pipelines as code working with GHE.
+Pipeline as code will automatically detects the header as set from GHE and use it  the GHE API auth url instead of the public github.
