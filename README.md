@@ -346,7 +346,7 @@ directly like this :
 You simply need to run this command :
 
 ```bash
-kubectl apply -f https://uploader-cron.svc.ci.openshift.org/pipelines-as-code/release-nightly.yaml
+kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/nightly/release.yaml
 ```
 
 which will apply the release.yaml to your kubernetes cluster, creating the

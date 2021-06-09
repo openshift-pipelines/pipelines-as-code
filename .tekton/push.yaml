@@ -91,18 +91,19 @@ spec:
           - fetch
         taskSpec:
           steps:
-            - image: public.ecr.aws/bitnami/golang:latest
+            - image: public.ecr.aws/bitnami/python:latest
               name: release
               env:
                 - name: HUB_TOKEN
                   valueFrom:
                     secretKeyRef:
                       name: "nightly-ci-github-hub-token"
-                      key: "token"
+                      key: "hub-token"
               script: |
                 #!/usr/bin/env bash
-                set -eux
-                hack/upload-file-to-github.py --branch-ref refs/heads/nightly --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} -d release.yaml -f <(./hack/generate-releaseyaml.sh)
+                set -eu
+                set +x # Do not show TOKEN in logs
+                hack/upload-file-to-github.py --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" --branch-ref refs/heads/nightly --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} -d release.yaml -f <(./hack/generate-releaseyaml.sh)
               workingDir: $(workspaces.source.path)
           workspaces:
             - name: source
