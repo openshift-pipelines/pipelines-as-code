@@ -15,12 +15,7 @@ import (
 	knative1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
-const checkStatustmpl = `{{.taskStatus}}
-
-<hr>
-
-🗒️ Full log available here <a href="{{.consoleURL}}">here</a>.
-`
+const checkStatustmpl = `{{.taskStatus}}`
 
 const taskStatustmpl = `
 <table>
@@ -157,7 +152,6 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 
 	data := map[string]string{
 		"taskStatus": taskStatus,
-		"consoleURL": consoleURL,
 	}
 
 	t := template.Must(template.New("Pipeline Status").Parse(checkStatustmpl))
