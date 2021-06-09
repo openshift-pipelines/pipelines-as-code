@@ -85,40 +85,24 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 bash <(curl https://codecov.io/bash)
-      - name: generate-release-yaml
-        runAfter:
-          - fetch
-        workspaces:
-          - name: source
-            workspace: source
-        taskSpec:
-          steps:
-            - image: public.ecr.aws/bitnami/golang:latest
-              name: generate
-              script: |
-                set -e
-                bash -x hack/generate-releaseyaml.sh > release.yaml
-              workingDir: $(workspaces.source.path)
-          workspaces:
-            - name: source
 
       - name: upload-release-yaml
         runAfter:
-          - generate-release-yaml
+          - fetch
         taskSpec:
           steps:
             - image: public.ecr.aws/bitnami/golang:latest
               name: release
               env:
-                - name: UPLOADER_CREDS
+                - name: HUB_TOKEN
                   valueFrom:
                     secretKeyRef:
-                      name: "pipelines-as-code-uploader"
-                      key: "creds"
+                      name: "nightly-ci-github-hub-token"
+                      key: "token"
               script: |
-                set +x
-                curl -F 'path=/pipelines-as-code/release-nightly.yaml' -F 'file=@release.yaml' -u "${UPLOADER_CREDS}" -X POST \
-                https://uploader-cron.svc.ci.openshift.org/upload
+                #!/usr/bin/env bash
+                set -eux
+                hack/upload-file-to-github.py --branch-ref refs/heads/nightly --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} -d release.yaml -f <(./hack/generate-releaseyaml.sh)
               workingDir: $(workspaces.source.path)
           workspaces:
             - name: source
