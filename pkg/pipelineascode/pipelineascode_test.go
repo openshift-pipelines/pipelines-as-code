@@ -35,69 +35,6 @@ func replyString(mux *http.ServeMux, url, body string) {
 	})
 }
 
-func TestRunDeniedFromForcedNamespace(t *testing.T) {
-	t.Skip("TODO: Disabled until we reimplement this as annotation")
-	ctx, _ := rtesting.SetupFakeContext(t)
-	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
-	defer teardown()
-	defaultBranch := "default"
-	forcedNamespace := "laotronamspace"
-	installedNamespace := "nomespace"
-	runinfo := &webvcs.RunInfo{
-		SHA:           "sha",
-		Owner:         "organizatione",
-		Repository:    "repo",
-		URL:           "https://service/documentation",
-		HeadBranch:    "press",
-		BaseBranch:    "main",
-		DefaultBranch: defaultBranch,
-		Sender:        "carlos_valderama",
-	}
-	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/check-runs", runinfo.Owner, runinfo.Repository),
-		`{"id": 26}`)
-
-	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/contents/.tekton/tekton.yaml", runinfo.Owner, runinfo.Repository),
-		func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Query().Get("ref") != defaultBranch {
-				fmt.Fprint(w, `{}`)
-			} else {
-				fmt.Fprint(w, `{"sha": "shaofmaintektonyaml"}`)
-			}
-		})
-
-	forcedNamespaceContent := base64.StdEncoding.EncodeToString([]byte("namespace: " + forcedNamespace + "\n"))
-	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/blobs/shaofmaintektonyaml", runinfo.Owner, runinfo.Repository),
-		func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(w, `{"content": "%s"}`, forcedNamespaceContent)
-		})
-
-	mux.HandleFunc("/orgs/"+runinfo.Owner+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(rw, `[{"login": "%s"}]`, runinfo.Sender)
-	})
-
-	gcvs := webvcs.GithubVCS{
-		Client: fakeclient,
-	}
-	datas := testclient.Data{
-		Repositories: []*v1alpha1.Repository{
-			repository.NewRepo("repo", runinfo.URL, runinfo.BaseBranch, installedNamespace, installedNamespace, "pull_request"),
-		},
-	}
-	stdata, _ := testclient.SeedTestData(t, ctx, datas)
-	cs := &cli.Clients{
-		GithubClient:   gcvs,
-		PipelineAsCode: stdata.PipelineAsCode,
-	}
-	k8int := kitesthelper.KinterfaceTest{}
-
-	err := Run(ctx, cs, &k8int, runinfo)
-
-	assert.Error(t, err,
-		fmt.Sprintf("repo CR matches but should be installed in %s as configured from tekton.yaml on the main branch",
-			forcedNamespace))
-}
-
 func testSetupTektonDir(mux *http.ServeMux, runinfo *webvcs.RunInfo, directory string) {
 	var tektonDirContent string
 	_ = filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
