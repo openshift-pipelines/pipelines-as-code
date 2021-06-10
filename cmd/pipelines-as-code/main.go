@@ -9,16 +9,16 @@ import (
 
 func main() {
 	tp := &cli.PacParams{}
-	tkn := cmd.Root(tp)
+	pac := cmd.Root(tp)
 
-	cmd, _, err := tkn.Find(os.Args[1:])
+	cmd, _, err := pac.Find(os.Args[1:])
 	// default cmd if no cmd is given
 	if err != nil || cmd.Use == "" {
 		args := append([]string{"run"}, os.Args[1:]...)
-		tkn.SetArgs(args)
+		pac.SetArgs(args)
 	}
 
-	if err := tkn.Execute(); err != nil {
+	if err := pac.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
