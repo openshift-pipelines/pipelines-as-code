@@ -37,6 +37,7 @@ type RunInfo struct {
 	TriggerTarget string
 	URL           string
 	WebConsoleURL string
+	SHATitle      string
 }
 
 // Check check if the runinfo is properly set
@@ -199,6 +200,7 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			DefaultBranch: event.GetRepo().GetDefaultBranch(),
 			URL:           event.GetRepo().GetHTMLURL(),
 			SHA:           event.GetHeadCommit().GetID(),
+			SHATitle:      event.GetHeadCommit().GetMessage(),
 			Sender:        event.GetSender().GetLogin(),
 			BaseBranch:    event.GetRef(),
 			EventType:     eventType,
@@ -220,6 +222,14 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 	default:
 		return &runinfo, errors.New("this event is not supported")
 	}
+
+	if runinfo.SHATitle == "" {
+		runinfo.SHATitle, err = v.GetSHACommitTitle(ctx, &runinfo)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	runinfo.Event = event
 	runinfo.TriggerTarget = triggerTarget
 	return &runinfo, nil
@@ -270,6 +280,15 @@ func (v GithubVCS) GetStringPullRequestComment(ctx context.Context, runinfo *Run
 		}
 	}
 	return ret, nil
+}
+
+// GetSHACommitTitle Retrieve the commit title of the SHA
+func (v GithubVCS) GetSHACommitTitle(ctx context.Context, runinfo *RunInfo) (string, error) {
+	c, _, err := v.Client.Repositories.GetCommit(ctx, runinfo.Owner, runinfo.Repository, runinfo.SHA)
+	if err != nil {
+		return "", err
+	}
+	return strings.Split(c.Commit.GetMessage(), "\n\n")[0], nil
 }
 
 // GetTektonDir Get tekton directory from a repository
