@@ -51,8 +51,8 @@ func getSpecificVersion(ctx context.Context, cli *cli.Clients, task string) (str
 }
 
 func getLatestVersion(ctx context.Context, cli *cli.Clients, task string) (string, error) {
-	data, err := getURL(ctx, cli, fmt.Sprintf("%s/resource/%s/task/%s", hubBaseURL, tektonCatalogHubName, task))
 	hr := new(hubResource)
+	data, err := getURL(ctx, cli, fmt.Sprintf("%s/resource/%s/task/%s", hubBaseURL, tektonCatalogHubName, task))
 	if err != nil {
 		return "", err
 	}
