@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jonboulle/clockwork"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -31,5 +32,26 @@ func TestTimeout(t *testing.T) {
 	assert.Equal(t, str, "5 minutes")
 
 	str = Timeout(nil) // Timeout is not defined
-	assert.Equal(t, str, NAStr)
+	assert.Equal(t, str, naStr)
+}
+
+func TestAge(t *testing.T) {
+	clock := clockwork.NewFakeClock()
+	assert.Equal(t, Age(&metav1.Time{}, clock), naStr)
+
+	t1 := &metav1.Time{
+		Time: clock.Now().Add(-5 * time.Minute),
+	}
+	assert.Equal(t, Age(t1, clock), "5 minutes ago")
+}
+
+func TestDuration(t *testing.T) {
+	assert.Equal(t, Duration(&metav1.Time{}, &metav1.Time{}), naStr)
+	clock := clockwork.NewFakeClock()
+
+	assert.Equal(t, Duration(&metav1.Time{
+		Time: clock.Now(),
+	}, &metav1.Time{
+		Time: clock.Now().Add(5 * time.Minute),
+	}), "5 minutes")
 }

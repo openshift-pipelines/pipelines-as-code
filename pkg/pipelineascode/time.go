@@ -22,7 +22,7 @@ import (
 
 func Age(t *metav1.Time, c clockwork.Clock) string {
 	if t.IsZero() {
-		return NAStr
+		return naStr
 	}
 
 	dur := c.Since(t.Time)
@@ -31,7 +31,7 @@ func Age(t *metav1.Time, c clockwork.Clock) string {
 
 func Duration(t1, t2 *metav1.Time) string {
 	if t1.IsZero() || t2.IsZero() {
-		return NAStr
+		return naStr
 	}
 
 	dur := t2.Time.Sub(t1.Time)
@@ -40,7 +40,7 @@ func Duration(t1, t2 *metav1.Time) string {
 
 func Timeout(t *metav1.Duration) string {
 	if t == nil {
-		return NAStr
+		return naStr
 	}
 
 	return durafmt.Parse(t.Duration).String()
