@@ -65,48 +65,59 @@ spec:
 	})
 
 	tests := []struct {
-		name                string
-		runinfo             *webvcs.RunInfo
-		annotations         map[string]string
-		wantErr             string
-		remoteURLDataReturn string
-		remoteURL           string
-		gotTaskName         string
+		name        string
+		runinfo     *webvcs.RunInfo
+		annotations map[string]string
+		wantErr     string
+		gotTaskName string
+		remoteURLS  map[string]map[string]string
 	}{
 		{
 			name: "test-annotations-error-remote-http-not-k8",
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[http://remote.task]",
 			},
-			remoteURL: "http://remote.task",
-			wantErr:   "not looking like a kubernetes resource",
+			remoteURLS: map[string]map[string]string{
+				"https://remote.task": {
+					"body": "",
+					"code": "200",
+				},
+			},
+			wantErr: "not looking like a kubernetes resource",
 		},
 		{
 			name: "test-annotations-remote-http",
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[http://remote.task]",
 			},
-			gotTaskName:         "task",
-			remoteURL:           "http://remote.task",
-			remoteURLDataReturn: simpletask,
+			gotTaskName: "task",
+			remoteURLS: map[string]map[string]string{
+				"http://remote.task": {
+					"body": simpletask,
+					"code": "200",
+				},
+			},
 		},
 		{
 			name: "test-annotations-remote-https",
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[https://remote.task]",
 			},
-			gotTaskName:         "task",
-			remoteURL:           "https://remote.task",
-			remoteURLDataReturn: simpletask,
+			gotTaskName: "task",
+			remoteURLS: map[string]map[string]string{
+				"https://remote.task": {
+					"body": simpletask,
+					"code": "200",
+				},
+			},
 		},
 		{
 			name: "test-annotations-inside-repo",
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[be/healthy]",
 			},
-			gotTaskName:         "task",
-			remoteURLDataReturn: simpletask,
-			runinfo:             &webvcs.RunInfo{},
+			gotTaskName: "task",
+			runinfo:     &webvcs.RunInfo{},
 		},
 		{
 			name: "test-annotations-remote-http-skipping-notmatching",
@@ -114,9 +125,13 @@ spec:
 				pipelinesascode.GroupName + "/task":  "[http://remote.task]",
 				pipelinesascode.GroupName + "/taskA": "[http://other.task]", // That's wrong this would be skipped
 			},
-			gotTaskName:         "task",
-			remoteURL:           "http://remote.task",
-			remoteURLDataReturn: simpletask,
+			gotTaskName: "task",
+			remoteURLS: map[string]map[string]string{
+				"http://remote.task": {
+					"body": simpletask,
+					"code": "200",
+				},
+			},
 		},
 		{
 			name: "test-annotations-remote-http-bad-annotation",
@@ -133,15 +148,44 @@ spec:
 			runinfo: &webvcs.RunInfo{},
 			wantErr: "404",
 		},
+		{
+			name:        "test-get-from-hub-latest",
+			gotTaskName: "task",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/task": "[chmouzie]",
+			},
+			remoteURLS: map[string]map[string]string{
+				"https://api.hub.tekton.dev/v1/resource/tekton/task/chmouzie": {
+					"body": `{"data": {"LatestVersion": {"RawURL": "http://simple.task"}}}`,
+					"code": "200",
+				},
+				"http://simple.task": {
+					"body": simpletask,
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:        "test-get-from-hub-specific-version",
+			gotTaskName: "task",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/task": "[chmouzie:0.2]",
+			},
+			remoteURLS: map[string]map[string]string{
+				"https://api.hub.tekton.dev/v1/resource/tekton/task/chmouzie/0.2": {
+					"body": `{"data": {"RawURL": "http://simple.task"}}`,
+					"code": "200",
+				},
+				"http://simple.task": {
+					"body": simpletask,
+					"code": "200",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			httpTestClient := httptesthelper.MakeHTTPTestClient(t, map[string]map[string]string{
-				tt.remoteURL: {
-					"body": tt.remoteURLDataReturn,
-					"code": "200",
-				},
-			})
+			httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.remoteURLS)
 			cs := &cli.Clients{
 				HTTPClient: *httpTestClient,
 				GithubClient: webvcs.GithubVCS{

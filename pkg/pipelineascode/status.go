@@ -32,7 +32,7 @@ const taskStatustmpl = `
 {{- end }}
 </table>`
 
-const NAStr = "---"
+const naStr = "---"
 
 type tkr struct {
 	TaskrunName string
@@ -86,7 +86,7 @@ func pipelineRunStatus(pr *tektonv1beta1.PipelineRun) string {
 func ConditionEmoji(c knative1.Conditions) string {
 	var status string
 	if len(c) == 0 {
-		return NAStr
+		return naStr
 	}
 
 	// TODO: there is other weird errors we need to handle.

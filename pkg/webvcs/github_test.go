@@ -89,13 +89,7 @@ func setupFakesURLS() (client GithubVCS, teardown func()) {
 				  "path": ".tekton/run.yaml",
 				  "sha": "runyaml",
 				  "type": "file"
-				},
-				{
-				  "name": "tekton.yaml",
-				  "path": ".tekton/tekton.yaml",
-				  "sha": "tektonyaml",
-				  "type": "file"
-			 }]`)
+				}]`)
 	})
 	mux.HandleFunc("/repos/throw/error/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, "ERRROR")

@@ -339,8 +339,8 @@ func (v GithubVCS) ConcatAllYamlFiles(ctx context.Context, objects []*github.Rep
 	var allTemplates string
 
 	for _, value := range objects {
-		if value.GetName() != "tekton.yaml" && (strings.HasSuffix(value.GetName(), ".yaml") ||
-			strings.HasSuffix(value.GetName(), ".yml")) {
+		if strings.HasSuffix(value.GetName(), ".yaml") ||
+			strings.HasSuffix(value.GetName(), ".yml") {
 			data, err := v.GetObject(ctx, value.GetSHA(), runinfo)
 			if err != nil {
 				return "", err

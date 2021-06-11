@@ -10,7 +10,7 @@ ifneq ($(FLAGS),)
 	LDFLAGS := -ldflags "$(FLAGS)"
 endif
 
-all: bin/tkn test
+all: bin/pipelines-as-code test
 
 FORCE:
 
