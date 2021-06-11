@@ -31,6 +31,14 @@ type RepositoryRunStatus struct {
 	// CompletionTime is the time the PipelineRun completed.
 	// +optional
 	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
+
+	// SHA is the name of the SHA that has been tested
+	// +optional
+	SHA *string `json:"sha,omitempty"`
+
+	// Title is the title of the commit SHA that has been tested
+	// +optional
+	Title *string `json:"title,omitempty"`
 }
 
 // RepositorySpec is the spec of a repo

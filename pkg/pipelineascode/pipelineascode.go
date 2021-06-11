@@ -201,6 +201,8 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		PipelineRunName: newPr.Name,
 		StartTime:       newPr.Status.StartTime,
 		CompletionTime:  newPr.Status.CompletionTime,
+		SHA:             &runinfo.SHA,
+		Title:           &runinfo.SHATitle,
 	}
 
 	// Get repo again in case it was updated while we were running the CI

@@ -116,7 +116,15 @@ func TestPayLoadFix(t *testing.T) {
 	b, err := ioutil.ReadFile("testdata/pull_request_with_newlines.json")
 	assert.NilError(t, err)
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := NewGithubVCS("none", "")
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+	mux.HandleFunc("/repos/repo/owner/commits/SHA", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+	})
+	gvcs := GithubVCS{
+		Client: fakeclient,
+	}
+
 	logger, _ := getLogger()
 	_, err = gvcs.ParsePayload(ctx, logger, "pull_request", "pull_request", string(b))
 	// would bomb out on "assertion failed: error is not nil: invalid character
@@ -126,9 +134,10 @@ func TestPayLoadFix(t *testing.T) {
 
 func TestParsePayloadRerequestFromPullRequest(t *testing.T) {
 	checkrunSender := "jean-pierre"
-	prOwner := "openshift"
-	repoName := "pipelines"
+	prOwner := "owner"
+	repoName := "repo"
 	prNumber := "123"
+	sha := "ParsePayloadRerequestFromPullRequestSHA"
 	checkrunEvent := fmt.Sprintf(`{"action": "rerequested",
 	"sender": {"login": "%s"},
 	"check_run": {"check_suite": {"pull_requests": [{"number": %s}]}},
@@ -137,7 +146,10 @@ func TestParsePayloadRerequestFromPullRequest(t *testing.T) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 	mux.HandleFunc("/repos/"+prOwner+"/"+repoName+"/pulls/"+prNumber, func(rw http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(rw, `{"head": {"ref": "123"}, "user": {"login": "%s"}}`, prOwner)
+		_, _ = fmt.Fprintf(rw, `{"head": {"sha": "%s", "ref": "123"}, "user": {"login": "%s"}}`, sha, prOwner)
+	})
+	mux.HandleFunc("/repos/owner/repo/commits/"+sha, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 	})
 	ctx, _ := rtesting.SetupFakeContext(t)
 	gvcs := GithubVCS{
@@ -158,9 +170,9 @@ func TestParsePayloadRerequestFromPullRequest(t *testing.T) {
 func TestParsePayloadRerequestFromPush(t *testing.T) {
 	sender := "jean-pierre"
 	headBranch := "tartonpion"
-	headSHA := "abcd"
+	headSHA := "TestParsePayloadRerequestFromPushSHA"
 	owner := "owner"
-	repository := "repository"
+	repository := "repo"
 	url := fmt.Sprintf("https://github.com/%s/%s", owner, repository)
 	checkrunEvent := fmt.Sprintf(`{
   "action": "rerequested",
@@ -185,7 +197,14 @@ func TestParsePayloadRerequestFromPush(t *testing.T) {
 }`,
 		headBranch, headSHA, url, repository, owner, sender)
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := GithubVCS{}
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+	gvcs := GithubVCS{
+		Client: fakeclient,
+	}
+	mux.HandleFunc("/repos/owner/repo/commits/"+headSHA, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+	})
 	logger, _ := getLogger()
 	runinfo, err := gvcs.ParsePayload(ctx, logger, "check_run", "issue-recheck", checkrunEvent)
 	assert.NilError(t, err)
@@ -204,11 +223,15 @@ func TestParsePayLoadRetest(t *testing.T) {
 	repoOwner := "openshift"
 	repoName := "pipelines"
 	prNumber := "123"
+	sha := "TestParsePayLoadRetestSHA"
 
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 	mux.HandleFunc("/repos/"+prOwner+"/"+repoName+"/pulls/"+prNumber, func(rw http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(rw, `{"head": {"ref": "123"}, "user": {"login": "%s"}}`, prOwner)
+		_, _ = fmt.Fprintf(rw, `{"head": {"sha": "%s", "ref": "123"}, "user": {"login": "%s"}}`, sha, prOwner)
+	})
+	mux.HandleFunc("/repos/user1/pipelines/commits/"+sha, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 	})
 
 	issueEvent := fmt.Sprintf(`{
@@ -248,9 +271,15 @@ func TestParsePayLoadRetest(t *testing.T) {
 func TestParsePayload(t *testing.T) {
 	b, err := ioutil.ReadFile("testdata/pull_request.json")
 	assert.NilError(t, err)
-
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+	mux.HandleFunc("/repos/chmouel/scratchpad/commits/cc8334de8e056317d18bd00c2588c3f7c95af294", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+	})
+	gvcs := GithubVCS{
+		Client: fakeclient,
+	}
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := NewGithubVCS("none", "")
 	logger, _ := getLogger()
 
 	runinfo, err := gvcs.ParsePayload(ctx, logger, "pull_request", "pull_request", string(b))
@@ -674,6 +703,56 @@ func TestGithubVCS_CreateStatus(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GithubVCS.CreateStatus() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGithubVCSGetSHACommitTitle(t *testing.T) {
+	tests := []struct {
+		runinfo *RunInfo
+		message string
+		name    string
+		want    string
+		wantErr bool
+	}{
+		{
+			runinfo: &RunInfo{
+				SHA:        "sha",
+				Owner:      "owner",
+				Repository: "repo",
+			},
+			message: `Message\n\nFooBar`,
+			name:    "Get only title multiple lines",
+			want:    "Message",
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+
+			mux.HandleFunc(
+				fmt.Sprintf("/repos/%s/%s/commits/%s", tt.runinfo.Owner,
+					tt.runinfo.Repository,
+					tt.runinfo.SHA),
+				func(w http.ResponseWriter, r *http.Request) {
+					_, _ = fmt.Fprintf(w, `{"commit": {"message": "%s"}}`, tt.message)
+				})
+
+			ctx, _ := rtesting.SetupFakeContext(t)
+			gvcs := GithubVCS{
+				Client: fakeclient,
+			}
+			got, err := gvcs.GetSHACommitTitle(ctx, tt.runinfo)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GithubVCS.GetSHACommitTitle() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GithubVCS.GetSHACommitTitle() = %v, want %v", got, tt.want)
 			}
 		})
 	}
