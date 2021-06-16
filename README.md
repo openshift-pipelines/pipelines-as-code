@@ -171,11 +171,11 @@ based on the Pipeline name as well.
 This allows you to have multiple runs in the same namespace from the same
 PipelineRun with no risk of conflicts.
 
-Everything that runs your pipelinerun and its references neeed to inside the
-`.tekton/` directory or referenced as remote tasks (see below on how the remote
-tasks are specified).  If pipelines as code cannot resolve the referenced tasks
-in the `Pipeline` or `PipelineSpec` it will fails before applying the
-pipelinerun onto the cluster.
+Everything that runs your pipelinerun and its references need to be inside the
+`.tekton/` directory or referenced via a remote task (see below on how the remote
+tasks are referenced). 
+
+If pipelines as code cannot resolve the referenced tasks in the `Pipeline` or `PipelineSpec` it will fails before applying the pipelinerun onto the cluster.
 
 If you need to test your `PipelineRun` locally before sending it in a PR, you can use
 the `tkresolver` CLI, by installing it like this :
@@ -210,7 +210,7 @@ You can have multiple tasks in there if you separate  them by a comma `,`:
 pipelinesascode.tekton.dev/task: "[git-clone, golang-test, tkn]"
 ```
 
-You can have multiple lines if you add a `-NUMBER` prefix to the annotation, for example :
+You can have multiple lines if you add a `-NUMBER` suffix to the annotation, for example :
 
 ```yaml
   pipelinesascode.tekton.dev/task: "[git-clone]"
@@ -220,21 +220,20 @@ You can have multiple lines if you add a `-NUMBER` prefix to the annotation, for
 
 By default `Pipelines as Code` will interpret the string as the `latest` task to grab from [tekton hub](https://hub.tekton.dev).
 
-If instead you want to have a specific task, you can add a colon `:` to the string and a version number, like in this example :
+If you want to have a specific version of the task, you can add a colon `:` to the string and a version number, like in this example :
 
 ```yaml
   pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # will install git-clone 0.1 from tekton.hub
   ```
 
 If you have a string starting with http:// or https://, `Pipelines as Code`
-will fetch the task directly from that remote url instead of going via the
-`tekton hub` :
+will fetch the task directly from that remote url :
 
 ```yaml
   pipelinesascode.tekton.dev/task: "[https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.3/git-clone.yaml]"
 ```
 
-You can as well a reference to a task from a yaml file inside your repo if you specify the relative path to it, for example :
+Additionally you can as well a reference to a task from a yaml file inside your repo if you specify the relative path to it, for example :
 
   ```yaml
   pipelinesascode.tekton.dev/task: "[.tekton/tasks/git-clone.yaml]"
@@ -243,6 +242,7 @@ You can as well a reference to a task from a yaml file inside your repo if you s
 will grab the `.tekton/tasks/git-clone.yaml` from the current repository on the `SHA` where the event come from (i.e: the current pull request or the current branch push).
 
 If there is any error fetching those resources, `Pipelines as Code` will error out and not process the pipeline.
+
 If the object fetched cannot be parsed as a Tekton `Task` it will error out.
 
 ### Running the Pipeline
