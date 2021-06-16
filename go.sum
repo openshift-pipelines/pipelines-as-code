@@ -711,9 +711,9 @@ github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5
 github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd0=
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
-github.com/tektoncd/pipeline v0.24.1 h1:c+Odgmf8dkUVRdQ5NVbOliwFB8608kM9i+18t5QDO+g=
-github.com/tektoncd/pipeline v0.24.1/go.mod h1:ChFD/vfu14VOtCVlLWdtlvOwXfBfVotULoNV6yz+CKY=
-github.com/tektoncd/plumbing v0.0.0-20210420200944-17170d5e7bc9/go.mod h1:WTWwsg91xgm+jPOKoyKVK/yRYxnVDlUYeDlypB1lDdQ=
+github.com/tektoncd/pipeline v0.25.0 h1:zFl6c9t4LuFeAcO05w27qv9fxU0QDaLfRGwjSEkvN0s=
+github.com/tektoncd/pipeline v0.25.0/go.mod h1:jgHxrbx/FXRh+hgD2R2E1U+NBrBggOg+dgk0RkMcTKs=
+github.com/tektoncd/plumbing v0.0.0-20210514044347-f8a9689d5bd5/go.mod h1:WTWwsg91xgm+jPOKoyKVK/yRYxnVDlUYeDlypB1lDdQ=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20170815181823-89b8d40f7ca8/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=

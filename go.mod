@@ -10,7 +10,7 @@ require (
 	github.com/jonboulle/clockwork v0.1.1-0.20190114141812-62fb9bc030d1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.1.3
-	github.com/tektoncd/pipeline v0.24.1
+	github.com/tektoncd/pipeline v0.25.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013
 	gotest.tools/v3 v3.0.3
