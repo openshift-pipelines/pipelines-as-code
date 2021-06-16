@@ -101,7 +101,7 @@ type PipelineRunSpecStatus = v1beta1.PipelineRunSpecStatus
 const (
 	// PipelineRunSpecStatusCancelled indicates that the user wants to cancel the task,
 	// if not already cancelled or terminated
-	PipelineRunSpecStatusCancelled = v1beta1.PipelineRunSpecStatusCancelledDeprecated
+	PipelineRunSpecStatusCancelled = v1beta1.PipelineRunSpecStatusCancelled
 )
 
 // PipelineResourceRef can be used to refer to a specific instance of a Resource
