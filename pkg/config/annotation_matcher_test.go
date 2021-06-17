@@ -39,18 +39,33 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		data    testclient.Data
 	}
 	tests := []struct {
-		name, wantRepoName, wantLog string
-		args                        args
-		wantErr                     bool
+		name, wantPRName, wantRepoName, wantLog string
+		args                                    args
+		wantErr                                 bool
 	}{
 		{
-			name:         "match a repository with target NS",
-			wantRepoName: pipelineTargetNSName,
+			name:       "match a repository with target NS",
+			wantPRName: pipelineTargetNSName,
 			args: args{
 				pruns:   []*tektonv1beta1.PipelineRun{pipelineTargetNS},
 				runinfo: &webvcs.RunInfo{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
+					},
+				},
+			},
+		},
+		{
+			name:         "match same webhook on multiple repos with different NS",
+			wantPRName:   pipelineTargetNSName,
+			wantRepoName: "test-good",
+			args: args{
+				pruns:   []*tektonv1beta1.PipelineRun{pipelineTargetNS},
+				runinfo: &webvcs.RunInfo{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo("test-other", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
 						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
@@ -79,7 +94,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			observer, log := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 			client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger}
-			got, err := MatchPipelinerunByAnnotation(ctx,
+			got, repo, err := MatchPipelinerunByAnnotation(ctx,
 				tt.args.pruns,
 				client, tt.args.runinfo)
 
@@ -92,7 +107,10 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			}
 
 			if tt.wantRepoName != "" {
-				assert.Assert(t, tt.wantRepoName == got.GetName())
+				assert.Assert(t, tt.wantRepoName == repo.GetName())
+			}
+			if tt.wantPRName != "" {
+				assert.Assert(t, tt.wantPRName == got.GetName())
 			}
 			if tt.wantLog != "" {
 				logmsg := log.TakeAll()
@@ -303,7 +321,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			got, err := MatchPipelinerunByAnnotation(ctx, tt.args.pruns, cs, tt.args.runinfo)
+			got, _, err := MatchPipelinerunByAnnotation(ctx, tt.args.pruns, cs, tt.args.runinfo)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -135,9 +135,6 @@ func Test_getRepoByCR(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.name != "test-nomatch-event-type" {
-				return
-			}
 			ctx, _ := rtesting.SetupFakeContext(t)
 			cs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
 			observer, _ := zapobserver.New(zap.InfoLevel)
