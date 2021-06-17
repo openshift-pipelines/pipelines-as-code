@@ -78,6 +78,21 @@ main into the namespace `my-pipeline-ci`
 For security reasons, the Repository CR needs to be created
 in the namespace where Tekton Pipelines associated with the source code repository would be executed.
 
+There is another optional layer of security where PipelineRun can have an
+annotation to explicitely target a specific namespace. It would stilll need to
+have a Repository CRD created in that namespace to be able to be matched.
+
+With this annotation there is no way a bad actor on a cluster can hijack the
+pipelineRun execution to a namespace they don't have access to. To use that
+feature you need to add this annotation :
+
+```yaml
+pipelinesascode.tekton.dev/target-namespace: "mynamespace"
+```
+
+and Pipeline as Code will only match the repository in the mynamespace Namespace
+instead of trying to match it from all available repository on cluster.
+
 ### Writting Tekton pipelines in `.tekton/` directory
 
 - Pipelines as Code tries to be as close to the tekton template as possible.
@@ -173,7 +188,7 @@ PipelineRun with no risk of conflicts.
 
 Everything that runs your pipelinerun and its references need to be inside the
 `.tekton/` directory or referenced via a remote task (see below on how the remote
-tasks are referenced). 
+tasks are referenced).
 
 If pipelines as code cannot resolve the referenced tasks in the `Pipeline` or `PipelineSpec` it will fails before applying the pipelinerun onto the cluster.
 

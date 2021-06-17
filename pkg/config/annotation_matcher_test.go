@@ -1,19 +1,107 @@
 package config
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
+	pipelineTargetNSName := "pipeline-target-ns"
+	pipelineTargetNS := &tektonv1beta1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: pipelineTargetNSName,
+			Annotations: map[string]string{
+				pipelinesascode.GroupName + "/" + onTargetNamespace:        targetNamespace,
+				pipelinesascode.GroupName + "/" + onEventAnnotation:        "[pull_request]",
+				pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: fmt.Sprintf("[%s]", mainBranch),
+			},
+		},
+	}
+
+	type args struct {
+		pruns   []*tektonv1beta1.PipelineRun
+		runinfo *webvcs.RunInfo
+		data    testclient.Data
+	}
+	tests := []struct {
+		name, wantRepoName, wantLog string
+		args                        args
+		wantErr                     bool
+	}{
+		{
+			name:         "match a repository with target NS",
+			wantRepoName: pipelineTargetNSName,
+			args: args{
+				pruns:   []*tektonv1beta1.PipelineRun{pipelineTargetNS},
+				runinfo: &webvcs.RunInfo{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
+					},
+				},
+			},
+		},
+		{
+			name:    "no match a repository with target NS",
+			wantErr: true,
+			wantLog: "could not find Repository CRD",
+			args: args{
+				pruns:   []*tektonv1beta1.PipelineRun{pipelineTargetNS},
+				runinfo: &webvcs.RunInfo{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, "otherNS", "otherNS", "pull_request"),
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			cs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
+			observer, log := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+			client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger}
+			got, err := MatchPipelinerunByAnnotation(ctx,
+				tt.args.pruns,
+				client, tt.args.runinfo)
+
+			if tt.wantErr && err == nil {
+				t.Error("We should have get an error")
+			}
+
+			if !tt.wantErr && err != nil {
+				t.Errorf("We should have not get an error %s", err)
+			}
+
+			if tt.wantRepoName != "" {
+				assert.Assert(t, tt.wantRepoName == got.GetName())
+			}
+			if tt.wantLog != "" {
+				logmsg := log.TakeAll()
+				assert.Assert(t, len(logmsg) > 0, "We didn't get any log message")
+				assert.Assert(t, strings.Contains(logmsg[0].Message, tt.wantLog), logmsg[0].Message, tt.wantLog)
+			}
+		})
+	}
+}
 
 func TestMatchPipelinerunByAnnotation(t *testing.T) {
 	pipelineGood := &tektonv1beta1.PipelineRun{
@@ -214,7 +302,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := MatchPipelinerunByAnnotation(tt.args.pruns, cs, tt.args.runinfo)
+			ctx, _ := rtesting.SetupFakeContext(t)
+			got, err := MatchPipelinerunByAnnotation(ctx, tt.args.pruns, cs, tt.args.runinfo)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return

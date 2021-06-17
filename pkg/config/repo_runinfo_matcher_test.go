@@ -8,6 +8,8 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -133,16 +135,25 @@ func Test_getRepoByCR(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.name != "test-nomatch-event-type" {
+				return
+			}
 			ctx, _ := rtesting.SetupFakeContext(t)
 			cs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
-			client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode}
-			got, err := GetRepoByCR(ctx, client, tt.args.runinfo)
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+			client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger}
+			got, err := GetRepoByCR(ctx, client, "", tt.args.runinfo)
 			if err == nil && tt.wantErr {
 				assert.NilError(t, err, "GetRepoByCR() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if tt.wantTargetNS == "" && got.Spec.Namespace != "" {
+			if tt.wantTargetNS == "" && got != nil {
 				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.Spec.Namespace, tt.wantTargetNS)
 			}
+			if tt.wantTargetNS != "" && got == nil {
+				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.Spec.Namespace, tt.wantTargetNS)
+			}
+
 			if tt.wantTargetNS != "" && tt.wantTargetNS != got.Spec.Namespace {
 				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.Spec.Namespace, tt.wantTargetNS)
 			}

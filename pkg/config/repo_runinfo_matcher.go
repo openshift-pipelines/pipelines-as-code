@@ -24,16 +24,18 @@ func branchMatch(prunBranch, baseBranch string) bool {
 	return g.Match(baseBranch)
 }
 
-func GetRepoByCR(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) (apipac.Repository, error) {
-	var repository apipac.Repository
-
-	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
+func GetRepoByCR(ctx context.Context, cs *cli.Clients, ns string, runinfo *webvcs.RunInfo) (*apipac.Repository, error) {
+	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(ns).List(
 		ctx, metav1.ListOptions{})
 	if err != nil {
-		return repository, err
+		return nil, err
 	}
-
+	matches := []string{}
 	for _, value := range repositories.Items {
+		matches = append(matches,
+			fmt.Sprintf("RepositoryValue: URL=%s, eventType=%s BaseBranch:=%s", value.Spec.URL,
+				value.Spec.EventType, value.Spec.Branch))
+
 		if value.Spec.URL == runinfo.URL &&
 			value.Spec.EventType == runinfo.EventType {
 			if value.Spec.Branch != runinfo.BaseBranch {
@@ -45,14 +47,18 @@ func GetRepoByCR(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo) 
 			// Disallow attempts for hijacks. If the installed CR is not configured on the
 			// Namespace the Spec is targeting then disallow it.
 			if value.Namespace != value.Spec.Namespace {
-				return repository, fmt.Errorf("repo CR %s matches but belongs to %s while it should be in %s",
+				return nil, fmt.Errorf("repo CR %s matches but belongs to %s while it should be in %s",
 					value.Name,
 					value.Namespace,
 					value.Spec.Namespace)
 			}
 
-			return value, nil
+			return &value, nil
 		}
 	}
-	return repository, nil
+	for _, value := range matches {
+		cs.Log.Debug(value)
+	}
+
+	return nil, nil
 }
