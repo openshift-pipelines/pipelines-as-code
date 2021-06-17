@@ -70,12 +70,14 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	// Match the Event to a Repository Resource,
-	// TODO: we need to be able to force a Namespace from the configuration as annotation as an extra layer of security for // hijacking
-	repo, err := config.GetRepoByCR(ctx, cs, runinfo)
+	// We are going to match on targetNamespace annotation later on in
+	// `MatchPipelinerunByAnnotation`
+	repo, err := config.GetRepoByCR(ctx, cs, "", runinfo)
 	if err != nil {
 		return err
 	}
-	if repo.Spec.Namespace == "" {
+
+	if repo == nil {
 		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on target-branch:%s event-type: %s", runinfo.Owner, runinfo.Repository, runinfo.BaseBranch, runinfo.EventType)
 		if runinfo.EventType == "pull_request" || runinfo.TriggerTarget == "issue-recheck" {
 			err = createStatus(ctx, cs, runinfo, "completed", "skipped", msg, "https://tenor.com/search/sad-cat-gifs", true)
@@ -144,7 +146,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	// Match the pipelinerun with annotation
-	pipelineRun, err := config.MatchPipelinerunByAnnotation(pipelineRuns, cs, runinfo)
+	pipelineRun, err := config.MatchPipelinerunByAnnotation(ctx, pipelineRuns, cs, runinfo)
 	if err != nil {
 		return err
 	}

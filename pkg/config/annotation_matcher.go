@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -15,6 +16,7 @@ import (
 const (
 	onEventAnnotation        = "on-event"
 	onTargetBranchAnnotation = "on-target-branch"
+	onTargetNamespace        = "target-namespace"
 	reValidateTag            = `^\[(.*)\]$`
 )
 
@@ -39,7 +41,7 @@ func getAnnotationValues(annotation string) ([]string, error) {
 	return splitted, nil
 }
 
-func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
+func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 	runinfo *webvcs.RunInfo) (*v1beta1.PipelineRun, error) {
 	configurations := map[string]map[string]string{}
 	for _, prun := range pruns {
@@ -47,6 +49,16 @@ func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 		if prun.GetObjectMeta().GetAnnotations() == nil {
 			cs.Log.Warnf("PipelineRun %s does not have any annotations", prun.GetName())
 			continue
+		}
+
+		if targetNS, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
+			GroupName+"/"+onTargetNamespace]; ok {
+			configurations[prun.GetGenerateName()]["target-namespace"] = targetNS
+			repo, _ := GetRepoByCR(ctx, cs, targetNS, runinfo)
+			if repo == nil {
+				cs.Log.Warnf("could not find Repository CRD in %s while pipelineRun %s targets it", targetNS, prun.GetGenerateName())
+				continue
+			}
 		}
 
 		if targetEvent, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
@@ -83,8 +95,8 @@ func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 
 	cs.Log.Info("available configuration in pipelineRuns annotations")
 	for prunname, maps := range configurations {
-		cs.Log.Infof("pipelineRun: %s, baseBranch=%s, targetEvent=%s",
-			prunname, maps["target-branch"], maps["target-event"])
+		cs.Log.Infof("pipelineRun: %s, baseBranch=%s, targetEvent=%s, targetNs=%s",
+			prunname, maps["target-branch"], maps["target-event"], maps["target-namespace"])
 	}
 
 	// TODO: more descriptive error message
