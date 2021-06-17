@@ -77,7 +77,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return err
 	}
 
-	if repo == nil {
+	if repo == nil || repo.Spec.Namespace == "" {
 		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on target-branch:%s event-type: %s", runinfo.Owner, runinfo.Repository, runinfo.BaseBranch, runinfo.EventType)
 		if runinfo.EventType == "pull_request" || runinfo.TriggerTarget == "issue-recheck" {
 			err = createStatus(ctx, cs, runinfo, "completed", "skipped", msg, "https://tenor.com/search/sad-cat-gifs", true)
@@ -146,9 +146,12 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	// Match the pipelinerun with annotation
-	pipelineRun, err := config.MatchPipelinerunByAnnotation(ctx, pipelineRuns, cs, runinfo)
+	pipelineRun, annotationRepo, err := config.MatchPipelinerunByAnnotation(ctx, pipelineRuns, cs, runinfo)
 	if err != nil {
 		return err
+	}
+	if annotationRepo.Spec.Namespace != "" {
+		repo = annotationRepo
 	}
 
 	// Add labels on the soon to be created pipelinerun so UI/CLI can easily
