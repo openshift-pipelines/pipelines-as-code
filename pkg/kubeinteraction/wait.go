@@ -83,7 +83,7 @@ func PipelineRunSucceed(name string) ConditionAccessorFn {
 	return Succeed(name)
 }
 
-func pollImmediateWithContext(ctx context.Context, fn func() (bool, error)) error {
+func PollImmediateWithContext(ctx context.Context, fn func() (bool, error)) error {
 	return wait.PollImmediate(interval, timeout, func() (bool, error) {
 		select {
 		case <-ctx.Done():
@@ -101,7 +101,7 @@ func pollImmediateWithContext(ctx context.Context, fn func() (bool, error)) erro
 func waitForPipelineRunState(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun, polltimeout time.Duration, inState ConditionAccessorFn) error {
 	ctx, cancel := context.WithTimeout(ctx, polltimeout)
 	defer cancel()
-	return pollImmediateWithContext(ctx, func() (bool, error) {
+	return PollImmediateWithContext(ctx, func() (bool, error) {
 		r, err := tektonbeta1.PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
 		if err != nil {
 			return true, err
