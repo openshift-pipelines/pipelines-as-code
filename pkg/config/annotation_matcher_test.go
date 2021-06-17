@@ -100,7 +100,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				runinfo: &webvcs.RunInfo{EventType: "push", BaseBranch: "main"},
 			},
 			wantErr: true,
-			wantLog: "does not have any annotations",
+			wantLog: "cannot match between event and pipelineRuns",
 		},
 		{
 			name: "bad-event-annotation",
@@ -225,8 +225,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			}
 			if tt.wantLog != "" {
 				logmsg := log.TakeAll()
-				assert.Assert(t, len(logmsg) > 0)
-				assert.Assert(t, strings.Contains(logmsg[0].Message, tt.wantLog))
+				assert.Assert(t, len(logmsg) > 0, "We didn't get any log message")
+				assert.Assert(t, strings.Contains(logmsg[0].Message, tt.wantLog), logmsg[0].Message, tt.wantLog)
 			}
 		})
 	}

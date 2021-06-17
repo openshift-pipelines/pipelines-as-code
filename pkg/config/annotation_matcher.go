@@ -41,7 +41,9 @@ func getAnnotationValues(annotation string) ([]string, error) {
 
 func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 	runinfo *webvcs.RunInfo) (*v1beta1.PipelineRun, error) {
+	configurations := map[string]map[string]string{}
 	for _, prun := range pruns {
+		configurations[prun.GetGenerateName()] = map[string]string{}
 		if prun.GetObjectMeta().GetAnnotations() == nil {
 			cs.Log.Warnf("PipelineRun %s does not have any annotations", prun.GetName())
 			continue
@@ -50,6 +52,7 @@ func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 		if targetEvent, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onEventAnnotation]; ok {
 			matched, err := matchOnAnnotation(targetEvent, runinfo.EventType, false)
+			configurations[prun.GetGenerateName()]["target-event"] = targetEvent
 			if err != nil {
 				return nil, err
 			}
@@ -61,6 +64,7 @@ func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 		if targetBranch, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onTargetBranchAnnotation]; ok {
 			matched, err := matchOnAnnotation(targetBranch, runinfo.BaseBranch, true)
+			configurations[prun.GetGenerateName()]["target-branch"] = targetBranch
 			if err != nil {
 				return nil, err
 			}
@@ -71,8 +75,20 @@ func MatchPipelinerunByAnnotation(pruns []*v1beta1.PipelineRun, cs *cli.Clients,
 
 		return prun, nil
 	}
+
+	cs.Log.Infof("cannot match between event and pipelineRuns: URL=%s baseBranch=%s, "+
+		"eventType=%s", runinfo.URL,
+		runinfo.BaseBranch,
+		runinfo.EventType)
+
+	cs.Log.Info("available configuration in pipelineRuns annotations")
+	for prunname, maps := range configurations {
+		cs.Log.Infof("pipelineRun: %s, baseBranch=%s, targetEvent=%s",
+			prunname, maps["target-branch"], maps["target-event"])
+	}
+
 	// TODO: more descriptive error message
-	return nil, fmt.Errorf("cannot match any pipeline on EventType: %s, TargetBranch: %s", runinfo.EventType, runinfo.BaseBranch)
+	return nil, fmt.Errorf("cannot match pipeline from webhook to pipelineruns")
 }
 
 func matchOnAnnotation(annotations string, runinfoValue string, branchMatching bool) (bool, error) {

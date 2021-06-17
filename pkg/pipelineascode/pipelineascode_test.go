@@ -136,7 +136,7 @@ func TestRun(t *testing.T) {
 				EventType:  "pull_request",
 			},
 			tektondir:   "testdata/pull_request",
-			wantErr:     "cannot match any pipeline",
+			wantErr:     "cannot match pipeline from webhook to pipelineruns",
 			finalStatus: "neutral",
 		},
 		{
