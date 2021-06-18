@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -532,6 +533,54 @@ func TestCheckSenderOrgMembership(t *testing.T) {
 				t.Errorf("We got an error when we didn't want it: %s", err)
 			}
 			assert.Equal(t, tt.allowed, allowed)
+		})
+	}
+}
+
+func TestGetStringPullRequestComment(t *testing.T) {
+	regexp := `(^|\n)/retest(\r\n|$)`
+	tests := []struct {
+		name, apiReturn string
+		wantErr         bool
+		runinfo         *RunInfo
+		wantRet         bool
+	}{
+		{
+			name:      "Get String from comments",
+			runinfo:   &RunInfo{URL: "http://1"},
+			apiReturn: `[{"body": "/retest"}]`,
+			wantRet:   true,
+		},
+		{
+			name:      "Not matching string in comments",
+			runinfo:   &RunInfo{URL: "http://1"},
+			apiReturn: `[{"body": ""}]`,
+			wantRet:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			ctx, _ := rtesting.SetupFakeContext(t)
+			gvcs := GithubVCS{
+				Client: fakeclient,
+			}
+			mux.HandleFunc(fmt.Sprintf("/repos/issues/%s/comments", filepath.Base(tt.runinfo.URL)), func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(rw, tt.apiReturn)
+			})
+
+			ret, err := gvcs.GetStringPullRequestComment(ctx, tt.runinfo, regexp)
+			if tt.wantErr && err == nil {
+				t.Error("We didn't get an error when we wanted one")
+			}
+			if !tt.wantErr && err != nil {
+				t.Errorf("We got an error when we didn't want it: %s", err)
+			}
+
+			if tt.wantRet {
+				assert.Assert(t, ret != nil)
+			}
 		})
 	}
 }
