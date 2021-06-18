@@ -30,32 +30,6 @@ spec:
           - name: output
             workspace: source
 
-      - name: getcache
-        runAfter:
-          - fetchit
-        taskSpec:
-          steps:
-            - image: public.ecr.aws/bitnami/golang:latest
-              name: get-cache
-              script: |
-                #!/usr/bin/env bash
-                set -ex
-                mkdir -p go-build-cache;cd go-build-cache
-
-                curl -fsI http://uploader:8080/golang-cache.tar || {
-                    echo "no cache found"
-                    exit 0
-                }
-
-                echo "Getting cache"
-                curl http://uploader:8080/golang-cache.tar|tar -x -f-
-              workingDir: $(workspaces.source.path)
-          workspaces:
-            - name: source
-        workspaces:
-          - name: source
-            workspace: source
-
       - name: yamllint
         runAfter:
           - fetchit
@@ -74,7 +48,7 @@ spec:
 
       - name: unitlint
         runAfter:
-          - getcache
+          - fetchit
         taskSpec:
           workspaces:
             - name: source
