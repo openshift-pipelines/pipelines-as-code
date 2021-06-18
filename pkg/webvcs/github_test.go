@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -507,6 +508,112 @@ func TestGithubVCS_CreateCheckRun(t *testing.T) {
 	assert.Equal(t, cr.GetID(), int64(555))
 }
 
+func TestCheckSenderOrgMembership(t *testing.T) {
+	tests := []struct {
+		name, apiReturn  string
+		allowed, wantErr bool
+		runinfo          *RunInfo
+	}{
+		{
+			name: "Check Sender Org Membership",
+			runinfo: &RunInfo{
+				Owner:  "organization",
+				Sender: "me",
+			},
+			apiReturn: `[{"login": "me"}]`,
+			allowed:   true,
+			wantErr:   false,
+		},
+		{
+			name: "Check Sender not in Org Membership",
+			runinfo: &RunInfo{
+				Owner:  "organization",
+				Sender: "me",
+			},
+			apiReturn: `[{"login": "not"}]`,
+			allowed:   false,
+		},
+		{
+			name: "Not found on organization",
+			runinfo: &RunInfo{
+				Owner:  "notfound",
+				Sender: "me",
+			},
+			allowed: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			ctx, _ := rtesting.SetupFakeContext(t)
+			gvcs := GithubVCS{
+				Client: fakeclient,
+			}
+			mux.HandleFunc(fmt.Sprintf("/orgs/%s/public_members", tt.runinfo.Owner), func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(rw, tt.apiReturn)
+			})
+
+			allowed, err := gvcs.CheckSenderOrgMembership(ctx, tt.runinfo)
+			if tt.wantErr && err == nil {
+				t.Error("We didn't get an error when we wanted one")
+			}
+			if !tt.wantErr && err != nil {
+				t.Errorf("We got an error when we didn't want it: %s", err)
+			}
+			assert.Equal(t, tt.allowed, allowed)
+		})
+	}
+}
+
+func TestGetStringPullRequestComment(t *testing.T) {
+	regexp := `(^|\n)/retest(\r\n|$)`
+	tests := []struct {
+		name, apiReturn string
+		wantErr         bool
+		runinfo         *RunInfo
+		wantRet         bool
+	}{
+		{
+			name:      "Get String from comments",
+			runinfo:   &RunInfo{URL: "http://1"},
+			apiReturn: `[{"body": "/retest"}]`,
+			wantRet:   true,
+		},
+		{
+			name:      "Not matching string in comments",
+			runinfo:   &RunInfo{URL: "http://1"},
+			apiReturn: `[{"body": ""}]`,
+			wantRet:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			ctx, _ := rtesting.SetupFakeContext(t)
+			gvcs := GithubVCS{
+				Client: fakeclient,
+			}
+			mux.HandleFunc(fmt.Sprintf("/repos/issues/%s/comments", filepath.Base(tt.runinfo.URL)), func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(rw, tt.apiReturn)
+			})
+
+			ret, err := gvcs.GetStringPullRequestComment(ctx, tt.runinfo, regexp)
+			if tt.wantErr && err == nil {
+				t.Error("We didn't get an error when we wanted one")
+			}
+			if !tt.wantErr && err != nil {
+				t.Errorf("We got an error when we didn't want it: %s", err)
+			}
+
+			if tt.wantRet {
+				assert.Assert(t, ret != nil)
+			}
+		})
+	}
+}
+
 func TestRunInfoCheck(t *testing.T) {
 	type fields struct {
 		Owner         string
@@ -564,21 +671,6 @@ func TestRunInfoCheck(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestCreateStatus(t *testing.T) {
-	ctx, _ := rtesting.SetupFakeContext(t)
-	gcvs, teardown := setupFakesURLS()
-	checkrunid := int64(2026)
-	defer teardown()
-	runinfo := &RunInfo{
-		Owner:      "check",
-		Repository: "run",
-		CheckRunID: &checkrunid,
-	}
-	cr, err := gcvs.CreateStatus(ctx, runinfo, "completed", "success", "Yay", "https://foo/bar")
-	assert.NilError(t, err)
-	assert.Equal(t, cr.GetID(), int64(666))
 }
 
 func TestGithubVCS_CreateStatus(t *testing.T) {
