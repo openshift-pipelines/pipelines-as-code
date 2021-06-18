@@ -14,7 +14,7 @@ import (
 	testDynamic "github.com/openshift-pipelines/pipelines-as-code/pkg/test/dynamic"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 
-	"github.com/google/go-github/v34/github"
+	"github.com/google/go-github/v35/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"

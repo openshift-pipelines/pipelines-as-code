@@ -14,7 +14,7 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-github/v34/github"
+	"github.com/google/go-github/v35/github"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
