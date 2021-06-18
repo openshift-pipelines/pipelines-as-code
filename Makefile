@@ -35,6 +35,10 @@ check: lint test
 .PHONY: test
 test: test-unit ## run all tests
 
+.PHONY: test-e2e
+test-e2e:  ## run e2e tests
+	@go test -failfast -count=1 -tags=e2e $(GO_TEST_FLAGS) ./test
+
 .PHONY: lint
 lint: lint-go lint-yaml ## run all linters
 
