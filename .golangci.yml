@@ -44,7 +44,7 @@ linters:
   - unparam
   - gochecknoinits
   - goconst
-  - gocyclo
+    # - gocyclo
     # - goerr113
   - gofmt
   - goheader
