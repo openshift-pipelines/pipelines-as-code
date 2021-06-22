@@ -124,8 +124,6 @@ github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
 # github.com/google/go-containerregistry v0.4.1-0.20210128200529-19c2b639fab1
 github.com/google/go-containerregistry/pkg/name
-# github.com/google/go-github/v34 v34.0.0
-## explicit
 # github.com/google/go-github/v35 v35.3.0
 ## explicit
 github.com/google/go-github/v35/github

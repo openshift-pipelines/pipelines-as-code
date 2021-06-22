@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/google/go-github/v34/github"
+	"github.com/google/go-github/v35/github"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
