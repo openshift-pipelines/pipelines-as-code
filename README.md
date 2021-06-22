@@ -124,7 +124,7 @@ on the `PipelineRun`. For example when you have these metadatas in your `Pipelin
 
 ```yaml
  metadata:
- name: pipeline-pr-main
+    name: pipeline-pr-main
  annotations:
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
     pipelinesascode.tekton.dev/on-event: "[pull_request]"
