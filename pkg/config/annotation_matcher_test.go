@@ -29,6 +29,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				pipelinesascode.GroupName + "/" + onTargetNamespace:        targetNamespace,
 				pipelinesascode.GroupName + "/" + onEventAnnotation:        "[pull_request]",
 				pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: fmt.Sprintf("[%s]", mainBranch),
+				pipelinesascode.GroupName + "/" + maxKeepRuns:              "2",
 			},
 		},
 	}
@@ -94,7 +95,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			observer, log := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 			client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger}
-			got, repo, err := MatchPipelinerunByAnnotation(ctx,
+			got, repo, _, err := MatchPipelinerunByAnnotation(ctx,
 				tt.args.pruns,
 				client, tt.args.runinfo)
 
@@ -321,7 +322,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			got, _, err := MatchPipelinerunByAnnotation(ctx, tt.args.pruns, cs, tt.args.runinfo)
+			got, _, _, err := MatchPipelinerunByAnnotation(ctx, tt.args.pruns, cs, tt.args.runinfo)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return

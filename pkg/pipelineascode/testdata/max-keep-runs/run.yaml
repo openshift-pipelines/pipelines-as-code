@@ -1,0 +1,18 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: max-keep-runs
+  annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+    pipelinesascode.tekton.dev/max-keep-runs: "10"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: max
+        taskSpec:
+          steps:
+            - name: success
+              image: registry.access.redhat.com/ubi8/ubi-minimal:8.3
+              script: 'exit 0'

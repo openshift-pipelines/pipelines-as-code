@@ -106,6 +106,7 @@ func TestRun(t *testing.T) {
 		finalLogText                 string
 		repositories                 []*v1alpha1.Repository
 		skipReplyingOrgPublicMembers bool
+		expectedNumberofCleanups     int
 	}{
 		{
 			name: "pull request",
@@ -123,6 +124,7 @@ func TestRun(t *testing.T) {
 			finalStatus:  "neutral",
 			finalLogText: "<th>Status</th><th>Duration</th><th>Name</th>",
 		},
+
 		{
 			name: "No match",
 			runinfo: &webvcs.RunInfo{
@@ -264,6 +266,23 @@ func TestRun(t *testing.T) {
 			finalLogText:                 "is not allowed to run CI on this repo",
 			skipReplyingOrgPublicMembers: true,
 		},
+		{
+			name: "Keep max number of pipelineruns",
+			runinfo: &webvcs.RunInfo{
+				SHA:        "principale",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				HeadBranch: "press",
+				BaseBranch: "main",
+				Sender:     "fantasio",
+				EventType:  "pull_request",
+			},
+			tektondir:                "testdata/max-keep-runs",
+			finalStatus:              "neutral",
+			finalLogText:             "<th>Status</th><th>Duration</th><th>Name</th>",
+			expectedNumberofCleanups: 10,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -306,7 +325,8 @@ func TestRun(t *testing.T) {
 				Dynamic:        dc,
 			}
 			k8int := &kitesthelper.KinterfaceTest{
-				ConsoleURL: "https://console.url",
+				ConsoleURL:               "https://console.url",
+				ExpectedNumberofCleanups: tt.expectedNumberofCleanups,
 			}
 			err := Run(ctx, cs, k8int, tt.runinfo)
 

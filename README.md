@@ -1,8 +1,8 @@
-[![Container Repository on Quay](https://quay.io/repository/openshift-pipeline/pipelines-as-code/status "Container Repository on Quay")](https://quay.io/repository/openshift-pipeline/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code)
-
 # Pipelines as Code
 
-Pipelines as Code is an opinionated CI based on OpenShift Pipelines / Tekton.
+[![Container Repository on Quay](https://quay.io/repository/openshift-pipeline/pipelines-as-code/status "Container Repository on Quay")](https://quay.io/repository/openshift-pipeline/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code)
+
+Pipelines as Code -- An opinionated CI based on OpenShift Pipelines / Tekton.
 
 ## Introduction
 
@@ -15,11 +15,13 @@ to have your pipelines "sits and live" inside the same repository where your
 code is.
 
 The goal of Pipelines as Code is to let you define your
-[Tekton](https://tekton.cd) templates inside your source code repository and have the pipeline run and report the status of the execution when triggered by a Pull Request or a branch push.
+[Tekton](https://tekton.cd) templates inside your source code repository and
+have the pipeline run and report the status of the execution when triggered by a
+Pull Request or a branch push.
 
 ## Components
 
-Pipelines as Code is built on the following technologies :
+Pipelines as Code is built on the following technologies:
 
 - [Tekton Triggers](github.com/tektoncd/triggers): A Tekton Triggers
   EventListener is spun up in a central namespace (`pipelines-as-code`). The
@@ -175,6 +177,23 @@ If there is multiple pipeline matching an event, it will match the first one.
 We are currently not supporting multiple PipelineRuns on a single event but
 this may be something we can consider to implement in the future.
 
+### PipelineRuns Cleanups
+
+There can be a lot of PipelineRuns into an user namespace and Pipelines as Code
+has the ability to only keep a number of PipelineRuns that matches an event.
+
+For example if the PipelineRun has this annotation :
+
+```yaml
+pipelinesascode.tekton.dev/max-keep-runs: "maxNumber"
+```
+
+Pipelines as Code sees this and will start cleaning up right after it finishes a
+successful execution keeping only the maxNumber of PipelineRuns.
+
+It will skip the `Running` PipelineRuns but will not skip the PipelineRuns with
+`Unknown` status.
+
 #### Pipelines as Code resolver
 
 If `Pipelines as Code` sees a PipelineRun with a reference to a `Task` or a
@@ -262,11 +281,11 @@ If the object fetched cannot be parsed as a Tekton `Task` it will error out.
 
 ### Running the Pipeline
 
-* A user create a Pull Request.
+- A user create a Pull Request.
 
-* If the user sending the Pull Request is not the owner of the repository or not a public member of the organization where the repository belong to, `Pipelines as Code` will not run.
+- If the user sending the Pull Request is not the owner of the repository or not a public member of the organization where the repository belong to, `Pipelines as Code` will not run.
 
-* If the user sending the Pull Request is inside an OWNER file located in the repository root in the main branch (the main branch as defined in the Github configuration for the repo) in the `approvers` or `reviewers` section like this :
+- If the user sending the Pull Request is inside an OWNER file located in the repository root in the main branch (the main branch as defined in the Github configuration for the repo) in the `approvers` or `reviewers` section like this :
 
 ```yaml
 approvers:
@@ -302,7 +321,7 @@ with the string `/retest` to ask Pipeline as Code to retest the current PR.
 
 Example :
 
-```
+```text
 Thanks for contributing! This is a much needed bugfix! ❤️
 The failure is not with your PR but seems to be an infra issue.
 
