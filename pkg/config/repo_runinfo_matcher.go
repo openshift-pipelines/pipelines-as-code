@@ -45,7 +45,7 @@ func GetRepoByCR(ctx context.Context, cs *cli.Clients, ns string, runinfo *webvc
 			}
 
 			// Disallow attempts for hijacks. If the installed CR is not configured on the
-			// Namespace the Spec is targeting then disallow it.
+			// namespace the Spec is targeting then disallow it.
 			if value.Namespace != value.Spec.Namespace {
 				return nil, fmt.Errorf("repo CR %s matches but belongs to %s while it should be in %s",
 					value.Name,

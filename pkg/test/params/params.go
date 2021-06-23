@@ -7,6 +7,11 @@ import (
 
 type FakeParams struct {
 	Fakeclients *cli.Clients
+	ns          string
+}
+
+func (p FakeParams) GetNamespace() string {
+	return p.ns
 }
 
 // SetKubeConfigPath uses the kubeconfig path to instantiate tekton

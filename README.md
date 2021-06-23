@@ -212,15 +212,8 @@ tasks are referenced).
 If pipelines as code cannot resolve the referenced tasks in the `Pipeline` or `PipelineSpec` it will fails before applying the pipelinerun onto the cluster.
 
 If you need to test your `PipelineRun` locally before sending it in a PR, you can use
-the `tkresolver` CLI, by installing it like this :
-
-```shell
-go install github.com/openshift-pipelines/pipelines-as-code/cmd/tknresolve
-```
-
-and you can use the tknresolve binary to generate the PipelineRun the say way it
-is generated on events. See the `--help` of the `tknresolve` to learn about how
-this CLI and on how to use it.
+the `resolve` command from the `tkn-pac` CLI See the `--help` of the command to learn about
+how to use it.
 
 #### Remote Task support
 
@@ -389,6 +382,40 @@ success) with this task :
 Pipelines as Code reuse this for its push pipeline, see it here :
 
 [.tekton/push.yaml](.tekton/push.yaml)
+
+## CLI
+
+`Pipeline as Code` provide a CLI which is design to work as tkn plugin.
+
+Install it like this :
+
+```shell
+go install github.com/openshift-pipelines/pipelines-as-code/cmd/tkn-pac
+```
+
+and you can then see the usage of the commands with :
+
+```shell
+tkn pac help
+```
+
+for example to list all repo status in your system (if you have the right for it) :
+
+```shell
+tkn pac repo ls -A
+```
+
+and to dig into a specific repository status:
+
+```shell
+tkn pac repo desc repository-name -n namespace
+```
+
+Here is a short video :
+
+https://user-images.githubusercontent.com/98980/123408765-ac32c900-d5ad-11eb-83bf-6ef068a787bb.mp4
+
+
 
 ## Setup
 

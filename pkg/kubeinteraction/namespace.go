@@ -10,9 +10,9 @@ import (
 func (k Interaction) GetNamespace(ctx context.Context, namespace string) error {
 	_, err := k.Clients.Kube.CoreV1().Namespaces().Get(ctx, namespace, v1.GetOptions{})
 	if err != nil {
-		k.Clients.Log.Infof("Namespace: %s cannot be found", namespace)
+		k.Clients.Log.Infof("namespace: %s cannot be found", namespace)
 		return err
 	}
-	k.Clients.Log.Infof("Namespace is: %s", namespace)
+	k.Clients.Log.Infof("namespace is: %s", namespace)
 	return nil
 }

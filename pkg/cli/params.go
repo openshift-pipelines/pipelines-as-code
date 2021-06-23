@@ -24,6 +24,10 @@ type PacParams struct {
 
 var _ Params = (*PacParams)(nil)
 
+func (p *PacParams) GetNamespace() string {
+	return p.namespace
+}
+
 func (p *PacParams) SetKubeConfigPath(path string) {
 	p.kubeConfigPath = path
 }

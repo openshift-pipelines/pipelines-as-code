@@ -110,7 +110,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 
 	// Make sure we have the namespace already created or error it.
 	// TODO: this probably can be trashed since repo is only can be created in
-	// Namespace
+	// namespace
 	err = k8int.GetNamespace(ctx, repo.Spec.Namespace)
 	if err != nil {
 		return err
