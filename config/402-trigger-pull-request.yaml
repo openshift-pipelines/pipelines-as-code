@@ -77,7 +77,7 @@ spec:
       metadata:
         generateName: pipelines-as-code-run-
         labels:
-          tekton.dev/pipeline: pipelines-as-code
+          app.kubernetes.io/managed-by: pipelines-as-code
           tekton.dev/pipelines-as-code-event: $(tt.params.event_type)
       spec:
         serviceAccountName: pipelines-as-code-sa-el
