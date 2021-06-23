@@ -1,0 +1,27 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: finally-task
+spec:
+  steps:
+    - name: finally-task
+      image: finally-image
+
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pipelinespec-taskspecs-embedded
+spec:
+  pipelineSpec:
+    finally:
+      - name: finally-task
+        taskRef:
+          name: finally-task
+    tasks:
+      - name: hello1
+        taskSpec:
+          steps:
+            - name: hello-moto
+              image: scratch

@@ -76,6 +76,23 @@ func skippingTask(taskName string, skippedTasks []string) bool {
 	return false
 }
 
+func inlineTasks(tasks []tektonv1beta1.PipelineTask, ropt *Opts, types Types) ([]tektonv1beta1.PipelineTask,
+	error) {
+	pipelineTasks := []tektonv1beta1.PipelineTask{}
+	for _, task := range tasks {
+		if task.TaskRef != nil && task.TaskRef.Bundle == "" && !skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
+			taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
+			if err != nil {
+				return nil, err
+			}
+			task.TaskRef = nil
+			task.TaskSpec = &tektonv1beta1.EmbeddedTask{TaskSpec: taskResolved.Spec}
+		}
+		pipelineTasks = append(pipelineTasks, task)
+	}
+	return pipelineTasks, nil
+}
+
 type Opts struct {
 	GenerateName bool     // wether to GenerateName
 	RemoteTasks  bool     // wether to parse annotation to fetch tasks from remote
@@ -114,39 +131,35 @@ func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data
 		}
 	}
 
-	// Resolve TaskRef inside Pipeline
+	// Resolve {Finally/Task}Ref inside Pipeline
 	for _, pipeline := range types.Pipelines {
-		var pipelineTasks []tektonv1beta1.PipelineTask
-		for _, task := range pipeline.Spec.Tasks {
-			if task.TaskRef != nil && task.TaskRef.Bundle == "" && !skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
-				taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
-				if err != nil {
-					return []*tektonv1beta1.PipelineRun{}, err
-				}
-				task.TaskRef = nil
-				task.TaskSpec = &tektonv1beta1.EmbeddedTask{TaskSpec: taskResolved.Spec}
-			}
-			pipelineTasks = append(pipelineTasks, task)
+		pipelineTasks, err := inlineTasks(pipeline.Spec.Tasks, ropt, types)
+		if err != nil {
+			return nil, err
 		}
 		pipeline.Spec.Tasks = pipelineTasks
+
+		finallyTasks, err := inlineTasks(pipeline.Spec.Finally, ropt, types)
+		if err != nil {
+			return nil, err
+		}
+		pipeline.Spec.Finally = finallyTasks
 	}
 
 	for _, pipelinerun := range types.PipelineRuns {
-		// Resolve taskRef inside PipelineSpec inside PipelineRun
+		// Resolve {Finally/Task}Ref inside PipelineSpec inside PipelineRun
 		if pipelinerun.Spec.PipelineSpec != nil {
-			var pipelineTasksResolve []tektonv1beta1.PipelineTask
-			for _, task := range pipelinerun.Spec.PipelineSpec.Tasks {
-				if task.TaskRef != nil && task.TaskRef.Bundle == "" && !skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
-					taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
-					if err != nil {
-						return []*tektonv1beta1.PipelineRun{}, err
-					}
-					task.TaskRef = nil
-					task.TaskSpec = &tektonv1beta1.EmbeddedTask{TaskSpec: taskResolved.Spec}
-				}
-				pipelineTasksResolve = append(pipelineTasksResolve, task)
+			truns, err := inlineTasks(pipelinerun.Spec.PipelineSpec.Tasks, ropt, types)
+			if err != nil {
+				return nil, err
 			}
-			pipelinerun.Spec.PipelineSpec.Tasks = pipelineTasksResolve
+			pipelinerun.Spec.PipelineSpec.Tasks = truns
+
+			fruns, err := inlineTasks(pipelinerun.Spec.PipelineSpec.Finally, ropt, types)
+			if err != nil {
+				return nil, err
+			}
+			pipelinerun.Spec.PipelineSpec.Finally = fruns
 		}
 
 		// Resolve PipelineRef inside PipelineRef
