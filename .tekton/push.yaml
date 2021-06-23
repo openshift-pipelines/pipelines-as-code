@@ -7,6 +7,7 @@ metadata:
     pipelinesascode.tekton.dev/on-event: "[push]"
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
     pipelinesascode.tekton.dev/task: "[git-clone]"
+    pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]"  # send-slack-notifications task
 spec:
   params:
     - name: repo_url
@@ -112,6 +113,15 @@ spec:
             workspace: source
     workspaces:
       - name: source
+    finally:
+      - name: finally
+        taskRef:
+          name: send-slack-notification
+        params:
+          - name: log_url
+            value: "https://console-openshift-console.apps.paac.devcluster.openshift.com"
+          - name: openshift
+            value: "true"
   workspaces:
     - name: source
       volumeClaimTemplate:

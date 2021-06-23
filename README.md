@@ -375,6 +375,21 @@ directly like this :
   [...]
 ```
 
+### Notifications
+
+Notifications are not enabled natively by Pipelines as Code, the only place
+where we report status is when we do a Pull Request and update for example the
+Github checks interface with the results.
+
+You can easily configure your pipeline to send a slack message on failures (or
+success) with this task :
+
+<https://github.com/chmouel/tekton-slack-task-status>
+
+Pipelines as Code reuse this for its push pipeline, see it here :
+
+[.tekton/push.yaml](.tekton/push.yaml)
+
 ## Setup
 
 You simply need to run this command :
