@@ -3,6 +3,7 @@ package pipelineascode
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -146,10 +147,11 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	// Match the pipelinerun with annotation
-	pipelineRun, annotationRepo, err := config.MatchPipelinerunByAnnotation(ctx, pipelineRuns, cs, runinfo)
+	pipelineRun, annotationRepo, config, err := config.MatchPipelinerunByAnnotation(ctx, pipelineRuns, cs, runinfo)
 	if err != nil {
 		return err
 	}
+
 	if annotationRepo.Spec.Namespace != "" {
 		repo = annotationRepo
 	}
@@ -195,6 +197,19 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		cs.Log.Info("PipelineRun has failed.")
 	}
 
+	// Do cleanups
+	if keepMaxPipeline, ok := config["max-keep-runs"]; ok {
+		max, err := strconv.Atoi(keepMaxPipeline)
+		if err != nil {
+			return err
+		}
+
+		err = k8int.CleanupPipelines(ctx, repo.Spec.Namespace, runinfo, max)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Post the final status to GitHub check status with a nice breakdown and
 	// tekton cli describe output.
 	newPr, err := postFinalStatus(ctx, cs, k8int, runinfo, pr.Name, repo.Spec.Namespace)
@@ -223,6 +238,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		copy(lastrepo.Status, lastrepo.Status[len(lastrepo.Status)-maxPipelineRunStatusRun+1:])
 		lastrepo.Status = lastrepo.Status[:maxPipelineRunStatusRun-1]
 	}
+
 	lastrepo.Status = append(lastrepo.Status, repoStatus)
 	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
 		ctx, lastrepo, metav1.UpdateOptions{})

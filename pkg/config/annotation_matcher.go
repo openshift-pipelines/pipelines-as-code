@@ -19,6 +19,7 @@ const (
 	onTargetBranchAnnotation = "on-target-branch"
 	onTargetNamespace        = "target-namespace"
 	reValidateTag            = `^\[(.*)\]$`
+	maxKeepRuns              = "max-keep-runs"
 )
 
 // TODO: move to another file since it's common to all annotations_* files
@@ -43,7 +44,7 @@ func getAnnotationValues(annotation string) ([]string, error) {
 }
 
 func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.PipelineRun, cs *cli.Clients,
-	runinfo *webvcs.RunInfo) (*v1beta1.PipelineRun, *apipac.Repository, error) {
+	runinfo *webvcs.RunInfo) (*v1beta1.PipelineRun, *apipac.Repository, map[string]string, error) {
 	configurations := map[string]map[string]string{}
 	repo := &apipac.Repository{}
 	for _, prun := range pruns {
@@ -51,6 +52,11 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 		if prun.GetObjectMeta().GetAnnotations() == nil {
 			cs.Log.Warnf("PipelineRun %s does not have any annotations", prun.GetName())
 			continue
+		}
+
+		if maxPrNumber, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
+			GroupName+"/"+maxKeepRuns]; ok {
+			configurations[prun.GetGenerateName()]["max-keep-runs"] = maxPrNumber
 		}
 
 		if targetNS, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
@@ -68,7 +74,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 			matched, err := matchOnAnnotation(targetEvent, runinfo.EventType, false)
 			configurations[prun.GetGenerateName()]["target-event"] = targetEvent
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, map[string]string{}, err
 			}
 			if !matched {
 				continue
@@ -80,14 +86,14 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 			matched, err := matchOnAnnotation(targetBranch, runinfo.BaseBranch, true)
 			configurations[prun.GetGenerateName()]["target-branch"] = targetBranch
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, map[string]string{}, err
 			}
 			if !matched {
 				continue
 			}
 		}
 
-		return prun, repo, nil
+		return prun, repo, configurations[prun.GetGenerateName()], nil
 	}
 
 	cs.Log.Infof("cannot match between event and pipelineRuns: URL=%s baseBranch=%s, "+
@@ -102,7 +108,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 	}
 
 	// TODO: more descriptive error message
-	return nil, nil, fmt.Errorf("cannot match pipeline from webhook to pipelineruns")
+	return nil, nil, map[string]string{}, fmt.Errorf("cannot match pipeline from webhook to pipelineruns")
 }
 
 func matchOnAnnotation(annotations string, runinfoValue string, branchMatching bool) (bool, error) {
