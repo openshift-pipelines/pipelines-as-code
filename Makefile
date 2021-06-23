@@ -3,6 +3,7 @@ QUAY_REPOSITORY=quay.io/openshift-pipeline/pipelines-as-code
 QUAY_REPOSITORY_BRANCH=main
 GO_TEST_FLAGS=-v -cover
 GOLANGCI_LINT=golangci-lint
+GOFUMPT=gofumpt
 
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
 
@@ -72,6 +73,12 @@ clean: ## clean build artifacts
 .PHONY: fmt ## formats the GO code(excludes vendors dir)
 fmt:
 	@go fmt `go list ./... | grep -v /vendor/`
+
+.PHONY: fumpt ## formats the GO code with gofumpt(excludes vendors dir)
+fumpt:
+	@$(GOFUMPT) -w pkg/**/*go
+
+
 
 .PHONY: help
 help: ## print this help
