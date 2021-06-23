@@ -86,6 +86,19 @@ func TestPipelineRunPipelineSpecTaskSpec(t *testing.T) {
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "hello-moto")
 }
 
+func TestPipelineRunWithFinally(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-finally", false)
+	assert.NilError(t, err)
+	assert.Equal(t, resolved.Spec.PipelineSpec.Finally[0].TaskSpec.Steps[0].Name, "finally-task")
+}
+
+func TestPipelineWithFinally(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipeline-finally", false)
+	assert.NilError(t, err)
+	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "normal-task")
+	assert.Equal(t, resolved.Spec.PipelineSpec.Finally[0].TaskSpec.Steps[0].Name, "finally-task")
+}
+
 func TestPipelineRunPipelineSpecTaskRef(t *testing.T) {
 	resolved, _, err := readTDfile(t, "pipelinerun-pipelinespec-taskref", false)
 	assert.NilError(t, err)
