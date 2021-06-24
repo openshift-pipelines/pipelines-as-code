@@ -16,6 +16,8 @@ SETUP
 
 * Configure a GitHub APP and a `github-secret` as mentionned in README.
 
+* Make sure you have the namespace as the user created and not as cluster admin.
+
 * Configure a few Repository CR and a namespace target.
 
 * If you go to your GitHub app setting in `Advanced` you can see the json and
