@@ -35,7 +35,7 @@ Pipelines as Code is built on the following technologies:
 - Web VCS support. When iterating over a Pull Request, status and control is
   done on the platform.
 
-  GitHub:
+  *GitHub*:
 
   - Support for Checks API to set the status of a PipelineRun.
   - Support rechecks on UI.
