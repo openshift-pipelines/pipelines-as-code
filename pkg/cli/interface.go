@@ -36,6 +36,9 @@ type Params interface {
 	// SetGitAPIURL Set github token TODO: rename to a generic vcs
 	SetGitHubAPIURL(string)
 
+	// GetNamespace Get namesace
+	GetNamespace() string
+
 	Clients() (*Clients, error)
 	KubeClient() (k8s.Interface, error)
 }

@@ -3,11 +3,15 @@ module github.com/openshift-pipelines/pipelines-as-code
 go 1.15
 
 require (
+	github.com/briandowns/spinner v1.16.0
 	github.com/gobwas/glob v0.2.3
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-github/v35 v35.3.0
 	github.com/hako/durafmt v0.0.0-20210601083242-f49dacec7612
 	github.com/jonboulle/clockwork v0.1.1-0.20190114141812-62fb9bc030d1
+	github.com/mattn/go-colorable v0.1.2
+	github.com/mattn/go-isatty v0.0.13
+	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.1.3
 	github.com/tektoncd/pipeline v0.24.3

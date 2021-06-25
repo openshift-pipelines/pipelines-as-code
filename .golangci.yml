@@ -28,7 +28,6 @@ linters:
   - gocritic
   - misspell
   - deadcode
-  - gomnd
   - gosec
   - gosimple
   - govet

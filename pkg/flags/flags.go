@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -38,25 +39,25 @@ func InitParams(p cli.Params, cmd *cobra.Command) error {
 	}
 	p.SetGitHubAPIURL(githubAPIURL)
 
-	// ensure that the config is valid by creating a client
-	if _, err := p.Clients(); err != nil {
-		return err
-	}
-
 	return nil
 }
 
 // AddPacOptions amends command to add flags required to initialize a cli.Param
 func AddPacOptions(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP(
-		kubeConfig, "k", "",
-		"kubectl config file (default: $HOME/.kube/config)")
+	envkconfig := os.Getenv("KUBECONFIG")
+	if envkconfig == "" {
+		envkconfig = "$HOME/.kube/config"
+	}
 
 	cmd.PersistentFlags().StringP(
-		token, "", os.Getenv("PAC_TOKEN"),
+		kubeConfig, "k", "",
+		fmt.Sprintf("kubectl config file (default: %s)", envkconfig))
+
+	cmd.PersistentFlags().StringP(
+		token, "", os.Getenv("PAC_WEBVCS_TOKEN"),
 		"Web VCS (ie: GitHub) Token")
 
 	cmd.PersistentFlags().StringP(
-		apiURL, "", os.Getenv("PAC_URL"),
+		apiURL, "", os.Getenv("PAC_WEBVCS_URL"),
 		"Web VCS (ie: GitHub Enteprise) API URL")
 }

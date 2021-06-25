@@ -1,0 +1,15 @@
+Name:            test-run
+Namespace:       optnamespace
+URL:             https://anurl.com
+Event Type:      PullRequest
+Target Branch:   branch
+
+Last Run:
+
+PipelineRun:    pipelinerun1
+Status:         Success
+Commit:         https://anurl.com/commit/SHA
+Commit Title:   A title
+StartTime:      16 minutes ago
+Duration:       1 minute
+

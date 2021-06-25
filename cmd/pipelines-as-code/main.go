@@ -4,19 +4,12 @@ import (
 	"os"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/pipelineascode"
 )
 
 func main() {
 	tp := &cli.PacParams{}
-	pac := cmd.Root(tp)
-
-	cmd, _, err := pac.Find(os.Args[1:])
-	// default cmd if no cmd is given
-	if err != nil || cmd.Use == "" {
-		args := append([]string{"run"}, os.Args[1:]...)
-		pac.SetArgs(args)
-	}
+	pac := pipelineascode.Command(tp)
 
 	if err := pac.Execute(); err != nil {
 		os.Exit(1)

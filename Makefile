@@ -11,7 +11,7 @@ ifneq ($(FLAGS),)
 	LDFLAGS := -ldflags "$(FLAGS)"
 endif
 
-all: bin/pipelines-as-code test
+all: bin/pipelines-as-code bin/tkn-pac test
 
 FORCE:
 
@@ -60,6 +60,14 @@ lint-yaml: ${YAML_FILES} ## runs yamllint on all yaml files
 test-unit: ./vendor ## run unit tests
 	@echo "Running unit tests..."
 	@go test -failfast $(GO_TEST_FLAGS) ./...
+
+.PHONY: update-golden
+update-golden: ./vendor ## run unit tests (updating golden files)
+	@echo "Running unit tests to update golden files..."
+	@./hack/update-golden.sh
+
+.PHONY: generated
+generated: update-golden fumpt ## generate all files that needs to be generated
 
 .PHONY: html-coverage
 html-coverage: ./vendor ## generate html coverage

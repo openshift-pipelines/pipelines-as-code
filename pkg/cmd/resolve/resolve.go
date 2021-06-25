@@ -58,7 +58,7 @@ func Command(p cli.Params) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "resolve",
 		Long:  longhelp,
-		Short: "Resolve a bunch of yaml file in a single PipelineRun",
+		Short: "Embed PipelineRun references as a single resource.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cs, err := p.Clients()
 			if err != nil {

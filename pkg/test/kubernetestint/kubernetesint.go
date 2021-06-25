@@ -23,7 +23,7 @@ func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string)
 
 func (k *KinterfaceTest) GetNamespace(ctx context.Context, ns string) error {
 	if k.NamespaceError {
-		return errors.New("cannot find Namespace")
+		return errors.New("cannot find namespace")
 	}
 	return nil
 }
