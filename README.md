@@ -402,7 +402,7 @@ tkn pac help
 for example to list all repo status in your system (if you have the right for it) :
 
 ```shell
-tkn pac repo ls -A
+tkn pac repo ls --all-namespaces
 ```
 
 and to dig into a specific repository status:
@@ -411,11 +411,18 @@ and to dig into a specific repository status:
 tkn pac repo desc repository-name -n namespace
 ```
 
-Here is a short video :
+tkn-pac is as well available inside the container image :
 
-https://user-images.githubusercontent.com/98980/123408765-ac32c900-d5ad-11eb-83bf-6ef068a787bb.mp4
+or from the container image user docker/podman:
 
+```shell
+docker run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
+     -it quay.io/openshift-pipeline/pipelines-as-code tkn-pac help
+```
 
+and here is a short walk-thought video :
+
+<https://user-images.githubusercontent.com/98980/123408765-ac32c900-d5ad-11eb-83bf-6ef068a787bb.mp4>
 
 ## Setup
 
