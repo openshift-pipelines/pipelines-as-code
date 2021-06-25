@@ -1,8 +1,8 @@
-FROM registry.access.redhat.com/ubi8/go-toolset:1.15.7	 AS builder
+FROM registry.access.redhat.com/ubi8/go-toolset:1.15	 AS builder
 
 COPY . /src
 WORKDIR /src
-RUN go build -mod=vendor -v -o /tmp/pipelines-as-code ./cmd/pipelines-as-code
+RUN go build -mod=vendor -v -o /tmp/pipelines-as-code ./cmd/pipelines-as-code && strip /tmp/pipelines-as-code
 
 FROM registry.access.redhat.com/ubi8/ubi-micro:8.4
 
