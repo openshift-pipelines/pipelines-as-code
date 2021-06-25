@@ -38,6 +38,9 @@ func ListCommand(p cli.Params) *cobra.Command {
 			if err := opts.SetFromFlags(cmd); err != nil {
 				return err
 			}
+
+			ioStreams.SetColorEnabled(!opts.NoColoring)
+
 			cs, err := p.Clients()
 			if err != nil {
 				return err

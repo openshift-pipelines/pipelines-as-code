@@ -90,7 +90,7 @@ func DescribeCommand(p cli.Params) *cobra.Command {
 				return err
 			}
 			ioStreams := ui.NewIOStreams()
-
+			ioStreams.SetColorEnabled(!opts.NoColoring)
 			return describe(ctx, cs, clock, opts, ioStreams, p.GetNamespace(), args[0])
 		},
 	}

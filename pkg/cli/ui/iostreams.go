@@ -47,6 +47,10 @@ func (s *IOStreams) ColorEnabled() bool {
 	return s.colorEnabled
 }
 
+func (s *IOStreams) SetColorEnabled(colorEnabled bool) {
+	s.colorEnabled = colorEnabled
+}
+
 func (s *IOStreams) ColorSupport256() bool {
 	return s.is256enabled
 }
