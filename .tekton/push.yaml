@@ -41,7 +41,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: public.ecr.aws/bitnami/golang:latest
+            - image: registry.access.redhat.com/ubi8/go-toolset:latest
               name: get-cache
               workingDir: $(workspaces.source.path)
               script: |
@@ -57,7 +57,7 @@ spec:
                 echo "Getting cache"
                 curl http://uploader:8080/golang-cache.tar|tar -x -f-
             - name: unittest
-              image: public.ecr.aws/bitnami/golang:latest
+              image: registry.access.redhat.com/ubi8/go-toolset:latest
               workingDir: $(workspaces.source.path)
               script: |
                 #!/usr/bin/env bash
@@ -75,7 +75,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: public.ecr.aws/bitnami/golang:latest
+              image: registry.access.redhat.com/ubi8/go-toolset:latest
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN
@@ -92,7 +92,7 @@ spec:
           - fetch
         taskSpec:
           steps:
-            - image: public.ecr.aws/bitnami/python:latest
+            - image: registry.access.redhat.com/ubi8/python-39:latest
               name: release
               env:
                 - name: HUB_TOKEN
