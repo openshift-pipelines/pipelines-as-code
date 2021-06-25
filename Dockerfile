@@ -1,10 +1,10 @@
-FROM registry.access.redhat.com/ubi8/go-toolset:1.15	 AS builder
+FROM registry.access.redhat.com/ubi8/go-toolset:latest	 AS builder
 
 COPY . /src
 WORKDIR /src
 RUN go build -mod=vendor -v -o /tmp/pipelines-as-code ./cmd/pipelines-as-code && strip /tmp/pipelines-as-code
 
-FROM registry.access.redhat.com/ubi8/ubi-micro:8.4
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
 
 LABEL com.redhat.component=pipelines-as-code \ 
     name=openshift-pipelines/pipelines-as-code \ 
