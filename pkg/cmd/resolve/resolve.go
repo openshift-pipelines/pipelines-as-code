@@ -59,6 +59,9 @@ func Command(p cli.Params) *cobra.Command {
 		Use:   "resolve",
 		Long:  longhelp,
 		Short: "Embed PipelineRun references as a single resource.",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return flags.GetWebCVSOptions(p, cmd)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cs, err := p.Clients()
 			if err != nil {
@@ -89,6 +92,7 @@ func Command(p cli.Params) *cobra.Command {
 	cmd.Flags().BoolVar(&remoteTask, "remoteTask", true,
 		"Wether parse annotation to fetch remote task")
 	flags.AddPacOptions(cmd)
+	flags.AddWebCVSOptions(cmd)
 
 	return cmd
 }

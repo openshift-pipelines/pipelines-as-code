@@ -17,6 +17,8 @@ import (
 
 const (
 	defaultURL = "https://giphy.com/explore/cat"
+	tokenFlag  = "token"
+	apiURLFlag = "api-url"
 )
 
 func Command(p cli.Params) *cobra.Command {
@@ -25,7 +27,7 @@ func Command(p cli.Params) *cobra.Command {
 		Use:   "run",
 		Short: "Run pipelines as code",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return flags.InitParams(p, cmd)
+			return flags.GetWebCVSOptions(p, cmd)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := cmd.LocalFlags().GetString("token")
@@ -47,10 +49,12 @@ func Command(p cli.Params) *cobra.Command {
 	}
 
 	flags.AddPacOptions(cmd)
+	flags.AddWebCVSOptions(cmd)
 
 	cmd.Flags().StringVarP(&opts.RunInfo.EventType, "webhook-type", "", os.Getenv("PAC_EVENT_TYPE"), "Payload event type as set from Github (ie: X-GitHub-Event header)")
 	cmd.Flags().StringVarP(&opts.RunInfo.TriggerTarget, "trigger-target", "", os.Getenv("PAC_TRIGGER_TARGET"), "The trigger target from where this event comes from")
 	cmd.Flags().StringVarP(&opts.PayloadFile, "payload-file", "", os.Getenv("PAC_PAYLOAD_FILE"), "A file containing the webhook payload")
+
 	return cmd
 }
 
