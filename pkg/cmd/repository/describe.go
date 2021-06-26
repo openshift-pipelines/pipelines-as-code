@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 	"text/template"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -91,7 +92,17 @@ func askRepo(ctx context.Context, cs *cli.Clients, opts *flags.CliOpts, namespac
 				repoOwner, repository.Spec.EventType))
 	}
 
-	replyString, err := opts.Ask("repository", allRepositories)
+	qs := []*survey.Question{
+		{
+			Name: "repository",
+			Prompt: &survey.Select{
+				Message: "Select a repository",
+				Options: allRepositories,
+			},
+		},
+	}
+	var replyString string
+	err = opts.Ask(qs, &replyString)
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +152,14 @@ func DescribeCommand(p cli.Params) *cobra.Command {
 			return describe(ctx, cs, clock, opts, ioStreams, p.GetNamespace(), repoName)
 		},
 	}
+	cmd.Flags().StringP(
+		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
+
+	_ = cmd.RegisterFlagCompletionFunc(namespaceFlag,
+		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			return completion.BaseCompletion(namespaceFlag, args)
+		},
+	)
 	return cmd
 }
 

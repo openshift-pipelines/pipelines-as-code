@@ -1,18 +1,16 @@
 package flags
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/completion"
 	"github.com/spf13/cobra"
 )
 
 var (
-	noColor   = "no-color"
-	namespace = "namespace"
+	noColorFlag   = "no-color"
+	namespaceFlag = "namespace"
 )
 
 type CliOpts struct {
@@ -34,45 +32,21 @@ func NewCliOptions(cmd *cobra.Command) (*CliOpts, error) {
 			return nil
 		},
 	}
-	c.NoColoring, err = cmd.Flags().GetBool(noColor)
+	c.NoColoring, err = cmd.Flags().GetBool(noColorFlag)
 	if err != nil {
 		return nil, err
 	}
-	c.Namespace, err = cmd.Flags().GetString(namespace)
+	c.Namespace, err = cmd.Flags().GetString(namespaceFlag)
 	if err != nil {
 		return nil, err
 	}
 	return c, err
 }
 
-func (c *CliOpts) Ask(resource string, options []string) (string, error) {
-	var ans string
-	qs := []*survey.Question{
-		{
-			Name: resource,
-			Prompt: &survey.Select{
-				Message: fmt.Sprintf("Select a %s", resource),
-				Options: options,
-			},
-		},
-	}
-
-	if err := survey.Ask(qs, &ans, c.AskOpts); err != nil {
-		return "", err
-	}
-	return ans, nil
+func (c *CliOpts) Ask(qs []*survey.Question, ans interface{}) error {
+	return survey.Ask(qs, ans, c.AskOpts)
 }
 
 func AddPacCliOptions(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP(
-		namespace, "n", "",
-		"If present, the namespace scope for this CLI request")
-
-	_ = cmd.RegisterFlagCompletionFunc(namespace,
-		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			return completion.BaseCompletion(namespace, args)
-		},
-	)
-
-	cmd.PersistentFlags().BoolP(noColor, "C", false, "disable coloring")
+	cmd.PersistentFlags().BoolP(noColorFlag, "C", false, "disable coloring")
 }
