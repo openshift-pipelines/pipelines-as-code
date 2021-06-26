@@ -30,12 +30,13 @@ func ListCommand(p cli.Params) *cobra.Command {
 			var err error
 			ioStreams := ui.NewIOStreams()
 
-			opts := &flags.CliOpts{AllNameSpaces: allNamespaces}
-			opts.AllNameSpaces, err = cmd.Flags().GetBool(allNamespacesFlag)
+			opts, err := flags.NewCliOptions(cmd)
 			if err != nil {
 				return err
 			}
-			if err := opts.SetFromFlags(cmd); err != nil {
+
+			opts.AllNameSpaces, err = cmd.Flags().GetBool(allNamespacesFlag)
+			if err != nil {
 				return err
 			}
 

@@ -1,13 +1,16 @@
 package ui
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"time"
 
+	surveyCore "github.com/AlecAivazis/survey/v2/core"
 	"github.com/briandowns/spinner"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
+	"github.com/mgutz/ansi"
 )
 
 type IOStreams struct {
@@ -49,6 +52,27 @@ func (s *IOStreams) ColorEnabled() bool {
 
 func (s *IOStreams) SetColorEnabled(colorEnabled bool) {
 	s.colorEnabled = colorEnabled
+	s.setSurveyColor()
+	s.progressIndicatorEnabled = colorEnabled
+}
+
+func (s *IOStreams) setSurveyColor() {
+	if !s.colorEnabled {
+		surveyCore.DisableColor = true
+	} else {
+		// override survey's poor choice of color
+		surveyCore.TemplateFuncsWithColor["color"] = func(style string) string {
+			switch style {
+			case "white":
+				if s.ColorSupport256() {
+					return fmt.Sprintf("\x1b[%d;5;%dm", 38, 242)
+				}
+				return ansi.ColorCode("default")
+			default:
+				return ansi.ColorCode(style)
+			}
+		}
+	}
 }
 
 func (s *IOStreams) ColorSupport256() bool {
@@ -70,6 +94,8 @@ func NewIOStreams() *IOStreams {
 	if stdoutIsTTY && stderrIsTTY {
 		io.progressIndicatorEnabled = true
 	}
+
+	io.setSurveyColor()
 
 	// prevent duplicate isTerminal queries now that we know the answer
 	io.SetStdoutTTY(stdoutIsTTY)

@@ -3,6 +3,7 @@ module github.com/openshift-pipelines/pipelines-as-code
 go 1.15
 
 require (
+	github.com/AlecAivazis/survey/v2 v2.2.12
 	github.com/briandowns/spinner v1.16.0
 	github.com/gobwas/glob v0.2.3
 	github.com/google/go-cmp v0.5.6
