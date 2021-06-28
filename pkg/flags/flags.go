@@ -10,8 +10,8 @@ import (
 
 const (
 	kubeConfig = "kubeconfig"
-	token      = "token"
-	apiURL     = "api-url"
+	tokenFlag  = "token"
+	apiURLFlag = "api-url"
 )
 
 // PacOptions holds struct of Pipeline as code Options
@@ -26,19 +26,6 @@ func InitParams(p cli.Params, cmd *cobra.Command) error {
 		return err
 	}
 	p.SetKubeConfigPath(kcPath)
-
-	githubToken, err := cmd.Flags().GetString(token)
-	if err != nil {
-		return err
-	}
-	p.SetGitHubToken(githubToken)
-
-	githubAPIURL, err := cmd.Flags().GetString(apiURL)
-	if err != nil {
-		return err
-	}
-	p.SetGitHubAPIURL(githubAPIURL)
-
 	return nil
 }
 
@@ -52,12 +39,27 @@ func AddPacOptions(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP(
 		kubeConfig, "k", "",
 		fmt.Sprintf("kubectl config file (default: %s)", envkconfig))
+}
 
-	cmd.PersistentFlags().StringP(
-		token, "", os.Getenv("PAC_WEBVCS_TOKEN"),
+func AddWebCVSOptions(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringP(tokenFlag, "", os.Getenv("PAC_WEBVCS_TOKEN"),
 		"Web VCS (ie: GitHub) Token")
 
-	cmd.PersistentFlags().StringP(
-		apiURL, "", os.Getenv("PAC_WEBVCS_URL"),
+	cmd.PersistentFlags().StringP(apiURLFlag, "", os.Getenv("PAC_WEBVCS_URL"),
 		"Web VCS (ie: GitHub Enteprise) API URL")
+}
+
+func GetWebCVSOptions(p cli.Params, cmd *cobra.Command) error {
+	githubToken, err := cmd.Flags().GetString(tokenFlag)
+	if err != nil {
+		return err
+	}
+	p.SetGitHubToken(githubToken)
+
+	githubAPIURL, err := cmd.Flags().GetString(apiURLFlag)
+	if err != nil {
+		return err
+	}
+	p.SetGitHubAPIURL(githubAPIURL)
+	return nil
 }

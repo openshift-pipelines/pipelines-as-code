@@ -15,6 +15,7 @@ var (
 	redBold   = ansi.ColorFunc("red+b")
 	yellow    = ansi.ColorFunc("yellow")
 	blue      = ansi.ColorFunc("blue")
+	blueBold  = ansi.ColorFunc("blue+b")
 	green     = ansi.ColorFunc("green")
 	greenBold = ansi.ColorFunc("green+b")
 	gray      = ansi.ColorFunc("black+i")
@@ -203,12 +204,23 @@ func (c *ColorScheme) Blue(t string) string {
 	return blue(t)
 }
 
+func (c *ColorScheme) BlueBold(t string) string {
+	if !c.enabled {
+		return t
+	}
+	return blueBold(t)
+}
+
 func (c *ColorScheme) Bluef(t string, args ...interface{}) string {
 	return c.Blue(fmt.Sprintf(t, args...))
 }
 
 func (c *ColorScheme) SuccessIcon() string {
 	return c.SuccessIconWithColor(c.Green)
+}
+
+func (c *ColorScheme) InfoIcon() string {
+	return c.BlueBold("ℹ")
 }
 
 func (c *ColorScheme) SuccessIconWithColor(colo func(string) string) string {

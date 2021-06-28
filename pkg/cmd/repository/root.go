@@ -16,5 +16,7 @@ func Root(p cli.Params) *cobra.Command {
 
 	cmd.AddCommand(ListCommand(p))
 	cmd.AddCommand(DescribeCommand(p))
+	cmd.AddCommand(CreateCommand(p))
+
 	return cmd
 }

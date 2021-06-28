@@ -6,6 +6,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/ui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
 	"github.com/spf13/cobra"
@@ -16,6 +17,7 @@ var (
 	header            = "NAME\tOWNER/REPOSITORY\tSHA\tEVENT-TYPE"
 	body              = "%s\t%s\t%s\t%s"
 	allNamespacesFlag = "all-namespaces"
+	namespaceFlag     = "namespace"
 )
 
 func ListCommand(p cli.Params) *cobra.Command {
@@ -27,18 +29,20 @@ func ListCommand(p cli.Params) *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List repositories",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var err error
 			ioStreams := ui.NewIOStreams()
+			opts, err := flags.NewCliOptions(cmd)
+			if err != nil {
+				return err
+			}
 
-			opts := &flags.CliOpts{AllNameSpaces: allNamespaces}
 			opts.AllNameSpaces, err = cmd.Flags().GetBool(allNamespacesFlag)
 			if err != nil {
 				return err
 			}
-			if err := opts.SetFromFlags(cmd); err != nil {
+			opts.Namespace, err = cmd.Flags().GetString(namespaceFlag)
+			if err != nil {
 				return err
 			}
-
 			ioStreams.SetColorEnabled(!opts.NoColoring)
 
 			cs, err := p.Clients()
@@ -53,6 +57,15 @@ func ListCommand(p cli.Params) *cobra.Command {
 	cmd.PersistentFlags().BoolVarP(&allNamespaces, allNamespacesFlag, "A", false, "If present, "+
 		"list the repository across all namespaces. Namespace in current context is ignored even if specified with"+
 		" --namespace.")
+
+	cmd.Flags().StringP(
+		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
+
+	_ = cmd.RegisterFlagCompletionFunc(namespaceFlag,
+		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			return completion.BaseCompletion(namespaceFlag, args)
+		},
+	)
 
 	cmd.Flags().BoolVar(
 		&noheaders, "no-headers", false, "don't print headers.")

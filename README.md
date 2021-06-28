@@ -399,6 +399,16 @@ and you can then see the usage of the commands with :
 tkn pac help
 ```
 
+You can easily create a new repo CR with the command :
+
+```shell
+tkn pac repo create
+```
+
+It will detect your current GIT repo URL and branch your current namespace and
+ask you for a target, it will ask you if you want to create sample pipelinerun
+for you to customize it.
+
 for example to list all repo status in your system (if you have the right for it) :
 
 ```shell
@@ -411,7 +421,7 @@ and to dig into a specific repository status:
 tkn pac repo desc repository-name -n namespace
 ```
 
-tkn-pac is as well available inside the container image :
+`tkn-pac` is as well available inside the container image :
 
 or from the container image user docker/podman:
 
