@@ -106,6 +106,8 @@ func runWrap(ctx context.Context, opts *pacpkg.Options, cs *cli.Clients, kintera
 			_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "failure",
 				fmt.Sprintf("There was an issue validating the commit: %q", err),
 				runinfo.WebConsoleURL)
+		} else {
+			cs.Log.Debug("There was an error: %s", err.Error())
 		}
 	}
 	return err
