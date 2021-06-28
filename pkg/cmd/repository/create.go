@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/ui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,7 +51,11 @@ func CreateCommand(p cli.Params) *cobra.Command {
 				return err
 			}
 			createOpts.CurrentNS = p.GetNamespace()
-			return create(context.Background(), createOpts)
+			cwd, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+			return create(context.Background(), cwd, createOpts)
 		},
 	}
 	cmd.PersistentFlags().StringVar(&createOpts.RepositoryName, "name", "", "The repository name")
@@ -61,37 +65,6 @@ func CreateCommand(p cli.Params) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&createOpts.TargetNamespace, "target-namespace", "", "The target namespace where the runs will be created")
 
 	return cmd
-}
-
-// getGitInfo try to detect the current remote for this URL
-func getGitInfo() (string, string) {
-	gitPath, err := exec.LookPath("git")
-	if err != nil {
-		return "", ""
-	}
-	cmd := exec.Command(gitPath, "remote", "get-url", "origin")
-	bgitURL, err := cmd.Output()
-	if err != nil {
-		cmd := exec.Command(gitPath, "remote", "get-url", "upstream")
-		bgitURL, err = cmd.Output()
-		if err != nil {
-			return "", ""
-		}
-	}
-	gitURL := strings.TrimSpace(string(bgitURL))
-	if strings.HasPrefix(gitURL, "git@") {
-		sp := strings.Split(gitURL, ":")
-		prefix := strings.ReplaceAll(sp[0], "git@", "https://")
-		gitURL = fmt.Sprintf("%s/%s", prefix, strings.Join(sp[1:], ":"))
-	}
-	gitURL = strings.TrimSuffix(gitURL, ".git")
-
-	cmd = exec.Command(gitPath, "rev-parse", "--show-toplevel")
-	brootdir, err := cmd.Output()
-	if err != nil {
-		return "", ""
-	}
-	return gitURL, strings.TrimSpace(string(brootdir))
 }
 
 // askToCreateSimplePipeline will try to create a basic pipeline in tekton
@@ -216,9 +189,9 @@ spec:
 }
 
 // create ...
-func create(ctx context.Context, opts CreateOptions) error {
+func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 	var qs []*survey.Question
-	detectedGitRemoteURL, gitRoot := getGitInfo()
+	gitinfo := git.GetGitInfo(gitdir)
 
 	if opts.TargetNamespace == "" {
 		qs = append(qs, &survey.Question{
@@ -228,8 +201,8 @@ func create(ctx context.Context, opts CreateOptions) error {
 	}
 	if opts.TargetURL == "" {
 		prompt := "Enter the target url: "
-		if detectedGitRemoteURL != "" {
-			prompt = fmt.Sprintf("Enter the target url (default: %s): ", detectedGitRemoteURL)
+		if gitinfo.TargetURL != "" {
+			prompt = fmt.Sprintf("Enter the target url (default: %s): ", gitinfo.TargetURL)
 		}
 		qs = append(qs, &survey.Question{
 			Name:   "TargetURL",
@@ -262,8 +235,8 @@ func create(ctx context.Context, opts CreateOptions) error {
 	if opts.TargetNamespace == "" {
 		opts.TargetNamespace = opts.CurrentNS
 	}
-	if opts.TargetURL == "" && detectedGitRemoteURL != "" {
-		opts.TargetURL = detectedGitRemoteURL
+	if opts.TargetURL == "" && gitinfo.TargetURL != "" {
+		opts.TargetURL = gitinfo.TargetURL
 	} else if opts.TargetURL == "" {
 		return fmt.Errorf("we didn't get a target URL")
 	}
@@ -304,7 +277,7 @@ func create(ctx context.Context, opts CreateOptions) error {
 		opts.TargetNamespace,
 	)
 
-	if err := askToCreateSimplePipeline(gitRoot, opts); err != nil {
+	if err := askToCreateSimplePipeline(gitinfo.TopLevelPath, opts); err != nil {
 		return err
 	}
 
