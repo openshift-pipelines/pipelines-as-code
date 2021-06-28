@@ -20,7 +20,6 @@ import (
 )
 
 const (
-	promptStr        = "Choose a repository"
 	describeTemplate = `{{ $.ColorScheme.Bold "Name" }}:	{{.Repository.Name}}
 {{ $.ColorScheme.Bold "Namespace" }}:	{{.Repository.Namespace}}
 {{ $.ColorScheme.Bold "URL" }}:	{{.Repository.Spec.URL}}
@@ -74,13 +73,13 @@ func askRepo(ctx context.Context, cs *cli.Clients, opts *flags.CliOpts, namespac
 	}
 
 	if len(repositories.Items) == 0 {
-		return nil, fmt.Errorf("No repo found")
+		return nil, fmt.Errorf("no repo found")
 	}
 	if len(repositories.Items) == 1 {
 		return &repositories.Items[0], nil
 	}
 
-	var allRepositories []string
+	allRepositories := []string{}
 	for _, repository := range repositories.Items {
 		repoOwner, err := ui.GetRepoOwnerFromGHURL(repository.Spec.URL)
 		if err != nil {

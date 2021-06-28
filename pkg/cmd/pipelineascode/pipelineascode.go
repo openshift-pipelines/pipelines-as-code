@@ -17,8 +17,6 @@ import (
 
 const (
 	defaultURL = "https://giphy.com/explore/cat"
-	tokenFlag  = "token"
-	apiURLFlag = "api-url"
 )
 
 func Command(p cli.Params) *cobra.Command {

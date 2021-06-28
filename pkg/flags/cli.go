@@ -8,10 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	noColorFlag   = "no-color"
-	namespaceFlag = "namespace"
-)
+var noColorFlag = "no-color"
 
 type CliOpts struct {
 	NoColoring    bool

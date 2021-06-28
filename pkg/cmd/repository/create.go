@@ -70,23 +70,21 @@ func getGitInfo() (string, string) {
 		return "", ""
 	}
 	cmd := exec.Command(gitPath, "remote", "get-url", "origin")
-	bgitUrl, err := cmd.Output()
+	bgitURL, err := cmd.Output()
 	if err != nil {
 		cmd := exec.Command(gitPath, "remote", "get-url", "upstream")
-		bgitUrl, err = cmd.Output()
+		bgitURL, err = cmd.Output()
 		if err != nil {
 			return "", ""
 		}
 	}
-	gitURL := strings.TrimSpace(string(bgitUrl))
+	gitURL := strings.TrimSpace(string(bgitURL))
 	if strings.HasPrefix(gitURL, "git@") {
 		sp := strings.Split(gitURL, ":")
-		prefix := strings.Replace(sp[0], "git@", "https://", -1)
+		prefix := strings.ReplaceAll(sp[0], "git@", "https://")
 		gitURL = fmt.Sprintf("%s/%s", prefix, strings.Join(sp[1:], ":"))
 	}
-	if strings.HasSuffix(gitURL, ".git") {
-		gitURL = strings.TrimSuffix(gitURL, ".git")
-	}
+	gitURL = strings.TrimSuffix(gitURL, ".git")
 
 	cmd = exec.Command(gitPath, "rev-parse", "--show-toplevel")
 	brootdir, err := cmd.Output()
@@ -113,26 +111,23 @@ func askToCreateSimplePipeline(gitRoot string, opts CreateOptions) error {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Join(gitRoot, ".tekton"), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(gitRoot, ".tekton"), 0o755); err != nil {
 		return err
 	}
-	if _, err = os.Stat(fpath); err != nil {
-		if !os.IsNotExist(err) {
-			var ans string
-			err := opts.CLIOpts.Ask([]*survey.Question{{
-				Prompt: &survey.Select{
-					Options: []string{"Yes", "No"},
-					Default: "No",
-					Message: fmt.Sprintf("There is already a file named: %s would you like to override it?", fpath),
-				},
-			}}, &ans)
-			if err != nil {
-				return err
-			}
-			if ans == "No" {
-				return nil
-			}
-
+	if _, err = os.Stat(fpath); err != nil && !os.IsNotExist(err) {
+		var ans string
+		err := opts.CLIOpts.Ask([]*survey.Question{{
+			Prompt: &survey.Select{
+				Options: []string{"Yes", "No"},
+				Default: "No",
+				Message: fmt.Sprintf("There is already a file named: %s would you like to override it?", fpath),
+			},
+		}}, &ans)
+		if err != nil {
+			return err
+		}
+		if ans == "No" {
+			return nil
 		}
 	}
 
@@ -142,10 +137,10 @@ kind: PipelineRun
 metadata:
   name: %s
   annotations:
-    # The event we are targetting (ie: pull_request, push)
+    # The event we are targeting (ie: pull_request, push)
     pipelinesascode.tekton.dev/on-event: "[%s]"
 
-    # The branch we are targetting (ie: main)
+    # The branch we are targeting (ie: main)
     pipelinesascode.tekton.dev/on-target-branch: "[%s]"
 
     # Fetch the git-clone task from hub, we are able to reference it with taskRef
@@ -202,7 +197,8 @@ spec:
           requests:
             storage: 1Gi
 `, opts.RepositoryName, opts.EventType, opts.TargetBranch)
-	err = ioutil.WriteFile(fpath, []byte(tmpl), 0644)
+	// nolint: gosec
+	err = ioutil.WriteFile(fpath, []byte(tmpl), 0o644)
 	if err != nil {
 		return err
 	}
@@ -275,57 +271,15 @@ func create(ctx context.Context, opts CreateOptions) error {
 		opts.TargetBranch = "main"
 	}
 	if opts.RepositoryName == "" {
-		s, err := ui.GetRepoOwnerFromGHURL(opts.TargetURL)
-		generatedNS := fmt.Sprintf("%s-%s", filepath.Base(s), strings.ReplaceAll(opts.EventType, "_", "-"))
-		prompt := fmt.Sprintf("Set a name for this resource (default: %s):", generatedNS)
-		if err != nil {
-			prompt = "Set a name for this resource:"
-			generatedNS = ""
-		}
-
-		var repo string
-		err = opts.CLIOpts.Ask([]*survey.Question{{
-			Prompt: &survey.Input{Message: prompt},
-		}}, &repo)
+		opts.RepositoryName, err = askNameForResource(opts)
 		if err != nil {
 			return err
 		}
-		if repo == "" && generatedNS == "" {
-			return fmt.Errorf("no name has been set")
-		}
-		if repo == "" {
-			repo = generatedNS
-		}
-		opts.RepositoryName = repo
 	}
 	cs := opts.IOStreams.ColorScheme()
 	if opts.TargetNamespace != opts.CurrentNS {
-		_, err := opts.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.TargetNamespace, metav1.GetOptions{})
-		if err != nil {
-			fmt.Fprintf(opts.IOStreams.ErrOut, "%s Namespace %s is not created yet\n",
-				cs.WarningIcon(),
-				opts.TargetNamespace,
-			)
-			var ans string
-			err := opts.CLIOpts.Ask([]*survey.Question{{
-				Prompt: &survey.Select{
-					Options: []string{"Yes", "No"},
-					Default: "Yes",
-					Message: fmt.Sprintf("Would you like me to create the namespace %s?", opts.TargetNamespace),
-				},
-			}}, &ans)
-			if err != nil {
-				return err
-			}
-			if ans != "Yes" {
-				return fmt.Errorf("you need to create the target namespace..")
-			}
-			_, err = opts.Clients.Kube.CoreV1().Namespaces().Create(ctx,
-				&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: opts.TargetNamespace}},
-				metav1.CreateOptions{})
-			if err != nil {
-				return err
-			}
+		if err := askCreateNamespace(ctx, opts, cs); err != nil {
+			return err
 		}
 	}
 	_, err = opts.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.TargetNamespace).Create(ctx,
@@ -360,5 +314,65 @@ func create(ctx context.Context, opts CreateOptions) error {
 	)
 	fmt.Fprintf(opts.IOStreams.ErrOut, "%s and we are done! enjoy :)))\n", cs.SuccessIcon())
 
+	return nil
+}
+
+func askNameForResource(opts CreateOptions) (string, error) {
+	s, err := ui.GetRepoOwnerFromGHURL(opts.TargetURL)
+	generatedNS := fmt.Sprintf("%s-%s", filepath.Base(s), strings.ReplaceAll(opts.EventType, "_", "-"))
+	prompt := fmt.Sprintf("Set a name for this resource (default: %s):", generatedNS)
+	if err != nil {
+		prompt = "Set a name for this resource:"
+		generatedNS = ""
+	}
+
+	var repo string
+	err = opts.CLIOpts.Ask([]*survey.Question{
+		{
+			Prompt: &survey.Input{Message: prompt},
+		},
+	}, &repo)
+	if err != nil {
+		return "", err
+	}
+	if repo == "" && generatedNS == "" {
+		return "", fmt.Errorf("no name has been set")
+	}
+	if repo == "" {
+		repo = generatedNS
+	}
+	return repo, nil
+}
+
+func askCreateNamespace(ctx context.Context, opts CreateOptions, cs *ui.ColorScheme) error {
+	_, err := opts.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.TargetNamespace, metav1.GetOptions{})
+	if err != nil {
+		fmt.Fprintf(opts.IOStreams.ErrOut, "%s Namespace %s is not created yet\n",
+			cs.WarningIcon(),
+			opts.TargetNamespace,
+		)
+		var ans string
+		err := opts.CLIOpts.Ask([]*survey.Question{
+			{
+				Prompt: &survey.Select{
+					Options: []string{"Yes", "No"},
+					Default: "Yes",
+					Message: fmt.Sprintf("Would you like me to create the namespace %s?", opts.TargetNamespace),
+				},
+			},
+		}, &ans)
+		if err != nil {
+			return err
+		}
+		if ans != "Yes" {
+			return fmt.Errorf("you need to create the target namespace")
+		}
+		_, err = opts.Clients.Kube.CoreV1().Namespaces().Create(ctx,
+			&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: opts.TargetNamespace}},
+			metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
