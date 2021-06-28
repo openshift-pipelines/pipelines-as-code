@@ -39,7 +39,10 @@ func ListCommand(p cli.Params) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
+			opts.Namespace, err = cmd.Flags().GetString(namespaceFlag)
+			if err != nil {
+				return err
+			}
 			ioStreams.SetColorEnabled(!opts.NoColoring)
 
 			cs, err := p.Clients()

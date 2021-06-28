@@ -137,6 +137,11 @@ func DescribeCommand(p cli.Params) *cobra.Command {
 				return err
 			}
 
+			opts.Namespace, err = cmd.Flags().GetString(namespaceFlag)
+			if err != nil {
+				return err
+			}
+
 			if len(args) > 0 {
 				repoName = args[0]
 			}

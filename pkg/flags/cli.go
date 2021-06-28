@@ -36,10 +36,6 @@ func NewCliOptions(cmd *cobra.Command) (*CliOpts, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.Namespace, err = cmd.Flags().GetString(namespaceFlag)
-	if err != nil {
-		return nil, err
-	}
 	return c, err
 }
 

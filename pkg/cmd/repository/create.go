@@ -54,10 +54,10 @@ func CreateCommand(p cli.Params) *cobra.Command {
 			return create(context.Background(), createOpts)
 		},
 	}
-	cmd.PersistentFlags().StringVar(&createOpts.RepositoryName, "repository-name", "", "The repository name")
-	cmd.PersistentFlags().StringVar(&createOpts.TargetBranch, "target-branch", "", "The target branch of the repository  event to handle (eg: main, nightly)")
+	cmd.PersistentFlags().StringVar(&createOpts.RepositoryName, "name", "", "The repository name")
+	cmd.PersistentFlags().StringVar(&createOpts.TargetBranch, "branch", "", "The target branch of the repository  event to handle (eg: main, nightly)")
 	cmd.PersistentFlags().StringVar(&createOpts.EventType, "event-type", "", "The event type of the repository event to handle (eg: pull_request, push)")
-	cmd.PersistentFlags().StringVar(&createOpts.TargetURL, "repository-url", "", "The repository URL from where the event will come from")
+	cmd.PersistentFlags().StringVar(&createOpts.TargetURL, "url", "", "The repository URL from where the event will come from")
 	cmd.PersistentFlags().StringVar(&createOpts.TargetNamespace, "target-namespace", "", "The target namespace where the runs will be created")
 
 	return cmd
@@ -100,11 +100,13 @@ func getGitInfo() (string, string) {
 // directory.
 func askToCreateSimplePipeline(gitRoot string, opts CreateOptions) error {
 	var repo string
+	fpath := filepath.Join(gitRoot, ".tekton", fmt.Sprintf("%s.yaml", opts.EventType))
+
 	err := opts.CLIOpts.Ask([]*survey.Question{{
 		Prompt: &survey.Select{
 			Options: []string{"Yes", "No"},
 			Default: "Yes",
-			Message: fmt.Sprintf("Would you like to create a basic PipelineRun in your repo?"),
+			Message: fmt.Sprintf("Would you like to create a basic PipelineRun file: %s in your repo?", fpath),
 		},
 	}}, &repo)
 	if err != nil {
@@ -114,16 +116,43 @@ func askToCreateSimplePipeline(gitRoot string, opts CreateOptions) error {
 	if err := os.MkdirAll(filepath.Join(gitRoot, ".tekton"), 0755); err != nil {
 		return err
 	}
-	fpath := filepath.Join(gitRoot, ".tekton", fmt.Sprintf("%s.yaml", opts.EventType))
+	if _, err = os.Stat(fpath); err != nil {
+		if !os.IsNotExist(err) {
+			var ans string
+			err := opts.CLIOpts.Ask([]*survey.Question{{
+				Prompt: &survey.Select{
+					Options: []string{"Yes", "No"},
+					Default: "No",
+					Message: fmt.Sprintf("There is already a file named: %s would you like to override it?", fpath),
+				},
+			}}, &ans)
+			if err != nil {
+				return err
+			}
+			if ans == "No" {
+				return nil
+			}
+
+		}
+	}
+
 	tmpl := fmt.Sprintf(`---
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   name: %s
   annotations:
-    pipelinesascode.tekton.dev/on-target-branch: "[%s]"
+    # The event we are targetting (ie: pull_request, push)
     pipelinesascode.tekton.dev/on-event: "[%s]"
+
+    # The branch we are targetting (ie: main)
+    pipelinesascode.tekton.dev/on-target-branch: "[%s]"
+
+    # Fetch the git-clone task from hub, we are able to reference it with taskRef
     pipelinesascode.tekton.dev/task: "[git-clone]"
+
+    # How many runs we want to keep attached to this event
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
 spec:
   params:
     - name: repo_url
@@ -137,23 +166,31 @@ spec:
     workspaces:
       - name: source
     tasks:
-      - name: git-clone
+      - name: fetch-repository
         taskRef:
           name: git-clone
+        workspaces:
+          - name: output
+            workspace: source
         params:
           - name: url
             value: $(params.repo_url)
           - name: revision
             value: $(params.revision)
+      - name: noop-task
+        runAfter:
+          - fetch-repository
         workspaces:
-          - name: output
+          - name: source
             workspace: source
-      - name: task
         taskSpec:
+          workspaces:
+            - name: source
           steps:
-            - name: task
+            - name: noop-task
               image: registry.access.redhat.com/ubi8/ubi-micro:8.4
-              script : |
+              workingDir: $(workspaces.source.path)
+              script: |
                 exit 0
   workspaces:
   - name: source
@@ -164,7 +201,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-`, opts.RepositoryName, opts.TargetBranch, opts.EventType)
+`, opts.RepositoryName, opts.EventType, opts.TargetBranch)
 	err = ioutil.WriteFile(fpath, []byte(tmpl), 0644)
 	if err != nil {
 		return err
@@ -176,8 +213,8 @@ spec:
 		cs.Bold(fpath),
 	)
 	fmt.Fprintf(opts.IOStreams.ErrOut, "%s You can test your pipeline manually with :.\n", cs.InfoIcon())
-	fmt.Fprintf(opts.IOStreams.ErrOut, "tkn-pac resolve -f --generateName \\\n"+
-		"     --params revision=%s --params repo_url=\"%s\" \\\n      -f %s\n", opts.TargetBranch, opts.TargetURL, fpath)
+	fmt.Fprintf(opts.IOStreams.ErrOut, "tkn-pac resolve --generateName \\\n"+
+		"     --params revision=%s --params repo_url=\"%s\" \\\n      -f %s | k create -f-\n", opts.TargetBranch, opts.TargetURL, fpath)
 
 	return nil
 }
@@ -313,13 +350,10 @@ func create(ctx context.Context, opts CreateOptions) error {
 		opts.TargetNamespace,
 	)
 
-	if _, err = os.Stat(filepath.Join(gitRoot, ".tekton")); err != nil {
-		if os.IsNotExist(err) {
-			if err := askToCreateSimplePipeline(gitRoot, opts); err != nil {
-				return err
-			}
-		}
+	if err := askToCreateSimplePipeline(gitRoot, opts); err != nil {
+		return err
 	}
+
 	fmt.Fprintf(opts.IOStreams.ErrOut, "%s Don't forget to install the GitHub application into your repo %s\n",
 		cs.InfoIcon(),
 		opts.TargetURL,
