@@ -84,6 +84,9 @@ func getGitInfo() (string, string) {
 		prefix := strings.Replace(sp[0], "git@", "https://", -1)
 		gitURL = fmt.Sprintf("%s/%s", prefix, strings.Join(sp[1:], ":"))
 	}
+	if strings.HasSuffix(gitURL, ".git") {
+		gitURL = strings.TrimSuffix(gitURL, ".git")
+	}
 
 	cmd = exec.Command(gitPath, "rev-parse", "--show-toplevel")
 	brootdir, err := cmd.Output()
