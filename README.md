@@ -177,7 +177,7 @@ If there is multiple pipeline matching an event, it will match the first one.
 We are currently not supporting multiple PipelineRuns on a single event but
 this may be something we can consider to implement in the future.
 
-### PipelineRuns Cleanups
+#### PipelineRuns Cleanups
 
 There can be a lot of PipelineRuns into an user namespace and Pipelines as Code
 has the ability to only keep a number of PipelineRuns that matches an event.
