@@ -15,8 +15,6 @@
 package completion
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
@@ -78,13 +76,13 @@ func Command() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			switch args[0] {
 			case "bash":
-				_ = cmd.Root().GenBashCompletion(os.Stdout)
+				_ = cmd.Root().GenBashCompletion(cmd.OutOrStdout())
 			case "zsh":
-				_ = cmd.Root().GenZshCompletion(os.Stdout)
+				_ = cmd.Root().GenZshCompletion(cmd.OutOrStdout())
 			case "fish":
-				_ = cmd.Root().GenFishCompletion(os.Stdout, true)
+				_ = cmd.Root().GenFishCompletion(cmd.OutOrStdout(), true)
 			case "powershell":
-				_ = cmd.Root().GenPowerShellCompletion(os.Stdout)
+				_ = cmd.Root().GenPowerShellCompletion(cmd.OutOrStdout())
 			}
 
 			return nil

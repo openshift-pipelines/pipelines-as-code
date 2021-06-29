@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/completion"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"

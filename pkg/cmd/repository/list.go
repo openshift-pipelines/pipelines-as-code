@@ -6,8 +6,8 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/ui"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
