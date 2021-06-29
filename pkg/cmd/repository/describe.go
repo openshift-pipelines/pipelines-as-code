@@ -117,10 +117,10 @@ func askRepo(ctx context.Context, cs *cli.Clients, opts *flags.CliOpts, namespac
 		}
 	}
 
-	return nil, fmt.Errorf("cannot match repository???")
+	return nil, fmt.Errorf("cannot match repository")
 }
 
-func DescribeCommand(p cli.Params) *cobra.Command {
+func DescribeCommand(p cli.Params, streams *ui.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "describe",
 		Aliases: []string{"desc"},
@@ -151,11 +151,11 @@ func DescribeCommand(p cli.Params) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ioStreams := ui.NewIOStreams()
-			ioStreams.SetColorEnabled(!opts.NoColoring)
-			return describe(ctx, cs, clock, opts, ioStreams, p.GetNamespace(), repoName)
+			streams.SetColorEnabled(!opts.NoColoring)
+			return describe(ctx, cs, clock, opts, streams, p.GetNamespace(), repoName)
 		},
 	}
+	flags.AddPacCliOptions(cmd)
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
 

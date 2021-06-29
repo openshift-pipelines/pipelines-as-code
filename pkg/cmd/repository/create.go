@@ -34,7 +34,7 @@ type CreateOptions struct {
 	AssumeYes bool
 }
 
-func CreateCommand(p cli.Params) *cobra.Command {
+func CreateCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 	createOpts := CreateOptions{}
 	cmd := &cobra.Command{
 		Use:     "create",
@@ -42,8 +42,7 @@ func CreateCommand(p cli.Params) *cobra.Command {
 		Short:   "Create  a repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-
-			createOpts.IOStreams = ui.NewIOStreams()
+			createOpts.IOStreams = ioStreams
 			createOpts.CLIOpts, err = flags.NewCliOptions(cmd)
 			if err != nil {
 				return err

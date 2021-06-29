@@ -21,7 +21,7 @@ var (
 	namespaceFlag     = "namespace"
 )
 
-func ListCommand(p cli.Params) *cobra.Command {
+func ListCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 	var noheaders, allNamespaces bool
 	var selectors string
 
@@ -30,7 +30,6 @@ func ListCommand(p cli.Params) *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List repositories",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ioStreams := ui.NewIOStreams()
 			opts, err := flags.NewCliOptions(cmd)
 			if err != nil {
 				return err
@@ -56,6 +55,7 @@ func ListCommand(p cli.Params) *cobra.Command {
 		},
 	}
 
+	flags.AddPacCliOptions(cmd)
 	cmd.PersistentFlags().BoolVarP(&allNamespaces, allNamespacesFlag, "A", false, "If present, "+
 		"list the repository across all namespaces. Namespace in current context is ignored even if specified with"+
 		" --namespace.")
