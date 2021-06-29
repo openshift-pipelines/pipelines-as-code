@@ -443,10 +443,13 @@ kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines
 ```
 
 which will apply the release.yaml to your kubernetes cluster, creating the
-namespace, the roles and all other bits needed.
+admin namespace `pipelines-as-code`, the roles and all other bits needed.
 
-You will need to have events coming through to your EventListenner so follow
-the next steps on how to do that.
+The `pipelines-as-code` namespace is where all the admin pipelinerun are run,
+they are supposed to be accesible only by the admin.
+
+You will need then to have events from github or others coming through to your
+EventListenner so follow the next steps on how to do that.
 
 ### Github configuration
 
@@ -504,3 +507,12 @@ Pipelines as Code supports Github Enterprise.
 
 You don't need to do anything special to get Pipelines as code working with GHE.
 Pipeline as code will automatically detects the header as set from GHE and use it  the GHE API auth url instead of the public github.
+
+### PR cleanups in pipelines-as-code admin namespace
+
+We install by default a cron that cleanups the PR generated on events in pipelines-as-code
+namespace. The crons runs every hour and by default cleanups pipelineruns over a
+day. If you would like to change the max number of days to keep you can change the
+key `max-keep-days` in the `pipelines-as-code` configmap. This configmap
+setting doens't affect the cleanups of the user's PR controlled by the
+annotations.
