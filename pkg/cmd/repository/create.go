@@ -19,6 +19,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const defaultMainBranch = "main"
+
 type CreateOptions struct {
 	RepositoryName             string
 	TargetNamespace, TargetURL string
@@ -29,6 +31,7 @@ type CreateOptions struct {
 	IOStreams *ui.IOStreams
 	Clients   *cli.Clients
 	CLIOpts   *flags.CliOpts
+	AssumeYes bool
 }
 
 func CreateCommand(p cli.Params) *cobra.Command {
@@ -63,6 +66,8 @@ func CreateCommand(p cli.Params) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&createOpts.EventType, "event-type", "", "The event type of the repository event to handle (eg: pull_request, push)")
 	cmd.PersistentFlags().StringVar(&createOpts.TargetURL, "url", "", "The repository URL from where the event will come from")
 	cmd.PersistentFlags().StringVar(&createOpts.TargetNamespace, "target-namespace", "", "The target namespace where the runs will be created")
+	cmd.PersistentFlags().BoolVarP(&createOpts.AssumeYes, "assume-yes", "y", false,
+		"Do not ask questions and just assume yes to everything")
 
 	return cmd
 }
@@ -70,36 +75,28 @@ func CreateCommand(p cli.Params) *cobra.Command {
 // askToCreateSimplePipeline will try to create a basic pipeline in tekton
 // directory.
 func askToCreateSimplePipeline(gitRoot string, opts CreateOptions) error {
-	var repo string
 	fpath := filepath.Join(gitRoot, ".tekton", fmt.Sprintf("%s.yaml", opts.EventType))
 
-	err := opts.CLIOpts.Ask([]*survey.Question{{
-		Prompt: &survey.Select{
-			Options: []string{"Yes", "No"},
-			Default: "Yes",
-			Message: fmt.Sprintf("Would you like to create a basic PipelineRun file: %s in your repo?", fpath),
-		},
-	}}, &repo)
+	reply, err := askYesNo(opts,
+		fmt.Sprintf("Would you like to create a basic PipelineRun file: %s in your createBasicPipelineRun?", fpath),
+		"True")
 	if err != nil {
 		return err
+	}
+	if !reply {
+		return nil
 	}
 
 	if err := os.MkdirAll(filepath.Join(gitRoot, ".tekton"), 0o755); err != nil {
 		return err
 	}
 	if _, err = os.Stat(fpath); err != nil && !os.IsNotExist(err) {
-		var ans string
-		err := opts.CLIOpts.Ask([]*survey.Question{{
-			Prompt: &survey.Select{
-				Options: []string{"Yes", "No"},
-				Default: "No",
-				Message: fmt.Sprintf("There is already a file named: %s would you like to override it?", fpath),
-			},
-		}}, &ans)
+		overwrite, err := askYesNo(opts,
+			fmt.Sprintf("There is already a file named: %s would you like to override it?", fpath), "No")
 		if err != nil {
 			return err
 		}
-		if ans == "No" {
+		if !overwrite {
 			return nil
 		}
 	}
@@ -177,21 +174,61 @@ spec:
 	}
 
 	cs := opts.IOStreams.ColorScheme()
-	fmt.Fprintf(opts.IOStreams.ErrOut, "%s A basic template has been created in %s, feel free to customize it.\n",
+	fmt.Fprintf(opts.IOStreams.Out, "%s A basic template has been created in %s, feel free to customize it.\n",
 		cs.SuccessIcon(),
 		cs.Bold(fpath),
 	)
-	fmt.Fprintf(opts.IOStreams.ErrOut, "%s You can test your pipeline manually with :.\n", cs.InfoIcon())
-	fmt.Fprintf(opts.IOStreams.ErrOut, "tkn-pac resolve --generateName \\\n"+
+	fmt.Fprintf(opts.IOStreams.Out, "%s You can test your pipeline manually with :.\n", cs.InfoIcon())
+	fmt.Fprintf(opts.IOStreams.Out, "tkn-pac resolve --generateName \\\n"+
 		"     --params revision=%s --params repo_url=\"%s\" \\\n      -f %s | k create -f-\n", opts.TargetBranch, opts.TargetURL, fpath)
 
 	return nil
 }
 
+func askYesNo(opts CreateOptions, question string, defaults string) (bool, error) {
+	var answer string
+	if opts.AssumeYes {
+		return true, nil
+	}
+	err := opts.CLIOpts.Ask([]*survey.Question{
+		{
+			Prompt: &survey.Select{
+				Options: []string{"Yes", "No"},
+				Default: defaults,
+				Message: question,
+			},
+		},
+	}, &answer)
+	if err != nil {
+		return false, err
+	}
+
+	if strings.ToLower(answer) == "yes" {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // create ...
 func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 	var qs []*survey.Question
+	var err error
+
 	gitinfo := git.GetGitInfo(gitdir)
+
+	if opts.AssumeYes && opts.TargetNamespace == "" {
+		opts.TargetNamespace = opts.CurrentNS
+	}
+	if opts.AssumeYes && opts.TargetURL == "" {
+		opts.TargetURL = gitinfo.TargetURL
+	}
+	if opts.AssumeYes && opts.TargetBranch == "" {
+		opts.TargetBranch = defaultMainBranch
+	}
+	if opts.AssumeYes && opts.EventType == "" {
+		opts.EventType = "pull_request"
+	}
 
 	if opts.TargetNamespace == "" {
 		qs = append(qs, &survey.Question{
@@ -228,9 +265,11 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 		})
 	}
 
-	err := opts.CLIOpts.Ask(qs, &opts)
-	if err != nil {
-		return err
+	if qs != nil {
+		err := opts.CLIOpts.Ask(qs, &opts)
+		if err != nil {
+			return err
+		}
 	}
 	if opts.TargetNamespace == "" {
 		opts.TargetNamespace = opts.CurrentNS
@@ -241,7 +280,7 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 		return fmt.Errorf("we didn't get a target URL")
 	}
 	if opts.TargetBranch == "" {
-		opts.TargetBranch = "main"
+		opts.TargetBranch = defaultMainBranch
 	}
 	if opts.RepositoryName == "" {
 		opts.RepositoryName, err = askNameForResource(opts)
@@ -271,7 +310,7 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(opts.IOStreams.ErrOut, "%s Repository %s has been created in %s namespace\n",
+	fmt.Fprintf(opts.IOStreams.Out, "%s Repository %s has been created in %s namespace\n",
 		cs.SuccessIconWithColor(cs.Green),
 		opts.RepositoryName,
 		opts.TargetNamespace,
@@ -281,11 +320,11 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 		return err
 	}
 
-	fmt.Fprintf(opts.IOStreams.ErrOut, "%s Don't forget to install the GitHub application into your repo %s\n",
+	fmt.Fprintf(opts.IOStreams.Out, "%s Don't forget to install the GitHub application into your repo %s\n",
 		cs.InfoIcon(),
 		opts.TargetURL,
 	)
-	fmt.Fprintf(opts.IOStreams.ErrOut, "%s and we are done! enjoy :)))\n", cs.SuccessIcon())
+	fmt.Fprintf(opts.IOStreams.Out, "%s and we are done! enjoy :)))\n", cs.SuccessIcon())
 
 	return nil
 }
@@ -293,6 +332,9 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 func askNameForResource(opts CreateOptions) (string, error) {
 	s, err := ui.GetRepoOwnerFromGHURL(opts.TargetURL)
 	generatedNS := fmt.Sprintf("%s-%s", filepath.Base(s), strings.ReplaceAll(opts.EventType, "_", "-"))
+	if opts.AssumeYes {
+		return generatedNS, nil
+	}
 	prompt := fmt.Sprintf("Set a name for this resource (default: %s):", generatedNS)
 	if err != nil {
 		prompt = "Set a name for this resource:"
@@ -320,24 +362,17 @@ func askNameForResource(opts CreateOptions) (string, error) {
 func askCreateNamespace(ctx context.Context, opts CreateOptions, cs *ui.ColorScheme) error {
 	_, err := opts.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.TargetNamespace, metav1.GetOptions{})
 	if err != nil {
-		fmt.Fprintf(opts.IOStreams.ErrOut, "%s Namespace %s is not created yet\n",
+		fmt.Fprintf(opts.IOStreams.Out, "%s Namespace %s is not created yet\n",
 			cs.WarningIcon(),
 			opts.TargetNamespace,
 		)
-		var ans string
-		err := opts.CLIOpts.Ask([]*survey.Question{
-			{
-				Prompt: &survey.Select{
-					Options: []string{"Yes", "No"},
-					Default: "Yes",
-					Message: fmt.Sprintf("Would you like me to create the namespace %s?", opts.TargetNamespace),
-				},
-			},
-		}, &ans)
+		createNamespace, err := askYesNo(opts,
+			fmt.Sprintf("Would you like me to create the namespace %s?", opts.TargetNamespace),
+			"Yes")
 		if err != nil {
 			return err
 		}
-		if ans != "Yes" {
+		if !createNamespace {
 			return fmt.Errorf("you need to create the target namespace")
 		}
 		_, err = opts.Clients.Kube.CoreV1().Namespaces().Create(ctx,
