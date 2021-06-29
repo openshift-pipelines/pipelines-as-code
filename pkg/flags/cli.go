@@ -39,7 +39,3 @@ func NewCliOptions(cmd *cobra.Command) (*CliOpts, error) {
 func (c *CliOpts) Ask(qs []*survey.Question, ans interface{}) error {
 	return survey.Ask(qs, ans, c.AskOpts)
 }
-
-func AddPacCliOptions(cmd *cobra.Command) {
-	cmd.PersistentFlags().BoolP(noColorFlag, "C", false, "disable coloring")
-}

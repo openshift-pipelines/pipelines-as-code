@@ -22,7 +22,6 @@ func Root(p cli.Params) *cobra.Command {
 		},
 	}
 	flags.AddPacOptions(cmd)
-	flags.AddPacCliOptions(cmd)
 
 	cmd.AddCommand(repository.Root(p))
 	cmd.AddCommand(resolve.Command(p))
