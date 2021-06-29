@@ -39,6 +39,10 @@ type RepositoryRunStatus struct {
 	// Title is the title of the commit SHA that has been tested
 	// +optional
 	Title *string `json:"title,omitempty"`
+
+	// LogURL is the full url to this run long
+	// +optional
+	LogURL *string `json:"logurl,omitempty"`
 }
 
 // RepositorySpec is the spec of a repo

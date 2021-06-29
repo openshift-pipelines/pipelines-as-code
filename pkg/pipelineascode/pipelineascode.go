@@ -223,6 +223,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		CompletionTime:  newPr.Status.CompletionTime,
 		SHA:             &runinfo.SHA,
 		Title:           &runinfo.SHATitle,
+		LogURL:          &consoleURL,
 	}
 
 	// Get repo again in case it was updated while we were running the CI
