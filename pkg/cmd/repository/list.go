@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"text/tabwriter"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/ui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/completion"
@@ -14,8 +15,8 @@ import (
 )
 
 var (
-	header            = "NAME\tOWNER/REPOSITORY\tSHA\tEVENT-TYPE"
-	body              = "%s\t%s\t%s\t%s"
+	header            = "NAME\tAGE\tOWNER/REPOSITORY\tSHA\tEVENT-TYPE"
+	body              = "%s\t%s\t%s\t%s\t%s"
 	allNamespacesFlag = "all-namespaces"
 	namespaceFlag     = "namespace"
 )
@@ -50,7 +51,8 @@ func ListCommand(p cli.Params) *cobra.Command {
 				return err
 			}
 			ctx := context.Background()
-			return list(ctx, cs, opts, ioStreams, p.GetNamespace(), selectors, noheaders)
+			cw := clockwork.NewRealClock()
+			return list(ctx, cs, opts, ioStreams, cw, p.GetNamespace(), selectors, noheaders)
 		},
 	}
 
@@ -79,7 +81,9 @@ func ListCommand(p cli.Params) *cobra.Command {
 }
 
 func list(ctx context.Context, cs *cli.Clients, opts *flags.CliOpts, ioStreams *ui.IOStreams,
-	currentNamespace, selectors string, noheaders bool) error {
+	cw clockwork.Clock,
+	currentNamespace, selectors string,
+	noheaders bool) error {
 	if opts.Namespace != "" {
 		currentNamespace = opts.Namespace
 	}
@@ -110,7 +114,10 @@ func list(ctx context.Context, cs *cli.Clients, opts *flags.CliOpts, ioStreams *
 			return err
 		}
 
-		fmt.Fprintf(w, body, repository.GetName(), repoOwner,
+		fmt.Fprintf(w, body,
+			repository.GetName(),
+			ui.ShowLastAge(repository, cw),
+			repoOwner,
 			ui.ShowLastSHA(repository),
 			repository.Spec.EventType)
 
