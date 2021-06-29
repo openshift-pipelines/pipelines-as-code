@@ -144,7 +144,8 @@ func TestList(t *testing.T) {
 				PipelineAsCode: stdata.PipelineAsCode,
 			}
 			io, out := newIOStream()
-			if err := list(ctx, cs, tt.args.opts, io, tt.args.currentNamespace,
+			if err := list(ctx, cs, tt.args.opts, io,
+				cw, tt.args.currentNamespace,
 				tt.args.selectors, tt.args.noheaders); (err != nil) != tt.wantErr {
 				t.Errorf("describe() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
