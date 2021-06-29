@@ -60,6 +60,8 @@ func CreateCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 			return create(context.Background(), cwd, createOpts)
 		},
 	}
+
+	cmd.PersistentFlags().BoolP(noColorFlag, "C", !ioStreams.ColorEnabled(), "disable coloring")
 	cmd.PersistentFlags().StringVar(&createOpts.RepositoryName, "name", "", "The repository name")
 	cmd.PersistentFlags().StringVar(&createOpts.TargetBranch, "branch", "", "The target branch of the repository  event to handle (eg: main, nightly)")
 	cmd.PersistentFlags().StringVar(&createOpts.EventType, "event-type", "", "The event type of the repository event to handle (eg: pull_request, push)")

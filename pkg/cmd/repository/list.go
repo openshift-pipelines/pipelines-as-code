@@ -19,6 +19,7 @@ var (
 	body              = "%s\t%s\t%s\t%s\t%s"
 	allNamespacesFlag = "all-namespaces"
 	namespaceFlag     = "namespace"
+	noColorFlag       = "no-color"
 )
 
 func ListCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
@@ -55,7 +56,7 @@ func ListCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 		},
 	}
 
-	flags.AddPacCliOptions(cmd)
+	cmd.PersistentFlags().BoolP(noColorFlag, "C", !ioStreams.ColorEnabled(), "disable coloring")
 	cmd.PersistentFlags().BoolVarP(&allNamespaces, allNamespacesFlag, "A", false, "If present, "+
 		"list the repository across all namespaces. Namespace in current context is ignored even if specified with"+
 		" --namespace.")
