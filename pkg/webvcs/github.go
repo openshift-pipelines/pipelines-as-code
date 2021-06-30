@@ -36,7 +36,7 @@ type RunInfo struct {
 	Sender        string
 	TriggerTarget string
 	URL           string
-	WebConsoleURL string
+	LogURL        string
 	SHATitle      string
 }
 
@@ -393,7 +393,7 @@ func (v GithubVCS) CreateCheckRun(ctx context.Context, status string, runinfo *R
 		Name:       "Pipelines as Code CI",
 		HeadSHA:    runinfo.SHA,
 		Status:     &status,
-		DetailsURL: &runinfo.WebConsoleURL,
+		DetailsURL: &runinfo.LogURL,
 		StartedAt:  &now,
 	}
 

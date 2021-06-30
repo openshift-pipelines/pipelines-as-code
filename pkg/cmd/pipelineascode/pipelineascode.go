@@ -96,14 +96,14 @@ func runWrap(ctx context.Context, opts *pacpkg.Options, cs *cli.Clients, kintera
 		cs.Log.Error(err)
 		url = defaultURL
 	}
-	runinfo.WebConsoleURL = url
+	runinfo.LogURL = url
 
 	err = pacpkg.Run(ctx, cs, kinteract, runinfo)
 	if err != nil {
 		if runinfo.CheckRunID != nil && !strings.Contains(err.Error(), "403 Resource not accessible by integration") {
 			_, _ = cs.GithubClient.CreateStatus(ctx, runinfo, "completed", "failure",
 				fmt.Sprintf("There was an issue validating the commit: %q", err),
-				runinfo.WebConsoleURL)
+				runinfo.LogURL)
 		} else {
 			cs.Log.Debug("There was an error: %s", err.Error())
 		}
