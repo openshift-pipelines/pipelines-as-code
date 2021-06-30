@@ -1,7 +1,7 @@
 {
-  "ref": "refs/tags/0.1",
-  "before": "0000000000000000000000000000000000000000",
-  "after": "172a108023444bfb48851c0b08123b02afbe4ed2",
+  "ref": "refs/tags/0.2",
+  "before": "674b331364214536e16b7b24d806d3a1efb290cc",
+  "after": "02740beb3614221ed2eabbebec5f9a013c51e587",
   "repository": {
     "id": 359117785,
     "node_id": "MDEwOlJlcG9zaXRvcnkzNTkxMTc3ODU=",
@@ -71,14 +71,14 @@
     "releases_url": "https://api.github.com/repos/chmouel/scratchmyback/releases{/id}",
     "deployments_url": "https://api.github.com/repos/chmouel/scratchmyback/deployments",
     "created_at": 1618743465,
-    "updated_at": "2021-05-18T15:22:38Z",
-    "pushed_at": 1621352226,
+    "updated_at": "2021-05-26T13:27:27Z",
+    "pushed_at": 1625059843,
     "git_url": "git://github.com/chmouel/scratchmyback.git",
     "ssh_url": "git@github.com:chmouel/scratchmyback.git",
     "clone_url": "https://github.com/chmouel/scratchmyback.git",
     "svn_url": "https://github.com/chmouel/scratchmyback",
     "homepage": null,
-    "size": 25,
+    "size": 28,
     "stargazers_count": 0,
     "watchers_count": 0,
     "language": null,
@@ -87,11 +87,11 @@
     "has_downloads": true,
     "has_wiki": true,
     "has_pages": false,
-    "forks_count": 0,
+    "forks_count": 1,
     "mirror_url": null,
     "archived": false,
     "disabled": false,
-    "open_issues_count": 1,
+    "open_issues_count": 2,
     "license": {
       "key": "gpl-3.0",
       "name": "GNU General Public License v3.0",
@@ -99,8 +99,8 @@
       "url": "https://api.github.com/licenses/gpl-3.0",
       "node_id": "MDc6TGljZW5zZTk="
     },
-    "forks": 0,
-    "open_issues": 1,
+    "forks": 1,
+    "open_issues": 2,
     "watchers": 0,
     "default_branch": "main",
     "stargazers": 0,
@@ -134,21 +134,47 @@
     "id": 16556382,
     "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uMTY1NTYzODI="
   },
-  "created": true,
+  "created": false,
   "deleted": false,
   "forced": false,
-  "base_ref": "refs/heads/main",
-  "compare": "https://github.com/chmouel/scratchmyback/compare/0.1",
+  "base_ref": "refs/heads/tektonci",
+  "compare": "https://github.com/chmouel/scratchmyback/compare/674b33136421...02740beb3614",
   "commits": [
+    {
+      "id": "02740beb3614221ed2eabbebec5f9a013c51e587",
+      "tree_id": "26fd1af0f7b8a44bd2aa948b60cdc1d69c2ec580",
+      "distinct": false,
+      "message": "Add tag release pipeline\n\nSigned-off-by: Chmouel Boudjnah <chmouel@chmouel.com>",
+      "timestamp": "2021-06-30T15:29:53+02:00",
+      "url": "https://github.com/chmouel/scratchmyback/commit/02740beb3614221ed2eabbebec5f9a013c51e587",
+      "author": {
+        "name": "Chmouel Boudjnah",
+        "email": "chmouel@chmouel.com",
+        "username": "chmouel"
+      },
+      "committer": {
+        "name": "Chmouel Boudjnah",
+        "email": "chmouel@chmouel.com",
+        "username": "chmouel"
+      },
+      "added": [
+        ".tekton/tag-release.yaml"
+      ],
+      "removed": [
 
+      ],
+      "modified": [
+
+      ]
+    }
   ],
   "head_commit": {
-    "id": "172a108023444bfb48851c0b08123b02afbe4ed2",
-    "tree_id": "a7f00fa35663a623df63e694e517f7d49a5b4028",
-    "distinct": true,
-    "message": "Add run on push\n\nSigned-off-by: Chmouel Boudjnah <chmouel@chmouel.com>",
-    "timestamp": "2021-05-18T17:22:31+02:00",
-    "url": "https://github.com/chmouel/scratchmyback/commit/172a108023444bfb48851c0b08123b02afbe4ed2",
+    "id": "02740beb3614221ed2eabbebec5f9a013c51e587",
+    "tree_id": "26fd1af0f7b8a44bd2aa948b60cdc1d69c2ec580",
+    "distinct": false,
+    "message": "Add tag release pipeline\n\nSigned-off-by: Chmouel Boudjnah <chmouel@chmouel.com>",
+    "timestamp": "2021-06-30T15:29:53+02:00",
+    "url": "https://github.com/chmouel/scratchmyback/commit/02740beb3614221ed2eabbebec5f9a013c51e587",
     "author": {
       "name": "Chmouel Boudjnah",
       "email": "chmouel@chmouel.com",
@@ -160,7 +186,7 @@
       "username": "chmouel"
     },
     "added": [
-      ".tekton/run-on-push.yaml"
+      ".tekton/tag-release.yaml"
     ],
     "removed": [
 
