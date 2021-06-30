@@ -164,6 +164,12 @@ spec:
                     type: string
                 steps:
                   - name: apply-and-launch
+                    env:
+                    - name: PAC_APPLICATION_NAME
+                      valueFrom:
+                        configMapKeyRef:
+                          name: pipelines-as-code
+                          key: application-name
                     imagePullPolicy: Always
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
                     script: |

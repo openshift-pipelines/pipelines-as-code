@@ -24,20 +24,21 @@ type GithubVCS struct {
 
 // RunInfo Information about current run
 type RunInfo struct {
-	BaseBranch    string // branch against where we are making the PR
-	CheckRunID    *int64
-	DefaultBranch string
-	Event         interface{}
-	EventType     string
-	HeadBranch    string // branch from where our SHA get tested
-	Owner         string
-	Repository    string
-	SHA           string
-	Sender        string
-	TriggerTarget string
-	URL           string
-	LogURL        string
-	SHATitle      string
+	BaseBranch      string // branch against where we are making the PR
+	CheckRunID      *int64
+	DefaultBranch   string
+	Event           interface{}
+	EventType       string
+	HeadBranch      string // branch from where our SHA get tested
+	Owner           string
+	Repository      string
+	SHA             string
+	Sender          string
+	TriggerTarget   string
+	URL             string
+	LogURL          string
+	SHATitle        string
+	ApplicationName string // The Application Name for example "Pipelines as Code"
 }
 
 // Check check if the runinfo is properly set
@@ -390,7 +391,7 @@ func (v GithubVCS) GetObject(ctx context.Context, sha string, runinfo *RunInfo) 
 func (v GithubVCS) CreateCheckRun(ctx context.Context, status string, runinfo *RunInfo) (*github.CheckRun, error) {
 	now := github.Timestamp{Time: time.Now()}
 	checkrunoption := github.CreateCheckRunOptions{
-		Name:       "Pipelines as Code CI",
+		Name:       runinfo.ApplicationName,
 		HeadSHA:    runinfo.SHA,
 		Status:     &status,
 		DetailsURL: &runinfo.LogURL,
@@ -428,7 +429,7 @@ func (v GithubVCS) CreateStatus(ctx context.Context, runinfo *RunInfo, status, c
 	}
 
 	opts := github.UpdateCheckRunOptions{
-		Name:   "Pipelines as Code CI",
+		Name:   runinfo.ApplicationName,
 		Status: &status,
 		Output: checkRunOutput,
 	}

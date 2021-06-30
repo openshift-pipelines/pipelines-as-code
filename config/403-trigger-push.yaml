@@ -166,6 +166,12 @@ spec:
                   - name: apply-and-launch
                     imagePullPolicy: Always
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+                    env:
+                    - name: PAC_APPLICATION_NAME
+                      valueFrom:
+                        configMapKeyRef:
+                          name: pipelines-as-code
+                          key: application-name
                     script: |
                       cat << EOF > /tmp/payload.json
                       {

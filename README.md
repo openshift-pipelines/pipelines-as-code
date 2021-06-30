@@ -508,6 +508,16 @@ Pipelines as Code supports Github Enterprise.
 You don't need to do anything special to get Pipelines as code working with GHE.
 Pipelines as code will automatically detects the header as set from GHE and use it  the GHE API auth url instead of the public github.
 
+### Configuration
+
+There is a few things you can configure via the configmap `pipelines-as-code` in
+the `pipelines-as-code` namespace.
+
+- **application-name**: The name of the application showing for example in the
+  GitHub Checks labels. Default to `"Pipelines as Code"`
+- **max-keep-days**: The number of the day to keep the PR runs in the
+  `pipelines-as-code` namespace, see below for more details about it..
+
 ### PR cleanups in pipelines-as-code admin namespace
 
 We install by default a cron that cleanups the PR generated on events in pipelines-as-code

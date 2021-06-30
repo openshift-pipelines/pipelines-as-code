@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	defaultURL = "https://giphy.com/explore/cat"
+	defaultURL             = "https://giphy.com/explore/cat"
+	defaultApplicationName = "Pipelines as Code CI"
 )
 
 func Command(p cli.Params) *cobra.Command {
@@ -52,7 +53,14 @@ func Command(p cli.Params) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.RunInfo.EventType, "webhook-type", "", os.Getenv("PAC_EVENT_TYPE"), "Payload event type as set from Github (ie: X-GitHub-Event header)")
 	cmd.Flags().StringVarP(&opts.RunInfo.TriggerTarget, "trigger-target", "", os.Getenv("PAC_TRIGGER_TARGET"), "The trigger target from where this event comes from")
 	cmd.Flags().StringVarP(&opts.PayloadFile, "payload-file", "", os.Getenv("PAC_PAYLOAD_FILE"), "A file containing the webhook payload")
+	applicationName := os.Getenv("PAC_APPLICATION_NAME")
+	if applicationName == "" {
+		applicationName = defaultApplicationName
+	}
 
+	cmd.Flags().StringVar(&opts.RunInfo.ApplicationName,
+		"application-name", applicationName,
+		"The name of the application.")
 	return cmd
 }
 
@@ -75,6 +83,7 @@ func parsePayload(ctx context.Context, cs *cli.Clients, opts *pacpkg.Options) (*
 	if err != nil {
 		return &webvcs.RunInfo{}, err
 	}
+	payloadinfo.ApplicationName = opts.RunInfo.ApplicationName
 
 	if err := payloadinfo.Check(); err != nil {
 		return &webvcs.RunInfo{}, fmt.Errorf("invalid Payload, missing some values : %+v", payloadinfo)
