@@ -22,8 +22,8 @@ const (
 func Command(p cli.Params) *cobra.Command {
 	opts := &pacpkg.Options{}
 	cmd := &cobra.Command{
-		Use:   "run",
-		Short: "Run pipelines as code",
+		Use:   "pipelines-as-code",
+		Short: "Pipelines as code Run",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return flags.GetWebCVSOptions(p, cmd)
 		},

@@ -390,7 +390,7 @@ func (v GithubVCS) GetObject(ctx context.Context, sha string, runinfo *RunInfo) 
 func (v GithubVCS) CreateCheckRun(ctx context.Context, status string, runinfo *RunInfo) (*github.CheckRun, error) {
 	now := github.Timestamp{Time: time.Now()}
 	checkrunoption := github.CreateCheckRunOptions{
-		Name:       "Tekton Pipeline as Code CI",
+		Name:       "Pipelines as Code CI",
 		HeadSHA:    runinfo.SHA,
 		Status:     &status,
 		DetailsURL: &runinfo.WebConsoleURL,
@@ -428,7 +428,7 @@ func (v GithubVCS) CreateStatus(ctx context.Context, runinfo *RunInfo, status, c
 	}
 
 	opts := github.UpdateCheckRunOptions{
-		Name:   "Tekton Pipeline as Code CI",
+		Name:   "Pipelines as Code CI",
 		Status: &status,
 		Output: checkRunOutput,
 	}
