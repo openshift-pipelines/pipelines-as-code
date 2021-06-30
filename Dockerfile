@@ -14,5 +14,5 @@ LABEL com.redhat.component=pipelines-as-code \
 LABEL version=0.1.0
 
 COPY --from=builder /tmp/pipelines-as-code /usr/bin/pipelines-as-code
-RUN ln -s /usr/bin/pipelines-as-code /usr/bin/tkn-pac
+RUN ln /usr/bin/pipelines-as-code /usr/bin/tkn-pac
 CMD ["/usr/bin/pipelines-as-code"]

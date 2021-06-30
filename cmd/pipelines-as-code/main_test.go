@@ -16,11 +16,11 @@ func TestRouteBinary(t *testing.T) {
 			short: "Pipelines as code Run",
 		},
 		{
-			name:  "tkn-pac",
-			short: "Pipelines as Code CLI",
+			name:  "main",
+			short: "Pipelines as code Run",
 		},
 		{
-			name:  "anything-else",
+			name:  "tkn-pac",
 			short: "Pipelines as Code CLI",
 		},
 	}
