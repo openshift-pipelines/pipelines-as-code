@@ -14,10 +14,11 @@ import (
 // RouteBinary according to $0
 func RouteBinary(binary string) *cobra.Command {
 	tp := &cli.PacParams{}
-	if filepath.Base(binary) == "pipelines-as-code" {
-		return pipelineascode.Command(tp)
+	binary = filepath.Base(binary)
+	if binary == "tkn-pac" {
+		return tknpac.Root(tp)
 	}
-	return tknpac.Root(tp)
+	return pipelineascode.Command(tp)
 }
 
 func main() {
