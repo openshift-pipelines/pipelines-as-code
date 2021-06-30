@@ -22,9 +22,9 @@ import (
 const defaultMainBranch = "main"
 
 type CreateOptions struct {
-	RepositoryName             string
-	TargetNamespace, TargetURL string
-	EventType, TargetBranch    string
+	RepositoryName          string
+	Namespace, TargetURL    string
+	EventType, TargetBranch string
 
 	CurrentNS string
 
@@ -66,7 +66,7 @@ func CreateCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&createOpts.TargetBranch, "branch", "", "The target branch of the repository  event to handle (eg: main, nightly)")
 	cmd.PersistentFlags().StringVar(&createOpts.EventType, "event-type", "", "The event type of the repository event to handle (eg: pull_request, push)")
 	cmd.PersistentFlags().StringVar(&createOpts.TargetURL, "url", "", "The repository URL from where the event will come from")
-	cmd.PersistentFlags().StringVar(&createOpts.TargetNamespace, "target-namespace", "", "The target namespace where the runs will be created")
+	cmd.PersistentFlags().StringVarP(&createOpts.Namespace, "namespace", "n", "", "The target namespace where the runs will be created")
 	cmd.PersistentFlags().BoolVarP(&createOpts.AssumeYes, "assume-yes", "y", false,
 		"Do not ask questions and just assume yes to everything")
 
@@ -77,23 +77,29 @@ func CreateCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 // directory.
 func askToCreateSimplePipeline(gitRoot string, opts CreateOptions) error {
 	fpath := filepath.Join(gitRoot, ".tekton", fmt.Sprintf("%s.yaml", opts.EventType))
+	cwd, _ := os.Getwd()
+	abspath, _ := filepath.Rel(cwd, fpath)
 
 	reply, err := askYesNo(opts,
-		fmt.Sprintf("Would you like to create a basic PipelineRun file: %s in your createBasicPipelineRun?", fpath),
+		fmt.Sprintf("Would you like me to create a basic PipelineRun file into the file %s ?", abspath),
 		"True")
 	if err != nil {
 		return err
 	}
+
 	if !reply {
 		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Join(gitRoot, ".tekton"), 0o755); err != nil {
-		return err
+	if _, err = os.Stat(filepath.Join(gitRoot, ".tekton")); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Join(gitRoot, ".tekton"), 0o755); err != nil {
+			return err
+		}
 	}
-	if _, err = os.Stat(fpath); err != nil && !os.IsNotExist(err) {
+
+	if _, err = os.Stat(fpath); !os.IsNotExist(err) {
 		overwrite, err := askYesNo(opts,
-			fmt.Sprintf("There is already a file named: %s would you like to override it?", fpath), "No")
+			fmt.Sprintf("There is already a file named: %s would you like me to override it?", fpath), "No")
 		if err != nil {
 			return err
 		}
@@ -111,7 +117,7 @@ metadata:
     # The event we are targeting (ie: pull_request, push)
     pipelinesascode.tekton.dev/on-event: "[%s]"
 
-    # The branch we are targeting (ie: main)
+    # The branch or tag we are targeting (ie: main, refs/tags/*)
     pipelinesascode.tekton.dev/on-target-branch: "[%s]"
 
     # Fetch the git-clone task from hub, we are able to reference it with taskRef
@@ -204,7 +210,7 @@ func askYesNo(opts CreateOptions, question string, defaults string) (bool, error
 		return false, err
 	}
 
-	if strings.ToLower(answer) == "yes" {
+	if answer == "True" {
 		return true, nil
 	}
 
@@ -218,8 +224,8 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 
 	gitinfo := git.GetGitInfo(gitdir)
 
-	if opts.AssumeYes && opts.TargetNamespace == "" {
-		opts.TargetNamespace = opts.CurrentNS
+	if opts.AssumeYes && opts.Namespace == "" {
+		opts.Namespace = opts.CurrentNS
 	}
 	if opts.AssumeYes && opts.TargetURL == "" {
 		opts.TargetURL = gitinfo.TargetURL
@@ -231,16 +237,16 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 		opts.EventType = "pull_request"
 	}
 
-	if opts.TargetNamespace == "" {
+	if opts.Namespace == "" {
 		qs = append(qs, &survey.Question{
-			Name:   "TargetNamespace",
-			Prompt: &survey.Input{Message: fmt.Sprintf("Enter the target namespace (default: %s):", opts.CurrentNS)},
+			Name:   "Namespace",
+			Prompt: &survey.Input{Message: fmt.Sprintf("Enter the namespace where the pipeline should run (default: %s): ", opts.CurrentNS)},
 		})
 	}
 	if opts.TargetURL == "" {
 		prompt := "Enter the target url: "
 		if gitinfo.TargetURL != "" {
-			prompt = fmt.Sprintf("Enter the target url (default: %s): ", gitinfo.TargetURL)
+			prompt = fmt.Sprintf("Enter the Git repository url containing the pipelines (default: %s): ", gitinfo.TargetURL)
 		}
 		qs = append(qs, &survey.Question{
 			Name:   "TargetURL",
@@ -251,7 +257,7 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 	if opts.TargetBranch == "" {
 		qs = append(qs, &survey.Question{
 			Name:   "TargetBranch",
-			Prompt: &survey.Input{Message: "Enter the target branch (default: main): "},
+			Prompt: &survey.Input{Message: "Enter the target GIT branch (default: main): "},
 		})
 	}
 
@@ -259,7 +265,7 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 		qs = append(qs, &survey.Question{
 			Name: "EventType",
 			Prompt: &survey.Select{
-				Message: "What type of webhook event:",
+				Message: "Enter the Git event type for triggering the pipeline: ",
 				Options: []string{"pull_request", "push"},
 				Default: "pull_request",
 			},
@@ -272,8 +278,8 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 			return err
 		}
 	}
-	if opts.TargetNamespace == "" {
-		opts.TargetNamespace = opts.CurrentNS
+	if opts.Namespace == "" {
+		opts.Namespace = opts.CurrentNS
 	}
 	if opts.TargetURL == "" && gitinfo.TargetURL != "" {
 		opts.TargetURL = gitinfo.TargetURL
@@ -290,18 +296,18 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 		}
 	}
 	cs := opts.IOStreams.ColorScheme()
-	if opts.TargetNamespace != opts.CurrentNS {
+	if opts.Namespace != opts.CurrentNS {
 		if err := askCreateNamespace(ctx, opts, cs); err != nil {
 			return err
 		}
 	}
-	_, err = opts.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.TargetNamespace).Create(ctx,
+	_, err = opts.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Create(ctx,
 		&v1alpha1.Repository{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: opts.RepositoryName,
 			},
 			Spec: v1alpha1.RepositorySpec{
-				Namespace: opts.TargetNamespace,
+				Namespace: opts.Namespace,
 				URL:       opts.TargetURL,
 				EventType: opts.EventType,
 				Branch:    opts.TargetBranch,
@@ -314,7 +320,7 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 	fmt.Fprintf(opts.IOStreams.Out, "%s Repository %s has been created in %s namespace\n",
 		cs.SuccessIconWithColor(cs.Green),
 		opts.RepositoryName,
-		opts.TargetNamespace,
+		opts.Namespace,
 	)
 
 	if err := askToCreateSimplePipeline(gitinfo.TopLevelPath, opts); err != nil {
@@ -361,14 +367,14 @@ func askNameForResource(opts CreateOptions) (string, error) {
 }
 
 func askCreateNamespace(ctx context.Context, opts CreateOptions, cs *ui.ColorScheme) error {
-	_, err := opts.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.TargetNamespace, metav1.GetOptions{})
+	_, err := opts.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.Namespace, metav1.GetOptions{})
 	if err != nil {
 		fmt.Fprintf(opts.IOStreams.Out, "%s Namespace %s is not created yet\n",
 			cs.WarningIcon(),
-			opts.TargetNamespace,
+			opts.Namespace,
 		)
 		createNamespace, err := askYesNo(opts,
-			fmt.Sprintf("Would you like me to create the namespace %s?", opts.TargetNamespace),
+			fmt.Sprintf("Would you like me to create the namespace %s?", opts.Namespace),
 			"Yes")
 		if err != nil {
 			return err
@@ -377,7 +383,7 @@ func askCreateNamespace(ctx context.Context, opts CreateOptions, cs *ui.ColorSch
 			return fmt.Errorf("you need to create the target namespace")
 		}
 		_, err = opts.Clients.Kube.CoreV1().Namespaces().Create(ctx,
-			&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: opts.TargetNamespace}},
+			&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: opts.Namespace}},
 			metav1.CreateOptions{})
 		if err != nil {
 			return err
