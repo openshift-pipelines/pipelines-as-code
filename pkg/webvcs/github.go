@@ -409,17 +409,22 @@ func (v GithubVCS) CreateStatus(ctx context.Context, runinfo *RunInfo, status, c
 
 	switch conclusion {
 	case "success":
-		title = "🥳 CI Run Report: Success"
-		summary = "Tekton CI has successfully validated your commit."
+		title = "✅ Success"
+		summary = fmt.Sprintf("%s has successfully validated your commit.", runinfo.ApplicationName)
 	case "failure":
-		title = "😞 CI Run: Failed"
-		summary = "Tekon CI has <b>failed</b>."
+		title = "❌ Failed"
+		summary = fmt.Sprintf("%s has <b>failed</b>.", runinfo.ApplicationName)
 	case "skipped":
-		title = "🤫 CI Run: Skipped"
-		summary = "Tekton CI is skipping this commit."
+		title = "➖ Skipped"
+		summary = fmt.Sprintf("%s is skipping this commit.", runinfo.ApplicationName)
 	case "neutral":
-		title = "🤨 CI Run: Unknown"
-		summary = "Tekton CI doesn't know what happened with this commit."
+		title = "❓ Unknown"
+		summary = fmt.Sprintf("%s doesn't know what happened with this commit.", runinfo.ApplicationName)
+	}
+
+	if status == "in_progress" {
+		title = "CI has Started"
+		summary = fmt.Sprintf("%s is running.", runinfo.ApplicationName)
 	}
 
 	checkRunOutput := &github.CheckRunOutput{

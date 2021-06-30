@@ -95,9 +95,9 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	objects, err := cs.GithubClient.GetTektonDir(ctx, tektonDir, runinfo)
 	if len(objects) == 0 || err != nil {
 		msg := "😿 Could not find a <b>.tekton/</b> directory for this repository"
-		err2 := createStatus(ctx, cs, runinfo, "completed", "skipped",
+		err := createStatus(ctx, cs, runinfo, "completed", "skipped",
 			msg, "https://tenor.com/search/sad-cat-gifs", true)
-		if err2 != nil {
+		if err != nil {
 			return err
 		}
 		return err
@@ -112,14 +112,6 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	// TODO: this probably can be trashed since repo is only can be created in
 	// namespace
 	err = k8int.GetNamespace(ctx, repo.Spec.Namespace)
-	if err != nil {
-		return err
-	}
-
-	// Update status in UI
-	err = createStatus(ctx, cs, runinfo, "in_progress", "",
-		fmt.Sprintf("Getting pipelinerun configuration in namespace <b>%s</b>", repo.Spec.Namespace),
-		"https://tenor.com/search/sad-cat-gifs", true)
 	if err != nil {
 		return err
 	}
