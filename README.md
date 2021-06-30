@@ -92,7 +92,7 @@ feature you need to add this annotation :
 pipelinesascode.tekton.dev/target-namespace: "mynamespace"
 ```
 
-and Pipeline as Code will only match the repository in the mynamespace Namespace
+and Pipelines as Code will only match the repository in the mynamespace Namespace
 instead of trying to match it from all available repository on cluster.
 
 ### Writting Tekton pipelines in `.tekton/` directory
@@ -310,7 +310,7 @@ with a short recap of how long each task of your pipeline took and the output of
 
 If there was a failure you can click on the "Re-Run" button on the left to rerun
 the Pipeline or you can issue a issue comment with a line starting and finishing
-with the string `/retest` to ask Pipeline as Code to retest the current PR.
+with the string `/retest` to ask Pipelines as Code to retest the current PR.
 
 Example :
 
@@ -385,7 +385,7 @@ Pipelines as Code reuse this for its push pipeline, see it here :
 
 ## CLI
 
-`Pipeline as Code` provide a CLI which is design to work as tkn plugin.
+`Pipelines as Code` provide a CLI which is design to work as tkn plugin.
 
 Install it like this :
 
@@ -506,7 +506,7 @@ so GitHub can get send the webhook to it.
 Pipelines as Code supports Github Enterprise.
 
 You don't need to do anything special to get Pipelines as code working with GHE.
-Pipeline as code will automatically detects the header as set from GHE and use it  the GHE API auth url instead of the public github.
+Pipelines as code will automatically detects the header as set from GHE and use it  the GHE API auth url instead of the public github.
 
 ### PR cleanups in pipelines-as-code admin namespace
 

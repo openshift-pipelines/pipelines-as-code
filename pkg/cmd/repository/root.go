@@ -10,8 +10,8 @@ func Root(p cli.Params) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "repository",
 		Aliases:      []string{"repo", "repsitories"},
-		Short:        "Pipeline as Code repositories",
-		Long:         `Manage Pipeline as Code repositories`,
+		Short:        "Pipelines as Code repositories",
+		Long:         `Manage Pipelines as Code repositories`,
 		SilenceUsage: true,
 	}
 	ioStreams := ui.NewIOStreams()

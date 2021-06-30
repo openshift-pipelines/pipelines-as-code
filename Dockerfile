@@ -10,7 +10,7 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:8.4
 LABEL com.redhat.component=pipelines-as-code \ 
     name=openshift-pipelines/pipelines-as-code \ 
     maintainer=pipelines@redhat.com \ 
-    summary="This image is to run Pipeline as Code task"
+    summary="This image is to run Pipelines as Code task"
 
 LABEL version=0.1.0
 

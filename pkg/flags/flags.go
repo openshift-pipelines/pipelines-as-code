@@ -14,7 +14,7 @@ const (
 	apiURLFlag = "api-url"
 )
 
-// PacOptions holds struct of Pipeline as code Options
+// PacOptions holds struct of Pipelines as code Options
 type PacOptions struct {
 	KubeConfig, GithubToken, GithubAPIURL string
 }
