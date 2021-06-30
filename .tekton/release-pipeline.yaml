@@ -1,0 +1,97 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: release-pipeline
+  annotations:
+    pipelinesascode.tekton.dev/on-event: "[push]"
+    pipelinesascode.tekton.dev/on-target-branch: "[refs/tags/*]"
+    pipelinesascode.tekton.dev/task: "[git-clone, .tekton/tasks/goreleaser.yaml]"
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
+spec:
+  params:
+    - name: repo_url
+      value: "{{repo_url}}"
+    - name: revision
+      value: "{{revision}}"
+  pipelineSpec:
+    params:
+      - name: repo_url
+      - name: revision
+    workspaces:
+      - name: source
+    tasks:
+      - name: fetch-repository
+        taskRef:
+          name: git-clone
+        workspaces:
+          - name: output
+            workspace: source
+        params:
+          - name: url
+            value: $(params.repo_url)
+          - name: revision
+            value: $(params.revision)
+      - name: release-yaml
+        runAfter:
+          - fetch-repository
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: push-release-to-branch
+              image: registry.access.redhat.com/ubi8/python-39:latest
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: HUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "nightly-ci-github-hub-token"
+                      key: "hub-token"
+              script: |
+                #!/usr/bin/env bash
+                set -euf
+                set -x
+                git fetch --tag -v
+                version=$(git  --no-pager tag --points-at HEAD)
+                [[ -z ${version} ]] && {
+                    echo "No tags detected"
+                    exit
+                }
+                msg="Release version ${version}"
+                echo ${msg}
+                export TARGET_BRANCH=${version}
+                hack/upload-file-to-github.py \
+                    --message "Release yaml generated for Release ${TARGET_BRANCH}" \
+                    --owner-repository openshift-pipelines/pipelines-as-code \
+                    --token ${HUB_TOKEN} \
+                    --from-tag=refs/tags/${TARGET_BRANCH} \
+                    -d release-${TARGET_BRANCH}.yaml -f <(./hack/generate-releaseyaml.sh)
+                exit 0
+      - name: gorelease
+        runAfter:
+          - release-yaml
+        taskRef:
+          name: goreleaser
+        params:
+          - name: package
+            value: github.com/openshift-pipelines/pipelines-as-code
+          - name: github-token-secret
+            value: "nightly-ci-github-hub-token"
+          - name: github-token-secret-key
+            value: "hub-token"
+        workspaces:
+          - name: source
+            workspace: source
+  workspaces:
+  - name: source
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi

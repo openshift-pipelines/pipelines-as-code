@@ -1,0 +1,91 @@
+# This is an example goreleaser.yaml file with some sane defaults.
+# Make sure to check the documentation at http://goreleaser.com
+builds:
+- env:
+  - CGO_ENABLED=0
+  main: ./cmd/tkn-pac
+  binary: tkn-pac
+  goos:
+  - linux
+  - darwin
+  - windows
+  goarch:
+  - amd64
+archives:
+- name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    386: i386
+    amd64: x86_64
+  format_overrides:
+    - goos: windows
+      format: zip
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+    - Merge pull request
+    - Merge branch
+release:
+  prerelease: true
+  header: |
+    ## OpenShift Pipelines version $VERSION
+
+    OpenShift Pipelines as Code version  has been released 🥳
+
+    To install this version you can just do :
+
+    ```shell
+    kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.yaml
+    ```
+
+    and make sure you follow the setup documentation :
+
+    https://github.com/openshift-pipelines/pipelines-as-code/tree/main/INSTALL.md
+
+brews:
+  - name: tektoncd-pac
+    tap:
+      owner: openshift-pipelines
+      name: homebrew-pipelines-as-code
+    folder: Formula
+    dependencies:
+      - name: tektoncd-cli
+        type: optional
+      - name: git
+    homepage: "https://github.com/openshift-pipelines/pipelines-as-code"
+    description: Tekton PAC - The command line interface for interacting with Pipelines as Code
+    install: |
+      bin.install "tkn-pac" => "tkn-pac"
+      output = Utils.popen_read("SHELL=bash #{bin}/tkn-pac completion bash")
+      (bash_completion/"tkn-pac").write output
+      output = Utils.popen_read("SHELL=zsh #{bin}/tkn-pac completion zsh")
+      (zsh_completion/"_tkn-pac").write output
+      prefix.install_metafiles
+nfpms:
+  - file_name_template: "tektoncd-cli-{{.Version}}_{{.Os}}-{{.Arch}}"
+    homepage: https://github.com/openshift-pipelines/pipelines-as-code
+    description: Command line interface to OpenShift Pipelines as Code
+    maintainer: OpenShift Pipelines Developers <pipelines-dev@redhat.com>
+    license: BSD
+    vendor: Red Hat
+    formats:
+    - deb
+    - rpm
+    bindir: /usr/bin
+    replacements:
+      amd64: 64bit
+      386: 32bit
+      arm: ARM
+      arm64: ARM64
+      darwin: macOS
+      linux: Linux
+      windows: Windows
