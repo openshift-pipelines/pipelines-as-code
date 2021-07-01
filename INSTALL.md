@@ -1,5 +1,9 @@
 # Install
 
+Here is a video walkthought explaining going thought the install process :
+
+[![Pipelines as Code Install Walkthought](https://img.youtube.com/vi/d81rIHNFjJM/0.jpg)](https://www.youtube.com/watch?v=d81rIHNFjJM)
+
 ## Pipelines as Code Install
 
 To install Pipelines as Code on your server you simply need to run this command :
