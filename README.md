@@ -6,35 +6,29 @@ Pipelines as Code -- An opinionated CI based on OpenShift Pipelines / Tekton.
 
 ## Introduction
 
-Pipelines as Code let you use the pipelines as Code flow directly with OpenShift
+Pipelines as Code let you use the [Pipelines as Code flow]([https://www.thoughtworks.com/radar/techniques/pipelines-as-code](https://www.thoughtworks.com/radar/techniques/pipelines-as-code)) directly with OpenShift
 Pipelines.
-
-The Pipelines as Code technique can be described in this web page
-[https://www.thoughtworks.com/radar/techniques/pipelines-as-code](https://www.thoughtworks.com/radar/techniques/pipelines-as-code) it allows you
-to have your pipelines "sits and live" inside the same repository where your
-code is.
 
 The goal of Pipelines as Code is to let you define your
 [Tekton](https://tekton.cd) templates inside your source code repository and
 have the pipeline run and report the status of the execution when triggered by a
-Pull Request or a branch push.
+Pull Request or a Push.
 
 See a walkthought video about it here :
 
 [![Pipelines as Code Walkthought](https://img.youtube.com/vi/Uh1YhOGPOes/0.jpg)](https://www.youtube.com/watch?v=Uh1YhOGPOes)
 
-## Components
+## Installation
 
+Please follow [this document](INSTALL.MD) here for the install process
 Pipelines as Code is built on the following technologies:
 
-- [Tekton Triggers](github.com/tektoncd/triggers): A Tekton Triggers
-  EventListener is spun up in a central namespace (`pipelines-as-code`). The
-  EventListener is the service responsible for listening to webhook events and acting upon it.
+## Features
 
 - Repository CRD: The Repository CRD is a new API introduced in the Pipelines as
   Code project. This CRD is used to define the association between the source
   code repository and the Kubernetes namespace in which the corresponding
-  Pipelines are run.
+  Pipelines are run. It stores the status of the last runs as well.
 
 - Web VCS support. When iterating over a Pull Request, status and control is
   done on the platform.
@@ -47,11 +41,16 @@ Pipelines as Code is built on the following technologies:
   - Use GitHUB blobs and objects API to get configuration files directly.
     (instead of checking the repo locally)
 
-## Installation
+* Remote tasks
 
-Please follow [this document](INSTALL.MD) here for the install process
+  - Automatically grabs remote tasks from Tekton HUB or from Remote URI
 
-## User usage
+* CLI - tkn-pac
+
+  - A CLI to let you list and describe your repositories and runs attached to it.
+  - Quickly bootstrap a pipelinerun and repository CRD.
+
+## User flow
 
 ### GitHub apps Configuration
 
