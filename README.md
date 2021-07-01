@@ -20,8 +20,7 @@ See a walkthought video about it here :
 
 ## Installation
 
-Please follow [this document](INSTALL.MD) here for the install process
-Pipelines as Code is built on the following technologies:
+Please follow [this document](INSTALL.MD) for the install process
 
 ## Features
 
