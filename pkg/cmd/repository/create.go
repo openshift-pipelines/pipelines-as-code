@@ -210,7 +210,7 @@ func askYesNo(opts CreateOptions, question string, defaults string) (bool, error
 		return false, err
 	}
 
-	if answer == "True" {
+	if answer == "True" || answer == "Yes" {
 		return true, nil
 	}
 
