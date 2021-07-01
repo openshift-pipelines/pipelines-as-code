@@ -153,15 +153,7 @@ def main(args):
     if args.from_tag:
         resp, jz = create_ref_from_tags(args)
     else:
-        resp, jz = upload_to_github(
-            args.token,
-            args.owner_repository,
-            args.filename,
-            args.destination,
-            args.branch_ref,
-            args.last_commit_sha,
-            args.message,
-        )
+        resp, jz = upload_to_github(args)
     print(resp.status)
 
 
