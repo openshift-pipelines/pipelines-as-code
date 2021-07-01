@@ -54,6 +54,10 @@ GitHub app :
              ]
 ```
 
+The screenshot on how it looks like is locate [here](https://user-images.githubusercontent.com/98980/124132813-7e53f580-da81-11eb-9eb4-e4f1487cf7a0.png)
+
+
+
 When you have created the `github-app-secret` Secret, grab the private key the
 `application_id` and the `webhook_secret`  from the interface, place the private
 key in a file named for example `/tmp/github.app.key` and issue those commands :
