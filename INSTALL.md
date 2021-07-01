@@ -100,7 +100,7 @@ key `max-keep-days` in the `pipelines-as-code` configmap. This configmap
 setting doens't affect the cleanups of the user's PR controlled by the
 annotations.
 
-## OpenShift Pipelines CLI
+## CLI
 
 OpenShift Pipelines CLI offer a easy to use CLI to manage your repositories status.
 
