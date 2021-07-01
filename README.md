@@ -429,6 +429,6 @@ docker run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
      -it quay.io/openshift-pipeline/pipelines-as-code tkn-pac help
 ```
 
-and here is a short walk-thought video :
+## Blog Posts
 
-<https://user-images.githubusercontent.com/98980/123408765-ac32c900-d5ad-11eb-83bf-6ef068a787bb.mp4>
+* [How to make a release pipeline with Pipelines as Code](https://blog.chmouel.com/2021/07/01/how-to-make-a-release-pipeline-with-pipelines-as-code)
