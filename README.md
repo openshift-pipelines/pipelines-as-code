@@ -20,7 +20,7 @@ See a walkthought video about it here :
 
 ## Installation
 
-Please follow [this document](INSTALL.MD) for the install process
+Please follow [this document](INSTALL.md) for the install process
 
 ## Features
 
