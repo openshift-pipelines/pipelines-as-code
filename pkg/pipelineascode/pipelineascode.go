@@ -154,12 +154,13 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	// be aware of it when querying.
 	refTomakeK8Happy := strings.ReplaceAll(runinfo.BaseBranch, "/", "-")
 	pipelineRun.Labels = map[string]string{
-		"tekton.dev/pipeline-ascode-owner":      runinfo.Owner,
-		"tekton.dev/pipeline-ascode-repository": runinfo.Repository,
-		"tekton.dev/pipeline-ascode-sha":        runinfo.SHA,
-		"tekton.dev/pipeline-ascode-sender":     runinfo.Sender,
-		"tekton.dev/pipeline-ascode-event-type": runinfo.EventType,
-		"tekton.dev/pipeline-ascode-branch":     refTomakeK8Happy,
+		"pipelinesascode.tekton.dev/url-org":        runinfo.Owner,
+		"pipelinesascode.tekton.dev/url-repository": runinfo.Repository,
+		"pipelinesascode.tekton.dev/sha":            runinfo.SHA,
+		"pipelinesascode.tekton.dev/sender":         runinfo.Sender,
+		"pipelinesascode.tekton.dev/event-type":     runinfo.EventType,
+		"pipelinesascode.tekton.dev/branch":         refTomakeK8Happy,
+		"pipelinesascode.tekton.dev/repository":     repo.GetName(),
 	}
 
 	// Create the actual pipeline
@@ -196,7 +197,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 			return err
 		}
 
-		err = k8int.CleanupPipelines(ctx, repo.Spec.Namespace, runinfo, max)
+		err = k8int.CleanupPipelines(ctx, repo.Spec.Namespace, repo.Name, max)
 		if err != nil {
 			return err
 		}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonv1beta1client "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1beta1"
 )
@@ -32,7 +31,7 @@ func (k *KinterfaceTest) WaitForPipelineRunSucceed(ctx context.Context, tektonbe
 	return nil
 }
 
-func (k *KinterfaceTest) CleanupPipelines(ctx context.Context, namespace string, runinfo *webvcs.RunInfo, maxKeep int) error {
+func (k *KinterfaceTest) CleanupPipelines(ctx context.Context, namespace string, repoName string, maxKeep int) error {
 	if k.ExpectedNumberofCleanups != maxKeep {
 		return fmt.Errorf("we wanted %d and we got %d", k.ExpectedNumberofCleanups, maxKeep)
 	}
