@@ -68,7 +68,7 @@ spec:
         generateName: pipelines-as-code-run-
         labels:
           app.kubernetes.io/managed-by: pipelines-as-code
-          tekton.dev/pipelines-as-code-event: $(tt.params.event_type)
+          pipelinesascode.tekton.dev/event: $(tt.params.event_type)
       spec:
         serviceAccountName: pipelines-as-code-sa-el
         params:
