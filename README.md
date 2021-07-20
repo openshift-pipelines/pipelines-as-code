@@ -101,9 +101,9 @@ pipelinesascode.tekton.dev/target-namespace: "mynamespace"
 and Pipelines as Code will only match the repository in the mynamespace Namespace
 instead of trying to match it from all available repository on cluster.
 
-### Writting Tekton pipelines in `.tekton/` directory
+### Authoring PipelineRun in `.tekton/` directory
 
-- Pipelines as Code tries to be as close to the tekton template as possible.
+- Pipelines as Code will always try to be as close to the tekton template as possible.
   Usually you would write your template and save them with a ".yaml" extension  and
   Pipelines as Code will run them.
 
