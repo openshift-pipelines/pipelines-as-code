@@ -28,6 +28,7 @@ func Command(p cli.Params) *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return flags.GetWebCVSOptions(p, cmd)
 		},
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			token, err := cmd.LocalFlags().GetString("token")
 			if token == "" || err != nil {
