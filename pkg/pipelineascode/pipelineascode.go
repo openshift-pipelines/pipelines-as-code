@@ -163,6 +163,8 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		"pipelinesascode.tekton.dev/repository":     repo.GetName(),
 	}
 
+	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-title"] = runinfo.SHATitle
+
 	// Create the actual pipeline
 	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, pipelineRun, metav1.CreateOptions{})
 	if err != nil {
