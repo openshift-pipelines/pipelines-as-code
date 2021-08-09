@@ -213,6 +213,10 @@ func TestParsePayloadRerequestFromPush(t *testing.T) {
 	mux.HandleFunc("/repos/owner/repo/commits/"+headSHA, func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 	})
+	mux.HandleFunc("/repos/owner/repo/git/commits/"+headSHA, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+	})
+
 	logger, _ := getLogger()
 	runinfo, err := gvcs.ParsePayload(ctx, logger, "check_run", "issue-recheck", checkrunEvent)
 	assert.NilError(t, err)
@@ -807,56 +811,6 @@ func TestGithubVCS_CreateStatus(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GithubVCS.CreateStatus() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestGithubVCSGetSHACommitTitle(t *testing.T) {
-	tests := []struct {
-		runinfo *RunInfo
-		message string
-		name    string
-		want    string
-		wantErr bool
-	}{
-		{
-			runinfo: &RunInfo{
-				SHA:        "sha",
-				Owner:      "owner",
-				Repository: "repo",
-			},
-			message: `Message\n\nFooBar`,
-			name:    "Get only title multiple lines",
-			want:    "Message",
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
-			defer teardown()
-
-			mux.HandleFunc(
-				fmt.Sprintf("/repos/%s/%s/commits/%s", tt.runinfo.Owner,
-					tt.runinfo.Repository,
-					tt.runinfo.SHA),
-				func(w http.ResponseWriter, r *http.Request) {
-					_, _ = fmt.Fprintf(w, `{"commit": {"message": "%s"}}`, tt.message)
-				})
-
-			ctx, _ := rtesting.SetupFakeContext(t)
-			gvcs := GithubVCS{
-				Client: fakeclient,
-			}
-			got, err := gvcs.GetSHACommitTitle(ctx, tt.runinfo)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GithubVCS.GetSHACommitTitle() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("GithubVCS.GetSHACommitTitle() = %v, want %v", got, tt.want)
 			}
 		})
 	}
