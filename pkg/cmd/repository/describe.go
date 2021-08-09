@@ -37,7 +37,7 @@ const (
 
 {{ $.ColorScheme.Bold "PipelineRun" }}:	{{ $status.PipelineRunName }}
 {{ $.ColorScheme.Bold "Status" }}:	{{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
-{{ $.ColorScheme.Bold "Commit" }}:	{{.Repository.Spec.URL}}/commit/{{ shortSHA $status.SHA }}
+{{ $.ColorScheme.Bold "Commit" }}:	{{ $status.SHAURL }}
 {{ $.ColorScheme.Bold "Commit Title" }}:	{{ $status.Title }}
 {{ $.ColorScheme.Bold "StartTime" }}:	{{ formatTime $status.StartTime $.Clock }}
 {{ $.ColorScheme.Bold "Duration" }}:	{{ formatDuration $status.StartTime $status.CompletionTime }}

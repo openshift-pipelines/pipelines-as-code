@@ -36,6 +36,10 @@ type RepositoryRunStatus struct {
 	// +optional
 	SHA *string `json:"sha,omitempty"`
 
+	// SHA the URL of the SHA to view it
+	// +optional
+	SHAURL *string `json:"sha_url,omitempty"`
+
 	// Title is the title of the commit SHA that has been tested
 	// +optional
 	Title *string `json:"title,omitempty"`

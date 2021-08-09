@@ -48,6 +48,9 @@ func TestRunWrapPR(t *testing.T) {
 	mux.HandleFunc("/repos/chmouel/scratchmyback/commits/ref", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 	})
+	mux.HandleFunc("/repos/chmouel/scratchmyback/git/commits/ref", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+	})
 	mux.HandleFunc(fmt.Sprintf("/repos/chmouel/scratchmyback/check-runs/%d", checkid), func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, `{"id": %d}`, checkid)
 	})
@@ -189,6 +192,10 @@ func TestRunWrap(t *testing.T) {
 	mux.HandleFunc("/repos/chmouel/scratchmyback/commits/ref", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 	})
+	mux.HandleFunc("/repos/chmouel/scratchmyback/git/commits/ref", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+	})
+
 	kinteract := &kitesthelper.KinterfaceTest{
 		ConsoleURL: "https://console.url",
 	}

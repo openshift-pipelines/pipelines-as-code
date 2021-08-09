@@ -122,6 +122,10 @@ func TestPayLoadFix(t *testing.T) {
 	mux.HandleFunc("/repos/repo/owner/commits/SHA", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 	})
+	mux.HandleFunc("/repos/repo/owner/git/commits/SHA", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+	})
+
 	gvcs := GithubVCS{
 		Client: fakeclient,
 	}
@@ -150,6 +154,9 @@ func TestParsePayloadRerequestFromPullRequest(t *testing.T) {
 		_, _ = fmt.Fprintf(rw, `{"head": {"sha": "%s", "ref": "123"}, "user": {"login": "%s"}}`, sha, prOwner)
 	})
 	mux.HandleFunc("/repos/owner/repo/commits/"+sha, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+	})
+	mux.HandleFunc("/repos/owner/repo/git/commits/"+sha, func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 	})
 	ctx, _ := rtesting.SetupFakeContext(t)
@@ -234,7 +241,9 @@ func TestParsePayLoadRetest(t *testing.T) {
 	mux.HandleFunc("/repos/user1/pipelines/commits/"+sha, func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 	})
-
+	mux.HandleFunc("/repos/user1/pipelines/git/commits/"+sha, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+	})
 	issueEvent := fmt.Sprintf(`{
   "sender": {
 	"login": "%s"
@@ -275,6 +284,9 @@ func TestParsePayload(t *testing.T) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 	mux.HandleFunc("/repos/chmouel/scratchpad/commits/cc8334de8e056317d18bd00c2588c3f7c95af294", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+	})
+	mux.HandleFunc("/repos/chmouel/scratchpad/git/commits/cc8334de8e056317d18bd00c2588c3f7c95af294", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 	})
 	gvcs := GithubVCS{

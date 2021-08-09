@@ -33,6 +33,7 @@ type RunInfo struct {
 	Owner           string
 	Repository      string
 	SHA             string
+	SHAURL          string
 	Sender          string
 	TriggerTarget   string
 	URL             string
@@ -158,6 +159,7 @@ func (v GithubVCS) getPullRequest(ctx context.Context, runinfo RunInfo, prNumber
 	runinfo.DefaultBranch = pr.GetBase().GetRepo().GetDefaultBranch()
 	runinfo.URL = pr.GetBase().GetRepo().GetHTMLURL()
 	runinfo.SHA = pr.GetHead().GetSHA()
+	runinfo.SHAURL = fmt.Sprintf("%s/commit/%s", pr.GetHTMLURL(), pr.GetHead().GetSHA())
 	// TODO: Maybe if we wanted to allow rerequest from non approved user we
 	// would use the CheckRun Sender instead of the rerequest sender, could it
 	// be a room for abuse? 🤔
@@ -165,7 +167,22 @@ func (v GithubVCS) getPullRequest(ctx context.Context, runinfo RunInfo, prNumber
 	runinfo.HeadBranch = pr.GetHead().GetRef()
 	runinfo.BaseBranch = pr.GetBase().GetRef()
 	runinfo.EventType = "pull_request"
+	err = v.populateCommitInfo(ctx, &runinfo)
+	if err != nil {
+		return RunInfo{}, err
+	}
 	return runinfo, nil
+}
+
+// populateCommitInfo get info on a commit in runinfo
+func (v GithubVCS) populateCommitInfo(ctx context.Context, runinfo *RunInfo) error {
+	commit, _, err := v.Client.Git.GetCommit(ctx, runinfo.Owner, runinfo.Repository, runinfo.SHA)
+	if err != nil {
+		return err
+	}
+
+	runinfo.SHAURL = commit.GetHTMLURL()
+	return nil
 }
 
 // ParsePayload parse payload event
@@ -202,6 +219,7 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			URL:           event.GetRepo().GetHTMLURL(),
 			SHA:           event.GetHeadCommit().GetID(),
 			SHATitle:      event.GetHeadCommit().GetMessage(),
+			SHAURL:        event.GetHeadCommit().GetURL(),
 			Sender:        event.GetSender().GetLogin(),
 			BaseBranch:    event.GetRef(),
 			EventType:     eventType,
@@ -219,6 +237,10 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			HeadBranch:    event.GetPullRequest().Head.GetRef(),
 			Sender:        event.GetPullRequest().GetUser().GetLogin(),
 			EventType:     eventType,
+		}
+		err := v.populateCommitInfo(ctx, &runinfo)
+		if err != nil {
+			return nil, err
 		}
 	default:
 		return &runinfo, errors.New("this event is not supported")

@@ -66,6 +66,7 @@ func TestCommands(t *testing.T) {
 					StartTime:       &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
 					CompletionTime:  &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
 					SHA:             github.String("SHA"),
+					SHAURL:          github.String("https://anurl.com/repo/owner/commit/SHA"),
 					Title:           github.String("A title"),
 				},
 			}
@@ -132,6 +133,7 @@ func TESSS(t *testing.T) {
 			StartTime:       &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
 			CompletionTime:  &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
 			SHA:             github.String("SHA"),
+			SHAURL:          github.String("https://anurl.com/repo/owner/commit/SHA"),
 			Title:           github.String("A title"),
 		},
 	}
