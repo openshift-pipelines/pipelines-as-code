@@ -9,7 +9,7 @@ Here is a video walkthought going thought the install process :
 To install Pipelines as Code on your server you simply need to run this command :
 
 ```shell
-VERSION=0.1
+VERSION=0.2
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.yaml
 ```
 
@@ -59,8 +59,6 @@ GitHub app :
 ```
 
 The screenshot on how it looks like is locate [here](https://user-images.githubusercontent.com/98980/124132813-7e53f580-da81-11eb-9eb4-e4f1487cf7a0.png)
-
-
 
 When you have created the `github-app-secret` Secret, grab the private key the
 `application_id` and the `webhook_secret`  from the interface, place the private
