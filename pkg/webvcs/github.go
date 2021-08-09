@@ -167,10 +167,6 @@ func (v GithubVCS) getPullRequest(ctx context.Context, runinfo RunInfo, prNumber
 	runinfo.HeadBranch = pr.GetHead().GetRef()
 	runinfo.BaseBranch = pr.GetBase().GetRef()
 	runinfo.EventType = "pull_request"
-	err = v.populateCommitInfo(ctx, &runinfo)
-	if err != nil {
-		return RunInfo{}, err
-	}
 	return runinfo, nil
 }
 
@@ -182,6 +178,8 @@ func (v GithubVCS) populateCommitInfo(ctx context.Context, runinfo *RunInfo) err
 	}
 
 	runinfo.SHAURL = commit.GetHTMLURL()
+	runinfo.SHATitle = strings.Split(commit.GetMessage(), "\n\n")[0]
+
 	return nil
 }
 
@@ -218,8 +216,8 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			DefaultBranch: event.GetRepo().GetDefaultBranch(),
 			URL:           event.GetRepo().GetHTMLURL(),
 			SHA:           event.GetHeadCommit().GetID(),
-			SHATitle:      event.GetHeadCommit().GetMessage(),
 			SHAURL:        event.GetHeadCommit().GetURL(),
+			SHATitle:      event.GetHeadCommit().GetMessage(),
 			Sender:        event.GetSender().GetLogin(),
 			BaseBranch:    event.GetRef(),
 			EventType:     eventType,
@@ -238,19 +236,13 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			Sender:        event.GetPullRequest().GetUser().GetLogin(),
 			EventType:     eventType,
 		}
-		err := v.populateCommitInfo(ctx, &runinfo)
-		if err != nil {
-			return nil, err
-		}
 	default:
 		return &runinfo, errors.New("this event is not supported")
 	}
 
-	if runinfo.SHATitle == "" {
-		runinfo.SHATitle, err = v.GetSHACommitTitle(ctx, &runinfo)
-		if err != nil {
-			return nil, err
-		}
+	err = v.populateCommitInfo(ctx, &runinfo)
+	if err != nil {
+		return nil, err
 	}
 
 	runinfo.Event = event
@@ -303,15 +295,6 @@ func (v GithubVCS) GetStringPullRequestComment(ctx context.Context, runinfo *Run
 		}
 	}
 	return ret, nil
-}
-
-// GetSHACommitTitle Retrieve the commit title of the SHA
-func (v GithubVCS) GetSHACommitTitle(ctx context.Context, runinfo *RunInfo) (string, error) {
-	c, _, err := v.Client.Repositories.GetCommit(ctx, runinfo.Owner, runinfo.Repository, runinfo.SHA)
-	if err != nil {
-		return "", err
-	}
-	return strings.Split(c.Commit.GetMessage(), "\n\n")[0], nil
 }
 
 // GetTektonDir Get tekton directory from a repository
