@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"regexp"
@@ -30,7 +29,7 @@ func (rt RemoteTasks) convertTotask(data string) (*tektonv1beta1.Task, error) {
 	obj, _, err := decoder.Decode([]byte(data), nil, nil)
 	if err != nil {
 		// TODO: Better debug information
-		return nil, errors.New("we have a task that is not looking like a kubernetes resource")
+		return nil, fmt.Errorf("we have a task that is not looking like a kubernetes resource: %w", err)
 	}
 
 	return obj.(*tektonv1beta1.Task), nil
