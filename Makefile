@@ -36,8 +36,12 @@ check: lint test
 .PHONY: test
 test: test-unit ## run all tests
 
+.PHONY: test-e2e-cleanup
+test-e2e-cleanup: ## cleanup test e2e namespace/pr left open
+	@./hack/dev/e2e-tests-cleanup.sh
+
 .PHONY: test-e2e
-test-e2e:  ## run e2e tests
+test-e2e:  test-e2e-cleanup ## run e2e tests
 	@go test -failfast -count=1 -tags=e2e $(GO_TEST_FLAGS) ./test
 
 .PHONY: lint
