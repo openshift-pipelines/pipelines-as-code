@@ -23,133 +23,136 @@ metadata:
 spec:
   serviceAccountName: pipelines-as-code-sa-el
   triggers:
+
     # When you have a /retest in a comment to retest a PR
     - name: github-issue-comment-retest
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "secretRef"
+              value:
+                secretName: "github-app-secret"
+                secretKey: "webhook.secret"
+            - name: "eventTypes"
+              value: ["issue_comment"]
+        - name: "Handle /retest comment in issue"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                  body.action == 'created' &&
+                  'pull_request' in body.issue &&
+                  body.issue.state == 'open' &&
+                  'installation' in body &&
+                  body.comment.body.matches('(^|\\r\\n)/retest([ ]*$|$|\\r\\n)')
       bindings:
         - ref: pipelines-as-code-bindings-retest-comment
-      interceptors:
-        - github:
-            secretRef:
-              secretName: "github-app-secret"
-              secretKey: "webhook.secret"
-            eventTypes:
-              - issue_comment
-        - cel:
-            filter: >-
-              body.action == 'created' &&
-              'pull_request' in body.issue &&
-              body.issue.state == 'open' &&
-              'installation' in body &&
-              body.comment.body.matches('(^|\\r\\n)/retest([ ]*$|$|\\r\\n)')
       template:
         ref: pipelines-as-code-template-retest-comment
 
     # When you have a /ok-to-test in a comment to allow CI on a non owner sender
-    - name: github-issue-comment-retest
+    - name: github-issue-comment-ok-to-test
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "secretRef"
+              value:
+                secretName: "github-app-secret"
+                secretKey: "webhook.secret"
+            - name: "eventTypes"
+              value: ["issue_comment"]
+        - name: "Handle /ok-to-test comment in issue"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                  body.action == 'created' &&
+                  'pull_request' in body.issue &&
+                  body.issue.state == 'open' &&
+                  'installation' in body &&
+                  body.comment.body.matches('(^|\\r\\n)/ok-to-test([ ]*$|$|\\r\\n)')
       bindings:
         - ref: pipelines-as-code-bindings-ok-to-test-comment
-      interceptors:
-        - github:
-            secretRef:
-              secretName: "github-app-secret"
-              secretKey: "webhook.secret"
-            eventTypes:
-              - issue_comment
-        - cel:
-            filter: >-
-              body.action == 'created' &&
-              'pull_request' in body.issue &&
-              body.issue.state == 'open' &&
-              'installation' in body &&
-              body.comment.body.matches('(^|\\r\\n)/ok-to-test([ ]*$|$|\\r\\n)')
       template:
-        # Using retest comment since it was the first one
+        # Using the templateRef from retest since they are mostly the same
         ref: pipelines-as-code-template-retest-comment
 
     # Branch push using different binding but same triggertemplate as pullreq
     - name: github-branch-push
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "secretRef"
+              value:
+                secretName: "github-app-secret"
+                secretKey: "webhook.secret"
+            - name: "eventTypes"
+              value: ["push"]
+        - name: "Branch Push"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                'installation' in body &&
+                'pusher' in body &&
+                'installation' in body
       bindings:
         - ref: pipelines-as-code-bindings-push
-      interceptors:
-        - github:
-            secretRef:
-              secretName: "github-app-secret"
-              secretKey: "webhook.secret"
-            eventTypes:
-              - push
-        - cel:
-            filter: >-
-              'installation' in body &&
-              'pusher' in body
       template:
         ref: pipelines-as-code-template-push
 
     # When using the UI and clicking on Re-run failed test
     - name: github-check-run-recheck
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "secretRef"
+              value:
+                secretName: "github-app-secret"
+                secretKey: "webhook.secret"
+            - name: "eventTypes"
+              value: ["check_run"]
+        - name: "UI rerun failed CI click"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                body.action in ['rerequested'] &&
+                'check_run' in body
       bindings:
         - ref: pipelines-as-code-bindings-recheck
-      interceptors:
-        - github:
-            secretRef:
-              secretName: "github-app-secret"
-              secretKey: "webhook.secret"
-            eventTypes:
-              - check_run
-        - cel:
-            filter: >-
-              body.action in ['rerequested'] && 'check_run' in body && 'installation' in body
       template:
         ref: pipelines-as-code-template-recheck
 
     # When sending a new Pull Request
     - name: github-pull-request
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "secretRef"
+              value:
+                secretName: "github-app-secret"
+                secretKey: "webhook.secret"
+            - name: "eventTypes"
+              value: ["pull_request"]
+        - name: "Pull request - created/updated"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                body.action in ['created', 'synchronize', 'opened'] &&
+                'installation' in body
       bindings:
         - ref: pipelines-as-code-bindings-pullreq
-      interceptors:
-        - github:
-            secretRef:
-              secretName: "github-app-secret"
-              secretKey: "webhook.secret"
-            eventTypes:
-              - pull_request
-        - cel:
-            filter: >-
-              body.action in ['created', 'synchronize', 'opened'] && 'installation' in body
       template:
         ref: pipelines-as-code-template-pullreq
-# Triggers >0.13 Changed almost everything for EventListener
-# ---
-# apiVersion: triggers.tekton.dev/v1alpha1
-# kind: EventListener
-# metadata:
-#   name: pipelines-as-code-interceptor
-#   namespace: pipelines-as-code
-#   labels:
-#     app.kubernetes.io/instance: default
-#     app.kubernetes.io/part-of: pipelines-as-code
-# spec:
-#   triggers:
-#     - name: github-listener
-#       interceptors:
-#         # TODO: Add webhook secret
-#         - ref:
-#             name: github-listener
-#           params:
-#             - name: "eventTypes"
-#               value: ["pull_request", "issue_comment"]
-#         - name: "Only form a Github APP and PR Opened, Created, Syncronized"
-#           ref:
-#             name: "cel"
-#           params:
-#             - name: "filter"
-#               value: "body.action in ['created', 'opened', 'synchronize'] && 'installation' in body"
-#       bindings:
-#         - ref: pipelines-as-code-bindings
-#       template:
-#         ref: pipelines-as-code-template
-#   resources:
-#     kubernetesResource:
-#       spec:
-#         template:
-#           spec:
-#             serviceAccountName: pipelines-as-code-sa-el
