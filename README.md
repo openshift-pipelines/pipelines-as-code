@@ -18,50 +18,81 @@ See a walkthought video about it here :
 
 [![Pipelines as Code Walkthought](https://img.youtube.com/vi/Uh1YhOGPOes/0.jpg)](https://www.youtube.com/watch?v=Uh1YhOGPOes)
 
-## Installation
 
-Please follow [this document](INSTALL.md) for the install process
+Pipeline as Code features:
 
-## Features
-
-- Repository CRD: The Repository CRD is a new API introduced in the Pipelines as
-  Code project. This CRD is used to define the association between the source
-  code repository and the Kubernetes namespace in which the corresponding
-  Pipelines are run. It stores the status of the last runs as well.
-
-- Web VCS support. When iterating over a Pull Request, status and control is
+- Pull-request status support: When iterating over a Pull Request, status and control is
   done on the platform.
 
-  *GitHub*:
+- GitHub Checks API support to set the status of a PipelineRun including rechecks
 
-  - Support for Checks API to set the status of a PipelineRun.
-  - Support rechecks on UI.
-  - Support for Pull Request events.
-  - Use GitHUB blobs and objects API to get configuration files directly.
-    (instead of checking the repo locally)
+- GitHub Pull Request and Commit event support
 
-* Remote tasks
+- Pull-request actions in comments such as `/retest`
 
-  - Automatically grabs remote tasks from Tekton HUB or from Remote URI
+- Git events filtering and support for separate pipelines for each event
 
-* CLI - tkn-pac
+- Automatic Task resolution in Pipelines (local Tasks, Tekton Hub and remote URLs)
 
-  - A CLI to let you list and describe your repositories and runs attached to it.
-  - Quickly bootstrap a pipelinerun and repository CRD.
+- Efficient use of GitHub blobs and objects API for retrieving configurations
 
-## User flow
+- `tkn-pac` plugin for Tekton CLI for managing pipeline-as-code repositories and bootstrapping
+  
 
-### GitHub apps Configuration
+## Installation Guide
 
-- Admin gives the GitHub application url to add to the user.
-- User clicks on it and add the app on her repository which is in this example
-  named `linda/project`
-- Users create a namespace inside their kubernetes where the runs are going to
-  be executed. i.e:
+Please follow [this document](INSTALL.md) for installing Pipeline as Code on OpenShift.
 
-```bash
-kubectl create ns my-pipeline-ci
+## Getting Started
+
+The flow for using pipeline as code generally begins with admin installing the Pipeline-as-Code infrastructure, creating a GitHub App and sharing the GitHub App url across the organization for app teams to enable the app on their GitHub repositories.
+
+In order to enable the GitHub App provided by admin on your Git repository. Otherwise you can go to the *Settings > Applications* and then click on *Configure* button near the GitHub App you had created. In the **Repository access** section, select the repositories that you want to enable and have access to pipeline-as-code.
+
+Once you have enabled your GitHub App for your GitHub repository, you can use the `pac` Tekton CLI plugin to bootstrap pipeline as code:
+
 ```
+$ git clone https://github.com/siamaksade/pipeline-as-code-demo
+$ cd pipeline-as-code-demo
+$ tkn pac repository create
+
+? Enter the namespace where the pipeline should run (default: pipelines-as-code):  demo
+? Enter the Git repository url containing the pipelines (default: https://github.com/siamaksade/pipeline-as-code-demo):
+? Enter the target GIT branch (default: main):
+? Enter the Git event type for triggering the pipeline:  pull_request
+? Set a name for this resource (default: pipeline-as-code-demo-pull-request):
+! Namespace demo is not created yet
+? Would you like me to create the namespace demo? Yes
+✓ Repository pipeline-as-code-demo-pull-request has been created in demo namespace
+? Would you like me to create a basic PipelineRun file into the file .tekton/pull_request.yaml ? True
+✓ A basic template has been created in /Users/ssadeghi/Projects/pipelines/pac-demo/.tekton/pull_request.yaml, feel free to customize it.
+ℹ You can test your pipeline manually with :
+
+tkn pac resolve --generateName \
+     --params revision=main --params repo_url="https://github.com/siamaksade/pipeline-as-code-demo" \
+      -f /Users/ssadeghi/Projects/pipelines/pac-demo/.tekton/pull_request.yaml | k create -f-
+
+ℹ Don't forget to install the GitHub application into your repo https://github.com/siamaksade/pipeline-as-code-demo
+✓ and we are done! enjoy :)))
+
+```
+
+The above command would create a `Repository` CRD in your `demo` namespace which is used to determine where the PipelineRuns for your GitHub repository should run. It also generates an example pipeline in the `.tekton` folder. Commit and push the pipeline to your repo to start using pipeline as code. 
+
+## Usage Guide
+
+### Pipeline As Code Configurations
+
+There is a few things you can configure via the configmap `pipelines-as-code` in
+the `pipelines-as-code` namespace.
+
+* `application-name`
+
+  The name of the application showing for example in the GitHub Checks labels. Default to `"Pipelines as Code"`
+
+* `max-keep-days`
+
+  The number of the day to keep the PipelineRuns runs in the `pipelines-as-code` namespace. We install by default a cronjob that cleans up the PipelineRuns generated on events in pipelines-as-code namespace. Note that these PipelineRuns are internal to Pipeline-as-code are separate from the PipelineRuns that exist in the user's GitHub repository. The cronjob runs every hour and by default cleanups PipelineRuns over a day. This configmap setting doesn't affect the cleanups of the user's PipelineRuns which are controlled by the [annotations on the PipelineRun definition in the user's GitHub repository](#pipelineruns-cleanups). 
 
 ### Namespace Configuration
 
@@ -393,8 +424,31 @@ The push pipeline of Pipelines as Code use this task, you can see the example he
 
 ## CLI
 
-`Pipelines as Code` provide a CLI which is design to work as tkn plugin. See the
-[INSTALL.md](INSTALL.md) to see how to install it.
+`Pipelines as Code` provide a CLI which is design to work as tkn plugin. 
+
+### Binary releases
+
+You can grab the latest binary directly from the
+[releases](https://github.com/openshift-pipelines/pipelines-as-code/releases)
+page.
+
+### Dev release
+
+If you want to install from the git repository you can just do :
+
+```shell
+go install github.com/openshift-pipelines/pipelines-as-code/cmd/tkn-pac
+```
+
+### Brew release
+
+On LinuxBrew or OSX brew you can simply add the tap :
+
+```shell
+brew install openshift-pipelines/pipelines-as-code/tektoncd-pac
+```
+
+### CLI commands
 
 ```shell
 tkn pac help
