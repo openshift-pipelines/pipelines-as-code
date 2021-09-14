@@ -148,9 +148,7 @@ spec:
                           name: pipelines-as-code
                           key: application-name
                     script: |
-                      env
-                      env|grep PAC_APPLICATION_NAME
-                      cat << EOF > /tmp/payload.json
+                      cat << EOF|tee /tmp/payload.json
                       {
                         "action": "$(params.action)",
                         "issue": {
