@@ -86,7 +86,7 @@ You should now create a Pipeline-as-Code GitHub App which acts as the integratio
 
 ## Configure Pipeline-as-Code on your cluster to access the GitHub App
 
-In order for Pipeline-as-Code to be able to authenticate to the GitHub App and the GitHub App securely trigger the Pipeline-as-Code webhook, you need to create a Kubernetes secret containing the private key of the GitHub App and the webhook secret of the Pipeline-as-Code as it was provided when you created the GitHub App in the previous section. This secret is used to generate a token on behalf of the user running the event and make sure to validate the webhook via the webhook secret.
+In order for Pipeline-as-Code to be able to authenticate to the GitHub App and have the GitHub App securely trigger the Pipeline-as-Code webhook, you need to create a Kubernetes secret containing the private key of the GitHub App and the webhook secret of the Pipeline-as-Code as it was provided when you created the GitHub App in the previous section. This secret is [used to generate](https://docs.github.com/en/developers/apps/building-github-apps/identifying-and-authorizing-users-for-github-apps) a token on behalf of the user running the event and make sure to validate the webhook via the webhook secret.
 
 Run the following command and replace:
 * `APP_ID` with the GitHub App **App ID** copied in the previous section

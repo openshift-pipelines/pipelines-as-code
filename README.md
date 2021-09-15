@@ -47,7 +47,7 @@ Please follow [this document](INSTALL.md) for installing Pipeline as Code on Ope
 
 The flow for using pipeline as code generally begins with admin installing the Pipeline-as-Code infrastructure, creating a GitHub App and sharing the GitHub App url across the organization for app teams to enable the app on their GitHub repositories.
 
-In order to enable the GitHub App provided by admin on your Git repository. Otherwise you can go to the *Settings > Applications* and then click on *Configure* button near the GitHub App you had created. In the **Repository access** section, select the repositories that you want to enable and have access to pipeline-as-code.
+In order to enable the GitHub App provided by admin on your Git repository as documented [here](https://docs.github.com/en/developers/apps/managing-github-apps/installing-github-apps). Otherwise you can go to the *Settings > Applications* and then click on *Configure* button near the GitHub App you had created. In the **Repository access** section, select the repositories that you want to enable and have access to pipeline-as-code.
 
 Once you have enabled your GitHub App for your GitHub repository, you can use the `pac` Tekton CLI plugin to bootstrap pipeline as code:
 
