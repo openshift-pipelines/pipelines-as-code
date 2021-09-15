@@ -290,7 +290,7 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 		opts.TargetBranch = defaultMainBranch
 	}
 	if opts.RepositoryName == "" {
-		opts.RepositoryName, err = askNameForResource(opts)
+		opts.RepositoryName, err = askNameForResource(opts, "Enter the repository name")
 		if err != nil {
 			return err
 		}
@@ -336,32 +336,30 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 	return nil
 }
 
-func askNameForResource(opts CreateOptions) (string, error) {
+func askNameForResource(opts CreateOptions, question string) (string, error) {
 	s, err := ui.GetRepoOwnerFromGHURL(opts.TargetURL)
-	generatedNS := fmt.Sprintf("%s-%s", filepath.Base(s), strings.ReplaceAll(opts.EventType, "_", "-"))
+	repo := fmt.Sprintf("%s-%s", filepath.Base(s), strings.ReplaceAll(opts.EventType, "_", "-"))
+	// Don't ask question if we auto generated
 	if opts.AssumeYes {
-		return generatedNS, nil
-	}
-	prompt := fmt.Sprintf("Set a name for this resource (default: %s):", generatedNS)
-	if err != nil {
-		prompt = "Set a name for this resource:"
-		generatedNS = ""
+		return repo, nil
 	}
 
-	var repo string
+	if err == nil {
+		// No assume yes but generated a name propery so let's return that
+		return repo, nil
+	}
+
+	repo = ""
 	err = opts.CLIOpts.Ask([]*survey.Question{
 		{
-			Prompt: &survey.Input{Message: prompt},
+			Prompt: &survey.Input{Message: question},
 		},
 	}, &repo)
 	if err != nil {
 		return "", err
 	}
-	if repo == "" && generatedNS == "" {
-		return "", fmt.Errorf("no name has been set")
-	}
 	if repo == "" {
-		repo = generatedNS
+		return "", fmt.Errorf("no name has been set")
 	}
 	return repo, nil
 }
