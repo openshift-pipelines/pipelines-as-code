@@ -93,7 +93,7 @@ There is a few things you can configure via the configmap `pipelines-as-code` in
 the `pipelines-as-code` namespace.
 
 - **application-name**: The name of the application showing for example in the
-  GitHub Checks labels. Default to `"Pipelines as Code"`
+  GitHub Checks labels. Default to `"Pipelines as Code CI"`
 - **max-keep-days**: The number of the day to keep the PR runs in the
   `pipelines-as-code` namespace, see below for more details about it..
 
