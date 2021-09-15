@@ -37,7 +37,7 @@ Pipeline as Code features:
 - Efficient use of GitHub blobs and objects API for retrieving configurations
 
 - `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping
-  
+
 
 ## Installation Guide
 
@@ -60,7 +60,6 @@ $ tkn pac repository create
 ? Enter the Git repository url containing the pipelines (default: https://github.com/siamaksade/pipeline-as-code-demo):
 ? Enter the target GIT branch (default: main):
 ? Enter the Git event type for triggering the pipeline:  pull_request
-? Set a name for this resource (default: pipeline-as-code-demo-pull-request):
 ! Namespace demo is not created yet
 ? Would you like me to create the namespace demo? Yes
 ✓ Repository pipeline-as-code-demo-pull-request has been created in demo namespace
@@ -77,7 +76,7 @@ tkn pac resolve --generateName \
 
 ```
 
-The above command would create a `Repository` CRD in your `demo` namespace which is used to determine where the PipelineRuns for your GitHub repository should run. It also generates an example pipeline in the `.tekton` folder. Commit and push the pipeline to your repo to start using pipeline as code. 
+The above command would create a `Repository` CRD in your `demo` namespace which is used to determine where the PipelineRuns for your GitHub repository should run. It also generates an example pipeline in the `.tekton` folder. Commit and push the pipeline to your repo to start using pipeline as code.
 
 ## Usage Guide
 
@@ -92,7 +91,7 @@ the `pipelines-as-code` namespace.
 
 * `max-keep-days`
 
-  The number of the day to keep the PipelineRuns runs in the `pipelines-as-code` namespace. We install by default a cronjob that cleans up the PipelineRuns generated on events in pipelines-as-code namespace. Note that these PipelineRuns are internal to Pipelines-as-code are separate from the PipelineRuns that exist in the user's GitHub repository. The cronjob runs every hour and by default cleanups PipelineRuns over a day. This configmap setting doesn't affect the cleanups of the user's PipelineRuns which are controlled by the [annotations on the PipelineRun definition in the user's GitHub repository](#pipelineruns-cleanups). 
+  The number of the day to keep the PipelineRuns runs in the `pipelines-as-code` namespace. We install by default a cronjob that cleans up the PipelineRuns generated on events in pipelines-as-code namespace. Note that these PipelineRuns are internal to Pipelines-as-code are separate from the PipelineRuns that exist in the user's GitHub repository. The cronjob runs every hour and by default cleanups PipelineRuns over a day. This configmap setting doesn't affect the cleanups of the user's PipelineRuns which are controlled by the [annotations on the PipelineRun definition in the user's GitHub repository](#pipelineruns-cleanups).
 
 ### Namespace Configuration
 
@@ -424,7 +423,7 @@ The push pipeline of Pipelines as Code use this task, you can see the example he
 
 ## CLI
 
-`Pipelines as Code` provide a CLI which is design to work as tkn plugin. 
+`Pipelines as Code` provide a CLI which is design to work as tkn plugin.
 
 ### Binary releases
 
