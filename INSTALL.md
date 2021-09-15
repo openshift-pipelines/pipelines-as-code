@@ -95,7 +95,7 @@ Run the following command and replace:
 
 ```bash
 kubectl -n pipelines-as-code create secret generic github-app-secret \
-        --from-literal private.key="$(cat PATH_PRIVATE_KEY)"
+        --from-literal private.key="$(cat PATH_PRIVATE_KEY)" \
         --from-literal application_id="APP_ID" \
         --from-literal webhook.secret="WEBHOOK_SECRET"
 ```
