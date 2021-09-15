@@ -18,7 +18,7 @@ data:
   max-keep-days: "5"
 
   # The application name, you can customize this label
-  application-name: "Pipelines as Code"
+  application-name: "Pipelines as Code CI"
 kind: ConfigMap
 metadata:
   name: pipelines-as-code
