@@ -36,7 +36,7 @@ Pipeline as Code features:
 
 - Efficient use of GitHub blobs and objects API for retrieving configurations
 
-- `tkn-pac` plugin for Tekton CLI for managing pipeline-as-code repositories and bootstrapping
+- `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping
   
 
 ## Installation Guide
@@ -45,9 +45,9 @@ Please follow [this document](INSTALL.md) for installing Pipeline as Code on Ope
 
 ## Getting Started
 
-The flow for using pipeline as code generally begins with admin installing the Pipeline-as-Code infrastructure, creating a GitHub App and sharing the GitHub App url across the organization for app teams to enable the app on their GitHub repositories.
+The flow for using pipeline as code generally begins with admin installing the Pipelines-as-Code infrastructure, creating a GitHub App and sharing the GitHub App url across the organization for app teams to enable the app on their GitHub repositories.
 
-In order to enable the GitHub App provided by admin on your Git repository. Otherwise you can go to the *Settings > Applications* and then click on *Configure* button near the GitHub App you had created. In the **Repository access** section, select the repositories that you want to enable and have access to pipeline-as-code.
+In order to enable the GitHub App provided by admin on your Git repository. Otherwise you can go to the *Settings > Applications* and then click on *Configure* button near the GitHub App you had created. In the **Repository access** section, select the repositories that you want to enable and have access to pipelines-as-code.
 
 Once you have enabled your GitHub App for your GitHub repository, you can use the `pac` Tekton CLI plugin to bootstrap pipeline as code:
 
@@ -92,7 +92,7 @@ the `pipelines-as-code` namespace.
 
 * `max-keep-days`
 
-  The number of the day to keep the PipelineRuns runs in the `pipelines-as-code` namespace. We install by default a cronjob that cleans up the PipelineRuns generated on events in pipelines-as-code namespace. Note that these PipelineRuns are internal to Pipeline-as-code are separate from the PipelineRuns that exist in the user's GitHub repository. The cronjob runs every hour and by default cleanups PipelineRuns over a day. This configmap setting doesn't affect the cleanups of the user's PipelineRuns which are controlled by the [annotations on the PipelineRun definition in the user's GitHub repository](#pipelineruns-cleanups). 
+  The number of the day to keep the PipelineRuns runs in the `pipelines-as-code` namespace. We install by default a cronjob that cleans up the PipelineRuns generated on events in pipelines-as-code namespace. Note that these PipelineRuns are internal to Pipelines-as-code are separate from the PipelineRuns that exist in the user's GitHub repository. The cronjob runs every hour and by default cleanups PipelineRuns over a day. This configmap setting doesn't affect the cleanups of the user's PipelineRuns which are controlled by the [annotations on the PipelineRun definition in the user's GitHub repository](#pipelineruns-cleanups). 
 
 ### Namespace Configuration
 

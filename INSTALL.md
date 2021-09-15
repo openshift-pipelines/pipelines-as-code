@@ -1,9 +1,9 @@
 # Installation Guides
 
 In order to install and use Pipelines-as-Code, you need to 
-* Install the Pipeline-as-Code infrastructure on your cluster 
-* Create a Pipeline-as-Code GitHub App on your GitHub account or organization
-* Configure Pipeline-as-Code on your cluster to access the GitHub App
+* Install the Pipelines-as-Code infrastructure on your cluster 
+* Create a Pipelines-as-Code GitHub App on your GitHub account or organization
+* Configure Pipelines-as-Code on your cluster to access the GitHub App
 
 Here is a video walkthrough of the install process :
 
@@ -27,15 +27,15 @@ kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines
 It will apply the release.yaml to your kubernetes cluster, creating the
 admin namespace `pipelines-as-code`, the roles and all other bits needed.
 
-The `pipelines-as-code` namespace is where the pipeline-as-code infrastructure runs and is supposed to be accessible only by the admin.
+The `pipelines-as-code` namespace is where the Pipelines-as-Code infrastructure runs and is supposed to be accessible only by the admin.
 
-The Pipeline-as-Code EventListener requires an OpenShift route to be accessible from GitHub. Run the following to create a route:
+The Pipelines-as-Code EventListener requires an OpenShift route to be accessible from GitHub. Run the following to create a route:
 
 ```
 oc expose service el-pipelines-as-code-interceptor -n pipelines-as-code
 ```
 
-Enable TLS on the Pipeline-as-Code EventListener:
+Enable TLS on the Pipelines-as-Code EventListener:
 
 ```
 oc apply -n pipelines-as-code -f <(oc get -n pipelines-as-code route el-pipelines-as-code-interceptor  -o json |jq -r '.spec |= . + {tls: {"insecureEdgeTerminationPolicy": "Redirect", "termination": "edge"}}')
@@ -46,9 +46,9 @@ Retrieve the EventListener URL which you will need in the next section when crea
 echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
 ```
 
-## Create a Pipeline-as-Code GitHub App
+## Create a Pipelines-as-Code GitHub App
 
-You should now create a Pipeline-as-Code GitHub App which acts as the integration point with OpenShift Pipelines and brings the Git workflow into Tekton pipelines. You need the webhook of the GitHub App pointing to your Pipeline-as-Code EventListener route endpoint which would then trigger pipelines on GitHub events.
+You should now create a Pipelines-as-Code GitHub App which acts as the integration point with OpenShift Pipelines and brings the Git workflow into Tekton pipelines. You need the webhook of the GitHub App pointing to your Pipelines-as-Code EventListener route endpoint which would then trigger pipelines on GitHub events.
 
 * Go to https://github.com/settings/apps (or *Settings > Developer settings > GitHub Apps*) and click on **New GitHub App** button
 * Provide the following info in the GitHub App form
@@ -84,9 +84,9 @@ You should now create a Pipeline-as-Code GitHub App which acts as the integratio
 
 * In **Private keys** section, click on **Generate Private key* to generate a private key for the GitHub app. It will download automatically. Store the private key in a safe place as you need it in the next section and in future when reconfiguring this app to use a different cluster.
 
-## Configure Pipeline-as-Code on your cluster to access the GitHub App
+## Configure Pipelines-as-Code on your cluster to access the GitHub App
 
-In order for Pipeline-as-Code to be able to authenticate to the GitHub App and the GitHub App securely trigger the Pipeline-as-Code webhook, you need to create a Kubernetes secret containing the private key of the GitHub App and the webhook secret of the Pipeline-as-Code as it was provided when you created the GitHub App in the previous section. This secret is used to generate a token on behalf of the user running the event and make sure to validate the webhook via the webhook secret.
+In order for Pipelines-as-Code to be able to authenticate to the GitHub App and the GitHub App securely trigger the Pipelines-as-Code webhook, you need to create a Kubernetes secret containing the private key of the GitHub App and the webhook secret of the Pipelines-as-Code as it was provided when you created the GitHub App in the previous section. This secret is used to generate a token on behalf of the user running the event and make sure to validate the webhook via the webhook secret.
 
 Run the following command and replace:
 * `APP_ID` with the GitHub App **App ID** copied in the previous section
