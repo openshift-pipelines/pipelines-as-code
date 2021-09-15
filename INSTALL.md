@@ -1,7 +1,7 @@
 # Installation Guides
 
-In order to install and use Pipelines-as-Code, you need to 
-* Install the Pipelines-as-Code infrastructure on your cluster 
+In order to install and use Pipelines-as-Code, you need to
+* Install the Pipelines-as-Code infrastructure on your cluster
 * Create a Pipelines-as-Code GitHub App on your GitHub account or organization
 * Configure Pipelines-as-Code on your cluster to access the GitHub App
 

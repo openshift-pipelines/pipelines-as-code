@@ -54,14 +54,26 @@ func Command(p cli.Params) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.RunInfo.EventType, "webhook-type", "", os.Getenv("PAC_EVENT_TYPE"), "Payload event type as set from Github (ie: X-GitHub-Event header)")
 	cmd.Flags().StringVarP(&opts.RunInfo.TriggerTarget, "trigger-target", "", os.Getenv("PAC_TRIGGER_TARGET"), "The trigger target from where this event comes from")
 	cmd.Flags().StringVarP(&opts.PayloadFile, "payload-file", "", os.Getenv("PAC_PAYLOAD_FILE"), "A file containing the webhook payload")
+
 	applicationName := os.Getenv("PAC_APPLICATION_NAME")
 	if applicationName == "" {
 		applicationName = defaultApplicationName
 	}
-
 	cmd.Flags().StringVar(&opts.RunInfo.ApplicationName,
 		"application-name", applicationName,
 		"The name of the application.")
+
+	secretAutoCreation := false
+	secretAutoCreationEnv := os.Getenv("PAC_SECRET_AUTO_CREATE")
+	if strings.ToLower(secretAutoCreationEnv) == "true" ||
+		strings.ToLower(secretAutoCreationEnv) == "yes" || secretAutoCreationEnv == "1" {
+		secretAutoCreation = true
+	}
+	cmd.Flags().BoolVar(&opts.RunInfo.SecretAutoCreation,
+		"secret-auto-creation",
+		secretAutoCreation,
+		"Wether to create automatically secrets.")
+
 	return cmd
 }
 

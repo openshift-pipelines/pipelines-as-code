@@ -124,8 +124,10 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 
 	// Replace those {{var}} placeholders user has in her template to the runinfo variable
 	allTemplates = ReplacePlaceHoldersVariables(allTemplates, map[string]string{
-		"revision": runinfo.SHA,
-		"repo_url": runinfo.URL,
+		"revision":   runinfo.SHA,
+		"repo_url":   runinfo.URL,
+		"repo_owner": runinfo.Owner,
+		"repo_name":  runinfo.Repository,
 	})
 
 	ropt := &resolve.Opts{
@@ -146,6 +148,14 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 
 	if annotationRepo.Spec.Namespace != "" {
 		repo = annotationRepo
+	}
+
+	// Automatically create a secret with the token to be reused by git-clone task
+	if runinfo.SecretAutoCreation {
+		err = k8int.CreateBasicAuthSecret(ctx, *runinfo, repo.Spec.Namespace, cs.GithubClient.Token)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Add labels on the soon to be created pipelinerun so UI/CLI can easily

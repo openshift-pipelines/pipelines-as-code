@@ -49,4 +49,5 @@ type KubeInteractionIntf interface {
 	// TODO: we don't need tektonv1beta1client stuff here
 	WaitForPipelineRunSucceed(context.Context, tektonv1beta1client.TektonV1beta1Interface, *v1beta1.PipelineRun, time.Duration) error
 	CleanupPipelines(context.Context, string, string, int) error
+	CreateBasicAuthSecret(context.Context, webvcs.RunInfo, string, string) error
 }
