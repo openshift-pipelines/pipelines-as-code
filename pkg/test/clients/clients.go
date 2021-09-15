@@ -36,6 +36,7 @@ type Data struct {
 	PipelineRuns []*pipelinev1alpha1.PipelineRun
 	Repositories []*v1alpha1.Repository
 	Namespaces   []*corev1.Namespace
+	Secret       []*corev1.Secret
 }
 
 // SeedTestData returns Clients and Informers populated with the

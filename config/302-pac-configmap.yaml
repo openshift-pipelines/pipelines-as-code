@@ -19,6 +19,10 @@ data:
 
   # The application name, you can customize this label
   application-name: "Pipelines as Code CI"
+
+  # Wether to automatically create a secret with the token to be use by git-clone
+  secret-auto-create: "true"
+
 kind: ConfigMap
 metadata:
   name: pipelines-as-code

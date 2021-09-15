@@ -170,6 +170,11 @@ spec:
                         configMapKeyRef:
                           name: pipelines-as-code
                           key: application-name
+                    - name: PAC_SECRET_AUTO_CREATE
+                      valueFrom:
+                        configMapKeyRef:
+                          name: pipelines-as-code
+                          key: secret-auto-create
                     imagePullPolicy: Always
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
                     script: |

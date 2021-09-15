@@ -19,7 +19,7 @@ See a walkthought video about it here :
 [![Pipelines as Code Walkthought](https://img.youtube.com/vi/Uh1YhOGPOes/0.jpg)](https://www.youtube.com/watch?v=Uh1YhOGPOes)
 
 
-Pipeline as Code features:
+Pipelines as Code features:
 
 - Pull-request status support: When iterating over a Pull Request, status and control is
   done on the platform.
@@ -38,18 +38,17 @@ Pipeline as Code features:
 
 - `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping
 
-
 ## Installation Guide
 
-Please follow [this document](INSTALL.md) for installing Pipeline as Code on OpenShift.
+Please follow [this document](INSTALL.md) for installing Pipelines as Code on OpenShift.
 
 ## Getting Started
 
-The flow for using pipeline as code generally begins with admin installing the Pipelines-as-Code infrastructure, creating a GitHub App and sharing the GitHub App url across the organization for app teams to enable the app on their GitHub repositories.
+The flow for using pipelines as code generally begins with admin installing the Pipelines-as-Code infrastructure, creating a GitHub App and sharing the GitHub App url across the organization for app teams to enable the app on their GitHub repositories.
 
 In order to enable the GitHub App provided by admin on your Git repository as documented [here](https://docs.github.com/en/developers/apps/managing-github-apps/installing-github-apps). Otherwise you can go to the *Settings > Applications* and then click on *Configure* button near the GitHub App you had created. In the **Repository access** section, select the repositories that you want to enable and have access to Pipelines-as-code.
 
-Once you have enabled your GitHub App for your GitHub repository, you can use the `pac` Tekton CLI plugin to bootstrap pipeline as code:
+Once you have enabled your GitHub App for your GitHub repository, you can use the `pac` Tekton CLI plugin to bootstrap pipelines as code:
 
 ```
 $ git clone https://github.com/siamaksade/pipeline-as-code-demo
@@ -76,22 +75,26 @@ tkn pac resolve --generateName \
 
 ```
 
-The above command would create a `Repository` CRD in your `demo` namespace which is used to determine where the PipelineRuns for your GitHub repository should run. It also generates an example pipeline in the `.tekton` folder. Commit and push the pipeline to your repo to start using pipeline as code.
+The above command would create a `Repository` CRD in your `demo` namespace which is used to determine where the PipelineRuns for your GitHub repository should run. It also generates an example pipeline in the `.tekton` folder. Commit and push the pipeline to your repo to start using pipelines as code.
 
 ## Usage Guide
 
-### Pipeline As Code Configurations
+### Pipelines As Code Configurations
 
 There is a few things you can configure via the configmap `pipelines-as-code` in
 the `pipelines-as-code` namespace.
 
-* `application-name`
+- `application-name`
 
   The name of the application showing for example in the GitHub Checks labels. Default to `"Pipelines as Code CI"`
 
-* `max-keep-days`
+- `max-keep-days`
 
   The number of the day to keep the PipelineRuns runs in the `pipelines-as-code` namespace. We install by default a cronjob that cleans up the PipelineRuns generated on events in pipelines-as-code namespace. Note that these PipelineRuns are internal to Pipelines-as-code are separate from the PipelineRuns that exist in the user's GitHub repository. The cronjob runs every hour and by default cleanups PipelineRuns over a day. This configmap setting doesn't affect the cleanups of the user's PipelineRuns which are controlled by the [annotations on the PipelineRun definition in the user's GitHub repository](#pipelineruns-cleanups).
+
+- `secret-auto-create`
+
+    Wether to auto create a secret with the token generated via the Github application to be used with private repositories. This feature is enabled by default.
 
 ### Namespace Configuration
 
@@ -144,8 +147,10 @@ instead of trying to match it from all available repository on cluster.
   as Code allows you to have those two variables filled between double brackets,
   i.e: `{{ var }}`:
 
-  - `{{repo_url}}`: The repository URL of this commit
-  - `{{revision}}`: The revision of the commit.
+  - `{{repo_owner}}`: The repository owner.
+  - `{{repo_name}}`: The repository name.
+  - `{{repo_url}}`: The repository full URL.
+  - `{{revision}}`: The commit full sha revision.
 
 - You need at least one `PipelineRun` with a `PipelineSpec` or a separated
   `Pipeline` object. You can have embedded `TaskSpec` inside
@@ -212,6 +217,69 @@ match your `PiplineRun`.
 If there is multiple pipeline matching an event, it will match the first one.
 We are currently not supporting multiple PipelineRuns on a single event but
 this may be something we can consider to implement in the future.
+
+#### Private repositories
+
+Pipelines as Code support private repositories by creating or updating a secret
+in the target namespace with the user token for the [git-clone](https://github.com/tektoncd/catalog/blob/main/task/git-clone) task to use and
+be able to clone private repositories.
+
+Whenever Pipelines as Code create a new PipelineRun in the target namespace it
+will create or update a secret called :
+
+`pac-git-basic-auth-REPOSITORY_OWNER-REPOSITORY_NAME`
+
+The secret contains a `.gitconfig` and a git credentials `.git-credentials` with the
+https url using the short lived token generated from the Github application for accessing the private repository.
+
+As documented :
+
+<https://github.com/tektoncd/catalog/blob/main/task/git-clone/0.4/README.md>
+
+the secret needs to be referenced inside your PipelineRun and Pipeline as a workspace called basic-auth to be passed to the `git-clone` task.
+
+For example in your PipelineRun you will add the workspace referencing the Secret :
+
+```yaml
+  workspace:
+  - name: basic-auth
+    secret:
+      secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"
+```
+
+And inside your pipeline, you are referencing them for the git-clone to reuse  :
+
+```yaml
+[...]
+workspaces:
+  - name basic-auth
+params:
+    - name: repo_url
+    - name: revision
+[...]
+tasks:
+  workspaces:
+    - name: basic-auth
+      workspace: basic-auth
+  [...]
+  tasks:
+  - name: git-clone-from-catalog
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.repo_url)
+        - name: revision
+          value: $(params.revision)
+```
+
+The git-clone task will pick up the basic-auth (optional) workspace and automatically
+use it to be able to clone the private repository.
+
+You can see as well a full example [here](./test/testdata/pipelinerun_git_clone_private.yaml)
+
+This behaviour can be disabled by configuration the `secret-auto-create` key inside the
+[Pipelines-as-Code Configmap](./INSTALL.md#configuration).
 
 #### PipelineRuns Cleanups
 
@@ -486,4 +554,4 @@ docker run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
 
 ## Blog Posts
 
-* [How to make a release pipeline with Pipelines as Code](https://blog.chmouel.com/2021/07/01/how-to-make-a-release-pipeline-with-pipelines-as-code)
+- [How to make a release pipeline with Pipelines as Code](https://blog.chmouel.com/2021/07/01/how-to-make-a-release-pipeline-with-pipelines-as-code)

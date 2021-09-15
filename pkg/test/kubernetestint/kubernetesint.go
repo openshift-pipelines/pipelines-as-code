@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonv1beta1client "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1beta1"
 )
@@ -18,6 +19,10 @@ type KinterfaceTest struct {
 
 func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string) (string, error) {
 	return k.ConsoleURL, nil
+}
+
+func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, runinfo webvcs.RunInfo, namespace, token string) error {
+	return nil
 }
 
 func (k *KinterfaceTest) GetNamespace(ctx context.Context, ns string) error {

@@ -19,27 +19,29 @@ import (
 )
 
 type GithubVCS struct {
-	Client *github.Client
+	Client        *github.Client
+	Token, APIURL string
 }
 
 // RunInfo Information about current run
 type RunInfo struct {
-	BaseBranch      string // branch against where we are making the PR
-	CheckRunID      *int64
-	DefaultBranch   string
-	Event           interface{}
-	EventType       string
-	HeadBranch      string // branch from where our SHA get tested
-	Owner           string
-	Repository      string
-	SHA             string
-	SHAURL          string
-	Sender          string
-	TriggerTarget   string
-	URL             string
-	LogURL          string
-	SHATitle        string
-	ApplicationName string // The Application Name for example "Pipelines as Code"
+	BaseBranch         string // branch against where we are making the PR
+	CheckRunID         *int64
+	DefaultBranch      string
+	Event              interface{}
+	EventType          string
+	HeadBranch         string // branch from where our SHA get tested
+	Owner              string
+	Repository         string
+	SHA                string
+	SHAURL             string
+	Sender             string
+	TriggerTarget      string
+	URL                string
+	LogURL             string
+	SHATitle           string
+	ApplicationName    string // the Application Name for example "Pipelines as Code"
+	SecretAutoCreation bool   // secret auto creation in target namespace
 }
 
 // Check check if the runinfo is properly set
@@ -76,6 +78,8 @@ func NewGithubVCS(token string, apiURL string) GithubVCS {
 	}
 	return GithubVCS{
 		Client: client,
+		Token:  token,
+		APIURL: apiURL,
 	}
 }
 
