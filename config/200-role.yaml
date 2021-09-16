@@ -82,10 +82,10 @@ rules:
   - apiGroups: [""]
     resources: ["namespaces", "pods", "pods/log"]
     verbs: ["get", "list", "watch"]
-  # Allow creating secrets in namespace
+  # Allow creating and deleting secrets in namespace
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get", "create", "update"]
+    verbs: ["create", "delete"]
   # Permissions to list repositories on cluster
   - apiGroups: ["pipelinesascode.tekton.dev"]
     resources: ["repositories"]
