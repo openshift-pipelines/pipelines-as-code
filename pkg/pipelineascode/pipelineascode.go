@@ -152,7 +152,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 
 	// Automatically create a secret with the token to be reused by git-clone task
 	if runinfo.SecretAutoCreation {
-		err = k8int.CreateBasicAuthSecret(ctx, *runinfo, repo.Spec.Namespace, cs.GithubClient.Token)
+		err = k8int.CreateBasicAuthSecret(ctx, *runinfo, repo.Spec.Namespace)
 		if err != nil {
 			return err
 		}

@@ -30,13 +30,12 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 }
 
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
-func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runinfo webvcs.RunInfo, targetNamespace, token string) error {
+func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runinfo webvcs.RunInfo, targetNamespace string) error {
 	repoURL, err := url.Parse(runinfo.URL)
 	if err != nil {
 		return err
 	}
-	urlWithToken := fmt.Sprintf("%s://git:%s@%s%s", repoURL.Scheme, token, repoURL.Host, repoURL.Path)
-
+	urlWithToken := fmt.Sprintf("%s://git:%s@%s%s", repoURL.Scheme, k.Clients.GithubClient.Token, repoURL.Host, repoURL.Path)
 	secretData := map[string]string{
 		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, runinfo.URL),
 		".git-credentials": urlWithToken,
@@ -52,6 +51,6 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runinfo webvcs.R
 			err = k.createSecret(ctx, secretData, targetNamespace, secretName)
 		}
 	}
-
+	k.Clients.Log.Infof("Secret %s has been generated in namespace %s", secretName, targetNamespace)
 	return err
 }
