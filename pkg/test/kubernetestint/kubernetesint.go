@@ -21,7 +21,7 @@ func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string)
 	return k.ConsoleURL, nil
 }
 
-func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, runinfo webvcs.RunInfo, namespace, token string) error {
+func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, runinfo webvcs.RunInfo, ns string) error {
 	return nil
 }
 

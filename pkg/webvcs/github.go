@@ -188,10 +188,11 @@ func (v GithubVCS) populateCommitInfo(ctx context.Context, runinfo *RunInfo) err
 }
 
 // ParsePayload parse payload event
-func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eventType, triggerTarget, payload string) (*RunInfo, error) {
+// TODO: this piece of code is just plain silly
+func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, optRunInfo RunInfo, payload string) (*RunInfo, error) {
 	var runinfo RunInfo
 	payload = payloadFix(payload)
-	event, err := github.ParseWebHook(eventType, []byte(payloadFix(payload)))
+	event, err := github.ParseWebHook(optRunInfo.EventType, []byte(payloadFix(payload)))
 	if err != nil {
 		return &runinfo, err
 	}
@@ -202,7 +203,7 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 
 	switch event := event.(type) {
 	case *github.CheckRunEvent:
-		if triggerTarget == "issue-recheck" {
+		if optRunInfo.TriggerTarget == "issue-recheck" {
 			runinfo, err = v.handleReRequestEvent(ctx, log, event)
 			if err != nil {
 				return &runinfo, err
@@ -224,7 +225,7 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			SHATitle:      event.GetHeadCommit().GetMessage(),
 			Sender:        event.GetSender().GetLogin(),
 			BaseBranch:    event.GetRef(),
-			EventType:     eventType,
+			EventType:     optRunInfo.TriggerTarget,
 		}
 
 		runinfo.HeadBranch = runinfo.BaseBranch // in push events Head Branch is the same as Basebranch
@@ -238,7 +239,7 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 			BaseBranch:    event.GetPullRequest().Base.GetRef(),
 			HeadBranch:    event.GetPullRequest().Head.GetRef(),
 			Sender:        event.GetPullRequest().GetUser().GetLogin(),
-			EventType:     eventType,
+			EventType:     optRunInfo.EventType,
 		}
 	default:
 		return &runinfo, errors.New("this event is not supported")
@@ -250,7 +251,8 @@ func (v GithubVCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, eve
 	}
 
 	runinfo.Event = event
-	runinfo.TriggerTarget = triggerTarget
+	runinfo.TriggerTarget = optRunInfo.TriggerTarget
+	runinfo.SecretAutoCreation = optRunInfo.SecretAutoCreation
 	return &runinfo, nil
 }
 
