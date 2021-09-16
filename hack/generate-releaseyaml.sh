@@ -4,6 +4,7 @@ set -euf
 export TARGET_REPO=${TARGET_REPO:-quay.io/openshift-pipeline/pipelines-as-code}
 export TARGET_BRANCH=${TARGET_BRANCH:-main}
 export TARGET_NAMESPACE=${TARGET_NAMESPACE:-pipelines-as-code}
+export TARGET_OPENSHIFT=${TARGET_OPENSHIFT:-""}
 
 MODE=${1:-""}
 
@@ -12,10 +13,20 @@ if [[ -n ${MODE} && ${MODE} == ko ]];then
     clean() { rm -f ${tmpfile}; }
     trap clean EXIT
     ko resolve -f config/ > ${tmpfile}
+
+    if [[ ${TARGET_OPENSHIFT} != "" ]];then
+       ko resolve -f config/openshift >> ${tmpfile}
+    fi
+
     files="${tmpfile}"
 else
     files=$(find config -maxdepth 1 -name '*.yaml'|sort -n)
+
+    if [[ ${TARGET_OPENSHIFT} != "" ]];then
+       files="${files} $(find config/openshift -maxdepth 1 -name '*.yaml'|sort -n)"
+    fi
 fi
+
 
 for file in ${files};do
     head -1 ${file} | grep -q -- "---" || echo "---"

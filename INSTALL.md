@@ -29,20 +29,10 @@ admin namespace `pipelines-as-code`, the roles and all other bits needed.
 
 The `pipelines-as-code` namespace is where the Pipelines-as-Code infrastructure runs and is supposed to be accessible only by the admin.
 
-The Pipelines-as-Code EventListener requires an OpenShift route to be accessible from GitHub. Run the following to create a route:
+The Route for the EventListener URL is automatically created when you apply the release.yaml.
+You will need to grab the url for the next section when creating the GitHub App. You can run this command to get the route created on your cluster:
 
-```
-oc expose service el-pipelines-as-code-interceptor -n pipelines-as-code
-```
-
-Enable TLS on the Pipelines-as-Code EventListener:
-
-```
-oc apply -n pipelines-as-code -f <(oc get -n pipelines-as-code route el-pipelines-as-code-interceptor  -o json |jq -r '.spec |= . + {tls: {"insecureEdgeTerminationPolicy": "Redirect", "termination": "edge"}}')
-```
-
-Retrieve the EventListener URL which you will need in the next section when creating the GitHub App:
-```
+```shell
 echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
 ```
 
@@ -106,3 +96,20 @@ Pipelines as Code supports Github Enterprise.
 
 You don't need to do anything special to get Pipelines as code working with GHE.
 Pipelines as code will automatically detects the header as set from GHE and use it  the GHE API auth url instead of the public github.
+
+## Kubernetes
+
+Pipelines as Code should work directly on kubernetes/minikube/kind. You just need to install the release.yaml for [pipeline](https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml), [triggers](https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml) and its [interceptors](https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml) on your cluster. The release yaml to install pipelines are for the relesaed version :
+
+```shell
+VERSION=0.2
+kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.k8s.yaml
+```
+
+and for the nightly :
+
+```shell
+kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release.k8s.yaml
+```
+
+Kubernetes Dashboard is not yet supported for logs links but help is always welcome ;)
