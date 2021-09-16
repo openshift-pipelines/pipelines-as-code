@@ -14,7 +14,7 @@ Here is a video walkthrough of the install process :
 To install Pipelines as Code on your cluster you simply need to run this command :
 
 ```shell
-VERSION=0.2
+VERSION=0.3
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.yaml
 ```
 
@@ -102,7 +102,7 @@ Pipelines as code will automatically detects the header as set from GHE and use 
 Pipelines as Code should work directly on kubernetes/minikube/kind. You just need to install the release.yaml for [pipeline](https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml), [triggers](https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml) and its [interceptors](https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml) on your cluster. The release yaml to install pipelines are for the relesaed version :
 
 ```shell
-VERSION=0.2
+VERSION=0.3
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.k8s.yaml
 ```
 
