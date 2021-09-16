@@ -91,8 +91,7 @@ func parsePayload(ctx context.Context, cs *cli.Clients, opts *pacpkg.Options) (*
 		return nil, err
 	}
 
-	payloadinfo, err := cs.GithubClient.ParsePayload(ctx, cs.Log, opts.RunInfo.EventType,
-		opts.RunInfo.TriggerTarget, string(payloadB))
+	payloadinfo, err := cs.GithubClient.ParsePayload(ctx, cs.Log, opts.RunInfo, string(payloadB))
 	if err != nil {
 		return &webvcs.RunInfo{}, err
 	}
