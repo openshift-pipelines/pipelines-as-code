@@ -16,15 +16,15 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 )
 
-func Send(ctx context.Context, cs *cli.Clients, elURL, elWebHookSecret, githubURL, installationID string, event interface{}, eventType string) error {
+func Send(ctx context.Context, cs *params.Run, elURL, elWebHookSecret, githubURL, installationID string, event interface{}, eventType string) error {
 	jeez, err := json.Marshal(event)
 	if err != nil {
 		return err
 	}
-	cs.Log.Infof("Sending a payload directly to the EL on %s: %s", os.Getenv("TEST_EL_URL"), string(jeez))
+	cs.Clients.Log.Infof("Sending a payload directly to the EL on %s: %s", os.Getenv("TEST_EL_URL"), string(jeez))
 
 	mac := hmac.New(sha1.New, []byte(elWebHookSecret))
 	mac.Write(jeez)

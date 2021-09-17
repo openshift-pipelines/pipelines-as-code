@@ -10,11 +10,11 @@ import (
 	"github.com/google/go-github/v35/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/ui"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	tcli "github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/params"
 	"github.com/spf13/cobra"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
@@ -26,7 +26,7 @@ import (
 )
 
 func TestRoot(t *testing.T) {
-	s, err := tcli.ExecuteCommand(Root(&cli.PacParams{}), "help")
+	s, err := tcli.ExecuteCommand(Root(&params.Run{}), "help")
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(s, "repository, repo, repsitories"))
 }
@@ -34,7 +34,7 @@ func TestRoot(t *testing.T) {
 func TestCommands(t *testing.T) {
 	tests := []struct {
 		name    string
-		command func(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command
+		command func(c *params.Run, ioStreams *ui.IOStreams) *cobra.Command
 		want    *cobra.Command
 	}{
 		{
@@ -97,14 +97,15 @@ func TestCommands(t *testing.T) {
 			}
 			ctx, _ := rtesting.SetupFakeContext(t)
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
-			cs := &cli.Clients{
-				PipelineAsCode: stdata.PipelineAsCode,
+			cs := &params.Run{
+				Clients: clients.Clients{
+					ClientInitialized: true,
+					PipelineAsCode:    stdata.PipelineAsCode,
+				},
 			}
 			buf := new(bytes.Buffer)
 			ioStream := &ui.IOStreams{Out: buf, ErrOut: buf}
-			cmd := tt.command(params.FakeParams{
-				Fakeclients: cs,
-			}, ioStream)
+			cmd := tt.command(cs, ioStream)
 			cmd.SetOut(buf)
 			_, err := tcli.ExecuteCommand(cmd, "--no-color", "-n", nsName, repoName)
 			assert.NilError(t, err)
@@ -164,13 +165,13 @@ func TESSS(t *testing.T) {
 	}
 	ctx, _ := rtesting.SetupFakeContext(t)
 	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
-	cs := &cli.Clients{
-		PipelineAsCode: stdata.PipelineAsCode,
+	cs := &params.Run{
+		Clients: clients.Clients{
+			PipelineAsCode: stdata.PipelineAsCode,
+		},
 	}
 	buf := new(bytes.Buffer)
-	cmd := ListCommand(params.FakeParams{
-		Fakeclients: cs,
-	}, &ui.IOStreams{Out: buf, ErrOut: buf})
+	cmd := ListCommand(cs, &ui.IOStreams{Out: buf, ErrOut: buf})
 	cmd.SetOut(buf)
 	_, err := tcli.ExecuteCommand(cmd, "-n", nsName, repoName)
 	assert.NilError(t, err)

@@ -10,10 +10,9 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/ui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/completion"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,8 +65,8 @@ func formatStatus(status v1alpha1.RepositoryRunStatus, cs *ui.ColorScheme, c clo
 		cs.ColorStatus(status.Status.Conditions[0].Reason))
 }
 
-func askRepo(ctx context.Context, cs *cli.Clients, opts *flags.CliOpts, namespace string) (*v1alpha1.Repository, error) {
-	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(namespace).List(ctx, metav1.ListOptions{})
+func askRepo(ctx context.Context, cs *params.Run, opts *params.PacCliOpts, namespace string) (*v1alpha1.Repository, error) {
+	repositories, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +119,7 @@ func askRepo(ctx context.Context, cs *cli.Clients, opts *flags.CliOpts, namespac
 	return nil, fmt.Errorf("cannot match repository")
 }
 
-func DescribeCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
+func DescribeCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "describe",
 		Aliases: []string{"desc"},
@@ -131,7 +130,7 @@ func DescribeCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 		ValidArgsFunction: completion.ParentCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var repoName string
-			opts, err := flags.NewCliOptions(cmd)
+			opts, err := params.NewCliOptions(cmd)
 			if err != nil {
 				return err
 			}
@@ -147,12 +146,12 @@ func DescribeCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 
 			ctx := context.Background()
 			clock := clockwork.NewRealClock()
-			cs, err := p.Clients()
+			err = run.Clients.NewClients(&run.Info)
 			if err != nil {
 				return err
 			}
 			ioStreams.SetColorEnabled(!opts.NoColoring)
-			return describe(ctx, cs, clock, opts, ioStreams, p.GetNamespace(), repoName)
+			return describe(ctx, run, clock, opts, ioStreams, repoName)
 		},
 	}
 
@@ -168,23 +167,23 @@ func DescribeCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func describe(ctx context.Context, cs *cli.Clients, clock clockwork.Clock, opts *flags.CliOpts,
-	ioStreams *ui.IOStreams, namespace, repoName string) error {
+func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *params.PacCliOpts,
+	ioStreams *ui.IOStreams, repoName string) error {
 	var repository *v1alpha1.Repository
 	var err error
 
 	if opts.Namespace != "" {
-		namespace = opts.Namespace
+		cs.Info.Kube.Namespace = opts.Namespace
 	}
 
 	if repoName != "" {
-		repository, err = cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(namespace).Get(ctx,
+		repository, err = cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(cs.Info.Kube.Namespace).Get(ctx,
 			repoName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 	} else {
-		repository, err = askRepo(ctx, cs, opts, namespace)
+		repository, err = askRepo(ctx, cs, opts, cs.Info.Kube.Namespace)
 		if err != nil {
 			return err
 		}

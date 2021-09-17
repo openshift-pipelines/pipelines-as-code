@@ -23,11 +23,11 @@ import (
 func TestPullRequestRetest(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	cs, opts, err := setup()
+	run, opts, ghcnx, err := setup(ctx)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
-		".tekton/run.yaml": fmt.Sprintf(`---
+		".tekton/info.yaml": fmt.Sprintf(`---
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
@@ -48,7 +48,7 @@ spec:
 `, targetNS, mainBranch, pullRequestEvent),
 	}
 
-	repoinfo, resp, err := cs.GithubClient.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
+	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Owner, opts.Repo)
@@ -66,39 +66,39 @@ spec:
 		},
 	}
 
-	err = trepo.CreateNSRepo(ctx, targetNS, cs, repository)
+	err = trepo.CreateNSRepo(ctx, targetNS, run, repository)
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, err := tgithub.PushFilesToRef(ctx, cs.GithubClient.Client, "TestRetest - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
+	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, "TestRetest - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
 	assert.NilError(t, err)
-	cs.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
+	run.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 	title := "TestPullRequestRetest on " + targetRefName
 
-	number, err := tgithub.PRCreate(ctx, cs, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+	number, err := tgithub.PRCreate(ctx, run, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
-	defer tearDown(ctx, t, cs, number, targetRefName, targetNS, opts)
+	defer tearDown(ctx, t, run, ghcnx, number, targetRefName, targetNS, opts)
 
-	cs.Log.Infof("Waiting for Repository to be updated")
-	err = twait.UntilRepositoryUpdated(ctx, cs.PipelineAsCode, targetNS, targetNS, 0, defaultTimeout)
+	run.Clients.Log.Infof("Waiting for Repository to be updated")
+	err = twait.UntilRepositoryUpdated(ctx, run.Clients.PipelineAsCode, targetNS, targetNS, 0, defaultTimeout)
 	assert.NilError(t, err)
 
-	cs.Log.Infof("Creating /retest in PullRequest")
-	_, _, err = cs.GithubClient.Client.Issues.CreateComment(ctx,
+	run.Clients.Log.Infof("Creating /retest in PullRequest")
+	_, _, err = ghcnx.Client.Issues.CreateComment(ctx,
 		opts.Owner,
 		opts.Repo, number,
 		&github.IssueComment{Body: github.String("/retest")})
 	assert.NilError(t, err)
 
-	cs.Log.Infof("Wait for the second repository update to be updated")
-	err = twait.UntilRepositoryUpdated(ctx, cs.PipelineAsCode, targetNS, targetNS, 1, defaultTimeout)
+	run.Clients.Log.Infof("Wait for the second repository update to be updated")
+	err = twait.UntilRepositoryUpdated(ctx, run.Clients.PipelineAsCode, targetNS, targetNS, 1, defaultTimeout)
 	assert.NilError(t, err)
 
-	cs.Log.Infof("Check if we have the repository set as succeeded")
-	repo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
+	run.Clients.Log.Infof("Check if we have the repository set as succeeded")
+	repo, err := run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
 }

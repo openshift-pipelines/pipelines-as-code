@@ -1,4 +1,4 @@
-package pipelineascode
+package github
 
 import (
 	"encoding/base64"
@@ -7,9 +7,8 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v35/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -17,14 +16,14 @@ func TestOkToTestComment(t *testing.T) {
 	tests := []struct {
 		name          string
 		commentsReply string
-		runinfo       *webvcs.RunInfo
+		runevent      info.Event
 		allowed       bool
 		wantErr       bool
 	}{
 		{
 			name:          "good",
 			commentsReply: `[{"body": "/ok-to-test", "user": {"login": "owner"}}]`,
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				Owner:     "owner",
 				Sender:    "nonowner",
 				EventType: "issue_comment",
@@ -35,7 +34,7 @@ func TestOkToTestComment(t *testing.T) {
 		{
 			name:          "no-ok-to-test",
 			commentsReply: `[{"body": "Foo Bar", "user": {"login": "owner"}}]`,
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				Owner:     "owner",
 				Sender:    "nonowner",
 				EventType: "issue_comment",
@@ -46,7 +45,7 @@ func TestOkToTestComment(t *testing.T) {
 		{
 			name:          "ok-to-test-not-from-owner",
 			commentsReply: `[{"body": "/ok-to-test", "user": {"login": "notowner"}}]`,
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				Owner:     "owner",
 				Sender:    "nonowner",
 				EventType: "issue_comment",
@@ -58,26 +57,25 @@ func TestOkToTestComment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repoOwnerURL := "http://url.com/owner/repo/1"
-			tt.runinfo.Event = &github.IssueCommentEvent{
+			tt.runevent.Event = &github.IssueCommentEvent{
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
 						HTMLURL: &repoOwnerURL,
 					},
 				},
 			}
-			tt.runinfo.TriggerTarget = "ok-to-test-comment"
+			tt.runevent.TriggerTarget = "ok-to-test-comment"
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			mux.HandleFunc("/repos/owner/issues/1/comments", func(rw http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(rw, tt.commentsReply)
 			})
 			ctx, _ := rtesting.SetupFakeContext(t)
-			cs := &cli.Clients{
-				GithubClient: webvcs.GithubVCS{
-					Client: fakeclient,
-				},
+			gvcs := VCS{
+				Client: fakeclient,
 			}
-			got, err := aclCheck(ctx, cs, tt.runinfo)
+
+			got, err := gvcs.IsAllowed(ctx, &tt.runevent)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("aclCheck() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -124,19 +122,19 @@ func TestAclCheckAll(t *testing.T) {
 	})
 
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := webvcs.GithubVCS{
+	gvcs := VCS{
 		Client: fakeclient,
 	}
 
 	tests := []struct {
-		name    string
-		runinfo *webvcs.RunInfo
-		allowed bool
-		wantErr bool
+		name     string
+		runevent info.Event
+		allowed  bool
+		wantErr  bool
 	}{
 		{
 			name: "sender allowed in org",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				Owner:  orgallowed,
 				Sender: "login_allowed",
 			},
@@ -145,7 +143,7 @@ func TestAclCheckAll(t *testing.T) {
 		},
 		{
 			name: "sender allowed from owner file",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				Owner:  repoOwnerFileAllowed,
 				Sender: "approved",
 			},
@@ -154,7 +152,7 @@ func TestAclCheckAll(t *testing.T) {
 		},
 		{
 			name: "owner is sender is allowed",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				Owner:  orgallowed,
 				Sender: "allowed",
 			},
@@ -163,7 +161,7 @@ func TestAclCheckAll(t *testing.T) {
 		},
 		{
 			name: "sender not allowed in org",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				Owner:  orgdenied,
 				Sender: "notallowed",
 			},
@@ -172,7 +170,7 @@ func TestAclCheckAll(t *testing.T) {
 		},
 		{
 			name: "err it",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				Owner:  errit,
 				Sender: "error",
 			},
@@ -182,11 +180,7 @@ func TestAclCheckAll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cs := cli.Clients{
-				GithubClient: gvcs,
-			}
-
-			got, err := aclCheckAll(ctx, &cs, tt.runinfo)
+			got, err := gvcs.IsAllowed(ctx, &tt.runevent)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("aclCheckAll() error = %v, wantErr %v", err, tt.wantErr)
 				return

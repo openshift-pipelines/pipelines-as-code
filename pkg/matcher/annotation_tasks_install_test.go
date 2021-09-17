@@ -1,18 +1,16 @@
-package config
+package matcher
 
 import (
-	"encoding/base64"
-	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/webvcs"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
@@ -41,36 +39,14 @@ spec:
       script: |
        echo hello`
 
-	fakeGHclient, mux, _, ghTeardown := ghtesthelper.SetupGH()
-	defer ghTeardown()
-
-	mux.HandleFunc("/repos/contents/be/healthy", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{
-  "name": "healthy",
-  "path": "be/healthy",
-  "sha": "takepicture"}`)
-	})
-	mux.HandleFunc("/repos/git/blobs/takepicture", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, `{
-  "name": "healthy",
-  "path": "be/healthy",
-  "sha": "takepicture",
-  "size": 68,
-  "content": "%s\n",
-  "encoding": "base64"}`,
-			base64.StdEncoding.EncodeToString([]byte(simpletask)))
-	})
-	mux.HandleFunc("/repos/contents/pas/la", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	})
-
 	tests := []struct {
-		name        string
-		runinfo     *webvcs.RunInfo
-		annotations map[string]string
-		wantErr     string
-		gotTaskName string
-		remoteURLS  map[string]map[string]string
+		name            string
+		runevent        info.Event
+		annotations     map[string]string
+		wantErr         string
+		gotTaskName     string
+		remoteURLS      map[string]map[string]string
+		filesInsideRepo map[string]string
 	}{
 		{
 			name: "test-annotations-error-remote-http-not-k8",
@@ -117,7 +93,9 @@ spec:
 				pipelinesascode.GroupName + "/task": "[be/healthy]",
 			},
 			gotTaskName: "task",
-			runinfo:     &webvcs.RunInfo{},
+			filesInsideRepo: map[string]string{
+				"be/healthy": simpletask,
+			},
 		},
 		{
 			name: "test-annotations-remote-http-skipping-notmatching",
@@ -145,8 +123,7 @@ spec:
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[pas/la]",
 			},
-			runinfo: &webvcs.RunInfo{},
-			wantErr: "404",
+			wantErr: "could not find",
 		},
 		{
 			name:        "test-get-from-hub-latest",
@@ -186,18 +163,21 @@ spec:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.remoteURLS)
-			cs := &cli.Clients{
-				HTTPClient: *httpTestClient,
-				GithubClient: webvcs.GithubVCS{
-					Client: fakeGHclient,
+			cs := &params.Run{
+				Clients: clients.Clients{
+					HTTP: *httpTestClient,
 				},
+				Info: info.Info{Event: &tt.runevent},
 			}
 			ctx, _ := rtesting.SetupFakeContext(t)
 			rt := RemoteTasks{
-				Clients: cs,
-				Runinfo: tt.runinfo,
+				Run: cs,
 			}
-			got, err := rt.GetTaskFromAnnotations(ctx, tt.annotations)
+
+			vcsint := webvcs.TestWebVCSImp{
+				FilesInsideRepo: tt.filesInsideRepo,
+			}
+			got, err := rt.GetTaskFromAnnotations(ctx, vcsint, tt.annotations)
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr, "We should have get an error with %v but we didn't", tt.wantErr)
 				return

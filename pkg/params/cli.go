@@ -1,4 +1,4 @@
-package flags
+package params
 
 import (
 	"os"
@@ -10,16 +10,16 @@ import (
 
 var noColorFlag = "no-color"
 
-type CliOpts struct {
+type PacCliOpts struct {
 	NoColoring    bool
 	AllNameSpaces bool
 	Namespace     string
 	AskOpts       survey.AskOpt
 }
 
-func NewCliOptions(cmd *cobra.Command) (*CliOpts, error) {
+func NewCliOptions(cmd *cobra.Command) (*PacCliOpts, error) {
 	var err error
-	c := &CliOpts{
+	c := &PacCliOpts{
 		AskOpts: func(opt *survey.AskOptions) error {
 			opt.Stdio = terminal.Stdio{
 				In:  os.Stdin,
@@ -36,6 +36,6 @@ func NewCliOptions(cmd *cobra.Command) (*CliOpts, error) {
 	return c, err
 }
 
-func (c *CliOpts) Ask(qs []*survey.Question, ans interface{}) error {
+func (c *PacCliOpts) Ask(qs []*survey.Question, ans interface{}) error {
 	return survey.Ask(qs, ans, c.AskOpts)
 }

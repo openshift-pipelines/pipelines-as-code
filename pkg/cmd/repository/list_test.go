@@ -9,8 +9,9 @@ import (
 	"github.com/google/go-github/v35/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
@@ -93,7 +94,7 @@ func TestList(t *testing.T) {
 		namespaces       []*corev1.Namespace
 		repositories     []*v1alpha1.Repository
 		currentNamespace string
-		opts             *flags.CliOpts
+		opts             *params.PacCliOpts
 		selectors        string
 		noheaders        bool
 	}
@@ -105,7 +106,7 @@ func TestList(t *testing.T) {
 		{
 			name: "Test list repositories",
 			args: args{
-				opts:             &flags.CliOpts{},
+				opts:             &params.PacCliOpts{},
 				currentNamespace: namespace1.GetName(),
 				namespaces: []*corev1.Namespace{
 					namespace1,
@@ -116,7 +117,7 @@ func TestList(t *testing.T) {
 		{
 			name: "Test list repositories all namespaces",
 			args: args{
-				opts:             &flags.CliOpts{AllNameSpaces: true},
+				opts:             &params.PacCliOpts{AllNameSpaces: true},
 				currentNamespace: "namespace",
 				namespaces:       []*corev1.Namespace{namespace1, namespace2},
 				repositories:     []*v1alpha1.Repository{repoNamespace1, repoNamespace2},
@@ -125,7 +126,7 @@ func TestList(t *testing.T) {
 		{
 			name: "Test list repositories specific namespaces",
 			args: args{
-				opts:             &flags.CliOpts{},
+				opts:             &params.PacCliOpts{},
 				currentNamespace: namespace2.GetName(),
 				namespaces:       []*corev1.Namespace{namespace1, namespace2},
 				repositories:     []*v1alpha1.Repository{repoNamespace1, repoNamespace2},
@@ -140,13 +141,15 @@ func TestList(t *testing.T) {
 			}
 			ctx, _ := rtesting.SetupFakeContext(t)
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
-			cs := &cli.Clients{
-				PipelineAsCode: stdata.PipelineAsCode,
+			cs := &params.Run{
+				Clients: clients.Clients{
+					PipelineAsCode: stdata.PipelineAsCode,
+				},
+				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.args.currentNamespace}},
 			}
 			io, out := newIOStream()
 			if err := list(ctx, cs, tt.args.opts, io,
-				cw, tt.args.currentNamespace,
-				tt.args.selectors, tt.args.noheaders); (err != nil) != tt.wantErr {
+				cw, tt.args.selectors, tt.args.noheaders); (err != nil) != tt.wantErr {
 				t.Errorf("describe() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				golden.Assert(t, out.String(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))

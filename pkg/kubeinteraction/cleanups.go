@@ -28,7 +28,7 @@ func (prs prByCompletionTime) Less(i, j int) bool {
 func (k Interaction) CleanupPipelines(ctx context.Context, namespace string, repositoryName string, maxKeep int) error {
 	labelSelector := fmt.Sprintf("pipelinesascode.tekton.dev/repository=%s", repositoryName)
 
-	pruns, err := k.Clients.Tekton.TektonV1beta1().PipelineRuns(namespace).List(ctx, metav1.ListOptions{
+	pruns, err := k.Run.Clients.Tekton.TektonV1beta1().PipelineRuns(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 
@@ -36,12 +36,12 @@ func (k Interaction) CleanupPipelines(ctx context.Context, namespace string, rep
 
 	for c, v := range pruns.Items {
 		if v.GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason() == "Running" {
-			k.Clients.Log.Infof("Skipping Cleanining up %s since it is currently Running", v.GetName())
+			k.Run.Clients.Log.Infof("Skipping Cleanining up %s since it is currently Running", v.GetName())
 			continue
 		}
 		if c >= maxKeep {
-			k.Clients.Log.Infof("Cleaning old PipelineRun: %s", v.GetName())
-			err := k.Clients.Tekton.TektonV1beta1().PipelineRuns(namespace).Delete(ctx, v.GetName(), metav1.DeleteOptions{})
+			k.Run.Clients.Log.Infof("Cleaning old PipelineRun: %s", v.GetName())
+			err := k.Run.Clients.Tekton.TektonV1beta1().PipelineRuns(namespace).Delete(ctx, v.GetName(), metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}

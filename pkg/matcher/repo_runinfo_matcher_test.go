@@ -1,13 +1,14 @@
-package config
+package matcher
 
 import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -22,8 +23,8 @@ const (
 
 func Test_getRepoByCR(t *testing.T) {
 	type args struct {
-		data    testclient.Data
-		runinfo *webvcs.RunInfo
+		data     testclient.Data
+		runevent info.Event
 	}
 	tests := []struct {
 		name         string
@@ -39,7 +40,7 @@ func Test_getRepoByCR(t *testing.T) {
 						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
-				runinfo: &webvcs.RunInfo{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
+				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
 			},
 			wantTargetNS: targetNamespace,
 			wantErr:      false,
@@ -52,7 +53,7 @@ func Test_getRepoByCR(t *testing.T) {
 						testnewrepo.NewRepo("test-good", targetURL, mainBranch, "paslebonns", targetNamespace, "pull_request"),
 					},
 				},
-				runinfo: &webvcs.RunInfo{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
+				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
 			},
 			wantTargetNS: "",
 			wantErr:      true,
@@ -65,7 +66,7 @@ func Test_getRepoByCR(t *testing.T) {
 						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
-				runinfo: &webvcs.RunInfo{URL: targetURL, BaseBranch: mainBranch, EventType: "push"},
+				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "push"},
 			},
 			wantTargetNS: "",
 			wantErr:      false,
@@ -78,7 +79,7 @@ func Test_getRepoByCR(t *testing.T) {
 						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
-				runinfo: &webvcs.RunInfo{URL: targetURL, BaseBranch: "anotherBaseBranch", EventType: "pull_request"},
+				runevent: info.Event{URL: targetURL, BaseBranch: "anotherBaseBranch", EventType: "pull_request"},
 			},
 			wantTargetNS: "",
 			wantErr:      false,
@@ -92,7 +93,7 @@ func Test_getRepoByCR(t *testing.T) {
 							targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
-				runinfo: &webvcs.RunInfo{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
+				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
 			},
 			wantTargetNS: "",
 			wantErr:      false,
@@ -106,7 +107,7 @@ func Test_getRepoByCR(t *testing.T) {
 							targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
-				runinfo: &webvcs.RunInfo{
+				runevent: info.Event{
 					URL: targetURL, BaseBranch: "refs/heads/mainBranch",
 					EventType: "pull_request",
 				},
@@ -123,7 +124,7 @@ func Test_getRepoByCR(t *testing.T) {
 							targetNamespace, targetNamespace, "pull_request"),
 					},
 				},
-				runinfo: &webvcs.RunInfo{
+				runevent: info.Event{
 					URL:        targetURL,
 					BaseBranch: "refs/tags/1.0",
 					EventType:  "pull_request",
@@ -139,8 +140,13 @@ func Test_getRepoByCR(t *testing.T) {
 			cs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
-			client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger}
-			got, err := GetRepoByCR(ctx, client, "", tt.args.runinfo)
+			client := &params.Run{
+				Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger},
+				Info: info.Info{
+					Event: &tt.args.runevent,
+				},
+			}
+			got, err := GetRepoByCR(ctx, client, "")
 			if err == nil && tt.wantErr {
 				assert.NilError(t, err, "GetRepoByCR() error = %v, wantErr %v", err, tt.wantErr)
 			}

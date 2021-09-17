@@ -11,16 +11,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testDynamic "github.com/openshift-pipelines/pipelines-as-code/pkg/test/dynamic"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 
 	"github.com/google/go-github/v35/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	githubintf "github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -35,7 +37,7 @@ func replyString(mux *http.ServeMux, url, body string) {
 	})
 }
 
-func testSetupTektonDir(mux *http.ServeMux, runinfo *webvcs.RunInfo, directory string) {
+func testSetupTektonDir(mux *http.ServeMux, runevent info.Event, directory string) {
 	var tektonDirContent string
 	_ = filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
 		basename := filepath.Base(path)
@@ -50,7 +52,7 @@ func testSetupTektonDir(mux *http.ServeMux, runinfo *webvcs.RunInfo, directory s
 
 		contentB, _ := ioutil.ReadFile(path)
 		replyString(mux,
-			fmt.Sprintf("/repos/%s/%s/git/blobs/shaof%s", runinfo.Owner, runinfo.Repository, trimmed),
+			fmt.Sprintf("/repos/%s/%s/git/blobs/shaof%s", runevent.Owner, runevent.Repository, trimmed),
 			fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
 				base64.StdEncoding.EncodeToString(contentB)))
 
@@ -58,28 +60,28 @@ func testSetupTektonDir(mux *http.ServeMux, runinfo *webvcs.RunInfo, directory s
 	})
 
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/contents/.tekton", runinfo.Owner, runinfo.Repository),
+		fmt.Sprintf("/repos/%s/%s/contents/.tekton", runevent.Owner, runevent.Repository),
 		fmt.Sprintf("[%s]", strings.TrimSuffix(tektonDirContent, ",")))
 }
 
-func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runinfo *webvcs.RunInfo, finalStatus, finalStatusText string,
+func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, finalStatus, finalStatusText string,
 	noReplyOrgPublicMembers bool) {
 	// Take a directory and generate replies as Github for it
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/contents/internal/task", runinfo.Owner, runinfo.Repository),
+		fmt.Sprintf("/repos/%s/%s/contents/internal/task", runevent.Owner, runevent.Repository),
 		`{"sha": "internaltasksha"}`)
 
 	if !noReplyOrgPublicMembers {
-		mux.HandleFunc("/orgs/"+runinfo.Owner+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(rw, `[{"login": "%s"}]`, runinfo.Sender)
+		mux.HandleFunc("/orgs/"+runevent.Owner+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(rw, `[{"login": "%s"}]`, runevent.Sender)
 		})
 	}
 
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/check-runs", runinfo.Owner, runinfo.Repository),
+		fmt.Sprintf("/repos/%s/%s/check-runs", runevent.Owner, runevent.Repository),
 		`{"id": 26}`)
 
-	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/26", runinfo.Owner, runinfo.Repository),
+	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/26", runevent.Owner, runevent.Repository),
 		func(w http.ResponseWriter, r *http.Request) {
 			body, _ := ioutil.ReadAll(r.Body)
 			created := github.CreateCheckRunOptions{}
@@ -99,7 +101,7 @@ func TestRun(t *testing.T) {
 	logger := zap.New(observer).Sugar()
 	tests := []struct {
 		name                         string
-		runinfo                      *webvcs.RunInfo
+		runevent                     info.Event
 		tektondir                    string
 		wantErr                      string
 		finalStatus                  string
@@ -110,16 +112,15 @@ func TestRun(t *testing.T) {
 	}{
 		{
 			name: "pull request",
-			runinfo: &webvcs.RunInfo{
-				SHA:                "principale",
-				Owner:              "organizationes",
-				Repository:         "lagaffe",
-				URL:                "https://service/documentation",
-				HeadBranch:         "press",
-				BaseBranch:         "main",
-				Sender:             "fantasio",
-				EventType:          "pull_request",
-				SecretAutoCreation: true,
+			runevent: info.Event{
+				SHA:        "principale",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				HeadBranch: "press",
+				BaseBranch: "main",
+				Sender:     "fantasio",
+				EventType:  "pull_request",
 			},
 			tektondir:    "testdata/pull_request",
 			finalStatus:  "neutral",
@@ -128,7 +129,7 @@ func TestRun(t *testing.T) {
 
 		{
 			name: "No match",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				SHA:        "principale",
 				Owner:      "organizationes",
 				Repository: "lagaffe",
@@ -144,7 +145,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "Push/branch",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				SHA:        "principale",
 				Owner:      "organizationes",
 				Repository: "lagaffe",
@@ -159,7 +160,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "Push/tags",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				SHA:        "principale",
 				Owner:      "organizationes",
 				Repository: "lagaffe",
@@ -176,7 +177,7 @@ func TestRun(t *testing.T) {
 		// Skipped
 		{
 			name: "Skipped/Test no tekton dir",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				SHA:        "principale",
 				Owner:      "organizationes",
 				Repository: "lagaffe",
@@ -193,7 +194,7 @@ func TestRun(t *testing.T) {
 		// Skipped
 		{
 			name: "Skipped/Test on check_run",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				SHA:           "principale",
 				Owner:         "organizationes",
 				Repository:    "lagaffe",
@@ -210,7 +211,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "Skipped/Test no repositories match on different event_type",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				SHA:        "principale",
 				Owner:      "organizationes",
 				Repository: "lagaffe",
@@ -231,7 +232,7 @@ func TestRun(t *testing.T) {
 
 		{
 			name: "Skipped/Test no repositories match",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				SHA:        "principale",
 				Owner:      "organizationes",
 				Repository: "lagaffe",
@@ -252,7 +253,7 @@ func TestRun(t *testing.T) {
 
 		{
 			name: "Skipped/User is not allowed",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				SHA:        "principale",
 				Owner:      "organizationes",
 				Repository: "lagaffe",
@@ -269,7 +270,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "Keep max number of pipelineruns",
-			runinfo: &webvcs.RunInfo{
+			runevent: info.Event{
 				SHA:        "principale",
 				Owner:      "organizationes",
 				Repository: "lagaffe",
@@ -290,7 +291,7 @@ func TestRun(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			if tt.repositories == nil {
 				tt.repositories = []*v1alpha1.Repository{
-					repository.NewRepo("test-run", tt.runinfo.URL, tt.runinfo.BaseBranch, "namespace", "namespace", tt.runinfo.EventType),
+					repository.NewRepo("test-run", tt.runevent.URL, tt.runevent.BaseBranch, "namespace", "namespace", tt.runevent.EventType),
 				}
 			}
 			tdata := testclient.Data{
@@ -306,30 +307,38 @@ func TestRun(t *testing.T) {
 
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-
-			testSetupCommonGhReplies(t, mux, tt.runinfo, tt.finalStatus, tt.finalLogText, tt.skipReplyingOrgPublicMembers)
+			testSetupCommonGhReplies(t, mux, tt.runevent, tt.finalStatus, tt.finalLogText, tt.skipReplyingOrgPublicMembers)
 			if tt.tektondir != "" {
-				testSetupTektonDir(mux, tt.runinfo, tt.tektondir)
+				testSetupTektonDir(mux, tt.runevent, tt.tektondir)
 			}
 
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 			tdc := testDynamic.Options{}
 			dc, _ := tdc.Client()
-			cs := &cli.Clients{
-				GithubClient: webvcs.GithubVCS{
-					Client: fakeclient,
+			cs := &params.Run{
+				Clients: clients.Clients{
+					PipelineAsCode: stdata.PipelineAsCode,
+					Log:            logger,
+					Kube:           stdata.Kube,
+					Tekton:         stdata.Pipeline,
+					Dynamic:        dc,
 				},
-				PipelineAsCode: stdata.PipelineAsCode,
-				Log:            logger,
-				Kube:           stdata.Kube,
-				Tekton:         stdata.Pipeline,
-				Dynamic:        dc,
+				Info: info.Info{
+					Event: &tt.runevent,
+					Pac: info.PacOpts{
+						SecretAutoCreation: true,
+					},
+				},
 			}
 			k8int := &kitesthelper.KinterfaceTest{
 				ConsoleURL:               "https://console.url",
 				ExpectedNumberofCleanups: tt.expectedNumberofCleanups,
 			}
-			err := Run(ctx, cs, k8int, tt.runinfo)
+
+			vcsintf := githubintf.VCS{
+				Client: fakeclient,
+			}
+			err := Run(ctx, cs, vcsintf, k8int)
 
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)

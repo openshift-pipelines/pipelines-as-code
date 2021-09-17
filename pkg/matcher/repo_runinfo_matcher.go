@@ -1,4 +1,4 @@
-package config
+package matcher
 
 import (
 	"context"
@@ -7,8 +7,7 @@ import (
 
 	"github.com/gobwas/glob"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -24,8 +23,8 @@ func branchMatch(prunBranch, baseBranch string) bool {
 	return g.Match(baseBranch)
 }
 
-func GetRepoByCR(ctx context.Context, cs *cli.Clients, ns string, runinfo *webvcs.RunInfo) (*apipac.Repository, error) {
-	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(ns).List(
+func GetRepoByCR(ctx context.Context, cs *params.Run, ns string) (*apipac.Repository, error) {
+	repositories, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(ns).List(
 		ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -36,10 +35,10 @@ func GetRepoByCR(ctx context.Context, cs *cli.Clients, ns string, runinfo *webvc
 			fmt.Sprintf("RepositoryValue: URL=%s, eventType=%s BaseBranch:=%s", value.Spec.URL,
 				value.Spec.EventType, value.Spec.Branch))
 
-		if value.Spec.URL == runinfo.URL &&
-			value.Spec.EventType == runinfo.EventType {
-			if value.Spec.Branch != runinfo.BaseBranch {
-				if !branchMatch(value.Spec.Branch, runinfo.BaseBranch) {
+		if value.Spec.URL == cs.Info.Event.URL &&
+			value.Spec.EventType == cs.Info.Event.EventType {
+			if value.Spec.Branch != cs.Info.Event.BaseBranch {
+				if !branchMatch(value.Spec.Branch, cs.Info.Event.BaseBranch) {
 					continue
 				}
 			}
@@ -57,7 +56,7 @@ func GetRepoByCR(ctx context.Context, cs *cli.Clients, ns string, runinfo *webvc
 		}
 	}
 	for _, value := range matches {
-		cs.Log.Debug(value)
+		cs.Clients.Log.Debug(value)
 	}
 
 	return nil, nil

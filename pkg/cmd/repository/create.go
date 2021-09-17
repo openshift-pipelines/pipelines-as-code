@@ -10,10 +10,9 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/ui"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,12 +28,12 @@ type CreateOptions struct {
 	CurrentNS string
 
 	IOStreams *ui.IOStreams
-	Clients   *cli.Clients
-	CLIOpts   *flags.CliOpts
+	Run       *params.Run
+	CLIOpts   *params.PacCliOpts
 	AssumeYes bool
 }
 
-func CreateCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
+func CreateCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 	createOpts := CreateOptions{}
 	cmd := &cobra.Command{
 		Use:     "create",
@@ -43,16 +42,17 @@ func CreateCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			createOpts.IOStreams = ioStreams
-			createOpts.CLIOpts, err = flags.NewCliOptions(cmd)
+			createOpts.CLIOpts, err = params.NewCliOptions(cmd)
 			if err != nil {
 				return err
 			}
 			createOpts.IOStreams.SetColorEnabled(!createOpts.CLIOpts.NoColoring)
-			createOpts.Clients, err = p.Clients()
+			err = run.Clients.NewClients(&run.Info)
 			if err != nil {
 				return err
 			}
-			createOpts.CurrentNS = p.GetNamespace()
+			createOpts.Run = run
+			createOpts.CurrentNS = run.Info.Kube.Namespace
 			cwd, err := os.Getwd()
 			if err != nil {
 				return err
@@ -301,7 +301,7 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 			return err
 		}
 	}
-	_, err = opts.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Create(ctx,
+	_, err = opts.Run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Create(ctx,
 		&v1alpha1.Repository{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: opts.RepositoryName,
@@ -365,7 +365,7 @@ func askNameForResource(opts CreateOptions, question string) (string, error) {
 }
 
 func askCreateNamespace(ctx context.Context, opts CreateOptions, cs *ui.ColorScheme) error {
-	_, err := opts.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.Namespace, metav1.GetOptions{})
+	_, err := opts.Run.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.Namespace, metav1.GetOptions{})
 	if err != nil {
 		fmt.Fprintf(opts.IOStreams.Out, "%s Namespace %s is not created yet\n",
 			cs.WarningIcon(),
@@ -380,7 +380,7 @@ func askCreateNamespace(ctx context.Context, opts CreateOptions, cs *ui.ColorSch
 		if !createNamespace {
 			return fmt.Errorf("you need to create the target namespace")
 		}
-		_, err = opts.Clients.Kube.CoreV1().Namespaces().Create(ctx,
+		_, err = opts.Run.Clients.Kube.CoreV1().Namespaces().Create(ctx,
 			&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: opts.Namespace}},
 			metav1.CreateOptions{})
 		if err != nil {

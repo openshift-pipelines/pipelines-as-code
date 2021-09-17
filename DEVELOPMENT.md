@@ -3,11 +3,9 @@ SETUP
 
 ## Dev setup
 
-* Configure and use [ko](https://github.com/google/ko) to easily push your change to a
-  registry.
-* You should be able to use it against a kind/minikube cluster but bear in mind
-  we are trying to be compatible from at least the pipeline/triggers version
-  from openshift-pipelines.
+* Configure and use [ko](https://github.com/google/ko) to easily push your change to a registry.
+* You should be able to use it against a kind/minikube cluster but bear in mind we are trying to be compatible from at
+  least the pipeline/triggers version from openshift-pipelines.
 * Install your cluster with ko or from release yaml :
 
     ```shell
@@ -18,22 +16,20 @@ SETUP
 
 * Configure a few Repository CR and a namespace target.
 
-* If you go to your GitHub app setting in `Advanced` you can see the json and
-  payload GitHub is sending to the eventlistenner.
+* If you go to your GitHub app setting in `Advanced` you can see the json and payload GitHub is sending to the
+  eventlistenner.
 
-* If you want to replay an event without having to `git commmit --amend
-  --no-edit && git push --force`, you can capture that json blob into a file
+* If you want to replay an event without having to `git commmit --amend --no-edit && git push --force`, you can capture
+  that json blob into a file
   (ie: /tmp/payload.json) and do :
 
   ```shell
   ./hack/dev/replay-gh-events.py /tmp/payload.json
   ```
 
-  That script would detect github webhook secret and payload content and replay
-  it to the event listenner.
+  That script would detect github webhook secret and payload content and replay it to the event listenner.
 
-  If you don't have a OpenShift route setup to the eventlistenner, you can
-  override the route with :
+  If you don't have a OpenShift route setup to the eventlistenner, you can override the route with :
 
   ```shell
   export EL_ROUTE=http://localhost:8080
@@ -47,9 +43,8 @@ SETUP
 
   will give you an easy way to debug payloads on kind.
 
-* If you need to debug your binary from your IDE, you will need an user token
-  generated from the app, at first you need to grab the installation_id of your
-  repository id, you can get that from the payload :
+* If you need to debug your binary from your IDE, you will need an user token generated from the app, at first you need
+  to grab the installation_id of your repository id, you can get that from the payload :
 
   ```shell
   jq .installation_id /tmp/payload.json
@@ -65,8 +60,7 @@ SETUP
 
   This only can be used for that installation_id if you target another repo it will fail.
 
-  You want to use a cache-file or it will generate a token every time and you
-  may get ratelimited.
+  You want to use a cache-file or it will generate a token every time and you may get ratelimited.
 
   You can then run the binary with :
 
@@ -74,15 +68,13 @@ SETUP
   go run cmd/pipelines-as-code/main.go --trigger-target=issue-recheck --webhook-type=check_run --payload-file=/tmp/payload.json --token=$(cat /tmp/token.for.my.repo)
   ```
 
-  To guess the trigger target and webhook-type you can simply get the logs of
-  the pipelines-as-code pr pod which gets printed there (along with a token you
-  can use quickly).
+  To guess the trigger target and webhook-type you can simply get the logs of the pipelines-as-code pr pod which gets
+  printed there (along with a token you can use quickly).
 
   You can plug that command into your IDE of choice for debugging.
 
-  On vscode argument cannot be a shell script (i.e: that cat command would not
-  work), you can use [this
-  plugin](https://marketplace.visualstudio.com/items?itemName=augustocdias.tasks-shell-input)
+  On vscode argument cannot be a shell script (i.e: that cat command would not work), you can
+  use [this plugin](https://marketplace.visualstudio.com/items?itemName=augustocdias.tasks-shell-input)
   for that.
 
 * There is a bunch of payload example in test/fixtures/ which you can use for
@@ -93,8 +85,7 @@ SETUP
 
   I grab the SHA locally and generate a payload out of it :
 
-  My shell script has a few variables which I configure and it autodetect from
-  the local repository the REF and SHA :
+  My shell script has a few variables which I configure and it autodetect from the local repository the REF and SHA :
 
   ```shell
   OWNER_REPO=${1:-"chmouel/scratchmyback"}
@@ -149,7 +140,7 @@ SETUP
 
 ## Code
 
-* 100% coverage is not a goal, coverage of corner case errors handling
-  is really not necessary.
-* Make sure you make it easy to reproduce the bug for reviewers, i.e: copy the problematic payload in the `test/fixtures`
+* 100% coverage is not a goal, coverage of corner case errors handling is really not necessary.
+* Make sure you make it easy to reproduce the bug for reviewers, i.e: copy the problematic payload in
+  the `test/fixtures`
   directory.

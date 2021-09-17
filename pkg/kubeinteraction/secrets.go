@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -20,37 +20,40 @@ const (
 )
 
 func (k Interaction) createSecret(ctx context.Context, secretData map[string]string, targetNamespace, secretName string) error {
-	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
-		Name:   secretName,
-		Labels: map[string]string{"app.kubernetes.io/managed-by": "pipelines-as-code"},
-	}}
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   secretName,
+			Labels: map[string]string{"app.kubernetes.io/managed-by": "pipelines-as-code"},
+		},
+	}
 	secret.StringData = secretData
-	_, err := k.Clients.Kube.CoreV1().Secrets(targetNamespace).Create(ctx, secret, metav1.CreateOptions{})
+	_, err := k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Create(ctx, secret, metav1.CreateOptions{})
 	return err
 }
 
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
-func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runinfo webvcs.RunInfo, targetNamespace string) error {
-	repoURL, err := url.Parse(runinfo.URL)
+func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, pacopts info.PacOpts, targetNamespace string) error {
+	repoURL, err := url.Parse(runevent.URL)
 	if err != nil {
 		return err
 	}
-	urlWithToken := fmt.Sprintf("%s://git:%s@%s%s", repoURL.Scheme, k.Clients.GithubClient.Token, repoURL.Host, repoURL.Path)
+
+	urlWithToken := fmt.Sprintf("%s://git:%s@%s%s", repoURL.Scheme, pacopts.VCSToken, repoURL.Host, repoURL.Path)
 	secretData := map[string]string{
-		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, runinfo.URL),
+		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, runevent.URL),
 		".git-credentials": urlWithToken,
 	}
 
 	// Try to create secrete if that fails then delete it first and then create
 	// This allows up not to give List and Get right clusterwide
-	secretName := fmt.Sprintf(basicAuthSecretName, runinfo.Owner, runinfo.Repository)
+	secretName := fmt.Sprintf(basicAuthSecretName, runevent.Owner, runevent.Repository)
 	err = k.createSecret(ctx, secretData, targetNamespace, secretName)
 	if err != nil {
-		err = k.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+		err = k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 		if err == nil {
 			err = k.createSecret(ctx, secretData, targetNamespace, secretName)
 		}
 	}
-	k.Clients.Log.Infof("Secret %s has been generated in namespace %s", secretName, targetNamespace)
+	k.Run.Clients.Log.Infof("Secret %s has been generated in namespace %s", secretName, targetNamespace)
 	return err
 }

@@ -1,36 +1,19 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
-	"path/filepath"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/pipelineascode"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac"
-	"github.com/spf13/cobra"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
 
-// RouteBinary according to $0
-func RouteBinary(binary string) *cobra.Command {
-	tp := &cli.PacParams{}
-	binary = filepath.Base(binary)
-	if binary == "tkn-pac" {
-		return tknpac.Root(tp)
-	}
-	return pipelineascode.Command(tp)
-}
-
 func main() {
-	executable, err := os.Executable()
-	if err != nil {
-		fmt.Fprint(os.Stderr, err.Error())
-		os.Exit(1)
-	}
-
-	cmd := RouteBinary(executable)
-
+	clients := &params.Run{Info: info.Info{Event: &info.Event{}}}
+	cmd := pipelineascode.Command(clients)
 	if err := cmd.Execute(); err != nil {
+		log.Fatal(err)
 		os.Exit(1)
 	}
 }

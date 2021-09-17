@@ -13,7 +13,7 @@ import (
 
 	"github.com/google/go-github/v35/github"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
@@ -27,11 +27,11 @@ import (
 func TestPullRerequest(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	cs, opts, err := setup()
+	runcnx, opts, ghcnx, err := setup(ctx)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
-		".tekton/run.yaml": fmt.Sprintf(`---
+		".tekton/info.yaml": fmt.Sprintf(`---
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
@@ -52,7 +52,7 @@ spec:
 `, targetNS, mainBranch, pullRequestEvent),
 	}
 
-	repoinfo, resp, err := cs.GithubClient.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
+	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Owner, opts.Repo)
@@ -70,31 +70,31 @@ spec:
 		},
 	}
 
-	err = trepo.CreateNSRepo(ctx, targetNS, cs, repository)
+	err = trepo.CreateNSRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, err := tgithub.PushFilesToRef(ctx, cs.GithubClient.Client,
+	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client,
 		"TestPullRequest - "+targetRefName, repoinfo.GetDefaultBranch(),
 		targetRefName,
 		opts.Owner,
 		opts.Repo,
 		entries)
 	assert.NilError(t, err)
-	cs.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 	title := "TestPullRerequest on " + targetRefName
-	number, err := tgithub.PRCreate(ctx, cs, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
-	defer tearDown(ctx, t, cs, number, targetRefName, targetNS, opts)
+	defer tearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
-	cs.Log.Infof("Waiting for Repository to be updated")
-	err = twait.UntilRepositoryUpdated(ctx, cs.PipelineAsCode, targetNS, targetNS, 0, defaultTimeout)
+	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
+	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode, targetNS, targetNS, 0, defaultTimeout)
 	assert.NilError(t, err)
 
-	runinfo := webvcs.RunInfo{
+	runinfo := info.Event{
 		BaseBranch:    repoinfo.GetDefaultBranch(),
 		DefaultBranch: repoinfo.GetDefaultBranch(),
 		HeadBranch:    targetRefName,
@@ -135,7 +135,7 @@ spec:
 	}
 
 	err = payload.Send(ctx,
-		cs,
+		runcnx,
 		os.Getenv("TEST_EL_URL"),
 		os.Getenv("TEST_EL_WEBHOOK_SECRET"),
 		os.Getenv("TEST_GITHUB_API_URL"),
@@ -145,12 +145,12 @@ spec:
 	)
 	assert.NilError(t, err)
 
-	cs.Log.Infof("Wait for the second repository update to be updated")
-	err = twait.UntilRepositoryUpdated(ctx, cs.PipelineAsCode, targetNS, targetNS, 1, defaultTimeout)
+	runcnx.Clients.Log.Infof("Wait for the second repository update to be updated")
+	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode, targetNS, targetNS, 1, defaultTimeout)
 	assert.NilError(t, err)
 
-	cs.Log.Infof("Check if we have the repository set as succeeded")
-	repo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
+	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
+	repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
 }

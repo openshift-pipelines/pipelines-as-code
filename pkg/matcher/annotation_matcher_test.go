@@ -1,4 +1,4 @@
-package config
+package matcher
 
 import (
 	"fmt"
@@ -8,10 +8,11 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -35,9 +36,9 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 	}
 
 	type args struct {
-		pruns   []*tektonv1beta1.PipelineRun
-		runinfo *webvcs.RunInfo
-		data    testclient.Data
+		pruns    []*tektonv1beta1.PipelineRun
+		runevent info.Event
+		data     testclient.Data
 	}
 	tests := []struct {
 		name, wantPRName, wantRepoName, wantLog string
@@ -48,8 +49,8 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:       "match a repository with target NS",
 			wantPRName: pipelineTargetNSName,
 			args: args{
-				pruns:   []*tektonv1beta1.PipelineRun{pipelineTargetNS},
-				runinfo: &webvcs.RunInfo{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineTargetNS},
+				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
 						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
@@ -62,8 +63,8 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			wantPRName:   pipelineTargetNSName,
 			wantRepoName: "test-good",
 			args: args{
-				pruns:   []*tektonv1beta1.PipelineRun{pipelineTargetNS},
-				runinfo: &webvcs.RunInfo{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineTargetNS},
+				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
 						testnewrepo.NewRepo("test-other", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
@@ -77,8 +78,8 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			wantErr: true,
 			wantLog: "could not find Repository CRD",
 			args: args{
-				pruns:   []*tektonv1beta1.PipelineRun{pipelineTargetNS},
-				runinfo: &webvcs.RunInfo{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineTargetNS},
+				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
 						testnewrepo.NewRepo("test-good", targetURL, mainBranch, "otherNS", "otherNS", "pull_request"),
@@ -94,10 +95,15 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			cs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
 			observer, log := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
-			client := &cli.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger}
+			client := &params.Run{
+				Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger},
+				Info: info.Info{
+					Event: &tt.args.runevent,
+				},
+			}
 			got, repo, _, err := MatchPipelinerunByAnnotation(ctx,
 				tt.args.pruns,
-				client, tt.args.runinfo)
+				client)
 
 			if tt.wantErr && err == nil {
 				t.Error("We should have get an error")
@@ -145,13 +151,10 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
-	cs := &cli.Clients{
-		Log: logger,
-	}
 
 	type args struct {
-		pruns   []*tektonv1beta1.PipelineRun
-		runinfo *webvcs.RunInfo
+		pruns    []*tektonv1beta1.PipelineRun
+		runevent info.Event
 	}
 	tests := []struct {
 		name       string
@@ -163,8 +166,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "good-match-with-only-one",
 			args: args{
-				pruns:   []*tektonv1beta1.PipelineRun{pipelineGood},
-				runinfo: &webvcs.RunInfo{EventType: "pull_request", BaseBranch: "main"},
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineGood},
+				runevent: info.Event{EventType: "pull_request", BaseBranch: "main"},
 			},
 			wantErr:    false,
 			wantPrName: "pipeline-good",
@@ -172,8 +175,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "first-one-match-with-two-good-ones",
 			args: args{
-				pruns:   []*tektonv1beta1.PipelineRun{pipelineGood, pipelineOther},
-				runinfo: &webvcs.RunInfo{EventType: "pull_request", BaseBranch: "main"},
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineGood, pipelineOther},
+				runevent: info.Event{EventType: "pull_request", BaseBranch: "main"},
 			},
 			wantErr:    false,
 			wantPrName: "pipeline-good",
@@ -181,16 +184,16 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "no-match-on-event",
 			args: args{
-				pruns:   []*tektonv1beta1.PipelineRun{pipelineGood, pipelineOther},
-				runinfo: &webvcs.RunInfo{EventType: "push", BaseBranch: "main"},
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineGood, pipelineOther},
+				runevent: info.Event{EventType: "push", BaseBranch: "main"},
 			},
 			wantErr: true,
 		},
 		{
 			name: "no-match-on-target-branch",
 			args: args{
-				pruns:   []*tektonv1beta1.PipelineRun{pipelineGood, pipelineOther},
-				runinfo: &webvcs.RunInfo{EventType: "pull_request", BaseBranch: "other"},
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineGood, pipelineOther},
+				runevent: info.Event{EventType: "pull_request", BaseBranch: "other"},
 			},
 			wantErr: true,
 		},
@@ -204,7 +207,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 						},
 					},
 				},
-				runinfo: &webvcs.RunInfo{EventType: "push", BaseBranch: "main"},
+				runevent: info.Event{EventType: "push", BaseBranch: "main"},
 			},
 			wantErr: true,
 			wantLog: "cannot match between event and pipelineRuns",
@@ -212,7 +215,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "bad-event-annotation",
 			args: args{
-				runinfo: &webvcs.RunInfo{EventType: "pull_request", BaseBranch: "main"},
+				runevent: info.Event{EventType: "pull_request", BaseBranch: "main"},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -230,7 +233,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "bad-target-branch-annotation",
 			args: args{
-				runinfo: &webvcs.RunInfo{EventType: "pull_request", BaseBranch: "main"},
+				runevent: info.Event{EventType: "pull_request", BaseBranch: "main"},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -248,7 +251,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "empty-annotation",
 			args: args{
-				runinfo: &webvcs.RunInfo{EventType: "pull_request", BaseBranch: "main"},
+				runevent: info.Event{EventType: "pull_request", BaseBranch: "main"},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -266,7 +269,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "match-branch-matching",
 			args: args{
-				runinfo: &webvcs.RunInfo{EventType: "push", BaseBranch: "refs/heads/main"},
+				runevent: info.Event{EventType: "push", BaseBranch: "refs/heads/main"},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -284,7 +287,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "base-does-not-compare",
 			args: args{
-				runinfo: &webvcs.RunInfo{EventType: "push", BaseBranch: "refs/heads/main/foobar"},
+				runevent: info.Event{EventType: "push", BaseBranch: "refs/heads/main/foobar"},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -302,7 +305,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "branch-glob-matching",
 			args: args{
-				runinfo: &webvcs.RunInfo{EventType: "push", BaseBranch: "refs/heads/main"},
+				runevent: info.Event{EventType: "push", BaseBranch: "refs/heads/main"},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -322,7 +325,15 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			got, _, _, err := MatchPipelinerunByAnnotation(ctx, tt.args.pruns, cs, tt.args.runinfo)
+			cs := &params.Run{
+				Clients: clients.Clients{
+					Log: logger,
+				},
+				Info: info.Info{
+					Event: &tt.args.runevent,
+				},
+			}
+			got, _, _, err := MatchPipelinerunByAnnotation(ctx, tt.args.pruns, cs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return

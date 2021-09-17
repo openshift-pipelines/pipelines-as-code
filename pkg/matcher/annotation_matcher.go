@@ -1,4 +1,4 @@
-package config
+package matcher
 
 import (
 	"context"
@@ -9,8 +9,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
@@ -43,14 +42,13 @@ func getAnnotationValues(annotation string) ([]string, error) {
 	return splitted, nil
 }
 
-func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.PipelineRun, cs *cli.Clients,
-	runinfo *webvcs.RunInfo) (*v1beta1.PipelineRun, *apipac.Repository, map[string]string, error) {
+func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.PipelineRun, cs *params.Run) (*v1beta1.PipelineRun, *apipac.Repository, map[string]string, error) {
 	configurations := map[string]map[string]string{}
 	repo := &apipac.Repository{}
 	for _, prun := range pruns {
 		configurations[prun.GetGenerateName()] = map[string]string{}
 		if prun.GetObjectMeta().GetAnnotations() == nil {
-			cs.Log.Warnf("PipelineRun %s does not have any annotations", prun.GetName())
+			cs.Clients.Log.Warnf("PipelineRun %s does not have any annotations", prun.GetName())
 			continue
 		}
 
@@ -62,16 +60,16 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 		if targetNS, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onTargetNamespace]; ok {
 			configurations[prun.GetGenerateName()]["target-namespace"] = targetNS
-			repo, _ = GetRepoByCR(ctx, cs, targetNS, runinfo)
+			repo, _ = GetRepoByCR(ctx, cs, targetNS)
 			if repo == nil {
-				cs.Log.Warnf("could not find Repository CRD in %s while pipelineRun %s targets it", targetNS, prun.GetGenerateName())
+				cs.Clients.Log.Warnf("could not find Repository CRD in %s while pipelineRun %s targets it", targetNS, prun.GetGenerateName())
 				continue
 			}
 		}
 
 		if targetEvent, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onEventAnnotation]; ok {
-			matched, err := matchOnAnnotation(targetEvent, runinfo.EventType, false)
+			matched, err := matchOnAnnotation(targetEvent, cs.Info.Event.EventType, false)
 			configurations[prun.GetGenerateName()]["target-event"] = targetEvent
 			if err != nil {
 				return nil, nil, map[string]string{}, err
@@ -83,7 +81,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 
 		if targetBranch, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onTargetBranchAnnotation]; ok {
-			matched, err := matchOnAnnotation(targetBranch, runinfo.BaseBranch, true)
+			matched, err := matchOnAnnotation(targetBranch, cs.Info.Event.BaseBranch, true)
 			configurations[prun.GetGenerateName()]["target-branch"] = targetBranch
 			if err != nil {
 				return nil, nil, map[string]string{}, err
@@ -96,14 +94,14 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 		return prun, repo, configurations[prun.GetGenerateName()], nil
 	}
 
-	cs.Log.Infof("cannot match between event and pipelineRuns: URL=%s baseBranch=%s, "+
-		"eventType=%s", runinfo.URL,
-		runinfo.BaseBranch,
-		runinfo.EventType)
+	cs.Clients.Log.Infof("cannot match between event and pipelineRuns: URL=%s baseBranch=%s, "+
+		"eventType=%s", cs.Info.Event.URL,
+		cs.Info.Event.BaseBranch,
+		cs.Info.Event.EventType)
 
-	cs.Log.Info("available configuration in pipelineRuns annotations")
+	cs.Clients.Log.Info("available configuration in pipelineRuns annotations")
 	for prunname, maps := range configurations {
-		cs.Log.Infof("pipelineRun: %s, baseBranch=%s, targetEvent=%s, targetNs=%s",
+		cs.Clients.Log.Infof("pipelineRun: %s, baseBranch=%s, targetEvent=%s, targetNs=%s",
 			prunname, maps["target-branch"], maps["target-event"], maps["target-namespace"])
 	}
 

@@ -167,16 +167,22 @@ spec:
                     imagePullPolicy: Always
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
                     env:
-                    - name: PAC_APPLICATION_NAME
-                      valueFrom:
-                        configMapKeyRef:
-                          name: pipelines-as-code
-                          key: application-name
-                    - name: PAC_SECRET_AUTO_CREATE
-                      valueFrom:
-                        configMapKeyRef:
-                          name: pipelines-as-code
-                          key: secret-auto-create
+                      - name: PAC_APPLICATION_NAME
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: application-name
+                      - name: PAC_SECRET_AUTO_CREATE
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: secret-auto-create
+                      - name: PAC_WEBVCS_URL
+                        value: $(params.ghe_host)
+                      - name: PAC_WEBVCS_TOKEN
+                        value: $(params.token)
+                      - name: PAC_WEBVCS_TYPE
+                        value: "github"
                     script: |
                       cat << EOF > /tmp/payload.json
                       {
@@ -197,9 +203,10 @@ spec:
                         }
                       }
                       EOF
-                      pipelines-as-code --trigger-target=$(params.trigger_target) \
-                        --api-url="$(params.ghe_host)" \
-                        --payload-file=/tmp/payload.json --token="$(params.token)" --webhook-type="$(params.event_type)"
+                      env|grep '^PAC'|sed 's/TOKEN=.*/TOKEN=HIDDENTOKEN/'
+                      cat /tmp/payload.json
+                      pipelines-as-code --trigger-target=$(params.trigger_target) --webhook-type="$(params.event_type)" \
+                      --payload-file=/tmp/payload.json
               params:
                 - name: ghe_host
                   value: $(params.ghe_host)
