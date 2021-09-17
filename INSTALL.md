@@ -36,7 +36,7 @@ You will need to grab the url for the next section when creating the GitHub App.
 echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
 ```
 
-## Create a Pipelines-as-Code GitHub App
+### Create a Pipelines-as-Code GitHub App
 
 You should now create a Pipelines-as-Code GitHub App which acts as the integration point with OpenShift Pipelines and brings the Git workflow into Tekton pipelines. You need the webhook of the GitHub App pointing to your Pipelines-as-Code EventListener route endpoint which would then trigger pipelines on GitHub events.
 
@@ -74,7 +74,7 @@ You should now create a Pipelines-as-Code GitHub App which acts as the integrati
 
 * In **Private keys** section, click on **Generate Private key* to generate a private key for the GitHub app. It will download automatically. Store the private key in a safe place as you need it in the next section and in future when reconfiguring this app to use a different cluster.
 
-## Configure Pipelines-as-Code on your cluster to access the GitHub App
+### Configure Pipelines-as-Code on your cluster to access the GitHub App
 
 In order for Pipelines-as-Code to be able to authenticate to the GitHub App and have the GitHub App securely trigger the Pipelines-as-Code webhook, you need to create a Kubernetes secret containing the private key of the GitHub App and the webhook secret of the Pipelines-as-Code as it was provided when you created the GitHub App in the previous section. This secret is [used to generate](https://docs.github.com/en/developers/apps/building-github-apps/identifying-and-authorizing-users-for-github-apps) a token on behalf of the user running the event and make sure to validate the webhook via the webhook secret.
 
@@ -90,14 +90,14 @@ kubectl -n pipelines-as-code create secret generic github-app-secret \
         --from-literal webhook.secret="WEBHOOK_SECRET"
 ```
 
-## GitHub Enterprise
+### GitHub Enterprise
 
 Pipelines as Code supports Github Enterprise.
 
 You don't need to do anything special to get Pipelines as code working with GHE.
 Pipelines as code will automatically detects the header as set from GHE and use it  the GHE API auth url instead of the public github.
 
-## Kubernetes
+### Kubernetes
 
 Pipelines as Code should work directly on kubernetes/minikube/kind. You just need to install the release.yaml for [pipeline](https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml), [triggers](https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml) and its [interceptors](https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml) on your cluster. The release yaml to install pipelines are for the relesaed version :
 
@@ -113,3 +113,37 @@ kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines
 ```
 
 Kubernetes Dashboard is not yet supported for logs links but help is always welcome ;)
+
+## CLI
+
+`Pipelines as Code` provide a CLI which is design to work as tkn plugin. To install the plugin see the instruction below.
+
+### Binary releases
+
+You can grab the latest binary directly from the
+[releases](https://github.com/openshift-pipelines/pipelines-as-code/releases)
+page.
+
+### Dev release
+
+If you want to install from the git repository you can just do :
+
+```shell
+go install github.com/openshift-pipelines/pipelines-as-code/cmd/tkn-pac
+```
+
+### Brew release
+
+On [LinuxBrew](https://docs.brew.sh/Homebrew-on-Linux) or [OSX brew](https://brew.sh/) you can simply add the Brew tap to have the tkn-pac plugin and its completion installed :
+
+```shell
+brew install openshift-pipelines/pipelines-as-code/tektoncd-pac
+```
+
+You simply need to do a :
+
+```shell
+brew upgrade openshift-pipelines/pipelines-as-code/tektoncd-pac
+```
+
+to grab the latest version
