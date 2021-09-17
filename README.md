@@ -491,29 +491,7 @@ The push pipeline of Pipelines as Code use this task, you can see the example he
 
 ## CLI
 
-`Pipelines as Code` provide a CLI which is design to work as tkn plugin.
-
-### Binary releases
-
-You can grab the latest binary directly from the
-[releases](https://github.com/openshift-pipelines/pipelines-as-code/releases)
-page.
-
-### Dev release
-
-If you want to install from the git repository you can just do :
-
-```shell
-go install github.com/openshift-pipelines/pipelines-as-code/cmd/tkn-pac
-```
-
-### Brew release
-
-On LinuxBrew or OSX brew you can simply add the tap :
-
-```shell
-brew install openshift-pipelines/pipelines-as-code/tektoncd-pac
-```
+`Pipelines as Code` provide a CLI which is design to work as tkn plugin. See the installation instruction in the [INSTALL.md](INSTALL.md#CLI) documentation
 
 ### CLI commands
 
