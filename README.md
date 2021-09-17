@@ -521,15 +521,6 @@ and to dig into a specific repository status:
 tkn pac repo desc repository-name -n namespace
 ```
 
-`tkn-pac` is as well available inside the container image :
-
-or from the container image user docker/podman:
-
-```shell
-docker run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
-     -it quay.io/openshift-pipeline/pipelines-as-code tkn-pac help
-```
-
 ## Blog Posts
 
 - [How to make a release pipeline with Pipelines as Code](https://blog.chmouel.com/2021/07/01/how-to-make-a-release-pipeline-with-pipelines-as-code)

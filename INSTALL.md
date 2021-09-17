@@ -146,4 +146,15 @@ You simply need to do a :
 brew upgrade openshift-pipelines/pipelines-as-code/tektoncd-pac
 ```
 
-to grab the latest version
+to upgrade to the latest released version.
+
+### Container
+
+`tkn-pac` is as well available inside the container image :
+
+or from the container image user docker/podman:
+
+```shell
+docker run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
+     -it quay.io/openshift-pipeline/pipelines-as-code tkn-pac help
+```
