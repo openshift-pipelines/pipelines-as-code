@@ -24,7 +24,7 @@ import (
 func TestPullRequestPrivateRepository(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	run, opts, ghcnx, err := setup(ctx)
+	runcnx, opts, ghcnx, err := setup(ctx)
 	assert.NilError(t, err)
 
 	prun, err := ioutil.ReadFile("testdata/pipelinerun_git_clone_private.yaml")
@@ -52,7 +52,7 @@ func TestPullRequestPrivateRepository(t *testing.T) {
 		},
 	}
 
-	err = trepo.CreateNSRepo(ctx, targetNS, run, repository)
+	err = trepo.CreateNSRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",
@@ -60,20 +60,27 @@ func TestPullRequestPrivateRepository(t *testing.T) {
 
 	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, "TestPullRequestPrivateRepository - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
 	assert.NilError(t, err)
-	run.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 
 	title := "TestPullRequestPrivateRepository - " + targetRefName
-	number, err := tgithub.PRCreate(ctx, run, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
-	defer tearDown(ctx, t, run, ghcnx, number, targetRefName, targetNS, opts)
+	defer tearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
-	run.Clients.Log.Infof("Waiting for Repository to be updated")
-	err = twait.UntilRepositoryUpdated(ctx, run.Clients.PipelineAsCode, targetNS, targetNS, 0, defaultTimeout)
+	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
+	waitOpts := twait.Opts{
+		RepoName:        targetNS,
+		Namespace:       targetNS,
+		MinNumberStatus: 0,
+		PollTimeout:     defaultTimeout,
+		TargetSHA:       sha,
+	}
+	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode, runcnx.Clients.Tekton.TektonV1beta1(), waitOpts)
 	assert.NilError(t, err)
 
-	run.Clients.Log.Infof("Check if we have the repository set as succeeded")
-	repo, err := run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
+	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
+	repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
 	laststatus := repo.Status[len(repo.Status)-1]
 	assert.Equal(t, corev1.ConditionTrue, laststatus.Conditions[0].Status)
@@ -82,7 +89,7 @@ func TestPullRequestPrivateRepository(t *testing.T) {
 	assert.Equal(t, title, *laststatus.Title)
 	assert.Assert(t, *laststatus.LogURL != "")
 
-	pr, err := run.Clients.Tekton.TektonV1alpha1().PipelineRuns(targetNS).Get(ctx, laststatus.PipelineRunName, metav1.GetOptions{})
+	pr, err := runcnx.Clients.Tekton.TektonV1beta1().PipelineRuns(targetNS).Get(ctx, laststatus.PipelineRunName, metav1.GetOptions{})
 	assert.NilError(t, err)
 
 	assert.Equal(t, "pull_request", pr.Labels["pipelinesascode.tekton.dev/event-type"])

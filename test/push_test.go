@@ -25,7 +25,7 @@ func TestPush(t *testing.T) {
 	targetEvent := "push"
 
 	ctx := context.Background()
-	run, opts, gvcs, err := setup(ctx)
+	runcnx, opts, gvcs, err := setup(ctx)
 	assert.NilError(t, err)
 
 	repoinfo, resp, err := gvcs.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
@@ -46,7 +46,7 @@ func TestPush(t *testing.T) {
 		},
 	}
 
-	err = trepo.CreateNSRepo(ctx, targetNS, run, repository)
+	err = trepo.CreateNSRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
@@ -73,16 +73,23 @@ spec:
 
 	targetRefName := fmt.Sprintf("refs/heads/%s", targetBranch)
 	sha, err := tgithub.PushFilesToRef(ctx, gvcs.Client, "TestPush - "+targetBranch, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
-	run.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 	assert.NilError(t, err)
-	defer tearDown(ctx, t, run, gvcs, -1, targetRefName, targetNS, opts)
+	defer tearDown(ctx, t, runcnx, gvcs, -1, targetRefName, targetNS, opts)
 
-	run.Clients.Log.Infof("Waiting for Repository to be updated")
-	err = twait.UntilRepositoryUpdated(ctx, run.Clients.PipelineAsCode, targetNS, targetNS, 0, defaultTimeout)
+	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
+	waitOpts := twait.Opts{
+		RepoName:        targetNS,
+		Namespace:       targetNS,
+		MinNumberStatus: 0,
+		PollTimeout:     defaultTimeout,
+		TargetSHA:       sha,
+	}
+	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode, runcnx.Clients.Tekton.TektonV1beta1(), waitOpts)
 	assert.NilError(t, err)
 
-	run.Clients.Log.Infof("Check if we have the repository set as succeeded")
-	repo, err := run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
+	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
+	repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
 }

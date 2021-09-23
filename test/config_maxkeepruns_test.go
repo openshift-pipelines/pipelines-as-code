@@ -86,11 +86,19 @@ spec:
 		defer tearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
 		runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
-		err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode, targetNS, targetNS, 0, defaultTimeout)
+		waitOpts := twait.Opts{
+			RepoName:        targetNS,
+			Namespace:       targetNS,
+			MinNumberStatus: 0,
+			PollTimeout:     defaultTimeout,
+			TargetSHA:       sha,
+		}
+		err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode,
+			runcnx.Clients.Tekton.TektonV1beta1(), waitOpts)
 		assert.NilError(t, err)
 	}
 
-	prs, err := runcnx.Clients.Tekton.TektonV1alpha1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+	prs, err := runcnx.Clients.Tekton.TektonV1beta1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), maxKepRuns)
 }
