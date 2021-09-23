@@ -26,6 +26,11 @@ func getURL(ctx context.Context, cli *params.Run, url string) ([]byte, error) {
 		return []byte{}, err
 	}
 	defer res.Body.Close()
+	statusOK := res.StatusCode >= 200 && res.StatusCode < 300
+	if !statusOK {
+		return nil, fmt.Errorf("Non-OK HTTP status: %d", res.StatusCode)
+	}
+
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return []byte{}, err
@@ -41,7 +46,7 @@ func getSpecificVersion(ctx context.Context, cli *params.Run, task string) (stri
 	data, err := getURL(ctx, cli,
 		fmt.Sprintf("%s/resource/%s/task/%s/%s", hubBaseURL, tektonCatalogHubName, taskName, version))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not fetch specific task version from the hub %s:%s: %w", task, version, err)
 	}
 	err = json.Unmarshal(data, &hr)
 	if err != nil {
@@ -60,6 +65,7 @@ func getLatestVersion(ctx context.Context, cli *params.Run, task string) (string
 	if err != nil {
 		return "", err
 	}
+
 	return *hr.Data.LatestVersion.RawURL, nil
 }
 
@@ -73,12 +79,12 @@ func GetTask(ctx context.Context, cli *params.Run, task string) (string, error) 
 		rawURL, err = getLatestVersion(ctx, cli, task)
 	}
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not fetch remote task %s: %w", task, err)
 	}
 
 	data, err := getURL(ctx, cli, rawURL)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not fetch remote task %s: %w", task, err)
 	}
 	return string(data), err
 }
