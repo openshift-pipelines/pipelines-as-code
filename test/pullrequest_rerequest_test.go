@@ -91,7 +91,15 @@ spec:
 	defer tearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode, targetNS, targetNS, 0, defaultTimeout)
+	waitOpts := twait.Opts{
+		RepoName:        targetNS,
+		Namespace:       targetNS,
+		MinNumberStatus: 0,
+		PollTimeout:     defaultTimeout,
+		TargetSHA:       sha,
+	}
+	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode, runcnx.Clients.Tekton.TektonV1beta1(),
+		waitOpts)
 	assert.NilError(t, err)
 
 	runinfo := info.Event{
@@ -146,7 +154,15 @@ spec:
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Wait for the second repository update to be updated")
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode, targetNS, targetNS, 1, defaultTimeout)
+	waitOpts = twait.Opts{
+		RepoName:        targetNS,
+		Namespace:       targetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     defaultTimeout,
+		TargetSHA:       sha,
+	}
+	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode, runcnx.Clients.Tekton.TektonV1beta1(),
+		waitOpts)
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")

@@ -9,7 +9,7 @@ import (
 	informersv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/informers/externalversions/pipelinesascode/v1alpha1"
 	fakepacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/client/fake"
 	fakerepositoryinformers "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/informers/pipelinesascode/v1alpha1/repository/fake"
-	pipelinev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	fakepipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
 	pipelineinformersv1alpha1 "github.com/tektoncd/pipeline/pkg/client/informers/externalversions/pipeline/v1alpha1"
 	fakepipelineclient "github.com/tektoncd/pipeline/pkg/client/injection/client/fake"
@@ -33,7 +33,7 @@ type Informers struct {
 }
 
 type Data struct {
-	PipelineRuns []*pipelinev1alpha1.PipelineRun
+	PipelineRuns []*pipelinev1beta1.PipelineRun
 	Repositories []*v1alpha1.Repository
 	Namespaces   []*corev1.Namespace
 	Secret       []*corev1.Secret
@@ -57,7 +57,7 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 		if err := i.PipelineRun.Informer().GetIndexer().Add(pr); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := c.Pipeline.TektonV1alpha1().PipelineRuns(pr.Namespace).Create(ctx, pr, metav1.CreateOptions{}); err != nil {
+		if _, err := c.Pipeline.TektonV1beta1().PipelineRuns(pr.Namespace).Create(ctx, pr, metav1.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
 	}
