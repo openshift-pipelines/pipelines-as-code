@@ -527,6 +527,7 @@ and to dig into a specific repository status:
 tkn pac repo desc repository-name -n namespace
 ```
 
-## Blog Posts
+## Videos/Blog Posts
 
+- [OpenShift Developer Experience Office Hours: Pipeline as Code with OpenShift Pipelines](https://www.youtube.com/watch?v=PhqzGsJnFEI)
 - [How to make a release pipeline with Pipelines as Code](https://blog.chmouel.com/2021/07/01/how-to-make-a-release-pipeline-with-pipelines-as-code)
