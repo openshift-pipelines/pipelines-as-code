@@ -35,6 +35,26 @@ func TestGetTask(t *testing.T) {
 			},
 		},
 		{
+			name:    "get-latest-task-not-there",
+			task:    "task1",
+			wantErr: true,
+			config: map[string]map[string]string{
+				fmt.Sprintf("%s/resource/%s/task/task1", hubBaseURL, tektonCatalogHubName): {
+					"code": "404",
+				},
+			},
+		},
+		{
+			name:    "get-specific-task-not-there",
+			task:    "task1:1.1",
+			wantErr: true,
+			config: map[string]map[string]string{
+				fmt.Sprintf("%s/resource/%s/task/task1/1.1", hubBaseURL, tektonCatalogHubName): {
+					"code": "404",
+				},
+			},
+		},
+		{
 			name:    "get-task-specific",
 			task:    "task2:1.1",
 			want:    "This is Task2",
