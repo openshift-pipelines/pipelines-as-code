@@ -1,0 +1,45 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-remote-annotations
+spec:
+  workspaces:
+  - name: source
+  - name: basic-auth
+  params:
+    - name: repo_url
+    - name: revision
+  tasks:
+
+    - name: task-spec
+      taskSpec:
+        steps:
+          - name: task-spec
+            image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
+            script: |
+              echo "Hello from taskSpec"
+              exit 1
+
+    - name: task-from-remote
+      taskRef:
+        name: task-remote
+
+    - name: task-referenced-internally
+      taskRef:
+        name: task-referenced-internally
+
+    - name: git-clone-from-catalog
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.repo_url)
+        - name: revision
+          value: $(params.revision)
+
+      workspaces:
+        - name: output
+          workspace: source
+        - name: basic-auth
+          workspace: basic-auth

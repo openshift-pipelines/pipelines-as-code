@@ -1,0 +1,31 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "%s"
+    pipelinesascode.tekton.dev/on-target-branch: "[%s]"
+    pipelinesascode.tekton.dev/on-event: "[%s]"
+    pipelinesascode.tekton.dev/task: "[git-clone, .other-tasks/task-referenced-internally.yaml]"
+    pipelinesascode.tekton.dev/task-1: "[https://raw.githubusercontent.com/chmouel/scratchmyback/10c5ea559615c6783aa1a1aa9d93ea988b68dad7/.other-tasks/task-remote.yaml]"
+  name: pipelinerun-remote-annotations
+spec:
+  pipelineRef:
+    name: pipeline-remote-annotations
+  params:
+    - name: repo_url
+      value: "{{repo_url}}"
+    - name: revision
+      value: "{{revision}}"
+  workspaces:
+  - name: source
+    volumeClaimTemplate:
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+  - name: basic-auth
+    secret:
+      secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"
