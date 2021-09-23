@@ -1,0 +1,122 @@
+package clients
+
+import (
+	"net/http"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/pkg/errors"
+	versioned2 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	"go.uber.org/zap"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+type Clients struct {
+	ClientInitialized bool
+	PipelineAsCode    versioned.Interface
+	Tekton            versioned2.Interface
+	Kube              kubernetes.Interface
+	HTTP              http.Client
+	Log               *zap.SugaredLogger
+	Dynamic           dynamic.Interface
+}
+
+// Set kube client based on config
+func (c *Clients) kubeClient(config *rest.Config) (kubernetes.Interface, error) {
+	k8scs, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create k8s client from config")
+	}
+
+	return k8scs, nil
+}
+
+func (c *Clients) dynamicClient(config *rest.Config) (dynamic.Interface, error) {
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create dynamic client from config")
+	}
+	return dynamicClient, err
+}
+
+func (c *Clients) kubeConfig(info *info.Info) (*rest.Config, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	if info.Kube.ConfigPath != "" {
+		loadingRules.ExplicitPath = info.Kube.ConfigPath
+	}
+	configOverrides := &clientcmd.ConfigOverrides{}
+	if info.Kube.Context != "" {
+		configOverrides.CurrentContext = info.Kube.Context
+	}
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	if info.Kube.Namespace == "" {
+		namespace, _, err := kubeConfig.Namespace()
+		if err != nil {
+			return nil, errors.Wrap(err, "Couldn't get kubeConfiguration namespace")
+		}
+		info.Kube.Namespace = namespace
+	}
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "Parsing kubeconfig failed")
+	}
+	return config, nil
+}
+
+func (c *Clients) tektonClient(config *rest.Config) (versioned2.Interface, error) {
+	cs, err := versioned2.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return cs, nil
+}
+
+func (c *Clients) pacClient(config *rest.Config) (versioned.Interface, error) {
+	cs, err := versioned.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return cs, nil
+}
+
+func (c *Clients) NewClients(info *info.Info) error {
+	if c.ClientInitialized {
+		return nil
+	}
+	prod, _ := zap.NewProduction()
+	logger := prod.Sugar()
+	defer func() {
+		_ = logger.Sync() // flushes buffer, if any
+	}()
+	c.Log = logger
+
+	config, err := c.kubeConfig(info)
+	if err != nil {
+		return err
+	}
+
+	c.Kube, err = c.kubeClient(config)
+	if err != nil {
+		return err
+	}
+	c.Tekton, err = c.tektonClient(config)
+	if err != nil {
+		return err
+	}
+
+	c.PipelineAsCode, err = c.pacClient(config)
+	if err != nil {
+		return err
+	}
+
+	c.Dynamic, err = c.dynamicClient(config)
+	if err != nil {
+		return err
+	}
+	c.ClientInitialized = true
+	return nil
+}

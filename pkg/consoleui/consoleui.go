@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -20,9 +20,12 @@ const (
 
 // getOpenshiftConsole use dynamic client to get the route of the openshift
 // console where we can point to.
-func getOpenshiftConsole(ctx context.Context, cs *cli.Clients, ns, pr string) (string, error) {
-	gvr := schema.GroupVersionResource{Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource}
-	route, err := cs.Dynamic.Resource(gvr).Namespace(openShiftConsoleNS).Get(ctx, openShiftConsoleRouteName, metav1.GetOptions{})
+func getOpenshiftConsole(ctx context.Context, cs *params.Run, ns, pr string) (string, error) {
+	gvr := schema.GroupVersionResource{
+		Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource,
+	}
+
+	route, err := cs.Clients.Dynamic.Resource(gvr).Namespace(openShiftConsoleNS).Get(ctx, openShiftConsoleRouteName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -49,13 +52,13 @@ func getOpenshiftConsole(ctx context.Context, cs *cli.Clients, ns, pr string) (s
 
 // GetConsoleUI Get a Console URL, OpenShift Console or Tekton Dashboard.
 // don't error if we can't find it.
-func GetConsoleUI(ctx context.Context, cs *cli.Clients, ns, pr string) (string, error) {
+func GetConsoleUI(ctx context.Context, cs *params.Run, ns, pr string) (string, error) {
 	var url string
 	var err error
 	url, err = getOpenshiftConsole(ctx, cs, ns, pr)
 	if err != nil {
 		return "", err
 	}
-	cs.Log.Infof("Web Console PR url: %s", url)
+	cs.Clients.Log.Infof("Web Console PR url: %s", url)
 	return url, nil
 }

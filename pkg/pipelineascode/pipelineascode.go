@@ -8,8 +8,9 @@ import (
 	"time"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/config"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,23 +19,13 @@ import (
 const (
 	tektonDir               = ".tekton"
 	maxPipelineRunStatusRun = 5
+	startingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
+	<b>%s</b><br><br>You can follow the execution on the command line with :
+	<br><br><code>tkn pr logs -f -n %s %s</code>`
 )
-
-type Options struct {
-	PayloadFile string
-	RunInfo     webvcs.RunInfo
-}
 
 // The time to wait for a pipelineRun, maybe we should not restrict this?
 const pipelineRunTimeout = 2 * time.Hour
-
-func createStatus(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, status, conclusion, text, detailsURL string, logit bool) error {
-	if logit {
-		cs.Log.Infof(text)
-	}
-	_, err := cs.GithubClient.CreateStatus(ctx, runinfo, status, conclusion, text, detailsURL)
-	return err
-}
 
 func fmtDuration(d time.Duration) string {
 	d = d.Round(time.Minute)
@@ -42,28 +33,23 @@ func fmtDuration(d time.Duration) string {
 	return fmt.Sprintf("%02d", m)
 }
 
-// Run over the main loop
-func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo) error {
+func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int kubeinteraction.Interface) error {
 	var err error
 
-	// Create first check run to let know the user we have started the pipeline
-	// TODO: Refactor this bit in a function
-	checkRun, err := cs.GithubClient.CreateCheckRun(ctx, "in_progress", runinfo)
-	if err != nil {
-		return err
-	}
-	// Set the runId on runInfo so if we have an error we can report it on UI (GH checks UI for GH PR)
-	runinfo.CheckRunID = checkRun.ID
-
-	// Check if submitted is allowed to run this.
-	allowed, err := aclCheck(ctx, cs, runinfo)
+	// Check if the submitter is allowed to run this.
+	allowed, err := vcsintf.IsAllowed(ctx, cs.Info.Event)
 	if err != nil {
 		return err
 	}
 
 	if !allowed {
-		msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", runinfo.Sender)
-		err = createStatus(ctx, cs, runinfo, "completed", "skipped", msg, "https://tenor.com/search/police-cat-gifs", true)
+		msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", cs.Info.Event.Sender)
+		err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+			Status:     "completed",
+			Conclusion: "skipped",
+			Text:       msg,
+			DetailsURL: "https://tenor.com/search/police-cat-gifs",
+		}, true)
 		if err != nil {
 			return err
 		}
@@ -73,39 +59,51 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	// Match the Event to a Repository Resource,
 	// We are going to match on targetNamespace annotation later on in
 	// `MatchPipelinerunByAnnotation`
-	repo, err := config.GetRepoByCR(ctx, cs, "", runinfo)
+	repo, err := matcher.GetRepoByCR(ctx, cs, "")
 	if err != nil {
 		return err
 	}
 
 	if repo == nil || repo.Spec.Namespace == "" {
-		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on target-branch:%s event-type: %s", runinfo.Owner, runinfo.Repository, runinfo.BaseBranch, runinfo.EventType)
-		if runinfo.EventType == "pull_request" || runinfo.TriggerTarget == "issue-recheck" {
-			err = createStatus(ctx, cs, runinfo, "completed", "skipped", msg, "https://tenor.com/search/sad-cat-gifs", true)
+		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on target-branch:%s event-type: %s", cs.Info.Event.Owner, cs.Info.Event.Repository, cs.Info.Event.BaseBranch, cs.Info.Event.EventType)
+		if cs.Info.Event.EventType == "pull_request" || cs.Info.Event.TriggerTarget == "issue-recheck" {
+			err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+				Status:     "completed",
+				Conclusion: "skipped",
+				Text:       msg,
+				DetailsURL: "https://tenor.com/search/sad-cat-gifs",
+			}, true)
+
 			if err != nil {
 				return err
 			}
 		} else {
-			cs.Log.Infof("Skipping creating status check: %s", msg)
+			cs.Clients.Log.Infof("Skipping creating status check: %s", msg)
 		}
 		return nil
 	}
 
 	// Get everything in tekton directory
-	objects, err := cs.GithubClient.GetTektonDir(ctx, tektonDir, runinfo)
-	if len(objects) == 0 || err != nil {
+	allTemplates, err := vcsintf.GetTektonDir(ctx, cs.Info.Event, tektonDir)
+	if allTemplates == "" || err != nil {
 		msg := "😿 Could not find a <b>.tekton/</b> directory for this repository"
-		err := createStatus(ctx, cs, runinfo, "completed", "skipped",
-			msg, "https://tenor.com/search/sad-cat-gifs", true)
+
+		err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+			Status:     "completed",
+			Conclusion: "skipped",
+			Text:       msg,
+			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
+		}, true)
+
 		if err != nil {
 			return err
 		}
 		return err
 	}
-	cs.Log.Infow("Loading payload",
-		"url", runinfo.URL,
-		"branch", runinfo.BaseBranch,
-		"sha", runinfo.SHA,
+	cs.Clients.Log.Infow("Loading payload",
+		"url", cs.Info.Event.URL,
+		"branch", cs.Info.Event.BaseBranch,
+		"sha", cs.Info.Event.SHA,
 		"event_type", "pull_request")
 
 	// Make sure we have the namespace already created or error it.
@@ -116,32 +114,26 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		return err
 	}
 
-	// Concat all yaml files as one multi document yaml string
-	allTemplates, err := cs.GithubClient.ConcatAllYamlFiles(ctx, objects, runinfo)
-	if err != nil {
-		return err
-	}
-
-	// Replace those {{var}} placeholders user has in her template to the runinfo variable
+	// Replace those {{var}} placeholders user has in her template to the cs.Info variable
 	allTemplates = ReplacePlaceHoldersVariables(allTemplates, map[string]string{
-		"revision":   runinfo.SHA,
-		"repo_url":   runinfo.URL,
-		"repo_owner": runinfo.Owner,
-		"repo_name":  runinfo.Repository,
+		"revision":   cs.Info.Event.SHA,
+		"repo_url":   cs.Info.Event.URL,
+		"repo_owner": cs.Info.Event.Owner,
+		"repo_name":  cs.Info.Event.Repository,
 	})
 
 	ropt := &resolve.Opts{
 		GenerateName: true,
-		RemoteTasks:  true,
+		RemoteTasks:  true, // TODO: add an option to disable remote tasking,
 	}
 	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
-	pipelineRuns, err := resolve.Resolve(ctx, cs, runinfo, allTemplates, ropt)
+	pipelineRuns, err := resolve.Resolve(ctx, cs, vcsintf, allTemplates, ropt)
 	if err != nil {
 		return err
 	}
 
 	// Match the pipelinerun with annotation
-	pipelineRun, annotationRepo, config, err := config.MatchPipelinerunByAnnotation(ctx, pipelineRuns, cs, runinfo)
+	pipelineRun, annotationRepo, config, err := matcher.MatchPipelinerunByAnnotation(ctx, pipelineRuns, cs)
 	if err != nil {
 		return err
 	}
@@ -151,8 +143,8 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	// Automatically create a secret with the token to be reused by git-clone task
-	if runinfo.SecretAutoCreation {
-		err = k8int.CreateBasicAuthSecret(ctx, *runinfo, repo.Spec.Namespace)
+	if cs.Info.Pac.SecretAutoCreation {
+		err = k8int.CreateBasicAuthSecret(ctx, cs.Info.Event, cs.Info.Pac, repo.Spec.Namespace)
 		if err != nil {
 			return err
 		}
@@ -162,23 +154,23 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	// query them. Since K8s do not like slash in labels value and on push we
 	// have the full ref, we replace the "/" by "-". The tools probably need to
 	// be aware of it when querying.
-	refTomakeK8Happy := strings.ReplaceAll(runinfo.BaseBranch, "/", "-")
+	refTomakeK8Happy := strings.ReplaceAll(cs.Info.Event.BaseBranch, "/", "-")
 	pipelineRun.Labels = map[string]string{
 		"app.kubernetes.io/managed-by":              "pipelines-as-code",
-		"pipelinesascode.tekton.dev/url-org":        runinfo.Owner,
-		"pipelinesascode.tekton.dev/url-repository": runinfo.Repository,
-		"pipelinesascode.tekton.dev/sha":            runinfo.SHA,
-		"pipelinesascode.tekton.dev/sender":         runinfo.Sender,
-		"pipelinesascode.tekton.dev/event-type":     runinfo.EventType,
+		"pipelinesascode.tekton.dev/url-org":        cs.Info.Event.Owner,
+		"pipelinesascode.tekton.dev/url-repository": cs.Info.Event.Repository,
+		"pipelinesascode.tekton.dev/sha":            cs.Info.Event.SHA,
+		"pipelinesascode.tekton.dev/sender":         cs.Info.Event.Sender,
+		"pipelinesascode.tekton.dev/event-type":     cs.Info.Event.EventType,
 		"pipelinesascode.tekton.dev/branch":         refTomakeK8Happy,
 		"pipelinesascode.tekton.dev/repository":     repo.GetName(),
 	}
 
-	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-title"] = runinfo.SHATitle
-	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-url"] = runinfo.SHAURL
+	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-title"] = cs.Info.Event.SHATitle
+	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-url"] = cs.Info.Event.SHAURL
 
 	// Create the actual pipeline
-	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, pipelineRun, metav1.CreateOptions{})
+	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, pipelineRun, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -191,17 +183,21 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	// Create status with the log url
-	err = createStatus(ctx, cs, runinfo, "in_progress", "",
-		fmt.Sprintf(`Starting Pipelinerun <b>%s</b> in namespace <b>%s</b><br><br>You can follow the execution on the command line with : <br><br><code>tkn pr logs -f -n %s %s</code>`,
-			pr.GetName(), repo.Spec.Namespace, repo.Spec.Namespace, pr.GetName()),
-		consoleURL, false)
+	msg := fmt.Sprintf(startingPipelineRunText,
+		pr.GetName(), repo.Spec.Namespace, repo.Spec.Namespace, pr.GetName())
+	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+		Status:     "in_progress",
+		Conclusion: "",
+		Text:       msg,
+		DetailsURL: consoleURL,
+	}, false)
 	if err != nil {
 		return err
 	}
 
-	cs.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes", pr.Namespace, pr.Name, fmtDuration(pipelineRunTimeout))
-	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Tekton.TektonV1beta1(), pr, pipelineRunTimeout); err != nil {
-		cs.Log.Info("PipelineRun has failed.")
+	cs.Clients.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes", pr.Namespace, pr.Name, fmtDuration(pipelineRunTimeout))
+	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, pipelineRunTimeout); err != nil {
+		cs.Clients.Log.Info("PipelineRun has failed.")
 	}
 
 	// Do cleanups
@@ -219,7 +215,7 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 
 	// Post the final status to GitHub check status with a nice breakdown and
 	// tekton cli describe output.
-	newPr, err := postFinalStatus(ctx, cs, k8int, runinfo, pr.Name, repo.Spec.Namespace)
+	newPr, err := postFinalStatus(ctx, cs, k8int, vcsintf, pr.Name, repo.Spec.Namespace)
 	if err != nil {
 		return err
 	}
@@ -228,16 +224,16 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 		PipelineRunName: newPr.Name,
 		StartTime:       newPr.Status.StartTime,
 		CompletionTime:  newPr.Status.CompletionTime,
-		SHA:             &runinfo.SHA,
-		SHAURL:          &runinfo.SHAURL,
-		Title:           &runinfo.SHATitle,
+		SHA:             &cs.Info.Event.SHA,
+		SHAURL:          &cs.Info.Event.SHAURL,
+		Title:           &cs.Info.Event.SHATitle,
 		LogURL:          &consoleURL,
 	}
 
 	// Get repo again in case it was updated while we were running the CI
 	// NOTE: there may be a race issue we should maybe solve here, between the Get and
 	// Update but we are talking sub-milliseconds issue here.
-	lastrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Spec.Namespace).Get(ctx, repo.Name, metav1.GetOptions{})
+	lastrepo, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Spec.Namespace).Get(ctx, repo.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -249,12 +245,12 @@ func Run(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, ru
 	}
 
 	lastrepo.Status = append(lastrepo.Status, repoStatus)
-	nrepo, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
+	nrepo, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
 		ctx, lastrepo, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
 
-	cs.Log.Infof("Repository status of %s has been updated", nrepo.Name)
+	cs.Clients.Log.Infof("Repository status of %s has been updated", nrepo.Name)
 	return err
 }

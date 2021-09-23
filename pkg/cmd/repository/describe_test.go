@@ -11,9 +11,10 @@ import (
 	"github.com/google/go-github/v35/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/ui"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
@@ -40,7 +41,7 @@ func TestDescribe(t *testing.T) {
 		currentNamespace string
 		repoName         string
 		statuses         []v1alpha1.RepositoryRunStatus
-		opts             *flags.CliOpts
+		opts             *params.PacCliOpts
 	}
 	tests := []struct {
 		name    string
@@ -52,7 +53,7 @@ func TestDescribe(t *testing.T) {
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: "namespace",
-				opts:             &flags.CliOpts{},
+				opts:             &params.PacCliOpts{},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
 						Status: v1beta1.Status{
@@ -78,7 +79,7 @@ func TestDescribe(t *testing.T) {
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: "namespace",
-				opts: &flags.CliOpts{
+				opts: &params.PacCliOpts{
 					Namespace: "optnamespace",
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
@@ -104,7 +105,7 @@ func TestDescribe(t *testing.T) {
 		{
 			name: "Describe a Pipeline with a Multiple Run",
 			args: args{
-				opts:             &flags.CliOpts{},
+				opts:             &params.PacCliOpts{},
 				repoName:         "test-run",
 				currentNamespace: "namespace",
 				statuses: []v1alpha1.RepositoryRunStatus{
@@ -177,12 +178,16 @@ func TestDescribe(t *testing.T) {
 			}
 			ctx, _ := rtesting.SetupFakeContext(t)
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
-			cs := &cli.Clients{
-				PipelineAsCode: stdata.PipelineAsCode,
+			cs := &params.Run{
+				Clients: clients.Clients{
+					PipelineAsCode: stdata.PipelineAsCode,
+				},
+				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.args.currentNamespace}},
 			}
 
 			io, out := newIOStream()
-			if err := describe(ctx, cs, cw, tt.args.opts, io, tt.args.currentNamespace,
+			if err := describe(
+				ctx, cs, cw, tt.args.opts, io,
 				tt.args.repoName); (err != nil) != tt.wantErr {
 				t.Errorf("describe() error = %v, wantErr %v", err, tt.wantErr)
 			} else {

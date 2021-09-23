@@ -1,4 +1,4 @@
-package config
+package matcher
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/hub"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
@@ -20,8 +20,7 @@ const (
 )
 
 type RemoteTasks struct {
-	Clients *cli.Clients
-	Runinfo *webvcs.RunInfo
+	Run *params.Run
 }
 
 func (rt RemoteTasks) convertTotask(data string) (*tektonv1beta1.Task, error) {
@@ -35,14 +34,14 @@ func (rt RemoteTasks) convertTotask(data string) (*tektonv1beta1.Task, error) {
 	return obj.(*tektonv1beta1.Task), nil
 }
 
-func (rt RemoteTasks) getTask(ctx context.Context, task string) (*tektonv1beta1.Task, error) {
+func (rt RemoteTasks) getTask(ctx context.Context, vcsintf webvcs.Interface, task string) (*tektonv1beta1.Task, error) {
 	var ret *tektonv1beta1.Task
 
 	// TODO: print a log info when getting the task from which location
 	switch {
 	case strings.HasPrefix(task, "https://"), strings.HasPrefix(task, "http://"):
-		// nolint:  noctx // TODO: Add a context
-		res, err := rt.Clients.HTTPClient.Get(task)
+		// TODO: Add a context
+		res, err := rt.Run.Clients.HTTP.Get(task)
 		if err != nil {
 			return ret, err
 		}
@@ -50,13 +49,13 @@ func (rt RemoteTasks) getTask(ctx context.Context, task string) (*tektonv1beta1.
 		defer res.Body.Close()
 		return rt.convertTotask(string(data))
 	case strings.Contains(task, "/"):
-		data, err := rt.Clients.GithubClient.GetFileInsideRepo(ctx, task, false, rt.Runinfo)
+		data, err := vcsintf.GetFileInsideRepo(ctx, rt.Run.Info.Event, task, false)
 		if err != nil {
 			return ret, err
 		}
 		return rt.convertTotask(string(data))
 	default:
-		data, err := hub.GetTask(ctx, rt.Clients, task)
+		data, err := hub.GetTask(ctx, rt.Run, task)
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +64,8 @@ func (rt RemoteTasks) getTask(ctx context.Context, task string) (*tektonv1beta1.
 }
 
 // GetTaskFromAnnotations Get task remotely if they are on Annotations
-func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, annotations map[string]string) ([]*tektonv1beta1.Task, error) {
+func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, vcsintf webvcs.Interface,
+	annotations map[string]string) ([]*tektonv1beta1.Task, error) {
 	var ret []*tektonv1beta1.Task
 	rtareg := regexp.MustCompile(fmt.Sprintf("%s/%s", pipelinesascode.GroupName, taskAnnotationsRegexp))
 	for annotationK, annotationV := range annotations {
@@ -77,7 +77,7 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, annotations ma
 			return ret, err
 		}
 		for _, v := range tasks {
-			task, err := rt.getTask(ctx, v)
+			task, err := rt.getTask(ctx, vcsintf, v)
 			if err != nil {
 				return ret, err
 			}

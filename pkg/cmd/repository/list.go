@@ -6,10 +6,9 @@ import (
 	"text/tabwriter"
 
 	"github.com/jonboulle/clockwork"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/ui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/completion"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -22,7 +21,7 @@ var (
 	noColorFlag       = "no-color"
 )
 
-func ListCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
+func ListCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 	var noheaders, allNamespaces bool
 	var selectors string
 
@@ -31,7 +30,7 @@ func ListCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List repositories",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts, err := flags.NewCliOptions(cmd)
+			opts, err := params.NewCliOptions(cmd)
 			if err != nil {
 				return err
 			}
@@ -46,13 +45,13 @@ func ListCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 			}
 			ioStreams.SetColorEnabled(!opts.NoColoring)
 
-			cs, err := p.Clients()
+			err = run.Clients.NewClients(&run.Info)
 			if err != nil {
 				return err
 			}
 			ctx := context.Background()
 			cw := clockwork.NewRealClock()
-			return list(ctx, cs, opts, ioStreams, cw, p.GetNamespace(), selectors, noheaders)
+			return list(ctx, run, opts, ioStreams, cw, selectors, noheaders)
 		},
 	}
 
@@ -81,20 +80,17 @@ func ListCommand(p cli.Params, ioStreams *ui.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func list(ctx context.Context, cs *cli.Clients, opts *flags.CliOpts, ioStreams *ui.IOStreams,
-	cw clockwork.Clock,
-	currentNamespace, selectors string,
-	noheaders bool) error {
+func list(ctx context.Context, cs *params.Run, opts *params.PacCliOpts, ioStreams *ui.IOStreams, cw clockwork.Clock, selectors string, noheaders bool) error {
 	if opts.Namespace != "" {
-		currentNamespace = opts.Namespace
+		cs.Info.Kube.Namespace = opts.Namespace
 	}
 	if opts.AllNameSpaces {
-		currentNamespace = ""
+		cs.Info.Kube.Namespace = ""
 	}
 
 	lopt := metav1.ListOptions{LabelSelector: selectors}
 
-	repositories, err := cs.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(currentNamespace).List(
+	repositories, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(cs.Info.Kube.Namespace).List(
 		ctx, lopt)
 	if err != nil {
 		return err

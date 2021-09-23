@@ -161,10 +161,8 @@
         ".tekton/tag-release.yaml"
       ],
       "removed": [
-
       ],
       "modified": [
-
       ]
     }
   ],
@@ -189,10 +187,8 @@
       ".tekton/tag-release.yaml"
     ],
     "removed": [
-
     ],
     "modified": [
-
     ]
   }
 }

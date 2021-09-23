@@ -4,15 +4,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/fs"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func Test_create(t *testing.T) {
+func TestCreate(t *testing.T) {
 	tests := []struct {
 		name            string
 		wantErr         bool
@@ -36,13 +37,15 @@ func Test_create(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			tdata := testclient.Data{}
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
-			cs := &cli.Clients{
-				PipelineAsCode: stdata.PipelineAsCode,
+			cs := &params.Run{
+				Clients: clients.Clients{
+					PipelineAsCode: stdata.PipelineAsCode,
+				},
 			}
 			io, out := newIOStream()
 			opts := CreateOptions{
 				AssumeYes: true,
-				Clients:   cs,
+				Run:       cs,
 				IOStreams: io,
 				CurrentNS: tt.targetNamespace,
 			}

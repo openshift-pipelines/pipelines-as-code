@@ -3,9 +3,10 @@ package kubeinteraction
 import (
 	"testing"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -17,7 +18,6 @@ import (
 func TestCreateBasicAuthSecret(t *testing.T) {
 	nsNotThere := "not_there"
 	nsthere := "there"
-	token := "verysecrete"
 
 	ctx, _ := rtesting.SetupFakeContext(t)
 	tdata := testclient.Data{
@@ -55,13 +55,14 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	fakelogger := zap.New(observer).Sugar()
 	kint := Interaction{
-		Clients: &cli.Clients{
-			Kube:         stdata.Kube,
-			GithubClient: webvcs.GithubVCS{Token: token},
-			Log:          fakelogger,
+		Run: &params.Run{
+			Clients: clients.Clients{
+				Kube: stdata.Kube,
+				Log:  fakelogger,
+			},
 		},
 	}
-	runinfo := webvcs.RunInfo{
+	runevent := info.Event{
 		Owner:      "owner",
 		Repository: "repo",
 		URL:        "https://forge/owner/repo",
@@ -82,9 +83,9 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := kint.CreateBasicAuthSecret(ctx, runinfo, tt.targetNS)
+			err := kint.CreateBasicAuthSecret(ctx, &runevent, info.PacOpts{VCSToken: "verysecrete"}, tt.targetNS)
 			assert.NilError(t, err)
-			slist, err := kint.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})
+			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
 			assert.Assert(t, len(slist.Items) > 0, "Secret has not been created")
 			assert.Equal(t, slist.Items[0].Name, "pac-git-basic-auth-owner-repo")

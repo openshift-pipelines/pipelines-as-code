@@ -7,7 +7,8 @@ import (
 	"sort"
 	"text/template"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -132,10 +133,19 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun, consoleURL st
 	return outputBuffer.String(), nil
 }
 
-func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInteractionIntf, runinfo *webvcs.RunInfo, prName, namespace string) (*tektonv1beta1.PipelineRun, error) {
+func createStatus(ctx context.Context, vcsintf webvcs.Interface,
+	cs *params.Run, status webvcs.StatusOpts, logit bool) error {
+	if logit {
+		cs.Clients.Log.Infof(status.Text)
+	}
+	return vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status)
+}
+
+func postFinalStatus(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, vcsintf webvcs.Interface,
+	prName, namespace string) (*tektonv1beta1.PipelineRun, error) {
 	var outputBuffer bytes.Buffer
 
-	pr, err := cs.Tekton.TektonV1beta1().PipelineRuns(namespace).Get(ctx, prName, v1.GetOptions{})
+	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(namespace).Get(ctx, prName, v1.GetOptions{})
 	if err != nil {
 		return pr, err
 	}
@@ -160,8 +170,12 @@ func postFinalStatus(ctx context.Context, cs *cli.Clients, k8int cli.KubeInterac
 		return pr, err
 	}
 
-	err = createStatus(ctx, cs, runinfo, "completed", pipelineRunStatus(pr),
-		outputBuffer.String(), consoleURL, false)
+	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+		Status:     "completed",
+		Conclusion: pipelineRunStatus(pr),
+		Text:       outputBuffer.String(),
+		DetailsURL: consoleURL,
+	}, false)
 
 	return pr, err
 }

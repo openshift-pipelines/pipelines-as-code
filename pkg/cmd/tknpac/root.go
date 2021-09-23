@@ -1,28 +1,24 @@
 package tknpac
 
 import (
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/resolve"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/spf13/cobra"
 )
 
-func Root(p cli.Params) *cobra.Command {
+func Root(clients *params.Run) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "tkn-pac",
 		Short:        "Pipelines as Code CLI",
-		Long:         `This is the Pipelines as Code CLI`,
+		Long:         `This is the the tkn plugin for Pipelines as Code CLI`,
 		SilenceUsage: true,
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return flags.InitParams(p, cmd)
-		},
 	}
-	flags.AddPacOptions(cmd)
+	clients.Info.Kube.AddFlags(cmd)
 
-	cmd.AddCommand(repository.Root(p))
-	cmd.AddCommand(resolve.Command(p))
+	cmd.AddCommand(repository.Root(clients))
+	cmd.AddCommand(resolve.Command(clients))
 	cmd.AddCommand(completion.Command())
 
 	return cmd

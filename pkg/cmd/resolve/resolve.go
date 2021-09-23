@@ -9,18 +9,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/flags"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
 
 var (
 	filenames    []string
-	params       []string
+	parameters   []string
 	skipInlining []string
 	generateName bool
 	remoteTask   bool
@@ -54,16 +53,13 @@ pipelines-as-code resolve -f .tekton/
 *It does not support task from local directory referenced in annotations at the
  moment*.`
 
-func Command(p cli.Params) *cobra.Command {
+func Command(run *params.Run) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "resolve",
 		Long:  longhelp,
 		Short: "Embed PipelineRun references as a single resource.",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return flags.GetWebCVSOptions(p, cmd)
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cs, err := p.Clients()
+			err := run.Clients.NewClients(&run.Info)
 			if err != nil {
 				// this check allows resolve to be run without
 				// a kubeconfig so users can verify the tkn version
@@ -75,13 +71,13 @@ func Command(p cli.Params) *cobra.Command {
 			if len(filenames) == 0 {
 				return fmt.Errorf("you need to at least specify a file with -f")
 			}
-			s, err := resolveFilenames(cs, filenames, params)
+			s, err := resolveFilenames(run, filenames, parameters)
 			// nolint: forbidigo
 			fmt.Println(s)
 			return err
 		},
 	}
-	cmd.Flags().StringSliceVarP(&params, "params", "p", filenames,
+	cmd.Flags().StringSliceVarP(&parameters, "params", "p", filenames,
 		"Params to resolve")
 	cmd.Flags().StringSliceVarP(&filenames, "filename", "f", filenames,
 		"Filename, directory, or URL to files to use to create the resource")
@@ -91,8 +87,7 @@ func Command(p cli.Params) *cobra.Command {
 		"Wether to switch name to a generateName on pipelinerun")
 	cmd.Flags().BoolVar(&remoteTask, "remoteTask", true,
 		"Wether parse annotation to fetch remote task")
-	flags.AddPacOptions(cmd)
-	flags.AddWebCVSOptions(cmd)
+	run.Info.Pac.AddFlags(cmd)
 
 	return cmd
 }
@@ -106,20 +101,21 @@ func splitArgsInMap(args []string) map[string]string {
 	return m
 }
 
-func resolveFilenames(cs *cli.Clients, filenames []string, params []string) (string, error) {
+func resolveFilenames(cs *params.Run, filenames []string, params []string) (string, error) {
 	var ret string
 
 	allTemplates := enumerateFiles(filenames)
 	// TODO: flags
 	allTemplates = pipelineascode.ReplacePlaceHoldersVariables(allTemplates, splitArgsInMap(params))
 	ctx := context.Background()
-	runinfo := &webvcs.RunInfo{}
 	ropt := &resolve.Opts{
 		GenerateName: generateName,
 		RemoteTasks:  remoteTask,
 		SkipInlining: skipInlining,
 	}
-	prun, err := resolve.Resolve(ctx, cs, runinfo, allTemplates, ropt)
+	// We use github here but since we don't do remotetask we would not care
+	vcsintf := github.NewGithubVCS(ctx, cs.Info.Pac)
+	prun, err := resolve.Resolve(ctx, cs, vcsintf, allTemplates, ropt)
 	if err != nil {
 		return "", err
 	}

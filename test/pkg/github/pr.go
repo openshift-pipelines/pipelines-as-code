@@ -5,7 +5,8 @@ import (
 	"encoding/base64"
 
 	"github.com/google/go-github/v35/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	ghvcs "github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 )
 
 func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (string, error) {
@@ -51,9 +52,11 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 		},
 		Message: &commitMessage,
 		Tree:    tree,
-		Parents: []*github.Commit{{
-			SHA: &mainSha,
-		}},
+		Parents: []*github.Commit{
+			{
+				SHA: &mainSha,
+			},
+		},
 	})
 	if err != nil {
 		return "", err
@@ -73,8 +76,8 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 	return commit.GetSHA(), nil
 }
 
-func PRCreate(ctx context.Context, cs *cli.Clients, owner, repo, targetRef, defaultBranch, title string) (int, error) {
-	pr, _, err := cs.GithubClient.Client.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
+func PRCreate(ctx context.Context, cs *params.Run, ghcnx ghvcs.VCS, owner, repo, targetRef, defaultBranch, title string) (int, error) {
+	pr, _, err := ghcnx.Client.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
 		Title: &title,
 		Head:  &targetRef,
 		Base:  &defaultBranch,
@@ -83,6 +86,6 @@ func PRCreate(ctx context.Context, cs *cli.Clients, owner, repo, targetRef, defa
 	if err != nil {
 		return -1, err
 	}
-	cs.Log.Infof("Pull request created: %s", pr.GetHTMLURL())
+	cs.Clients.Log.Infof("Pull request created: %s", pr.GetHTMLURL())
 	return pr.GetNumber(), nil
 }

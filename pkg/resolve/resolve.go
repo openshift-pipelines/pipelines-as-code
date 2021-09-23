@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/config"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -20,7 +21,7 @@ type Types struct {
 	Tasks        []*tektonv1beta1.Task
 }
 
-func readTypes(cs *cli.Clients, data string) Types {
+func readTypes(log *zap.SugaredLogger, data string) Types {
 	types := Types{}
 	decoder := k8scheme.Codecs.UniversalDeserializer()
 
@@ -31,7 +32,7 @@ func readTypes(cs *cli.Clients, data string) Types {
 
 		obj, _, err := decoder.Decode([]byte(doc), nil, nil)
 		if err != nil {
-			cs.Log.Infof("Skipping document not looking like a kubernetes resources: %v", err)
+			log.Infof("Skipping document not looking like a kubernetes resources: %v", err)
 			continue
 		}
 		switch o := obj.(type) {
@@ -42,7 +43,7 @@ func readTypes(cs *cli.Clients, data string) Types {
 		case *tektonv1beta1.Task:
 			types.Tasks = append(types.Tasks, o)
 		default:
-			cs.Log.Info("Skipping document not looking like a tekton resource we can Resolve.")
+			log.Info("Skipping document not looking like a tekton resource we can Resolve.")
 		}
 	}
 
@@ -103,14 +104,14 @@ type Opts struct {
 // Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
 // generateName can be set as True to set the name as a generateName + "-" for
 // unique pipelinerun
-func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data string, ropt *Opts) (
+func Resolve(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, data string, ropt *Opts) (
 	[]*tektonv1beta1.PipelineRun, error) {
 	s := k8scheme.Scheme
 	if err := tektonv1beta1.AddToScheme(s); err != nil {
 		return []*tektonv1beta1.PipelineRun{}, err
 	}
 
-	types := readTypes(cs, data)
+	types := readTypes(cs.Clients.Log, data)
 	if len(types.PipelineRuns) == 0 {
 		return []*tektonv1beta1.PipelineRun{}, errors.New("we need at least one pipelinerun to start with")
 	}
@@ -118,11 +119,10 @@ func Resolve(ctx context.Context, cs *cli.Clients, runinfo *webvcs.RunInfo, data
 	// First resolve Annotations Tasks
 	for _, pipelinerun := range types.PipelineRuns {
 		if ropt.RemoteTasks && pipelinerun.GetObjectMeta().GetAnnotations() != nil {
-			rt := config.RemoteTasks{
-				Clients: cs,
-				Runinfo: runinfo,
+			rt := matcher.RemoteTasks{
+				Run: cs,
 			}
-			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, pipelinerun.GetObjectMeta().GetAnnotations())
+			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, vcsintf, pipelinerun.GetObjectMeta().GetAnnotations())
 			if err != nil {
 				return []*tektonv1beta1.PipelineRun{}, err
 			}

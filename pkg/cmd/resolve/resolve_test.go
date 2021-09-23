@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
-	tparams "github.com/openshift-pipelines/pipelines-as-code/pkg/test/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -40,8 +40,8 @@ func TestSplitArgsInMap(t *testing.T) {
 }
 
 func TestCommandFilenameSetProperly(t *testing.T) {
-	params := tparams.FakeParams{}
-	cmd := Command(params)
+	cs := &params.Run{Clients: clients.Clients{ClientInitialized: true}}
+	cmd := Command(cs)
 	e := bytes.NewBufferString("")
 	o := bytes.NewBufferString("")
 	cmd.SetErr(e)
@@ -54,7 +54,7 @@ func TestCommandFilenameSetProperly(t *testing.T) {
 func TestResolveFilenames(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	fakelogger := zap.New(observer).Sugar()
-	cs := &cli.Clients{Log: fakelogger}
+	cs := &params.Run{Clients: clients.Clients{Log: fakelogger}}
 
 	tmplSimpleWithPrefix := fmt.Sprintf("---\n%s", tmplSimpleNoPrefix)
 

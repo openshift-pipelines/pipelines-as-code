@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -54,8 +55,10 @@ func TestGetTask(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.config)
 			ctx, _ := rtesting.SetupFakeContext(t)
-			cs := &cli.Clients{
-				HTTPClient: *httpTestClient,
+			cs := &params.Run{
+				Clients: clients.Clients{
+					HTTP: *httpTestClient,
+				},
 			}
 			got, err := GetTask(ctx, cs, tt.task)
 			if (err != nil) != tt.wantErr {

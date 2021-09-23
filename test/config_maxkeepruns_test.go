@@ -23,11 +23,11 @@ import (
 func TestMaxKeepRuns(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	cs, opts, err := setup()
+	runcnx, opts, ghcnx, err := setup(ctx)
 	assert.NilError(t, err)
 	maxKepRuns := 1
 
-	repoinfo, resp, err := cs.GithubClient.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
+	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Owner, opts.Repo)
@@ -44,12 +44,12 @@ func TestMaxKeepRuns(t *testing.T) {
 		},
 	}
 
-	err = trepo.CreateNSRepo(ctx, targetNS, cs, repository)
+	err = trepo.CreateNSRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
 	for prRun := 1; prRun <= maxKepRuns+1; prRun++ {
 		entries := map[string]string{
-			".tekton/run.yaml": fmt.Sprintf(`---
+			".tekton/info.yaml": fmt.Sprintf(`---
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
@@ -59,7 +59,7 @@ metadata:
     pipelinesascode.tekton.dev/on-target-branch: "[%s]"
     pipelinesascode.tekton.dev/on-event: "[%s]"
     pipelinesascode.tekton.dev/max-keep-runs: "%d"
-    pipelinesascode.tekton.dev/test-current-run: "%d"
+    pipelinesascode.tekton.dev/test-current-info: "%d"
 spec:
   pipelineSpec:
     tasks:
@@ -75,26 +75,26 @@ spec:
 		targetRefName := fmt.Sprintf("refs/heads/%s",
 			names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-		sha, err := tgithub.PushFilesToRef(ctx, cs.GithubClient.Client, "TestMaxKeepRuns - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
+		sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, "TestMaxKeepRuns - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
 		assert.NilError(t, err)
-		cs.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
+		runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 
 		title := "TestMaxKeepRuns - " + targetRefName
-		number, err := tgithub.PRCreate(ctx, cs, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+		number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 		assert.NilError(t, err)
 
-		defer tearDown(ctx, t, cs, number, targetRefName, targetNS, opts)
+		defer tearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
-		cs.Log.Infof("Waiting for Repository to be updated")
-		err = twait.UntilRepositoryUpdated(ctx, cs.PipelineAsCode, targetNS, targetNS, 0, defaultTimeout)
+		runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
+		err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients.PipelineAsCode, targetNS, targetNS, 0, defaultTimeout)
 		assert.NilError(t, err)
 	}
 
-	prs, err := cs.Tekton.TektonV1alpha1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+	prs, err := runcnx.Clients.Tekton.TektonV1alpha1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), maxKepRuns)
 }
 
 // Local Variables:
-// compile-command: "go test -tags=e2e -v -run TestMaxKeepRuns$ ."
+// compile-command: "go test -tags=e2e -v -info TestMaxKeepRuns$ ."
 // End:

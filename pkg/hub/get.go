@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 )
 
 var (
@@ -16,12 +16,12 @@ var (
 	hubBaseURL           = `https://api.hub.tekton.dev/v1`
 )
 
-func getURL(ctx context.Context, cli *cli.Clients, url string) ([]byte, error) {
+func getURL(ctx context.Context, cli *params.Run, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return []byte{}, err
 	}
-	res, err := cli.HTTPClient.Do(req)
+	res, err := cli.Clients.HTTP.Do(req)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -33,7 +33,7 @@ func getURL(ctx context.Context, cli *cli.Clients, url string) ([]byte, error) {
 	return data, nil
 }
 
-func getSpecificVersion(ctx context.Context, cli *cli.Clients, task string) (string, error) {
+func getSpecificVersion(ctx context.Context, cli *params.Run, task string) (string, error) {
 	split := strings.Split(task, ":")
 	version := split[len(split)-1]
 	taskName := split[0]
@@ -50,7 +50,7 @@ func getSpecificVersion(ctx context.Context, cli *cli.Clients, task string) (str
 	return *hr.Data.RawURL, nil
 }
 
-func getLatestVersion(ctx context.Context, cli *cli.Clients, task string) (string, error) {
+func getLatestVersion(ctx context.Context, cli *params.Run, task string) (string, error) {
 	hr := new(hubResource)
 	data, err := getURL(ctx, cli, fmt.Sprintf("%s/resource/%s/task/%s", hubBaseURL, tektonCatalogHubName, task))
 	if err != nil {
@@ -63,7 +63,7 @@ func getLatestVersion(ctx context.Context, cli *cli.Clients, task string) (strin
 	return *hr.Data.LatestVersion.RawURL, nil
 }
 
-func GetTask(ctx context.Context, cli *cli.Clients, task string) (string, error) {
+func GetTask(ctx context.Context, cli *params.Run, task string) (string, error) {
 	var rawURL string
 	var err error
 
