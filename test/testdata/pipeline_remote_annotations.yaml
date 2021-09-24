@@ -11,7 +11,6 @@ spec:
     - name: repo_url
     - name: revision
   tasks:
-
     - name: task-spec
       taskSpec:
         steps:
@@ -19,7 +18,7 @@ spec:
             image: registry.access.redhat.com/ubi8/ubi-minimal:8.2
             script: |
               echo "Hello from taskSpec"
-              exit 1
+              exit 0
 
     - name: task-from-remote
       taskRef:

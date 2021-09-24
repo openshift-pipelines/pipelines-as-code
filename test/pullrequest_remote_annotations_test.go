@@ -71,7 +71,7 @@ func TestPullRequestRemoteAnnotations(t *testing.T) {
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 
-	title := "TestPullRequestPrivateRepository - " + targetRefName
+	title := "TestPullRequestRemoteAnnotations - " + targetRefName
 	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
