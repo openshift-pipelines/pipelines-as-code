@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	pacversioned "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
-	tektonv1beta1client "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1beta1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -21,18 +20,18 @@ type Opts struct {
 	TargetSHA       string
 }
 
-func UntilRepositoryUpdated(ctx context.Context, pacintf pacversioned.Interface, tknintf tektonv1beta1client.TektonV1beta1Interface, opts Opts) error {
+func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts Opts) error {
 	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
 	defer cancel()
 	return kubeinteraction.PollImmediateWithContext(ctx, func() (bool, error) {
-		pacintf.PipelinesascodeV1alpha1().Repositories(opts.Namespace)
-		r, err := pacintf.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Get(ctx, opts.RepoName,
+		clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace)
+		r, err := clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Get(ctx, opts.RepoName,
 			metav1.GetOptions{})
 		if err != nil {
 			return true, err
 		}
 
-		prs, err := tknintf.PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{
+		prs, err := clients.Tekton.TektonV1beta1().PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("pipelinesascode.tekton.dev/sha=%s", opts.TargetSHA),
 		})
 		if err != nil {
