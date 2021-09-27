@@ -34,7 +34,7 @@ Pipelines as Code features:
 
 - Efficient use of GitHub blobs and objects API for retrieving configurations
 
-- ACL over a GitHub organization or via a Prow style `OWNER` file.
+- ACL over a GitHub organization or via a Prow style [`OWNER`](https://www.kubernetes.dev/docs/guide/owners/) file.
 
 - `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping
 
