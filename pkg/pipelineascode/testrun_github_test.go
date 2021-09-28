@@ -11,18 +11,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	testDynamic "github.com/openshift-pipelines/pipelines-as-code/pkg/test/dynamic"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
-
 	"github.com/google/go-github/v35/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	testDynamic "github.com/openshift-pipelines/pipelines-as-code/pkg/test/dynamic"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
-	githubintf "github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
+	ghwebvcs "github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -42,6 +42,9 @@ func testSetupTektonDir(mux *http.ServeMux, runevent info.Event, directory strin
 	_ = filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
 		basename := filepath.Base(path)
 		trimmed := strings.TrimSuffix(basename, filepath.Ext(basename))
+		if info == nil {
+			return fmt.Errorf("should not be nil: %s", directory)
+		}
 		tektonDirContent += fmt.Sprintf(`{
 			"name": "%s",
 			"path": ".tekton/%s",
@@ -64,12 +67,25 @@ func testSetupTektonDir(mux *http.ServeMux, runevent info.Event, directory strin
 		fmt.Sprintf("[%s]", strings.TrimSuffix(tektonDirContent, ",")))
 }
 
-func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, finalStatus, finalStatusText string,
-	noReplyOrgPublicMembers bool) {
+func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Event,
+	finalStatus, finalStatusText string, noReplyOrgPublicMembers bool) {
 	// Take a directory and generate replies as Github for it
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/contents/internal/task", runevent.Owner, runevent.Repository),
 		`{"sha": "internaltasksha"}`)
+
+	replyString(mux,
+		fmt.Sprintf("/repos/%s/%s/statuses/%s", runevent.Owner, runevent.Repository, runevent.SHA),
+		"{}")
+
+	// using 666 as pull request number
+	replyString(mux,
+		fmt.Sprintf("/repos/%s/%s/issues/666/comments", runevent.Owner, runevent.Repository),
+		"{}")
+
+	replyString(mux,
+		fmt.Sprintf("/repos/%s/%s/git/commits/%s", runevent.Owner, runevent.Repository, runevent.SHA),
+		`{}`)
 
 	if !noReplyOrgPublicMembers {
 		mux.HandleFunc("/orgs/"+runevent.Owner+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
@@ -105,13 +121,14 @@ func TestRun(t *testing.T) {
 		tektondir                    string
 		wantErr                      string
 		finalStatus                  string
-		finalLogText                 string
+		finalStatusText              string
 		repositories                 []*v1alpha1.Repository
 		skipReplyingOrgPublicMembers bool
 		expectedNumberofCleanups     int
+		VCSInfoFromRepo              bool
 	}{
 		{
-			name: "pull request",
+			name: "pull request/apps",
 			runevent: info.Event{
 				SHA:        "principale",
 				Owner:      "organizationes",
@@ -122,11 +139,32 @@ func TestRun(t *testing.T) {
 				Sender:     "fantasio",
 				EventType:  "pull_request",
 			},
-			tektondir:    "testdata/pull_request",
-			finalStatus:  "neutral",
-			finalLogText: "<th>Status</th><th>Duration</th><th>Name</th>",
+			tektondir:       "testdata/pull_request",
+			finalStatus:     "neutral",
+			finalStatusText: "<th>Status</th><th>Duration</th><th>Name</th>",
 		},
-
+		{
+			name: "pull request/with webhook",
+			runevent: info.Event{
+				Event: &github.PullRequestEvent{
+					PullRequest: &github.PullRequest{
+						Number: github.Int(666),
+					},
+				},
+				SHA:        "fromwebhook",
+				Owner:      "organizationes",
+				Repository: "lagaffe",
+				URL:        "https://service/documentation",
+				HeadBranch: "press",
+				BaseBranch: "main",
+				Sender:     "fantasio",
+				EventType:  "pull_request",
+			},
+			tektondir:       "testdata/pull_request",
+			finalStatus:     "neutral",
+			finalStatusText: "<th>Status</th><th>Duration</th><th>Name</th>",
+			VCSInfoFromRepo: true,
+		},
 		{
 			name: "No match",
 			runevent: info.Event{
@@ -187,9 +225,9 @@ func TestRun(t *testing.T) {
 				BaseBranch: "nomatch",
 				EventType:  "pull_request",
 			},
-			tektondir:    "",
-			finalStatus:  "skipped",
-			finalLogText: "directory for this repository",
+			tektondir:       "",
+			finalStatus:     "skipped",
+			finalStatusText: "directory for this repository",
 		},
 		// Skipped
 		{
@@ -205,9 +243,9 @@ func TestRun(t *testing.T) {
 				TriggerTarget: "check_run",
 				EventType:     "push",
 			},
-			tektondir:    "",
-			finalStatus:  "skipped",
-			finalLogText: "directory for this repository",
+			tektondir:       "",
+			finalStatus:     "skipped",
+			finalStatusText: "directory for this repository",
 		},
 		{
 			name: "Skipped/Test no repositories match on different event_type",
@@ -221,12 +259,11 @@ func TestRun(t *testing.T) {
 				BaseBranch: "nomatch",
 				EventType:  "push",
 			},
-			tektondir:    "",
-			finalStatus:  "skipped",
-			finalLogText: "Skipping creating status check",
+			tektondir:       "",
+			finalStatus:     "skipped",
+			finalStatusText: "not find a namespace match",
 			repositories: []*v1alpha1.Repository{
-				repository.NewRepo("test-run", "https://service/documentation",
-					"a branch", "namespace", "namespace", "pull_request"),
+				repository.NewRepo("test-run", "https://service/documentation", "a branch", "namespace", "namespace", "pull_request", "", ""),
 			},
 		},
 
@@ -242,12 +279,11 @@ func TestRun(t *testing.T) {
 				BaseBranch: "nomatch",
 				EventType:  "pull_request",
 			},
-			tektondir:    "",
-			finalStatus:  "skipped",
-			finalLogText: "not find a namespace match",
+			tektondir:       "",
+			finalStatus:     "skipped",
+			finalStatusText: "not find a namespace match",
 			repositories: []*v1alpha1.Repository{
-				repository.NewRepo("test-run", "https://nowhere.com",
-					"a branch", "namespace", "namespace", "pull_request"),
+				repository.NewRepo("test-run", "https://nowhere.com", "a branch", "namespace", "namespace", "pull_request", "", ""),
 			},
 		},
 
@@ -265,7 +301,7 @@ func TestRun(t *testing.T) {
 			},
 			tektondir:                    "testdata/pull_request",
 			finalStatus:                  "skipped",
-			finalLogText:                 "is not allowed to run CI on this repo",
+			finalStatusText:              "is not allowed to run CI on this repo",
 			skipReplyingOrgPublicMembers: true,
 		},
 		{
@@ -282,16 +318,26 @@ func TestRun(t *testing.T) {
 			},
 			tektondir:                "testdata/max-keep-runs",
 			finalStatus:              "neutral",
-			finalLogText:             "<th>Status</th><th>Duration</th><th>Name</th>",
+			finalStatusText:          "<th>Status</th><th>Duration</th><th>Name</th>",
 			expectedNumberofCleanups: 10,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			fakeclient, mux, ghTestServerURL, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+
+			var secretName, vcsURL string
+			if tt.VCSInfoFromRepo {
+				vcsURL = ghTestServerURL
+				secretName = "ziesecretee"
+			}
+
 			if tt.repositories == nil {
 				tt.repositories = []*v1alpha1.Repository{
-					repository.NewRepo("test-run", tt.runevent.URL, tt.runevent.BaseBranch, "namespace", "namespace", tt.runevent.EventType),
+					repository.NewRepo("test-run", tt.runevent.URL, tt.runevent.BaseBranch, "namespace", "namespace",
+						tt.runevent.EventType, secretName, vcsURL),
 				}
 			}
 			tdata := testclient.Data{
@@ -303,11 +349,16 @@ func TestRun(t *testing.T) {
 					},
 				},
 				Repositories: tt.repositories,
+				PipelineRuns: []*pipelinev1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "force-me",
+						},
+					},
+				},
 			}
 
-			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
-			defer teardown()
-			testSetupCommonGhReplies(t, mux, tt.runevent, tt.finalStatus, tt.finalLogText, tt.skipReplyingOrgPublicMembers)
+			testSetupCommonGhReplies(t, mux, tt.runevent, tt.finalStatus, tt.finalStatusText, tt.skipReplyingOrgPublicMembers)
 			if tt.tektondir != "" {
 				testSetupTektonDir(mux, tt.runevent, tt.tektondir)
 			}
@@ -326,19 +377,23 @@ func TestRun(t *testing.T) {
 				Info: info.Info{
 					Event: &tt.runevent,
 					Pac: info.PacOpts{
+						VCSInfoFromRepo:    tt.VCSInfoFromRepo,
 						SecretAutoCreation: true,
+						VCSAPIURL:          ghTestServerURL,
+						VCSToken:           "NONE",
 					},
 				},
 			}
 			k8int := &kitesthelper.KinterfaceTest{
 				ConsoleURL:               "https://console.url",
 				ExpectedNumberofCleanups: tt.expectedNumberofCleanups,
+				GetSecretResult:          secretName,
 			}
 
-			vcsintf := githubintf.VCS{
+			err := Run(ctx, cs, &ghwebvcs.VCS{
 				Client: fakeclient,
-			}
-			err := Run(ctx, cs, vcsintf, k8int)
+				Token:  github.String("None"),
+			}, k8int)
 
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)

@@ -79,7 +79,8 @@ func setup(ctx context.Context) (*params.Run, E2EOptions, github.VCS, error) {
 		return nil, E2EOptions{}, github.VCS{}, err
 	}
 	e2eoptions := E2EOptions{Owner: splitted[0], Repo: splitted[1]}
-	gvcs := github.NewGithubVCS(ctx, info.PacOpts{
+	gvcs := github.VCS{}
+	gvcs.SetClient(ctx, info.PacOpts{
 		VCSToken:  githubToken,
 		VCSAPIURL: githubURL,
 	})

@@ -13,6 +13,7 @@ type PacOpts struct {
 	SecretAutoCreation bool   // secret auto creation in target namespace
 	VCSToken           string
 	VCSAPIURL          string
+	VCSInfoFromRepo    bool // wether the webvcs info come from the repository
 	VCSType            string
 	PayloadFile        string
 }

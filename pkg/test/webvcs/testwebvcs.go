@@ -17,31 +17,38 @@ type TestWebVCSImp struct {
 	FilesInsideRepo      map[string]string
 }
 
-func (v TestWebVCSImp) ParsePayload(ctx context.Context, logger *zap.SugaredLogger, event *info.Event,
+func (v *TestWebVCSImp) ParsePayload(ctx context.Context, logger *zap.SugaredLogger, event *info.Event,
 	s string) (*info.Event, error) {
 	return v.Event, nil
 }
 
-func (v TestWebVCSImp) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
+func (v *TestWebVCSImp) GetCommitInfo(ctx context.Context, runevent *info.Event) error {
+	return nil
+}
+
+func (v *TestWebVCSImp) SetClient(ctx context.Context, pacopt info.PacOpts) {
+}
+
+func (v *TestWebVCSImp) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 	if v.AllowIT {
 		return true, nil
 	}
 	return false, nil
 }
 
-func (v TestWebVCSImp) CreateStatus(ctx context.Context, event *info.Event, opts info.PacOpts,
-	opts2 webvcs.StatusOpts) error {
+func (v *TestWebVCSImp) CreateStatus(ctx context.Context, event *info.Event, opts info.PacOpts,
+	statusOpts webvcs.StatusOpts) error {
 	if v.CreateStatusErorring {
 		return fmt.Errorf("you want me to error I error for you")
 	}
 	return nil
 }
 
-func (v TestWebVCSImp) GetTektonDir(ctx context.Context, event *info.Event, s string) (string, error) {
+func (v *TestWebVCSImp) GetTektonDir(ctx context.Context, event *info.Event, s string) (string, error) {
 	return v.TektonDirTemplate, nil
 }
 
-func (v TestWebVCSImp) GetFileInsideRepo(ctx context.Context, event *info.Event, s string, b bool) (string, error) {
+func (v *TestWebVCSImp) GetFileInsideRepo(ctx context.Context, event *info.Event, s string, b bool) (string, error) {
 	if val, ok := v.FilesInsideRepo[s]; ok {
 		return val, nil
 	}

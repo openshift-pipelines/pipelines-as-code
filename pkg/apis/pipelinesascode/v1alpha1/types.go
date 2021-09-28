@@ -51,10 +51,18 @@ type RepositoryRunStatus struct {
 
 // RepositorySpec is the spec of a repo
 type RepositorySpec struct {
-	Namespace string `json:"namespace"`
-	URL       string `json:"url"`
-	EventType string `json:"event_type"`
-	Branch    string `json:"branch"`
+	Namespace    string            `json:"namespace"` // TODO: Remove, this should be implicit where it is installed
+	URL          string            `json:"url"`
+	EventType    string            `json:"event_type"`
+	Branch       string            `json:"branch"`
+	WebvcsAPIURL string            `json:"webvcs_api_url"`
+	WebvcsSecret *WebvcsSecretSpec `json:"webvcs_secret,omitempty"`
+}
+
+type WebvcsSecretSpec struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace,omitempty"`
+	Key       string `json:"key"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

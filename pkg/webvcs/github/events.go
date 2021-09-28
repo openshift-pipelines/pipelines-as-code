@@ -91,11 +91,6 @@ func (v VCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, runevent 
 		return &info.Event{}, errors.New("this event is not supported")
 	}
 
-	err = v.populateCommitInfo(ctx, processedevent)
-	if err != nil {
-		return &info.Event{}, err
-	}
-
 	processedevent.Event = event
 	processedevent.TriggerTarget = runevent.TriggerTarget
 

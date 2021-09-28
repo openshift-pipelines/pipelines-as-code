@@ -12,6 +12,12 @@ import (
 	tektonv1beta1client "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1beta1"
 )
 
+type GetSecretOpt struct {
+	Namespace string
+	Name      string
+	Key       string
+}
+
 type Interface interface {
 	GetConsoleUI(context.Context, string, string) (string, error)
 	GetNamespace(context.Context, string) error
@@ -19,6 +25,7 @@ type Interface interface {
 	WaitForPipelineRunSucceed(context.Context, tektonv1beta1client.TektonV1beta1Interface, *v1beta1.PipelineRun, time.Duration) error
 	CleanupPipelines(context.Context, string, string, int) error
 	CreateBasicAuthSecret(context.Context, *info.Event, info.PacOpts, string) error
+	GetSecret(context.Context, GetSecretOpt) (string, error)
 }
 
 type Interaction struct {

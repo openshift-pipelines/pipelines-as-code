@@ -82,10 +82,11 @@ rules:
   - apiGroups: [""]
     resources: ["namespaces", "pods", "pods/log"]
     verbs: ["get", "list", "watch"]
-  # Allow creating and deleting secrets in namespace
+  # Allow getting, creating and deleting secrets in namespace
+  # This is to be able to attach secret to repository on webhook.
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["create", "delete"]
+    verbs: ["get", "create", "delete"]
   # Permissions to list repositories on cluster
   - apiGroups: ["pipelinesascode.tekton.dev"]
     resources: ["repositories"]

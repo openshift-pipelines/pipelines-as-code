@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonv1beta1client "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1beta1"
@@ -16,6 +17,7 @@ type KinterfaceTest struct {
 	ConsoleURLErorring       bool
 	NamespaceError           bool
 	ExpectedNumberofCleanups int
+	GetSecretResult          string
 }
 
 func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string) (string, error) {
@@ -27,6 +29,10 @@ func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string)
 
 func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, pacopts info.PacOpts, targetNamespace string) error {
 	return nil
+}
+
+func (k *KinterfaceTest) GetSecret(ctx context.Context, secretopt kubeinteraction.GetSecretOpt) (string, error) {
+	return k.GetSecretResult, nil
 }
 
 func (k *KinterfaceTest) GetNamespace(ctx context.Context, ns string) error {

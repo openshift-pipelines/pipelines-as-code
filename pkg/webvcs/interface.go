@@ -12,6 +12,8 @@ type StatusOpts struct {
 	Conclusion string
 	Text       string
 	DetailsURL string
+	Summary    string
+	Title      string
 }
 
 type Interface interface {
@@ -20,4 +22,6 @@ type Interface interface {
 	CreateStatus(context.Context, *info.Event, info.PacOpts, StatusOpts) error
 	GetTektonDir(context.Context, *info.Event, string) (string, error)            // ctx, event, path
 	GetFileInsideRepo(context.Context, *info.Event, string, bool) (string, error) // ctx, event, path, branch
+	SetClient(context.Context, info.PacOpts)
+	GetCommitInfo(context.Context, *info.Event) error
 }

@@ -94,9 +94,15 @@ spec:
         import json
         import os
         import time
+        import sys
 
         import requests
         from jwcrypto import jwk, jwt
+
+        if not os.environ.get("GITHUBAPP_INSTALLATION_ID"):
+          open(os.environ.get('GITHUBAPP_RESULT_PATH'), 'w').write("")
+          print("Skipping, since event not coming from a githup app installation")
+          sys.exit(0)
 
         EXPIRE_MINUTES_AS_SECONDS = int(os.environ.get('GITHUBAPP_TOKEN_EXPIRATION_MINUTES', 10)) * 60
         GITHUB_API_URL = "https://" + os.environ.get('GITHUB_API_URL')

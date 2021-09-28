@@ -71,6 +71,7 @@ spec:
     - name: pull_request_number
     - name: sender
     - name: installation_id
+      default: ""
     - name: trigger_target
     - name: ghe_host
       default: "api.github.com"

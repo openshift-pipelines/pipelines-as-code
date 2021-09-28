@@ -114,7 +114,7 @@ func resolveFilenames(cs *params.Run, filenames []string, params []string) (stri
 		SkipInlining: skipInlining,
 	}
 	// We use github here but since we don't do remotetask we would not care
-	vcsintf := github.NewGithubVCS(ctx, cs.Info.Pac)
+	vcsintf := &github.VCS{}
 	prun, err := resolve.Resolve(ctx, cs, vcsintf, allTemplates, ropt)
 	if err != nil {
 		return "", err

@@ -150,8 +150,7 @@ spec:
           params:
             - name: "filter"
               value: >-
-                body.action in ['created', 'synchronize', 'opened'] &&
-                'installation' in body
+                body.action in ['created', 'synchronize', 'opened']
       bindings:
         - ref: pipelines-as-code-bindings-pullreq
       template:

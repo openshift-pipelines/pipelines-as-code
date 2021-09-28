@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-github/v35/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"gotest.tools/v3/assert"
@@ -229,10 +230,10 @@ func TestParsePayload(t *testing.T) {
 
 func TestParsePayloadInvalid(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := NewGithubVCS(ctx, info.PacOpts{
-		VCSToken:  "none",
-		VCSAPIURL: "nothing",
-	})
+	gvcs := VCS{
+		Token:  github.String("none"),
+		APIURL: github.String("nothing"),
+	}
 	logger, _ := getLogger()
 	r := &info.Event{
 		EventType:     "pull_request",
@@ -244,10 +245,10 @@ func TestParsePayloadInvalid(t *testing.T) {
 
 func TestParsePayloadUnkownEvent(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := NewGithubVCS(ctx, info.PacOpts{
-		VCSToken:  "none",
-		VCSAPIURL: "",
-	})
+	gvcs := VCS{
+		Token:  github.String("none"),
+		APIURL: github.String(""),
+	}
 	logger, _ := getLogger()
 	r := &info.Event{
 		EventType:     "foo",
@@ -259,10 +260,10 @@ func TestParsePayloadUnkownEvent(t *testing.T) {
 
 func TestParsePayCannotParse(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gvcs := NewGithubVCS(ctx, info.PacOpts{
-		VCSToken:  "none",
-		VCSAPIURL: "",
-	})
+	gvcs := VCS{
+		Token:  github.String("none"),
+		APIURL: github.String(""),
+	}
 	logger, _ := getLogger()
 	r := &info.Event{
 		EventType:     "gollum",

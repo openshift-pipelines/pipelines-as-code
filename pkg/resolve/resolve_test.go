@@ -51,7 +51,7 @@ func readTDfile(t *testing.T, testname string, generateName bool) (*tektonv1beta
 		GenerateName: generateName,
 		RemoteTasks:  true,
 	}
-	tvcs := testwebvcs.TestWebVCSImp{}
+	tvcs := &testwebvcs.TestWebVCSImp{}
 	resolved, err := Resolve(ctx, cs, tvcs, string(data), ropt)
 	if err != nil {
 		return &tektonv1beta1.PipelineRun{}, nil, err

@@ -53,7 +53,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request", "", ""),
 					},
 				},
 			},
@@ -67,8 +67,8 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-other", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request"),
+						testnewrepo.NewRepo("test-other", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request", "", ""),
 					},
 				},
 			},
@@ -82,7 +82,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, "otherNS", "otherNS", "pull_request"),
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, "otherNS", "otherNS", "pull_request", "", ""),
 					},
 				},
 			},

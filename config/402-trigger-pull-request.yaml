@@ -40,13 +40,16 @@ spec:
       value: $(body.pull_request.user.login)
     - name: "base_ref"
       value: $(body.pull_request.base.ref)
+    - name: "pull_request_number"
+      value: $(body.pull_request.number)
+    - name: "pull_request_html_url"
+      value: $(body.pull_request.html_url)
     - name: "sha"
       value: $(body.pull_request.head.sha)
     - name: "head_ref"
       value: $(body.pull_request.head.ref)
     - name: "installation_id"
       value: $(body.installation.id)
-
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
@@ -65,9 +68,12 @@ spec:
     - name: url
     - name: sender
     - name: base_ref
+    - name: pull_request_number
+    - name: pull_request_html_url
     - name: sha
     - name: head_ref
     - name: installation_id
+      default: ""
     - name: trigger_target
     - name: ghe_host
       default: "api.github.com"
@@ -100,6 +106,10 @@ spec:
             value: $(tt.params.sender)
           - name: base_ref
             value: $(tt.params.base_ref)
+          - name: pull_request_number
+            value: $(tt.params.pull_request_number)
+          - name: pull_request_html_url
+            value: $(tt.params.pull_request_html_url)
           - name: sha
             value: $(tt.params.sha)
           - name: head_ref
@@ -117,6 +127,8 @@ spec:
             - name: url
             - name: sender
             - name: base_ref
+            - name: pull_request_number
+            - name: pull_request_html_url
             - name: sha
             - name: head_ref
             - name: installation_id
@@ -155,6 +167,10 @@ spec:
                   - name: sender
                     type: string
                   - name: base_ref
+                    type: string
+                  - name: pull_request_number
+                    type: string
+                  - name: pull_request_html_url
                     type: string
                   - name: sha
                     type: string
@@ -195,6 +211,8 @@ spec:
                               "html_url": "$(params.url)"
                           },
                           "pull_request": {
+                              "number": $(params.pull_request_number),
+                              "html_url": "$(params.pull_request_html_url)",
                               "user": {
                                   "login": "$(params.sender)"
                               },
@@ -232,13 +250,16 @@ spec:
                   value: $(params.sender)
                 - name: base_ref
                   value: $(params.base_ref)
+                - name: pull_request_number
+                  value: $(params.pull_request_number)
+                - name: pull_request_html_url
+                  value: $(params.pull_request_html_url)
                 - name: sha
                   value: $(params.sha)
                 - name: head_ref
                   value: $(params.head_ref)
                 - name: token
                   value: "$(tasks.get-token.results.token)"
-
         workspaces:
           - name: secrets
             secret:
