@@ -42,7 +42,7 @@ linters:
     - unused
     - unparam
     - gochecknoinits
-    - goconst
+      # - goconst
       # - gocyclo
     # - goerr113
     - gofmt
