@@ -174,10 +174,9 @@ spec:
 				Run: cs,
 			}
 
-			vcsint := webvcs.TestWebVCSImp{
+			got, err := rt.GetTaskFromAnnotations(ctx, &webvcs.TestWebVCSImp{
 				FilesInsideRepo: tt.filesInsideRepo,
-			}
-			got, err := rt.GetTaskFromAnnotations(ctx, vcsint, tt.annotations)
+			}, tt.annotations)
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr, "We should have get an error with %v but we didn't", tt.wantErr)
 				return

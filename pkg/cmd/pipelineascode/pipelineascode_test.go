@@ -29,17 +29,19 @@ func TestRunByVCS(t *testing.T) {
 		payloadFile          string
 		consoleURLErroring   bool
 		createStatusErroring bool
-		twebvcs              testwebvcs.TestWebVCSImp
+		twebvcs              *testwebvcs.TestWebVCSImp
 	}{
 		{
 			name:        "error on payload not here",
-			payloadFile: "/no/men/no/football",
+			payloadFile: "/no/men/no/war",
 			wantErr:     true,
+			twebvcs:     &testwebvcs.TestWebVCSImp{},
 		},
 		{
 			name:        "no payload passed",
 			payloadFile: "",
 			wantErr:     true,
+			twebvcs:     &testwebvcs.TestWebVCSImp{},
 		},
 		{
 			name: "run pull_request user not allowed",
@@ -54,7 +56,7 @@ func TestRunByVCS(t *testing.T) {
 				SHA:           "sha",
 				Sender:        "sender",
 			},
-			twebvcs:     testwebvcs.TestWebVCSImp{AllowIT: false},
+			twebvcs:     &testwebvcs.TestWebVCSImp{AllowIT: false},
 			payloadFile: "testdata/pull_request.json",
 		},
 		{
@@ -70,24 +72,14 @@ func TestRunByVCS(t *testing.T) {
 				SHA:           "sha",
 				Sender:        "sender",
 			},
-			twebvcs:            testwebvcs.TestWebVCSImp{AllowIT: false},
+			twebvcs:            &testwebvcs.TestWebVCSImp{AllowIT: false},
 			payloadFile:        "testdata/pull_request.json",
 			consoleURLErroring: true,
 		},
 		{
-			name: "create status error",
-			event: &info.Event{
-				EventType:     "pull_request",
-				TriggerTarget: "pull_request",
-				BaseBranch:    "testbranch",
-				DefaultBranch: "main",
-				HeadBranch:    "main",
-				Owner:         "owner",
-				Repository:    "repo",
-				SHA:           "sha",
-				Sender:        "sender",
-			},
-			twebvcs:     testwebvcs.TestWebVCSImp{AllowIT: false, CreateStatusErorring: true},
+			name:        "create status error",
+			event:       &info.Event{},
+			twebvcs:     &testwebvcs.TestWebVCSImp{AllowIT: false, CreateStatusErorring: true},
 			payloadFile: "testdata/pull_request.json",
 			wantErr:     true,
 		},
@@ -103,9 +95,12 @@ func TestRunByVCS(t *testing.T) {
 					Pac: info.PacOpts{
 						VCSType:     "github",
 						PayloadFile: test.payloadFile,
+						VCSToken:    "TOKEN",
+						VCSAPIURL:   "http://goninjago",
 					},
 				},
 			}
+
 			test.twebvcs.Event = test.event
 			kinteract := &kitesthelper.KinterfaceTest{
 				ConsoleURL:         "http://console",
@@ -144,8 +139,7 @@ func TestGetPayloadFromFile(t *testing.T) {
 			opts := info.PacOpts{
 				VCSType: tt.vcstype,
 			}
-			ctx, _ := rtesting.SetupFakeContext(t)
-			_, err := getVCS(ctx, opts)
+			_, err := getVCS(opts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getPayloadFromFile() error = %v, wantErr %v", err, tt.wantErr)
 				return

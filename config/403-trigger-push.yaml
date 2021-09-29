@@ -70,6 +70,7 @@ spec:
     - name: sha
     - name: head_ref
     - name: installation_id
+      default: ""
     - name: trigger_target
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1

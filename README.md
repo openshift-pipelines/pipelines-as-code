@@ -85,6 +85,10 @@ The above command would create a `Repository` CRD in your `demo` namespace which
 PipelineRuns for your GitHub repository should run. It also generates an example pipeline in the `.tekton` folder.
 Commit and push the pipeline to your repo to start using pipelines as code.
 
+Note that even if Github application is the preferred method, Pipeline As Code
+supports Github Webhook as well, see the [INSTALL guide](INSTALL.md) for
+reference
+
 ## Usage Guide
 
 ### Pipelines As Code Configurations

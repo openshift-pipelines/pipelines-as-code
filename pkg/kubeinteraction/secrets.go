@@ -57,3 +57,12 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 	k.Run.Clients.Log.Infof("Secret %s has been generated in namespace %s", secretName, targetNamespace)
 	return err
 }
+
+func (k Interaction) GetSecret(ctx context.Context, secretopt GetSecretOpt) (string, error) {
+	secret, err := k.Run.Clients.Kube.CoreV1().Secrets(secretopt.Namespace).Get(
+		ctx, secretopt.Name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return string(secret.Data[secretopt.Key]), nil
+}

@@ -99,9 +99,7 @@ spec:
           params:
             - name: "filter"
               value: >-
-                'installation' in body &&
-                'pusher' in body &&
-                'installation' in body
+                'pusher' in body
       bindings:
         - ref: pipelines-as-code-bindings-push
       template:
@@ -150,8 +148,7 @@ spec:
           params:
             - name: "filter"
               value: >-
-                body.action in ['created', 'synchronize', 'opened'] &&
-                'installation' in body
+                body.action in ['created', 'synchronize', 'opened']
       bindings:
         - ref: pipelines-as-code-bindings-pullreq
       template:

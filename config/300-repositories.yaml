@@ -81,6 +81,19 @@ spec:
                 namespace:
                   description: Namespace
                   type: string
+                webvcs_api_url:
+                  description: The API URL for the WEBVCS
+                  type: string
+                webvcs_secret:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                      description: "Key inside the secret"
+                      default: "token"
+                    name:
+                      type: string
+                      description: "The secret name"
               type: object
           type: object
   scope: Namespaced

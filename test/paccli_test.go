@@ -38,7 +38,7 @@ func execCommand(runcnx *params.Run, cmd func(*params.Run, *ui.IOStreams) *cobra
 func TestPacCli(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghvcs, err := setup(ctx)
+	runcnx, opts, ghvcs, err := setup(ctx, false)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
@@ -81,7 +81,10 @@ spec:
 		},
 	}
 
-	err = trepo.CreateNSRepo(ctx, targetNS, runcnx, repository)
+	err = trepo.CreateNS(ctx, targetNS, runcnx)
+	assert.NilError(t, err)
+
+	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
 	output, err := execCommand(runcnx, repositorycmd.DescribeCommand, "-n", targetNS, targetNS)

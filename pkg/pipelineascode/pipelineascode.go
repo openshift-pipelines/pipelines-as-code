@@ -13,6 +13,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -27,14 +29,47 @@ const (
 // The time to wait for a pipelineRun, maybe we should not restrict this?
 const pipelineRunTimeout = 2 * time.Hour
 
-func fmtDuration(d time.Duration) string {
-	d = d.Round(time.Minute)
-	m := d / time.Minute
-	return fmt.Sprintf("%02d", m)
-}
-
 func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int kubeinteraction.Interface) error {
 	var err error
+
+	// Match the Event to a Repository Resource,
+	// We are going to match on targetNamespace annotation later on in
+	// `MatchPipelinerunByAnnotation`
+	repo, err := matcher.GetRepoByCR(ctx, cs, "")
+	if err != nil {
+		return err
+	}
+
+	if repo == nil || repo.Spec.Namespace == "" {
+		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on target-branch:%s event-type: %s", cs.Info.Event.Owner, cs.Info.Event.Repository, cs.Info.Event.BaseBranch, cs.Info.Event.EventType)
+
+		if cs.Info.Pac.VCSToken == "" {
+			cs.Clients.Log.Error(msg)
+			return nil
+		}
+
+		err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+			Status:     "completed",
+			Conclusion: "skipped",
+			Text:       msg,
+			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
+		}, true)
+
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if repo.Spec.WebvcsSecret != nil {
+		err := secretFromRepository(ctx, cs, k8int, repo)
+		if err != nil {
+			return err
+		}
+		// We already SetClient before ParseWebhook in case if we already set
+		// the token (ie: github apps) and not coming from the repository
+		vcsintf.SetClient(ctx, cs.Info.Pac)
+	}
 
 	// Check if the submitter is allowed to run this.
 	allowed, err := vcsintf.IsAllowed(ctx, cs.Info.Event)
@@ -52,33 +87,6 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		}, true)
 		if err != nil {
 			return err
-		}
-		return nil
-	}
-
-	// Match the Event to a Repository Resource,
-	// We are going to match on targetNamespace annotation later on in
-	// `MatchPipelinerunByAnnotation`
-	repo, err := matcher.GetRepoByCR(ctx, cs, "")
-	if err != nil {
-		return err
-	}
-
-	if repo == nil || repo.Spec.Namespace == "" {
-		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on target-branch:%s event-type: %s", cs.Info.Event.Owner, cs.Info.Event.Repository, cs.Info.Event.BaseBranch, cs.Info.Event.EventType)
-		if cs.Info.Event.EventType == "pull_request" || cs.Info.Event.TriggerTarget == "issue-recheck" {
-			err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
-				Status:     "completed",
-				Conclusion: "skipped",
-				Text:       msg,
-				DetailsURL: "https://tenor.com/search/sad-cat-gifs",
-			}, true)
-
-			if err != nil {
-				return err
-			}
-		} else {
-			cs.Clients.Log.Infof("Skipping creating status check: %s", msg)
 		}
 		return nil
 	}
@@ -150,24 +158,14 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		}
 	}
 
-	// Add labels on the soon to be created pipelinerun so UI/CLI can easily
-	// query them. Since K8s do not like slash in labels value and on push we
-	// have the full ref, we replace the "/" by "-". The tools probably need to
-	// be aware of it when querying.
-	refTomakeK8Happy := strings.ReplaceAll(cs.Info.Event.BaseBranch, "/", "-")
-	pipelineRun.Labels = map[string]string{
-		"app.kubernetes.io/managed-by":              "pipelines-as-code",
-		"pipelinesascode.tekton.dev/url-org":        cs.Info.Event.Owner,
-		"pipelinesascode.tekton.dev/url-repository": cs.Info.Event.Repository,
-		"pipelinesascode.tekton.dev/sha":            cs.Info.Event.SHA,
-		"pipelinesascode.tekton.dev/sender":         cs.Info.Event.Sender,
-		"pipelinesascode.tekton.dev/event-type":     cs.Info.Event.EventType,
-		"pipelinesascode.tekton.dev/branch":         refTomakeK8Happy,
-		"pipelinesascode.tekton.dev/repository":     repo.GetName(),
+	// Get the SHA commit info, we want to get the URL and commit title
+	err = vcsintf.GetCommitInfo(ctx, cs.Info.Event)
+	if err != nil {
+		return err
 	}
 
-	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-title"] = cs.Info.Event.SHATitle
-	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-url"] = cs.Info.Event.SHAURL
+	// Add labels and annotations to pipelinerun
+	addLabelsAndAnnotations(cs, pipelineRun, repo)
 
 	// Create the actual pipeline
 	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, pipelineRun, metav1.CreateOptions{})
@@ -183,8 +181,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	}
 
 	// Create status with the log url
-	msg := fmt.Sprintf(startingPipelineRunText,
-		pr.GetName(), repo.Spec.Namespace, repo.Spec.Namespace, pr.GetName())
+	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), repo.Spec.Namespace, repo.Spec.Namespace, pr.GetName())
 	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
 		Status:     "in_progress",
 		Conclusion: "",
@@ -253,4 +250,58 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 
 	cs.Clients.Log.Infof("Repository status of %s has been updated", nrepo.Name)
 	return err
+}
+
+func addLabelsAndAnnotations(cs *params.Run, pipelineRun *tektonv1beta1.PipelineRun, repo *apipac.Repository) {
+	// Add labels on the soon to be created pipelinerun so UI/CLI can easily
+	// query them. Since K8s do not like slash in labels value and on push we
+	// have the full ref, we replace the "/" by "-". The tools probably need to
+	// be aware of it when querying.
+	refTomakeK8Happy := strings.ReplaceAll(cs.Info.Event.BaseBranch, "/", "-")
+	pipelineRun.Labels = map[string]string{
+		"app.kubernetes.io/managed-by":              "pipelines-as-code",
+		"pipelinesascode.tekton.dev/url-org":        cs.Info.Event.Owner,
+		"pipelinesascode.tekton.dev/url-repository": cs.Info.Event.Repository,
+		"pipelinesascode.tekton.dev/sha":            cs.Info.Event.SHA,
+		"pipelinesascode.tekton.dev/sender":         cs.Info.Event.Sender,
+		"pipelinesascode.tekton.dev/event-type":     cs.Info.Event.EventType,
+		"pipelinesascode.tekton.dev/branch":         refTomakeK8Happy,
+		"pipelinesascode.tekton.dev/repository":     repo.GetName(),
+	}
+
+	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-title"] = cs.Info.Event.SHATitle
+	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-url"] = cs.Info.Event.SHAURL
+}
+
+func fmtDuration(d time.Duration) string {
+	d = d.Round(time.Minute)
+	m := d / time.Minute
+	return fmt.Sprintf("%02d", m)
+}
+
+func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, repo *apipac.Repository) error {
+	var err error
+
+	if repo.Spec.WebvcsAPIURL == "" {
+		if cs.Info.Pac.VCSType == "github" {
+			repo.Spec.WebvcsAPIURL = github.PublicURL
+		}
+	}
+	cs.Info.Pac.VCSToken, err = k8int.GetSecret(
+		ctx,
+		kubeinteraction.GetSecretOpt{
+			Namespace: repo.GetNamespace(),
+			Name:      repo.Spec.WebvcsSecret.Name,
+			Key:       repo.Spec.WebvcsSecret.Key,
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+	cs.Info.Pac.VCSInfoFromRepo = true
+	cs.Info.Pac.VCSAPIURL = repo.Spec.WebvcsAPIURL
+
+	cs.Clients.Log.Infof("Using token from secret %s in key %s", repo.Spec.WebvcsSecret.Name, repo.Spec.WebvcsSecret.Key)
+	return nil
 }

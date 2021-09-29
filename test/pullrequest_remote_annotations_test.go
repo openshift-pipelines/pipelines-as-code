@@ -24,7 +24,7 @@ import (
 func TestPullRequestRemoteAnnotations(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghcnx, err := setup(ctx)
+	runcnx, opts, ghcnx, err := setup(ctx, false)
 	assert.NilError(t, err)
 
 	prun, err := ioutil.ReadFile("testdata/pipelinerun_remote_annotations.yaml")
@@ -61,7 +61,10 @@ func TestPullRequestRemoteAnnotations(t *testing.T) {
 		},
 	}
 
-	err = trepo.CreateNSRepo(ctx, targetNS, runcnx, repository)
+	err = trepo.CreateNS(ctx, targetNS, runcnx)
+	assert.NilError(t, err)
+
+	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",

@@ -23,7 +23,7 @@ import (
 func TestMaxKeepRuns(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghcnx, err := setup(ctx)
+	runcnx, opts, ghcnx, err := setup(ctx, false)
 	assert.NilError(t, err)
 	maxKepRuns := 1
 
@@ -43,8 +43,10 @@ func TestMaxKeepRuns(t *testing.T) {
 			Branch:    mainBranch,
 		},
 	}
+	err = trepo.CreateNS(ctx, targetNS, runcnx)
+	assert.NilError(t, err)
 
-	err = trepo.CreateNSRepo(ctx, targetNS, runcnx, repository)
+	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
 	for prRun := 1; prRun <= maxKepRuns+1; prRun++ {

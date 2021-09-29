@@ -36,7 +36,7 @@ func Command(cs *params.Run) *cobra.Command {
 				return err
 			}
 			ctx := context.Background()
-			vcsintf, err := getVCS(ctx, cs.Info.Pac)
+			vcsintf, err := getVCS(cs.Info.Pac)
 			if err != nil {
 				return err
 			}
@@ -66,10 +66,11 @@ func getPayloadFromFile(opts info.PacOpts) (string, error) {
 	return string(payloadB), err
 }
 
-func getVCS(ctx context.Context, pacopts info.PacOpts) (webvcs.Interface, error) {
+func getVCS(pacopts info.PacOpts) (webvcs.Interface, error) {
 	switch pacopts.VCSType {
 	case "github":
-		return github.NewGithubVCS(ctx, pacopts), nil
+		g := &github.VCS{}
+		return g, nil
 	default:
 		return nil, fmt.Errorf("no supported VCS is detected")
 	}
@@ -84,15 +85,23 @@ func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinterac
 		cs.Info.Pac.LogURL = defaultURL
 	}
 
+	// If we already have the Token (ie: github apps) set as soon as possible the client,
+	// There is more things supported when we already have a github apps and some that are not
+	// (ie: /ok-to-test or /rerequest)
+	if cs.Info.Pac.VCSToken != "" {
+		vcx.SetClient(ctx, cs.Info.Pac)
+	}
+
 	payload, err := getPayloadFromFile(cs.Info.Pac)
 	if err != nil {
 		return err
 	}
 
-	cs.Info.Event, err = vcx.ParsePayload(ctx, cs.Clients.Log, cs.Info.Event, payload)
+	cs.Info.Event, err = vcx.ParsePayload(ctx, cs, payload)
 	if err != nil {
 		return err
 	}
+
 	err = pipelineascode.Run(ctx, cs, vcx, kinteract)
 	if err != nil {
 		createStatusErr := vcx.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, webvcs.StatusOpts{

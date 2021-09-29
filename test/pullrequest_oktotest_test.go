@@ -27,7 +27,7 @@ import (
 func TestPullRequestOkToTest(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghcnx, err := setup(ctx)
+	runcnx, opts, ghcnx, err := setup(ctx, false)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
@@ -69,8 +69,10 @@ spec:
 			Branch:    mainBranch,
 		},
 	}
+	err = trepo.CreateNS(ctx, targetNS, runcnx)
+	assert.NilError(t, err)
 
-	err = trepo.CreateNSRepo(ctx, targetNS, runcnx, repository)
+	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",
