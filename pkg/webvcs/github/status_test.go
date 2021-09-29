@@ -49,6 +49,7 @@ func TestGithubVCS_CreateStatus(t *testing.T) {
 		args    args
 		want    *github.CheckRun
 		wantErr bool
+		notoken bool
 	}{
 		{
 			name: "success",
@@ -115,6 +116,11 @@ func TestGithubVCS_CreateStatus(t *testing.T) {
 			want:    &github.CheckRun{ID: &resultid},
 			wantErr: false,
 		},
+		{
+			name:    "no token set",
+			wantErr: true,
+			notoken: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -152,10 +158,13 @@ func TestGithubVCS_CreateStatus(t *testing.T) {
 				DetailsURL: tt.args.detailsURL,
 			}
 			pacopts := info.PacOpts{
-				LogURL:    "https://log",
-				VCSToken:  "hello",
-				VCSAPIURL: "moto",
+				LogURL: "https://log",
 			}
+			if !tt.notoken {
+				pacopts.VCSToken = "hello"
+				pacopts.VCSAPIURL = "moto"
+			}
+
 			err := gcvs.CreateStatus(ctx, &tt.args.runevent, pacopts, status)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GithubVCS.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)

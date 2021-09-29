@@ -9,13 +9,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CreateNSRepo(ctx context.Context, targetNS string, cs *params.Run,
-	repository *pacv1alpha1.Repository) error {
+func CreateNS(ctx context.Context, targetNS string, cs *params.Run) error {
 	nsSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: targetNS}}
 	_, err := cs.Clients.Kube.CoreV1().Namespaces().Create(ctx, nsSpec, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
+	return err
+}
+
+func CreateRepo(ctx context.Context, targetNS string, cs *params.Run,
+	repository *pacv1alpha1.Repository) error {
 	repo, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Create(ctx, repository, metav1.CreateOptions{})
 	if err != nil {
 		return err

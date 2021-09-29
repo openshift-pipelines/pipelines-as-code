@@ -66,8 +66,10 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		if err != nil {
 			return err
 		}
+		// We already SetClient before ParseWebhook in case if we already set
+		// the token (ie: github apps) and not coming from the repository
+		vcsintf.SetClient(ctx, cs.Info.Pac)
 	}
-	vcsintf.SetClient(ctx, cs.Info.Pac)
 
 	// Check if the submitter is allowed to run this.
 	allowed, err := vcsintf.IsAllowed(ctx, cs.Info.Event)
@@ -156,6 +158,12 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		}
 	}
 
+	// Get the SHA commit info, we want to get the URL and commit title
+	err = vcsintf.GetCommitInfo(ctx, cs.Info.Event)
+	if err != nil {
+		return err
+	}
+
 	// Add labels and annotations to pipelinerun
 	addLabelsAndAnnotations(cs, pipelineRun, repo)
 
@@ -170,12 +178,6 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	if err != nil {
 		// Don't bomb out if we can't get the console UI
 		consoleURL = "https://giphy.com/explore/cat-exercise-wheel"
-	}
-
-	// Get the SHA commit info, we want to get the URL and commit title
-	err = vcsintf.GetCommitInfo(ctx, cs.Info.Event)
-	if err != nil {
-		return err
 	}
 
 	// Create status with the log url

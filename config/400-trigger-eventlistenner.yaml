@@ -99,9 +99,7 @@ spec:
           params:
             - name: "filter"
               value: >-
-                'installation' in body &&
-                'pusher' in body &&
-                'installation' in body
+                'pusher' in body
       bindings:
         - ref: pipelines-as-code-bindings-push
       template:

@@ -60,9 +60,8 @@ type RepositorySpec struct {
 }
 
 type WebvcsSecretSpec struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace,omitempty"`
-	Key       string `json:"key"`
+	Name string `json:"name"`
+	Key  string `json:"key"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

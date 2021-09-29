@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v35/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"go.uber.org/zap"
 )
@@ -33,10 +34,10 @@ func (v VCS) payloadFix(payload string) []byte {
 
 // ParsePayload parse payload event
 // TODO: this piece of code is just plain silly
-func (v VCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, runevent *info.Event, payload string) (*info.Event, error) {
+func (v VCS) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
 	var processedevent *info.Event
 	payloadTreated := v.payloadFix(payload)
-	event, err := github.ParseWebHook(runevent.EventType, payloadTreated)
+	event, err := github.ParseWebHook(run.Info.Event.EventType, payloadTreated)
 	if err != nil {
 		return &info.Event{}, err
 	}
@@ -48,14 +49,18 @@ func (v VCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, runevent 
 
 	switch event := event.(type) {
 	case *github.CheckRunEvent:
-		if runevent.TriggerTarget == "issue-recheck" {
-			processedevent, err = v.handleReRequestEvent(ctx, log, event)
+		if run.Info.Event.TriggerTarget == "issue-recheck" {
+			processedevent, err = v.handleReRequestEvent(ctx, run.Clients.Log, event)
 			if err != nil {
 				return &info.Event{}, err
 			}
 		}
 	case *github.IssueCommentEvent:
-		processedevent, err = v.handleIssueCommentEvent(ctx, log, event)
+		if run.Info.Pac.VCSToken == "" {
+			return &info.Event{}, fmt.Errorf("gitops style comments operation is only supported with github apps" +
+				" integration")
+		}
+		processedevent, err = v.handleIssueCommentEvent(ctx, run.Clients.Log, event)
 		if err != nil {
 			return &info.Event{}, err
 		}
@@ -70,7 +75,7 @@ func (v VCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, runevent 
 			SHATitle:      event.GetHeadCommit().GetMessage(),
 			Sender:        event.GetSender().GetLogin(),
 			BaseBranch:    event.GetRef(),
-			EventType:     runevent.TriggerTarget,
+			EventType:     run.Info.Event.TriggerTarget,
 		}
 
 		processedevent.HeadBranch = processedevent.BaseBranch // in push events Head Branch is the same as Basebranch
@@ -84,7 +89,7 @@ func (v VCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, runevent 
 			BaseBranch:    event.GetPullRequest().Base.GetRef(),
 			HeadBranch:    event.GetPullRequest().Head.GetRef(),
 			Sender:        event.GetPullRequest().GetUser().GetLogin(),
-			EventType:     runevent.EventType,
+			EventType:     run.Info.Event.EventType,
 		}
 
 	default:
@@ -92,7 +97,7 @@ func (v VCS) ParsePayload(ctx context.Context, log *zap.SugaredLogger, runevent 
 	}
 
 	processedevent.Event = event
-	processedevent.TriggerTarget = runevent.TriggerTarget
+	processedevent.TriggerTarget = run.Info.Event.TriggerTarget
 
 	return processedevent, nil
 }

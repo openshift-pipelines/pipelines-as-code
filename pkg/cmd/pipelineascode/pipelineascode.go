@@ -85,12 +85,19 @@ func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinterac
 		cs.Info.Pac.LogURL = defaultURL
 	}
 
+	// If we already have the Token (ie: github apps) set as soon as possible the client,
+	// There is more things supported when we already have a github apps and some that are not
+	// (ie: /ok-to-test or /rerequest)
+	if cs.Info.Pac.VCSToken != "" {
+		vcx.SetClient(ctx, cs.Info.Pac)
+	}
+
 	payload, err := getPayloadFromFile(cs.Info.Pac)
 	if err != nil {
 		return err
 	}
 
-	cs.Info.Event, err = vcx.ParsePayload(ctx, cs.Clients.Log, cs.Info.Event, payload)
+	cs.Info.Event, err = vcx.ParsePayload(ctx, cs, payload)
 	if err != nil {
 		return err
 	}

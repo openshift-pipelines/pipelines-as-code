@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
-	"go.uber.org/zap"
 )
 
 type TestWebVCSImp struct {
@@ -17,8 +17,7 @@ type TestWebVCSImp struct {
 	FilesInsideRepo      map[string]string
 }
 
-func (v *TestWebVCSImp) ParsePayload(ctx context.Context, logger *zap.SugaredLogger, event *info.Event,
-	s string) (*info.Event, error) {
+func (v *TestWebVCSImp) ParsePayload(ctx context.Context, run *params.Run, s string) (*info.Event, error) {
 	return v.Event, nil
 }
 
