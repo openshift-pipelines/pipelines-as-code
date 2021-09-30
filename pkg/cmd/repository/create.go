@@ -79,10 +79,13 @@ func askToCreateSimplePipeline(gitRoot string, opts CreateOptions) error {
 	fpath := filepath.Join(gitRoot, ".tekton", fmt.Sprintf("%s.yaml", opts.EventType))
 	cwd, _ := os.Getwd()
 	abspath, _ := filepath.Rel(cwd, fpath)
+	msg := fmt.Sprintf("Would you like me to create a basic PipelineRun file into the file %s ?", abspath)
 
-	reply, err := askYesNo(opts,
-		fmt.Sprintf("Would you like me to create a basic PipelineRun file into the file %s ?", abspath),
-		"True")
+	if _, err := os.Stat(fpath); !os.IsNotExist(err) {
+		msg = fmt.Sprintf("There is already a file named: %s would you like me to override it?", abspath)
+	}
+
+	reply, err := askYesNo(opts, msg, "True")
 	if err != nil {
 		return err
 	}
@@ -94,17 +97,6 @@ func askToCreateSimplePipeline(gitRoot string, opts CreateOptions) error {
 	if _, err = os.Stat(filepath.Join(gitRoot, ".tekton")); os.IsNotExist(err) {
 		if err := os.MkdirAll(filepath.Join(gitRoot, ".tekton"), 0o755); err != nil {
 			return err
-		}
-	}
-
-	if _, err = os.Stat(fpath); !os.IsNotExist(err) {
-		overwrite, err := askYesNo(opts,
-			fmt.Sprintf("There is already a file named: %s would you like me to override it?", fpath), "No")
-		if err != nil {
-			return err
-		}
-		if !overwrite {
-			return nil
 		}
 	}
 
@@ -301,6 +293,11 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 			return err
 		}
 	}
+
+	if err := askToCreateSimplePipeline(gitinfo.TopLevelPath, opts); err != nil {
+		return err
+	}
+
 	_, err = opts.Run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Create(ctx,
 		&v1alpha1.Repository{
 			ObjectMeta: metav1.ObjectMeta{
@@ -321,10 +318,6 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 		opts.RepositoryName,
 		opts.Namespace,
 	)
-
-	if err := askToCreateSimplePipeline(gitinfo.TopLevelPath, opts); err != nil {
-		return err
-	}
 
 	fmt.Fprintf(opts.IOStreams.Out, "%s Don't forget to install the GitHub application into your repo %s\n",
 		cs.InfoIcon(),
