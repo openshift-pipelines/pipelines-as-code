@@ -307,7 +307,6 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 				Name: opts.RepositoryName,
 			},
 			Spec: v1alpha1.RepositorySpec{
-				Namespace: opts.Namespace,
 				URL:       opts.TargetURL,
 				EventType: opts.EventType,
 				Branch:    opts.TargetBranch,

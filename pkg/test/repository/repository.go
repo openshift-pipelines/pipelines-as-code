@@ -9,7 +9,7 @@ import (
 	"knative.dev/pkg/apis/duck/v1beta1"
 )
 
-func NewRepo(name, url, branch, installNamespace, namespace, eventtype, secretname, vcsurl string) *v1alpha1.Repository {
+func NewRepo(name, url, branch, installNamespace, eventtype, secretname, vcsurl string) *v1alpha1.Repository {
 	cw := clockwork.NewFakeClock()
 	repo := &v1alpha1.Repository{
 		TypeMeta: v1.TypeMeta{},
@@ -18,7 +18,6 @@ func NewRepo(name, url, branch, installNamespace, namespace, eventtype, secretna
 			Namespace: installNamespace,
 		},
 		Spec: v1alpha1.RepositorySpec{
-			Namespace: namespace,
 			URL:       url,
 			Branch:    branch,
 			EventType: eventtype,

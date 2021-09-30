@@ -5,7 +5,6 @@ go 1.15
 require (
 	github.com/AlecAivazis/survey/v2 v2.2.12
 	github.com/briandowns/spinner v1.16.0
-	github.com/davecgh/go-spew v1.1.1
 	github.com/gobwas/glob v0.2.3
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-github/v35 v35.3.0

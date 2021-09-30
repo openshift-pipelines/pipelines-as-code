@@ -157,7 +157,6 @@ func TestDescribe(t *testing.T) {
 						Namespace: ns,
 					},
 					Spec: v1alpha1.RepositorySpec{
-						Namespace: ns,
 						URL:       "https://anurl.com",
 						Branch:    "branch",
 						EventType: "pull_request",

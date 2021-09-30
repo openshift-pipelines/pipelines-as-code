@@ -54,7 +54,6 @@ func TestPullRequestRemoteAnnotations(t *testing.T) {
 			Name: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
-			Namespace: targetNS,
 			URL:       repoinfo.GetHTMLURL(),
 			EventType: pullRequestEvent,
 			Branch:    mainBranch,

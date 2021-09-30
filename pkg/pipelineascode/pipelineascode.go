@@ -40,7 +40,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		return err
 	}
 
-	if repo == nil || repo.Spec.Namespace == "" {
+	if repo == nil || repo.Spec.URL == "" {
 		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on target-branch:%s event-type: %s", cs.Info.Event.Owner, cs.Info.Event.Repository, cs.Info.Event.BaseBranch, cs.Info.Event.EventType)
 
 		if cs.Info.Pac.VCSToken == "" {
@@ -114,14 +114,6 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		"sha", cs.Info.Event.SHA,
 		"event_type", "pull_request")
 
-	// Make sure we have the namespace already created or error it.
-	// TODO: this probably can be trashed since repo is only can be created in
-	// namespace
-	err = k8int.GetNamespace(ctx, repo.Spec.Namespace)
-	if err != nil {
-		return err
-	}
-
 	// Replace those {{var}} placeholders user has in her template to the cs.Info variable
 	allTemplates = ReplacePlaceHoldersVariables(allTemplates, map[string]string{
 		"revision":   cs.Info.Event.SHA,
@@ -146,13 +138,13 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		return err
 	}
 
-	if annotationRepo.Spec.Namespace != "" {
+	if annotationRepo.Spec.URL != "" {
 		repo = annotationRepo
 	}
 
 	// Automatically create a secret with the token to be reused by git-clone task
 	if cs.Info.Pac.SecretAutoCreation {
-		err = k8int.CreateBasicAuthSecret(ctx, cs.Info.Event, cs.Info.Pac, repo.Spec.Namespace)
+		err = k8int.CreateBasicAuthSecret(ctx, cs.Info.Event, cs.Info.Pac, repo.GetNamespace())
 		if err != nil {
 			return err
 		}
@@ -168,20 +160,20 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	addLabelsAndAnnotations(cs, pipelineRun, repo)
 
 	// Create the actual pipeline
-	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.Spec.Namespace).Create(ctx, pipelineRun, metav1.CreateOptions{})
+	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).Create(ctx, pipelineRun, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
 	// Get the UI/webconsole URL for this pipeline to watch the log (only openshift console supported atm)
-	consoleURL, err := k8int.GetConsoleUI(ctx, repo.Spec.Namespace, pr.GetName())
+	consoleURL, err := k8int.GetConsoleUI(ctx, repo.GetNamespace(), pr.GetName())
 	if err != nil {
 		// Don't bomb out if we can't get the console UI
 		consoleURL = "https://giphy.com/explore/cat-exercise-wheel"
 	}
 
 	// Create status with the log url
-	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), repo.Spec.Namespace, repo.Spec.Namespace, pr.GetName())
+	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), repo.GetNamespace(), repo.GetNamespace(), pr.GetName())
 	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
 		Status:     "in_progress",
 		Conclusion: "",
@@ -204,7 +196,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 			return err
 		}
 
-		err = k8int.CleanupPipelines(ctx, repo.Spec.Namespace, repo.Name, max)
+		err = k8int.CleanupPipelines(ctx, repo.GetNamespace(), repo.Name, max)
 		if err != nil {
 			return err
 		}
@@ -212,7 +204,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 
 	// Post the final status to GitHub check status with a nice breakdown and
 	// tekton cli describe output.
-	newPr, err := postFinalStatus(ctx, cs, k8int, vcsintf, pr.Name, repo.Spec.Namespace)
+	newPr, err := postFinalStatus(ctx, cs, k8int, vcsintf, pr.Name, repo.GetNamespace())
 	if err != nil {
 		return err
 	}
@@ -230,7 +222,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	// Get repo again in case it was updated while we were running the CI
 	// NOTE: there may be a race issue we should maybe solve here, between the Get and
 	// Update but we are talking sub-milliseconds issue here.
-	lastrepo, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.Spec.Namespace).Get(ctx, repo.Name, metav1.GetOptions{})
+	lastrepo, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.GetNamespace()).Get(ctx, repo.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}

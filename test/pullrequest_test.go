@@ -130,7 +130,6 @@ func createRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, run *par
 			Name: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
-			Namespace: targetNS,
 			URL:       repoinfo.GetHTMLURL(),
 			EventType: targetEvent,
 			Branch:    targetBranch,

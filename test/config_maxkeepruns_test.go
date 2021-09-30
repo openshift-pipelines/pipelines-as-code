@@ -37,7 +37,6 @@ func TestMaxKeepRuns(t *testing.T) {
 			Name: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
-			Namespace: targetNS,
 			URL:       repoinfo.GetHTMLURL(),
 			EventType: pullRequestEvent,
 			Branch:    mainBranch,
@@ -105,5 +104,5 @@ spec:
 }
 
 // Local Variables:
-// compile-command: "go test -tags=e2e -v -info TestMaxKeepRuns$ ."
+// compile-command: "go test -tags=e2e -v -run TestMaxKeepRuns$ ."
 // End:

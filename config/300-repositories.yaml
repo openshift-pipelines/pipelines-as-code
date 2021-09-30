@@ -78,9 +78,6 @@ spec:
                 event_type:
                   description: Event Type
                   type: string
-                namespace:
-                  description: Namespace
-                  type: string
                 webvcs_api_url:
                   description: The API URL for the WEBVCS
                   type: string

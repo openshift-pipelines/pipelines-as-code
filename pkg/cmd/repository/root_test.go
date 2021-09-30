@@ -77,7 +77,6 @@ func TestCommands(t *testing.T) {
 						Namespace: nsName,
 					},
 					Spec: v1alpha1.RepositorySpec{
-						Namespace: nsName,
 						URL:       "https://anurl.com/repo/owner",
 						Branch:    "branch",
 						EventType: "pull_request",
@@ -145,7 +144,6 @@ func TESSS(t *testing.T) {
 				Namespace: nsName,
 			},
 			Spec: v1alpha1.RepositorySpec{
-				Namespace: nsName,
 				URL:       "https://anurl.com/repo/owner",
 				Branch:    "branch",
 				EventType: "pull_request",
