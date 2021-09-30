@@ -32,7 +32,7 @@ func (k Interaction) CleanupPipelines(ctx context.Context, namespace string, rep
 		LabelSelector: labelSelector,
 	})
 
-	sort.Sort(prByCompletionTime(pruns.Items))
+	sort.Sort(sort.Reverse(prByCompletionTime(pruns.Items)))
 
 	for c, v := range pruns.Items {
 		if v.GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason() == "Running" {
