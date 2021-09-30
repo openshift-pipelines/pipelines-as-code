@@ -17,6 +17,8 @@ ignore:
   - "**/*.pb.go"
   - "hack"
   - "pkg/generated"
+  - "pkg/apis"
+  - "cmd/*"
   - "test"
   - "third_party"
   - "vendor"
