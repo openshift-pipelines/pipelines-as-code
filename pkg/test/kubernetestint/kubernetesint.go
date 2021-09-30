@@ -2,7 +2,6 @@ package kubernetestint
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 type KinterfaceTest struct {
 	ConsoleURL               string
 	ConsoleURLErorring       bool
-	NamespaceError           bool
 	ExpectedNumberofCleanups int
 	GetSecretResult          string
 }
@@ -33,13 +31,6 @@ func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, runevent *in
 
 func (k *KinterfaceTest) GetSecret(ctx context.Context, secretopt kubeinteraction.GetSecretOpt) (string, error) {
 	return k.GetSecretResult, nil
-}
-
-func (k *KinterfaceTest) GetNamespace(ctx context.Context, ns string) error {
-	if k.NamespaceError {
-		return errors.New("cannot find namespace")
-	}
-	return nil
 }
 
 func (k *KinterfaceTest) WaitForPipelineRunSucceed(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun, polltimeout time.Duration) error {
