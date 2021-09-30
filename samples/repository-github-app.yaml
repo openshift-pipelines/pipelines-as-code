@@ -13,5 +13,3 @@ spec:
   branch: "main"
   # Which event type
   event_type: "pull_request"
-  # Target namespace, it needs to match where this CRD is installed.
-  namespace: "sample-ci"

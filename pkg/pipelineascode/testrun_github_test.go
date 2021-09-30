@@ -263,7 +263,7 @@ func TestRun(t *testing.T) {
 			finalStatus:     "skipped",
 			finalStatusText: "not find a namespace match",
 			repositories: []*v1alpha1.Repository{
-				repository.NewRepo("test-run", "https://service/documentation", "a branch", "namespace", "namespace", "pull_request", "", ""),
+				repository.NewRepo("test-run", "https://service/documentation", "a branch", "namespace", "pull_request", "", ""),
 			},
 		},
 
@@ -283,7 +283,7 @@ func TestRun(t *testing.T) {
 			finalStatus:     "skipped",
 			finalStatusText: "not find a namespace match",
 			repositories: []*v1alpha1.Repository{
-				repository.NewRepo("test-run", "https://nowhere.com", "a branch", "namespace", "namespace", "pull_request", "", ""),
+				repository.NewRepo("test-run", "https://nowhere.com", "a branch", "namespace", "pull_request", "", ""),
 			},
 		},
 
@@ -336,8 +336,7 @@ func TestRun(t *testing.T) {
 
 			if tt.repositories == nil {
 				tt.repositories = []*v1alpha1.Repository{
-					repository.NewRepo("test-run", tt.runevent.URL, tt.runevent.BaseBranch, "namespace", "namespace",
-						tt.runevent.EventType, secretName, vcsURL),
+					repository.NewRepo("test-run", tt.runevent.URL, tt.runevent.BaseBranch, "namespace", tt.runevent.EventType, secretName, vcsURL),
 				}
 			}
 			tdata := testclient.Data{

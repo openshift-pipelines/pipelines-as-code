@@ -51,7 +51,6 @@ type RepositoryRunStatus struct {
 
 // RepositorySpec is the spec of a repo
 type RepositorySpec struct {
-	Namespace    string            `json:"namespace"` // TODO: Remove, this should be implicit where it is installed
 	URL          string            `json:"url"`
 	EventType    string            `json:"event_type"`
 	Branch       string            `json:"branch"`

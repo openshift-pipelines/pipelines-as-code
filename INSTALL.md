@@ -178,7 +178,6 @@ spec:
   url: "https://github.com/owner/repo"
   branch: "main"
   event_type: "pull_request"
-  namespace: "target-namespace"
   # Set this if you run with Github Enteprise
   # webvcs_api_url: "github.enteprise.com"
   webvcs_secret:

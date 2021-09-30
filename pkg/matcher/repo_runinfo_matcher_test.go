@@ -37,7 +37,7 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
 					},
 				},
 				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
@@ -46,24 +46,11 @@ func Test_getRepoByCR(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			name: "test-repo-not-installed-where-it-should",
-			args: args{
-				data: testclient.Data{
-					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, "paslebonns", targetNamespace, "pull_request", "", ""),
-					},
-				},
-				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
-			},
-			wantTargetNS: "",
-			wantErr:      true,
-		},
-		{
 			name: "test-nomatch-event-type",
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
 					},
 				},
 				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "push"},
@@ -76,7 +63,7 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
 					},
 				},
 				runevent: info.Event{URL: targetURL, BaseBranch: "anotherBaseBranch", EventType: "pull_request"},
@@ -89,7 +76,7 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", "http://nottarget.url", mainBranch, targetNamespace, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo("test-good", "http://nottarget.url", mainBranch, targetNamespace, "pull_request", "", ""),
 					},
 				},
 				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
@@ -102,7 +89,7 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
 					},
 				},
 				runevent: info.Event{
@@ -118,7 +105,7 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, "refs/tags/*", targetNamespace, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo("test-good", targetURL, "refs/tags/*", targetNamespace, "pull_request", "", ""),
 					},
 				},
 				runevent: info.Event{
@@ -148,14 +135,14 @@ func Test_getRepoByCR(t *testing.T) {
 				assert.NilError(t, err, "GetRepoByCR() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantTargetNS == "" && got != nil {
-				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.Spec.Namespace, tt.wantTargetNS)
+				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.GetNamespace(), tt.wantTargetNS)
 			}
 			if tt.wantTargetNS != "" && got == nil {
-				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.Spec.Namespace, tt.wantTargetNS)
+				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.GetNamespace(), tt.wantTargetNS)
 			}
 
-			if tt.wantTargetNS != "" && tt.wantTargetNS != got.Spec.Namespace {
-				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.Spec.Namespace, tt.wantTargetNS)
+			if tt.wantTargetNS != "" && tt.wantTargetNS != got.GetNamespace() {
+				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.GetNamespace(), tt.wantTargetNS)
 			}
 		})
 	}

@@ -126,31 +126,36 @@ metadata:
 spec:
   url: "https://github.com/linda/project"
   branch: "main"
-  namespace: "my-pipeline-ci"
 EOF
 ```
 
-This will match all Pull Request coming to `github.com/linda/project` on branch main into the namespace `my-pipeline-ci`
+This will match all Pull Request coming to `github.com/linda/project` on branch
+main into the namespace `my-pipeline-ci` (since this is where the Repository is
+installed).
 
-For security reasons, the Repository CR needs to be created in the namespace where Tekton Pipelines associated with the
-source code repository would be executed.
+The Repository CR needs to be created in the namespace where Tekton Pipelines associated with the
+source code repository would be executed it cannot target another namespace.
 
 There is another optional layer of security where PipelineRun can have an annotation to explicitely target a specific
-namespace. It would stilll need to have a Repository CRD created in that namespace to be able to be matched.
+namespace. It would stilll need to have a Repository CRD created in that
+namespace to be able to be matched.
 
-With this annotation there is no way a bad actor on a cluster can hijack the pipelineRun execution to a namespace they
-don't have access to. To use that feature you need to add this annotation :
+With this annotation a bad actor on a cluster cannot hijack the pipelineRun
+execution to a namespace they don't have access to. To use that feature you
+need to add this annotation to the pipeline annotation :
 
 ```yaml
 pipelinesascode.tekton.dev/target-namespace: "mynamespace"
 ```
 
-and Pipelines as Code will only match the repository in the mynamespace Namespace instead of trying to match it from all
+and Pipelines as Code will only match the repository in the mynamespace
+Namespace instead of trying to match it from all
 available repository on cluster.
 
 ### Authoring PipelineRun in `.tekton/` directory
 
-- Pipelines as Code will always try to be as close to the tekton template as possible. Usually you would write your
+- Pipelines as Code will always try to be as close to the tekton template as
+  possible. Usually you would write your
   template and save them with a ".yaml" extension and Pipelines as Code will run them.
 
 - Inside your pipeline you would need to be able to consume the commit as received from the webhook by checking it out
@@ -235,8 +240,8 @@ Whenever Pipelines as Code create a new PipelineRun in the target namespace it w
 
 `pac-git-basic-auth-REPOSITORY_OWNER-REPOSITORY_NAME`
 
-The secret contains a `.gitconfig` and a git credentials `.git-credentials` with the https url using the short lived
-token generated from the Github application for accessing the private repository.
+The secret contains a `.gitconfig` and a git credentials `.git-credentials`
+with the https url using the token it discovered from the Github application or attached to the secret.
 
 As documented :
 

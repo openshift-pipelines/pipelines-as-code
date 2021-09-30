@@ -39,7 +39,6 @@ func TestList(t *testing.T) {
 			Namespace: namespace1.GetName(),
 		},
 		Spec: v1alpha1.RepositorySpec{
-			Namespace: namespace1.GetName(),
 			URL:       "https://anurl.com/owner/repo",
 			Branch:    "branch",
 			EventType: "pull_request",
@@ -67,7 +66,6 @@ func TestList(t *testing.T) {
 			Namespace: namespace2.GetName(),
 		},
 		Spec: v1alpha1.RepositorySpec{
-			Namespace: namespace2.GetName(),
 			URL:       "https://anurl.com/owner/repo",
 			Branch:    "branch",
 			EventType: "pull_request",
