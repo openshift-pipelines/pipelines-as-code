@@ -203,8 +203,8 @@ func TestInteraction_CleanupPipelines(t *testing.T) {
 				metav1.ListOptions{})
 			assert.NilError(t, err)
 			assert.Equal(t, len(plist.Items), tt.args.kept)
-			assert.Equal(t, plist.Items[len(plist.Items)-1].Name, tt.args.pruns[0].Name,
-				fmt.Sprintf("%s != %s", plist.Items[0].Name, tt.args.pruns[0].Name))
+			assert.Equal(t, plist.Items[0].Name, tt.args.pruns[len(tt.args.pruns)-1].Name,
+				fmt.Sprintf("%s != %s", plist.Items[0].Name, tt.args.pruns[len(tt.args.pruns)-1].Name))
 		})
 	}
 }
