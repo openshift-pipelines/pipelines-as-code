@@ -12,11 +12,18 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const PublicURL = "https://api.github.com/"
+const apiPublicURL = "https://api.github.com/"
 
 type VCS struct {
 	Client        *github.Client
 	Token, APIURL *string
+}
+
+func (v *VCS) GetConfig() *info.VCSConfig {
+	return &info.VCSConfig{
+		TaskStatusTMPL: taskStatusTemplate,
+		APIURL:         apiPublicURL,
+	}
 }
 
 func (v *VCS) SetClient(ctx context.Context, info info.PacOpts) {
@@ -32,7 +39,7 @@ func (v *VCS) SetClient(ctx context.Context, info info.PacOpts) {
 			apiURL = "https://" + apiURL
 		}
 	}
-	if apiURL != "" && apiURL != PublicURL {
+	if apiURL != "" && apiURL != apiPublicURL {
 		client, _ = github.NewEnterpriseClient(apiURL, apiURL, tc)
 	} else {
 		client = github.NewClient(tc)

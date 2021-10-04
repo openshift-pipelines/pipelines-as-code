@@ -18,21 +18,6 @@ import (
 
 const checkStatustmpl = `{{.taskStatus}}`
 
-const taskStatustmpl = `
-<table>
-  <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
-
-{{- range $taskrun := .TaskRunList }}
-<tr>
-<td>{{ formatCondition $taskrun.Status.Conditions }}</td>
-<td>{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}</td><td>
-
-{{ $taskrun.ConsoleLogURL }}
-
-</td></tr>
-{{- end }}
-</table>`
-
 const naStr = "---"
 
 type tkr struct {
@@ -104,7 +89,7 @@ func ConditionEmoji(c knative1.Conditions) string {
 	return status
 }
 
-func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun, consoleURL string) (string, error) {
+func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun, consoleURL, statusTemplate string) (string, error) {
 	var trl taskrunList
 	var outputBuffer bytes.Buffer
 
@@ -124,7 +109,7 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun, consoleURL st
 		TaskRunList: trl,
 	}
 
-	t := template.Must(template.New("Task Status").Funcs(funcMap).Parse(taskStatustmpl))
+	t := template.Must(template.New("Task Status").Funcs(funcMap).Parse(statusTemplate))
 	if err := t.Execute(&outputBuffer, data); err != nil {
 		fmt.Fprintf(&outputBuffer, "failed to execute template: ")
 		return "", err
@@ -155,7 +140,7 @@ func postFinalStatus(ctx context.Context, cs *params.Run, k8int kubeinteraction.
 		consoleURL = "https://giphy.com/search/cat-reading"
 	}
 
-	taskStatus, err := statusOfAllTaskListForCheckRun(pr, consoleURL)
+	taskStatus, err := statusOfAllTaskListForCheckRun(pr, consoleURL, vcsintf.GetConfig().TaskStatusTMPL)
 	if err != nil {
 		return pr, err
 	}
@@ -170,10 +155,11 @@ func postFinalStatus(ctx context.Context, cs *params.Run, k8int kubeinteraction.
 		return pr, err
 	}
 
+	output := outputBuffer.String()
 	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
 		Status:     "completed",
 		Conclusion: pipelineRunStatus(pr),
-		Text:       outputBuffer.String(),
+		Text:       output,
 		DetailsURL: consoleURL,
 	}, false)
 

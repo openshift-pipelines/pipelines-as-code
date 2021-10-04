@@ -21,6 +21,10 @@ func (v *TestWebVCSImp) ParsePayload(ctx context.Context, run *params.Run, s str
 	return v.Event, nil
 }
 
+func (v *TestWebVCSImp) GetConfig() *info.VCSConfig {
+	return &info.VCSConfig{}
+}
+
 func (v *TestWebVCSImp) GetCommitInfo(ctx context.Context, runevent *info.Event) error {
 	return nil
 }

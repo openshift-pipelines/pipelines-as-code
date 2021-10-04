@@ -24,4 +24,5 @@ type Interface interface {
 	GetFileInsideRepo(context.Context, *info.Event, string, string) (string, error) // ctx, event, path, branch
 	SetClient(context.Context, info.PacOpts)
 	GetCommitInfo(context.Context, *info.Event) error
+	GetConfig() *info.VCSConfig
 }
