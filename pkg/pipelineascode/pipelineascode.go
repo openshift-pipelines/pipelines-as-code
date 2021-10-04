@@ -45,6 +45,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 
 		if cs.Info.Pac.VCSToken == "" {
 			cs.Clients.Log.Error(msg)
+			cs.Clients.Log.Error("cannot set status since not token has been set")
 			return nil
 		}
 
