@@ -95,7 +95,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	// Get everything in tekton directory
 	allTemplates, err := vcsintf.GetTektonDir(ctx, cs.Info.Event, tektonDir)
 	if allTemplates == "" || err != nil {
-		msg := "😿 Could not find a <b>.tekton/</b> directory for this repository"
+		msg := fmt.Sprintf("%s - Could not find a **.tekton/** directory for this repository", cs.Info.Pac.ApplicationName)
 
 		err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
 			Status:     "completed",
