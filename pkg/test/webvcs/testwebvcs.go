@@ -47,9 +47,10 @@ func (v *TestWebVCSImp) GetTektonDir(ctx context.Context, event *info.Event, s s
 	return v.TektonDirTemplate, nil
 }
 
-func (v *TestWebVCSImp) GetFileInsideRepo(ctx context.Context, event *info.Event, s string, b bool) (string, error) {
-	if val, ok := v.FilesInsideRepo[s]; ok {
+func (v *TestWebVCSImp) GetFileInsideRepo(ctx context.Context, event *info.Event, file string,
+	targetBranch string) (string, error) {
+	if val, ok := v.FilesInsideRepo[file]; ok {
 		return val, nil
 	}
-	return "", fmt.Errorf("could not find %s in tests", s)
+	return "", fmt.Errorf("could not find %s in tests", file)
 }

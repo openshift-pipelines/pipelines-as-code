@@ -49,7 +49,7 @@ func (rt RemoteTasks) getTask(ctx context.Context, vcsintf webvcs.Interface, tas
 		defer res.Body.Close()
 		return rt.convertTotask(string(data))
 	case strings.Contains(task, "/"):
-		data, err := vcsintf.GetFileInsideRepo(ctx, rt.Run.Info.Event, task, false)
+		data, err := vcsintf.GetFileInsideRepo(ctx, rt.Run.Info.Event, task, "")
 		if err != nil {
 			return ret, err
 		}

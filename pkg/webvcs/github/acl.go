@@ -28,8 +28,8 @@ func (v VCS) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 	return v.aclAllowedOkToTestFromAnOwner(ctx, event)
 }
 
-// allowedOkToTestFromAnOwner Goes on evry comments in a pull-request and sess
-// if there is a /ok-to-test in there running an aclCheck again on the commment
+// allowedOkToTestFromAnOwner Go over every comments in a pull request and check
+// if there is a /ok-to-test in there running an aclCheck again on the comment
 // Sender if she is an OWNER and then allow it to run CI.
 // TODO: pull out the github logic from there in an agnostic way.
 func (v VCS) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Event) (bool, error) {
@@ -140,12 +140,9 @@ func (v VCS) checkSenderOrgMembership(ctx context.Context, runevent *info.Event)
 // getFileFromDefaultBranch will get a file directly from the Default BaseBranch as
 // configured in runinfo which is directly set in webhook by Github
 func (v VCS) getFileFromDefaultBranch(ctx context.Context, path string, runevent *info.Event) (string, error) {
-	runEventOnMain := runevent
-	runEventOnMain.BaseBranch = runEventOnMain.DefaultBranch
-
-	tektonyaml, err := v.GetFileInsideRepo(ctx, runEventOnMain, path, true)
+	tektonyaml, err := v.GetFileInsideRepo(ctx, runevent, path, runevent.DefaultBranch)
 	if err != nil {
-		return "", fmt.Errorf("cannot find %s inside the %s branch: %w", path, runEventOnMain.BaseBranch, err)
+		return "", fmt.Errorf("cannot find %s inside the %s branch: %w", path, runevent.DefaultBranch, err)
 	}
 	return tektonyaml, err
 }
