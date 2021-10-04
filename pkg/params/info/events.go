@@ -6,7 +6,6 @@ type Event struct {
 	TriggerTarget string
 
 	BaseBranch    string // branch against where we are making the PR
-	CheckRunID    *int64
 	DefaultBranch string
 	HeadBranch    string // branch from where our SHA get tested
 	Owner         string
@@ -16,4 +15,11 @@ type Event struct {
 	Sender        string
 	URL           string
 	SHATitle      string
+
+	// TODO: move forge specifics to each driver
+	// Github
+	CheckRunID *int64
+
+	// Bitbucket
+	AccountID string
 }

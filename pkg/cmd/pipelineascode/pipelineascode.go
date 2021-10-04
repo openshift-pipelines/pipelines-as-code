@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -70,6 +71,9 @@ func getVCS(pacopts info.PacOpts) (webvcs.Interface, error) {
 	switch pacopts.VCSType {
 	case "github":
 		g := &github.VCS{}
+		return g, nil
+	case "bitbucket-cloud":
+		g := &bitbucketcloud.VCS{}
 		return g, nil
 	default:
 		return nil, fmt.Errorf("no supported VCS is detected")

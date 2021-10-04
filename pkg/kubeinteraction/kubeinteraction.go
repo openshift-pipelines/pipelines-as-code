@@ -20,7 +20,6 @@ type GetSecretOpt struct {
 
 type Interface interface {
 	GetConsoleUI(context.Context, string, string) (string, error)
-	// TODO: we don't need tektonv1beta1client stuff here
 	WaitForPipelineRunSucceed(context.Context, tektonv1beta1client.TektonV1beta1Interface, *v1beta1.PipelineRun, time.Duration) error
 	CleanupPipelines(context.Context, string, string, int) error
 	CreateBasicAuthSecret(context.Context, *info.Event, info.PacOpts, string) error

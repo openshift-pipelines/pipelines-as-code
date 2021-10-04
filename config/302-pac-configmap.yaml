@@ -23,6 +23,16 @@ data:
   # Wether to automatically create a secret with the token to be use by git-clone
   secret-auto-create: "true"
 
+  # Since public bitbucket doesn't have the concept of Secret, we need to be
+  # able to secure the request by querying https://ip-ranges.atlassian.com/,
+  # this only happen for public bitbucket (ie: when webvcs-api-url is not set in
+  # repository spec). If you want to override this, you need to bear in mind
+  # this could be a security issue, a malicious user can send a PR to your repo
+  # with a modification to your PipelineRun that would grab secrets, tunnel or
+  # others and then send a malicious webhook payload to the eventlistenner which
+  # look like a authorized owner has send the PR to run it..
+  bitbucket-cloud-check-source-ip: "true"
+
 kind: ConfigMap
 metadata:
   name: pipelines-as-code

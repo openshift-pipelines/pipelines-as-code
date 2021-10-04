@@ -130,7 +130,7 @@ spec:
       template:
         ref: pipelines-as-code-template-recheck
 
-    # When sending a new Pull Request
+    # GitHub When sending a new Pull Request
     - name: github-pull-request
       interceptors:
         - ref:
@@ -153,3 +153,80 @@ spec:
         - ref: pipelines-as-code-bindings-pullreq
       template:
         ref: pipelines-as-code-template-pullreq
+
+    # Bitbucket Cloud event when sending a new Pull Request
+    - name: bitbucket-cloud-pull-request
+      bindings:
+        - ref: pipelines-as-code-bitbucket-cloud-pullreq
+        - ref: pipelines-as-code-bitbucket-cloud-pullreq-common
+      interceptors:
+        - ref:
+            name: "bitbucket"
+          params:
+            # TODO: secrets! this should come from Repository CRD so we need to do this from the pac binary :\
+            - name: eventTypes
+              value:
+                - pullrequest:created
+                - pullrequest:updated
+      template:
+        ref: pipelines-as-code-bitbucket-cloud-pullreq
+
+    # When you have a /ok-to-test in a comment to allow CI on a non owner sender
+    - name: bitbucket-cloud-issue-comment-ok-to-test
+      interceptors:
+        - ref:
+            name: "bitbucket"
+          params:
+            - name: eventTypes
+              value:
+                - pullrequest:comment_created
+        - name: "Handle /ok-to-test comment in issue"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                  body.comment.content.raw.matches('(^|\\r\\n)/ok-to-test([ ]*$|$|\\r\\n)')
+      bindings:
+        - ref: pipelines-as-code-bitbucket-cloud-ok-to-test-comment
+        - ref: pipelines-as-code-bitbucket-cloud-pullreq-common
+      template:
+        # Using the templateRef from retest since they are mostly the same
+        ref: pipelines-as-code-bitbucket-cloud-pullreq
+
+    - name: bitbucket-cloud-issue-retest-test
+      interceptors:
+        - ref:
+            name: "bitbucket"
+          params:
+            - name: eventTypes
+              value:
+                - pullrequest:comment_created
+        - name: "Handle /retest comment in issue"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                  body.comment.content.raw.matches('(^|\\r\\n)/retest([ ]*$|$|\\r\\n)')
+      bindings:
+        - ref: pipelines-as-code-bitbucket-cloud-retest-comment
+        - ref: pipelines-as-code-bitbucket-cloud-pullreq-common
+      template:
+        # Using the templateRef from retest since they are mostly the same
+        ref: pipelines-as-code-bitbucket-cloud-pullreq
+
+    # Bitbucket Cloud event when sending a new Pull Request
+    - name: bitbucket-cloud-push
+      bindings:
+        - ref: pipelines-as-code-bitbucket-cloud-push
+      interceptors:
+        - ref:
+            name: "bitbucket-cloud"
+          params:
+            # TODO: secrets! this should come from Repository CRD so we need to do this from the pac binary :\
+            - name: eventTypes
+              value:
+                - repo:push
+      template:
+        ref: pipelines-as-code-bitbucket-cloud-push

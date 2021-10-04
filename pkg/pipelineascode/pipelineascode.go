@@ -86,6 +86,10 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 
 	if !allowed {
 		msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", cs.Info.Event.Sender)
+		if cs.Info.Event.AccountID != "" {
+			msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", cs.Info.Event.Sender,
+				cs.Info.Event.AccountID)
+		}
 		err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
 			Status:     "completed",
 			Conclusion: "skipped",
