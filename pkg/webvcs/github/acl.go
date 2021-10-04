@@ -8,11 +8,10 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v35/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"sigs.k8s.io/yaml"
 )
-
-var okToTestCommentRegexp = `(^|\n)/ok-to-test(\r\n|$)`
 
 func (v VCS) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 	// Do most of the checks first, if user is a owner or in a organisation
@@ -49,7 +48,7 @@ func (v VCS) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Even
 		return false, nil
 	}
 
-	comments, err := v.GetStringPullRequestComment(ctx, revent, okToTestCommentRegexp)
+	comments, err := v.GetStringPullRequestComment(ctx, revent, acl.OKToTestCommentRegexp)
 	if err != nil {
 		return false, err
 	}
