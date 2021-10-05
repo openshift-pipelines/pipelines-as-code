@@ -63,7 +63,7 @@ func (v *VCS) createCheckRunStatus(ctx context.Context, runevent *info.Event, pa
 	}
 
 	// Only set completed-at if conclusion is set (which means finished)
-	if status.Conclusion != "" {
+	if status.Conclusion != "" && status.Conclusion != "pending" {
 		opts.CompletedAt = &now
 		opts.Conclusion = &status.Conclusion
 	}
