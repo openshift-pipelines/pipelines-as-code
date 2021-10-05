@@ -1,6 +1,9 @@
 package clients
 
 import (
+	"context"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
@@ -22,6 +25,28 @@ type Clients struct {
 	HTTP              http.Client
 	Log               *zap.SugaredLogger
 	Dynamic           dynamic.Interface
+}
+
+func (c *Clients) GetURL(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return []byte{}, err
+	}
+	res, err := c.HTTP.Do(req)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer res.Body.Close()
+	statusOK := res.StatusCode >= 200 && res.StatusCode < 300
+	if !statusOK {
+		return nil, fmt.Errorf("Non-OK HTTP status: %d", res.StatusCode)
+	}
+
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return []byte{}, err
+	}
+	return data, nil
 }
 
 // Set kube client based on config
