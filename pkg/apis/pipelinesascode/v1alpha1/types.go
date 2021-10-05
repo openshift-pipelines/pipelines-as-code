@@ -51,11 +51,12 @@ type RepositoryRunStatus struct {
 
 // RepositorySpec is the spec of a repo
 type RepositorySpec struct {
-	URL          string            `json:"url"`
-	EventType    string            `json:"event_type"`
-	Branch       string            `json:"branch"`
-	WebvcsAPIURL string            `json:"webvcs_api_url"`
-	WebvcsSecret *WebvcsSecretSpec `json:"webvcs_secret,omitempty"`
+	URL           string            `json:"url"`
+	EventType     string            `json:"event_type"`
+	Branch        string            `json:"branch"`
+	WebvcsAPIURL  string            `json:"webvcs_api_url"`
+	WebvcsAPIUser string            `json:"webvcs_api_user"`
+	WebvcsSecret  *WebvcsSecretSpec `json:"webvcs_secret,omitempty"`
 }
 
 type WebvcsSecretSpec struct {

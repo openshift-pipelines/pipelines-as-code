@@ -31,6 +31,8 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 	return err
 }
 
+const defaultGitUser = "git"
+
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
 func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, pacopts info.PacOpts, targetNamespace string) error {
 	repoURL, err := url.Parse(runevent.URL)
@@ -38,7 +40,12 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 		return err
 	}
 
-	urlWithToken := fmt.Sprintf("%s://git:%s@%s%s", repoURL.Scheme, pacopts.VCSToken, repoURL.Host, repoURL.Path)
+	gitUser := defaultGitUser
+	if pacopts.VCSUser != "" {
+		gitUser = pacopts.VCSUser
+	}
+
+	urlWithToken := fmt.Sprintf("%s://%s:%s@%s%s", repoURL.Scheme, gitUser, pacopts.VCSToken, repoURL.Host, repoURL.Path)
 	secretData := map[string]string{
 		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, runevent.URL),
 		".git-credentials": urlWithToken,

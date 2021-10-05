@@ -279,6 +279,7 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 			repo.Spec.WebvcsAPIURL = github.PublicURL
 		}
 	}
+	cs.Info.Pac.VCSUser = repo.Spec.WebvcsAPIUser
 	cs.Info.Pac.VCSToken, err = k8int.GetSecret(
 		ctx,
 		kubeinteraction.GetSecretOpt{
