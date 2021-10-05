@@ -11,9 +11,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -62,7 +62,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	}
 
 	if repo.Spec.WebvcsSecret != nil {
-		err := secretFromRepository(ctx, cs, k8int, repo)
+		err := secretFromRepository(ctx, cs, k8int, vcsintf.GetConfig(), repo)
 		if err != nil {
 			return err
 		}
@@ -271,14 +271,13 @@ func fmtDuration(d time.Duration) string {
 	return fmt.Sprintf("%02d", m)
 }
 
-func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, repo *apipac.Repository) error {
+func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.VCSConfig, repo *apipac.Repository) error {
 	var err error
 
 	if repo.Spec.WebvcsAPIURL == "" {
-		if cs.Info.Pac.VCSType == "github" {
-			repo.Spec.WebvcsAPIURL = github.PublicURL
-		}
+		repo.Spec.WebvcsAPIURL = config.APIURL
 	}
+
 	cs.Info.Pac.VCSUser = repo.Spec.WebvcsAPIUser
 	cs.Info.Pac.VCSToken, err = k8int.GetSecret(
 		ctx,
@@ -293,7 +292,6 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 		return err
 	}
 	cs.Info.Pac.VCSInfoFromRepo = true
-	cs.Info.Pac.VCSAPIURL = repo.Spec.WebvcsAPIURL
 
 	cs.Clients.Log.Infof("Using token from secret %s in key %s", repo.Spec.WebvcsSecret.Name, repo.Spec.WebvcsSecret.Key)
 	return nil

@@ -10,6 +10,21 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 )
 
+const taskStatusTemplate = `
+<table>
+  <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
+
+{{- range $taskrun := .TaskRunList }}
+<tr>
+<td>{{ formatCondition $taskrun.Status.Conditions }}</td>
+<td>{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}</td><td>
+
+{{ $taskrun.ConsoleLogURL }}
+
+</td></tr>
+{{- end }}
+</table>`
+
 // createCheckRunStatus create a status via the checkRun API, which is only
 // available with Github apps tokens.
 func (v *VCS) createCheckRunStatus(ctx context.Context, runevent *info.Event, pacopts info.PacOpts, status webvcs.StatusOpts) error {
