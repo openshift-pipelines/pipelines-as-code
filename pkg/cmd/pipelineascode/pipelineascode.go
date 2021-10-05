@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	defaultURL = "https://giphy.com/explore/cat"
+	defaultDetailsURL = "https://github.com/openshift-pipelines/pipelines-as-code/"
 )
 
 func Command(cs *params.Run) *cobra.Command {
@@ -82,7 +82,7 @@ func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinterac
 	cs.Info.Pac.LogURL, err = kinteract.GetConsoleUI(ctx, "", "")
 	if err != nil {
 		cs.Clients.Log.Warn("could not detect a Console URL, skipping")
-		cs.Info.Pac.LogURL = defaultURL
+		cs.Info.Pac.LogURL = defaultDetailsURL
 	}
 
 	// If we already have the Token (ie: github apps) set as soon as possible the client,
@@ -108,7 +108,7 @@ func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinterac
 			Status:     "completed",
 			Conclusion: "failure",
 			Text:       fmt.Sprintf("There was an issue validating the commit: %q", err),
-			DetailsURL: "",
+			DetailsURL: defaultDetailsURL,
 		})
 		if createStatusErr != nil {
 			cs.Clients.Log.Errorf("Cannot create status: %s %s", err, createStatusErr)
