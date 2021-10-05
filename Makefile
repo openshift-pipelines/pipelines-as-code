@@ -15,8 +15,9 @@ all: bin/pipelines-as-code bin/tkn-pac test
 
 FORCE:
 
+.PHONY: vendor
 vendor:
-	@go mod vendor
+	go mod tidy && go mod vendor
 
 bin/%: cmd/% FORCE
 	go build -mod=vendor $(LDFLAGS) -v -o $@ ./$<
