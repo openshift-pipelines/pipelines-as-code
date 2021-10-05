@@ -1,0 +1,37 @@
+package acl
+
+import (
+	"regexp"
+
+	"sigs.k8s.io/yaml"
+)
+
+const OKToTestCommentRegexp = `(^|\n)/ok-to-test(\r\n|$)`
+
+// ownersConfig prow owner, only supporting approvers or reviewers in yaml
+type ownersConfig struct {
+	Approvers []string `json:"approvers,omitempty"`
+	Reviewers []string `json:"reviewers,omitempty"`
+}
+
+// Parse a Prow type Owner, Approver files and return true if the sender is in
+// there.
+func UserInOwnerFile(ownerContent string, sender string) (bool, error) {
+	oc := ownersConfig{}
+	err := yaml.Unmarshal([]byte(ownerContent), &oc)
+	if err != nil {
+		return false, err
+	}
+
+	for _, owner := range append(oc.Approvers, oc.Reviewers...) {
+		if owner == sender {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func MatchRegexp(reg, comment string) bool {
+	re := regexp.MustCompile(reg)
+	return string(re.Find([]byte(comment))) != ""
+}

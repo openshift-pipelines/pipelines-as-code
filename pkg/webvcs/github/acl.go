@@ -4,15 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v35/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"sigs.k8s.io/yaml"
 )
-
-var okToTestCommentRegexp = `(^|\n)/ok-to-test(\r\n|$)`
 
 func (v VCS) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 	// Do most of the checks first, if user is a owner or in a organisation
@@ -49,7 +46,7 @@ func (v VCS) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Even
 		return false, nil
 	}
 
-	comments, err := v.GetStringPullRequestComment(ctx, revent, okToTestCommentRegexp)
+	comments, err := v.GetStringPullRequestComment(ctx, revent, acl.OKToTestCommentRegexp)
 	if err != nil {
 		return false, err
 	}
@@ -65,12 +62,6 @@ func (v VCS) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Even
 		}
 	}
 	return false, nil
-}
-
-// ownersConfig prow owner, only supporting approvers or reviewers in yaml
-type ownersConfig struct {
-	Approvers []string `json:"approvers,omitempty"`
-	Reviewers []string `json:"reviewers,omitempty"`
 }
 
 // aclCheck check if we are allowed to run the pipeline on that PR
@@ -92,25 +83,16 @@ func (v VCS) aclCheckAll(ctx context.Context, rev *info.Event) (bool, error) {
 
 	// If we have a prow OWNERS file in the defaultBranch (ie: master) then
 	// parse it in approvers and reviewers field and check if sender is in there.
-	ownerFile, err := v.getFileFromDefaultBranch(ctx, "OWNERS", rev)
-
-	// Don't error out if the OWNERS file cannot be found
-	if err != nil && !strings.Contains(err.Error(), "cannot find") {
+	ownerContent, err := v.getFileFromDefaultBranch(ctx, "OWNERS", rev)
+	if err != nil {
+		if strings.Contains(err.Error(), "cannot find") {
+			// no owner file, skipping
+			return false, nil
+		}
 		return false, err
-	} else if ownerFile != "" {
-		var ownerConfig ownersConfig
-		err := yaml.Unmarshal([]byte(ownerFile), &ownerConfig)
-		if err != nil {
-			return false, err
-		}
-		for _, owner := range append(ownerConfig.Approvers, ownerConfig.Reviewers...) {
-			if owner == rev.Sender {
-				return true, nil
-			}
-		}
 	}
 
-	return false, nil
+	return acl.UserInOwnerFile(ownerContent, rev.Sender)
 }
 
 // checkSenderOrgMembership Get sender user's organization. We can
@@ -155,15 +137,14 @@ func (v VCS) GetStringPullRequestComment(ctx context.Context, runevent *info.Eve
 	if err != nil {
 		return nil, err
 	}
+
 	comments, _, err := v.Client.Issues.ListComments(ctx, runevent.Owner, runevent.Repository,
 		prNumber, &github.IssueListCommentsOptions{})
 	if err != nil {
 		return nil, err
 	}
-
-	re := regexp.MustCompile(reg)
 	for _, v := range comments {
-		if string(re.Find([]byte(v.GetBody()))) != "" {
+		if acl.MatchRegexp(reg, v.GetBody()) {
 			ret = append(ret, v)
 		}
 	}

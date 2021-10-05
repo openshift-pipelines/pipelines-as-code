@@ -45,6 +45,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 
 		if cs.Info.Pac.VCSToken == "" {
 			cs.Clients.Log.Error(msg)
+			cs.Clients.Log.Error("cannot set status since not token has been set")
 			return nil
 		}
 
@@ -71,6 +72,12 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		vcsintf.SetClient(ctx, cs.Info.Pac)
 	}
 
+	// Get the SHA commit info, we want to get the URL and commit title
+	err = vcsintf.GetCommitInfo(ctx, cs.Info.Event)
+	if err != nil {
+		return err
+	}
+
 	// Check if the submitter is allowed to run this.
 	allowed, err := vcsintf.IsAllowed(ctx, cs.Info.Event)
 	if err != nil {
@@ -94,7 +101,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	// Get everything in tekton directory
 	allTemplates, err := vcsintf.GetTektonDir(ctx, cs.Info.Event, tektonDir)
 	if allTemplates == "" || err != nil {
-		msg := "😿 Could not find a <b>.tekton/</b> directory for this repository"
+		msg := fmt.Sprintf("%s - Could not find a **.tekton/** directory for this repository", cs.Info.Pac.ApplicationName)
 
 		err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
 			Status:     "completed",
@@ -150,12 +157,6 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		}
 	}
 
-	// Get the SHA commit info, we want to get the URL and commit title
-	err = vcsintf.GetCommitInfo(ctx, cs.Info.Event)
-	if err != nil {
-		return err
-	}
-
 	// Add labels and annotations to pipelinerun
 	addLabelsAndAnnotations(cs, pipelineRun, repo)
 
@@ -176,7 +177,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), repo.GetNamespace(), repo.GetNamespace(), pr.GetName())
 	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
 		Status:     "in_progress",
-		Conclusion: "",
+		Conclusion: "pending",
 		Text:       msg,
 		DetailsURL: consoleURL,
 	}, false)
@@ -244,21 +245,26 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	return err
 }
 
+// cleanupLabel k8s do not like slash in labels value and on push we have the
+// full ref, we replace the "/" by "-". The tools probably need to be aware of
+// it when querying.
+func cleanupLabel(s string) string {
+	replasoeur := strings.NewReplacer("/", "-", " ", "_")
+	return replasoeur.Replace(s)
+}
+
 func addLabelsAndAnnotations(cs *params.Run, pipelineRun *tektonv1beta1.PipelineRun, repo *apipac.Repository) {
 	// Add labels on the soon to be created pipelinerun so UI/CLI can easily
-	// query them. Since K8s do not like slash in labels value and on push we
-	// have the full ref, we replace the "/" by "-". The tools probably need to
-	// be aware of it when querying.
-	refTomakeK8Happy := strings.ReplaceAll(cs.Info.Event.BaseBranch, "/", "-")
+	// query them.
 	pipelineRun.Labels = map[string]string{
 		"app.kubernetes.io/managed-by":              "pipelines-as-code",
-		"pipelinesascode.tekton.dev/url-org":        cs.Info.Event.Owner,
-		"pipelinesascode.tekton.dev/url-repository": cs.Info.Event.Repository,
-		"pipelinesascode.tekton.dev/sha":            cs.Info.Event.SHA,
-		"pipelinesascode.tekton.dev/sender":         cs.Info.Event.Sender,
-		"pipelinesascode.tekton.dev/event-type":     cs.Info.Event.EventType,
-		"pipelinesascode.tekton.dev/branch":         refTomakeK8Happy,
-		"pipelinesascode.tekton.dev/repository":     repo.GetName(),
+		"pipelinesascode.tekton.dev/url-org":        cleanupLabel(cs.Info.Event.Owner),
+		"pipelinesascode.tekton.dev/url-repository": cleanupLabel(cs.Info.Event.Repository),
+		"pipelinesascode.tekton.dev/sha":            cleanupLabel(cs.Info.Event.SHA),
+		"pipelinesascode.tekton.dev/sender":         cleanupLabel(cs.Info.Event.Sender),
+		"pipelinesascode.tekton.dev/event-type":     cleanupLabel(cs.Info.Event.EventType),
+		"pipelinesascode.tekton.dev/branch":         cleanupLabel(cs.Info.Event.BaseBranch),
+		"pipelinesascode.tekton.dev/repository":     cleanupLabel(repo.GetName()),
 	}
 
 	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-title"] = cs.Info.Event.SHATitle
