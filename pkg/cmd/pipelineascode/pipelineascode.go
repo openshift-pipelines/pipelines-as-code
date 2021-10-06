@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -44,7 +45,10 @@ func Command(cs *params.Run) *cobra.Command {
 		},
 	}
 
-	cs.Info.Pac.AddFlags(cmd)
+	err := cs.Info.Pac.AddFlags(cmd)
+	if err != nil {
+		log.Fatal(err)
+	}
 	cs.Info.Kube.AddFlags(cmd)
 
 	cmd.Flags().StringVarP(&cs.Info.Event.EventType, "webhook-type", "", os.Getenv("PAC_EVENT_TYPE"), "Payload event type as set from Github (ie: X-GitHub-Event header)")
