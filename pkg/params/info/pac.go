@@ -1,6 +1,7 @@
 package info
 
 import (
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -26,7 +27,7 @@ func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
 	webvcsToken := os.Getenv("PAC_WEBVCS_TOKEN")
 	if webvcsToken != "" {
 		if _, err := os.Stat(webvcsToken); !os.IsNotExist(err) {
-			data, err := os.ReadFile(webvcsToken)
+			data, err := ioutil.ReadFile(webvcsToken)
 			if err != nil {
 				return err
 			}
