@@ -162,7 +162,7 @@ func TestIsAllowed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient()
+			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
 
 			bbcloudtest.MuxOrgMember(t, mux, tt.event, tt.fields.workspaceMembers)

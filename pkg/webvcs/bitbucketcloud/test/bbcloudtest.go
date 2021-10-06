@@ -16,11 +16,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/bitbucketcloud/types"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/env"
 )
 
 const bbBaseURLPath = "/2.0"
 
-func SetupBBCloudClient() (*bitbucket.Client, *http.ServeMux, func()) {
+func SetupBBCloudClient(t *testing.T) (*bitbucket.Client, *http.ServeMux, func()) {
 	mux := http.NewServeMux()
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(bbBaseURLPath+"/", http.StripPrefix(bbBaseURLPath, mux))
@@ -32,14 +33,18 @@ func SetupBBCloudClient() (*bitbucket.Client, *http.ServeMux, func()) {
 		fmt.Fprintln(os.Stderr, "\tDid you accidentally use an absolute endpoint URL rather than relative?")
 		http.Error(w, "Client.BaseURL path prefix is not preserved in the request URL.", http.StatusInternalServerError)
 	})
-	oldEnv, _ := os.LookupEnv("BITBUCKET_API_BASE_URL")
+
 	// server is a test HTTP server used to provide mock API responses.
 	server := httptest.NewServer(apiHandler)
+
+	restoreEnv := env.PatchAll(t, map[string]string{
+		"BITBUCKET_API_BASE_URL": server.URL + bbBaseURLPath,
+	})
+
 	tearDown := func() {
 		server.Close()
-		_ = os.Setenv("BITBUCKET_API_BASE_URL", oldEnv)
+		restoreEnv()
 	}
-	_ = os.Setenv("BITBUCKET_API_BASE_URL", server.URL+bbBaseURLPath)
 
 	client := bitbucket.NewBasicAuth("", "")
 	client.HttpClient = server.Client()
