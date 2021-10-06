@@ -53,7 +53,7 @@ func (rt RemoteTasks) getTask(ctx context.Context, vcsintf webvcs.Interface, tas
 		if err != nil {
 			return ret, err
 		}
-		return rt.convertTotask(string(data))
+		return rt.convertTotask(data)
 	default:
 		data, err := hub.GetTask(ctx, rt.Run, task)
 		if err != nil {

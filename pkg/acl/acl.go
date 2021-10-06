@@ -14,7 +14,7 @@ type ownersConfig struct {
 	Reviewers []string `json:"reviewers,omitempty"`
 }
 
-// Parse a Prow type Owner, Approver files and return true if the sender is in
+// UserInOwnerFile Parse a Prow type Owner, Approver files and return true if the sender is in
 // there.
 func UserInOwnerFile(ownerContent string, sender string) (bool, error) {
 	oc := ownersConfig{}
@@ -31,6 +31,7 @@ func UserInOwnerFile(ownerContent string, sender string) (bool, error) {
 	return false, nil
 }
 
+// MatchRegexp Match a regexp to a string
 func MatchRegexp(reg, comment string) bool {
 	re := regexp.MustCompile(reg)
 	return string(re.Find([]byte(comment))) != ""

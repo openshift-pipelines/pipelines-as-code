@@ -1,0 +1,222 @@
+# Copyright 2021 Red Hat
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: pipelines-as-code-bitbucket-cloud-push
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+spec:
+  params:
+    - name: "source_ip"
+      value: $(header.X-Forwarded-For)
+    - name: event_type
+      value: "push"
+    - name: trigger_target
+      value: "push"
+    - name: "workspace_slug"
+      value: $(body.repository.workspace.slug)
+    - name: "repository_name"
+      value: $(body.repository.name)
+    - name: "repository_html_link"
+      value: $(body.repository.links.html.href)
+    - name: "actor_acount_id"
+      value: $(body.actor.account_id)
+    - name: "actor_nickname"
+      value: $(body.actor.nickname)
+    - name: "branch_new_name"
+      value: $(body.push.changes[0].new.name)
+    - name: "branch_old_name"
+      value: $(body.push.changes[0].old.name)
+    - name: "push_new_hash"
+      value: $(body.push.changes[0].new.target.hash)
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: pipelines-as-code-bitbucket-cloud-push
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+spec:
+  params:
+    - name: source_ip
+    - name: event_type
+    - name: trigger_target
+    - name: workspace_slug
+    - name: repository_name
+    - name: repository_html_link
+    - name: actor_acount_id
+    - name: actor_nickname
+    - name: branch_new_name
+    - name: branch_old_name
+    - name: push_new_hash
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: pipelines-as-code-run-
+        labels:
+          app.kubernetes.io/managed-by: pipelines-as-code
+      spec:
+        serviceAccountName: pipelines-as-code-sa-el
+        params:
+          - name: source_ip
+            value: $(tt.params.source_ip)
+          - name: event_type
+            value: $(tt.params.event_type)
+          - name: trigger_target
+            value: $(tt.params.trigger_target)
+          - name: workspace_slug
+            value: $(tt.params.workspace_slug)
+          - name: repository_name
+            value: $(tt.params.repository_name)
+          - name: repository_html_link
+            value: $(tt.params.repository_html_link)
+          - name: actor_acount_id
+            value: $(tt.params.actor_acount_id)
+          - name: actor_nickname
+            value: $(tt.params.actor_nickname)
+          - name: branch_new_name
+            value: $(tt.params.branch_new_name)
+          - name: branch_old_name
+            value: $(tt.params.branch_old_name)
+          - name: push_new_hash
+            value: $(tt.params.push_new_hash)
+        pipelineSpec:
+          params:
+            - name: source_ip
+            - name: event_type
+            - name: trigger_target
+            - name: workspace_slug
+            - name: repository_name
+            - name: repository_html_link
+            - name: actor_acount_id
+            - name: actor_nickname
+            - name: branch_new_name
+            - name: branch_old_name
+            - name: push_new_hash
+          tasks:
+            - name: pipelines-as-code
+              taskSpec:
+                params:
+                  - name: source_ip
+                    type: string
+                  - name: event_type
+                    type: string
+                  - name: trigger_target
+                    type: string
+                  - name: workspace_slug
+                    type: string
+                  - name: repository_name
+                    type: string
+                  - name: repository_html_link
+                    type: string
+                  - name: actor_acount_id
+                    type: string
+                  - name: actor_nickname
+                    type: string
+                  - name: branch_new_name
+                    type: string
+                  - name: branch_old_name
+                    type: string
+                  - name: push_new_hash
+                    type: string
+                steps:
+                  - name: apply-and-launch
+                    env:
+                      - name: PAC_APPLICATION_NAME
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: application-name
+                      - name: PAC_SECRET_AUTO_CREATE
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: secret-auto-create
+                      - name: PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: bitbucket-cloud-check-source-ip
+                      - name: PAC_WEBVCS_TYPE
+                        value: "bitbucket-cloud"
+                    imagePullPolicy: Always
+                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+                    script: |
+                      cat << EOF |tee /tmp/payload.json
+                      {
+                       "repository": {
+                           "workspace": {
+                               "slug": "$(params.workspace_slug)"
+                           },
+                           "name": "$(params.repository_name)",
+                           "links": {
+                               "html": {
+                                   "href": "$(params.repository_html_link)"
+                               }
+                           }
+                       },
+                       "actor": {
+                           "account_id": "$(params.actor_acount_id)",
+                           "nickname": "$(params.actor_nickname)"
+                       },
+                       "push": {
+                           "changes": [{
+                               "new": {
+                                   "name": "$(params.branch_new_name)",
+                                   "target": {
+                                       "hash": "$(params.push_new_hash)"
+                                   }
+                               },
+                               "old": {
+                                   "name": "$(params.branch_old_name)"
+                               }
+                           }]
+                       }
+                      }
+                      EOF
+                      export PAC_SOURCE_IP="$(params.source_ip)"
+                      env|grep '^PAC'|sed 's/TOKEN=.*/TOKEN=HIDDENTOKEN/'
+                      pipelines-as-code --trigger-target=$(params.trigger_target) \
+                        --payload-file=/tmp/payload.json \
+                        --webhook-type="$(params.event_type)"
+              params:
+                - name: source_ip
+                  value: $(params.source_ip)
+                - name: event_type
+                  value: $(params.event_type)
+                - name: trigger_target
+                  value: $(params.trigger_target)
+                - name: workspace_slug
+                  value: $(params.workspace_slug)
+                - name: repository_name
+                  value: $(params.repository_name)
+                - name: repository_html_link
+                  value: $(params.repository_html_link)
+                - name: actor_acount_id
+                  value: $(params.actor_acount_id)
+                - name: actor_nickname
+                  value: $(params.actor_nickname)
+                - name: branch_new_name
+                  value: $(params.branch_new_name)
+                - name: branch_old_name
+                  value: $(params.branch_old_name)
+                - name: push_new_hash
+                  value: $(params.push_new_hash)
