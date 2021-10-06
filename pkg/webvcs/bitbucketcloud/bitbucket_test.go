@@ -47,7 +47,7 @@ func TestGetTektonDir(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient()
+			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
 			v := &VCS{Client: bbclient}
 			bbcloudtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path)
@@ -102,7 +102,7 @@ func TestGetCommitInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient()
+			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
 			v := &VCS{Client: bbclient}
 			bbcloudtest.MuxCommits(t, mux, tt.event, []types.Commit{
@@ -194,7 +194,7 @@ func TestCreateStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient()
+			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
 			v := &VCS{Client: bbclient}
 			event := bbcloudtest.MakeEvent(nil)
