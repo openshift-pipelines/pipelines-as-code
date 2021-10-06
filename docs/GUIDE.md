@@ -214,7 +214,7 @@ automatically use it to be able to clone the private repository.
 You can see as well a full example [here](./test/testdata/pipelinerun_git_clone_private.yaml)
 
 This behaviour can be disabled by configuration the `secret-auto-create` key
-inside the [Pipelines-as-Code Configmap](./docs/INSTALL.md#configuration).
+inside the [Pipelines-as-Code Configmap](./INSTALL.md#configuration).
 
 ## Pipelines as Code resolver
 
@@ -434,7 +434,7 @@ here :
 ## CLI
 
 `Pipelines as Code` provide a CLI which is design to work as tkn plugin. See the
-installation instruction in the [INSTALL.md](./docs/INSTALL.md#CLI)
+installation instruction in the [INSTALL.md](./INSTALL.md#CLI)
 documentation
 
 ### CLI commands
