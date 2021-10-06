@@ -1,4 +1,4 @@
-# Pipelines as Code
+G# Pipelines as Code
 
 [![Container Repository on Quay](https://quay.io/repository/openshift-pipeline/pipelines-as-code/status "Container Repository on Quay")](https://quay.io/repository/openshift-pipeline/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code)
 
@@ -91,7 +91,7 @@ reference
 
 ## Usage Guide
 
-The usage guide here offer a comprehenive documentatiuon on how to configure and use Pipeline As Code.
+The usage guide [here](./doc/GUIDE.md) offer a comprehenive documentatiuon on how to configure and use Pipeline As Code.
 
 ## Videos/Blog Posts
 

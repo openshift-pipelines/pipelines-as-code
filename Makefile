@@ -62,7 +62,7 @@ lint-yaml: ${YAML_FILES} ## runs yamllint on all yaml files
 	@yamllint -c .yamllint $(YAML_FILES)
 
 .PHONY: test-unit
-test-unit: ./vendor ## run unit tests
+test-unit: ## run unit tests
 	@echo "Running unit tests..."
 	@go test -failfast $(GO_TEST_FLAGS) ./...
 
