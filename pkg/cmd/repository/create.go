@@ -123,10 +123,17 @@ metadata:
     # Fetch the git-clone task from hub, we are able to reference it with taskRef
     pipelinesascode.tekton.dev/task: "[git-clone]"
 
+    # You can add more tasks in here to reuse, browse the one you like from here
+    # https://hub.tekton.dev/
+    # example:
+    # pipelinesascode.tekton.dev/task-1: "[maven, buildah]"
+
     # How many runs we want to keep attached to this event
     pipelinesascode.tekton.dev/max-keep-runs: "5"
 spec:
   params:
+    # The variable with brackets are special to Pipelines as Code
+    # They will automatically be expanded with the events from Github.
     - name: repo_url
       value: "{{repo_url}}"
     - name: revision
@@ -137,6 +144,7 @@ spec:
       - name: revision
     workspaces:
       - name: source
+      - name: basic-auth
     tasks:
       - name: fetch-repository
         taskRef:
@@ -144,11 +152,15 @@ spec:
         workspaces:
           - name: output
             workspace: source
+          - name: basic-auth
+            workspace: basic-auth
         params:
           - name: url
             value: $(params.repo_url)
           - name: revision
             value: $(params.revision)
+      # Customize this task if you like, or just do a taskRef
+      # to one of the hub task.
       - name: noop-task
         runAfter:
           - fetch-repository
@@ -173,7 +185,12 @@ spec:
         resources:
           requests:
             storage: 1Gi
-`, opts.RepositoryName, opts.EventType, opts.TargetBranch)
+  # This workspace will inject secret to help the git-clone task to be able to
+  # checkout the private repositories
+  - name: basic-auth
+    secret:
+      secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"
+      `, opts.RepositoryName, opts.EventType, opts.TargetBranch)
 	// nolint: gosec
 	err = ioutil.WriteFile(fpath, []byte(tmpl), 0o644)
 	if err != nil {
