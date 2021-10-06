@@ -87,7 +87,10 @@ func Command(run *params.Run) *cobra.Command {
 		"Wether to switch name to a generateName on pipelinerun")
 	cmd.Flags().BoolVar(&remoteTask, "remoteTask", true,
 		"Wether parse annotation to fetch remote task")
-	run.Info.Pac.AddFlags(cmd)
+	err := run.Info.Pac.AddFlags(cmd)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return cmd
 }

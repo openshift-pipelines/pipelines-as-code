@@ -19,11 +19,22 @@ type PacOpts struct {
 	PayloadFile        string
 }
 
-func (p *PacOpts) AddFlags(cmd *cobra.Command) {
+func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringVarP(&p.VCSType, "webvcs-type", "", os.Getenv("PAC_WEBVCS_TYPE"),
 		"Web VCS (ie: GitHub) Token")
 
-	cmd.PersistentFlags().StringVarP(&p.VCSToken, "webvcs-token", "", os.Getenv("PAC_WEBVCS_TOKEN"),
+	webvcsToken := os.Getenv("PAC_WEBVCS_TOKEN")
+	if webvcsToken != "" {
+		if _, err := os.Stat(webvcsToken); !os.IsNotExist(err) {
+			data, err := os.ReadFile(webvcsToken)
+			if err != nil {
+				return err
+			}
+			webvcsToken = string(data)
+		}
+	}
+
+	cmd.PersistentFlags().StringVarP(&p.VCSToken, "webvcs-token", "", webvcsToken,
 		"Web VCS (ie: GitHub) Token")
 
 	cmd.PersistentFlags().StringVarP(&p.VCSAPIURL, "webvcs-api-url", "", os.Getenv("PAC_WEBVCS_URL"),
@@ -50,4 +61,6 @@ func (p *PacOpts) AddFlags(cmd *cobra.Command) {
 		"secret-auto-creation",
 		secretAutoCreation,
 		"Wether to create automatically secrets.")
+
+	return nil
 }
