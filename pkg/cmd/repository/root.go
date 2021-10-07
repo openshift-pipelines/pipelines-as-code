@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func Root(clients *params.Run) *cobra.Command {
+func Root(clients *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "repository",
 		Aliases:      []string{"repo", "repsitories"},
@@ -14,8 +14,6 @@ func Root(clients *params.Run) *cobra.Command {
 		Long:         `Manage Pipelines as Code repositories`,
 		SilenceUsage: true,
 	}
-	ioStreams := ui.NewIOStreams()
-
 	cmd.AddCommand(ListCommand(clients, ioStreams))
 	cmd.AddCommand(DescribeCommand(clients, ioStreams))
 	cmd.AddCommand(CreateCommand(clients, ioStreams))
