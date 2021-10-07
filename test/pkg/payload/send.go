@@ -24,7 +24,6 @@ func Send(ctx context.Context, cs *params.Run, elURL, elWebHookSecret, githubURL
 	if err != nil {
 		return err
 	}
-	cs.Clients.Log.Infof("Sending a payload directly to the EL on %s: %s", os.Getenv("TEST_EL_URL"), string(jeez))
 
 	mac := hmac.New(sha1.New, []byte(elWebHookSecret))
 	mac.Write(jeez)
@@ -43,6 +42,7 @@ func Send(ctx context.Context, cs *params.Run, elURL, elWebHookSecret, githubURL
 	req.Header.Set("X-Hub-Signature-256", fmt.Sprintf("sha256=%s", sha256secret))
 	req.Header.Set("X-GitHub-Hook-Installation-Target-Type", "integration")
 	req.Header.Set("X-GitHub-Hook-Installation-Target-ID", installationID)
+	cs.Clients.Log.Infof("Sending a payload directly to the EL on %s: %s headers: %+v", os.Getenv("TEST_EL_URL"), string(jeez), req.Header)
 	u, err := url.Parse(githubURL)
 	if err != nil {
 		return err
@@ -52,6 +52,10 @@ func Send(ctx context.Context, cs *params.Run, elURL, elWebHookSecret, githubURL
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
+	}
+	statusOK := resp.StatusCode >= 200 && resp.StatusCode < 300
+	if !statusOK {
+		return fmt.Errorf("responses Error: %+d", resp.StatusCode)
 	}
 	defer resp.Body.Close()
 	_, err = ioutil.ReadAll(resp.Body)
