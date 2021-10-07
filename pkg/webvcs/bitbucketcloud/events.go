@@ -25,10 +25,7 @@ func lastForwarderForIP(xff string) string {
 // checkFromPublicCloudIPS Grab public IP from public cloud and make sure we match it
 func (v *VCS) checkFromPublicCloudIPS(ctx context.Context, run *params.Run) (bool, error) {
 	enval, ok := os.LookupEnv("PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP")
-	if !ok {
-		return true, nil
-	}
-	if strings.ToLower(enval) != "true" {
+	if !ok || strings.ToLower(enval) != "true" {
 		return true, nil
 	}
 
@@ -48,6 +45,18 @@ func (v *VCS) checkFromPublicCloudIPS(ctx context.Context, run *params.Run) (boo
 	err = json.Unmarshal(data, &ipranges)
 	if err != nil {
 		return false, err
+	}
+
+	extraIPEnv, _ := os.LookupEnv("PAC_BITBUCKET_CLOUD_ADDITIONAL_SOURCE_IP")
+	if extraIPEnv != "" {
+		for _, value := range strings.Split(extraIPEnv, ",") {
+			if !strings.Contains(value, "/") {
+				value = fmt.Sprintf("%s/32", value)
+			}
+			ipranges.Items = append(ipranges.Items, types.IPRangesItem{
+				CIDR: strings.TrimSpace(value),
+			})
+		}
 	}
 	for _, value := range ipranges.Items {
 		_, cidr, err := net.ParseCIDR(value.CIDR)

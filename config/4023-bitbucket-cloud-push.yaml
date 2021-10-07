@@ -65,6 +65,7 @@ spec:
     - name: actor_nickname
     - name: branch_new_name
     - name: branch_old_name
+      default: ""
     - name: push_new_hash
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
@@ -155,6 +156,11 @@ spec:
                           configMapKeyRef:
                             name: pipelines-as-code
                             key: bitbucket-cloud-check-source-ip
+                      - name: PAC_BITBUCKET_CLOUD_ADDITIONAL_SOURCE_IP
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: bitbucket-cloud-additional-source-ip
                       - name: PAC_WEBVCS_TYPE
                         value: "bitbucket-cloud"
                     imagePullPolicy: Always

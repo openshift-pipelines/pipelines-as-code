@@ -33,6 +33,9 @@ data:
   # look like a authorized owner has send the PR to run it..
   bitbucket-cloud-check-source-ip: "true"
 
+  # Add extra IPS (ie: 127.0.0.1) or networks (127.0.0.0/16) separated by commas.
+  bitbucket-cloud-additional-source-ip: ""
+
 kind: ConfigMap
 metadata:
   name: pipelines-as-code

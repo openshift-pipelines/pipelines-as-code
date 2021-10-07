@@ -178,6 +178,11 @@ spec:
                           configMapKeyRef:
                             name: pipelines-as-code
                             key: bitbucket-cloud-check-source-ip
+                      - name: PAC_BITBUCKET_CLOUD_ADDITIONAL_SOURCE_IP
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: bitbucket-cloud-additional-source-ip
                       - name: PAC_WEBVCS_TYPE
                         value: "bitbucket-cloud"
                     imagePullPolicy: Always
