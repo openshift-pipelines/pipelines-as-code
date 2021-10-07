@@ -1,16 +1,25 @@
 # Installation Guides
 
-In order to install and use Pipelines-as-Code, you need to
+Pipelines-as-Code support different installation method to WebVCS platforms (i.e: GitHub, Bitbucket etc..)
+
+The preferred method to use Pipelines-as-Code is with
+[GitHub Application](https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps).
+
+Refers to the end of Documentation for the other WebVCS installations
+
+## Install Pipelines-as-Code as GitHub Application
+
+In order to install and use Pipelines-as-Code as GitHub application, you need to
 
 * Install the Pipelines-as-Code infrastructure on your cluster
 * Create a Pipelines-as-Code GitHub App on your GitHub account or organization
 * Configure Pipelines-as-Code on your cluster to access the GitHub App
 
-Here is a video walkthrough of the install process :
+Here is a video walkthrough on the install process :
 
 [![Pipelines as Code Install Walkthought](https://img.youtube.com/vi/d81rIHNFjJM/0.jpg)](https://www.youtube.com/watch?v=d81rIHNFjJM)
 
-## Install Pipelines as Code infrastructure
+### Install Pipelines as Code infrastructure
 
 To install Pipelines as Code on your cluster you simply need to run this command :
 
@@ -111,61 +120,65 @@ Pipelines as Code supports Github Enterprise.
 You don't need to do anything special to get Pipelines as code working with GHE. Pipelines as code will automatically
 detects the header as set from GHE and use it the GHE API auth url instead of the public github.
 
-### Github Webhook
+## Install Pipelines-as-Code as a GitHub Webhook
 
-You can as well use [Github Webhooks](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks) directly from your repository instead of a Github application.
+If you are not able to create a GitHub application you can install Pipelines-as-Code on your repository as a
+[GitHub Webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks).
 
-Using Pipelines as Code via Github webhook does not allow access to the CheckRun API, the status of the tasks will be added as a Comment of the PR.
+Using Pipelines as Code via Github webhook does not give you access to the GitHub CheckRun API,
+therefore the status of the tasks will be added as a Comment of the PR and not via the **Checks** Tab.
 
-You will need to create a personal token to be able to do operation on the Github API.
+* You have to first install the Pipelines-as-Code infrastructure as detailled here : [Install infrastructure](INSTALL.md#install-pipelines-as-code-infrastructure)
 
+* You will have to generate a personal token for Pipelines-as-Code Github API operations.
 Follow this guide to create a personal token :
 
 <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token>
 
-The only permission needed is the *repo* permission. Make sure you note
-somewhere the generated token or otherwise you will have to recreate it.
+  The only permission needed is the *repo* permission. Make sure you note
+  somewhere the generated token or otherwise you will have to recreate it.
 
-Go to you repository or organisation setting and click on *Hooks* and *"Add webhook"* links.
+* Go to you repository or organisation setting and click on *Hooks* and *"Add webhook"* links.
 
-Set the payload URL to the event listenner public url, on OpenShift you can get it like this :
+* Set the payload URL to the event listenner public URL.
+  On OpenShift you can get the public URL of the Pipelines-as-Code eventlistenner like this :
 
-```shell
-echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
-```
+  ```shell
+  echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
+  ```
 
-Add a secret or generate a random one with this command  :
+* Add a secret or generate a random one with this command  :
 
-```shell
-openssl rand -hex 20
-```
+  ```shell
+  openssl rand -hex 20
+  ```
 
-- Click on select individual events and check these events :
+* [Refer to this screenshot](./images/pac-direct-webhook-create.png) on how to configure the Webhook. The individual events to select are :
+  * Commit comments
+  * Issue comments
+  * Pull request reviews
+  * Pull request
+  * Pushes
 
-* Commit comments
-* Issue comments
-* Pull request reviews
-* Pull request reviews
-* Pushes
-
-On your cluster you need to add the webhook secret set previously in the *pipelines-as-code* namespace.
+* On your cluster you need create the webhook secret as generated previously in the *pipelines-as-code* namespace.
 
 ```shell
 kubectl -n pipelines-as-code create secret generic github-app-secret \
-        --from-literal webhook.secret="WEBHOOK_SECRET_AS_SET"
+        --from-literal webhook.secret="$WEBHOOK_SECRET_AS_GENERATED"
 ```
 
-Now to use this from the Repository CRD you first need to create a secret with
-the Github API token
+* You are now able to create a Repository CRD. The repository CRD will have a Secret that contains the Personal token
+  as generated and Pipelines as Code will know how to use it for GitHub API operations.
 
-```shell
-kubectl -n target-namespace create secret generic github-token \
-        --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
-```
+  - First create the secret with the personal token in the `target-namespace` :
+  ```shell
+  kubectl -n target-namespace create secret generic github-personal-token \
+          --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
+  ```
 
-And from your Repositry CRD you can add the secret field to reference this :
+  - And now create Repositry CRD with the secret field referencing it.
 
-For example :
+  Here is an example of a Repository CRD :
 
 ```yaml
 ---
@@ -181,16 +194,90 @@ spec:
   # Set this if you run with Github Enteprise
   # webvcs_api_url: "github.enteprise.com"
   webvcs_secret:
+    name: "github-personal-token"
+    # Set this if you have a different key in your secret
+    # key: "token"
+```
+
+* Note that `webvcs_secret` cannot reference a secret in another namespace, Pipelines as
+code assumes always it will be the same namespace as where the repository has been
+created.
+
+## Install Pipelines-As-Code for Bitbucket Cloud
+
+Pipelines-As-Code has a full support on Bitbucket Cloud on <https://bitbucket.org>
+
+* You have to first install the Pipelines-as-Code infrastructure as detailled here : [Install infrastructure](INSTALL.md#install-pipelines-as-code-infrastructure)
+
+* You will have to generate an app password for Pipelines-as-Code Bitbucket API operations.
+  Follow this guide to create an app password :
+
+<https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/>
+
+  Make sure you note somewhere the generated token or otherwise you will have to recreate it.
+
+* Go to you **"Repository setting"** tab on your **Repository** and click on the **WebHooks** tab and **"Add webhook"** button.
+
+* Set a **Title** (i.e: Pipelines as Code)
+
+* Set the URL to the event listenner public URL.
+  On OpenShift you can get the public URL of the Pipelines-as-Code eventlistenner like this :
+
+  ```shell
+  echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
+  ```
+
+* [Refer to this screenshot](./images/bitbucket-cloud-create-webhook.png) on how to configure the Webhook. The individual events to select are :
+  * Repository -> Push
+  * Pull Request -> Created
+  * Pull Request -> Updated
+  * Pull Request -> Comment created
+  * Pull Request -> Comment updated
+
+
+* You are now able to create a Repository CRD. The repository CRD will have a Secret and Username that contains the App Password
+  as generated and Pipelines as Code will know how to use it for Bitbucket API operations.
+
+  - First create the secret with the app password in the `target-namespace` :
+  ```shell
+  kubectl -n target-namespace create secret generic bitbucket-app-password \
+          --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
+  ```
+
+  - And now create Repositry CRD with the secret field referencing it.
+
+  - Here is an example of a Repository CRD :
+
+```yaml
+---
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: my-repo
+  namespace: target-namespace
+spec:
+  url: "https://bitbucket.com/workspace/repo"
+  branch: "main"
+  event_type: "pull_request"
+  webvcs_api_user: "yourbitbucketusername"
+  webvcs_secret:
     name: "github-token"
     # Set this if you have a different key in your secret
     # key: "token"
 ```
 
-`webvcs_secret` cannot reference a secret in another namespace, Pipelines as
-code assumes always it is in the same namespace where the repository has been
-created.
+* Note that `webvcs_secret` cannot reference a secret in another namespace, Pipelines as
+  code assumes always it will be the same namespace as where the repository has been
+  created.
 
-### Pipelines As Code Configurations
+* There is no Webhook secret support in Bitbucket Cloud.  To be able to secure
+  the payload and not let a user hijack the CI, Pipelines-as-Code will fetch
+  the ip addresses list from <https://ip-ranges.atlassian.com/> and make sure
+  the webhook only comes from the Bitbucket Cloud IPS.  If you want to disable
+  this behaviour you can set the key **bitbucket-cloud-check-source-ip** to
+  false in the pipelines-as-code configmap in the pipelines-as-code namespace.
+
+## Pipelines-As-Code configuration settings.
 
 There is a few things you can configure via the configmap `pipelines-as-code` in the `pipelines-as-code` namespace.
 
@@ -212,7 +299,7 @@ There is a few things you can configure via the configmap `pipelines-as-code` in
   Wether to auto create a secret with the token generated via the Github application to be used with private
   repositories. This feature is enabled by default.
 
-### Kubernetes
+## Kubernetes
 
 Pipelines as Code should work directly on kubernetes/minikube/kind. You just need to install the release.yaml
 for [pipeline](https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml)
