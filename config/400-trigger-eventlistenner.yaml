@@ -222,7 +222,7 @@ spec:
         - ref: pipelines-as-code-bitbucket-cloud-push
       interceptors:
         - ref:
-            name: "bitbucket-cloud"
+            name: "bitbucket"
           params:
             # TODO: secrets! this should come from Repository CRD so we need to do this from the pac binary :\
             - name: eventTypes
