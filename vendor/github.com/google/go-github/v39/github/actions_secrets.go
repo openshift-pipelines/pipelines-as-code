@@ -274,8 +274,13 @@ type SelectedReposList struct {
 // ListSelectedReposForOrgSecret lists all repositories that have access to a secret.
 //
 // GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/actions/#list-selected-repositories-for-an-organization-secret
-func (s *ActionsService) ListSelectedReposForOrgSecret(ctx context.Context, org, name string) (*SelectedReposList, *Response, error) {
+func (s *ActionsService) ListSelectedReposForOrgSecret(ctx context.Context, org, name string, opts *ListOptions) (*SelectedReposList, *Response, error) {
 	u := fmt.Sprintf("orgs/%v/actions/secrets/%v/repositories", org, name)
+	u, err := addOptions(u, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	req, err := s.client.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, nil, err
@@ -297,7 +302,7 @@ func (s *ActionsService) SetSelectedReposForOrgSecret(ctx context.Context, org, 
 	u := fmt.Sprintf("orgs/%v/actions/secrets/%v/repositories", org, name)
 
 	type repoIDs struct {
-		SelectedIDs SelectedRepoIDs `json:"selected_repository_ids,omitempty"`
+		SelectedIDs SelectedRepoIDs `json:"selected_repository_ids"`
 	}
 
 	req, err := s.client.NewRequest("PUT", u, repoIDs{SelectedIDs: ids})

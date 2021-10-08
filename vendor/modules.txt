@@ -137,8 +137,10 @@ github.com/google/go-cmp/cmp/internal/value
 github.com/google/go-containerregistry/pkg/name
 # github.com/google/go-github/v35 v35.3.0
 ## explicit
-github.com/google/go-github/v35/github
-# github.com/google/go-querystring v1.0.0
+# github.com/google/go-github/v39 v39.1.0
+## explicit
+github.com/google/go-github/v39/github
+# github.com/google/go-querystring v1.1.0
 github.com/google/go-querystring/query
 # github.com/google/gofuzz v1.2.0
 github.com/google/gofuzz
@@ -305,7 +307,7 @@ go.uber.org/zap/internal/ztest
 go.uber.org/zap/zapcore
 go.uber.org/zap/zaptest
 go.uber.org/zap/zaptest/observer
-# golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
+# golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
