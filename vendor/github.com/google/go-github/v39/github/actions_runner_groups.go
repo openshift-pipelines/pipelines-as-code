@@ -36,12 +36,15 @@ type CreateRunnerGroupRequest struct {
 	SelectedRepositoryIDs []int64 `json:"selected_repository_ids,omitempty"`
 	// Runners represent a list of runner IDs to add to the runner group.
 	Runners []int64 `json:"runners,omitempty"`
+	// If set to True, public repos can use this runner group
+	AllowsPublicRepositories *bool `json:"allows_public_repositories,omitempty"`
 }
 
 // UpdateRunnerGroupRequest represents a request to update a Runner group for an organization.
 type UpdateRunnerGroupRequest struct {
-	Name       *string `json:"name,omitempty"`
-	Visibility *string `json:"visibility,omitempty"`
+	Name                     *string `json:"name,omitempty"`
+	Visibility               *string `json:"visibility,omitempty"`
+	AllowsPublicRepositories *bool   `json:"allows_public_repositories,omitempty"`
 }
 
 // SetRepoAccessRunnerGroupRequest represents a request to replace the list of repositories
@@ -156,8 +159,13 @@ func (s *ActionsService) UpdateOrganizationRunnerGroup(ctx context.Context, org 
 // ListRepositoryAccessRunnerGroup lists the repositories with access to a self-hosted runner group configured in an organization.
 //
 // GitHub API docs: https://docs.github.com/en/rest/reference/actions#list-repository-access-to-a-self-hosted-runner-group-in-an-organization
-func (s *ActionsService) ListRepositoryAccessRunnerGroup(ctx context.Context, org string, groupID int64) (*ListRepositories, *Response, error) {
+func (s *ActionsService) ListRepositoryAccessRunnerGroup(ctx context.Context, org string, groupID int64, opts *ListOptions) (*ListRepositories, *Response, error) {
 	u := fmt.Sprintf("orgs/%v/actions/runner-groups/%v/repositories", org, groupID)
+	u, err := addOptions(u, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	req, err := s.client.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, nil, err
@@ -217,10 +225,10 @@ func (s *ActionsService) RemoveRepositoryAccessRunnerGroup(ctx context.Context, 
 	return s.client.Do(ctx, req, nil)
 }
 
-// ListRunerGroupRunners lists self-hosted runners that are in a specific organization group.
+// ListRunnerGroupRunners lists self-hosted runners that are in a specific organization group.
 //
 // GitHub API docs: https://docs.github.com/en/rest/reference/actions#list-self-hosted-runners-in-a-group-for-an-organization
-func (s *ActionsService) ListRunerGroupRunners(ctx context.Context, org string, groupID int64, opts *ListOptions) (*Runners, *Response, error) {
+func (s *ActionsService) ListRunnerGroupRunners(ctx context.Context, org string, groupID int64, opts *ListOptions) (*Runners, *Response, error) {
 	u := fmt.Sprintf("orgs/%v/actions/runner-groups/%v/runners", org, groupID)
 	u, err := addOptions(u, opts)
 	if err != nil {
@@ -241,11 +249,11 @@ func (s *ActionsService) ListRunerGroupRunners(ctx context.Context, org string, 
 	return runners, resp, nil
 }
 
-// SetRunerGroupRunners replaces the list of self-hosted runners that are part of an organization runner group
+// SetRunnerGroupRunners replaces the list of self-hosted runners that are part of an organization runner group
 // with a new list of runners.
 //
 // GitHub API docs: https://docs.github.com/en/rest/reference/actions#set-self-hosted-runners-in-a-group-for-an-organization
-func (s *ActionsService) SetRunerGroupRunners(ctx context.Context, org string, groupID int64, ids SetRunnerGroupRunnersRequest) (*Response, error) {
+func (s *ActionsService) SetRunnerGroupRunners(ctx context.Context, org string, groupID int64, ids SetRunnerGroupRunnersRequest) (*Response, error) {
 	u := fmt.Sprintf("orgs/%v/actions/runner-groups/%v/runners", org, groupID)
 
 	req, err := s.client.NewRequest("PUT", u, ids)
@@ -256,10 +264,10 @@ func (s *ActionsService) SetRunerGroupRunners(ctx context.Context, org string, g
 	return s.client.Do(ctx, req, nil)
 }
 
-// AddRunerGroupRunners adds a self-hosted runner to a runner group configured in an organization.
+// AddRunnerGroupRunners adds a self-hosted runner to a runner group configured in an organization.
 //
 // GitHub API docs: https://docs.github.com/en/rest/reference/actions#add-a-self-hosted-runner-to-a-group-for-an-organization
-func (s *ActionsService) AddRunerGroupRunners(ctx context.Context, org string, groupID, runnerID int64) (*Response, error) {
+func (s *ActionsService) AddRunnerGroupRunners(ctx context.Context, org string, groupID, runnerID int64) (*Response, error) {
 	u := fmt.Sprintf("orgs/%v/actions/runner-groups/%v/runners/%v", org, groupID, runnerID)
 
 	req, err := s.client.NewRequest("PUT", u, nil)
@@ -270,11 +278,11 @@ func (s *ActionsService) AddRunerGroupRunners(ctx context.Context, org string, g
 	return s.client.Do(ctx, req, nil)
 }
 
-// RemoveRunerGroupRunners removes a self-hosted runner from a group configured in an organization.
+// RemoveRunnerGroupRunners removes a self-hosted runner from a group configured in an organization.
 // The runner is then returned to the default group.
 //
 // GitHub API docs: https://docs.github.com/en/rest/reference/actions#remove-a-self-hosted-runner-from-a-group-for-an-organization
-func (s *ActionsService) RemoveRunerGroupRunners(ctx context.Context, org string, groupID, runnerID int64) (*Response, error) {
+func (s *ActionsService) RemoveRunnerGroupRunners(ctx context.Context, org string, groupID, runnerID int64) (*Response, error) {
 	u := fmt.Sprintf("orgs/%v/actions/runner-groups/%v/runners/%v", org, groupID, runnerID)
 
 	req, err := s.client.NewRequest("DELETE", u, nil)

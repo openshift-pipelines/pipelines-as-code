@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/go-github/v35/github"
+	"github.com/google/go-github/v39/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"golang.org/x/oauth2"
 )
