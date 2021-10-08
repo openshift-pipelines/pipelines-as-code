@@ -27,7 +27,7 @@ func askYN(opts *bootstrapOpts, title, question string) (bool, error) {
 func askQuestions(opts *bootstrapOpts) error {
 	var qs []*survey.Question
 
-	if opts.RecreateSecret {
+	if opts.recreateSecret {
 		answer, err := askYN(opts,
 			fmt.Sprintf("👀 A secret named %s in %s namespace has been detected.", secretName, opts.targetNamespace),
 			"Do you want me to override the secret?")
@@ -39,17 +39,25 @@ func askQuestions(opts *bootstrapOpts) error {
 		}
 	}
 
-	prompt := "Enter the name of your GitHub application: "
-	if opts.ApplicationName == "" {
+	if opts.vcsType == "github-enteprise-app" {
+		prompt := "Enter your Github enteprise API URL: "
 		qs = append(qs, &survey.Question{
-			Name:   "ApplicationName",
+			Name:   "GithubAPIURL",
 			Prompt: &survey.Input{Message: prompt},
 		})
 	}
-	if opts.ApplicationURL == "" {
+
+	prompt := "Enter the name of your GitHub application: "
+	if opts.GithubApplicationName == "" {
+		qs = append(qs, &survey.Question{
+			Name:   "GithubApplicationName",
+			Prompt: &survey.Input{Message: prompt},
+		})
+	}
+	if opts.GithubApplicationURL == "" {
 		prompt = "Enter an URL for your GitHub application"
 		qs = append(qs, &survey.Question{
-			Name:   "ApplicationURL",
+			Name:   "GithubApplicationURL",
 			Prompt: &survey.Input{Message: prompt},
 		})
 	}
