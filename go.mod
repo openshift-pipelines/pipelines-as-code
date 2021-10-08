@@ -8,6 +8,7 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6
+	github.com/google/go-github/scrape v0.0.0-20211006151203-f6640949b0de
 	github.com/google/go-github/v39 v39.1.0
 	github.com/hako/durafmt v0.0.0-20210601083242-f49dacec7612
 	github.com/jonboulle/clockwork v0.1.1-0.20190114141812-62fb9bc030d1
@@ -33,3 +34,6 @@ require (
 	knative.dev/pkg v0.0.0-20210331065221-952fdd90dbb0
 	sigs.k8s.io/yaml v1.2.0
 )
+
+// waiting on https://github.com/google/go-github/pull/2121 to get merged
+replace github.com/google/go-github/scrape => github.com/chmouel/go-github/scrape v0.0.0-20211008062324-29895c10f57d

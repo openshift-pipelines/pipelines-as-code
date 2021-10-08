@@ -17,6 +17,8 @@ contrib.go.opencensus.io/exporter/stackdriver/monitoredresource/gcp
 github.com/AlecAivazis/survey/v2
 github.com/AlecAivazis/survey/v2/core
 github.com/AlecAivazis/survey/v2/terminal
+# github.com/PuerkitoBio/goquery v1.7.1
+github.com/PuerkitoBio/goquery
 # github.com/PuerkitoBio/purell v1.1.1
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
@@ -26,6 +28,8 @@ github.com/alecthomas/template
 github.com/alecthomas/template/parse
 # github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 github.com/alecthomas/units
+# github.com/andybalholm/cascadia v1.2.0
+github.com/andybalholm/cascadia
 # github.com/aws/aws-sdk-go v1.31.12
 github.com/aws/aws-sdk-go/aws
 github.com/aws/aws-sdk-go/aws/awserr
@@ -135,8 +139,9 @@ github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
 # github.com/google/go-containerregistry v0.4.1-0.20210128200529-19c2b639fab1
 github.com/google/go-containerregistry/pkg/name
-# github.com/google/go-github/v35 v35.3.0
+# github.com/google/go-github/scrape v0.0.0-20211006151203-f6640949b0de => github.com/chmouel/go-github/scrape v0.0.0-20211008062324-29895c10f57d
 ## explicit
+github.com/google/go-github/scrape
 # github.com/google/go-github/v39 v39.1.0
 ## explicit
 github.com/google/go-github/v39/github
@@ -272,6 +277,8 @@ github.com/tektoncd/pipeline/pkg/list
 github.com/tektoncd/pipeline/pkg/names
 github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag
 github.com/tektoncd/pipeline/pkg/substitution
+# github.com/xlzd/gotp v0.0.0-20181030022105-c8557ba2c119
+github.com/xlzd/gotp
 # go.opencensus.io v0.23.0
 go.opencensus.io
 go.opencensus.io/internal
@@ -323,12 +330,15 @@ golang.org/x/mod/semver
 ## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
+golang.org/x/net/html
+golang.org/x/net/html/atom
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/h2c
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
+golang.org/x/net/publicsuffix
 golang.org/x/net/trace
 # golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 ## explicit
@@ -823,3 +833,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.2.0
 ## explicit
 sigs.k8s.io/yaml
+# github.com/google/go-github/scrape => github.com/chmouel/go-github/scrape v0.0.0-20211008062324-29895c10f57d

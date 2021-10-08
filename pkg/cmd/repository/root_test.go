@@ -26,7 +26,8 @@ import (
 )
 
 func TestRoot(t *testing.T) {
-	s, err := tcli.ExecuteCommand(Root(&params.Run{}), "help")
+	buf := &bytes.Buffer{}
+	s, err := tcli.ExecuteCommand(Root(&params.Run{}, &ui.IOStreams{Out: buf, ErrOut: buf}), "help")
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(s, "repository, repo, repsitories"))
 }
