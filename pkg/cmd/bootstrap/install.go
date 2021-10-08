@@ -15,6 +15,7 @@ var (
 )
 
 func getLatestRelease(ctx context.Context) (string, string, error) {
+	// Always go to public
 	gh := github.NewClient(nil)
 	release, _, err := gh.Repositories.GetLatestRelease(ctx, pacGHRepoOwner, pacGHRepoName)
 	if err != nil {
