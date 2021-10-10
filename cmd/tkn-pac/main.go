@@ -9,8 +9,10 @@ import (
 )
 
 func main() {
-	clients := &params.Run{}
-	clients.Info.Event = &info.Event{}
+	clients := &params.Run{Info: info.Info{
+		Event: &info.Event{},
+		Pac:   &info.PacOpts{},
+	}}
 	pac := tknpac.Root(clients)
 
 	if err := pac.Execute(); err != nil {

@@ -30,7 +30,7 @@ func (v *VCS) GetConfig() *info.VCSConfig {
 	}
 }
 
-func (v *VCS) CreateStatus(_ context.Context, event *info.Event, pacopts info.PacOpts,
+func (v *VCS) CreateStatus(_ context.Context, event *info.Event, pacopts *info.PacOpts,
 	statusopts webvcs.StatusOpts) error {
 	switch statusopts.Conclusion {
 	case "skipped":
@@ -124,7 +124,7 @@ func (v *VCS) GetFileInsideRepo(_ context.Context, runevent *info.Event, path st
 	return v.getBlob(runevent, branch, path)
 }
 
-func (v *VCS) SetClient(_ context.Context, opts info.PacOpts) {
+func (v *VCS) SetClient(_ context.Context, opts *info.PacOpts) {
 	v.Client = bitbucket.NewBasicAuth(opts.VCSUser, opts.VCSToken)
 	v.Token = &opts.VCSToken
 }

@@ -52,13 +52,13 @@ func Command(cs *params.Run) *cobra.Command {
 	}
 	cs.Info.Kube.AddFlags(cmd)
 
-	cmd.Flags().StringVarP(&cs.Info.Event.EventType, "webhook-type", "", os.Getenv("PAC_EVENT_TYPE"), "Payload event type as set from Github (ie: X-GitHub-Event header)")
+	cmd.Flags().StringVarP(&cs.Info.Event.EventType, "webhook-type", "", os.Getenv("PAC_WEBHOOK_TYPE"), "Payload event type as set from Github (ie: X-GitHub-Event header)")
 	cmd.Flags().StringVarP(&cs.Info.Event.TriggerTarget, "trigger-target", "", os.Getenv("PAC_TRIGGER_TARGET"), "The trigger target from where this event comes from")
 
 	return cmd
 }
 
-func getPayloadFromFile(opts info.PacOpts) (string, error) {
+func getPayloadFromFile(opts *info.PacOpts) (string, error) {
 	if opts.PayloadFile == "" {
 		return "", fmt.Errorf("no payload file has been passed")
 	}
@@ -71,8 +71,8 @@ func getPayloadFromFile(opts info.PacOpts) (string, error) {
 	return string(payloadB), err
 }
 
-func getVCS(pacopts info.PacOpts) (webvcs.Interface, error) {
-	switch pacopts.VCSType {
+func getVCS(pacopts *info.PacOpts) (webvcs.Interface, error) {
+	switch pacopts.WebhookType {
 	case "github":
 		g := &github.VCS{}
 		return g, nil

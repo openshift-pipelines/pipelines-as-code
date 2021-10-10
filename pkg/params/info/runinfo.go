@@ -2,6 +2,6 @@ package info
 
 type Info struct {
 	Event *Event
-	Pac   PacOpts
+	Pac   *PacOpts
 	Kube  KubeOpts
 }

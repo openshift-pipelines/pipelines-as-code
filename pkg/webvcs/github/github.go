@@ -26,7 +26,7 @@ func (v *VCS) GetConfig() *info.VCSConfig {
 	}
 }
 
-func (v *VCS) SetClient(ctx context.Context, info info.PacOpts) {
+func (v *VCS) SetClient(ctx context.Context, info *info.PacOpts) {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: info.VCSToken},
 	)

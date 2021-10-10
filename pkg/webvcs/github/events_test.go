@@ -223,7 +223,7 @@ func TestParsePayLoadRetest(t *testing.T) {
 		},
 		Info: info.Info{
 			Event: event,
-			Pac: info.PacOpts{
+			Pac: &info.PacOpts{
 				VCSToken: "TOKENSET",
 			},
 		},
@@ -239,7 +239,7 @@ func TestParsePayLoadRetest(t *testing.T) {
 	assert.Equal(t, runinfo.EventType, "pull_request")
 
 	// We cannot parse payload without a token when getting from issue_comment
-	run.Info.Pac = info.PacOpts{VCSToken: ""}
+	gvcs.Client = nil
 	runinfo, err = gvcs.ParsePayload(ctx, run, issueEvent)
 	assert.ErrorContains(t, err, "gitops style comments operation is only supported with github apps")
 	assert.Assert(t, runinfo.Event == nil)

@@ -73,12 +73,14 @@ spec:
       spec:
         serviceAccountName: pipelines-as-code-sa-el
         params:
+          - name: ghe_host
+            value: $(tt.params.ghe_host)
           - name: action
             value: $(tt.params.action)
           - name: event_type
             value: $(tt.params.event_type)
-          - name: ghe_host
-            value: $(tt.params.ghe_host)
+          - name: trigger_target
+            value: $(tt.params.trigger_target)
           - name: owner
             value: $(tt.params.owner)
           - name: sender
@@ -89,8 +91,6 @@ spec:
             value: $(tt.params.pull_request_url)
           - name: installation_id
             value: $(tt.params.installation_id)
-          - name: trigger_target
-            value: $(tt.params.trigger_target)
         pipelineSpec:
           params:
             - name: action
@@ -105,20 +105,10 @@ spec:
           workspaces:
             - name: secrets
           tasks:
-            - name: get-token
-              taskRef:
-                name: github-app-token
-              params:
-                - name: github_api_url
-                  value: $(params.ghe_host)
-                - name: installation_id
-                  value: $(params.installation_id)
-              workspaces:
-                - name: secrets
-                  workspace: secrets
             - name: pipelines-as-code
-              runAfter: [get-token]
               taskSpec:
+                workspaces:
+                  - name: secrets
                 params:
                   - name: action
                     type: string
@@ -134,9 +124,9 @@ spec:
                     type: string
                   - name: pull_request_url
                     type: string
-                  - name: token
-                    type: string
                   - name: trigger_target
+                    type: string
+                  - name: installation_id
                     type: string
                 steps:
                   - name: apply-and-launch
@@ -153,12 +143,14 @@ spec:
                           configMapKeyRef:
                             name: pipelines-as-code
                             key: secret-auto-create
-                      - name: PAC_WEBVCS_URL
+                      - name: PAC_WEBVCS_APIURL
                         value: $(params.ghe_host)
-                      - name: PAC_WEBVCS_TOKEN
-                        value: $(params.token)
                       - name: PAC_WEBVCS_TYPE
                         value: "github"
+                      - name: PAC_INSTALLATION_ID
+                        value: $(params.installation_id)
+                      - name: PAC_WORKSPACE_SECRET
+                        value: $(workspaces.secrets.path)
                     script: |
                       cat << EOF|tee /tmp/payload.json
                       {
@@ -179,8 +171,7 @@ spec:
                         }
                       }
                       EOF
-                      env|grep '^PAC'|sed 's/TOKEN=.*/TOKEN=HIDDENTOKEN/'
-                      cat /tmp/payload.json
+                      env|grep '^PAC'
                       pipelines-as-code --trigger-target=$(params.trigger_target) --webhook-type="$(params.event_type)" \
                       --payload-file=/tmp/payload.json
               params:
@@ -200,8 +191,11 @@ spec:
                   value: "$(params.repository)"
                 - name: pull_request_url
                   value: "$(params.pull_request_url)"
-                - name: token
-                  value: "$(tasks.get-token.results.token)"
+                - name: installation_id
+                  value: $(params.installation_id)
+              workspaces:
+                - name: secrets
+                  workspace: secrets
         workspaces:
           - name: secrets
             secret:

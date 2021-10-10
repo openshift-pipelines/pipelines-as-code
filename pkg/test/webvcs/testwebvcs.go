@@ -29,7 +29,7 @@ func (v *TestWebVCSImp) GetCommitInfo(ctx context.Context, runevent *info.Event)
 	return nil
 }
 
-func (v *TestWebVCSImp) SetClient(ctx context.Context, pacopt info.PacOpts) {
+func (v *TestWebVCSImp) SetClient(ctx context.Context, pacopt *info.PacOpts) {
 }
 
 func (v *TestWebVCSImp) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
@@ -39,7 +39,7 @@ func (v *TestWebVCSImp) IsAllowed(ctx context.Context, event *info.Event) (bool,
 	return false, nil
 }
 
-func (v *TestWebVCSImp) CreateStatus(ctx context.Context, event *info.Event, opts info.PacOpts,
+func (v *TestWebVCSImp) CreateStatus(ctx context.Context, event *info.Event, opts *info.PacOpts,
 	statusOpts webvcs.StatusOpts) error {
 	if v.CreateStatusErorring {
 		return fmt.Errorf("you want me to error I error for you")

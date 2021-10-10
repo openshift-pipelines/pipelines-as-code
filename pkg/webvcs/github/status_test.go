@@ -25,7 +25,7 @@ func TestGithubVCS_CreateCheckRun(t *testing.T) {
 		Repository: "info",
 	}
 
-	err := gcvs.createCheckRunStatus(ctx, event, info.PacOpts{LogURL: "http://nowhere"}, webvcs.StatusOpts{Status: "hello moto"})
+	err := gcvs.createCheckRunStatus(ctx, event, &info.PacOpts{LogURL: "http://nowhere"}, webvcs.StatusOpts{Status: "hello moto"})
 	assert.NilError(t, err)
 	assert.Equal(t, *event.CheckRunID, int64(555))
 }
@@ -157,7 +157,7 @@ func TestGithubVCS_CreateStatus(t *testing.T) {
 				Text:       tt.args.text,
 				DetailsURL: tt.args.detailsURL,
 			}
-			pacopts := info.PacOpts{
+			pacopts := &info.PacOpts{
 				LogURL: "https://log",
 			}
 			if !tt.notoken {
@@ -248,8 +248,7 @@ func TestVCS_createStatusCommit(t *testing.T) {
 				Client: fakeclient,
 			}
 
-			pacopts := info.PacOpts{}
-			if err := gvcs.createStatusCommit(ctx, tt.event, pacopts, tt.status); (err != nil) != tt.wantErr {
+			if err := gvcs.createStatusCommit(ctx, tt.event, &info.PacOpts{}, tt.status); (err != nil) != tt.wantErr {
 				t.Errorf("GetCommitInfo() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

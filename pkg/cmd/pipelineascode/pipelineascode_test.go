@@ -92,8 +92,8 @@ func TestRunByVCS(t *testing.T) {
 					PipelineAsCode: stdata.PipelineAsCode,
 				},
 				Info: info.Info{
-					Pac: info.PacOpts{
-						VCSType:     "github",
+					Pac: &info.PacOpts{
+						WebhookType: "github",
 						PayloadFile: test.payloadFile,
 						VCSToken:    "TOKEN",
 						VCSAPIURL:   "http://goninjago",
@@ -120,7 +120,6 @@ func TestGetPayloadFromFile(t *testing.T) {
 	tests := []struct {
 		name    string
 		vcstype string
-		opts    info.PacOpts
 		want    string
 		wantErr bool
 	}{
@@ -136,8 +135,8 @@ func TestGetPayloadFromFile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opts := info.PacOpts{
-				VCSType: tt.vcstype,
+			opts := &info.PacOpts{
+				WebhookType: tt.vcstype,
 			}
 			_, err := getVCS(opts)
 			if (err != nil) != tt.wantErr {

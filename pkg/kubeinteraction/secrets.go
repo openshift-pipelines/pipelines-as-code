@@ -34,7 +34,7 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 const defaultGitUser = "git"
 
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
-func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, pacopts info.PacOpts, targetNamespace string) error {
+func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, targetNamespace string) error {
 	repoURL, err := url.Parse(runevent.URL)
 	if err != nil {
 		return err

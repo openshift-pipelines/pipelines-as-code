@@ -453,13 +453,13 @@ func TestVCS_GetCommitInfo(t *testing.T) {
 func TestVCS_SetClient(t *testing.T) {
 	tests := []struct {
 		name        string
-		info        info.PacOpts
+		info        *info.PacOpts
 		expectedURL string
 		isGHE       bool
 	}{
 		{
 			name: "api url set",
-			info: info.PacOpts{
+			info: &info.PacOpts{
 				VCSAPIURL: "foo.com",
 			},
 			expectedURL: "https://foo.com",
@@ -468,6 +468,7 @@ func TestVCS_SetClient(t *testing.T) {
 		{
 			name:        "default to public github",
 			expectedURL: "https://api.github.com/",
+			info:        &info.PacOpts{},
 		},
 	}
 	for _, tt := range tests {

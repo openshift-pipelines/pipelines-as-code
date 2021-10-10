@@ -83,7 +83,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := kint.CreateBasicAuthSecret(ctx, &runevent, info.PacOpts{VCSToken: "verysecrete"}, tt.targetNS)
+			err := kint.CreateBasicAuthSecret(ctx, &runevent, &info.PacOpts{VCSToken: "verysecrete"}, tt.targetNS)
 			assert.NilError(t, err)
 			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
