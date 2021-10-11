@@ -69,7 +69,7 @@ func TestSetClient(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	v := VCS{}
 	token := "HELLOTOKEN"
-	v.SetClient(ctx, info.PacOpts{VCSToken: token})
+	v.SetClient(ctx, &info.PacOpts{VCSToken: token})
 	assert.Equal(t, token, *v.Token)
 }
 
@@ -203,7 +203,7 @@ func TestCreateStatus(t *testing.T) {
 			bbcloudtest.MuxCreateCommitstatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbcloudtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr)
 
-			err := v.CreateStatus(ctx, event, info.PacOpts{
+			err := v.CreateStatus(ctx, event, &info.PacOpts{
 				VCSToken:        "token",
 				ApplicationName: "HELLO APP",
 			}, tt.status)

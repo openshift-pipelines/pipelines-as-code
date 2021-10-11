@@ -4,8 +4,10 @@ go 1.15
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.2.12
+	github.com/bradleyfalzon/ghinstallation/v2 v2.0.3
 	github.com/briandowns/spinner v1.16.0
 	github.com/gobwas/glob v0.2.3
+	github.com/golang-jwt/jwt/v4 v4.1.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-github/scrape v0.0.0-20211006151203-f6640949b0de
@@ -22,6 +24,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/tektoncd/pipeline v0.24.3
 	go.uber.org/zap v1.16.0
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20210929193557-e81a3d93ecf6 // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	golang.org/x/sys v0.0.0-20211002104244-808efd93c36d // indirect

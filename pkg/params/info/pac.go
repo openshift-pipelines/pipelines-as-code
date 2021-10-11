@@ -16,13 +16,13 @@ type PacOpts struct {
 	VCSAPIURL          string
 	VCSUser            string
 	VCSInfoFromRepo    bool // wether the webvcs info come from the repository
-	VCSType            string
+	WebhookType        string
 	PayloadFile        string
 }
 
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
-	cmd.PersistentFlags().StringVarP(&p.VCSType, "webvcs-type", "", os.Getenv("PAC_WEBVCS_TYPE"),
-		"Web VCS (ie: GitHub) Token")
+	cmd.PersistentFlags().StringVarP(&p.WebhookType, "webvcs-type", "", os.Getenv("PAC_WEBVCS_TYPE"),
+		"Webhook type")
 
 	webvcsToken := os.Getenv("PAC_WEBVCS_TOKEN")
 	if webvcsToken != "" {
@@ -38,7 +38,7 @@ func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringVarP(&p.VCSToken, "webvcs-token", "", webvcsToken,
 		"Web VCS (ie: GitHub) Token")
 
-	cmd.PersistentFlags().StringVarP(&p.VCSAPIURL, "webvcs-api-url", "", os.Getenv("PAC_WEBVCS_URL"),
+	cmd.PersistentFlags().StringVarP(&p.VCSAPIURL, "webvcs-api-url", "", os.Getenv("PAC_WEBVCS_APIURL"),
 		"Web VCS (ie: GitHub Enteprise) API URL")
 
 	cmd.PersistentFlags().StringVarP(&p.PayloadFile,

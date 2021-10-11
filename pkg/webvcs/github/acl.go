@@ -11,7 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
 
-func (v VCS) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
+func (v *VCS) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 	// Do most of the checks first, if user is a owner or in a organisation
 	allowed, err := v.aclCheckAll(ctx, event)
 	if err != nil {
@@ -29,7 +29,7 @@ func (v VCS) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 // if there is a /ok-to-test in there running an aclCheck again on the comment
 // Sender if she is an OWNER and then allow it to run CI.
 // TODO: pull out the github logic from there in an agnostic way.
-func (v VCS) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Event) (bool, error) {
+func (v *VCS) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Event) (bool, error) {
 	revent := event
 	revent.EventType = ""
 	revent.TriggerTarget = ""
@@ -65,7 +65,7 @@ func (v VCS) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Even
 }
 
 // aclCheck check if we are allowed to run the pipeline on that PR
-func (v VCS) aclCheckAll(ctx context.Context, rev *info.Event) (bool, error) {
+func (v *VCS) aclCheckAll(ctx context.Context, rev *info.Event) (bool, error) {
 	if rev.Owner == rev.Sender {
 		return true, nil
 	}
@@ -97,7 +97,7 @@ func (v VCS) aclCheckAll(ctx context.Context, rev *info.Event) (bool, error) {
 
 // checkSenderOrgMembership Get sender user's organization. We can
 // only get the one that the user sets as public 🤷
-func (v VCS) checkSenderOrgMembership(ctx context.Context, runevent *info.Event) (bool, error) {
+func (v *VCS) checkSenderOrgMembership(ctx context.Context, runevent *info.Event) (bool, error) {
 	users, resp, err := v.Client.Organizations.ListMembers(ctx, runevent.Owner,
 		&github.ListMembersOptions{
 			PublicOnly: true, // We can't list private member in a org
@@ -121,7 +121,7 @@ func (v VCS) checkSenderOrgMembership(ctx context.Context, runevent *info.Event)
 
 // getFileFromDefaultBranch will get a file directly from the Default BaseBranch as
 // configured in runinfo which is directly set in webhook by Github
-func (v VCS) getFileFromDefaultBranch(ctx context.Context, path string, runevent *info.Event) (string, error) {
+func (v *VCS) getFileFromDefaultBranch(ctx context.Context, path string, runevent *info.Event) (string, error) {
 	tektonyaml, err := v.GetFileInsideRepo(ctx, runevent, path, runevent.DefaultBranch)
 	if err != nil {
 		return "", fmt.Errorf("cannot find %s inside the %s branch: %w", path, runevent.DefaultBranch, err)
@@ -131,7 +131,7 @@ func (v VCS) getFileFromDefaultBranch(ctx context.Context, path string, runevent
 
 // GetStringPullRequestComment return the comment if we find a regexp in one of
 // the comments text of a pull request
-func (v VCS) GetStringPullRequestComment(ctx context.Context, runevent *info.Event, reg string) ([]*github.IssueComment, error) {
+func (v *VCS) GetStringPullRequestComment(ctx context.Context, runevent *info.Event, reg string) ([]*github.IssueComment, error) {
 	var ret []*github.IssueComment
 	prNumber, err := convertPullRequestURLtoNumber(runevent.URL)
 	if err != nil {

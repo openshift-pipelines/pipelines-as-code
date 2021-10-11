@@ -5,10 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v39/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -17,7 +21,7 @@ import (
 
 // payloadFix since we are getting a bunch of \r\n or \n and others from triggers/github, so let just
 // workaround it. Originally from https://stackoverflow.com/a/52600147
-func (v VCS) payloadFix(payload string) []byte {
+func (v *VCS) payloadFix(payload string) []byte {
 	replacement := " "
 	replacer := strings.NewReplacer(
 		"\r\n", replacement,
@@ -32,10 +36,72 @@ func (v VCS) payloadFix(payload string) []byte {
 	return []byte(replacer.Replace(payload))
 }
 
+func (v *VCS) getAppToken() error {
+	installationIDEnv := os.Getenv("PAC_INSTALLATION_ID")
+	workspacePath := os.Getenv("PAC_WORKSPACE_SECRET")
+
+	if installationIDEnv == "" || workspacePath == "" {
+		return nil
+	}
+
+	installationID, err := strconv.ParseInt(installationIDEnv, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	// check if the path exists
+	if _, err := os.Stat(workspacePath); os.IsNotExist(err) {
+		return fmt.Errorf("workspace path %s in env PAC_WORKSPACE_SECRET does not exist", workspacePath)
+	}
+
+	// read application_id from the secret workspace
+	b, err := os.ReadFile(filepath.Join(workspacePath, "application_id"))
+	if err != nil {
+		return err
+	}
+	applicationID, err := strconv.ParseInt(string(b), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	// read private_key from the secret workspace
+	privatekey := filepath.Join(workspacePath, "private.key")
+	tr := http.DefaultTransport
+	itr, err := ghinstallation.NewKeyFromFile(tr, applicationID, installationID, privatekey)
+	if err != nil {
+		return err
+	}
+
+	// getting the baseurl from go-github since it has all the logic in there
+	gheURL := os.Getenv("PAC_WEBVCS_APIURL")
+	if gheURL != "" {
+		if !strings.HasPrefix(gheURL, "https://") {
+			gheURL = "https://" + gheURL
+		}
+
+		v.Client, err = github.NewEnterpriseClient(gheURL, "", &http.Client{Transport: itr})
+		if err != nil {
+			return err
+		}
+		itr.BaseURL = strings.TrimSuffix(v.Client.BaseURL.String(), "/")
+	} else {
+		v.Client = github.NewClient(&http.Client{Transport: itr})
+	}
+
+	return err
+}
+
 // ParsePayload parse payload event
 // TODO: this piece of code is just plain silly
-func (v VCS) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
+func (v *VCS) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
 	var processedevent *info.Event
+
+	// get the app token if it exist first
+	err := v.getAppToken()
+	if err != nil {
+		return &info.Event{}, err
+	}
+
 	payloadTreated := v.payloadFix(payload)
 	event, err := github.ParseWebHook(run.Info.Event.EventType, payloadTreated)
 	if err != nil {
@@ -56,9 +122,8 @@ func (v VCS) ParsePayload(ctx context.Context, run *params.Run, payload string) 
 			}
 		}
 	case *github.IssueCommentEvent:
-		if run.Info.Pac.VCSToken == "" {
-			return &info.Event{}, fmt.Errorf("gitops style comments operation is only supported with github apps" +
-				" integration")
+		if v.Client == nil {
+			return &info.Event{}, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
 		}
 		processedevent, err = v.handleIssueCommentEvent(ctx, run.Clients.Log, event)
 		if err != nil {
@@ -102,7 +167,7 @@ func (v VCS) ParsePayload(ctx context.Context, run *params.Run, payload string) 
 	return processedevent, nil
 }
 
-func (v VCS) handleReRequestEvent(ctx context.Context, log *zap.SugaredLogger, event *github.CheckRunEvent) (*info.Event, error) {
+func (v *VCS) handleReRequestEvent(ctx context.Context, log *zap.SugaredLogger, event *github.CheckRunEvent) (*info.Event, error) {
 	runevent := &info.Event{
 		Owner:         event.GetRepo().GetOwner().GetLogin(),
 		Repository:    event.GetRepo().GetName(),
@@ -134,7 +199,7 @@ func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
 	return prNumber, nil
 }
 
-func (v VCS) handleIssueCommentEvent(ctx context.Context, log *zap.SugaredLogger, event *github.IssueCommentEvent) (*info.Event, error) {
+func (v *VCS) handleIssueCommentEvent(ctx context.Context, log *zap.SugaredLogger, event *github.IssueCommentEvent) (*info.Event, error) {
 	runevent := &info.Event{
 		Owner:      event.GetRepo().GetOwner().GetLogin(),
 		Repository: event.GetRepo().GetName(),

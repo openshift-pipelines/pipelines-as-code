@@ -15,7 +15,7 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: pipelines-as-code-bindings-push
+  name: pipelines-as-code-github-push
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
@@ -42,7 +42,7 @@ spec:
       value: $(body.sender.login)
     - name: "base_ref"
       value: $(body.ref)
-    - name: "head_ref"  # head ref is the same as base ref
+    - name: "head_ref" # head ref become the same as base ref
       value: $(body.ref)
     - name: "installation_id"
       value: $(body.installation.id)
@@ -51,7 +51,7 @@ spec:
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: pipelines-as-code-template-push
+  name: pipelines-as-code-github-push
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
@@ -124,20 +124,10 @@ spec:
           workspaces:
             - name: secrets
           tasks:
-            - name: get-token
-              taskRef:
-                name: github-app-token
-              params:
-                - name: github_api_url
-                  value: $(params.ghe_host)
-                - name: installation_id
-                  value: $(params.installation_id)
-              workspaces:
-                - name: secrets
-                  workspace: secrets
             - name: pipelines-as-code
-              runAfter: [get-token]
               taskSpec:
+                workspaces:
+                  - name: secrets
                 params:
                   - name: ghe_host
                     type: string
@@ -161,7 +151,7 @@ spec:
                     type: string
                   - name: head_ref
                     type: string
-                  - name: token
+                  - name: installation_id
                     type: string
                 steps:
                   - name: apply-and-launch
@@ -178,14 +168,25 @@ spec:
                           configMapKeyRef:
                             name: pipelines-as-code
                             key: secret-auto-create
-                      - name: PAC_WEBVCS_URL
+                      - name: PAC_WEBVCS_APIURL
                         value: $(params.ghe_host)
-                      - name: PAC_WEBVCS_TOKEN
-                        value: $(params.token)
                       - name: PAC_WEBVCS_TYPE
                         value: "github"
+                      - name: PAC_TRIGGER_TARGET
+                        value: $(params.trigger_target)
+                      - name: PAC_WEBHOOK_TYPE
+                        value: $(params.event_type)
+                      - name: PAC_INSTALLATION_ID
+                        value: $(params.installation_id)
+                      - name: PAC_WORKSPACE_SECRET
+                        value: $(workspaces.secrets.path)
+                      - name: PAC_PAYLOAD_FILE
+                        value: "/tmp/payload.json"
                     script: |
-                      cat << EOF > /tmp/payload.json
+                      #!/usr/bin/env bash
+                      set -euf
+                      set +x
+                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
                       {
                         "repository": {
                           "owner": {
@@ -204,10 +205,8 @@ spec:
                         }
                       }
                       EOF
-                      env|grep '^PAC'|sed 's/TOKEN=.*/TOKEN=HIDDENTOKEN/'
-                      cat /tmp/payload.json
-                      pipelines-as-code --trigger-target=$(params.trigger_target) --webhook-type="$(params.event_type)" \
-                      --payload-file=/tmp/payload.json
+                      env|grep '^PAC'
+                      pipelines-as-code
               params:
                 - name: ghe_host
                   value: $(params.ghe_host)
@@ -231,8 +230,11 @@ spec:
                   value: $(params.sha)
                 - name: head_ref
                   value: $(params.head_ref)
-                - name: token
-                  value: "$(tasks.get-token.results.token)"
+                - name: installation_id
+                  value: $(params.installation_id)
+              workspaces:
+                - name: secrets
+                  workspace: secrets
 
         workspaces:
           - name: secrets

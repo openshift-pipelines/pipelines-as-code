@@ -4,12 +4,12 @@ kind: Pipeline
 metadata:
   name: pipeline-remote-annotations
 spec:
-  workspaces:
-  - name: source
-  - name: basic-auth
-  params:
-    - name: repo_url
-    - name: revision
+  # workspaces:
+  # - name: source
+  # - name: basic-auth
+  # params:
+  #   - name: repo_url
+  #   - name: revision
   tasks:
     - name: task-spec
       taskSpec:
@@ -28,17 +28,17 @@ spec:
       taskRef:
         name: task-referenced-internally
 
-    - name: git-clone-from-catalog
-      taskRef:
-        name: git-clone
-      params:
-        - name: url
-          value: $(params.repo_url)
-        - name: revision
-          value: $(params.revision)
+    # - name: git-clone-from-catalog
+    #   taskRef:
+    #     name: git-clone
+    #   params:
+    #     - name: url
+    #       value: $(params.repo_url)
+    #     - name: revision
+          # value: $(params.revision)
 
-      workspaces:
-        - name: output
-          workspace: source
-        - name: basic-auth
-          workspace: basic-auth
+      # workspaces:
+      #   - name: output
+      #     workspace: source
+      #   - name: basic-auth
+          # workspace: basic-auth

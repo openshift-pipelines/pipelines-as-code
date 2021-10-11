@@ -10,7 +10,10 @@ import (
 )
 
 func main() {
-	clients := &params.Run{Info: info.Info{Event: &info.Event{}}}
+	clients := &params.Run{Info: info.Info{
+		Event: &info.Event{},
+		Pac:   &info.PacOpts{},
+	}}
 	cmd := pipelineascode.Command(clients)
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)

@@ -91,7 +91,7 @@ func setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, E2EOptions,
 	}
 	e2eoptions := E2EOptions{Owner: splitted[0], Repo: splitted[1], DirectWebhook: viaDirectWebhook}
 	gvcs := github.VCS{}
-	gvcs.SetClient(ctx, info.PacOpts{
+	gvcs.SetClient(ctx, &info.PacOpts{
 		VCSToken:  githubToken,
 		VCSAPIURL: githubURL,
 	})

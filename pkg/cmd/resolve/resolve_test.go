@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -40,7 +41,10 @@ func TestSplitArgsInMap(t *testing.T) {
 }
 
 func TestCommandFilenameSetProperly(t *testing.T) {
-	cs := &params.Run{Clients: clients.Clients{ClientInitialized: true}}
+	cs := &params.Run{
+		Clients: clients.Clients{ClientInitialized: true},
+		Info:    info.Info{Pac: &info.PacOpts{}},
+	}
 	cmd := Command(cs)
 	e := bytes.NewBufferString("")
 	o := bytes.NewBufferString("")

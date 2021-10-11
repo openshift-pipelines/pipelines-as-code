@@ -375,7 +375,7 @@ func TestRun(t *testing.T) {
 				},
 				Info: info.Info{
 					Event: &tt.runevent,
-					Pac: info.PacOpts{
+					Pac: &info.PacOpts{
 						VCSInfoFromRepo:    tt.VCSInfoFromRepo,
 						SecretAutoCreation: true,
 						VCSAPIURL:          ghTestServerURL,

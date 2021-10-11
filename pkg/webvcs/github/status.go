@@ -27,7 +27,7 @@ const taskStatusTemplate = `
 
 // createCheckRunStatus create a status via the checkRun API, which is only
 // available with Github apps tokens.
-func (v *VCS) createCheckRunStatus(ctx context.Context, runevent *info.Event, pacopts info.PacOpts, status webvcs.StatusOpts) error {
+func (v *VCS) createCheckRunStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status webvcs.StatusOpts) error {
 	now := github.Timestamp{Time: time.Now()}
 	if runevent.CheckRunID == nil {
 		now := github.Timestamp{Time: time.Now()}
@@ -74,7 +74,7 @@ func (v *VCS) createCheckRunStatus(ctx context.Context, runevent *info.Event, pa
 
 // createStatusCommit use the classic/old statuses API which is available when we
 // don't have a github app token
-func (v *VCS) createStatusCommit(ctx context.Context, runevent *info.Event, pacopts info.PacOpts, status webvcs.StatusOpts) error {
+func (v *VCS) createStatusCommit(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status webvcs.StatusOpts) error {
 	now := time.Now()
 	switch status.Conclusion {
 	case "skipped":
@@ -117,8 +117,8 @@ func (v *VCS) createStatusCommit(ctx context.Context, runevent *info.Event, paco
 	return nil
 }
 
-func (v *VCS) CreateStatus(ctx context.Context, runevent *info.Event, pacopts info.PacOpts, status webvcs.StatusOpts) error {
-	if pacopts.VCSAPIURL == "" || pacopts.VCSToken == "" {
+func (v *VCS) CreateStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status webvcs.StatusOpts) error {
+	if v.Client == nil {
 		return fmt.Errorf("cannot set status on github no token or url set")
 	}
 

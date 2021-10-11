@@ -15,7 +15,7 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: pipelines-as-code-bindings-ok-to-test-comment
+  name: pipelines-as-code-github-ok-to-test-comment
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default

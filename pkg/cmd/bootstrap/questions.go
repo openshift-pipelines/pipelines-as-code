@@ -20,6 +20,7 @@ func askYN(opts *bootstrapOpts, title, question string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	return answer, nil
 }
 

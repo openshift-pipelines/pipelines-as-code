@@ -70,6 +70,9 @@ github.com/aws/aws-sdk-go/service/sts/stsiface
 github.com/beorn7/perks/quantile
 # github.com/blendle/zapdriver v1.3.1
 github.com/blendle/zapdriver
+# github.com/bradleyfalzon/ghinstallation/v2 v2.0.3
+## explicit
+github.com/bradleyfalzon/ghinstallation/v2
 # github.com/briandowns/spinner v1.16.0
 ## explicit
 github.com/briandowns/spinner
@@ -116,6 +119,9 @@ github.com/gobwas/glob/util/strings
 # github.com/gogo/protobuf v1.3.2
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
+# github.com/golang-jwt/jwt/v4 v4.1.0
+## explicit
+github.com/golang-jwt/jwt/v4
 # github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 github.com/golang/groupcache/lru
 # github.com/golang/protobuf v1.5.2
@@ -314,7 +320,8 @@ go.uber.org/zap/internal/ztest
 go.uber.org/zap/zapcore
 go.uber.org/zap/zaptest
 go.uber.org/zap/zaptest/observer
-# golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+# golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+## explicit
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
