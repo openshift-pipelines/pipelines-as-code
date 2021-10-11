@@ -42,7 +42,7 @@ spec:
       value: $(body.sender.login)
     - name: "base_ref"
       value: $(body.ref)
-    - name: "head_ref"  # head ref become the same as base ref
+    - name: "head_ref" # head ref become the same as base ref
       value: $(body.ref)
     - name: "installation_id"
       value: $(body.installation.id)
@@ -126,6 +126,8 @@ spec:
           tasks:
             - name: pipelines-as-code
               taskSpec:
+                workspaces:
+                  - name: secrets
                 params:
                   - name: ghe_host
                     type: string
@@ -171,7 +173,7 @@ spec:
                       - name: PAC_WEBVCS_TYPE
                         value: "github"
                       - name: PAC_TRIGGER_TARGET
-                        params: $(params.trigger_target)
+                        value: $(params.trigger_target)
                       - name: PAC_WEBHOOK_TYPE
                         value: $(params.event_type)
                       - name: PAC_INSTALLATION_ID
