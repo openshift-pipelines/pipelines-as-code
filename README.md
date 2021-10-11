@@ -40,7 +40,21 @@ Pipelines as Code features:
 
 ## Installation Guide
 
-Please follow [this document](docs/INSTALL.md) for installing Pipelines as Code on OpenShift.
+The easiest way to get started is to use the `tkn pac` CLI and its bootstrap command.
+
+Download and install first the tkn-pac CLI following [these instructions](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/docs/INSTALL.md#cli).
+
+Connected to your cluster launch the command :
+
+```bash
+-$ tkn pac bootstrap
+```
+
+and follow the questions and installation methods which will install Pipelines as Code on cluster and help you create a Github Application.
+
+feel free to look over the `--help` to see the different options for example installing on Github Enteprise.
+
+For more detailled installation method please follow [this document](docs/INSTALL.md) for installing Pipelines as Code on OpenShift.
 
 ## Getting Started
 
