@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -55,7 +56,7 @@ func (v *VCS) getAppToken() error {
 	}
 
 	// read application_id from the secret workspace
-	b, err := os.ReadFile(filepath.Join(workspacePath, "application_id"))
+	b, err := ioutil.ReadFile(filepath.Join(workspacePath, "application_id"))
 	if err != nil {
 		return err
 	}
