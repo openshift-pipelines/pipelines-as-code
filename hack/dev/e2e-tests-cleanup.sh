@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -eu
 
-type -p gh >/dev/null || { echo "You need gh installed and configured for ${TEST_GITHUB_API_URL}"; exit 1 ;}
+type -p gh >/dev/null || { echo "You need gh installed"; exit 1 ;}
 
 for target in ${TEST_GITHUB_REPO_OWNER_GITHUBAPP} ${TEST_GITHUB_REPO_OWNER_WEBHOOK};do
     export GH_REPO=${target}
     export GH_HOST=$(echo ${TEST_GITHUB_API_URL}|sed 's,https://,,')
+    export GH_ENTERPRISE_TOKEN=$(echo ${TEST_GITHUB_TOKEN})
 
     echo "Closing lingering PR on ${target}"
     for prn in $(gh pr list --jq .[].number --json number);do
