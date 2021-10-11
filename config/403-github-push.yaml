@@ -42,7 +42,7 @@ spec:
       value: $(body.sender.login)
     - name: "base_ref"
       value: $(body.ref)
-    - name: "head_ref" # head ref become the same as base ref
+    - name: "head_ref"
       value: $(body.ref)
     - name: "installation_id"
       value: $(body.installation.id)

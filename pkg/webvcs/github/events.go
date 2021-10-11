@@ -79,10 +79,7 @@ func (v *VCS) getAppToken() error {
 			gheURL = "https://" + gheURL
 		}
 
-		v.Client, err = github.NewEnterpriseClient(gheURL, "", &http.Client{Transport: itr})
-		if err != nil {
-			return err
-		}
+		v.Client, _ = github.NewEnterpriseClient(gheURL, "", &http.Client{Transport: itr})
 		itr.BaseURL = strings.TrimSuffix(v.Client.BaseURL.String(), "/")
 	} else {
 		v.Client = github.NewClient(&http.Client{Transport: itr})
