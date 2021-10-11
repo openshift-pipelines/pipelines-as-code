@@ -15,63 +15,66 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: pipelines-as-code-bindings-push
+  name: pipelines-as-code-github-recheck
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   params:
-    - name: "event_type"
+    - name: action
+      value: $(body.action)
+    - name: head_branch
+      value: $(body.check_run.check_suite.head_branch)
+    - name: head_sha
+      value: $(body.check_run.check_suite.head_sha)
+    - name: trigger_target
+      value: "issue-recheck"
+    - name: event_type
       value: $(header.X-GitHub-Event)
     - name: "ghe_host"
       value: $(header.X-GitHub-Enterprise-Host)
-    - name: "trigger_target"
-      value: "push"
-    - name: "owner"
+    - name: owner
       value: $(body.repository.owner.login)
-    - name: "repository"
+    - name: repository
       value: $(body.repository.name)
-    - name: "default_branch"
-      value: $(body.repository.default_branch)
-    - name: "sha"
-      value: $(body.head_commit.id)
-    - name: "url"
+    - name: url
       value: $(body.repository.html_url)
-    - name: "sender"
+    - name: default_branch
+      value: $(body.repository.default_branch)
+    - name: pull_request_number
+      value: $(body.check_run.check_suite.pull_requests[?(@.number)].number)
+    - name: sender
       value: $(body.sender.login)
-    - name: "base_ref"
-      value: $(body.ref)
-    - name: "head_ref"  # head ref become the same as base ref
-      value: $(body.ref)
-    - name: "installation_id"
+    - name: installation_id
       value: $(body.installation.id)
 
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: pipelines-as-code-template-push
+  name: pipelines-as-code-github-recheck
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   params:
+    - name: action
+    - name: head_branch
+    - name: head_sha
     - name: event_type
-    - name: ghe_host
-      default: "api.github.com"
     - name: owner
     - name: repository
     - name: default_branch
     - name: url
+    - name: pull_request_number
     - name: sender
-    - name: base_ref
-    - name: sha
-    - name: head_ref
     - name: installation_id
       default: ""
     - name: trigger_target
+    - name: ghe_host
+      default: "api.github.com"
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
@@ -83,12 +86,14 @@ spec:
       spec:
         serviceAccountName: pipelines-as-code-sa-el
         params:
-          - name: ghe_host
-            value: $(tt.params.ghe_host)
+          - name: action
+            value: $(tt.params.action)
           - name: event_type
             value: $(tt.params.event_type)
-          - name: trigger_target
-            value: $(tt.params.trigger_target)
+          - name: head_branch
+            value: $(tt.params.head_branch)
+          - name: head_sha
+            value: $(tt.params.head_sha)
           - name: owner
             value: $(tt.params.owner)
           - name: repository
@@ -97,30 +102,31 @@ spec:
             value: $(tt.params.default_branch)
           - name: url
             value: $(tt.params.url)
+          - name: pull_request_number
+            value: $(tt.params.pull_request_number)
           - name: sender
             value: $(tt.params.sender)
-          - name: base_ref
-            value: $(tt.params.base_ref)
-          - name: sha
-            value: $(tt.params.sha)
-          - name: head_ref
-            value: $(tt.params.head_ref)
           - name: installation_id
             value: $(tt.params.installation_id)
+          - name: trigger_target
+            value: $(tt.params.trigger_target)
+          - name: ghe_host
+            value: $(tt.params.ghe_host)
         pipelineSpec:
           params:
-            - name: ghe_host
-            - name: event_type
             - name: trigger_target
+            - name: action
+            - name: head_branch
+            - name: head_sha
+            - name: event_type
             - name: owner
             - name: repository
             - name: default_branch
             - name: url
+            - name: pull_request_number
             - name: sender
-            - name: base_ref
-            - name: sha
-            - name: head_ref
             - name: installation_id
+            - name: ghe_host
           workspaces:
             - name: secrets
           tasks:
@@ -129,7 +135,11 @@ spec:
                 params:
                   - name: ghe_host
                     type: string
-                  - name: trigger_target
+                  - name: action
+                    type: string
+                  - name: head_branch
+                    type: string
+                  - name: head_sha
                     type: string
                   - name: event_type
                     type: string
@@ -141,13 +151,12 @@ spec:
                     type: string
                   - name: url
                     type: string
+                  - name: pull_request_number
+                    type: string
+                    default: "000"
                   - name: sender
                     type: string
-                  - name: base_ref
-                    type: string
-                  - name: sha
-                    type: string
-                  - name: head_ref
+                  - name: trigger_target
                     type: string
                   - name: installation_id
                     type: string
@@ -168,7 +177,7 @@ spec:
                             key: secret-auto-create
                       - name: PAC_WEBVCS_APIURL
                         value: $(params.ghe_host)
-                      - name: PAC_WEBHOOK_TYPE
+                      - name: PAC_WEBVCS_TYPE
                         value: "github"
                       - name: PAC_TRIGGER_TARGET
                         params: $(params.trigger_target)
@@ -181,22 +190,30 @@ spec:
                       - name: PAC_PAYLOAD_FILE
                         value: "/tmp/payload.json"
                     script: |
+                      #!/usr/bin/env bash
+                      set -eux
+                      prnumber=$(params.pull_request_number)
+                      [[ ${prnumber} != "[]" ]] && prnumber="[{\"number\": ${prnumber}}]"
                       cat << EOF |tee /tmp/payload.json
                       {
+                        "action": "$(params.action)",
+                        "check_run": {
+                          "check_suite": {
+                            "head_branch": "$(params.head_branch)",
+                            "head_sha": "$(params.head_sha)",
+                            "pull_requests": ${prnumber}
+                          }
+                        },
                         "repository": {
+                          "default_branch": "$(params.default_branch)",
+                          "html_url": "$(params.url)",
+                          "name": "$(params.repository)",
                           "owner": {
                             "login": "$(params.owner)"
-                          },
-                          "name": "$(params.repository)",
-                          "default_branch": "$(params.default_branch)",
-                          "html_url": "$(params.url)"
+                          }
                         },
                         "sender": {
                           "login": "$(params.sender)"
-                        },
-                        "ref": "$(params.base_ref)",
-                        "head_commit": {
-                          "id": "$(params.sha)"
                         }
                       }
                       EOF
@@ -205,32 +222,33 @@ spec:
               params:
                 - name: ghe_host
                   value: $(params.ghe_host)
-                - name: event_type
-                  value: $(params.event_type)
+                - name: action
+                  value: "$(params.action)"
+                - name: head_branch
+                  value: "$(params.head_branch)"
+                - name: head_sha
+                  value: "$(params.head_sha)"
                 - name: trigger_target
-                  value: $(params.trigger_target)
+                  value: "$(params.trigger_target)"
+                - name: event_type
+                  value: "$(params.event_type)"
                 - name: owner
-                  value: $(params.owner)
-                - name: repository
-                  value: $(params.repository)
-                - name: default_branch
-                  value: $(params.default_branch)
+                  value: "$(params.owner)"
                 - name: url
-                  value: $(params.url)
+                  value: "$(params.url)"
+                - name: repository
+                  value: "$(params.repository)"
+                - name: default_branch
+                  value: "$(params.default_branch)"
+                - name: pull_request_number
+                  value: "$(params.pull_request_number)"
                 - name: sender
-                  value: $(params.sender)
-                - name: base_ref
-                  value: $(params.base_ref)
-                - name: sha
-                  value: $(params.sha)
-                - name: head_ref
-                  value: $(params.head_ref)
+                  value: "$(params.sender)"
                 - name: installation_id
                   value: $(params.installation_id)
               workspaces:
                 - name: secrets
                   workspace: secrets
-
         workspaces:
           - name: secrets
             secret:

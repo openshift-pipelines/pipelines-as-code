@@ -48,9 +48,9 @@ spec:
                   'installation' in body &&
                   body.comment.body.matches('(^|\\r\\n)/retest([ ]*$|$|\\r\\n)')
       bindings:
-        - ref: pipelines-as-code-bindings-retest-comment
+        - ref: pipelines-as-code-github-retest-comment
       template:
-        ref: pipelines-as-code-template-retest-comment
+        ref: pipelines-as-code-github-retest-comment
 
     # When you have a /ok-to-test in a comment to allow CI on a non owner sender
     - name: github-issue-comment-ok-to-test
@@ -76,10 +76,10 @@ spec:
                   'installation' in body &&
                   body.comment.body.matches('(^|\\r\\n)/ok-to-test([ ]*$|$|\\r\\n)')
       bindings:
-        - ref: pipelines-as-code-bindings-ok-to-test-comment
+        - ref: pipelines-as-code-github-ok-to-test-comment
       template:
         # Using the templateRef from retest since they are mostly the same
-        ref: pipelines-as-code-template-retest-comment
+        ref: pipelines-as-code-github-retest-comment
 
     # Branch push using different binding but same triggertemplate as pullreq
     - name: github-branch-push
@@ -101,9 +101,9 @@ spec:
               value: >-
                 'pusher' in body
       bindings:
-        - ref: pipelines-as-code-bindings-push
+        - ref: pipelines-as-code-github-push
       template:
-        ref: pipelines-as-code-template-push
+        ref: pipelines-as-code-github-push
 
     # When using the UI and clicking on Re-run failed test
     - name: github-check-run-recheck
@@ -126,9 +126,9 @@ spec:
                 body.action in ['rerequested'] &&
                 'check_run' in body
       bindings:
-        - ref: pipelines-as-code-bindings-recheck
+        - ref: pipelines-as-code-github-recheck
       template:
-        ref: pipelines-as-code-template-recheck
+        ref: pipelines-as-code-github-recheck
 
     # GitHub When sending a new Pull Request
     - name: github-pull-request
@@ -150,9 +150,9 @@ spec:
               value: >-
                 body.action in ['created', 'synchronize', 'opened']
       bindings:
-        - ref: pipelines-as-code-bindings-pullreq
+        - ref: pipelines-as-code-github-pullreq
       template:
-        ref: pipelines-as-code-template-pullreq
+        ref: pipelines-as-code-github-pullreq
 
     # Bitbucket Cloud event when sending a new Pull Request
     - name: bitbucket-cloud-pull-request
