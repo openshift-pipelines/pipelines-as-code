@@ -185,10 +185,21 @@ spec:
                             key: bitbucket-cloud-additional-source-ip
                       - name: PAC_WEBVCS_TYPE
                         value: "bitbucket-cloud"
+                      - name: PAC_TRIGGER_TARGET
+                        value: "$(params.trigger_target)"
+                      - name: PAC_WEBHOOK_TYPE
+                        value: "$(params.event_type)"
+                      - name: PAC_PAYLOAD_FILE
+                        value: "/tmp/payload.json"
+                      - name: PAC_SOURCE_IP
+                        value: $(params.source_ip)
                     imagePullPolicy: Always
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
                     script: |
-                      cat << EOF |tee /tmp/payload.json
+                      #!/usr/bin/env bash
+                      set -euf
+                      set +x
+                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
                       {
                           "repository": {
                               "workspace": {
@@ -223,11 +234,8 @@ spec:
                           }
                       }
                       EOF
-                      export PAC_SOURCE_IP="$(params.source_ip)"
-                      env|grep '^PAC'|sed 's/TOKEN=.*/TOKEN=HIDDENTOKEN/'
-                      pipelines-as-code --trigger-target=$(params.trigger_target) \
-                        --payload-file=/tmp/payload.json \
-                        --webhook-type="$(params.event_type)"
+                      env|grep '^PAC'
+                      pipelines-as-code
               params:
                 - name: source_ip
                   value: $(params.source_ip)

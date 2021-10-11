@@ -151,8 +151,17 @@ spec:
                         value: $(params.installation_id)
                       - name: PAC_WORKSPACE_SECRET
                         value: $(workspaces.secrets.path)
+                      - name: PAC_TRIGGER_TARGET
+                        value: "$(params.trigger_target)"
+                      - name: PAC_WEBHOOK_TYPE
+                        value: "$(params.event_type)"
+                      - name: PAC_PAYLOAD_FILE
+                        value: "/tmp/payload.json"
                     script: |
-                      cat << EOF|tee /tmp/payload.json
+                      #!/usr/bin/env bash
+                      set -euf
+                      set +x
+                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
                       {
                         "action": "$(params.action)",
                         "issue": {
@@ -172,8 +181,7 @@ spec:
                       }
                       EOF
                       env|grep '^PAC'
-                      pipelines-as-code --trigger-target=$(params.trigger_target) --webhook-type="$(params.event_type)" \
-                      --payload-file=/tmp/payload.json
+                      pipelines-as-code
               params:
                 - name: action
                   value: "$(params.action)"

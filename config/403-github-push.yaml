@@ -168,12 +168,12 @@ spec:
                             key: secret-auto-create
                       - name: PAC_WEBVCS_APIURL
                         value: $(params.ghe_host)
-                      - name: PAC_WEBHOOK_TYPE
+                      - name: PAC_WEBVCS_TYPE
                         value: "github"
                       - name: PAC_TRIGGER_TARGET
                         params: $(params.trigger_target)
                       - name: PAC_WEBHOOK_TYPE
-                        params: $(params.event_type)
+                        value: $(params.event_type)
                       - name: PAC_INSTALLATION_ID
                         value: $(params.installation_id)
                       - name: PAC_WORKSPACE_SECRET
@@ -181,7 +181,10 @@ spec:
                       - name: PAC_PAYLOAD_FILE
                         value: "/tmp/payload.json"
                     script: |
-                      cat << EOF |tee /tmp/payload.json
+                      #!/usr/bin/env bash
+                      set -euf
+                      set +x
+                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
                       {
                         "repository": {
                           "owner": {

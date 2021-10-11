@@ -132,6 +132,8 @@ spec:
           tasks:
             - name: pipelines-as-code
               taskSpec:
+                workspaces:
+                  - name: secrets
                 params:
                   - name: ghe_host
                     type: string
@@ -180,9 +182,9 @@ spec:
                       - name: PAC_WEBVCS_TYPE
                         value: "github"
                       - name: PAC_TRIGGER_TARGET
-                        params: $(params.trigger_target)
+                        value: $(params.trigger_target)
                       - name: PAC_WEBHOOK_TYPE
-                        params: $(params.event_type)
+                        value: $(params.event_type)
                       - name: PAC_INSTALLATION_ID
                         value: $(params.installation_id)
                       - name: PAC_WORKSPACE_SECRET
@@ -191,10 +193,11 @@ spec:
                         value: "/tmp/payload.json"
                     script: |
                       #!/usr/bin/env bash
-                      set -eux
+                      set -euf
+                      set +x
                       prnumber=$(params.pull_request_number)
                       [[ ${prnumber} != "[]" ]] && prnumber="[{\"number\": ${prnumber}}]"
-                      cat << EOF |tee /tmp/payload.json
+                      cat << EOF |tee ${PAC_PAYLOAD_FILE}
                       {
                         "action": "$(params.action)",
                         "check_run": {

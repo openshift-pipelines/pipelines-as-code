@@ -189,16 +189,19 @@ spec:
                         value: $(params.installation_id)
                       - name: PAC_WORKSPACE_SECRET
                         value: $(workspaces.secrets.path)
-                      - name: PAC_TRIGGER_TARGET
-                        params: $(params.trigger_target)
-                      - name: PAC_WEBHOOK_TYPE
-                        params: $(params.event_type)
                       - name: PAC_PAYLOAD_FILE
                         value: "/tmp/payload.json"
+                      - name: PAC_TRIGGER_TARGET
+                        value: "$(params.trigger_target)"
+                      - name: PAC_WEBHOOK_TYPE
+                        value: "$(params.event_type)"
                     imagePullPolicy: Always
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
                     script: |
-                      cat << EOF|tee /tmp/payload.json
+                      #!/usr/bin/env bash
+                      set -euf
+                      set +x
+                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
                       {
                           "repository": {
                               "owner": {
