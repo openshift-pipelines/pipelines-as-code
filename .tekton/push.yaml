@@ -92,7 +92,7 @@ spec:
           - fetch
         taskSpec:
           steps:
-            - image: registry.access.redhat.com/ubi8/python-39:latestregistry.access.redhat.com/ubi8/python-39@sha256:86466a8a2b3981c339f84e791e170055eb3f520e8419f955efa98e93ccaaf5b9
+            - image: registry.access.redhat.com/ubi8/python-39@sha256:86466a8a2b3981c339f84e791e170055eb3f520e8419f955efa98e9
               name: release
               env:
                 - name: HUB_TOKEN
