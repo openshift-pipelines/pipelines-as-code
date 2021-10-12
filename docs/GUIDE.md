@@ -28,6 +28,10 @@ The Repository CR needs to be created in the namespace where Tekton Pipelines
 associated with the
 source code repository would be executed it cannot target another namespace.
 
+If there is multiples CRD matching the same event, only the oldest one would
+match. If you need to match a specific namespace you would need to use the
+target-namepsace feature in the pipeine annotation (see below).
+
 There is another optional layer of security where PipelineRun can have an
 annotation to explicitely target a specific
 namespace. It would stilll need to have a Repository CRD created in that
@@ -42,8 +46,7 @@ pipelinesascode.tekton.dev/target-namespace: "mynamespace"
 ```
 
 and Pipelines as Code will only match the repository in the mynamespace
-Namespace instead of trying to match it from all
-available repository on cluster.
+Namespace instead of trying to match it from all available repository on cluster.
 
 ## Authoring PipelineRun in `.tekton/` directory
 
