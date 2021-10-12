@@ -12,17 +12,3 @@ metadata:
 spec:
   pipelineRef:
     name: pipeline-remote-annotations
-  # params:
-  #   - name: repo_url
-  #     value: "{{repo_url}}"
-  #   - name: revision
-  #     value: "{{revision}}"
-  # workspaces:
-  # - name: source
-  #   volumeClaimTemplate:
-  #     spec:
-  #       accessModes:
-  #         - ReadWriteOnce
-  #       resources:
-  #         requests:
-  #           storage: 1Gi

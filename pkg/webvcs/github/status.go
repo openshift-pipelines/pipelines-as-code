@@ -75,6 +75,7 @@ func (v *VCS) createCheckRunStatus(ctx context.Context, runevent *info.Event, pa
 // createStatusCommit use the classic/old statuses API which is available when we
 // don't have a github app token
 func (v *VCS) createStatusCommit(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status webvcs.StatusOpts) error {
+	var err error
 	now := time.Now()
 	switch status.Conclusion {
 	case "skipped":
@@ -94,8 +95,7 @@ func (v *VCS) createStatusCommit(ctx context.Context, runevent *info.Event, paco
 		CreatedAt:   &now,
 	}
 
-	_, _, err := v.Client.Repositories.CreateStatus(ctx, runevent.Owner, runevent.Repository, runevent.SHA, ghstatus)
-	if err != nil {
+	if _, _, err := v.Client.Repositories.CreateStatus(ctx, runevent.Owner, runevent.Repository, runevent.SHA, ghstatus); err != nil {
 		return err
 	}
 	if status.Status == "completed" && status.Text != "" && runevent.EventType == "pull_request" {

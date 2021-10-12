@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -55,7 +56,7 @@ func (v *VCS) getAppToken() error {
 	}
 
 	// read application_id from the secret workspace
-	b, err := os.ReadFile(filepath.Join(workspacePath, "application_id"))
+	b, err := ioutil.ReadFile(filepath.Join(workspacePath, "application_id"))
 	if err != nil {
 		return err
 	}
@@ -79,10 +80,7 @@ func (v *VCS) getAppToken() error {
 			gheURL = "https://" + gheURL
 		}
 
-		v.Client, err = github.NewEnterpriseClient(gheURL, "", &http.Client{Transport: itr})
-		if err != nil {
-			return err
-		}
+		v.Client, _ = github.NewEnterpriseClient(gheURL, "", &http.Client{Transport: itr})
 		itr.BaseURL = strings.TrimSuffix(v.Client.BaseURL.String(), "/")
 	} else {
 		v.Client = github.NewClient(&http.Client{Transport: itr})
@@ -97,37 +95,39 @@ func (v *VCS) ParsePayload(ctx context.Context, run *params.Run, payload string)
 	var processedevent *info.Event
 
 	// get the app token if it exist first
-	err := v.getAppToken()
-	if err != nil {
-		return &info.Event{}, err
+	if err := v.getAppToken(); err != nil {
+		return nil, err
 	}
 
 	payloadTreated := v.payloadFix(payload)
 	event, err := github.ParseWebHook(run.Info.Event.EventType, payloadTreated)
 	if err != nil {
-		return &info.Event{}, err
+		return nil, err
 	}
 
-	err = json.Unmarshal(payloadTreated, &event)
-	if err != nil {
-		return &info.Event{}, err
-	}
+	// should not get invalid json since we already check it in github.ParseWebHook
+	_ = json.Unmarshal(payloadTreated, &event)
 
 	switch event := event.(type) {
 	case *github.CheckRunEvent:
-		if run.Info.Event.TriggerTarget == "issue-recheck" {
-			processedevent, err = v.handleReRequestEvent(ctx, run.Clients.Log, event)
-			if err != nil {
-				return &info.Event{}, err
-			}
+		if v.Client == nil {
+			return nil, fmt.Errorf("reqrequest is only supported with github apps integration")
+		}
+
+		if run.Info.Event.TriggerTarget != "issue-recheck" {
+			return nil, fmt.Errorf("only issue recheck is supported in checkrunevent")
+		}
+		processedevent, err = v.handleReRequestEvent(ctx, run.Clients.Log, event)
+		if err != nil {
+			return nil, err
 		}
 	case *github.IssueCommentEvent:
 		if v.Client == nil {
-			return &info.Event{}, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
+			return nil, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
 		}
 		processedevent, err = v.handleIssueCommentEvent(ctx, run.Clients.Log, event)
 		if err != nil {
-			return &info.Event{}, err
+			return nil, err
 		}
 	case *github.PushEvent:
 		processedevent = &info.Event{
@@ -158,7 +158,7 @@ func (v *VCS) ParsePayload(ctx context.Context, run *params.Run, payload string)
 		}
 
 	default:
-		return &info.Event{}, errors.New("this event is not supported")
+		return nil, errors.New("this event is not supported")
 	}
 
 	processedevent.Event = event
@@ -194,7 +194,7 @@ func (v *VCS) handleReRequestEvent(ctx context.Context, log *zap.SugaredLogger, 
 func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
 	prNumber, err := strconv.Atoi(path.Base(pullRequest))
 	if err != nil {
-		return -1, err
+		return -1, fmt.Errorf("bad pull request number html_url number: %w", err)
 	}
 	return prNumber, nil
 }
@@ -204,7 +204,6 @@ func (v *VCS) handleIssueCommentEvent(ctx context.Context, log *zap.SugaredLogge
 		Owner:      event.GetRepo().GetOwner().GetLogin(),
 		Repository: event.GetRepo().GetName(),
 	}
-
 	if !event.GetIssue().IsPullRequest() {
 		return &info.Event{}, fmt.Errorf("issue comment is not coming from a pull_request")
 	}

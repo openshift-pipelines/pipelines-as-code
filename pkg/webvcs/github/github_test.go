@@ -16,10 +16,10 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func getLogger() (*zap.SugaredLogger, *zapobserver.ObservedLogs) {
-	observer, logobserver := zapobserver.New(zap.InfoLevel)
+func getLogger() *zap.SugaredLogger {
+	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
-	return logger, logobserver
+	return logger
 }
 
 func setupFakesURLS() (client VCS, teardown func()) {

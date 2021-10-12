@@ -27,18 +27,3 @@ spec:
     - name: task-referenced-internally
       taskRef:
         name: task-referenced-internally
-
-    # - name: git-clone-from-catalog
-    #   taskRef:
-    #     name: git-clone
-    #   params:
-    #     - name: url
-    #       value: $(params.repo_url)
-    #     - name: revision
-          # value: $(params.revision)
-
-      # workspaces:
-      #   - name: output
-      #     workspace: source
-      #   - name: basic-auth
-          # workspace: basic-auth
