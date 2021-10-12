@@ -37,7 +37,15 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								Branch:           mainBranch,
+								InstallNamespace: targetNamespace,
+								EventType:        "pull_request",
+							},
+						),
 					},
 				},
 				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
@@ -50,7 +58,15 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								Branch:           mainBranch,
+								InstallNamespace: targetNamespace,
+								EventType:        "pull_request",
+							},
+						),
 					},
 				},
 				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "push"},
@@ -63,7 +79,15 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								Branch:           mainBranch,
+								InstallNamespace: targetNamespace,
+								EventType:        "pull_request",
+							},
+						),
 					},
 				},
 				runevent: info.Event{URL: targetURL, BaseBranch: "anotherBaseBranch", EventType: "pull_request"},
@@ -76,7 +100,15 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", "http://nottarget.url", mainBranch, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              "http://nottarget.url",
+								Branch:           mainBranch,
+								InstallNamespace: targetNamespace,
+								EventType:        "pull_request",
+							},
+						),
 					},
 				},
 				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
@@ -89,7 +121,15 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								Branch:           mainBranch,
+								InstallNamespace: targetNamespace,
+								EventType:        "pull_request",
+							},
+						),
 					},
 				},
 				runevent: info.Event{
@@ -105,7 +145,15 @@ func Test_getRepoByCR(t *testing.T) {
 			args: args{
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, "refs/tags/*", targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								Branch:           "refs/tags/*",
+								InstallNamespace: targetNamespace,
+								EventType:        "pull_request",
+							},
+						),
 					},
 				},
 				runevent: info.Event{

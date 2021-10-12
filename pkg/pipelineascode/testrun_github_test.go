@@ -20,7 +20,7 @@ import (
 	testDynamic "github.com/openshift-pipelines/pipelines-as-code/pkg/test/dynamic"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
+	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	ghwebvcs "github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
@@ -263,7 +263,15 @@ func TestRun(t *testing.T) {
 			finalStatus:     "skipped",
 			finalStatusText: "not find a namespace match",
 			repositories: []*v1alpha1.Repository{
-				repository.NewRepo("test-run", "https://service/documentation", "a branch", "namespace", "pull_request", "", ""),
+				testnewrepo.NewRepo(
+					testnewrepo.RepoTestcreationOpts{
+						Name:             "test-good",
+						URL:              "https://service/documentation",
+						Branch:           "a branch",
+						InstallNamespace: "namespace",
+						EventType:        "pull_request",
+					},
+				),
 			},
 		},
 
@@ -283,7 +291,15 @@ func TestRun(t *testing.T) {
 			finalStatus:     "skipped",
 			finalStatusText: "not find a namespace match",
 			repositories: []*v1alpha1.Repository{
-				repository.NewRepo("test-run", "https://nowhere.com", "a branch", "namespace", "pull_request", "", ""),
+				testnewrepo.NewRepo(
+					testnewrepo.RepoTestcreationOpts{
+						Name:             "test-run",
+						URL:              "https://nowhere.com",
+						Branch:           "a branch",
+						InstallNamespace: "namespace",
+						EventType:        "pull_request",
+					},
+				),
 			},
 		},
 
@@ -336,7 +352,17 @@ func TestRun(t *testing.T) {
 
 			if tt.repositories == nil {
 				tt.repositories = []*v1alpha1.Repository{
-					repository.NewRepo("test-run", tt.runevent.URL, tt.runevent.BaseBranch, "namespace", tt.runevent.EventType, secretName, vcsURL),
+					testnewrepo.NewRepo(
+						testnewrepo.RepoTestcreationOpts{
+							Name:             "test-run",
+							URL:              tt.runevent.URL,
+							Branch:           tt.runevent.BaseBranch,
+							InstallNamespace: "namespace",
+							EventType:        tt.runevent.EventType,
+							SecretName:       secretName,
+							VcsURL:           vcsURL,
+						},
+					),
 				}
 			}
 			tdata := testclient.Data{

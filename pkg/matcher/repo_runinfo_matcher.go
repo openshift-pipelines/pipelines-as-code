@@ -30,19 +30,20 @@ func GetRepoByCR(ctx context.Context, cs *params.Run, ns string) (*apipac.Reposi
 		return nil, err
 	}
 	matches := []string{}
-	for _, value := range repositories.Items {
+	for i := len(repositories.Items) - 1; i >= 0; i-- {
+		repo := repositories.Items[i]
 		matches = append(matches,
-			fmt.Sprintf("RepositoryValue: URL=%s, eventType=%s BaseBranch:=%s", value.Spec.URL,
-				value.Spec.EventType, value.Spec.Branch))
+			fmt.Sprintf("RepositoryValue: URL=%s, eventType=%s BaseBranch:=%s", repo.Spec.URL,
+				repo.Spec.EventType, repo.Spec.Branch))
 
-		if value.Spec.URL == cs.Info.Event.URL &&
-			value.Spec.EventType == cs.Info.Event.EventType {
-			if value.Spec.Branch != cs.Info.Event.BaseBranch {
-				if !branchMatch(value.Spec.Branch, cs.Info.Event.BaseBranch) {
+		if repo.Spec.URL == cs.Info.Event.URL &&
+			repo.Spec.EventType == cs.Info.Event.EventType {
+			if repo.Spec.Branch != cs.Info.Event.BaseBranch {
+				if !branchMatch(repo.Spec.Branch, cs.Info.Event.BaseBranch) {
 					continue
 				}
 			}
-			return &value, nil
+			return &repo, nil
 		}
 	}
 	for _, value := range matches {

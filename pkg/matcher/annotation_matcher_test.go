@@ -5,7 +5,9 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -22,6 +24,7 @@ import (
 )
 
 func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
+	cw := clockwork.NewFakeClock()
 	pipelineTargetNSName := "pipeline-target-ns"
 	pipelineTargetNS := &tektonv1beta1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
@@ -53,22 +56,48 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								Branch:           mainBranch,
+								InstallNamespace: targetNamespace,
+								EventType:        "pull_request",
+							},
+						),
 					},
 				},
 			},
 		},
 		{
-			name:         "match same webhook on multiple repos with different NS",
+			name:         "match same webhook on multiple repos takes the oldest one",
 			wantPRName:   pipelineTargetNSName,
-			wantRepoName: "test-good",
+			wantRepoName: "test-oldest",
 			args: args{
 				pruns:    []*tektonv1beta1.PipelineRun{pipelineTargetNS},
 				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-other", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, targetNamespace, "pull_request", "", ""),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-oldest",
+								URL:              targetURL,
+								Branch:           mainBranch,
+								InstallNamespace: targetNamespace,
+								EventType:        "pull_request",
+								CreateTime:       metav1.Time{Time: cw.Now().Add(-55 * time.Minute)},
+							},
+						),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-newest",
+								URL:              targetURL,
+								Branch:           mainBranch,
+								InstallNamespace: targetNamespace,
+								EventType:        "pull_request",
+								CreateTime:       metav1.Time{Time: cw.Now().Add(-50 * time.Minute)},
+							},
+						),
 					},
 				},
 			},
@@ -82,7 +111,15 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
-						testnewrepo.NewRepo("test-good", targetURL, mainBranch, "otherNS", "pull_request", "", ""),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								Branch:           mainBranch,
+								InstallNamespace: "otherNS",
+								EventType:        "pull_request",
+							},
+						),
 					},
 				},
 			},
