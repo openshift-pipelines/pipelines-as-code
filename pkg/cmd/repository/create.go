@@ -78,10 +78,10 @@ func CreateCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 func askToCreateSimplePipeline(gitRoot string, opts CreateOptions) error {
 	fpath := filepath.Join(gitRoot, ".tekton", fmt.Sprintf("%s.yaml", opts.EventType))
 	cwd, _ := os.Getwd()
-	abspath, _ := filepath.Rel(cwd, fpath)
+	relpath, _ := filepath.Rel(cwd, fpath)
 
 	reply, err := askYesNo(opts,
-		fmt.Sprintf("Would you like me to create a basic PipelineRun file into the file %s ?", abspath),
+		fmt.Sprintf("Would you like me to create a basic PipelineRun file into the file %s ?", relpath),
 		"True")
 	if err != nil {
 		return err
@@ -203,8 +203,9 @@ spec:
 		cs.Bold(fpath),
 	)
 	fmt.Fprintf(opts.IOStreams.Out, "%s You can test your pipeline manually with :.\n", cs.InfoIcon())
+
 	fmt.Fprintf(opts.IOStreams.Out, "tkn-pac resolve --generateName \\\n"+
-		"     --params revision=%s --params repo_url=\"%s\" \\\n      -f %s | k create -f-\n", opts.TargetBranch, opts.TargetURL, fpath)
+		"     --params revision=%s --params repo_url=\"%s\" \\\n      -f %s | kubectl create -f-\n", opts.TargetBranch, opts.TargetURL, relpath)
 
 	return nil
 }

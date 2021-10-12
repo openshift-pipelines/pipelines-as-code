@@ -86,9 +86,9 @@ $ tkn pac repository create
 ✓ A basic template has been created in /Users/ssadeghi/Projects/pipelines/pac-demo/.tekton/pull_request.yaml, feel free to customize it.
 ℹ You can test your pipeline manually with :
 
-tkn pac resolve --generateName \
+tkn-pac resolve --generateName \
      --params revision=main --params repo_url="https://github.com/siamaksade/pipeline-as-code-demo" \
-      -f /Users/ssadeghi/Projects/pipelines/pac-demo/.tekton/pull_request.yaml | k create -f-
+      -f .tekton/pull_request.yaml | kubectl create -f-
 
 ℹ Don't forget to install the GitHub application into your repo https://github.com/siamaksade/pipeline-as-code-demo
 ✓ and we are done! enjoy :)))
