@@ -54,8 +54,8 @@ type RepositorySpec struct {
 	URL           string            `json:"url"`
 	EventType     string            `json:"event_type"`
 	Branch        string            `json:"branch"`
-	WebvcsAPIURL  string            `json:"webvcs_api_url"`
-	WebvcsAPIUser string            `json:"webvcs_api_user"`
+	WebvcsAPIURL  string            `json:"webvcs_api_url,omitempty"`
+	WebvcsAPIUser string            `json:"webvcs_api_user,omitempty"`
 	WebvcsSecret  *WebvcsSecretSpec `json:"webvcs_secret,omitempty"`
 }
 
