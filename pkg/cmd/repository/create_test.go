@@ -21,7 +21,7 @@ func TestCreate(t *testing.T) {
 		subsMatch       string
 	}{
 		{
-			name:            "test",
+			name:            "test has been created",
 			targetNamespace: "ns",
 			subsMatch:       "has been created",
 		},
@@ -33,6 +33,9 @@ func TestCreate(t *testing.T) {
 			gitDir := nd.Path()
 			_, _ = git.RunGit(gitDir, "init")
 			_, _ = git.RunGit(gitDir, "remote", "add", "origin", "https://url/owner/repo")
+			_, _ = git.RunGit(gitDir, "config", "user.email", "foo@foo.com")
+			_, _ = git.RunGit(gitDir, "config", "user.name", "Foo Bar")
+			_, _ = git.RunGit(gitDir, "commit", "--allow-empty", "-m", "Empty Commmit")
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			tdata := testclient.Data{}

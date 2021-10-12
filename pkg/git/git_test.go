@@ -13,6 +13,7 @@ func TestGetGitInfo(t *testing.T) {
 		want         Info
 		gitURL       string
 		remoteTarget string
+		branchName   string
 	}{
 		{
 			name:         "Get git info",
@@ -46,6 +47,14 @@ func TestGetGitInfo(t *testing.T) {
 				TargetURL: "https://github.com/chmouel/demo",
 			},
 		},
+		{
+			name:         "Get head ref",
+			gitURL:       "git@github.com:chmouel/demo",
+			remoteTarget: "upstream",
+			want: Info{
+				Branch: "targetheadbranch",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -54,8 +63,19 @@ func TestGetGitInfo(t *testing.T) {
 			gitDir := nd.Path()
 			_, _ = RunGit(gitDir, "init")
 			_, _ = RunGit(gitDir, "remote", "add", tt.remoteTarget, tt.gitURL)
-
-			assert.Equal(t, GetGitInfo(gitDir).TargetURL, tt.want.TargetURL)
+			_, _ = RunGit(gitDir, "config", "user.email", "foo@foo.com")
+			_, _ = RunGit(gitDir, "config", "user.name", "Foo Bar")
+			_, _ = RunGit(gitDir, "commit", "--allow-empty", "-m", "Empty Commmit")
+			if tt.want.Branch != "" {
+				_, _ = RunGit(gitDir, "checkout", "-b", tt.want.Branch)
+			}
+			gitinfo := GetGitInfo(gitDir)
+			if tt.want.TargetURL != "" {
+				assert.Equal(t, gitinfo.TargetURL, tt.want.TargetURL)
+			}
+			if tt.want.Branch != "" {
+				assert.Equal(t, gitinfo.Branch, tt.want.Branch)
+			}
 		})
 	}
 }

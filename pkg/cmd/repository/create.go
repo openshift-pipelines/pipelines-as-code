@@ -202,10 +202,8 @@ spec:
 		cs.SuccessIcon(),
 		cs.Bold(fpath),
 	)
-	fmt.Fprintf(opts.IOStreams.Out, "%s You can test your pipeline manually with :.\n", cs.InfoIcon())
-
-	fmt.Fprintf(opts.IOStreams.Out, "tkn-pac resolve --generateName \\\n"+
-		"     --params revision=%s --params repo_url=\"%s\" \\\n      -f %s | kubectl create -f-\n", opts.TargetBranch, opts.TargetURL, relpath)
+	fmt.Fprintf(opts.IOStreams.Out, "%s You can test your pipeline manually with: ", cs.InfoIcon())
+	fmt.Fprintf(opts.IOStreams.Out, "tkn-pac resolve -f %s | kubectl create -f-\n", relpath)
 
 	return nil
 }
@@ -296,6 +294,7 @@ func create(ctx context.Context, gitdir string, opts CreateOptions) error {
 			return err
 		}
 	}
+
 	if opts.Namespace == "" {
 		opts.Namespace = opts.CurrentNS
 	}

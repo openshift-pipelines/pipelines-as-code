@@ -10,6 +10,8 @@ import (
 type Info struct {
 	TargetURL    string
 	TopLevelPath string
+	SHA          string
+	Branch       string
 }
 
 func RunGit(dir string, args ...string) (string, error) {
@@ -28,7 +30,7 @@ func RunGit(dir string, args ...string) (string, error) {
 		c.Dir = dir
 	}
 	if err := c.Run(); err != nil {
-		return "", err
+		return "", fmt.Errorf("error running, %s, output: %s error: %w", args, output.String(), err)
 	}
 	return output.String(), nil
 }
@@ -56,8 +58,20 @@ func GetGitInfo(dir string) Info {
 		return Info{}
 	}
 
+	sha, err := RunGit(dir, "rev-parse", "HEAD")
+	if err != nil {
+		return Info{}
+	}
+
+	headbranch, err := RunGit(dir, "rev-parse", "--abbrev-ref", "HEAD")
+	if err != nil {
+		return Info{}
+	}
+
 	return Info{
 		TargetURL:    gitURL,
 		TopLevelPath: strings.TrimSpace(brootdir),
+		SHA:          strings.TrimSpace(sha),
+		Branch:       strings.TrimSpace(headbranch),
 	}
 }
