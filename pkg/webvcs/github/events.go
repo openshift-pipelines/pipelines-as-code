@@ -55,8 +55,8 @@ func (v *VCS) getAppToken() error {
 		return fmt.Errorf("workspace path %s in env PAC_WORKSPACE_SECRET does not exist", workspacePath)
 	}
 
-	// read application_id from the secret workspace
-	b, err := ioutil.ReadFile(filepath.Join(workspacePath, "application_id"))
+	// read github-application-id from the secret workspace
+	b, err := ioutil.ReadFile(filepath.Join(workspacePath, "github-application-id"))
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (v *VCS) getAppToken() error {
 	}
 
 	// read private_key from the secret workspace
-	privatekey := filepath.Join(workspacePath, "private.key")
+	privatekey := filepath.Join(workspacePath, "github-private-key")
 	tr := http.DefaultTransport
 	itr, err := ghinstallation.NewKeyFromFile(tr, applicationID, installationID, privatekey)
 	if err != nil {

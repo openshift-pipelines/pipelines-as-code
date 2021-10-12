@@ -239,4 +239,4 @@ spec:
         workspaces:
           - name: secrets
             secret:
-              secretName: github-app-secret
+              secretName: pipelines-as-code-secret

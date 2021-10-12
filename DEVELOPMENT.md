@@ -51,8 +51,8 @@ SETUP
   ```
 
   Then generate a token for that installation_id using the `gen-token.py`
-  script, it will use your private.key and application_id from the
-  `github-app-secret` secret :
+  script, it will use your github-private-key and github-application-id from the
+  `pipelines-as-code-secret` secret :
 
   ```shell
   ./hack/dev/gen-token.py --installation-id 123456789 --cache-file /tmp/token.for.my.repo

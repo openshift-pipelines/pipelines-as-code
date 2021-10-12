@@ -346,7 +346,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				"PAC_WORKSPACE_SECRET": "here",
 			},
 			wsSecretFiles: map[string]string{
-				"noapplication_id": "Foo",
+				"nogithub-application-id": "Foo",
 			},
 			wantErr: true,
 		},
@@ -357,7 +357,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				"PAC_WORKSPACE_SECRET": "here",
 			},
 			wsSecretFiles: map[string]string{
-				"application_id": "BAD",
+				"github-application-id": "BAD",
 			},
 			wantErr: true,
 		},
@@ -368,7 +368,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				"PAC_WORKSPACE_SECRET": "here",
 			},
 			wsSecretFiles: map[string]string{
-				"application_id": "2222",
+				"github-application-id": "2222",
 			},
 			wantErr: true,
 		},
@@ -380,8 +380,8 @@ func TestAppTokenGeneration(t *testing.T) {
 				"PAC_WEBVCS_APIURL":    "foo.bar.com",
 			},
 			wsSecretFiles: map[string]string{
-				"application_id": "2222",
-				"private.key":    "hello",
+				"github-application-id": "2222",
+				"github-private-key":    "hello",
 			},
 			wantErr: true,
 		},
@@ -393,8 +393,8 @@ func TestAppTokenGeneration(t *testing.T) {
 				"PAC_WEBVCS_APIURL":    "foo.bar.com",
 			},
 			wsSecretFiles: map[string]string{
-				"application_id": "2222",
-				"private.key":    fakePrivateKey,
+				"github-application-id": "2222",
+				"github-private-key":    fakePrivateKey,
 			},
 			resultBaseURL: "https://foo.bar.com/api/v3/",
 		},
@@ -406,8 +406,8 @@ func TestAppTokenGeneration(t *testing.T) {
 				"PAC_WEBVCS_APIURL":    "https://alpha.beta.com",
 			},
 			wsSecretFiles: map[string]string{
-				"application_id": "2222",
-				"private.key":    fakePrivateKey,
+				"github-application-id": "2222",
+				"github-private-key":    fakePrivateKey,
 			},
 			resultBaseURL: "https://alpha.beta.com/api/v3/",
 		},
@@ -418,8 +418,8 @@ func TestAppTokenGeneration(t *testing.T) {
 				"PAC_WORKSPACE_SECRET": "here",
 			},
 			wsSecretFiles: map[string]string{
-				"application_id": "2222",
-				"private.key":    fakePrivateKey,
+				"github-application-id": "2222",
+				"github-private-key":    fakePrivateKey,
 			},
 			resultBaseURL: "https://api.github.com/",
 		},
