@@ -22,8 +22,9 @@ const (
 	tektonDir               = ".tekton"
 	maxPipelineRunStatusRun = 5
 	startingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
-	<b>%s</b><br><br>You can follow the execution on the command line with :
-	<br><br><code>tkn pr logs -f -n %s %s</code>`
+  <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
+  the command line with :
+	<br><code>tkn pr logs -f -n %s %s</code>`
 )
 
 // The time to wait for a pipelineRun, maybe we should not restrict this?
@@ -178,7 +179,8 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	}
 
 	// Create status with the log url
-	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), repo.GetNamespace(), repo.GetNamespace(), pr.GetName())
+	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(),
+		repo.GetNamespace(), consoleURL, repo.GetNamespace(), pr.GetName())
 	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
 		Status:     "in_progress",
 		Conclusion: "pending",
