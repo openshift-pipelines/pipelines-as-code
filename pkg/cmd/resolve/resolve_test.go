@@ -88,7 +88,7 @@ func TestResolveFilenames(t *testing.T) {
 			dir := assertfs.NewDir(t, "test-name",
 				assertfs.WithFile("file.yaml", strings.ReplaceAll(tt.tmpl, "\t", "    ")))
 			defer dir.Remove()
-			got, err := resolveFilenames(cs, []string{dir.Path()}, []string{"foo=bar"})
+			got, err := resolveFilenames(cs, []string{dir.Path()}, map[string]string{"foo": "bar"})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("resolveFilenames() error = %v, wantErr %v", err, tt.wantErr)
 				return

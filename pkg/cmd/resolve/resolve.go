@@ -9,7 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
@@ -18,11 +20,11 @@ import (
 )
 
 var (
-	filenames    []string
-	parameters   []string
-	skipInlining []string
-	generateName bool
-	remoteTask   bool
+	filenames      []string
+	parameters     []string
+	skipInlining   []string
+	noGenerateName bool
+	remoteTask     bool
 )
 
 const longhelp = `
@@ -71,20 +73,41 @@ func Command(run *params.Run) *cobra.Command {
 			if len(filenames) == 0 {
 				return fmt.Errorf("you need to at least specify a file with -f")
 			}
-			s, err := resolveFilenames(run, filenames, parameters)
-			// nolint: forbidigo
+
+			mapped := splitArgsInMap(parameters)
+
+			// ignore error
+			gitinfo := git.GetGitInfo(".")
+			if _, ok := mapped["repo_url"]; !ok && gitinfo.TargetURL != "" {
+				mapped["repo_url"] = gitinfo.TargetURL
+			}
+
+			if _, ok := mapped["revision"]; !ok && gitinfo.SHA != "" {
+				mapped["revision"] = gitinfo.SHA
+			}
+
+			if _, ok := mapped["repo_owner"]; !ok && gitinfo.TargetURL != "" {
+				repoOwner, err := ui.GetRepoOwnerFromGHURL(gitinfo.TargetURL)
+				if err != nil {
+					return err
+				}
+				mapped["repo_owner"] = strings.Split(repoOwner, "/")[0]
+				mapped["repo_name"] = strings.Split(repoOwner, "/")[1]
+			}
+			s, err := resolveFilenames(run, filenames, mapped)
+			// nolint:forbidigo
 			fmt.Println(s)
 			return err
 		},
 	}
 	cmd.Flags().StringSliceVarP(&parameters, "params", "p", filenames,
-		"Params to resolve")
+		"Params to resolve (ie: revision, repo_url)")
 	cmd.Flags().StringSliceVarP(&filenames, "filename", "f", filenames,
 		"Filename, directory, or URL to files to use to create the resource")
 	cmd.Flags().StringSliceVarP(&skipInlining, "skip", "s", filenames,
 		"Which task to skip inlining")
-	cmd.Flags().BoolVar(&generateName, "generateName", false,
-		"Wether to switch name to a generateName on pipelinerun")
+	cmd.Flags().BoolVar(&noGenerateName, "no-generate-name", false,
+		"Don't automatically generate a GenerateName for pipelinerun uniqueness")
 	cmd.Flags().BoolVar(&remoteTask, "remoteTask", true,
 		"Wether parse annotation to fetch remote task")
 	err := run.Info.Pac.AddFlags(cmd)
@@ -104,15 +127,15 @@ func splitArgsInMap(args []string) map[string]string {
 	return m
 }
 
-func resolveFilenames(cs *params.Run, filenames []string, params []string) (string, error) {
+func resolveFilenames(cs *params.Run, filenames []string, params map[string]string) (string, error) {
 	var ret string
 
 	allTemplates := enumerateFiles(filenames)
 	// TODO: flags
-	allTemplates = pipelineascode.ReplacePlaceHoldersVariables(allTemplates, splitArgsInMap(params))
+	allTemplates = pipelineascode.ReplacePlaceHoldersVariables(allTemplates, params)
 	ctx := context.Background()
 	ropt := &resolve.Opts{
-		GenerateName: generateName,
+		GenerateName: !noGenerateName,
 		RemoteTasks:  remoteTask,
 		SkipInlining: skipInlining,
 	}
