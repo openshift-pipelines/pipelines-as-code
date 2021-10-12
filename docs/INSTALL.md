@@ -107,9 +107,9 @@ Run the following command and replace:
 * `PATH_PRIVATE_KEY` with the path to the private key that was downloaded in the previous section
 
 ```bash
-kubectl -n pipelines-as-code create secret generic github-app-secret \
-        --from-literal private.key="$(cat PATH_PRIVATE_KEY)" \
-        --from-literal application_id="APP_ID" \
+kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
+        --from-literal github-private-key="$(cat PATH_PRIVATE_KEY)" \
+        --from-literal github-application-id="APP_ID" \
         --from-literal webhook.secret="WEBHOOK_SECRET"
 ```
 
@@ -165,7 +165,7 @@ will have to recreate it.
 * On your cluster you need create the webhook secret as generated previously in the *pipelines-as-code* namespace.
 
 ```shell
-kubectl -n pipelines-as-code create secret generic github-app-secret \
+kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
         --from-literal webhook.secret="$WEBHOOK_SECRET_AS_GENERATED"
 ```
 

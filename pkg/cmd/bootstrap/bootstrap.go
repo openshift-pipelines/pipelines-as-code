@@ -16,9 +16,8 @@ const (
 	openShiftRouteGroup    = "route.openshift.io"
 	openShiftRouteVersion  = "v1"
 	openShiftRouteResource = "routes"
-	// nolint: gosec
-	secretName     = "github-app-secret"
-	defaultVCSType = "github-app"
+	secretName             = "pipelines-as-code-secret"
+	defaultVCSType         = "github-app"
 )
 
 var vcsTargets = []string{"github-app", "github-enteprise-app"}

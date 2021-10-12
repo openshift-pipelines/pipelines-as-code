@@ -22,9 +22,9 @@ func createPacSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts, 
 			Name: secretName,
 		},
 		Data: map[string][]byte{
-			"application_id": []byte(fmt.Sprintf("%d", manifest.GetID())),
-			"private.key":    []byte(manifest.GetPEM()),
-			"webhook.secret": []byte(manifest.GetWebhookSecret()),
+			"github-application-id": []byte(fmt.Sprintf("%d", manifest.GetID())),
+			"github-private-key":    []byte(manifest.GetPEM()),
+			"webhook.secret":        []byte(manifest.GetWebhookSecret()),
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {

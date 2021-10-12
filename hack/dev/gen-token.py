@@ -10,7 +10,7 @@ import time
 import requests
 from jwcrypto import jwk, jwt
 
-SECRET_NAME = "github-app-secret"
+SECRET_NAME = "pipelines-as-code-secret"
 NAMESPACE = "pipelines-as-code"
 EXPIRE_MINUTES_AS_SECONDS = int(
     os.environ.get('GITHUBAPP_TOKEN_EXPIRATION_MINUTES', 10)) * 60
@@ -92,8 +92,8 @@ def get_private_key(ns):
                             check=True,
                             capture_output=True)
     jeez = json.loads(secret.stdout)
-    return (base64.b64decode(jeez["data"]["application_id"]).decode(),
-            base64.b64decode(jeez["data"]["private.key"]))
+    return (base64.b64decode(jeez["data"]["github-application-id"]).decode(),
+            base64.b64decode(jeez["data"]["github-private-key"]))
 
 
 def main(args):

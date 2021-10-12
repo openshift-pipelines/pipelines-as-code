@@ -14,7 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 """Will replay a json file in Eventlistenner, it automatically detects the
-EventListenner, the webhook secret from github-app-secret secret name
+EventListenner, the webhook secret from pipelines-as-code-secret secret name
 require requests library"""
 import argparse
 import base64
@@ -27,7 +27,7 @@ import os
 import requests
 
 NAMESPACE = "pipelines-as-code"
-SECRET_NAME = "github-app-secret"
+SECRET_NAME = "pipelines-as-code-secret"
 ELNAME = "pipelines-as-code"
 
 
@@ -48,7 +48,7 @@ def get_installation_id_and_webhook_secret():
         check=True,
         capture_output=True)
     jeez = json.loads(secret.stdout)
-    return (jeez["data"]["application_id"],
+    return (jeez["data"]["github-application-id"],
             base64.b64decode(jeez["data"]["webhook.secret"]).decode())
 
 
