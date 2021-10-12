@@ -54,7 +54,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: public.ecr.aws/bitnami/golang:latest
+            - image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
               name: get-cache
               workingDir: $(workspaces.source.path)
               script: |
@@ -72,7 +72,7 @@ spec:
             - name: unittest
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
-              image: public.ecr.aws/bitnami/golang:latest
+              image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
               workingDir: $(workspaces.source.path)
               script: |
                 #!/usr/bin/env bash
@@ -105,7 +105,7 @@ spec:
           steps:
             - name: save-cache
               # Has everything we need in there and we already fetched it!
-              image: public.ecr.aws/bitnami/python:latest
+              image: registry.access.redhat.com/ubi8/python-39@sha256:86466a8a2b3981c339f84e791e170055eb3f520e8419f955efa98e93ccaaf5b9
               workingDir: $(workspaces.source.path)
               script: |
                 #!/usr/bin/env bash
@@ -139,7 +139,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: public.ecr.aws/bitnami/golang:latest
+              image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN

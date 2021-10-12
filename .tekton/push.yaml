@@ -41,7 +41,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: registry.access.redhat.com/ubi8/go-toolset:latest
+            - image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
               name: get-cache
               workingDir: $(workspaces.source.path)
               script: |
@@ -57,7 +57,7 @@ spec:
                 echo "Getting cache"
                 curl http://uploader:8080/golang-cache.tar|tar -x -f-
             - name: unittest
-              image: registry.access.redhat.com/ubi8/go-toolset:latest
+              image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
               workingDir: $(workspaces.source.path)
               script: |
                 #!/usr/bin/env bash
@@ -75,7 +75,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: registry.access.redhat.com/ubi8/go-toolset:latest
+              image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN
@@ -92,7 +92,7 @@ spec:
           - fetch
         taskSpec:
           steps:
-            - image: registry.access.redhat.com/ubi8/python-39:latest
+            - image: registry.access.redhat.com/ubi8/python-39:latestregistry.access.redhat.com/ubi8/python-39@sha256:86466a8a2b3981c339f84e791e170055eb3f520e8419f955efa98e93ccaaf5b9
               name: release
               env:
                 - name: HUB_TOKEN
