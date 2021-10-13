@@ -68,12 +68,13 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		if err != nil {
 			return err
 		}
-		// We already SetClient before ParseWebhook in case if we already set
-		// the token (ie: github apps) and not coming from the repository
-		err = vcsintf.SetClient(ctx, cs.Info.Pac)
-		if err != nil {
-			return err
-		}
+	}
+
+	// Set the client, we should error out if there is a problem with
+	// token or secret or we won't be able to do much.
+	err = vcsintf.SetClient(ctx, cs.Info.Pac)
+	if err != nil {
+		return err
 	}
 
 	// Get the SHA commit info, we want to get the URL and commit title

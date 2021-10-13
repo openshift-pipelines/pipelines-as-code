@@ -15,7 +15,6 @@ import (
 )
 
 func TestGithubPullRequestPrivateRepository(t *testing.T) {
-	t.Skip("PSI E2E Infra is borked atm")
 	for _, onWebhook := range []bool{false, true} {
 		targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 		ctx := context.Background()

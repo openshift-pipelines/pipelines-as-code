@@ -399,10 +399,11 @@ func TestGetStringPullRequestComment(t *testing.T) {
 
 func TestVCS_GetCommitInfo(t *testing.T) {
 	tests := []struct {
-		name             string
-		event            *info.Event
-		wantErr          bool
-		shaurl, shatitle string
+		name              string
+		event             *info.Event
+		noclient          bool
+		apiReply, wantErr string
+		shaurl, shatitle  string
 	}{
 		{
 			name: "good",
@@ -421,7 +422,13 @@ func TestVCS_GetCommitInfo(t *testing.T) {
 				Repository: "repository",
 				SHA:        "shacommitinfo",
 			},
-			wantErr: true,
+			apiReply: "hello moto",
+		},
+		{
+			name:     "noclient",
+			event:    &info.Event{},
+			wantErr:  "no github client has been initiliazed",
+			noclient: true,
 		},
 	}
 	for _, tt := range tests {
@@ -430,19 +437,22 @@ func TestVCS_GetCommitInfo(t *testing.T) {
 			defer teardown()
 			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/commits/%s",
 				tt.event.Owner, tt.event.Repository, tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
-				if tt.wantErr {
-					fmt.Fprint(rw, "XXXXX")
-				} else {
-					fmt.Fprintf(rw, `{"html_url": "%s", "message": "%s"}`, tt.shaurl, tt.shatitle)
+				if tt.apiReply != "" {
+					fmt.Fprintf(rw, tt.apiReply)
+					return
 				}
+				fmt.Fprintf(rw, `{"html_url": "%s", "message": "%s"}`, tt.shaurl, tt.shatitle)
 			})
 			ctx, _ := rtesting.SetupFakeContext(t)
-			gvcs := &VCS{
-				Client: fakeclient,
+			vcs := &VCS{Client: fakeclient}
+			if tt.noclient {
+				vcs = &VCS{}
 			}
-
-			if err := gvcs.GetCommitInfo(ctx, tt.event); (err != nil) != tt.wantErr {
-				t.Errorf("GetCommitInfo() error = %v, wantErr %v", err, tt.wantErr)
+			gvcs := vcs
+			err := gvcs.GetCommitInfo(ctx, tt.event)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
 			}
 			assert.Equal(t, tt.shatitle, tt.event.SHATitle)
 			assert.Equal(t, tt.shaurl, tt.event.SHAURL)

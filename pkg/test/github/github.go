@@ -13,7 +13,7 @@ import (
 const (
 	// baseURLPath is a non-empty Client.BaseURL path to use during tests,
 	// to ensure relative URLs are used for all endpoints. See issue #752.
-	githubBaseURLPath = "/api-v3"
+	githubBaseURLPath = "/api/v3"
 )
 
 // SetupGH Setup a GitHUB httptest connexion, from go-github test-suit

@@ -31,7 +31,6 @@ func (v *VCS) SetClient(ctx context.Context, info *info.PacOpts) error {
 		&oauth2.Token{AccessToken: info.VCSToken},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-
 	var client *github.Client
 	apiURL := info.VCSAPIURL
 	if apiURL != "" {
@@ -52,7 +51,6 @@ func (v *VCS) SetClient(ctx context.Context, info *info.PacOpts) error {
 		v.Client = client
 	}
 	v.APIURL = &apiURL
-	v.Token = &info.VCSToken
 
 	return nil
 }
@@ -79,6 +77,11 @@ func (v *VCS) GetTektonDir(ctx context.Context, runevent *info.Event, path strin
 // GetCommitInfo get info (url and title) on a commit in runevent, this needs to
 // be run after parsewebhook while we already matched a token.
 func (v *VCS) GetCommitInfo(ctx context.Context, runevent *info.Event) error {
+	if v.Client == nil {
+		return fmt.Errorf("no github client has been initiliazed, " +
+			"exiting... (hint: did you forget setting a secret on your repo?)")
+	}
+
 	commit, _, err := v.Client.Git.GetCommit(ctx, runevent.Owner, runevent.Repository, runevent.SHA)
 	if err != nil {
 		return err
