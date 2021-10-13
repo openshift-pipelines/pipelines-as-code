@@ -97,7 +97,7 @@ PipelineRuns for your GitHub repository should run. It also generates an example
 Commit and push the pipeline to your repo to start using pipelines as code.
 
 Note that even if Github application is the preferred method, Pipeline As Code
-supports Github Webhook as well, see the [INSTALL guide](docs/INSTALL.md) for
+supports Github Webhook and Bitbucket Cloud as well, see the [INSTALL guide](docs/INSTALL.md) for
 reference
 
 ## Usage Guide
