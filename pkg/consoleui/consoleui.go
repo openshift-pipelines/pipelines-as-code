@@ -10,12 +10,12 @@ import (
 )
 
 const (
-	openShiftConsoleNS        = "openshift-console"
-	openShiftConsoleRouteName = "console"
-	openShiftPipelineViewURL  = "https://%s/k8s/ns/%s/tekton.dev~v1beta1~PipelineRun/%s/logs"
-	openShiftRouteGroup       = "route.openshift.io"
-	openShiftRouteVersion     = "v1"
-	openShiftRouteResource    = "routes"
+	openShiftConsoleNS             = "openshift-console"
+	openShiftConsoleRouteName      = "console"
+	openShiftPipelineDetailViewURL = "https://%s/k8s/ns/%s/tekton.dev~v1beta1~PipelineRun/%s"
+	openShiftRouteGroup            = "route.openshift.io"
+	openShiftRouteVersion          = "v1"
+	openShiftRouteResource         = "routes"
 )
 
 // getOpenshiftConsole use dynamic client to get the route of the openshift
@@ -47,7 +47,7 @@ func getOpenshiftConsole(ctx context.Context, cs *params.Run, ns, pr string) (st
 		return fmt.Sprintf("https://%s", host), nil
 	}
 
-	return fmt.Sprintf(openShiftPipelineViewURL, host, ns, pr), nil
+	return fmt.Sprintf(openShiftPipelineDetailViewURL, host, ns, pr), nil
 }
 
 // GetConsoleUI Get a Console URL, OpenShift Console or Tekton Dashboard.
