@@ -44,7 +44,7 @@ func checkSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) bool
 }
 
 // check if we have the namespace created
-func checkNS(ctx context.Context, run *params.Run, opts *bootstrapOpts) bool {
-	ns, _ := run.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.targetNamespace, metav1.GetOptions{})
-	return ns.GetName() != ""
+func checkNS(ctx context.Context, run *params.Run, opts *bootstrapOpts) (bool, error) {
+	ns, err := run.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.targetNamespace, metav1.GetOptions{})
+	return ns.GetName() != "", err
 }

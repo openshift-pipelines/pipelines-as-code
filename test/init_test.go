@@ -58,13 +58,13 @@ func nsTearDown(ctx context.Context, t *testing.T, runcnx *params.Run, targetNS 
 }
 
 func bitbucketCloudSetup(ctx context.Context) (*params.Run, E2EOptions, bitbucketcloud.VCS, error) {
-	bitbucketCloudUser := os.Getenv("TEST_BITBUCKET_USER")
-	bitbucketCloudToken := os.Getenv("TEST_BITBUCKET_TOKEN")
-	bitbucketWSOwner := os.Getenv("TEST_BITBUCKET_E2E_REPOSITORY")
-	bitbucketCloudAPIURL := os.Getenv("TEST_BITBUCKET_API_URL")
+	bitbucketCloudUser := os.Getenv("TEST_BITBUCKET_CLOUD_USER")
+	bitbucketCloudToken := os.Getenv("TEST_BITBUCKET_CLOUD_TOKEN")
+	bitbucketWSOwner := os.Getenv("TEST_BITBUCKET_CLOUD_E2E_REPOSITORY")
+	bitbucketCloudAPIURL := os.Getenv("TEST_BITBUCKET_CLOUD_API_URL")
 
 	for _, value := range []string{
-		"BITBUCKET_TOKEN", "BITBUCKET_E2E_REPOSITORY", "BITBUCKET_API_URL",
+		"BITBUCKET_CLOUD_TOKEN", "BITBUCKET_CLOUD_E2E_REPOSITORY", "BITBUCKET_CLOUD_API_URL",
 	} {
 		if env := os.Getenv("TEST_" + value); env == "" {
 			return nil, E2EOptions{}, bitbucketcloud.VCS{}, fmt.Errorf("\"TEST_%s\" env variable is required, cannot continue", value)

@@ -57,9 +57,13 @@ const successTmpl = `
 func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	// nolint:forbidigo
 	fmt.Println("🏃 Checking if Pipelines as Code is installed.")
-	if checkNS(ctx, run, opts) {
+	installed, err := checkNS(ctx, run, opts)
+	if err != nil {
+		return err
+	}
+	if installed {
 		// nolint:forbidigo
-		fmt.Println("👌 Pipelines as Code is installed.")
+		fmt.Println("👌 Pipelines as Code is already installed.")
 	} else if err := installPac(ctx, opts); err != nil {
 		return err
 	}
@@ -69,11 +73,13 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	var err error
 	opts.recreateSecret = checkSecret(ctx, run, opts)
-	opts.RouteName, err = detectOpenShiftRoute(ctx, run, opts)
-	if err != nil {
-		return err
-	}
 
+	if opts.RouteName == "" {
+		opts.RouteName, err = detectOpenShiftRoute(ctx, run, opts)
+		if err != nil {
+			return fmt.Errorf("only OpenShift is suported at the moment for autodetection: %w", err)
+		}
+	}
 	if err := askQuestions(opts); err != nil {
 		return err
 	}
