@@ -475,7 +475,8 @@ func TestVCS_SetClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			v := VCS{}
-			v.SetClient(ctx, tt.info)
+			err := v.SetClient(ctx, tt.info)
+			assert.NilError(t, err)
 			assert.Equal(t, tt.expectedURL, *v.APIURL)
 			assert.Equal(t, "https", v.Client.BaseURL.Scheme)
 			if tt.isGHE {

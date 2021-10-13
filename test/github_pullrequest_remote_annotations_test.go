@@ -77,7 +77,7 @@ func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
-	defer tearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
+	defer ghtearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 	waitOpts := twait.Opts{

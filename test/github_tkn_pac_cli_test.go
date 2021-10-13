@@ -105,7 +105,7 @@ spec:
 	number, err := tgithub.PRCreate(ctx, runcnx, ghvcs, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
-	defer tearDown(ctx, t, runcnx, ghvcs, number, targetRefName, targetNS, opts)
+	defer ghtearDown(ctx, t, runcnx, ghvcs, number, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 	waitOpts := twait.Opts{

@@ -126,10 +126,10 @@ func (v *VCS) GetFileInsideRepo(_ context.Context, runevent *info.Event, path st
 
 func (v *VCS) SetClient(_ context.Context, opts *info.PacOpts) error {
 	if opts.VCSUser == "" {
-		return fmt.Errorf("No webvcs_api_user has been set in the repo crd")
+		return fmt.Errorf("no webvcs_api_user has been set in the repo crd")
 	}
 	if opts.VCSToken == "" {
-		return fmt.Errorf("No webvcs_secret has been set in the repo crd")
+		return fmt.Errorf("no webvcs_secret has been set in the repo crd")
 	}
 	v.Client = bitbucket.NewBasicAuth(opts.VCSUser, opts.VCSToken)
 	v.Token = &opts.VCSToken
@@ -150,7 +150,10 @@ func (v *VCS) GetCommitInfo(_ context.Context, event *info.Event) error {
 	if !ok {
 		return fmt.Errorf("cannot convert")
 	}
-	values := commitMap["values"].([]interface{})
+	values, ok := commitMap["values"].([]interface{})
+	if !ok {
+		return fmt.Errorf("cannot convert")
+	}
 	if len(values) == 0 {
 		return fmt.Errorf("we did not get commit information from commit: %s", event.SHA)
 	}

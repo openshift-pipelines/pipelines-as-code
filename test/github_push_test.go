@@ -48,7 +48,7 @@ func TestGithubPush(t *testing.T) {
 		sha, err := tgithub.PushFilesToRef(ctx, gvcs.Client, title, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
 		runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 		assert.NilError(t, err)
-		defer tearDown(ctx, t, runcnx, gvcs, -1, targetRefName, targetNS, opts)
+		defer ghtearDown(ctx, t, runcnx, gvcs, -1, targetRefName, targetNS, opts)
 
 		runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 		waitOpts := twait.Opts{
