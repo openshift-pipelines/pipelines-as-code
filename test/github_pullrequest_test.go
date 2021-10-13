@@ -38,7 +38,7 @@ func TestGithubPullRequest(t *testing.T) {
 			runcnx.Clients.Log.Info("Testing with Github APPS integration")
 		}
 
-		repoinfo, err := createRepoCRD(ctx, t, ghvcs, runcnx, opts, targetNS, pullRequestEvent, mainBranch, runcnx)
+		repoinfo, err := createGithubRepoCRD(ctx, t, ghvcs, runcnx, opts, targetNS, pullRequestEvent, mainBranch)
 		assert.NilError(t, err)
 
 		entries, err := getEntries("testdata/pipelinerun.yaml", targetNS, mainBranch, pullRequestEvent)
@@ -116,8 +116,8 @@ func createSecret(ctx context.Context, runcnx *params.Run, secretData map[string
 	return err
 }
 
-func createRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, run *params.Run, opts E2EOptions,
-	targetNS, targetEvent, targetBranch string, runcnx *params.Run) (*ghlib.Repository, error) {
+func createGithubRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, run *params.Run, opts E2EOptions,
+	targetNS, targetEvent, targetBranch string) (*ghlib.Repository, error) {
 	repoinfo, resp, err := ghvcs.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
 	assert.NilError(t, err)
 
@@ -136,7 +136,7 @@ func createRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, run *par
 		},
 	}
 
-	err = trepo.CreateNS(ctx, targetNS, runcnx)
+	err = trepo.CreateNS(ctx, targetNS, run)
 	assert.NilError(t, err)
 
 	if opts.DirectWebhook {
@@ -148,7 +148,7 @@ func createRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, run *par
 		repository.Spec.WebvcsSecret = &pacv1alpha1.WebvcsSecretSpec{Name: "webhook-token", Key: "token"}
 	}
 
-	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
+	err = trepo.CreateRepo(ctx, targetNS, run, repository)
 	assert.NilError(t, err)
 	return repoinfo, err
 }
