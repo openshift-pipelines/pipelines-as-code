@@ -16,13 +16,13 @@
 #
 # env variable to set in envrc :
 #
-# export TEST_BITBUCKET_USER=
-# export TEST_BITBUCKET_API_URL=
-# export TEST_BITBUCKET_TEST_REPOSITORY=
-# export TEST_BITBUCKET_OTHER_USER=
-# export TEST_BITBUCKET_OTHER_TOKEN=
-# export TEST_BITBUCKET_MEMBER_USER=
-# export TEST_BITBUCKET_MEMBER_TOKEN=
+# export TEST_BITBUCKET_CLOUD_USER=
+# export TEST_BITBUCKET_CLOUD_API_URL=
+# export TEST_BITBUCKET_CLOUD_TEST_REPOSITORY=
+# export TEST_BITBUCKET_CLOUD_OTHER_USER=
+# export TEST_BITBUCKET_CLOUD_OTHER_TOKEN=
+# export TEST_BITBUCKET_CLOUD_MEMBER_USER=
+# export TEST_BITBUCKET_CLOUD_MEMBER_TOKEN=
 
 set -eux
 
@@ -34,15 +34,15 @@ declare -A ROLE_TO_PR=(
     [other]=5
 )
 
-[[ -z ${TEST_BITBUCKET_TOKEN:-""} ]] && { echo "We need the TEST_BITBUCKET_TOKEN variable set"; exit 1 ;}
-[[ -z ${TEST_BITBUCKET_USER:-""} ]] && { echo "We need the TEST_BITBUCKET_USER variable set"; exit 1 ;}
-[[ -z ${TEST_BITBUCKET_API_URL:-""} ]] && { echo "We need the TEST_BITBUCKET_API_URL variable set"; exit 1 ;}
-[[ -z ${TEST_BITBUCKET_TEST_REPOSITORY:-""} ]] && { echo "We need the TEST_BITBUCKET_TEST_REPOSITORY variable set"; exit 1 ;}
+[[ -z ${TEST_BITBUCKET_CLOUD_TOKEN:-""} ]] && { echo "We need the TEST_BITBUCKET_CLOUD_TOKEN variable set"; exit 1 ;}
+[[ -z ${TEST_BITBUCKET_CLOUD_USER:-""} ]] && { echo "We need the TEST_BITBUCKET_CLOUD_USER variable set"; exit 1 ;}
+[[ -z ${TEST_BITBUCKET_CLOUD_API_URL:-""} ]] && { echo "We need the TEST_BITBUCKET_CLOUD_API_URL variable set"; exit 1 ;}
+[[ -z ${TEST_BITBUCKET_CLOUD_TEST_REPOSITORY:-""} ]] && { echo "We need the TEST_BITBUCKET_CLOUD_TEST_REPOSITORY variable set"; exit 1 ;}
 type -p http >/dev/null 2>/dev/null || { echo "We need httpie installed https://httpie.io/docs#installation"; exit 1 ;}
 
 ROOTDIR=$(git rev-parse --show-toplevel)
-OWNER=${TEST_BITBUCKET_TEST_REPOSITORY%/*}
-REPOSITORY=${TEST_BITBUCKET_TEST_REPOSITORY#*/}
+OWNER=${TEST_BITBUCKET_CLOUD_TEST_REPOSITORY%/*}
+REPOSITORY=${TEST_BITBUCKET_CLOUD_TEST_REPOSITORY#*/}
 WEBHOOK_TYPE=pull_request
 TRIGGER_TARGET=pull_request
 TMP=$(mktemp /tmp/.mm.XXXXXX)
@@ -63,13 +63,13 @@ get_user_info() {
     local typeof=${3}
 
     [[ ! -s ${TMP} ]] && \
-        http -q --no-verbose --check-status --auth "${user}:${token}" GET ${TEST_BITBUCKET_API_URL}/user -d --output="${TMP}"
+        http -q --no-verbose --check-status --auth "${user}:${token}" GET ${TEST_BITBUCKET_CLOUD_API_URL}/user -d --output="${TMP}"
     jq -r ${typeof} ${TMP}
 }
 
 get_pr_info() {
-    http -q --no-verbose --check-status --auth "${TEST_BITBUCKET_USER}:${TEST_BITBUCKET_TOKEN}" GET \
-         ${TEST_BITBUCKET_API_URL}/repositories/${TEST_BITBUCKET_TEST_REPOSITORY}/pullrequests/${PULL_REQUEST_ID} \
+    http -q --no-verbose --check-status --auth "${TEST_BITBUCKET_CLOUD_USER}:${TEST_BITBUCKET_CLOUD_TOKEN}" GET \
+         ${TEST_BITBUCKET_CLOUD_API_URL}/repositories/${TEST_BITBUCKET_CLOUD_TEST_REPOSITORY}/pullrequests/${PULL_REQUEST_ID} \
          -d --output="${TMP}"
     HASH=$(jq -r '.source.commit.hash' ${TMP})
     DEFAULT_BRANCH=$(jq -r '.destination.branch.name' ${TMP})
@@ -77,20 +77,20 @@ get_pr_info() {
 }
 
 if [[ ${PROFILE} == "other" ]];then
-   [[ -z ${TEST_BITBUCKET_OTHER_USER:-""} ]] && { echo "We need the TEST_BITBUCKET_OTHER_USER variable set"; exit 1 ;}
-   [[ -z ${TEST_BITBUCKET_OTHER_TOKEN:-""} ]] && { echo "We need the TEST_BITBUCKET_OTHER_TOKEN variable set"; exit 1 ;}
+   [[ -z ${TEST_BITBUCKET_CLOUD_OTHER_USER:-""} ]] && { echo "We need the TEST_BITBUCKET_CLOUD_OTHER_USER variable set"; exit 1 ;}
+   [[ -z ${TEST_BITBUCKET_CLOUD_OTHER_TOKEN:-""} ]] && { echo "We need the TEST_BITBUCKET_CLOUD_OTHER_TOKEN variable set"; exit 1 ;}
    
-   target_user=${TEST_BITBUCKET_OTHER_USER}
-   target_token=${TEST_BITBUCKET_OTHER_TOKEN}
+   target_user=${TEST_BITBUCKET_CLOUD_OTHER_USER}
+   target_token=${TEST_BITBUCKET_CLOUD_OTHER_TOKEN}
 elif [[ ${PROFILE} == "member" ]];then
-     [[ -z ${TEST_BITBUCKET_MEMBER_USER:-""} ]] && { echo "We need the TEST_BITBUCKET_MEMBER_USER variable set"; exit 1 ;}
-     [[ -z ${TEST_BITBUCKET_MEMBER_TOKEN:-""} ]] && { echo "We need the TEST_BITBUCKET_MEMBER_TOKEN variable set"; exit 1 ;}
+     [[ -z ${TEST_BITBUCKET_CLOUD_MEMBER_USER:-""} ]] && { echo "We need the TEST_BITBUCKET_CLOUD_MEMBER_USER variable set"; exit 1 ;}
+     [[ -z ${TEST_BITBUCKET_CLOUD_MEMBER_TOKEN:-""} ]] && { echo "We need the TEST_BITBUCKET_CLOUD_MEMBER_TOKEN variable set"; exit 1 ;}
         
-     target_user=${TEST_BITBUCKET_MEMBER_USER}
-     target_token=${TEST_BITBUCKET_MEMBER_TOKEN}
+     target_user=${TEST_BITBUCKET_CLOUD_MEMBER_USER}
+     target_token=${TEST_BITBUCKET_CLOUD_MEMBER_TOKEN}
 elif [[ ${PROFILE} == "owner" ]];then
-     target_user=${TEST_BITBUCKET_USER}
-     target_token=${TEST_BITBUCKET_TOKEN}
+     target_user=${TEST_BITBUCKET_CLOUD_USER}
+     target_token=${TEST_BITBUCKET_CLOUD_TOKEN}
 fi
      
 ACCOUNT_ID=$(get_user_info "${target_user}" ${target_token} .account_id)

@@ -128,9 +128,9 @@ func createBitbucketRepoCRD(ctx context.Context, t *testing.T, bcvcs bitbucketcl
 	err = trepo.CreateNS(ctx, targetNS, run)
 	assert.NilError(t, err)
 
-	token, _ := os.LookupEnv("TEST_BITBUCKET_TOKEN")
-	apiURL, _ := os.LookupEnv("TEST_BITBUCKET_API_URL")
-	apiUser, _ := os.LookupEnv("TEST_BITBUCKET_USER")
+	token, _ := os.LookupEnv("TEST_BITBUCKET_CLOUD_TOKEN")
+	apiURL, _ := os.LookupEnv("TEST_BITBUCKET_CLOUD_API_URL")
+	apiUser, _ := os.LookupEnv("TEST_BITBUCKET_CLOUD_USER")
 	err = createSecret(ctx, run, map[string]string{"token": token}, targetNS, "webhook-token")
 	assert.NilError(t, err)
 	repository.Spec.WebvcsAPIURL = apiURL
