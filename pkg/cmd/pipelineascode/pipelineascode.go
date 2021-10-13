@@ -96,6 +96,7 @@ func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinterac
 	// If we already have the Token (ie: github apps) set as soon as possible the client,
 	// There is more things supported when we already have a github apps and some that are not
 	// (ie: /ok-to-test or /rerequest)
+	// TODO: probably not needed since we generate our token and not getting them beforehand
 	if cs.Info.Pac.VCSToken != "" {
 		err := vcx.SetClient(ctx, cs.Info.Pac)
 		if err != nil {

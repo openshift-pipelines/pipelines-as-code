@@ -308,6 +308,7 @@ func TestParsePayLoad(t *testing.T) {
 }
 
 func TestAppTokenGeneration(t *testing.T) {
+	fakeGithubAuthURL := "https://fake.gitub.auth/api/v3/"
 	tests := []struct {
 		name          string
 		wantErr       bool
@@ -396,7 +397,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				"github-application-id": "2222",
 				"github-private-key":    fakePrivateKey,
 			},
-			resultBaseURL: "https://foo.bar.com/api/v3/",
+			resultBaseURL: fakeGithubAuthURL,
 		},
 		{
 			name: "Good/full ghe url",
@@ -409,19 +410,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				"github-application-id": "2222",
 				"github-private-key":    fakePrivateKey,
 			},
-			resultBaseURL: "https://alpha.beta.com/api/v3/",
-		},
-		{
-			name: "Good/default github url",
-			envs: map[string]string{
-				"PAC_INSTALLATION_ID":  "11111",
-				"PAC_WORKSPACE_SECRET": "here",
-			},
-			wsSecretFiles: map[string]string{
-				"github-application-id": "2222",
-				"github-private-key":    fakePrivateKey,
-			},
-			resultBaseURL: "https://api.github.com/",
+			resultBaseURL: fakeGithubAuthURL,
 		},
 	}
 	for _, tt := range tests {
@@ -431,6 +420,15 @@ func TestAppTokenGeneration(t *testing.T) {
 				defer d.Remove()
 				tt.envs["PAC_WORKSPACE_SECRET"] = d.Path()
 			}
+
+			_, mux, url, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			mux.HandleFunc(fmt.Sprintf("/app/installations/%s/access_tokens", tt.envs["PAC_INSTALLATION_ID"]), func(w http.ResponseWriter, r *http.Request) {
+				_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+			})
+			tt.envs["PAC_WEBVCS_APIURL"] = fakeGithubAuthURL
+			tt.envs["PAC_WEBVCS_TOKEN_APIURL"] = url + "/api/v3"
+
 			envRemove := env.PatchAll(t, tt.envs)
 			defer envRemove()
 
@@ -448,6 +446,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				},
 				Info: info.Info{
 					Event: event,
+					Pac:   &info.PacOpts{},
 				},
 			}
 

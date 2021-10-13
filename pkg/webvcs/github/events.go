@@ -37,7 +37,7 @@ func (v *VCS) payloadFix(payload string) []byte {
 	return []byte(replacer.Replace(payload))
 }
 
-func (v *VCS) getAppToken() error {
+func (v *VCS) getAppToken(ctx context.Context, info *info.PacOpts) error {
 	installationIDEnv := os.Getenv("PAC_INSTALLATION_ID")
 	workspacePath := os.Getenv("PAC_WORKSPACE_SECRET")
 
@@ -79,12 +79,25 @@ func (v *VCS) getAppToken() error {
 		if !strings.HasPrefix(gheURL, "https://") {
 			gheURL = "https://" + gheURL
 		}
-
 		v.Client, _ = github.NewEnterpriseClient(gheURL, "", &http.Client{Transport: itr})
 		itr.BaseURL = strings.TrimSuffix(v.Client.BaseURL.String(), "/")
 	} else {
 		v.Client = github.NewClient(&http.Client{Transport: itr})
 	}
+
+	// This is a hack when we have auth and api dissascoiated
+	reqTokenURL := os.Getenv("PAC_WEBVCS_TOKEN_APIURL")
+	if reqTokenURL != "" {
+		itr.BaseURL = reqTokenURL
+	}
+
+	// Get a token ASAP because we need it for setting private repos
+	token, err := itr.Token(ctx)
+	if err != nil {
+		return err
+	}
+	v.Token = github.String(token)
+	info.VCSToken = token
 
 	return err
 }
@@ -95,7 +108,7 @@ func (v *VCS) ParsePayload(ctx context.Context, run *params.Run, payload string)
 	var processedevent *info.Event
 
 	// get the app token if it exist first
-	if err := v.getAppToken(); err != nil {
+	if err := v.getAppToken(ctx, run.Info.Pac); err != nil {
 		return nil, err
 	}
 
