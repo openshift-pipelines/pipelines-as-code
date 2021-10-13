@@ -16,12 +16,6 @@ import (
 
 // ClientConnPool manages a pool of HTTP/2 client connections.
 type ClientConnPool interface {
-	// GetClientConn returns a specific HTTP/2 connection (usually
-	// a TLS-TCP connection) to an HTTP/2 server. On success, the
-	// returned ClientConn accounts for the upcoming RoundTrip
-	// call, so the caller should not omit it. If the caller needs
-	// to, ClientConn.RoundTrip can be called with a bogus
-	// new(http.Request) to release the stream reservation.
 	GetClientConn(req *http.Request, addr string) (*ClientConn, error)
 	MarkDead(*ClientConn)
 }
@@ -67,7 +61,7 @@ const (
 // during the back-and-forth between net/http and x/net/http2 (when the
 // net/http.Transport is upgraded to also speak http2), as well as support
 // the case where x/net/http2 is being used directly.
-func (p *clientConnPool) shouldTraceGetConn(cc *ClientConn) bool {
+func (p *clientConnPool) shouldTraceGetConn(st clientConnIdleState) bool {
 	// If our Transport wasn't made via ConfigureTransport, always
 	// trace the GetConn hook if provided, because that means the
 	// http2 package is being used directly and it's the one
@@ -78,9 +72,7 @@ func (p *clientConnPool) shouldTraceGetConn(cc *ClientConn) bool {
 	// Otherwise, only use the GetConn hook if this connection has
 	// been used previously for other requests. For fresh
 	// connections, the net/http package does the dialing.
-	cc.mu.Lock()
-	defer cc.mu.Unlock()
-	return cc.nextStreamID == 1
+	return !st.freshConn
 }
 
 func (p *clientConnPool) getClientConn(req *http.Request, addr string, dialOnMiss bool) (*ClientConn, error) {
@@ -97,8 +89,8 @@ func (p *clientConnPool) getClientConn(req *http.Request, addr string, dialOnMis
 	for {
 		p.mu.Lock()
 		for _, cc := range p.conns[addr] {
-			if cc.ReserveNewRequest() {
-				if p.shouldTraceGetConn(cc) {
+			if st := cc.idleState(); st.canTakeNewRequest {
+				if p.shouldTraceGetConn(st) {
 					traceGetConn(req, addr)
 				}
 				p.mu.Unlock()
@@ -116,13 +108,7 @@ func (p *clientConnPool) getClientConn(req *http.Request, addr string, dialOnMis
 		if shouldRetryDial(call, req) {
 			continue
 		}
-		cc, err := call.res, call.err
-		if err != nil {
-			return nil, err
-		}
-		if cc.ReserveNewRequest() {
-			return cc, nil
-		}
+		return call.res, call.err
 	}
 }
 

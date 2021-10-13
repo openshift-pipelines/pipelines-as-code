@@ -86,7 +86,6 @@ github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
 # github.com/davecgh/go-spew v1.1.1
-## explicit
 github.com/davecgh/go-spew/spew
 # github.com/emicklei/go-restful v2.15.0+incompatible
 github.com/emicklei/go-restful
@@ -196,7 +195,7 @@ github.com/k0kubun/pp
 github.com/kballard/go-shellquote
 # github.com/kelseyhightower/envconfig v1.4.0
 github.com/kelseyhightower/envconfig
-# github.com/ktrysmt/go-bitbucket v0.9.27
+# github.com/ktrysmt/go-bitbucket v0.9.28-0.20211003085546-c342cba4c553
 ## explicit
 github.com/ktrysmt/go-bitbucket
 # github.com/mailru/easyjson v0.7.6
@@ -321,8 +320,7 @@ go.uber.org/zap/internal/ztest
 go.uber.org/zap/zapcore
 go.uber.org/zap/zaptest
 go.uber.org/zap/zaptest/observer
-# golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-## explicit
+# golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 golang.org/x/crypto/cast5
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
@@ -334,8 +332,7 @@ golang.org/x/crypto/ssh/terminal
 # golang.org/x/mod v0.4.1
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20210929193557-e81a3d93ecf6
-## explicit
+# golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
@@ -348,10 +345,9 @@ golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/publicsuffix
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
+# golang.org/x/oauth2 v0.0.0-20210126194326-f9ce19ea3013
 ## explicit
 golang.org/x/oauth2
-golang.org/x/oauth2/authhandler
 golang.org/x/oauth2/bitbucket
 golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/google
@@ -361,8 +357,7 @@ golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.0.0-20211002104244-808efd93c36d
-## explicit
+# golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
