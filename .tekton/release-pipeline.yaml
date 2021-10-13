@@ -28,6 +28,8 @@ spec:
           - name: output
             workspace: source
         params:
+          - name: depth
+            value: 500
           - name: url
             value: $(params.repo_url)
           - name: revision
