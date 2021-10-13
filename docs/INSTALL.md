@@ -195,13 +195,13 @@ spec:
   event_type: "pull_request"
   # Set this if you run with Github Enteprise
   # webvcs_api_url: "github.enteprise.com"
-  webvcs_secret:
+  webvcs_api_secret:
     name: "github-personal-token"
     # Set this if you have a different key in your secret
     # key: "token"
 ```
 
-* Note that `webvcs_secret` cannot reference a secret in another namespace, Pipelines as code assumes always it will be
+* Note that `webvcs_api_secret` cannot reference a secret in another namespace, Pipelines as code assumes always it will be
   the same namespace as where the repository has been created.
 
 ## Install Pipelines-As-Code for Bitbucket Cloud
@@ -264,13 +264,13 @@ spec:
   branch: "main"
   event_type: "pull_request"
   webvcs_api_user: "yourbitbucketusername"
-  webvcs_secret:
+  webvcs_api_secret:
     name: "github-token"
     # Set this if you have a different key in your secret
     # key: "token"
 ```
 
-* Note that `webvcs_secret` cannot reference a secret in another namespace, Pipelines as code assumes always it will be
+* Note that `webvcs_api_secret` cannot reference a secret in another namespace, Pipelines as code assumes always it will be
   the same namespace as where the repository has been created.
 
 * There is no Webhook secret support in Bitbucket Cloud. To be able to secure the payload and not let a user hijack the

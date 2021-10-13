@@ -129,7 +129,7 @@ func (v *VCS) SetClient(_ context.Context, opts *info.PacOpts) error {
 		return fmt.Errorf("no webvcs_api_user has been set in the repo crd")
 	}
 	if opts.VCSToken == "" {
-		return fmt.Errorf("no webvcs_secret has been set in the repo crd")
+		return fmt.Errorf("no webvcs_api_api_secret has been set in the repo crd")
 	}
 	v.Client = bitbucket.NewBasicAuth(opts.VCSUser, opts.VCSToken)
 	v.Token = &opts.VCSToken

@@ -84,7 +84,7 @@ spec:
                 webvcs_api_user:
                   description: The user used for WebVCS
                   type: string
-                webvcs_secret:
+                webvcs_api_secret:
                   type: object
                   properties:
                     key:

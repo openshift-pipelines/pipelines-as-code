@@ -135,7 +135,7 @@ func createBitbucketRepoCRD(ctx context.Context, t *testing.T, bcvcs bitbucketcl
 	assert.NilError(t, err)
 	repository.Spec.WebvcsAPIURL = apiURL
 	repository.Spec.WebvcsAPIUser = apiUser
-	repository.Spec.WebvcsSecret = &pacv1alpha1.WebvcsSecretSpec{Name: "webhook-token", Key: "token"}
+	repository.Spec.WebvcsAPISecret = &pacv1alpha1.WebvcsSecretSpec{Name: "webhook-token", Key: "token"}
 
 	err = trepo.CreateRepo(ctx, targetNS, run, repository)
 	assert.NilError(t, err)
