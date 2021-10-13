@@ -15,7 +15,7 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: pipelines-as-code-bitbucket-retest-comment
+  name: pipelines-as-code-bitbucket-cloud-retest-comment
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
@@ -31,7 +31,7 @@ spec:
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: pipelines-as-code-bitbucket-ok-to-test-comment
+  name: pipelines-as-code-bitbucket-cloud-ok-to-test-comment
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
