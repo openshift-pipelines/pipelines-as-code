@@ -308,6 +308,9 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	}
 	cs.Info.Pac.VCSInfoFromRepo = true
 
-	cs.Clients.Log.Infof("Using token from secret %s in key %s", repo.Spec.WebvcsSecret.Name, repo.Spec.WebvcsSecret.Key)
+	if repo.Spec.WebvcsAPIUser != "" {
+		cs.Clients.Log.Infof("Using vcs-user %s", repo.Spec.WebvcsAPIUser)
+	}
+	cs.Clients.Log.Infof("Using vcs-token from secret %s in key %s", repo.Spec.WebvcsSecret.Name, repo.Spec.WebvcsSecret.Key)
 	return nil
 }
