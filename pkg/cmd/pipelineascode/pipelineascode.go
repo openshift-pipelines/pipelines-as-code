@@ -97,7 +97,10 @@ func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinterac
 	// There is more things supported when we already have a github apps and some that are not
 	// (ie: /ok-to-test or /rerequest)
 	if cs.Info.Pac.VCSToken != "" {
-		vcx.SetClient(ctx, cs.Info.Pac)
+		err := vcx.SetClient(ctx, cs.Info.Pac)
+		if err != nil {
+			return err
+		}
 	}
 
 	payload, err := getPayloadFromFile(cs.Info.Pac)

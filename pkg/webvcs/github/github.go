@@ -26,7 +26,7 @@ func (v *VCS) GetConfig() *info.VCSConfig {
 	}
 }
 
-func (v *VCS) SetClient(ctx context.Context, info *info.PacOpts) {
+func (v *VCS) SetClient(ctx context.Context, info *info.PacOpts) error {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: info.VCSToken},
 	)
@@ -53,6 +53,8 @@ func (v *VCS) SetClient(ctx context.Context, info *info.PacOpts) {
 	}
 	v.APIURL = &apiURL
 	v.Token = &info.VCSToken
+
+	return nil
 }
 
 // GetTektonDir Get all yaml files in tekton directory return as a single concated file

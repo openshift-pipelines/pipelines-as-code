@@ -22,7 +22,7 @@ type Interface interface {
 	CreateStatus(context.Context, *info.Event, *info.PacOpts, StatusOpts) error
 	GetTektonDir(context.Context, *info.Event, string) (string, error)              // ctx, event, path
 	GetFileInsideRepo(context.Context, *info.Event, string, string) (string, error) // ctx, event, path, branch
-	SetClient(context.Context, *info.PacOpts)
+	SetClient(context.Context, *info.PacOpts) error
 	GetCommitInfo(context.Context, *info.Event) error
 	GetConfig() *info.VCSConfig
 }

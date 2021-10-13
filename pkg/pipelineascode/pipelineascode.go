@@ -70,7 +70,10 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		}
 		// We already SetClient before ParseWebhook in case if we already set
 		// the token (ie: github apps) and not coming from the repository
-		vcsintf.SetClient(ctx, cs.Info.Pac)
+		err = vcsintf.SetClient(ctx, cs.Info.Pac)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Get the SHA commit info, we want to get the URL and commit title
