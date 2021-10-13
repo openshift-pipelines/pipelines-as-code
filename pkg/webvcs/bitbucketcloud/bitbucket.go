@@ -150,8 +150,12 @@ func (v *VCS) GetCommitInfo(_ context.Context, event *info.Event) error {
 	if !ok {
 		return fmt.Errorf("cannot convert")
 	}
+	values := commitMap["values"].([]interface{})
+	if len(values) == 0 {
+		return fmt.Errorf("we did not get commit information from commit: %s", event.SHA)
+	}
 	commitinfo := &types.Commit{}
-	err = mapstructure.Decode(commitMap["values"].([]interface{})[0], commitinfo)
+	err = mapstructure.Decode(values[0], commitinfo)
 	if err != nil {
 		return err
 	}
