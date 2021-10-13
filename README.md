@@ -16,9 +16,9 @@ The goal of Pipelines as Code is to let you define your
 [Tekton](https://tekton.cd) templates inside your source code repository and have the pipeline run and report the status
 of the execution when triggered by a Pull Request or a Push.
 
-See a walkthought video about it here :
+Here is a video on how to get started with the tkn pac cli and its bootstrap command :
 
-[![Pipelines as Code Walkthought](https://img.youtube.com/vi/Uh1YhOGPOes/0.jpg)](https://www.youtube.com/watch?v=Uh1YhOGPOes)
+[![Getting started to Pipelines as Code](https://img.youtube.com/vi/ytm3brml8is/0.jpg)](https://www.youtube.com/watch?v=ytm3brml8is)
 
 Pipelines as Code features:
 
@@ -103,6 +103,8 @@ reference
 ## Usage Guide
 
 The usage guide [here](./docs/GUIDE.md) offer a comprehenive documentatiuon on how to configure and use Pipeline As Code.
+
+A walkthought video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
 
 ## Videos/Blog Posts
 
