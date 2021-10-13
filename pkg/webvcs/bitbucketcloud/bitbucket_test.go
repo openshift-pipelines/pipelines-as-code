@@ -93,7 +93,7 @@ func TestSetClient(t *testing.T) {
 				VCSToken: "",
 				VCSUser:  "user",
 			},
-			wantErrSubstr: "no webvcs_secret",
+			wantErrSubstr: "no webvcs_api_api_secret",
 		},
 	}
 	for _, tt := range tests {

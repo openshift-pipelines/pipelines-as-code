@@ -68,7 +68,7 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 		},
 	}
 	if opts.SecretName != "" {
-		repo.Spec.WebvcsSecret = &v1alpha1.WebvcsSecretSpec{
+		repo.Spec.WebvcsAPISecret = &v1alpha1.WebvcsSecretSpec{
 			Name: opts.SecretName,
 		}
 	}

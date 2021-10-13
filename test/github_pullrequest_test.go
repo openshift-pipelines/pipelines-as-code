@@ -132,7 +132,7 @@ func createGithubRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, ru
 		err := createSecret(ctx, run, map[string]string{"token": token}, targetNS, "webhook-token")
 		assert.NilError(t, err)
 		repository.Spec.WebvcsAPIURL = apiURL
-		repository.Spec.WebvcsSecret = &pacv1alpha1.WebvcsSecretSpec{Name: "webhook-token", Key: "token"}
+		repository.Spec.WebvcsAPISecret = &pacv1alpha1.WebvcsSecretSpec{Name: "webhook-token", Key: "token"}
 	}
 
 	err = trepo.CreateRepo(ctx, targetNS, run, repository)

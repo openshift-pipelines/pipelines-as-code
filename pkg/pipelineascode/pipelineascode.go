@@ -63,7 +63,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		return nil
 	}
 
-	if repo.Spec.WebvcsSecret != nil {
+	if repo.Spec.WebvcsAPISecret != nil {
 		err := secretFromRepository(ctx, cs, k8int, vcsintf.GetConfig(), repo)
 		if err != nil {
 			return err
@@ -299,8 +299,8 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 		ctx,
 		kubeinteraction.GetSecretOpt{
 			Namespace: repo.GetNamespace(),
-			Name:      repo.Spec.WebvcsSecret.Name,
-			Key:       repo.Spec.WebvcsSecret.Key,
+			Name:      repo.Spec.WebvcsAPISecret.Name,
+			Key:       repo.Spec.WebvcsAPISecret.Key,
 		},
 	)
 
@@ -312,6 +312,6 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	if repo.Spec.WebvcsAPIUser != "" {
 		cs.Clients.Log.Infof("Using vcs-user %s", repo.Spec.WebvcsAPIUser)
 	}
-	cs.Clients.Log.Infof("Using vcs-token from secret %s in key %s", repo.Spec.WebvcsSecret.Name, repo.Spec.WebvcsSecret.Key)
+	cs.Clients.Log.Infof("Using vcs-token from secret %s in key %s", repo.Spec.WebvcsAPISecret.Name, repo.Spec.WebvcsAPISecret.Key)
 	return nil
 }
