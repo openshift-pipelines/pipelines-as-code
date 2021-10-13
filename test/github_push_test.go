@@ -16,14 +16,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestPush(t *testing.T) {
+func TestGithubPush(t *testing.T) {
 	for _, onWebhook := range []bool{false, true} {
 		targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-push")
 		targetBranch := targetNS
 		targetEvent := "push"
 
 		ctx := context.Background()
-		runcnx, opts, gvcs, err := setup(ctx, onWebhook)
+		runcnx, opts, gvcs, err := githubSetup(ctx, onWebhook)
 		assert.NilError(t, err)
 
 		if onWebhook {

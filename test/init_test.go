@@ -56,7 +56,7 @@ func tearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghvcs githu
 	}
 }
 
-func setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, E2EOptions, github.VCS, error) {
+func githubSetup(ctx context.Context, viaDirectWebhook bool) (*params.Run, E2EOptions, github.VCS, error) {
 	githubURL := os.Getenv("TEST_GITHUB_API_URL")
 	githubToken := os.Getenv("TEST_GITHUB_TOKEN")
 	githubRepoOwnerGithubApp := os.Getenv("TEST_GITHUB_REPO_OWNER_GITHUBAPP")

@@ -21,10 +21,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestPullRequestRemoteAnnotations(t *testing.T) {
+func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghcnx, err := setup(ctx, false)
+	runcnx, opts, ghcnx, err := githubSetup(ctx, false)
 	assert.NilError(t, err)
 
 	prun, err := ioutil.ReadFile("testdata/pipelinerun_remote_annotations.yaml")

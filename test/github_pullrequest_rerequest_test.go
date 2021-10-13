@@ -24,10 +24,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestPullRequestOkToTest(t *testing.T) {
+func TestGithubPullRerequest(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghcnx, err := setup(ctx, false)
+	runcnx, opts, ghcnx, err := githubSetup(ctx, false)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
@@ -68,6 +68,7 @@ spec:
 			Branch:    mainBranch,
 		},
 	}
+
 	err = trepo.CreateNS(ctx, targetNS, runcnx)
 	assert.NilError(t, err)
 
@@ -85,7 +86,7 @@ spec:
 		entries)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
-	title := "TestPullRequestOkToTest on " + targetRefName
+	title := "TestPullRerequest on " + targetRefName
 	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
@@ -102,7 +103,7 @@ spec:
 	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
-	runevent := info.Event{
+	runinfo := info.Event{
 		BaseBranch:    repoinfo.GetDefaultBranch(),
 		DefaultBranch: repoinfo.GetDefaultBranch(),
 		HeadBranch:    targetRefName,
@@ -115,30 +116,30 @@ spec:
 
 	installID, err := strconv.ParseInt(os.Getenv("TEST_GITHUB_REPO_INSTALLATION_ID"), 10, 64)
 	assert.NilError(t, err)
-	event := github.IssueCommentEvent{
-		Comment: &github.IssueComment{
-			Body: github.String(`/ok-to-test`),
-		},
+	event := github.CheckRunEvent{
+		Action: github.String("rerequested"),
 		Installation: &github.Installation{
 			ID: &installID,
 		},
-		Action: github.String("created"),
-		Issue: &github.Issue{
-			State: github.String("open"),
-			PullRequestLinks: &github.PullRequestLinks{
-				HTMLURL: github.String(fmt.Sprintf("%s/%s/pull/%d",
-					os.Getenv("TEST_GITHUB_API_URL"),
-					os.Getenv("TEST_GITHUB_REPO_OWNER"), number)),
+		CheckRun: &github.CheckRun{
+			CheckSuite: &github.CheckSuite{
+				HeadBranch: &runinfo.HeadBranch,
+				HeadSHA:    &runinfo.SHA,
+				PullRequests: []*github.PullRequest{
+					{
+						Number: github.Int(number),
+					},
+				},
 			},
 		},
 		Repo: &github.Repository{
-			DefaultBranch: &runevent.DefaultBranch,
-			HTMLURL:       &runevent.URL,
-			Name:          &runevent.Repository,
-			Owner:         &github.User{Login: &runevent.Owner},
+			DefaultBranch: &runinfo.DefaultBranch,
+			HTMLURL:       &runinfo.URL,
+			Name:          &runinfo.Repository,
+			Owner:         &github.User{Login: &runinfo.Owner},
 		},
 		Sender: &github.User{
-			Login: &runevent.Sender,
+			Login: &runinfo.Sender,
 		},
 	}
 
@@ -149,7 +150,7 @@ spec:
 		os.Getenv("TEST_GITHUB_API_URL"),
 		os.Getenv("TEST_GITHUB_REPO_INSTALLATION_ID"),
 		event,
-		"issue_comment",
+		"check_run",
 	)
 	assert.NilError(t, err)
 

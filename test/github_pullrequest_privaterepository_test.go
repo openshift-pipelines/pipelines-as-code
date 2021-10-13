@@ -14,12 +14,12 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestPullRequestPrivateRepository(t *testing.T) {
+func TestGithubPullRequestPrivateRepository(t *testing.T) {
 	t.Skip("PSI E2E Infra is borked atm")
 	for _, onWebhook := range []bool{false, true} {
 		targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 		ctx := context.Background()
-		runcnx, opts, ghcnx, err := setup(ctx, onWebhook)
+		runcnx, opts, ghcnx, err := githubSetup(ctx, onWebhook)
 		assert.NilError(t, err)
 		if onWebhook {
 			runcnx.Clients.Log.Info("Testing with Direct Webhook integration")

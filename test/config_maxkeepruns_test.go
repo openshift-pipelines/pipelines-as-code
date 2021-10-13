@@ -23,7 +23,7 @@ import (
 func TestMaxKeepRuns(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghcnx, err := setup(ctx, false)
+	runcnx, opts, ghcnx, err := githubSetup(ctx, false)
 	assert.NilError(t, err)
 	maxKepRuns := 1
 

@@ -25,12 +25,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestPullRequest(t *testing.T) {
+func TestGithubPullRequest(t *testing.T) {
 	for _, onWebhook := range []bool{false, true} {
 		targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 		ctx := context.Background()
 
-		runcnx, opts, ghvcs, err := setup(ctx, onWebhook)
+		runcnx, opts, ghvcs, err := githubSetup(ctx, onWebhook)
 		assert.NilError(t, err)
 		if onWebhook {
 			runcnx.Clients.Log.Info("Testing with Direct Webhook integration")

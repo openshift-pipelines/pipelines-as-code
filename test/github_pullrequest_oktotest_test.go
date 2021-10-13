@@ -7,11 +7,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 	"testing"
 
 	"github.com/google/go-github/v39/github"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
@@ -20,10 +24,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestPullRequestRetest(t *testing.T) {
+func TestGithubPullRequestOkToTest(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghcnx, err := setup(ctx, false)
+	runcnx, opts, ghcnx, err := githubSetup(ctx, false)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
@@ -64,7 +68,6 @@ spec:
 			Branch:    mainBranch,
 		},
 	}
-
 	err = trepo.CreateNS(ctx, targetNS, runcnx)
 	assert.NilError(t, err)
 
@@ -74,18 +77,21 @@ spec:
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, "TestRetest - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
+	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client,
+		"TestPullRequest - "+targetRefName, repoinfo.GetDefaultBranch(),
+		targetRefName,
+		opts.Owner,
+		opts.Repo,
+		entries)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
-	title := "TestPullRequestRetest on " + targetRefName
-
+	title := "TestPullRequestOkToTest on " + targetRefName
 	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
 	defer tearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
-
 	waitOpts := twait.Opts{
 		RepoName:        targetNS,
 		Namespace:       targetNS,
@@ -96,11 +102,55 @@ spec:
 	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
-	runcnx.Clients.Log.Infof("Creating /retest in PullRequest")
-	_, _, err = ghcnx.Client.Issues.CreateComment(ctx,
-		opts.Owner,
-		opts.Repo, number,
-		&github.IssueComment{Body: github.String("/retest")})
+	runevent := info.Event{
+		BaseBranch:    repoinfo.GetDefaultBranch(),
+		DefaultBranch: repoinfo.GetDefaultBranch(),
+		HeadBranch:    targetRefName,
+		Owner:         opts.Owner,
+		Repository:    opts.Repo,
+		URL:           repoinfo.GetHTMLURL(),
+		SHA:           sha,
+		Sender:        opts.Owner,
+	}
+
+	installID, err := strconv.ParseInt(os.Getenv("TEST_GITHUB_REPO_INSTALLATION_ID"), 10, 64)
+	assert.NilError(t, err)
+	event := github.IssueCommentEvent{
+		Comment: &github.IssueComment{
+			Body: github.String(`/ok-to-test`),
+		},
+		Installation: &github.Installation{
+			ID: &installID,
+		},
+		Action: github.String("created"),
+		Issue: &github.Issue{
+			State: github.String("open"),
+			PullRequestLinks: &github.PullRequestLinks{
+				HTMLURL: github.String(fmt.Sprintf("%s/%s/pull/%d",
+					os.Getenv("TEST_GITHUB_API_URL"),
+					os.Getenv("TEST_GITHUB_REPO_OWNER"), number)),
+			},
+		},
+		Repo: &github.Repository{
+			DefaultBranch: &runevent.DefaultBranch,
+			HTMLURL:       &runevent.URL,
+			Name:          &runevent.Repository,
+			Owner:         &github.User{Login: &runevent.Owner},
+		},
+		Sender: &github.User{
+			Login: &runevent.Sender,
+		},
+	}
+
+	err = payload.Send(ctx,
+		runcnx,
+		os.Getenv("TEST_EL_URL"),
+		os.Getenv("TEST_EL_WEBHOOK_SECRET"),
+		os.Getenv("TEST_GITHUB_API_URL"),
+		os.Getenv("TEST_GITHUB_REPO_INSTALLATION_ID"),
+		event,
+		"issue_comment",
+	)
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Wait for the second repository update to be updated")

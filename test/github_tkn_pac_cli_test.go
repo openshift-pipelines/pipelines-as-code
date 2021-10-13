@@ -35,10 +35,10 @@ func execCommand(runcnx *params.Run, cmd func(*params.Run, *ui.IOStreams) *cobra
 	return bufout.String(), err
 }
 
-func TestPacCli(t *testing.T) {
+func TestGithubPacCli(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghvcs, err := setup(ctx, false)
+	runcnx, opts, ghvcs, err := githubSetup(ctx, false)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
