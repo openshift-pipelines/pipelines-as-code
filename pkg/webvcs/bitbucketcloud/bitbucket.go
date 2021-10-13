@@ -15,7 +15,7 @@ import (
 type VCS struct {
 	Client        *bitbucket.Client
 	Token, APIURL *string
-	Username      interface{}
+	Username      *string
 }
 
 const taskStatusTemplate = `| **Status** | **Duration** | **Name** |
