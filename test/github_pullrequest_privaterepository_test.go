@@ -14,12 +14,12 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestPullRequestPrivateRepository(t *testing.T) {
+func TestGithubPullRequestPrivateRepository(t *testing.T) {
 	t.Skip("PSI E2E Infra is borked atm")
 	for _, onWebhook := range []bool{false, true} {
 		targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 		ctx := context.Background()
-		runcnx, opts, ghcnx, err := setup(ctx, onWebhook)
+		runcnx, opts, ghcnx, err := githubSetup(ctx, onWebhook)
 		assert.NilError(t, err)
 		if onWebhook {
 			runcnx.Clients.Log.Info("Testing with Direct Webhook integration")
@@ -29,7 +29,7 @@ func TestPullRequestPrivateRepository(t *testing.T) {
 		entries, err := getEntries("testdata/pipelinerun_git_clone_private.yaml", targetNS, mainBranch, pullRequestEvent)
 		assert.NilError(t, err)
 
-		repoinfo, err := createRepoCRD(ctx, t, ghcnx, runcnx, opts, targetNS, pullRequestEvent, mainBranch, runcnx)
+		repoinfo, err := createGithubRepoCRD(ctx, t, ghcnx, runcnx, opts, targetNS, pullRequestEvent, mainBranch)
 		assert.NilError(t, err)
 
 		targetRefName := fmt.Sprintf("refs/heads/%s",
@@ -49,7 +49,7 @@ func TestPullRequestPrivateRepository(t *testing.T) {
 		number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 		assert.NilError(t, err)
 
-		defer tearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
+		defer ghtearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
 		runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 		waitOpts := twait.Opts{

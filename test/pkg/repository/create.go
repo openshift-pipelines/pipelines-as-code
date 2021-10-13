@@ -12,6 +12,7 @@ import (
 func CreateNS(ctx context.Context, targetNS string, cs *params.Run) error {
 	nsSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: targetNS}}
 	_, err := cs.Clients.Kube.CoreV1().Namespaces().Create(ctx, nsSpec, metav1.CreateOptions{})
+	cs.Clients.Log.Infof("Namespace %s created", targetNS)
 	return err
 }
 

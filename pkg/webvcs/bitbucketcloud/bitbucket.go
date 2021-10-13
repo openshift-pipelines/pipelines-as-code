@@ -15,7 +15,7 @@ import (
 type VCS struct {
 	Client        *bitbucket.Client
 	Token, APIURL *string
-	Username      interface{}
+	Username      *string
 }
 
 const taskStatusTemplate = `| **Status** | **Duration** | **Name** |
@@ -69,7 +69,7 @@ func (v *VCS) CreateStatus(_ context.Context, event *info.Event, pacopts *info.P
 		Revision: event.SHA,
 	}
 
-	if pacopts.VCSToken == "" {
+	if v.Client == nil {
 		return fmt.Errorf("no token has been set, cannot set status")
 	}
 
@@ -124,9 +124,17 @@ func (v *VCS) GetFileInsideRepo(_ context.Context, runevent *info.Event, path st
 	return v.getBlob(runevent, branch, path)
 }
 
-func (v *VCS) SetClient(_ context.Context, opts *info.PacOpts) {
+func (v *VCS) SetClient(_ context.Context, opts *info.PacOpts) error {
+	if opts.VCSUser == "" {
+		return fmt.Errorf("no webvcs_api_user has been set in the repo crd")
+	}
+	if opts.VCSToken == "" {
+		return fmt.Errorf("no webvcs_secret has been set in the repo crd")
+	}
 	v.Client = bitbucket.NewBasicAuth(opts.VCSUser, opts.VCSToken)
 	v.Token = &opts.VCSToken
+	v.Username = &opts.VCSUser
+	return nil
 }
 
 func (v *VCS) GetCommitInfo(_ context.Context, event *info.Event) error {
@@ -142,8 +150,15 @@ func (v *VCS) GetCommitInfo(_ context.Context, event *info.Event) error {
 	if !ok {
 		return fmt.Errorf("cannot convert")
 	}
+	values, ok := commitMap["values"].([]interface{})
+	if !ok {
+		return fmt.Errorf("cannot convert")
+	}
+	if len(values) == 0 {
+		return fmt.Errorf("we did not get commit information from commit: %s", event.SHA)
+	}
 	commitinfo := &types.Commit{}
-	err = mapstructure.Decode(commitMap["values"].([]interface{})[0], commitinfo)
+	err = mapstructure.Decode(values[0], commitinfo)
 	if err != nil {
 		return err
 	}

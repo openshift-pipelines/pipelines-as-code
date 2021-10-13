@@ -378,6 +378,21 @@ func (r *Repository) GetBranch(rbo *RepositoryBranchOptions) (*RepositoryBranch,
 	return decodeRepositoryBranch(bodyString)
 }
 
+// DeleteBranch https://developer.atlassian.com/bitbucket/api/2/reference/resource/repositories/%7Bworkspace%7D/%7Brepo_slug%7D/refs/branches/%7Bname%7D#delete
+func (r *Repository) DeleteBranch(rbo *RepositoryBranchDeleteOptions) error {
+	repo := rbo.RepoSlug
+	if rbo.RepoUUID != "" {
+		repo = rbo.RepoUUID
+	}
+	ref := rbo.RefName
+	if rbo.RefUUID != "" {
+		ref = rbo.RefUUID
+	}
+	urlStr := r.c.requestUrl("/repositories/%s/%s/refs/branches/%s", rbo.Owner, repo, ref)
+	_, err := r.c.execute("DELETE", urlStr, "")
+	return err
+}
+
 func (r *Repository) CreateBranch(rbo *RepositoryBranchCreationOptions) (*RepositoryBranch, error) {
 	urlStr := r.c.requestUrl("/repositories/%s/%s/refs/branches", rbo.Owner, rbo.RepoSlug)
 	data := r.buildBranchBody(rbo)

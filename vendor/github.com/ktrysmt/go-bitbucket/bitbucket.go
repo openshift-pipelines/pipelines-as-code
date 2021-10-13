@@ -232,6 +232,14 @@ type RepositoryBranchCreationOptions struct {
 	Target   RepositoryBranchTarget `json:"target"`
 }
 
+type RepositoryBranchDeleteOptions struct {
+	Owner    string `json:"owner"`
+	RepoSlug string `json:"repo_slug"`
+	RepoUUID string `json:"uuid"`
+	RefName  string `json:"name"`
+	RefUUID  string `json:uuid`
+}
+
 type RepositoryBranchTarget struct {
 	Hash string `json:"hash"`
 }

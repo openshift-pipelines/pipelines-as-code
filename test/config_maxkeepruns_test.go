@@ -23,7 +23,7 @@ import (
 func TestMaxKeepRuns(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghcnx, err := setup(ctx, false)
+	runcnx, opts, ghcnx, err := githubSetup(ctx, false)
 	assert.NilError(t, err)
 	maxKepRuns := 1
 
@@ -84,7 +84,7 @@ spec:
 		number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 		assert.NilError(t, err)
 
-		defer tearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
+		defer ghtearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
 		runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 		waitOpts := twait.Opts{

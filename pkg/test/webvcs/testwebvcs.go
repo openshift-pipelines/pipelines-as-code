@@ -29,7 +29,8 @@ func (v *TestWebVCSImp) GetCommitInfo(ctx context.Context, runevent *info.Event)
 	return nil
 }
 
-func (v *TestWebVCSImp) SetClient(ctx context.Context, pacopt *info.PacOpts) {
+func (v *TestWebVCSImp) SetClient(ctx context.Context, pacopt *info.PacOpts) error {
+	return nil
 }
 
 func (v *TestWebVCSImp) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {

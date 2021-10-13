@@ -4,41 +4,26 @@
 package test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"testing"
 
+	"github.com/google/go-github/v39/github"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	repositorycmd "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/repository"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"github.com/spf13/cobra"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func execCommand(runcnx *params.Run, cmd func(*params.Run, *ui.IOStreams) *cobra.Command,
-	args ...string) (string, error) {
-	bufout := new(bytes.Buffer)
-	ecmd := cmd(runcnx, &ui.IOStreams{
-		Out: bufout,
-	})
-	_, err := cli.ExecuteCommand(ecmd, args...)
-	return bufout.String(), err
-}
-
-func TestPacCli(t *testing.T) {
+func TestGithubPullRequestRetest(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghvcs, err := setup(ctx, false)
+	runcnx, opts, ghcnx, err := githubSetup(ctx, false)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
@@ -63,7 +48,7 @@ spec:
 `, targetNS, mainBranch, pullRequestEvent),
 	}
 
-	repoinfo, resp, err := ghvcs.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
+	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Owner, opts.Repo)
@@ -86,28 +71,21 @@ spec:
 	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
-	output, err := execCommand(runcnx, repositorycmd.DescribeCommand, "-n", targetNS, targetNS)
-	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "No runs has started."))
-
-	output, err = execCommand(runcnx, repositorycmd.ListCommand, "-n", targetNS)
-	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "NoRun"))
-
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, err := tgithub.PushFilesToRef(ctx, ghvcs.Client, "TestPacCli - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
+	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, "TestRetest - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
+	title := "TestPullRequestRetest on " + targetRefName
 
-	title := "TestPacCli - " + targetRefName
-	number, err := tgithub.PRCreate(ctx, runcnx, ghvcs, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
-	defer tearDown(ctx, t, runcnx, ghvcs, number, targetRefName, targetNS, opts)
+	defer ghtearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
+
 	waitOpts := twait.Opts{
 		RepoName:        targetNS,
 		Namespace:       targetNS,
@@ -118,17 +96,26 @@ spec:
 	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
+	runcnx.Clients.Log.Infof("Creating /retest in PullRequest")
+	_, _, err = ghcnx.Client.Issues.CreateComment(ctx,
+		opts.Owner,
+		opts.Repo, number,
+		&github.IssueComment{Body: github.String("/retest")})
+	assert.NilError(t, err)
+
+	runcnx.Clients.Log.Infof("Wait for the second repository update to be updated")
+	waitOpts = twait.Opts{
+		RepoName:        targetNS,
+		Namespace:       targetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     defaultTimeout,
+		TargetSHA:       sha,
+	}
+	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
-
-	output, err = execCommand(runcnx, repositorycmd.ListCommand, "-n", targetNS)
+	repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "Succeeded"))
-
-	output, err = execCommand(runcnx, repositorycmd.DescribeCommand, "-n", targetNS, targetNS)
-	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "Succeeded"))
+	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
 }
-
-// Local Variables:
-// compile-command: "go test -tags=e2e -v -run TestPacCli$ ."
-// End:

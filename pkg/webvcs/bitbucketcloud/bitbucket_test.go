@@ -66,11 +66,49 @@ func TestGetTektonDir(t *testing.T) {
 }
 
 func TestSetClient(t *testing.T) {
-	ctx, _ := rtesting.SetupFakeContext(t)
-	v := VCS{}
-	token := "HELLOTOKEN"
-	v.SetClient(ctx, &info.PacOpts{VCSToken: token})
-	assert.Equal(t, token, *v.Token)
+	tests := []struct {
+		name          string
+		wantErrSubstr string
+		opts          *info.PacOpts
+		token         string
+	}{
+		{
+			name: "set token",
+			opts: &info.PacOpts{
+				VCSToken: "token",
+				VCSUser:  "user",
+			},
+		},
+		{
+			name: "no user",
+			opts: &info.PacOpts{
+				VCSToken: "token",
+				VCSUser:  "",
+			},
+			wantErrSubstr: "no webvcs_api_user",
+		},
+		{
+			name: "no token",
+			opts: &info.PacOpts{
+				VCSToken: "",
+				VCSUser:  "user",
+			},
+			wantErrSubstr: "no webvcs_secret",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			v := VCS{}
+			err := v.SetClient(ctx, tt.opts)
+			if tt.wantErrSubstr != "" {
+				assert.ErrorContains(t, err, tt.wantErrSubstr)
+				return
+			}
+			assert.Equal(t, tt.opts.VCSToken, *v.Token)
+			assert.Equal(t, tt.opts.VCSUser, *v.Username)
+		})
+	}
 }
 
 func TestGetCommitInfo(t *testing.T) {
