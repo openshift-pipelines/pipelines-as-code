@@ -38,4 +38,4 @@ require (
 // waiting on https://github.com/google/go-github/pull/2121 to get merged
 replace github.com/google/go-github/scrape => github.com/chmouel/go-github/scrape v0.0.0-20211008062324-29895c10f57d
 
-//replace github.com/ktrysmt/go-bitbucket => github.com/ktrysmt/go-bitbucket v0.9.28-0.20211003085546-c342cba4c553
+replace github.com/ktrysmt/go-bitbucket => github.com/chmouel/go-bitbucket v0.9.27-0.20211013140525-ef577a27520c

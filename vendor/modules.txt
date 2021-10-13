@@ -195,7 +195,7 @@ github.com/k0kubun/pp
 github.com/kballard/go-shellquote
 # github.com/kelseyhightower/envconfig v1.4.0
 github.com/kelseyhightower/envconfig
-# github.com/ktrysmt/go-bitbucket v0.9.28-0.20211003085546-c342cba4c553
+# github.com/ktrysmt/go-bitbucket v0.9.28-0.20211003085546-c342cba4c553 => github.com/chmouel/go-bitbucket v0.9.27-0.20211013140525-ef577a27520c
 ## explicit
 github.com/ktrysmt/go-bitbucket
 # github.com/mailru/easyjson v0.7.6
@@ -837,3 +837,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit
 sigs.k8s.io/yaml
 # github.com/google/go-github/scrape => github.com/chmouel/go-github/scrape v0.0.0-20211008062324-29895c10f57d
+# github.com/ktrysmt/go-bitbucket => github.com/chmouel/go-bitbucket v0.9.27-0.20211013140525-ef577a27520c
