@@ -86,7 +86,6 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 			return err
 		}
 	}
-
 	jeez, err := generateManifest(opts)
 	if err != nil {
 		return err
