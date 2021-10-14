@@ -56,7 +56,7 @@ func installPac(ctx context.Context, opts *bootstrapOpts) error {
 		}
 	}
 
-	doinstall, err := askYN(opts, "🕵️ Pipelines as Code doesn't seem installed", fmt.Sprintf("Do you want me to install Pipelines as Code %s?", latestversion))
+	doinstall, err := askYN(opts, true, "🕵️ Pipelines as Code doesn't seem installed", fmt.Sprintf("Do you want me to install Pipelines as Code %s?", latestversion))
 	if err != nil {
 		return err
 	}
@@ -69,6 +69,6 @@ func installPac(ctx context.Context, opts *bootstrapOpts) error {
 	}
 
 	// nolint:forbidigo
-	fmt.Printf("✅  Pipelines-as-Code %s has been installed\n", latestversion)
+	fmt.Printf("✓ Pipelines-as-Code %s has been installed\n", latestversion)
 	return nil
 }
