@@ -27,6 +27,7 @@ type bootstrapOpts struct {
 	installNightly  bool
 	skipInstall     bool
 	skipGithubAPP   bool
+	forceInstall    bool
 	webserverPort   int
 	cliOpts         *params.PacCliOpts
 	ioStreams       *ui.IOStreams
@@ -55,10 +56,12 @@ const successTmpl = `
 `
 
 func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
-	// nolint:forbidigo
-	fmt.Println("🏃 Checking if Pipelines as Code is installed.")
+	if !opts.forceInstall {
+		// nolint:forbidigo
+		fmt.Println("🏃 Checking if Pipelines as Code is installed.")
+	}
 	installed, _ := checkNS(ctx, run, opts)
-	if installed {
+	if !opts.forceInstall && installed {
 		// nolint:forbidigo
 		fmt.Println("👌 Pipelines as Code is already installed.")
 	} else if err := installPac(ctx, opts); err != nil {
@@ -137,6 +140,7 @@ func Command(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "webserver-port")
 	cmd.PersistentFlags().StringVarP(&opts.targetNamespace, "namespace", "n", pacNS, "target namespace where pac is installed")
 
+	cmd.PersistentFlags().BoolVar(&opts.forceInstall, "force-install", false, "wether we should force pac install even if it's already installed")
 	cmd.PersistentFlags().BoolVar(&opts.skipInstall, "skip-install", false, "skip Pipelines as Code installation")
 	cmd.PersistentFlags().BoolVar(&opts.skipGithubAPP, "skip-github-app", false, "skip creating github application")
 

@@ -56,12 +56,14 @@ func installPac(ctx context.Context, opts *bootstrapOpts) error {
 		}
 	}
 
-	doinstall, err := askYN(opts, true, "🕵️ Pipelines as Code doesn't seem installed", fmt.Sprintf("Do you want me to install Pipelines as Code %s?", latestversion))
-	if err != nil {
-		return err
-	}
-	if !doinstall {
-		return fmt.Errorf("i will let you install Pipelines as Code")
+	if !opts.forceInstall {
+		doinstall, err := askYN(opts, true, "🕵️ Pipelines as Code doesn't seem installed", fmt.Sprintf("Do you want me to install Pipelines as Code %s?", latestversion))
+		if err != nil {
+			return err
+		}
+		if !doinstall {
+			return fmt.Errorf("i will let you install Pipelines as Code")
+		}
 	}
 
 	if err := kubectlApply(latestReleaseYaml); err != nil {
