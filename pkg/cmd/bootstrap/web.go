@@ -78,7 +78,7 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 	}
 
 	// nolint:forbidigo
-	fmt.Printf("🚀 You can now add your newly created application on your repository by going to this URL:\n%s\n", *manifest.HTMLURL)
+	fmt.Printf("🚀 You can now add your newly created application on your repository by going to this URL:\n%s\n\n", *manifest.HTMLURL)
 
 	// nolint:forbidigo
 	fmt.Println("💡 Don't forget to run the \"tkn pac repo create\" to create a new Repository CRD on your cluster.")

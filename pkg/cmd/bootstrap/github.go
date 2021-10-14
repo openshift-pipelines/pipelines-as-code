@@ -40,8 +40,7 @@ func generateManifest(opts *bootstrapOpts) ([]byte, error) {
 
 // getGHClient get github client
 func getGHClient(opts *bootstrapOpts) (*github.Client, error) {
-	if opts.GithubAPIURL == "" {
-		opts.GithubAPIURL = "https://github.com"
+	if opts.GithubAPIURL == defaultPublicGithub {
 		return github.NewClient(nil), nil
 	}
 
