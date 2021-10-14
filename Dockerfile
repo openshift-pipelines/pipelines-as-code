@@ -11,7 +11,7 @@ LABEL com.redhat.component=pipelines-as-code \
     maintainer=pipelines@redhat.com \ 
     summary="This image is to run Pipelines as Code task"
 
-LABEL version=0.3
+LABEL version=0.4.1
 
 COPY --from=builder /tmp/pipelines-as-code /usr/bin/pipelines-as-code
 RUN ln /usr/bin/pipelines-as-code /usr/bin/tkn-pac
