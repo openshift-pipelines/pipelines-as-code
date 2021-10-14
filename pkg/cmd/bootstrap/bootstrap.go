@@ -57,10 +57,7 @@ const successTmpl = `
 func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	// nolint:forbidigo
 	fmt.Println("🏃 Checking if Pipelines as Code is installed.")
-	installed, err := checkNS(ctx, run, opts)
-	if err != nil {
-		return err
-	}
+	installed, _ := checkNS(ctx, run, opts)
 	if installed {
 		// nolint:forbidigo
 		fmt.Println("👌 Pipelines as Code is already installed.")
