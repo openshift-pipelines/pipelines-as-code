@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	corev1 "k8s.io/api/core/v1"
@@ -53,7 +54,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 
 	// Try to create secrete if that fails then delete it first and then create
 	// This allows up not to give List and Get right clusterwide
-	secretName := fmt.Sprintf(basicAuthSecretName, runevent.Owner, runevent.Repository)
+	secretName := fmt.Sprintf(basicAuthSecretName, strings.ToLower(runevent.Owner), strings.ToLower(runevent.Repository))
 	err = k.createSecret(ctx, secretData, targetNamespace, secretName)
 	if err != nil {
 		err = k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})

@@ -15,6 +15,6 @@ func ReplacePlaceHoldersVariables(template string, dico map[string]string) strin
 		if _, ok := dico[key]; !ok {
 			return s
 		}
-		return dico[key]
+		return strings.ToLower(dico[key])
 	})
 }
