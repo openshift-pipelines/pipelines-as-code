@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +36,14 @@ const defaultGitUser = "git"
 
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
 func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, targetNamespace string) error {
-	repoURL, err := url.Parse(runevent.URL)
+	// Bitbucket Server have a different Clone URL than it's Repo URL, so we
+	// have to separate them 👨‍🏭
+	cloneURL := runevent.URL
+	if runevent.CloneURL != "" {
+		cloneURL = runevent.CloneURL
+	}
+
+	repoURL, err := url.Parse(cloneURL)
 	if err != nil {
 		return err
 	}
@@ -45,15 +53,26 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 		gitUser = pacopts.VCSUser
 	}
 
-	urlWithToken := fmt.Sprintf("%s://%s:%s@%s%s", repoURL.Scheme, gitUser, pacopts.VCSToken, repoURL.Host, repoURL.Path)
+	// Bitbucket server token have / into it, so unless we do urlquote them it's
+	// impossible to use it🤡
+	//
+	// It supposed not working on github according to
+	// https://stackoverflow.com/a/24719496 but arguably github have a better
+	// product and would not do such things.
+	//
+	// maybe we could patch the git-clone task too but that probably be a pain
+	// in the tuchus to do it in shell.
+	token := url.QueryEscape(pacopts.VCSToken)
+
+	urlWithToken := fmt.Sprintf("%s://%s:%s@%s%s", repoURL.Scheme, gitUser, token, repoURL.Host, repoURL.Path)
 	secretData := map[string]string{
-		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, runevent.URL),
+		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, cloneURL),
 		".git-credentials": urlWithToken,
 	}
 
 	// Try to create secrete if that fails then delete it first and then create
 	// This allows up not to give List and Get right clusterwide
-	secretName := fmt.Sprintf(basicAuthSecretName, runevent.Owner, runevent.Repository)
+	secretName := fmt.Sprintf(basicAuthSecretName, strings.ToLower(runevent.Owner), strings.ToLower(runevent.Repository))
 	err = k.createSecret(ctx, secretData, targetNamespace, secretName)
 	if err != nil {
 		err = k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})

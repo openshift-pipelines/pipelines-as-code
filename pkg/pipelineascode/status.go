@@ -154,13 +154,13 @@ func postFinalStatus(ctx context.Context, cs *params.Run, k8int kubeinteraction.
 		fmt.Fprintf(&outputBuffer, "failed to execute template: ")
 		return pr, err
 	}
-
 	output := outputBuffer.String()
 	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
-		Status:     "completed",
-		Conclusion: pipelineRunStatus(pr),
-		Text:       output,
-		DetailsURL: consoleURL,
+		Status:          "completed",
+		Conclusion:      pipelineRunStatus(pr),
+		Text:            output,
+		PipelineRunName: pr.Name,
+		DetailsURL:      consoleURL,
 	}, false)
 
 	return pr, err
