@@ -1,0 +1,324 @@
+# Copyright 2021 Red Hat
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: pipelines-as-code-bitbucket-server-pullreq
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+spec:
+  params:
+    - name: "trigger_target"
+      value: "pull_request"
+
+    - name: "event_type"
+      value: "pull_request"
+
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: pipelines-as-code-bitbucket-server-pullreq-common
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+spec:
+  params:
+    - name: "toRefName"
+      value: $(body.pullRequest.toRef.displayId)
+
+    - name: "project_id"
+      value: $(body.pullRequest.toRef.repository.project.id)
+
+    - name: "project_key"
+      value: $(body.pullRequest.toRef.repository.project.key)
+
+    - name: "repository_name"
+      value: $(body.pullRequest.toRef.repository.name)
+
+    - name: "repository_id"
+      value: $(body.pullRequest.toRef.repository.id)
+
+    - name: "dest_repo_url"
+      value: $(body.pullRequest.toRef.repository.links.self[0].href)
+
+    # Yep this is not 'ideal', I am open for suggestions tho...
+    - name: "clone_url_http"
+      value: $(body.pullRequest.fromRef.repository.links.clone[0].href)
+
+    - name: "clone_url_ssh"
+      value: $(body.pullRequest.fromRef.repository.links.clone[1].href)
+
+    - name: "sender_id"
+      value: $(body.actor.id)
+
+    - name: "sender_name"
+      value: $(body.actor.name)
+
+    - name: "pull_request_number"
+      value: $(body.pullRequest.id)
+
+    - name: "pull_request_html_url"
+      value: $(body.pullRequest.links.self[0].href)
+
+    - name: "sha"
+      value: $(body.pullRequest.fromRef.latestCommit)
+
+    - name: "fromRefName"
+      value: $(body.pullRequest.fromRef.displayId)
+
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: pipelines-as-code-bitbucket-server-pullreq
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+spec:
+  params:
+    - name: trigger_target
+    - name: event_type
+    - name: project_key
+    - name: project_id
+    - name: repository_name
+    - name: repository_id
+    - name: dest_repo_url
+    - name: clone_url_http
+    - name: clone_url_ssh
+      default: ""
+    - name: sender_id
+    - name: sender_name
+    - name: toRefName
+    - name: pull_request_number
+    - name: pull_request_html_url
+    - name: sha
+    - name: fromRefName
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: pipelines-as-code-run-
+        labels:
+          app.kubernetes.io/managed-by: pipelines-as-code
+      spec:
+        serviceAccountName: pipelines-as-code-sa-el
+        params:
+          - name: trigger_target
+            value: $(tt.params.trigger_target)
+          - name: event_type
+            value: $(tt.params.event_type)
+          - name: project_key
+            value: $(tt.params.project_key)
+          - name: project_id
+            value: $(tt.params.project_id)
+          - name: repository_name
+            value: $(tt.params.repository_name)
+          - name: repository_id
+            value: $(tt.params.repository_id)
+          - name: dest_repo_url
+            value: $(tt.params.dest_repo_url)
+          - name: clone_url_http
+            value: $(tt.params.clone_url_http)
+          - name: clone_url_ssh
+            value: $(tt.params.clone_url_ssh)
+          - name: sender_id
+            value: $(tt.params.sender_id)
+          - name: sender_name
+            value: $(tt.params.sender_name)
+          - name: toRefName
+            value: $(tt.params.toRefName)
+          - name: pull_request_number
+            value: $(tt.params.pull_request_number)
+          - name: pull_request_html_url
+            value: $(tt.params.pull_request_html_url)
+          - name: sha
+            value: $(tt.params.sha)
+          - name: fromRefName
+            value: $(tt.params.fromRefName)
+        pipelineSpec:
+          params:
+            - name: trigger_target
+            - name: event_type
+            - name: project_key
+            - name: project_id
+            - name: repository_name
+            - name: repository_id
+            - name: dest_repo_url
+            - name: clone_url_http
+            - name: clone_url_ssh
+            - name: sender_id
+            - name: sender_name
+            - name: toRefName
+            - name: pull_request_number
+            - name: pull_request_html_url
+            - name: sha
+            - name: fromRefName
+          tasks:
+            - name: pipelines-as-code
+              taskSpec:
+                params:
+                  - name: trigger_target
+                    type: string
+                  - name: event_type
+                    type: string
+                  - name: project_key
+                    type: string
+                  - name: project_id
+                    type: string
+                  - name: repository_name
+                    type: string
+                  - name: repository_id
+                    type: string
+                  - name: dest_repo_url
+                    type: string
+                  - name: clone_url_http
+                    type: string
+                  - name: clone_url_ssh
+                    type: string
+                  - name: sender_id
+                    type: string
+                  - name: sender_name
+                    type: string
+                  - name: toRefName
+                    type: string
+                  - name: pull_request_number
+                    type: string
+                  - name: pull_request_html_url
+                    type: string
+                  - name: sha
+                    type: string
+                  - name: fromRefName
+                    type: string
+                steps:
+                  - name: apply-and-launch
+                    env:
+                      - name: PAC_APPLICATION_NAME
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: application-name
+                      - name: PAC_SECRET_AUTO_CREATE
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: secret-auto-create
+                      - name: PAC_WEBVCS_TYPE
+                        value: "bitbucket-server"
+                      - name: PAC_TRIGGER_TARGET
+                        value: "$(params.trigger_target)"
+                      - name: PAC_WEBHOOK_TYPE
+                        value: "$(params.event_type)"
+                      - name: PAC_PAYLOAD_FILE
+                        value: "/tmp/payload.json"
+                    imagePullPolicy: Always
+                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+                    script: |
+                      #!/usr/bin/env bash
+                      set -euf
+                      set +x
+                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
+                      {
+                          "actor": {
+                              "id": $(params.sender_id),
+                              "name": "$(params.sender_name)"
+                          },
+                          "pullRequest": {
+                              "id": $(params.pull_request_number),
+                              "toRef": {
+                                  "displayId": "$(params.toRefName)",
+                                  "repository": {
+                                      "id": $(params.repository_id),
+                                      "name": "$(params.repository_name)",
+                                      "project": {
+                                          "id": $(params.project_id),
+                                          "key": "$(params.project_key)"
+                                      },
+                                      "links": {
+                                          "self": [
+                                              {
+                                                  "href": "$(params.dest_repo_url)"
+                                              }
+                                          ]
+                                      }
+                                  }
+                              },
+                              "fromRef": {
+                                  "displayId": "$(params.fromRefName)",
+                                  "latestCommit": "$(params.sha)",
+                                  "repository": {
+                                    "links": {
+                                      "clone": [
+                                        {
+                                          "href": "$(params.clone_url_http)",
+                                          "name": "http"
+                                        },
+                                        {
+                                          "href": "$(params.clone_url_ssh)",
+                                          "name": "ssh"
+                                        }
+                                      ]
+                                    }
+                                  }
+                              },
+                              "links": {
+                                  "self": [
+                                      {
+                                          "href": "$(params.pull_request_html_url)"
+                                      }
+                                  ]
+                              }
+                          }
+                      }
+                      EOF
+                      env|grep '^PAC'
+                      pipelines-as-code
+              params:
+                - name: trigger_target
+                  value: $(params.trigger_target)
+                - name: event_type
+                  value: $(params.event_type)
+                - name: project_key
+                  value: $(params.project_key)
+                - name: project_id
+                  value: $(params.project_id)
+                - name: repository_name
+                  value: $(params.repository_name)
+                - name: repository_id
+                  value: $(params.repository_id)
+                - name: dest_repo_url
+                  value: $(params.dest_repo_url)
+                - name: clone_url_http
+                  value: $(params.clone_url_http)
+                - name: clone_url_ssh
+                  value: $(params.clone_url_ssh)
+                - name: sender_id
+                  value: $(params.sender_id)
+                - name: sender_name
+                  value: $(params.sender_name)
+                - name: toRefName
+                  value: $(params.toRefName)
+                - name: pull_request_number
+                  value: $(params.pull_request_number)
+                - name: pull_request_html_url
+                  value: $(params.pull_request_html_url)
+                - name: sha
+                  value: $(params.sha)
+                - name: fromRefName
+                  value: $(params.fromRefName)

@@ -36,7 +36,7 @@ Pipelines as Code features:
 
 - `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
 
-- Bitbucket Cloud and Github Webhook support.
+- Bitbucket Server, Bitbucket Cloud and Github Webhook support.
 
 ## Installation Guide
 
@@ -53,7 +53,7 @@ and follow the questions and installation methods which will install Pipelines a
 
 feel free to look over the `--help` to see the different options on how to install for example on Github Enteprise.
 
-This 10 minute video will guide you thought the `tkn-pac bootstrap` flow : 
+This 10 minute video will guide you thought the `tkn-pac bootstrap` flow :
 
 [![Getting started to Pipelines as Code](https://img.youtube.com/vi/ytm3brml8is/0.jpg)](https://www.youtube.com/watch?v=ytm3brml8is)
 
@@ -98,7 +98,7 @@ PipelineRuns for your GitHub repository should run. It also generates an example
 Commit and push the pipeline to your repo to start using pipelines as code.
 
 Note that even if Github application is the preferred method, Pipeline As Code
-supports Github Webhook and Bitbucket Cloud as well, see the [INSTALL guide](docs/INSTALL.md) for
+supports Github Webhook and Bitbucket Server/Cloud as well, see the [INSTALL guide](docs/INSTALL.md) for
 reference
 
 ## Usage Guide

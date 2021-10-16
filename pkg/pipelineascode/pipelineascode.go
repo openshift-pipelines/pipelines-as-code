@@ -128,7 +128,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		"url", cs.Info.Event.URL,
 		"branch", cs.Info.Event.BaseBranch,
 		"sha", cs.Info.Event.SHA,
-		"event_type", "pull_request")
+		"event_type", cs.Info.Event.EventType)
 
 	// Replace those {{var}} placeholders user has in her template to the cs.Info variable
 	allTemplates = processTemplates(cs.Info.Event, allTemplates)

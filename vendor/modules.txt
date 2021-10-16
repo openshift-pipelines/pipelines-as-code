@@ -94,6 +94,9 @@ github.com/emicklei/go-restful/log
 github.com/evanphx/json-patch
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
+# github.com/gfleury/go-bitbucket-v1 v0.0.0-20210826163055-dff2223adeac
+## explicit
+github.com/gfleury/go-bitbucket-v1
 # github.com/ghodss/yaml v1.0.0
 github.com/ghodss/yaml
 # github.com/go-logr/logr v0.4.0

@@ -163,7 +163,6 @@ spec:
         - ref:
             name: "bitbucket"
           params:
-            # TODO: secrets! this should come from Repository CRD so we need to do this from the pac binary :\
             - name: eventTypes
               value:
                 - pullrequest:created
@@ -194,7 +193,7 @@ spec:
         # Using the templateRef from retest since they are mostly the same
         ref: pipelines-as-code-bitbucket-cloud-pullreq
 
-    - name: bitbucket-cloud-issue-retest-test
+    - name: bitbucket-cloud-issue-retest
       interceptors:
         - ref:
             name: "bitbucket"
@@ -224,9 +223,106 @@ spec:
         - ref:
             name: "bitbucket"
           params:
-            # TODO: secrets! this should come from Repository CRD so we need to do this from the pac binary :\
             - name: eventTypes
               value:
                 - repo:push
       template:
         ref: pipelines-as-code-bitbucket-cloud-push
+
+    # Bitbucket Server event when sending a new Pull Request
+    - name: bitbucket-server-pull-request
+      bindings:
+        - ref: pipelines-as-code-bitbucket-server-pullreq-common
+        - ref: pipelines-as-code-bitbucket-server-pullreq
+      interceptors:
+        - ref:
+            name: "bitbucket"
+          params:
+            - name: secretRef
+              value:
+                secretName: "pipelines-as-code-secret"
+                secretKey: "webhook.secret"
+            - name: eventTypes
+              value:
+                - pr:from_ref_updated
+                - pr:opened
+      template:
+        ref: pipelines-as-code-bitbucket-server-pullreq
+
+    - name: bitbucket-server-push
+      interceptors:
+        - ref:
+            name: "bitbucket"
+          params:
+            - name: "secretRef"
+              value:
+                secretName: "pipelines-as-code-secret"
+                secretKey: "webhook.secret"
+            - name: "eventTypes"
+              value: ["repo:refs_changed"]
+        - name: "Branch Push"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                'changes' in body
+      bindings:
+        - ref: pipelines-as-code-bitbucket-server-push
+      template:
+        ref: pipelines-as-code-bitbucket-server-push
+
+    # When you have a /ok-to-test in a comment to allow CI on a non owner sender
+    - name: bitbucket-server-issue-comment-ok-to-test
+      interceptors:
+        - ref:
+            name: bitbucket
+          params:
+            - name: secretRef
+              value:
+                secretName: "pipelines-as-code-secret"
+                secretKey: "webhook.secret"
+            - name: eventTypes
+              value:
+                - pr:comment:added
+                - pr:comment:edited
+        - name: "Handle /ok-to-test comment in issue"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                  body.comment.text.matches('(^|\\r\\n)/ok-to-test([ ]*$|$|\\r\\n)')
+      bindings:
+        - ref: pipelines-as-code-bitbucket-server-ok-to-test-comment
+        - ref: pipelines-as-code-bitbucket-server-pullreq-common
+      template:
+        # Using the templateRef from retest since they are mostly the same
+        ref: pipelines-as-code-bitbucket-server-pullreq
+
+    # When you have a /retest in a comment to let CI "rekick"
+    - name: bitbucket-server-issue-comment-retest
+      interceptors:
+        - ref:
+            name: bitbucket
+          params:
+            - name: "secretRef"
+              value:
+                secretName: "pipelines-as-code-secret"
+                secretKey: "webhook.secret"
+            - name: eventTypes
+              value:
+                - pr:comment:added
+        - name: "Handle /retest comment in issue"
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                  body.comment.text.matches('(^|\\r\\n)/retest([ ]*$|$|\\r\\n)')
+      bindings:
+        - ref: pipelines-as-code-bitbucket-server-retest-comment
+        - ref: pipelines-as-code-bitbucket-server-pullreq-common
+      template:
+        # Using the templateRef from retest since they are mostly the same
+        ref: pipelines-as-code-bitbucket-server-pullreq
