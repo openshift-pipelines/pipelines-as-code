@@ -16,10 +16,6 @@ The goal of Pipelines as Code is to let you define your
 [Tekton](https://tekton.cd) templates inside your source code repository and have the pipeline run and report the status
 of the execution when triggered by a Pull Request or a Push.
 
-Here is a video on how to get started with the tkn pac cli and its bootstrap command :
-
-[![Getting started to Pipelines as Code](https://img.youtube.com/vi/ytm3brml8is/0.jpg)](https://www.youtube.com/watch?v=ytm3brml8is)
-
 Pipelines as Code features:
 
 - Pull-request status support: When iterating over a Pull Request, status and control is done on the platform.
@@ -38,7 +34,9 @@ Pipelines as Code features:
 
 - ACL over a GitHub organization or via a Prow style [`OWNER`](https://www.kubernetes.dev/docs/guide/owners/) file.
 
-- `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping
+- `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
+
+- Bitbucket Cloud and Github Webhook support.
 
 ## Installation Guide
 
@@ -51,12 +49,15 @@ Connected to your cluster launch the command :
 ```bash
 -$ tkn pac bootstrap
 ```
-
 and follow the questions and installation methods which will install Pipelines as Code on cluster and help you create a Github Application.
 
-feel free to look over the `--help` to see the different options for example installing on Github Enteprise.
+feel free to look over the `--help` to see the different options on how to install for example on Github Enteprise.
 
-For more detailled installation method please follow [this document](docs/INSTALL.md) for installing Pipelines as Code on OpenShift.
+This 10 minute video will guide you thought the `tkn-pac bootstrap` flow : 
+
+[![Getting started to Pipelines as Code](https://img.youtube.com/vi/ytm3brml8is/0.jpg)](https://www.youtube.com/watch?v=ytm3brml8is)
+
+For more details on the different installation method please follow [this document](docs/INSTALL.md) for installing Pipelines as Code on OpenShift.
 
 ## Getting Started
 
