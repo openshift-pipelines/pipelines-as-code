@@ -353,21 +353,18 @@ to have the tkn-pac plugin and its completion installed :
 brew install openshift-pipelines/pipelines-as-code/tektoncd-pac
 ```
 
-You simply need to do a :
+and simply upgrade with : 
 
 ```shell
 brew upgrade openshift-pipelines/pipelines-as-code/tektoncd-pac
 ```
 
-to upgrade to the latest released version.
-
 ### Container
 
-`tkn-pac` is as well available inside the container image :
-
-or from the container image user docker/podman:
+`tkn-pac` is as well available as a container :
 
 ```shell
-docker run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
+# use docker
+podman run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
      -it quay.io/openshift-pipeline/pipelines-as-code tkn-pac help
 ```
