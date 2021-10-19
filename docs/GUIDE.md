@@ -314,12 +314,15 @@ If the object fetched cannot be parsed as a Tekton `Task` it will error out.
 
 - A user create a Pull Request.
 
+- Pipelines as Code picks the event and matches to a Repo CRD installed on the
+  cluster.
+
 - The user would only be allowed to run the CI if :
   - The user is the owner of the repository.
   - The user is a collaborator on the repository.
   - The user is a public member on the organization of the repository.
 
-- If the user sending the Pull Request is inside an OWNER file located in the
+- If the user is sending the Pull Request is inside an OWNER file located in the
   repository root on the main branch (the main branch as defined in the Github
   configuration for the repo) and added to either `approvers` or `reviewers`
   sections like this :
