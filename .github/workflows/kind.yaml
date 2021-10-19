@@ -4,7 +4,6 @@ on:
   workflow_dispatch: # yamllint disable-line
   push: # yamllint disable-line
   pull_request: # yamllint disable-line
-  tags: # yamllint disable-line
 jobs:
   e2e-tests:
     name: e2e tests
