@@ -314,14 +314,15 @@ If the object fetched cannot be parsed as a Tekton `Task` it will error out.
 
 - A user create a Pull Request.
 
-- If the user sending the Pull Request is not the owner of the repository or not
-  a public member of the organization where the repository belong to, `Pipelines
-  as Code` will not run.
+- The user would only be allowed run the CI if :
+  - The user is the owner of the repository.
+  - The user is a collaborator on the repository.
+  - The user is a public member on the organization of the repository.
 
 - If the user sending the Pull Request is inside an OWNER file located in the
-  repository root in the main branch (the main branch as defined in the Github
-  configuration for the repo) in the `approvers` or `reviewers` section like
-  this :
+  repository root on the main branch (the main branch as defined in the Github
+  configuration for the repo) and added to either `approvers` or `reviewers`
+  sections like this :
 
 ```yaml
 approvers:
@@ -330,21 +331,21 @@ approvers:
 
 then the user `approved` will be allowed.
 
-If the sender of a PR is not allowed to run CI but one of allowed user issue a
-`/ok-to-test` in any line of a comment the PR will be allowed to run CI.
+- If the sender of a PR is not allowed to run CI but one of allowed user issue a
+  `/ok-to-test` in any line of a comment the PR will be allowed to run CI.
 
-If the user is allowed, `Pipelines as Code` will start creating the
+- If the user is allowed, `Pipelines as Code` will start creating the
 `PipelineRun` in the target user namespace.
 
-The user can follow the execution of your pipeline with the
+- The user can follow the execution of your pipeline with the
 [tkn](https://github.com/tektoncd/cli) cli :
 
 ```bash
 tkn pr logs -n my-pipeline-ci -Lf
 ```
 
-Or via your kubernetes UI like the OpenShift console inside your namespace to
-follow the pipelinerun execution.
+Or with the OpenShift console inside your namespace to follow the pipelinerun
+execution via the URL provided on the "Checks" tab if you run with Github App.
 
 ## Status
 
