@@ -163,6 +163,7 @@ jobs:
 
       - name: Run E2E Tests
         run: |
+          cat <<EOF>/tmp/a.env
           export TEST_GITHUB_API_URL=api.github.com
           export TEST_GITHUB_REPO_OWNER_GITHUBAPP=openshift-pipelines/pipelines-as-code-e2e-tests
           export TEST_GITHUB_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
@@ -174,15 +175,15 @@ jobs:
           export TEST_BITBUCKET_CLOUD_USER=chmouelb
           export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=chmouelb/pac-e2e-test
           export TEST_BITBUCKET_CLOUD_TOKEN=${{ secrets.BITBUCKET_CLOUD_TOKEN }}
-
-          make test-e2e
+          EOF
+          #make test-e2e
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Collect logs
         if: ${{ always() }}
         run: |
           mkdir -p /tmp/logs
           kind export logs /tmp/logs
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
       - name: Upload artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
