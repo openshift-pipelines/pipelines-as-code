@@ -70,6 +70,9 @@ func TestOkToTestComment(t *testing.T) {
 			mux.HandleFunc("/repos/owner/issues/1/comments", func(rw http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(rw, tt.commentsReply)
 			})
+			mux.HandleFunc("/repos/owner/collaborators", func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(rw, "[]")
+			})
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gvcs := VCS{
 				Client: fakeclient,
@@ -93,6 +96,9 @@ func TestAclCheckAll(t *testing.T) {
 
 	orgallowed := "allowed"
 	orgdenied := "denied"
+	collabOwner := "collab"
+	collabRepo := "collabRepo"
+	collaborator := "collaborator"
 	repoOwnerFileAllowed := "repoOwnerAllowed"
 
 	errit := "err"
@@ -105,6 +111,10 @@ func TestAclCheckAll(t *testing.T) {
 		fmt.Fprint(rw, `[]`)
 	})
 
+	mux.HandleFunc("/repos/"+orgdenied+"/collaborators", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(rw, `[]`)
+	})
+
 	mux.HandleFunc("/orgs/"+errit+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(rw, `x1x`)
 	})
@@ -112,13 +122,19 @@ func TestAclCheckAll(t *testing.T) {
 	mux.HandleFunc("/orgs/"+repoOwnerFileAllowed+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(rw, `[]`)
 	})
-
+	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/collaborators", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(rw, `[]`)
+	})
 	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/contents/OWNERS", func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(rw, `{"name": "OWNERS", "path": "OWNERS", "sha": "ownerssha"}`)
 	})
 
 	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/git/blobs/ownerssha", func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(rw, `{"content": "%s"}`, base64.RawStdEncoding.EncodeToString([]byte("approvers:\n  - approved\n")))
+	})
+
+	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/collaborators", collabOwner, collabRepo), func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(rw, `[{"login": "%s"}]`, collaborator)
 	})
 
 	ctx, _ := rtesting.SetupFakeContext(t)
@@ -155,6 +171,16 @@ func TestAclCheckAll(t *testing.T) {
 			runevent: info.Event{
 				Owner:  orgallowed,
 				Sender: "allowed",
+			},
+			allowed: true,
+			wantErr: false,
+		},
+		{
+			name: "sender allowed since collaborator on repo",
+			runevent: info.Event{
+				Owner:      collabOwner,
+				Repository: collabRepo,
+				Sender:     collaborator,
 			},
 			allowed: true,
 			wantErr: false,
