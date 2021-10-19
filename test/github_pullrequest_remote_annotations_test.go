@@ -105,7 +105,6 @@ func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 
 	assert.Equal(t, "pull_request", pr.Labels["pipelinesascode.tekton.dev/event-type"])
 	assert.Equal(t, repo.GetName(), pr.Labels["pipelinesascode.tekton.dev/repository"])
-	assert.Equal(t, opts.Owner, pr.Labels["pipelinesascode.tekton.dev/sender"])
 	assert.Equal(t, sha, pr.Labels["pipelinesascode.tekton.dev/sha"])
 	assert.Equal(t, opts.Owner, pr.Labels["pipelinesascode.tekton.dev/url-org"])
 	assert.Equal(t, opts.Repo, pr.Labels["pipelinesascode.tekton.dev/url-repository"])

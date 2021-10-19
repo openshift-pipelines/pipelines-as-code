@@ -76,8 +76,15 @@ func (v *VCS) aclCheckAll(ctx context.Context, rev *info.Event) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
 	if isUserMemberRepo {
+		return true, nil
+	}
+
+	checkSenderRepoMembership, err := v.checkSenderRepoMembership(ctx, rev)
+	if err != nil {
+		return false, err
+	}
+	if checkSenderRepoMembership {
 		return true, nil
 	}
 
@@ -102,6 +109,29 @@ func (v *VCS) checkSenderOrgMembership(ctx context.Context, runevent *info.Event
 		&github.ListMembersOptions{
 			PublicOnly: true, // We can't list private member in a org
 		})
+	// If we are 404 it means we are checking a repo owner and not a org so let's bail out with grace
+	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
+
+	if err != nil {
+		return false, err
+	}
+	for _, v := range users {
+		if v.GetLogin() == runevent.Sender {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// checkSenderRepoMembership check if user is allowed to run CI
+func (v *VCS) checkSenderRepoMembership(ctx context.Context, runevent *info.Event) (bool, error) {
+	users, resp, err := v.Client.Repositories.ListCollaborators(ctx,
+		runevent.Owner,
+		runevent.Repository,
+		&github.ListCollaboratorsOptions{})
 	// If we are 404 it means we are checking a repo owner and not a org so let's bail out with grace
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
 		return false, nil
