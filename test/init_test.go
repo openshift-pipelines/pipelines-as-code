@@ -67,7 +67,7 @@ func bitbucketCloudSetup(ctx context.Context) (*params.Run, E2EOptions, bitbucke
 		"BITBUCKET_CLOUD_TOKEN", "BITBUCKET_CLOUD_E2E_REPOSITORY", "BITBUCKET_CLOUD_API_URL",
 	} {
 		if env := os.Getenv("TEST_" + value); env == "" {
-			return nil, E2EOptions{}, bitbucketcloud.VCS{}, fmt.Errorf("\"TEST_%s\" env variable is required, cannot continue", value)
+			return nil, E2EOptions{}, bitbucketcloud.VCS{}, fmt.Errorf("\"TEST_%s\" env variable is required, skipping", value)
 		}
 	}
 
@@ -100,8 +100,11 @@ func githubSetup(ctx context.Context, viaDirectWebhook bool) (*params.Run, E2EOp
 	githubRepoOwnerDirectWebhook := os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK")
 
 	for _, value := range []string{
-		"EL_URL", "GITHUB_API_URL", "GITHUB_TOKEN",
-		"GITHUB_REPO_OWNER_WEBHOOK", "GITHUB_REPO_OWNER_GITHUBAPP", "EL_WEBHOOK_SECRET",
+		"EL_URL",
+		"GITHUB_API_URL",
+		"GITHUB_TOKEN",
+		"GITHUB_REPO_OWNER_GITHUBAPP",
+		"EL_WEBHOOK_SECRET",
 	} {
 		if env := os.Getenv("TEST_" + value); env == "" {
 			return nil, E2EOptions{}, github.VCS{}, fmt.Errorf("\"TEST_%s\" env variable is required, cannot continue", value)

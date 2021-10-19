@@ -29,7 +29,10 @@ func TestGithubPullRequest(t *testing.T) {
 	for _, onWebhook := range []bool{false, true} {
 		targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 		ctx := context.Background()
-
+		if onWebhook && os.Getenv("GITHUB_REPO_OWNER_WEBHOOK") == "" {
+			t.Skip("GITHUB_REPO_OWNER_WEBHOOK is not set")
+			continue
+		}
 		runcnx, opts, ghvcs, err := githubSetup(ctx, onWebhook)
 		assert.NilError(t, err)
 		if onWebhook {

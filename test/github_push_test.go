@@ -6,6 +6,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"os"
 	"testing"
 
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
@@ -21,6 +22,10 @@ func TestGithubPush(t *testing.T) {
 		targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-push")
 		targetBranch := targetNS
 		targetEvent := "push"
+		if onWebhook && os.Getenv("GITHUB_REPO_OWNER_WEBHOOK") == "" {
+			t.Skip("GITHUB_REPO_OWNER_WEBHOOK is not set")
+			continue
+		}
 
 		ctx := context.Background()
 		runcnx, opts, gvcs, err := githubSetup(ctx, onWebhook)

@@ -27,8 +27,10 @@ func TestBitbucketCloudPullRequest(t *testing.T) {
 	ctx := context.Background()
 
 	runcnx, opts, bcvcs, err := bitbucketCloudSetup(ctx)
-	assert.NilError(t, err)
-
+	if err != nil {
+		t.Skip(err.Error())
+		return
+	}
 	bcrepo := createBitbucketRepoCRD(ctx, t, bcvcs, runcnx, opts, targetNS, pullRequestEvent, mainBranch)
 	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
 	title := "TestPullRequest - " + targetRefName
