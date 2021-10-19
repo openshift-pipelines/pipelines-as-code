@@ -75,6 +75,9 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 		`{"sha": "internaltasksha"}`)
 
 	replyString(mux,
+		fmt.Sprintf("/repos/%s/%s/collaborators", runevent.Owner, runevent.Repository), `[]`)
+
+	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/statuses/%s", runevent.Owner, runevent.Repository, runevent.SHA),
 		"{}")
 
