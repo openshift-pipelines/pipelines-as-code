@@ -24,6 +24,8 @@ jobs:
         with:
           go-version: 1.17.x
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/cache@v2
         with:
           path: |
@@ -164,11 +166,15 @@ jobs:
           export TEST_GITHUB_API_URL=api.github.com
           export TEST_GITHUB_REPO_OWNER_GITHUBAPP=openshift-pipelines/pipelines-as-code-e2e-tests
           export TEST_GITHUB_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
-
           export TEST_GITHUB_TOKEN="${{ secrets.GH_APPS_TOKEN }}"
           export TEST_EL_WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"
           export TEST_GITHUB_REPO_INSTALLATION_ID="${{ secrets.INSTALLATION_ID }}"
           export TEST_EL_URL="http://${EL_NAME}"
+          export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0
+          export TEST_BITBUCKET_CLOUD_USER=chmouelb
+          export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=chmouelb/pac-e2e-test
+          export TEST_BITBUCKET_CLOUD_TOKEN=${{ secrets.BITBUCKET_CLOUD_TOKEN }}
+
           make test-e2e
       - name: Collect logs
         if: ${{ always() }}
