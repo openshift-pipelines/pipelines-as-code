@@ -1,0 +1,186 @@
+name: KinD e2e tests
+
+on:
+  workflow_dispatch: # yamllint disable-line
+  push: # yamllint disable-line
+  pull_request: # yamllint disable-line
+  tags: # yamllint disable-line
+jobs:
+  e2e-tests:
+    name: e2e tests
+    runs-on: ubuntu-latest
+    env:
+      # https://github.com/google/go-containerregistry/pull/125 allows insecure registry for
+      # '*.local' hostnames. This works both for `ko` and our own tag-to-digest resolution logic,
+      # thus allowing us to test without bypassing tag-to-digest resolution.
+      REGISTRY_NAME: registry.local
+      REGISTRY_PORT: 5000
+      KO_DOCKER_REPO: registry.local:5000/ko
+      EL_NAME: kind.pac
+      TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
+      # TEST_GITHUB_REPO_OWNER_WEBHOOK: pac/pac-test-webhooks
+
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.17.x
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/.cache/pip
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Install ko
+        run: curl -sfL https://github.com/google/ko/releases/download/v0.9.3/ko_0.9.3_Linux_x86_64.tar.gz -o-|tar xvzf - -C /usr/local/bin ko
+
+      - name: Configure KinD Cluster
+        run: |
+          # KinD configuration.
+          cat > kind.yaml <<EOF
+          apiVersion: kind.x-k8s.io/v1alpha4
+          kind: Cluster
+          nodes:
+          # configure ports for ambassador
+          - role: control-plane
+            kubeadmConfigPatches:
+            - |
+              kind: InitConfiguration
+              nodeRegistration:
+                kubeletExtraArgs:
+                  node-labels: "ingress-ready=true"
+            extraPortMappings:
+            - containerPort: 80
+              hostPort: 80
+              protocol: TCP
+          # Configure registry for KinD.
+          containerdConfigPatches:
+          - |-
+            [plugins."io.containerd.grpc.v1.cri".registry.mirrors."$REGISTRY_NAME:$REGISTRY_PORT"]
+              endpoint = ["http://$REGISTRY_NAME:$REGISTRY_PORT"]
+          EOF
+      - uses: helm/kind-action@v1.2.0
+        with:
+          cluster_name: kind
+          config: kind.yaml
+
+      - name: Setup local registry
+        run: |
+          # Run a registry.
+          docker run -d --restart=always \
+            -p $REGISTRY_PORT:$REGISTRY_PORT --name $REGISTRY_NAME registry:2
+
+          # Connect the registry to the KinD network.
+          docker network connect "kind" $REGISTRY_NAME
+
+          # Make the $REGISTRY_NAME -> 127.0.0.1, to tell `ko` to publish to
+          # local reigstry, even when pushing $REGISTRY_NAME:$REGISTRY_PORT/some/image
+          sudo echo "127.0.0.1 $REGISTRY_NAME" | sudo tee -a /etc/hosts
+
+      - name: Wait for ready nodes
+        run: |
+          kubectl wait --timeout=2m --for=condition=Ready nodes --all
+
+      - name: Install ambassador
+        run: |
+          kubectl create ns ambassador && sleep 5
+          kubectl apply -f https://github.com/datawire/ambassador-operator/releases/latest/download/ambassador-operator-crds.yaml
+          kubectl apply -n ambassador -f https://github.com/datawire/ambassador-operator/releases/latest/download/ambassador-operator-kind.yaml
+          kubectl wait --timeout=180s -n ambassador --for=condition=deployed ambassadorinstallations/ambassador
+
+      - name: Install Tekton
+        run: |
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml
+          kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/latest/tekton-dashboard-release.yaml
+
+      - name: Wait for Tekton to be installed
+        run: |
+          i=0
+          for tt in pipelines triggers;do
+            while true;do
+              [[ ${i} == 120 ]] && exit 1
+              ep=$(kubectl get ep -n tekton-pipelines tekton-${tt}-webhook -o jsonpath='{.subsets[*].addresses[*].ip}')
+              [[ -n ${ep} ]] && break
+              sleep 2
+              i=$((i+1))
+            done
+          done
+
+      - name: Apply config with KO
+        run: |
+          # Test with kind load
+          ko apply -f ./config
+
+      - name: Create Ambassador Route
+        run: |
+          sudo echo "127.0.0.1 $EL_NAME" | sudo tee -a /etc/hosts
+          cat <<EOF | kubectl apply -f-
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: kind.pipelines.devcluster.openshift.com-ingress
+            namespace: pipelines-as-code
+            annotations:
+              kubernetes.io/ingress.class: "ambassador"
+          spec:
+            rules:
+            - host: "${EL_NAME}"
+              http:
+                paths:
+                - path: /
+                  pathType: Exact
+                  backend:
+                    service:
+                      name: el-pipelines-as-code-interceptor
+                      port:
+                        number: 8080
+          EOF
+      - name: Wait that the ingress host is up
+        run: |
+          for i in {1..60};do
+            curl -s --fail-early -L http://kind.pac/|grep -q pipelines-as-code && break
+            sleep 2
+          done
+
+      - name: Create PAC github-app-secret
+        run: |
+          kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
+            --from-literal github-private-key="${{ secrets.APP_PRIVATE_KEY }}" \
+            --from-literal github-application-id=${{ secrets.APPLICATION_ID }} \
+            --from-literal webhook.secret=${{ secrets.WEBHOOK_SECRET }}
+
+      - name: Install and Run pysmee
+        run: |
+          pip3 install pysmee
+          set -x
+          nohup pysmee forward ${{ secrets.PYSMEE_URL }} http://${EL_NAME} &
+
+      - name: Run E2E Tests
+        run: |
+          export TEST_GITHUB_API_URL=api.github.com
+          export TEST_GITHUB_REPO_OWNER_GITHUBAPP=openshift-pipelines/pipelines-as-code-e2e-tests
+          export TEST_GITHUB_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
+
+          export TEST_GITHUB_TOKEN="${{ secrets.GH_APPS_TOKEN }}"
+          export TEST_EL_WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"
+          export TEST_GITHUB_REPO_INSTALLATION_ID="${{ secrets.INSTALLATION_ID }}"
+          export TEST_EL_URL="http://${EL_NAME}"
+          make test-e2e
+      - name: Collect logs
+        if: ${{ always() }}
+        run: |
+          mkdir -p /tmp/logs
+          kind export logs /tmp/logs
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+      - name: Upload artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: /tmp/logs
