@@ -131,12 +131,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		"event_type", "pull_request")
 
 	// Replace those {{var}} placeholders user has in her template to the cs.Info variable
-	allTemplates = ReplacePlaceHoldersVariables(allTemplates, map[string]string{
-		"revision":   cs.Info.Event.SHA,
-		"repo_url":   cs.Info.Event.URL,
-		"repo_owner": cs.Info.Event.Owner,
-		"repo_name":  cs.Info.Event.Repository,
-	})
+	allTemplates = processTemplates(cs.Info.Event, allTemplates)
 
 	ropt := &resolve.Opts{
 		GenerateName: true,
@@ -186,10 +181,11 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(),
 		repo.GetNamespace(), consoleURL, repo.GetNamespace(), pr.GetName())
 	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
-		Status:     "in_progress",
-		Conclusion: "pending",
-		Text:       msg,
-		DetailsURL: consoleURL,
+		Status:          "in_progress",
+		Conclusion:      "pending",
+		Text:            msg,
+		DetailsURL:      consoleURL,
+		PipelineRunName: pr.GetName(),
 	}, false)
 	if err != nil {
 		return err
@@ -292,6 +288,9 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 
 	if repo.Spec.WebvcsAPIURL == "" {
 		repo.Spec.WebvcsAPIURL = config.APIURL
+	} else {
+		cs.Info.Pac.VCSAPIURL = repo.Spec.WebvcsAPIURL
+		cs.Clients.Log.Infof("Using API URL %s", repo.Spec.WebvcsAPIURL)
 	}
 
 	cs.Info.Pac.VCSUser = repo.Spec.WebvcsAPIUser
