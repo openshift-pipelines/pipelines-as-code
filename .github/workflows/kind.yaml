@@ -1,9 +1,9 @@
-name: KinD e2e tests
-
+name: E2E Tests
 on:
   workflow_dispatch: # yamllint disable-line
   push: # yamllint disable-line
-  pull_request: # yamllint disable-line
+  pull_request_target:
+    types: [opened, synchronize, reopened]
 jobs:
   e2e-tests:
     name: e2e tests
