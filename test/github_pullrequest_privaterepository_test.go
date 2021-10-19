@@ -17,8 +17,8 @@ import (
 
 func TestGithubPullRequestPrivateRepository(t *testing.T) {
 	for _, onWebhook := range []bool{false, true} {
-		if onWebhook && os.Getenv("GITHUB_REPO_OWNER_WEBHOOK") == "" {
-			t.Skip("GITHUB_REPO_OWNER_WEBHOOK is not set")
+		if onWebhook && os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
+			t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
 			continue
 		}
 		targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
