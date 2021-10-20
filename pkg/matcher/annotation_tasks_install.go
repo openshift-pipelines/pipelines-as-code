@@ -27,8 +27,7 @@ func (rt RemoteTasks) convertTotask(data string) (*tektonv1beta1.Task, error) {
 	decoder := k8scheme.Codecs.UniversalDeserializer()
 	obj, _, err := decoder.Decode([]byte(data), nil, nil)
 	if err != nil {
-		// TODO: Better debug information
-		return nil, fmt.Errorf("we have a task that is not looking like a kubernetes resource: %w", err)
+		return nil, fmt.Errorf("we have a task that is not looking like a kubernetes resource: task: %s resource: %w", data, err)
 	}
 
 	return obj.(*tektonv1beta1.Task), nil
