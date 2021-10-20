@@ -6,7 +6,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-const OKToTestCommentRegexp = `(^|\n)/ok-to-test(\r\n|$)`
+const OKToTestCommentRegexp = `(^|\n)\/ok-to-test(\r\n|\r|\n|$)`
 
 // ownersConfig prow owner, only supporting approvers or reviewers in yaml
 type ownersConfig struct {
