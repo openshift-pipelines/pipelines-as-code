@@ -77,7 +77,7 @@ func askQuestions(opts *bootstrapOpts) error {
 
 	if opts.RouteName != "" {
 		answer, err := askYN(opts, true,
-			fmt.Sprintf("👀 We have detected an OpenShift Route on: %s", opts.RouteName),
+			fmt.Sprintf("👀 I have detected an OpenShift Route on: %s", opts.RouteName),
 			"Do you want me to use it?")
 		if err != nil {
 			return err
