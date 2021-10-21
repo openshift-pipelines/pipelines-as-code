@@ -1,0 +1,28 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pr-test1
+spec:
+  pipelineRef:
+    name: pipeline-test1
+  params:
+    - name: key
+      value: "{{value}}"
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-test1
+spec:
+  params:
+    - name: repo_url
+    - name: revision
+  tasks:
+    - name: clustertask
+      taskRef:
+        name: foo
+        kind: ClusterTask
+  steps:
+    - name: first-step
+      image: image
