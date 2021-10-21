@@ -1,6 +1,50 @@
 package acl
 
-import "testing"
+import (
+	"testing"
+
+	"gotest.tools/v3/assert"
+)
+
+func TestRegexp(t *testing.T) {
+	tests := []struct {
+		name    string
+		text    string
+		matched bool
+	}{
+		{
+			name:    "bad/match regexp",
+			text:    "foo bar",
+			matched: false,
+		},
+		{
+			name:    "good/match regexp",
+			text:    "/ok-to-test",
+			matched: true,
+		},
+		{
+			name:    "good/match regexp newline",
+			text:    "\n/ok-to-test",
+			matched: true,
+		},
+		{
+			name:    "bad/match regexp newline space",
+			text:    "\n /ok-to-test",
+			matched: false,
+		},
+		{
+			name:    "good/in the middle",
+			text:    "foo bar\n/ok-to-test\nhello moto",
+			matched: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			matched := MatchRegexp(OKToTestCommentRegexp, tt.text)
+			assert.Equal(t, tt.matched, matched)
+		})
+	}
+}
 
 func TestUserInOwnerFile(t *testing.T) {
 	type args struct {
