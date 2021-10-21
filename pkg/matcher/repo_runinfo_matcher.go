@@ -33,7 +33,7 @@ func GetRepoByCR(ctx context.Context, cs *params.Run, ns string) (*apipac.Reposi
 	for i := len(repositories.Items) - 1; i >= 0; i-- {
 		repo := repositories.Items[i]
 		matches = append(matches,
-			fmt.Sprintf("RepositoryValue: URL=%s, eventType=%s BaseBranch:=%s", repo.Spec.URL,
+			fmt.Sprintf("RepositoryValue: URL=%s, eventType=%s BaseBranch=%s", repo.Spec.URL,
 				repo.Spec.EventType, repo.Spec.Branch))
 
 		if repo.Spec.URL == cs.Info.Event.URL &&
