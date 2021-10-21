@@ -81,7 +81,9 @@ func inlineTasks(tasks []tektonv1beta1.PipelineTask, ropt *Opts, types Types) ([
 	error) {
 	pipelineTasks := []tektonv1beta1.PipelineTask{}
 	for _, task := range tasks {
-		if task.TaskRef != nil && task.TaskRef.Bundle == "" && !skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
+		if task.TaskRef != nil && task.TaskRef.Bundle == "" &&
+			string(task.TaskRef.Kind) != "ClusterTask" &&
+			!skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
 			taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
 			if err != nil {
 				return nil, err
