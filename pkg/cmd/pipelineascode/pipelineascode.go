@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/bitbucketcloud"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/bitbucketserver"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -74,11 +75,14 @@ func getPayloadFromFile(opts *info.PacOpts) (string, error) {
 func getVCS(pacopts *info.PacOpts) (webvcs.Interface, error) {
 	switch pacopts.WebhookType {
 	case "github":
-		g := &github.VCS{}
-		return g, nil
+		v := &github.VCS{}
+		return v, nil
 	case "bitbucket-cloud":
-		g := &bitbucketcloud.VCS{}
-		return g, nil
+		v := &bitbucketcloud.VCS{}
+		return v, nil
+	case "bitbucket-server":
+		v := &bitbucketserver.VCS{}
+		return v, nil
 	default:
 		return nil, fmt.Errorf("no supported VCS is detected")
 	}

@@ -1,0 +1,226 @@
+# Copyright 2021 Red Hat
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: pipelines-as-code-bitbucket-server-push
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+spec:
+  params:
+    - name: "event_type"
+      value: "push"
+    - name: "trigger_target"
+      value: "push"
+    - name: "owner"
+      value: $(body.repository.project.key)
+    - name: "repository"
+      value: $(body.repository.slug)
+    - name: "sha"
+      value: $(body.changes[0].toHash)
+    - name: "url"
+      value: $(body.repository.links.self[0].href)
+    - name: "base_branch"
+      value: $(body.changes[0].refId)
+    - name: "accountid"
+      value: $(body.actor.id)
+    - name: "sender"
+      value: $(body.actor.name)
+
+    - name: "clone_url_http"
+      value: $(body.repository.links.clone[0].href)
+
+    - name: "clone_url_ssh"
+      value: $(body.repository.links.clone[1].href)
+
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: pipelines-as-code-bitbucket-server-push
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+spec:
+  params:
+    - name: "event_type"
+    - name: "trigger_target"
+    - name: "owner"
+    - name: "repository"
+    - name: "sha"
+    - name: "url"
+    - name: "base_branch"
+    - name: "accountid"
+    - name: "sender"
+    - name: clone_url_http
+    - name: clone_url_ssh
+      default: ""
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: pipelines-as-code-run-
+        labels:
+          app.kubernetes.io/managed-by: pipelines-as-code
+      spec:
+        serviceAccountName: pipelines-as-code-sa-el
+        params:
+          - name: "event_type"
+            value: $(tt.params.event_type)
+          - name: "trigger_target"
+            value: $(tt.params.trigger_target)
+          - name: "owner"
+            value: $(tt.params.owner)
+          - name: "repository"
+            value: $(tt.params.repository)
+          - name: "sha"
+            value: $(tt.params.sha)
+          - name: "url"
+            value: $(tt.params.url)
+          - name: "base_branch"
+            value: $(tt.params.base_branch)
+          - name: "accountid"
+            value: $(tt.params.accountid)
+          - name: "sender"
+            value: $(tt.params.sender)
+          - name: "clone_url_http"
+            value: $(tt.params.clone_url_http)
+          - name: "clone_url_ssh"
+            value: $(tt.params.clone_url_ssh)
+        pipelineSpec:
+          params:
+            - name: "event_type"
+            - name: "trigger_target"
+            - name: "owner"
+            - name: "repository"
+            - name: "sha"
+            - name: "url"
+            - name: "base_branch"
+            - name: "accountid"
+            - name: "sender"
+            - name: "clone_url_http"
+            - name: "clone_url_ssh"
+          tasks:
+            - name: pipelines-as-code
+              taskSpec:
+                params:
+                  - name: "event_type"
+                    type: string
+                  - name: "trigger_target"
+                    type: string
+                  - name: "owner"
+                    type: string
+                  - name: "repository"
+                    type: string
+                  - name: "sha"
+                    type: string
+                  - name: "url"
+                    type: string
+                  - name: "base_branch"
+                    type: string
+                  - name: "accountid"
+                    type: string
+                  - name: "sender"
+                    type: string
+                  - name: "clone_url_http"
+                    type: string
+                  - name: "clone_url_ssh"
+                    type: string
+                steps:
+                  - name: apply-and-launch
+                    env:
+                      - name: PAC_APPLICATION_NAME
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: application-name
+                      - name: PAC_SECRET_AUTO_CREATE
+                        valueFrom:
+                          configMapKeyRef:
+                            name: pipelines-as-code
+                            key: secret-auto-create
+                      - name: PAC_WEBVCS_TYPE
+                        value: "bitbucket-server"
+                      - name: PAC_TRIGGER_TARGET
+                        value: "$(params.trigger_target)"
+                      - name: PAC_WEBHOOK_TYPE
+                        value: "$(params.event_type)"
+                      - name: PAC_PAYLOAD_FILE
+                        value: "/tmp/payload.json"
+                    imagePullPolicy: Always
+                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+                    script: |
+                      #!/usr/bin/env bash
+                      set -euf
+                      set +x
+                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
+                      {
+                          "actor": {
+                              "id"  : $(params.accountid),
+                              "name": "$(params.sender)"
+                          },
+                          "repository": {
+                              "slug": "$(params.repository)",
+                              "project": {
+                                  "key": "$(params.owner)"
+                              },
+                              "links": {
+                                "clone": [
+                                        {
+                                          "href": "$(params.clone_url_http)",
+                                          "name": "http"
+                                        },
+                                        {
+                                          "href": "$(params.clone_url_ssh)",
+                                          "name": "ssh"
+                                        }
+                                  ],
+                                  "self": [{"href": "$(params.url)"}]
+                              }
+                          },
+                          "changes": [{
+                              "toHash": "$(params.sha)",
+                              "refId": "$(params.base_branch)"
+                          }]
+                      }
+                      EOF
+                      env|grep '^PAC'
+                      pipelines-as-code
+              params:
+                - name: "event_type"
+                  value: $(params.event_type)
+                - name: "trigger_target"
+                  value: $(params.trigger_target)
+                - name: "owner"
+                  value: $(params.owner)
+                - name: "repository"
+                  value: $(params.repository)
+                - name: "sha"
+                  value: $(params.sha)
+                - name: "url"
+                  value: $(params.url)
+                - name: "base_branch"
+                  value: $(params.base_branch)
+                - name: "accountid"
+                  value: $(params.accountid)
+                - name: "sender"
+                  value: $(params.sender)
+                - name: "clone_url_http"
+                  value: $(params.clone_url_http)
+                - name: "clone_url_ssh"
+                  value: $(params.clone_url_ssh)

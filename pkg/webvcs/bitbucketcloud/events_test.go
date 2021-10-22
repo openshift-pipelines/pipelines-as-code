@@ -13,7 +13,7 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func TestParsePayload1(t *testing.T) {
+func TestParsePayload(t *testing.T) {
 	tests := []struct {
 		name                      string
 		payloadEvent              interface{}
