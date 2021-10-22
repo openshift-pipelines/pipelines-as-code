@@ -40,7 +40,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	}
 
 	if repo == nil || repo.Spec.URL == "" {
-		msg := fmt.Sprintf("could not find find a namespace match for %s", cs.Info.Event.URL)
+		msg := fmt.Sprintf("could not find a namespace match for %s", cs.Info.Event.URL)
 		cs.Clients.Log.Warn(msg)
 
 		if cs.Info.Pac.VCSToken == "" {

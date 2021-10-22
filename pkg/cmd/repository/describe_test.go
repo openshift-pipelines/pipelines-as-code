@@ -69,6 +69,7 @@ func TestDescribe(t *testing.T) {
 						SHA:             github.String("SHA"),
 						SHAURL:          github.String("https://anurl.com/commit/SHA"),
 						Title:           github.String("A title"),
+						TargetBranch:    github.String("TargetBranch"),
 					},
 				},
 			},
@@ -97,6 +98,7 @@ func TestDescribe(t *testing.T) {
 						SHA:             github.String("SHA"),
 						SHAURL:          github.String("https://anurl.com/commit/SHA"),
 						Title:           github.String("A title"),
+						TargetBranch:    github.String("TargetBranch"),
 					},
 				},
 			},
@@ -123,6 +125,8 @@ func TestDescribe(t *testing.T) {
 						SHA:             github.String("SHA"),
 						SHAURL:          github.String("https://anurl.com/commit/SHA"),
 						Title:           github.String("A title"),
+						TargetBranch:    github.String("TargetBranch"),
+						EventType:       github.String("pull_request"),
 					},
 					{
 						Status: v1beta1.Status{
@@ -138,6 +142,8 @@ func TestDescribe(t *testing.T) {
 						SHA:             github.String("SHA2"),
 						SHAURL:          github.String("https://anurl.com/commit/SHA2"),
 						Title:           github.String("Another Update"),
+						TargetBranch:    github.String("TargetBranch"),
+						EventType:       github.String("pull_request"),
 					},
 				},
 			},

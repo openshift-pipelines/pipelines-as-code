@@ -99,7 +99,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "no match a repository with target NS",
 			wantErr: true,
-			wantLog: "could not find Repository CRD",
+			wantLog: "matching a pipeline to event: URL",
 			args: args{
 				pruns:    []*tektonv1beta1.PipelineRun{pipelineTargetNS},
 				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
@@ -239,7 +239,6 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				runevent: info.Event{EventType: "push", BaseBranch: "main"},
 			},
 			wantErr: true,
-			wantLog: "cannot match between event and pipelineRuns",
 		},
 		{
 			name: "bad-event-annotation",

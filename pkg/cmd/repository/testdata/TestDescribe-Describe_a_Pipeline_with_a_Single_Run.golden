@@ -2,11 +2,12 @@ Name:        test-run
 Namespace:   namespace
 URL:         https://anurl.com
 
-Last Run:
+Last Run: Success
 
 PipelineRun:    pipelinerun1
-Status:         Success
-Commit:         https://anurl.com/commit/SHA
+Event:          <nil>
+Branch:         TargetBranch
+Commit URL:     https://anurl.com/commit/SHA
 Commit Title:   A title
 StartTime:      16 minutes ago
 Duration:       1 minute

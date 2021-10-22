@@ -1,2 +1,2 @@
-NAME    AGE              OWNER/REPOSITORY   STATUS
-repo2   15 minutes ago   owner/repo         Success
+NAME    AGE              URL                            STATUS
+repo2   15 minutes ago   https://anurl.com/owner/repo   Success
