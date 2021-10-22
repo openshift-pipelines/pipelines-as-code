@@ -41,7 +41,7 @@ func TestGithubPullRequest(t *testing.T) {
 			runcnx.Clients.Log.Info("Testing with Github APPS integration")
 		}
 
-		repoinfo, err := createGithubRepoCRD(ctx, t, ghvcs, runcnx, opts, targetNS, pullRequestEvent, mainBranch)
+		repoinfo, err := createGithubRepoCRD(ctx, t, ghvcs, runcnx, opts, targetNS)
 		assert.NilError(t, err)
 
 		entries, err := getEntries("testdata/pipelinerun.yaml", targetNS, mainBranch, pullRequestEvent)
@@ -106,8 +106,7 @@ func checkSuccess(ctx context.Context, t *testing.T, runcnx *params.Run, opts E2
 	assert.Equal(t, title, pr.Annotations["pipelinesascode.tekton.dev/sha-title"])
 }
 
-func createGithubRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, run *params.Run, opts E2EOptions,
-	targetNS, targetEvent, targetBranch string) (*ghlib.Repository, error) {
+func createGithubRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, run *params.Run, opts E2EOptions, targetNS string) (*ghlib.Repository, error) {
 	repoinfo, resp, err := ghvcs.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
 	assert.NilError(t, err)
 
@@ -120,9 +119,7 @@ func createGithubRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, ru
 			Name: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
-			URL:       repoinfo.GetHTMLURL(),
-			EventType: targetEvent,
-			Branch:    targetBranch,
+			URL: repoinfo.GetHTMLURL(),
 		},
 	}
 

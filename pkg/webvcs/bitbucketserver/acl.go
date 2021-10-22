@@ -44,7 +44,7 @@ func (v *VCS) checkOkToTestCommentFromApprovedMember(event *info.Event) (bool, e
 		if nextPage > 0 {
 			localVarOptionals["start"] = int(nextPage)
 		}
-		return v.Client.DefaultApi.GetActivities(event.Owner, event.Repository, int64(v.pullRequestNumber), localVarOptionals)
+		return v.Client.DefaultApi.GetActivities(v.projectKey, event.Repository, int64(v.pullRequestNumber), localVarOptionals)
 	})
 	if err != nil {
 		return false, err
@@ -65,7 +65,7 @@ func (v *VCS) checkOkToTestCommentFromApprovedMember(event *info.Event) (bool, e
 					BaseBranch:    event.BaseBranch,
 					HeadBranch:    event.HeadBranch,
 					Repository:    event.Repository,
-					Owner:         event.Owner,
+					Owner:         v.projectKey,
 					DefaultBranch: event.DefaultBranch,
 				}
 				allowed, err := v.checkMemberShip(commenterEvent)
@@ -108,7 +108,7 @@ func (v *VCS) checkMemberShip(event *info.Event) (bool, error) {
 		if nextPage > 0 {
 			localVarOptionals["start"] = int(nextPage)
 		}
-		return v.Client.DefaultApi.GetUsersWithAnyPermission_23(event.Owner, localVarOptionals)
+		return v.Client.DefaultApi.GetUsersWithAnyPermission_23(v.projectKey, localVarOptionals)
 	})
 	if err != nil {
 		return false, err
@@ -127,7 +127,7 @@ func (v *VCS) checkMemberShip(event *info.Event) (bool, error) {
 		if nextPage > 0 {
 			localVarOptionals["start"] = int(nextPage)
 		}
-		return v.Client.DefaultApi.GetUsersWithAnyPermission_24(event.Owner, event.Repository, localVarOptionals)
+		return v.Client.DefaultApi.GetUsersWithAnyPermission_24(v.projectKey, event.Repository, localVarOptionals)
 	})
 	if err != nil {
 		return false, err

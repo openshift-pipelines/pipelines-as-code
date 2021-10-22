@@ -37,9 +37,7 @@ func TestMaxKeepRuns(t *testing.T) {
 			Name: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
-			URL:       repoinfo.GetHTMLURL(),
-			EventType: pullRequestEvent,
-			Branch:    mainBranch,
+			URL: repoinfo.GetHTMLURL(),
 		},
 	}
 	err = trepo.CreateNS(ctx, targetNS, runcnx)

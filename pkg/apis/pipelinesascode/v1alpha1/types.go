@@ -47,13 +47,19 @@ type RepositoryRunStatus struct {
 	// LogURL is the full url to this run long
 	// +optional
 	LogURL *string `json:"logurl,omitempty"`
+
+	// TargetBranch is the target branch of that run
+	// +optional
+	TargetBranch *string `json:"target_branch,omitempty"`
+
+	// EventType is the event type of that run
+	// +optional
+	EventType *string `json:"event_type,omitempty"`
 }
 
 // RepositorySpec is the spec of a repo
 type RepositorySpec struct {
 	URL             string            `json:"url"`
-	EventType       string            `json:"event_type"`
-	Branch          string            `json:"branch"`
 	WebvcsAPIURL    string            `json:"webvcs_api_url,omitempty"`
 	WebvcsAPIUser   string            `json:"webvcs_api_user,omitempty"`
 	WebvcsAPISecret *WebvcsSecretSpec `json:"webvcs_api_secret,omitempty"`

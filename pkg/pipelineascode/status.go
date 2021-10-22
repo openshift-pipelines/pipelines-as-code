@@ -119,10 +119,7 @@ func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun, consoleURL, s
 }
 
 func createStatus(ctx context.Context, vcsintf webvcs.Interface,
-	cs *params.Run, status webvcs.StatusOpts, logit bool) error {
-	if logit {
-		cs.Clients.Log.Infof(status.Text)
-	}
+	cs *params.Run, status webvcs.StatusOpts) error {
 	return vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status)
 }
 
@@ -155,13 +152,15 @@ func postFinalStatus(ctx context.Context, cs *params.Run, k8int kubeinteraction.
 		return pr, err
 	}
 	output := outputBuffer.String()
-	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+	status := webvcs.StatusOpts{
 		Status:          "completed",
 		Conclusion:      pipelineRunStatus(pr),
 		Text:            output,
 		PipelineRunName: pr.Name,
 		DetailsURL:      consoleURL,
-	}, false)
+	}
+	err = createStatus(ctx, vcsintf, cs, status)
+	cs.Clients.Log.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)
 
 	return pr, err
 }

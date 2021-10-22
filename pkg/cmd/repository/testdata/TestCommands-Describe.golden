@@ -1,8 +1,6 @@
-Name:            repo1
-Namespace:       ns
-URL:             https://anurl.com/repo/owner
-Event Type:      PullRequest
-Target Branch:   branch
+Name:        repo1
+Namespace:   ns
+URL:         https://anurl.com/repo/owner
 
 Last Run:
 

@@ -9,7 +9,3 @@ metadata:
 spec:
   # which URL this Repository handles
   url: "https://github.com/owner/sample-app"
-  # Which branch
-  branch: "main"
-  # Which event type
-  event_type: "pull_request"

@@ -60,9 +60,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 							testnewrepo.RepoTestcreationOpts{
 								Name:             "test-good",
 								URL:              targetURL,
-								Branch:           mainBranch,
 								InstallNamespace: targetNamespace,
-								EventType:        "pull_request",
 							},
 						),
 					},
@@ -82,9 +80,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 							testnewrepo.RepoTestcreationOpts{
 								Name:             "test-oldest",
 								URL:              targetURL,
-								Branch:           mainBranch,
 								InstallNamespace: targetNamespace,
-								EventType:        "pull_request",
 								CreateTime:       metav1.Time{Time: cw.Now().Add(-55 * time.Minute)},
 							},
 						),
@@ -92,9 +88,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 							testnewrepo.RepoTestcreationOpts{
 								Name:             "test-newest",
 								URL:              targetURL,
-								Branch:           mainBranch,
 								InstallNamespace: targetNamespace,
-								EventType:        "pull_request",
 								CreateTime:       metav1.Time{Time: cw.Now().Add(-50 * time.Minute)},
 							},
 						),
@@ -115,9 +109,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 							testnewrepo.RepoTestcreationOpts{
 								Name:             "test-good",
 								URL:              targetURL,
-								Branch:           mainBranch,
 								InstallNamespace: "otherNS",
-								EventType:        "pull_request",
 							},
 						),
 					},

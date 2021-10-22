@@ -157,9 +157,7 @@ func TestDescribe(t *testing.T) {
 						Namespace: ns,
 					},
 					Spec: v1alpha1.RepositorySpec{
-						URL:       "https://anurl.com",
-						Branch:    "branch",
-						EventType: "pull_request",
+						URL: "https://anurl.com",
 					},
 					Status: tt.args.statuses,
 				},

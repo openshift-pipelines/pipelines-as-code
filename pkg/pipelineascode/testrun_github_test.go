@@ -251,34 +251,6 @@ func TestRun(t *testing.T) {
 			finalStatusText: "directory for this repository",
 		},
 		{
-			name: "Skipped/Test no repositories match on different event_type",
-			runevent: info.Event{
-				SHA:        "principale",
-				Owner:      "organizationes",
-				Repository: "lagaffe",
-				URL:        "https://service/documentation",
-				HeadBranch: "press",
-				Sender:     "fantasio",
-				BaseBranch: "nomatch",
-				EventType:  "push",
-			},
-			tektondir:       "",
-			finalStatus:     "skipped",
-			finalStatusText: "not find a namespace match",
-			repositories: []*v1alpha1.Repository{
-				testnewrepo.NewRepo(
-					testnewrepo.RepoTestcreationOpts{
-						Name:             "test-good",
-						URL:              "https://service/documentation",
-						Branch:           "a branch",
-						InstallNamespace: "namespace",
-						EventType:        "pull_request",
-					},
-				),
-			},
-		},
-
-		{
 			name: "Skipped/Test no repositories match",
 			runevent: info.Event{
 				SHA:        "principale",
@@ -298,9 +270,7 @@ func TestRun(t *testing.T) {
 					testnewrepo.RepoTestcreationOpts{
 						Name:             "test-run",
 						URL:              "https://nowhere.com",
-						Branch:           "a branch",
 						InstallNamespace: "namespace",
-						EventType:        "pull_request",
 					},
 				),
 			},
@@ -359,9 +329,7 @@ func TestRun(t *testing.T) {
 						testnewrepo.RepoTestcreationOpts{
 							Name:             "test-run",
 							URL:              tt.runevent.URL,
-							Branch:           tt.runevent.BaseBranch,
 							InstallNamespace: "namespace",
-							EventType:        tt.runevent.EventType,
 							SecretName:       secretName,
 							VcsURL:           vcsURL,
 						},

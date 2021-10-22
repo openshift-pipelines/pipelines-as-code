@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	header            = "NAME\tAGE\tOWNER/REPOSITORY\tSHA\tEVENT-TYPE"
-	body              = "%s\t%s\t%s\t%s\t%s"
+	header            = "NAME\tAGE\tURL"
+	body              = "%s\t%s\t%s"
 	allNamespacesFlag = "all-namespaces"
 	namespaceFlag     = "namespace"
 	noColorFlag       = "no-color"
@@ -106,17 +106,7 @@ func list(ctx context.Context, cs *params.Run, opts *params.PacCliOpts, ioStream
 		fmt.Fprintln(w, "\tSTATUS")
 	}
 	for _, repository := range repositories.Items {
-		repoOwner, err := ui.GetRepoOwnerFromGHURL(repository.Spec.URL)
-		if err != nil {
-			return err
-		}
-
-		fmt.Fprintf(w, body,
-			repository.GetName(),
-			ui.ShowLastAge(repository, cw),
-			repoOwner,
-			ui.ShowLastSHA(repository),
-			repository.Spec.EventType)
+		fmt.Fprintf(w, body, repository.GetName(), ui.ShowLastAge(repository, cw), repository.Spec.URL)
 
 		if opts.AllNameSpaces {
 			fmt.Fprintf(w, "\t%s", repository.GetNamespace())

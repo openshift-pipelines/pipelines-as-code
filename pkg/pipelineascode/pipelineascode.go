@@ -33,19 +33,17 @@ const pipelineRunTimeout = 2 * time.Hour
 func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int kubeinteraction.Interface) error {
 	var err error
 
-	// Match the Event to a Repository Resource,
-	// We are going to match on targetNamespace annotation later on in
-	// `MatchPipelinerunByAnnotation`
-	repo, err := matcher.GetRepoByCR(ctx, cs, "")
+	// Match the Event URL to a Repository URL,
+	repo, err := matcher.MatchEventURLRepo(ctx, cs, "")
 	if err != nil {
 		return err
 	}
 
 	if repo == nil || repo.Spec.URL == "" {
 		msg := fmt.Sprintf("could not find find a namespace match for %s", cs.Info.Event.URL)
+		cs.Clients.Log.Warn(msg)
 
 		if cs.Info.Pac.VCSToken == "" {
-			cs.Clients.Log.Warn(msg)
 			cs.Clients.Log.Warn("cannot set status since not token has been set")
 			return nil
 		}
@@ -55,7 +53,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 			Conclusion: "skipped",
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
-		}, true)
+		})
 
 		if err != nil {
 			return err
@@ -100,7 +98,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 			Conclusion: "skipped",
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/police-cat-gifs",
-		}, true)
+		})
 		if err != nil {
 			return err
 		}
@@ -111,25 +109,20 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	allTemplates, err := vcsintf.GetTektonDir(ctx, cs.Info.Event, tektonDir)
 	if allTemplates == "" || err != nil {
 		msg := fmt.Sprintf("%s - Could not find a **.tekton/** directory for this repository", cs.Info.Pac.ApplicationName)
+		cs.Clients.Log.Info(msg)
 
 		err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
 			Status:     "completed",
 			Conclusion: "skipped",
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
-		}, true)
+		})
 
 		if err != nil {
 			return err
 		}
 		return err
 	}
-	cs.Clients.Log.Infow("Loading payload",
-		"url", cs.Info.Event.URL,
-		"branch", cs.Info.Event.BaseBranch,
-		"sha", cs.Info.Event.SHA,
-		"event_type", cs.Info.Event.EventType)
-
 	// Replace those {{var}} placeholders user has in her template to the cs.Info variable
 	allTemplates = processTemplates(cs.Info.Event, allTemplates)
 
@@ -157,7 +150,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	if cs.Info.Pac.SecretAutoCreation {
 		err = k8int.CreateBasicAuthSecret(ctx, cs.Info.Event, cs.Info.Pac, repo.GetNamespace())
 		if err != nil {
-			return err
+			return fmt.Errorf("creating basic auth secret has failed: %w ", err)
 		}
 	}
 
@@ -167,7 +160,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	// Create the actual pipeline
 	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).Create(ctx, pipelineRun, metav1.CreateOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
 	}
 
 	// Get the UI/webconsole URL for this pipeline to watch the log (only openshift console supported atm)
@@ -180,20 +173,21 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	// Create status with the log url
 	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(),
 		repo.GetNamespace(), consoleURL, repo.GetNamespace(), pr.GetName())
+	cs.Clients.Log.Infof("pipelinerun %s has been created in namespace %s", pr.GetName(), repo.GetNamespace())
 	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
 		Status:          "in_progress",
 		Conclusion:      "pending",
 		Text:            msg,
 		DetailsURL:      consoleURL,
 		PipelineRunName: pr.GetName(),
-	}, false)
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot create a in_progress WebVCS status: %w", err)
 	}
 
 	cs.Clients.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes", pr.Namespace, pr.Name, fmtDuration(pipelineRunTimeout))
 	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, pipelineRunTimeout); err != nil {
-		cs.Clients.Log.Info("PipelineRun has failed.")
+		cs.Clients.Log.Infow("pipelinerun has failed: %w", err)
 	}
 
 	// Do cleanups
@@ -224,6 +218,8 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		SHAURL:          &cs.Info.Event.SHAURL,
 		Title:           &cs.Info.Event.SHATitle,
 		LogURL:          &consoleURL,
+		EventType:       &cs.Info.Event.EventType,
+		TargetBranch:    &cs.Info.Event.BaseBranch,
 	}
 
 	// Get repo again in case it was updated while we were running the CI

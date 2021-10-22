@@ -22,8 +22,6 @@ const (
 	describeTemplate = `{{ $.ColorScheme.Bold "Name" }}:	{{.Repository.Name}}
 {{ $.ColorScheme.Bold "Namespace" }}:	{{.Repository.Namespace}}
 {{ $.ColorScheme.Bold "URL" }}:	{{.Repository.Spec.URL}}
-{{ $.ColorScheme.Bold "Event Type" }}:	{{formatEventType .Repository.Spec.EventType}}
-{{ $.ColorScheme.Bold "Target Branch" }}:	{{.Repository.Spec.Branch}}
 
 {{- if eq (len .Repository.Status) 0 }}
 
@@ -32,11 +30,12 @@ const (
 
 {{- $status := (index .Statuses 0) }}
 
-{{ $.ColorScheme.Underline "Last Run:" }}
+{{ $.ColorScheme.Underline "Last Run:" }} {{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
 
 {{ $.ColorScheme.Bold "PipelineRun" }}:	{{ $status.PipelineRunName }}
-{{ $.ColorScheme.Bold "Status" }}:	{{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
-{{ $.ColorScheme.Bold "Commit" }}:	{{ $status.SHAURL }}
+{{ $.ColorScheme.Bold "Event" }}:	{{ $status.EventType }}
+{{ $.ColorScheme.Bold "Branch" }}:	{{ sanitizeBranch $status.TargetBranch }}
+{{ $.ColorScheme.Bold "Commit URL" }}:	{{ $status.SHAURL }}
 {{ $.ColorScheme.Bold "Commit Title" }}:	{{ $status.Title }}
 {{ $.ColorScheme.Bold "StartTime" }}:	{{ formatTime $status.StartTime $.Clock }}
 {{ $.ColorScheme.Bold "Duration" }}:	{{ formatDuration $status.StartTime $status.CompletionTime }}
@@ -45,7 +44,7 @@ const (
 
 {{ $.ColorScheme.Underline "Other Runs:" }}
 
-{{ $.ColorScheme.BulletSpace }}PIPELINERUN	SHA	START_TIME	DURATION	STATUS
+{{ $.ColorScheme.BulletSpace }}PIPELINERUN	Event	Branch	 SHA	 START_TIME	DURATION	STATUS
 
 {{- range $i, $st := (slice .Statuses 1 (len .Repository.Status)) }}
 {{ $.ColorScheme.Bullet }}{{ formatStatus $st $.ColorScheme $.Clock }}
@@ -57,8 +56,10 @@ const (
 )
 
 func formatStatus(status v1alpha1.RepositoryRunStatus, cs *ui.ColorScheme, c clockwork.Clock) string {
-	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s",
+	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
 		status.PipelineRunName,
+		*status.EventType,
+		ui.SanitizeBranch(*status.TargetBranch),
 		ui.ShortSHA(*status.SHA),
 		pipelineascode.Age(status.StartTime, c),
 		pipelineascode.Duration(status.StartTime, status.CompletionTime),
@@ -85,9 +86,9 @@ func askRepo(ctx context.Context, cs *params.Run, opts *params.PacCliOpts, names
 			return nil, err
 		}
 		allRepositories = append(allRepositories,
-			fmt.Sprintf("%s - %s on %s",
+			fmt.Sprintf("%s - %s",
 				repository.GetName(),
-				repoOwner, repository.Spec.EventType))
+				repoOwner))
 	}
 
 	qs := []*survey.Question{
@@ -196,6 +197,7 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		"formatEventType": ui.CamelCasit,
 		"formatDuration":  pipelineascode.Duration,
 		"formatTime":      pipelineascode.Age,
+		"sanitizeBranch":  ui.SanitizeBranch,
 		"shortSHA":        ui.ShortSHA,
 	}
 

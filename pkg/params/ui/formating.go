@@ -40,6 +40,16 @@ func ShowStatus(repository v1alpha1.Repository, cs *ColorScheme) string {
 	return cs.ColorStatus(status)
 }
 
+// sanitizeBranch remove refs/heads from string if it's a branch or keep it if
+// it's a tag.
+func SanitizeBranch(s string) string {
+	if strings.HasPrefix(s, "refs/heads/") {
+		return strings.TrimPrefix(s, "refs/heads/")
+	}
+	return s
+}
+
+// ShortSHA returns a shortsha
 func ShortSHA(sha string) string {
 	if sha == "" {
 		return ""

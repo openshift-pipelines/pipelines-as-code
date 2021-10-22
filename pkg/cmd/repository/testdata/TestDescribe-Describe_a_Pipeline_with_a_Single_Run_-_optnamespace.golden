@@ -1,8 +1,6 @@
-Name:            test-run
-Namespace:       optnamespace
-URL:             https://anurl.com
-Event Type:      PullRequest
-Target Branch:   branch
+Name:        test-run
+Namespace:   optnamespace
+URL:         https://anurl.com
 
 Last Run:
 

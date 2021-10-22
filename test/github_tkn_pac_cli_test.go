@@ -74,9 +74,7 @@ spec:
 			Name: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
-			URL:       repoinfo.GetHTMLURL(),
-			EventType: pullRequestEvent,
-			Branch:    mainBranch,
+			URL: repoinfo.GetHTMLURL(),
 		},
 	}
 

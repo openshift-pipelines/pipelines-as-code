@@ -78,9 +78,7 @@ func TestCommands(t *testing.T) {
 						Namespace: nsName,
 					},
 					Spec: v1alpha1.RepositorySpec{
-						URL:       "https://anurl.com/repo/owner",
-						Branch:    "branch",
-						EventType: "pull_request",
+						URL: "https://anurl.com/repo/owner",
 					},
 					Status: statuses,
 				},
