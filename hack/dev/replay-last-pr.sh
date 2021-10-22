@@ -20,11 +20,11 @@ fi
 tkn pr logs ${arg} --prefix=false 2>/dev/null > ${TMPD}/last
 [[ -s ${TMPD}/last ]] || { echo "payload could not be found"; exit 1 ;}
 
-sed '/PAC/,$ { d;}' ${TMPD}/last > ${TMPD}/payload.json
+sed '/^PAC_/,$ { d;}' ${TMPD}/last > ${TMPD}/payload.json
 [[ -s ${TMPD}/payload.json ]] || { echo "payload json could not be found"; exit 1 ;}
 
 
-grep -e "PAC_.[a-zA-Z0-9_-]*=" ${TMPD}/last |sed -e 's/=\(.*\)/="\1"/' -e 's/^/export /' > ${TMPD}/env 
+grep -e "^PAC_.[a-zA-Z0-9_-]*=" ${TMPD}/last |sed -e 's/=\(.*\)/="\1"/' -e 's/^/export /' > ${TMPD}/env 
 [[ -s ${TMPD}/env ]] || { echo "payload env could not be found"; exit 1 ;}
 
 source $TMPD/env
