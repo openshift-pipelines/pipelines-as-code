@@ -2,11 +2,19 @@
 
 ## Repository CRD
 
-Repository CRD are here to indicate to pipelines as code which pipelines needs
-to be tested on which Namespace. It allows as well to attach secret for API
-operations on the webvcs platform.
+The purposes of the Repository CRD  is :
 
-User create a CustomResource definition inside the namespace `my-pipeline-ci`
+- To let know to Pipelines as Code that this event from this URL needs to be handled.
+- To tell Pipelines as Code on which namespace the PipelineRuns are going to be executed.
+- To reference a api secret, a api username or a api URL if needed for the
+  webvcs platforms that requires (ie: when you are using webhooks method and not
+  the github application).
+- To give the last Pipelinerun status for that Repository (5 by default).
+
+The flow looks like this :
+
+Via the tkn pac CLI or other method the user creates a `CustomResourceDefinition`
+inside the target namespace `my-pipeline-ci` :
 
 ```yaml
 cat <<EOF|kubectl create -n my-pipeline-ci -f-
@@ -16,19 +24,18 @@ metadata:
   name: scratch-my-back
 spec:
   url: "https://github.com/linda/project"
-  branch: "main"
 EOF
 ```
 
-This will match all Pull Request coming to `github.com/linda/project` on branch
-main into the namespace `my-pipeline-ci` (since this is where the Repository is
-installed).
+Whenever there is a event coming from `github.com/linda/project` Pipelines as
+Code will match it and starts checking out the content of the `linda/project`
+for pipelinerun to match in the `.tekton/` directory.
 
-The Repository CR needs to be created in the namespace where Tekton Pipelines
-associated with the
-source code repository would be executed it cannot target another namespace.
+The Repository CRD needs to be created in the namespace where Tekton Pipelines
+associated with the source code repository would be executed, it cannot target
+another namespace.
 
-If there is multiples CRD matching the same event, only the oldest one would
+If there is multiples CRD matching the same event, only the oldest one will
 match. If you need to match a specific namespace you would need to use the
 target-namepsace feature in the pipeine annotation (see below).
 
@@ -51,16 +58,18 @@ Namespace instead of trying to match it from all available repository on cluster
 ## Authoring PipelineRun in `.tekton/` directory
 
 - Pipelines as Code will always try to be as close to the tekton template as
-  possible. Usually you would write your template and save them with a ".yaml"
+  possible. Usually you will write your template and save them with a ".yaml"
   extension and Pipelines as Code will run them.
 
-- Inside your pipeline you would need to be able to consume the commit as
+- Inside your pipeline you need to be able to check out the commit as
   received from the webhook by checking it out the repository from that ref. You
   would usually use the
   [git-clone](https://github.com/tektoncd/catalog/blob/main/task/git-clone/)
-  task from catalog for the same. To be able to specify those parameters,
-  Pipelines as Code allows you to have those two variables filled between double
-  brackets, i.e: `{{ var }}`:
+  task from catalog.
+
+  To be able to specify the parameters of your commit and url, Pipelines as Code
+  allows you to have those "dynamic" variables expanded. Those variables look
+  like this `{{ var }}`and those are the one you can use:
 
   - `{{repo_owner}}`: The repository owner.
   - `{{repo_name}}`: The repository name.
