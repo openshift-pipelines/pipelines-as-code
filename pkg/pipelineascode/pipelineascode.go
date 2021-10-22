@@ -290,7 +290,7 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 		repo.Spec.WebvcsAPIURL = config.APIURL
 	} else {
 		cs.Info.Pac.VCSAPIURL = repo.Spec.WebvcsAPIURL
-		cs.Clients.Log.Infof("Using API URL %s", repo.Spec.WebvcsAPIURL)
+		cs.Clients.Log.Infof("Using WebVCS: %s with api-url: %s", cs.Info.Pac.WebhookType, repo.Spec.WebvcsAPIURL)
 	}
 
 	cs.Info.Pac.VCSUser = repo.Spec.WebvcsAPIUser
@@ -309,8 +309,8 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	cs.Info.Pac.VCSInfoFromRepo = true
 
 	if repo.Spec.WebvcsAPIUser != "" {
-		cs.Clients.Log.Infof("Using vcs-user %s", repo.Spec.WebvcsAPIUser)
+		cs.Clients.Log.Infof("Using api-user %s", repo.Spec.WebvcsAPIUser)
 	}
-	cs.Clients.Log.Infof("Using vcs-token from secret %s in key %s", repo.Spec.WebvcsAPISecret.Name, repo.Spec.WebvcsAPISecret.Key)
+	cs.Clients.Log.Infof("Using api-token from secret %s in key %s", repo.Spec.WebvcsAPISecret.Name, repo.Spec.WebvcsAPISecret.Key)
 	return nil
 }

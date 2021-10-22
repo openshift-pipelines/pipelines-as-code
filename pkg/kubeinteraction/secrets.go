@@ -45,7 +45,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 
 	repoURL, err := url.Parse(cloneURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot parse url %s: %w", cloneURL, err)
 	}
 
 	gitUser := defaultGitUser
@@ -80,8 +80,13 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 			err = k.createSecret(ctx, secretData, targetNamespace, secretName)
 		}
 	}
+
+	if err != nil {
+		return fmt.Errorf("cannot create secret: %w", err)
+	}
+
 	k.Run.Clients.Log.Infof("Secret %s has been generated in namespace %s", secretName, targetNamespace)
-	return err
+	return nil
 }
 
 func (k Interaction) GetSecret(ctx context.Context, secretopt GetSecretOpt) (string, error) {
