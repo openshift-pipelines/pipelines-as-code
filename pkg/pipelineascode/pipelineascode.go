@@ -42,11 +42,11 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	}
 
 	if repo == nil || repo.Spec.URL == "" {
-		msg := fmt.Sprintf("Could not find a namespace match for %s/%s on target-branch:%s event-type: %s", cs.Info.Event.Owner, cs.Info.Event.Repository, cs.Info.Event.BaseBranch, cs.Info.Event.EventType)
+		msg := fmt.Sprintf("could not find find a namespace match for %s", cs.Info.Event.URL)
 
 		if cs.Info.Pac.VCSToken == "" {
-			cs.Clients.Log.Error(msg)
-			cs.Clients.Log.Error("cannot set status since not token has been set")
+			cs.Clients.Log.Warn(msg)
+			cs.Clients.Log.Warn("cannot set status since not token has been set")
 			return nil
 		}
 
