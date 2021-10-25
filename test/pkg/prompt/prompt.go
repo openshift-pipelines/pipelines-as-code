@@ -33,10 +33,10 @@ type Prompt struct {
 
 // RunTest run the test cases of some prompt test.
 // It will start given procedure in background and eval the test.
-func (pt *Prompt) RunTest(t *testing.T, procedure func(*goexpect.Console) error, test func(terminal.Stdio) error) {
+func (pt *Prompt) RunTest(t *testing.T, procedure func(*goexpect.Console) error, test func(terminal.Stdio) error) error {
 	// Multiplex output to a buffer as well for the raw bytes.
 	buf := new(bytes.Buffer)
-	c, state, err := vt10x.NewVT10XConsole(goexpect.WithStdout(buf))
+	c, _, err := vt10x.NewVT10XConsole(goexpect.WithStdout(buf))
 	assert.NilError(t, err)
 	defer c.Close()
 
@@ -48,16 +48,13 @@ func (pt *Prompt) RunTest(t *testing.T, procedure func(*goexpect.Console) error,
 		}
 	}()
 
-	assert.NilError(t, test(stdio(c)))
+	err = test(stdio(c))
 
 	// Close the slave end of the pty, and read the remaining bytes from the master end.
 	_ = c.Tty().Close()
 	<-donec
 
-	t.Logf("Raw output: %q", buf.String())
-
-	// Dump the terminal's screen.
-	t.Logf("\n%s", goexpect.StripTrailingEmptyLines(state.String()))
+	return err
 }
 
 // WithStdio helps to test interactive command
