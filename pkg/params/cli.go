@@ -36,6 +36,6 @@ func NewCliOptions(cmd *cobra.Command) (*PacCliOpts, error) {
 	return c, err
 }
 
-func (c *PacCliOpts) Ask(qs []*survey.Question, ans interface{}) error {
-	return survey.Ask(qs, ans, c.AskOpts)
+func (c *PacCliOpts) Ask(qss []*survey.Question, ans interface{}) error {
+	return survey.Ask(qss, ans, c.AskOpts)
 }

@@ -8,7 +8,7 @@ import (
 )
 
 type Info struct {
-	TargetURL    string
+	URL          string
 	TopLevelPath string
 	SHA          string
 	Branch       string
@@ -36,17 +36,19 @@ func RunGit(dir string, args ...string) (string, error) {
 }
 
 // GetGitInfo try to detect the current remote for this URL return the origin url transformed and the topdir
-func GetGitInfo(dir string) Info {
+func GetGitInfo(dir string) *Info {
 	gitURL, err := RunGit(dir, "remote", "get-url", "origin")
 	if err != nil {
 		gitURL, err = RunGit(dir, "remote", "get-url", "upstream")
 		if err != nil {
-			return Info{}
+			return nil
 		}
 	}
 	gitURL = strings.TrimSpace(gitURL)
 	gitURL = strings.TrimSuffix(gitURL, ".git")
 
+	// convert github and probably others ssh access format into https
+	// i think it only fails with bitbucket server
 	if strings.HasPrefix(gitURL, "git@") {
 		sp := strings.Split(gitURL, ":")
 		prefix := strings.ReplaceAll(sp[0], "git@", "https://")
@@ -55,21 +57,21 @@ func GetGitInfo(dir string) Info {
 
 	brootdir, err := RunGit(dir, "rev-parse", "--show-toplevel")
 	if err != nil {
-		return Info{}
+		return nil
 	}
 
 	sha, err := RunGit(dir, "rev-parse", "HEAD")
 	if err != nil {
-		return Info{}
+		return nil
 	}
 
 	headbranch, err := RunGit(dir, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
-		return Info{}
+		return nil
 	}
 
-	return Info{
-		TargetURL:    gitURL,
+	return &Info{
+		URL:          gitURL,
 		TopLevelPath: strings.TrimSpace(brootdir),
 		SHA:          strings.TrimSpace(sha),
 		Branch:       strings.TrimSpace(headbranch),

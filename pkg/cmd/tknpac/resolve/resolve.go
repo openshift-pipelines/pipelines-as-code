@@ -78,16 +78,16 @@ func Command(run *params.Run) *cobra.Command {
 
 			// ignore error
 			gitinfo := git.GetGitInfo(".")
-			if _, ok := mapped["repo_url"]; !ok && gitinfo.TargetURL != "" {
-				mapped["repo_url"] = gitinfo.TargetURL
+			if _, ok := mapped["repo_url"]; !ok && gitinfo.URL != "" {
+				mapped["repo_url"] = gitinfo.URL
 			}
 
 			if _, ok := mapped["revision"]; !ok && gitinfo.SHA != "" {
 				mapped["revision"] = gitinfo.SHA
 			}
 
-			if _, ok := mapped["repo_owner"]; !ok && gitinfo.TargetURL != "" {
-				repoOwner, err := ui.GetRepoOwnerFromGHURL(gitinfo.TargetURL)
+			if _, ok := mapped["repo_owner"]; !ok && gitinfo.URL != "" {
+				repoOwner, err := ui.GetRepoOwnerFromGHURL(gitinfo.URL)
 				if err != nil {
 					return err
 				}

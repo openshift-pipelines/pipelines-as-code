@@ -1,10 +1,10 @@
 package tknpac
 
 import (
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/bootstrap"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/completion"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/repository"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/resolve"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/bootstrap"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/repository"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/spf13/cobra"

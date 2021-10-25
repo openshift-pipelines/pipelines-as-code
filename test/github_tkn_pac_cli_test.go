@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	repositorycmd "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/repository"
+	repository2 "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
@@ -84,11 +84,11 @@ spec:
 	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
-	output, err := execCommand(runcnx, repositorycmd.DescribeCommand, "-n", targetNS, targetNS)
+	output, err := execCommand(runcnx, repository2.DescribeCommand, "-n", targetNS, targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "No runs has started."))
 
-	output, err = execCommand(runcnx, repositorycmd.ListCommand, "-n", targetNS)
+	output, err = execCommand(runcnx, repository2.ListCommand, "-n", targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "NoRun"))
 
@@ -118,11 +118,11 @@ spec:
 
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
 
-	output, err = execCommand(runcnx, repositorycmd.ListCommand, "-n", targetNS)
+	output, err = execCommand(runcnx, repository2.ListCommand, "-n", targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "Succeeded"))
 
-	output, err = execCommand(runcnx, repositorycmd.DescribeCommand, "-n", targetNS, targetNS)
+	output, err = execCommand(runcnx, repository2.DescribeCommand, "-n", targetNS, targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "Succeeded"))
 }

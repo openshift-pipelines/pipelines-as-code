@@ -6,11 +6,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/AlecAivazis/survey/v2"
 	surveyCore "github.com/AlecAivazis/survey/v2/core"
 	"github.com/briandowns/spinner"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 	"github.com/mgutz/ansi"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 )
 
 type IOStreams struct {
@@ -125,4 +127,21 @@ func (s *IOStreams) IsStdoutTTY() bool {
 
 func isTerminal(f *os.File) bool {
 	return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
+}
+
+func AskYesNo(cliOpts *params.PacCliOpts, question string, deflt bool) (bool, error) {
+	var answer bool
+
+	if err := cliOpts.Ask([]*survey.Question{
+		{
+			Prompt: &survey.Confirm{
+				Message: question,
+				Default: deflt,
+			},
+		},
+	}, &answer); err != nil {
+		return false, err
+	}
+
+	return answer, nil
 }

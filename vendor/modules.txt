@@ -17,6 +17,9 @@ contrib.go.opencensus.io/exporter/stackdriver/monitoredresource/gcp
 github.com/AlecAivazis/survey/v2
 github.com/AlecAivazis/survey/v2/core
 github.com/AlecAivazis/survey/v2/terminal
+# github.com/Netflix/go-expect v0.0.0-20211003183012-e1a7c020ce25
+## explicit
+github.com/Netflix/go-expect
 # github.com/PuerkitoBio/goquery v1.7.1
 github.com/PuerkitoBio/goquery
 # github.com/PuerkitoBio/purell v1.1.1
@@ -85,6 +88,8 @@ github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
+# github.com/creack/pty v1.1.9
+github.com/creack/pty
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/emicklei/go-restful v2.15.0+incompatible
@@ -178,6 +183,9 @@ github.com/hako/durafmt
 # github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
+# github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
+## explicit
+github.com/hinshun/vt10x
 # github.com/imdario/mergo v0.3.9
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
@@ -198,6 +206,8 @@ github.com/k0kubun/pp
 github.com/kballard/go-shellquote
 # github.com/kelseyhightower/envconfig v1.4.0
 github.com/kelseyhightower/envconfig
+# github.com/kr/pty v1.1.8
+github.com/kr/pty
 # github.com/ktrysmt/go-bitbucket v0.9.28-0.20211003085546-c342cba4c553 => github.com/chmouel/go-bitbucket v0.9.27-0.20211013140525-ef577a27520c
 ## explicit
 github.com/ktrysmt/go-bitbucket
