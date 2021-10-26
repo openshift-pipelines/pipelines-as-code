@@ -37,9 +37,6 @@ func (t *Task) Validate(ctx context.Context) *apis.FieldError {
 	if err := validate.ObjectMetadata(t.GetObjectMeta()); err != nil {
 		return err.ViaField("metadata")
 	}
-	if apis.IsInDelete(ctx) {
-		return nil
-	}
 	return t.Spec.Validate(ctx)
 }
 
@@ -140,7 +137,10 @@ func (ts *TaskSpec) Validate(ctx context.Context) *apis.FieldError {
 		return err
 	}
 	// Deprecated
-	return validateResourceVariables(ts.Steps, ts.Inputs, ts.Outputs, ts.Resources)
+	if err := validateResourceVariables(ts.Steps, ts.Inputs, ts.Outputs, ts.Resources); err != nil {
+		return err
+	}
+	return nil
 }
 
 // validateDeclaredWorkspaces will make sure that the declared workspaces do not try to use

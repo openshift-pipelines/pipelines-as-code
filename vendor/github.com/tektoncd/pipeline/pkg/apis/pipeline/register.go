@@ -23,35 +23,31 @@ const (
 	GroupName = "tekton.dev"
 
 	// ClusterTaskLabelKey is used as the label identifier for a ClusterTask
-	ClusterTaskLabelKey = GroupName + "/clusterTask"
+	ClusterTaskLabelKey = "/clusterTask"
 
 	// TaskLabelKey is used as the label identifier for a Task
-	TaskLabelKey = GroupName + "/task"
+	TaskLabelKey = "/task"
 
 	// TaskRunLabelKey is used as the label identifier for a TaskRun
-	TaskRunLabelKey = GroupName + "/taskRun"
+	TaskRunLabelKey = "/taskRun"
 
 	// PipelineLabelKey is used as the label identifier for a Pipeline
-	PipelineLabelKey = GroupName + "/pipeline"
+	PipelineLabelKey = "/pipeline"
 
 	// PipelineRunLabelKey is used as the label identifier for a PipelineRun
-	PipelineRunLabelKey = GroupName + "/pipelineRun"
+	PipelineRunLabelKey = "/pipelineRun"
 
 	// PipelineTaskLabelKey is used as the label identifier for a PipelineTask
-	PipelineTaskLabelKey = GroupName + "/pipelineTask"
+	PipelineTaskLabelKey = "/pipelineTask"
 
 	// ConditionCheckKey is used as the label identifier for a ConditionCheck
-	ConditionCheckKey = GroupName + "/conditionCheck"
+	ConditionCheckKey = "/conditionCheck"
 
 	// ConditionNameKey is used as the label identifier for a Condition
-	ConditionNameKey = GroupName + "/conditionName"
+	ConditionNameKey = "/conditionName"
 
 	// RunKey is used as the label identifier for a Run
-	RunKey = GroupName + "/run"
-
-	// MemberOfLabelKey is used as the label identifier for a PipelineTask
-	// Set to Tasks/Finally depending on the position of the PipelineTask
-	MemberOfLabelKey = GroupName + "/memberOf"
+	RunKey = "/run"
 )
 
 var (

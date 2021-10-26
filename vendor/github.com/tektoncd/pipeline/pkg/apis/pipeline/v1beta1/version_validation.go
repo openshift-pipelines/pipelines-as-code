@@ -34,5 +34,6 @@ func ValidateEnabledAPIFields(ctx context.Context, featureName, wantVersion stri
 		message := fmt.Sprintf(`%s requires "enable-api-fields" feature gate to be %q but it is %q`, featureName, wantVersion, currentVersion)
 		return errs.Also(apis.ErrGeneric(message))
 	}
-	return nil
+	var errs *apis.FieldError = nil
+	return errs
 }

@@ -34,9 +34,7 @@ func (r *PipelineResource) Validate(ctx context.Context) *apis.FieldError {
 	if err := validate.ObjectMetadata(r.GetObjectMeta()); err != nil {
 		return err.ViaField("metadata")
 	}
-	if apis.IsInDelete(ctx) {
-		return nil
-	}
+
 	return r.Spec.Validate(ctx)
 }
 

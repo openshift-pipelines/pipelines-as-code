@@ -16,14 +16,10 @@ limitations under the License.
 
 package v1beta1
 
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
-)
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // PipelineObject is implemented by Pipeline and ClusterPipeline
 type PipelineObject interface {
-	apis.Defaultable
 	PipelineMetadata() metav1.ObjectMeta
 	PipelineSpec() PipelineSpec
 	Copy() PipelineObject

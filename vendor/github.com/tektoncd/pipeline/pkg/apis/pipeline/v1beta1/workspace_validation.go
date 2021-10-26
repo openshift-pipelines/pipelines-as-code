@@ -25,7 +25,7 @@ import (
 
 // allVolumeSourceFields is a list of all the volume source field paths that a
 // WorkspaceBinding may include.
-var allVolumeSourceFields = []string{
+var allVolumeSourceFields []string = []string{
 	"persistentvolumeclaim",
 	"volumeclaimtemplate",
 	"emptydir",

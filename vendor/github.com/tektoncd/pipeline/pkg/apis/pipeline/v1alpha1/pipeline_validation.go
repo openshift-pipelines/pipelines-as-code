@@ -39,9 +39,6 @@ func (p *Pipeline) Validate(ctx context.Context) *apis.FieldError {
 	if err := validate.ObjectMetadata(p.GetObjectMeta()); err != nil {
 		return err.ViaField("metadata")
 	}
-	if apis.IsInDelete(ctx) {
-		return nil
-	}
 	return p.Spec.Validate(ctx)
 }
 
@@ -175,7 +172,11 @@ func (ps *PipelineSpec) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	// Validate the pipeline's workspaces.
-	return validatePipelineWorkspaces(ps.Workspaces, ps.Tasks)
+	if err := validatePipelineWorkspaces(ps.Workspaces, ps.Tasks); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func validatePipelineTasks(ctx context.Context, tasks []PipelineTask) *apis.FieldError {

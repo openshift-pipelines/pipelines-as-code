@@ -23,31 +23,22 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/tektoncd/pipeline/pkg/apis/config"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 
 	"github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/kmeta"
 )
 
 const (
 	// PipelineTasksAggregateStatus is a param representing aggregate status of all dag pipelineTasks
 	PipelineTasksAggregateStatus = "tasks.status"
-	// PipelineTasks is a value representing a task is a member of "tasks" section of the pipeline
-	PipelineTasks = "tasks"
-	// PipelineFinallyTasks is a value representing a task is a member of "finally" section of the pipeline
-	PipelineFinallyTasks = "finally"
 )
 
 // +genclient
-// +genclient:noStatus
-// +genreconciler:krshapedlogic=false
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +genclient:noStatus
 
 // Pipeline describes a list of Tasks to execute. It expresses how outputs
 // of tasks feed into inputs of subsequent tasks.
@@ -62,8 +53,6 @@ type Pipeline struct {
 	Spec PipelineSpec `json:"spec"`
 }
 
-var _ kmeta.OwnerRefable = (*Pipeline)(nil)
-
 func (p *Pipeline) PipelineMetadata() metav1.ObjectMeta {
 	return p.ObjectMeta
 }
@@ -74,11 +63,6 @@ func (p *Pipeline) PipelineSpec() PipelineSpec {
 
 func (p *Pipeline) Copy() PipelineObject {
 	return p.DeepCopy()
-}
-
-// GetGroupVersionKind implements kmeta.OwnerRefable.
-func (*Pipeline) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind(pipeline.PipelineControllerName)
 }
 
 // PipelineSpec defines the desired state of Pipeline.
@@ -131,17 +115,9 @@ type PipelineTaskMetadata struct {
 
 type EmbeddedTask struct {
 	// +optional
-	runtime.TypeMeta `json:",inline,omitempty"`
-
-	// Spec is a specification of a custom task
-	// +optional
-	Spec runtime.RawExtension `json:"spec,omitempty"`
-
-	// +optional
 	Metadata PipelineTaskMetadata `json:"metadata,omitempty"`
 
 	// TaskSpec is a specification of a task
-	// +optional
 	TaskSpec `json:",inline,omitempty"`
 }
 
@@ -214,19 +190,9 @@ func (pt PipelineTask) validateRefOrSpec() (errs *apis.FieldError) {
 
 // validateCustomTask validates custom task specifications - checking kind and fail if not yet supported features specified
 func (pt PipelineTask) validateCustomTask() (errs *apis.FieldError) {
-	if pt.TaskRef != nil && pt.TaskRef.Kind == "" {
+	if pt.TaskRef.Kind == "" {
 		errs = errs.Also(apis.ErrInvalidValue("custom task ref must specify kind", "taskRef.kind"))
 	}
-	if pt.TaskSpec != nil && pt.TaskSpec.Kind == "" {
-		errs = errs.Also(apis.ErrInvalidValue("custom task spec must specify kind", "taskSpec.kind"))
-	}
-	if pt.TaskRef != nil && pt.TaskRef.APIVersion == "" {
-		errs = errs.Also(apis.ErrInvalidValue("custom task ref must specify apiVersion", "taskRef.apiVersion"))
-	}
-	if pt.TaskSpec != nil && pt.TaskSpec.APIVersion == "" {
-		errs = errs.Also(apis.ErrInvalidValue("custom task spec must specify apiVersion", "taskSpec.apiVersion"))
-	}
-
 	// Conditions are deprecated so the effort to support them with custom tasks is not justified.
 	// When expressions should be used instead.
 	if len(pt.Conditions) > 0 {
@@ -238,6 +204,9 @@ func (pt PipelineTask) validateCustomTask() (errs *apis.FieldError) {
 	}
 	if pt.Resources != nil {
 		errs = errs.Also(apis.ErrInvalidValue("custom tasks do not support PipelineResources", "resources"))
+	}
+	if pt.Timeout != nil {
+		errs = errs.Also(apis.ErrInvalidValue("custom tasks do not support timeout", "timeout"))
 	}
 	return errs
 }
@@ -309,8 +278,6 @@ func (pt PipelineTask) Validate(ctx context.Context) (errs *apis.FieldError) {
 	// pipeline task having taskRef with APIVersion is classified as custom task
 	switch {
 	case cfg.FeatureFlags.EnableCustomTasks && pt.TaskRef != nil && pt.TaskRef.APIVersion != "":
-		errs = errs.Also(pt.validateCustomTask())
-	case cfg.FeatureFlags.EnableCustomTasks && pt.TaskSpec != nil && pt.TaskSpec.APIVersion != "":
 		errs = errs.Also(pt.validateCustomTask())
 		// If EnableTektonOCIBundles feature flag is on, validate bundle specifications
 	case cfg.FeatureFlags.EnableTektonOCIBundles && pt.TaskRef != nil && pt.TaskRef.Bundle != "":
