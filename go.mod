@@ -4,10 +4,9 @@ go 1.15
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.2.12
-	github.com/Netflix/go-expect v0.0.0-20211003183012-e1a7c020ce25
+	github.com/Netflix/go-expect v0.0.0-20211003183012-e1a7c020ce25 // indirect
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.3
 	github.com/briandowns/spinner v1.16.0
-	github.com/davecgh/go-spew v1.1.1
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20210826163055-dff2223adeac
 	github.com/gobwas/glob v0.2.3
 	github.com/golang-jwt/jwt/v4 v4.1.0 // indirect
@@ -16,7 +15,7 @@ require (
 	github.com/google/go-github/scrape v0.0.0-20211012192337-d1858a3fc4bf
 	github.com/google/go-github/v39 v39.1.0
 	github.com/hako/durafmt v0.0.0-20210601083242-f49dacec7612
-	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
+	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
 	github.com/jonboulle/clockwork v0.1.1-0.20190114141812-62fb9bc030d1
 	github.com/k0kubun/pp v3.0.1+incompatible // indirect
 	github.com/ktrysmt/go-bitbucket v0.9.28-0.20211003085546-c342cba4c553
