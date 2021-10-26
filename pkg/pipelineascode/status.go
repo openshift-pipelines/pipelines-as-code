@@ -7,6 +7,7 @@ import (
 	"sort"
 	"text/template"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
@@ -21,13 +22,12 @@ const checkStatustmpl = `{{.taskStatus}}`
 const naStr = "---"
 
 type tkr struct {
-	TaskrunName string
-	LogURL      string
+	taskLogURL string
 	*tektonv1beta1.PipelineRunTaskRunStatus
 }
 
 func (t tkr) ConsoleLogURL() string {
-	return fmt.Sprintf("[%s](%s/%s)", t.PipelineTaskName, t.LogURL, t.PipelineTaskName)
+	return fmt.Sprintf("[%s](%s)", t.PipelineTaskName, t.taskLogURL)
 }
 
 type taskrunList []tkr
@@ -44,18 +44,6 @@ func (trs taskrunList) Less(i, j int) bool {
 	}
 
 	return trs[j].Status.StartTime.Before(trs[i].Status.StartTime)
-}
-
-func newTaskrunListFromMap(statusMap map[string]*tektonv1beta1.PipelineRunTaskRunStatus, consoleURL string) taskrunList {
-	trl := taskrunList{}
-	for taskrunName, taskrunStatus := range statusMap {
-		trl = append(trl, tkr{
-			taskrunName,
-			consoleURL,
-			taskrunStatus,
-		})
-	}
-	return trl
 }
 
 // pipelineRunStatus return status of PR  success failed or skipped
@@ -89,12 +77,18 @@ func ConditionEmoji(c knative1.Conditions) string {
 	return status
 }
 
-func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun, consoleURL, statusTemplate string) (string, error) {
+func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun,
+	console consoleui.Interface, statusTemplate string) (string, error) {
 	var trl taskrunList
 	var outputBuffer bytes.Buffer
 
 	if len(pr.Status.TaskRuns) != 0 {
-		trl = newTaskrunListFromMap(pr.Status.TaskRuns, consoleURL)
+		for taskrunName, taskrunStatus := range pr.Status.TaskRuns {
+			trl = append(trl, tkr{
+				taskLogURL:               console.TaskLogURL(pr.GetNamespace(), pr.GetName(), taskrunName),
+				PipelineRunTaskRunStatus: taskrunStatus,
+			})
+		}
 		sort.Sort(sort.Reverse(trl))
 	}
 
@@ -132,12 +126,7 @@ func postFinalStatus(ctx context.Context, cs *params.Run, k8int kubeinteraction.
 		return pr, err
 	}
 
-	consoleURL, err := k8int.GetConsoleUI(ctx, namespace, pr.Name)
-	if err != nil {
-		consoleURL = "https://giphy.com/search/cat-reading"
-	}
-
-	taskStatus, err := statusOfAllTaskListForCheckRun(pr, consoleURL, vcsintf.GetConfig().TaskStatusTMPL)
+	taskStatus, err := statusOfAllTaskListForCheckRun(pr, cs.Clients.ConsoleUI, vcsintf.GetConfig().TaskStatusTMPL)
 	if err != nil {
 		return pr, err
 	}
@@ -152,12 +141,13 @@ func postFinalStatus(ctx context.Context, cs *params.Run, k8int kubeinteraction.
 		return pr, err
 	}
 	output := outputBuffer.String()
+
 	status := webvcs.StatusOpts{
 		Status:          "completed",
 		Conclusion:      pipelineRunStatus(pr),
 		Text:            output,
 		PipelineRunName: pr.Name,
-		DetailsURL:      consoleURL,
+		DetailsURL:      cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
 	}
 	err = createStatus(ctx, vcsintf, cs, status)
 	cs.Clients.Log.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)

@@ -163,12 +163,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		return fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
 	}
 
-	// Get the UI/webconsole URL for this pipeline to watch the log (only openshift console supported atm)
-	consoleURL, err := k8int.GetConsoleUI(ctx, repo.GetNamespace(), pr.GetName())
-	if err != nil {
-		// Don't bomb out if we can't get the console UI
-		consoleURL = "https://giphy.com/explore/cat-exercise-wheel"
-	}
+	consoleURL := cs.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
 
 	// Create status with the log url
 	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(),
@@ -187,7 +182,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 
 	cs.Clients.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes", pr.Namespace, pr.Name, fmtDuration(pipelineRunTimeout))
 	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, pipelineRunTimeout); err != nil {
-		cs.Clients.Log.Infow("pipelinerun has failed: %w", err)
+		cs.Clients.Log.Warnf("pipelinerun %s in namespace %s has a failed status", pipelineRun.GetGenerateName(), repo.GetNamespace())
 	}
 
 	// Do cleanups

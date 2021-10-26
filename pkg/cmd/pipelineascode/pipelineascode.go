@@ -19,17 +19,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	defaultDetailsURL = "https://github.com/openshift-pipelines/pipelines-as-code/"
-)
-
 func Command(cs *params.Run) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "pipelines-as-code",
 		Short:        "Pipelines as code Run",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := cs.Clients.NewClients(&cs.Info)
+			ctx := context.Background()
+			err := cs.Clients.NewClients(ctx, &cs.Info)
 			if err != nil {
 				return err
 			}
@@ -38,7 +35,6 @@ func Command(cs *params.Run) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ctx := context.Background()
 			vcsintf, err := getVCS(cs.Info.Pac)
 			if err != nil {
 				return err
@@ -91,11 +87,7 @@ func getVCS(pacopts *info.PacOpts) (webvcs.Interface, error) {
 func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinteract kubeinteraction.Interface) error {
 	var err error
 
-	cs.Info.Pac.LogURL, err = kinteract.GetConsoleUI(ctx, "", "")
-	if err != nil {
-		cs.Clients.Log.Warn("could not detect a Console URL, skipping")
-		cs.Info.Pac.LogURL = defaultDetailsURL
-	}
+	cs.Info.Pac.LogURL = cs.Clients.ConsoleUI.URL()
 
 	// If we already have the Token (ie: github apps) set as soon as possible the client,
 	// There is more things supported when we already have a github apps and some that are not
@@ -124,7 +116,7 @@ func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinterac
 			Status:     "completed",
 			Conclusion: "failure",
 			Text:       fmt.Sprintf("There was an issue validating the commit: %q", err),
-			DetailsURL: defaultDetailsURL,
+			DetailsURL: cs.Clients.ConsoleUI.URL(),
 		})
 		if createStatusErr != nil {
 			cs.Clients.Log.Errorf("Cannot create status: %s %s", err, createStatusErr)

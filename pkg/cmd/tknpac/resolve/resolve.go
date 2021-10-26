@@ -61,7 +61,8 @@ func Command(run *params.Run) *cobra.Command {
 		Long:  longhelp,
 		Short: "Embed PipelineRun references as a single resource.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := run.Clients.NewClients(&run.Info)
+			ctx := context.Background()
+			err := run.Clients.NewClients(ctx, &run.Info)
 			if err != nil {
 				// this check allows resolve to be run without
 				// a kubeconfig so users can verify the tkn version

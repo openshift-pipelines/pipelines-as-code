@@ -140,7 +140,7 @@ func DescribeCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 			ctx := context.Background()
 			clock := clockwork.NewRealClock()
-			err = run.Clients.NewClients(&run.Info)
+			err = run.Clients.NewClients(ctx, &run.Info)
 			if err != nil {
 				return err
 			}

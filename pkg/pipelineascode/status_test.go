@@ -105,21 +105,21 @@ func TestTaskRunListMapSort(t *testing.T) {
 
 	trlist := newTaskrunListFromMap(status, "http://hello")
 	sort.Sort(trlist)
-	assert.Equal(t, trlist[0].TaskrunName, "last")
-	assert.Equal(t, trlist[1].TaskrunName, "middle")
-	assert.Equal(t, trlist[2].TaskrunName, "first")
+	assert.Equal(t, trlist[0].trname, "last")
+	assert.Equal(t, trlist[1].trname, "middle")
+	assert.Equal(t, trlist[2].trname, "first")
 
 	// Not sorting the middle one since no status, comes first then
 	status["middle"].Status.TaskRunStatusFields.StartTime = nil
 	trlist = newTaskrunListFromMap(status, "http://moto")
 	sort.Sort(trlist)
-	assert.Equal(t, trlist[0].TaskrunName, "middle")
+	assert.Equal(t, trlist[0].trname, "middle")
 
 	// Only last become sorted because middle and first has been removed
 	status["first"].Status.TaskRunStatusFields.StartTime = nil
 	trlist = newTaskrunListFromMap(status, "http://moto")
 	sort.Sort(trlist)
-	assert.Equal(t, trlist[len(trlist)-1].TaskrunName, "last")
+	assert.Equal(t, trlist[len(trlist)-1].trname, "last")
 }
 
 func TestConditionEmoji(t *testing.T) {

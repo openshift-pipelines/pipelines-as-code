@@ -74,7 +74,7 @@ func bitbucketCloudSetup(ctx context.Context) (*params.Run, E2EOptions, bitbucke
 	splitted := strings.Split(bitbucketWSOwner, "/")
 
 	run := &params.Run{}
-	if err := run.Clients.NewClients(&run.Info); err != nil {
+	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return nil, E2EOptions{}, bitbucketcloud.VCS{}, err
 	}
 	e2eoptions := E2EOptions{
@@ -126,7 +126,7 @@ func githubSetup(ctx context.Context, viaDirectWebhook bool) (*params.Run, E2EOp
 	}
 
 	run := &params.Run{}
-	if err := run.Clients.NewClients(&run.Info); err != nil {
+	if err := run.Clients.NewClients(nil, &run.Info); err != nil {
 		return nil, E2EOptions{}, github.VCS{}, err
 	}
 	e2eoptions := E2EOptions{Owner: splitted[0], Repo: splitted[1], DirectWebhook: viaDirectWebhook}

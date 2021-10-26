@@ -41,12 +41,11 @@ func ListCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			err = run.Clients.NewClients(&run.Info)
+			ctx := context.Background()
+			err = run.Clients.NewClients(ctx, &run.Info)
 			if err != nil {
 				return err
 			}
-			ctx := context.Background()
 			cw := clockwork.NewRealClock()
 			return list(ctx, run, opts, ioStreams, cw, selectors, noheaders)
 		},
