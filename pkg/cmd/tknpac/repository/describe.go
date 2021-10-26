@@ -10,10 +10,11 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -55,18 +56,18 @@ const (
 `
 )
 
-func formatStatus(status v1alpha1.RepositoryRunStatus, cs *ui.ColorScheme, c clockwork.Clock) string {
+func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock) string {
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
 		status.PipelineRunName,
 		*status.EventType,
-		ui.SanitizeBranch(*status.TargetBranch),
-		ui.ShortSHA(*status.SHA),
+		formating.SanitizeBranch(*status.TargetBranch),
+		formating.ShortSHA(*status.SHA),
 		pipelineascode.Age(status.StartTime, c),
 		pipelineascode.Duration(status.StartTime, status.CompletionTime),
 		cs.ColorStatus(status.Status.Conditions[0].Reason))
 }
 
-func askRepo(ctx context.Context, cs *params.Run, opts *params.PacCliOpts, namespace string) (*v1alpha1.Repository, error) {
+func askRepo(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, namespace string) (*v1alpha1.Repository, error) {
 	repositories, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -81,7 +82,7 @@ func askRepo(ctx context.Context, cs *params.Run, opts *params.PacCliOpts, names
 
 	allRepositories := []string{}
 	for _, repository := range repositories.Items {
-		repoOwner, err := ui.GetRepoOwnerFromGHURL(repository.Spec.URL)
+		repoOwner, err := formating.GetRepoOwnerFromGHURL(repository.Spec.URL)
 		if err != nil {
 			return nil, err
 		}
@@ -120,7 +121,7 @@ func askRepo(ctx context.Context, cs *params.Run, opts *params.PacCliOpts, names
 	return nil, fmt.Errorf("cannot match repository")
 }
 
-func DescribeCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
+func DescribeCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "describe",
 		Aliases: []string{"desc"},
@@ -130,11 +131,9 @@ func DescribeCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 		},
 		ValidArgsFunction: completion.ParentCompletion,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			var err error
 			var repoName string
-			opts, err := params.NewCliOptions(cmd)
-			if err != nil {
-				return err
-			}
+			opts := cli.NewCliOptions(cmd)
 
 			opts.Namespace, err = cmd.Flags().GetString(namespaceFlag)
 			if err != nil {
@@ -168,8 +167,8 @@ func DescribeCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *params.PacCliOpts,
-	ioStreams *ui.IOStreams, repoName string) error {
+func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *cli.PacCliOpts,
+	ioStreams *cli.IOStreams, repoName string) error {
 	var repository *v1alpha1.Repository
 	var err error
 
@@ -194,17 +193,17 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 
 	funcMap := template.FuncMap{
 		"formatStatus":    formatStatus,
-		"formatEventType": ui.CamelCasit,
+		"formatEventType": formating.CamelCasit,
 		"formatDuration":  pipelineascode.Duration,
 		"formatTime":      pipelineascode.Age,
-		"sanitizeBranch":  ui.SanitizeBranch,
-		"shortSHA":        ui.ShortSHA,
+		"sanitizeBranch":  formating.SanitizeBranch,
+		"shortSHA":        formating.ShortSHA,
 	}
 
 	data := struct {
 		Repository  *v1alpha1.Repository
 		Statuses    []v1alpha1.RepositoryRunStatus
-		ColorScheme *ui.ColorScheme
+		ColorScheme *cli.ColorScheme
 		Clock       clockwork.Clock
 	}{
 		Repository:  repository,

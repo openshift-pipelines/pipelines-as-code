@@ -1,12 +1,12 @@
 package repository
 
 import (
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/spf13/cobra"
 )
 
-func Root(clients *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
+func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "repository",
 		Aliases:      []string{"repo", "repsitories"},

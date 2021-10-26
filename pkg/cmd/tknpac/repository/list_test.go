@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-github/v39/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -88,7 +89,7 @@ func TestList(t *testing.T) {
 		namespaces       []*corev1.Namespace
 		repositories     []*v1alpha1.Repository
 		currentNamespace string
-		opts             *params.PacCliOpts
+		opts             *cli.PacCliOpts
 		selectors        string
 		noheaders        bool
 	}
@@ -100,7 +101,7 @@ func TestList(t *testing.T) {
 		{
 			name: "Test list repositories",
 			args: args{
-				opts:             &params.PacCliOpts{},
+				opts:             &cli.PacCliOpts{},
 				currentNamespace: namespace1.GetName(),
 				namespaces: []*corev1.Namespace{
 					namespace1,
@@ -111,7 +112,7 @@ func TestList(t *testing.T) {
 		{
 			name: "Test list repositories all namespaces",
 			args: args{
-				opts:             &params.PacCliOpts{AllNameSpaces: true},
+				opts:             &cli.PacCliOpts{AllNameSpaces: true},
 				currentNamespace: "namespace",
 				namespaces:       []*corev1.Namespace{namespace1, namespace2},
 				repositories:     []*v1alpha1.Repository{repoNamespace1, repoNamespace2},
@@ -120,7 +121,7 @@ func TestList(t *testing.T) {
 		{
 			name: "Test list repositories specific namespaces",
 			args: args{
-				opts:             &params.PacCliOpts{},
+				opts:             &cli.PacCliOpts{},
 				currentNamespace: namespace2.GetName(),
 				namespaces:       []*corev1.Namespace{namespace1, namespace2},
 				repositories:     []*v1alpha1.Repository{repoNamespace1, repoNamespace2},

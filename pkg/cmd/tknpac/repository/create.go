@@ -8,10 +8,10 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,11 +23,11 @@ type createOptions struct {
 	run        *params.Run
 	gitInfo    *git.Info
 
-	ioStreams *ui.IOStreams
-	cliOpts   *params.PacCliOpts
+	ioStreams *cli.IOStreams
+	cliOpts   *cli.PacCliOpts
 }
 
-func CreateCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
+func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	createOpts := &createOptions{
 		event:      &info.Event{},
 		repository: &apipac.Repository{},
@@ -40,10 +40,7 @@ func CreateCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			createOpts.ioStreams = ioStreams
-			createOpts.cliOpts, err = params.NewCliOptions(cmd)
-			if err != nil {
-				return err
-			}
+			createOpts.cliOpts = cli.NewCliOptions(cmd)
 			createOpts.ioStreams.SetColorEnabled(!createOpts.cliOpts.NoColoring)
 
 			cwd, err := os.Getwd()
@@ -122,7 +119,7 @@ func getOrCreateNamespace(ctx context.Context, opts *createOptions) error {
 		defaultNamespace,
 	)
 	msg = fmt.Sprintf("Would you like me to create the namespace %s?", defaultNamespace)
-	createNamespace, err := ui.AskYesNo(opts.cliOpts, msg, true)
+	createNamespace, err := cli.AskYesNo(opts.cliOpts, msg, true)
 	if err != nil {
 		return err
 	}

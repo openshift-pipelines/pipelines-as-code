@@ -9,10 +9,10 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -28,11 +28,11 @@ type generateOpts struct {
 	run        *params.Run
 	gitInfo    *git.Info
 
-	ioStreams *ui.IOStreams
-	cliOpts   *params.PacCliOpts
+	ioStreams *cli.IOStreams
+	cliOpts   *cli.PacCliOpts
 }
 
-func Command(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
+func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	opt := &generateOpts{
 		event:      &info.Event{},
 		repository: &apipac.Repository{},
@@ -44,11 +44,7 @@ func Command(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 		Aliases: []string{"gen"},
 		Short:   "Generate PipelineRun",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var err error
-			opt.cliOpts, err = params.NewCliOptions(cmd)
-			if err != nil {
-				return err
-			}
+			opt.cliOpts = cli.NewCliOptions(cmd)
 			opt.ioStreams.SetColorEnabled(!opt.cliOpts.NoColoring)
 
 			cwd, err := os.Getwd()
@@ -75,7 +71,6 @@ func Command(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.PersistentFlags().BoolP("no-color", "C", !ioStreams.ColorEnabled(), "disable coloring")
 	return cmd
 }
 
@@ -151,7 +146,7 @@ func (o *generateOpts) generateSamplePipeline() error {
 	fpath := filepath.Join(o.gitInfo.TopLevelPath, ".tekton", fname)
 	relpath, _ := filepath.Rel(o.gitInfo.TopLevelPath, fpath)
 
-	reply, err := ui.AskYesNo(
+	reply, err := cli.AskYesNo(
 		o.cliOpts,
 		fmt.Sprintf("Would you like me to create a basic PipelineRun into the file %s ?", relpath),
 		true)
@@ -174,7 +169,7 @@ func (o *generateOpts) generateSamplePipeline() error {
 	}
 
 	if _, err = os.Stat(fpath); !os.IsNotExist(err) {
-		overwrite, err := ui.AskYesNo(o.cliOpts,
+		overwrite, err := cli.AskYesNo(o.cliOpts,
 			fmt.Sprintf("There is already a file named: %s would you like me to override it?", fpath),
 			false)
 		if err != nil {

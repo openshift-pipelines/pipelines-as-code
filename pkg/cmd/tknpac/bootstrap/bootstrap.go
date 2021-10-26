@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -29,8 +29,8 @@ type bootstrapOpts struct {
 	skipGithubAPP   bool
 	forceInstall    bool
 	webserverPort   int
-	cliOpts         *params.PacCliOpts
-	ioStreams       *ui.IOStreams
+	cliOpts         *cli.PacCliOpts
+	ioStreams       *cli.IOStreams
 	targetNamespace string
 	recreateSecret  bool
 
@@ -97,20 +97,16 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 	return startWebServer(ctx, opts, run, string(jeez))
 }
 
-func Command(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
+func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	opts := &bootstrapOpts{}
 	cmd := &cobra.Command{
 		Use:   "bootstrap",
 		Long:  "Bootstrap Pipelines as Code",
 		Short: "Bootstrap Pipelines as Code.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var err error
 			ctx := context.Background()
 			opts.ioStreams = ioStreams
-			opts.cliOpts, err = params.NewCliOptions(cmd)
-			if err != nil {
-				return err
-			}
+			opts.cliOpts = cli.NewCliOptions(cmd)
 			opts.ioStreams.SetColorEnabled(!opts.cliOpts.NoColoring)
 
 			if err := run.Clients.NewClients(&run.Info); err != nil {

@@ -1,4 +1,4 @@
-package ui
+package formating
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 )
 
@@ -29,7 +30,7 @@ func CamelCasit(s string) string {
 	return strings.ReplaceAll(strings.Title(strings.ReplaceAll(s, "_", " ")), " ", "")
 }
 
-func ShowStatus(repository v1alpha1.Repository, cs *ColorScheme) string {
+func ShowStatus(repository v1alpha1.Repository, cs *cli.ColorScheme) string {
 	var status string
 	if len(repository.Status) == 0 {
 		status = "NoRun"

@@ -1,4 +1,4 @@
-package ui
+package cli
 
 import (
 	"fmt"
@@ -12,7 +12,6 @@ import (
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 	"github.com/mgutz/ansi"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 )
 
 type IOStreams struct {
@@ -85,7 +84,7 @@ func NewIOStreams() *IOStreams {
 	stdoutIsTTY := isTerminal(os.Stdout)
 	stderrIsTTY := isTerminal(os.Stderr)
 
-	io := &IOStreams{
+	ios := &IOStreams{
 		In:           os.Stdin,
 		Out:          colorable.NewColorable(os.Stdout),
 		ErrOut:       colorable.NewColorable(os.Stderr),
@@ -94,15 +93,15 @@ func NewIOStreams() *IOStreams {
 	}
 
 	if stdoutIsTTY && stderrIsTTY {
-		io.progressIndicatorEnabled = true
+		ios.progressIndicatorEnabled = true
 	}
 
-	io.setSurveyColor()
+	ios.setSurveyColor()
 
 	// prevent duplicate isTerminal queries now that we know the answer
-	io.SetStdoutTTY(stdoutIsTTY)
-	io.SetStderrTTY(stderrIsTTY)
-	return io
+	ios.SetStdoutTTY(stdoutIsTTY)
+	ios.SetStderrTTY(stderrIsTTY)
+	return ios
 }
 
 func (s *IOStreams) SetStdoutTTY(isTTY bool) {
@@ -129,7 +128,7 @@ func isTerminal(f *os.File) bool {
 	return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
 }
 
-func AskYesNo(cliOpts *params.PacCliOpts, question string, deflt bool) (bool, error) {
+func AskYesNo(cliOpts *PacCliOpts, question string, deflt bool) (bool, error) {
 	var answer bool
 
 	if err := cliOpts.Ask([]*survey.Question{

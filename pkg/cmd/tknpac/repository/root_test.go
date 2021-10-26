@@ -10,9 +10,9 @@ import (
 	"github.com/google/go-github/v39/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	tcli "github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/spf13/cobra"
@@ -27,7 +27,7 @@ import (
 
 func TestRoot(t *testing.T) {
 	buf := &bytes.Buffer{}
-	s, err := tcli.ExecuteCommand(Root(&params.Run{}, &ui.IOStreams{Out: buf, ErrOut: buf}), "help")
+	s, err := tcli.ExecuteCommand(Root(&params.Run{}, &cli.IOStreams{Out: buf, ErrOut: buf}), "help")
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(s, "repository, repo, repsitories"))
 }
@@ -35,7 +35,7 @@ func TestRoot(t *testing.T) {
 func TestCommands(t *testing.T) {
 	tests := []struct {
 		name    string
-		command func(c *params.Run, ioStreams *ui.IOStreams) *cobra.Command
+		command func(c *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 		want    *cobra.Command
 	}{
 		{
@@ -104,7 +104,7 @@ func TestCommands(t *testing.T) {
 				},
 			}
 			buf := new(bytes.Buffer)
-			ioStream := &ui.IOStreams{Out: buf, ErrOut: buf}
+			ioStream := &cli.IOStreams{Out: buf, ErrOut: buf}
 			cmd := tt.command(cs, ioStream)
 			cmd.SetOut(buf)
 			_, err := tcli.ExecuteCommand(cmd, "--no-color", "-n", nsName, repoName)

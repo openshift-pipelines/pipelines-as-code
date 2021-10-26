@@ -11,9 +11,9 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -87,7 +87,7 @@ func Command(run *params.Run) *cobra.Command {
 			}
 
 			if _, ok := mapped["repo_owner"]; !ok && gitinfo.URL != "" {
-				repoOwner, err := ui.GetRepoOwnerFromGHURL(gitinfo.URL)
+				repoOwner, err := formating.GetRepoOwnerFromGHURL(gitinfo.URL)
 				if err != nil {
 					return err
 				}

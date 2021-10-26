@@ -11,10 +11,10 @@ import (
 	"github.com/google/go-github/v39/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
@@ -24,11 +24,11 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func newIOStream() (*ui.IOStreams, *bytes.Buffer) {
+func newIOStream() (*cli.IOStreams, *bytes.Buffer) {
 	in := &bytes.Buffer{}
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
-	return &ui.IOStreams{
+	return &cli.IOStreams{
 		In:     ioutil.NopCloser(in),
 		Out:    out,
 		ErrOut: errOut,
@@ -41,7 +41,7 @@ func TestDescribe(t *testing.T) {
 		currentNamespace string
 		repoName         string
 		statuses         []v1alpha1.RepositoryRunStatus
-		opts             *params.PacCliOpts
+		opts             *cli.PacCliOpts
 	}
 	tests := []struct {
 		name    string
@@ -53,7 +53,7 @@ func TestDescribe(t *testing.T) {
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: "namespace",
-				opts:             &params.PacCliOpts{},
+				opts:             &cli.PacCliOpts{},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
 						Status: v1beta1.Status{
@@ -80,7 +80,7 @@ func TestDescribe(t *testing.T) {
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: "namespace",
-				opts: &params.PacCliOpts{
+				opts: &cli.PacCliOpts{
 					Namespace: "optnamespace",
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
@@ -107,7 +107,7 @@ func TestDescribe(t *testing.T) {
 		{
 			name: "Describe a Pipeline with a Multiple Run",
 			args: args{
-				opts:             &params.PacCliOpts{},
+				opts:             &cli.PacCliOpts{},
 				repoName:         "test-run",
 				currentNamespace: "namespace",
 				statuses: []v1alpha1.RepositoryRunStatus{

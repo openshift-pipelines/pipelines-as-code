@@ -6,9 +6,10 @@ import (
 	"text/tabwriter"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -21,7 +22,7 @@ var (
 	noColorFlag       = "no-color"
 )
 
-func ListCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
+func ListCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	var noheaders, allNamespaces bool
 	var selectors string
 
@@ -30,11 +31,8 @@ func ListCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List repositories",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opts, err := params.NewCliOptions(cmd)
-			if err != nil {
-				return err
-			}
-
+			var err error
+			opts := cli.NewCliOptions(cmd)
 			opts.AllNameSpaces, err = cmd.Flags().GetBool(allNamespacesFlag)
 			if err != nil {
 				return err
@@ -80,7 +78,7 @@ func ListCommand(run *params.Run, ioStreams *ui.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func list(ctx context.Context, cs *params.Run, opts *params.PacCliOpts, ioStreams *ui.IOStreams, cw clockwork.Clock, selectors string, noheaders bool) error {
+func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, cw clockwork.Clock, selectors string, noheaders bool) error {
 	if opts.Namespace != "" {
 		cs.Info.Kube.Namespace = opts.Namespace
 	}
@@ -106,13 +104,13 @@ func list(ctx context.Context, cs *params.Run, opts *params.PacCliOpts, ioStream
 		fmt.Fprintln(w, "\tSTATUS")
 	}
 	for _, repository := range repositories.Items {
-		fmt.Fprintf(w, body, repository.GetName(), ui.ShowLastAge(repository, cw), repository.Spec.URL)
+		fmt.Fprintf(w, body, repository.GetName(), formating.ShowLastAge(repository, cw), repository.Spec.URL)
 
 		if opts.AllNameSpaces {
 			fmt.Fprintf(w, "\t%s", repository.GetNamespace())
 		}
 
-		fmt.Fprintf(w, "\t%s", ui.ShowStatus(repository, ioStreams.ColorScheme()))
+		fmt.Fprintf(w, "\t%s", formating.ShowStatus(repository, ioStreams.ColorScheme()))
 		fmt.Fprint(w, "\n")
 	}
 
