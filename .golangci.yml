@@ -4,6 +4,9 @@ run:
   skip-dirs:
     - vendor
 linters-settings:
+  gocritic:
+    disabled-checks:
+      - unlambda
   errcheck:
     exclude: .errcheck.txt
 linters:

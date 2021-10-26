@@ -68,7 +68,7 @@ func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c cl
 		cs.ColorStatus(status.Status.Conditions[0].Reason))
 }
 
-func askRepo(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, namespace string) (*v1alpha1.Repository, error) {
+func askRepo(ctx context.Context, cs *params.Run, namespace string) (*v1alpha1.Repository, error) {
 	repositories, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
@@ -175,7 +175,7 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 			return err
 		}
 	} else {
-		repository, err = askRepo(ctx, cs, opts, cs.Info.Kube.Namespace)
+		repository, err = askRepo(ctx, cs, cs.Info.Kube.Namespace)
 		if err != nil {
 			return err
 		}

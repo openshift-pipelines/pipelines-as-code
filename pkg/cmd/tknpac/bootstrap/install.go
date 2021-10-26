@@ -57,7 +57,9 @@ func installPac(ctx context.Context, opts *bootstrapOpts) error {
 	}
 
 	if !opts.forceInstall {
-		doinstall, err := askYN(opts, true, "🕵️ Pipelines as Code doesn't seems to be installed", fmt.Sprintf("Do you want me to install Pipelines as Code %s?", latestversion))
+		doinstall, err := askYN(true,
+			"🕵️ Pipelines as Code doesn't seems to be installed",
+			fmt.Sprintf("Do you want me to install Pipelines as Code %s?", latestversion))
 		if err != nil {
 			return err
 		}

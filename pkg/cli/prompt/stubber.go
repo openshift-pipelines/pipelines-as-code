@@ -14,7 +14,7 @@ type AskStubber struct {
 	Count    int
 	OneCount int
 	Stubs    [][]*QuestionStub
-	StubOnes []*PromptStub
+	StubOnes []*StubPrompt
 }
 
 func InitAskStubber() (*AskStubber, func()) {
@@ -25,7 +25,7 @@ func InitAskStubber() (*AskStubber, func()) {
 	SurveyAskOne = func(p survey.Prompt, response interface{}, opts ...survey.AskOpt) error {
 		as.AskOnes = append(as.AskOnes, &p)
 		count := as.OneCount
-		as.OneCount += 1
+		as.OneCount++
 		if count >= len(as.StubOnes) {
 			panic(fmt.Sprintf("more asks than stubs. most recent call: %v", p))
 		}
@@ -44,7 +44,7 @@ func InitAskStubber() (*AskStubber, func()) {
 	SurveyAsk = func(qs []*survey.Question, response interface{}, opts ...survey.AskOpt) error {
 		as.Asks = append(as.Asks, qs)
 		count := as.Count
-		as.Count += 1
+		as.Count++
 		if count >= len(as.Stubs) {
 			panic(fmt.Sprintf("more asks than stubs. most recent call: %#v", qs))
 		}
@@ -76,7 +76,7 @@ func InitAskStubber() (*AskStubber, func()) {
 	return &as, teardown
 }
 
-type PromptStub struct {
+type StubPrompt struct {
 	Value   interface{}
 	Default bool
 }
@@ -88,13 +88,13 @@ type QuestionStub struct {
 }
 
 func (as *AskStubber) StubOne(value interface{}) {
-	as.StubOnes = append(as.StubOnes, &PromptStub{
+	as.StubOnes = append(as.StubOnes, &StubPrompt{
 		Value: value,
 	})
 }
 
 func (as *AskStubber) StubOneDefault() {
-	as.StubOnes = append(as.StubOnes, &PromptStub{
+	as.StubOnes = append(as.StubOnes, &StubPrompt{
 		Default: true,
 	})
 }

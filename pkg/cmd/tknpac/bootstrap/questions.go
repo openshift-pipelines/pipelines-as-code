@@ -10,7 +10,7 @@ import (
 
 const defaultPublicGithub = "https://github.com"
 
-func askYN(opts *bootstrapOpts, deflt bool, title, question string) (bool, error) {
+func askYN(deflt bool, title, question string) (bool, error) {
 	var answer bool
 	// nolint:forbidigo
 	fmt.Printf("%s\n", title)
@@ -26,7 +26,7 @@ func askQuestions(opts *bootstrapOpts) error {
 	var qs []*survey.Question
 
 	if opts.recreateSecret {
-		answer, err := askYN(opts, false,
+		answer, err := askYN(false,
 			fmt.Sprintf("👀 A secret named %s in %s namespace has been detected.", secretName, opts.targetNamespace),
 			"Do you want me to override the secret?")
 		if err != nil {
@@ -69,7 +69,7 @@ func askQuestions(opts *bootstrapOpts) error {
 	}
 
 	if opts.RouteName != "" {
-		answer, err := askYN(opts, true,
+		answer, err := askYN(true,
 			fmt.Sprintf("👀 I have detected an OpenShift Route on: %s", opts.RouteName),
 			"Do you want me to use it?")
 		if err != nil {
