@@ -8,11 +8,9 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/spf13/cobra"
 )
@@ -24,58 +22,53 @@ var (
 )
 
 type generateOpts struct {
-	event      *info.Event
-	repository *apipac.Repository
-	run        *params.Run
-	gitInfo    *git.Info
+	event   *info.Event
+	gitInfo *git.Info
 
 	ioStreams *cli.IOStreams
 	cliOpts   *cli.PacCliOpts
 }
 
-func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
-	opt := &generateOpts{
-		event:      &info.Event{},
-		repository: &apipac.Repository{},
-		ioStreams:  ioStreams,
-		run:        run,
+func Command(ioStreams *cli.IOStreams) *cobra.Command {
+	gopt := &generateOpts{
+		event:     &info.Event{},
+		ioStreams: ioStreams,
 	}
 	cmd := &cobra.Command{
 		Use:     "generate",
 		Aliases: []string{"gen"},
 		Short:   "Generate PipelineRun",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			opt.cliOpts = cli.NewCliOptions(cmd)
-			opt.ioStreams.SetColorEnabled(!opt.cliOpts.NoColoring)
+			gopt.cliOpts = cli.NewCliOptions(cmd)
+			gopt.ioStreams.SetColorEnabled(!gopt.cliOpts.NoColoring)
 
 			cwd, err := os.Getwd()
 			if err != nil {
 				return err
 			}
-			opt.gitInfo = git.GetGitInfo(cwd)
-			if err := run.Clients.NewClients(&run.Info); err != nil {
-				return err
-			}
-
-			if err := opt.getTargetEvent(); err != nil {
-				return err
-			}
-
-			if err := opt.getBranchOrTag(); err != nil {
-				return err
-			}
-
-			if err := opt.generateSamplePipeline(); err != nil {
-				return err
-			}
-
-			return nil
+			gopt.gitInfo = git.GetGitInfo(cwd)
+			return Generate(gopt)
 		},
 	}
 	return cmd
 }
 
-func (o *generateOpts) getTargetEvent() error {
+func Generate(o *generateOpts) error {
+	if err := o.targetEvent(); err != nil {
+		return err
+	}
+
+	if err := o.branchOrTag(); err != nil {
+		return err
+	}
+
+	if err := o.samplePipeline(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o *generateOpts) targetEvent() error {
 	msg := "Enter the Git event type for triggering the pipeline: "
 
 	eventLabels := make([]string, 0, len(eventTypes))
@@ -92,17 +85,21 @@ func (o *generateOpts) getTargetEvent() error {
 		}, &choice); err != nil {
 		return err
 	}
+	if *choice == "" {
+		choice = &defaultEventType
+	}
 
 	for k, v := range eventTypes {
 		if v == *choice {
 			o.event.EventType = k
+			return nil
 		}
 	}
 
-	return nil
+	return fmt.Errorf("invalid event type: %s", *choice)
 }
 
-func (o *generateOpts) getBranchOrTag() error {
+func (o *generateOpts) branchOrTag() error {
 	var msg string
 	choice := new(string)
 	if o.event.BaseBranch != "" {
@@ -130,9 +127,9 @@ func (o *generateOpts) getBranchOrTag() error {
 	return nil
 }
 
-// generateSamplePipeline will try to create a basic pipeline in tekton
+// samplePipeline will try to create a basic pipeline in tekton
 // directory.
-func (o *generateOpts) generateSamplePipeline() error {
+func (o *generateOpts) samplePipeline() error {
 	cs := o.ioStreams.ColorScheme()
 
 	fname := fmt.Sprintf("%s.yaml", strings.ReplaceAll(o.event.EventType, "_", "-"))
@@ -175,6 +172,7 @@ func (o *generateOpts) generateSamplePipeline() error {
 		return err
 	}
 
+	// nolint: gosec
 	err = ioutil.WriteFile(fpath, tmpl.Bytes(), 0o644)
 	if err != nil {
 		return err
