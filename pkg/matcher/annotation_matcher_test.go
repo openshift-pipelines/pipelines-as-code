@@ -60,9 +60,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 							testnewrepo.RepoTestcreationOpts{
 								Name:             "test-good",
 								URL:              targetURL,
-								Branch:           mainBranch,
 								InstallNamespace: targetNamespace,
-								EventType:        "pull_request",
 							},
 						),
 					},
@@ -82,9 +80,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 							testnewrepo.RepoTestcreationOpts{
 								Name:             "test-oldest",
 								URL:              targetURL,
-								Branch:           mainBranch,
 								InstallNamespace: targetNamespace,
-								EventType:        "pull_request",
 								CreateTime:       metav1.Time{Time: cw.Now().Add(-55 * time.Minute)},
 							},
 						),
@@ -92,9 +88,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 							testnewrepo.RepoTestcreationOpts{
 								Name:             "test-newest",
 								URL:              targetURL,
-								Branch:           mainBranch,
 								InstallNamespace: targetNamespace,
-								EventType:        "pull_request",
 								CreateTime:       metav1.Time{Time: cw.Now().Add(-50 * time.Minute)},
 							},
 						),
@@ -105,7 +99,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "no match a repository with target NS",
 			wantErr: true,
-			wantLog: "could not find Repository CRD",
+			wantLog: "matching a pipeline to event: URL",
 			args: args{
 				pruns:    []*tektonv1beta1.PipelineRun{pipelineTargetNS},
 				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
@@ -115,9 +109,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 							testnewrepo.RepoTestcreationOpts{
 								Name:             "test-good",
 								URL:              targetURL,
-								Branch:           mainBranch,
 								InstallNamespace: "otherNS",
-								EventType:        "pull_request",
 							},
 						),
 					},
@@ -247,7 +239,6 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				runevent: info.Event{EventType: "push", BaseBranch: "main"},
 			},
 			wantErr: true,
-			wantLog: "cannot match between event and pipelineRuns",
 		},
 		{
 			name: "bad-event-annotation",

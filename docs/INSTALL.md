@@ -191,8 +191,6 @@ metadata:
   namespace: target-namespace
 spec:
   url: "https://github.com/owner/repo"
-  branch: "main"
-  event_type: "pull_request"
   # Set this if you run with Github Enteprise
   # webvcs_api_url: "github.enteprise.com"
   webvcs_api_secret:
@@ -274,8 +272,6 @@ metadata:
   namespace: target-namespace
 spec:
   url: "https://bitbucket.com/workspace/repo"
-  branch: "main"
-  event_type: "pull_request"
   webvcs_api_user: "yourbitbucketusername"
   webvcs_api_url: "https://bitbucket.server.api.url"
   webvcs_api_secret:
@@ -354,7 +350,6 @@ metadata:
 spec:
   url: "https://bitbucket.com/workspace/repo"
   branch: "main"
-  event_type: "pull_request"
   webvcs_api_user: "yourbitbucketusername"
   webvcs_api_secret:
     name: "bitbucket-cloud-token"

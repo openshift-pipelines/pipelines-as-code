@@ -12,12 +12,17 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/bitbucketserver/types"
 )
 
-// processEventURL returns the URL to the event without the /browse
-func processEventURL(eventURL string) string {
+// sanitizeEventURL returns the URL to the event without the /browse
+func sanitizeEventURL(eventURL string) string {
 	if strings.HasSuffix(eventURL, "/browse") {
 		return eventURL[:len(eventURL)-len("/browse")]
 	}
 	return eventURL
+}
+
+// sanitizeOwner remove ~ from OWNER in case of personal repos
+func sanitizeOwner(owner string) string {
+	return strings.ReplaceAll(owner, "~", "")
 }
 
 // ParsePayload parses the payload from the event
@@ -37,7 +42,7 @@ func (v *VCS) ParsePayload(ctx context.Context, run *params.Run, payload string)
 		processedevent.Owner = e.PulRequest.ToRef.Repository.Project.Key
 		processedevent.Repository = e.PulRequest.ToRef.Repository.Name
 		processedevent.SHA = e.PulRequest.FromRef.LatestCommit
-		processedevent.URL = processEventURL(e.PulRequest.ToRef.Repository.Links.Self[0].Href)
+		processedevent.URL = e.PulRequest.ToRef.Repository.Links.Self[0].Href
 		processedevent.BaseBranch = e.PulRequest.ToRef.DisplayID
 		processedevent.HeadBranch = e.PulRequest.FromRef.DisplayID
 		processedevent.AccountID = fmt.Sprintf("%d", e.Actor.ID)
@@ -52,7 +57,7 @@ func (v *VCS) ParsePayload(ctx context.Context, run *params.Run, payload string)
 		processedevent.Owner = e.Repository.Project.Key
 		processedevent.Repository = e.Repository.Slug
 		processedevent.SHA = e.Changes[0].ToHash
-		processedevent.URL = processEventURL(e.Repository.Links.Self[0].Href)
+		processedevent.URL = e.Repository.Links.Self[0].Href
 		processedevent.BaseBranch = e.Changes[0].RefID
 		processedevent.HeadBranch = e.Changes[0].RefID
 		processedevent.AccountID = fmt.Sprintf("%d", e.Actor.ID)
@@ -66,6 +71,10 @@ func (v *VCS) ParsePayload(ctx context.Context, run *params.Run, payload string)
 	default:
 		return nil, fmt.Errorf("event %s is not supported", run.Info.Event.EventType)
 	}
+
+	v.projectKey = processedevent.Owner
+	processedevent.Owner = sanitizeOwner(processedevent.Owner)
+	processedevent.URL = sanitizeEventURL(processedevent.URL)
 
 	// TODO: is this the right way? I guess i have no way to know what is the
 	// baseURL of a server unless there is something in the API?

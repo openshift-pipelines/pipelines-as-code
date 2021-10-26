@@ -1,0 +1,14 @@
+Name:        repo1
+Namespace:   ns
+URL:         https://anurl.com/repo/owner
+
+Last Run: Success
+
+PipelineRun:    pipelinerun1
+Event:          pull_request
+Branch:         TargetBranch
+Commit URL:     https://anurl.com/repo/owner/commit/SHA
+Commit Title:   A title
+StartTime:      37 years ago
+Duration:       1 minute
+

@@ -37,7 +37,7 @@ func TestGithubPush(t *testing.T) {
 			runcnx.Clients.Log.Info("Testing with Github APPS integration")
 		}
 
-		repoinfo, err := createGithubRepoCRD(ctx, t, gvcs, runcnx, opts, targetNS, targetEvent, targetBranch)
+		repoinfo, err := createGithubRepoCRD(ctx, t, gvcs, runcnx, opts, targetNS)
 		assert.NilError(t, err)
 
 		entries, err := getEntries("testdata/pipelinerun-on-push.yaml", targetNS, targetBranch, targetEvent)

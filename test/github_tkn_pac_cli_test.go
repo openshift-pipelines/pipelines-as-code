@@ -12,10 +12,10 @@ import (
 	"testing"
 
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	repositorycmd "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/repository"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	tkpacrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/ui"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
+	tcli "github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -25,13 +25,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func execCommand(runcnx *params.Run, cmd func(*params.Run, *ui.IOStreams) *cobra.Command,
+func execCommand(runcnx *params.Run, cmd func(*params.Run, *cli.IOStreams) *cobra.Command,
 	args ...string) (string, error) {
 	bufout := new(bytes.Buffer)
-	ecmd := cmd(runcnx, &ui.IOStreams{
+	ecmd := cmd(runcnx, &cli.IOStreams{
 		Out: bufout,
 	})
-	_, err := cli.ExecuteCommand(ecmd, args...)
+	_, err := tcli.ExecuteCommand(ecmd, args...)
 	return bufout.String(), err
 }
 
@@ -74,9 +74,7 @@ spec:
 			Name: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
-			URL:       repoinfo.GetHTMLURL(),
-			EventType: pullRequestEvent,
-			Branch:    mainBranch,
+			URL: repoinfo.GetHTMLURL(),
 		},
 	}
 
@@ -86,11 +84,11 @@ spec:
 	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
-	output, err := execCommand(runcnx, repositorycmd.DescribeCommand, "-n", targetNS, targetNS)
+	output, err := execCommand(runcnx, tkpacrepo.DescribeCommand, "-n", targetNS, targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "No runs has started."))
 
-	output, err = execCommand(runcnx, repositorycmd.ListCommand, "-n", targetNS)
+	output, err = execCommand(runcnx, tkpacrepo.ListCommand, "-n", targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "NoRun"))
 
@@ -120,11 +118,11 @@ spec:
 
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
 
-	output, err = execCommand(runcnx, repositorycmd.ListCommand, "-n", targetNS)
+	output, err = execCommand(runcnx, tkpacrepo.ListCommand, "-n", targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "Succeeded"))
 
-	output, err = execCommand(runcnx, repositorycmd.DescribeCommand, "-n", targetNS, targetNS)
+	output, err = execCommand(runcnx, tkpacrepo.DescribeCommand, "-n", targetNS, targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "Succeeded"))
 }

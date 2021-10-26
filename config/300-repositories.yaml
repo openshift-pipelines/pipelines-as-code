@@ -29,12 +29,6 @@ spec:
         - jsonPath: .spec.url
           name: URL
           type: string
-        - jsonPath: .spec.event_type
-          name: EventType
-          type: string
-        - jsonPath: .spec.branch
-          name: Branch
-          type: string
         - name: Succeeded
           type: string
           jsonPath: ".pipelinerun_status[-1].conditions[?(@.type==\"Succeeded\")].status"
@@ -71,12 +65,6 @@ spec:
               properties:
                 url:
                   description: Repository URL
-                  type: string
-                branch:
-                  description: Branch
-                  type: string
-                event_type:
-                  description: Event Type
                   type: string
                 webvcs_api_url:
                   description: The API URL for the WEBVCS

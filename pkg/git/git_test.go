@@ -20,7 +20,7 @@ func TestGetGitInfo(t *testing.T) {
 			gitURL:       "https://github.com/chmouel/demo",
 			remoteTarget: "origin",
 			want: Info{
-				TargetURL: "https://github.com/chmouel/demo",
+				URL: "https://github.com/chmouel/demo",
 			},
 		},
 		{
@@ -28,7 +28,7 @@ func TestGetGitInfo(t *testing.T) {
 			gitURL:       "git@github.com:chmouel/demo.git",
 			remoteTarget: "origin",
 			want: Info{
-				TargetURL: "https://github.com/chmouel/demo",
+				URL: "https://github.com/chmouel/demo",
 			},
 		},
 		{
@@ -36,7 +36,7 @@ func TestGetGitInfo(t *testing.T) {
 			gitURL:       "git@github.com:chmouel/demo",
 			remoteTarget: "origin",
 			want: Info{
-				TargetURL: "https://github.com/chmouel/demo",
+				URL: "https://github.com/chmouel/demo",
 			},
 		},
 		{
@@ -44,7 +44,7 @@ func TestGetGitInfo(t *testing.T) {
 			gitURL:       "git@github.com:chmouel/demo",
 			remoteTarget: "upstream",
 			want: Info{
-				TargetURL: "https://github.com/chmouel/demo",
+				URL: "https://github.com/chmouel/demo",
 			},
 		},
 		{
@@ -70,8 +70,8 @@ func TestGetGitInfo(t *testing.T) {
 				_, _ = RunGit(gitDir, "checkout", "-b", tt.want.Branch)
 			}
 			gitinfo := GetGitInfo(gitDir)
-			if tt.want.TargetURL != "" {
-				assert.Equal(t, gitinfo.TargetURL, tt.want.TargetURL)
+			if tt.want.URL != "" {
+				assert.Equal(t, gitinfo.URL, tt.want.URL)
 			}
 			if tt.want.Branch != "" {
 				assert.Equal(t, gitinfo.Branch, tt.want.Branch)

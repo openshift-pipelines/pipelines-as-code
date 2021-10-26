@@ -43,7 +43,7 @@ func TestGetTektonDir(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			client, mux, tearDown := bbtest.SetupBBServerClient(ctx, t)
 			defer tearDown()
-			v := &VCS{Client: client}
+			v := &VCS{Client: client, projectKey: tt.event.Owner}
 			bbtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path)
 			content, err := v.GetTektonDir(ctx, tt.event, tt.path)
 			if tt.wantErr {
@@ -158,9 +158,9 @@ func TestCreateStatus(t *testing.T) {
 			if tt.nilClient {
 				client = nil
 			}
-			v := VCS{Client: client, pullRequestNumber: pullRequestNumber}
 			event := bbtest.MakeEvent(nil)
 			event.EventType = "pull_request"
+			v := VCS{Client: client, pullRequestNumber: pullRequestNumber, projectKey: event.Owner}
 			bbtest.MuxCreateAndTestCommitStatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr, pullRequestNumber)
 			err := v.CreateStatus(ctx, event, &tt.pacOpts, tt.status)
@@ -209,7 +209,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			client, mux, tearDown := bbtest.SetupBBServerClient(ctx, t)
 			defer tearDown()
-			v := &VCS{Client: client, defaultBranchLatestCommit: "1234"}
+			v := &VCS{Client: client, defaultBranchLatestCommit: "1234", projectKey: tt.event.Owner}
 			bbtest.MuxFiles(t, mux, tt.event, tt.targetbranch, filepath.Dir(tt.path), tt.filescontents)
 			fc, err := v.GetFileInsideRepo(ctx, tt.event, tt.path, tt.targetbranch)
 			assert.NilError(t, err)
@@ -292,7 +292,7 @@ func TestGetCommitInfo(t *testing.T) {
 			bbtest.MuxCommitInfo(t, mux, tt.event, tt.commit)
 			bbtest.MuxDefaultBranch(t, mux, tt.event, tt.defaultBranch, tt.latestCommit)
 			defer tearDown()
-			v := &VCS{Client: bbclient, baseURL: defaultBaseURL}
+			v := &VCS{Client: bbclient, baseURL: defaultBaseURL, projectKey: tt.event.Owner}
 			err := v.GetCommitInfo(ctx, tt.event)
 			assert.NilError(t, err)
 			assert.Equal(t, tt.defaultBranch, tt.event.DefaultBranch)

@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var noColorFlag = "no-color"
-
 type PacCliOpts struct {
 	NoColoring    bool
 	AllNameSpaces bool
@@ -17,9 +15,8 @@ type PacCliOpts struct {
 	AskOpts       survey.AskOpt
 }
 
-func NewCliOptions(cmd *cobra.Command) (*PacCliOpts, error) {
-	var err error
-	c := &PacCliOpts{
+func NewCliOptions(cmd *cobra.Command) *PacCliOpts {
+	return &PacCliOpts{
 		AskOpts: func(opt *survey.AskOptions) error {
 			opt.Stdio = terminal.Stdio{
 				In:  os.Stdin,
@@ -29,13 +26,8 @@ func NewCliOptions(cmd *cobra.Command) (*PacCliOpts, error) {
 			return nil
 		},
 	}
-	c.NoColoring, err = cmd.Flags().GetBool(noColorFlag)
-	if err != nil {
-		return nil, err
-	}
-	return c, err
 }
 
-func (c *PacCliOpts) Ask(qs []*survey.Question, ans interface{}) error {
-	return survey.Ask(qs, ans, c.AskOpts)
+func (c *PacCliOpts) Ask(qss []*survey.Question, ans interface{}) error {
+	return survey.Ask(qss, ans, c.AskOpts)
 }

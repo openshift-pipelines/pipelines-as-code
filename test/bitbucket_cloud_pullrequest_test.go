@@ -31,7 +31,7 @@ func TestBitbucketCloudPullRequest(t *testing.T) {
 		t.Skip(err.Error())
 		return
 	}
-	bcrepo := createBitbucketRepoCRD(ctx, t, bcvcs, runcnx, opts, targetNS, pullRequestEvent, mainBranch)
+	bcrepo := createBitbucketRepoCRD(ctx, t, bcvcs, runcnx, opts, targetNS)
 	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
 	title := "TestPullRequest - " + targetRefName
 
@@ -106,7 +106,7 @@ func bitbucketTearDown(ctx context.Context, t *testing.T, runcnx *params.Run, bc
 	nsTearDown(ctx, t, runcnx, targetNS)
 }
 
-func createBitbucketRepoCRD(ctx context.Context, t *testing.T, bcvcs bitbucketcloud.VCS, run *params.Run, opts E2EOptions, targetNS, targetEvent, targetBranch string) *bitbucket.Repository {
+func createBitbucketRepoCRD(ctx context.Context, t *testing.T, bcvcs bitbucketcloud.VCS, run *params.Run, opts E2EOptions, targetNS string) *bitbucket.Repository {
 	repo, err := bcvcs.Client.Workspaces.Repositories.Repository.Get(
 		&bitbucket.RepositoryOptions{
 			Owner:    opts.Owner,
@@ -122,9 +122,7 @@ func createBitbucketRepoCRD(ctx context.Context, t *testing.T, bcvcs bitbucketcl
 			Name: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
-			URL:       links.HTML.HRef,
-			EventType: targetEvent,
-			Branch:    targetBranch,
+			URL: links.HTML.HRef,
 		},
 	}
 	err = trepo.CreateNS(ctx, targetNS, run)

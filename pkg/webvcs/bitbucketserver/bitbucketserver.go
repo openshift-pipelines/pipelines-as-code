@@ -22,6 +22,12 @@ type VCS struct {
 	defaultBranchLatestCommit string
 	pullRequestNumber         int
 	apiURL                    string
+	projectKey                string
+}
+
+// sanitizeTitle make sure we only get the tile by remove everything after \n.
+func sanitizeTitle(s string) string {
+	return strings.Split(s, "\n")[0]
 }
 
 func (v *VCS) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info.PacOpts,
@@ -81,7 +87,7 @@ func (v *VCS) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info
 	if statusOpts.Conclusion == "SUCCESSFUL" && statusOpts.Status == "completed" &&
 		statusOpts.Text != "" && event.EventType == "pull_request" && v.pullRequestNumber > 0 {
 		_, err := v.Client.DefaultApi.CreatePullRequestComment(
-			event.Owner, event.Repository, v.pullRequestNumber,
+			v.projectKey, event.Repository, v.pullRequestNumber,
 			bbcomment, []string{"application/json"})
 		if err != nil {
 			return err
@@ -115,7 +121,7 @@ func (v *VCS) getRaw(runevent *info.Event, revision string, path string) (string
 	localVarOptionals := map[string]interface{}{
 		"at": revision,
 	}
-	resp, err := v.Client.DefaultApi.GetContent_11(runevent.Owner, runevent.Repository, path, localVarOptionals)
+	resp, err := v.Client.DefaultApi.GetContent_11(v.projectKey, runevent.Repository, path, localVarOptionals)
 	if err != nil {
 		return "", err
 	}
@@ -128,7 +134,7 @@ func (v *VCS) GetTektonDir(ctx context.Context, event *info.Event, path string) 
 		if nextPage != 0 {
 			localVarOptionals["start"] = nextPage
 		}
-		return v.Client.DefaultApi.StreamFiles_42(event.Owner, event.Repository, path, localVarOptionals)
+		return v.Client.DefaultApi.StreamFiles_42(v.projectKey, event.Repository, path, localVarOptionals)
 	})
 	if err != nil {
 		return "", err
@@ -188,7 +194,7 @@ func (v *VCS) SetClient(ctx context.Context, opts *info.PacOpts) error {
 
 func (v *VCS) GetCommitInfo(ctx context.Context, event *info.Event) error {
 	localVarOptionals := map[string]interface{}{}
-	resp, err := v.Client.DefaultApi.GetCommit(event.Owner, event.Repository, event.SHA, localVarOptionals)
+	resp, err := v.Client.DefaultApi.GetCommit(v.projectKey, event.Repository, event.SHA, localVarOptionals)
 	if err != nil {
 		return err
 	}
@@ -197,10 +203,10 @@ func (v *VCS) GetCommitInfo(ctx context.Context, event *info.Event) error {
 	if err != nil {
 		return err
 	}
-	event.SHATitle = commitInfo.Message
-	event.SHAURL = fmt.Sprintf("%s/projects/%s/repos/%s/commits/%s", v.baseURL, event.Owner, event.Repository, event.SHA)
+	event.SHATitle = sanitizeTitle(commitInfo.Message)
+	event.SHAURL = fmt.Sprintf("%s/projects/%s/repos/%s/commits/%s", v.baseURL, v.projectKey, event.Repository, event.SHA)
 
-	resp, err = v.Client.DefaultApi.GetDefaultBranch(event.Owner, event.Repository)
+	resp, err = v.Client.DefaultApi.GetDefaultBranch(v.projectKey, event.Repository)
 	if err != nil {
 		return err
 	}

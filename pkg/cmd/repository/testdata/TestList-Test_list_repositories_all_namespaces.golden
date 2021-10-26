@@ -1,3 +1,0 @@
-NAME    AGE              OWNER/REPOSITORY   SHA   EVENT-TYPE     NAMESPACE    STATUS
-repo1   15 minutes ago   owner/repo         SHA   pull_request   namespace1   Success
-repo2   15 minutes ago   owner/repo         SHA   pull_request   namespace2   Success

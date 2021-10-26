@@ -33,7 +33,7 @@ func TestGithubPullRequestPrivateRepository(t *testing.T) {
 		entries, err := getEntries("testdata/pipelinerun_git_clone_private.yaml", targetNS, mainBranch, pullRequestEvent)
 		assert.NilError(t, err)
 
-		repoinfo, err := createGithubRepoCRD(ctx, t, ghcnx, runcnx, opts, targetNS, pullRequestEvent, mainBranch)
+		repoinfo, err := createGithubRepoCRD(ctx, t, ghcnx, runcnx, opts, targetNS)
 		assert.NilError(t, err)
 
 		targetRefName := fmt.Sprintf("refs/heads/%s",

@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/gobwas/glob"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -20,6 +22,18 @@ const (
 	reValidateTag            = `^\[(.*)\]$`
 	maxKeepRuns              = "max-keep-runs"
 )
+
+func branchMatch(prunBranch, baseBranch string) bool {
+	// If we have targetBranch in annotation and refs/heads/targetBranch from
+	// webhook, then allow it.
+	if filepath.Base(baseBranch) == prunBranch {
+		return true
+	}
+
+	// match globs like refs/tags/0.*
+	g := glob.MustCompile(prunBranch)
+	return g.Match(baseBranch)
+}
 
 // TODO: move to another file since it's common to all annotations_* files
 func getAnnotationValues(annotation string) ([]string, error) {
@@ -45,6 +59,11 @@ func getAnnotationValues(annotation string) ([]string, error) {
 func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.PipelineRun, cs *params.Run) (*v1beta1.PipelineRun, *apipac.Repository, map[string]string, error) {
 	configurations := map[string]map[string]string{}
 	repo := &apipac.Repository{}
+	cs.Clients.Log.Infof("matching a pipeline to event: URL=%s, target-branch=%s, target-event=%s",
+		cs.Info.Event.URL,
+		cs.Info.Event.BaseBranch,
+		cs.Info.Event.EventType)
+
 	for _, prun := range pruns {
 		configurations[prun.GetGenerateName()] = map[string]string{}
 		if prun.GetObjectMeta().GetAnnotations() == nil {
@@ -60,7 +79,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 		if targetNS, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onTargetNamespace]; ok {
 			configurations[prun.GetGenerateName()]["target-namespace"] = targetNS
-			repo, _ = GetRepoByCR(ctx, cs, targetNS)
+			repo, _ = MatchEventURLRepo(ctx, cs, targetNS)
 			if repo == nil {
 				cs.Clients.Log.Warnf("could not find Repository CRD in %s while pipelineRun %s targets it", targetNS, prun.GetGenerateName())
 				continue
@@ -91,25 +110,23 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 			}
 		}
 
+		cs.Clients.Log.Infof("matched pipelinerun with name: %s, annotation config: %q", prun.GetGenerateName(),
+			configurations[prun.GetGenerateName()])
 		return prun, repo, configurations[prun.GetGenerateName()], nil
 	}
 
-	cs.Clients.Log.Infof("cannot match between event and pipelineRuns: URL=%s baseBranch=%s, "+
-		"eventType=%s", cs.Info.Event.URL,
-		cs.Info.Event.BaseBranch,
-		cs.Info.Event.EventType)
-
-	cs.Clients.Log.Info("available configuration in pipelineRuns annotations")
+	cs.Clients.Log.Warn("could not find a match to a pipelinerun in .tekton/ dir")
+	cs.Clients.Log.Warn("available configuration in pipelineRuns annotations")
 	for prunname, maps := range configurations {
-		cs.Clients.Log.Infof("pipelineRun: %s, baseBranch=%s, targetEvent=%s, targetNs=%s",
-			prunname, maps["target-branch"], maps["target-event"], maps["target-namespace"])
+		cs.Clients.Log.Infof("pipelineRun: %s, target-branch=%s, target-event=%s",
+			prunname, maps["target-branch"], maps["target-event"])
 	}
 
 	// TODO: more descriptive error message
 	return nil, nil, map[string]string{}, fmt.Errorf("cannot match pipeline from webhook to pipelineruns")
 }
 
-func matchOnAnnotation(annotations string, runinfoValue string, branchMatching bool) (bool, error) {
+func matchOnAnnotation(annotations string, eventType string, branchMatching bool) (bool, error) {
 	targets, err := getAnnotationValues(annotations)
 	if err != nil {
 		return false, err
@@ -117,10 +134,10 @@ func matchOnAnnotation(annotations string, runinfoValue string, branchMatching b
 
 	var gotit string
 	for _, v := range targets {
-		if v == runinfoValue {
+		if v == eventType {
 			gotit = v
 		}
-		if branchMatching && branchMatch(v, runinfoValue) {
+		if branchMatching && branchMatch(v, eventType) {
 			gotit = v
 		}
 	}

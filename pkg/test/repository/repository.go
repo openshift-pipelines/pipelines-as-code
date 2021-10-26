@@ -12,9 +12,7 @@ import (
 type RepoTestcreationOpts struct {
 	Name             string
 	URL              string
-	Branch           string
 	InstallNamespace string
-	EventType        string
 	SecretName       string
 	VcsURL           string
 	CreateTime       metav1.Time
@@ -30,9 +28,7 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 			CreationTimestamp: opts.CreateTime,
 		},
 		Spec: v1alpha1.RepositorySpec{
-			URL:       opts.URL,
-			Branch:    opts.Branch,
-			EventType: opts.EventType,
+			URL: opts.URL,
 		},
 		Status: []v1alpha1.RepositoryRunStatus{
 			{
