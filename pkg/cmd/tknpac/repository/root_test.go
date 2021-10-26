@@ -107,7 +107,7 @@ func TestCommands(t *testing.T) {
 			ioStream := &cli.IOStreams{Out: buf, ErrOut: buf}
 			cmd := tt.command(cs, ioStream)
 			cmd.SetOut(buf)
-			_, err := tcli.ExecuteCommand(cmd, "--no-color", "-n", nsName, repoName)
+			_, err := tcli.ExecuteCommand(cmd, "-n", nsName, repoName)
 			assert.NilError(t, err)
 
 			golden.Assert(t, buf.String(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))

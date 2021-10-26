@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var noColorFlag = "no-color"
-
 type PacCliOpts struct {
 	NoColoring    bool
 	AllNameSpaces bool

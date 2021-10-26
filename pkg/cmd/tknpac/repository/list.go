@@ -8,8 +8,8 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -41,7 +41,6 @@ func ListCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ioStreams.SetColorEnabled(!opts.NoColoring)
 
 			err = run.Clients.NewClients(&run.Info)
 			if err != nil {
@@ -53,7 +52,6 @@ func ListCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().BoolP(noColorFlag, "C", !ioStreams.ColorEnabled(), "disable coloring")
 	cmd.PersistentFlags().BoolVarP(&allNamespaces, allNamespacesFlag, "A", false, "If present, "+
 		"list the repository across all namespaces. Namespace in current context is ignored even if specified with"+
 		" --namespace.")

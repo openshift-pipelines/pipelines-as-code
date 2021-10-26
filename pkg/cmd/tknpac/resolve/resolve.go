@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"

@@ -12,9 +12,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -150,12 +150,10 @@ func DescribeCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ioStreams.SetColorEnabled(!opts.NoColoring)
 			return describe(ctx, run, clock, opts, ioStreams, repoName)
 		},
 	}
 
-	cmd.PersistentFlags().BoolP(noColorFlag, "C", !ioStreams.ColorEnabled(), "disable coloring")
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
 
