@@ -136,7 +136,7 @@ func TestGetRepoURL(t *testing.T) {
 				err := os.MkdirAll(filepath.Dir(nd.Join(key)), os.ModePerm)
 				assert.NilError(t, err, "failed to create dir: %s", filepath.Dir(nd.Join(key)))
 
-				err = os.WriteFile(nd.Join(key), []byte(value), 0o600)
+				err = ioutil.WriteFile(nd.Join(key), []byte(value), 0o600)
 				assert.NilError(t, err, "failed to create file", key)
 			}
 
