@@ -34,9 +34,6 @@ func (tr *TaskRun) Validate(ctx context.Context) *apis.FieldError {
 	if err := validate.ObjectMetadata(tr.GetObjectMeta()).ViaField("metadata"); err != nil {
 		return err
 	}
-	if apis.IsInDelete(ctx) {
-		return nil
-	}
 	return tr.Spec.Validate(ctx)
 }
 

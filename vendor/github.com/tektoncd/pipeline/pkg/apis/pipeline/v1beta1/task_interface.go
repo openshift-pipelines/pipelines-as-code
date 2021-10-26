@@ -16,14 +16,10 @@ limitations under the License.
 
 package v1beta1
 
-import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
-)
+import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // TaskObject is implemented by Task and ClusterTask
 type TaskObject interface {
-	apis.Defaultable
 	TaskMetadata() metav1.ObjectMeta
 	TaskSpec() TaskSpec
 	Copy() TaskObject

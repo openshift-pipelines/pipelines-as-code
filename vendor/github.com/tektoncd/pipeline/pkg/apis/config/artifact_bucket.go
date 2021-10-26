@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	// BucketLocationKey is the name of the configmap entry that specifies
+	// bucketLocationKey is the name of the configmap entry that specifies
 	// loction of the bucket.
 	BucketLocationKey = "location"
 
@@ -38,16 +38,16 @@ const (
 	// to the bucket
 	BucketServiceAccountSecretKeyKey = "bucket.service.account.secret.key"
 
-	// DefaultBucketServiceFieldName defaults to a gcs bucket
+	// DefaultBucketServiceAccountSecretKey defaults to a gcs bucket
 	DefaultBucketServiceFieldName = "GOOGLE_APPLICATION_CREDENTIALS"
 
-	// BucketServiceAccountFieldNameKey is the name of the configmap entry that specifies
+	// bucketServiceAccountFieldName is the name of the configmap entry that specifies
 	// the field name that should be used for the service account.
 	// Valid values: GOOGLE_APPLICATION_CREDENTIALS, BOTO_CONFIG.
 	BucketServiceAccountFieldNameKey = "bucket.service.account.field.name"
 )
 
-// ArtifactBucket holds the configurations for the artifacts PVC
+// ArtifactPVC holds the configurations for the artifacts PVC
 // +k8s:deepcopy-gen=true
 type ArtifactBucket struct {
 	Location                 string

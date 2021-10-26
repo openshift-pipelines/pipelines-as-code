@@ -28,6 +28,14 @@ import (
 	"knative.dev/pkg/apis"
 )
 
+var (
+	groupVersionKind = schema.GroupVersionKind{
+		Group:   SchemeGroupVersion.Group,
+		Version: SchemeGroupVersion.Version,
+		Kind:    pipeline.PipelineRunControllerName,
+	}
+)
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -93,7 +101,7 @@ type PipelineRunSpecStatus = v1beta1.PipelineRunSpecStatus
 const (
 	// PipelineRunSpecStatusCancelled indicates that the user wants to cancel the task,
 	// if not already cancelled or terminated
-	PipelineRunSpecStatusCancelled = v1beta1.PipelineRunSpecStatusCancelledDeprecated
+	PipelineRunSpecStatusCancelled = v1beta1.PipelineRunSpecStatusCancelled
 )
 
 // PipelineResourceRef can be used to refer to a specific instance of a Resource
@@ -135,9 +143,9 @@ type PipelineRunList struct {
 // and produces logs.
 type PipelineTaskRun = v1beta1.PipelineTaskRun
 
-// GetGroupVersionKind implements kmeta.OwnerRefable.
-func (*PipelineRun) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind(pipeline.PipelineRunControllerName)
+// GetOwnerReference gets the pipeline run as owner reference for any related objects
+func (pr *PipelineRun) GetOwnerReference() metav1.OwnerReference {
+	return *metav1.NewControllerRef(pr, groupVersionKind)
 }
 
 // IsDone returns true if the PipelineRun's status indicates that it is done.

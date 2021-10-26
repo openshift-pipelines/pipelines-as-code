@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
+
 	"knative.dev/pkg/apis"
 )
 
@@ -26,3 +28,24 @@ const (
 	// breakage.
 	ConditionTypeConvertible apis.ConditionType = "Convertible"
 )
+
+// CannotConvertError is returned when a field cannot be converted.
+type CannotConvertError struct {
+	Message string
+	Field   string
+}
+
+var _ error = (*CannotConvertError)(nil)
+
+// Error implements error
+func (cce *CannotConvertError) Error() string {
+	return cce.Message
+}
+
+// ConvertErrorf creates a CannotConvertError from the field name and format string.
+func ConvertErrorf(field, msg string, args ...interface{}) error {
+	return &CannotConvertError{
+		Message: fmt.Sprintf(msg, args...),
+		Field:   field,
+	}
+}
