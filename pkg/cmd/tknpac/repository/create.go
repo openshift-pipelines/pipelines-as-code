@@ -9,6 +9,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -83,54 +84,48 @@ func getOrCreateNamespace(ctx context.Context, opts *createOptions) error {
 	// by default, use the current namespace unless it's default or
 	// pipelines-as-code and then propose some meaningful namespace based on the
 	// git url.
-	defaultNamespace := opts.run.Info.Kube.Namespace
-	if (defaultNamespace == "default" || defaultNamespace == "pipelines-as-code") &&
+	autoNS := opts.run.Info.Kube.Namespace
+
+	if (autoNS == "default" || autoNS == "pipelines-as-code") &&
 		opts.gitInfo.URL != "" {
-		defaultNamespace = filepath.Base(opts.gitInfo.URL) + "-pipelines"
+		autoNS = filepath.Base(opts.gitInfo.URL) + "-pipelines"
 	}
 
 	cs := opts.ioStreams.ColorScheme()
 
-	msg := fmt.Sprintf("Please enter the namespace where the pipeline will be created (default: %s):", defaultNamespace)
-	err := opts.cliOpts.Ask([]*survey.Question{
-		{
-			Prompt: &survey.Input{
-				Message: msg,
-			},
-		},
-	}, &opts.repository.Namespace)
-	if err != nil {
+	var chosenNS string
+	msg := fmt.Sprintf("Please enter the namespace where the pipeline will be created (default: %s):", autoNS)
+	if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &chosenNS); err != nil {
 		return err
 	}
 
 	// set the namespace as the default one
-	if opts.repository.GetNamespace() == "" {
-		opts.repository.Namespace = opts.run.Info.Kube.Namespace
+	if chosenNS == "" {
+		chosenNS = autoNS
 	}
-
 	// check if the namespace exists if it does just exit
-	if _, err = opts.run.Clients.Kube.CoreV1().Namespaces().Get(
-		ctx, defaultNamespace, metav1.GetOptions{}); err == nil {
+	_, err := opts.run.Clients.Kube.CoreV1().Namespaces().Get(ctx, chosenNS, metav1.GetOptions{})
+	if err == nil {
 		return nil
 	}
 
 	fmt.Fprintf(opts.ioStreams.Out, "%s Namespace %s is not found\n",
 		cs.WarningIcon(),
-		defaultNamespace,
+		chosenNS,
 	)
-	msg = fmt.Sprintf("Would you like me to create the namespace %s?", defaultNamespace)
-	createNamespace, err := cli.AskYesNo(opts.cliOpts, msg, true)
-	if err != nil {
+	msg = fmt.Sprintf("Would you like me to create the namespace %s?", chosenNS)
+	var createNamespace bool
+	if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &createNamespace); err != nil {
 		return err
 	}
 	if !createNamespace {
-		return fmt.Errorf("you need to create the target namespace")
+		return fmt.Errorf("you need to create the target namespace first")
 	}
 
 	_, err = opts.run.Clients.Kube.CoreV1().Namespaces().Create(ctx,
 		&v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: defaultNamespace,
+				Name: chosenNS,
 			},
 		},
 		metav1.CreateOptions{})
@@ -143,19 +138,16 @@ func getRepoURL(opts *createOptions) error {
 		return nil
 	}
 
-	prompt := "Enter the Git repository url containing the pipelines "
+	q := "Enter the Git repository url containing the pipelines "
 	if opts.gitInfo.URL != "" {
-		prompt += fmt.Sprintf("(default: %s)", opts.gitInfo.URL)
+		q += fmt.Sprintf("(default: %s)", opts.gitInfo.URL)
 	}
-	prompt += ": "
-	if err := opts.cliOpts.Ask([]*survey.Question{
-		{
-			Prompt: &survey.Input{
-				Message: prompt,
-			},
-		},
-	}, &opts.event.URL); err != nil {
+	q += ": "
+	if err := prompt.SurveyAskOne(&survey.Input{Message: q}, &opts.event.URL); err != nil {
 		return err
+	}
+	if opts.event.URL != "" {
+		return nil
 	}
 	if opts.event.URL == "" && opts.gitInfo.URL != "" {
 		opts.event.URL = opts.gitInfo.URL

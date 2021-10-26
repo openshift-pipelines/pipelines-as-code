@@ -11,6 +11,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -92,18 +93,11 @@ func askRepo(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, namespac
 				repoOwner))
 	}
 
-	qs := []*survey.Question{
-		{
-			Name: "repository",
-			Prompt: &survey.Select{
-				Message: "Select a repository",
-				Options: allRepositories,
-			},
-		},
-	}
 	var replyString string
-	err = opts.Ask(qs, &replyString)
-	if err != nil {
+	if err := prompt.SurveyAskOne(&survey.Select{
+		Message: "Select a repository",
+		Options: allRepositories,
+	}, &replyString); err != nil {
 		return nil, err
 	}
 

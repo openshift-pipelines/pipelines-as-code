@@ -1,12 +1,13 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"time"
 
-	"github.com/AlecAivazis/survey/v2"
 	surveyCore "github.com/AlecAivazis/survey/v2/core"
 	"github.com/briandowns/spinner"
 	"github.com/mattn/go-colorable"
@@ -128,19 +129,13 @@ func isTerminal(f *os.File) bool {
 	return isatty.IsTerminal(f.Fd()) || isatty.IsCygwinTerminal(f.Fd())
 }
 
-func AskYesNo(cliOpts *PacCliOpts, question string, deflt bool) (bool, error) {
-	var answer bool
-
-	if err := cliOpts.Ask([]*survey.Question{
-		{
-			Prompt: &survey.Confirm{
-				Message: question,
-				Default: deflt,
-			},
-		},
-	}, &answer); err != nil {
-		return false, err
-	}
-
-	return answer, nil
+func IOTest() (*IOStreams, *bytes.Buffer, *bytes.Buffer, *bytes.Buffer) {
+	in := &bytes.Buffer{}
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	return &IOStreams{
+		In:     ioutil.NopCloser(in),
+		Out:    out,
+		ErrOut: errOut,
+	}, in, out, errOut
 }

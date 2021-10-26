@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 )
 
 const defaultPublicGithub = "https://github.com"
@@ -13,19 +14,11 @@ func askYN(opts *bootstrapOpts, deflt bool, title, question string) (bool, error
 	var answer bool
 	// nolint:forbidigo
 	fmt.Printf("%s\n", title)
-	err := opts.cliOpts.Ask([]*survey.Question{
-		{
-			Prompt: &survey.Confirm{
-				Message: question,
-				Default: deflt,
-			},
-		},
+	err := prompt.SurveyAskOne(&survey.Confirm{
+		Message: question,
+		Default: deflt,
 	}, &answer)
-	if err != nil {
-		return false, err
-	}
-
-	return answer, nil
+	return answer, err
 }
 
 // askQuestions ask questions to the user for the name and url of the app
@@ -57,16 +50,16 @@ func askQuestions(opts *bootstrapOpts) error {
 		opts.GithubAPIURL = defaultPublicGithub
 	}
 
-	prompt := "Enter the name of your GitHub application: "
+	msg := "Enter the name of your GitHub application: "
 	if opts.GithubApplicationName == "" {
 		qs = append(qs, &survey.Question{
 			Name:     "GithubApplicationName",
-			Prompt:   &survey.Input{Message: prompt},
+			Prompt:   &survey.Input{Message: msg},
 			Validate: survey.Required,
 		})
 	}
 
-	err := opts.cliOpts.Ask(qs, opts)
+	err := prompt.SurveyAsk(qs, opts)
 	if err != nil {
 		return err
 	}
@@ -88,15 +81,9 @@ func askQuestions(opts *bootstrapOpts) error {
 	}
 
 	if opts.RouteName == "" {
-		err = opts.cliOpts.Ask([]*survey.Question{
-			{
-				Prompt: &survey.Input{
-					Message: "Enter your public route URL: ",
-				},
-				Validate: survey.Required,
-			},
-		}, &opts.RouteName)
-		if err != nil {
+		if err := prompt.SurveyAskOne(&survey.Input{
+			Message: "Enter your public route URL: ",
+		}, &opts.RouteName, survey.WithValidator(survey.Required)); err != nil {
 			return err
 		}
 	}
