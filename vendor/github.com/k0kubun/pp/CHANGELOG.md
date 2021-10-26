@@ -1,26 +1,8 @@
 # Change Log
 
-## [v3.0.0](https://github.com/k0kubun/pp/tree/v3.0.0) (2019-03-04)
-[Full Changelog](https://github.com/k0kubun/pp/compare/v2.4.0...v3.0.0)
+## [Unreleased](https://github.com/k0kubun/pp/tree/HEAD)
 
-## [v2.4.0](https://github.com/k0kubun/pp/tree/v2.4.0) (2019-03-03)
-[Full Changelog](https://github.com/k0kubun/pp/compare/v2.3.0...v2.4.0)
-
-**Merged pull requests:**
-
-- Fix newline of map type [\#29](https://github.com/k0kubun/pp/pull/29) ([itchyny](https://github.com/itchyny))
-- add MIT license file [\#28](https://github.com/k0kubun/pp/pull/28) ([alteholz](https://github.com/alteholz))
-- Update the map printer to properly print maps. [\#25](https://github.com/k0kubun/pp/pull/25) ([denniszl](https://github.com/denniszl))
-
-## [v2.3.0](https://github.com/k0kubun/pp/tree/v2.3.0) (2017-01-23)
-[Full Changelog](https://github.com/k0kubun/pp/compare/v2.2.0...v2.3.0)
-
-**Merged pull requests:**
-
-- Add WithLineInfo method for print filename and line number along [\#24](https://github.com/k0kubun/pp/pull/24) ([huydx](https://github.com/huydx))
-
-## [v2.2.0](https://github.com/k0kubun/pp/tree/v2.2.0) (2015-07-23)
-[Full Changelog](https://github.com/k0kubun/pp/compare/v2.1.0...v2.2.0)
+[Full Changelog](https://github.com/k0kubun/pp/compare/v2.1.0...HEAD)
 
 **Closed issues:**
 

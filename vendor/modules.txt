@@ -17,8 +17,6 @@ contrib.go.opencensus.io/exporter/stackdriver/monitoredresource/gcp
 github.com/AlecAivazis/survey/v2
 github.com/AlecAivazis/survey/v2/core
 github.com/AlecAivazis/survey/v2/terminal
-# github.com/Netflix/go-expect v0.0.0-20211003183012-e1a7c020ce25
-## explicit
 # github.com/PuerkitoBio/goquery v1.7.1
 github.com/PuerkitoBio/goquery
 # github.com/PuerkitoBio/purell v1.1.1
@@ -180,8 +178,6 @@ github.com/hako/durafmt
 # github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
-# github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
-## explicit
 # github.com/imdario/mergo v0.3.9
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
@@ -195,8 +191,7 @@ github.com/jonboulle/clockwork
 github.com/josharian/intern
 # github.com/json-iterator/go v1.1.10
 github.com/json-iterator/go
-# github.com/k0kubun/pp v3.0.1+incompatible
-## explicit
+# github.com/k0kubun/pp v2.3.0+incompatible
 github.com/k0kubun/pp
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 github.com/kballard/go-shellquote
