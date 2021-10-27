@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -62,6 +64,11 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			if err := getOrCreateNamespace(ctx, createOpts); err != nil {
 				return err
 			}
+
+			if err := createRepoCRD(ctx, createOpts); err != nil {
+				return err
+			}
+
 			gopt := generate.MakeOpts()
 			gopt.GitInfo = createOpts.gitInfo
 			gopt.IOStreams = createOpts.ioStreams
@@ -101,8 +108,6 @@ func getOrCreateNamespace(ctx context.Context, opts *createOptions) error {
 		autoNS = filepath.Base(opts.gitInfo.URL) + "-pipelines"
 	}
 
-	cs := opts.ioStreams.ColorScheme()
-
 	var chosenNS string
 	msg := fmt.Sprintf("Please enter the namespace where the pipeline will be created (default: %s):", autoNS)
 	if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &chosenNS); err != nil {
@@ -120,7 +125,7 @@ func getOrCreateNamespace(ctx context.Context, opts *createOptions) error {
 	}
 
 	fmt.Fprintf(opts.ioStreams.Out, "%s Namespace %s is not found\n",
-		cs.WarningIcon(),
+		opts.ioStreams.ColorScheme().WarningIcon(),
 		chosenNS,
 	)
 	msg = fmt.Sprintf("Would you like me to create the namespace %s?", chosenNS)
@@ -139,6 +144,7 @@ func getOrCreateNamespace(ctx context.Context, opts *createOptions) error {
 			},
 		},
 		metav1.CreateOptions{})
+	opts.repository.Namespace = chosenNS
 	return err
 }
 
@@ -163,5 +169,35 @@ func getRepoURL(opts *createOptions) error {
 		opts.event.URL = opts.gitInfo.URL
 		return nil
 	}
+
 	return fmt.Errorf("no url has been provided")
+}
+
+func createRepoCRD(ctx context.Context, opts *createOptions) error {
+	repoOwner, err := formatting.GetRepoOwnerFromGHURL(opts.event.URL)
+	if err != nil {
+		return fmt.Errorf("invalid Git URL: %s", opts.event.URL)
+	}
+	repositoryName := strings.ReplaceAll(repoOwner, "/", "-")
+	_, err = opts.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.repository.Namespace).Create(
+		ctx,
+		&apipac.Repository{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: repositoryName,
+			},
+			Spec: apipac.RepositorySpec{
+				URL: opts.event.URL,
+			},
+		},
+		metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	cs := opts.ioStreams.ColorScheme()
+	fmt.Fprintf(opts.ioStreams.Out, "%s Repository %s has been created in %s namespace\n",
+		cs.SuccessIconWithColor(cs.Green),
+		repositoryName,
+		opts.repository.Namespace,
+	)
+	return nil
 }
