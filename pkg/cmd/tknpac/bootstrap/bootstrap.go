@@ -108,8 +108,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			opts.ioStreams = ioStreams
 			opts.cliOpts = cli.NewCliOptions(cmd)
 			opts.ioStreams.SetColorEnabled(!opts.cliOpts.NoColoring)
-
-			if err := run.Clients.NewClients(&run.Info); err != nil {
+			if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 				return err
 			}
 

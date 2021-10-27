@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/pkg/errors"
@@ -25,6 +26,7 @@ type Clients struct {
 	HTTP              http.Client
 	Log               *zap.SugaredLogger
 	Dynamic           dynamic.Interface
+	ConsoleUI         consoleui.Interface
 }
 
 func (c *Clients) GetURL(ctx context.Context, url string) ([]byte, error) {
@@ -108,7 +110,11 @@ func (c *Clients) pacClient(config *rest.Config) (versioned.Interface, error) {
 	return cs, nil
 }
 
-func (c *Clients) NewClients(info *info.Info) error {
+func (c *Clients) consoleUIClient(ctx context.Context, dynamic dynamic.Interface) consoleui.Interface {
+	return consoleui.New(ctx, dynamic)
+}
+
+func (c *Clients) NewClients(ctx context.Context, info *info.Info) error {
 	if c.ClientInitialized {
 		return nil
 	}
@@ -142,6 +148,12 @@ func (c *Clients) NewClients(info *info.Info) error {
 	if err != nil {
 		return err
 	}
+
+	c.ConsoleUI = c.consoleUIClient(ctx, c.Dynamic)
+	if err != nil {
+		return err
+	}
+
 	c.ClientInitialized = true
 	return nil
 }

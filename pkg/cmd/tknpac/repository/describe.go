@@ -13,9 +13,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -61,10 +61,10 @@ func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c cl
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
 		status.PipelineRunName,
 		*status.EventType,
-		formating.SanitizeBranch(*status.TargetBranch),
-		formating.ShortSHA(*status.SHA),
-		pipelineascode.Age(status.StartTime, c),
-		pipelineascode.Duration(status.StartTime, status.CompletionTime),
+		formatting.SanitizeBranch(*status.TargetBranch),
+		formatting.ShortSHA(*status.SHA),
+		formatting.Age(status.StartTime, c),
+		formatting.Duration(status.StartTime, status.CompletionTime),
 		cs.ColorStatus(status.Status.Conditions[0].Reason))
 }
 
@@ -83,7 +83,7 @@ func askRepo(ctx context.Context, cs *params.Run, namespace string) (*v1alpha1.R
 
 	allRepositories := []string{}
 	for _, repository := range repositories.Items {
-		repoOwner, err := formating.GetRepoOwnerFromGHURL(repository.Spec.URL)
+		repoOwner, err := formatting.GetRepoOwnerFromGHURL(repository.Spec.URL)
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +140,7 @@ func DescribeCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 			ctx := context.Background()
 			clock := clockwork.NewRealClock()
-			err = run.Clients.NewClients(&run.Info)
+			err = run.Clients.NewClients(ctx, &run.Info)
 			if err != nil {
 				return err
 			}
@@ -185,11 +185,11 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 
 	funcMap := template.FuncMap{
 		"formatStatus":    formatStatus,
-		"formatEventType": formating.CamelCasit,
-		"formatDuration":  pipelineascode.Duration,
-		"formatTime":      pipelineascode.Age,
-		"sanitizeBranch":  formating.SanitizeBranch,
-		"shortSHA":        formating.ShortSHA,
+		"formatEventType": formatting.CamelCasit,
+		"formatDuration":  formatting.Duration,
+		"formatTime":      formatting.Age,
+		"sanitizeBranch":  formatting.SanitizeBranch,
+		"shortSHA":        formatting.ShortSHA,
 	}
 
 	data := struct {
@@ -199,7 +199,7 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		Clock       clockwork.Clock
 	}{
 		Repository:  repository,
-		Statuses:    pipelineascode.SortedStatus(repository.Status),
+		Statuses:    sort.RepositoryRunStatus(repository.Status),
 		ColorScheme: colorScheme,
 		Clock:       clock,
 	}

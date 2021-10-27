@@ -3,6 +3,7 @@ package pipelineascode
 import (
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -90,6 +91,7 @@ func TestRunByVCS(t *testing.T) {
 				Clients: clients.Clients{
 					Log:            fakelogger,
 					PipelineAsCode: stdata.PipelineAsCode,
+					ConsoleUI:      consoleui.FallBackConsole{},
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{

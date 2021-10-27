@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-github/v39/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -21,6 +22,7 @@ import (
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
+	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
 	ghwebvcs "github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
@@ -110,7 +112,8 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 			// TODO: we could maybe refine this test
 			if created.GetStatus() == "completed" {
 				assert.Equal(t, created.GetConclusion(), finalStatus)
-				assert.Assert(t, strings.Contains(created.GetOutput().GetText(), finalStatusText), "GetStatus/CheckRun %s != %s", created.GetOutput().GetText(), finalStatusText)
+				assert.Assert(t, strings.Contains(created.GetOutput().GetText(), finalStatusText),
+					"GetStatus/CheckRun %s != %s", created.GetOutput().GetText(), finalStatusText)
 			}
 		})
 }
@@ -346,11 +349,11 @@ func TestRun(t *testing.T) {
 				},
 				Repositories: tt.repositories,
 				PipelineRuns: []*pipelinev1beta1.PipelineRun{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "force-me",
-						},
-					},
+					tektontest.MakePR("namespace", "force-me", map[string]*pipelinev1beta1.PipelineRunTaskRunStatus{
+						"first":  tektontest.MakePrTrStatus("first", 5),
+						"last":   tektontest.MakePrTrStatus("last", 15),
+						"middle": tektontest.MakePrTrStatus("middle", 10),
+					}),
 				},
 			}
 
@@ -369,6 +372,7 @@ func TestRun(t *testing.T) {
 					Kube:           stdata.Kube,
 					Tekton:         stdata.Pipeline,
 					Dynamic:        dc,
+					ConsoleUI:      consoleui.FallBackConsole{},
 				},
 				Info: info.Info{
 					Event: &tt.runevent,

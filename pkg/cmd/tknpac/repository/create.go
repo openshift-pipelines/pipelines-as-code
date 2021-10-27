@@ -40,6 +40,7 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		Short:   "Create  a repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
+			ctx := context.Background()
 			createOpts.ioStreams = ioStreams
 			createOpts.cliOpts = cli.NewCliOptions(cmd)
 			createOpts.ioStreams.SetColorEnabled(!createOpts.cliOpts.NoColoring)
@@ -49,7 +50,7 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 			createOpts.gitInfo = git.GetGitInfo(cwd)
-			if err := run.Clients.NewClients(&run.Info); err != nil {
+			if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 				return err
 			}
 
@@ -57,7 +58,7 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			return getOrCreateNamespace(context.Background(), createOpts)
+			return getOrCreateNamespace(ctx, createOpts)
 		},
 	}
 

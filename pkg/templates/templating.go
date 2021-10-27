@@ -1,4 +1,4 @@
-package pipelineascode
+package templates
 
 import (
 	"regexp"
@@ -22,7 +22,7 @@ func ReplacePlaceHoldersVariables(template string, dico map[string]string) strin
 }
 
 // processTemplates process all templates replacing
-func processTemplates(event *info.Event, template string) string {
+func Process(event *info.Event, template string) string {
 	repoURL := event.URL
 	// On bitbucket server you are have a special url for checking it out, they
 	// seemed to fix it in 2.0 but i guess we have to live with this until then.
