@@ -140,11 +140,11 @@ func TestGetRepoURL(t *testing.T) {
 				assert.NilError(t, err, "failed to create file", key)
 			}
 
-			err := Generate(&generateOpts{
+			err := Generate(&Opts{
 				event:     &tt.event,
-				gitInfo:   &tt.gitinfo,
-				ioStreams: io,
-				cliOpts:   &cli.PacCliOpts{},
+				GitInfo:   &tt.gitinfo,
+				IOStreams: io,
+				CLIOpts:   &cli.PacCliOpts{},
 			})
 			assert.NilError(t, err)
 

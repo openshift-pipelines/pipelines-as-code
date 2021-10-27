@@ -10,6 +10,7 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -58,7 +59,15 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			return getOrCreateNamespace(ctx, createOpts)
+			if err := getOrCreateNamespace(ctx, createOpts); err != nil {
+				return err
+			}
+			gopt := generate.MakeOpts()
+			gopt.GitInfo = createOpts.gitInfo
+			gopt.IOStreams = createOpts.ioStreams
+			gopt.CLIOpts = createOpts.cliOpts
+
+			return generate.Generate(gopt)
 		},
 	}
 

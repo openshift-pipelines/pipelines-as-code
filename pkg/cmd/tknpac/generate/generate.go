@@ -21,39 +21,47 @@ var (
 	mainBranch       = "main"
 )
 
-type generateOpts struct {
+type Opts struct {
 	event   *info.Event
-	gitInfo *git.Info
+	GitInfo *git.Info
 
-	ioStreams *cli.IOStreams
-	cliOpts   *cli.PacCliOpts
+	IOStreams *cli.IOStreams
+	CLIOpts   *cli.PacCliOpts
+}
+
+func MakeOpts() *Opts {
+	return &Opts{
+		event:   &info.Event{},
+		GitInfo: &git.Info{},
+
+		IOStreams: &cli.IOStreams{},
+		CLIOpts:   &cli.PacCliOpts{},
+	}
 }
 
 func Command(ioStreams *cli.IOStreams) *cobra.Command {
-	gopt := &generateOpts{
-		event:     &info.Event{},
-		ioStreams: ioStreams,
-	}
+	gopt := MakeOpts()
+	gopt.IOStreams = ioStreams
 	cmd := &cobra.Command{
 		Use:     "generate",
 		Aliases: []string{"gen"},
 		Short:   "Generate PipelineRun",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gopt.cliOpts = cli.NewCliOptions(cmd)
-			gopt.ioStreams.SetColorEnabled(!gopt.cliOpts.NoColoring)
+			gopt.CLIOpts = cli.NewCliOptions(cmd)
+			gopt.IOStreams.SetColorEnabled(!gopt.CLIOpts.NoColoring)
 
 			cwd, err := os.Getwd()
 			if err != nil {
 				return err
 			}
-			gopt.gitInfo = git.GetGitInfo(cwd)
+			gopt.GitInfo = git.GetGitInfo(cwd)
 			return Generate(gopt)
 		},
 	}
 	return cmd
 }
 
-func Generate(o *generateOpts) error {
+func Generate(o *Opts) error {
 	if err := o.targetEvent(); err != nil {
 		return err
 	}
@@ -68,38 +76,39 @@ func Generate(o *generateOpts) error {
 	return nil
 }
 
-func (o *generateOpts) targetEvent() error {
+func (o *Opts) targetEvent() error {
+	var choice string
+
 	msg := "Enter the Git event type for triggering the pipeline: "
 
 	eventLabels := make([]string, 0, len(eventTypes))
 	for _, label := range eventTypes {
 		eventLabels = append(eventLabels, label)
 	}
-
-	choice := new(string)
 	if err := prompt.SurveyAskOne(
 		&survey.Select{
 			Message: msg,
-			Default: defaultEventType,
 			Options: eventLabels,
+			Default: 0,
 		}, &choice); err != nil {
 		return err
 	}
-	if *choice == "" {
-		choice = &defaultEventType
+
+	if choice == "" {
+		choice = defaultEventType
 	}
 
 	for k, v := range eventTypes {
-		if v == *choice {
+		if v == choice {
 			o.event.EventType = k
 			return nil
 		}
 	}
 
-	return fmt.Errorf("invalid event type: %s", *choice)
+	return fmt.Errorf("invalid event type: %s", choice)
 }
 
-func (o *generateOpts) branchOrTag() error {
+func (o *Opts) branchOrTag() error {
 	var msg string
 	choice := new(string)
 	if o.event.BaseBranch != "" {
@@ -129,12 +138,12 @@ func (o *generateOpts) branchOrTag() error {
 
 // samplePipeline will try to create a basic pipeline in tekton
 // directory.
-func (o *generateOpts) samplePipeline() error {
-	cs := o.ioStreams.ColorScheme()
+func (o *Opts) samplePipeline() error {
+	cs := o.IOStreams.ColorScheme()
 
 	fname := fmt.Sprintf("%s.yaml", strings.ReplaceAll(o.event.EventType, "_", "-"))
-	fpath := filepath.Join(o.gitInfo.TopLevelPath, ".tekton", fname)
-	relpath, _ := filepath.Rel(o.gitInfo.TopLevelPath, fpath)
+	fpath := filepath.Join(o.GitInfo.TopLevelPath, ".tekton", fname)
+	relpath, _ := filepath.Rel(o.GitInfo.TopLevelPath, fpath)
 
 	var reply bool
 	msg := fmt.Sprintf("Would you like me to create a basic PipelineRun into the file %s ?", relpath)
@@ -146,11 +155,11 @@ func (o *generateOpts) samplePipeline() error {
 		return nil
 	}
 
-	if _, err := os.Stat(filepath.Join(o.gitInfo.TopLevelPath, ".tekton")); os.IsNotExist(err) {
-		if err := os.MkdirAll(filepath.Join(o.gitInfo.TopLevelPath, ".tekton"), 0o755); err != nil {
+	if _, err := os.Stat(filepath.Join(o.GitInfo.TopLevelPath, ".tekton")); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Join(o.GitInfo.TopLevelPath, ".tekton"), 0o755); err != nil {
 			return err
 		}
-		fmt.Fprintf(o.ioStreams.Out, "%s Directory %s has been created.\n",
+		fmt.Fprintf(o.IOStreams.Out, "%s Directory %s has been created.\n",
 			cs.InfoIcon(),
 			cs.Bold(".tekton"),
 		)
@@ -178,12 +187,12 @@ func (o *generateOpts) samplePipeline() error {
 		return err
 	}
 
-	fmt.Fprintf(o.ioStreams.Out, "%s A basic template has been created in %s, feel free to customize it.\n",
+	fmt.Fprintf(o.IOStreams.Out, "%s A basic template has been created in %s, feel free to customize it.\n",
 		cs.SuccessIcon(),
 		cs.Bold(fpath),
 	)
-	fmt.Fprintf(o.ioStreams.Out, "%s You can test your pipeline manually with: ", cs.InfoIcon())
-	fmt.Fprintf(o.ioStreams.Out, "tkn-pac resolve -f %s | kubectl create -f-\n", relpath)
+	fmt.Fprintf(o.IOStreams.Out, "%s You can test your pipeline manually with: ", cs.InfoIcon())
+	fmt.Fprintf(o.IOStreams.Out, "tkn-pac resolve -f %s | kubectl create -f-\n", relpath)
 
 	return nil
 }
