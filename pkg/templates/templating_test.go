@@ -1,4 +1,4 @@
-package pipelineascode
+package templates
 
 import (
 	"testing"
@@ -74,7 +74,7 @@ func TestProcessTemplates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processed := processTemplates(tt.event, tt.template)
+			processed := Process(tt.event, tt.template)
 			assert.Equal(t, tt.expected, processed)
 		})
 	}

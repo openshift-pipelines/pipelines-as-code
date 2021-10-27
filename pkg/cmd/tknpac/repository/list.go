@@ -8,7 +8,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -101,13 +101,13 @@ func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *
 		fmt.Fprintln(w, "\tSTATUS")
 	}
 	for _, repository := range repositories.Items {
-		fmt.Fprintf(w, body, repository.GetName(), formating.ShowLastAge(repository, cw), repository.Spec.URL)
+		fmt.Fprintf(w, body, repository.GetName(), formatting.ShowLastAge(repository, cw), repository.Spec.URL)
 
 		if opts.AllNameSpaces {
 			fmt.Fprintf(w, "\t%s", repository.GetNamespace())
 		}
 
-		fmt.Fprintf(w, "\t%s", formating.ShowStatus(repository, ioStreams.ColorScheme()))
+		fmt.Fprintf(w, "\t%s", formatting.ShowStatus(repository, ioStreams.ColorScheme()))
 		fmt.Fprint(w, "\n")
 	}
 

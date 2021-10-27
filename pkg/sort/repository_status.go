@@ -1,4 +1,4 @@
-package pipelineascode
+package sort
 
 import (
 	"sort"
@@ -28,7 +28,7 @@ func (rs repoRunStatus) Less(i, j int) bool {
 	return rs[j].StartTime.Before(rs[i].StartTime)
 }
 
-func SortedStatus(repoStatus []v1alpha1.RepositoryRunStatus) []v1alpha1.RepositoryRunStatus {
+func RepositoryRunStatus(repoStatus []v1alpha1.RepositoryRunStatus) []v1alpha1.RepositoryRunStatus {
 	rrstatus := repoRunStatus{}
 	for _, status := range repoStatus {
 		rrstatus = append(rrstatus, status)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pipelineascode
+package formatting
 
 import (
 	"testing"
@@ -32,12 +32,12 @@ func TestTimeout(t *testing.T) {
 	assert.Equal(t, str, "5 minutes")
 
 	str = Timeout(nil) // Timeout is not defined
-	assert.Equal(t, str, naStr)
+	assert.Equal(t, str, nonAttributedStr)
 }
 
 func TestAge(t *testing.T) {
 	clock := clockwork.NewFakeClock()
-	assert.Equal(t, Age(&metav1.Time{}, clock), naStr)
+	assert.Equal(t, Age(&metav1.Time{}, clock), nonAttributedStr)
 
 	t1 := &metav1.Time{
 		Time: clock.Now().Add(-5 * time.Minute),
@@ -46,7 +46,7 @@ func TestAge(t *testing.T) {
 }
 
 func TestDuration(t *testing.T) {
-	assert.Equal(t, Duration(&metav1.Time{}, &metav1.Time{}), naStr)
+	assert.Equal(t, Duration(&metav1.Time{}, &metav1.Time{}), nonAttributedStr)
 	clock := clockwork.NewFakeClock()
 
 	assert.Equal(t, Duration(&metav1.Time{

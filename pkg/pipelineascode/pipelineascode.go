@@ -4,17 +4,15 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -48,15 +46,14 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 			return nil
 		}
 
-		err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+		status := webvcs.StatusOpts{
 			Status:     "completed",
 			Conclusion: "skipped",
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
-		})
-
-		if err != nil {
-			return err
+		}
+		if err := vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
+			return fmt.Errorf("failed to run create status on repo not found: %w", err)
 		}
 		return nil
 	}
@@ -93,14 +90,14 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 			msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", cs.Info.Event.Sender,
 				cs.Info.Event.AccountID)
 		}
-		err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+		status := webvcs.StatusOpts{
 			Status:     "completed",
 			Conclusion: "skipped",
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/police-cat-gifs",
-		})
-		if err != nil {
-			return err
+		}
+		if err := vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
+			return fmt.Errorf("failed to run create status on not allowed to run: %w", err)
 		}
 		return nil
 	}
@@ -111,20 +108,20 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		msg := fmt.Sprintf("%s - Could not find a **.tekton/** directory for this repository", cs.Info.Pac.ApplicationName)
 		cs.Clients.Log.Info(msg)
 
-		err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+		status := webvcs.StatusOpts{
 			Status:     "completed",
 			Conclusion: "skipped",
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
-		})
-
-		if err != nil {
-			return err
 		}
-		return err
+		if err := vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
+			return fmt.Errorf("failed to run create status on could not find .tekton: %w", err)
+		}
+		return nil
 	}
+
 	// Replace those {{var}} placeholders user has in her template to the cs.Info variable
-	allTemplates = processTemplates(cs.Info.Event, allTemplates)
+	allTemplates = templates.Process(cs.Info.Event, allTemplates)
 
 	ropt := &resolve.Opts{
 		GenerateName: true,
@@ -163,26 +160,29 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		return fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
 	}
 
-	consoleURL := cs.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
-
 	// Create status with the log url
-	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(),
-		repo.GetNamespace(), consoleURL, repo.GetNamespace(), pr.GetName())
-	cs.Clients.Log.Infof("pipelinerun %s has been created in namespace %s", pr.GetName(), repo.GetNamespace())
-	err = createStatus(ctx, vcsintf, cs, webvcs.StatusOpts{
+	cs.Clients.Log.Infof("pipelinerun %s has been created in namespace %s for SHA: %s Target Branch: %s",
+		pr.GetName(), repo.GetNamespace(), cs.Info.Event.SHA, cs.Info.Event.BaseBranch)
+	consoleURL := cs.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
+	// Create status with the log url
+	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), repo.GetNamespace(), consoleURL, repo.GetNamespace(), pr.GetName())
+	status := webvcs.StatusOpts{
 		Status:          "in_progress",
 		Conclusion:      "pending",
 		Text:            msg,
 		DetailsURL:      consoleURL,
 		PipelineRunName: pr.GetName(),
-	})
-	if err != nil {
+	}
+	if err := vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
 		return fmt.Errorf("cannot create a in_progress WebVCS status: %w", err)
 	}
 
-	cs.Clients.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes", pr.Namespace, pr.Name, fmtDuration(pipelineRunTimeout))
+	cs.Clients.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes",
+		pr.Namespace, pr.Name,
+		formatting.HumanDuration(pipelineRunTimeout))
 	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, pipelineRunTimeout); err != nil {
-		cs.Clients.Log.Warnf("pipelinerun %s in namespace %s has a failed status", pipelineRun.GetGenerateName(), repo.GetNamespace())
+		cs.Clients.Log.Warnf("pipelinerun %s in namespace %s has a failed status",
+			pipelineRun.GetGenerateName(), repo.GetNamespace())
 	}
 
 	// Do cleanups
@@ -200,108 +200,10 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 
 	// Post the final status to GitHub check status with a nice breakdown and
 	// tekton cli describe output.
-	newPr, err := postFinalStatus(ctx, cs, k8int, vcsintf, pr.Name, repo.GetNamespace())
-	if err != nil {
-		return err
-	}
-	repoStatus := apipac.RepositoryRunStatus{
-		Status:          newPr.Status.Status,
-		PipelineRunName: newPr.Name,
-		StartTime:       newPr.Status.StartTime,
-		CompletionTime:  newPr.Status.CompletionTime,
-		SHA:             &cs.Info.Event.SHA,
-		SHAURL:          &cs.Info.Event.SHAURL,
-		Title:           &cs.Info.Event.SHATitle,
-		LogURL:          &consoleURL,
-		EventType:       &cs.Info.Event.EventType,
-		TargetBranch:    &cs.Info.Event.BaseBranch,
-	}
-
-	// Get repo again in case it was updated while we were running the CI
-	// NOTE: there may be a race issue we should maybe solve here, between the Get and
-	// Update but we are talking sub-milliseconds issue here.
-	lastrepo, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(repo.GetNamespace()).Get(ctx, repo.Name, metav1.GetOptions{})
+	newPr, err := postFinalStatus(ctx, cs, vcsintf, pr)
 	if err != nil {
 		return err
 	}
 
-	// Append pipelinerun status files to the repo status
-	if len(lastrepo.Status) >= maxPipelineRunStatusRun {
-		copy(lastrepo.Status, lastrepo.Status[len(lastrepo.Status)-maxPipelineRunStatusRun+1:])
-		lastrepo.Status = lastrepo.Status[:maxPipelineRunStatusRun-1]
-	}
-
-	lastrepo.Status = append(lastrepo.Status, repoStatus)
-	nrepo, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
-		ctx, lastrepo, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-
-	cs.Clients.Log.Infof("Repository status of %s has been updated", nrepo.Name)
-	return err
-}
-
-// cleanupLabel k8s do not like slash in labels value and on push we have the
-// full ref, we replace the "/" by "-". The tools probably need to be aware of
-// it when querying.
-func cleanupLabel(s string) string {
-	replasoeur := strings.NewReplacer("/", "-", " ", "_")
-	return replasoeur.Replace(s)
-}
-
-func addLabelsAndAnnotations(cs *params.Run, pipelineRun *tektonv1beta1.PipelineRun, repo *apipac.Repository) {
-	// Add labels on the soon to be created pipelinerun so UI/CLI can easily
-	// query them.
-	pipelineRun.Labels = map[string]string{
-		"app.kubernetes.io/managed-by":              "pipelines-as-code",
-		"pipelinesascode.tekton.dev/url-org":        cleanupLabel(cs.Info.Event.Owner),
-		"pipelinesascode.tekton.dev/url-repository": cleanupLabel(cs.Info.Event.Repository),
-		"pipelinesascode.tekton.dev/sha":            cleanupLabel(cs.Info.Event.SHA),
-		"pipelinesascode.tekton.dev/sender":         cleanupLabel(cs.Info.Event.Sender),
-		"pipelinesascode.tekton.dev/event-type":     cleanupLabel(cs.Info.Event.EventType),
-		"pipelinesascode.tekton.dev/branch":         cleanupLabel(cs.Info.Event.BaseBranch),
-		"pipelinesascode.tekton.dev/repository":     cleanupLabel(repo.GetName()),
-	}
-
-	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-title"] = cs.Info.Event.SHATitle
-	pipelineRun.Annotations["pipelinesascode.tekton.dev/sha-url"] = cs.Info.Event.SHAURL
-}
-
-func fmtDuration(d time.Duration) string {
-	d = d.Round(time.Minute)
-	m := d / time.Minute
-	return fmt.Sprintf("%02d", m)
-}
-
-func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.VCSConfig, repo *apipac.Repository) error {
-	var err error
-
-	if repo.Spec.WebvcsAPIURL == "" {
-		repo.Spec.WebvcsAPIURL = config.APIURL
-	} else {
-		cs.Info.Pac.VCSAPIURL = repo.Spec.WebvcsAPIURL
-		cs.Clients.Log.Infof("Using WebVCS: %s with api-url: %s", cs.Info.Pac.WebhookType, repo.Spec.WebvcsAPIURL)
-	}
-
-	cs.Info.Pac.VCSUser = repo.Spec.WebvcsAPIUser
-	cs.Info.Pac.VCSToken, err = k8int.GetSecret(
-		ctx,
-		kubeinteraction.GetSecretOpt{
-			Namespace: repo.GetNamespace(),
-			Name:      repo.Spec.WebvcsAPISecret.Name,
-			Key:       repo.Spec.WebvcsAPISecret.Key,
-		},
-	)
-
-	if err != nil {
-		return err
-	}
-	cs.Info.Pac.VCSInfoFromRepo = true
-
-	if repo.Spec.WebvcsAPIUser != "" {
-		cs.Clients.Log.Infof("Using api-user %s", repo.Spec.WebvcsAPIUser)
-	}
-	cs.Clients.Log.Infof("Using api-token from secret %s in key %s", repo.Spec.WebvcsAPISecret.Name, repo.Spec.WebvcsAPISecret.Key)
-	return nil
+	return updateRepoRunStatus(ctx, cs, newPr, repo)
 }

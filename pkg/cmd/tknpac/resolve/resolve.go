@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/formating"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
@@ -88,7 +88,7 @@ func Command(run *params.Run) *cobra.Command {
 			}
 
 			if _, ok := mapped["repo_owner"]; !ok && gitinfo.URL != "" {
-				repoOwner, err := formating.GetRepoOwnerFromGHURL(gitinfo.URL)
+				repoOwner, err := formatting.GetRepoOwnerFromGHURL(gitinfo.URL)
 				if err != nil {
 					return err
 				}
@@ -133,7 +133,7 @@ func resolveFilenames(cs *params.Run, filenames []string, params map[string]stri
 
 	allTemplates := enumerateFiles(filenames)
 	// TODO: flags
-	allTemplates = pipelineascode.ReplacePlaceHoldersVariables(allTemplates, params)
+	allTemplates = templates.ReplacePlaceHoldersVariables(allTemplates, params)
 	ctx := context.Background()
 	ropt := &resolve.Opts{
 		GenerateName: !noGenerateName,

@@ -1,156 +1,81 @@
 package pipelineascode
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"sort"
-	"text/template"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/google/go-github/v39/github"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	knative1 "knative.dev/pkg/apis/duck/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const checkStatustmpl = `{{.taskStatus}}`
+func updateRepoRunStatus(ctx context.Context, cs *params.Run, pr *tektonv1beta1.PipelineRun, repo *apipac.Repository) error {
+	repoStatus := apipac.RepositoryRunStatus{
+		Status:          pr.Status.Status,
+		PipelineRunName: pr.Name,
+		StartTime:       pr.Status.StartTime,
+		CompletionTime:  pr.Status.CompletionTime,
+		SHA:             &cs.Info.Event.SHA,
+		SHAURL:          &cs.Info.Event.SHAURL,
+		Title:           &cs.Info.Event.SHATitle,
+		LogURL:          github.String(cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName())),
+		EventType:       &cs.Info.Event.EventType,
+		TargetBranch:    &cs.Info.Event.BaseBranch,
+	}
 
-const naStr = "---"
+	// Get repo again in case it was updated while we were running the CI
+	// NOTE: there may be a race issue we should maybe solve here, between the Get and
+	// Update but we are talking sub-milliseconds issue here.
+	lastrepo, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(
+		pr.GetNamespace()).Get(ctx, repo.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
 
-type tkr struct {
-	taskLogURL string
-	*tektonv1beta1.PipelineRunTaskRunStatus
+	// Append pipelinerun status files to the repo status
+	if len(lastrepo.Status) >= maxPipelineRunStatusRun {
+		copy(lastrepo.Status, lastrepo.Status[len(lastrepo.Status)-maxPipelineRunStatusRun+1:])
+		lastrepo.Status = lastrepo.Status[:maxPipelineRunStatusRun-1]
+	}
+
+	lastrepo.Status = append(lastrepo.Status, repoStatus)
+	nrepo, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
+		ctx, lastrepo, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	cs.Clients.Log.Infof("Repository status of %s has been updated", nrepo.Name)
+
+	return nil
 }
 
-func (t tkr) ConsoleLogURL() string {
-	return fmt.Sprintf("[%s](%s)", t.PipelineTaskName, t.taskLogURL)
-}
-
-type taskrunList []tkr
-
-func (trs taskrunList) Len() int      { return len(trs) }
-func (trs taskrunList) Swap(i, j int) { trs[i], trs[j] = trs[j], trs[i] }
-func (trs taskrunList) Less(i, j int) bool {
-	if trs[j].Status == nil || trs[j].Status.StartTime == nil {
-		return false
-	}
-
-	if trs[i].Status == nil || trs[i].Status.StartTime == nil {
-		return true
-	}
-
-	return trs[j].Status.StartTime.Before(trs[i].Status.StartTime)
-}
-
-// pipelineRunStatus return status of PR  success failed or skipped
-func pipelineRunStatus(pr *tektonv1beta1.PipelineRun) string {
-	if len(pr.Status.Conditions) == 0 {
-		return "neutral"
-	}
-	if pr.Status.Conditions[0].Status == corev1.ConditionFalse {
-		return "failure"
-	}
-	return "success"
-}
-
-func ConditionEmoji(c knative1.Conditions) string {
-	var status string
-	if len(c) == 0 {
-		return naStr
-	}
-
-	// TODO: there is other weird errors we need to handle.
-
-	switch c[0].Status {
-	case corev1.ConditionFalse:
-		return "❌ Failed"
-	case corev1.ConditionTrue:
-		return "✅ Succeeded"
-	case corev1.ConditionUnknown:
-		return "🏃 Running"
-	}
-
-	return status
-}
-
-func statusOfAllTaskListForCheckRun(pr *tektonv1beta1.PipelineRun,
-	console consoleui.Interface, statusTemplate string) (string, error) {
-	var trl taskrunList
-	var outputBuffer bytes.Buffer
-
-	if len(pr.Status.TaskRuns) != 0 {
-		for taskrunName, taskrunStatus := range pr.Status.TaskRuns {
-			trl = append(trl, tkr{
-				taskLogURL:               console.TaskLogURL(pr.GetNamespace(), pr.GetName(), taskrunName),
-				PipelineRunTaskRunStatus: taskrunStatus,
-			})
-		}
-		sort.Sort(sort.Reverse(trl))
-	}
-
-	funcMap := template.FuncMap{
-		"formatDuration":  Duration,
-		"formatCondition": ConditionEmoji,
-	}
-
-	data := struct {
-		TaskRunList taskrunList
-	}{
-		TaskRunList: trl,
-	}
-
-	t := template.Must(template.New("Task Status").Funcs(funcMap).Parse(statusTemplate))
-	if err := t.Execute(&outputBuffer, data); err != nil {
-		fmt.Fprintf(&outputBuffer, "failed to execute template: ")
-		return "", err
-	}
-
-	return outputBuffer.String(), nil
-}
-
-func createStatus(ctx context.Context, vcsintf webvcs.Interface,
-	cs *params.Run, status webvcs.StatusOpts) error {
-	return vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status)
-}
-
-func postFinalStatus(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, vcsintf webvcs.Interface,
-	prName, namespace string) (*tektonv1beta1.PipelineRun, error) {
-	var outputBuffer bytes.Buffer
-
-	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(namespace).Get(ctx, prName, v1.GetOptions{})
+func postFinalStatus(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, createdPR *tektonv1beta1.PipelineRun) (
+	*tektonv1beta1.PipelineRun, error) {
+	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(createdPR.GetNamespace()).Get(
+		ctx, createdPR.GetName(), metav1.GetOptions{},
+	)
 	if err != nil {
 		return pr, err
 	}
 
-	taskStatus, err := statusOfAllTaskListForCheckRun(pr, cs.Clients.ConsoleUI, vcsintf.GetConfig().TaskStatusTMPL)
+	taskStatus, err := sort.TaskStatusTmpl(pr, cs.Clients.ConsoleUI, vcsintf.GetConfig().TaskStatusTMPL)
 	if err != nil {
 		return pr, err
 	}
-
-	data := map[string]string{
-		"taskStatus": taskStatus,
-	}
-
-	t := template.Must(template.New("Pipeline Status").Parse(checkStatustmpl))
-	if err := t.Execute(&outputBuffer, data); err != nil {
-		fmt.Fprintf(&outputBuffer, "failed to execute template: ")
-		return pr, err
-	}
-	output := outputBuffer.String()
 
 	status := webvcs.StatusOpts{
 		Status:          "completed",
-		Conclusion:      pipelineRunStatus(pr),
-		Text:            output,
+		Conclusion:      formatting.PipelineRunStatus(pr),
+		Text:            taskStatus,
 		PipelineRunName: pr.Name,
 		DetailsURL:      cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
 	}
-	err = createStatus(ctx, vcsintf, cs, status)
-	cs.Clients.Log.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)
 
+	err = vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status)
+	cs.Clients.Log.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)
 	return pr, err
 }
