@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
@@ -173,11 +175,28 @@ func Resolve(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, data
 			pipelinerun.Spec.PipelineRef = nil
 			pipelinerun.Spec.PipelineSpec = &pipelineResolved.Spec
 		}
-		// Add a generateName based on name if we want it
+
+		var originPipelinerunName string
+
+		originPipelinerunName = pipelinerun.ObjectMeta.Name
+		// Add a GenerateName based on the pipeline name and a "-"
+		// if we already have a GenerateName then just keep it like this
 		if ropt.GenerateName && pipelinerun.ObjectMeta.GenerateName == "" {
 			pipelinerun.ObjectMeta.GenerateName = pipelinerun.ObjectMeta.Name + "-"
 			pipelinerun.ObjectMeta.Name = ""
+		} else if originPipelinerunName == "" && pipelinerun.ObjectMeta.GenerateName != "" {
+			originPipelinerunName = pipelinerun.ObjectMeta.GenerateName
 		}
+
+		// make sure we keep the originalPipelineRun in a label
+		// because we would need it later on when grouping by cleanups and we
+		// can attach that pr file from .tekton directory.
+
+		// Don't overwrite the labels if there is some who already exist set by the user in repo
+		if pipelinerun.ObjectMeta.Labels == nil {
+			pipelinerun.ObjectMeta.Labels = map[string]string{}
+		}
+		pipelinerun.ObjectMeta.Labels[filepath.Join(apipac.GroupName, "original-prname")] = originPipelinerunName
 	}
 	return types.PipelineRuns, nil
 }

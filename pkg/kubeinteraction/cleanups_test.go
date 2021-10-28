@@ -1,11 +1,11 @@
 package kubeinteraction
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
@@ -20,19 +20,57 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
+func makePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus string, labels map[string]string, timeshift int) *v1beta1.PipelineRun {
+	// fakeing time logic give me headache
+	// this will make the pr finish 5mn ago, starting 5-5mn ago
+	starttime := time.Duration((timeshift - 5*-1) * int(time.Minute))
+	endtime := time.Duration((timeshift * -1) * int(time.Minute))
+
+	return &v1beta1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Status: v1beta1.PipelineRunStatus{
+			Status: duckv1beta1.Status{
+				Conditions: duckv1beta1.Conditions{
+					{
+						Type:   knativeapi.ConditionSucceeded,
+						Status: corev1.ConditionTrue,
+						Reason: runstatus,
+					},
+				},
+			},
+			PipelineRunStatusFields: v1beta1.PipelineRunStatusFields{
+				StartTime:      &metav1.Time{Time: clock.Now().Add(starttime)},
+				CompletionTime: &metav1.Time{Time: clock.Now().Add(endtime)},
+			},
+		},
+	}
+}
+
 func TestInteraction_CleanupPipelines(t *testing.T) {
 	ns := "namespace"
+	cleanupRepoName := "clean-me-up-before-you-go-go-go-go"
+	cleanupPRName := "clean-me-pleaze"
+	cleanupLabels := map[string]string{
+		"pipelinesascode.tekton.dev/original-prname": cleanupPRName,
+		"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
+	}
+
 	clock := clockwork.NewFakeClock()
 
 	type args struct {
-		namespace      string
-		repositoryName string
-		maxKeep        int
-		pruns          []*v1beta1.PipelineRun
-		kept           int
+		namespace        string
+		repositoryName   string
+		maxKeep          int
+		pruns            []*v1beta1.PipelineRun
+		prunCurrent      *v1beta1.PipelineRun
+		kept             int
+		prunLatestInList string
 	}
 
-	const cleanupRepoName = "clean-me-up-before-you-go-go"
 	tests := []struct {
 		name    string
 		args    args
@@ -45,53 +83,13 @@ func TestInteraction_CleanupPipelines(t *testing.T) {
 				repositoryName: cleanupRepoName,
 				maxKeep:        1,
 				kept:           1,
+				prunCurrent:    &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
 				pruns: []*v1beta1.PipelineRun{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "pipeline-newest",
-							Namespace: ns,
-							Labels: map[string]string{
-								"pipelinesascode.tekton.dev/repository": cleanupRepoName,
-							},
-						},
-						Status: v1beta1.PipelineRunStatus{
-							PipelineRunStatusFields: v1beta1.PipelineRunStatusFields{
-								StartTime:      &metav1.Time{Time: clock.Now().Add(-5 * time.Minute)},
-								CompletionTime: &metav1.Time{Time: clock.Now().Add(10 * time.Minute)},
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "pipeline-middest",
-							Namespace: ns,
-							Labels: map[string]string{
-								"pipelinesascode.tekton.dev/repository": cleanupRepoName,
-							},
-						},
-						Status: v1beta1.PipelineRunStatus{
-							PipelineRunStatusFields: v1beta1.PipelineRunStatusFields{
-								StartTime:      &metav1.Time{Time: clock.Now().Add(-15 * time.Minute)},
-								CompletionTime: &metav1.Time{Time: clock.Now().Add(20 * time.Minute)},
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "pipeline-oldest",
-							Namespace: ns,
-							Labels: map[string]string{
-								"pipelinesascode.tekton.dev/repository": cleanupRepoName,
-							},
-						},
-						Status: v1beta1.PipelineRunStatus{
-							PipelineRunStatusFields: v1beta1.PipelineRunStatusFields{
-								StartTime:      &metav1.Time{Time: clock.Now().Add(-25 * time.Minute)},
-								CompletionTime: &metav1.Time{Time: clock.Now().Add(30 * time.Minute)},
-							},
-						},
-					},
+					makePRCompletion(clock, "pipeline-newest", ns, v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
+					makePRCompletion(clock, "pipeline-middest", ns, v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
+					makePRCompletion(clock, "pipeline-oldest", ns, v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
 				},
+				prunLatestInList: "pipeline-newest",
 			},
 		},
 		{
@@ -100,77 +98,27 @@ func TestInteraction_CleanupPipelines(t *testing.T) {
 				namespace:      ns,
 				repositoryName: cleanupRepoName,
 				maxKeep:        1,
-				kept:           2,
+				kept:           1, // see my comment in code why only 1 is kept.
+				prunCurrent:    &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
 				pruns: []*v1beta1.PipelineRun{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "pipeline-newest",
-							Namespace: ns,
-							Labels: map[string]string{
-								"pipelinesascode.tekton.dev/repository": cleanupRepoName,
-							},
-						},
-						Status: v1beta1.PipelineRunStatus{
-
-							PipelineRunStatusFields: v1beta1.PipelineRunStatusFields{
-								// pipeline run started 5 minutes ago
-								StartTime: &metav1.Time{Time: clock.Now().Add(-5 * time.Minute)},
-								// takes 10 minutes to complete
-								CompletionTime: &metav1.Time{Time: clock.Now().Add(10 * time.Minute)},
-							},
-						},
-					},
-
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "pipeline-oldest",
-							Namespace: ns,
-							Labels: map[string]string{
-								"pipelinesascode.tekton.dev/repository": cleanupRepoName,
-							},
-						},
-						Status: v1beta1.PipelineRunStatus{
-							PipelineRunStatusFields: v1beta1.PipelineRunStatusFields{
-								// pipeline run started 5 minutes ago
-								StartTime: &metav1.Time{Time: clock.Now().Add(-25 * time.Minute)},
-								// takes 10 minutes to complete
-								CompletionTime: &metav1.Time{Time: clock.Now().Add(30 * time.Minute)},
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "pipeline-midest",
-							Namespace: ns,
-							Labels: map[string]string{
-								"pipelinesascode.tekton.dev/repository": cleanupRepoName,
-							},
-						},
-						Status: v1beta1.PipelineRunStatus{
-							Status: duckv1beta1.Status{
-								Conditions: duckv1beta1.Conditions{
-									{
-										Type:   knativeapi.ConditionSucceeded,
-										Status: corev1.ConditionTrue,
-										Reason: v1beta1.PipelineRunReasonRunning.String(),
-									},
-								},
-							},
-							PipelineRunStatusFields: v1beta1.PipelineRunStatusFields{
-								// pipeline run started 5 minutes ago
-								StartTime: &metav1.Time{Time: clock.Now().Add(-15 * time.Minute)},
-								// takes 10 minutes to complete
-								CompletionTime: &metav1.Time{Time: clock.Now().Add(20 * time.Minute)},
-							},
-						},
-					},
+					makePRCompletion(clock, "pipeline-running", ns, v1beta1.PipelineRunReasonRunning.String(), cleanupLabels, 10),
+					makePRCompletion(clock, "pipeline-toclean", ns, v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+					makePRCompletion(clock, "pipeline-tokeep", ns, v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
 				},
+				prunLatestInList: "pipeline-running",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			repo := &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      tt.args.repositoryName,
+					Namespace: tt.args.namespace,
+				},
+			}
+
 			tdata := testclient.Data{
 				PipelineRuns: tt.args.pruns,
 				Namespaces: []*corev1.Namespace{
@@ -194,17 +142,18 @@ func TestInteraction_CleanupPipelines(t *testing.T) {
 				},
 			}
 
-			if err := kint.CleanupPipelines(ctx, tt.args.namespace, tt.args.repositoryName,
-				tt.args.maxKeep); (err != nil) != tt.wantErr {
-				t.Errorf("CleanupPipelines() error = %v, wantErr %v", err, tt.wantErr)
+			err := kint.CleanupPipelines(ctx, repo, tt.args.prunCurrent, tt.args.maxKeep)
+			if tt.wantErr {
+				assert.Assert(t, err != nil)
 			}
 
-			plist, err := kint.Run.Clients.Tekton.TektonV1beta1().PipelineRuns(tt.args.namespace).List(ctx,
-				metav1.ListOptions{})
+			plist, err := kint.Run.Clients.Tekton.TektonV1beta1().PipelineRuns(tt.args.namespace).List(
+				ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
-			assert.Equal(t, len(plist.Items), tt.args.kept)
-			assert.Equal(t, plist.Items[0].Name, tt.args.pruns[len(tt.args.pruns)-1].Name,
-				fmt.Sprintf("%s != %s", plist.Items[0].Name, tt.args.pruns[len(tt.args.pruns)-1].Name))
+			assert.Equal(t, tt.args.kept, len(plist.Items), "we have %d pruns kept when we wanted only %d", len(plist.Items), tt.args.kept)
+			if tt.args.prunLatestInList != "" {
+				assert.Equal(t, tt.args.prunLatestInList, plist.Items[0].Name)
+			}
 		})
 	}
 }
