@@ -152,7 +152,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	}
 
 	// Add labels and annotations to pipelinerun
-	addLabelsAndAnnotations(cs, pipelineRun, repo)
+	kubeinteraction.AddLabelsAndAnnotations(cs.Info.Event, pipelineRun, repo)
 
 	// Create the actual pipeline
 	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).Create(ctx, pipelineRun, metav1.CreateOptions{})
@@ -192,7 +192,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 			return err
 		}
 
-		err = k8int.CleanupPipelines(ctx, repo.GetNamespace(), repo.Name, max)
+		err = k8int.CleanupPipelines(ctx, repo, pr, max)
 		if err != nil {
 			return err
 		}

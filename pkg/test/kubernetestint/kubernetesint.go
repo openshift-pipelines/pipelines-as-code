@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -37,9 +38,9 @@ func (k *KinterfaceTest) WaitForPipelineRunSucceed(ctx context.Context, tektonbe
 	return nil
 }
 
-func (k *KinterfaceTest) CleanupPipelines(ctx context.Context, namespace string, repoName string, maxKeep int) error {
-	if k.ExpectedNumberofCleanups != maxKeep {
-		return fmt.Errorf("we wanted %d and we got %d", k.ExpectedNumberofCleanups, maxKeep)
+func (k *KinterfaceTest) CleanupPipelines(ctx context.Context, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun, limitnumber int) error {
+	if k.ExpectedNumberofCleanups != limitnumber {
+		return fmt.Errorf("we wanted %d and we got %d", k.ExpectedNumberofCleanups, limitnumber)
 	}
 	return nil
 }
