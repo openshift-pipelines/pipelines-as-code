@@ -68,7 +68,7 @@ spec:
                 #!/usr/bin/env bash
                 set -eux
                 mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
-                cd $(dirname GOCACHE)
+                cd $(dirname ${GOCACHE})
 
                 curl -fsI http://uploader:8080/golang-cache.tar || {
                     echo "no cache found"
