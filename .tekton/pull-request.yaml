@@ -55,12 +55,20 @@ spec:
             - name: source
           steps:
             - image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+                - name: GOLANGCILINT_CACHE
+                  value: $(workspaces.source.path)/go-build-cache/golangci-cache
               name: get-cache
               workingDir: $(workspaces.source.path)
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                mkdir -p go-build-cache;cd go-build-cache
+                mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
+                cd $(dirname GOCACHE)
 
                 curl -fsI http://uploader:8080/golang-cache.tar || {
                     echo "no cache found"
@@ -73,21 +81,30 @@ spec:
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
               image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
               workingDir: $(workspaces.source.path)
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                [[ -e $HOME/.cache/go-build ]] || { mkdir -p $HOME/.cache/ && ln -vfs $(workspaces.source.path)/go-build-cache $HOME/.cache/go-build ;}
                 make test GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
 
             - name: lint
               image: quay.io/app-sre/golangci-lint
               workingDir: $(workspaces.source.path)
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+                - name: GOLANGCILINT_CACHE
+                  value: $(workspaces.source.path)/go-build-cache/golangci-cache
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                [[ -e $HOME/.cache/go-build ]] || { mkdir -p $HOME/.cache/ && ln -vfs $(workspaces.source.path)/go-build-cache $HOME/.cache/go-build ;}
-                [[ -e $HOME/.cache/golangci-lint ]] || { mkdir -p $HOME/.cache/ && ln -vfs $(workspaces.source.path)/go-build-cache $HOME/.cache/golangci-lint ;}
                 make lint-go
         workspaces:
           - name: source
