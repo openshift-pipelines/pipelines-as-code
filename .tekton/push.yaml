@@ -44,10 +44,18 @@ spec:
             - image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
               name: get-cache
               workingDir: $(workspaces.source.path)
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+                - name: GOLANGCILINT_CACHE
+                  value: $(workspaces.source.path)/go-build-cache/golangci-cache
               script: |
                 #!/usr/bin/env bash
                 set -ex
-                mkdir -p go-build-cache;cd go-build-cache
+                mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
+                cd $(dirname ${GOCACHE})
 
                 curl -fsI http://uploader:8080/golang-cache.tar || {
                     echo "no cache found"
@@ -59,10 +67,15 @@ spec:
             - name: unittest
               image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
               workingDir: $(workspaces.source.path)
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
               script: |
                 #!/usr/bin/env bash
-                [[ -e $HOME/.cache/go-build ]] || { mkdir -p $HOME/.cache/ && ln -vs $(workspaces.source.path)/go-build-cache $HOME/.cache/go-build ;}
-                make test GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
+                make test \
+                    GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
       - name: codecov
         runAfter:
           - unit
