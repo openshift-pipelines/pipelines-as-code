@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -32,8 +33,6 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 	return err
 }
 
-const defaultGitUser = "git"
-
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
 func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, targetNamespace string) error {
 	// Bitbucket Server have a different Clone URL than it's Repo URL, so we
@@ -48,7 +47,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 		return fmt.Errorf("cannot parse url %s: %w", cloneURL, err)
 	}
 
-	gitUser := defaultGitUser
+	gitUser := webvcs.DefaultWebvcsAPIUser
 	if pacopts.VCSUser != "" {
 		gitUser = pacopts.VCSUser
 	}

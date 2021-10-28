@@ -141,12 +141,12 @@ spec:
       secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"
 `
 
-func (o *generateOpts) detectLanguage() langOpts {
-	cs := o.ioStreams.ColorScheme()
+func (o *Opts) detectLanguage() langOpts {
+	cs := o.IOStreams.ColorScheme()
 	for _, v := range languageDetection {
-		fpath := filepath.Join(o.gitInfo.TopLevelPath, v.detectionFile)
+		fpath := filepath.Join(o.GitInfo.TopLevelPath, v.detectionFile)
 		if _, err := os.Stat(fpath); !os.IsNotExist(err) {
-			fmt.Fprintf(o.ioStreams.Out, "%s We have detected your repository using the programming language %s.\n",
+			fmt.Fprintf(o.IOStreams.Out, "%s We have detected your repository using the programming language %s.\n",
 				cs.SuccessIcon(),
 				cs.Bold(v.Language),
 			)
@@ -156,11 +156,11 @@ func (o *generateOpts) detectLanguage() langOpts {
 	return langOpts{}
 }
 
-func (o *generateOpts) genTmpl() (bytes.Buffer, error) {
+func (o *Opts) genTmpl() (bytes.Buffer, error) {
 	var outputBuffer bytes.Buffer
 	t := template.Must(template.New("PipelineRun").Delims("[[", "]]").Parse(pipelineRunTmpl))
 	prName := fmt.Sprintf("%s-%s",
-		filepath.Base(o.gitInfo.URL),
+		filepath.Base(o.GitInfo.URL),
 		strings.ReplaceAll(o.event.EventType, "_", "-"))
 	data := map[string]interface{}{
 		"prName":                  prName,
