@@ -27,3 +27,5 @@ type Interface interface {
 	GetCommitInfo(context.Context, *info.Event) error
 	GetConfig() *info.VCSConfig
 }
+
+const DefaultWebvcsAPIUser = "git"

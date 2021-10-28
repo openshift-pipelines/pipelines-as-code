@@ -9,6 +9,10 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
 
+const (
+	defaultWebvcsAPISecretKey = "token"
+)
+
 // secretFromRepository grab the secret from the repository CRD
 func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.VCSConfig, repo *apipac.Repository) error {
 	var err error
@@ -17,7 +21,11 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 		repo.Spec.WebvcsAPIURL = config.APIURL
 	} else {
 		cs.Info.Pac.VCSAPIURL = repo.Spec.WebvcsAPIURL
-		cs.Clients.Log.Infof("Using WebVCS: %s with api-url: %s", cs.Info.Pac.WebhookType, repo.Spec.WebvcsAPIURL)
+	}
+
+	key := repo.Spec.WebvcsAPISecret.Key
+	if key == "" {
+		key = defaultWebvcsAPISecretKey
 	}
 
 	cs.Info.Pac.VCSUser = repo.Spec.WebvcsAPIUser
@@ -26,7 +34,7 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 		kubeinteraction.GetSecretOpt{
 			Namespace: repo.GetNamespace(),
 			Name:      repo.Spec.WebvcsAPISecret.Name,
-			Key:       repo.Spec.WebvcsAPISecret.Key,
+			Key:       key,
 		},
 	)
 
@@ -35,9 +43,6 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	}
 	cs.Info.Pac.VCSInfoFromRepo = true
 
-	if repo.Spec.WebvcsAPIUser != "" {
-		cs.Clients.Log.Infof("Using api-user %s", repo.Spec.WebvcsAPIUser)
-	}
-	cs.Clients.Log.Infof("Using api-token from secret %s in key %s", repo.Spec.WebvcsAPISecret.Name, repo.Spec.WebvcsAPISecret.Key)
+	cs.Clients.Log.Infof("Using webvcs: url=%s user=%s token-secret=%s in token-key=%s", repo.Spec.WebvcsAPIURL, repo.Spec.WebvcsAPIUser, repo.Spec.WebvcsAPISecret.Name, key)
 	return nil
 }
