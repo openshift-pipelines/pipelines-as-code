@@ -46,9 +46,13 @@ func TaskStatusTmpl(pr *tektonv1beta1.PipelineRun, console consoleui.Interface, 
 		return statusTemplate + "No tasks has been found", nil
 	}
 
-	for taskrunName, taskrunStatus := range pr.Status.TaskRuns {
+	for _, taskrunStatus := range pr.Status.TaskRuns {
 		trl = append(trl, tkr{
-			taskLogURL:               console.TaskLogURL(pr.GetNamespace(), pr.GetName(), taskrunName),
+			taskLogURL: console.TaskLogURL(
+				pr.GetNamespace(),
+				pr.GetName(),
+				taskrunStatus.PipelineTaskName,
+			),
 			PipelineRunTaskRunStatus: taskrunStatus,
 		})
 	}
