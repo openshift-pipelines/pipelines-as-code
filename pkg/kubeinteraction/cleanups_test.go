@@ -2,55 +2,23 @@ package kubeinteraction
 
 import (
 	"testing"
-	"time"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	knativeapi "knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func makePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus string, labels map[string]string, timeshift int) *v1beta1.PipelineRun {
-	// fakeing time logic give me headache
-	// this will make the pr finish 5mn ago, starting 5-5mn ago
-	starttime := time.Duration((timeshift - 5*-1) * int(time.Minute))
-	endtime := time.Duration((timeshift * -1) * int(time.Minute))
-
-	return &v1beta1.PipelineRun{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels:    labels,
-		},
-		Status: v1beta1.PipelineRunStatus{
-			Status: duckv1beta1.Status{
-				Conditions: duckv1beta1.Conditions{
-					{
-						Type:   knativeapi.ConditionSucceeded,
-						Status: corev1.ConditionTrue,
-						Reason: runstatus,
-					},
-				},
-			},
-			PipelineRunStatusFields: v1beta1.PipelineRunStatusFields{
-				StartTime:      &metav1.Time{Time: clock.Now().Add(starttime)},
-				CompletionTime: &metav1.Time{Time: clock.Now().Add(endtime)},
-			},
-		},
-	}
-}
-
-func TestInteraction_CleanupPipelines(t *testing.T) {
+func TestCleanupPipelines(t *testing.T) {
 	ns := "namespace"
 	cleanupRepoName := "clean-me-up-before-you-go-go-go-go"
 	cleanupPRName := "clean-me-pleaze"
@@ -85,9 +53,12 @@ func TestInteraction_CleanupPipelines(t *testing.T) {
 				kept:           1,
 				prunCurrent:    &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
 				pruns: []*v1beta1.PipelineRun{
-					makePRCompletion(clock, "pipeline-newest", ns, v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-					makePRCompletion(clock, "pipeline-middest", ns, v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-					makePRCompletion(clock, "pipeline-oldest", ns, v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+					tektontest.MakePRCompletion(clock, "pipeline-newest", ns,
+						v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
+					tektontest.MakePRCompletion(clock, "pipeline-middest", ns,
+						v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
+					tektontest.MakePRCompletion(clock, "pipeline-oldest", ns,
+						v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
 				},
 				prunLatestInList: "pipeline-newest",
 			},
@@ -101,9 +72,12 @@ func TestInteraction_CleanupPipelines(t *testing.T) {
 				kept:           1, // see my comment in code why only 1 is kept.
 				prunCurrent:    &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
 				pruns: []*v1beta1.PipelineRun{
-					makePRCompletion(clock, "pipeline-running", ns, v1beta1.PipelineRunReasonRunning.String(), cleanupLabels, 10),
-					makePRCompletion(clock, "pipeline-toclean", ns, v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
-					makePRCompletion(clock, "pipeline-tokeep", ns, v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
+					tektontest.MakePRCompletion(clock, "pipeline-running", ns,
+						v1beta1.PipelineRunReasonRunning.String(), cleanupLabels, 10),
+					tektontest.MakePRCompletion(clock, "pipeline-toclean", ns,
+						v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+					tektontest.MakePRCompletion(clock, "pipeline-tokeep", ns,
+						v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
 				},
 				prunLatestInList: "pipeline-running",
 			},
