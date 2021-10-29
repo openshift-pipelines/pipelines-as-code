@@ -47,10 +47,10 @@ const (
 
 {{ $.ColorScheme.Underline "Other Runs:" }}
 
-{{ $.ColorScheme.BulletSpace }}PIPELINERUN	Event	Branch	 SHA	 START_TIME	DURATION	STATUS
-
+STATUS	Event	Branch	 SHA	 STARTED TIME	DURATION	PIPELINERUN
+――――――	―――――	――――――	 ―――	 ――――――――――――	――――――――	―――――――――――
 {{- range $i, $st := (slice .Statuses 1 (len .Repository.Status)) }}
-{{ $.ColorScheme.Bullet }}{{ formatStatus $st $.ColorScheme $.Clock }}
+{{ formatStatus $st $.ColorScheme $.Clock }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -60,13 +60,13 @@ const (
 
 func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock) string {
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
-		cs.HyperLink(status.PipelineRunName, *status.LogURL),
+		cs.ColorStatus(status.Status.Conditions[0].Reason),
 		*status.EventType,
 		formatting.SanitizeBranch(*status.TargetBranch),
 		cs.HyperLink(formatting.ShortSHA(*status.SHA), *status.SHAURL),
 		formatting.Age(status.StartTime, c),
 		formatting.Duration(status.StartTime, status.CompletionTime),
-		cs.ColorStatus(status.Status.Conditions[0].Reason))
+		cs.HyperLink(status.PipelineRunName, *status.LogURL))
 }
 
 func askRepo(ctx context.Context, cs *params.Run, namespace string) (*v1alpha1.Repository, error) {

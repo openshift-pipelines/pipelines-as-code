@@ -16,14 +16,12 @@ func ShowLastSHA(repository v1alpha1.Repository) string {
 }
 
 func ShowStatus(repository v1alpha1.Repository, cs *cli.ColorScheme) string {
-	var status string
 	if len(repository.Status) == 0 {
-		status = "NoRun"
-	} else {
-		status = repository.Status[len(repository.Status)-1].Status.Conditions[0].GetReason()
+		return cs.ColorStatus("NoRun")
 	}
-
-	return cs.ColorStatus(status)
+	status := repository.Status[len(repository.Status)-1].Status.Conditions[0].GetReason()
+	logurl := repository.Status[len(repository.Status)-1].LogURL
+	return cs.HyperLink(cs.ColorStatus(status), *logurl)
 }
 
 func ShowLastAge(repository v1alpha1.Repository, cw clockwork.Clock) string {

@@ -56,6 +56,7 @@ func TestList(t *testing.T) {
 				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
 				SHA:             github.String("SHA"),
 				Title:           github.String("A title"),
+				LogURL:          github.String("https://help.me.obiwan.kenobi"),
 			},
 		},
 	}
@@ -81,6 +82,7 @@ func TestList(t *testing.T) {
 				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
 				SHA:             github.String("SHA"),
 				Title:           github.String("A title"),
+				LogURL:          github.String("https://help.me.obiwan.kenobi"),
 			},
 		},
 	}
