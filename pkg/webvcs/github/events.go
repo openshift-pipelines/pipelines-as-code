@@ -47,22 +47,22 @@ func (v *VCS) getAppToken(ctx context.Context, info *info.PacOpts) error {
 
 	installationID, err := strconv.ParseInt(installationIDEnv, 10, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not parse installation_id: %w", err)
 	}
 
 	// check if the path exists
 	if _, err := os.Stat(workspacePath); os.IsNotExist(err) {
-		return fmt.Errorf("workspace path %s in env PAC_WORKSPACE_SECRET does not exist", workspacePath)
+		return fmt.Errorf("workspace path %s or env PAC_WORKSPACE_SECRET does not exist", workspacePath)
 	}
 
 	// read github-application-id from the secret workspace
 	b, err := ioutil.ReadFile(filepath.Join(workspacePath, "github-application-id"))
 	if err != nil {
-		return err
+		return fmt.Errorf("could not open the github-application-id key in secret: %w", err)
 	}
-	applicationID, err := strconv.ParseInt(string(b), 10, 64)
+	applicationID, err := strconv.ParseInt(strings.TrimSpace(string(b)), 10, 64)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not parse the github application_id number from secret: %w", err)
 	}
 
 	// read private_key from the secret workspace
