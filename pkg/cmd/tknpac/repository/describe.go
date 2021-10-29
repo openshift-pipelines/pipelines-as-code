@@ -9,6 +9,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/jonboulle/clockwork"
+	"github.com/juju/ansiterm"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
@@ -59,10 +60,10 @@ const (
 
 func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock) string {
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
-		status.PipelineRunName,
+		cs.HyperLink(status.PipelineRunName, *status.LogURL),
 		*status.EventType,
 		formatting.SanitizeBranch(*status.TargetBranch),
-		formatting.ShortSHA(*status.SHA),
+		cs.HyperLink(formatting.ShortSHA(*status.SHA), *status.SHAURL),
 		formatting.Age(status.StartTime, c),
 		formatting.Duration(status.StartTime, status.CompletionTime),
 		cs.ColorStatus(status.Status.Conditions[0].Reason))
@@ -204,7 +205,7 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		Clock:       clock,
 	}
 
-	w := tabwriter.NewWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
+	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
 	t := template.Must(template.New("Describe Repository").Funcs(funcMap).Parse(describeTemplate))
 
 	if err := t.Execute(w, data); err != nil {

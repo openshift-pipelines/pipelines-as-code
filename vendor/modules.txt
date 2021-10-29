@@ -141,6 +141,10 @@ github.com/jonboulle/clockwork
 github.com/josharian/intern
 # github.com/json-iterator/go v1.1.11
 github.com/json-iterator/go
+# github.com/juju/ansiterm v0.0.0-20210929141451-8b71cc96ebdc
+## explicit
+github.com/juju/ansiterm
+github.com/juju/ansiterm/tabwriter
 # github.com/k0kubun/pp v2.3.0+incompatible
 github.com/k0kubun/pp
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
@@ -150,6 +154,8 @@ github.com/kelseyhightower/envconfig
 # github.com/ktrysmt/go-bitbucket v0.9.28
 ## explicit
 github.com/ktrysmt/go-bitbucket
+# github.com/lunixbochs/vtclean v1.0.0
+github.com/lunixbochs/vtclean
 # github.com/mailru/easyjson v0.7.7
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer

@@ -13,6 +13,7 @@ require (
 	github.com/google/go-github/v39 v39.2.0
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/jonboulle/clockwork v0.2.2
+	github.com/juju/ansiterm v0.0.0-20210929141451-8b71cc96ebdc
 	github.com/ktrysmt/go-bitbucket v0.9.28
 	github.com/mattn/go-colorable v0.1.11
 	github.com/mattn/go-isatty v0.0.14

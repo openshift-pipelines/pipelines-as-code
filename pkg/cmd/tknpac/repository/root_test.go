@@ -71,6 +71,7 @@ func TestCommands(t *testing.T) {
 					Title:           github.String("A title"),
 					EventType:       github.String("pull_request"),
 					TargetBranch:    github.String("TargetBranch"),
+					LogURL:          github.String("https://everywhere.anwywhere"),
 				},
 			}
 			repositories := []*v1alpha1.Repository{

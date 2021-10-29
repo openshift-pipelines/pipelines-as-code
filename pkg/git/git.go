@@ -41,7 +41,7 @@ func GetGitInfo(dir string) *Info {
 	if err != nil {
 		gitURL, err = RunGit(dir, "remote", "get-url", "upstream")
 		if err != nil {
-			return nil
+			return &Info{}
 		}
 	}
 	gitURL = strings.TrimSpace(gitURL)
@@ -57,17 +57,17 @@ func GetGitInfo(dir string) *Info {
 
 	brootdir, err := RunGit(dir, "rev-parse", "--show-toplevel")
 	if err != nil {
-		return nil
+		return &Info{}
 	}
 
 	sha, err := RunGit(dir, "rev-parse", "HEAD")
 	if err != nil {
-		return nil
+		return &Info{}
 	}
 
 	headbranch, err := RunGit(dir, "rev-parse", "--abbrev-ref", "HEAD")
 	if err != nil {
-		return nil
+		return &Info{}
 	}
 
 	return &Info{

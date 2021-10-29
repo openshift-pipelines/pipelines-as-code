@@ -28,7 +28,7 @@ var (
 		return fmt.Sprintf("\x1b[%d;5;%dm%s\x1b[m", 38, 242, t)
 	}
 	hyperLink = func(title, href string) string {
-		return fmt.Sprintf("\x1b]8;;%s\x1b\\%s\x1b]8;;\x1b\\\n", href, title)
+		return fmt.Sprintf("\x1b]8;;%s\x1b\\%s\x1b]8;;\x1b\\", href, title)
 	}
 )
 
