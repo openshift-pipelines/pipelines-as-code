@@ -9,6 +9,7 @@ import (
 	// "gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	knativeapi "knative.dev/pkg/apis"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
@@ -53,6 +54,36 @@ func MakePR(namespace, name string, trstatus map[string]*tektonv1beta1.PipelineR
 		Status: tektonv1beta1.PipelineRunStatus{
 			PipelineRunStatusFields: tektonv1beta1.PipelineRunStatusFields{
 				TaskRuns: trstatus,
+			},
+		},
+	}
+}
+
+func MakePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus string, labels map[string]string, timeshift int) *tektonv1beta1.PipelineRun {
+	// fakeing time logic give me headache
+	// this will make the pr finish 5mn ago, starting 5-5mn ago
+	starttime := time.Duration((timeshift - 5*-1) * int(time.Minute))
+	endtime := time.Duration((timeshift * -1) * int(time.Minute))
+
+	return &tektonv1beta1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Status: tektonv1beta1.PipelineRunStatus{
+			Status: duckv1beta1.Status{
+				Conditions: duckv1beta1.Conditions{
+					{
+						Type:   knativeapi.ConditionSucceeded,
+						Status: corev1.ConditionTrue,
+						Reason: runstatus,
+					},
+				},
+			},
+			PipelineRunStatusFields: tektonv1beta1.PipelineRunStatusFields{
+				StartTime:      &metav1.Time{Time: clock.Now().Add(starttime)},
+				CompletionTime: &metav1.Time{Time: clock.Now().Add(endtime)},
 			},
 		},
 	}

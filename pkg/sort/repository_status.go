@@ -6,17 +6,17 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 )
 
-type repoRunStatus []v1alpha1.RepositoryRunStatus
+type repoSortRunStatus []v1alpha1.RepositoryRunStatus
 
-func (rs repoRunStatus) Len() int {
+func (rs repoSortRunStatus) Len() int {
 	return len(rs)
 }
 
-func (rs repoRunStatus) Swap(i, j int) {
+func (rs repoSortRunStatus) Swap(i, j int) {
 	rs[i], rs[j] = rs[j], rs[i]
 }
 
-func (rs repoRunStatus) Less(i, j int) bool {
+func (rs repoSortRunStatus) Less(i, j int) bool {
 	if rs[j].StartTime == nil {
 		return false
 	}
@@ -28,8 +28,8 @@ func (rs repoRunStatus) Less(i, j int) bool {
 	return rs[j].StartTime.Before(rs[i].StartTime)
 }
 
-func RepositoryRunStatus(repoStatus []v1alpha1.RepositoryRunStatus) []v1alpha1.RepositoryRunStatus {
-	rrstatus := repoRunStatus{}
+func RepositorySortRunStatus(repoStatus []v1alpha1.RepositoryRunStatus) []v1alpha1.RepositoryRunStatus {
+	rrstatus := repoSortRunStatus{}
 	for _, status := range repoStatus {
 		rrstatus = append(rrstatus, status)
 	}

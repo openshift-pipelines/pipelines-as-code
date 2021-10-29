@@ -16,21 +16,14 @@ type RepoTestcreationOpts struct {
 	SecretName       string
 	VcsURL           string
 	CreateTime       metav1.Time
+	RepoStatus       []v1alpha1.RepositoryRunStatus
 }
 
 func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 	cw := clockwork.NewFakeClock()
-	repo := &v1alpha1.Repository{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:              opts.Name,
-			Namespace:         opts.InstallNamespace,
-			CreationTimestamp: opts.CreateTime,
-		},
-		Spec: v1alpha1.RepositorySpec{
-			URL: opts.URL,
-		},
-		Status: []v1alpha1.RepositoryRunStatus{
+
+	if opts.RepoStatus == nil {
+		opts.RepoStatus = []v1alpha1.RepositoryRunStatus{
 			{
 				Status:          v1beta1.Status{},
 				PipelineRunName: "pipelinerun5",
@@ -61,7 +54,20 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 				StartTime:       &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
 				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
 			},
+		}
+	}
+
+	repo := &v1alpha1.Repository{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              opts.Name,
+			Namespace:         opts.InstallNamespace,
+			CreationTimestamp: opts.CreateTime,
 		},
+		Spec: v1alpha1.RepositorySpec{
+			URL: opts.URL,
+		},
+		Status: opts.RepoStatus,
 	}
 	if opts.SecretName != "" {
 		repo.Spec.WebvcsAPISecret = &v1alpha1.WebvcsSecretSpec{

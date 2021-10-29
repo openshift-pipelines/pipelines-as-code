@@ -4,29 +4,14 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"sort"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	psort "github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
-
-// From tekton cli prsort package
-type prByCompletionTime []v1beta1.PipelineRun
-
-func (prs prByCompletionTime) Len() int      { return len(prs) }
-func (prs prByCompletionTime) Swap(i, j int) { prs[i], prs[j] = prs[j], prs[i] }
-func (prs prByCompletionTime) Less(i, j int) bool {
-	if prs[j].Status.CompletionTime == nil {
-		return false
-	}
-	if prs[i].Status.CompletionTime == nil {
-		return true
-	}
-	return prs[j].Status.CompletionTime.Before(prs[i].Status.CompletionTime)
-}
 
 func (k Interaction) CleanupPipelines(ctx context.Context, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun,
 	maxKeep int) error {
@@ -49,14 +34,9 @@ func (k Interaction) CleanupPipelines(ctx context.Context, repo *v1alpha1.Reposi
 		return err
 	}
 
-	sort.Sort(prByCompletionTime(pruns.Items))
-
-	for c, prun := range pruns.Items {
+	for c, prun := range psort.PipelineRunSortByCompletionTime(pruns.Items) {
 		if prun.GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason() == "Running" {
-			// Should we care about resetting the counter?
-			// user ask keep me the last 5 pr, there is one running, so we end up
-			// keep the last 4 running. I guess the user really want to keep the running one as Kept.
-			k.Run.Clients.Log.Infof("skipping cleaning pr: %s since currently running", prun.GetName())
+			k.Run.Clients.Log.Infof("skipping %s since currently running", prun.GetName())
 			continue
 		}
 
@@ -70,5 +50,5 @@ func (k Interaction) CleanupPipelines(ctx context.Context, repo *v1alpha1.Reposi
 		}
 	}
 
-	return err
+	return nil
 }

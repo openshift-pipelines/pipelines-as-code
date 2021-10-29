@@ -199,7 +199,7 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		Clock       clockwork.Clock
 	}{
 		Repository:  repository,
-		Statuses:    sort.RepositoryRunStatus(repository.Status),
+		Statuses:    sort.RepositorySortRunStatus(repository.Status),
 		ColorScheme: colorScheme,
 		Clock:       clock,
 	}
