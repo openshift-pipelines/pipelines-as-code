@@ -67,9 +67,9 @@ type ColorScheme struct {
 func (c *ColorScheme) ColorStatus(status string) string {
 	switch strings.ToLower(status) {
 	case "succeeded":
-		return c.GreenBold(status)
+		return c.Green(status)
 	case "failed":
-		return c.RedBold(status)
+		return c.Red(status)
 	case "norun":
 		return c.Dimmed(status)
 	}
