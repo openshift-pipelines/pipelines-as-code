@@ -34,7 +34,7 @@ const (
 
 {{ $.ColorScheme.Underline "Last Run:" }} {{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
 
-{{ $.ColorScheme.Bold "PipelineRun" }}:	{{ $status.PipelineRunName }}
+{{ $.ColorScheme.Bold "PipelineRun" }}:	{{ $.ColorScheme.HyperLink $status.PipelineRunName $status.LogURL }}
 {{ $.ColorScheme.Bold "Event" }}:	{{ $status.EventType }}
 {{ $.ColorScheme.Bold "Branch" }}:	{{ sanitizeBranch $status.TargetBranch }}
 {{ $.ColorScheme.Bold "Commit URL" }}:	{{ $status.SHAURL }}

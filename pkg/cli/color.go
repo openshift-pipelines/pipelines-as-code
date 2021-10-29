@@ -27,6 +27,9 @@ var (
 	gray256 = func(t string) string {
 		return fmt.Sprintf("\x1b[%d;5;%dm%s\x1b[m", 38, 242, t)
 	}
+	hyperLink = func(title, href string) string {
+		return fmt.Sprintf("\x1b]8;;%s\x1b\\%s\x1b]8;;\x1b\\\n", href, title)
+	}
 )
 
 func EnvColorDisabled() bool {
@@ -273,4 +276,11 @@ func (c *ColorScheme) GreenBold(s string) string {
 		return s
 	}
 	return greenBold(s)
+}
+
+func (c *ColorScheme) HyperLink(title, href string) string {
+	if !c.enabled {
+		return title
+	}
+	return hyperLink(title, href)
 }
