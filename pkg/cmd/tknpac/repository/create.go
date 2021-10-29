@@ -176,7 +176,7 @@ func getRepoURL(opts *createOptions) error {
 func createRepoCRD(ctx context.Context, opts *createOptions) error {
 	repoOwner, err := formatting.GetRepoOwnerFromGHURL(opts.event.URL)
 	if err != nil {
-		return fmt.Errorf("invalid Git URL: %s", opts.event.URL)
+		return fmt.Errorf("invalid git URL: %s, it should be of format: https://gitprovider/project/repository", opts.event.URL)
 	}
 	repositoryName := strings.ReplaceAll(repoOwner, "/", "-")
 	_, err = opts.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.repository.Namespace).Create(
