@@ -14,6 +14,7 @@ Duration:       1 minute
 
 Other Runs:
 
-PIPELINERUN    Event          Branch          SHA    START_TIME      DURATION   STATUS
-pipelinerun2   pull_request   TargetBranch   SHA2   18 minutes ago   1 minute   Success
+STATUS    Event          Branch          SHA    STARTED TIME    DURATION   PIPELINERUN
+――――――    ―――――          ――――――          ―――    ――――――――――――    ――――――――   ―――――――――――
+Success   pull_request   TargetBranch   SHA2   18 minutes ago   1 minute   pipelinerun2
 

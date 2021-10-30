@@ -9,6 +9,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/jonboulle/clockwork"
+	"github.com/juju/ansiterm"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
@@ -34,7 +35,7 @@ const (
 
 {{ $.ColorScheme.Underline "Last Run:" }} {{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
 
-{{ $.ColorScheme.Bold "PipelineRun" }}:	{{ $status.PipelineRunName }}
+{{ $.ColorScheme.Bold "PipelineRun" }}:	{{ $.ColorScheme.HyperLink $status.PipelineRunName $status.LogURL }}
 {{ $.ColorScheme.Bold "Event" }}:	{{ $status.EventType }}
 {{ $.ColorScheme.Bold "Branch" }}:	{{ sanitizeBranch $status.TargetBranch }}
 {{ $.ColorScheme.Bold "Commit URL" }}:	{{ $status.SHAURL }}
@@ -46,10 +47,10 @@ const (
 
 {{ $.ColorScheme.Underline "Other Runs:" }}
 
-{{ $.ColorScheme.BulletSpace }}PIPELINERUN	Event	Branch	 SHA	 START_TIME	DURATION	STATUS
-
+STATUS	Event	Branch	 SHA	 STARTED TIME	DURATION	PIPELINERUN
+――――――	―――――	――――――	 ―――	 ――――――――――――	――――――――	―――――――――――
 {{- range $i, $st := (slice .Statuses 1 (len .Repository.Status)) }}
-{{ $.ColorScheme.Bullet }}{{ formatStatus $st $.ColorScheme $.Clock }}
+{{ formatStatus $st $.ColorScheme $.Clock }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -59,13 +60,13 @@ const (
 
 func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock) string {
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
-		status.PipelineRunName,
+		cs.ColorStatus(status.Status.Conditions[0].Reason),
 		*status.EventType,
 		formatting.SanitizeBranch(*status.TargetBranch),
-		formatting.ShortSHA(*status.SHA),
+		cs.HyperLink(formatting.ShortSHA(*status.SHA), *status.SHAURL),
 		formatting.Age(status.StartTime, c),
 		formatting.Duration(status.StartTime, status.CompletionTime),
-		cs.ColorStatus(status.Status.Conditions[0].Reason))
+		cs.HyperLink(status.PipelineRunName, *status.LogURL))
 }
 
 func askRepo(ctx context.Context, cs *params.Run, namespace string) (*v1alpha1.Repository, error) {
@@ -204,7 +205,7 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		Clock:       clock,
 	}
 
-	w := tabwriter.NewWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
+	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
 	t := template.Must(template.New("Describe Repository").Funcs(funcMap).Parse(describeTemplate))
 
 	if err := t.Execute(w, data); err != nil {

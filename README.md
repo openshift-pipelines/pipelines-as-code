@@ -42,7 +42,7 @@ Pipelines as Code features:
 
 The easiest way to get started is to use the `tkn pac` CLI and its bootstrap command.
 
-Download and install first the tkn-pac CLI following [these instructions](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/docs/INSTALL.md#cli).
+Download and install first the tkn-pac CLI following [these instructions](./docs/CLI#install).
 
 Connected to your cluster launch the command :
 
@@ -103,7 +103,7 @@ reference
 
 ## Usage Guide
 
-The usage guide [here](./docs/GUIDE.md) offer a comprehenive documentatiuon on how to configure and use Pipeline As Code.
+The usage guide [here](./docs/GUIDE.md) offer a comprehenive documentatiuon on how to use and configure Pipeline As Code.
 
 A walkthought video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
 

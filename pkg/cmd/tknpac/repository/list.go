@@ -6,6 +6,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/juju/ansiterm"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
@@ -15,8 +16,8 @@ import (
 )
 
 var (
-	header            = "NAME\tAGE\tURL"
-	body              = "%s\t%s\t%s"
+	header            = "STATUS\tNAME\tAGE\tURL"
+	body              = "%s\t%s\t%s\t%s"
 	allNamespacesFlag = "all-namespaces"
 	namespaceFlag     = "namespace"
 	noColorFlag       = "no-color"
@@ -91,23 +92,27 @@ func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *
 		return err
 	}
 
-	w := tabwriter.NewWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
+	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
 
 	if !noheaders {
 		_, _ = fmt.Fprint(w, header)
 		if opts.AllNameSpaces {
 			fmt.Fprint(w, "\tNAMESPACE")
 		}
-		fmt.Fprintln(w, "\tSTATUS")
+		fmt.Fprint(w, "\n")
 	}
+	coscheme := ioStreams.ColorScheme()
 	for _, repository := range repositories.Items {
-		fmt.Fprintf(w, body, repository.GetName(), formatting.ShowLastAge(repository, cw), repository.Spec.URL)
+		fmt.Fprintf(w, body,
+			formatting.ShowStatus(repository, coscheme),
+			coscheme.HyperLink(repository.GetName(), repository.Spec.URL),
+			formatting.ShowLastAge(repository, cw),
+			repository.Spec.URL)
 
 		if opts.AllNameSpaces {
 			fmt.Fprintf(w, "\t%s", repository.GetNamespace())
 		}
 
-		fmt.Fprintf(w, "\t%s", formatting.ShowStatus(repository, ioStreams.ColorScheme()))
 		fmt.Fprint(w, "\n")
 	}
 

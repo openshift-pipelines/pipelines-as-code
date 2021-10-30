@@ -30,6 +30,7 @@ func makeRepoStatus(prname, sha, conditionReason string, cw clockwork.FakeClock,
 		Title:           github.String("A title"),
 		EventType:       github.String("pull_request"),
 		TargetBranch:    github.String("TargetBranch"),
+		LogURL:          github.String("https://help.me.obiwan.kenobi"),
 	}
 }
 

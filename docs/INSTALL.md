@@ -422,44 +422,6 @@ Kubernetes Dashboard is not yet supported for logs links but help is always welc
 
 ## CLI
 
-`Pipelines as Code` provide a CLI which is design to work as tkn plugin. To install the plugin see the instruction
-below.
+`Pipelines as Code` provide a CLI which is designed to work as tkn plugin. To install the plugin see the instruction below.
 
-### Binary releases
-
-You can grab the latest binary directly from the
-[releases](https://github.com/openshift-pipelines/pipelines-as-code/releases)
-page.
-
-### Dev release
-
-If you want to install from the git repository you can just do :
-
-```shell
-go install github.com/openshift-pipelines/pipelines-as-code/cmd/tkn-pac
-```
-
-### Brew release
-
-On [LinuxBrew](https://docs.brew.sh/Homebrew-on-Linux) or [OSX brew](https://brew.sh/) you can simply add the Brew tap
-to have the tkn-pac plugin and its completion installed :
-
-```shell
-brew install openshift-pipelines/pipelines-as-code/tektoncd-pac
-```
-
-and simply upgrade with :
-
-```shell
-brew upgrade openshift-pipelines/pipelines-as-code/tektoncd-pac
-```
-
-### Container
-
-`tkn-pac` is as well available as a container :
-
-```shell
-# use docker
-podman run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
-     -it quay.io/openshift-pipeline/pipelines-as-code tkn-pac help
-```
+See the [CLI](./cli.md) for the documentation on the CLI and how to install it.
