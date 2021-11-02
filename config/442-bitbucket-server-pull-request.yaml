@@ -209,16 +209,6 @@ spec:
                 steps:
                   - name: apply-and-launch
                     env:
-                      - name: PAC_APPLICATION_NAME
-                        valueFrom:
-                          configMapKeyRef:
-                            name: pipelines-as-code
-                            key: application-name
-                      - name: PAC_SECRET_AUTO_CREATE
-                        valueFrom:
-                          configMapKeyRef:
-                            name: pipelines-as-code
-                            key: secret-auto-create
                       - name: PAC_WEBVCS_TYPE
                         value: "bitbucket-server"
                       - name: PAC_TRIGGER_TARGET

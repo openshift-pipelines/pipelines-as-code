@@ -18,6 +18,7 @@ type PacOpts struct {
 	VCSInfoFromRepo    bool // wether the webvcs info come from the repository
 	WebhookType        string
 	PayloadFile        string
+	TektonDashboardURL string
 }
 
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
@@ -45,9 +46,6 @@ func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
 		"payload-file", "", os.Getenv("PAC_PAYLOAD_FILE"), "A file containing the webhook payload")
 
 	applicationName := os.Getenv("PAC_APPLICATION_NAME")
-	if applicationName == "" {
-		applicationName = defaultApplicationName
-	}
 	cmd.Flags().StringVar(&p.ApplicationName,
 		"application-name", applicationName,
 		"The name of the application.")
