@@ -418,10 +418,13 @@ and for the nightly :
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release.k8s.yaml
 ```
 
-Kubernetes Dashboard is not yet supported for logs links but help is always welcome ;)
+If you have [Tekton Dashboard](https://github.com/tektoncd/dashboard). You can
+just add the key `tekton-dashboard-url` in the `pipelines-as-code` configmap
+set to the full url of the `Ingress` host to get tekton dashboard logs url.
 
 ## CLI
 
-`Pipelines as Code` provide a CLI which is designed to work as tkn plugin. To install the plugin see the instruction below.
+`Pipelines as Code` provide a CLI which is designed to work as tkn plugin. To
+install the plugin see the instruction below.
 
 See the [CLI](./cli.md) for the documentation on the CLI and how to install it.

@@ -3,6 +3,7 @@ package consoleui
 import (
 	"context"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"k8s.io/client-go/dynamic"
 )
 
@@ -31,10 +32,11 @@ func (f FallBackConsole) URL() string {
 	return "https://giphy.com/explore/random"
 }
 
-func New(ctx context.Context, kdyn dynamic.Interface) Interface {
+func New(ctx context.Context, kdyn dynamic.Interface, runinfo *info.Info) Interface {
 	oc := &OpenshiftConsole{}
 	if err := oc.UI(ctx, kdyn); err == nil {
 		return oc
 	}
+
 	return FallBackConsole{}
 }

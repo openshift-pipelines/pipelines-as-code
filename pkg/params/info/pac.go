@@ -18,6 +18,7 @@ type PacOpts struct {
 	VCSInfoFromRepo    bool // wether the webvcs info come from the repository
 	WebhookType        string
 	PayloadFile        string
+	TektonDashboardURL string
 }
 
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {

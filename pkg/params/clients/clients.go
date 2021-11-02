@@ -110,8 +110,8 @@ func (c *Clients) pacClient(config *rest.Config) (versioned.Interface, error) {
 	return cs, nil
 }
 
-func (c *Clients) consoleUIClient(ctx context.Context, dynamic dynamic.Interface) consoleui.Interface {
-	return consoleui.New(ctx, dynamic)
+func (c *Clients) consoleUIClient(ctx context.Context, dynamic dynamic.Interface, info *info.Info) consoleui.Interface {
+	return consoleui.New(ctx, dynamic, info)
 }
 
 func (c *Clients) NewClients(ctx context.Context, info *info.Info) error {
@@ -149,7 +149,7 @@ func (c *Clients) NewClients(ctx context.Context, info *info.Info) error {
 		return err
 	}
 
-	c.ConsoleUI = c.consoleUIClient(ctx, c.Dynamic)
+	c.ConsoleUI = c.consoleUIClient(ctx, c.Dynamic, info)
 	if err != nil {
 		return err
 	}
