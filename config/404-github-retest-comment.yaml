@@ -133,16 +133,6 @@ spec:
                     imagePullPolicy: Always
                     image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
                     env:
-                      - name: PAC_APPLICATION_NAME
-                        valueFrom:
-                          configMapKeyRef:
-                            name: pipelines-as-code
-                            key: application-name
-                      - name: PAC_SECRET_AUTO_CREATE
-                        valueFrom:
-                          configMapKeyRef:
-                            name: pipelines-as-code
-                            key: secret-auto-create
                       - name: PAC_WEBVCS_APIURL
                         value: $(params.ghe_host)
                       - name: PAC_WEBVCS_TYPE

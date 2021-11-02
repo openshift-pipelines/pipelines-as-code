@@ -6,14 +6,10 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
 
 func main() {
-	clients := &params.Run{Info: info.Info{
-		Event: &info.Event{},
-		Pac:   &info.PacOpts{},
-	}}
+	clients := params.New()
 	cmd := pipelineascode.Command(clients)
 	if err := cmd.Execute(); err != nil {
 		log.Fatal(err)

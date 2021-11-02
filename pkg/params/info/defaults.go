@@ -1,5 +1,7 @@
 package info
 
 const (
-	defaultApplicationName = "Pipelines as Code CI"
+	PACInstallNS       = "pipelines-as-code"
+	PACConfigmapNS     = "pipelines-as-code"
+	PACApplicationName = "Pipelines as Code CI"
 )

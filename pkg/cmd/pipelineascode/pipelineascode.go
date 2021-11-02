@@ -35,6 +35,11 @@ func Command(cs *params.Run) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			if err := cs.GetConfigFromConfigMap(ctx); err != nil {
+				return err
+			}
+
 			vcsintf, err := getVCS(cs.Info.Pac)
 			if err != nil {
 				return err

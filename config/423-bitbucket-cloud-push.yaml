@@ -141,16 +141,6 @@ spec:
                 steps:
                   - name: apply-and-launch
                     env:
-                      - name: PAC_APPLICATION_NAME
-                        valueFrom:
-                          configMapKeyRef:
-                            name: pipelines-as-code
-                            key: application-name
-                      - name: PAC_SECRET_AUTO_CREATE
-                        valueFrom:
-                          configMapKeyRef:
-                            name: pipelines-as-code
-                            key: secret-auto-create
                       - name: PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP
                         valueFrom:
                           configMapKeyRef:
