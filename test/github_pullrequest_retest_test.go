@@ -48,10 +48,10 @@ spec:
 `, targetNS, mainBranch, pullRequestEvent),
 	}
 
-	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
+	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
-		t.Errorf("Repository %s not found in %s", opts.Owner, opts.Repo)
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
 	repository := &pacv1alpha1.Repository{
@@ -72,12 +72,12 @@ spec:
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, "TestRetest - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
+	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, "TestRetest - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 	title := "TestPullRequestRetest on " + targetRefName
 
-	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
 	defer ghtearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
@@ -96,7 +96,7 @@ spec:
 
 	runcnx.Clients.Log.Infof("Creating /retest in PullRequest")
 	_, _, err = ghcnx.Client.Issues.CreateComment(ctx,
-		opts.Owner,
+		opts.Organization,
 		opts.Repo, number,
 		&github.IssueComment{Body: github.String("/retest")})
 	assert.NilError(t, err)

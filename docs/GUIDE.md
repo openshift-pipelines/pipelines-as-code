@@ -6,8 +6,8 @@ The purposes of the Repository CRD  is :
 
 - To let know to Pipelines as Code that this event from this URL needs to be handled.
 - To tell Pipelines as Code on which namespace the PipelineRuns are going to be executed.
-- To reference a api secret, a api username or a api URL if needed for the
-  webvcs platforms that requires (ie: when you are using webhooks method and not
+- To reference a api secret, username or api URL if needed for the git provider
+  platforms that requires it (ie: when you are using webhooks method and not
   the github application).
 - To give the last Pipelinerun status for that Repository (5 by default).
 
@@ -87,9 +87,9 @@ Namespace instead of trying to match it from all available repository on cluster
 
 ### Event matching to a Pipeline
 
-Each `PipelineRun` can match different vcs events via some special annotations
-on the `PipelineRun`. For example when you have these metadatas in your
-`PipelineRun`:
+Each `PipelineRun` can match different git provider events via some special
+annotations on the `PipelineRun`. For example when you have these metadatas in
+your `PipelineRun`:
 
 ```yaml
  metadata:
@@ -99,8 +99,8 @@ on the `PipelineRun`. For example when you have these metadatas in your
     pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-`Pipelines as Code` will match the piplinerun `pipeline-pr-main` if the VCS
-events target the branch `main` and it's coming from a `[pull_request]`
+`Pipelines as Code` will match the piplinerun `pipeline-pr-main` if the git
+provider events target the branch `main` and it's coming from a `[pull_request]`
 
 Multiple target branch can be specified separated by comma, i.e:
 

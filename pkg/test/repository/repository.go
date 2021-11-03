@@ -14,7 +14,7 @@ type RepoTestcreationOpts struct {
 	URL              string
 	InstallNamespace string
 	SecretName       string
-	VcsURL           string
+	ProviderURL      string
 	CreateTime       metav1.Time
 	RepoStatus       []v1alpha1.RepositoryRunStatus
 }
@@ -66,16 +66,19 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 		},
 		Spec: v1alpha1.RepositorySpec{
 			URL: opts.URL,
+			GitProvider: &v1alpha1.GitProvider{
+				Secret: &v1alpha1.GitProviderSecret{},
+			},
 		},
 		Status: opts.RepoStatus,
 	}
 	if opts.SecretName != "" {
-		repo.Spec.WebvcsAPISecret = &v1alpha1.WebvcsSecretSpec{
+		repo.Spec.GitProvider.Secret = &v1alpha1.GitProviderSecret{
 			Name: opts.SecretName,
 		}
 	}
-	if opts.VcsURL != "" {
-		repo.Spec.WebvcsAPIURL = opts.VcsURL
+	if opts.ProviderURL != "" {
+		repo.Spec.GitProvider.URL = opts.ProviderURL
 	}
 	return repo
 }

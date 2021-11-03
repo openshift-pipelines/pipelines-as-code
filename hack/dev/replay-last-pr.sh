@@ -29,7 +29,7 @@ grep -e "^PAC_.[a-zA-Z0-9_-]*=" ${TMPD}/last |sed -e 's/=\(.*\)/="\1"/' -e 's/^/
 
 source $TMPD/env
 
-PAC_PAYLOAD_FILE="/tmp/pac-payload-${PAC_WEBVCS_TYPE}-${PAC_WEBHOOK_TYPE}-${PAC_TRIGGER_TARGET}.json"
+PAC_PAYLOAD_FILE="/tmp/pac-payload-${PAC_GIT_PROVIDER_TYPE}-${PAC_WEBHOOK_TYPE}-${PAC_TRIGGER_TARGET}.json"
 cat ${TMPD}/payload.json |tee ${PAC_PAYLOAD_FILE}
 echo PAC_PAYLOAD_FILE=${PAC_PAYLOAD_FILE}
 

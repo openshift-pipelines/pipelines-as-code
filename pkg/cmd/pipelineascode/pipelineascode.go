@@ -10,10 +10,10 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/bitbucketcloud"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/bitbucketserver"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/spf13/cobra"
@@ -40,11 +40,11 @@ func Command(cs *params.Run) *cobra.Command {
 				return err
 			}
 
-			vcsintf, err := getVCS(cs.Info.Pac)
+			providerintf, err := getGitProvider(cs.Info.Pac)
 			if err != nil {
 				return err
 			}
-			return runWrap(ctx, cs, vcsintf, kinteract)
+			return runWrap(ctx, cs, providerintf, kinteract)
 		},
 	}
 
@@ -73,23 +73,23 @@ func getPayloadFromFile(opts *info.PacOpts) (string, error) {
 	return string(payloadB), err
 }
 
-func getVCS(pacopts *info.PacOpts) (webvcs.Interface, error) {
+func getGitProvider(pacopts *info.PacOpts) (provider.Interface, error) {
 	switch pacopts.WebhookType {
 	case "github":
-		v := &github.VCS{}
+		v := &github.Provider{}
 		return v, nil
 	case "bitbucket-cloud":
-		v := &bitbucketcloud.VCS{}
+		v := &bitbucketcloud.Provider{}
 		return v, nil
 	case "bitbucket-server":
-		v := &bitbucketserver.VCS{}
+		v := &bitbucketserver.Provider{}
 		return v, nil
 	default:
-		return nil, fmt.Errorf("no supported VCS is detected")
+		return nil, fmt.Errorf("no supported Git Provider is detected")
 	}
 }
 
-func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinteract kubeinteraction.Interface) error {
+func runWrap(ctx context.Context, cs *params.Run, vcx provider.Interface, kinteract kubeinteraction.Interface) error {
 	var err error
 
 	cs.Info.Pac.LogURL = cs.Clients.ConsoleUI.URL()
@@ -98,7 +98,7 @@ func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinterac
 	// There is more things supported when we already have a github apps and some that are not
 	// (ie: /ok-to-test or /rerequest)
 	// TODO: probably not needed since we generate our token and not getting them beforehand
-	if cs.Info.Pac.VCSToken != "" {
+	if cs.Info.Pac.ProviderToken != "" {
 		err := vcx.SetClient(ctx, cs.Info.Pac)
 		if err != nil {
 			return err
@@ -117,7 +117,7 @@ func runWrap(ctx context.Context, cs *params.Run, vcx webvcs.Interface, kinterac
 
 	err = pipelineascode.Run(ctx, cs, vcx, kinteract)
 	if err != nil {
-		createStatusErr := vcx.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, webvcs.StatusOpts{
+		createStatusErr := vcx.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, provider.StatusOpts{
 			Status:     "completed",
 			Conclusion: "failure",
 			Text:       fmt.Sprintf("There was an issue validating the commit: %q", err),

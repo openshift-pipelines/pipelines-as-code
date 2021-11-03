@@ -43,10 +43,10 @@ func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 		".other-tasks/task-referenced-internally.yaml": string(taskreferencedinternally),
 	}
 
-	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
+	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
-		t.Errorf("Repository %s not found in %s", opts.Owner, opts.Repo)
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
 	repository := &pacv1alpha1.Repository{
@@ -67,12 +67,12 @@ func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, "TestPullRequestRemoteAnnotations - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
+	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, "TestPullRequestRemoteAnnotations - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 
 	title := "TestPullRequestRemoteAnnotations - " + targetRefName
-	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
 	defer ghtearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
@@ -104,7 +104,7 @@ func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 	assert.Equal(t, "pull_request", pr.Labels["pipelinesascode.tekton.dev/event-type"])
 	assert.Equal(t, repo.GetName(), pr.Labels["pipelinesascode.tekton.dev/repository"])
 	assert.Equal(t, sha, pr.Labels["pipelinesascode.tekton.dev/sha"])
-	assert.Equal(t, opts.Owner, pr.Labels["pipelinesascode.tekton.dev/url-org"])
+	assert.Equal(t, opts.Organization, pr.Labels["pipelinesascode.tekton.dev/url-org"])
 	assert.Equal(t, opts.Repo, pr.Labels["pipelinesascode.tekton.dev/url-repository"])
 
 	assert.Equal(t, sha, filepath.Base(pr.Annotations["pipelinesascode.tekton.dev/sha-url"]))

@@ -59,13 +59,17 @@ type RepositoryRunStatus struct {
 
 // RepositorySpec is the spec of a repo
 type RepositorySpec struct {
-	URL             string            `json:"url"`
-	WebvcsAPIURL    string            `json:"webvcs_api_url,omitempty"`
-	WebvcsAPIUser   string            `json:"webvcs_api_user,omitempty"`
-	WebvcsAPISecret *WebvcsSecretSpec `json:"webvcs_api_secret,omitempty"`
+	URL         string       `json:"url"`
+	GitProvider *GitProvider `json:"git_provider,omitempty"`
 }
 
-type WebvcsSecretSpec struct {
+type GitProvider struct {
+	URL    string             `json:"url,omitempty"`
+	User   string             `json:"user,omitempty"`
+	Secret *GitProviderSecret `json:"secret,omitempty"`
+}
+
+type GitProviderSecret struct {
 	Name string `json:"name"`
 	Key  string `json:"key"`
 }

@@ -15,7 +15,7 @@ import (
 	ghlib "github.com/google/go-github/v39/github"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -33,7 +33,7 @@ func TestGithubPullRequest(t *testing.T) {
 			t.Skip("TEST_HUB_REPO_OWNER_WEBHOOK is not set")
 			continue
 		}
-		runcnx, opts, ghvcs, err := githubSetup(ctx, onWebhook)
+		runcnx, opts, ghprovider, err := githubSetup(ctx, onWebhook)
 		assert.NilError(t, err)
 		if onWebhook {
 			runcnx.Clients.Log.Info("Testing with Direct Webhook integration")
@@ -41,7 +41,7 @@ func TestGithubPullRequest(t *testing.T) {
 			runcnx.Clients.Log.Info("Testing with Github APPS integration")
 		}
 
-		repoinfo, err := createGithubRepoCRD(ctx, t, ghvcs, runcnx, opts, targetNS)
+		repoinfo, err := createGithubRepoCRD(ctx, t, ghprovider, runcnx, opts, targetNS)
 		assert.NilError(t, err)
 
 		entries, err := getEntries("testdata/pipelinerun.yaml", targetNS, mainBranch, pullRequestEvent)
@@ -56,15 +56,15 @@ func TestGithubPullRequest(t *testing.T) {
 		}
 		title += "- " + targetRefName
 
-		sha, err := tgithub.PushFilesToRef(ctx, ghvcs.Client, title, repoinfo.GetDefaultBranch(), targetRefName,
-			opts.Owner, opts.Repo, entries)
+		sha, err := tgithub.PushFilesToRef(ctx, ghprovider.Client, title, repoinfo.GetDefaultBranch(), targetRefName,
+			opts.Organization, opts.Repo, entries)
 		assert.NilError(t, err)
 		runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 
-		number, err := tgithub.PRCreate(ctx, runcnx, ghvcs, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+		number, err := tgithub.PRCreate(ctx, runcnx, ghprovider, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 		assert.NilError(t, err)
 
-		defer ghtearDown(ctx, t, runcnx, ghvcs, number, targetRefName, targetNS, opts)
+		defer ghtearDown(ctx, t, runcnx, ghprovider, number, targetRefName, targetNS, opts)
 
 		checkSuccess(ctx, t, runcnx, opts, pullRequestEvent, targetNS, sha, title)
 	}
@@ -99,19 +99,19 @@ func checkSuccess(ctx context.Context, t *testing.T, runcnx *params.Run, opts E2
 	assert.Equal(t, repo.GetName(), pr.Labels["pipelinesascode.tekton.dev/repository"])
 	// assert.Equal(t, opts.Owner, pr.Labels["pipelinesascode.tekton.dev/sender"]) bitbucket is too weird for that
 	assert.Equal(t, sha, pr.Labels["pipelinesascode.tekton.dev/sha"])
-	assert.Equal(t, opts.Owner, pr.Labels["pipelinesascode.tekton.dev/url-org"])
+	assert.Equal(t, opts.Organization, pr.Labels["pipelinesascode.tekton.dev/url-org"])
 	assert.Equal(t, opts.Repo, pr.Labels["pipelinesascode.tekton.dev/url-repository"])
 
 	assert.Equal(t, sha, filepath.Base(pr.Annotations["pipelinesascode.tekton.dev/sha-url"]))
 	assert.Equal(t, title, pr.Annotations["pipelinesascode.tekton.dev/sha-title"])
 }
 
-func createGithubRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, run *params.Run, opts E2EOptions, targetNS string) (*ghlib.Repository, error) {
-	repoinfo, resp, err := ghvcs.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
+func createGithubRepoCRD(ctx context.Context, t *testing.T, ghprovider github.Provider, run *params.Run, opts E2EOptions, targetNS string) (*ghlib.Repository, error) {
+	repoinfo, resp, err := ghprovider.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
 
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
-		t.Errorf("Repository %s not found in %s", opts.Owner, opts.Repo)
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
 	repository := &pacv1alpha1.Repository{
@@ -131,8 +131,10 @@ func createGithubRepoCRD(ctx context.Context, t *testing.T, ghvcs github.VCS, ru
 		apiURL, _ := os.LookupEnv("TEST_GITHUB_API_URL")
 		err := createSecret(ctx, run, map[string]string{"token": token}, targetNS, "webhook-token")
 		assert.NilError(t, err)
-		repository.Spec.WebvcsAPIURL = apiURL
-		repository.Spec.WebvcsAPISecret = &pacv1alpha1.WebvcsSecretSpec{Name: "webhook-token", Key: "token"}
+		repository.Spec.GitProvider = &pacv1alpha1.GitProvider{
+			URL:    apiURL,
+			Secret: &pacv1alpha1.GitProviderSecret{Name: "webhook-token", Key: "token"},
+		}
 	}
 
 	err = trepo.CreateRepo(ctx, targetNS, run, repository)

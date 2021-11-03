@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
@@ -174,7 +174,7 @@ spec:
 				Run: cs,
 			}
 
-			got, err := rt.GetTaskFromAnnotations(ctx, &webvcs.TestWebVCSImp{
+			got, err := rt.GetTaskFromAnnotations(ctx, &provider.TestProviderImp{
 				FilesInsideRepo: tt.filesInsideRepo,
 			}, tt.annotations)
 			if tt.wantErr != "" {

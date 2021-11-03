@@ -1,11 +1,12 @@
 # Installation Guides
 
-Pipelines-as-Code support different installation method to WebVCS platforms (i.e: GitHub, Bitbucket etc..)
+Pipelines-as-Code support different installation method to Git provider
+platforms (i.e: GitHub, Bitbucket etc..)
 
 The preferred method to use Pipelines-as-Code is with
 [GitHub Application](https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps).
 
-Refers to the end of Documentation for the other WebVCS installations
+Refers to the end of Documentation for the other provider installations
 
 ## Install Pipelines-as-Code as GitHub Application
 
@@ -191,16 +192,17 @@ metadata:
   namespace: target-namespace
 spec:
   url: "https://github.com/owner/repo"
-  # Set this if you run with Github Enteprise
-  # webvcs_api_url: "github.enteprise.com"
-  webvcs_api_secret:
-    name: "github-personal-token"
-    # Set this if you have a different key in your secret
-    # key: "token"
+  git_provider:
+    url: "https://github.enterprise.com"
+    secret:
+      name: "github-personal-token"
+      # Set this if you have a different key in your secret
+      # key: "token"
 ```
 
-* Note that `webvcs_api_secret` cannot reference a secret in another namespace, Pipelines as code assumes always it will be
-  the same namespace as where the repository has been created.
+* Note that `git_provider.secret` cannot reference a secret in another
+  namespace, Pipelines as code assumes always it will be the same namespace as
+  where the repository has been created.
 
 ## Install Pipelines-As-Code for Bitbucket Server
 
@@ -272,18 +274,20 @@ metadata:
   namespace: target-namespace
 spec:
   url: "https://bitbucket.com/workspace/repo"
-  webvcs_api_user: "yourbitbucketusername"
-  webvcs_api_url: "https://bitbucket.server.api.url"
-  webvcs_api_secret:
-    name: "bitbucket-server-token"
-    # Set this if you have a different key in your secret
-    # key: "token"
+  git_provider:
+    url: "https://bitbucket.server.api.url"
+    user: "yourbitbucketusername"
+    secret:
+      name: "bitbucket-server-token"
+      # Set this if you have a different key in your secret
+      # key: "token"
 ```
 
-### Notes:
+### Notes
 
-* `webvcs_api_secret` cannot reference a secret in another namespace, Pipelines as code assumes always it will be
-  the same namespace as where the repository has been created.
+* `git_provider.secret` cannot reference a secret in another namespace,
+  Pipelines as code assumes always it will be the same namespace as where the
+  repository has been created.
 
 * `tkn-pac create` and `bootstrap` is not supported on Bitbucket Server.
 
@@ -350,54 +354,67 @@ metadata:
 spec:
   url: "https://bitbucket.com/workspace/repo"
   branch: "main"
-  webvcs_api_user: "yourbitbucketusername"
-  webvcs_api_secret:
-    name: "bitbucket-cloud-token"
-    # Set this if you have a different key in your secret
-    # key: "token"
+  git_provider:
+    user: "yourbitbucketusername"
+    secret:
+      name: "bitbucket-cloud-token"
+      # Set this if you have a different key in your secret
+      # key: "token"
 ```
 
-### Notes
+### Bitbucket Cloud Notes
 
-* `webvcs_api_secret` cannot reference a secret in another namespace, Pipelines as code assumes always it will be
-  the same namespace as where the repository has been created.
+* `git_provider.secret` cannot reference a secret in another namespace,
+  Pipelines as code assumes always it will be the same namespace as where the
+  repository has been created.
 
 * `tkn-pac create` and `bootstrap` is not supported on Bitbucket Server.
 
-* There is no Webhook secret support in Bitbucket Cloud. To be able to secure the payload and not let a user hijack the
-  CI, Pipelines-as-Code will fetch the ip addresses list from <https://ip-ranges.atlassian.com/> and make sure the
+* There is no Webhook secret support in Bitbucket Cloud. To be able to secure
+  the payload and not let a user hijack the CI, Pipelines-as-Code will fetch the
+  ip addresses list from <https://ip-ranges.atlassian.com/> and make sure the
   webhook only comes from the Bitbucket Cloud IPS.
-    * If you want to add some ips address or networks you can add them to the key
-      **bitbucket-cloud-additional-source-ip** in the pipelines-as-code configmap in the pipelines-as-code namespace.
-      You can added multiple network or ips separated by a comma.
-    * If you want to disable this behaviour you can set the key **bitbucket-cloud-check-source-ip** to false in the
-      pipelines-as-code configmap in the pipelines-as-code namespace.
+* If you want to add some ips address or networks you can add them to the
+  key **bitbucket-cloud-additional-source-ip** in the pipelines-as-code
+  configmap in the pipelines-as-code namespace.  You can added multiple
+  network or ips separated by a comma.
 
-* You can only reference user by `ACCOUNT_ID` in owner file, see here for the reasoning :
+* If you want to disable this behaviour you can set the key
+  **bitbucket-cloud-check-source-ip** to false in the pipelines-as-code
+  configmap in the pipelines-as-code namespace.
+
+* You can only reference user by `ACCOUNT_ID` in owner file, see here for the
+  reasoning :
 
 https://developer.atlassian.com/cloud/bitbucket/bitbucket-api-changes-gdpr/#introducing-atlassian-account-id-and-nicknames
 
 ## Pipelines-As-Code configuration settings.
 
-There is a few things you can configure via the configmap `pipelines-as-code` in the `pipelines-as-code` namespace.
+There is a few things you can configure via the configmap `pipelines-as-code` in
+the `pipelines-as-code` namespace.
 
 - `application-name`
 
-  The name of the application showing for example in the GitHub Checks labels. Default to `"Pipelines as Code CI"`
+  The name of the application showing for example in the GitHub Checks
+  labels. Default to `"Pipelines as Code CI"`
 
 - `max-keep-days`
 
-  The number of the day to keep the PipelineRuns runs in the `pipelines-as-code` namespace. We install by default a
-  cronjob that cleans up the PipelineRuns generated on events in pipelines-as-code namespace. Note that these
-  PipelineRuns are internal to Pipelines-as-code are separate from the PipelineRuns that exist in the user's GitHub
-  repository. The cronjob runs every hour and by default cleanups PipelineRuns over a day. This configmap setting
-  doesn't affect the cleanups of the user's PipelineRuns which are controlled by
-  the [annotations on the PipelineRun definition in the user's GitHub repository](#pipelineruns-cleanups).
+  The number of the day to keep the PipelineRuns runs in the `pipelines-as-code`
+  namespace. We install by default a cronjob that cleans up the PipelineRuns
+  generated on events in pipelines-as-code namespace. Note that these
+  PipelineRuns are internal to Pipelines-as-code are separate from the
+  PipelineRuns that exist in the user's GitHub repository. The cronjob runs
+  every hour and by default cleanups PipelineRuns over a day. This configmap
+  setting doesn't affect the cleanups of the user's PipelineRuns which are
+  controlled by the [annotations on the PipelineRun definition in the user's
+  GitHub repository](#pipelineruns-cleanups).
 
 - `secret-auto-create`
 
-  Wether to auto create a secret with the token generated via the Github application to be used with private
-  repositories. This feature is enabled by default.
+  Wether to auto create a secret with the token generated via the Github
+  application to be used with private repositories. This feature is enabled by
+  default.
 
 ## Kubernetes
 

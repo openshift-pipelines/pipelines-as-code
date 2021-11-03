@@ -38,7 +38,7 @@ func execCommand(runcnx *params.Run, cmd func(*params.Run, *cli.IOStreams) *cobr
 func TestGithubPacCli(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghvcs, err := githubSetup(ctx, false)
+	runcnx, opts, ghprovider, err := githubSetup(ctx, false)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
@@ -63,10 +63,10 @@ spec:
 `, targetNS, mainBranch, pullRequestEvent),
 	}
 
-	repoinfo, resp, err := ghvcs.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
+	repoinfo, resp, err := ghprovider.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
-		t.Errorf("Repository %s not found in %s", opts.Owner, opts.Repo)
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
 	repository := &pacv1alpha1.Repository{
@@ -95,15 +95,15 @@ spec:
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, err := tgithub.PushFilesToRef(ctx, ghvcs.Client, "TestPacCli - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
+	sha, err := tgithub.PushFilesToRef(ctx, ghprovider.Client, "TestPacCli - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 
 	title := "TestPacCli - " + targetRefName
-	number, err := tgithub.PRCreate(ctx, runcnx, ghvcs, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+	number, err := tgithub.PRCreate(ctx, runcnx, ghprovider, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
-	defer ghtearDown(ctx, t, runcnx, ghvcs, number, targetRefName, targetNS, opts)
+	defer ghtearDown(ctx, t, runcnx, ghprovider, number, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 	waitOpts := twait.Opts{

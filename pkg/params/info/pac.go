@@ -9,38 +9,40 @@ import (
 )
 
 type PacOpts struct {
-	LogURL             string
-	ApplicationName    string // the Application Name for example "Pipelines as Code"
-	SecretAutoCreation bool   // secret auto creation in target namespace
-	VCSToken           string
-	VCSAPIURL          string
-	VCSUser            string
-	VCSInfoFromRepo    bool // wether the webvcs info come from the repository
-	WebhookType        string
-	PayloadFile        string
-	TektonDashboardURL string
+	LogURL               string
+	ApplicationName      string // the Application Name for example "Pipelines as Code"
+	SecretAutoCreation   bool   // secret auto creation in target namespace
+	ProviderToken        string
+	ProviderURL          string
+	ProviderUser         string
+	ProviderInfoFromRepo bool // whether the provider info come from the repository
+	WebhookType          string
+	PayloadFile          string
+	TektonDashboardURL   string
 }
 
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
-	cmd.PersistentFlags().StringVarP(&p.WebhookType, "webvcs-type", "", os.Getenv("PAC_WEBVCS_TYPE"),
+	cmd.PersistentFlags().StringVarP(&p.WebhookType, "git-provider-type", "",
+		os.Getenv("PAC_GIT_PROVIDER_TYPE"),
 		"Webhook type")
 
-	webvcsToken := os.Getenv("PAC_WEBVCS_TOKEN")
-	if webvcsToken != "" {
-		if _, err := os.Stat(webvcsToken); !os.IsNotExist(err) {
-			data, err := ioutil.ReadFile(webvcsToken)
+	providerToken := os.Getenv("PAC_GIT_PROVIDER_TOKEN")
+	if providerToken != "" {
+		if _, err := os.Stat(providerToken); !os.IsNotExist(err) {
+			data, err := ioutil.ReadFile(providerToken)
 			if err != nil {
 				return err
 			}
-			webvcsToken = string(data)
+			providerToken = string(data)
 		}
 	}
 
-	cmd.PersistentFlags().StringVarP(&p.VCSToken, "webvcs-token", "", webvcsToken,
-		"Web VCS (ie: GitHub) Token")
+	cmd.PersistentFlags().StringVarP(&p.ProviderToken, "git-provider-token", "", providerToken,
+		"Git Provider Token")
 
-	cmd.PersistentFlags().StringVarP(&p.VCSAPIURL, "webvcs-api-url", "", os.Getenv("PAC_WEBVCS_APIURL"),
-		"Web VCS (ie: GitHub Enteprise) API URL")
+	cmd.PersistentFlags().StringVarP(&p.ProviderURL, "git-provider-api-url", "",
+		os.Getenv("PAC_GIT_PROVIDER_APIURL"),
+		"Git Provider API URL")
 
 	cmd.PersistentFlags().StringVarP(&p.PayloadFile,
 		"payload-file", "", os.Getenv("PAC_PAYLOAD_FILE"), "A file containing the webhook payload")

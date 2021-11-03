@@ -12,9 +12,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
@@ -141,8 +141,8 @@ func resolveFilenames(cs *params.Run, filenames []string, params map[string]stri
 		SkipInlining: skipInlining,
 	}
 	// We use github here but since we don't do remotetask we would not care
-	vcsintf := &github.VCS{}
-	prun, err := resolve.Resolve(ctx, cs, vcsintf, allTemplates, ropt)
+	providerintf := &github.Provider{}
+	prun, err := resolve.Resolve(ctx, cs, providerintf, allTemplates, ropt)
 	if err != nil {
 		return "", err
 	}

@@ -62,12 +62,12 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 		return err
 	}
 
-	gvcs, err := getGHClient(opts)
+	gprovider, err := getGHClient(opts)
 	if err != nil {
 		return err
 	}
 
-	manifest, _, err := gvcs.Apps.CompleteAppManifest(ctx, code)
+	manifest, _, err := gprovider.Apps.CompleteAppManifest(ctx, code)
 	if err != nil {
 		return err
 	}

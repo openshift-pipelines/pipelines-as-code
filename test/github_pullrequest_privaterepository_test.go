@@ -46,11 +46,11 @@ func TestGithubPullRequestPrivateRepository(t *testing.T) {
 		title += "- " + targetRefName
 
 		sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, title, repoinfo.GetDefaultBranch(), targetRefName,
-			opts.Owner, opts.Repo, entries)
+			opts.Organization, opts.Repo, entries)
 		assert.NilError(t, err)
 		runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 
-		number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+		number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 		assert.NilError(t, err)
 
 		defer ghtearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)

@@ -17,13 +17,13 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testDynamic "github.com/openshift-pipelines/pipelines-as-code/pkg/test/dynamic"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	ghwebvcs "github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -57,7 +57,7 @@ func testSetupTektonDir(mux *http.ServeMux, runevent info.Event, directory strin
 
 		contentB, _ := ioutil.ReadFile(path)
 		replyString(mux,
-			fmt.Sprintf("/repos/%s/%s/git/blobs/shaof%s", runevent.Owner, runevent.Repository, trimmed),
+			fmt.Sprintf("/repos/%s/%s/git/blobs/shaof%s", runevent.Organization, runevent.Repository, trimmed),
 			fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
 				base64.StdEncoding.EncodeToString(contentB)))
 
@@ -65,7 +65,7 @@ func testSetupTektonDir(mux *http.ServeMux, runevent info.Event, directory strin
 	})
 
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/contents/.tekton", runevent.Owner, runevent.Repository),
+		fmt.Sprintf("/repos/%s/%s/contents/.tekton", runevent.Organization, runevent.Repository),
 		fmt.Sprintf("[%s]", strings.TrimSuffix(tektonDirContent, ",")))
 }
 
@@ -73,36 +73,36 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 	finalStatus, finalStatusText string, noReplyOrgPublicMembers bool) {
 	// Take a directory and generate replies as Github for it
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/contents/internal/task", runevent.Owner, runevent.Repository),
+		fmt.Sprintf("/repos/%s/%s/contents/internal/task", runevent.Organization, runevent.Repository),
 		`{"sha": "internaltasksha"}`)
 
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/collaborators", runevent.Owner, runevent.Repository), `[]`)
+		fmt.Sprintf("/repos/%s/%s/collaborators", runevent.Organization, runevent.Repository), `[]`)
 
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/statuses/%s", runevent.Owner, runevent.Repository, runevent.SHA),
+		fmt.Sprintf("/repos/%s/%s/statuses/%s", runevent.Organization, runevent.Repository, runevent.SHA),
 		"{}")
 
 	// using 666 as pull request number
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/issues/666/comments", runevent.Owner, runevent.Repository),
+		fmt.Sprintf("/repos/%s/%s/issues/666/comments", runevent.Organization, runevent.Repository),
 		"{}")
 
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/git/commits/%s", runevent.Owner, runevent.Repository, runevent.SHA),
+		fmt.Sprintf("/repos/%s/%s/git/commits/%s", runevent.Organization, runevent.Repository, runevent.SHA),
 		`{}`)
 
 	if !noReplyOrgPublicMembers {
-		mux.HandleFunc("/orgs/"+runevent.Owner+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/orgs/"+runevent.Organization+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(rw, `[{"login": "%s"}]`, runevent.Sender)
 		})
 	}
 
 	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/check-runs", runevent.Owner, runevent.Repository),
+		fmt.Sprintf("/repos/%s/%s/check-runs", runevent.Organization, runevent.Repository),
 		`{"id": 26}`)
 
-	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/26", runevent.Owner, runevent.Repository),
+	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/26", runevent.Organization, runevent.Repository),
 		func(w http.ResponseWriter, r *http.Request) {
 			body, _ := ioutil.ReadAll(r.Body)
 			created := github.CreateCheckRunOptions{}
@@ -131,19 +131,19 @@ func TestRun(t *testing.T) {
 		repositories                 []*v1alpha1.Repository
 		skipReplyingOrgPublicMembers bool
 		expectedNumberofCleanups     int
-		VCSInfoFromRepo              bool
+		ProviderInfoFromRepo         bool
 	}{
 		{
 			name: "pull request/apps",
 			runevent: info.Event{
-				SHA:        "principale",
-				Owner:      "organizationes",
-				Repository: "lagaffe",
-				URL:        "https://service/documentation",
-				HeadBranch: "press",
-				BaseBranch: "main",
-				Sender:     "fantasio",
-				EventType:  "pull_request",
+				SHA:          "principale",
+				Organization: "organizationes",
+				Repository:   "lagaffe",
+				URL:          "https://service/documentation",
+				HeadBranch:   "press",
+				BaseBranch:   "main",
+				Sender:       "fantasio",
+				EventType:    "pull_request",
 			},
 			tektondir:       "testdata/pull_request",
 			finalStatus:     "neutral",
@@ -157,31 +157,31 @@ func TestRun(t *testing.T) {
 						Number: github.Int(666),
 					},
 				},
-				SHA:        "fromwebhook",
-				Owner:      "organizationes",
-				Repository: "lagaffe",
-				URL:        "https://service/documentation",
-				HeadBranch: "press",
-				BaseBranch: "main",
-				Sender:     "fantasio",
-				EventType:  "pull_request",
+				SHA:          "fromwebhook",
+				Organization: "organizationes",
+				Repository:   "lagaffe",
+				URL:          "https://service/documentation",
+				HeadBranch:   "press",
+				BaseBranch:   "main",
+				Sender:       "fantasio",
+				EventType:    "pull_request",
 			},
-			tektondir:       "testdata/pull_request",
-			finalStatus:     "neutral",
-			finalStatusText: "<th>Status</th><th>Duration</th><th>Name</th>",
-			VCSInfoFromRepo: true,
+			tektondir:            "testdata/pull_request",
+			finalStatus:          "neutral",
+			finalStatusText:      "<th>Status</th><th>Duration</th><th>Name</th>",
+			ProviderInfoFromRepo: true,
 		},
 		{
 			name: "No match",
 			runevent: info.Event{
-				SHA:        "principale",
-				Owner:      "organizationes",
-				Repository: "lagaffe",
-				URL:        "https://service/documentation",
-				HeadBranch: "press",
-				Sender:     "fantasio",
-				BaseBranch: "nomatch",
-				EventType:  "pull_request",
+				SHA:          "principale",
+				Organization: "organizationes",
+				Repository:   "lagaffe",
+				URL:          "https://service/documentation",
+				HeadBranch:   "press",
+				Sender:       "fantasio",
+				BaseBranch:   "nomatch",
+				EventType:    "pull_request",
 			},
 			tektondir:   "testdata/pull_request",
 			wantErr:     "cannot match pipeline from webhook to pipelineruns",
@@ -190,14 +190,14 @@ func TestRun(t *testing.T) {
 		{
 			name: "Push/branch",
 			runevent: info.Event{
-				SHA:        "principale",
-				Owner:      "organizationes",
-				Repository: "lagaffe",
-				URL:        "https://service/documentation",
-				Sender:     "fantasio",
-				HeadBranch: "refs/heads/main",
-				BaseBranch: "refs/heads/main",
-				EventType:  "push",
+				SHA:          "principale",
+				Organization: "organizationes",
+				Repository:   "lagaffe",
+				URL:          "https://service/documentation",
+				Sender:       "fantasio",
+				HeadBranch:   "refs/heads/main",
+				BaseBranch:   "refs/heads/main",
+				EventType:    "push",
 			},
 			tektondir:   "testdata/push_branch",
 			finalStatus: "neutral",
@@ -205,14 +205,14 @@ func TestRun(t *testing.T) {
 		{
 			name: "Push/tags",
 			runevent: info.Event{
-				SHA:        "principale",
-				Owner:      "organizationes",
-				Repository: "lagaffe",
-				URL:        "https://service/documentation",
-				Sender:     "fantasio",
-				HeadBranch: "refs/tags/0.1",
-				BaseBranch: "refs/tags/0.1",
-				EventType:  "push",
+				SHA:          "principale",
+				Organization: "organizationes",
+				Repository:   "lagaffe",
+				URL:          "https://service/documentation",
+				Sender:       "fantasio",
+				HeadBranch:   "refs/tags/0.1",
+				BaseBranch:   "refs/tags/0.1",
+				EventType:    "push",
 			},
 			tektondir:   "testdata/push_tags",
 			finalStatus: "neutral",
@@ -222,14 +222,14 @@ func TestRun(t *testing.T) {
 		{
 			name: "Skipped/Test no tekton dir",
 			runevent: info.Event{
-				SHA:        "principale",
-				Owner:      "organizationes",
-				Repository: "lagaffe",
-				URL:        "https://service/documentation",
-				HeadBranch: "press",
-				Sender:     "fantasio",
-				BaseBranch: "nomatch",
-				EventType:  "pull_request",
+				SHA:          "principale",
+				Organization: "organizationes",
+				Repository:   "lagaffe",
+				URL:          "https://service/documentation",
+				HeadBranch:   "press",
+				Sender:       "fantasio",
+				BaseBranch:   "nomatch",
+				EventType:    "pull_request",
 			},
 			tektondir:       "",
 			finalStatus:     "skipped",
@@ -240,7 +240,7 @@ func TestRun(t *testing.T) {
 			name: "Skipped/Test on check_run",
 			runevent: info.Event{
 				SHA:           "principale",
-				Owner:         "organizationes",
+				Organization:  "organizationes",
 				Repository:    "lagaffe",
 				URL:           "https://service/documentation",
 				HeadBranch:    "press",
@@ -256,14 +256,14 @@ func TestRun(t *testing.T) {
 		{
 			name: "Skipped/Test no repositories match",
 			runevent: info.Event{
-				SHA:        "principale",
-				Owner:      "organizationes",
-				Repository: "lagaffe",
-				URL:        "https://service/documentation",
-				HeadBranch: "press",
-				Sender:     "fantasio",
-				BaseBranch: "nomatch",
-				EventType:  "pull_request",
+				SHA:          "principale",
+				Organization: "organizationes",
+				Repository:   "lagaffe",
+				URL:          "https://service/documentation",
+				HeadBranch:   "press",
+				Sender:       "fantasio",
+				BaseBranch:   "nomatch",
+				EventType:    "pull_request",
 			},
 			tektondir:       "",
 			finalStatus:     "skipped",
@@ -282,14 +282,14 @@ func TestRun(t *testing.T) {
 		{
 			name: "Skipped/User is not allowed",
 			runevent: info.Event{
-				SHA:        "principale",
-				Owner:      "organizationes",
-				Repository: "lagaffe",
-				URL:        "https://service/documentation",
-				HeadBranch: "press",
-				Sender:     "evilbro",
-				BaseBranch: "nomatch",
-				EventType:  "pull_request",
+				SHA:          "principale",
+				Organization: "organizationes",
+				Repository:   "lagaffe",
+				URL:          "https://service/documentation",
+				HeadBranch:   "press",
+				Sender:       "evilbro",
+				BaseBranch:   "nomatch",
+				EventType:    "pull_request",
 			},
 			tektondir:                    "testdata/pull_request",
 			finalStatus:                  "skipped",
@@ -299,14 +299,14 @@ func TestRun(t *testing.T) {
 		{
 			name: "Keep max number of pipelineruns",
 			runevent: info.Event{
-				SHA:        "principale",
-				Owner:      "organizationes",
-				Repository: "lagaffe",
-				URL:        "https://service/documentation",
-				HeadBranch: "press",
-				BaseBranch: "main",
-				Sender:     "fantasio",
-				EventType:  "pull_request",
+				SHA:          "principale",
+				Organization: "organizationes",
+				Repository:   "lagaffe",
+				URL:          "https://service/documentation",
+				HeadBranch:   "press",
+				BaseBranch:   "main",
+				Sender:       "fantasio",
+				EventType:    "pull_request",
 			},
 			tektondir:                "testdata/max-keep-runs",
 			finalStatus:              "neutral",
@@ -320,9 +320,9 @@ func TestRun(t *testing.T) {
 			fakeclient, mux, ghTestServerURL, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 
-			var secretName, vcsURL string
-			if tt.VCSInfoFromRepo {
-				vcsURL = ghTestServerURL
+			var secretName, providerURL string
+			if tt.ProviderInfoFromRepo {
+				providerURL = ghTestServerURL
 				secretName = "ziesecretee"
 			}
 
@@ -334,7 +334,7 @@ func TestRun(t *testing.T) {
 							URL:              tt.runevent.URL,
 							InstallNamespace: "namespace",
 							SecretName:       secretName,
-							VcsURL:           vcsURL,
+							ProviderURL:      providerURL,
 						},
 					),
 				}
@@ -377,20 +377,21 @@ func TestRun(t *testing.T) {
 				Info: info.Info{
 					Event: &tt.runevent,
 					Pac: &info.PacOpts{
-						VCSInfoFromRepo:    tt.VCSInfoFromRepo,
-						SecretAutoCreation: true,
-						VCSAPIURL:          ghTestServerURL,
-						VCSToken:           "NONE",
+						ProviderInfoFromRepo: tt.ProviderInfoFromRepo,
+						SecretAutoCreation:   true,
+						ProviderURL:          ghTestServerURL,
+						ProviderToken:        "NONE",
 					},
 				},
 			}
+
 			k8int := &kitesthelper.KinterfaceTest{
 				ConsoleURL:               "https://console.url",
 				ExpectedNumberofCleanups: tt.expectedNumberofCleanups,
 				GetSecretResult:          secretName,
 			}
 
-			err := Run(ctx, cs, &ghwebvcs.VCS{
+			err := Run(ctx, cs, &ghprovider.Provider{
 				Client: fakeclient,
 				Token:  github.String("None"),
 			}, k8int)
@@ -401,7 +402,6 @@ func TestRun(t *testing.T) {
 			}
 
 			assert.NilError(t, err)
-			// assert.Assert(t, len(log.TakeAll()) > 0)
 
 			if tt.finalStatus != "skipped" {
 				got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(

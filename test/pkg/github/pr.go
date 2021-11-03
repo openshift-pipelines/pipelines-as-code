@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/go-github/v39/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	ghvcs "github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
+	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 )
 
 func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (string, error) {
@@ -76,7 +76,7 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 	return commit.GetSHA(), nil
 }
 
-func PRCreate(ctx context.Context, cs *params.Run, ghcnx ghvcs.VCS, owner, repo, targetRef, defaultBranch, title string) (int, error) {
+func PRCreate(ctx context.Context, cs *params.Run, ghcnx ghprovider.Provider, owner, repo, targetRef, defaultBranch, title string) (int, error) {
 	pr, _, err := ghcnx.Client.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
 		Title: &title,
 		Head:  &targetRef,

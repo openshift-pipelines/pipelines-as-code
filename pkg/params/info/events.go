@@ -8,7 +8,7 @@ type Event struct {
 	BaseBranch    string // branch against where we are making the PR
 	DefaultBranch string
 	HeadBranch    string // branch from where our SHA get tested
-	Owner         string
+	Organization  string
 	Repository    string
 	SHA           string
 	SHAURL        string

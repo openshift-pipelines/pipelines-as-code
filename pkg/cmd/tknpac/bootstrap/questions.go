@@ -37,7 +37,7 @@ func askQuestions(opts *bootstrapOpts) error {
 		}
 	}
 
-	if opts.vcsType == "github-enteprise-app" {
+	if opts.providerType == "github-enteprise-app" {
 		prompt := "Enter your Github enteprise API URL: "
 		qs = append(qs, &survey.Question{
 			Name: "GithubAPIURL",

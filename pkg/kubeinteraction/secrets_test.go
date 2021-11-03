@@ -52,9 +52,9 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 		},
 	}
 	event := info.Event{
-		Owner:      "owner",
-		Repository: "repo",
-		URL:        "https://forge/owner/repo",
+		Organization: "owner",
+		Repository:   "repo",
+		URL:          "https://forge/owner/repo",
 	}
 
 	tests := []struct {
@@ -81,7 +81,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 		{
 			name:                   "Lowercase secrets",
 			targetNS:               nsthere,
-			event:                  info.Event{Owner: "UPPER", Repository: "CASE", URL: "https://forge/UPPER/CASE"},
+			event:                  info.Event{Organization: "UPPER", Repository: "CASE", URL: "https://forge/UPPER/CASE"},
 			expectedGitCredentials: "https://git:verysecrete@forge/UPPER/CASE",
 			expectedSecretName:     "pac-git-basic-auth-upper-case",
 		},
@@ -100,7 +100,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 					},
 				},
 			}
-			err := kint.CreateBasicAuthSecret(ctx, &tt.event, &info.PacOpts{VCSToken: secrete}, tt.targetNS)
+			err := kint.CreateBasicAuthSecret(ctx, &tt.event, &info.PacOpts{ProviderToken: secrete}, tt.targetNS)
 			assert.NilError(t, err)
 
 			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})

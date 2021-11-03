@@ -10,7 +10,7 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
@@ -108,7 +108,7 @@ type Opts struct {
 // Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
 // generateName can be set as True to set the name as a generateName + "-" for
 // unique pipelinerun
-func Resolve(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, data string, ropt *Opts) (
+func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interface, data string, ropt *Opts) (
 	[]*tektonv1beta1.PipelineRun, error) {
 	s := k8scheme.Scheme
 	if err := tektonv1beta1.AddToScheme(s); err != nil {
@@ -126,7 +126,7 @@ func Resolve(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, data
 			rt := matcher.RemoteTasks{
 				Run: cs,
 			}
-			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, vcsintf, pipelinerun.GetObjectMeta().GetAnnotations())
+			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, providerintf, pipelinerun.GetObjectMeta().GetAnnotations())
 			if err != nil {
 				return []*tektonv1beta1.PipelineRun{}, err
 			}

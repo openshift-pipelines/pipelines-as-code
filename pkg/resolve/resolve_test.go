@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	testwebvcs "github.com/openshift-pipelines/pipelines-as-code/pkg/test/webvcs"
+	testprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -51,8 +51,8 @@ func readTDfile(t *testing.T, testname string, generateName bool) (*tektonv1beta
 		GenerateName: generateName,
 		RemoteTasks:  true,
 	}
-	tvcs := &testwebvcs.TestWebVCSImp{}
-	resolved, err := Resolve(ctx, cs, tvcs, string(data), ropt)
+	tprovider := &testprovider.TestProviderImp{}
+	resolved, err := Resolve(ctx, cs, tprovider, string(data), ropt)
 	if err != nil {
 		return &tektonv1beta1.PipelineRun{}, nil, err
 	}
