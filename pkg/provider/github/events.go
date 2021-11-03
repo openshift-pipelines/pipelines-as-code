@@ -144,7 +144,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		}
 	case *github.PushEvent:
 		processedevent = &info.Event{
-			Owner:         event.GetRepo().GetOwner().GetLogin(),
+			Organization:  event.GetRepo().GetOwner().GetLogin(),
 			Repository:    event.GetRepo().GetName(),
 			DefaultBranch: event.GetRepo().GetDefaultBranch(),
 			URL:           event.GetRepo().GetHTMLURL(),
@@ -159,7 +159,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		processedevent.HeadBranch = processedevent.BaseBranch // in push events Head Branch is the same as Basebranch
 	case *github.PullRequestEvent:
 		processedevent = &info.Event{
-			Owner:         event.GetRepo().Owner.GetLogin(),
+			Organization:  event.GetRepo().Owner.GetLogin(),
 			Repository:    event.GetRepo().GetName(),
 			DefaultBranch: event.GetRepo().GetDefaultBranch(),
 			SHA:           event.GetPullRequest().Head.GetSHA(),
@@ -182,7 +182,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 
 func (v *Provider) handleReRequestEvent(ctx context.Context, log *zap.SugaredLogger, event *github.CheckRunEvent) (*info.Event, error) {
 	runevent := &info.Event{
-		Owner:         event.GetRepo().GetOwner().GetLogin(),
+		Organization:  event.GetRepo().GetOwner().GetLogin(),
 		Repository:    event.GetRepo().GetName(),
 		URL:           event.GetRepo().GetHTMLURL(),
 		DefaultBranch: event.GetRepo().GetDefaultBranch(),
@@ -200,7 +200,7 @@ func (v *Provider) handleReRequestEvent(ctx context.Context, log *zap.SugaredLog
 		return runevent, nil
 	}
 	prNumber := event.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
-	log.Infof("Recheck of PR %s/%s#%d has been requested", runevent.Owner, runevent.Repository, prNumber)
+	log.Infof("Recheck of PR %s/%s#%d has been requested", runevent.Organization, runevent.Repository, prNumber)
 	return v.getPullRequest(ctx, runevent, prNumber)
 }
 
@@ -214,8 +214,8 @@ func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
 
 func (v *Provider) handleIssueCommentEvent(ctx context.Context, log *zap.SugaredLogger, event *github.IssueCommentEvent) (*info.Event, error) {
 	runevent := &info.Event{
-		Owner:      event.GetRepo().GetOwner().GetLogin(),
-		Repository: event.GetRepo().GetName(),
+		Organization: event.GetRepo().GetOwner().GetLogin(),
+		Repository:   event.GetRepo().GetName(),
 	}
 	if !event.GetIssue().IsPullRequest() {
 		return &info.Event{}, fmt.Errorf("issue comment is not coming from a pull_request")
@@ -229,6 +229,6 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, log *zap.Sugared
 		return &info.Event{}, err
 	}
 
-	log.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runevent.Owner, runevent.Repository, prNumber)
+	log.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runevent.Organization, runevent.Repository, prNumber)
 	return v.getPullRequest(ctx, runevent, prNumber)
 }

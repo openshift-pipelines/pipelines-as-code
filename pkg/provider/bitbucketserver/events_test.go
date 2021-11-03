@@ -14,13 +14,13 @@ import (
 
 func TestParsePayload(t *testing.T) {
 	ev1 := &info.Event{
-		AccountID:  "12345",
-		Sender:     "sender",
-		Owner:      "PROJ",
-		Repository: "repo",
-		URL:        "http://forge/PROJ/repo/browse",
-		SHA:        "abcd",
-		CloneURL:   "http://clone/PROJ/repo",
+		AccountID:    "12345",
+		Sender:       "sender",
+		Organization: "PROJ",
+		Repository:   "repo",
+		URL:          "http://forge/PROJ/repo/browse",
+		SHA:          "abcd",
+		CloneURL:     "http://clone/PROJ/repo",
 	}
 	pr1 := bbv1test.MakePREvent(ev1)
 
@@ -50,10 +50,10 @@ func TestParsePayload(t *testing.T) {
 			eventType: "pull_request",
 			payloadEvent: bbv1test.MakePREvent(
 				&info.Event{
-					AccountID:  "12345",
-					Sender:     "sender",
-					Owner:      "PROJ",
-					Repository: "repo",
+					AccountID:    "12345",
+					Sender:       "sender",
+					Organization: "PROJ",
+					Repository:   "repo",
 					// nolint: stylecheck
 					URL: "💢",
 					SHA: "abcd",

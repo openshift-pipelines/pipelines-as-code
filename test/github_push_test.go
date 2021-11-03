@@ -50,7 +50,7 @@ func TestGithubPush(t *testing.T) {
 		title += "- " + targetBranch
 
 		targetRefName := fmt.Sprintf("refs/heads/%s", targetBranch)
-		sha, err := tgithub.PushFilesToRef(ctx, gprovider.Client, title, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
+		sha, err := tgithub.PushFilesToRef(ctx, gprovider.Client, title, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
 		runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 		assert.NilError(t, err)
 		defer ghtearDown(ctx, t, runcnx, gprovider, -1, targetRefName, targetNS, opts)

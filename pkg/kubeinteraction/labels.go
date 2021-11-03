@@ -15,7 +15,7 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.Pipel
 	// query them.
 	labels := map[string]string{
 		"app.kubernetes.io/managed-by":                             pipelinesascode.GroupName,
-		filepath.Join(pipelinesascode.GroupName, "url-org"):        formatting.K8LabelsCleanup(event.Owner),
+		filepath.Join(pipelinesascode.GroupName, "url-org"):        formatting.K8LabelsCleanup(event.Organization),
 		filepath.Join(pipelinesascode.GroupName, "url-repository"): formatting.K8LabelsCleanup(event.Repository),
 		filepath.Join(pipelinesascode.GroupName, "sha"):            formatting.K8LabelsCleanup(event.SHA),
 		filepath.Join(pipelinesascode.GroupName, "sender"):         formatting.K8LabelsCleanup(event.Sender),

@@ -65,7 +65,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event) (bo
 					BaseBranch:    event.BaseBranch,
 					HeadBranch:    event.HeadBranch,
 					Repository:    event.Repository,
-					Owner:         v.projectKey,
+					Organization:  v.projectKey,
 					DefaultBranch: event.DefaultBranch,
 				}
 				allowed, err := v.checkMemberShip(commenterEvent)

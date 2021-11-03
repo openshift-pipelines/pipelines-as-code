@@ -50,7 +50,7 @@ func createPR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Ru
 	defer tmpfile.Remove()
 
 	err = bprovider.Client.Workspaces.Repositories.Repository.WriteFileBlob(&bitbucket.RepositoryBlobWriteOptions{
-		Owner:    opts.Owner,
+		Owner:    opts.Organization,
 		RepoSlug: opts.Repo,
 		FileName: ".tekton/pr.yaml",
 		FilePath: tmpfile.Path(),
@@ -62,14 +62,14 @@ func createPR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Ru
 	runcnx.Clients.Log.Infof("Using repo %s branch %s", bcrepo.Full_name, targetRefName)
 
 	repobranch, err := bprovider.Client.Repositories.Repository.GetBranch(&bitbucket.RepositoryBranchOptions{
-		Owner:      opts.Owner,
+		Owner:      opts.Organization,
 		RepoSlug:   opts.Repo,
 		BranchName: targetRefName,
 	})
 	assert.NilError(t, err)
 
 	intf, err := bprovider.Client.Repositories.PullRequests.Create(&bitbucket.PullRequestsOptions{
-		Owner:        opts.Owner,
+		Owner:        opts.Organization,
 		RepoSlug:     opts.Repo,
 		Title:        title,
 		Message:      "A new PR for testing",
@@ -89,14 +89,14 @@ func bitbucketTearDown(ctx context.Context, t *testing.T, runcnx *params.Run, bp
 	runcnx.Clients.Log.Infof("Closing PR #%d", prNumber)
 	_, err := bprovider.Client.Repositories.PullRequests.Decline(&bitbucket.PullRequestsOptions{
 		ID:       fmt.Sprintf("%d", prNumber),
-		Owner:    opts.Owner,
+		Owner:    opts.Organization,
 		RepoSlug: opts.Repo,
 	})
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Deleting ref %s", ref)
 	err = bprovider.Client.Repositories.Repository.DeleteBranch(
 		&bitbucket.RepositoryBranchDeleteOptions{
-			Owner:    opts.Owner,
+			Owner:    opts.Organization,
 			RepoSlug: opts.Repo,
 			RefName:  ref,
 		},
@@ -109,7 +109,7 @@ func bitbucketTearDown(ctx context.Context, t *testing.T, runcnx *params.Run, bp
 func createBitbucketRepoCRD(ctx context.Context, t *testing.T, bprovider bitbucketcloud.Provider, run *params.Run, opts E2EOptions, targetNS string) *bitbucket.Repository {
 	repo, err := bprovider.Client.Workspaces.Repositories.Repository.Get(
 		&bitbucket.RepositoryOptions{
-			Owner:    opts.Owner,
+			Owner:    opts.Organization,
 			RepoSlug: opts.Repo,
 		})
 	assert.NilError(t, err)

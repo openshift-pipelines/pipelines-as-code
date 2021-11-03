@@ -39,7 +39,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 	switch e := eventPayload.(type) {
 	case *types.PullRequestEvent:
 		// TODO: It's Really not an OWNER but a PROJECT
-		processedevent.Owner = e.PulRequest.ToRef.Repository.Project.Key
+		processedevent.Organization = e.PulRequest.ToRef.Repository.Project.Key
 		processedevent.Repository = e.PulRequest.ToRef.Repository.Name
 		processedevent.SHA = e.PulRequest.FromRef.LatestCommit
 		processedevent.URL = e.PulRequest.ToRef.Repository.Links.Self[0].Href
@@ -54,7 +54,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		}
 		v.pullRequestNumber = e.PulRequest.ID
 	case *types.PushRequestEvent:
-		processedevent.Owner = e.Repository.Project.Key
+		processedevent.Organization = e.Repository.Project.Key
 		processedevent.Repository = e.Repository.Slug
 		processedevent.SHA = e.Changes[0].ToHash
 		processedevent.URL = e.Repository.Links.Self[0].Href
@@ -72,8 +72,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		return nil, fmt.Errorf("event %s is not supported", run.Info.Event.EventType)
 	}
 
-	v.projectKey = processedevent.Owner
-	processedevent.Owner = sanitizeOwner(processedevent.Owner)
+	v.projectKey = processedevent.Organization
+	processedevent.Organization = sanitizeOwner(processedevent.Organization)
 	processedevent.URL = sanitizeEventURL(processedevent.URL)
 
 	// TODO: is this the right way? I guess i have no way to know what is the

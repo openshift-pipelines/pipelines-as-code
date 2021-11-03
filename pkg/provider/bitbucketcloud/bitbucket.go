@@ -64,7 +64,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacopts *i
 		Description: statusopts.Title,
 	}
 	cmo := &bitbucket.CommitsOptions{
-		Owner:    event.Owner,
+		Owner:    event.Organization,
 		RepoSlug: event.Repository,
 		Revision: event.SHA,
 	}
@@ -86,7 +86,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacopts *i
 
 		_, err = v.Client.Repositories.PullRequests.AddComment(
 			&bitbucket.PullRequestCommentOptions{
-				Owner:         event.Owner,
+				Owner:         event.Organization,
 				RepoSlug:      event.Repository,
 				PullRequestID: prNumber,
 				Content: fmt.Sprintf("**%s** - %s\n\n%s", pacopts.ApplicationName,
@@ -101,7 +101,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacopts *i
 
 func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path string) (string, error) {
 	repoFileOpts := &bitbucket.RepositoryFilesOptions{
-		Owner:    event.Owner,
+		Owner:    event.Organization,
 		RepoSlug: event.Repository,
 		Ref:      event.SHA,
 		Path:     path,
@@ -139,7 +139,7 @@ func (v *Provider) SetClient(_ context.Context, opts *info.PacOpts) error {
 
 func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	response, err := v.Client.Repositories.Commits.GetCommits(&bitbucket.CommitsOptions{
-		Owner:       event.Owner,
+		Owner:       event.Organization,
 		RepoSlug:    event.Repository,
 		Branchortag: event.SHA,
 	})
@@ -170,7 +170,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 
 	// now to get the default branch from repository.Get
 	repo, err := v.Client.Repositories.Repository.Get(&bitbucket.RepositoryOptions{
-		Owner:    event.Owner,
+		Owner:    event.Organization,
 		RepoSlug: event.Repository,
 	})
 	if err != nil {
@@ -202,13 +202,13 @@ func (v *Provider) concatAllYamlFiles(objects []bitbucket.RepositoryFile, runeve
 
 func (v *Provider) getBlob(runevent *info.Event, ref, path string) (string, error) {
 	blob, err := v.Client.Repositories.Repository.GetFileBlob(&bitbucket.RepositoryBlobOptions{
-		Owner:    runevent.Owner,
+		Owner:    runevent.Organization,
 		RepoSlug: runevent.Repository,
 		Ref:      ref,
 		Path:     path,
 	})
 	if err != nil {
-		return "", fmt.Errorf("cannot find %s on branch %s in repo %s/%s", path, ref, runevent.Owner, runevent.Repository)
+		return "", fmt.Errorf("cannot find %s on branch %s in repo %s/%s", path, ref, runevent.Organization, runevent.Repository)
 	}
 	return blob.String(), nil
 }

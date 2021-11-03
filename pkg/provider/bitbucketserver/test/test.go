@@ -55,7 +55,7 @@ func SetupBBServerClient(ctx context.Context, t *testing.T) (*bbv1.APIClient, *h
 func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expectedCommentSubstr string, prID int) {
 	assert.Assert(t, event.Event != nil)
 
-	path := fmt.Sprintf("/projects/%s/repos/%s/pull-requests/%d/comments", event.Owner, event.Repository, prID)
+	path := fmt.Sprintf("/projects/%s/repos/%s/pull-requests/%d/comments", event.Organization, event.Repository, prID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &bbv1.Comment{}
 		bit, _ := ioutil.ReadAll(r.Body)
@@ -85,8 +85,8 @@ func MakeEvent(event *info.Event) *info.Event {
 	if rev.SHA == "" {
 		rev.SHA = "1234"
 	}
-	if rev.Owner == "" {
-		rev.Owner = "owner"
+	if rev.Organization == "" {
+		rev.Organization = "owner"
 	}
 	if rev.Repository == "" {
 		rev.Repository = "repo"
@@ -134,7 +134,7 @@ func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir 
 }
 
 func MuxCommitInfo(t *testing.T, mux *http.ServeMux, event *info.Event, commit bbv1.Commit) {
-	path := fmt.Sprintf("/projects/%s/repos/%s/commits/%s", event.Owner, event.Repository, event.SHA)
+	path := fmt.Sprintf("/projects/%s/repos/%s/commits/%s", event.Organization, event.Repository, event.SHA)
 
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		b, err := json.Marshal(commit)
@@ -144,7 +144,7 @@ func MuxCommitInfo(t *testing.T, mux *http.ServeMux, event *info.Event, commit b
 }
 
 func MuxDefaultBranch(t *testing.T, mux *http.ServeMux, event *info.Event, defaultBranch, latestCommit string) {
-	path := fmt.Sprintf("/projects/%s/repos/%s/branches/default", event.Owner, event.Repository)
+	path := fmt.Sprintf("/projects/%s/repos/%s/branches/default", event.Organization, event.Repository)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		resp := &bbv1.Branch{
 			LatestCommit: latestCommit,
@@ -158,7 +158,7 @@ func MuxDefaultBranch(t *testing.T, mux *http.ServeMux, event *info.Event, defau
 
 func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, branch string, targetDirName string, filescontents map[string]string) {
 	for filename := range filescontents {
-		path := fmt.Sprintf("/projects/%s/repos/%s/raw/%s", event.Owner, event.Repository, filename)
+		path := fmt.Sprintf("/projects/%s/repos/%s/raw/%s", event.Organization, event.Repository, filename)
 		mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 			// delete everything until the targetDirName in string this is
 			// fragile, so we do the filepath.Base if we can't mark by targetDirName
@@ -172,7 +172,7 @@ func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, branch string
 }
 
 func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, path string, files []string) {
-	url := fmt.Sprintf("/projects/%s/repos/%s/files/%s", event.Owner, event.Repository, path)
+	url := fmt.Sprintf("/projects/%s/repos/%s/files/%s", event.Organization, event.Repository, path)
 	mux.HandleFunc(url, func(rw http.ResponseWriter, r *http.Request) {
 		pagedfiles := files[0 : len(files)/2]
 		isLastPage := false
@@ -220,7 +220,7 @@ func MuxCreateAndTestCommitStatus(t *testing.T, mux *http.ServeMux, event *info.
 }
 
 func MuxProjectMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, userperms []*bbv1.UserPermission) {
-	path := fmt.Sprintf("/projects/%s/permissions/users", event.Owner)
+	path := fmt.Sprintf("/projects/%s/permissions/users", event.Organization)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		if userperms == nil {
 			fmt.Fprintf(rw, "{\"values\": []}")
@@ -236,7 +236,7 @@ func MuxProjectMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, u
 }
 
 func MuxRepoMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, userperms []*bbv1.UserPermission) {
-	path := fmt.Sprintf("/projects/%s/repos/%s/permissions/users", event.Owner, event.Repository)
+	path := fmt.Sprintf("/projects/%s/repos/%s/permissions/users", event.Organization, event.Repository)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		if userperms == nil {
 			fmt.Fprintf(rw, "{\"values\": []}")
@@ -251,7 +251,7 @@ func MuxRepoMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, user
 }
 
 func MuxPullRequestActivities(t *testing.T, mux *http.ServeMux, event *info.Event, prNumber int, activities []*bbv1.Activity) {
-	path := fmt.Sprintf("/projects/%s/repos/%s/pull-requests/%d/activities", event.Owner, event.Repository, prNumber)
+	path := fmt.Sprintf("/projects/%s/repos/%s/pull-requests/%d/activities", event.Organization, event.Repository, prNumber)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{
 			"values": activities,
@@ -271,7 +271,7 @@ func MakePREvent(event *info.Event) *types.PullRequestEvent {
 		PulRequest: bbv1.PullRequest{
 			ToRef: bbv1.PullRequestRef{
 				Repository: bbv1.Repository{
-					Project: &bbv1.Project{Key: event.Owner},
+					Project: &bbv1.Project{Key: event.Organization},
 					Name:    event.Repository,
 					Links: &struct {
 						Clone []bbv1.CloneLink "json:\"clone,omitempty\""

@@ -52,10 +52,10 @@ spec:
 `, targetNS, mainBranch, pullRequestEvent),
 	}
 
-	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Owner, opts.Repo)
+	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
-		t.Errorf("Repository %s not found in %s", opts.Owner, opts.Repo)
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
 	repository := &pacv1alpha1.Repository{
@@ -79,13 +79,13 @@ spec:
 	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client,
 		"TestPullRequest - "+targetRefName, repoinfo.GetDefaultBranch(),
 		targetRefName,
-		opts.Owner,
+		opts.Organization,
 		opts.Repo,
 		entries)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 	title := "TestPullRerequest on " + targetRefName
-	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Owner, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
+	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
 	defer ghtearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
@@ -105,11 +105,11 @@ spec:
 		BaseBranch:    repoinfo.GetDefaultBranch(),
 		DefaultBranch: repoinfo.GetDefaultBranch(),
 		HeadBranch:    targetRefName,
-		Owner:         opts.Owner,
+		Organization:  opts.Organization,
 		Repository:    opts.Repo,
 		URL:           repoinfo.GetHTMLURL(),
 		SHA:           sha,
-		Sender:        opts.Owner,
+		Sender:        opts.Organization,
 	}
 
 	installID, err := strconv.ParseInt(os.Getenv("TEST_GITHUB_REPO_INSTALLATION_ID"), 10, 64)
@@ -134,7 +134,7 @@ spec:
 			DefaultBranch: &runinfo.DefaultBranch,
 			HTMLURL:       &runinfo.URL,
 			Name:          &runinfo.Repository,
-			Owner:         &github.User{Login: &runinfo.Owner},
+			Owner:         &github.User{Login: &runinfo.Organization},
 		},
 		Sender: &github.User{
 			Login: &runinfo.Sender,

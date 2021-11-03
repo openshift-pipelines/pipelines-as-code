@@ -45,10 +45,10 @@ func TestProcessTemplates(t *testing.T) {
 		{
 			name: "test process templates",
 			event: &info.Event{
-				SHA:        "abcd",
-				URL:        "http://chmouel.com",
-				Owner:      "owner",
-				Repository: "repository",
+				SHA:          "abcd",
+				URL:          "http://chmouel.com",
+				Organization: "owner",
+				Repository:   "repository",
 			},
 			template: `{{ revision }} {{ repo_owner }} {{ repo_name }} {{ repo_url }}`,
 			expected: "abcd owner repository http://chmouel.com",
@@ -56,8 +56,8 @@ func TestProcessTemplates(t *testing.T) {
 		{
 			name: "test process templates lowering owner and repository",
 			event: &info.Event{
-				Owner:      "OWNER",
-				Repository: "REPOSITORY",
+				Organization: "OWNER",
+				Repository:   "REPOSITORY",
 			},
 			template: `{{ repo_owner }} {{ repo_name }}`,
 			expected: "owner repository",

@@ -24,9 +24,9 @@ func TestOkToTestComment(t *testing.T) {
 			name:          "good",
 			commentsReply: `[{"body": "/ok-to-test", "user": {"login": "owner"}}]`,
 			runevent: info.Event{
-				Owner:     "owner",
-				Sender:    "nonowner",
-				EventType: "issue_comment",
+				Organization: "owner",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
 			},
 			allowed: true,
 			wantErr: false,
@@ -35,9 +35,9 @@ func TestOkToTestComment(t *testing.T) {
 			name:          "no-ok-to-test",
 			commentsReply: `[{"body": "Foo Bar", "user": {"login": "owner"}}]`,
 			runevent: info.Event{
-				Owner:     "owner",
-				Sender:    "nonowner",
-				EventType: "issue_comment",
+				Organization: "owner",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
 			},
 			allowed: false,
 			wantErr: false,
@@ -46,9 +46,9 @@ func TestOkToTestComment(t *testing.T) {
 			name:          "ok-to-test-not-from-owner",
 			commentsReply: `[{"body": "/ok-to-test", "user": {"login": "notowner"}}]`,
 			runevent: info.Event{
-				Owner:     "owner",
-				Sender:    "nonowner",
-				EventType: "issue_comment",
+				Organization: "owner",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
 			},
 			allowed: false,
 			wantErr: false,
@@ -151,8 +151,8 @@ func TestAclCheckAll(t *testing.T) {
 		{
 			name: "sender allowed in org",
 			runevent: info.Event{
-				Owner:  orgallowed,
-				Sender: "login_allowed",
+				Organization: orgallowed,
+				Sender:       "login_allowed",
 			},
 			allowed: true,
 			wantErr: false,
@@ -160,8 +160,8 @@ func TestAclCheckAll(t *testing.T) {
 		{
 			name: "sender allowed from owner file",
 			runevent: info.Event{
-				Owner:  repoOwnerFileAllowed,
-				Sender: "approved",
+				Organization: repoOwnerFileAllowed,
+				Sender:       "approved",
 			},
 			allowed: true,
 			wantErr: false,
@@ -169,8 +169,8 @@ func TestAclCheckAll(t *testing.T) {
 		{
 			name: "owner is sender is allowed",
 			runevent: info.Event{
-				Owner:  orgallowed,
-				Sender: "allowed",
+				Organization: orgallowed,
+				Sender:       "allowed",
 			},
 			allowed: true,
 			wantErr: false,
@@ -178,9 +178,9 @@ func TestAclCheckAll(t *testing.T) {
 		{
 			name: "sender allowed since collaborator on repo",
 			runevent: info.Event{
-				Owner:      collabOwner,
-				Repository: collabRepo,
-				Sender:     collaborator,
+				Organization: collabOwner,
+				Repository:   collabRepo,
+				Sender:       collaborator,
 			},
 			allowed: true,
 			wantErr: false,
@@ -188,8 +188,8 @@ func TestAclCheckAll(t *testing.T) {
 		{
 			name: "sender not allowed in org",
 			runevent: info.Event{
-				Owner:  orgdenied,
-				Sender: "notallowed",
+				Organization: orgdenied,
+				Sender:       "notallowed",
 			},
 			allowed: false,
 			wantErr: false,
@@ -197,8 +197,8 @@ func TestAclCheckAll(t *testing.T) {
 		{
 			name: "err it",
 			runevent: info.Event{
-				Owner:  errit,
-				Sender: "error",
+				Organization: errit,
+				Sender:       "error",
 			},
 			allowed: false,
 			wantErr: true,

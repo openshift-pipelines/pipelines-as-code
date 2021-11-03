@@ -66,7 +66,7 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 
 // aclCheck check if we are allowed to run the pipeline on that PR
 func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, error) {
-	if rev.Owner == rev.Sender {
+	if rev.Organization == rev.Sender {
 		return true, nil
 	}
 
@@ -105,7 +105,7 @@ func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, erro
 // checkSenderOrgMembership Get sender user's organization. We can
 // only get the one that the user sets as public 🤷
 func (v *Provider) checkSenderOrgMembership(ctx context.Context, runevent *info.Event) (bool, error) {
-	users, resp, err := v.Client.Organizations.ListMembers(ctx, runevent.Owner,
+	users, resp, err := v.Client.Organizations.ListMembers(ctx, runevent.Organization,
 		&github.ListMembersOptions{
 			PublicOnly: true, // We can't list private member in a org
 		})
@@ -129,7 +129,7 @@ func (v *Provider) checkSenderOrgMembership(ctx context.Context, runevent *info.
 // checkSenderRepoMembership check if user is allowed to run CI
 func (v *Provider) checkSenderRepoMembership(ctx context.Context, runevent *info.Event) (bool, error) {
 	users, _, err := v.Client.Repositories.ListCollaborators(ctx,
-		runevent.Owner,
+		runevent.Organization,
 		runevent.Repository,
 		&github.ListCollaboratorsOptions{})
 	if err != nil {
@@ -164,7 +164,7 @@ func (v *Provider) GetStringPullRequestComment(ctx context.Context, runevent *in
 		return nil, err
 	}
 
-	comments, _, err := v.Client.Issues.ListComments(ctx, runevent.Owner, runevent.Repository,
+	comments, _, err := v.Client.Issues.ListComments(ctx, runevent.Organization, runevent.Repository,
 		prNumber, &github.IssueListCommentsOptions{})
 	if err != nil {
 		return nil, err

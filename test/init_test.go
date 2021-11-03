@@ -29,8 +29,8 @@ var (
 )
 
 type E2EOptions struct {
-	Repo, Owner   string
-	DirectWebhook bool
+	Repo, Organization string
+	DirectWebhook      bool
 }
 
 func ghtearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovider github.Provider,
@@ -39,7 +39,7 @@ func ghtearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovide
 	if prNumber != -1 {
 		state := "closed"
 		_, _, err := ghprovider.Client.PullRequests.Edit(ctx,
-			opts.Owner, opts.Repo, prNumber,
+			opts.Organization, opts.Repo, prNumber,
 			&ghlib.PullRequest{State: &state})
 		if err != nil {
 			t.Fatal(err)
@@ -47,7 +47,7 @@ func ghtearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovide
 	}
 	nsTearDown(ctx, t, runcnx, targetNS)
 	runcnx.Clients.Log.Infof("Deleting Ref %s", ref)
-	_, err := ghprovider.Client.Git.DeleteRef(ctx, opts.Owner, opts.Repo, ref)
+	_, err := ghprovider.Client.Git.DeleteRef(ctx, opts.Organization, opts.Repo, ref)
 	assert.NilError(t, err)
 }
 
@@ -78,8 +78,8 @@ func bitbucketCloudSetup(ctx context.Context) (*params.Run, E2EOptions, bitbucke
 		return nil, E2EOptions{}, bitbucketcloud.Provider{}, err
 	}
 	e2eoptions := E2EOptions{
-		Owner: splitted[0],
-		Repo:  splitted[1],
+		Organization: splitted[0],
+		Repo:         splitted[1],
 	}
 	bbc := bitbucketcloud.Provider{}
 	infopts := &info.PacOpts{
@@ -129,7 +129,7 @@ func githubSetup(ctx context.Context, viaDirectWebhook bool) (*params.Run, E2EOp
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return nil, E2EOptions{}, github.Provider{}, err
 	}
-	e2eoptions := E2EOptions{Owner: splitted[0], Repo: splitted[1], DirectWebhook: viaDirectWebhook}
+	e2eoptions := E2EOptions{Organization: splitted[0], Repo: splitted[1], DirectWebhook: viaDirectWebhook}
 	gprovider := github.Provider{}
 	if err := gprovider.SetClient(ctx, &info.PacOpts{ProviderToken: githubToken, ProviderURL: githubURL}); err != nil {
 		return nil, E2EOptions{}, github.Provider{}, err

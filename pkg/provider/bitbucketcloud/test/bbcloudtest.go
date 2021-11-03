@@ -55,7 +55,7 @@ func MuxComments(t *testing.T, mux *http.ServeMux, event *info.Event, comments [
 	assert.Assert(t, event.Event != nil)
 
 	prID := fmt.Sprintf("%d", event.Event.(*types.PullRequestEvent).PullRequest.ID)
-	mux.HandleFunc("/repositories/"+event.Owner+"/"+event.Repository+"/pullrequests/"+prID+"/comments/",
+	mux.HandleFunc("/repositories/"+event.Organization+"/"+event.Repository+"/pullrequests/"+prID+"/comments/",
 		func(rw http.ResponseWriter, r *http.Request) {
 			members := &types.Comments{
 				Values: comments,
@@ -67,7 +67,7 @@ func MuxComments(t *testing.T, mux *http.ServeMux, event *info.Event, comments [
 }
 
 func MuxOrgMember(t *testing.T, mux *http.ServeMux, event *info.Event, members []types.Member) {
-	mux.HandleFunc("/workspaces/"+event.Owner+"/members",
+	mux.HandleFunc("/workspaces/"+event.Organization+"/members",
 		func(rw http.ResponseWriter, r *http.Request) {
 			members := &types.Members{
 				Values: members,
@@ -80,7 +80,7 @@ func MuxOrgMember(t *testing.T, mux *http.ServeMux, event *info.Event, members [
 
 func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, targetBranch string, filescontents map[string]string) {
 	for key := range filescontents {
-		target := fmt.Sprintf("/repositories/%s/%s/src/%s", event.Owner, event.Repository, targetBranch)
+		target := fmt.Sprintf("/repositories/%s/%s/src/%s", event.Organization, event.Repository, targetBranch)
 		mux.HandleFunc(target+"/"+key, func(rw http.ResponseWriter, r *http.Request) {
 			s := strings.ReplaceAll(r.URL.String(), target, "")
 			s = strings.TrimPrefix(s, "/")
@@ -91,7 +91,7 @@ func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, targetBranch 
 
 func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, dirs map[string][]bitbucket.RepositoryFile) {
 	for key, value := range dirs {
-		urlp := "/repositories/" + event.Owner + "/" + event.Repository + "/src/" + event.SHA + "/" + key + "/"
+		urlp := "/repositories/" + event.Organization + "/" + event.Repository + "/src/" + event.SHA + "/" + key + "/"
 		mux.HandleFunc(urlp, func(rw http.ResponseWriter, r *http.Request) {
 			dircontents := map[string][]bitbucket.RepositoryFile{
 				"values": value,
@@ -104,7 +104,7 @@ func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, dirs map[st
 }
 
 func MuxCommits(t *testing.T, mux *http.ServeMux, event *info.Event, commits []types.Commit) {
-	path := fmt.Sprintf("/repositories/%s/%s/commits/%s", event.Owner, event.Repository, event.SHA)
+	path := fmt.Sprintf("/repositories/%s/%s/commits/%s", event.Organization, event.Repository, event.SHA)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		dircontents := map[string][]types.Commit{
 			"values": commits,
@@ -115,7 +115,7 @@ func MuxCommits(t *testing.T, mux *http.ServeMux, event *info.Event, commits []t
 }
 
 func MuxRepoInfo(t *testing.T, mux *http.ServeMux, event *info.Event, repo *bitbucket.Repository) {
-	path := fmt.Sprintf("/repositories/%s/%s", event.Owner, event.Repository)
+	path := fmt.Sprintf("/repositories/%s/%s", event.Organization, event.Repository)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		b, _ := json.Marshal(repo)
 		fmt.Fprint(rw, string(b))
@@ -124,7 +124,7 @@ func MuxRepoInfo(t *testing.T, mux *http.ServeMux, event *info.Event, repo *bitb
 
 func MuxCreateCommitstatus(t *testing.T, mux *http.ServeMux, event *info.Event,
 	expectedDescSubstr string, expStatus provider.StatusOpts) {
-	path := fmt.Sprintf("/repositories/%s/%s/commit/%s/statuses/build", event.Owner, event.Repository, event.SHA)
+	path := fmt.Sprintf("/repositories/%s/%s/commit/%s/statuses/build", event.Organization, event.Repository, event.SHA)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &bitbucket.CommitStatusOptions{}
 		bit, _ := ioutil.ReadAll(r.Body)
@@ -148,7 +148,7 @@ func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event,
 	assert.Assert(t, event.Event != nil)
 	prID := fmt.Sprintf("%d", event.Event.(*types.PullRequestEvent).PullRequest.ID)
 
-	path := fmt.Sprintf("/repositories/%s/%s/pullrequests/%s/comments", event.Owner, event.Repository, prID)
+	path := fmt.Sprintf("/repositories/%s/%s/pullrequests/%s/comments", event.Organization, event.Repository, prID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &types.Comment{}
 		bit, _ := ioutil.ReadAll(r.Body)
@@ -297,8 +297,8 @@ func MakeEvent(event *info.Event) *info.Event {
 	if rev.SHA == "" {
 		rev.SHA = "1234"
 	}
-	if rev.Owner == "" {
-		rev.Owner = "owner"
+	if rev.Organization == "" {
+		rev.Organization = "owner"
 	}
 	if rev.Repository == "" {
 		rev.Repository = "repo"

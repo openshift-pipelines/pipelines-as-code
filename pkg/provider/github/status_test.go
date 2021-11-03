@@ -21,8 +21,8 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 	gcvs, teardown := setupFakesURLS()
 	defer teardown()
 	event := &info.Event{
-		Owner:      "check",
-		Repository: "info",
+		Organization: "check",
+		Repository:   "info",
 	}
 
 	err := gcvs.createCheckRunStatus(ctx, event, &info.PacOpts{LogURL: "http://nowhere"}, provider.StatusOpts{Status: "hello moto"})
@@ -33,7 +33,7 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 func TestGithubProviderCreateStatus(t *testing.T) {
 	checkrunid := int64(2026)
 	resultid := int64(666)
-	runEvent := info.Event{Owner: "check", Repository: "run", CheckRunID: &checkrunid}
+	runEvent := info.Event{Organization: "check", Repository: "run", CheckRunID: &checkrunid}
 
 	type args struct {
 		runevent           info.Event
@@ -177,11 +177,11 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 func TestGithubProvidercreateStatusCommit(t *testing.T) {
 	issuenumber := 666
 	anevent := &info.Event{
-		Event:      &github.PullRequestEvent{PullRequest: &github.PullRequest{Number: github.Int(issuenumber)}},
-		Owner:      "owner",
-		Repository: "repository",
-		SHA:        "createStatusCommitSHA",
-		EventType:  "pull_request",
+		Event:        &github.PullRequestEvent{PullRequest: &github.PullRequest{Number: github.Int(issuenumber)}},
+		Organization: "owner",
+		Repository:   "repository",
+		SHA:          "createStatusCommitSHA",
+		EventType:    "pull_request",
 	}
 	tests := []struct {
 		name               string
@@ -231,13 +231,13 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/statuses/%s",
-				tt.event.Owner, tt.event.Repository, tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
+				tt.event.Organization, tt.event.Repository, tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
 				body, _ := ioutil.ReadAll(r.Body)
 				assert.Check(t, strings.Contains(string(body), fmt.Sprintf(`"state":"%s"`, tt.expectedConclusion)))
 			})
 			if tt.status.Status == "completed" {
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/issues/%d/comments",
-					tt.event.Owner, tt.event.Repository, issuenumber), func(rw http.ResponseWriter, r *http.Request) {
+					tt.event.Organization, tt.event.Repository, issuenumber), func(rw http.ResponseWriter, r *http.Request) {
 					body, _ := ioutil.ReadAll(r.Body)
 					assert.Equal(t, fmt.Sprintf(`{"body":"%s<br>%s"}`, tt.status.Summary, tt.status.Text)+"\n", string(body))
 				})

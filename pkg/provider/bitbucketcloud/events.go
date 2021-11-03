@@ -110,7 +110,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 
 	switch e := event.(type) {
 	case *types.PullRequestEvent:
-		processedevent.Owner = e.Repository.Workspace.Slug
+		processedevent.Organization = e.Repository.Workspace.Slug
 		processedevent.Repository = e.Repository.Name
 		processedevent.SHA = e.PullRequest.Source.Commit.Hash
 		processedevent.URL = e.Repository.Links.HTML.HRef
@@ -119,7 +119,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		processedevent.AccountID = e.PullRequest.Author.AccountID
 		processedevent.Sender = e.PullRequest.Author.Nickname
 	case *types.PushRequestEvent:
-		processedevent.Owner = e.Repository.Workspace.Slug
+		processedevent.Organization = e.Repository.Workspace.Slug
 		processedevent.Repository = e.Repository.Name
 		processedevent.SHA = e.Push.Changes[0].New.Target.Hash
 		processedevent.URL = e.Repository.Links.HTML.HRef

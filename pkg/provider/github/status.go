@@ -39,7 +39,7 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 			StartedAt:  &now,
 		}
 
-		checkRun, _, err := v.Client.Checks.CreateCheckRun(ctx, runevent.Owner, runevent.Repository, checkrunoption)
+		checkRun, _, err := v.Client.Checks.CreateCheckRun(ctx, runevent.Organization, runevent.Repository, checkrunoption)
 		if err != nil {
 			return err
 		}
@@ -68,7 +68,7 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 		opts.Conclusion = &status.Conclusion
 	}
 
-	_, _, err := v.Client.Checks.UpdateCheckRun(ctx, runevent.Owner, runevent.Repository, *runevent.CheckRunID, opts)
+	_, _, err := v.Client.Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *runevent.CheckRunID, opts)
 	return err
 }
 
@@ -96,7 +96,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 	}
 
 	if _, _, err := v.Client.Repositories.CreateStatus(ctx,
-		runevent.Owner, runevent.Repository, runevent.SHA, ghstatus); err != nil {
+		runevent.Organization, runevent.Repository, runevent.SHA, ghstatus); err != nil {
 		return err
 	}
 	if status.Status == "completed" && status.Text != "" && runevent.EventType == "pull_request" {
@@ -104,7 +104,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		if !ok {
 			return fmt.Errorf("could not parse event: %+v", payloadevent)
 		}
-		_, _, err = v.Client.Issues.CreateComment(ctx, runevent.Owner, runevent.Repository,
+		_, _, err = v.Client.Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
 			payloadevent.GetPullRequest().GetNumber(),
 			&github.IssueComment{
 				Body: github.String(fmt.Sprintf("%s<br>%s", status.Summary, status.Text)),

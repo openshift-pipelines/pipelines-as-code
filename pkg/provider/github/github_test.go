@@ -135,8 +135,8 @@ func TestGetFileInsideRepo(t *testing.T) {
 				},
 				path: "README.md",
 				runevent: info.Event{
-					Owner:      "foo",
-					Repository: "bar",
+					Organization: "foo",
+					Repository:   "bar",
 				},
 			},
 		},
@@ -148,8 +148,8 @@ func TestGetFileInsideRepo(t *testing.T) {
 				},
 				path: ".tekton",
 				runevent: info.Event{
-					Owner:      "pas",
-					Repository: "la",
+					Organization: "pas",
+					Repository:   "la",
 				},
 			},
 		},
@@ -161,8 +161,8 @@ func TestGetFileInsideRepo(t *testing.T) {
 				},
 				path: ".tekton",
 				runevent: info.Event{
-					Owner:      "tekton",
-					Repository: "dir",
+					Organization: "tekton",
+					Repository:   "dir",
 				},
 			},
 		},
@@ -174,8 +174,8 @@ func TestGetFileInsideRepo(t *testing.T) {
 				},
 				path: ".tekton",
 				runevent: info.Event{
-					Owner:      "throw",
-					Repository: "error",
+					Organization: "throw",
+					Repository:   "error",
 				},
 			},
 		},
@@ -212,8 +212,8 @@ func TestGetTektonDir(t *testing.T) {
 				},
 				path: ".tekton",
 				runevent: info.Event{
-					Owner:      "tekton",
-					Repository: "dir",
+					Organization: "tekton",
+					Repository:   "dir",
 				},
 			},
 		},
@@ -226,8 +226,8 @@ func TestGetTektonDir(t *testing.T) {
 				},
 				path: ".tekton",
 				runevent: info.Event{
-					Owner:      "pas",
-					Repository: "la",
+					Organization: "pas",
+					Repository:   "la",
 				},
 			},
 		},
@@ -240,8 +240,8 @@ func TestGetTektonDir(t *testing.T) {
 				},
 				path: ".tekton",
 				runevent: info.Event{
-					Owner:      "its",
-					Repository: "afile",
+					Organization: "its",
+					Repository:   "afile",
 				},
 			},
 		},
@@ -254,8 +254,8 @@ func TestGetTektonDir(t *testing.T) {
 				},
 				path: ".tekton",
 				runevent: info.Event{
-					Owner:      "throw",
-					Repository: "error",
+					Organization: "throw",
+					Repository:   "error",
 				},
 			},
 		},
@@ -278,8 +278,8 @@ hello runyaml
 	gcvs, teardown := setupFakesURLS()
 	defer teardown()
 	runevent := &info.Event{
-		Owner:      "tekton",
-		Repository: "dir",
+		Organization: "tekton",
+		Repository:   "dir",
 	}
 
 	got, err := gcvs.GetTektonDir(ctx, runevent, ".tekton")
@@ -300,8 +300,8 @@ func TestCheckSenderOrgMembership(t *testing.T) {
 		{
 			name: "Check Sender Org Membership",
 			runevent: info.Event{
-				Owner:  "organization",
-				Sender: "me",
+				Organization: "organization",
+				Sender:       "me",
 			},
 			apiReturn: `[{"login": "me"}]`,
 			allowed:   true,
@@ -310,8 +310,8 @@ func TestCheckSenderOrgMembership(t *testing.T) {
 		{
 			name: "Check Sender not in Org Membership",
 			runevent: info.Event{
-				Owner:  "organization",
-				Sender: "me",
+				Organization: "organization",
+				Sender:       "me",
 			},
 			apiReturn: `[{"login": "not"}]`,
 			allowed:   false,
@@ -319,8 +319,8 @@ func TestCheckSenderOrgMembership(t *testing.T) {
 		{
 			name: "Not found on organization",
 			runevent: info.Event{
-				Owner:  "notfound",
-				Sender: "me",
+				Organization: "notfound",
+				Sender:       "me",
 			},
 			allowed: false,
 		},
@@ -333,7 +333,7 @@ func TestCheckSenderOrgMembership(t *testing.T) {
 			gprovider := Provider{
 				Client: fakeclient,
 			}
-			mux.HandleFunc(fmt.Sprintf("/orgs/%s/public_members", tt.runevent.Owner), func(rw http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc(fmt.Sprintf("/orgs/%s/public_members", tt.runevent.Organization), func(rw http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(rw, tt.apiReturn)
 			})
 
@@ -408,9 +408,9 @@ func TestGithubGetCommitInfo(t *testing.T) {
 		{
 			name: "good",
 			event: &info.Event{
-				Owner:      "owner",
-				Repository: "repository",
-				SHA:        "shacommitinfo",
+				Organization: "owner",
+				Repository:   "repository",
+				SHA:          "shacommitinfo",
 			},
 			shaurl:   "https://git.provider/commit/info",
 			shatitle: "My beautiful pony",
@@ -418,9 +418,9 @@ func TestGithubGetCommitInfo(t *testing.T) {
 		{
 			name: "error",
 			event: &info.Event{
-				Owner:      "owner",
-				Repository: "repository",
-				SHA:        "shacommitinfo",
+				Organization: "owner",
+				Repository:   "repository",
+				SHA:          "shacommitinfo",
 			},
 			apiReply: "hello moto",
 		},
@@ -436,7 +436,7 @@ func TestGithubGetCommitInfo(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/commits/%s",
-				tt.event.Owner, tt.event.Repository, tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
+				tt.event.Organization, tt.event.Repository, tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
 				if tt.apiReply != "" {
 					fmt.Fprintf(rw, tt.apiReply)
 					return

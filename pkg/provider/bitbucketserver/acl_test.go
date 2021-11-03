@@ -214,7 +214,7 @@ func TestIsAllowed(t *testing.T) {
 				Client:                    bbclient,
 				defaultBranchLatestCommit: tt.fields.defaultBranchLatestCommit,
 				pullRequestNumber:         tt.fields.pullRequestNumber,
-				projectKey:                tt.event.Owner,
+				projectKey:                tt.event.Organization,
 			}
 
 			got, err := v.IsAllowed(ctx, tt.event)

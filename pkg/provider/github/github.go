@@ -57,7 +57,7 @@ func (v *Provider) SetClient(ctx context.Context, info *info.PacOpts) error {
 
 // GetTektonDir Get all yaml files in tekton directory return as a single concated file
 func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path string) (string, error) {
-	fp, objects, resp, err := v.Client.Repositories.GetContents(ctx, runevent.Owner,
+	fp, objects, resp, err := v.Client.Repositories.GetContents(ctx, runevent.Organization,
 		runevent.Repository, path, &github.RepositoryContentGetOptions{Ref: runevent.SHA})
 
 	if fp != nil {
@@ -82,7 +82,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
-	commit, _, err := v.Client.Git.GetCommit(ctx, runevent.Owner, runevent.Repository, runevent.SHA)
+	commit, _, err := v.Client.Git.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 		ref = runevent.BaseBranch
 	}
 
-	fp, objects, resp, err := v.Client.Repositories.GetContents(ctx, runevent.Owner,
+	fp, objects, resp, err := v.Client.Repositories.GetContents(ctx, runevent.Organization,
 		runevent.Repository, path, &github.RepositoryContentGetOptions{Ref: ref})
 	if err != nil {
 		return "", err
@@ -145,7 +145,7 @@ func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []*github.Rep
 
 // getPullRequest get a pull request details
 func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event, prNumber int) (*info.Event, error) {
-	pr, _, err := v.Client.PullRequests.Get(ctx, runevent.Owner, runevent.Repository, prNumber)
+	pr, _, err := v.Client.PullRequests.Get(ctx, runevent.Organization, runevent.Repository, prNumber)
 	if err != nil {
 		return runevent, err
 	}
@@ -166,7 +166,7 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event, prN
 
 // getObject Get an object from a repository
 func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Event) ([]byte, error) {
-	blob, _, err := v.Client.Git.GetBlob(ctx, runevent.Owner, runevent.Repository, sha)
+	blob, _, err := v.Client.Git.GetBlob(ctx, runevent.Organization, runevent.Repository, sha)
 	if err != nil {
 		return nil, err
 	}
