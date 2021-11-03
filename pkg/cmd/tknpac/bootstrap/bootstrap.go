@@ -17,13 +17,13 @@ const (
 	openShiftRouteVersion  = "v1"
 	openShiftRouteResource = "routes"
 	secretName             = "pipelines-as-code-secret"
-	defaultVCSType         = "github-app"
+	defaultProviderType    = "github-app"
 )
 
-var vcsTargets = []string{"github-app", "github-enteprise-app"}
+var providerTargets = []string{"github-app", "github-enteprise-app"}
 
 type bootstrapOpts struct {
-	vcsType         string
+	providerType    string
 	installNightly  bool
 	skipInstall     bool
 	skipGithubAPP   bool
@@ -139,7 +139,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&opts.skipInstall, "skip-install", false, "skip Pipelines as Code installation")
 	cmd.PersistentFlags().BoolVar(&opts.skipGithubAPP, "skip-github-app", false, "skip creating github application")
 
-	cmd.PersistentFlags().StringVarP(&opts.vcsType, "install-type", "t", defaultVCSType,
-		fmt.Sprintf("target install type, choices are: %s ", strings.Join(vcsTargets, ", ")))
+	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,
+		fmt.Sprintf("target install type, choices are: %s ", strings.Join(providerTargets, ", ")))
 	return cmd
 }

@@ -10,30 +10,30 @@ import (
 )
 
 const (
-	defaultWebvcsAPISecretKey = "token"
+	defaultGitProviderSecretKey = "token"
 )
 
 // secretFromRepository grab the secret from the repository CRD
-func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.VCSConfig, repo *apipac.Repository) error {
+func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.ProviderConfig, repo *apipac.Repository) error {
 	var err error
 
-	if repo.Spec.WebvcsAPIURL == "" {
-		repo.Spec.WebvcsAPIURL = config.APIURL
+	if repo.Spec.GitProvider.URL == "" {
+		repo.Spec.GitProvider.URL = config.APIURL
 	} else {
-		cs.Info.Pac.VCSAPIURL = repo.Spec.WebvcsAPIURL
+		cs.Info.Pac.ProviderURL = repo.Spec.GitProvider.URL
 	}
 
-	key := repo.Spec.WebvcsAPISecret.Key
+	key := repo.Spec.GitProvider.Secret.Key
 	if key == "" {
-		key = defaultWebvcsAPISecretKey
+		key = defaultGitProviderSecretKey
 	}
 
-	cs.Info.Pac.VCSUser = repo.Spec.WebvcsAPIUser
-	cs.Info.Pac.VCSToken, err = k8int.GetSecret(
+	cs.Info.Pac.ProviderUser = repo.Spec.GitProvider.User
+	cs.Info.Pac.ProviderToken, err = k8int.GetSecret(
 		ctx,
 		kubeinteraction.GetSecretOpt{
 			Namespace: repo.GetNamespace(),
-			Name:      repo.Spec.WebvcsAPISecret.Name,
+			Name:      repo.Spec.GitProvider.Secret.Name,
 			Key:       key,
 		},
 	)
@@ -41,8 +41,14 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	if err != nil {
 		return err
 	}
-	cs.Info.Pac.VCSInfoFromRepo = true
+	cs.Info.Pac.ProviderInfoFromRepo = true
 
-	cs.Clients.Log.Infof("Using webvcs: url=%s user=%s token-secret=%s in token-key=%s", repo.Spec.WebvcsAPIURL, repo.Spec.WebvcsAPIUser, repo.Spec.WebvcsAPISecret.Name, key)
+	cs.Clients.Log.Infof("Using git provider %s: url=%s user=%s token-secret=%s in token-key=%s",
+		cs.Info.Pac.WebhookType,
+		repo.Spec.GitProvider.URL,
+		repo.Spec.GitProvider.User,
+		repo.Spec.GitProvider.Secret.Name,
+		key)
+
 	return nil
 }

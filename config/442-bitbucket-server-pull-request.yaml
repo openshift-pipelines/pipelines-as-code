@@ -209,7 +209,7 @@ spec:
                 steps:
                   - name: apply-and-launch
                     env:
-                      - name: PAC_WEBVCS_TYPE
+                      - name: PAC_GIT_PROVIDER_TYPE
                         value: "bitbucket-server"
                       - name: PAC_TRIGGER_TARGET
                         value: "$(params.trigger_target)"

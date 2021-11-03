@@ -39,7 +39,7 @@ WEBHOOK_TYPE=push
 TRIGGER_TARGET=push
 TMP=$(mktemp /tmp/.mm.XXXXXX)
 
-export PAC_WEBVCS_TYPE="bitbucket-cloud"
+export PAC_GIT_PROVIDER_TYPE="bitbucket-cloud"
 export PAC_SECRET_AUTO_CREATE=true
 export PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP=true
 export PAC_SOURCE_IP="127.0.0.1,18.246.31.224"

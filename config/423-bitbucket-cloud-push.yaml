@@ -151,7 +151,7 @@ spec:
                           configMapKeyRef:
                             name: pipelines-as-code
                             key: bitbucket-cloud-additional-source-ip
-                      - name: PAC_WEBVCS_TYPE
+                      - name: PAC_GIT_PROVIDER_TYPE
                         value: "bitbucket-cloud"
                       - name: PAC_TRIGGER_TARGET
                         value: "$(params.trigger_target)"

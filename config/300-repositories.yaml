@@ -66,22 +66,25 @@ spec:
                 url:
                   description: Repository URL
                   type: string
-                webvcs_api_url:
-                  description: The API URL for the WEBVCS
-                  type: string
-                webvcs_api_user:
-                  description: The user used for WebVCS
-                  type: string
-                webvcs_api_secret:
+                git_provider:
                   type: object
                   properties:
-                    key:
+                    url:
+                      description: The Git provider api url
                       type: string
-                      description: "Key inside the secret"
-                      default: "token"
-                    name:
+                    user:
+                      description: The Git provider api user
                       type: string
-                      description: "The secret name"
+                    secret:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          description: "Key inside the secret"
+                          default: "token"
+                        name:
+                          type: string
+                          description: "The secret name"
               type: object
           type: object
   scope: Namespaced

@@ -1,0 +1,11 @@
+# This is the most basic CRD needed to get started handling CI for the
+# sample-app repo.
+---
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: sample-app
+  namespace: "sample-ci"
+spec:
+  # which URL this Repository handles
+  url: "https://github.com/owner/sample-app"

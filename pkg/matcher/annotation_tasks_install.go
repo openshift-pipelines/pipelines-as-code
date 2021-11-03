@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/hub"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
 )
@@ -33,7 +33,7 @@ func (rt RemoteTasks) convertTotask(data string) (*tektonv1beta1.Task, error) {
 	return obj.(*tektonv1beta1.Task), nil
 }
 
-func (rt RemoteTasks) getTask(ctx context.Context, vcsintf webvcs.Interface, task string) (*tektonv1beta1.Task, error) {
+func (rt RemoteTasks) getTask(ctx context.Context, providerintf provider.Interface, task string) (*tektonv1beta1.Task, error) {
 	var ret *tektonv1beta1.Task
 
 	// TODO: print a log info when getting the task from which location
@@ -48,7 +48,7 @@ func (rt RemoteTasks) getTask(ctx context.Context, vcsintf webvcs.Interface, tas
 		defer res.Body.Close()
 		return rt.convertTotask(string(data))
 	case strings.Contains(task, "/"):
-		data, err := vcsintf.GetFileInsideRepo(ctx, rt.Run.Info.Event, task, "")
+		data, err := providerintf.GetFileInsideRepo(ctx, rt.Run.Info.Event, task, "")
 		if err != nil {
 			return ret, err
 		}
@@ -63,7 +63,7 @@ func (rt RemoteTasks) getTask(ctx context.Context, vcsintf webvcs.Interface, tas
 }
 
 // GetTaskFromAnnotations Get task remotely if they are on Annotations
-func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, vcsintf webvcs.Interface,
+func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, providerintf provider.Interface,
 	annotations map[string]string) ([]*tektonv1beta1.Task, error) {
 	var ret []*tektonv1beta1.Task
 	rtareg := regexp.MustCompile(fmt.Sprintf("%s/%s", pipelinesascode.GroupName, taskAnnotationsRegexp))
@@ -76,7 +76,7 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, vcsintf webvcs
 			return ret, err
 		}
 		for _, v := range tasks {
-			task, err := rt.getTask(ctx, vcsintf, v)
+			task, err := rt.getTask(ctx, providerintf, v)
 			if err != nil {
 				return ret, err
 			}

@@ -19,36 +19,42 @@ func TestSecretFromRepository(t *testing.T) {
 	tests := []struct {
 		name           string
 		repo           *apipac.Repository
-		vcsconfig      *info.VCSConfig
+		providerconfig *info.ProviderConfig
 		logmatch       []*regexp.Regexp
 		expectedSecret string
+		providerType   string
 	}{
 		{
 			name: "config default",
-			vcsconfig: &info.VCSConfig{
+			providerconfig: &info.ProviderConfig{
 				APIURL: "https://apiurl.default",
 			},
 			expectedSecret: "configdefault",
 			repo: &apipac.Repository{
 				Spec: apipac.RepositorySpec{
-					WebvcsAPISecret: &apipac.WebvcsSecretSpec{
-						Name: "repo-secret",
+					GitProvider: &apipac.GitProvider{
+						Secret: &apipac.GitProviderSecret{
+							Name: "repo-secret",
+						},
 					},
 				},
 			},
+			providerType: "lalala",
 			logmatch: []*regexp.Regexp{
-				regexp.MustCompile("^Using webvcs: url=https://apiurl.default user= token-secret=repo-secret in token-key=" + defaultWebvcsAPISecretKey),
+				regexp.MustCompile("^Using git provider lalala: url=https://apiurl.default user= token-secret=repo-secret in token-key=" + defaultGitProviderSecretKey),
 			},
 		},
 		{
 			name: "set api url",
-			vcsconfig: &info.VCSConfig{
+			providerconfig: &info.ProviderConfig{
 				APIURL: "https://donotwant",
 			},
 			repo: &apipac.Repository{
 				Spec: apipac.RepositorySpec{
-					WebvcsAPIURL:    "https://dowant",
-					WebvcsAPISecret: &apipac.WebvcsSecretSpec{},
+					GitProvider: &apipac.GitProvider{
+						URL:    "https://dowant",
+						Secret: &apipac.GitProviderSecret{},
+					},
 				},
 			},
 			expectedSecret: "setapiurl",
@@ -57,12 +63,14 @@ func TestSecretFromRepository(t *testing.T) {
 			},
 		},
 		{
-			name:      "set user",
-			vcsconfig: &info.VCSConfig{},
+			name:           "set user",
+			providerconfig: &info.ProviderConfig{},
 			repo: &apipac.Repository{
 				Spec: apipac.RepositorySpec{
-					WebvcsAPIUser:   "userfoo",
-					WebvcsAPISecret: &apipac.WebvcsSecretSpec{},
+					GitProvider: &apipac.GitProvider{
+						User:   "userfoo",
+						Secret: &apipac.GitProviderSecret{},
+					},
 				},
 			},
 			expectedSecret: "set user",
@@ -84,19 +92,21 @@ func TestSecretFromRepository(t *testing.T) {
 					Log: logger,
 				},
 				Info: info.Info{
-					Pac: &info.PacOpts{},
+					Pac: &info.PacOpts{
+						WebhookType: tt.providerType,
+					},
 				},
 			}
 
-			err := secretFromRepository(ctx, cs, k8int, tt.vcsconfig, tt.repo)
+			err := secretFromRepository(ctx, cs, k8int, tt.providerconfig, tt.repo)
 			assert.NilError(t, err)
 			logs := log.TakeAll()
 			assert.Equal(t, len(tt.logmatch), len(logs), "we didn't get the number of logging message: %+v", logs)
 			for key, value := range logs {
 				assert.Assert(t, tt.logmatch[key].MatchString(value.Message), "no match on logs %s => %s", tt.logmatch[key], value.Message)
 			}
-			assert.Assert(t, cs.Info.Pac.VCSInfoFromRepo)
-			assert.Equal(t, tt.expectedSecret, cs.Info.Pac.VCSToken)
+			assert.Assert(t, cs.Info.Pac.ProviderInfoFromRepo)
+			assert.Equal(t, tt.expectedSecret, cs.Info.Pac.ProviderToken)
 		})
 	}
 }

@@ -48,7 +48,7 @@ TRIGGER_TARGET=pull_request
 TMP=$(mktemp /tmp/.mm.XXXXXX)
 PAYLOAD_FILE=/tmp/payload-pullrequest-${OWNER}-${REPOSITORY}.json
 
-export PAC_WEBVCS_TYPE="bitbucket-cloud"
+export PAC_GIT_PROVIDER_TYPE="bitbucket-cloud"
 export PAC_SECRET_AUTO_CREATE=true
 export PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP=true
 export PAC_SOURCE_IP="1.2.3.4,127.0.0.1"

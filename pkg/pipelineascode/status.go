@@ -7,8 +7,8 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -53,7 +53,7 @@ func updateRepoRunStatus(ctx context.Context, cs *params.Run, pr *tektonv1beta1.
 	return nil
 }
 
-func postFinalStatus(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, createdPR *tektonv1beta1.PipelineRun) (
+func postFinalStatus(ctx context.Context, cs *params.Run, providerintf provider.Interface, createdPR *tektonv1beta1.PipelineRun) (
 	*tektonv1beta1.PipelineRun, error) {
 	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(createdPR.GetNamespace()).Get(
 		ctx, createdPR.GetName(), metav1.GetOptions{},
@@ -62,12 +62,12 @@ func postFinalStatus(ctx context.Context, cs *params.Run, vcsintf webvcs.Interfa
 		return pr, err
 	}
 
-	taskStatus, err := sort.TaskStatusTmpl(pr, cs.Clients.ConsoleUI, vcsintf.GetConfig().TaskStatusTMPL)
+	taskStatus, err := sort.TaskStatusTmpl(pr, cs.Clients.ConsoleUI, providerintf.GetConfig().TaskStatusTMPL)
 	if err != nil {
 		return pr, err
 	}
 
-	status := webvcs.StatusOpts{
+	status := provider.StatusOpts{
 		Status:          "completed",
 		Conclusion:      formatting.PipelineRunStatus(pr),
 		Text:            taskStatus,
@@ -75,7 +75,7 @@ func postFinalStatus(ctx context.Context, cs *params.Run, vcsintf webvcs.Interfa
 		DetailsURL:      cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
 	}
 
-	err = vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status)
+	err = providerintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status)
 	cs.Clients.Log.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)
 	return pr, err
 }

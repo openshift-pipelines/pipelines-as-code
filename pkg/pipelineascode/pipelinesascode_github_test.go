@@ -17,13 +17,13 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testDynamic "github.com/openshift-pipelines/pipelines-as-code/pkg/test/dynamic"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	ghwebvcs "github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs/github"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -131,7 +131,7 @@ func TestRun(t *testing.T) {
 		repositories                 []*v1alpha1.Repository
 		skipReplyingOrgPublicMembers bool
 		expectedNumberofCleanups     int
-		VCSInfoFromRepo              bool
+		ProviderInfoFromRepo         bool
 	}{
 		{
 			name: "pull request/apps",
@@ -166,10 +166,10 @@ func TestRun(t *testing.T) {
 				Sender:     "fantasio",
 				EventType:  "pull_request",
 			},
-			tektondir:       "testdata/pull_request",
-			finalStatus:     "neutral",
-			finalStatusText: "<th>Status</th><th>Duration</th><th>Name</th>",
-			VCSInfoFromRepo: true,
+			tektondir:            "testdata/pull_request",
+			finalStatus:          "neutral",
+			finalStatusText:      "<th>Status</th><th>Duration</th><th>Name</th>",
+			ProviderInfoFromRepo: true,
 		},
 		{
 			name: "No match",
@@ -320,9 +320,9 @@ func TestRun(t *testing.T) {
 			fakeclient, mux, ghTestServerURL, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 
-			var secretName, vcsURL string
-			if tt.VCSInfoFromRepo {
-				vcsURL = ghTestServerURL
+			var secretName, providerURL string
+			if tt.ProviderInfoFromRepo {
+				providerURL = ghTestServerURL
 				secretName = "ziesecretee"
 			}
 
@@ -334,7 +334,7 @@ func TestRun(t *testing.T) {
 							URL:              tt.runevent.URL,
 							InstallNamespace: "namespace",
 							SecretName:       secretName,
-							VcsURL:           vcsURL,
+							ProviderURL:      providerURL,
 						},
 					),
 				}
@@ -377,20 +377,21 @@ func TestRun(t *testing.T) {
 				Info: info.Info{
 					Event: &tt.runevent,
 					Pac: &info.PacOpts{
-						VCSInfoFromRepo:    tt.VCSInfoFromRepo,
-						SecretAutoCreation: true,
-						VCSAPIURL:          ghTestServerURL,
-						VCSToken:           "NONE",
+						ProviderInfoFromRepo: tt.ProviderInfoFromRepo,
+						SecretAutoCreation:   true,
+						ProviderURL:          ghTestServerURL,
+						ProviderToken:        "NONE",
 					},
 				},
 			}
+
 			k8int := &kitesthelper.KinterfaceTest{
 				ConsoleURL:               "https://console.url",
 				ExpectedNumberofCleanups: tt.expectedNumberofCleanups,
 				GetSecretResult:          secretName,
 			}
 
-			err := Run(ctx, cs, &ghwebvcs.VCS{
+			err := Run(ctx, cs, &ghprovider.Provider{
 				Client: fakeclient,
 				Token:  github.String("None"),
 			}, k8int)
@@ -401,7 +402,6 @@ func TestRun(t *testing.T) {
 			}
 
 			assert.NilError(t, err)
-			// assert.Assert(t, len(log.TakeAll()) > 0)
 
 			if tt.finalStatus != "skipped" {
 				got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(

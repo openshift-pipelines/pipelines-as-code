@@ -1,6 +1,6 @@
 package info
 
-type VCSConfig struct {
+type ProviderConfig struct {
 	TaskStatusTMPL string
 	APIURL         string
 }

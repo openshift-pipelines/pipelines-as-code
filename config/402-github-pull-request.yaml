@@ -171,9 +171,9 @@ spec:
                 steps:
                   - name: apply-and-launch
                     env:
-                      - name: PAC_WEBVCS_APIURL
+                      - name: PAC_GIT_PROVIDER_APIURL
                         value: $(params.ghe_host)
-                      - name: PAC_WEBVCS_TYPE
+                      - name: PAC_GIT_PROVIDER_TYPE
                         value: "github"
                       - name: PAC_INSTALLATION_ID
                         value: $(params.installation_id)

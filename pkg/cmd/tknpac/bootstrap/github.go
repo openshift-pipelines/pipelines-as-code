@@ -44,9 +44,9 @@ func getGHClient(opts *bootstrapOpts) (*github.Client, error) {
 		return github.NewClient(nil), nil
 	}
 
-	gvcs, err := github.NewEnterpriseClient(opts.GithubAPIURL, "", nil)
+	gprovider, err := github.NewEnterpriseClient(opts.GithubAPIURL, "", nil)
 	if err != nil {
 		return nil, err
 	}
-	return gvcs, nil
+	return gprovider, nil
 }

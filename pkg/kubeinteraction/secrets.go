@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -47,9 +47,9 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 		return fmt.Errorf("cannot parse url %s: %w", cloneURL, err)
 	}
 
-	gitUser := webvcs.DefaultWebvcsAPIUser
-	if pacopts.VCSUser != "" {
-		gitUser = pacopts.VCSUser
+	gitUser := provider.DefaultProviderAPIUser
+	if pacopts.ProviderUser != "" {
+		gitUser = pacopts.ProviderUser
 	}
 
 	// Bitbucket server token have / into it, so unless we do urlquote them it's
@@ -61,7 +61,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 	//
 	// maybe we could patch the git-clone task too but that probably be a pain
 	// in the tuchus to do it in shell.
-	token := url.QueryEscape(pacopts.VCSToken)
+	token := url.QueryEscape(pacopts.ProviderToken)
 
 	urlWithToken := fmt.Sprintf("%s://%s:%s@%s%s", repoURL.Scheme, gitUser, token, repoURL.Host, repoURL.Path)
 	secretData := map[string]string{

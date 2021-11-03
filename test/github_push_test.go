@@ -28,7 +28,7 @@ func TestGithubPush(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		runcnx, opts, gvcs, err := githubSetup(ctx, onWebhook)
+		runcnx, opts, gprovider, err := githubSetup(ctx, onWebhook)
 		assert.NilError(t, err)
 
 		if onWebhook {
@@ -37,7 +37,7 @@ func TestGithubPush(t *testing.T) {
 			runcnx.Clients.Log.Info("Testing with Github APPS integration")
 		}
 
-		repoinfo, err := createGithubRepoCRD(ctx, t, gvcs, runcnx, opts, targetNS)
+		repoinfo, err := createGithubRepoCRD(ctx, t, gprovider, runcnx, opts, targetNS)
 		assert.NilError(t, err)
 
 		entries, err := getEntries("testdata/pipelinerun-on-push.yaml", targetNS, targetBranch, targetEvent)
@@ -50,10 +50,10 @@ func TestGithubPush(t *testing.T) {
 		title += "- " + targetBranch
 
 		targetRefName := fmt.Sprintf("refs/heads/%s", targetBranch)
-		sha, err := tgithub.PushFilesToRef(ctx, gvcs.Client, title, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
+		sha, err := tgithub.PushFilesToRef(ctx, gprovider.Client, title, repoinfo.GetDefaultBranch(), targetRefName, opts.Owner, opts.Repo, entries)
 		runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 		assert.NilError(t, err)
-		defer ghtearDown(ctx, t, runcnx, gvcs, -1, targetRefName, targetNS, opts)
+		defer ghtearDown(ctx, t, runcnx, gprovider, -1, targetRefName, targetNS, opts)
 
 		runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 		waitOpts := twait.Opts{

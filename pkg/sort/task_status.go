@@ -36,7 +36,7 @@ func (trs taskrunList) Less(i, j int) bool {
 	return trs[j].Status.StartTime.Before(trs[i].Status.StartTime)
 }
 
-// TaskStatusTmpl generate a template of all status of a taskruns sorted to a statusTemplate as defined by the VCS
+// TaskStatusTmpl generate a template of all status of a taskruns sorted to a statusTemplate as defined by the git provider
 func TaskStatusTmpl(pr *tektonv1beta1.PipelineRun, console consoleui.Interface, statusTemplate string) (string, error) {
 	trl := taskrunList{}
 	outputBuffer := bytes.Buffer{}

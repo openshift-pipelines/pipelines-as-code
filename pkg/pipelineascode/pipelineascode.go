@@ -10,9 +10,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/webvcs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,7 +28,7 @@ const (
 // The time to wait for a pipelineRun, maybe we should not restrict this?
 const pipelineRunTimeout = 2 * time.Hour
 
-func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int kubeinteraction.Interface) error {
+func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k8int kubeinteraction.Interface) error {
 	var err error
 
 	// Match the Event URL to a Repository URL,
@@ -41,45 +41,47 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		msg := fmt.Sprintf("could not find a namespace match for %s", cs.Info.Event.URL)
 		cs.Clients.Log.Warn(msg)
 
-		if cs.Info.Pac.VCSToken == "" {
+		if cs.Info.Pac.ProviderToken == "" {
 			cs.Clients.Log.Warn("cannot set status since not token has been set")
 			return nil
 		}
 
-		status := webvcs.StatusOpts{
+		status := provider.StatusOpts{
 			Status:     "completed",
 			Conclusion: "skipped",
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
 		}
-		if err := vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
+		if err := providerintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
 			return fmt.Errorf("failed to run create status on repo not found: %w", err)
 		}
 		return nil
 	}
 
-	if repo.Spec.WebvcsAPISecret != nil {
-		err := secretFromRepository(ctx, cs, k8int, vcsintf.GetConfig(), repo)
+	if repo.Spec.GitProvider != nil && repo.Spec.GitProvider.URL != "" {
+		err := secretFromRepository(ctx, cs, k8int, providerintf.GetConfig(), repo)
 		if err != nil {
 			return err
 		}
+	} else {
+		cs.Clients.Log.Infof("Using git provider %s", cs.Info.Pac.WebhookType)
 	}
 
 	// Set the client, we should error out if there is a problem with
 	// token or secret or we won't be able to do much.
-	err = vcsintf.SetClient(ctx, cs.Info.Pac)
+	err = providerintf.SetClient(ctx, cs.Info.Pac)
 	if err != nil {
 		return err
 	}
 
 	// Get the SHA commit info, we want to get the URL and commit title
-	err = vcsintf.GetCommitInfo(ctx, cs.Info.Event)
+	err = providerintf.GetCommitInfo(ctx, cs.Info.Event)
 	if err != nil {
 		return err
 	}
 
 	// Check if the submitter is allowed to run this.
-	allowed, err := vcsintf.IsAllowed(ctx, cs.Info.Event)
+	allowed, err := providerintf.IsAllowed(ctx, cs.Info.Event)
 	if err != nil {
 		return err
 	}
@@ -90,31 +92,31 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 			msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", cs.Info.Event.Sender,
 				cs.Info.Event.AccountID)
 		}
-		status := webvcs.StatusOpts{
+		status := provider.StatusOpts{
 			Status:     "completed",
 			Conclusion: "skipped",
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/police-cat-gifs",
 		}
-		if err := vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
+		if err := providerintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
 			return fmt.Errorf("failed to run create status on not allowed to run: %w", err)
 		}
 		return nil
 	}
 
 	// Get everything in tekton directory
-	allTemplates, err := vcsintf.GetTektonDir(ctx, cs.Info.Event, tektonDir)
+	allTemplates, err := providerintf.GetTektonDir(ctx, cs.Info.Event, tektonDir)
 	if allTemplates == "" || err != nil {
 		msg := fmt.Sprintf("%s - Could not find a **.tekton/** directory for this repository", cs.Info.Pac.ApplicationName)
 		cs.Clients.Log.Info(msg)
 
-		status := webvcs.StatusOpts{
+		status := provider.StatusOpts{
 			Status:     "completed",
 			Conclusion: "skipped",
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
 		}
-		if err := vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
+		if err := providerintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
 			return fmt.Errorf("failed to run create status on could not find .tekton: %w", err)
 		}
 		return nil
@@ -128,7 +130,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 		RemoteTasks:  true, // TODO: add an option to disable remote tasking,
 	}
 	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
-	pipelineRuns, err := resolve.Resolve(ctx, cs, vcsintf, allTemplates, ropt)
+	pipelineRuns, err := resolve.Resolve(ctx, cs, providerintf, allTemplates, ropt)
 	if err != nil {
 		return err
 	}
@@ -166,20 +168,19 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 	consoleURL := cs.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
 	// Create status with the log url
 	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), repo.GetNamespace(), consoleURL, repo.GetNamespace(), pr.GetName())
-	status := webvcs.StatusOpts{
+	status := provider.StatusOpts{
 		Status:          "in_progress",
 		Conclusion:      "pending",
 		Text:            msg,
 		DetailsURL:      consoleURL,
 		PipelineRunName: pr.GetName(),
 	}
-	if err := vcsintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
-		return fmt.Errorf("cannot create a in_progress WebVCS status: %w", err)
+	if err := providerintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
+		return fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
 	}
 
 	cs.Clients.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes",
-		pr.Namespace, pr.Name,
-		formatting.HumanDuration(pipelineRunTimeout))
+		pr.Namespace, pr.Name, formatting.HumanDuration(pipelineRunTimeout))
 	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, pipelineRunTimeout); err != nil {
 		cs.Clients.Log.Warnf("pipelinerun %s in namespace %s has a failed status",
 			pipelineRun.GetGenerateName(), repo.GetNamespace())
@@ -200,7 +201,7 @@ func Run(ctx context.Context, cs *params.Run, vcsintf webvcs.Interface, k8int ku
 
 	// Post the final status to GitHub check status with a nice breakdown and
 	// tekton cli describe output.
-	newPr, err := postFinalStatus(ctx, cs, vcsintf, pr)
+	newPr, err := postFinalStatus(ctx, cs, providerintf, pr)
 	if err != nil {
 		return err
 	}
