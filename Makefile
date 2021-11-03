@@ -4,12 +4,18 @@ QUAY_REPOSITORY_BRANCH=main
 GO_TEST_FLAGS=-v -cover
 GOLANGCI_LINT=golangci-lint
 GOFUMPT=gofumpt
+LDFLAGS=
 
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
 
-ifneq ($(FLAGS),)
-	LDFLAGS := -ldflags "$(FLAGS)"
+ifneq ($(VERSION),)
+	FLAGS += -X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version=$(VERSION)
 endif
+
+ifneq ($(FLAGS),)
+	LDFLAGS += -ldflags "-s -w $(FLAGS)"
+endif
+
 
 all: bin/pipelines-as-code bin/tkn-pac test
 

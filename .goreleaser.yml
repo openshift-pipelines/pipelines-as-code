@@ -12,6 +12,10 @@ builds:
     goarch:
       - amd64
       - arm64
+    ldflags:
+      - -w
+      - -s
+      - -X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version={{.Version}}
 archives:
   - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     replacements:

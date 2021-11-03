@@ -7,6 +7,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/version"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/spf13/cobra"
 )
@@ -22,6 +23,7 @@ func Root(clients *params.Run) *cobra.Command {
 
 	ioStreams := cli.NewIOStreams()
 
+	cmd.AddCommand(version.Command(ioStreams))
 	cmd.AddCommand(repository.Root(clients, ioStreams))
 	cmd.AddCommand(resolve.Command(clients))
 	cmd.AddCommand(completion.Command())

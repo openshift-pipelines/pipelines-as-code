@@ -9,6 +9,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/version"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
@@ -115,6 +116,7 @@ func runWrap(ctx context.Context, cs *params.Run, vcx provider.Interface, kinter
 		return err
 	}
 
+	cs.Clients.Log.Infof("Starting Pipelines as Code version: %s", version.Version)
 	err = pipelineascode.Run(ctx, cs, vcx, kinteract)
 	if err != nil {
 		createStatusErr := vcx.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, provider.StatusOpts{

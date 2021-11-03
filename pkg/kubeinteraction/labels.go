@@ -7,6 +7,7 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/version"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
@@ -15,6 +16,7 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.Pipel
 	// query them.
 	labels := map[string]string{
 		"app.kubernetes.io/managed-by":                             pipelinesascode.GroupName,
+		"app.kubernetes.io/version":                                version.Version,
 		filepath.Join(pipelinesascode.GroupName, "url-org"):        formatting.K8LabelsCleanup(event.Organization),
 		filepath.Join(pipelinesascode.GroupName, "url-repository"): formatting.K8LabelsCleanup(event.Repository),
 		filepath.Join(pipelinesascode.GroupName, "sha"):            formatting.K8LabelsCleanup(event.SHA),
