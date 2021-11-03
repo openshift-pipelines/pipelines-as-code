@@ -5,19 +5,16 @@ GO_TEST_FLAGS=-v -cover
 GOLANGCI_LINT=golangci-lint
 GOFUMPT=gofumpt
 LDFLAGS=
+OUTPUT_DIR=bin
 
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
 
-ifneq ($(VERSION),)
-	FLAGS += -X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version=$(VERSION)
+ifeq ($(TKN_PAC_VERSION),)
+	TKN_PAC_VERSION="$(shell git describe --tags --exact-match 2>/dev/null || echo nightly-`date +'%Y%m%d'`-`git rev-parse --short HEAD`)"
 endif
+FLAGS += -ldflags "-X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version=$(TKN_PAC_VERSION) $(LDFLAGS)"
 
-ifneq ($(FLAGS),)
-	LDFLAGS += -ldflags "-s -w $(FLAGS)"
-endif
-
-
-all: bin/pipelines-as-code bin/tkn-pac test
+all: $(OUTPUT_DIR)/pipelines-as-code $(OUTPUT_DIR)/tkn-pac test
 
 FORCE:
 
@@ -25,8 +22,8 @@ FORCE:
 vendor:
 	go mod tidy && go mod vendor
 
-bin/%: cmd/% FORCE
-	go build -mod=vendor $(LDFLAGS) -v -o $@ ./$<
+$(OUTPUT_DIR)/%: cmd/% FORCE
+	go build -mod=vendor $(FLAGS)  -v -o $@ ./$<
 
 .PHONY: releaseyaml
 releaseyaml: ## Generate release.yaml, use it like this `make releaseyaml|kubectl apply -f-`
@@ -87,7 +84,7 @@ html-coverage: ./vendor ## generate html coverage
 
 .PHONY: clean
 clean: ## clean build artifacts
-	rm -fR bin VERSION
+	rm -fR bin 
 
 .PHONY: fmt ## formats the GO code(excludes vendors dir)
 fmt:
