@@ -130,7 +130,7 @@ Using Pipelines as Code via Github webhook does not give you access to the GitHu
 the tasks will be added as a Comment of the PR and not via the **Checks** Tab.
 
 * You have to first install the Pipelines-as-Code infrastructure as detailled
-  here : [Install infrastructure](INSTALL.md#install-pipelines-as-code-infrastructure)
+  here : [Install infrastructure](install.md#install-pipelines-as-code-infrastructure)
 
 * You will have to generate a personal token for Pipelines-as-Code Github API operations. Follow this guide to create a
   personal token :
@@ -212,7 +212,7 @@ Server](https://www.atlassian.com/software/bitbucket/enterprise).
 Pipelines-As-Code has a full support on Bitbucket Cloud on <https://bitbucket.org>
 
 * You have to first install the Pipelines-as-Code infrastructure as detailled
-  here : [Install infrastructure](INSTALL.md#install-pipelines-as-code-infrastructure)
+  here : [Install infrastructure](install.md#install-pipelines-as-code-infrastructure)
 
 * You will have to generate a personal token as the manager of the Project,
   follow the steps here :
@@ -300,7 +300,7 @@ Pipelines-As-Code has a full support on Bitbucket Cloud on
 
 * You have to first install the Pipelines-as-Code infrastructure as detailled
   here : [Install
-  infrastructure](INSTALL.md#install-pipelines-as-code-infrastructure)
+  infrastructure](install.md#install-pipelines-as-code-infrastructure)
 
 * You will have to generate an app password for Pipelines-as-Code Bitbucket API
   operations. Follow this guide to create an app password :
@@ -442,6 +442,5 @@ set to the full url of the `Ingress` host to get tekton dashboard logs url.
 ## CLI
 
 `Pipelines as Code` provide a CLI which is designed to work as tkn plugin. To
-install the plugin see the instruction below.
-
-See the [CLI](./cli.md) for the documentation on the CLI and how to install it.
+install the plugin follow the instruction from the [CLI](./cli.md)
+documentation.
