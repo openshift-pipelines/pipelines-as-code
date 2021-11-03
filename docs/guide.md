@@ -226,7 +226,7 @@ automatically use it to be able to clone the private repository.
 You can see as well a full example [here](./test/testdata/pipelinerun_git_clone_private.yaml)
 
 This behaviour can be disabled by configuration the `secret-auto-create` key
-inside the [Pipelines-as-Code Configmap](./INSTALL.md#configuration).
+inside the [Pipelines-as-Code Configmap](./install.md#configuration).
 
 ## Pipelines as Code resolver
 
@@ -450,34 +450,4 @@ here :
 ## CLI
 
 `Pipelines as Code` provide a CLI which is design to work as tkn plugin. See the
-installation instruction in the [INSTALL.md](./INSTALL.md#CLI)
-documentation
-
-### CLI commands
-
-```shell
-tkn pac help
-```
-
-You can easily create a new repo CR with the command :
-
-```shell
-tkn pac repo create
-```
-
-It will detect your current GIT repo URL and branch your current namespace and
-ask you for a target, it will ask you if you want to create sample pipelinerun
-for you to customize it.
-
-for example to list all repo status in your system (if you have the right for
-it) :
-
-```shell
-tkn pac repo ls --all-namespaces
-```
-
-and to dig into a specific repository status:
-
-```shell
-tkn pac repo desc repository-name -n namespace
-```
+installation instruction  on how to install and use it [here](./cli.md).

@@ -42,7 +42,7 @@ Pipelines as Code features:
 
 The easiest way to get started is to use the `tkn pac` CLI and its bootstrap command.
 
-Download and install first the tkn-pac CLI following [these instructions](./docs/CLI#install).
+Download and install first the tkn-pac CLI following [these instructions](./docs/cli#install).
 
 Connected to your cluster launch the command :
 
@@ -57,7 +57,7 @@ This 10 minute video will guide you thought the `tkn-pac bootstrap` flow :
 
 [![Getting started to Pipelines as Code](https://img.youtube.com/vi/ytm3brml8is/0.jpg)](https://www.youtube.com/watch?v=ytm3brml8is)
 
-For more details on the different installation method please follow [this document](docs/INSTALL.md) for installing Pipelines as Code on OpenShift.
+For more details on the different installation method please follow [this document](docs/install.md) for installing Pipelines as Code on OpenShift.
 
 ## Getting Started
 
@@ -98,12 +98,12 @@ PipelineRuns for your GitHub repository should run. It also generates an example
 Commit and push the pipeline to your repo to start using pipelines as code.
 
 Note that even if Github application is the preferred method, Pipeline As Code
-supports Github Webhook and Bitbucket Server/Cloud as well, see the [INSTALL guide](docs/INSTALL.md) for
+supports Github Webhook and Bitbucket Server/Cloud as well, see the [INSTALL guide](docs/install.md) for
 reference
 
 ## Usage Guide
 
-The usage guide [here](./docs/GUIDE.md) offer a comprehenive documentatiuon on how to use and configure Pipeline As Code.
+The usage guide [here](./docs/guide.md) offer a comprehenive documentatiuon on how to use and configure Pipeline As Code.
 
 A walkthought video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
 
