@@ -172,22 +172,6 @@ func TestRun(t *testing.T) {
 			ProviderInfoFromRepo: true,
 		},
 		{
-			name: "No match",
-			runevent: info.Event{
-				SHA:          "principale",
-				Organization: "organizationes",
-				Repository:   "lagaffe",
-				URL:          "https://service/documentation",
-				HeadBranch:   "press",
-				Sender:       "fantasio",
-				BaseBranch:   "nomatch",
-				EventType:    "pull_request",
-			},
-			tektondir:   "testdata/pull_request",
-			wantErr:     "cannot match pipeline from webhook to pipelineruns",
-			finalStatus: "neutral",
-		},
-		{
 			name: "Push/branch",
 			runevent: info.Event{
 				SHA:          "principale",
@@ -407,7 +391,8 @@ func TestRun(t *testing.T) {
 				got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(
 					ctx, "test-run", metav1.GetOptions{})
 				assert.NilError(t, err)
-				assert.Assert(t, got.Status[len(got.Status)-1].PipelineRunName != "pipelinerun1")
+				assert.Assert(t, got.Status[len(got.Status)-1].PipelineRunName != "pipelinerun1", "'%s'!='%s'",
+					got.Status[len(got.Status)-1].PipelineRunName, "pipelinerun1")
 			}
 		})
 	}

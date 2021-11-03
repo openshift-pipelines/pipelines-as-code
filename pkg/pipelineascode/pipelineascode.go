@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -23,10 +24,9 @@ const (
   <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
   the command line with :
 	<br><code>tkn pr logs -f -n %s %s</code>`
+	// The time to wait for a pipelineRun, maybe we should not restrict this?
+	pipelineRunTimeout = 2 * time.Hour
 )
-
-// The time to wait for a pipelineRun, maybe we should not restrict this?
-const pipelineRunTimeout = 2 * time.Hour
 
 func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k8int kubeinteraction.Interface) error {
 	var err error
@@ -104,41 +104,22 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 		return nil
 	}
 
-	// Get everything in tekton directory
-	allTemplates, err := providerintf.GetTektonDir(ctx, cs.Info.Event, tektonDir)
-	if allTemplates == "" || err != nil {
-		msg := fmt.Sprintf("%s - Could not find a **.tekton/** directory for this repository", cs.Info.Pac.ApplicationName)
-		cs.Clients.Log.Info(msg)
-
-		status := provider.StatusOpts{
-			Status:     "completed",
-			Conclusion: "skipped",
-			Text:       msg,
-			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
-		}
-		if err := providerintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
-			return fmt.Errorf("failed to run create status on could not find .tekton: %w", err)
-		}
-		return nil
-	}
-
-	// Replace those {{var}} placeholders user has in her template to the cs.Info variable
-	allTemplates = templates.Process(cs.Info.Event, allTemplates)
-
-	ropt := &resolve.Opts{
-		GenerateName: true,
-		RemoteTasks:  true, // TODO: add an option to disable remote tasking,
-	}
-	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
-	pipelineRuns, err := resolve.Resolve(ctx, cs, providerintf, allTemplates, ropt)
+	pipelineRuns, err := getAllPipelineRuns(ctx, cs, providerintf)
 	if err != nil {
 		return err
+	}
+	if pipelineRuns == nil {
+		msg := fmt.Sprintf("could not find templates in %s/ directory for this repository", tektonDir)
+		cs.Clients.Log.Info(msg)
+		return nil
 	}
 
 	// Match the pipelinerun with annotation
 	pipelineRun, annotationRepo, config, err := matcher.MatchPipelinerunByAnnotation(ctx, pipelineRuns, cs)
 	if err != nil {
-		return err
+		// Don't fail when you don't have a match between pipeline and annotations
+		cs.Clients.Log.Warn(err.Error())
+		return nil
 	}
 
 	if annotationRepo.Spec.URL != "" {
@@ -207,4 +188,22 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 	}
 
 	return updateRepoRunStatus(ctx, cs, newPr, repo)
+}
+
+func getAllPipelineRuns(ctx context.Context, cs *params.Run, providerintf provider.Interface) ([]*tektonv1beta1.PipelineRun, error) {
+	// Get everything in tekton directory
+	allTemplates, err := providerintf.GetTektonDir(ctx, cs.Info.Event, tektonDir)
+	if allTemplates == "" || err != nil {
+		// nolint: nilerr
+		return nil, nil
+	}
+
+	// Replace those {{var}} placeholders user has in her template to the cs.Info variable
+	allTemplates = templates.Process(cs.Info.Event, allTemplates)
+
+	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
+	return resolve.Resolve(ctx, cs, providerintf, allTemplates, &resolve.Opts{
+		GenerateName: true,
+		RemoteTasks:  true, // TODO: add an option to disable remote tasking,
+	})
 }

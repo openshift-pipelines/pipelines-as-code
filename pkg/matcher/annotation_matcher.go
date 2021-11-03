@@ -115,15 +115,15 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 		return prun, repo, configurations[prun.GetGenerateName()], nil
 	}
 
-	cs.Clients.Log.Warn("could not find a match to a pipelinerun in .tekton/ dir")
+	cs.Clients.Log.Warn("could not find a match to a pipelinerun in the .tekton/ dir")
 	cs.Clients.Log.Warn("available configuration in pipelineRuns annotations")
-	for prunname, maps := range configurations {
+	for name, maps := range configurations {
 		cs.Clients.Log.Infof("pipelineRun: %s, target-branch=%s, target-event=%s",
-			prunname, maps["target-branch"], maps["target-event"])
+			name, maps["target-branch"], maps["target-event"])
 	}
 
 	// TODO: more descriptive error message
-	return nil, nil, map[string]string{}, fmt.Errorf("cannot match pipeline from webhook to pipelineruns")
+	return nil, nil, map[string]string{}, fmt.Errorf("cannot match pipeline from webhook to pipelineruns on event=%s, branch=%s", cs.Info.Event.EventType, cs.Info.Event.BaseBranch)
 }
 
 func matchOnAnnotation(annotations string, eventType string, branchMatching bool) (bool, error) {
