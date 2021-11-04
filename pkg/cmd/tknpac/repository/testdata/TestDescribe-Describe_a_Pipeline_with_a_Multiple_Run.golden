@@ -2,8 +2,9 @@ Name:        test-run
 Namespace:   namespace
 URL:         https://anurl.com
 
-Last Run: Success
+Last Run: 
 
+Status:         Success
 PipelineRun:    pipelinerun1
 Event:          pull_request
 Branch:         TargetBranch
@@ -17,4 +18,3 @@ Other Runs:
 STATUS    Event          Branch          SHA    STARTED TIME    DURATION   PIPELINERUN
 ――――――    ―――――          ――――――          ―――    ――――――――――――    ――――――――   ―――――――――――
 Success   pull_request   TargetBranch   SHA2   18 minutes ago   1 minute   pipelinerun2
-

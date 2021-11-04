@@ -72,6 +72,8 @@ func (c *ColorScheme) ColorStatus(status string) string {
 		return c.Red(status)
 	case "norun":
 		return c.Dimmed(status)
+	case "running":
+		return c.Yellow(status)
 	}
 	return status
 }

@@ -16,6 +16,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,11 +39,14 @@ func newIOStream() (*cli.IOStreams, *bytes.Buffer) {
 
 func TestDescribe(t *testing.T) {
 	cw := clockwork.NewFakeClock()
+	ns := "ns"
+	running := tektonv1beta1.PipelineRunReasonRunning.String()
 	type args struct {
 		currentNamespace string
 		repoName         string
 		statuses         []v1alpha1.RepositoryRunStatus
 		opts             *cli.PacCliOpts
+		pruns            []*tektonv1beta1.PipelineRun
 	}
 	tests := []struct {
 		name    string
@@ -49,11 +54,18 @@ func TestDescribe(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Describe a Pipeline with a Single Run",
+			name: "Describe a Pipeline with a Live Run and a Repository Run",
 			args: args{
 				repoName:         "test-run",
-				currentNamespace: "namespace",
+				currentNamespace: ns,
 				opts:             &cli.PacCliOpts{},
+				pruns: []*tektonv1beta1.PipelineRun{
+					tektontest.MakePRCompletion(cw, "running", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "tartanpion",
+						}, 30),
+				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
 						Status: v1beta1.Status{
@@ -181,6 +193,7 @@ func TestDescribe(t *testing.T) {
 						},
 					},
 				},
+				PipelineRuns: tt.args.pruns,
 				Repositories: repositories,
 			}
 			ctx, _ := rtesting.SetupFakeContext(t)
@@ -188,6 +201,7 @@ func TestDescribe(t *testing.T) {
 			cs := &params.Run{
 				Clients: clients.Clients{
 					PipelineAsCode: stdata.PipelineAsCode,
+					Tekton:         stdata.Pipeline,
 				},
 				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.args.currentNamespace}},
 			}

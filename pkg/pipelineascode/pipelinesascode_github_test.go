@@ -337,7 +337,7 @@ func TestRun(t *testing.T) {
 						"first":  tektontest.MakePrTrStatus("first", 5),
 						"last":   tektontest.MakePrTrStatus("last", 15),
 						"middle": tektontest.MakePrTrStatus("middle", 10),
-					}),
+					}, nil),
 				},
 			}
 

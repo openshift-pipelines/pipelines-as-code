@@ -102,6 +102,7 @@ func TestCommands(t *testing.T) {
 				Clients: clients.Clients{
 					ClientInitialized: true,
 					PipelineAsCode:    stdata.PipelineAsCode,
+					Tekton:            stdata.Pipeline,
 				},
 			}
 			buf := new(bytes.Buffer)
