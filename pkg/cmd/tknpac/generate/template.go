@@ -56,25 +56,27 @@ var pipelineRunTmpl = `---
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: [[ .prName ]]
+  name: << .prName >>
   annotations:
-    # The event we are targeting (ie: pull_request, push)
-    pipelinesascode.tekton.dev/on-event: "[ [[ .event.EventType ]] ]"
+    # The event we are targeting as seen from the webhook payload
+    # this can be an array too, i.e: [pull_request, push]
+    pipelinesascode.tekton.dev/on-event: "<< .event.EventType >>"
 
     # The branch or tag we are targeting (ie: main, refs/tags/*)
-    pipelinesascode.tekton.dev/on-target-branch: "[ [[ .event.BaseBranch ]] ]"
+    pipelinesascode.tekton.dev/on-target-branch: "<< .event.BaseBranch >>"
 
-    # Fetch the git-clone task from hub, we are able to reference it with taskRef
-    pipelinesascode.tekton.dev/task: "[ git-clone ]"
-    [[- if .extra_task.AnnotationTask ]]
+    # Fetch the git-clone task from hub, we are able to reference later on it
+    # with taskRef and it will automatically be embedded into our pipeline.
+    pipelinesascode.tekton.dev/task: "git-clone"
+    <<- if .extra_task.AnnotationTask >>
 
-    # Task for [[.extra_task.Language ]]
-    pipelinesascode.tekton.dev/task-1: "[ [[ .extra_task.AnnotationTask ]] ]"
-    [[ end ]]
+    # Task for <<.extra_task.Language >>
+    pipelinesascode.tekton.dev/task-1: "[<< .extra_task.AnnotationTask >>]"
+    << end >>
     # You can add more tasks in here to reuse, browse the one you like from here
     # https://hub.tekton.dev/
     # example:
-    # pipelinesascode.tekton.dev/task-2: "[ maven, buildah ]"
+    # pipelinesascode.tekton.dev/task-2: "[maven, buildah]"
 
     # How many runs we want to keep attached to this event
     pipelinesascode.tekton.dev/max-keep-runs: "5"
@@ -106,8 +108,10 @@ spec:
           - name: url
             value: $(params.repo_url)
           - name: revision
-            value: $(params.revision)
-      [[ .extra_task.Task ]]
+            value: $(params.revision)      
+      << if .extra_task.Task>>
+      << .extra_task.Task >>
+      <<- end >>
       # Customize this task if you like, or just do a taskRef
       # to one of the hub task.
       - name: noop-task
@@ -141,7 +145,14 @@ spec:
       secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"
 `
 
-func (o *Opts) detectLanguage() langOpts {
+func (o *Opts) detectLanguage() (langOpts, error) {
+	if o.language != "" {
+		if _, ok := languageDetection[o.language]; !ok {
+			return langOpts{}, fmt.Errorf("no template available for %s", o.language)
+		}
+		return languageDetection[o.language], nil
+	}
+
 	cs := o.IOStreams.ColorScheme()
 	for _, v := range languageDetection {
 		fpath := filepath.Join(o.GitInfo.TopLevelPath, v.detectionFile)
@@ -150,22 +161,26 @@ func (o *Opts) detectLanguage() langOpts {
 				cs.SuccessIcon(),
 				cs.Bold(v.Language),
 			)
-			return v
+			return v, nil
 		}
 	}
-	return langOpts{}
+	return langOpts{}, nil
 }
 
 func (o *Opts) genTmpl() (bytes.Buffer, error) {
 	var outputBuffer bytes.Buffer
-	t := template.Must(template.New("PipelineRun").Delims("[[", "]]").Parse(pipelineRunTmpl))
+	t := template.Must(template.New("PipelineRun").Delims("<<", ">>").Parse(pipelineRunTmpl))
 	prName := fmt.Sprintf("%s-%s",
 		filepath.Base(o.GitInfo.URL),
 		strings.ReplaceAll(o.event.EventType, "_", "-"))
+	lang, err := o.detectLanguage()
+	if err != nil {
+		return bytes.Buffer{}, err
+	}
 	data := map[string]interface{}{
 		"prName":                  prName,
 		"event":                   o.event,
-		"extra_task":              o.detectLanguage(),
+		"extra_task":              lang,
 		"language_specific_tasks": "",
 	}
 	if err := t.Execute(&outputBuffer, data); err != nil {
