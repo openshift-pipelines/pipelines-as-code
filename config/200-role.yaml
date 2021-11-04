@@ -90,7 +90,7 @@ rules:
   # Permissions to list repositories on cluster
   - apiGroups: ["pipelinesascode.tekton.dev"]
     resources: ["repositories"]
-    verbs: ["get", "list", "update"]
+    verbs: ["create", "get", "list", "update"]
   - apiGroups: ["triggers.tekton.dev"]
     resources: ["clustertriggerbindings", "clusterinterceptors"]
     verbs: ["get", "list", "watch"]
