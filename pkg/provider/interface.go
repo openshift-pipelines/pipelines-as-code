@@ -8,13 +8,14 @@ import (
 )
 
 type StatusOpts struct {
-	PipelineRunName string
-	Status          string
-	Conclusion      string
-	Text            string
-	DetailsURL      string
-	Summary         string
-	Title           string
+	PipelineRunName         string
+	OriginalPipelineRunName string
+	Status                  string
+	Conclusion              string
+	Text                    string
+	DetailsURL              string
+	Summary                 string
+	Title                   string
 }
 
 type Interface interface {

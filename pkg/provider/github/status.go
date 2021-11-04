@@ -25,6 +25,13 @@ const taskStatusTemplate = `
 {{- end }}
 </table>`
 
+func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
+	if pacopts.ApplicationName != "" {
+		return fmt.Sprintf("%s / %s", pacopts.ApplicationName, status.OriginalPipelineRunName)
+	}
+	return status.OriginalPipelineRunName
+}
+
 // createCheckRunStatus create a status via the checkRun API, which is only
 // available with Github apps tokens.
 func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
@@ -32,7 +39,7 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 	if runevent.CheckRunID == nil {
 		now := github.Timestamp{Time: time.Now()}
 		checkrunoption := github.CreateCheckRunOptions{
-			Name:       pacopts.ApplicationName,
+			Name:       getCheckName(status, pacopts),
 			HeadSHA:    runevent.SHA,
 			Status:     github.String("in_progress"),
 			DetailsURL: github.String(pacopts.LogURL),
@@ -53,7 +60,7 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 	}
 
 	opts := github.UpdateCheckRunOptions{
-		Name:   pacopts.ApplicationName,
+		Name:   getCheckName(status, pacopts),
 		Status: &status.Status,
 		Output: checkRunOutput,
 	}
@@ -91,7 +98,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		State:       github.String(status.Conclusion),
 		TargetURL:   github.String(status.DetailsURL),
 		Description: github.String(status.Title),
-		Context:     github.String(pacopts.ApplicationName),
+		Context:     github.String(getCheckName(status, pacopts)),
 		CreatedAt:   &now,
 	}
 
