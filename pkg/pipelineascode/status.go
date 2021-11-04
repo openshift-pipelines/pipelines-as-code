@@ -2,9 +2,11 @@ package pipelineascode
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/google/go-github/v39/github"
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	pacv1a1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -13,8 +15,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func updateRepoRunStatus(ctx context.Context, cs *params.Run, pr *tektonv1beta1.PipelineRun, repo *apipac.Repository) error {
-	repoStatus := apipac.RepositoryRunStatus{
+func updateRepoRunStatus(ctx context.Context, cs *params.Run, pr *tektonv1beta1.PipelineRun, repo *pacv1a1.Repository) error {
+	repoStatus := pacv1a1.RepositoryRunStatus{
 		Status:          pr.Status.Status,
 		PipelineRunName: pr.Name,
 		StartTime:       pr.Status.StartTime,
@@ -68,11 +70,12 @@ func postFinalStatus(ctx context.Context, cs *params.Run, providerintf provider.
 	}
 
 	status := provider.StatusOpts{
-		Status:          "completed",
-		Conclusion:      formatting.PipelineRunStatus(pr),
-		Text:            taskStatus,
-		PipelineRunName: pr.Name,
-		DetailsURL:      cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
+		Status:                  "completed",
+		Conclusion:              formatting.PipelineRunStatus(pr),
+		Text:                    taskStatus,
+		PipelineRunName:         pr.Name,
+		DetailsURL:              cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
+		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")],
 	}
 
 	err = providerintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status)

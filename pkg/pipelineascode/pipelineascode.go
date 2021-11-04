@@ -3,9 +3,11 @@ package pipelineascode
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"time"
 
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
@@ -150,11 +152,12 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 	// Create status with the log url
 	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), repo.GetNamespace(), consoleURL, repo.GetNamespace(), pr.GetName())
 	status := provider.StatusOpts{
-		Status:          "in_progress",
-		Conclusion:      "pending",
-		Text:            msg,
-		DetailsURL:      consoleURL,
-		PipelineRunName: pr.GetName(),
+		Status:                  "in_progress",
+		Conclusion:              "pending",
+		Text:                    msg,
+		DetailsURL:              consoleURL,
+		PipelineRunName:         pr.GetName(),
+		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")],
 	}
 	if err := providerintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
 		return fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
