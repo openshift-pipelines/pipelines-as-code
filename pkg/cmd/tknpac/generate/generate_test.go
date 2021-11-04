@@ -32,14 +32,6 @@ func TestGetRepoURL(t *testing.T) {
 		addExtraFilesInRepo     map[string]string
 	}{
 		{
-			name: "generate no pipelinerun",
-			askStubs: func(as *prompt.AskStubber) {
-				as.StubOne(0)     // pull_request
-				as.StubOne("")    // default as main
-				as.StubOne(false) // no pipelinerun generation
-			},
-		},
-		{
 			name: "pull request default",
 			askStubs: func(as *prompt.AskStubber) {
 				as.StubOneDefault() // pull_request
@@ -60,7 +52,6 @@ func TestGetRepoURL(t *testing.T) {
 			askStubs: func(as *prompt.AskStubber) {
 				as.StubOneDefault() // pull_request
 				as.StubOne("")      // default as main
-				as.StubOne(true)    // pipelinerun generation
 				as.StubOne(false)   // overwrite
 			},
 			addExtraFilesInRepo: map[string]string{
@@ -79,7 +70,6 @@ func TestGetRepoURL(t *testing.T) {
 			askStubs: func(as *prompt.AskStubber) {
 				as.StubOneDefault() // pull_request
 				as.StubOne("")      // default as main
-				as.StubOne(true)    // pipelinerun generation
 			},
 			addExtraFilesInRepo: map[string]string{
 				"go.mod": "random string",
@@ -101,7 +91,6 @@ func TestGetRepoURL(t *testing.T) {
 				// I can't see to make the stubbing work for push :\
 				as.StubOneDefault() // pull_request
 				as.StubOne("")      // default as main
-				as.StubOne(true)    // pipelinerun generation
 			},
 			addExtraFilesInRepo: map[string]string{
 				"setup.py": "random string",
