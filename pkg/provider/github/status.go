@@ -27,6 +27,9 @@ const taskStatusTemplate = `
 
 func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 	if pacopts.ApplicationName != "" {
+		if status.OriginalPipelineRunName == "" {
+			return pacopts.ApplicationName
+		}
 		return fmt.Sprintf("%s / %s", pacopts.ApplicationName, status.OriginalPipelineRunName)
 	}
 	return status.OriginalPipelineRunName

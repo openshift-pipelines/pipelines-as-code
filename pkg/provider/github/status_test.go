@@ -254,3 +254,53 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 		})
 	}
 }
+
+func TestGetCheckName(t *testing.T) {
+	type args struct {
+		status  provider.StatusOpts
+		pacopts *info.PacOpts
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "no application name",
+			args: args{
+				status: provider.StatusOpts{
+					OriginalPipelineRunName: "HELLO",
+				},
+				pacopts: &info.PacOpts{ApplicationName: ""},
+			},
+			want: "HELLO",
+		},
+		{
+			name: "application and pipelinerun name",
+			args: args{
+				status: provider.StatusOpts{
+					OriginalPipelineRunName: "MOTO",
+				},
+				pacopts: &info.PacOpts{ApplicationName: "HELLO"},
+			},
+			want: "HELLO / MOTO",
+		},
+		{
+			name: "application no pipelinerun name",
+			args: args{
+				status: provider.StatusOpts{
+					OriginalPipelineRunName: "",
+				},
+				pacopts: &info.PacOpts{ApplicationName: "PAC"},
+			},
+			want: "PAC",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getCheckName(tt.args.status, tt.args.pacopts); got != tt.want {
+				t.Errorf("getCheckName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
