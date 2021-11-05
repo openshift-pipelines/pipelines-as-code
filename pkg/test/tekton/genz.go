@@ -42,9 +42,12 @@ func MakePrTrStatus(ptaskname string, completionmn int) *tektonv1beta1.PipelineR
 	}
 }
 
-func MakePR(namespace, name string, trstatus map[string]*tektonv1beta1.PipelineRunTaskRunStatus) *tektonv1beta1.PipelineRun {
+func MakePR(namespace, name string, trstatus map[string]*tektonv1beta1.PipelineRunTaskRunStatus, status *duckv1beta1.Status) *tektonv1beta1.PipelineRun {
 	if trstatus == nil {
 		trstatus = map[string]*tektonv1beta1.PipelineRunTaskRunStatus{}
+	}
+	if status == nil {
+		status = &duckv1beta1.Status{}
 	}
 	return &tektonv1beta1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
@@ -52,6 +55,7 @@ func MakePR(namespace, name string, trstatus map[string]*tektonv1beta1.PipelineR
 			Name:      name,
 		},
 		Status: tektonv1beta1.PipelineRunStatus{
+			Status: *status,
 			PipelineRunStatusFields: tektonv1beta1.PipelineRunStatusFields{
 				TaskRuns: trstatus,
 			},

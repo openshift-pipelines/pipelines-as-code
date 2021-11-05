@@ -28,7 +28,7 @@ func TestStatusTmpl(t *testing.T) {
 				"first":  tektontest.MakePrTrStatus("first", 5),
 				"last":   tektontest.MakePrTrStatus("last", 15),
 				"middle": tektontest.MakePrTrStatus("middle", 10),
-			}),
+			}, nil),
 		},
 		{
 			name:       "sorted",
@@ -38,7 +38,7 @@ func TestStatusTmpl(t *testing.T) {
 				"first":  tektontest.MakePrTrStatus("first", 5),
 				"last":   tektontest.MakePrTrStatus("last", 15),
 				"middle": tektontest.MakePrTrStatus("middle", 10),
-			}),
+			}, nil),
 		},
 		{
 			name:       "not completed yet come first",
@@ -48,12 +48,12 @@ func TestStatusTmpl(t *testing.T) {
 				"first":  tektontest.MakePrTrStatus("first", 5),
 				"last":   tektontest.MakePrTrStatus("last", 15),
 				"middle": tektontest.MakePrTrStatus("notcompleted", -1),
-			}),
+			}, nil),
 		},
 		{
 			name:       "test sorted status nada",
 			wantRegexp: regexp.MustCompile("No tasks has been found"),
-			pr:         tektontest.MakePR("nada", "ns", nil),
+			pr:         tektontest.MakePR("nada", "ns", nil, nil),
 		},
 	}
 	for _, tt := range tests {
