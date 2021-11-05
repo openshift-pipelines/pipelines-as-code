@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"text/tabwriter"
 	"text/template"
@@ -15,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	sortrepostatus "github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
@@ -27,30 +29,34 @@ const (
 	describeTemplate = `{{ $.ColorScheme.Bold "Name" }}:	{{.Repository.Name}}
 {{ $.ColorScheme.Bold "Namespace" }}:	{{.Repository.Namespace}}
 {{ $.ColorScheme.Bold "URL" }}:	{{.Repository.Spec.URL}}
-{{- if eq (len .Repository.Status) 0 }}
+{{- if eq (len .Statuses) 0 }}
+
 {{ $.ColorScheme.Dimmed "No runs has started."}}
 {{- else }}
 {{- $status := (index .Statuses 0) }}
 
-{{ $.ColorScheme.Bold "Last Run:" }} 
+{{- if (gt (len .Statuses) 1) }}
 
-Status:	{{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
-PipelineRun:	{{ $.ColorScheme.HyperLink $status.PipelineRunName $status.LogURL }}
-Event:	{{ $status.EventType }}
-Branch:	{{ sanitizeBranch $status.TargetBranch }}
-Commit URL:	{{ $status.SHAURL }}
-Commit Title:	{{ $status.Title }}
-StartTime:	{{ formatTime $status.StartTime $.Clock }}
+{{ $.ColorScheme.Underline "Last Run:" }} 
+{{ end }}
+{{ $.ColorScheme.Bold "Status:" }}	{{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
+{{ $.ColorScheme.Bold "Log:"  }}	{{ $status.LogURL}}
+{{ $.ColorScheme.Bold "PipelineRun:" }}	{{ $.ColorScheme.HyperLink $status.PipelineRunName $status.LogURL }}
+{{ $.ColorScheme.Bold "Event:" }}	{{ $status.EventType }}
+{{ $.ColorScheme.Bold "Branch:" }}	{{ sanitizeBranch $status.TargetBranch }}
+{{ $.ColorScheme.Bold "Commit URL:" }}	{{ $status.SHAURL }}
+{{ $.ColorScheme.Bold "Commit Title:" }}	{{ $status.Title }}
+{{ $.ColorScheme.Bold "StartTime:" }}	{{ formatTime $status.StartTime $.Clock }}
 {{- if $status.CompletionTime }}
-Duration:	{{ formatDuration $status.StartTime $status.CompletionTime }}
+{{ $.ColorScheme.Bold "Duration:" }}	{{ formatDuration $status.StartTime $status.CompletionTime }}
 {{- end }}
-{{- if gt (len .Repository.Status) 1 }}
+{{- if (gt (len .Statuses) 1) }}
 
-{{ $.ColorScheme.Bold "Other Runs:" }}
+{{ $.ColorScheme.Underline "Other Runs:" }}
 
 STATUS	Event	Branch	 SHA	 STARTED TIME	DURATION	PIPELINERUN
 ――――――	―――――	――――――	 ―――	 ――――――――――――	――――――――	―――――――――――
-{{- range $i, $st := (slice .Statuses 1 (len .Repository.Status)) }}
+{{- range $i, $st := (slice .Statuses 1 (len .Statuses)) }}
 {{ formatStatus $st $.ColorScheme $.Clock }}
 {{- end }}
 {{- end }}
@@ -145,6 +151,13 @@ func DescribeCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// The only way to know the tekton dashboard url is if the user specify it because we are not supposed to have access to the configmap.
+			// so let the user specify a env variable to implicitly set tekton dashboard
+			if os.Getenv("TEKTON_DASHBOARD_URL") != "" {
+				run.Clients.ConsoleUI = &consoleui.TektonDashboard{BaseURL: os.Getenv("TEKTON_DASHBOARD_URL")}
+			}
+
 			return describe(ctx, run, clock, opts, ioStreams, repoName)
 		},
 	}
@@ -226,19 +239,21 @@ func getLivePRAndRepostatus(ctx context.Context, cs *params.Run, repository *v1a
 	}
 
 	for _, pr := range prs.Items {
+		logurl := cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName())
 		if pr.Status.Conditions == nil || len(pr.Status.Conditions) == 0 {
-			repositorystatus = convertPrStatusToRepositoryStatus(repositorystatus, pr)
+			repositorystatus = convertPrStatusToRepositoryStatus(repositorystatus, pr, logurl)
 		} else if pr.Status.Conditions[0].Reason == tektonv1beta1.PipelineRunReasonRunning.String() {
-			repositorystatus = convertPrStatusToRepositoryStatus(repositorystatus, pr)
+			repositorystatus = convertPrStatusToRepositoryStatus(repositorystatus, pr, logurl)
 		}
 	}
+
 	return sortrepostatus.RepositorySortRunStatus(repositorystatus)
 }
 
-func convertPrStatusToRepositoryStatus(repositorystatus []v1alpha1.RepositoryRunStatus, pr tektonv1beta1.PipelineRun) []v1alpha1.RepositoryRunStatus {
+func convertPrStatusToRepositoryStatus(repositorystatus []v1alpha1.RepositoryRunStatus, pr tektonv1beta1.PipelineRun, logurl string) []v1alpha1.RepositoryRunStatus {
 	return append(repositorystatus, v1alpha1.RepositoryRunStatus{
 		Status:          pr.Status.Status,
-		LogURL:          new(string),
+		LogURL:          &logurl,
 		PipelineRunName: pr.GetName(),
 		StartTime:       pr.Status.StartTime,
 		SHA:             github.String(pr.GetLabels()["pipelinesascode.tekton.dev/sha"]),

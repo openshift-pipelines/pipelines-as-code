@@ -5,6 +5,7 @@ URL:         https://anurl.com
 Last Run: 
 
 Status:         Success
+Log:            https://everywhere.anwywhere
 PipelineRun:    pipelinerun1
 Event:          pull_request
 Branch:         TargetBranch

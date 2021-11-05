@@ -12,6 +12,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -54,7 +55,7 @@ func TestDescribe(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Describe a Pipeline with a Live Run and a Repository Run",
+			name: "live run and repository run",
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: ns,
@@ -64,6 +65,7 @@ func TestDescribe(t *testing.T) {
 						map[string]string{
 							"pipelinesascode.tekton.dev/repository": "test-run",
 							"pipelinesascode.tekton.dev/branch":     "tartanpion",
+							"pipelinesascode.tekton.dev/event-type": "papayolo",
 						}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
@@ -83,13 +85,53 @@ func TestDescribe(t *testing.T) {
 						SHAURL:          github.String("https://anurl.com/commit/SHA"),
 						Title:           github.String("A title"),
 						TargetBranch:    github.String("TargetBranch"),
+						EventType:       github.String("propseryouplaboun"),
 					},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name: "Describe a Pipeline with a Single Run - optnamespace",
+			name: "one live run",
+			args: args{
+				repoName:         "test-run",
+				currentNamespace: ns,
+				opts:             &cli.PacCliOpts{},
+				pruns: []*tektonv1beta1.PipelineRun{
+					tektontest.MakePRCompletion(cw, "running", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "tartanpion",
+						}, 30),
+				},
+				statuses: []v1alpha1.RepositoryRunStatus{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "multiple live runs",
+			args: args{
+				repoName:         "test-run",
+				currentNamespace: ns,
+				opts:             &cli.PacCliOpts{},
+				pruns: []*tektonv1beta1.PipelineRun{
+					tektontest.MakePRCompletion(cw, "running", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "tartanpion",
+						}, 30),
+					tektontest.MakePRCompletion(cw, "running2", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "vavaroom",
+						}, 30),
+				},
+				statuses: []v1alpha1.RepositoryRunStatus{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "one repository status and optnamespace",
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: "namespace",
@@ -119,7 +161,7 @@ func TestDescribe(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Describe a Pipeline with a Multiple Run",
+			name: "multiple repo status",
 			args: args{
 				opts:             &cli.PacCliOpts{},
 				repoName:         "test-run",
@@ -202,6 +244,7 @@ func TestDescribe(t *testing.T) {
 				Clients: clients.Clients{
 					PipelineAsCode: stdata.PipelineAsCode,
 					Tekton:         stdata.Pipeline,
+					ConsoleUI:      consoleui.FallBackConsole{},
 				},
 				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.args.currentNamespace}},
 			}

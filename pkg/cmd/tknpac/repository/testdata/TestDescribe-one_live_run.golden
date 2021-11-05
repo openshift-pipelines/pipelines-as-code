@@ -1,10 +1,8 @@
-Name:        test-run
-Namespace:   ns
-URL:         https://anurl.com
-
-Last Run: 
-
+Name:           test-run
+Namespace:      ns
+URL:            https://anurl.com
 Status:         Running
+Log:            https://giphy.com/search/random-dogs
 PipelineRun:    running
 Event:          
 Branch:         tartanpion
