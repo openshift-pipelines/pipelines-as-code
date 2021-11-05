@@ -9,18 +9,15 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 )
 
-var (
-	tektonCatalogHubName = `tekton`
-	hubBaseURL           = `https://api.hub.tekton.dev/v1`
-)
+var tektonCatalogHubName = `tekton`
 
-func getSpecificVersion(ctx context.Context, cli *params.Run, task string) (string, error) {
+func getSpecificVersion(ctx context.Context, cs *params.Run, task string) (string, error) {
 	split := strings.Split(task, ":")
 	version := split[len(split)-1]
 	taskName := split[0]
 	hr := hubResourceVersion{}
-	data, err := cli.Clients.GetURL(ctx,
-		fmt.Sprintf("%s/resource/%s/task/%s/%s", hubBaseURL, tektonCatalogHubName, taskName, version))
+	data, err := cs.Clients.GetURL(ctx,
+		fmt.Sprintf("%s/resource/%s/task/%s/%s", cs.Info.Pac.HubURL, tektonCatalogHubName, taskName, version))
 	if err != nil {
 		return "", fmt.Errorf("could not fetch specific task version from the hub %s:%s: %w", task, version, err)
 	}
@@ -31,9 +28,9 @@ func getSpecificVersion(ctx context.Context, cli *params.Run, task string) (stri
 	return *hr.Data.RawURL, nil
 }
 
-func getLatestVersion(ctx context.Context, cli *params.Run, task string) (string, error) {
+func getLatestVersion(ctx context.Context, cs *params.Run, task string) (string, error) {
 	hr := new(hubResource)
-	data, err := cli.Clients.GetURL(ctx, fmt.Sprintf("%s/resource/%s/task/%s", hubBaseURL, tektonCatalogHubName, task))
+	data, err := cs.Clients.GetURL(ctx, fmt.Sprintf("%s/resource/%s/task/%s", cs.Info.Pac.HubURL, tektonCatalogHubName, task))
 	if err != nil {
 		return "", err
 	}

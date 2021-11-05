@@ -27,7 +27,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
-	simpletask := `---
+	const testHubURL = "https://mybelovedhub"
+	const simpletask = `---
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
@@ -132,7 +133,7 @@ spec:
 				pipelinesascode.GroupName + "/task": "[chmouzie]",
 			},
 			remoteURLS: map[string]map[string]string{
-				"https://api.hub.tekton.dev/v1/resource/tekton/task/chmouzie": {
+				testHubURL + "/resource/tekton/task/chmouzie": {
 					"body": `{"data": {"LatestVersion": {"RawURL": "http://simple.task"}}}`,
 					"code": "200",
 				},
@@ -149,7 +150,7 @@ spec:
 				pipelinesascode.GroupName + "/task": "[chmouzie:0.2]",
 			},
 			remoteURLS: map[string]map[string]string{
-				"https://api.hub.tekton.dev/v1/resource/tekton/task/chmouzie/0.2": {
+				testHubURL + "/resource/tekton/task/chmouzie/0.2": {
 					"body": `{"data": {"RawURL": "http://simple.task"}}`,
 					"code": "200",
 				},
@@ -167,7 +168,12 @@ spec:
 				Clients: clients.Clients{
 					HTTP: *httpTestClient,
 				},
-				Info: info.Info{Event: &tt.runevent},
+				Info: info.Info{
+					Event: &tt.runevent,
+					Pac: &info.PacOpts{
+						HubURL: testHubURL,
+					},
+				},
 			}
 			ctx, _ := rtesting.SetupFakeContext(t)
 			rt := RemoteTasks{

@@ -19,6 +19,7 @@ type PacOpts struct {
 	WebhookType          string
 	PayloadFile          string
 	TektonDashboardURL   string
+	HubURL               string
 }
 
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
