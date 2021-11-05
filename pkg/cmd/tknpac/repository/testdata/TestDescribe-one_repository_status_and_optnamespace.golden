@@ -1,10 +1,8 @@
-Name:        test-run
-Namespace:   optnamespace
-URL:         https://anurl.com
-
-Last Run: 
-
+Name:           test-run
+Namespace:      optnamespace
+URL:            https://anurl.com
 Status:         Success
+Log:            https://everywhere.anwywhere
 PipelineRun:    pipelinerun1
 Event:          <nil>
 Branch:         TargetBranch

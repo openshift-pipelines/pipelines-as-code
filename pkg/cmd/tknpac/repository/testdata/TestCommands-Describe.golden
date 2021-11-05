@@ -1,10 +1,8 @@
-Name:        repo1
-Namespace:   ns
-URL:         https://anurl.com/repo/owner
-
-Last Run: 
-
+Name:           repo1
+Namespace:      ns
+URL:            https://anurl.com/repo/owner
 Status:         Success
+Log:            https://everywhere.anwywhere
 PipelineRun:    pipelinerun1
 Event:          pull_request
 Branch:         TargetBranch

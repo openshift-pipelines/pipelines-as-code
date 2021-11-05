@@ -1,0 +1,20 @@
+Name:        test-run
+Namespace:   ns
+URL:         https://anurl.com
+
+Last Run: 
+
+Status:         Running
+Log:            https://giphy.com/search/random-dogs
+PipelineRun:    running
+Event:          
+Branch:         tartanpion
+Commit URL:     
+Commit Title:   
+StartTime:      -35 minutes ago
+
+Other Runs:
+
+STATUS    Event   Branch      SHA    STARTED TIME     DURATION   PIPELINERUN
+――――――    ―――――   ――――――      ―――    ――――――――――――     ――――――――   ―――――――――――
+Running           vavaroom          -35 minutes ago   ---        running2
