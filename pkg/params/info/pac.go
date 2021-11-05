@@ -20,6 +20,7 @@ type PacOpts struct {
 	PayloadFile          string
 	TektonDashboardURL   string
 	HubURL               string
+	RemoteTasks          bool
 }
 
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {

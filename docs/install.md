@@ -454,6 +454,11 @@ the `pipelines-as-code` namespace.
   application to be used with private repositories. This feature is enabled by
   default.
 
+- `remote-tasks`
+
+  Let allows remote tasks from pipelinerun annotations. This feature is enabled by
+  default.
+
 - `hub-url`
 
   The base url for the [tekton hub](https://github.com/tektoncd/hub/)

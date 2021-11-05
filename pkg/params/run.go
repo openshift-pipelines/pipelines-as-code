@@ -59,6 +59,10 @@ func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
 		r.Info.Pac.HubURL = info.HubURL
 	}
 
+	if remoteTask, ok := cfg.Data["remote-tasks"]; ok {
+		r.Info.Pac.RemoteTasks = StringToBool(remoteTask)
+	}
+
 	return nil
 }
 
