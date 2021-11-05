@@ -207,6 +207,6 @@ func getAllPipelineRuns(ctx context.Context, cs *params.Run, providerintf provid
 	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
 	return resolve.Resolve(ctx, cs, providerintf, allTemplates, &resolve.Opts{
 		GenerateName: true,
-		RemoteTasks:  true, // TODO: add an option to disable remote tasking,
+		RemoteTasks:  cs.Info.Pac.RemoteTasks,
 	})
 }

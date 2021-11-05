@@ -454,6 +454,18 @@ the `pipelines-as-code` namespace.
   application to be used with private repositories. This feature is enabled by
   default.
 
+- `remote-tasks`
+
+  Let allows remote tasks from pipelinerun annotations. This feature is enabled by
+  default.
+
+- `hub-url`
+
+  The base url for the [tekton hub](https://github.com/tektoncd/hub/)
+  API. default to the [public hub](https://hub.tekton.dev/):
+
+  <https://api.hub.tekton.dev/v1>
+
 ## Kubernetes
 
 Pipelines as Code should work directly on kubernetes/minikube/kind. You just need to install the release.yaml

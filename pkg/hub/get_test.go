@@ -6,11 +6,14 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestGetTask(t *testing.T) {
+	const testHubURL = "https://myprecioushub"
+
 	tests := []struct {
 		name    string
 		task    string
@@ -24,7 +27,7 @@ func TestGetTask(t *testing.T) {
 			want:    "This is Task1",
 			wantErr: false,
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task1", hubBaseURL, tektonCatalogHubName): {
+				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, tektonCatalogHubName): {
 					"body": `{"data":{"latestVersion": {"rawURL": "https://get.me/task1"}}}`,
 					"code": "200",
 				},
@@ -39,7 +42,7 @@ func TestGetTask(t *testing.T) {
 			task:    "task1",
 			wantErr: true,
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task1", hubBaseURL, tektonCatalogHubName): {
+				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, tektonCatalogHubName): {
 					"code": "404",
 				},
 			},
@@ -49,7 +52,7 @@ func TestGetTask(t *testing.T) {
 			task:    "task1:1.1",
 			wantErr: true,
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task1/1.1", hubBaseURL, tektonCatalogHubName): {
+				fmt.Sprintf("%s/resource/%s/task/task1/1.1", testHubURL, tektonCatalogHubName): {
 					"code": "404",
 				},
 			},
@@ -60,7 +63,7 @@ func TestGetTask(t *testing.T) {
 			want:    "This is Task2",
 			wantErr: false,
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task2/1.1", hubBaseURL, tektonCatalogHubName): {
+				fmt.Sprintf("%s/resource/%s/task/task2/1.1", testHubURL, tektonCatalogHubName): {
 					"body": `{"data":{"rawURL": "https://get.me/task2"}}`,
 					"code": "200",
 				},
@@ -79,6 +82,7 @@ func TestGetTask(t *testing.T) {
 				Clients: clients.Clients{
 					HTTP: *httpTestClient,
 				},
+				Info: info.Info{Pac: &info.PacOpts{HubURL: testHubURL}},
 			}
 			got, err := GetTask(ctx, cs, tt.task)
 			if (err != nil) != tt.wantErr {

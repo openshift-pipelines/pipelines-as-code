@@ -33,7 +33,7 @@ func setup() {
 }
 
 // Not sure how to get testParams fixtures working
-func readTDfile(t *testing.T, testname string, generateName bool) (*tektonv1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
+func readTDfile(t *testing.T, testname string, generateName bool, remoteTasking bool) (*tektonv1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	data, err := ioutil.ReadFile("testdata/" + testname + ".yaml")
 	if err != nil {
@@ -49,7 +49,7 @@ func readTDfile(t *testing.T, testname string, generateName bool) (*tektonv1beta
 	}
 	ropt := &Opts{
 		GenerateName: generateName,
-		RemoteTasks:  true,
+		RemoteTasks:  remoteTasking,
 	}
 	tprovider := &testprovider.TestProviderImp{}
 	resolved, err := Resolve(ctx, cs, tprovider, string(data), ropt)
@@ -60,7 +60,7 @@ func readTDfile(t *testing.T, testname string, generateName bool) (*tektonv1beta
 }
 
 func TestPipelineRunPipelineTask(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-task", false)
+	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-task", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "first-step")
 
@@ -69,56 +69,69 @@ func TestPipelineRunPipelineTask(t *testing.T) {
 }
 
 func TestGenerateName(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-task", true)
+	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-task", true, true)
 	assert.NilError(t, err)
 	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
 
-	resolved, _, err = readTDfile(t, "with-generatename", true)
+	resolved, _, err = readTDfile(t, "with-generatename", true, true)
 	assert.NilError(t, err)
 	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
 }
 
 func TestBundlesSkipped(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipelinerun-with-a-bundle", false)
+	resolved, _, err := readTDfile(t, "pipelinerun-with-a-bundle", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].Name, "bundled")
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Bundle, "reg.io/ruben/barichello@sha256:1234")
 }
 
 func TestClusterTasksSkipped(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipelinerun-with-a-clustertasks", false)
+	resolved, _, err := readTDfile(t, "pipelinerun-with-a-clustertasks", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].Name, "clustertask")
 	assert.Equal(t, string(resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Kind), "ClusterTask")
 }
 
 func TestPipelineRunPipelineSpecTaskSpec(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipelinerun-pipelinespec-taskspec", false)
+	resolved, _, err := readTDfile(t, "pipelinerun-pipelinespec-taskspec", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "hello-moto")
 }
 
 func TestPipelineRunWithFinally(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipelinerun-finally", false)
+	resolved, _, err := readTDfile(t, "pipelinerun-finally", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Finally[0].TaskSpec.Steps[0].Name, "finally-task")
 }
 
 func TestPipelineWithFinally(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipeline-finally", false)
+	resolved, _, err := readTDfile(t, "pipeline-finally", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "normal-task")
 	assert.Equal(t, resolved.Spec.PipelineSpec.Finally[0].TaskSpec.Steps[0].Name, "finally-task")
 }
 
 func TestPipelineRunPipelineSpecTaskRef(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipelinerun-pipelinespec-taskref", false)
+	resolved, _, err := readTDfile(t, "pipelinerun-pipelinespec-taskref", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps[0].Name, "task1")
 }
 
+func TestPipelineRunRemoteTaskDisabled(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-task-remote-task-annotation", false, false)
+	assert.NilError(t, err)
+	// tbh: it would crash
+	assert.Equal(t, resolved.GetAnnotations()["pipelinesascode.tekton.dev/task"], "foo")
+}
+
+func TestOriginalPRNameLabelSet(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-task-remote-task-annotation", false, false)
+	assert.NilError(t, err)
+	assert.Equal(t, resolved.GetLabels()["pipelinesascode.tekton.dev/original-prname"], "pr")
+}
+
 func TestPipelineRunRemoteTaskNotPacAnnotations(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-task-annotations-not-pac", false)
+	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-task-annotations-not-pac", false, true)
 	assert.NilError(t, err)
 
 	if _, ok := resolved.GetObjectMeta().GetAnnotations()["anno"]; !ok {
@@ -127,12 +140,12 @@ func TestPipelineRunRemoteTaskNotPacAnnotations(t *testing.T) {
 }
 
 func TestPipelineRunRemoteTaskBadPacAnnotations(t *testing.T) {
-	_, _, err := readTDfile(t, "pipelinerun-pipeline-task-bad-pac-annotation", false)
+	_, _, err := readTDfile(t, "pipelinerun-pipeline-task-bad-pac-annotation", false, true)
 	assert.ErrorContains(t, err, "annotations in pipeline are in wrong format")
 }
 
 func TestNotTektonDocumentIgnore(t *testing.T) {
-	resolved, log, err := readTDfile(t, "not-a-tekton-document", false)
+	resolved, log, err := readTDfile(t, "not-a-tekton-document", false, true)
 	assert.NilError(t, err)
 	logs := log.TakeAll()
 	assert.Assert(t, len(logs) > 0)
@@ -141,7 +154,7 @@ func TestNotTektonDocumentIgnore(t *testing.T) {
 }
 
 func TestNotKubernetesDocumentIgnore(t *testing.T) {
-	resolved, log, err := readTDfile(t, "not-a-kubernetes-yaml", false)
+	resolved, log, err := readTDfile(t, "not-a-kubernetes-yaml", false, true)
 	logs := log.TakeAll()
 	assert.Assert(t, len(logs) > 0)
 	assert.Assert(t, strings.HasPrefix(logs[0].Message, "Skipping"))
@@ -151,21 +164,21 @@ func TestNotKubernetesDocumentIgnore(t *testing.T) {
 }
 
 func TestNoPipelineRuns(t *testing.T) {
-	_, _, err := readTDfile(t, "no-pipelinerun", false)
+	_, _, err := readTDfile(t, "no-pipelinerun", false, true)
 	assert.Error(t, err, "we need at least one pipelinerun to start with")
 }
 
 func TestReferencedTaskNotInRepo(t *testing.T) {
-	_, _, err := readTDfile(t, "referenced-task-not-in-repo", false)
+	_, _, err := readTDfile(t, "referenced-task-not-in-repo", false, true)
 	assert.Error(t, err, "cannot find task nothere in input")
 }
 
 func TestReferencedPipelineNotInRepo(t *testing.T) {
-	_, _, err := readTDfile(t, "referenced-pipeline-not-in-repo", false)
+	_, _, err := readTDfile(t, "referenced-pipeline-not-in-repo", false, true)
 	assert.Error(t, err, "cannot find pipeline pipeline-test1 in input")
 }
 
 func TestIgnoreDocSpace(t *testing.T) {
-	_, _, err := readTDfile(t, "empty-spaces", false)
+	_, _, err := readTDfile(t, "empty-spaces", false, true)
 	assert.NilError(t, err)
 }

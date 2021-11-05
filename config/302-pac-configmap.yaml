@@ -23,6 +23,12 @@ data:
   # Wether to automatically create a secret with the token to be use by git-clone
   secret-auto-create: "true"
 
+  # Tekton HUB API urls
+  hub-url: "https://api.hub.tekton.dev/v1"
+
+  # Wether to allow fetching remote tasks
+  remote-tasks: "true"
+
   # Since public bitbucket doesn't have the concept of Secret, we need to be
   # able to secure the request by querying https://ip-ranges.atlassian.com/,
   # this only happen for public bitbucket (ie: when provider.url is not set in

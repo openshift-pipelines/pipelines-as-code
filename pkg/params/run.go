@@ -16,6 +16,14 @@ type Run struct {
 	Info    info.Info
 }
 
+func StringToBool(s string) bool {
+	if strings.ToLower(s) == "true" ||
+		strings.ToLower(s) == "yes" || s == "1" {
+		return true
+	}
+	return false
+}
+
 // GetConfigFromConfigMap get config from configmap, we should remove all the
 // logics from cobra flags and just support configmap config and env config in the future.
 func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
@@ -33,13 +41,7 @@ func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
 	}
 
 	if secretAutoCreation, ok := cfg.Data["secret-auto-create"]; ok {
-		sv := false
-
-		if strings.ToLower(secretAutoCreation) == "true" ||
-			strings.ToLower(secretAutoCreation) == "yes" || secretAutoCreation == "1" {
-			sv = true
-		}
-		r.Info.Pac.SecretAutoCreation = sv
+		r.Info.Pac.SecretAutoCreation = StringToBool(secretAutoCreation)
 	}
 
 	if tektonDashboardURL, ok := cfg.Data["tekton-dashboard-url"]; ok {
@@ -50,6 +52,17 @@ func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
 		r.Clients.Log.Infof("using tekton dashboard url on: %s", os.Getenv("PAC_TEKTON_DASHBOARD_URL"))
 		r.Clients.ConsoleUI = &consoleui.TektonDashboard{BaseURL: os.Getenv("PAC_TEKTON_DASHBOARD_URL")}
 	}
+
+	if hubURL, ok := cfg.Data["hub-url"]; ok {
+		r.Info.Pac.HubURL = hubURL
+	} else {
+		r.Info.Pac.HubURL = info.HubURL
+	}
+
+	if remoteTask, ok := cfg.Data["remote-tasks"]; ok {
+		r.Info.Pac.RemoteTasks = StringToBool(remoteTask)
+	}
+
 	return nil
 }
 
