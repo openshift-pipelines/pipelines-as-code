@@ -103,7 +103,7 @@ reference
 
 ## Usage Guide
 
-The usage guide [here](./docs/guide.md) offer a comprehenive documentatiuon on how to use and configure Pipeline As Code.
+The usage guide available [here](./docs/guide.md) offer a comprehenive documentatiuon on how to use and configure Pipeline As Code.
 
 A walkthought video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
 
