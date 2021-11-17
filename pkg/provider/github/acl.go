@@ -30,7 +30,8 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, erro
 // Sender if she is an OWNER and then allow it to run CI.
 // TODO: pull out the github logic from there in an agnostic way.
 func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Event) (bool, error) {
-	revent := event
+	revent := &info.Event{}
+	event.DeepCopyInto(revent)
 	revent.EventType = ""
 	revent.TriggerTarget = ""
 	if revent.Event == nil {
