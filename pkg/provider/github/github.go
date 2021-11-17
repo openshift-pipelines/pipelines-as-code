@@ -154,10 +154,11 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event, prN
 	runevent.URL = pr.GetBase().GetRepo().GetHTMLURL()
 	runevent.SHA = pr.GetHead().GetSHA()
 	runevent.SHAURL = fmt.Sprintf("%s/commit/%s", pr.GetHTMLURL(), pr.GetHead().GetSHA())
-	// TODO: Maybe if we wanted to allow rerequest from non approved user we
-	// would use the CheckRun Sender instead of the rerequest sender, could it
-	// be a room for abuse? 🤔
-	runevent.Sender = pr.GetUser().GetLogin()
+
+	// TODO: check if we really need this
+	if runevent.Sender == "" {
+		runevent.Sender = pr.GetUser().GetLogin()
+	}
 	runevent.HeadBranch = pr.GetHead().GetRef()
 	runevent.BaseBranch = pr.GetBase().GetRef()
 	runevent.EventType = "pull_request"
