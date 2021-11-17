@@ -26,3 +26,8 @@ type Event struct {
 	// Bitbucket Server
 	CloneURL string // bitbucket server has a different cloneurl than normal url
 }
+
+// DeepCopyInto deep copy runinfo in another instance
+func (r *Event) DeepCopyInto(out *Event) {
+	*out = *r
+}

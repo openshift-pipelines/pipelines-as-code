@@ -90,6 +90,7 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 
 	if !allowed {
 		msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", cs.Info.Event.Sender)
+		cs.Clients.Log.Info(msg)
 		if cs.Info.Event.AccountID != "" {
 			msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", cs.Info.Event.Sender,
 				cs.Info.Event.AccountID)
@@ -101,7 +102,7 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 			DetailsURL: "https://tenor.com/search/police-cat-gifs",
 		}
 		if err := providerintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status); err != nil {
-			return fmt.Errorf("failed to run create status on not allowed to run: %w", err)
+			return fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
 		}
 		return nil
 	}

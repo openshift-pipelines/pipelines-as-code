@@ -216,6 +216,7 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, log *zap.Sugared
 	runevent := &info.Event{
 		Organization: event.GetRepo().GetOwner().GetLogin(),
 		Repository:   event.GetRepo().GetName(),
+		Sender:       event.GetSender().GetLogin(),
 	}
 	if !event.GetIssue().IsPullRequest() {
 		return &info.Event{}, fmt.Errorf("issue comment is not coming from a pull_request")

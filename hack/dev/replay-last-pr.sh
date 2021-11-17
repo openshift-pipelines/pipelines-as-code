@@ -3,9 +3,8 @@
 # need tkn, fzf
 set -euf
 
-TMPD=$(mktemp -d /tmp/.run-server-replay-XXXX)
-clean() { rm -rf ${TMPD} ;}
-trap clean EXIT
+TMPD=/tmp/pac-last-run
+rm -rf ${TMPD};mkdir -p ${TMPD}
 
 if [[ ${1:-""} == -l ]];then
     arg="-L"
@@ -20,17 +19,26 @@ fi
 tkn pr logs ${arg} --prefix=false 2>/dev/null > ${TMPD}/last
 [[ -s ${TMPD}/last ]] || { echo "payload could not be found"; exit 1 ;}
 
-sed '/^PAC_/,$ { d;}' ${TMPD}/last > ${TMPD}/payload.json
+export PAC_PAYLOAD_FILE=${TMPD}/payload.json
+sed '/^PAC_/,$ { d;}' ${TMPD}/last > ${PAC_PAYLOAD_FILE}
 [[ -s ${TMPD}/payload.json ]] || { echo "payload json could not be found"; exit 1 ;}
 
-
-grep -e "^PAC_.[a-zA-Z0-9_-]*=" ${TMPD}/last |sed -e 's/=\(.*\)/="\1"/' -e 's/^/export /' > ${TMPD}/env 
+grep -e "^PAC_.[a-zA-Z0-9_-]*=" ${TMPD}/last|sed -e 's/=\(.*\)/="\1"/' -e 's/^/export /' > ${TMPD}/env 
 [[ -s ${TMPD}/env ]] || { echo "payload env could not be found"; exit 1 ;}
 
+sed -i "s,PAC_PAYLOAD_FILE=.*,PAC_PAYLOAD_FILE=${TMPD}/payload.json," $TMPD/env
 source $TMPD/env
 
-PAC_PAYLOAD_FILE="/tmp/pac-payload-${PAC_GIT_PROVIDER_TYPE}-${PAC_WEBHOOK_TYPE}-${PAC_TRIGGER_TARGET}.json"
-cat ${TMPD}/payload.json |tee ${PAC_PAYLOAD_FILE}
-echo PAC_PAYLOAD_FILE=${PAC_PAYLOAD_FILE}
+if [[ -n ${PAC_WORKSPACE_SECRET} ]];then
+    for key in github-application-id github-private-key webhook.secret;do
+        kubectl get secrets -n pipelines-as-code pipelines-as-code-secret -o json | jq -r ".data.\"${key}\" | @base64d" > ${TMPD}/${key}
+    done
+    export PAC_WORKSPACE_SECRET=${TMPD}
+    sed -i "s,PAC_WORKSPACE_SECRET=.*,PAC_WORKSPACE_SECRET=$TMPD," ${TMPD}/env
+fi
+
+# for vscode easy envFile
+sed -i 's/^export //' ${TMPD}/env
+cat ${TMPD}/env
 
 go run cmd/pipelines-as-code/main.go
