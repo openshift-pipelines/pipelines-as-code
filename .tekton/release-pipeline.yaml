@@ -77,7 +77,7 @@ spec:
                     --message "OpenShift release.yaml generated for Release ${TARGET_BRANCH}" \
                     --owner-repository openshift-pipelines/pipelines-as-code \
                     --token ${HUB_TOKEN} \
-                    --from-tag=refs/tags/${TARGET_BRANCH} \
+                    --branch-ref refs/heads/release-${TARGET_BRANCH} \
                     -d release-${TARGET_BRANCH}.yaml -f <(env TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh)
                 exit 0
       - name: gorelease
