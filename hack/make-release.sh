@@ -10,14 +10,14 @@ remote=git@github.com:openshift-pipelines/pipelines-as-code
     exit 1
 }
 
-sed -i "s,\(https://github.com/openshift-pipelines/pipelines-as-code/blob/\)[^/]*,\1${VERSION}," README.md
-sed -i "s/^VERSION=.*/VERSION=${VERSION}/" docs/install.md
-
 git status -uno|grep -q "nothing to commit" || {
     echo "there is change locally, commit them first"
     git status -uno
     exit 1
 }
+
+sed -i "s,\(https://github.com/openshift-pipelines/pipelines-as-code/blob/\)[^/]*,\1${VERSION}," README.md
+sed -i "s/^VERSION=.*/VERSION=${VERSION}/" docs/install.md
 
 git switch main
 
