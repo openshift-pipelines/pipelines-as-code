@@ -1,4 +1,4 @@
-**This documentation refers to the main developement branch, the documentation for the released version is [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/0.5.0/README.md)**
+**This documentation refers to the main developement branch, the documentation for the released version is [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/0.5.1/README.md)**
 
 # Pipelines as Code
 
