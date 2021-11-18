@@ -54,6 +54,10 @@ def create_ref_from_tags(args):
         args.token, "GET",
         f"/repos/{args.owner_repository}/git/{args.from_tag}")
     last_commit_sha = jeez["object"]["sha"]
+    if jeez["object"]["type"] == "tag":
+        _, jeez = github_request(args.token, "GET", jeez["object"]["url"])
+        last_commit_sha = jeez['object']["sha"]
+
     print("TAG SHA: " + last_commit_sha)
 
     branchname = f"release-{os.path.basename(args.from_tag)}"
@@ -67,8 +71,8 @@ def create_ref_from_tags(args):
                                         "ref": branch_ref,
                                         "sha": last_commit_sha
                                     })
-    except Exception:
-        pass
+    except Exception as e:
+        raise e
     args.branch_ref = branch_ref
     return upload_to_github(args)
 
