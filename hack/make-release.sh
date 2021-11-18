@@ -21,7 +21,7 @@ sed -i "s/^VERSION=.*/VERSION=${VERSION}/" docs/install.md
 
 git switch main
 
-git commit -S -m "Update documentation for Release ${VERSION}" docs/install.md README.md
+git commit -S -m "Update documentation for Release ${VERSION}" docs/install.md README.md || true
 git tag -s ${VERSION} -m "Release ${VERSION}"
 git push ${remote} refs/heads/main
 git push --tags ${remote} refs/tags/${VERSION}
