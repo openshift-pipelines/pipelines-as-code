@@ -98,14 +98,15 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 }
 
 func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
-	opts := &bootstrapOpts{}
+	opts := &bootstrapOpts{
+		ioStreams: ioStreams,
+	}
 	cmd := &cobra.Command{
 		Use:   "bootstrap",
 		Long:  "Bootstrap Pipelines as Code",
 		Short: "Bootstrap Pipelines as Code.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
-			opts.ioStreams = ioStreams
 			opts.cliOpts = cli.NewCliOptions(cmd)
 			opts.ioStreams.SetColorEnabled(!opts.cliOpts.NoColoring)
 			if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
@@ -126,20 +127,55 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			return nil
 		},
 	}
+	cmd.AddCommand(GithubApp(run, ioStreams))
 
-	cmd.PersistentFlags().StringVar(&opts.GithubApplicationName, "github-application-name", "", "Github Application Name")
-	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "Github Application URL")
-	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "the URL for the eventlistenner")
-	cmd.PersistentFlags().BoolP("no-color", "C", !ioStreams.ColorEnabled(), "disable coloring")
-	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Wether to install the nightly Pipelines as Code")
-	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "webserver-port")
-	cmd.PersistentFlags().StringVarP(&opts.targetNamespace, "namespace", "n", pacNS, "target namespace where pac is installed")
+	addCommonFlags(cmd, opts, ioStreams)
+	addGithubAppFlag(cmd, opts)
 
 	cmd.PersistentFlags().BoolVar(&opts.forceInstall, "force-install", false, "wether we should force pac install even if it's already installed")
 	cmd.PersistentFlags().BoolVar(&opts.skipInstall, "skip-install", false, "skip Pipelines as Code installation")
 	cmd.PersistentFlags().BoolVar(&opts.skipGithubAPP, "skip-github-app", false, "skip creating github application")
 
+	return cmd
+}
+
+func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+	opts := &bootstrapOpts{
+		ioStreams: ioStreams,
+	}
+
+	cmd := &cobra.Command{
+		Use:   "github-app",
+		Long:  "A command helper to help you create the Pipelines as Code Github Application",
+		Short: "Create PAC Github Application",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
+			opts.cliOpts = cli.NewCliOptions(cmd)
+			opts.ioStreams.SetColorEnabled(!opts.cliOpts.NoColoring)
+			if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
+				return err
+			}
+
+			return createSecret(ctx, run, opts)
+		},
+	}
+	addCommonFlags(cmd, opts, ioStreams)
+	addGithubAppFlag(cmd, opts)
+	return cmd
+}
+
+func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
+	cmd.PersistentFlags().StringVar(&opts.GithubApplicationName, "github-application-name", "", "Github Application Name")
+	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "Github Application URL")
+	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enteprise API URL")
+	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "the URL for the eventlistenner")
+	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Wether to install the nightly Pipelines as Code")
+	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "webserver-port")
 	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,
 		fmt.Sprintf("target install type, choices are: %s ", strings.Join(providerTargets, ", ")))
-	return cmd
+}
+
+func addCommonFlags(cmd *cobra.Command, opts *bootstrapOpts, ioStreams *cli.IOStreams) {
+	cmd.PersistentFlags().BoolP("no-color", "C", !ioStreams.ColorEnabled(), "disable coloring")
+	cmd.PersistentFlags().StringVarP(&opts.targetNamespace, "namespace", "n", pacNS, "target namespace where pac is installed")
 }

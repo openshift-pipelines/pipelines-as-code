@@ -37,17 +37,19 @@ func askQuestions(opts *bootstrapOpts) error {
 		}
 	}
 
-	if opts.providerType == "github-enteprise-app" {
-		prompt := "Enter your Github enteprise API URL: "
-		qs = append(qs, &survey.Question{
-			Name: "GithubAPIURL",
-			Prompt: &survey.Input{
-				Message: prompt,
-			},
-			Validate: survey.Required,
-		})
-	} else {
-		opts.GithubAPIURL = defaultPublicGithub
+	if opts.GithubAPIURL == "" {
+		if opts.providerType == "github-enteprise-app" {
+			prompt := "Enter your Github enteprise API URL: "
+			qs = append(qs, &survey.Question{
+				Name: "GithubAPIURL",
+				Prompt: &survey.Input{
+					Message: prompt,
+				},
+				Validate: survey.Required,
+			})
+		} else {
+			opts.GithubAPIURL = defaultPublicGithub
+		}
 	}
 
 	msg := "Enter the name of your GitHub application: "
