@@ -64,6 +64,13 @@ It will start checking if you have installed Pipelines as Code and if not it wil
 
 It detect the OpenShift Route automatically associated to the EventListenner service, you can override the URL with the flag `--route-url`.
 
+### bootstrap github-app
+
+If you only want to create the Github application you can use `tkn pac bootstrap
+github-app` directly which would skip the installation and only create the
+github application and the secret with all the information needed in the
+`pipelines-as-code` namespace.
+
 ### Repository creation
 
 `tkn pac repo create` -- will create a new Pipelines as Code Repository and a namespace where the pipelineruns command. It will launch the `tkn pac generate` command right after the creation.
