@@ -55,7 +55,7 @@ podman run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
 
 ### bootstrap
 
-`tkn pac bootstrap` command will help you getting started installaing and configuring Pipelines as code. It currently supports the following providers:
+`tkn pac bootstrap` command will help you getting started installing and configuring Pipelines as code. It currently supports the following providers:
 
 * Github application on public Github
 * Github application on Github Enterprise
@@ -87,13 +87,13 @@ On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows Terminal](https:
 
 ### Generate
 
-`tkn pac generate`: will generate a simple pipelinerun to get you started with Pipelines as Code. It will try to be as smart as possible by detecting the current git information if you run the command from your source code.
+`tkn pac generate`: will generate a simple pipeline run to get you started with Pipelines as Code. It will try to be as smart as possible by detecting the current git information if you run the command from your source code.
 
 It has some basic language detection and add extra task depending of the language. For example if it detects a file named `setup.py` at the repository root it will add the [pylint task](https://hub.tekton.dev/tekton/task/pylint) to the generated pipelinerun.
 
 ### Resolve
 
-`tkn-pac resolve`: will run a pipelinerun as if it were executed by pipelines as code on service. It will try to detect the current git information if you run the command from your source code. To make it works you need to push the current revision to the target git repository and iterate the pipelinerun change with the `tkn-pac resolve` command. For example if you have a pipelinerun in the `.tekton/pull-request.yaml` file you can run the command `tkn-pac resolve` to see it running:
+`tkn-pac resolve`: will run a pipelinerun as if it were executed by pipelines as code on service. It will try to detect the current git information if you run the command from your source code. To make it works you need to push the current revision to the target git repository and iterate the pipelinerun change with the `tkn-pac resolve` command. For example if you have a pipeline run in the `.tekton/pull-request.yaml` file you can run the command `tkn-pac resolve` to see it running:
 
 ```yaml
 tkn pac resolve -f .tekton/pull-request.yaml|kubectl apply -f -
