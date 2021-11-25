@@ -55,7 +55,7 @@ podman run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
 
 ### bootstrap
 
-`tkn pac bootstrap` command will help you getting started installaing and configuring Pipelines as code. It currently supports the following providers:
+`tkn pac bootstrap` command will help you getting started installing and configuring Pipelines as code. It currently supports the following providers:
 
 * Github application on public Github
 * Github application on Github Enterprise
