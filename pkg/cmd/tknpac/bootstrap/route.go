@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,4 +39,20 @@ func detectOpenShiftRoute(ctx context.Context, run *params.Run, opts *bootstrapO
 	}
 
 	return fmt.Sprintf("https://%s", host), nil
+}
+
+func detectSelfSignedCertificate(ctx context.Context, url string) string {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return fmt.Sprintf("invalid url?? %s", url)
+	}
+
+	client := http.Client{}
+	_, err = client.Do(req)
+	if err != nil && strings.Contains(err.Error(), "x509: certificate is not valid") {
+		return "⚠️ your eventlistenner route is using self signed certificate\n⚠️ make sure you allow connecting to self signed url in your github app setting."
+	} else if err != nil {
+		return fmt.Sprintf("⚠️ could not connect to the route %s, make sure the eventlistenner is running", url)
+	}
+	return ""
 }

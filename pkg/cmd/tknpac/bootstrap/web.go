@@ -83,5 +83,11 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 	// nolint:forbidigo
 	fmt.Println("💡 Don't forget to run the \"tkn pac repo create\" to create a new Repository CRD on your cluster.")
 
+	detectString := detectSelfSignedCertificate(ctx, opts.RouteName)
+	if detectString != "" {
+		// nolint:forbidigo
+		fmt.Println(detectString)
+	}
+
 	return nil
 }
