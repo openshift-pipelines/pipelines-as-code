@@ -156,6 +156,10 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
+			if b, _ := askYN(false, "", "Are you using Github Enterprise?"); b {
+				opts.providerType = "github-enteprise-app"
+			}
+
 			return createSecret(ctx, run, opts)
 		},
 	}
