@@ -13,7 +13,9 @@ const defaultPublicGithub = "https://github.com"
 func askYN(deflt bool, title, question string) (bool, error) {
 	var answer bool
 	// nolint:forbidigo
-	fmt.Printf("%s\n", title)
+	if title != "" {
+		fmt.Printf("%s\n", title)
+	}
 	err := prompt.SurveyAskOne(&survey.Confirm{
 		Message: question,
 		Default: deflt,

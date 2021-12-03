@@ -15,7 +15,7 @@ func generateManifest(opts *bootstrapOpts) ([]byte, error) {
 		URL:            github.String(opts.GithubApplicationURL),
 		HookAttributes: map[string]string{"url": opts.RouteName},
 		RedirectURL:    github.String(fmt.Sprintf("http://localhost:%d", opts.webserverPort)),
-		Description:    github.String("Pipilines as Code Application"),
+		Description:    github.String("Pipeline as Code Application"),
 		Public:         github.Bool(true),
 		DefaultEvents: []string{
 			"commit_comment",
