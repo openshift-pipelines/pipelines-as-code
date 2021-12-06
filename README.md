@@ -107,6 +107,8 @@ The usage guide available [here](./docs/guide.md) offer a comprehenive documenta
 
 A walkthought video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
 
+The Pipelines as Code typical flow from a Github Pull Request on PR  can be viewed [here](./docs/flow.md)
+
 ## Videos/Blog Posts
 
 - [OpenShift Developer Experience Office Hours: Pipeline as Code with OpenShift Pipelines](https://www.youtube.com/watch?v=PhqzGsJnFEI)
