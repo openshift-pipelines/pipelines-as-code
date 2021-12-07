@@ -37,11 +37,11 @@ another namespace.
 
 If there is multiples CRD matching the same event, only the oldest one will
 match. If you need to match a specific namespace you would need to use the
-target-namepsace feature in the pipeine annotation (see below).
+target-namespace feature in the pipeline annotation (see below).
 
 There is another optional layer of security where PipelineRun can have an
-annotation to explicitely target a specific
-namespace. It would stilll need to have a Repository CRD created in that
+annotation to explicitly target a specific
+namespace. It would still need to have a Repository CRD created in that
 namespace to be able to be matched.
 
 With this annotation a bad actor on a cluster cannot hijack the pipelineRun
@@ -83,7 +83,7 @@ Namespace instead of trying to match it from all available repository on cluster
 ### Examples
 
 `Pipelines as code` test itself, you can see the examples in its
-[.tekton](.tekton/) repository.
+[.tekton](./../.tekton) repository.
 
 ### Event matching to a Pipeline
 
@@ -99,7 +99,7 @@ your `PipelineRun`:
     pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-`Pipelines as Code` will match the piplinerun `pipeline-pr-main` if the git
+`Pipelines as Code` will match the pipelinerun `pipeline-pr-main` if the git
 provider events target the branch `main` and it's coming from a `[pull_request]`
 
 Multiple target branch can be specified separated by comma, i.e:
@@ -223,7 +223,7 @@ tasks:
 The git-clone task will pick up the basic-auth (optional) workspace and
 automatically use it to be able to clone the private repository.
 
-You can see as well a full example [here](./test/testdata/pipelinerun_git_clone_private.yaml)
+You can see as well a full example [here](./../test/testdata/pipelinerun_git_clone_private.yaml)
 
 This behaviour can be disabled by configuration the `secret-auto-create` key
 inside the [Pipelines-as-Code Configmap](./install.md#configuration).
