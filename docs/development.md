@@ -12,12 +12,12 @@ SETUP
     make releaseyaml|kubectl apply -f-
     ```
 
-* Configure a GitHub APP and a `github-secret` as mentionned in README.
+* Configure a GitHub APP and a `github-secret` as mentioned in README.
 
 * Configure a few Repository CR and a namespace target.
 
 * If you go to your GitHub app setting in `Advanced` you can see the json and payload GitHub is sending to the
-  eventlistenner.
+  eventlistener.
 
 * If you want to replay an event without having to `git commmit --amend --no-edit && git push --force`, you can capture
   that json blob into a file
@@ -27,15 +27,15 @@ SETUP
   ./hack/dev/replay-gh-events.py /tmp/payload.json
   ```
 
-  That script would detect github webhook secret and payload content and replay it to the event listenner.
+  That script would detect github webhook secret and payload content and replay it to the event listener.
 
-  If you don't have a OpenShift route setup to the eventlistenner, you can override the route with :
+  If you don't have a OpenShift route setup to the eventlistener, you can override the route with :
 
   ```shell
   export EL_ROUTE=http://localhost:8080
   ```
 
-  This in combination with an always running port-forward to the eventlistenner :
+  This in combination with an always running port-forward to the eventlistener :
 
   ```shell
   kubectl port-forward -n pipelines-as-code deployment/el-pipelines-as-code-interceptor 8080 8888

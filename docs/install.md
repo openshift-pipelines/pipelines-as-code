@@ -54,14 +54,14 @@ echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-intercepto
 
 ### RBAC
 
-Non `system:admin` users needs to be allowed explicited to create repositories
+Non `system:admin` users needs to be allowed explicitly to create repositories
 CRD in their namespace
 
 To allow them you need to create a `RoleBinding` on the namespace to the
 `openshift-pipeline-as-code-clusterrole`.
 
 For example assuming we want `user` being able to create repository CRD in the
-naemspace `user-ci`, if we use the openshift `oc` cli :
+namespace `user-ci`, if we use the openshift `oc` cli :
 
 ```shell
 oc adm policy add-role-to-user openshift-pipeline-as-code-clusterrole user -n user-ci
@@ -167,7 +167,7 @@ If you are not able to create a GitHub application you can install Pipelines-as-
 Using Pipelines as Code via Github webhook does not give you access to the GitHub CheckRun API, therefore the status of
 the tasks will be added as a Comment of the PR and not via the **Checks** Tab.
 
-* You have to first install the Pipelines-as-Code infrastructure as detailled
+* You have to first install the Pipelines-as-Code infrastructure as detailed
   here : [Install infrastructure](install.md#install-pipelines-as-code-infrastructure)
 
 * You will have to generate a personal token for Pipelines-as-Code Github API operations. Follow this guide to create a
@@ -180,8 +180,8 @@ will have to recreate it.
 
 * Go to you repository or organisation setting and click on *Hooks* and *"Add webhook"* links.
 
-* Set the payload URL to the event listenner public URL. On OpenShift you can get the public URL of the
-  Pipelines-as-Code eventlistenner like this :
+* Set the payload URL to the event listener public URL. On OpenShift you can get the public URL of the
+  Pipelines-as-Code eventlistener like this :
 
   ```shell
   echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
@@ -217,7 +217,7 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
           --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
   ```
 
-    - And now create Repositry CRD with the secret field referencing it.
+    - And now create Repository CRD with the secret field referencing it.
 
   Here is an example of a Repository CRD :
 
@@ -249,7 +249,7 @@ Server](https://www.atlassian.com/software/bitbucket/enterprise).
 
 Pipelines-As-Code has a full support on Bitbucket Cloud on <https://bitbucket.org>
 
-* You have to first install the Pipelines-as-Code infrastructure as detailled
+* You have to first install the Pipelines-as-Code infrastructure as detailed
   here : [Install infrastructure](install.md#install-pipelines-as-code-infrastructure)
 
 * You will have to generate a personal token as the manager of the Project,
@@ -275,8 +275,8 @@ recreate it.
   openssl rand -hex 20
 ```
 
-* Set the URL to the event listenner public URL. On OpenShift you can get the
-  public URL of the Pipelines-as-Code eventlistenner like this :
+* Set the URL to the event listener public URL. On OpenShift you can get the
+  public URL of the Pipelines-as-Code eventlistener like this :
 
   ```shell
   echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
@@ -299,7 +299,7 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
     * Pull Request -> Source branch updated
     * Pull Request -> Comments added
 
-- And now create Repositry CRD with the secret field referencing it.
+- And now create Repository CRD with the secret field referencing it.
 
     - Here is an example of a Repository CRD :
 
@@ -336,7 +336,7 @@ spec:
 Pipelines-As-Code has a full support on Bitbucket Cloud on
 <https://bitbucket.org>
 
-* You have to first install the Pipelines-as-Code infrastructure as detailled
+* You have to first install the Pipelines-as-Code infrastructure as detailed
   here : [Install
   infrastructure](install.md#install-pipelines-as-code-infrastructure)
 
@@ -353,8 +353,8 @@ recreate it.
 
 * Set a **Title** (i.e: Pipelines as Code)
 
-* Set the URL to the event listenner public URL. On OpenShift you can get the public URL of the Pipelines-as-Code
-  eventlistenner like this :
+* Set the URL to the event listener public URL. On OpenShift you can get the public URL of the Pipelines-as-Code
+  eventlistener like this :
 
   ```shell
   echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
@@ -378,7 +378,7 @@ recreate it.
           --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
   ```
 
-    - And now create Repositry CRD with the secret field referencing it.
+    - And now create Repository CRD with the secret field referencing it.
 
     - Here is an example of a Repository CRD :
 
@@ -450,7 +450,7 @@ the `pipelines-as-code` namespace.
 
 - `secret-auto-create`
 
-  Wether to auto create a secret with the token generated via the Github
+  Whether to auto create a secret with the token generated via the Github
   application to be used with private repositories. This feature is enabled by
   default.
 
@@ -472,7 +472,7 @@ Pipelines as Code should work directly on kubernetes/minikube/kind. You just nee
 for [pipeline](https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml)
 , [triggers](https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml) and
 its [interceptors](https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml) on your cluster.
-The release yaml to install pipelines are for the relesaed version :
+The release yaml to install pipelines are for the released version :
 
 ```shell
 VERSION=0.5.1

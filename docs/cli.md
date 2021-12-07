@@ -62,7 +62,7 @@ podman run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
 
 It will start checking if you have installed Pipelines as Code and if not it will ask you if you want to  install (with `kubectl`) the latest stable release. If you add the flag `--nightly` it will install the latest code ci release.
 
-It detect the OpenShift Route automatically associated to the EventListenner service, you can override the URL with the flag `--route-url`.
+It detect the OpenShift Route automatically associated to the EventListener service, you can override the URL with the flag `--route-url`.
 
 ### bootstrap github-app
 
@@ -83,7 +83,7 @@ github application and the secret with all the information needed in the
 
 `tkn pac repo describe` -- will describe a Pipelines as Code Repository and the runs associated with it.
 
-On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows Terminal](https://github.com/microsoft/terminal), gnome-terminal etc..) the links are clickable via control+click or ⌘+click) and will open the browser to the UI URL to see the Pipelinerun associated with it.
+On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows Terminal](https://github.com/microsoft/terminal), gnome-terminal etc..) the links are clickable via control+click or ⌘+click and will open the browser to the UI URL to see the Pipelinerun associated with it.
 
 ### Generate
 

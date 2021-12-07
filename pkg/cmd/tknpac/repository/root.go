@@ -9,7 +9,7 @@ import (
 func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "repository",
-		Aliases:      []string{"repo", "repsitories"},
+		Aliases:      []string{"repo", "repositories"},
 		Short:        "Pipelines as Code repositories",
 		Long:         `Manage Pipelines as Code repositories`,
 		SilenceUsage: true,
