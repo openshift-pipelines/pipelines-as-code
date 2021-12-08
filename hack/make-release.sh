@@ -7,7 +7,6 @@ remote=git@github.com:openshift-pipelines/pipelines-as-code
 CURRENTVERSION=$(git describe --tags $(git rev-list --tags --max-count=1))
 
 bumpversion(){
-
    python3 -c "import semver" 2>/dev/null || {
        echo "install semver python module to bump version automatically: ie"
        echo "pip install --user semver"
@@ -22,15 +21,15 @@ bumpversion(){
    elif [[ ${ANSWER,,} == "p" ]];then
        mode=patch
    else
-       print "no or bad reply??"
+       echo "no or bad reply??"
        exit
    fi
-   VERSION=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_${mode}()))"
-             ${CURRENTVERSION})
+   VERSION=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_${mode}()))" ${CURRENTVERSION})
    [[ -z ${VERSION} ]] && {
        echo "could not bump version automatically"
        exit
    }
+   true
 }
 
 echo "Current version is ${CURRENTVERSION}"
