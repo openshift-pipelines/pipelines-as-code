@@ -7,34 +7,35 @@ remote=git@github.com:openshift-pipelines/pipelines-as-code
 CURRENTVERSION=$(git describe --tags $(git rev-list --tags --max-count=1))
 
 bumpversion() {
-   current=$(git describe --tags $(git rev-list --tags --max-count=1))
-   echo "Current version is ${current}"
+    mode=""
+    current=$(git describe --tags $(git rev-list --tags --max-count=1))
+    echo "Current version is ${current}"
 
-   major=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_major()))" ${CURRENTVERSION})
-   minor=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_minor()))" ${CURRENTVERSION})
-   patch=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_patch()))" ${CURRENTVERSION})
+    major=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_major()))" ${CURRENTVERSION})
+    minor=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_minor()))" ${CURRENTVERSION})
+    patch=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_patch()))" ${CURRENTVERSION})
 
-   echo "If we bump we get, Major: ${major} Minor: ${minor} Patch: ${patch}"
-   read -p "To which version you would like to bump [M]ajor, Mi[n]or, [P]atch or Manua[l]: " ANSWER
-   if [[ ${ANSWER,,} == "m" ]];then
-       mode=major
-   elif [[ ${ANSWER,,} == "n" ]];then
-       mode=minor
-   elif [[ ${ANSWER,,} == "p" ]];then
-       mode=patch
-   elif [[ ${ANSWER,,} == "l" ]];then
-       read -p "Enter version: " -e VERSION
-       return
-   else
-       print "no or bad reply??"
-       exit
-   fi
-   VERSION=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_${mode}()))" ${CURRENTVERSION})
-   [[ -z ${VERSION} ]] && {
-       echo "could not bump version automatically"
-       exit
-   }
-   echo "Releasing ${VERSION}"
+    echo "If we bump we get, Major: ${major} Minor: ${minor} Patch: ${patch}"
+    read -p "To which version you would like to bump [M]ajor, Mi[n]or, [P]atch or Manua[l]: " ANSWER
+    if [[ ${ANSWER,,} == "m" ]];then
+       mode="major"
+       elif [[ ${ANSWER,,} == "n" ]];then
+            mode="minor"
+       elif [[ ${ANSWER,,} == "p" ]];then
+            mode="patch"
+       elif [[ ${ANSWER,,} == "l" ]];then
+            read -p "Enter version: " -e VERSION
+            return
+       else
+           print "no or bad reply??"
+           exit
+       fi
+            VERSION=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_${mode}()))" ${CURRENTVERSION})
+            [[ -z ${VERSION} ]] && {
+                echo "could not bump version automatically"
+                exit
+            }
+            echo "Releasing ${VERSION}"
 }
 
 [[ -z ${VERSION} ]] && bumpversion
