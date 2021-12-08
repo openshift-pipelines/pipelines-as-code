@@ -49,15 +49,11 @@ func detectSelfSignedCertificate(ctx context.Context, url string) string {
 
 	client := http.Client{}
 	resp, err := client.Do(req)
-
 	if err != nil && strings.Contains(err.Error(), "x509: certificate is not valid") {
-		resp.Body.Close()
 		return "⚠️ your eventlistenner route is using self signed certificate\n⚠️ make sure you allow connecting to self signed url in your github app setting."
 	} else if err != nil {
-		resp.Body.Close()
 		return fmt.Sprintf("⚠️ could not connect to the route %s, make sure the eventlistenner is running", url)
 	}
-	// golangci-lint makes me do it, can't use defer :\
 	resp.Body.Close()
 	return ""
 }

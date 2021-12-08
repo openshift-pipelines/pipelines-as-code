@@ -48,3 +48,21 @@ func checkNS(ctx context.Context, run *params.Run, opts *bootstrapOpts) (bool, e
 	ns, err := run.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.targetNamespace, metav1.GetOptions{})
 	return ns.GetName() != "", err
 }
+
+func checkPipelinesInstalled(run *params.Run) (bool, error) {
+	sg, err := run.Clients.Kube.Discovery().ServerGroups()
+	if err != nil {
+		return false, err
+	}
+	tektonFound := false
+	triggersFound := false
+	for _, t := range sg.Groups {
+		if t.Name == "tekton.dev" {
+			tektonFound = true
+		}
+		if t.Name == "triggers.tekton.dev" {
+			triggersFound = true
+		}
+	}
+	return tektonFound && triggersFound, nil
+}
