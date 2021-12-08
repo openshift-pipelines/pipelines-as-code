@@ -2,4 +2,4 @@
 
 * A typical Pull Request, flow diagram.
 
-![Pipelines as Code - PR Flow](./images/pr-flow.png)
+![Pipelines as Code - PR Flow](./images/pr-flow.jpg)
