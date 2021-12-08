@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -59,6 +60,13 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	if !opts.forceInstall {
 		// nolint:forbidigo
 		fmt.Println("🏃 Checking if Pipelines as Code is installed.")
+	}
+	tektonInstalled, err := checkPipelinesInstalled(run)
+	if err != nil {
+		return err
+	}
+	if !tektonInstalled {
+		return errors.New("tekton API not found on the cluster. Please install Tekton first")
 	}
 	installed, _ := checkNS(ctx, run, opts)
 	if !opts.forceInstall && installed {
