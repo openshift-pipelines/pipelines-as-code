@@ -13,5 +13,4 @@ your descriptive commit message(s)! -->
 - [ ] 🎁 If that's something that is possible to do please make sure to check if we can add a e2e test.
 - [ ] 🔎 If there is a flakyness in the CI tests then make sure to get the flakyness fixed before merging or if that's not possible there is a good reason to bypass it.
 
-_See [the contribution guide](https://github.com/tektoncd/catalog/blob/master/CONTRIBUTING.md)
-for more details._
+_See [the developer guide](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/docs/development.md) for a bit more details._
