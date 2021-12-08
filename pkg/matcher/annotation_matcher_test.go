@@ -241,13 +241,13 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "bad-event-annotation",
+			name: "single-event-annotation",
 			args: args{
 				runevent: info.Event{EventType: "pull_request", BaseBranch: "main"},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "bad-event-annotation",
+							Name: "single-event-annotation",
 							Annotations: map[string]string{
 								pipelinesascode.GroupName + "/" + onEventAnnotation:        "pull_request",
 								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[main]",
@@ -256,16 +256,16 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
-			name: "bad-target-branch-annotation",
+			name: "single-target-branch-annotation",
 			args: args{
 				runevent: info.Event{EventType: "pull_request", BaseBranch: "main"},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: "bad-target-branch-annotation",
+							Name: "single-target-branch-annotation",
 							Annotations: map[string]string{
 								pipelinesascode.GroupName + "/" + onEventAnnotation:        "[pull_request]",
 								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "main",
@@ -274,7 +274,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 					},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "empty-annotation",
@@ -390,6 +390,14 @@ func Test_getAnnotationValues(t *testing.T) {
 		wantErr bool
 	}{
 		{
+			name: "get-annotation-string",
+			args: args{
+				annotation: "foo",
+			},
+			want:    []string{"foo"},
+			wantErr: false,
+		},
+		{
 			name: "get-annotation-simple",
 			args: args{
 				annotation: "[foo]",
@@ -404,6 +412,13 @@ func Test_getAnnotationValues(t *testing.T) {
 			},
 			want:    []string{"foo", "bar"},
 			wantErr: false,
+		},
+		{
+			name: "get-annotation-multiple-string-bad-syntax",
+			args: args{
+				annotation: "foo, bar",
+			},
+			wantErr: true,
 		},
 		{
 			name: "get-annotation-bad-syntax",

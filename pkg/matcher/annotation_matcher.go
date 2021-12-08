@@ -19,8 +19,11 @@ const (
 	onEventAnnotation        = "on-event"
 	onTargetBranchAnnotation = "on-target-branch"
 	onTargetNamespace        = "target-namespace"
-	reValidateTag            = `^\[(.*)\]$`
 	maxKeepRuns              = "max-keep-runs"
+
+	// regex allows array of string or a single string
+	// eg. ["foo", "bar"], ["foo"] or "foo"
+	reValidateTag = `^\[(.*)\]$|^[^[\]\s]*$`
 )
 
 func branchMatch(prunBranch, baseBranch string) bool {
@@ -38,9 +41,15 @@ func branchMatch(prunBranch, baseBranch string) bool {
 // TODO: move to another file since it's common to all annotations_* files
 func getAnnotationValues(annotation string) ([]string, error) {
 	re := regexp.MustCompile(reValidateTag)
+	annotation = strings.TrimSpace(annotation)
 	match := re.Match([]byte(annotation))
 	if !match {
 		return nil, errors.New("annotations in pipeline are in wrong format")
+	}
+
+	// if it's not an array then it would be a single string
+	if !strings.HasPrefix(annotation, "[") {
+		return []string{annotation}, nil
 	}
 
 	// Split all tasks by comma and make sure to trim spaces in there

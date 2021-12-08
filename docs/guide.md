@@ -262,7 +262,11 @@ Pipeline or a PipelineSpec it will automatically inlines it.
 An annotation to a remote task looks like this :
 
   ```yaml
-  pipelinesascode.tekton.dev/task: "[git-clone]"
+  pipelinesascode.tekton.dev/task: "git-clone"
+  ```
+or multiple tasks via an array :
+  ```yaml
+  pipelinesascode.tekton.dev/task: ["git-clone", "pylint"]
   ```
 
 this installs the
@@ -279,9 +283,9 @@ You can have multiple lines if you add a `-NUMBER` suffix to the annotation, for
 example :
 
 ```yaml
-  pipelinesascode.tekton.dev/task: "[git-clone]"
-  pipelinesascode.tekton.dev/task-1: "[golang-test]"
-  pipelinesascode.tekton.dev/task-2: "[tkn]"
+  pipelinesascode.tekton.dev/task: "git-clone"
+  pipelinesascode.tekton.dev/task-1: "golang-test"
+  pipelinesascode.tekton.dev/task-2: "tkn" 
 ```
 
 By default `Pipelines as Code` will interpret the string as the `latest` task to
