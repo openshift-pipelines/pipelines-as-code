@@ -2,9 +2,10 @@ package bootstrap
 
 import (
 	"context"
+	"crypto/x509"
+	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,11 +50,15 @@ func detectSelfSignedCertificate(ctx context.Context, url string) string {
 
 	client := http.Client{}
 	resp, err := client.Do(req)
-	if err != nil && strings.Contains(err.Error(), "x509: certificate is not valid") {
+	if err != nil && isTLSError(err) {
 		return "⚠️ your eventlistenner route is using self signed certificate\n⚠️ make sure you allow connecting to self signed url in your github app setting."
 	} else if err != nil {
 		return fmt.Sprintf("⚠️ could not connect to the route %s, make sure the eventlistenner is running", url)
 	}
 	resp.Body.Close()
 	return ""
+}
+
+func isTLSError(err error) bool {
+	return errors.As(err, &x509.UnknownAuthorityError{}) || errors.As(err, &x509.CertificateInvalidError{})
 }
