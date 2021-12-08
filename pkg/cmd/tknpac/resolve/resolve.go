@@ -71,6 +71,11 @@ func Command(run *params.Run) *cobra.Command {
 					return err
 				}
 			}
+
+			if err := run.GetConfigFromConfigMap(ctx); err != nil {
+				log.Printf("Warning: cannot get pipelines-as-code config map in pipelines-as-code namespace. Using defaults. Error: %v\n", err)
+			}
+
 			if len(filenames) == 0 {
 				return fmt.Errorf("you need to at least specify a file with -f")
 			}
