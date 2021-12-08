@@ -42,7 +42,7 @@ func TestSplitArgsInMap(t *testing.T) {
 
 func TestCommandFilenameSetProperly(t *testing.T) {
 	cs := &params.Run{
-		Clients: clients.Clients{ClientInitialized: true},
+		Clients: clients.Clients{ClientInitialized: false},
 		Info:    info.Info{Pac: &info.PacOpts{}},
 	}
 	cmd := Command(cs)
