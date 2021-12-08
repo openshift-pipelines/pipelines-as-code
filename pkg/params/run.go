@@ -70,7 +70,10 @@ func New() *Run {
 	return &Run{
 		Info: info.Info{
 			Event: &info.Event{},
-			Pac:   &info.PacOpts{},
+			Pac: &info.PacOpts{
+				ApplicationName: info.PACApplicationName,
+				HubURL:          info.HubURL,
+			},
 		},
 	}
 }
