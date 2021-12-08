@@ -6,36 +6,39 @@ VERSION=${1:-""}
 remote=git@github.com:openshift-pipelines/pipelines-as-code
 CURRENTVERSION=$(git describe --tags $(git rev-list --tags --max-count=1))
 
-bumpversion(){
-   python3 -c "import semver" 2>/dev/null || {
-       echo "install semver python module to bump version automatically: ie"
-       echo "pip install --user semver"
-       exit 1
-   }
+bumpversion() {
+    mode=""
+    current=$(git describe --tags $(git rev-list --tags --max-count=1))
+    echo "Current version is ${current}"
 
-   read -p "Would you like to bump [M]ajor, Mi[n]or or [P]atch: " ANSWER
-   if [[ ${ANSWER,,} == "m" ]];then
-       mode=major
-   elif [[ ${ANSWER,,} == "n" ]];then
-       mode=minor
-   elif [[ ${ANSWER,,} == "p" ]];then
-       mode=patch
-   else
-       echo "no or bad reply??"
-       exit
-   fi
-   VERSION=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_${mode}()))" ${CURRENTVERSION})
-   [[ -z ${VERSION} ]] && {
-       echo "could not bump version automatically"
-       exit
-   }
-   true
+    major=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_major()))" ${CURRENTVERSION})
+    minor=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_minor()))" ${CURRENTVERSION})
+    patch=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_patch()))" ${CURRENTVERSION})
+
+    echo "If we bump we get, Major: ${major} Minor: ${minor} Patch: ${patch}"
+    read -p "To which version you would like to bump [M]ajor, Mi[n]or, [P]atch or Manua[l]: " ANSWER
+    if [[ ${ANSWER,,} == "m" ]];then
+       mode="major"
+       elif [[ ${ANSWER,,} == "n" ]];then
+            mode="minor"
+       elif [[ ${ANSWER,,} == "p" ]];then
+            mode="patch"
+       elif [[ ${ANSWER,,} == "l" ]];then
+            read -p "Enter version: " -e VERSION
+            return
+       else
+           print "no or bad reply??"
+           exit
+       fi
+            VERSION=$(python3 -c "import semver,sys;print(str(semver.VersionInfo.parse(sys.argv[1]).bump_${mode}()))" ${CURRENTVERSION})
+            [[ -z ${VERSION} ]] && {
+                echo "could not bump version automatically"
+                exit
+            }
+            echo "Releasing ${VERSION}"
 }
 
-echo "Current version is ${CURRENTVERSION}"
-
 [[ -z ${VERSION} ]] && bumpversion
-echo "Releasing ${VERSION}"
 
 git status -uno|grep -q "nothing to commit" || {
     echo "there is change locally, commit them first"
