@@ -18,6 +18,7 @@ metadata:
   name: pipelines-as-code-bitbucket-server-pullreq
   namespace: pipelines-as-code
   labels:
+    app.kubernetes.io/version: "devel"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -35,6 +36,7 @@ metadata:
   name: pipelines-as-code-bitbucket-server-pullreq-common
   namespace: pipelines-as-code
   labels:
+    app.kubernetes.io/version: "devel"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -89,6 +91,7 @@ metadata:
   name: pipelines-as-code-bitbucket-server-pullreq
   namespace: pipelines-as-code
   labels:
+    app.kubernetes.io/version: "devel"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -116,6 +119,7 @@ spec:
       metadata:
         generateName: pipelines-as-code-run-
         labels:
+          app.kubernetes.io/version: "devel"
           app.kubernetes.io/managed-by: pipelines-as-code
       spec:
         serviceAccountName: pipelines-as-code-sa-el

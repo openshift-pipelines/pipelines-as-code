@@ -19,6 +19,7 @@ metadata:
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
+    app.kubernetes.io/version: "devel"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   serviceAccountName: pipelines-as-code-sa-el

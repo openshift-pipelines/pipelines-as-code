@@ -66,6 +66,7 @@ spec:
                 msg="Release version ${version}"
                 echo ${msg}
                 export TARGET_BRANCH=${version}
+                export PAC_VERSION=${version}
                 hack/upload-file-to-github.py \
                     --message "Release yaml generated for Release ${TARGET_BRANCH}" \
                     --owner-repository openshift-pipelines/pipelines-as-code \

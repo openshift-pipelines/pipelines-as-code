@@ -18,6 +18,7 @@ metadata:
   name: pipelines-as-code-pr-cleanup
   namespace: pipelines-as-code
   labels:
+    app.kubernetes.io/version: "devel"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   concurrencyPolicy: Replace

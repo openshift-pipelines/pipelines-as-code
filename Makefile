@@ -9,10 +9,10 @@ OUTPUT_DIR=bin
 
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
 
-ifeq ($(TKN_PAC_VERSION),)
-	TKN_PAC_VERSION="$(shell git describe --tags --exact-match 2>/dev/null || echo nightly-`date +'%Y%m%d'`-`git rev-parse --short HEAD`)"
+ifeq ($(PAC_VERSION),)
+	PAC_VERSION="$(shell git describe --tags --exact-match 2>/dev/null || echo nightly-`date +'%Y%m%d'`-`git rev-parse --short HEAD`)"
 endif
-FLAGS += -ldflags "-X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version=$(TKN_PAC_VERSION) $(LDFLAGS)"
+FLAGS += -ldflags "-X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version=$(PAC_VERSION) $(LDFLAGS)"
 
 all: $(OUTPUT_DIR)/pipelines-as-code $(OUTPUT_DIR)/tkn-pac test
 
@@ -28,11 +28,13 @@ $(OUTPUT_DIR)/%: cmd/% FORCE
 .PHONY: releaseyaml
 releaseyaml: ## Generate release.yaml, use it like this `make releaseyaml|kubectl apply -f-`
 	@env TARGET_REPO=$(QUAY_REPOSITORY) TARGET_BRANCH=$(QUAY_REPOSITORY_BRANCH) TARGET_NAMESPACE=$(TARGET_NAMESPACE) \
+		PAC_VERSION=$(PAC_VERSION) \
 		./hack/generate-releaseyaml.sh
 
 .PHONY: releaseko
 releaseko: ## Generate release.yaml with ko but changing the target_namespace and branch if needed
 	@env TARGET_BRANCH=$(QUAY_REPOSITORY_BRANCH) TARGET_NAMESPACE=$(TARGET_NAMESPACE) \
+		PAC_VERSION=$(PAC_VERSION) \
 		./hack/generate-releaseyaml.sh ko
 
 check: lint test
