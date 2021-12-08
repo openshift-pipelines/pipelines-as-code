@@ -18,6 +18,7 @@ metadata:
   name: pipelines-as-code-bitbucket-cloud-retest-comment
   namespace: pipelines-as-code
   labels:
+    app.kubernetes.io/version: "devel"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -34,6 +35,7 @@ metadata:
   name: pipelines-as-code-bitbucket-cloud-ok-to-test-comment
   namespace: pipelines-as-code
   labels:
+    app.kubernetes.io/version: "devel"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:

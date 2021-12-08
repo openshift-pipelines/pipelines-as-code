@@ -17,6 +17,7 @@ kind: CustomResourceDefinition
 metadata:
   name: repositories.pipelinesascode.tekton.dev
   labels:
+    app.kubernetes.io/version: "devel"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:

@@ -47,4 +47,5 @@ metadata:
   name: pipelines-as-code
   namespace: pipelines-as-code
   labels:
+    app.kubernetes.io/version: "devel"
     app.kubernetes.io/part-of: pipelines-as-code
