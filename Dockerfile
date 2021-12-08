@@ -1,5 +1,6 @@
 FROM registry.access.redhat.com/ubi8/go-toolset:latest	 AS builder
 
+
 COPY . /src
 WORKDIR /src
 RUN make /tmp/tkn-pac /tmp/pipelines-as-code LDFLAGS="-s -w" OUTPUT_DIR=/tmp
