@@ -87,7 +87,7 @@ spec:
     - name: pullrequest_id
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
-      kind: PipelineRun
+      kind: TaskRun
       metadata:
         generateName: pipelines-as-code-run-
         labels:
@@ -122,136 +122,95 @@ spec:
             value: $(tt.params.source_commit_hash)
           - name: pullrequest_id
             value: $(tt.params.pullrequest_id)
-        pipelineSpec:
+        taskSpec:
           params:
             - name: trigger_target
+              type: string
             - name: source_ip
+              type: string
             - name: event_type
+              type: string
             - name: workspace_slug
+              type: string
             - name: repository_name
+              type: string
             - name: repository_html_link
+              type: string
             - name: pullrequest_account_id
+              type: string
             - name: pullrequest_author_nickname
+              type: string
             - name: destination_branch_name
+              type: string
             - name: source_branch
+              type: string
             - name: source_commit_hash
+              type: string
             - name: pullrequest_id
-          tasks:
-            - name: pipelines-as-code
-              taskSpec:
-                params:
-                  - name: trigger_target
-                    type: string
-                  - name: source_ip
-                    type: string
-                  - name: event_type
-                    type: string
-                  - name: workspace_slug
-                    type: string
-                  - name: repository_name
-                    type: string
-                  - name: repository_html_link
-                    type: string
-                  - name: pullrequest_account_id
-                    type: string
-                  - name: pullrequest_author_nickname
-                    type: string
-                  - name: destination_branch_name
-                    type: string
-                  - name: source_branch
-                    type: string
-                  - name: source_commit_hash
-                    type: string
-                  - name: pullrequest_id
-                    type: string
-                steps:
-                  - name: apply-and-launch
-                    env:
-                      - name: PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP
-                        valueFrom:
-                          configMapKeyRef:
-                            name: pipelines-as-code
-                            key: bitbucket-cloud-check-source-ip
-                      - name: PAC_BITBUCKET_CLOUD_ADDITIONAL_SOURCE_IP
-                        valueFrom:
-                          configMapKeyRef:
-                            name: pipelines-as-code
-                            key: bitbucket-cloud-additional-source-ip
-                      - name: PAC_GIT_PROVIDER_TYPE
-                        value: "bitbucket-cloud"
-                      - name: PAC_TRIGGER_TARGET
-                        value: "$(params.trigger_target)"
-                      - name: PAC_WEBHOOK_TYPE
-                        value: "$(params.event_type)"
-                      - name: PAC_PAYLOAD_FILE
-                        value: "/tmp/payload.json"
-                      - name: PAC_SOURCE_IP
-                        value: $(params.source_ip)
-                    imagePullPolicy: Always
-                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
-                    script: |
-                      #!/usr/bin/env bash
-                      set -euf
-                      set +x
-                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
-                      {
-                          "repository": {
-                              "workspace": {
-                                  "slug": "$(params.workspace_slug)"
-                              },
-                              "name": "$(params.repository_name)",
-                              "links": {
-                                  "html": {
-                                      "href": "$(params.repository_html_link)"
-                                  }
-                              }
-                          },
-                          "pullrequest": {
-                              "id":  $(params.pullrequest_id),
-                              "author": {
-                                  "account_id": "$(params.pullrequest_account_id)",
-                                  "nickname": "$(params.pullrequest_author_nickname)"
-                              },
-                              "destination": {
-                                  "branch": {
-                                      "name": "$(params.destination_branch_name)"
-                                  }
-                              },
-                              "source": {
-                                  "branch": {
-                                      "name": "$(params.source_branch)"
-                                  },
-                                  "commit": {
-                                      "hash": "$(params.source_commit_hash)"
-                                  }
-                              }
-                          }
-                      }
-                      EOF
-                      env|grep '^PAC'
-                      pipelines-as-code
-              params:
-                - name: source_ip
+              type: string
+          steps:
+            - name: apply-and-launch
+              env:
+                - name: PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP
+                  valueFrom:
+                    configMapKeyRef:
+                      name: pipelines-as-code
+                      key: bitbucket-cloud-check-source-ip
+                - name: PAC_BITBUCKET_CLOUD_ADDITIONAL_SOURCE_IP
+                  valueFrom:
+                    configMapKeyRef:
+                      name: pipelines-as-code
+                      key: bitbucket-cloud-additional-source-ip
+                - name: PAC_GIT_PROVIDER_TYPE
+                  value: "bitbucket-cloud"
+                - name: PAC_TRIGGER_TARGET
+                  value: "$(params.trigger_target)"
+                - name: PAC_WEBHOOK_TYPE
+                  value: "$(params.event_type)"
+                - name: PAC_PAYLOAD_FILE
+                  value: "/tmp/payload.json"
+                - name: PAC_SOURCE_IP
                   value: $(params.source_ip)
-                - name: trigger_target
-                  value: $(params.trigger_target)
-                - name: event_type
-                  value: $(params.event_type)
-                - name: workspace_slug
-                  value: $(params.workspace_slug)
-                - name: repository_name
-                  value: $(params.repository_name)
-                - name: repository_html_link
-                  value: $(params.repository_html_link)
-                - name: pullrequest_account_id
-                  value: $(params.pullrequest_account_id)
-                - name: pullrequest_author_nickname
-                  value: $(params.pullrequest_author_nickname)
-                - name: destination_branch_name
-                  value: $(params.destination_branch_name)
-                - name: source_branch
-                  value: $(params.source_branch)
-                - name: source_commit_hash
-                  value: $(params.source_commit_hash)
-                - name: pullrequest_id
-                  value: $(params.pullrequest_id)
+              imagePullPolicy: Always
+              image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+              script: |
+                #!/usr/bin/env bash
+                set -euf
+                set +x
+                cat << EOF|tee ${PAC_PAYLOAD_FILE}
+                {
+                    "repository": {
+                        "workspace": {
+                            "slug": "$(params.workspace_slug)"
+                        },
+                        "name": "$(params.repository_name)",
+                        "links": {
+                            "html": {
+                                "href": "$(params.repository_html_link)"
+                            }
+                        }
+                    },
+                    "pullrequest": {
+                        "id":  $(params.pullrequest_id),
+                        "author": {
+                            "account_id": "$(params.pullrequest_account_id)",
+                            "nickname": "$(params.pullrequest_author_nickname)"
+                        },
+                        "destination": {
+                            "branch": {
+                                "name": "$(params.destination_branch_name)"
+                            }
+                        },
+                        "source": {
+                            "branch": {
+                                "name": "$(params.source_branch)"
+                            },
+                            "commit": {
+                                "hash": "$(params.source_commit_hash)"
+                            }
+                        }
+                    }
+                }
+                EOF
+                env|grep '^PAC'
+                pipelines-as-code

@@ -74,7 +74,7 @@ spec:
       default: ""
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
-      kind: PipelineRun
+      kind: TaskRun
       metadata:
         generateName: pipelines-as-code-run-
         labels:
@@ -105,115 +105,77 @@ spec:
             value: $(tt.params.clone_url_http)
           - name: "clone_url_ssh"
             value: $(tt.params.clone_url_ssh)
-        pipelineSpec:
+        taskSpec:
           params:
             - name: "event_type"
+              type: string
             - name: "trigger_target"
+              type: string
             - name: "owner"
+              type: string
             - name: "repository"
+              type: string
             - name: "sha"
+              type: string
             - name: "url"
+              type: string
             - name: "base_branch"
+              type: string
             - name: "accountid"
+              type: string
             - name: "sender"
+              type: string
             - name: "clone_url_http"
+              type: string
             - name: "clone_url_ssh"
-          tasks:
-            - name: pipelines-as-code
-              taskSpec:
-                params:
-                  - name: "event_type"
-                    type: string
-                  - name: "trigger_target"
-                    type: string
-                  - name: "owner"
-                    type: string
-                  - name: "repository"
-                    type: string
-                  - name: "sha"
-                    type: string
-                  - name: "url"
-                    type: string
-                  - name: "base_branch"
-                    type: string
-                  - name: "accountid"
-                    type: string
-                  - name: "sender"
-                    type: string
-                  - name: "clone_url_http"
-                    type: string
-                  - name: "clone_url_ssh"
-                    type: string
-                steps:
-                  - name: apply-and-launch
-                    env:
-                      - name: PAC_GIT_PROVIDER_TYPE
-                        value: "bitbucket-server"
-                      - name: PAC_TRIGGER_TARGET
-                        value: "$(params.trigger_target)"
-                      - name: PAC_WEBHOOK_TYPE
-                        value: "$(params.event_type)"
-                      - name: PAC_PAYLOAD_FILE
-                        value: "/tmp/payload.json"
-                    imagePullPolicy: Always
-                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
-                    script: |
-                      #!/usr/bin/env bash
-                      set -euf
-                      set +x
-                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
-                      {
-                          "actor": {
-                              "id"  : $(params.accountid),
-                              "name": "$(params.sender)"
-                          },
-                          "repository": {
-                              "slug": "$(params.repository)",
-                              "project": {
-                                  "key": "$(params.owner)"
-                              },
-                              "links": {
-                                "clone": [
-                                        {
-                                          "href": "$(params.clone_url_http)",
-                                          "name": "http"
-                                        },
-                                        {
-                                          "href": "$(params.clone_url_ssh)",
-                                          "name": "ssh"
-                                        }
-                                  ],
-                                  "self": [{"href": "$(params.url)"}]
-                              }
-                          },
-                          "changes": [{
-                              "toHash": "$(params.sha)",
-                              "refId": "$(params.base_branch)"
-                          }]
-                      }
-                      EOF
-                      env|grep '^PAC'
-                      pipelines-as-code
-              params:
-                - name: "event_type"
-                  value: $(params.event_type)
-                - name: "trigger_target"
-                  value: $(params.trigger_target)
-                - name: "owner"
-                  value: $(params.owner)
-                - name: "repository"
-                  value: $(params.repository)
-                - name: "sha"
-                  value: $(params.sha)
-                - name: "url"
-                  value: $(params.url)
-                - name: "base_branch"
-                  value: $(params.base_branch)
-                - name: "accountid"
-                  value: $(params.accountid)
-                - name: "sender"
-                  value: $(params.sender)
-                - name: "clone_url_http"
-                  value: $(params.clone_url_http)
-                - name: "clone_url_ssh"
-                  value: $(params.clone_url_ssh)
+              type: string
+          steps:
+            - name: apply-and-launch
+              env:
+                - name: PAC_GIT_PROVIDER_TYPE
+                  value: "bitbucket-server"
+                - name: PAC_TRIGGER_TARGET
+                  value: "$(params.trigger_target)"
+                - name: PAC_WEBHOOK_TYPE
+                  value: "$(params.event_type)"
+                - name: PAC_PAYLOAD_FILE
+                  value: "/tmp/payload.json"
+              imagePullPolicy: Always
+              image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+              script: |
+                #!/usr/bin/env bash
+                set -euf
+                set +x
+                cat << EOF|tee ${PAC_PAYLOAD_FILE}
+                {
+                    "actor": {
+                        "id"  : $(params.accountid),
+                        "name": "$(params.sender)"
+                    },
+                    "repository": {
+                        "slug": "$(params.repository)",
+                        "project": {
+                            "key": "$(params.owner)"
+                        },
+                        "links": {
+                          "clone": [
+                                  {
+                                    "href": "$(params.clone_url_http)",
+                                    "name": "http"
+                                  },
+                                  {
+                                    "href": "$(params.clone_url_ssh)",
+                                    "name": "ssh"
+                                  }
+                            ],
+                            "self": [{"href": "$(params.url)"}]
+                        }
+                    },
+                    "changes": [{
+                        "toHash": "$(params.sha)",
+                        "refId": "$(params.base_branch)"
+                    }]
+                }
+                EOF
+                env|grep '^PAC'
+                pipelines-as-code

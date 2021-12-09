@@ -71,7 +71,7 @@ spec:
     - name: push_new_hash
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
-      kind: PipelineRun
+      kind: TaskRun
       metadata:
         generateName: pipelines-as-code-run-
         labels:
@@ -102,128 +102,90 @@ spec:
             value: $(tt.params.branch_old_name)
           - name: push_new_hash
             value: $(tt.params.push_new_hash)
-        pipelineSpec:
+        taskSpec:
           params:
             - name: source_ip
+              type: string
             - name: event_type
+              type: string
             - name: trigger_target
+              type: string
             - name: workspace_slug
+              type: string
             - name: repository_name
+              type: string
             - name: repository_html_link
+              type: string
             - name: actor_acount_id
+              type: string
             - name: actor_nickname
+              type: string
             - name: branch_new_name
+              type: string
             - name: branch_old_name
+              type: string
             - name: push_new_hash
-          tasks:
-            - name: pipelines-as-code
-              taskSpec:
-                params:
-                  - name: source_ip
-                    type: string
-                  - name: event_type
-                    type: string
-                  - name: trigger_target
-                    type: string
-                  - name: workspace_slug
-                    type: string
-                  - name: repository_name
-                    type: string
-                  - name: repository_html_link
-                    type: string
-                  - name: actor_acount_id
-                    type: string
-                  - name: actor_nickname
-                    type: string
-                  - name: branch_new_name
-                    type: string
-                  - name: branch_old_name
-                    type: string
-                  - name: push_new_hash
-                    type: string
-                steps:
-                  - name: apply-and-launch
-                    env:
-                      - name: PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP
-                        valueFrom:
-                          configMapKeyRef:
-                            name: pipelines-as-code
-                            key: bitbucket-cloud-check-source-ip
-                      - name: PAC_BITBUCKET_CLOUD_ADDITIONAL_SOURCE_IP
-                        valueFrom:
-                          configMapKeyRef:
-                            name: pipelines-as-code
-                            key: bitbucket-cloud-additional-source-ip
-                      - name: PAC_GIT_PROVIDER_TYPE
-                        value: "bitbucket-cloud"
-                      - name: PAC_TRIGGER_TARGET
-                        value: "$(params.trigger_target)"
-                      - name: PAC_WEBHOOK_TYPE
-                        value: "$(params.event_type)"
-                      - name: PAC_PAYLOAD_FILE
-                        value: "/tmp/payload.json"
-                      - name: PAC_SOURCE_IP
-                        value: $(params.source_ip)
-                    imagePullPolicy: Always
-                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
-                    script: |
-                      #!/usr/bin/env bash
-                      set -euf
-                      set +x
-                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
-                      {
-                       "repository": {
-                           "workspace": {
-                               "slug": "$(params.workspace_slug)"
-                           },
-                           "name": "$(params.repository_name)",
-                           "links": {
-                               "html": {
-                                   "href": "$(params.repository_html_link)"
-                               }
-                           }
-                       },
-                       "actor": {
-                           "account_id": "$(params.actor_acount_id)",
-                           "nickname": "$(params.actor_nickname)"
-                       },
-                       "push": {
-                           "changes": [{
-                               "new": {
-                                   "name": "$(params.branch_new_name)",
-                                   "target": {
-                                       "hash": "$(params.push_new_hash)"
-                                   }
-                               },
-                               "old": {
-                                   "name": "$(params.branch_old_name)"
-                               }
-                           }]
-                       }
-                      }
-                      EOF
-                      env|grep '^PAC'
-                      pipelines-as-code
-              params:
-                - name: source_ip
+              type: string
+          steps:
+            - name: apply-and-launch
+              env:
+                - name: PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP
+                  valueFrom:
+                    configMapKeyRef:
+                      name: pipelines-as-code
+                      key: bitbucket-cloud-check-source-ip
+                - name: PAC_BITBUCKET_CLOUD_ADDITIONAL_SOURCE_IP
+                  valueFrom:
+                    configMapKeyRef:
+                      name: pipelines-as-code
+                      key: bitbucket-cloud-additional-source-ip
+                - name: PAC_GIT_PROVIDER_TYPE
+                  value: "bitbucket-cloud"
+                - name: PAC_TRIGGER_TARGET
+                  value: "$(params.trigger_target)"
+                - name: PAC_WEBHOOK_TYPE
+                  value: "$(params.event_type)"
+                - name: PAC_PAYLOAD_FILE
+                  value: "/tmp/payload.json"
+                - name: PAC_SOURCE_IP
                   value: $(params.source_ip)
-                - name: event_type
-                  value: $(params.event_type)
-                - name: trigger_target
-                  value: $(params.trigger_target)
-                - name: workspace_slug
-                  value: $(params.workspace_slug)
-                - name: repository_name
-                  value: $(params.repository_name)
-                - name: repository_html_link
-                  value: $(params.repository_html_link)
-                - name: actor_acount_id
-                  value: $(params.actor_acount_id)
-                - name: actor_nickname
-                  value: $(params.actor_nickname)
-                - name: branch_new_name
-                  value: $(params.branch_new_name)
-                - name: branch_old_name
-                  value: $(params.branch_old_name)
-                - name: push_new_hash
-                  value: $(params.push_new_hash)
+              imagePullPolicy: Always
+              image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+              script: |
+                #!/usr/bin/env bash
+                set -euf
+                set +x
+                cat << EOF|tee ${PAC_PAYLOAD_FILE}
+                {
+                 "repository": {
+                     "workspace": {
+                         "slug": "$(params.workspace_slug)"
+                     },
+                     "name": "$(params.repository_name)",
+                     "links": {
+                         "html": {
+                             "href": "$(params.repository_html_link)"
+                         }
+                     }
+                 },
+                 "actor": {
+                     "account_id": "$(params.actor_acount_id)",
+                     "nickname": "$(params.actor_nickname)"
+                 },
+                 "push": {
+                     "changes": [{
+                         "new": {
+                             "name": "$(params.branch_new_name)",
+                             "target": {
+                                 "hash": "$(params.push_new_hash)"
+                             }
+                         },
+                         "old": {
+                             "name": "$(params.branch_old_name)"
+                         }
+                     }]
+                 }
+                }
+                EOF
+                env|grep '^PAC'
+                pipelines-as-code
