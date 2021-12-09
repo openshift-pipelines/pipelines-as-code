@@ -145,7 +145,7 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -euf
-                set +x
+
                 cat << EOF|tee ${PAC_PAYLOAD_FILE}
                 {
                     "actor": {

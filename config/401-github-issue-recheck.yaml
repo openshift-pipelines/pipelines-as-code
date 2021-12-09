@@ -166,7 +166,7 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -euf
-                set +x
+
                 prnumber=$(params.pull_request_number)
                 [[ ${prnumber} != "[]" ]] && prnumber="[{\"number\": ${prnumber}}]"
                 cat << EOF |tee ${PAC_PAYLOAD_FILE}
