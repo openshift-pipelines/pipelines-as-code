@@ -115,7 +115,7 @@ spec:
     - name: fromRefName
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
-      kind: PipelineRun
+      kind: TaskRun
       metadata:
         generateName: pipelines-as-code-run-
         labels:
@@ -156,163 +156,110 @@ spec:
             value: $(tt.params.sha)
           - name: fromRefName
             value: $(tt.params.fromRefName)
-        pipelineSpec:
+        taskSpec:
           params:
             - name: trigger_target
+              type: string
             - name: event_type
+              type: string
             - name: project_key
+              type: string
             - name: project_id
+              type: string
             - name: repository_name
+              type: string
             - name: repository_id
+              type: string
             - name: dest_repo_url
+              type: string
             - name: clone_url_http
+              type: string
             - name: clone_url_ssh
+              type: string
             - name: sender_id
+              type: string
             - name: sender_name
+              type: string
             - name: toRefName
+              type: string
             - name: pull_request_number
+              type: string
             - name: pull_request_html_url
+              type: string
             - name: sha
+              type: string
             - name: fromRefName
-          tasks:
-            - name: pipelines-as-code
-              taskSpec:
-                params:
-                  - name: trigger_target
-                    type: string
-                  - name: event_type
-                    type: string
-                  - name: project_key
-                    type: string
-                  - name: project_id
-                    type: string
-                  - name: repository_name
-                    type: string
-                  - name: repository_id
-                    type: string
-                  - name: dest_repo_url
-                    type: string
-                  - name: clone_url_http
-                    type: string
-                  - name: clone_url_ssh
-                    type: string
-                  - name: sender_id
-                    type: string
-                  - name: sender_name
-                    type: string
-                  - name: toRefName
-                    type: string
-                  - name: pull_request_number
-                    type: string
-                  - name: pull_request_html_url
-                    type: string
-                  - name: sha
-                    type: string
-                  - name: fromRefName
-                    type: string
-                steps:
-                  - name: apply-and-launch
-                    env:
-                      - name: PAC_GIT_PROVIDER_TYPE
-                        value: "bitbucket-server"
-                      - name: PAC_TRIGGER_TARGET
-                        value: "$(params.trigger_target)"
-                      - name: PAC_WEBHOOK_TYPE
-                        value: "$(params.event_type)"
-                      - name: PAC_PAYLOAD_FILE
-                        value: "/tmp/payload.json"
-                    imagePullPolicy: Always
-                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
-                    script: |
-                      #!/usr/bin/env bash
-                      set -euf
-                      set +x
-                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
-                      {
-                          "actor": {
-                              "id": $(params.sender_id),
-                              "name": "$(params.sender_name)"
-                          },
-                          "pullRequest": {
-                              "id": $(params.pull_request_number),
-                              "toRef": {
-                                  "displayId": "$(params.toRefName)",
-                                  "repository": {
-                                      "id": $(params.repository_id),
-                                      "name": "$(params.repository_name)",
-                                      "project": {
-                                          "id": $(params.project_id),
-                                          "key": "$(params.project_key)"
-                                      },
-                                      "links": {
-                                          "self": [
-                                              {
-                                                  "href": "$(params.dest_repo_url)"
-                                              }
-                                          ]
-                                      }
-                                  }
-                              },
-                              "fromRef": {
-                                  "displayId": "$(params.fromRefName)",
-                                  "latestCommit": "$(params.sha)",
-                                  "repository": {
-                                    "links": {
-                                      "clone": [
+              type: string
+          steps:
+            - name: apply-and-launch
+              env:
+                - name: PAC_GIT_PROVIDER_TYPE
+                  value: "bitbucket-server"
+                - name: PAC_TRIGGER_TARGET
+                  value: "$(params.trigger_target)"
+                - name: PAC_WEBHOOK_TYPE
+                  value: "$(params.event_type)"
+                - name: PAC_PAYLOAD_FILE
+                  value: "/tmp/payload.json"
+              imagePullPolicy: Always
+              image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+              script: |
+                #!/usr/bin/env bash
+                set -euf
+
+                cat << EOF|tee ${PAC_PAYLOAD_FILE}
+                {
+                    "actor": {
+                        "id": $(params.sender_id),
+                        "name": "$(params.sender_name)"
+                    },
+                    "pullRequest": {
+                        "id": $(params.pull_request_number),
+                        "toRef": {
+                            "displayId": "$(params.toRefName)",
+                            "repository": {
+                                "id": $(params.repository_id),
+                                "name": "$(params.repository_name)",
+                                "project": {
+                                    "id": $(params.project_id),
+                                    "key": "$(params.project_key)"
+                                },
+                                "links": {
+                                    "self": [
                                         {
-                                          "href": "$(params.clone_url_http)",
-                                          "name": "http"
-                                        },
-                                        {
-                                          "href": "$(params.clone_url_ssh)",
-                                          "name": "ssh"
+                                            "href": "$(params.dest_repo_url)"
                                         }
-                                      ]
-                                    }
-                                  }
-                              },
+                                    ]
+                                }
+                            }
+                        },
+                        "fromRef": {
+                            "displayId": "$(params.fromRefName)",
+                            "latestCommit": "$(params.sha)",
+                            "repository": {
                               "links": {
-                                  "self": [
-                                      {
-                                          "href": "$(params.pull_request_html_url)"
-                                      }
-                                  ]
+                                "clone": [
+                                  {
+                                    "href": "$(params.clone_url_http)",
+                                    "name": "http"
+                                  },
+                                  {
+                                    "href": "$(params.clone_url_ssh)",
+                                    "name": "ssh"
+                                  }
+                                ]
                               }
-                          }
-                      }
-                      EOF
-                      env|grep '^PAC'
-                      pipelines-as-code
-              params:
-                - name: trigger_target
-                  value: $(params.trigger_target)
-                - name: event_type
-                  value: $(params.event_type)
-                - name: project_key
-                  value: $(params.project_key)
-                - name: project_id
-                  value: $(params.project_id)
-                - name: repository_name
-                  value: $(params.repository_name)
-                - name: repository_id
-                  value: $(params.repository_id)
-                - name: dest_repo_url
-                  value: $(params.dest_repo_url)
-                - name: clone_url_http
-                  value: $(params.clone_url_http)
-                - name: clone_url_ssh
-                  value: $(params.clone_url_ssh)
-                - name: sender_id
-                  value: $(params.sender_id)
-                - name: sender_name
-                  value: $(params.sender_name)
-                - name: toRefName
-                  value: $(params.toRefName)
-                - name: pull_request_number
-                  value: $(params.pull_request_number)
-                - name: pull_request_html_url
-                  value: $(params.pull_request_html_url)
-                - name: sha
-                  value: $(params.sha)
-                - name: fromRefName
-                  value: $(params.fromRefName)
+                            }
+                        },
+                        "links": {
+                            "self": [
+                                {
+                                    "href": "$(params.pull_request_html_url)"
+                                }
+                            ]
+                        }
+                    }
+                }
+                EOF
+                env|grep '^PAC'
+                pipelines-as-code

@@ -81,7 +81,7 @@ spec:
       default: "api.github.com"
   resourcetemplates:
     - apiVersion: tekton.dev/v1beta1
-      kind: PipelineRun
+      kind: TaskRun
       metadata:
         generateName: pipelines-as-code-run-
         labels:
@@ -119,141 +119,89 @@ spec:
             value: $(tt.params.head_ref)
           - name: installation_id
             value: $(tt.params.installation_id)
-        pipelineSpec:
+        taskSpec:
           params:
             - name: ghe_host
-            - name: event_type
+              type: string
             - name: trigger_target
+              type: string
+            - name: event_type
+              type: string
             - name: owner
+              type: string
             - name: repository
+              type: string
             - name: default_branch
+              type: string
             - name: url
+              type: string
             - name: sender
+              type: string
             - name: base_ref
+              type: string
             - name: pull_request_number
+              type: string
             - name: pull_request_html_url
+              type: string
             - name: sha
+              type: string
             - name: head_ref
+              type: string
             - name: installation_id
+              type: string
+          steps:
+            - name: apply-and-launch
+              env:
+                - name: PAC_GIT_PROVIDER_APIURL
+                  value: $(params.ghe_host)
+                - name: PAC_GIT_PROVIDER_TYPE
+                  value: "github"
+                - name: PAC_INSTALLATION_ID
+                  value: $(params.installation_id)
+                - name: PAC_WORKSPACE_SECRET
+                  value: $(workspaces.secrets.path)
+                - name: PAC_PAYLOAD_FILE
+                  value: "/tmp/payload.json"
+                - name: PAC_TRIGGER_TARGET
+                  value: "$(params.trigger_target)"
+                - name: PAC_WEBHOOK_TYPE
+                  value: "$(params.event_type)"
+              imagePullPolicy: Always
+              image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+              script: |
+                #!/usr/bin/env bash
+                set -euf
+
+                cat << EOF|tee ${PAC_PAYLOAD_FILE}
+                {
+                    "repository": {
+                        "owner": {
+                            "login": "$(params.owner)"
+                        },
+                        "name": "$(params.repository)",
+                        "default_branch": "$(params.default_branch)",
+                        "html_url": "$(params.url)"
+                    },
+                    "pull_request": {
+                        "number": $(params.pull_request_number),
+                        "html_url": "$(params.pull_request_html_url)",
+                        "user": {
+                            "login": "$(params.sender)"
+                        },
+                        "base": {
+                            "ref": "$(params.base_ref)"
+                        },
+                        "head": {
+                            "sha": "$(params.sha)",
+                            "ref": "$(params.head_ref)"
+                        }
+                    }
+                }
+                EOF
+                env|grep '^PAC'
+                pipelines-as-code
           workspaces:
             - name: secrets
-          tasks:
-            - name: pipelines-as-code
-              taskSpec:
-                workspaces:
-                  - name: secrets
-                params:
-                  - name: ghe_host
-                    type: string
-                  - name: trigger_target
-                    type: string
-                  - name: event_type
-                    type: string
-                  - name: owner
-                    type: string
-                  - name: repository
-                    type: string
-                  - name: default_branch
-                    type: string
-                  - name: url
-                    type: string
-                  - name: sender
-                    type: string
-                  - name: base_ref
-                    type: string
-                  - name: pull_request_number
-                    type: string
-                  - name: pull_request_html_url
-                    type: string
-                  - name: sha
-                    type: string
-                  - name: head_ref
-                    type: string
-                  - name: installation_id
-                    type: string
-                steps:
-                  - name: apply-and-launch
-                    env:
-                      - name: PAC_GIT_PROVIDER_APIURL
-                        value: $(params.ghe_host)
-                      - name: PAC_GIT_PROVIDER_TYPE
-                        value: "github"
-                      - name: PAC_INSTALLATION_ID
-                        value: $(params.installation_id)
-                      - name: PAC_WORKSPACE_SECRET
-                        value: $(workspaces.secrets.path)
-                      - name: PAC_PAYLOAD_FILE
-                        value: "/tmp/payload.json"
-                      - name: PAC_TRIGGER_TARGET
-                        value: "$(params.trigger_target)"
-                      - name: PAC_WEBHOOK_TYPE
-                        value: "$(params.event_type)"
-                    imagePullPolicy: Always
-                    image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
-                    script: |
-                      #!/usr/bin/env bash
-                      set -euf
-                      set +x
-                      cat << EOF|tee ${PAC_PAYLOAD_FILE}
-                      {
-                          "repository": {
-                              "owner": {
-                                  "login": "$(params.owner)"
-                              },
-                              "name": "$(params.repository)",
-                              "default_branch": "$(params.default_branch)",
-                              "html_url": "$(params.url)"
-                          },
-                          "pull_request": {
-                              "number": $(params.pull_request_number),
-                              "html_url": "$(params.pull_request_html_url)",
-                              "user": {
-                                  "login": "$(params.sender)"
-                              },
-                              "base": {
-                                  "ref": "$(params.base_ref)"
-                              },
-                              "head": {
-                                  "sha": "$(params.sha)",
-                                  "ref": "$(params.head_ref)"
-                              }
-                          }
-                      }
-                      EOF
-                      env|grep '^PAC'
-                      pipelines-as-code
-              params:
-                - name: ghe_host
-                  value: $(params.ghe_host)
-                - name: event_type
-                  value: $(params.event_type)
-                - name: trigger_target
-                  value: $(params.trigger_target)
-                - name: owner
-                  value: $(params.owner)
-                - name: repository
-                  value: $(params.repository)
-                - name: default_branch
-                  value: $(params.default_branch)
-                - name: url
-                  value: $(params.url)
-                - name: sender
-                  value: $(params.sender)
-                - name: base_ref
-                  value: $(params.base_ref)
-                - name: pull_request_number
-                  value: $(params.pull_request_number)
-                - name: pull_request_html_url
-                  value: $(params.pull_request_html_url)
-                - name: sha
-                  value: $(params.sha)
-                - name: head_ref
-                  value: $(params.head_ref)
-                - name: installation_id
-                  value: $(params.installation_id)
-              workspaces:
-                - name: secrets
-                  workspace: secrets
         workspaces:
           - name: secrets
             secret:
