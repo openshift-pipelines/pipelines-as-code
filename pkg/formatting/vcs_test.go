@@ -97,6 +97,11 @@ func TestSanitizeBranch(t *testing.T) {
 			args: args{s: "refs/tags/1.0"},
 			want: "refs/tags/1.0",
 		},
+		{
+			name: "sanitize main ref",
+			args: args{s: "refs-heads-main"},
+			want: "main",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
