@@ -12,6 +12,9 @@ func SanitizeBranch(s string) string {
 	if strings.HasPrefix(s, "refs/heads/") {
 		return strings.TrimPrefix(s, "refs/heads/")
 	}
+	if strings.HasPrefix(s, "refs-heads-") {
+		return strings.TrimPrefix(s, "refs-heads-")
+	}
 	return s
 }
 
