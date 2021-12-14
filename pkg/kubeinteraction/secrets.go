@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -71,7 +72,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 
 	// Try to create secrete if that fails then delete it first and then create
 	// This allows up not to give List and Get right clusterwide
-	secretName := fmt.Sprintf(basicAuthSecretName, strings.ToLower(runevent.Organization), strings.ToLower(runevent.Repository))
+	secretName := getBasicAuthSecretName(runevent)
 	err = k.createSecret(ctx, secretData, targetNamespace, secretName)
 	if err != nil {
 		err = k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
@@ -95,4 +96,20 @@ func (k Interaction) GetSecret(ctx context.Context, secretopt GetSecretOpt) (str
 		return "", err
 	}
 	return string(secret.Data[secretopt.Key]), nil
+}
+
+func getBasicAuthSecretName(runEvent *info.Event) string {
+	return fmt.Sprintf(basicAuthSecretName, strings.ToLower(runEvent.Organization), strings.ToLower(runEvent.Repository))
+}
+
+// DeleteBasicAuthSecret deletes the secret created for git-clone basic-auth
+func (k Interaction) DeleteBasicAuthSecret(ctx context.Context, runEvent *info.Event, targetNamespace string) error {
+	secretName := getBasicAuthSecretName(runEvent)
+	err := k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+
+	k.Run.Clients.Log.Infof("Secret %s has been deleted in namespace %s", secretName, targetNamespace)
+	return nil
 }
