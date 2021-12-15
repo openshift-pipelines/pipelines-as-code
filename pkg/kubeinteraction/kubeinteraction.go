@@ -22,6 +22,7 @@ type Interface interface {
 	WaitForPipelineRunSucceed(context.Context, tektonv1beta1client.TektonV1beta1Interface, *v1beta1.PipelineRun, time.Duration) error
 	CleanupPipelines(ctx context.Context, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun, limitnumber int) error
 	CreateBasicAuthSecret(context.Context, *info.Event, *info.PacOpts, string) error
+	DeleteBasicAuthSecret(context.Context, *info.Event, string) error
 	GetSecret(context.Context, GetSecretOpt) (string, error)
 }
 

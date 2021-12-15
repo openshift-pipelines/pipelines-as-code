@@ -111,3 +111,77 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteBasicAuthSecret(t *testing.T) {
+	nsthere := "there"
+
+	tdata := testclient.Data{
+		Namespaces: []*corev1.Namespace{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsthere,
+				},
+			},
+		},
+		Secret: []*corev1.Secret{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: nsthere,
+					Name:      "pac-git-basic-auth-owner-repo",
+				},
+				StringData: map[string]string{
+					".git-credentials": "https://whateveryousayboss",
+				},
+			},
+		},
+	}
+	event := info.Event{
+		Organization: "owner",
+		Repository:   "repo",
+		URL:          "https://forge/owner/repo",
+	}
+	event2 := info.Event{
+		Organization: "owner2",
+		Repository:   "repo2",
+		URL:          "https://forge/owner/repo2",
+	}
+
+	tests := []struct {
+		name     string
+		targetNS string
+		event    info.Event
+	}{
+		{
+			name:     "auth basic secret there",
+			targetNS: nsthere,
+			event:    event,
+		},
+		{
+			name:     "auth basic secret not there",
+			targetNS: nsthere,
+			event:    event2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			fakelogger := zap.New(observer).Sugar()
+			kint := Interaction{
+				Run: &params.Run{
+					Clients: clients.Clients{
+						Kube: stdata.Kube,
+						Log:  fakelogger,
+					},
+				},
+			}
+			err := kint.DeleteBasicAuthSecret(ctx, &tt.event, tt.targetNS)
+			assert.NilError(t, err)
+
+			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})
+			assert.NilError(t, err)
+			assert.Assert(t, len(slist.Items) == 0, "Secret has not been deleted")
+		})
+	}
+}

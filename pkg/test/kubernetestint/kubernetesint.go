@@ -30,6 +30,10 @@ func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, runevent *in
 	return nil
 }
 
+func (k *KinterfaceTest) DeleteBasicAuthSecret(ctx context.Context, runevent *info.Event, targetNamespace string) error {
+	return nil
+}
+
 func (k *KinterfaceTest) GetSecret(ctx context.Context, secretopt kubeinteraction.GetSecretOpt) (string, error) {
 	return k.GetSecretResult, nil
 }

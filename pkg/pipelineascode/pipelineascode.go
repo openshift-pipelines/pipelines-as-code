@@ -44,7 +44,7 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 		cs.Clients.Log.Warn(msg)
 
 		if cs.Info.Pac.ProviderToken == "" {
-			cs.Clients.Log.Warn("cannot set status since not token has been set")
+			cs.Clients.Log.Warn("cannot set status since no token has been set")
 			return nil
 		}
 
@@ -181,6 +181,14 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 		err = k8int.CleanupPipelines(ctx, repo, pr, max)
 		if err != nil {
 			return err
+		}
+	}
+
+	// remove the generated secret after completion of pipelinerun
+	if cs.Info.Pac.SecretAutoCreation {
+		err = k8int.DeleteBasicAuthSecret(ctx, cs.Info.Event, repo.GetNamespace())
+		if err != nil {
+			return fmt.Errorf("deleting basic auth secret has failed: %w ", err)
 		}
 	}
 
