@@ -4,23 +4,25 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
 
 type PacOpts struct {
-	LogURL               string
-	ApplicationName      string // the Application Name for example "Pipelines as Code"
-	SecretAutoCreation   bool   // secret auto creation in target namespace
-	ProviderToken        string
-	ProviderURL          string
-	ProviderUser         string
-	ProviderInfoFromRepo bool // whether the provider info come from the repository
-	WebhookType          string
-	PayloadFile          string
-	TektonDashboardURL   string
-	HubURL               string
-	RemoteTasks          bool
+	LogURL                    string
+	ApplicationName           string // the Application Name for example "Pipelines as Code"
+	SecretAutoCreation        bool   // secret auto creation in target namespace
+	ProviderToken             string
+	ProviderURL               string
+	ProviderUser              string
+	ProviderInfoFromRepo      bool // whether the provider info come from the repository
+	WebhookType               string
+	PayloadFile               string
+	TektonDashboardURL        string
+	HubURL                    string
+	RemoteTasks               bool
+	DefaultPipelineRunTimeout time.Duration
 }
 
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {

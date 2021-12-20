@@ -20,13 +20,13 @@ data:
   # The application name, you can customize this label
   application-name: "Pipelines as Code CI"
 
-  # Wether to automatically create a secret with the token to be use by git-clone
+  # Whether to automatically create a secret with the token to be use by git-clone
   secret-auto-create: "true"
 
   # Tekton HUB API urls
   hub-url: "https://api.hub.tekton.dev/v1"
 
-  # Wether to allow fetching remote tasks
+  # Whether to allow fetching remote tasks
   remote-tasks: "true"
 
   # Since public bitbucket doesn't have the concept of Secret, we need to be
@@ -41,6 +41,9 @@ data:
 
   # Add extra IPS (ie: 127.0.0.1) or networks (127.0.0.0/16) separated by commas.
   bitbucket-cloud-additional-source-ip: ""
+
+  # The default time to wait for a pipelineRun
+  default-pipelinerun-timeout: "2h"
 
 kind: ConfigMap
 metadata:
