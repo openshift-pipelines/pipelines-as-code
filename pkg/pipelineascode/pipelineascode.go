@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
@@ -26,8 +25,6 @@ const (
   <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
   the command line with :
 	<br><code>tkn pr logs -f -n %s %s</code>`
-	// The time to wait for a pipelineRun, maybe we should not restrict this?
-	pipelineRunTimeout = 2 * time.Hour
 )
 
 func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k8int kubeinteraction.Interface) error {
@@ -165,8 +162,8 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 	}
 
 	cs.Clients.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes",
-		pr.Namespace, pr.Name, formatting.HumanDuration(pipelineRunTimeout))
-	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, pipelineRunTimeout); err != nil {
+		pr.Namespace, pr.Name, formatting.HumanDuration(cs.Info.Pac.DefaultPipelineRunTimeout))
+	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, cs.Info.Pac.DefaultPipelineRunTimeout); err != nil {
 		cs.Clients.Log.Warnf("pipelinerun %s in namespace %s has a failed status",
 			pipelineRun.GetGenerateName(), repo.GetNamespace())
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
@@ -61,6 +62,19 @@ func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
 
 	if remoteTask, ok := cfg.Data["remote-tasks"]; ok {
 		r.Info.Pac.RemoteTasks = StringToBool(remoteTask)
+	}
+
+	if timeout, ok := cfg.Data["default-pipelinerun-timeout"]; ok {
+		parsedTimeout, err := time.ParseDuration(timeout)
+		if err != nil {
+			r.Clients.Log.Infof("failed to parse default-pipelinerun-timeout: %s, using %v as default timeout",
+				cfg.Data["default-pipelinerun-timeout"], info.DefaultPipelineRunTimeout)
+			r.Info.Pac.DefaultPipelineRunTimeout = info.DefaultPipelineRunTimeout
+		} else {
+			r.Info.Pac.DefaultPipelineRunTimeout = parsedTimeout
+		}
+	} else {
+		r.Info.Pac.DefaultPipelineRunTimeout = info.DefaultPipelineRunTimeout
 	}
 
 	return nil
