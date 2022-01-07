@@ -225,7 +225,7 @@ automatically use it to be able to clone the private repository.
 
 You can see as well a full example [here](./../test/testdata/pipelinerun_git_clone_private.yaml)
 
-This behaviour can be disabled by configuration the `secret-auto-create` key
+This behavior can be disabled by configuration the `secret-auto-create` key
 inside the [Pipelines-as-Code Configmap](./install.md#configuration).
 
 ## Pipelines as Code resolver
@@ -264,7 +264,9 @@ An annotation to a remote task looks like this :
   ```yaml
   pipelinesascode.tekton.dev/task: "git-clone"
   ```
+
 or multiple tasks via an array :
+
   ```yaml
   pipelinesascode.tekton.dev/task: ["git-clone", "pylint"]
   ```
