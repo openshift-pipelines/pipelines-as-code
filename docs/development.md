@@ -1,5 +1,4 @@
-SETUP
-=====
+# SETUP
 
 ## Dev setup
 
@@ -19,7 +18,7 @@ SETUP
 * If you go to your GitHub app setting in `Advanced` you can see the json and payload GitHub is sending to the
   eventlistener.
 
-* If you want to replay an event without having to `git commmit --amend --no-edit && git push --force`, you can capture
+* If you want to replay an event without having to `git commit --amend --no-edit && git push --force`, you can capture
   that json blob into a file
   (ie: /tmp/payload.json) and do :
 
@@ -104,6 +103,7 @@ SETUP
   ```
 
   then generate a payload file out of it :
+
   ```json
    {
     "repository": {

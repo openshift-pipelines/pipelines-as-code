@@ -1,6 +1,6 @@
-**This documentation refers to the main developement branch, the documentation for the released version is [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/0.5.2/README.md)**
-
 # Pipelines as Code
+
+**This documentation refers to the main development branch, the documentation for the latest released version is [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/0.5.2/README.md)**
 
 [![Container Repository on Quay](https://quay.io/repository/openshift-pipeline/pipelines-as-code/status "Container Repository on Quay")](https://quay.io/repository/openshift-pipeline/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code)
 
@@ -49,9 +49,10 @@ Connected to your cluster launch the command :
 ```bash
 -$ tkn pac bootstrap
 ```
+
 and follow the questions and installation methods which will install Pipelines as Code on cluster and help you create a Github Application.
 
-feel free to look over the `--help` to see the different options on how to install for example on Github Enteprise.
+feel free to look over the `--help` to see the different options on how to install for example on Github Enterprise.
 
 This 10 minute video will guide you thought the `tkn-pac bootstrap` flow :
 
@@ -73,7 +74,7 @@ the **Repository access** section, select the repositories that you want to enab
 Once you have enabled your GitHub App for your GitHub repository, you can use the `pac` Tekton CLI plugin to bootstrap
 pipelines as code:
 
-```
+```bash
 $ git clone https://github.com/siamaksade/pipeline-as-code-demo
 $ cd pipeline-as-code-demo
 $ tkn pac repository create
@@ -103,7 +104,7 @@ reference
 
 ## Usage Guide
 
-The usage guide available [here](./docs/guide.md) offer a comprehenive documentatiuon on how to use and configure Pipeline As Code.
+The usage guide available [here](./docs/guide.md) offer a comprehensive documentation on how to use and configure Pipeline As Code.
 
 A walkthought video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
 
