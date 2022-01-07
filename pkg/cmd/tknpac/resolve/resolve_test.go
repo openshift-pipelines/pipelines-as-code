@@ -9,10 +9,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	assertfs "gotest.tools/v3/fs"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 var tmplSimpleNoPrefix = `
@@ -41,9 +43,16 @@ func TestSplitArgsInMap(t *testing.T) {
 }
 
 func TestCommandFilenameSetProperly(t *testing.T) {
+	tdata := testclient.Data{}
+	ctx, _ := rtesting.SetupFakeContext(t)
+
+	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 	cs := &params.Run{
-		Clients: clients.Clients{ClientInitialized: false},
-		Info:    info.Info{Pac: &info.PacOpts{}},
+		Clients: clients.Clients{
+			Kube:              stdata.Kube,
+			ClientInitialized: false,
+		},
+		Info: info.Info{Pac: &info.PacOpts{}},
 	}
 	cmd := Command(cs)
 	e := bytes.NewBufferString("")
