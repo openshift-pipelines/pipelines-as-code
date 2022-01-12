@@ -70,9 +70,7 @@ func Command(run *params.Run) *cobra.Command {
 				if !noConfigErr {
 					return err
 				}
-			}
-
-			if err := run.GetConfigFromConfigMap(ctx); err != nil {
+			} else if err := run.GetConfigFromConfigMap(ctx); err != nil {
 				log.Printf("Warning: cannot get pipelines-as-code config map in pipelines-as-code namespace. Using defaults. Error: %v\n", err)
 			}
 
