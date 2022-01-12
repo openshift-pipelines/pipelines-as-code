@@ -2,8 +2,10 @@ package matcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -48,10 +51,23 @@ func (rt RemoteTasks) getTask(ctx context.Context, providerintf provider.Interfa
 		defer res.Body.Close()
 		return rt.convertTotask(string(data))
 	case strings.Contains(task, "/"):
-		data, err := providerintf.GetFileInsideRepo(ctx, rt.Run.Info.Event, task, "")
-		if err != nil {
-			return ret, err
+		var data string
+		var err error
+		if rt.Run.Info.Event.SHA != "" {
+			data, err = providerintf.GetFileInsideRepo(ctx, rt.Run.Info.Event, task, "")
+			if err != nil {
+				return ret, err
+			}
+		} else {
+			data, err = getTaskFromLocalFS(task, rt.Run.Clients.Log)
+			if err != nil {
+				return nil, err
+			}
+			if data == "" {
+				return nil, nil
+			}
 		}
+
 		return rt.convertTotask(data)
 	default:
 		data, err := hub.GetTask(ctx, rt.Run, task)
@@ -84,4 +100,24 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, providerintf p
 		}
 	}
 	return ret, nil
+}
+
+// getTaskFromLocalFS get task locally if file exist
+// TODO: may want to try chroot to the git root dir first as well if we are able so.
+func getTaskFromLocalFS(taskName string, logger *zap.SugaredLogger) (string, error) {
+	var data string
+	// We are most probably running with tkn pac resolve -f here, so
+	// let's try by any chance to check locally if the task is here on
+	// the filesystem
+	if _, err := os.Stat(taskName); errors.Is(err, os.ErrNotExist) {
+		logger.Warnf("could not find remote task %s inside repo", taskName)
+		return "", nil
+	}
+
+	b, err := ioutil.ReadFile(taskName)
+	data = string(b)
+	if err != nil {
+		return "", err
+	}
+	return data, nil
 }
