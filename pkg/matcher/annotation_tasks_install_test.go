@@ -12,7 +12,11 @@ import (
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/env"
+	"gotest.tools/v3/fs"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -45,6 +49,7 @@ spec:
 		runevent        info.Event
 		annotations     map[string]string
 		wantErr         string
+		wantLog         string
 		gotTaskName     string
 		remoteURLS      map[string]map[string]string
 		filesInsideRepo map[string]string
@@ -97,6 +102,9 @@ spec:
 			filesInsideRepo: map[string]string{
 				"be/healthy": simpletask,
 			},
+			runevent: info.Event{
+				SHA: "007",
+			},
 		},
 		{
 			name: "test-annotations-remote-http-skipping-notmatching",
@@ -125,6 +133,16 @@ spec:
 				pipelinesascode.GroupName + "/task": "[pas/la]",
 			},
 			wantErr: "could not find",
+			runevent: info.Event{
+				SHA: "007",
+			},
+		},
+		{
+			name: "test-annotations-remote-no-event-not-found-no-error",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/task": "[not/here]",
+			},
+			wantLog: "could not find remote task not/here inside repo",
 		},
 		{
 			name:        "test-get-from-hub-latest",
@@ -164,9 +182,12 @@ spec:
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.remoteURLS)
+			observer, fakelog := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
 			cs := &params.Run{
 				Clients: clients.Clients{
 					HTTP: *httpTestClient,
+					Log:  logger,
 				},
 				Info: info.Info{
 					Event: &tt.runevent,
@@ -187,7 +208,9 @@ spec:
 				assert.ErrorContains(t, err, tt.wantErr, "We should have get an error with %v but we didn't", tt.wantErr)
 				return
 			}
-
+			if tt.wantLog != "" {
+				assert.Assert(t, len(fakelog.FilterMessage(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", fakelog)
+			}
 			assert.NilError(t, err, "GetTaskFromAnnotations() error = %v, wantErr %v", err, tt.wantErr)
 			assert.Assert(t, len(got) > 0, "GetTaskFromAnnotations() error no tasks has been processed")
 
@@ -196,4 +219,14 @@ spec:
 			}
 		})
 	}
+}
+
+func TestGetTaskFromLocalFS(t *testing.T) {
+	content := "hellomoto"
+	defer env.ChangeWorkingDir(t, fs.NewDir(t, "TestGetTaskFromLocalFS", fs.WithFile("task1", content)).Path())()
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+	taskContent, err := getTaskFromLocalFS("task1", logger)
+	assert.NilError(t, err)
+	assert.Equal(t, content, taskContent)
 }
