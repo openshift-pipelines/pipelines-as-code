@@ -93,7 +93,7 @@ spec:
                 make test GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
 
             - name: lint
-              image: quay.io/app-sre/golangci-lint
+              image: quay.io/app-sre/golangci-lint:v1.44.0
               workingDir: $(workspaces.source.path)
               env:
                 - name: GOCACHE

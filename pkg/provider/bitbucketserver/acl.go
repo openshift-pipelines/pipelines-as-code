@@ -52,7 +52,11 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event) (bo
 
 	for _, comment := range allPages {
 		activities := &activitiesTypes{}
-		err := json.Unmarshal(comment.([]byte), activities)
+		cbyte, ok := comment.([]byte)
+		if !ok {
+			return false, fmt.Errorf("cannot convert comment to bytes")
+		}
+		err := json.Unmarshal(cbyte, activities)
 		if err != nil {
 			return false, err
 		}

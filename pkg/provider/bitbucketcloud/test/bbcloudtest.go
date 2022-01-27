@@ -54,7 +54,9 @@ func SetupBBCloudClient(t *testing.T) (*bitbucket.Client, *http.ServeMux, func()
 func MuxComments(t *testing.T, mux *http.ServeMux, event *info.Event, comments []types.Comment) {
 	assert.Assert(t, event.Event != nil)
 
-	prID := fmt.Sprintf("%d", event.Event.(*types.PullRequestEvent).PullRequest.ID)
+	pr, ok := event.Event.(*types.PullRequestEvent)
+	assert.Assert(t, ok)
+	prID := fmt.Sprintf("%d", pr.PullRequest.ID)
 	mux.HandleFunc("/repositories/"+event.Organization+"/"+event.Repository+"/pullrequests/"+prID+"/comments/",
 		func(rw http.ResponseWriter, r *http.Request) {
 			members := &types.Comments{
@@ -146,7 +148,9 @@ func MuxCreateCommitstatus(t *testing.T, mux *http.ServeMux, event *info.Event,
 func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event,
 	expectedCommentSubstr string) {
 	assert.Assert(t, event.Event != nil)
-	prID := fmt.Sprintf("%d", event.Event.(*types.PullRequestEvent).PullRequest.ID)
+	prev, ok := event.Event.(*types.PullRequestEvent)
+	assert.Assert(t, ok)
+	prID := fmt.Sprintf("%d", prev.PullRequest.ID)
 
 	path := fmt.Sprintf("/repositories/%s/%s/pullrequests/%s/comments", event.Organization, event.Repository, prID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {

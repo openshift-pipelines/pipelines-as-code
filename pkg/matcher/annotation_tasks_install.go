@@ -33,7 +33,12 @@ func (rt RemoteTasks) convertTotask(data string) (*tektonv1beta1.Task, error) {
 		return nil, fmt.Errorf("we have a task that is not looking like a kubernetes resource: task: %s resource: %w", data, err)
 	}
 
-	return obj.(*tektonv1beta1.Task), nil
+	task, ok := obj.(*tektonv1beta1.Task)
+	if !ok {
+		return nil, fmt.Errorf("this doesn't seem to be a proper task")
+	}
+
+	return task, nil
 }
 
 func (rt RemoteTasks) getTask(ctx context.Context, providerintf provider.Interface, task string) (*tektonv1beta1.Task, error) {
