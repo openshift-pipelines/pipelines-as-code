@@ -50,7 +50,7 @@ func TestCommandFilenameSetProperly(t *testing.T) {
 	cs := &params.Run{
 		Clients: clients.Clients{
 			Kube:              stdata.Kube,
-			ClientInitialized: false,
+			ClientInitialized: true,
 		},
 		Info: info.Info{Pac: &info.PacOpts{}},
 	}
