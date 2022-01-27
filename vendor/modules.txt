@@ -127,6 +127,10 @@ github.com/grpc-ecosystem/grpc-gateway/utilities
 # github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 ## explicit
 github.com/hako/durafmt
+# github.com/hashicorp/errwrap v1.0.0
+github.com/hashicorp/errwrap
+# github.com/hashicorp/go-multierror v1.1.0
+github.com/hashicorp/go-multierror
 # github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
@@ -203,7 +207,7 @@ github.com/prometheus/statsd_exporter/pkg/mapper/fsm
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/tektoncd/pipeline v0.24.3
+# github.com/tektoncd/pipeline v0.28.2
 ## explicit
 github.com/tektoncd/pipeline/pkg/apis/config
 github.com/tektoncd/pipeline/pkg/apis/pipeline
@@ -259,7 +263,7 @@ go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
 # go.uber.org/atomic v1.9.0
 go.uber.org/atomic
-# go.uber.org/multierr v1.6.0
+# go.uber.org/multierr v1.7.0
 go.uber.org/multierr
 # go.uber.org/zap v1.19.1
 ## explicit
@@ -283,7 +287,7 @@ golang.org/x/crypto/openpgp/s2k
 # golang.org/x/mod v0.4.2
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20210825183410-e898025ed96a
+# golang.org/x/net v0.0.0-20210903162142-ad29c8ab022f
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
