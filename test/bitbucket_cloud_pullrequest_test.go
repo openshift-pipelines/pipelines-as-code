@@ -37,7 +37,11 @@ func TestBitbucketCloudPullRequest(t *testing.T) {
 
 	pr, repobranch := createPR(t, bprovider, runcnx, bcrepo, opts, title, targetNS, targetRefName)
 	defer bitbucketTearDown(ctx, t, runcnx, bprovider, opts, pr.ID, targetRefName, targetNS)
-	checkSuccess(ctx, t, runcnx, opts, pullRequestEvent, targetNS, repobranch.Target["hash"].(string), title)
+
+	hash, ok := repobranch.Target["hash"].(string)
+	assert.Assert(t, ok)
+
+	checkSuccess(ctx, t, runcnx, opts, pullRequestEvent, targetNS, hash, title)
 }
 
 func createPR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Run, bcrepo *bitbucket.Repository, opts E2EOptions, title, targetNS, targetRefName string) (*types.PullRequest, *bitbucket.RepositoryBranch) {

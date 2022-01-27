@@ -43,7 +43,12 @@ func paginate(apiResultfunc apiResultfunc) ([]interface{}, error) {
 		if !ok {
 			break
 		}
-		if isLastPage.(bool) {
+		isLastPageb, ok := isLastPage.(bool)
+		if !ok {
+			break
+		}
+
+		if isLastPageb {
 			break
 		}
 	}
