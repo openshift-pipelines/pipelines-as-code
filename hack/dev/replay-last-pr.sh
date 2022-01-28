@@ -11,12 +11,12 @@ if [[ ${1:-""} == -l ]];then
 elif [[ -n ${1:-""} ]];then
     arg="${1}"
 else
-   pr=$(tkn pr ls --no-headers|fzf  -1)
+   pr=$(tkn tr ls --no-headers|fzf  -1)
    [[ -z ${pr} ]] && exit 0
    arg=$(echo ${pr}|awk '{print $1}')
    echo "Selected ${arg}"
 fi
-tkn pr logs ${arg} --prefix=false 2>/dev/null > ${TMPD}/last
+tkn tr logs ${arg} --prefix=false 2>/dev/null > ${TMPD}/last
 [[ -s ${TMPD}/last ]] || { echo "payload could not be found"; exit 1 ;}
 
 export PAC_PAYLOAD_FILE=${TMPD}/payload.json
