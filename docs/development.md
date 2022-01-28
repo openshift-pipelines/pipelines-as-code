@@ -3,6 +3,7 @@
 ## Dev setup
 
 * Configure and use [ko](https://github.com/google/ko) to easily push your change to a registry.
+* You can run kind, pipelines-as-code should not have any problems running on it.
 * You should be able to use it against a kind/minikube cluster but bear in mind we are trying to be compatible from at
   least the pipeline/triggers version from openshift-pipelines.
 * Install your cluster with ko or from release yaml :
