@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipelines-as-code-controller
+  namespace: pipelines-as-code
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: controller
+      app.kubernetes.io/version: "devel"
+      app.kubernetes.io/instance: default
+      app.kubernetes.io/part-of: pipelines-as-code
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: controller
+        app.kubernetes.io/version: "devel"
+        app.kubernetes.io/instance: default
+        app.kubernetes.io/part-of: pipelines-as-code
+    spec:
+      serviceAccountName: pipelines-as-code-controller
+      containers:
+      - name: pipelines-as-code-controller
+        image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-controller"
+        ports:
+        - name: http-server
+          containerPort: 8080

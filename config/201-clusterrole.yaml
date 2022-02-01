@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pipelines-as-code-controller-roles
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+rules:
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns"]
+    verbs: ["get", "update"]
+  - apiGroups: [ "pipelinesascode.tekton.dev" ]
+    resources: [ "repositories" ]
+    verbs: [ "get"]
