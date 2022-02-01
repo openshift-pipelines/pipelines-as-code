@@ -11,6 +11,7 @@ require (
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-github/scrape v0.0.0-20211025151445-d9d58a291646
 	github.com/google/go-github/v39 v39.2.0
+	github.com/gorilla/mux v1.7.4
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/jonboulle/clockwork v0.2.2
 	github.com/juju/ansiterm v0.0.0-20210929141451-8b71cc96ebdc
