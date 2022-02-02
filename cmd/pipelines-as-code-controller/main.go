@@ -8,10 +8,15 @@ import (
 	"github.com/gorilla/mux"
 	pacClientSet "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/scheduler"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	pipelineClientSet "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 )
+
+var getSyncLimit = func(lockKey string) (int, error) {
+	return 1, nil
+}
 
 func main() {
 
@@ -39,7 +44,9 @@ func main() {
 		fmt.Fprint(w, "ok!")
 	})
 
-	s := scheduler.New(pipelineCS, pacCS, logger)
+	manager := sync.NewLockManager(getSyncLimit, nil, logger)
+
+	s := scheduler.New(manager, pipelineCS, pacCS, logger)
 
 	router.HandleFunc("/register/pipelinerun/{namespace}/{name}", s.Register())
 

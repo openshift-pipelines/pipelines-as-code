@@ -22,10 +22,17 @@ func (s *scheduler) Register() http.HandlerFunc {
 			return
 		}
 
-		s.logger.Infof("Request validated for PipelineRun %s/%s for Repostitory %s", pipelineRun.Namespace, pipelineRun.Name, Repository.Name)
+		s.logger.Infof("request validated of PipelineRun %s/%s for Repostitory %s", pipelineRun.Namespace, pipelineRun.Name, Repository.Name)
 
-		response.WriteHeader(http.StatusOK)
-		fmt.Fprint(response, "ok!")
+		err := s.syncManager.Register(pipelineRun, s.pipelineClient)
+		if err != nil {
+			s.logger.Error("failed to register pipelinerun", err)
+		}
+
+		s.logger.Infof("request registered of PipelineRun %s/%s for Repostitory %s", pipelineRun.Namespace, pipelineRun.Name, Repository.Name)
+
+		responseWriter(s.logger, http.StatusOK, "request registered successfully!", response)
+		return
 	})
 }
 
