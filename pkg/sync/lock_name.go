@@ -32,11 +32,16 @@ func (ln *LockName) LockKey() string {
 	return fmt.Sprintf("%s/%s", ln.Namespace, ln.RepoName)
 }
 
+func (ln *LockName) DecodeLockName(repoKey string) *LockName {
+	items := strings.Split(repoKey, "/")
+	return &LockName{Namespace: items[0], RepoName: items[1]}
+}
+
 func HolderKey(pr *v1beta1.PipelineRun) string {
 	return fmt.Sprintf("%s/%s", pr.Namespace, pr.Name)
 }
 
-func (ln *LockName) DecodeLockName(repoKey string) *LockName {
+func DecodeHolderKey(repoKey string) (string, string) {
 	items := strings.Split(repoKey, "/")
-	return &LockName{Namespace: items[0], RepoName: items[1]}
+	return items[0], items[1]
 }

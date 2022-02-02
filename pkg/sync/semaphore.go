@@ -90,7 +90,7 @@ func (s *PrioritySemaphore) removeFromQueue(holderKey string) {
 	defer s.lock.Unlock()
 
 	s.pending.remove(holderKey)
-	s.logger.Infof("Removed from queue: %s", holderKey)
+	s.logger.Infof("removed from queue: %s for semaphore : %s ", holderKey, s.name)
 }
 
 func (s *PrioritySemaphore) acquire(holderKey string) bool {
@@ -101,16 +101,40 @@ func (s *PrioritySemaphore) acquire(holderKey string) bool {
 	return false
 }
 
-func (p PrioritySemaphore) acquireForLatest(holderKey string) string {
-	panic("implement me")
+func (s *PrioritySemaphore) acquireForLatest() string {
+
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	ready := s.pending.pop()
+
+	if s.semaphore.TryAcquire(1) {
+		s.lockHolder[ready.key] = true
+		s.logger.Infof("acquired lock for %s in %s", ready.key, s.name)
+	}
+
+	return ready.key
 }
 
-func (p PrioritySemaphore) tryAcquire(holderKey string) (bool, string) {
-	panic("implement me")
-}
+func (s *PrioritySemaphore) release(key string) bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
-func (p PrioritySemaphore) release(key string) bool {
-	panic("implement me")
+	if _, ok := s.lockHolder[key]; ok {
+
+		delete(s.lockHolder, key)
+
+		// When semaphore resized downward
+		// Remove the excess holders from map once the done.
+		if len(s.lockHolder) >= s.limit {
+			return true
+		}
+
+		s.semaphore.Release(1)
+		availableLocks := s.limit - len(s.lockHolder)
+		s.logger.Infof("lock has been released by %s in semaphore %s. Available locks: %d", key, s.name, availableLocks)
+	}
+	return true
 }
 
 func (s *PrioritySemaphore) addToQueue(holderKey string, creationTime time.Time) {
@@ -119,10 +143,10 @@ func (s *PrioritySemaphore) addToQueue(holderKey string, creationTime time.Time)
 	defer s.lock.Unlock()
 
 	if _, ok := s.lockHolder[holderKey]; ok {
-		s.logger.Infof("lock already acquired by %s", holderKey)
+		s.logger.Infof("%s lock already acquired by %s", s.name, holderKey)
 		return
 	}
 
 	s.pending.add(holderKey, creationTime)
-	s.logger.Infof("added %s to queue", holderKey)
+	s.logger.Infof("added %s in queue for %s", holderKey, s.name)
 }

@@ -17,19 +17,17 @@ import (
 func (s *scheduler) Register() http.HandlerFunc {
 	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 
-		pipelineRun, Repository, validationErr := s.validateRequest(response, request)
+		pipelineRun, repository, validationErr := s.validateRequest(response, request)
 		if validationErr != nil {
 			return
 		}
 
-		s.logger.Infof("request validated of PipelineRun %s/%s for Repostitory %s", pipelineRun.Namespace, pipelineRun.Name, Repository.Name)
-
-		err := s.syncManager.Register(pipelineRun, s.pipelineClient)
+		err := s.syncManager.Register(pipelineRun, repository, s.pipelineClient)
 		if err != nil {
 			s.logger.Error("failed to register pipelinerun", err)
+			responseWriter(s.logger, http.StatusInternalServerError, "failed to register Pipelinerun", response)
+			return
 		}
-
-		s.logger.Infof("request registered of PipelineRun %s/%s for Repostitory %s", pipelineRun.Namespace, pipelineRun.Name, Repository.Name)
 
 		responseWriter(s.logger, http.StatusOK, "request registered successfully!", response)
 		return

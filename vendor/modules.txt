@@ -310,6 +310,7 @@ golang.org/x/oauth2/bitbucket
 golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/internal
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+## explicit
 golang.org/x/sync/semaphore
 # golang.org/x/sys v0.0.0-20211113001501-0c823b97ae02
 ## explicit

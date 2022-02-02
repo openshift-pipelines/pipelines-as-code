@@ -14,10 +14,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-var getSyncLimit = func(lockKey string) (int, error) {
-	return 1, nil
-}
-
 func main() {
 
 	logger := initLogger()
@@ -44,7 +40,7 @@ func main() {
 		fmt.Fprint(w, "ok!")
 	})
 
-	manager := sync.NewLockManager(getSyncLimit, nil, logger)
+	manager := sync.NewLockManager(logger)
 
 	s := scheduler.New(manager, pipelineCS, pacCS, logger)
 

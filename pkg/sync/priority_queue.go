@@ -8,12 +8,6 @@ import (
 type Key = string
 type QueueFunc func(Key)
 
-type BucketKey = string
-type BucketFunc func(Key) BucketKey
-
-type bucket map[Key]bool
-type buckets map[BucketKey]bucket
-
 type item struct {
 	key          string
 	creationTime time.Time
