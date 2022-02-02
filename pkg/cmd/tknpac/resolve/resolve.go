@@ -70,8 +70,9 @@ func Command(run *params.Run) *cobra.Command {
 				if !noConfigErr {
 					return err
 				}
-			} else if err := run.GetConfigFromConfigMap(ctx); err != nil {
-				log.Printf("Warning: cannot get pipelines-as-code config map in pipelines-as-code namespace. Using defaults. Error: %v\n", err)
+			} else {
+				// it's okay if pac is not installed, ignore the error
+				_ = run.GetConfigFromConfigMap(ctx)
 			}
 
 			if len(filenames) == 0 {
