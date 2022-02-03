@@ -49,6 +49,6 @@ func (k *KinterfaceTest) CleanupPipelines(ctx context.Context, repo *v1alpha1.Re
 	return nil
 }
 
-func (k *KinterfaceTest) WaitForPipelineRunStart(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun, polltimeout time.Duration) error {
+func (k *KinterfaceTest) WaitForPipelineRunStart(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun) error {
 	return nil
 }

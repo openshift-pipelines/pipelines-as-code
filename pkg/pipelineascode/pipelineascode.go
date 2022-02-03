@@ -148,7 +148,6 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 
 		pipelineRun.Spec.Status = tektonv1beta1.PipelineRunSpecStatusPending
 
-		// Create the actual pipeline
 		pr, err = cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).Create(ctx, pipelineRun, metav1.CreateOptions{})
 		if err != nil {
 			return fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
@@ -166,6 +165,13 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 		if err := k8int.WaitForPipelineRunStart(ctx, cs.Clients.Tekton.TektonV1beta1(), pr); err != nil {
 			cs.Clients.Log.Warnf("pipelinerun %s in namespace %s has been not started",
 				pipelineRun.GetGenerateName(), repo.GetNamespace())
+		}
+	} else {
+
+		// Create the actual pipelineRun
+		pr, err = cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).Create(ctx, pipelineRun, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
 		}
 	}
 

@@ -114,7 +114,7 @@ func (k Interaction) WaitForPipelineRunSucceed(ctx context.Context, tektonbeta1 
 	return waitForPipelineRunState(ctx, tektonbeta1, pr, polltimeout, PipelineRunSucceed(pr.Name))
 }
 
-func (k Interaction) WaitForPipelineRunStart(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun, polltimeout time.Duration) error {
+func (k Interaction) WaitForPipelineRunStart(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun) error {
 	return waitForPipelineRunToStart(ctx, tektonbeta1, pr)
 }
 
