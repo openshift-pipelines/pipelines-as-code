@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -30,9 +29,8 @@ func NewLockManager(logger *zap.SugaredLogger) *Manager {
 }
 
 func (m *Manager) Register(pr *v1beta1.PipelineRun, repo *v1alpha1.Repository, pipelineCS versioned.Interface) error {
-
 	m.getSyncLimit = func() int {
-		return *repo.Spec.ConcurrencyLimit
+		return repo.Spec.ConcurrencyLimit
 	}
 
 	m.lock.Lock()
@@ -44,15 +42,9 @@ func (m *Manager) Register(pr *v1beta1.PipelineRun, repo *v1alpha1.Repository, p
 
 	// check if semaphore exist for current repo
 	// if not then create
-	var err error
 	lock, found := m.syncLockMap[lockKey]
 	if !found {
-		lock, err = m.initializeSemaphore(lockKey)
-		if err != nil {
-			errStr := fmt.Sprintf("failed to init semaphore for repository : %s, %v", lockKey, err)
-			m.logger.Error(errStr)
-			return fmt.Errorf(errStr)
-		}
+		lock = NewSemaphore(lockKey, m.getSyncLimit(), m.logger)
 		m.syncLockMap[lockKey] = lock
 	}
 
@@ -68,17 +60,14 @@ func (m *Manager) Register(pr *v1beta1.PipelineRun, repo *v1alpha1.Repository, p
 }
 
 func (m *Manager) startSyncer(lockKey string, pipelineCS versioned.Interface) {
-
 	// check if syncer already exist
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
 	if !m.syncLockMap[lockKey].syncerExist() {
-
 		// if syncer doesn't exist then start one
 		go func() {
 			err := syncer(m, lockKey, pipelineCS)
-
 			// check if syncer exits because of any error
 			if err != nil {
 				m.logger.Error("syncer exited for ", lockKey)
@@ -104,14 +93,9 @@ func (m *Manager) startSyncer(lockKey string, pipelineCS versioned.Interface) {
 	}
 }
 
-func (m *Manager) initializeSemaphore(semaphoreName string) (Semaphore, error) {
-	return NewSemaphore(semaphoreName, m.getSyncLimit(), m.logger), nil
-}
-
 func (m *Manager) checkAndUpdateSemaphoreSize(semaphore Semaphore) {
-	newLimit := m.getSyncLimit()
-	if semaphore.getLimit() != newLimit {
-		semaphore.resize(newLimit)
+	if semaphore.getLimit() != m.getSyncLimit() {
+		semaphore.resize(m.getSyncLimit())
 	}
 }
 

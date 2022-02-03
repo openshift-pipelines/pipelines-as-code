@@ -16,7 +16,6 @@ import (
 
 func (s *scheduler) Register() http.HandlerFunc {
 	return http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-
 		pipelineRun, repository, validationErr := s.validateRequest(response, request)
 		if validationErr != nil {
 			return
@@ -30,12 +29,10 @@ func (s *scheduler) Register() http.HandlerFunc {
 		}
 
 		responseWriter(s.logger, http.StatusOK, "request registered successfully!", response)
-		return
 	})
 }
 
 func (s *scheduler) validateRequest(response http.ResponseWriter, request *http.Request) (*v1beta1.PipelineRun, *v1alpha1.Repository, error) {
-
 	vars := mux.Vars(request)
 	prNamespace := vars["namespace"]
 	prName := vars["name"]
@@ -87,7 +84,7 @@ func (s *scheduler) validateRequest(response http.ResponseWriter, request *http.
 		return nil, nil, fmt.Errorf(errStr)
 	}
 
-	if repo.Spec.ConcurrencyLimit == nil || *repo.Spec.ConcurrencyLimit == 0 {
+	if repo.Spec.ConcurrencyLimit == 0 {
 		errStr := fmt.Sprintf("invalid concurrency limit for repository : %s", repo.Name)
 		s.logger.Error(errStr)
 		responseWriter(s.logger, http.StatusBadRequest, errStr, response)

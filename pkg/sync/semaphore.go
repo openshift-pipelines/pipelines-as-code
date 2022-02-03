@@ -50,7 +50,7 @@ func (s *PrioritySemaphore) setSyncer(status bool) {
 }
 
 func (s *PrioritySemaphore) getCurrentPending() []string {
-	var keys []string
+	keys := []string{}
 	for _, item := range s.pending.items {
 		keys = append(keys, item.key)
 	}
@@ -58,7 +58,7 @@ func (s *PrioritySemaphore) getCurrentPending() []string {
 }
 
 func (s *PrioritySemaphore) getCurrentHolders() []string {
-	var keys []string
+	keys := []string{}
 	for k := range s.lockHolder {
 		keys = append(keys, k)
 	}
@@ -102,7 +102,6 @@ func (s *PrioritySemaphore) acquire(holderKey string) bool {
 }
 
 func (s *PrioritySemaphore) acquireForLatest() string {
-
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -126,7 +125,6 @@ func (s *PrioritySemaphore) release(key string) bool {
 	defer s.lock.Unlock()
 
 	if _, ok := s.lockHolder[key]; ok {
-
 		delete(s.lockHolder, key)
 
 		// When semaphore resized downward
@@ -143,7 +141,6 @@ func (s *PrioritySemaphore) release(key string) bool {
 }
 
 func (s *PrioritySemaphore) addToQueue(holderKey string, creationTime time.Time) {
-
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

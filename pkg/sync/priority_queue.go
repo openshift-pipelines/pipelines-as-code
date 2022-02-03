@@ -5,8 +5,10 @@ import (
 	"time"
 )
 
-type Key = string
-type QueueFunc func(Key)
+type (
+	Key       = string
+	QueueFunc func(Key)
+)
 
 type item struct {
 	key          string

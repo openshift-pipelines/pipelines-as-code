@@ -61,7 +61,7 @@ type RepositoryRunStatus struct {
 type RepositorySpec struct {
 	URL              string       `json:"url"`
 	GitProvider      *GitProvider `json:"git_provider,omitempty"`
-	ConcurrencyLimit *int         `json:"concurrency_limit,omitempty"`
+	ConcurrencyLimit int          `json:"concurrency_limit,omitempty"`
 }
 
 type GitProvider struct {

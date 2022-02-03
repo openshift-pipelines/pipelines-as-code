@@ -14,13 +14,11 @@ import (
 )
 
 func syncer(m *Manager, lockKey string, pipelineCS versioned.Interface) error {
-
 	for {
 		sema := m.syncLockMap[lockKey]
 
 		// check if current running pr is complete
 		for _, pr := range sema.getCurrentHolders() {
-
 			// decode pipelineRun namespace/name
 			prNs, prName := DecodeHolderKey(pr)
 
@@ -58,7 +56,6 @@ func syncer(m *Manager, lockKey string, pipelineCS versioned.Interface) error {
 		}
 
 		for len(sema.getCurrentHolders()) < limit {
-
 			if len(sema.getCurrentPending()) == 0 {
 				break
 			}
