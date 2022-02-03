@@ -40,8 +40,6 @@ func (s *scheduler) validateRequest(response http.ResponseWriter, request *http.
 	prNamespace := vars["namespace"]
 	prName := vars["name"]
 
-	s.logger.Infof("validating register request for pipelinerun %s/%s ", prNamespace, prName)
-
 	// check if pipelinerun exists with pending status
 	pipelineRun, err := s.pipelineClient.TektonV1beta1().PipelineRuns(prNamespace).Get(context.Background(), prName, v1.GetOptions{})
 	if err != nil {
@@ -86,6 +84,13 @@ func (s *scheduler) validateRequest(response http.ResponseWriter, request *http.
 		errStr := "failed to get repository"
 		s.logger.Errorf("%v : %v ", errStr, err)
 		responseWriter(s.logger, http.StatusInternalServerError, errStr, response)
+		return nil, nil, fmt.Errorf(errStr)
+	}
+
+	if repo.Spec.ConcurrencyLimit == nil || *repo.Spec.ConcurrencyLimit == 0 {
+		errStr := fmt.Sprintf("invalid concurrency limit for repository : %s", repo.Name)
+		s.logger.Error(errStr)
+		responseWriter(s.logger, http.StatusBadRequest, errStr, response)
 		return nil, nil, fmt.Errorf(errStr)
 	}
 

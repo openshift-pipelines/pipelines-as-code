@@ -2,7 +2,6 @@ package sync
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -12,7 +11,7 @@ import (
 )
 
 type (
-	GetSyncLimit func(string) int
+	GetSyncLimit func() int
 )
 
 type Manager struct {
@@ -32,18 +31,8 @@ func NewLockManager(logger *zap.SugaredLogger) *Manager {
 
 func (m *Manager) Register(pr *v1beta1.PipelineRun, repo *v1alpha1.Repository, pipelineCS versioned.Interface) error {
 
-	m.getSyncLimit = func(s string) int {
-		// check if sync limit is set in repository
-		// if not then return 1 by default
-		limit, ok := repo.Annotations["pipelinesascode.tekton.dev/concurrencyLimit"]
-		if ok {
-			i, err := strconv.Atoi(limit)
-			if err != nil {
-				return 1
-			}
-			return i
-		}
-		return 1
+	m.getSyncLimit = func() int {
+		return *repo.Spec.ConcurrencyLimit
 	}
 
 	m.lock.Lock()
@@ -68,12 +57,7 @@ func (m *Manager) Register(pr *v1beta1.PipelineRun, repo *v1alpha1.Repository, p
 	}
 
 	// if sync limit is changed then update size of semaphore
-	err = m.checkAndUpdateSemaphoreSize(lock)
-	if err != nil {
-		errStr := fmt.Sprintf("failed to update semaphore size for lock %v, %v ", lock.getName(), err)
-		m.logger.Error(errStr)
-		return fmt.Errorf(errStr)
-	}
+	m.checkAndUpdateSemaphoreSize(lock)
 
 	lock.addToQueue(HolderKey(pr), pr.CreationTimestamp.Time)
 
@@ -98,7 +82,6 @@ func (m *Manager) startSyncer(lockKey string, pipelineCS versioned.Interface) {
 			// check if syncer exits because of any error
 			if err != nil {
 				m.logger.Error("syncer exited for ", lockKey)
-				// TODO: should we restart it again?
 			}
 
 			// if no error then mark syncer as false
@@ -106,6 +89,14 @@ func (m *Manager) startSyncer(lockKey string, pipelineCS versioned.Interface) {
 			defer m.lock.Unlock()
 
 			m.syncLockMap[lockKey].setSyncer(false)
+
+			// if there are still pipelineRun in running or pending then restart
+			// syncer
+			if len(m.syncLockMap[lockKey].getCurrentHolders()) != 0 ||
+				len(m.syncLockMap[lockKey].getCurrentPending()) != 0 {
+				m.logger.Infof("restarting syncer for lock %s", lockKey)
+				go m.startSyncer(lockKey, pipelineCS)
+			}
 		}()
 
 		// mark syncer as true
@@ -114,23 +105,14 @@ func (m *Manager) startSyncer(lockKey string, pipelineCS versioned.Interface) {
 }
 
 func (m *Manager) initializeSemaphore(semaphoreName string) (Semaphore, error) {
-	return NewSemaphore(semaphoreName, m.getSyncLimit(semaphoreName), m.logger), nil
+	return NewSemaphore(semaphoreName, m.getSyncLimit(), m.logger), nil
 }
 
-func (m *Manager) checkAndUpdateSemaphoreSize(semaphore Semaphore) error {
-	changed, newLimit, err := m.isSemaphoreSizeChanged(semaphore)
-	if err != nil {
-		return err
-	}
-	if changed {
+func (m *Manager) checkAndUpdateSemaphoreSize(semaphore Semaphore) {
+	newLimit := m.getSyncLimit()
+	if semaphore.getLimit() != newLimit {
 		semaphore.resize(newLimit)
 	}
-	return nil
-}
-
-func (m *Manager) isSemaphoreSizeChanged(semaphore Semaphore) (bool, int, error) {
-	limit := m.getSyncLimit(semaphore.getName())
-	return semaphore.getLimit() != limit, limit, nil
 }
 
 func (m *Manager) Release(lockKey, holderKey string) {
@@ -139,6 +121,15 @@ func (m *Manager) Release(lockKey, holderKey string) {
 
 	if syncLockHolder, ok := m.syncLockMap[lockKey]; ok {
 		syncLockHolder.release(holderKey)
+		syncLockHolder.removeFromQueue(holderKey)
+	}
+}
+
+func (m *Manager) Remove(lockKey, holderKey string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if syncLockHolder, ok := m.syncLockMap[lockKey]; ok {
 		syncLockHolder.removeFromQueue(holderKey)
 	}
 }

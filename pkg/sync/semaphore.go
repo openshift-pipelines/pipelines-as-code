@@ -106,9 +106,14 @@ func (s *PrioritySemaphore) acquireForLatest() string {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	ready := s.pending.pop()
+	if s.pending.Len() == 0 {
+		return ""
+	}
+
+	ready := s.pending.peek()
 
 	if s.semaphore.TryAcquire(1) {
+		_ = s.pending.pop()
 		s.lockHolder[ready.key] = true
 		s.logger.Infof("acquired lock for %s in %s", ready.key, s.name)
 	}
