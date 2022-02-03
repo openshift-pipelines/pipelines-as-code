@@ -113,3 +113,22 @@ func waitForPipelineRunState(ctx context.Context, tektonbeta1 tektonv1beta1clien
 func (k Interaction) WaitForPipelineRunSucceed(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun, polltimeout time.Duration) error {
 	return waitForPipelineRunState(ctx, tektonbeta1, pr, polltimeout, PipelineRunSucceed(pr.Name))
 }
+
+func (k Interaction) WaitForPipelineRunStart(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun, polltimeout time.Duration) error {
+	return waitForPipelineRunToStart(ctx, tektonbeta1, pr)
+}
+
+func waitForPipelineRunToStart(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	return PollImmediateWithContext(ctx, func() (bool, error) {
+		r, err := tektonbeta1.PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
+		if err != nil {
+			return true, err
+		}
+		if r.Spec.Status == v1beta1.PipelineRunSpecStatusPending {
+			return false, nil
+		}
+		return true, nil
+	})
+}

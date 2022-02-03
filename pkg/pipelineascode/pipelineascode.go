@@ -3,6 +3,8 @@ package pipelineascode
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"strconv"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
@@ -137,10 +140,33 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 	// Add labels and annotations to pipelinerun
 	kubeinteraction.AddLabelsAndAnnotations(cs.Info.Event, pipelineRun, repo)
 
-	// Create the actual pipeline
-	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).Create(ctx, pipelineRun, metav1.CreateOptions{})
-	if err != nil {
-		return fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
+	var pr *tektonv1beta1.PipelineRun
+	// If concurrency limit is defined then create it as pending and register
+	// with scheduler
+	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit != 0 {
+		// create pipelinerun with pending state and wait for it to start
+
+		pipelineRun.Spec.Status = tektonv1beta1.PipelineRunSpecStatusPending
+
+		// Create the actual pipeline
+		pr, err = cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).Create(ctx, pipelineRun, metav1.CreateOptions{})
+		if err != nil {
+			return fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
+		}
+
+		cs.Clients.Log.Infof("pipelinerun %s has been created with pending state in namespace %s for SHA: %s Target Branch: %s",
+			pr.GetName(), repo.GetNamespace(), cs.Info.Event.SHA, cs.Info.Event.BaseBranch)
+
+		if err := registerWithScheduler(pr); err != nil {
+			return err
+		}
+
+		// wait for scheduler to start the pipelinerun
+		cs.Clients.Log.Infof("Waiting for PipelineRun %s/%s to start", pr.Namespace, pr.Name)
+		if err := k8int.WaitForPipelineRunStart(ctx, cs.Clients.Tekton.TektonV1beta1(), pr); err != nil {
+			cs.Clients.Log.Warnf("pipelinerun %s in namespace %s has been not started",
+				pipelineRun.GetGenerateName(), repo.GetNamespace())
+		}
 	}
 
 	// Create status with the log url
@@ -215,4 +241,24 @@ func getAllPipelineRuns(ctx context.Context, cs *params.Run, providerintf provid
 		GenerateName: true,
 		RemoteTasks:  cs.Info.Pac.RemoteTasks,
 	})
+}
+
+func registerWithScheduler(pr *tektonv1beta1.PipelineRun) error {
+
+	// API: /register/pipelinerun/<namespace>/<name>
+	url := fmt.Sprintf("http://%s:%s/register/pipelinerun/%s/%s",
+		info.DefaultControllerService, info.DefaultControllerPort, pr.Namespace, pr.Name)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("failed to register pipelineRun with scheduler, %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		data, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("failed to register pipelineRun with scheduler, statusCode: %v, message: %v", resp.Status, string(data))
+	}
+
+	return nil
 }
