@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
@@ -152,18 +153,9 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 			return fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
 		}
 	} else {
-		// create pipelinerun with pending state and wait for it to start
-		pipelineRun.Spec.Status = tektonv1beta1.PipelineRunSpecStatusPending
-
-		pr, err = cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).Create(ctx, pipelineRun, metav1.CreateOptions{})
+		// create pipelineRun with Pending Status and register with controller for scheduling
+		pr, err = createAndRegisterPendingPR(ctx, cs, pipelineRun, repo)
 		if err != nil {
-			return fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
-		}
-
-		cs.Clients.Log.Infof("pipelinerun %s has been created with pending state in namespace %s for SHA: %s Target Branch: %s",
-			pr.GetName(), repo.GetNamespace(), cs.Info.Event.SHA, cs.Info.Event.BaseBranch)
-
-		if err := registerWithScheduler(pr); err != nil {
 			return err
 		}
 
@@ -176,7 +168,7 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 	}
 
 	// Create status with the log url
-	cs.Clients.Log.Infof("pipelinerun %s has been created in namespace %s for SHA: %s Target Branch: %s",
+	cs.Clients.Log.Infof("pipelinerun %s has been started in namespace %s for SHA: %s Target Branch: %s",
 		pr.GetName(), repo.GetNamespace(), cs.Info.Event.SHA, cs.Info.Event.BaseBranch)
 	consoleURL := cs.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
 	// Create status with the log url
@@ -249,11 +241,38 @@ func getAllPipelineRuns(ctx context.Context, cs *params.Run, providerintf provid
 	})
 }
 
-func registerWithScheduler(pr *tektonv1beta1.PipelineRun) error {
-	// API: /register/pipelinerun/<namespace>/<name>
-	url := fmt.Sprintf("%s/%s/%s", registerAPI, pr.Namespace, pr.Name)
+func createAndRegisterPendingPR(ctx context.Context, cs *params.Run, pipelineRun *tektonv1beta1.PipelineRun, repo *v1alpha1.Repository) (*tektonv1beta1.PipelineRun, error) {
+	// create pipelinerun with pending state and wait for it to start
+	pipelineRun.Spec.Status = tektonv1beta1.PipelineRunSpecStatusPending
 
-	resp, err := http.Get(url)
+	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).Create(ctx, pipelineRun, metav1.CreateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
+	}
+
+	cs.Clients.Log.Infof("pipelinerun %s has been created with pending state in namespace %s for SHA: %s Target Branch: %s",
+		pr.GetName(), repo.GetNamespace(), cs.Info.Event.SHA, cs.Info.Event.BaseBranch)
+
+	if err := registerWithScheduler(ctx, pr); err != nil {
+		cs.Clients.Log.Errorf("failed to register pipelinerun with controller, %v", err)
+		return pr, err
+	}
+
+	cs.Clients.Log.Infof("pipelinerun %s/%s has been registered with controller for scheduling", pr.GetNamespace(), pr.GetName())
+
+	return pr, nil
+}
+
+func registerWithScheduler(ctx context.Context, pr *tektonv1beta1.PipelineRun) error {
+	url := fmt.Sprintf("%s/%s/%s", registerAPI, pr.GetNamespace(), pr.GetName())
+
+	req, err := http.NewRequestWithContext(ctx, "POST", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create new request, %w", err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to register pipelineRun with scheduler, %w", err)
 	}

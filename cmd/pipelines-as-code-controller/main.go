@@ -15,7 +15,6 @@ import (
 )
 
 func main() {
-
 	logger := initLogger()
 
 	clusterConfig, err := rest.InClusterConfig()
