@@ -18,6 +18,9 @@ func Root(clients *params.Run) *cobra.Command {
 		Short:        "Pipelines as Code CLI",
 		Long:         `This is the the tkn plugin for Pipelines as Code CLI`,
 		SilenceUsage: true,
+		Annotations: map[string]string{
+			"commandType": "main",
+		},
 	}
 	clients.Info.Kube.AddFlags(cmd)
 

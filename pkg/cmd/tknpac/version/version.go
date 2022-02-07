@@ -15,6 +15,9 @@ func Command(ioStreams *cli.IOStreams) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Fprintln(ioStreams.ErrOut, version.Version)
 		},
+		Annotations: map[string]string{
+			"commandType": "main",
+		},
 	}
 	return cmd
 }

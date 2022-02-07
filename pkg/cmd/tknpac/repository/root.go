@@ -13,6 +13,9 @@ func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		Short:        "Pipelines as Code repositories",
 		Long:         `Manage Pipelines as Code repositories`,
 		SilenceUsage: true,
+		Annotations: map[string]string{
+			"commandType": "main",
+		},
 	}
 	cmd.AddCommand(ListCommand(clients, ioStreams))
 	cmd.AddCommand(DescribeCommand(clients, ioStreams))

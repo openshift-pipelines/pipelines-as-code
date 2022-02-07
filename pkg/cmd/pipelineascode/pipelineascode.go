@@ -47,6 +47,9 @@ func Command(cs *params.Run) *cobra.Command {
 			}
 			return runWrap(ctx, cs, providerintf, kinteract)
 		},
+		Annotations: map[string]string{
+			"commandType": "main",
+		},
 	}
 
 	err := cs.Info.Pac.AddFlags(cmd)

@@ -104,6 +104,9 @@ func Command(run *params.Run) *cobra.Command {
 			fmt.Println(s)
 			return err
 		},
+		Annotations: map[string]string{
+			"commandType": "main",
+		},
 	}
 	cmd.Flags().StringSliceVarP(&parameters, "params", "p", filenames,
 		"Params to resolve (ie: revision, repo_url)")
