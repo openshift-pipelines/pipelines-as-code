@@ -134,6 +134,9 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 			return nil
 		},
+		Annotations: map[string]string{
+			"commandType": "main",
+		},
 	}
 	cmd.AddCommand(GithubApp(run, ioStreams))
 
@@ -169,6 +172,9 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 
 			return createSecret(ctx, run, opts)
+		},
+		Annotations: map[string]string{
+			"commandType": "main",
 		},
 	}
 	addCommonFlags(cmd, opts, ioStreams)

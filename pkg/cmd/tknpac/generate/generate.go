@@ -62,6 +62,9 @@ func Command(ioStreams *cli.IOStreams) *cobra.Command {
 			gopt.GitInfo = git.GetGitInfo(cwd)
 			return Generate(gopt)
 		},
+		Annotations: map[string]string{
+			"commandType": "main",
+		},
 	}
 	cmd.PersistentFlags().StringVar(&gopt.event.BaseBranch, "branch", "",
 		"The target branch of the repository  event to handle (eg: main, nightly)")

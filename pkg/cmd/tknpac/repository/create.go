@@ -76,6 +76,9 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 			return generate.Generate(gopt)
 		},
+		Annotations: map[string]string{
+			"commandType": "main",
+		},
 	}
 
 	cmd.PersistentFlags().BoolP(noColorFlag, "C", !ioStreams.ColorEnabled(), "disable coloring")

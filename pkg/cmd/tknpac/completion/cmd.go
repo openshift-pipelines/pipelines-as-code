@@ -70,7 +70,7 @@ func Command() *cobra.Command {
 		ValidArgs: []string{"bash", "zsh", "fish", "powershell"},
 		Example:   eg,
 		Annotations: map[string]string{
-			"commandType": "utility",
+			"commandType": "main",
 		},
 		Args: cobra.ExactValidArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

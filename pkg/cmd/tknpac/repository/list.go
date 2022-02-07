@@ -50,6 +50,9 @@ func ListCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			cw := clockwork.NewRealClock()
 			return list(ctx, run, opts, ioStreams, cw, selectors, noheaders)
 		},
+		Annotations: map[string]string{
+			"commandType": "main",
+		},
 	}
 
 	cmd.PersistentFlags().BoolVarP(&allNamespaces, allNamespacesFlag, "A", false, "If present, "+
