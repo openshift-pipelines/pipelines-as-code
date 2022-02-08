@@ -60,10 +60,10 @@ func (s *scheduler) validateRequest(response http.ResponseWriter, request *http.
 		return nil, nil, fmt.Errorf(errStr)
 	}
 
-	// check if repository name annotation exist on pipelineRun
-	repoName, ok := pipelineRun.Annotations[RepoAnnotation]
+	// check if repository name label exist on pipelineRun
+	repoName, ok := pipelineRun.Labels[RepositoryLabel]
 	if !ok {
-		errStr := fmt.Sprintf("failed to find repository name annotation on pipelinerun %s/%s", prName, prNamespace)
+		errStr := fmt.Sprintf("failed to find repository label on pipelinerun %s/%s", prName, prNamespace)
 		s.logger.Error(errStr)
 		responseWriter(s.logger, http.StatusBadRequest, errStr, response)
 		return nil, nil, fmt.Errorf(errStr)

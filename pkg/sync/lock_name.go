@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	RepoAnnotation = "pipelinesascode.tekton.dev/repository"
+	RepositoryLabel = "pipelinesascode.tekton.dev/repository"
 )
 
 type LockName struct {
@@ -24,7 +24,7 @@ func NewLockName(repoName, namespace string) *LockName {
 }
 
 func GetLockName(pr *v1beta1.PipelineRun) *LockName {
-	repoName := pr.GetAnnotations()[RepoAnnotation]
+	repoName := pr.GetLabels()[RepositoryLabel]
 	return NewLockName(repoName, pr.Namespace)
 }
 

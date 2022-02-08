@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	RepoAnnotation = "pipelinesascode.tekton.dev/repository"
+	RepositoryLabel = "pipelinesascode.tekton.dev/repository"
 )
 
 type Scheduler interface {
