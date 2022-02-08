@@ -1,0 +1,36 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: hello-world-
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "%s"
+    pipelinesascode.tekton.dev/on-target-branch: "[%s]"
+    pipelinesascode.tekton.dev/on-event: "[%s]"
+spec:
+  params:
+    - name: say-what
+      value: "hello world"
+    - name: pause-duration
+      value: "30"
+  pipelineSpec:
+    params:
+      - name: say-what
+      - name: pause-duration
+    tasks:
+      - name: hello
+        taskSpec:
+          params:
+            - name: say-what
+              description: What should I say
+              default: "hello"
+              type: string
+            - name: pause-duration
+              description: How long to wait before saying something
+              default: "30"
+              type: string
+          steps:
+            - name: say-it
+              image: registry.access.redhat.com/ubi8/ubi
+              command:
+                - /bin/bash
+              args: ['-c', 'sleep $(params.pause-duration) && echo $(params.say-what)']
