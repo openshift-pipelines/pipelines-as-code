@@ -160,5 +160,5 @@ func createGithubRepoCRDC(ctx context.Context, t *testing.T, ghprovider github.P
 }
 
 // Local Variables:
-// compile-command: "go test -tags=e2e -v -info TestGithubPullRequest$ ."
+// compile-command: "go test -tags=e2e -v -info TestGithubPullRequestWithConcurrency$ ."
 // End:
