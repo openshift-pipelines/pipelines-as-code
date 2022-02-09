@@ -22,7 +22,8 @@ type priorityQueue struct {
 }
 
 func (pq *priorityQueue) pop() *item {
-	return heap.Pop(pq).(*item)
+	item, _ := heap.Pop(pq).(*item)
+	return item
 }
 
 func (pq *priorityQueue) peek() *item {
