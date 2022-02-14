@@ -4,8 +4,8 @@
 
 The purposes of the Repository CRD  is :
 
-- To let know to Pipelines as Code that this event from this URL needs to be handled.
-- To tell Pipelines as Code on which namespace the PipelineRuns are going to be executed.
+- To let _Pipelines as Code_ know that this event from this URL needs to be handled.
+- To let _Pipelines as Code_ know on which namespace the PipelineRuns are going to be executed.
 - To reference a api secret, username or api URL if needed for the git provider
   platforms that requires it (ie: when you are using webhooks method and not
   the github application).
@@ -13,7 +13,7 @@ The purposes of the Repository CRD  is :
 
 The flow looks like this :
 
-Via the tkn pac CLI or other method the user creates a `CustomResourceDefinition`
+Via the tkn pac CLI or other method the user creates a `Repository` CR 
 inside the target namespace `my-pipeline-ci` :
 
 ```yaml
