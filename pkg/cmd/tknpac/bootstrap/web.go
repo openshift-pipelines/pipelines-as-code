@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -41,7 +42,11 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 			fmt.Fprint(rw, successTmpl)
 			codeCh <- code
 		} else {
-			fmt.Fprintf(rw, indexTmpl, opts.GithubAPIURL, jeez)
+			url := opts.GithubAPIURL
+			if opts.GithubOrganizationName != "" {
+				url = filepath.Join(opts.GithubAPIURL, "organizations", opts.GithubOrganizationName)
+			}
+			fmt.Fprintf(rw, indexTmpl, url, jeez)
 		}
 	})
 	go func() {

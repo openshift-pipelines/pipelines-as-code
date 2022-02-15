@@ -35,10 +35,11 @@ type bootstrapOpts struct {
 	targetNamespace string
 	recreateSecret  bool
 
-	RouteName             string
-	GithubAPIURL          string
-	GithubApplicationName string
-	GithubApplicationURL  string
+	RouteName              string
+	GithubAPIURL           string
+	GithubApplicationName  string
+	GithubApplicationURL   string
+	GithubOrganizationName string
 }
 
 const indexTmpl = `
@@ -183,6 +184,7 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 }
 
 func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
+	cmd.PersistentFlags().StringVar(&opts.GithubOrganizationName, "github-organization-name", "", "Whether you want to target an organization instead of the current user")
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationName, "github-application-name", "", "Github Application Name")
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "Github Application URL")
 	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enteprise API URL")
