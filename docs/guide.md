@@ -13,7 +13,7 @@ The purposes of the Repository CRD  is :
 
 The flow looks like this :
 
-Via the tkn pac CLI or other method the user creates a `Repository` CR 
+Via the tkn pac CLI or other method the user creates a `Repository` CR
 inside the target namespace `my-pipeline-ci` :
 
 ```yaml
@@ -244,6 +244,9 @@ Everything that runs your pipelinerun and its references need to be inside the
 `.tekton/` directory or referenced via a remote task (see below on how the
 remote tasks are referenced).
 
+If you have a taskRef to a task located in the `.tekton/` directory it will be
+automatically embedded even if it's not in the annotations.
+
 If pipelines as code cannot resolve the referenced tasks in the `Pipeline` or
 `PipelineSpec` it will fails before applying the pipelinerun onto the cluster.
 
@@ -287,7 +290,7 @@ example :
 ```yaml
   pipelinesascode.tekton.dev/task: "git-clone"
   pipelinesascode.tekton.dev/task-1: "golang-test"
-  pipelinesascode.tekton.dev/task-2: "tkn" 
+  pipelinesascode.tekton.dev/task-2: "tkn"
 ```
 
 By default `Pipelines as Code` will interpret the string as the `latest` task to

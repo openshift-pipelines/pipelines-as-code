@@ -163,6 +163,14 @@ func TestNotKubernetesDocumentIgnore(t *testing.T) {
 	assert.Assert(t, resolved.Spec.PipelineSpec != nil)
 }
 
+// test if we have the task in .tekton dir not referenced in annotations but taskRef in a task.
+// should embed since in repo.
+func TestInRepoShouldNotEmbedIfNoAnnotations(t *testing.T) {
+	resolved, _, err := readTDfile(t, "in-repo-in-ref-no-annotation", false, true)
+	assert.NilError(t, err)
+	assert.Assert(t, resolved.Spec.PipelineSpec.Tasks[0].TaskRef == nil, "task should have been embedded")
+}
+
 func TestNoPipelineRuns(t *testing.T) {
 	_, _, err := readTDfile(t, "no-pipelinerun", false, true)
 	assert.Error(t, err, "we need at least one pipelinerun to start with")

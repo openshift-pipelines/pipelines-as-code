@@ -93,10 +93,25 @@ It has some basic language detection and add extra task depending of the languag
 
 ### Resolve
 
-`tkn-pac resolve`: will run a pipelinerun as if it were executed by pipelines as code on service. It will try to detect the current git information if you run the command from your source code. To make it works you need to push the current revision to the target git repository and iterate the pipelinerun change with the `tkn-pac resolve` command. For example if you have a pipelinerun in the `.tekton/pull-request.yaml` file you can run the command `tkn-pac resolve` to see it running:
+`tkn-pac resolve`: will run a pipelinerun as if it were executed by pipelines
+as code on service.
+
+For example if you have a pipelinerun in the `.tekton/pull-request.yaml` file you can run the command `tkn-pac resolve` to see it running:
 
 ```yaml
 tkn pac resolve -f .tekton/pull-request.yaml|kubectl apply -f -
 ```
 
 Combined with a kubernetes install running on your local machine (like[Code Ready Containers](https://developers.redhat.com/products/codeready-containers/overview) or [Kubernetes Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) ) you can see your run in action without having to generate a new commit.
+
+If you run the command from your source code repository it will try to detect the current git information and resolve the parameters like current revision or branch. You can override those params with the `-p` option. For example if you want to use a git branch as revision and another repo name than the current repo name you can just use :
+
+`tkn pac resolve -f .tekton/pr.yaml -p revision=main -p repo_name=othername`
+
+`-f` can as well accept a directory path instead of just a filename and grab every `yaml`/`yml` from the directory.
+
+You can specify multiple `-f` on the command line.
+
+You need to make sure that git-clone task (if you use it) can access the repository to the SHA. Which mean if you test your current source code you need to push it first tbefore using `tkn pac resolve|kubectl apply`.
+
+Compared with running directly on CI, you need to explicitely specify the list of filenames or directory where you have the templates.
