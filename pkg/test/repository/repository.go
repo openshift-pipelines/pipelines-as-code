@@ -66,12 +66,16 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 		},
 		Spec: v1alpha1.RepositorySpec{
 			URL: opts.URL,
-			GitProvider: &v1alpha1.GitProvider{
-				Secret: &v1alpha1.GitProviderSecret{},
-			},
 		},
 		Status: opts.RepoStatus,
 	}
+
+	if opts.SecretName != "" || opts.ProviderURL != "" {
+		repo.Spec.GitProvider = &v1alpha1.GitProvider{
+			Secret: &v1alpha1.GitProviderSecret{},
+		}
+	}
+
 	if opts.SecretName != "" {
 		repo.Spec.GitProvider.Secret = &v1alpha1.GitProviderSecret{
 			Name: opts.SecretName,

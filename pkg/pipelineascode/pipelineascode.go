@@ -57,7 +57,7 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 		return nil
 	}
 
-	if repo.Spec.GitProvider != nil && repo.Spec.GitProvider.URL != "" {
+	if repo.Spec.GitProvider != nil {
 		err := secretFromRepository(ctx, cs, k8int, providerintf.GetConfig(), repo)
 		if err != nil {
 			return err
