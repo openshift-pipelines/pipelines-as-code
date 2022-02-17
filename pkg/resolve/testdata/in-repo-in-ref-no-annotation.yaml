@@ -1,0 +1,36 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pr
+spec:
+  pipelineRef:
+    name: pipeline-test
+  params:
+    - name: key
+      value: "{{value}}"
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-test
+spec:
+  params:
+    - name: repo_url
+    - name: revision
+  tasks:
+    - name: task
+      taskRef:
+        name: should-expand
+  steps:
+    - name: first-step
+      image: image
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: should-expand
+spec:
+  steps:
+    - name: second-step
+      image: image
