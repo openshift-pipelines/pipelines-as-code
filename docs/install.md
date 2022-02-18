@@ -344,6 +344,10 @@ Pipelines-As-Code has a full support on Bitbucket Cloud on
 
 <https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/>
 
+Add those permissions to the token : 
+
+![image](https://user-images.githubusercontent.com/98980/154526912-75c52ded-45e9-42d4-8c09-908b86eb57b4.png)
+
 Make sure you note somewhere the generated token or otherwise you will have to
 recreate it.
 
