@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/google/go-github/v39/github"
+	"github.com/google/go-github/v42/github"
 )
 
 var (

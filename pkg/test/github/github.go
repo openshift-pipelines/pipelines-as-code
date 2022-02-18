@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/google/go-github/v39/github"
+	"github.com/google/go-github/v42/github"
 )
 
 const (
