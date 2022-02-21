@@ -2,7 +2,8 @@ package gotp
 
 import (
 	"fmt"
-	"math/rand"
+	"crypto/rand"
+	"encoding/base32"
 	"net/url"
 	"strings"
 	"time"
@@ -33,31 +34,36 @@ params:
 returns: provisioning uri
 */
 func BuildUri(otpType, secret, accountName, issuerName, algorithm string, initialCount, digits, period int) string {
+	q := url.Values{}
+
 	if otpType != OtpTypeHotp && otpType != OtpTypeTotp {
 		panic("otp type error, got " + otpType)
 	}
-
-	urlParams := make([]string, 0)
-	urlParams = append(urlParams, "secret="+secret)
-	if otpType == OtpTypeHotp {
-		urlParams = append(urlParams, fmt.Sprintf("counter=%d", initialCount))
-	}
 	label := url.QueryEscape(accountName)
 	if issuerName != "" {
-		issuerNameEscape := url.QueryEscape(issuerName)
-		label = issuerNameEscape + ":" + label
-		urlParams = append(urlParams, "issuer="+issuerNameEscape)
+		label = url.QueryEscape(issuerName) + ":" + label
+		q.Set("issuer", issuerName)
 	}
+	q.Set("secret", secret)
 	if algorithm != "" && algorithm != "sha1" {
-		urlParams = append(urlParams, "algorithm="+strings.ToUpper(algorithm))
+		q.Set("algorithm", strings.ToUpper(algorithm))
 	}
 	if digits != 0 && digits != 6 {
-		urlParams = append(urlParams, fmt.Sprintf("digits=%d", digits))
+		q.Set("digits", fmt.Sprintf("%d", digits))
 	}
 	if period != 0 && period != 30 {
-		urlParams = append(urlParams, fmt.Sprintf("period=%d", period))
+		q.Set("period", fmt.Sprintf("%d", period))
 	}
-	return fmt.Sprintf("otpauth://%s/%s?%s", otpType, label, strings.Join(urlParams, "&"))
+	if otpType == OtpTypeHotp {
+		q.Set("counter", fmt.Sprintf("%d", initialCount))
+	}
+	u := url.URL {
+		Scheme: "otpauth",
+		Host: otpType,
+		Path: label,
+		RawQuery: q.Encode(),
+	}
+	return u.String()
 }
 
 // get current timestamp
@@ -75,16 +81,17 @@ func Itob(integer int) []byte {
 	return byteArr
 }
 
-// generate a random secret of given length
+// generate a random secret of given length (number of bytes)
+// returns empty string if something bad happened
 func RandomSecret(length int) string {
-	rand.Seed(time.Now().UnixNano())
-	letterRunes := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567")
-
-	bytes := make([]rune, length)
-
-	for i := range bytes {
-		bytes[i] = letterRunes[rand.Intn(len(letterRunes))]
+	var result string
+	secret := make([]byte, length)
+	gen, err := rand.Read(secret)
+	if err != nil || gen != length {
+		// error reading random, return empty string
+		return result
 	}
-
-	return string(bytes)
+	var encoder = base32.StdEncoding.WithPadding(base32.NoPadding)
+	result = encoder.EncodeToString(secret)
+	return result
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 
-	"github.com/google/go-github/v39/github"
+	"github.com/google/go-github/v42/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 )
