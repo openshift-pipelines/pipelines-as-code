@@ -1,6 +1,6 @@
 # Pipelines as Code
 
-**This documentation refers to the main development branch, the documentation for the latest released version is [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/0.5.2/README.md)**
+**This documentation refers to the main development branch, the documentation for the latest released version is [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/0.5.3/README.md)**
 
 [![Container Repository on Quay](https://quay.io/repository/openshift-pipeline/pipelines-as-code/status "Container Repository on Quay")](https://quay.io/repository/openshift-pipeline/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code)
 
