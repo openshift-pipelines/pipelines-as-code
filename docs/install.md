@@ -26,7 +26,7 @@ To install Pipelines as Code on your cluster you simply need to run this command
 :
 
 ```shell
-VERSION=0.5.2
+VERSION=0.5.3
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.yaml
 ```
 
@@ -478,7 +478,7 @@ its [interceptors](https://storage.googleapis.com/tekton-releases/triggers/lates
 The release yaml to install pipelines are for the released version :
 
 ```shell
-VERSION=0.5.2
+VERSION=0.5.3
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.k8s.yaml
 ```
 
