@@ -52,12 +52,12 @@ func GetTask(ctx context.Context, cli *params.Run, task string) (string, error) 
 		rawURL, err = getLatestVersion(ctx, cli, task)
 	}
 	if err != nil {
-		return "", fmt.Errorf("could not fetch remote task %s: %w", task, err)
+		return "", fmt.Errorf("could not fetch remote task %s, hub API returned: %w", task, err)
 	}
 
 	data, err := cli.Clients.GetURL(ctx, rawURL)
 	if err != nil {
-		return "", fmt.Errorf("could not fetch remote task %s: %w", task, err)
+		return "", fmt.Errorf("could not fetch remote task %s, hub API returned: %w", task, err)
 	}
 	return string(data), err
 }
