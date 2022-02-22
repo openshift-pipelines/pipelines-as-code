@@ -49,7 +49,8 @@ git status -uno|grep -q "nothing to commit" || {
 sed -i "s,\(https://github.com/openshift-pipelines/pipelines-as-code/blob/\)[^/]*,\1${VERSION}," README.md
 sed -i "s/^VERSION=.*/VERSION=${VERSION}/" docs/install.md
 
-git switch main
+git fetch -a origin
+git checkout -B main origin/main
 
 git commit -S -m "Update documentation for Release ${VERSION}" docs/install.md README.md || true
 git tag -s ${VERSION} -m "Release ${VERSION}"
