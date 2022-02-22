@@ -78,8 +78,14 @@ func TestGenerateName(t *testing.T) {
 	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
 }
 
-func TestBundlesSkipped(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipelinerun-with-a-bundle", false, true)
+func TestPipelineBundlesSkipped(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-bundle", false, true)
+	assert.NilError(t, err)
+	assert.Assert(t, resolved.Spec.PipelineRef.Bundle != "")
+}
+
+func TestTaskBundlesSkipped(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-task-bundle", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].Name, "bundled")
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Bundle, "reg.io/ruben/barichello@sha256:1234")

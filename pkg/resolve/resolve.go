@@ -167,7 +167,7 @@ func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interfac
 		}
 
 		// Resolve PipelineRef inside PipelineRef
-		if pipelinerun.Spec.PipelineRef != nil {
+		if pipelinerun.Spec.PipelineRef != nil && pipelinerun.Spec.PipelineRef.Bundle == "" {
 			pipelineResolved, err := getPipelineByName(pipelinerun.Spec.PipelineRef.Name, types.Pipelines)
 			if err != nil {
 				return []*tektonv1beta1.PipelineRun{}, err
