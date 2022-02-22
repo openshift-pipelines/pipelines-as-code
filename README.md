@@ -2,7 +2,7 @@
 
 **This documentation refers to the main development branch, the documentation for the latest released version is [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/0.5.3/README.md)**
 
-[![Container Repository on Quay](https://quay.io/repository/openshift-pipeline/pipelines-as-code/status "Container Repository on Quay")](https://quay.io/repository/openshift-pipeline/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code)
+[![Container Repository on Quay](https://quay.io/repository/openshift-pipeline/pipelines-as-code/status "Container Repository on Quay")](https://quay.io/repository/openshift-pipeline/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code) [![E2E Tests](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/kind.yaml/badge.svg)](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/kind.yaml)
 
 Pipelines as Code -- An opinionated CI based on OpenShift Pipelines / Tekton.
 
