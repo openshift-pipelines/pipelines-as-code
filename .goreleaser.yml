@@ -68,7 +68,7 @@ brews:
       (zsh_completion/"_tkn-pac").write output
       prefix.install_metafiles
 nfpms:
-  - file_name_template: "tektoncd-cli-{{.Version}}_{{.Os}}-{{.Arch}}"
+  - file_name_template: "tkn-pac-{{.Version}}_{{.Os}}-{{.Arch}}"
     homepage: https://github.com/openshift-pipelines/pipelines-as-code
     description: Command line interface to OpenShift Pipelines as Code
     maintainer: OpenShift Pipelines Developers <pipelines-dev@redhat.com>
