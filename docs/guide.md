@@ -247,6 +247,13 @@ remote tasks are referenced).
 If you have a taskRef to a task located in the `.tekton/` directory it will be
 automatically embedded even if it's not in the annotations.
 
+If you have a reference to a
+[`ClusterTask`](https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#task-vs-clustertask)
+or a
+[`Bundle`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#tekton-bundles)
+(`Task` or `Pipeline`) the resolver will just use them as is and would not try
+to do anything with it.
+
 If pipelines as code cannot resolve the referenced tasks in the `Pipeline` or
 `PipelineSpec` it will fails before applying the pipelinerun onto the cluster.
 
