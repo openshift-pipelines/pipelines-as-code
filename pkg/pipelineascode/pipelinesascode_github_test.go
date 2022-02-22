@@ -135,7 +135,7 @@ func TestRun(t *testing.T) {
 		ProviderInfoFromRepo         bool
 	}{
 		{
-			name: "pull request/apps",
+			name: "pull request/fail-to-start-apps",
 			runevent: info.Event{
 				SHA:          "principale",
 				Organization: "organizationes",
@@ -148,7 +148,7 @@ func TestRun(t *testing.T) {
 			},
 			tektondir:       "testdata/pull_request",
 			finalStatus:     "neutral",
-			finalStatusText: "<th>Status</th><th>Duration</th><th>Name</th>",
+			finalStatusText: "PipelineRun has failed to start",
 		},
 		{
 			name: "pull request/with webhook",
@@ -295,7 +295,7 @@ func TestRun(t *testing.T) {
 			},
 			tektondir:                "testdata/max-keep-runs",
 			finalStatus:              "neutral",
-			finalStatusText:          "<th>Status</th><th>Duration</th><th>Name</th>",
+			finalStatusText:          "PipelineRun has failed to start",
 			expectedNumberofCleanups: 10,
 		},
 	}

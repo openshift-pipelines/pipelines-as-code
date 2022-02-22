@@ -42,8 +42,7 @@ func TaskStatusTmpl(pr *tektonv1beta1.PipelineRun, console consoleui.Interface, 
 	outputBuffer := bytes.Buffer{}
 
 	if len(pr.Status.TaskRuns) == 0 {
-		// Nada?
-		return statusTemplate + "No tasks has been found", nil
+		return "<b>PipelineRun has failed to start</b><br>", nil
 	}
 
 	for _, taskrunStatus := range pr.Status.TaskRuns {

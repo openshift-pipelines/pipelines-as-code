@@ -52,7 +52,7 @@ func TestStatusTmpl(t *testing.T) {
 		},
 		{
 			name:       "test sorted status nada",
-			wantRegexp: regexp.MustCompile("No tasks has been found"),
+			wantRegexp: regexp.MustCompile("PipelineRun has failed to start"),
 			pr:         tektontest.MakePR("nada", "ns", nil, nil),
 		},
 	}
