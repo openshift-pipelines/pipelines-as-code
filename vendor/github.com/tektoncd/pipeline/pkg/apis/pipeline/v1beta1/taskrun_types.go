@@ -24,6 +24,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/config"
 	apisconfig "github.com/tektoncd/pipeline/pkg/apis/config"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
+	"github.com/tektoncd/pipeline/pkg/clock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -60,6 +61,18 @@ type TaskRunSpec struct {
 	// Workspaces is a list of WorkspaceBindings from volumes to workspaces.
 	// +optional
 	Workspaces []WorkspaceBinding `json:"workspaces,omitempty"`
+	// Overrides to apply to Steps in this TaskRun.
+	// If a field is specified in both a Step and a StepOverride,
+	// the value from the StepOverride will be used.
+	// This field is only supported when the alpha feature gate is enabled.
+	// +optional
+	StepOverrides []TaskRunStepOverride `json:"stepOverrides,omitempty"`
+	// Overrides to apply to Sidecars in this TaskRun.
+	// If a field is specified in both a Sidecar and a SidecarOverride,
+	// the value from the SidecarOverride will be used.
+	// This field is only supported when the alpha feature gate is enabled.
+	// +optional
+	SidecarOverrides []TaskRunSidecarOverride `json:"sidecarOverrides,omitempty"`
 }
 
 // TaskRunSpecStatus defines the taskrun spec status the user can provide
@@ -132,22 +145,10 @@ func (trs *TaskRunStatus) GetStartedReason() string {
 }
 
 // GetRunningReason returns the reason set to the "Succeeded" condition when
-// the RunsToCompletion starts running. This is used indicate that the resource
+// the TaskRun starts running. This is used indicate that the resource
 // could be validated is starting to perform its job.
 func (trs *TaskRunStatus) GetRunningReason() string {
 	return TaskRunReasonRunning.String()
-}
-
-// MarkResourceNotConvertible adds a Warning-severity condition to the resource noting
-// that it cannot be converted to a higher version.
-func (trs *TaskRunStatus) MarkResourceNotConvertible(err *CannotConvertError) {
-	taskRunCondSet.Manage(trs).SetCondition(apis.Condition{
-		Type:     ConditionTypeConvertible,
-		Status:   corev1.ConditionFalse,
-		Severity: apis.ConditionSeverityWarning,
-		Reason:   err.Field,
-		Message:  err.Message,
-	})
 }
 
 // MarkResourceOngoing sets the ConditionSucceeded condition to ConditionUnknown
@@ -227,6 +228,22 @@ type TaskRunResult struct {
 
 	// Value the given value of the result
 	Value string `json:"value"`
+}
+
+// TaskRunStepOverride is used to override the values of a Step in the corresponding Task.
+type TaskRunStepOverride struct {
+	// The name of the Step to override.
+	Name string
+	// The resource requirements to apply to the Step.
+	Resources corev1.ResourceRequirements
+}
+
+// TaskRunSidecarOverride is used to override the values of a Sidecar in the corresponding Task.
+type TaskRunSidecarOverride struct {
+	// The name of the Sidecar to override.
+	Name string
+	// The resource requirements to apply to the Sidecar.
+	Resources corev1.ResourceRequirements
 }
 
 // GetGroupVersionKind implements kmeta.OwnerRefable.
@@ -396,7 +413,7 @@ func (tr *TaskRun) IsCancelled() bool {
 }
 
 // HasTimedOut returns true if the TaskRun runtime is beyond the allowed timeout
-func (tr *TaskRun) HasTimedOut(ctx context.Context) bool {
+func (tr *TaskRun) HasTimedOut(ctx context.Context, c clock.Clock) bool {
 	if tr.Status.StartTime.IsZero() {
 		return false
 	}
@@ -405,10 +422,11 @@ func (tr *TaskRun) HasTimedOut(ctx context.Context) bool {
 	if timeout == apisconfig.NoTimeoutDuration {
 		return false
 	}
-	runtime := time.Since(tr.Status.StartTime.Time)
+	runtime := c.Since(tr.Status.StartTime.Time)
 	return runtime > timeout
 }
 
+// GetTimeout returns the timeout for the TaskRun, or the default if not specified
 func (tr *TaskRun) GetTimeout(ctx context.Context) time.Duration {
 	// Use the platform default is no timeout is set
 	if tr.Spec.Timeout == nil {

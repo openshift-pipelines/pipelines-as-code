@@ -26,35 +26,40 @@ import (
 )
 
 const (
-	StableAPIFields                         = "stable"
-	AlphaAPIFields                          = "alpha"
-	disableHomeEnvOverwriteKey              = "disable-home-env-overwrite"
-	disableWorkingDirOverwriteKey           = "disable-working-directory-overwrite"
-	disableAffinityAssistantKey             = "disable-affinity-assistant"
-	disableCredsInitKey                     = "disable-creds-init"
-	runningInEnvWithInjectedSidecarsKey     = "running-in-environment-with-injected-sidecars"
-	requireGitSSHSecretKnownHostsKey        = "require-git-ssh-secret-known-hosts" // nolint: gosec
-	enableTektonOCIBundles                  = "enable-tekton-oci-bundles"
-	enableCustomTasks                       = "enable-custom-tasks"
-	enableAPIFields                         = "enable-api-fields"
-	scopeWhenExpressionsToTask              = "scope-when-expressions-to-task"
-	DefaultDisableHomeEnvOverwrite          = true
-	DefaultDisableWorkingDirOverwrite       = true
-	DefaultDisableAffinityAssistant         = false
-	DefaultDisableCredsInit                 = false
+	// StableAPIFields is the value used for "enable-api-fields" when only stable APIs should be usable.
+	StableAPIFields = "stable"
+	// AlphaAPIFields is the value used for "enable-api-fields" when alpha APIs should be usable as well.
+	AlphaAPIFields = "alpha"
+	// DefaultDisableAffinityAssistant is the default value for "disable-affinity-assistant".
+	DefaultDisableAffinityAssistant = false
+	// DefaultDisableCredsInit is the default value for "disable-creds-init".
+	DefaultDisableCredsInit = false
+	// DefaultRunningInEnvWithInjectedSidecars is the default value for "running-in-environment-with-injected-sidecars".
 	DefaultRunningInEnvWithInjectedSidecars = true
-	DefaultRequireGitSSHSecretKnownHosts    = false
-	DefaultEnableTektonOciBundles           = false
-	DefaultEnableCustomTasks                = false
-	DefaultScopeWhenExpressionsToTask       = false
-	DefaultEnableAPIFields                  = StableAPIFields
+	// DefaultRequireGitSSHSecretKnownHosts is the default value for "require-git-ssh-secret-known-hosts".
+	DefaultRequireGitSSHSecretKnownHosts = false
+	// DefaultEnableTektonOciBundles is the default value for "enable-tekton-oci-bundles".
+	DefaultEnableTektonOciBundles = false
+	// DefaultEnableCustomTasks is the default value for "enable-custom-tasks".
+	DefaultEnableCustomTasks = false
+	// DefaultScopeWhenExpressionsToTask is the default value for "scope-when-expressions-to-task".
+	DefaultScopeWhenExpressionsToTask = true
+	// DefaultEnableAPIFields is the default value for "enable-api-fields".
+	DefaultEnableAPIFields = StableAPIFields
+
+	disableAffinityAssistantKey         = "disable-affinity-assistant"
+	disableCredsInitKey                 = "disable-creds-init"
+	runningInEnvWithInjectedSidecarsKey = "running-in-environment-with-injected-sidecars"
+	requireGitSSHSecretKnownHostsKey    = "require-git-ssh-secret-known-hosts" // nolint: gosec
+	enableTektonOCIBundles              = "enable-tekton-oci-bundles"
+	enableCustomTasks                   = "enable-custom-tasks"
+	enableAPIFields                     = "enable-api-fields"
+	scopeWhenExpressionsToTask          = "scope-when-expressions-to-task"
 )
 
 // FeatureFlags holds the features configurations
 // +k8s:deepcopy-gen=true
 type FeatureFlags struct {
-	DisableHomeEnvOverwrite          bool
-	DisableWorkingDirOverwrite       bool
 	DisableAffinityAssistant         bool
 	DisableCredsInit                 bool
 	RunningInEnvWithInjectedSidecars bool
@@ -90,12 +95,6 @@ func NewFeatureFlagsFromMap(cfgMap map[string]string) (*FeatureFlags, error) {
 	}
 
 	tc := FeatureFlags{}
-	if err := setFeature(disableHomeEnvOverwriteKey, DefaultDisableHomeEnvOverwrite, &tc.DisableHomeEnvOverwrite); err != nil {
-		return nil, err
-	}
-	if err := setFeature(disableWorkingDirOverwriteKey, DefaultDisableWorkingDirOverwrite, &tc.DisableWorkingDirOverwrite); err != nil {
-		return nil, err
-	}
 	if err := setFeature(disableAffinityAssistantKey, DefaultDisableAffinityAssistant, &tc.DisableAffinityAssistant); err != nil {
 		return nil, err
 	}

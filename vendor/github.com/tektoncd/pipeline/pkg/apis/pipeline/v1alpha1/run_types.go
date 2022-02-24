@@ -24,6 +24,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	runv1alpha1 "github.com/tektoncd/pipeline/pkg/apis/run/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/clock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -59,6 +60,10 @@ type RunSpec struct {
 	// +optional
 	Status RunSpecStatus `json:"status,omitempty"`
 
+	// Used for propagating retries count to custom tasks
+	// +optional
+	Retries int `json:"retries,omitempty"`
+
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName"`
 
@@ -74,10 +79,6 @@ type RunSpec struct {
 	// Workspaces is a list of WorkspaceBindings from volumes to workspaces.
 	// +optional
 	Workspaces []v1beta1.WorkspaceBinding `json:"workspaces,omitempty"`
-
-	// TODO(https://github.com/tektoncd/community/pull/128)
-	// - timeout
-	// - inline task spec
 }
 
 // RunSpecStatus defines the taskrun spec status the user can provide
@@ -89,6 +90,7 @@ const (
 	RunSpecStatusCancelled RunSpecStatus = "RunCancelled"
 )
 
+// GetParam gets the Param from the RunSpec with the given name
 // TODO(jasonhall): Move this to a Params type so other code can use it?
 func (rs RunSpec) GetParam(name string) *v1beta1.Param {
 	for _, p := range rs.Params {
@@ -204,7 +206,7 @@ func (r *Run) GetRunKey() string {
 }
 
 // HasTimedOut returns true if the Run's running time is beyond the allowed timeout
-func (r *Run) HasTimedOut() bool {
+func (r *Run) HasTimedOut(c clock.Clock) bool {
 	if r.Status.StartTime == nil || r.Status.StartTime.IsZero() {
 		return false
 	}
@@ -213,10 +215,11 @@ func (r *Run) HasTimedOut() bool {
 	if timeout == apisconfig.NoTimeoutDuration {
 		return false
 	}
-	runtime := time.Since(r.Status.StartTime.Time)
+	runtime := c.Since(r.Status.StartTime.Time)
 	return runtime > timeout
 }
 
+// GetTimeout returns the timeout for this run, or the default if not configured
 func (r *Run) GetTimeout() time.Duration {
 	// Use the platform default if no timeout is set
 	if r.Spec.Timeout == nil {

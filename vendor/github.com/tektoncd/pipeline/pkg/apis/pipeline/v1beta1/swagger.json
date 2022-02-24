@@ -287,24 +287,6 @@
         }
       }
     },
-    "v1beta1.CannotConvertError": {
-      "description": "CannotConvertError is returned when a field cannot be converted.",
-      "type": "object",
-      "required": [
-        "Message",
-        "Field"
-      ],
-      "properties": {
-        "Field": {
-          "type": "string",
-          "default": ""
-        },
-        "Message": {
-          "type": "string",
-          "default": ""
-        }
-      }
-    },
     "v1beta1.CloudEventDelivery": {
       "description": "CloudEventDelivery is the target of a cloud event along with the state of delivery.",
       "type": "object",
@@ -503,6 +485,7 @@
       }
     },
     "v1beta1.EmbeddedTask": {
+      "description": "EmbeddedTask is used to define a Task inline within a Pipeline's PipelineTasks.",
       "type": "object",
       "properties": {
         "apiVersion": {
@@ -1363,6 +1346,7 @@
       }
     },
     "v1beta1.PipelineTaskMetadata": {
+      "description": "PipelineTaskMetadata contains the labels or annotations for an EmbeddedTask",
       "type": "object",
       "properties": {
         "annotations": {
@@ -1457,6 +1441,20 @@
         "pipelineTaskName": {
           "type": "string"
         },
+        "sidecarOverrides": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/v1beta1.TaskRunSidecarOverride"
+          }
+        },
+        "stepOverrides": {
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/v1beta1.TaskRunStepOverride"
+          }
+        },
         "taskPodTemplate": {
           "$ref": "#/definitions/pod.Template"
         },
@@ -1487,6 +1485,44 @@
         }
       }
     },
+    "v1beta1.ResolverParam": {
+      "description": "ResolverParam is a single parameter passed to a resolver.",
+      "type": "object",
+      "required": [
+        "Name",
+        "Value"
+      ],
+      "properties": {
+        "Name": {
+          "description": "Name is the name of the parameter that will be passed to the resolver.",
+          "type": "string",
+          "default": ""
+        },
+        "Value": {
+          "description": "Value is the string value of the parameter that will be passed to the resolver.",
+          "type": "string",
+          "default": ""
+        }
+      }
+    },
+    "v1beta1.ResolverRef": {
+      "description": "ResolverRef can be used to refer to a Pipeline or Task in a remote location like a git repo. This feature is in alpha and these fields are only available when the alpha feature gate is enabled.",
+      "type": "object",
+      "properties": {
+        "resolver": {
+          "description": "Resolver is the name of the resolver that should perform resolution of the referenced Tekton resource, such as \"git\".",
+          "type": "string"
+        },
+        "resource": {
+          "description": "Resource contains the parameters used to identify the referenced Tekton resource. Example entries might include \"repo\" or \"path\" but the set of params ultimately depends on the chosen resolver.",
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/v1beta1.ResolverParam"
+          }
+        }
+      }
+    },
     "v1beta1.ResultRef": {
       "description": "ResultRef is a type that represents a reference to a task run result",
       "type": "object",
@@ -1513,7 +1549,7 @@
       ],
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string",
@@ -1521,7 +1557,7 @@
           }
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string",
@@ -1596,7 +1632,7 @@
           "type": "string"
         },
         "securityContext": {
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
           "$ref": "#/definitions/v1.SecurityContext"
         },
         "startupProbe": {
@@ -1714,7 +1750,7 @@
       ],
       "properties": {
         "args": {
-          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string",
@@ -1722,7 +1758,7 @@
           }
         },
         "command": {
-          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
+          "description": "Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. \"$$(VAR_NAME)\" will produce the string literal \"$(VAR_NAME)\". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell",
           "type": "array",
           "items": {
             "type": "string",
@@ -1801,7 +1837,7 @@
           "type": "string"
         },
         "securityContext": {
-          "description": "Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
+          "description": "SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/",
           "$ref": "#/definitions/v1.SecurityContext"
         },
         "startupProbe": {
@@ -2207,6 +2243,26 @@
         }
       }
     },
+    "v1beta1.TaskRunSidecarOverride": {
+      "description": "TaskRunSidecarOverride is used to override the values of a Sidecar in the corresponding Task.",
+      "type": "object",
+      "required": [
+        "Name",
+        "Resources"
+      ],
+      "properties": {
+        "Name": {
+          "description": "The name of the Sidecar to override.",
+          "type": "string",
+          "default": ""
+        },
+        "Resources": {
+          "description": "The resource requirements to apply to the Sidecar.",
+          "default": {},
+          "$ref": "#/definitions/v1.ResourceRequirements"
+        }
+      }
+    },
     "v1beta1.TaskRunSpec": {
       "description": "TaskRunSpec defines the desired state of TaskRun",
       "type": "object",
@@ -2232,9 +2288,25 @@
           "type": "string",
           "default": ""
         },
+        "sidecarOverrides": {
+          "description": "Overrides to apply to Sidecars in this TaskRun. If a field is specified in both a Sidecar and a SidecarOverride, the value from the SidecarOverride will be used. This field is only supported when the alpha feature gate is enabled.",
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/v1beta1.TaskRunSidecarOverride"
+          }
+        },
         "status": {
           "description": "Used for cancelling a taskrun (and maybe more later on)",
           "type": "string"
+        },
+        "stepOverrides": {
+          "description": "Overrides to apply to Steps in this TaskRun. If a field is specified in both a Step and a StepOverride, the value from the StepOverride will be used. This field is only supported when the alpha feature gate is enabled.",
+          "type": "array",
+          "items": {
+            "default": {},
+            "$ref": "#/definitions/v1beta1.TaskRunStepOverride"
+          }
         },
         "taskRef": {
           "description": "no more than one of the TaskRef and TaskSpec may be specified.",
@@ -2428,6 +2500,26 @@
         }
       }
     },
+    "v1beta1.TaskRunStepOverride": {
+      "description": "TaskRunStepOverride is used to override the values of a Step in the corresponding Task.",
+      "type": "object",
+      "required": [
+        "Name",
+        "Resources"
+      ],
+      "properties": {
+        "Name": {
+          "description": "The name of the Step to override.",
+          "type": "string",
+          "default": ""
+        },
+        "Resources": {
+          "description": "The resource requirements to apply to the Step.",
+          "default": {},
+          "$ref": "#/definitions/v1.ResourceRequirements"
+        }
+      }
+    },
     "v1beta1.TaskSpec": {
       "description": "TaskSpec defines the desired state of Task.",
       "type": "object",
@@ -2495,6 +2587,7 @@
       }
     },
     "v1beta1.TimeoutFields": {
+      "description": "TimeoutFields allows granular specification of pipeline, task, and finally timeouts",
       "type": "object",
       "properties": {
         "finally": {

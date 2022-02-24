@@ -19,30 +19,23 @@ package v1beta1
 import (
 	"context"
 
-	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"knative.dev/pkg/apis"
 )
 
 var _ apis.Defaultable = (*Pipeline)(nil)
 
+// SetDefaults sets default values on the Pipeline's Spec
 func (p *Pipeline) SetDefaults(ctx context.Context) {
 	p.Spec.SetDefaults(ctx)
 }
 
+// SetDefaults sets default values for the PipelineSpec's Params, Tasks, and Finally
 func (ps *PipelineSpec) SetDefaults(ctx context.Context) {
 	for i := range ps.Params {
 		ps.Params[i].SetDefaults(ctx)
 	}
-	if config.FromContextOrDefaults(ctx).FeatureFlags.EnableAPIFields == "alpha" {
-		ctx = AddContextParamSpec(ctx, ps.Params)
-		ps.Params = GetContextParamSpecs(ctx)
-	}
-	for i, pt := range ps.Tasks {
-		ctx := ctx // Ensure local scoping per Task
-		if config.FromContextOrDefaults(ctx).FeatureFlags.EnableAPIFields == "alpha" {
-			ctx = AddContextParams(ctx, pt.Params)
-			ps.Tasks[i].Params = GetContextParams(ctx, pt.Params...)
-		}
+
+	for _, pt := range ps.Tasks {
 		if pt.TaskRef != nil {
 			if pt.TaskRef.Kind == "" {
 				pt.TaskRef.Kind = NamespacedTaskKind
@@ -53,12 +46,8 @@ func (ps *PipelineSpec) SetDefaults(ctx context.Context) {
 		}
 	}
 
-	for i, ft := range ps.Finally {
+	for _, ft := range ps.Finally {
 		ctx := ctx // Ensure local scoping per Task
-		if config.FromContextOrDefaults(ctx).FeatureFlags.EnableAPIFields == "alpha" {
-			ctx = AddContextParams(ctx, ft.Params)
-			ps.Finally[i].Params = GetContextParams(ctx, ft.Params...)
-		}
 		if ft.TaskRef != nil {
 			if ft.TaskRef.Kind == "" {
 				ft.TaskRef.Kind = NamespacedTaskKind
@@ -66,6 +55,35 @@ func (ps *PipelineSpec) SetDefaults(ctx context.Context) {
 		}
 		if ft.TaskSpec != nil {
 			ft.TaskSpec.SetDefaults(ctx)
+		}
+	}
+}
+
+// applyImplicitParams propagates implicit params from the parent context
+// through the Pipeline and underlying specs.
+func (ps *PipelineSpec) applyImplicitParams(ctx context.Context) {
+	ctx = addContextParamSpec(ctx, ps.Params)
+	ps.Params = getContextParamSpecs(ctx)
+
+	for i, pt := range ps.Tasks {
+		ctx := ctx // Ensure local scoping per Task
+
+		// Only propagate param context to the spec - ref params should
+		// still be explicitly set.
+		if pt.TaskSpec != nil {
+			ctx = addContextParams(ctx, pt.Params)
+			ps.Tasks[i].Params = getContextParams(ctx, pt.Params...)
+			pt.TaskSpec.applyImplicitParams(ctx)
+		}
+	}
+
+	for i, ft := range ps.Finally {
+		ctx := ctx // Ensure local scoping per Task
+
+		if ft.TaskSpec != nil {
+			ctx = addContextParams(ctx, ft.Params)
+			ps.Finally[i].Params = getContextParams(ctx, ft.Params...)
+			ft.TaskSpec.applyImplicitParams(ctx)
 		}
 	}
 }

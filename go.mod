@@ -16,23 +16,23 @@ require (
 	github.com/jonboulle/clockwork v0.2.2
 	github.com/juju/ansiterm v0.0.0-20210929141451-8b71cc96ebdc
 	github.com/ktrysmt/go-bitbucket v0.9.28
-	github.com/mattn/go-colorable v0.1.11
+	github.com/mattn/go-colorable v0.1.12
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
-	github.com/mitchellh/mapstructure v1.4.2
+	github.com/mitchellh/mapstructure v1.4.3
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/cobra v1.2.1
-	github.com/tektoncd/pipeline v0.28.2
+	github.com/spf13/cobra v1.3.0
+	github.com/tektoncd/pipeline v0.33.0
 	github.com/xlzd/gotp v0.0.0-20220110052318-fab697c03c2c // indirect
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/oauth2 v0.0.0-20211005180243-6b3c2da341f1
+	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	gotest.tools/v3 v3.0.3
-	k8s.io/api v0.21.4
-	k8s.io/apimachinery v0.21.4
-	k8s.io/client-go v0.21.4
-	k8s.io/code-generator v0.21.4
-	knative.dev/pkg v0.0.0-20210827184538-2bd91f75571c
-	sigs.k8s.io/yaml v1.2.0
+	k8s.io/api v0.22.5
+	k8s.io/apimachinery v0.22.5
+	k8s.io/client-go v0.22.5
+	k8s.io/code-generator v0.22.5
+	knative.dev/pkg v0.0.0-20220131144930-f4b57aef0006
+	sigs.k8s.io/yaml v1.3.0
 )
