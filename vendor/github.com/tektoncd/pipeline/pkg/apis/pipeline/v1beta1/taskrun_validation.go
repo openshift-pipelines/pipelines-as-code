@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"github.com/tektoncd/pipeline/pkg/apis/validate"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -41,49 +40,36 @@ func (tr *TaskRun) Validate(ctx context.Context) *apis.FieldError {
 
 // Validate taskrun spec
 func (ts *TaskRunSpec) Validate(ctx context.Context) (errs *apis.FieldError) {
-	cfg := config.FromContextOrDefaults(ctx)
-	// can't have both taskRef and taskSpec at the same time
-	if (ts.TaskRef != nil && ts.TaskRef.Name != "") && ts.TaskSpec != nil {
-		errs = errs.Also(apis.ErrDisallowedFields("taskref", "taskspec"))
+	// Must have exactly one of taskRef and taskSpec.
+	if ts.TaskRef == nil && ts.TaskSpec == nil {
+		errs = errs.Also(apis.ErrMissingOneOf("taskRef", "taskSpec"))
 	}
-
-	// Check that one of TaskRef and TaskSpec is present
-	if (ts.TaskRef == nil || (ts.TaskRef != nil && ts.TaskRef.Name == "")) && ts.TaskSpec == nil {
-		errs = errs.Also(apis.ErrMissingField("taskref.name", "taskspec"))
+	if ts.TaskRef != nil && ts.TaskSpec != nil {
+		errs = errs.Also(apis.ErrMultipleOneOf("taskRef", "taskSpec"))
 	}
-
-	// If EnableTektonOCIBundles feature flag is on validate it.
-	// Otherwise, fail if it is present (as it won't be allowed nor used)
-	if cfg.FeatureFlags.EnableTektonOCIBundles {
-		// Check that if a bundle is specified, that a TaskRef is specified as well.
-		if (ts.TaskRef != nil && ts.TaskRef.Bundle != "") && ts.TaskRef.Name == "" {
-			errs = errs.Also(apis.ErrMissingField("taskref.name"))
-		}
-
-		// If a bundle url is specified, ensure it is parseable.
-		if ts.TaskRef != nil && ts.TaskRef.Bundle != "" {
-			if _, err := name.ParseReference(ts.TaskRef.Bundle); err != nil {
-				errs = errs.Also(apis.ErrInvalidValue(fmt.Sprintf("invalid bundle reference (%s)", err.Error()), "taskref.bundle"))
-			}
-		}
-	} else if ts.TaskRef != nil && ts.TaskRef.Bundle != "" {
-		errs = errs.Also(apis.ErrDisallowedFields("taskref.bundle"))
+	// Validate TaskRef if it's present.
+	if ts.TaskRef != nil {
+		errs = errs.Also(ts.TaskRef.Validate(ctx).ViaField("taskRef"))
 	}
-
-	// Validate TaskSpec if it's present
+	// Validate TaskSpec if it's present.
 	if ts.TaskSpec != nil {
-		errs = errs.Also(ts.TaskSpec.Validate(ctx).ViaField("taskspec"))
+		errs = errs.Also(ts.TaskSpec.Validate(ctx).ViaField("taskSpec"))
 	}
 
 	errs = errs.Also(validateParameters(ts.Params).ViaField("params"))
 	errs = errs.Also(validateWorkspaceBindings(ctx, ts.Workspaces).ViaField("workspaces"))
 	errs = errs.Also(ts.Resources.Validate(ctx).ViaField("resources"))
-	if cfg.FeatureFlags.EnableAPIFields == config.AlphaAPIFields {
-		if ts.Debug != nil {
-			errs = errs.Also(validateDebug(ts.Debug).ViaField("debug"))
-		}
-	} else if ts.Debug != nil {
-		errs = errs.Also(apis.ErrDisallowedFields("debug"))
+	if ts.Debug != nil {
+		errs = errs.Also(ValidateEnabledAPIFields(ctx, "debug", config.AlphaAPIFields).ViaField("debug"))
+		errs = errs.Also(validateDebug(ts.Debug).ViaField("debug"))
+	}
+	if ts.StepOverrides != nil {
+		errs = errs.Also(ValidateEnabledAPIFields(ctx, "stepOverrides", config.AlphaAPIFields).ViaField("stepOverrides"))
+		errs = errs.Also(validateStepOverrides(ts.StepOverrides).ViaField("stepOverrides"))
+	}
+	if ts.SidecarOverrides != nil {
+		errs = errs.Also(ValidateEnabledAPIFields(ctx, "sidecarOverrides", config.AlphaAPIFields).ViaField("sidecarOverrides"))
+		errs = errs.Also(validateSidecarOverrides(ts.SidecarOverrides).ViaField("sidecarOverrides"))
 	}
 
 	if ts.Status != "" {
@@ -117,27 +103,63 @@ func validateDebug(db *TaskRunDebug) (errs *apis.FieldError) {
 
 // validateWorkspaceBindings makes sure the volumes provided for the Task's declared workspaces make sense.
 func validateWorkspaceBindings(ctx context.Context, wb []WorkspaceBinding) (errs *apis.FieldError) {
-	seen := sets.NewString()
+	var names []string
 	for idx, w := range wb {
-		if seen.Has(w.Name) {
-			errs = errs.Also(apis.ErrMultipleOneOf("name").ViaIndex(idx))
-		}
-		seen.Insert(w.Name)
-
+		names = append(names, w.Name)
 		errs = errs.Also(w.Validate(ctx).ViaIndex(idx))
 	}
-
+	errs = errs.Also(validateNoDuplicateNames(names, true))
 	return errs
 }
 
 func validateParameters(params []Param) (errs *apis.FieldError) {
-	// Template must not duplicate parameter names.
-	seen := sets.NewString()
+	var names []string
 	for _, p := range params {
-		if seen.Has(strings.ToLower(p.Name)) {
-			errs = errs.Also(apis.ErrMultipleOneOf("name").ViaKey(p.Name))
+		names = append(names, p.Name)
+	}
+	return validateNoDuplicateNames(names, false)
+}
+
+func validateStepOverrides(overrides []TaskRunStepOverride) (errs *apis.FieldError) {
+	var names []string
+	for i, o := range overrides {
+		if o.Name == "" {
+			errs = errs.Also(apis.ErrMissingField("name").ViaIndex(i))
+		} else {
+			names = append(names, o.Name)
 		}
-		seen.Insert(p.Name)
+	}
+	errs = errs.Also(validateNoDuplicateNames(names, true))
+	return errs
+}
+
+func validateSidecarOverrides(overrides []TaskRunSidecarOverride) (errs *apis.FieldError) {
+	var names []string
+	for i, o := range overrides {
+		if o.Name == "" {
+			errs = errs.Also(apis.ErrMissingField("name").ViaIndex(i))
+		} else {
+			names = append(names, o.Name)
+		}
+	}
+	errs = errs.Also(validateNoDuplicateNames(names, true))
+	return errs
+}
+
+// validateNoDuplicateNames returns an error for each name that is repeated in names.
+// Case insensitive.
+// If byIndex is true, the error will be reported by index instead of by key.
+func validateNoDuplicateNames(names []string, byIndex bool) (errs *apis.FieldError) {
+	seen := sets.NewString()
+	for i, n := range names {
+		if seen.Has(strings.ToLower(n)) {
+			if byIndex {
+				errs = errs.Also(apis.ErrMultipleOneOf("name").ViaIndex(i))
+			} else {
+				errs = errs.Also(apis.ErrMultipleOneOf("name").ViaKey(n))
+			}
+		}
+		seen.Insert(n)
 	}
 	return errs
 }

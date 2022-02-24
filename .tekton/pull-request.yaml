@@ -54,7 +54,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
+            - image: registry.access.redhat.com/ubi8/go-toolset@sha256:2d56a94f1e83fe0e874f099dd8d03b876186985a7dbeea118e8c725b1b07b9f0
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -80,7 +80,7 @@ spec:
             - name: unittest
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
-              image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
+              image: registry.access.redhat.com/ubi8/go-toolset@sha256:2d56a94f1e83fe0e874f099dd8d03b876186985a7dbeea118e8c725b1b07b9f0
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -156,7 +156,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: registry.access.redhat.com/ubi8/go-toolset@sha256:75144067a7135ac3a43d37cd74a8b46507c897f285680ed85cf1f2031cc0fbf3
+              image: registry.access.redhat.com/ubi8/go-toolset@sha256:2d56a94f1e83fe0e874f099dd8d03b876186985a7dbeea118e8c725b1b07b9f0
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN
