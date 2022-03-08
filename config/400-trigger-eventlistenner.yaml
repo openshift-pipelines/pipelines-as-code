@@ -327,3 +327,29 @@ spec:
       template:
         # Using the templateRef from retest since they are mostly the same
         ref: pipelines-as-code-bitbucket-server-pullreq
+
+    # GitHub When sending a new Pull Request
+    - name: gitlab-merge-request
+      interceptors:
+        - ref:
+            name: gitlab
+          params:
+            # TODO:
+            # - name: "secretRef"
+            #   value:
+            #     secretName: "pipelines-as-code-secret"
+            #     secretKey: "webhook.secret"
+            - name: eventTypes
+              value:
+                - "Merge Request Hook"
+        - ref:
+            name: cel
+          params:
+            - name: overlays
+              value:
+                - key: payload
+                  expression: "base64.encode(bytes(body.marshalJSON()))"
+      bindings:
+        - ref: pipelines-as-code-gitlab-mergereq
+      template:
+        ref: pipelines-as-code-gitlab-mergereq

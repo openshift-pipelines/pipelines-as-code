@@ -23,6 +23,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.3.0
 	github.com/tektoncd/pipeline v0.33.0
+	github.com/xanzy/go-gitlab v0.58.0
 	github.com/xlzd/gotp v0.0.0-20220110052318-fab697c03c2c // indirect
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect

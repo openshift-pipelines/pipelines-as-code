@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/spf13/cobra"
@@ -82,6 +83,9 @@ func getGitProvider(pacopts *info.PacOpts) (provider.Interface, error) {
 	case "github":
 		v := &github.Provider{}
 		return v, nil
+	case "gitlab":
+		v := &gitlab.Provider{}
+		return v, nil
 	case "bitbucket-cloud":
 		v := &bitbucketcloud.Provider{}
 		return v, nil
@@ -89,7 +93,7 @@ func getGitProvider(pacopts *info.PacOpts) (provider.Interface, error) {
 		v := &bitbucketserver.Provider{}
 		return v, nil
 	default:
-		return nil, fmt.Errorf("no supported Git Provider is detected")
+		return nil, fmt.Errorf("no supported Git Provider is detected, webhooktype: %s", pacopts.WebhookType)
 	}
 }
 
