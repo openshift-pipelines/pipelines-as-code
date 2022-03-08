@@ -133,7 +133,6 @@ func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 }
 
 func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info.PacOpts, statusOpts provider.StatusOpts) error {
-	var err error
 	var detailsURL string
 	if v.Client == nil {
 		return fmt.Errorf("no github client has been initiliazed, " +
@@ -176,18 +175,19 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 		TargetURL:   gitlab.String(detailsURL),
 		Description: gitlab.String(statusOpts.Title),
 	}
-	_, _, err = v.Client.Commits.SetCommitStatus(v.sourceProjectID, event.SHA, opt)
+	_, _, toIgnoreErr := v.Client.Commits.SetCommitStatus(v.sourceProjectID, event.SHA, opt)
 
-	if err != nil && event.EventType == "pull_request" {
+	if toIgnoreErr != nil && event.TriggerTarget == "pull_request" {
 		opt := &gitlab.CreateMergeRequestNoteOptions{
 			Body: gitlab.String(
 				fmt.Sprintf("**%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>", pacOpts.ApplicationName,
 					statusOpts.Title, statusOpts.Text, detailsURL)),
 		}
-		_, _, err = v.Client.Notes.CreateMergeRequestNote(v.targetProjectID, v.mergeRequestID, opt)
+		_, _, err := v.Client.Notes.CreateMergeRequestNote(v.targetProjectID, v.mergeRequestID, opt)
+		return err
 	}
 
-	return err
+	return nil
 }
 
 func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {

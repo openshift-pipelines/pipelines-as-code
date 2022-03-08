@@ -71,7 +71,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 	cs.Clients.Log.Infof("matching a pipeline to event: URL=%s, target-branch=%s, target-event=%s",
 		cs.Info.Event.URL,
 		cs.Info.Event.BaseBranch,
-		cs.Info.Event.EventType)
+		cs.Info.Event.TriggerTarget)
 
 	for _, prun := range pruns {
 		configurations[prun.GetGenerateName()] = map[string]string{}
