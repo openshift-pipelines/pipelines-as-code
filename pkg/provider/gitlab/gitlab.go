@@ -59,7 +59,6 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 			SHA:           event.ObjectAttributes.LastCommit.ID,
 			SHAURL:        event.ObjectAttributes.LastCommit.URL,
 			SHATitle:      event.ObjectAttributes.Title,
-			EventType:     run.Info.Event.TriggerTarget,
 			HeadBranch:    event.ObjectAttributes.SourceBranch,
 			BaseBranch:    event.ObjectAttributes.TargetBranch,
 		}
@@ -75,12 +74,30 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		splitted := strings.Split(event.ObjectAttributes.Target.PathWithNamespace, "/")
 		processedevent.Organization = splitted[0]
 		processedevent.Repository = splitted[1]
+		processedevent.TriggerTarget = "pull_request"
+	case *gitlab.PushEvent:
+		processedevent = &info.Event{
+			Sender:        event.UserUsername,
+			DefaultBranch: event.Project.DefaultBranch,
+			URL:           event.Project.WebURL,
+			SHA:           event.Commits[0].ID,
+			SHAURL:        event.Commits[0].URL,
+			SHATitle:      event.Commits[0].Title,
+			HeadBranch:    event.Ref,
+			BaseBranch:    event.Ref,
+		}
+		processedevent.TriggerTarget = "push"
+		splitted := strings.Split(event.Project.PathWithNamespace, "/")
+		processedevent.Organization = splitted[0]
+		processedevent.Repository = splitted[1]
+		v.targetProjectID = event.ProjectID
+		v.sourceProjectID = event.ProjectID
 	default:
 		return nil, fmt.Errorf("event %s is not supported", run.Info.Event.EventType)
 	}
 
 	processedevent.Event = event
-	processedevent.TriggerTarget = run.Info.Event.TriggerTarget
+	processedevent.EventType = run.Info.Event.EventType
 	return processedevent, nil
 }
 
@@ -141,28 +158,33 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 		statusOpts.Conclusion = "success"
 		statusOpts.Title = "successfully validated your commit"
 	case "completed":
-		statusOpts.Conclusion = "succes"
+		statusOpts.Conclusion = "success"
 		statusOpts.Title = "completed"
 	}
 	if statusOpts.DetailsURL != "" {
 		detailsURL = statusOpts.DetailsURL
 	}
 
-	if event.EventType == "pull_request" {
+	// in case we have access set the commit status, typically on MR from
+	// another users we won't have it but it would work on push or MR from a
+	// branch on the same repo or if token somehow can have access by other
+	// means.
+	// if we have an error fallback to send a issue comment
+	opt := &gitlab.SetCommitStatusOptions{
+		State:       gitlab.BuildStateValue(statusOpts.Conclusion),
+		Name:        gitlab.String(pacOpts.ApplicationName),
+		TargetURL:   gitlab.String(detailsURL),
+		Description: gitlab.String(statusOpts.Title),
+	}
+	_, _, err = v.Client.Commits.SetCommitStatus(v.sourceProjectID, event.SHA, opt)
+
+	if err != nil && event.EventType == "pull_request" {
 		opt := &gitlab.CreateMergeRequestNoteOptions{
 			Body: gitlab.String(
 				fmt.Sprintf("**%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>", pacOpts.ApplicationName,
 					statusOpts.Title, statusOpts.Text, detailsURL)),
 		}
 		_, _, err = v.Client.Notes.CreateMergeRequestNote(v.targetProjectID, v.mergeRequestID, opt)
-	} else if event.EventType == "push" {
-		opt := &gitlab.SetCommitStatusOptions{
-			State:       gitlab.BuildStateValue(statusOpts.Conclusion),
-			Name:        gitlab.String(pacOpts.ApplicationName),
-			TargetURL:   gitlab.String(detailsURL),
-			Description: gitlab.String(statusOpts.Title),
-		}
-		_, _, err = v.Client.Commits.SetCommitStatus(v.sourceProjectID, event.SHA, opt)
 	}
 
 	return err

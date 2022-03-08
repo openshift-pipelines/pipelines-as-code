@@ -334,7 +334,6 @@ spec:
         - ref:
             name: gitlab
           params:
-            # TODO:
             - name: "secretRef"
               value:
                 secretName: "pipelines-as-code-secret"
@@ -342,6 +341,7 @@ spec:
             - name: eventTypes
               value:
                 - "Merge Request Hook"
+                - "Push Hook"
         - ref:
             name: cel
           params:
@@ -350,6 +350,6 @@ spec:
                 - key: payload
                   expression: "base64.encode(bytes(body.marshalJSON()))"
       bindings:
-        - ref: pipelines-as-code-gitlab-mergereq
+        - ref: pipelines-as-code-gitlab
       template:
-        ref: pipelines-as-code-gitlab-mergereq
+        ref: pipelines-as-code-gitlab

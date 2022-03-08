@@ -97,7 +97,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 
 		if targetEvent, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onEventAnnotation]; ok {
-			matched, err := matchOnAnnotation(targetEvent, cs.Info.Event.EventType, false)
+			matched, err := matchOnAnnotation(targetEvent, cs.Info.Event.TriggerTarget, false)
 			configurations[prun.GetGenerateName()]["target-event"] = targetEvent
 			if err != nil {
 				return nil, nil, map[string]string{}, err

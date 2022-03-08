@@ -15,7 +15,7 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: pipelines-as-code-gitlab-mergereq
+  name: pipelines-as-code-gitlab
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/version: "devel"
@@ -23,8 +23,6 @@ metadata:
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   params:
-    - name: trigger_target
-      value: pull_request
     - name: event_type
       value: "$(header.X-Gitlab-Event)"
     - name: payload
@@ -33,7 +31,7 @@ spec:
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: pipelines-as-code-gitlab-mergereq
+  name: pipelines-as-code-gitlab
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/version: "devel"
@@ -41,7 +39,6 @@ metadata:
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   params:
-    - name: trigger_target
     - name: event_type
     - name: payload
   resourcetemplates:
@@ -52,20 +49,15 @@ spec:
         labels:
           app.kubernetes.io/version: "devel"
           app.kubernetes.io/managed-by: pipelines-as-code
-          #pipelinesascode.tekton.dev/event: "$(tt.params.event_type)"
       spec:
         serviceAccountName: pipelines-as-code-sa-el
         params:
-          - name: trigger_target
-            value: $(tt.params.trigger_target)
           - name: event_type
             value: $(tt.params.event_type)
           - name: payload
             value: $(tt.params.payload)
         taskSpec:
           params:
-            - name: trigger_target
-              type: string
             - name: event_type
               type: string
             - name: payload
@@ -77,8 +69,6 @@ spec:
                   value: "gitlab"
                 - name: PAC_PAYLOAD_FILE
                   value: "/tmp/payload.json"
-                - name: PAC_TRIGGER_TARGET
-                  value: "$(params.trigger_target)"
                 - name: PAC_WEBHOOK_TYPE
                   value: "$(params.event_type)"
               imagePullPolicy: Always
