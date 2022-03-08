@@ -3,7 +3,6 @@ package gitlab
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -37,6 +36,7 @@ type Provider struct {
 	Token           *string
 	targetProjectID int
 	sourceProjectID int
+	mergeRequestID  int
 }
 
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
@@ -53,10 +53,9 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 	case *gitlab.MergeEvent:
 		processedevent = &info.Event{
 			// Organization:  event.GetRepo().GetOwner().GetLogin(),
-			Repository:    event.Repository.Name,
 			Sender:        event.User.Username,
 			DefaultBranch: event.Project.DefaultBranch,
-			URL:           event.Project.GitHTTPURL,
+			URL:           event.Project.WebURL,
 			SHA:           event.ObjectAttributes.LastCommit.ID,
 			SHAURL:        event.ObjectAttributes.LastCommit.URL,
 			SHATitle:      event.ObjectAttributes.Title,
@@ -65,6 +64,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 			BaseBranch:    event.ObjectAttributes.TargetBranch,
 		}
 
+		v.mergeRequestID = event.ObjectAttributes.IID
 		v.targetProjectID = event.Project.ID
 		v.sourceProjectID = event.ObjectAttributes.SourceProjectID
 
@@ -74,8 +74,9 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		// wording/detail it doesn't matter
 		splitted := strings.Split(event.ObjectAttributes.Target.PathWithNamespace, "/")
 		processedevent.Organization = splitted[0]
+		processedevent.Repository = splitted[1]
 	default:
-		return nil, errors.New("this event is not supported")
+		return nil, fmt.Errorf("event %s is not supported", run.Info.Event.EventType)
 	}
 
 	processedevent.Event = event
@@ -103,7 +104,7 @@ func (v *Provider) SetClient(ctx context.Context, opts *info.PacOpts) error {
 	return nil
 }
 
-// todo: move to common since we use this in others too
+// TODO: move to common since we use this in others too
 func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 	if pacopts.ApplicationName != "" {
 		if status.OriginalPipelineRunName == "" {
@@ -115,24 +116,55 @@ func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 }
 
 func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info.PacOpts, statusOpts provider.StatusOpts) error {
+	var err error
+	var detailsURL string
 	if v.Client == nil {
 		return fmt.Errorf("no github client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
-
+	// TODO: not supported it on free, we will need an account on ultimate to be able to do it :\
 	if statusOpts.Status == "in_progress" {
-		statusOpts.Title = "CI has Started"
-		statusOpts.Summary = fmt.Sprintf("%s is running.", pacOpts.ApplicationName)
-		statusOpts.Conclusion = "running"
+		return nil
 	}
 
-	opt := &gitlab.SetCommitStatusOptions{
-		State:       gitlab.BuildStateValue(statusOpts.Conclusion),
-		Name:        gitlab.String(getCheckName(statusOpts, pacOpts)),
-		TargetURL:   gitlab.String(pacOpts.LogURL),
-		Description: gitlab.String(statusOpts.Title),
+	switch statusOpts.Conclusion {
+	case "skipped":
+		statusOpts.Conclusion = "canceled"
+		statusOpts.Title = "skipped validating this commit"
+	case "neutral":
+		statusOpts.Conclusion = "canceled"
+		statusOpts.Title = "stopped"
+	case "failure":
+		statusOpts.Conclusion = "failed"
+		statusOpts.Title = "failed"
+	case "success":
+		statusOpts.Conclusion = "success"
+		statusOpts.Title = "successfully validated your commit"
+	case "completed":
+		statusOpts.Conclusion = "succes"
+		statusOpts.Title = "completed"
 	}
-	_, _, err := v.Client.Commits.SetCommitStatus(v.targetProjectID, event.SHA, opt)
+	if statusOpts.DetailsURL != "" {
+		detailsURL = statusOpts.DetailsURL
+	}
+
+	if event.EventType == "pull_request" {
+		opt := &gitlab.CreateMergeRequestNoteOptions{
+			Body: gitlab.String(
+				fmt.Sprintf("**%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>", pacOpts.ApplicationName,
+					statusOpts.Title, statusOpts.Text, detailsURL)),
+		}
+		_, _, err = v.Client.Notes.CreateMergeRequestNote(v.targetProjectID, v.mergeRequestID, opt)
+	} else if event.EventType == "push" {
+		opt := &gitlab.SetCommitStatusOptions{
+			State:       gitlab.BuildStateValue(statusOpts.Conclusion),
+			Name:        gitlab.String(pacOpts.ApplicationName),
+			TargetURL:   gitlab.String(detailsURL),
+			Description: gitlab.String(statusOpts.Title),
+		}
+		_, _, err = v.Client.Commits.SetCommitStatus(v.sourceProjectID, event.SHA, opt)
+	}
+
 	return err
 }
 
