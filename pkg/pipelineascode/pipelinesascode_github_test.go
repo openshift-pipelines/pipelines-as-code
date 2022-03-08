@@ -69,8 +69,7 @@ func testSetupTektonDir(mux *http.ServeMux, runevent info.Event, directory strin
 		fmt.Sprintf("[%s]", strings.TrimSuffix(tektonDirContent, ",")))
 }
 
-func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Event,
-	finalStatus, finalStatusText string, noReplyOrgPublicMembers bool) {
+func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, finalStatus, finalStatusText string, noReplyOrgPublicMembers bool) {
 	// Take a directory and generate replies as Github for it
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/contents/internal/task", runevent.Organization, runevent.Repository),

@@ -55,8 +55,7 @@ func updateRepoRunStatus(ctx context.Context, cs *params.Run, pr *tektonv1beta1.
 	return nil
 }
 
-func postFinalStatus(ctx context.Context, cs *params.Run, providerintf provider.Interface, createdPR *tektonv1beta1.PipelineRun) (
-	*tektonv1beta1.PipelineRun, error) {
+func postFinalStatus(ctx context.Context, cs *params.Run, providerintf provider.Interface, createdPR *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
 	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(createdPR.GetNamespace()).Get(
 		ctx, createdPR.GetName(), metav1.GetOptions{},
 	)
