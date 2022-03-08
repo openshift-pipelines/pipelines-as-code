@@ -335,10 +335,10 @@ spec:
             name: gitlab
           params:
             # TODO:
-            # - name: "secretRef"
-            #   value:
-            #     secretName: "pipelines-as-code-secret"
-            #     secretKey: "webhook.secret"
+            - name: "secretRef"
+              value:
+                secretName: "pipelines-as-code-secret"
+                secretKey: "webhook.secret"
             - name: eventTypes
               value:
                 - "Merge Request Hook"
