@@ -23,6 +23,9 @@ type Event struct {
 	// Bitbucket
 	AccountID string
 
+	// Gitlab
+	ProjectID int
+
 	// Bitbucket Server
 	CloneURL string // bitbucket server has a different cloneurl than normal url
 }

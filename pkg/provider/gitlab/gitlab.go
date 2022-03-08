@@ -37,6 +37,7 @@ type Provider struct {
 	targetProjectID int
 	sourceProjectID int
 	mergeRequestID  int
+	userID          int
 }
 
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
@@ -66,6 +67,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		v.mergeRequestID = event.ObjectAttributes.IID
 		v.targetProjectID = event.Project.ID
 		v.sourceProjectID = event.ObjectAttributes.SourceProjectID
+		v.userID = event.User.ID
 
 		// If I understood properly, you can have "personal" projects and org
 		// attached projects. But this doesn't seem to show in the API, so I am
@@ -92,6 +94,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		processedevent.Repository = splitted[1]
 		v.targetProjectID = event.ProjectID
 		v.sourceProjectID = event.ProjectID
+		v.userID = event.UserID
 	default:
 		return nil, fmt.Errorf("event %s is not supported", run.Info.Event.EventType)
 	}
@@ -101,7 +104,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 	// Remove the " Hook" suffix so looks better in status, and since we don't
 	// really use it anymore we good to do whatever we want with it for
 	// cosmetics.
-	processedevent.EventType = strings.Replace(run.Info.Event.EventType, " Hook", "", -1)
+	processedevent.EventType = strings.ReplaceAll(run.Info.Event.EventType, " Hook", "")
 	return processedevent, nil
 }
 
@@ -123,17 +126,6 @@ func (v *Provider) SetClient(ctx context.Context, opts *info.PacOpts) error {
 	}
 	v.Token = &opts.ProviderToken
 	return nil
-}
-
-// TODO: move to common since we use this in others too
-func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
-	if pacopts.ApplicationName != "" {
-		if status.OriginalPipelineRunName == "" {
-			return pacopts.ApplicationName
-		}
-		return fmt.Sprintf("%s / %s", pacopts.ApplicationName, status.OriginalPipelineRunName)
-	}
-	return status.OriginalPipelineRunName
 }
 
 func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info.PacOpts, statusOpts provider.StatusOpts) error {
@@ -194,16 +186,6 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 	return nil
 }
 
-func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
-	if v.Client == nil {
-		return false, fmt.Errorf("no github client has been initiliazed, " +
-			"exiting... (hint: did you forget setting a secret on your repo?)")
-	}
-
-	// TODO implement me
-	return true, nil
-}
-
 func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path string) (string, error) {
 	if v.Client == nil {
 		return "", fmt.Errorf("no github client has been initiliazed, " +
@@ -233,7 +215,7 @@ func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, runevent *info
 	for _, value := range objects {
 		if strings.HasSuffix(value.Name, ".yaml") ||
 			strings.HasSuffix(value.Name, ".yml") {
-			data, err := v.getObject(value.Path, runevent)
+			data, err := v.getObject(value.Path, runevent.HeadBranch, v.sourceProjectID)
 			if err != nil {
 				return "", err
 			}
@@ -247,11 +229,11 @@ func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, runevent *info
 	return allTemplates, nil
 }
 
-func (v *Provider) getObject(fname string, runevent *info.Event) ([]byte, error) {
+func (v *Provider) getObject(fname, branch string, pid int) ([]byte, error) {
 	opt := &gitlab.GetRawFileOptions{
-		Ref: gitlab.String(runevent.HeadBranch),
+		Ref: gitlab.String(branch),
 	}
-	file, resp, err := v.Client.RepositoryFiles.GetRawFile(v.sourceProjectID, fname, opt)
+	file, resp, err := v.Client.RepositoryFiles.GetRawFile(pid, fname, opt)
 	if err != nil {
 		return []byte{}, fmt.Errorf("failed to get filename from api %s dir: %w", fname, err)
 	}
@@ -262,7 +244,7 @@ func (v *Provider) getObject(fname string, runevent *info.Event) ([]byte, error)
 }
 
 func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, target string) (string, error) {
-	getobj, err := v.getObject(path, runevent)
+	getobj, err := v.getObject(path, runevent.HeadBranch, v.sourceProjectID)
 	if err != nil {
 		return "", err
 	}

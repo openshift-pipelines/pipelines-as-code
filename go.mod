@@ -6,6 +6,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.2
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/briandowns/spinner v1.16.0
+	github.com/davecgh/go-spew v1.1.1
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20210826163055-dff2223adeac
 	github.com/gobwas/glob v0.2.3
 	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
