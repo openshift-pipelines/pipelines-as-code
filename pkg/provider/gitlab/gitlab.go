@@ -97,7 +97,11 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 	}
 
 	processedevent.Event = event
-	processedevent.EventType = run.Info.Event.EventType
+
+	// Remove the " Hook" suffix so looks better in status, and since we don't
+	// really use it anymore we good to do whatever we want with it for
+	// cosmetics.
+	processedevent.EventType = strings.Replace(run.Info.Event.EventType, " Hook", "", -1)
 	return processedevent, nil
 }
 
