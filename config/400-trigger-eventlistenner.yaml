@@ -340,8 +340,8 @@ spec:
                 secretKey: "webhook.secret"
             - name: eventTypes
               value:
-                - "Merge Request Hook"
-                - "Push Hook"
+                - Merge Request Hook
+                - Push Hook
         - ref:
             name: cel
           params:

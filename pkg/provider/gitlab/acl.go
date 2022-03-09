@@ -28,12 +28,15 @@ func (v *Provider) checkMembership(event *info.Event, userid int) bool {
 	return v.isAllowedFromOwnerFile(event)
 }
 
-func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event) (bool, error) {
-	// TODO: we need to handle pagination :\
-	opt := &gitlab.ListMergeRequestDiscussionsOptions{}
-	discussions, _, err := v.Client.Discussions.ListMergeRequestDiscussions(v.targetProjectID, v.mergeRequestID, opt)
+func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event, page int) (bool, error) {
+	var nextPage int
+	opt := &gitlab.ListMergeRequestDiscussionsOptions{Page: page}
+	discussions, resp, err := v.Client.Discussions.ListMergeRequestDiscussions(v.targetProjectID, v.mergeRequestID, opt)
 	if err != nil {
 		return false, err
+	}
+	if resp.NextPage != 0 {
+		nextPage = resp.NextPage
 	}
 
 	for _, comment := range discussions {
@@ -54,6 +57,10 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event) (bo
 		}
 	}
 
+	if nextPage != 0 {
+		return v.checkOkToTestCommentFromApprovedMember(event, nextPage)
+	}
+
 	return false, nil
 }
 
@@ -66,5 +73,5 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, erro
 		return true, nil
 	}
 
-	return v.checkOkToTestCommentFromApprovedMember(event)
+	return v.checkOkToTestCommentFromApprovedMember(event, 1)
 }
