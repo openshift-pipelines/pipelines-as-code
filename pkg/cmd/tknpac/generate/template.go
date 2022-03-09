@@ -108,7 +108,7 @@ spec:
           - name: url
             value: $(params.repo_url)
           - name: revision
-            value: $(params.revision)      
+            value: $(params.revision)
       << if .extra_task.Task>>
       << .extra_task.Task >>
       <<- end >>
@@ -125,7 +125,7 @@ spec:
             - name: source
           steps:
             - name: noop-task
-              image: registry.access.redhat.com/ubi8/ubi-micro:8.4
+              image: registry.access.redhat.com/ubi8/ubi-micro:8.5
               workingDir: $(workspaces.source.path)
               script: |
                 exit 0
