@@ -9,9 +9,15 @@
 - Report pull request status via comments if no access
 - Get files via APIs
 - Webhook via api token attached to repo secret
+- Auto secret attached for private repo.
 
 ## TODO
 
 - Handle paginations.
 - /ok-to-test in threads comments (only top level comment is supported atm)
 - caching API calls for permissions.
+
+## NOTES
+
+- since orgs may have subpaths we switch the / to - so we can use it for the pac
+  automatic secret and label. Sucks a bit but such is life
