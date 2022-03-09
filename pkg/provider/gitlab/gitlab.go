@@ -157,7 +157,7 @@ func (v *Provider) SetClient(ctx context.Context, opts *info.PacOpts) error {
 func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info.PacOpts, statusOpts provider.StatusOpts) error {
 	var detailsURL string
 	if v.Client == nil {
-		return fmt.Errorf("no github client has been initiliazed, " +
+		return fmt.Errorf("no gitlab client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	// TODO: not supported it on free, we will need an account on ultimate to be able to do it :\
