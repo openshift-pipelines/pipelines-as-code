@@ -52,3 +52,38 @@ func MuxNotePost(t *testing.T, mux *http.ServeMux, projectNumber int, mrID int, 
 		fmt.Fprintf(rw, "{}")
 	})
 }
+
+type MMEvent struct {
+	Username, DefaultBranch, URL, SHA, SHAurl, SHAtitle, Headbranch, Basebranch string
+	UserID, MRID, TargetProjectID, SourceProjectID                              int
+	PathWithNameSpace                                                           string
+}
+
+func MakeMergeEvent(mm MMEvent) string {
+	return fmt.Sprintf(`{
+    "user": {
+        "id": %d,
+        "username": "%s"
+    },
+    "project": {
+        "id": %d,
+        "web_url": "%s",
+        "default_branch": "%s"
+    },
+    "object_attributes": {
+        "iid": %d,
+        "source_project_id": %d,
+        "title": "%s",
+        "source_branch": "%s",
+        "target_branch": "%s",
+        "last_commit": {
+            "id": "%s",
+            "url": "%s"
+        },
+		"target": {
+			"path_with_namespace": "%s"
+		}
+    }
+}`, mm.UserID, mm.Username, mm.TargetProjectID, mm.URL, mm.DefaultBranch, mm.MRID,
+		mm.SourceProjectID, mm.SHAtitle, mm.Headbranch, mm.Basebranch, mm.SHA, mm.SHAurl, mm.PathWithNameSpace)
+}

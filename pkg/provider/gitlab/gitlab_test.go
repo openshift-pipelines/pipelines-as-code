@@ -3,9 +3,12 @@ package gitlab
 import (
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
+	"github.com/xanzy/go-gitlab"
+	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -147,6 +150,100 @@ func TestCreateStatus(t *testing.T) {
 			pacOpts := &info.PacOpts{ApplicationName: "Test me"}
 			if err := v.CreateStatus(ctx, tt.args.event, pacOpts, tt.args.statusOpts); (err != nil) != tt.wantErr {
 				t.Errorf("CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestParsePayload(t *testing.T) {
+	sampleMR := thelp.MMEvent{
+		Username:          "foo",
+		DefaultBranch:     "main",
+		URL:               "https://foo.com",
+		SHA:               "sha",
+		SHAurl:            "https://url",
+		SHAtitle:          "commit it",
+		Headbranch:        "branch",
+		Basebranch:        "main",
+		UserID:            10,
+		MRID:              1,
+		TargetProjectID:   100,
+		SourceProjectID:   200,
+		PathWithNameSpace: "hello/this/is/me/ze/project",
+	}
+	sampleMRjson := thelp.MakeMergeEvent(sampleMR)
+	type fields struct {
+		targetProjectID int
+		sourceProjectID int
+		mergeRequestID  int
+		userID          int
+	}
+	type args struct {
+		event   *info.Event
+		payload string
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		args       args
+		want       *info.Event
+		wantErr    bool
+		wantClient bool
+	}{
+		{
+			name: "bad payload",
+			args: args{
+				payload: "nono",
+				event:   &info.Event{EventType: "none"},
+			},
+			wantErr: true,
+		},
+		{
+			name: "merge event",
+			args: args{
+				event: &info.Event{
+					EventType: string(gitlab.EventTypeMergeRequest),
+				},
+				payload: sampleMRjson,
+			},
+			want: &info.Event{
+				EventType:     "Merge Request",
+				TriggerTarget: "pull_request",
+				Organization:  "hello-this-is-me-ze",
+				Repository:    "project",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			v := &Provider{
+				Token:           gitlab.String("tokeneuneu"),
+				targetProjectID: tt.fields.targetProjectID,
+				sourceProjectID: tt.fields.sourceProjectID,
+				mergeRequestID:  tt.fields.mergeRequestID,
+				userID:          tt.fields.userID,
+			}
+			if tt.wantClient {
+				client, _, tearDown := thelp.Setup(ctx, t)
+				v.Client = client
+				defer tearDown()
+			}
+			run := &params.Run{
+				Info: info.Info{
+					Event: tt.args.event,
+				},
+			}
+			got, err := v.ParsePayload(ctx, run, tt.args.payload)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParsePayload() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.want != nil {
+				assert.Equal(t, tt.want.TriggerTarget, got.TriggerTarget)
+				assert.Equal(t, tt.want.EventType, got.EventType)
+				assert.Equal(t, tt.want.Organization, got.Organization)
+				assert.Equal(t, tt.want.Repository, got.Repository)
 			}
 		})
 	}
