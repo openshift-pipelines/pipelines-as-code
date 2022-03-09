@@ -45,8 +45,6 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event) (bo
 				Sender:        topthread.Author.Username,
 				BaseBranch:    event.BaseBranch,
 				HeadBranch:    event.HeadBranch,
-				Repository:    event.Repository,
-				Organization:  event.Organization,
 				DefaultBranch: event.DefaultBranch,
 			}
 			// TODO: we could probably do with caching when checking all issues?
