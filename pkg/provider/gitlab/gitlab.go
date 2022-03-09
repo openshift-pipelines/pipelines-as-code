@@ -94,12 +94,33 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 			BaseBranch:    event.Ref,
 		}
 		processedevent.TriggerTarget = "push"
+		// TODO: commonolazie with previous case
 		splitted := strings.Split(event.Project.PathWithNamespace, "/")
 		processedevent.Organization = splitted[0]
 		processedevent.Repository = splitted[1]
 		v.targetProjectID = event.ProjectID
 		v.sourceProjectID = event.ProjectID
 		v.userID = event.UserID
+	case *gitlab.MergeCommentEvent:
+		processedevent = &info.Event{
+			Sender:        event.User.Username,
+			DefaultBranch: event.Project.DefaultBranch,
+			URL:           event.Project.WebURL,
+			SHA:           event.MergeRequest.LastCommit.ID,
+			SHAURL:        event.MergeRequest.LastCommit.URL,
+			// TODO: change this back to Title when we get this pr available merged https://github.com/xanzy/go-gitlab/pull/1406/files
+			SHATitle: event.MergeRequest.LastCommit.Message,
+		}
+		processedevent.TriggerTarget = "pull_request"
+		processedevent.Organization = filepath.Dir(event.MergeRequest.Target.PathWithNamespace)
+		processedevent.Organization = strings.ReplaceAll(processedevent.Organization, "/", "-")
+		processedevent.Repository = filepath.Base(event.MergeRequest.Target.PathWithNamespace)
+		processedevent.TriggerTarget = "pull_request"
+
+		v.mergeRequestID = event.MergeRequest.IID
+		v.targetProjectID = event.MergeRequest.TargetProjectID
+		v.sourceProjectID = event.MergeRequest.SourceProjectID
+		v.userID = event.User.ID
 	default:
 		return nil, fmt.Errorf("event %s is not supported", run.Info.Event.EventType)
 	}
@@ -262,12 +283,15 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 }
 
 func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
+	if v.Client == nil {
+		return fmt.Errorf("no github client has been initiliazed, " +
+			"exiting... (hint: did you forget setting a secret on your repo?)")
+	}
+	mr, _, err := v.Client.MergeRequests.GetMergeRequest(v.targetProjectID, v.mergeRequestID, nil)
+	if err != nil {
+		return err
+	}
+	event.HeadBranch = mr.SourceBranch
+	event.BaseBranch = mr.TargetBranch
 	return nil
-	// if v.Client == nil {
-	// 	return fmt.Errorf("no github client has been initiliazed, " +
-	// 		"exiting... (hint: did you forget setting a secret on your repo?)")
-	// }
-	// v.Client.Commits.GetCommit(v.projectID, event.SHA)
-	// // TODO implement me
-	// panic("implement me")
 }
