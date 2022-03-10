@@ -318,3 +318,69 @@ func TestSetClient(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, *vv.Token != "")
 }
+
+func TestGetTektonDir(t *testing.T) {
+	type fields struct {
+		targetProjectID int
+		sourceProjectID int
+		mergeRequestID  int
+		userID          int
+	}
+	type args struct {
+		event *info.Event
+		path  string
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		args       args
+		want       string
+		wantErr    bool
+		wantClient bool
+	}{
+		{
+			name:    "no client set",
+			wantErr: true,
+		},
+		{
+			name: "list tekton dir",
+			args: args{
+				path: ".tekton",
+				event: &info.Event{
+					HeadBranch: "main",
+				},
+			},
+			fields: fields{
+				sourceProjectID: 100,
+			},
+			wantClient: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+
+			v := &Provider{
+				targetProjectID: tt.fields.targetProjectID,
+				sourceProjectID: tt.fields.sourceProjectID,
+				mergeRequestID:  tt.fields.mergeRequestID,
+				userID:          tt.fields.userID,
+			}
+			if tt.wantClient {
+				client, mux, tearDown := thelp.Setup(ctx, t)
+				v.Client = client
+				thelp.MuxListTektonDir(t, mux, tt.fields.sourceProjectID, tt.args.event.HeadBranch)
+				defer tearDown()
+			}
+
+			got, err := v.GetTektonDir(ctx, tt.args.event, tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetTektonDir() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetTektonDir() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
