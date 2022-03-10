@@ -12,7 +12,19 @@
 - Report pull request status via comments if no access
 - Get files via APIs
 - Webhook via api token attached to repo secret
-- Auto secret attached for private repo.
+- Auto secret attached for git-clone support on private repo.
+- Private instance is supported via the Repository CR on `spec.provider.url` i.e:
+
+  ```yaml
+  kind: Repository
+  spec:
+    url: https://apiurl/project/repo
+    provider:
+      url: https://apiurl
+      secret:
+        name: secret-ref
+        key: token
+  ```
 
 ## TODO
 

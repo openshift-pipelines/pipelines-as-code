@@ -16,7 +16,6 @@ const (
 // secretFromRepository grab the secret from the repository CRD
 func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.ProviderConfig, repo *apipac.Repository) error {
 	var err error
-
 	if repo.Spec.GitProvider.URL == "" {
 		repo.Spec.GitProvider.URL = config.APIURL
 	} else {

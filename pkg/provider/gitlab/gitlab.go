@@ -146,7 +146,13 @@ func (v *Provider) SetClient(ctx context.Context, opts *info.PacOpts) error {
 	if opts.ProviderToken == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
-	v.Client, err = gitlab.NewClient(opts.ProviderToken, gitlab.WithBaseURL(apiPublicURL))
+
+	apiURL := apiPublicURL
+	if opts.ProviderURL != "" {
+		apiURL = opts.ProviderURL
+	}
+
+	v.Client, err = gitlab.NewClient(opts.ProviderToken, gitlab.WithBaseURL(apiURL))
 	if err != nil {
 		return err
 	}
