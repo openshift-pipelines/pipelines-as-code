@@ -2,7 +2,7 @@
 # Before pushing a change, run this script to make sure vendor has been
 # generated and that the test and lint is passing green.
 #
-# Install: 
+# Install:
 # from the topdir add this file to your `.git/hooks/pre-push`  and `chmod +x .git/hooke/pre-push`
 
 # exit 0 if NOTESTS is set
@@ -19,6 +19,6 @@ git status -uno vendor/|grep -q "nothing to commit" || {
 }
 
 
-make test lint 
+make test lint
 exit $?
 
