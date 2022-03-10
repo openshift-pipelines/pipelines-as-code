@@ -81,6 +81,7 @@ func (t TEvent) PushEventAsJSON() string {
 }
 
 func (t TEvent) NoteEventAsJSON() string {
+	// nolint:misspell
 	return fmt.Sprintf(`{
 	"object_kind": "note",
 	"event_type": "note",

@@ -287,3 +287,34 @@ func TestParsePayload(t *testing.T) {
 		})
 	}
 }
+
+func TestGetCommitInfo(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	client, _, tearDown := thelp.Setup(ctx, t)
+	v := &Provider{Client: client}
+
+	defer tearDown()
+	assert.NilError(t, v.GetCommitInfo(ctx, nil))
+
+	ncv := &Provider{}
+	assert.Assert(t, ncv.GetCommitInfo(ctx, nil) != nil)
+}
+
+func TestGetConfig(t *testing.T) {
+	v := &Provider{}
+	assert.Assert(t, v.GetConfig().APIURL != "")
+	assert.Assert(t, v.GetConfig().TaskStatusTMPL != "")
+}
+
+func TestSetClient(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	v := &Provider{}
+	assert.Assert(t, v.SetClient(ctx, &info.PacOpts{}) != nil)
+
+	client, _, tearDown := thelp.Setup(ctx, t)
+	defer tearDown()
+	vv := &Provider{Client: client}
+	err := vv.SetClient(ctx, &info.PacOpts{ProviderToken: "hello"})
+	assert.NilError(t, err)
+	assert.Assert(t, *vv.Token != "")
+}

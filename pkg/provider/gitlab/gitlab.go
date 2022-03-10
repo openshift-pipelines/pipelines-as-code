@@ -214,7 +214,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 
 func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path string) (string, error) {
 	if v.Client == nil {
-		return "", fmt.Errorf("no github client has been initiliazed, " +
+		return "", fmt.Errorf("no gitlab client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
@@ -284,7 +284,7 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 
 func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 	if v.Client == nil {
-		return fmt.Errorf("no github client has been initiliazed, " +
+		return fmt.Errorf("no gitlab client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	return nil
