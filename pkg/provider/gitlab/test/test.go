@@ -53,17 +53,21 @@ func MuxNotePost(t *testing.T, mux *http.ServeMux, projectNumber int, mrID int, 
 	})
 }
 
-func MuxListTektonDir(t *testing.T, mux *http.ServeMux, pid int, ref string) {
+func MuxListTektonDir(t *testing.T, mux *http.ServeMux, pid int, ref, prs string) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/tree", pid), func(rw http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("ref") == ref {
 			fmt.Fprintf(rw, `[{
         "id": "48512e393b27bc6c17552bef21ec89c2eec31de9",
         "mode": "100644",
         "name": "pac.yaml",
-        "path": ".tekton/pac.yaml",
+        "path": ".tekton/pr.yaml",
         "type": "blob"
     }]`)
 		}
+	})
+
+	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/files/.tekton/pr.yaml/raw", pid), func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(rw, prs)
 	})
 }
 

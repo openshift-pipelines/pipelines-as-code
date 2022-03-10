@@ -1,6 +1,8 @@
 package gitlab
 
 import (
+	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -320,6 +322,8 @@ func TestSetClient(t *testing.T) {
 }
 
 func TestGetTektonDir(t *testing.T) {
+	samplePR, err := ioutil.ReadFile("../../resolve/testdata/pipeline-finally.yaml")
+	assert.NilError(t, err)
 	type fields struct {
 		targetProjectID int
 		sourceProjectID int
@@ -334,16 +338,32 @@ func TestGetTektonDir(t *testing.T) {
 		name       string
 		fields     fields
 		args       args
-		want       string
+		wantStr    string
 		wantErr    bool
 		wantClient bool
+		prcontent  string
 	}{
 		{
 			name:    "no client set",
 			wantErr: true,
 		},
 		{
-			name: "list tekton dir",
+			name:       "not found, no err",
+			wantClient: true,
+			args:       args{event: &info.Event{}},
+		},
+		{
+			name:       "bad yaml",
+			wantClient: true,
+			args:       args{event: &info.Event{SHA: "abcd", HeadBranch: "main"}},
+			fields: fields{
+				sourceProjectID: 10,
+			},
+			prcontent: "bad yaml",
+		},
+		{
+			name:      "list tekton dir",
+			prcontent: string(samplePR),
 			args: args{
 				path: ".tekton",
 				event: &info.Event{
@@ -354,6 +374,7 @@ func TestGetTektonDir(t *testing.T) {
 				sourceProjectID: 100,
 			},
 			wantClient: true,
+			wantStr:    "kind: PipelineRun",
 		},
 	}
 	for _, tt := range tests {
@@ -369,7 +390,9 @@ func TestGetTektonDir(t *testing.T) {
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(ctx, t)
 				v.Client = client
-				thelp.MuxListTektonDir(t, mux, tt.fields.sourceProjectID, tt.args.event.HeadBranch)
+				if tt.args.path != "" && tt.prcontent != "" {
+					thelp.MuxListTektonDir(t, mux, tt.fields.sourceProjectID, tt.args.event.HeadBranch, tt.prcontent)
+				}
 				defer tearDown()
 			}
 
@@ -378,9 +401,31 @@ func TestGetTektonDir(t *testing.T) {
 				t.Errorf("GetTektonDir() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("GetTektonDir() got = %v, want %v", got, tt.want)
+			if tt.wantStr != "" {
+				assert.Assert(t, strings.Contains(got, tt.wantStr), "%s is not in %s", tt.wantStr, got)
 			}
 		})
 	}
+}
+
+func TestGetFileInsideRepo(t *testing.T) {
+	content := "hello moto"
+	ctx, _ := rtesting.SetupFakeContext(t)
+	client, mux, tearDown := thelp.Setup(ctx, t)
+	defer tearDown()
+
+	event := &info.Event{
+		HeadBranch: "branch",
+	}
+	v := Provider{
+		sourceProjectID: 10,
+		Client:          client,
+	}
+	thelp.MuxListTektonDir(t, mux, v.sourceProjectID, event.HeadBranch, content)
+	got, err := v.GetFileInsideRepo(ctx, event, ".tekton/pr.yaml", "")
+	assert.NilError(t, err)
+	assert.Equal(t, content, got)
+
+	_, err = v.GetFileInsideRepo(ctx, event, "notfound", "")
+	assert.Assert(t, err != nil)
 }

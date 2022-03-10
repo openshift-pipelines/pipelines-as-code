@@ -224,11 +224,11 @@ func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path str
 	}
 
 	objects, resp, err := v.Client.Repositories.ListTree(v.sourceProjectID, opt)
-	if err != nil {
-		return "", fmt.Errorf("failed to list %s dir: %w", path, err)
-	}
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
 		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to list %s dir: %w", path, err)
 	}
 
 	return v.concatAllYamlFiles(objects, event)
@@ -269,7 +269,7 @@ func (v *Provider) getObject(fname, branch string, pid int) ([]byte, error) {
 	return file, nil
 }
 
-func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, target string) (string, error) {
+func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, _ string) (string, error) {
 	getobj, err := v.getObject(path, runevent.HeadBranch, v.sourceProjectID)
 	if err != nil {
 		return "", err
