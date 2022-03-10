@@ -80,9 +80,9 @@ func MuxOrgMember(t *testing.T, mux *http.ServeMux, event *info.Event, members [
 		})
 }
 
-func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, targetBranch string, filescontents map[string]string) {
+func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, filescontents map[string]string) {
 	for key := range filescontents {
-		target := fmt.Sprintf("/repositories/%s/%s/src/%s", event.Organization, event.Repository, targetBranch)
+		target := fmt.Sprintf("/repositories/%s/%s/src/%s", event.Organization, event.Repository, event.SHA)
 		mux.HandleFunc(target+"/"+key, func(rw http.ResponseWriter, r *http.Request) {
 			s := strings.ReplaceAll(r.URL.String(), target, "")
 			s = strings.TrimPrefix(s, "/")
@@ -193,7 +193,7 @@ func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir 
 	MuxListDir(t, mux, event, map[string][]bitbucket.RepositoryFile{
 		targetDirName: repofiles,
 	})
-	MuxFiles(t, mux, event, event.HeadBranch, filecontents)
+	MuxFiles(t, mux, event, filecontents)
 }
 
 func MakePREvent(accountid, nickname, sha string) types.PullRequestEvent {

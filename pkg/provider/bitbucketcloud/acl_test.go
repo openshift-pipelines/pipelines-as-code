@@ -60,8 +60,11 @@ func TestIsAllowed(t *testing.T) {
 			want: true,
 		},
 		{
-			name:  "allowed/from owner file who is not part of workspace",
-			event: bbcloudtest.MakeEvent(&info.Event{Sender: "NotAllowedAtFirst"}),
+			name: "allowed/from owner file who is not part of workspace",
+			event: bbcloudtest.MakeEvent(&info.Event{
+				SHA:    "abcd",
+				Sender: "NotAllowedAtFirst",
+			}),
 			fields: fields{
 				comments: []types.Comment{
 					{
@@ -72,7 +75,7 @@ func TestIsAllowed(t *testing.T) {
 					},
 				},
 				filescontents: map[string]string{
-					"OWNERS": "---\n approvers:\n  - AllowedFromOwnerFile\n",
+					"OWNERS": "---\n approvers:\n  - accountid\n",
 				},
 			},
 			want: true,
@@ -167,7 +170,7 @@ func TestIsAllowed(t *testing.T) {
 
 			bbcloudtest.MuxOrgMember(t, mux, tt.event, tt.fields.workspaceMembers)
 			bbcloudtest.MuxComments(t, mux, tt.event, tt.fields.comments)
-			bbcloudtest.MuxFiles(t, mux, tt.event, tt.event.DefaultBranch, tt.fields.filescontents)
+			bbcloudtest.MuxFiles(t, mux, tt.event, tt.fields.filescontents)
 
 			v := &Provider{Client: bbclient}
 

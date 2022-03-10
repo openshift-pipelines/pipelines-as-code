@@ -30,8 +30,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacopts *info.PacOpts,
-	statusopts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacopts *info.PacOpts, statusopts provider.StatusOpts) error {
 	switch statusopts.Conclusion {
 	case "skipped":
 		statusopts.Conclusion = "STOPPED"
@@ -115,13 +114,8 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path strin
 	return v.concatAllYamlFiles(repositoryFiles, event)
 }
 
-func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, path string, targetBranch string) (string,
-	error) {
-	branch := runevent.HeadBranch
-	if targetBranch != "" {
-		branch = targetBranch
-	}
-	return v.getBlob(runevent, branch, path)
+func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, path string, targetBranch string) (string, error) {
+	return v.getBlob(runevent, runevent.SHA, path)
 }
 
 func (v *Provider) SetClient(_ context.Context, opts *info.PacOpts) error {
@@ -186,7 +180,7 @@ func (v *Provider) concatAllYamlFiles(objects []bitbucket.RepositoryFile, runeve
 	for _, value := range objects {
 		if strings.HasSuffix(value.Path, ".yaml") ||
 			strings.HasSuffix(value.Path, ".yml") {
-			data, err := v.getBlob(runevent, runevent.HeadBranch, value.Path)
+			data, err := v.getBlob(runevent, runevent.SHA, value.Path)
 			if err != nil {
 				return "", err
 			}
