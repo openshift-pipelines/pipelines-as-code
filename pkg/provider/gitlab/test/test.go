@@ -80,6 +80,37 @@ func (t TEvent) PushEventAsJSON() string {
 }`, t.Username, t.TargetProjectID, t.UserID, t.Basebranch, t.DefaultBranch, t.URL, t.PathWithNameSpace, t.SHA, t.SHAurl, t.SHAtitle)
 }
 
+func (t TEvent) NoteEventAsJSON() string {
+	return fmt.Sprintf(`{
+	"object_kind": "note",
+	"event_type": "note",
+    "object_attributes": {
+        "noteable_type": "MergeRequest"
+    },
+    "user": {
+        "username": "%s"
+    },
+    "project": {
+        "default_branch": "%s",
+        "web_url": "%s",
+        "path_with_namespace": "%s"
+    },
+    "merge_request": {
+        "iid": %d,
+        "target_project_id": %d,
+        "source_project_id": %d,
+        "target_branch": "%s",
+        "source_branch": "%s",
+        "last_commit": {
+            "id": "%s",
+            "url": "%s://gitlab.com/pac-chmou/pac-group/-/commit/e29c24f4b6000cf0c2eae3b8bc588cb855b67756",
+            "title": "%s",
+            "message": "%s"
+        }
+    }
+}`, t.Username, t.DefaultBranch, t.URL, t.PathWithNameSpace, t.MRID, t.TargetProjectID, t.SourceProjectID, t.Basebranch, t.Headbranch, t.SHA, t.SHAurl, t.SHAtitle, t.SHAtitle)
+}
+
 func (t TEvent) MREventAsJSON() string {
 	return fmt.Sprintf(`{
     "user": {

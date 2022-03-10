@@ -110,12 +110,11 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 			SHA:           event.MergeRequest.LastCommit.ID,
 			SHAURL:        event.MergeRequest.LastCommit.URL,
 			// TODO: change this back to Title when we get this pr available merged https://github.com/xanzy/go-gitlab/pull/1406/files
-			SHATitle: event.MergeRequest.LastCommit.Message,
+			SHATitle:   event.MergeRequest.LastCommit.Message,
+			BaseBranch: event.MergeRequest.TargetBranch,
+			HeadBranch: event.MergeRequest.SourceBranch,
 		}
-		processedevent.TriggerTarget = "pull_request"
-		processedevent.Organization = filepath.Dir(event.MergeRequest.Target.PathWithNamespace)
-		processedevent.Organization = strings.ReplaceAll(processedevent.Organization, "/", "-")
-		processedevent.Repository = filepath.Base(event.MergeRequest.Target.PathWithNamespace)
+		processedevent.Organization, processedevent.Repository = getOrgRepo(event.Project.PathWithNamespace)
 		processedevent.TriggerTarget = "pull_request"
 
 		v.mergeRequestID = event.MergeRequest.IID
@@ -288,11 +287,5 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 		return fmt.Errorf("no github client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
-	mr, _, err := v.Client.MergeRequests.GetMergeRequest(v.targetProjectID, v.mergeRequestID, nil)
-	if err != nil {
-		return err
-	}
-	event.HeadBranch = mr.SourceBranch
-	event.BaseBranch = mr.TargetBranch
 	return nil
 }

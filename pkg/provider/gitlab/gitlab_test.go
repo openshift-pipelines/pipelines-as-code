@@ -198,6 +198,16 @@ func TestParsePayload(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "event not supported",
+			args: args{
+				event: &info.Event{
+					EventType: string(gitlab.EventTypePipeline),
+				},
+				payload: sample.MREventAsJSON(),
+			},
+			wantErr: true,
+		},
+		{
 			name: "merge event",
 			args: args{
 				event: &info.Event{
@@ -223,6 +233,21 @@ func TestParsePayload(t *testing.T) {
 			want: &info.Event{
 				EventType:     "Push",
 				TriggerTarget: "push",
+				Organization:  "hello-this-is-me-ze",
+				Repository:    "project",
+			},
+		},
+		{
+			name: "note event",
+			args: args{
+				event: &info.Event{
+					EventType: string(gitlab.EventTypeNote),
+				},
+				payload: sample.NoteEventAsJSON(),
+			},
+			want: &info.Event{
+				EventType:     "Note",
+				TriggerTarget: "pull_request",
 				Organization:  "hello-this-is-me-ze",
 				Repository:    "project",
 			},
