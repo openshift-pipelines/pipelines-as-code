@@ -41,6 +41,20 @@ type Provider struct {
 	userID          int
 }
 
+// If I understood properly, you can have "personal" projects and groups
+// attached projects. But this doesn't seem to show in the API, so we
+// are just doing it the path_with_namespace to get the "org".
+//
+// Note that "orgs/groups" may have subgroups, so we get the first parts
+// as Orgs and the last element as Repo It's just a detail to show for
+// UI, we actually don't use this field for access or other logical
+// stuff.
+func getOrgRepo(pathWithNamespace string) (string, string) {
+	org := filepath.Dir(pathWithNamespace)
+	org = strings.ReplaceAll(org, "/", "-")
+	return org, filepath.Base(pathWithNamespace)
+}
+
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
 	var processedevent *info.Event
 
@@ -70,17 +84,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		v.sourceProjectID = event.ObjectAttributes.SourceProjectID
 		v.userID = event.User.ID
 
-		// If I understood properly, you can have "personal" projects and groups
-		// attached projects. But this doesn't seem to show in the API, so we
-		// are just doing it the path_with_namespace to get the "org".
-		//
-		// Note that "orgs/groups" may have subgroups, so we get the first parts
-		// as Orgs and the last element as Repo It's just a detail to show for
-		// UI, we actually don't use this field for access or other logical
-		// stuff.
-		processedevent.Organization = filepath.Dir(event.ObjectAttributes.Target.PathWithNamespace)
-		processedevent.Organization = strings.ReplaceAll(processedevent.Organization, "/", "-")
-		processedevent.Repository = filepath.Base(event.ObjectAttributes.Target.PathWithNamespace)
+		processedevent.Organization, processedevent.Repository = getOrgRepo(event.ObjectAttributes.Target.PathWithNamespace)
 		processedevent.TriggerTarget = "pull_request"
 	case *gitlab.PushEvent:
 		processedevent = &info.Event{
@@ -94,10 +98,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 			BaseBranch:    event.Ref,
 		}
 		processedevent.TriggerTarget = "push"
-		// TODO: commonolazie with previous case
-		splitted := strings.Split(event.Project.PathWithNamespace, "/")
-		processedevent.Organization = splitted[0]
-		processedevent.Repository = splitted[1]
+		processedevent.Organization, processedevent.Repository = getOrgRepo(event.Project.PathWithNamespace)
 		v.targetProjectID = event.ProjectID
 		v.sourceProjectID = event.ProjectID
 		v.userID = event.UserID

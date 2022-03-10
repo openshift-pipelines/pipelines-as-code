@@ -53,13 +53,34 @@ func MuxNotePost(t *testing.T, mux *http.ServeMux, projectNumber int, mrID int, 
 	})
 }
 
-type MMEvent struct {
+type TEvent struct {
 	Username, DefaultBranch, URL, SHA, SHAurl, SHAtitle, Headbranch, Basebranch string
 	UserID, MRID, TargetProjectID, SourceProjectID                              int
 	PathWithNameSpace                                                           string
 }
 
-func MakeMergeEvent(mm MMEvent) string {
+func (t TEvent) PushEventAsJSON() string {
+	return fmt.Sprintf(`{
+    "user_username": "%s",
+    "project_id": %d,
+    "user_id": %d,
+    "ref": "%s",
+    "project": {
+        "default_branch": "%s",
+        "web_url": "%s",
+        "path_with_namespace": "%s"
+    },
+    "commits": [
+        {
+            "id": "%s",
+            "url": "%s",
+            "title": "%s"
+        }
+    ]
+}`, t.Username, t.TargetProjectID, t.UserID, t.Basebranch, t.DefaultBranch, t.URL, t.PathWithNameSpace, t.SHA, t.SHAurl, t.SHAtitle)
+}
+
+func (t TEvent) MREventAsJSON() string {
 	return fmt.Sprintf(`{
     "user": {
         "id": %d,
@@ -84,6 +105,6 @@ func MakeMergeEvent(mm MMEvent) string {
 			"path_with_namespace": "%s"
 		}
     }
-}`, mm.UserID, mm.Username, mm.TargetProjectID, mm.URL, mm.DefaultBranch, mm.MRID,
-		mm.SourceProjectID, mm.SHAtitle, mm.Headbranch, mm.Basebranch, mm.SHA, mm.SHAurl, mm.PathWithNameSpace)
+}`, t.UserID, t.Username, t.TargetProjectID, t.URL, t.DefaultBranch, t.MRID,
+		t.SourceProjectID, t.SHAtitle, t.Headbranch, t.Basebranch, t.SHA, t.SHAurl, t.PathWithNameSpace)
 }

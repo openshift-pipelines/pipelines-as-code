@@ -156,7 +156,7 @@ func TestCreateStatus(t *testing.T) {
 }
 
 func TestParsePayload(t *testing.T) {
-	sampleMR := thelp.MMEvent{
+	sample := thelp.TEvent{
 		Username:          "foo",
 		DefaultBranch:     "main",
 		URL:               "https://foo.com",
@@ -171,7 +171,6 @@ func TestParsePayload(t *testing.T) {
 		SourceProjectID:   200,
 		PathWithNameSpace: "hello/this/is/me/ze/project",
 	}
-	sampleMRjson := thelp.MakeMergeEvent(sampleMR)
 	type fields struct {
 		targetProjectID int
 		sourceProjectID int
@@ -204,11 +203,26 @@ func TestParsePayload(t *testing.T) {
 				event: &info.Event{
 					EventType: string(gitlab.EventTypeMergeRequest),
 				},
-				payload: sampleMRjson,
+				payload: sample.MREventAsJSON(),
 			},
 			want: &info.Event{
 				EventType:     "Merge Request",
 				TriggerTarget: "pull_request",
+				Organization:  "hello-this-is-me-ze",
+				Repository:    "project",
+			},
+		},
+		{
+			name: "push event",
+			args: args{
+				event: &info.Event{
+					EventType: string(gitlab.EventTypePush),
+				},
+				payload: sample.PushEventAsJSON(),
+			},
+			want: &info.Event{
+				EventType:     "Push",
+				TriggerTarget: "push",
 				Organization:  "hello-this-is-me-ze",
 				Repository:    "project",
 			},
