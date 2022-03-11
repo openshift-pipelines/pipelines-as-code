@@ -177,6 +177,10 @@ jobs:
           export TEST_BITBUCKET_CLOUD_USER=chmouelb
           export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=chmouelb/pac-e2e-test
           export TEST_BITBUCKET_CLOUD_TOKEN=${{ secrets.BITBUCKET_CLOUD_TOKEN }}
+          # https://gitlab.com/gitlab-com/alliances/ibm-red-hat/sandbox/openshift-pipelines/pac-e2e-tests
+          export TEST_GITLAB_API_URL="https://gitlab.com"
+          export TEST_GITLAB_PROJECT_ID="34405323"
+          export TEST_GITLAB_TOKEN=${{ secrets.GITLAB_TOKEN }}
 
           make test-e2e
       # - name: Setup tmate session
