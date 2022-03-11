@@ -53,21 +53,52 @@ func MuxNotePost(t *testing.T, mux *http.ServeMux, projectNumber int, mrID int, 
 	})
 }
 
+func MuxAllowUserID(t *testing.T, mux *http.ServeMux, projectID, userID int) {
+	path := fmt.Sprintf("/projects/%d/members/all/%d", projectID, userID)
+	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(rw, `{"id": %d}`, userID)
+	})
+}
+
 func MuxListTektonDir(t *testing.T, mux *http.ServeMux, pid int, ref, prs string) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/tree", pid), func(rw http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("ref") == ref {
-			fmt.Fprintf(rw, `[{
-        "id": "48512e393b27bc6c17552bef21ec89c2eec31de9",
-        "mode": "100644",
-        "name": "pac.yaml",
-        "path": ".tekton/pr.yaml",
-        "type": "blob"
-    }]`)
+			fmt.Fprintf(rw, `[
+			{"name": "pac.yaml", "path": ".tekton/pr.yaml"},
+			{"name": "random.yaml", "path": ".tekton/random.yaml"}
+			]`)
 		}
 	})
 
-	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/files/.tekton/pr.yaml/raw", pid), func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(rw, prs)
+	MuxGetFile(t, mux, pid, ".tekton/pr.yaml", prs)
+	MuxGetFile(t, mux, pid, ".tekton/random.yaml", `foo:bar`)
+}
+
+func MuxDiscussionsNote(t *testing.T, mux *http.ServeMux, pid, mrID int, author string, authorID int, notecontent string) {
+	path := fmt.Sprintf("/projects/%d/merge_requests/%d/discussions", pid, mrID)
+	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
+		page, ok := r.URL.Query()["page"]
+		if ok && page[0] == "1" {
+			rw.Header().Set("X-Next-Page", "2")
+			fmt.Fprintf(rw, `[{"notes": [{}]}]`)
+			return
+		}
+		fmt.Fprintf(rw, `[{
+            "notes": [{
+                "body": "%s",
+                "author": {
+                    "username": "%s",
+                    "id": %d
+                }
+            }]
+        }]
+        `, notecontent, author, authorID)
+	})
+}
+
+func MuxGetFile(t *testing.T, mux *http.ServeMux, pid int, fname, content string) {
+	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/files/%s/raw", pid, fname), func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(rw, content)
 	})
 }
 

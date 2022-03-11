@@ -280,11 +280,6 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 	if err != nil {
 		return "", err
 	}
-
-	if getobj == nil {
-		return "", fmt.Errorf("cannot find %s in this repository", path)
-	}
-
 	return string(getobj), nil
 }
 

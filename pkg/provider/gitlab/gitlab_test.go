@@ -376,6 +376,21 @@ func TestGetTektonDir(t *testing.T) {
 			wantClient: true,
 			wantStr:    "kind: PipelineRun",
 		},
+		{
+			name:      "list tekton dir no --- prefix",
+			prcontent: strings.TrimPrefix(string(samplePR), "---"),
+			args: args{
+				path: ".tekton",
+				event: &info.Event{
+					HeadBranch: "main",
+				},
+			},
+			fields: fields{
+				sourceProjectID: 100,
+			},
+			wantClient: true,
+			wantStr:    "kind: PipelineRun",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
