@@ -6,7 +6,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -87,8 +86,10 @@ func checkSuccess(ctx context.Context, t *testing.T, runcnx *params.Run, opts E2
 	assert.NilError(t, err)
 	laststatus := repo.Status[len(repo.Status)-1]
 	assert.Equal(t, corev1.ConditionTrue, laststatus.Conditions[0].Status)
-	assert.Equal(t, sha, *laststatus.SHA)
-	assert.Equal(t, sha, filepath.Base(*laststatus.SHAURL))
+	if sha != "" {
+		assert.Equal(t, sha, *laststatus.SHA)
+		assert.Equal(t, sha, filepath.Base(*laststatus.SHAURL))
+	}
 	assert.Equal(t, title, *laststatus.Title)
 	assert.Assert(t, *laststatus.LogURL != "")
 
@@ -98,11 +99,17 @@ func checkSuccess(ctx context.Context, t *testing.T, runcnx *params.Run, opts E2
 	assert.Equal(t, onEvent, pr.Labels["pipelinesascode.tekton.dev/event-type"])
 	assert.Equal(t, repo.GetName(), pr.Labels["pipelinesascode.tekton.dev/repository"])
 	// assert.Equal(t, opts.Owner, pr.Labels["pipelinesascode.tekton.dev/sender"]) bitbucket is too weird for that
-	assert.Equal(t, sha, pr.Labels["pipelinesascode.tekton.dev/sha"])
-	assert.Equal(t, opts.Organization, pr.Labels["pipelinesascode.tekton.dev/url-org"])
-	assert.Equal(t, opts.Repo, pr.Labels["pipelinesascode.tekton.dev/url-repository"])
 
-	assert.Equal(t, sha, filepath.Base(pr.Annotations["pipelinesascode.tekton.dev/sha-url"]))
+	if opts.Organization != "" {
+		assert.Equal(t, opts.Organization, pr.Labels["pipelinesascode.tekton.dev/url-org"])
+	}
+	if opts.Repo != "" {
+		assert.Equal(t, opts.Repo, pr.Labels["pipelinesascode.tekton.dev/url-repository"])
+	}
+	if sha != "" {
+		assert.Equal(t, sha, pr.Labels["pipelinesascode.tekton.dev/sha"])
+		assert.Equal(t, sha, filepath.Base(pr.Annotations["pipelinesascode.tekton.dev/sha-url"]))
+	}
 	assert.Equal(t, title, pr.Annotations["pipelinesascode.tekton.dev/sha-title"])
 }
 
@@ -140,17 +147,6 @@ func createGithubRepoCRD(ctx context.Context, t *testing.T, ghprovider github.Pr
 	err = trepo.CreateRepo(ctx, targetNS, run, repository)
 	assert.NilError(t, err)
 	return repoinfo, err
-}
-
-func getEntries(yamlfile, targetNS, targetBranch, targetEvent string) (map[string]string, error) {
-	prun, err := ioutil.ReadFile(yamlfile)
-	if err != nil {
-		return nil, err
-	}
-
-	return map[string]string{
-		".tekton/pr.yaml": fmt.Sprintf(string(prun), targetNS, targetBranch, targetEvent),
-	}, nil
 }
 
 // Local Variables:

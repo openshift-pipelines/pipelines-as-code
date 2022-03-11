@@ -14,5 +14,5 @@ spec:
         taskSpec:
           steps:
             - name: task
-              image: gcr.io/google-containers/busybox
+              image: registry.access.redhat.com/ubi8/ubi-micro:8.5
               command: ["/bin/echo", "HELLOMOTO"]
