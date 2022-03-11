@@ -26,7 +26,7 @@ spec:
     - name: action
       value: "$(body.action)"
     - name: trigger_target
-      value: "ok-to-test-comment"
+      value: pull_request
     - name: event_type
       value: $(header.X-GitHub-Event)
     - name: "ghe_host"

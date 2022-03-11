@@ -183,10 +183,11 @@ func TestParsePayLoad(t *testing.T) {
 			name:          "bad/rerequest error fetching PR",
 			githubClient:  fakeclient,
 			eventType:     "check_run",
-			triggerTarget: "issue-recheck",
+			triggerTarget: "pull_request",
 			wantErrString: "404",
 			payloadEventStruct: github.CheckRunEvent{
-				Repo: sampleRepo,
+				Action: github.String("rerequested"),
+				Repo:   sampleRepo,
 				CheckRun: &github.CheckRun{
 					CheckSuite: &github.CheckSuite{
 						PullRequests: []*github.PullRequest{&samplePR},
@@ -202,7 +203,8 @@ func TestParsePayLoad(t *testing.T) {
 			githubClient:  fakeclient,
 			triggerTarget: "issue-recheck",
 			payloadEventStruct: github.CheckRunEvent{
-				Repo: sampleRepo,
+				Action: github.String("rerequested"),
+				Repo:   sampleRepo,
 				CheckRun: &github.CheckRun{
 					CheckSuite: &github.CheckSuite{
 						PullRequests: []*github.PullRequest{&samplePR},
@@ -218,7 +220,8 @@ func TestParsePayLoad(t *testing.T) {
 			githubClient:  fakeclient,
 			triggerTarget: "issue-recheck",
 			payloadEventStruct: github.CheckRunEvent{
-				Repo: sampleRepo,
+				Action: github.String("rerequested"),
+				Repo:   sampleRepo,
 				CheckRun: &github.CheckRun{
 					CheckSuite: &github.CheckSuite{
 						HeadSHA: github.String("headSHACheckSuite"),

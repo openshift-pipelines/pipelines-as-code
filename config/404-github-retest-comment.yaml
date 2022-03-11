@@ -24,7 +24,7 @@ metadata:
 spec:
   params:
     - name: trigger_target
-      value: "retest-comment"
+      value: pull_request
     - name: action
       value: $(body.action)
     - name: event_type
