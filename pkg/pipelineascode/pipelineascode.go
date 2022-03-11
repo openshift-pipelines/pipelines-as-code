@@ -109,7 +109,7 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 		return err
 	}
 	if pipelineRuns == nil {
-		msg := fmt.Sprintf("could not find templates in %s/ directory for this repository", tektonDir)
+		msg := fmt.Sprintf("could not find templates in %s/ directory for this repository in %s", tektonDir, cs.Info.Event.HeadBranch)
 		cs.Clients.Log.Info(msg)
 		return nil
 	}
