@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	apiPublicURL       = "https://gitlab.com/api/v4"
+	apiPublicURL       = "https://gitlab.com"
 	taskStatusTemplate = `
 <table>
   <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
@@ -33,12 +33,14 @@ const (
 )
 
 type Provider struct {
-	Client          *gitlab.Client
-	Token           *string
-	targetProjectID int
-	sourceProjectID int
-	mergeRequestID  int
-	userID          int
+	Client            *gitlab.Client
+	Token             *string
+	targetProjectID   int
+	sourceProjectID   int
+	mergeRequestID    int
+	userID            int
+	pathWithNamespace string
+	repoURL           string
 }
 
 // If I understood properly, you can have "personal" projects and groups
@@ -84,7 +86,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		v.sourceProjectID = event.ObjectAttributes.SourceProjectID
 		v.userID = event.User.ID
 
-		processedevent.Organization, processedevent.Repository = getOrgRepo(event.ObjectAttributes.Target.PathWithNamespace)
+		v.pathWithNamespace = event.ObjectAttributes.Target.PathWithNamespace
+		processedevent.Organization, processedevent.Repository = getOrgRepo(v.pathWithNamespace)
 		processedevent.TriggerTarget = "pull_request"
 	case *gitlab.PushEvent:
 		processedevent = &info.Event{
@@ -98,7 +101,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 			BaseBranch:    event.Ref,
 		}
 		processedevent.TriggerTarget = "push"
-		processedevent.Organization, processedevent.Repository = getOrgRepo(event.Project.PathWithNamespace)
+		v.pathWithNamespace = event.Project.PathWithNamespace
+		processedevent.Organization, processedevent.Repository = getOrgRepo(v.pathWithNamespace)
 		v.targetProjectID = event.ProjectID
 		v.sourceProjectID = event.ProjectID
 		v.userID = event.UserID
@@ -114,7 +118,9 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 			BaseBranch: event.MergeRequest.TargetBranch,
 			HeadBranch: event.MergeRequest.SourceBranch,
 		}
-		processedevent.Organization, processedevent.Repository = getOrgRepo(event.Project.PathWithNamespace)
+
+		v.pathWithNamespace = event.Project.PathWithNamespace
+		processedevent.Organization, processedevent.Repository = getOrgRepo(v.pathWithNamespace)
 		processedevent.TriggerTarget = "pull_request"
 
 		v.mergeRequestID = event.MergeRequest.IID
@@ -131,6 +137,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 	// really use it anymore we good to do whatever we want with it for
 	// cosmetics.
 	processedevent.EventType = strings.ReplaceAll(run.Info.Event.EventType, " Hook", "")
+
+	v.repoURL = processedevent.URL
 	return processedevent, nil
 }
 
@@ -147,9 +155,13 @@ func (v *Provider) SetClient(ctx context.Context, opts *info.PacOpts) error {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
 
+	// Try to detect automatically theapi url if url is not coming from public
+	// gitlab. Unless user has set a spec.provider.url in its repo crd
 	apiURL := apiPublicURL
 	if opts.ProviderURL != "" {
 		apiURL = opts.ProviderURL
+	} else if !strings.HasPrefix(v.repoURL, apiPublicURL) {
+		apiURL = strings.ReplaceAll(v.repoURL, v.pathWithNamespace, "")
 	}
 
 	v.Client, err = gitlab.NewClient(opts.ProviderToken, gitlab.WithBaseURL(apiURL))

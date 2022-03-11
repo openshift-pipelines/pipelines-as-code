@@ -13,7 +13,9 @@
 - Get files via APIs
 - Webhook via api token attached to repo secret
 - Auto secret attached for git-clone support on private repo.
-- Private instance is supported via the Repository CR on `spec.provider.url` i.e:
+- Private instance is supported, the private instance is not required to be
+  specified in config since auto detect but if for whatever reason you want to
+  set another api url you can do this on Repository :
 
   ```yaml
   kind: Repository
