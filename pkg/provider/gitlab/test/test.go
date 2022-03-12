@@ -108,8 +108,8 @@ type TEvent struct {
 	PathWithNameSpace                                                           string
 }
 
-func (t TEvent) PushEventAsJSON() string {
-	return fmt.Sprintf(`{
+func (t TEvent) PushEventAsJSON(withcommits bool) string {
+	jeez := fmt.Sprintf(`{
     "user_username": "%s",
     "project_id": %d,
     "user_id": %d,
@@ -118,15 +118,21 @@ func (t TEvent) PushEventAsJSON() string {
         "default_branch": "%s",
         "web_url": "%s",
         "path_with_namespace": "%s"
-    },
-    "commits": [
+    }
+`, t.Username, t.TargetProjectID, t.UserID, t.Basebranch, t.DefaultBranch, t.URL, t.PathWithNameSpace)
+
+	if withcommits {
+		jeez += fmt.Sprintf(`,
+"commits": [
         {
             "id": "%s",
             "url": "%s",
             "title": "%s"
         }
-    ]
-}`, t.Username, t.TargetProjectID, t.UserID, t.Basebranch, t.DefaultBranch, t.URL, t.PathWithNameSpace, t.SHA, t.SHAurl, t.SHAtitle)
+    ]`, t.SHA, t.SHAurl, t.SHAtitle)
+	}
+	jeez += "}"
+	return jeez
 }
 
 func (t TEvent) NoteEventAsJSON() string {

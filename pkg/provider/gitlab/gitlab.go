@@ -90,6 +90,9 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		processedevent.Organization, processedevent.Repository = getOrgRepo(v.pathWithNamespace)
 		processedevent.TriggerTarget = "pull_request"
 	case *gitlab.PushEvent:
+		if len(event.Commits) == 0 {
+			return nil, fmt.Errorf("no commits attached to this push event")
+		}
 		processedevent = &info.Event{
 			Sender:        event.UserUsername,
 			DefaultBranch: event.Project.DefaultBranch,

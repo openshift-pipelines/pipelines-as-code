@@ -225,12 +225,22 @@ func TestParsePayload(t *testing.T) {
 			},
 		},
 		{
+			name: "push event no commits",
+			args: args{
+				event: &info.Event{
+					EventType: string(gitlab.EventTypePush),
+				},
+				payload: sample.PushEventAsJSON(false),
+			},
+			wantErr: true,
+		},
+		{
 			name: "push event",
 			args: args{
 				event: &info.Event{
 					EventType: string(gitlab.EventTypePush),
 				},
-				payload: sample.PushEventAsJSON(),
+				payload: sample.PushEventAsJSON(true),
 			},
 			want: &info.Event{
 				EventType:     "Push",
@@ -239,6 +249,7 @@ func TestParsePayload(t *testing.T) {
 				Repository:    "project",
 			},
 		},
+
 		{
 			name: "note event",
 			args: args{
