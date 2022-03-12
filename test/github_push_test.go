@@ -6,10 +6,12 @@ package test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"testing"
 
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
@@ -28,7 +30,7 @@ func TestGithubPush(t *testing.T) {
 		}
 
 		ctx := context.Background()
-		runcnx, opts, gprovider, err := githubSetup(ctx, onWebhook)
+		runcnx, opts, gprovider, err := tgithub.Setup(ctx, onWebhook)
 		assert.NilError(t, err)
 
 		if onWebhook {
@@ -36,11 +38,15 @@ func TestGithubPush(t *testing.T) {
 		} else {
 			runcnx.Clients.Log.Info("Testing with Github APPS integration")
 		}
-
-		repoinfo, err := createGithubRepoCRD(ctx, t, gprovider, runcnx, opts, targetNS)
+		repoinfo, resp, err := gprovider.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
+		assert.NilError(t, err)
+		if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
+			t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+		}
+		err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
 		assert.NilError(t, err)
 
-		entries, err := getEntries("testdata/pipelinerun-on-push.yaml", targetNS, targetBranch, targetEvent)
+		entries, err := payload.GetEntries("testdata/pipelinerun-on-push.yaml", targetNS, targetBranch, targetEvent)
 		assert.NilError(t, err)
 
 		title := "TestPush "
@@ -53,14 +59,14 @@ func TestGithubPush(t *testing.T) {
 		sha, err := tgithub.PushFilesToRef(ctx, gprovider.Client, title, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
 		runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
 		assert.NilError(t, err)
-		defer ghtearDown(ctx, t, runcnx, gprovider, -1, targetRefName, targetNS, opts)
+		defer tgithub.TearDown(ctx, t, runcnx, gprovider, -1, targetRefName, targetNS, opts)
 
 		runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 		waitOpts := twait.Opts{
 			RepoName:        targetNS,
 			Namespace:       targetNS,
 			MinNumberStatus: 0,
-			PollTimeout:     defaultTimeout,
+			PollTimeout:     twait.DefaultTimeout,
 			TargetSHA:       sha,
 		}
 		err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)

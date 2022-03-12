@@ -3,10 +3,18 @@ package github
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
+	"net/http"
+	"testing"
 
 	"github.com/google/go-github/v42/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	"github.com/tektoncd/pipeline/pkg/names"
+	"gotest.tools/v3/assert"
 )
 
 func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (string, error) {
@@ -88,4 +96,40 @@ func PRCreate(ctx context.Context, cs *params.Run, ghcnx ghprovider.Provider, ow
 	}
 	cs.Clients.Log.Infof("Pull request created: %s", pr.GetHTMLURL())
 	return pr.GetNumber(), nil
+}
+
+func RunPullRequest(ctx context.Context, t *testing.T, label string, prFile string, webhook bool) (*params.Run, ghprovider.Provider, options.E2E, string, string, int, string) {
+	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+	runcnx, opts, ghcnx, err := Setup(ctx, webhook)
+	assert.NilError(t, err)
+
+	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", label, targetNS)
+	runcnx.Clients.Log.Info(logmsg)
+
+	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
+	assert.NilError(t, err)
+	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+	}
+
+	err = CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
+	assert.NilError(t, err)
+
+	entries, err := payload.GetEntries(prFile, targetNS, options.MainBranch, options.PullRequestEvent)
+	assert.NilError(t, err)
+
+	targetRefName := fmt.Sprintf("refs/heads/%s",
+		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
+
+	sha, err := PushFilesToRef(ctx, ghcnx.Client, logmsg, repoinfo.GetDefaultBranch(), targetRefName,
+		opts.Organization, opts.Repo, entries)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
+
+	number, err := PRCreate(ctx, runcnx, ghcnx, opts.Organization,
+		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), logmsg)
+	assert.NilError(t, err)
+
+	wait.Succeeded(ctx, t, runcnx, opts, options.PullRequestEvent, targetNS, sha, logmsg)
+	return runcnx, ghcnx, opts, targetNS, targetRefName, number, sha
 }

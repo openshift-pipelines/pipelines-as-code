@@ -4,7 +4,6 @@
 package test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -12,32 +11,21 @@ import (
 	"testing"
 
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	tkpacrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/repository"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	tcli "github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
+	cli2 "github.com/openshift-pipelines/pipelines-as-code/test/pkg/cli"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"github.com/spf13/cobra"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func execCommand(runcnx *params.Run, cmd func(*params.Run, *cli.IOStreams) *cobra.Command, args ...string) (string, error) {
-	bufout := new(bytes.Buffer)
-	ecmd := cmd(runcnx, &cli.IOStreams{
-		Out: bufout,
-	})
-	_, err := tcli.ExecuteCommand(ecmd, args...)
-	return bufout.String(), err
-}
-
 func TestGithubPacCli(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghprovider, err := githubSetup(ctx, false)
+	runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false)
 	assert.NilError(t, err)
 
 	entries := map[string]string{
@@ -59,7 +47,7 @@ spec:
             - name: task
               image: gcr.io/google-containers/busybox
               command: ["/bin/echo", "HELLOMOTO"]
-`, targetNS, mainBranch, pullRequestEvent),
+`, targetNS, options.MainBranch, options.PullRequestEvent),
 	}
 
 	repoinfo, resp, err := ghprovider.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
@@ -83,11 +71,11 @@ spec:
 	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
 	assert.NilError(t, err)
 
-	output, err := execCommand(runcnx, tkpacrepo.DescribeCommand, "-n", targetNS, targetNS)
+	output, err := cli2.ExecCommand(runcnx, tkpacrepo.DescribeCommand, "-n", targetNS, targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "No runs has started."))
 
-	output, err = execCommand(runcnx, tkpacrepo.ListCommand, "-n", targetNS)
+	output, err = cli2.ExecCommand(runcnx, tkpacrepo.ListCommand, "-n", targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "NoRun"))
 
@@ -102,14 +90,14 @@ spec:
 	number, err := tgithub.PRCreate(ctx, runcnx, ghprovider, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
-	defer ghtearDown(ctx, t, runcnx, ghprovider, number, targetRefName, targetNS, opts)
+	defer tgithub.TearDown(ctx, t, runcnx, ghprovider, number, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 	waitOpts := twait.Opts{
 		RepoName:        targetNS,
 		Namespace:       targetNS,
 		MinNumberStatus: 0,
-		PollTimeout:     defaultTimeout,
+		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       sha,
 	}
 	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
@@ -117,11 +105,11 @@ spec:
 
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
 
-	output, err = execCommand(runcnx, tkpacrepo.ListCommand, "-n", targetNS)
+	output, err = cli2.ExecCommand(runcnx, tkpacrepo.ListCommand, "-n", targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "Succeeded"))
 
-	output, err = execCommand(runcnx, tkpacrepo.DescribeCommand, "-n", targetNS, targetNS)
+	output, err = cli2.ExecCommand(runcnx, tkpacrepo.DescribeCommand, "-n", targetNS, targetNS)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(output, "Succeeded"))
 }

@@ -13,6 +13,7 @@ import (
 
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
@@ -24,7 +25,7 @@ import (
 func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghcnx, err := githubSetup(ctx, false)
+	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
 	assert.NilError(t, err)
 
 	prun, err := ioutil.ReadFile("testdata/pipelinerun_remote_annotations.yaml")
@@ -38,7 +39,7 @@ func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 
 	entries := map[string]string{
 		".tekton/pr.yaml": fmt.Sprintf(string(prun),
-			targetNS, mainBranch, pullRequestEvent),
+			targetNS, options.MainBranch, options.PullRequestEvent),
 		".tekton/pipeline.yaml":                        string(pipeline),
 		".other-tasks/task-referenced-internally.yaml": string(taskreferencedinternally),
 	}
@@ -75,14 +76,14 @@ func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
-	defer ghtearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
+	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 	waitOpts := twait.Opts{
 		RepoName:        targetNS,
 		Namespace:       targetNS,
 		MinNumberStatus: 0,
-		PollTimeout:     defaultTimeout,
+		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       sha,
 	}
 	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
@@ -101,7 +102,7 @@ func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 	pr, err := runcnx.Clients.Tekton.TektonV1alpha1().PipelineRuns(targetNS).Get(ctx, laststatus.PipelineRunName, metav1.GetOptions{})
 	assert.NilError(t, err)
 
-	assert.Equal(t, "pull_request", pr.Labels["pipelinesascode.tekton.dev/event-type"])
+	assert.Equal(t, options.PullRequestEvent, pr.Labels["pipelinesascode.tekton.dev/event-type"])
 	assert.Equal(t, repo.GetName(), pr.Labels["pipelinesascode.tekton.dev/repository"])
 	assert.Equal(t, sha, pr.Labels["pipelinesascode.tekton.dev/sha"])
 	assert.Equal(t, opts.Organization, pr.Labels["pipelinesascode.tekton.dev/url-org"])
