@@ -78,6 +78,20 @@ func TestIsAllowed(t *testing.T) {
 			commentAuthor:   "admin",
 			commentAuthorID: 1111,
 		},
+		{
+			name:       "disallowed from non authorized note",
+			wantClient: true,
+			fields: fields{
+				userID:          6666,
+				targetProjectID: 2525,
+				mergeRequestID:  1,
+			},
+			args: args{
+				event: &info.Event{Sender: "noowner"},
+			},
+			commentContent: "/ok-to-test",
+			commentAuthor:  "notallowed",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
