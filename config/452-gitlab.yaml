@@ -1,0 +1,90 @@
+# Copyright 2021 Red Hat
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: pipelines-as-code-gitlab
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+spec:
+  params:
+    - name: event_type
+      value: "$(header.X-Gitlab-Event)"
+    - name: payload
+      value: $(extensions.payload)
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: pipelines-as-code-gitlab
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+spec:
+  params:
+    - name: event_type
+    - name: payload
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: TaskRun
+      metadata:
+        generateName: pipelines-as-code-run-
+        labels:
+          app.kubernetes.io/version: "devel"
+          app.kubernetes.io/managed-by: pipelines-as-code
+      spec:
+        serviceAccountName: pipelines-as-code-sa-el
+        params:
+          - name: event_type
+            value: $(tt.params.event_type)
+          - name: payload
+            value: $(tt.params.payload)
+        taskSpec:
+          params:
+            - name: event_type
+              type: string
+            - name: payload
+              type: string
+          steps:
+            - name: apply-and-launch
+              env:
+                - name: PAC_GIT_PROVIDER_TYPE
+                  value: "gitlab"
+                - name: PAC_PAYLOAD_FILE
+                  value: "/tmp/payload.json"
+                - name: PAC_WEBHOOK_TYPE
+                  value: "$(params.event_type)"
+              imagePullPolicy: Always
+              image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code"
+              script: |
+                #!/usr/bin/env bash
+                set -euf
+
+                echo $(tt.params.payload)| base64 --decode |tee ${PAC_PAYLOAD_FILE}
+                echo
+
+                env|grep '^PAC'
+                pipelines-as-code
+          workspaces:
+            - name: secrets
+        workspaces:
+          - name: secrets
+            secret:
+              secretName: pipelines-as-code-secret

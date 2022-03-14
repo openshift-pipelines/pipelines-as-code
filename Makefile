@@ -86,7 +86,7 @@ html-coverage: ./vendor ## generate html coverage
 
 .PHONY: clean
 clean: ## clean build artifacts
-	rm -fR bin 
+	rm -fR bin
 
 .PHONY: fmt ## formats the GO code(excludes vendors dir)
 fmt:
@@ -94,7 +94,7 @@ fmt:
 
 .PHONY: fumpt ## formats the GO code with gofumpt(excludes vendors dir)
 fumpt:
-	@$(GOFUMPT) -w pkg/**/*go
+	@$(GOFUMPT) -w test/*/*/*go test/*go
 
 .PHONY: help
 help: ## print this help

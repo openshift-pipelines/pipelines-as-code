@@ -25,8 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func execCommand(runcnx *params.Run, cmd func(*params.Run, *cli.IOStreams) *cobra.Command,
-	args ...string) (string, error) {
+func execCommand(runcnx *params.Run, cmd func(*params.Run, *cli.IOStreams) *cobra.Command, args ...string) (string, error) {
 	bufout := new(bytes.Buffer)
 	ecmd := cmd(runcnx, &cli.IOStreams{
 		Out: bufout,

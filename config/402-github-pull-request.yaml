@@ -24,7 +24,7 @@ metadata:
 spec:
   params:
     - name: trigger_target
-      value: "pull-request"
+      value: pull_request
     - name: "event_type"
       value: $(header.X-GitHub-Event)
     - name: "ghe_host"

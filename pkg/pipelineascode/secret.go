@@ -16,7 +16,6 @@ const (
 // secretFromRepository grab the secret from the repository CRD
 func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.ProviderConfig, repo *apipac.Repository) error {
 	var err error
-
 	if repo.Spec.GitProvider.URL == "" {
 		repo.Spec.GitProvider.URL = config.APIURL
 	} else {
@@ -43,7 +42,7 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	}
 	cs.Info.Pac.ProviderInfoFromRepo = true
 
-	cs.Clients.Log.Infof("Using git provider %s: url=%s user=%s token-secret=%s in token-key=%s",
+	cs.Clients.Log.Infof("Using git provider %s: apiurl=%s user=%s token-secret=%s in token-key=%s",
 		cs.Info.Pac.WebhookType,
 		repo.Spec.GitProvider.URL,
 		repo.Spec.GitProvider.User,

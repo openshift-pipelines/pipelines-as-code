@@ -327,3 +327,63 @@ spec:
       template:
         # Using the templateRef from retest since they are mostly the same
         ref: pipelines-as-code-bitbucket-server-pullreq
+
+    # GitHub When sending a new Pull Request
+    - name: gitlab-merge-request
+      interceptors:
+        - ref:
+            name: gitlab
+          params:
+            - name: "secretRef"
+              value:
+                secretName: "pipelines-as-code-secret"
+                secretKey: "webhook.secret"
+            - name: eventTypes
+              value:
+                - Merge Request Hook
+                - Push Hook
+        - ref:
+            name: cel
+          params:
+            - name: overlays
+              value:
+                - key: payload
+                  expression: "base64.encode(bytes(body.marshalJSON()))"
+      bindings:
+        - ref: pipelines-as-code-gitlab
+      template:
+        ref: pipelines-as-code-gitlab
+
+    # When you have a /ok-to-test or /retest in a comment to retest a PR
+    - name: gitlab-notes
+      interceptors:
+        - ref:
+            name: gitlab
+          params:
+            - name: "secretRef"
+              value:
+                secretName: "pipelines-as-code-secret"
+                secretKey: "webhook.secret"
+            - name: eventTypes
+              value:
+                - Note Hook
+
+        - name: Filter comment on notes
+          ref:
+            name: "cel"
+          params:
+            - name: "filter"
+              value: >-
+                  body.merge_request.state == 'opened' &&
+                  body.object_attributes.note.matches('(^|\\r\\n)/(retest|ok-to-test)([ ]*$|$|\\r\\n)')
+        - ref:
+            name: cel
+          params:
+            - name: overlays
+              value:
+                - key: payload
+                  expression: "base64.encode(bytes(body.marshalJSON()))"
+      bindings:
+        - ref: pipelines-as-code-gitlab
+      template:
+        ref: pipelines-as-code-gitlab

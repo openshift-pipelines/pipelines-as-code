@@ -16,8 +16,7 @@ func CreateNS(ctx context.Context, targetNS string, cs *params.Run) error {
 	return err
 }
 
-func CreateRepo(ctx context.Context, targetNS string, cs *params.Run,
-	repository *pacv1alpha1.Repository) error {
+func CreateRepo(ctx context.Context, targetNS string, cs *params.Run, repository *pacv1alpha1.Repository) error {
 	repo, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Create(ctx, repository, metav1.CreateOptions{})
 	if err != nil {
 		return err

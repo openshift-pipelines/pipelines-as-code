@@ -68,10 +68,11 @@ func getAnnotationValues(annotation string) ([]string, error) {
 func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.PipelineRun, cs *params.Run) (*v1beta1.PipelineRun, *apipac.Repository, map[string]string, error) {
 	configurations := map[string]map[string]string{}
 	repo := &apipac.Repository{}
-	cs.Clients.Log.Infof("matching a pipeline to event: URL=%s, target-branch=%s, target-event=%s",
+	cs.Clients.Log.Infof("matching a pipeline to event: URL=%s, target-branch=%s, source-branch=%s, target-event=%s",
 		cs.Info.Event.URL,
 		cs.Info.Event.BaseBranch,
-		cs.Info.Event.EventType)
+		cs.Info.Event.HeadBranch,
+		cs.Info.Event.TriggerTarget)
 
 	for _, prun := range pruns {
 		configurations[prun.GetGenerateName()] = map[string]string{}
@@ -97,7 +98,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 
 		if targetEvent, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onEventAnnotation]; ok {
-			matched, err := matchOnAnnotation(targetEvent, cs.Info.Event.EventType, false)
+			matched, err := matchOnAnnotation(targetEvent, cs.Info.Event.TriggerTarget, false)
 			configurations[prun.GetGenerateName()]["target-event"] = targetEvent
 			if err != nil {
 				return nil, nil, map[string]string{}, err

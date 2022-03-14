@@ -127,7 +127,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 			return nil, fmt.Errorf("reqrequest is only supported with github apps integration")
 		}
 
-		if run.Info.Event.TriggerTarget != "issue-recheck" {
+		if *event.Action != "rerequested" {
 			return nil, fmt.Errorf("only issue recheck is supported in checkrunevent")
 		}
 		processedevent, err = v.handleReRequestEvent(ctx, run.Clients.Log, event)
@@ -217,6 +217,8 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, log *zap.Sugared
 		Organization: event.GetRepo().GetOwner().GetLogin(),
 		Repository:   event.GetRepo().GetName(),
 		Sender:       event.GetSender().GetLogin(),
+		// Always set the trigger target as pull_request on issue comment events
+		TriggerTarget: "pull_request",
 	}
 	if !event.GetIssue().IsPullRequest() {
 		return &info.Event{}, fmt.Errorf("issue comment is not coming from a pull_request")

@@ -84,8 +84,7 @@ func (rt RemoteTasks) getTask(ctx context.Context, providerintf provider.Interfa
 }
 
 // GetTaskFromAnnotations Get task remotely if they are on Annotations
-func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, providerintf provider.Interface,
-	annotations map[string]string) ([]*tektonv1beta1.Task, error) {
+func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, providerintf provider.Interface, annotations map[string]string) ([]*tektonv1beta1.Task, error) {
 	var ret []*tektonv1beta1.Task
 	rtareg := regexp.MustCompile(fmt.Sprintf("%s/%s", pipelinesascode.GroupName, taskAnnotationsRegexp))
 	for annotationK, annotationV := range annotations {

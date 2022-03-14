@@ -30,7 +30,7 @@ spec:
     - name: head_sha
       value: $(body.check_run.check_suite.head_sha)
     - name: trigger_target
-      value: "issue-recheck"
+      value: "pull_request"
     - name: event_type
       value: $(header.X-GitHub-Event)
     - name: "ghe_host"

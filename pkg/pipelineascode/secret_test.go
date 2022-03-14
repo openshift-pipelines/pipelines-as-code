@@ -41,7 +41,7 @@ func TestSecretFromRepository(t *testing.T) {
 			},
 			providerType: "lalala",
 			logmatch: []*regexp.Regexp{
-				regexp.MustCompile("^Using git provider lalala: url=https://apiurl.default user= token-secret=repo-secret in token-key=" + defaultGitProviderSecretKey),
+				regexp.MustCompile("^Using git provider lalala: apiurl=https://apiurl.default user= token-secret=repo-secret in token-key=" + defaultGitProviderSecretKey),
 			},
 		},
 		{
@@ -59,7 +59,7 @@ func TestSecretFromRepository(t *testing.T) {
 			},
 			expectedSecret: "setapiurl",
 			logmatch: []*regexp.Regexp{
-				regexp.MustCompile(".*url=https://dowant.*"),
+				regexp.MustCompile(".*apiurl=https://dowant.*"),
 			},
 		},
 		{

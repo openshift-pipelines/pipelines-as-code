@@ -130,8 +130,12 @@ github.com/grpc-ecosystem/grpc-gateway/utilities
 github.com/hako/durafmt
 # github.com/hashicorp/errwrap v1.0.0
 github.com/hashicorp/errwrap
+# github.com/hashicorp/go-cleanhttp v0.5.2
+github.com/hashicorp/go-cleanhttp
 # github.com/hashicorp/go-multierror v1.1.1
 github.com/hashicorp/go-multierror
+# github.com/hashicorp/go-retryablehttp v0.6.8
+github.com/hashicorp/go-retryablehttp
 # github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
@@ -243,6 +247,9 @@ github.com/tektoncd/pipeline/pkg/list
 github.com/tektoncd/pipeline/pkg/names
 github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag
 github.com/tektoncd/pipeline/pkg/substitution
+# github.com/xanzy/go-gitlab v0.58.0
+## explicit
+github.com/xanzy/go-gitlab
 # github.com/xlzd/gotp v0.0.0-20220110052318-fab697c03c2c
 ## explicit
 github.com/xlzd/gotp

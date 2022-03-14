@@ -23,7 +23,7 @@ export PAC_PAYLOAD_FILE=${TMPD}/payload.json
 sed '/^PAC_/,$ { d;}' ${TMPD}/last > ${PAC_PAYLOAD_FILE}
 [[ -s ${TMPD}/payload.json ]] || { echo "payload json could not be found"; exit 1 ;}
 
-grep -e "^PAC_.[a-zA-Z0-9_-]*=" ${TMPD}/last|sed -e 's/=\(.*\)/="\1"/' -e 's/^/export /' > ${TMPD}/env 
+grep -e "^PAC_.[a-zA-Z0-9_-]*=" ${TMPD}/last|sed -e 's/=\(.*\)/="\1"/' -e 's/^/export /' > ${TMPD}/env
 [[ -s ${TMPD}/env ]] || { echo "payload env could not be found"; exit 1 ;}
 
 sed -i "s,PAC_PAYLOAD_FILE=.*,PAC_PAYLOAD_FILE=${TMPD}/payload.json," $TMPD/env
