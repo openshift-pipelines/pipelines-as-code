@@ -6,9 +6,16 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/checker/decls"
 	"github.com/google/cel-go/common/types/ref"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
 
-func celEvaluate(expr string, data map[string]interface{}) (ref.Val, error) {
+func celEvaluate(expr string, event *info.Event) (ref.Val, error) {
+	data := map[string]interface{}{
+		"event":         event.TriggerTarget,
+		"target_branch": event.BaseBranch,
+		"source_branch": event.HeadBranch,
+	}
+
 	env, err := cel.NewEnv(
 		cel.Declarations(
 			decls.NewVar("event", decls.String),

@@ -9,6 +9,7 @@ require (
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20210826163055-dff2223adeac
 	github.com/gobwas/glob v0.2.3
 	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
+	github.com/google/cel-go v0.10.1
 	github.com/google/go-cmp v0.5.7
 	github.com/google/go-github/scrape v0.0.0-20220217161514-77b2d7586ddc
 	github.com/google/go-github/v42 v42.0.0

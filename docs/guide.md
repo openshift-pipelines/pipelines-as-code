@@ -144,6 +144,45 @@ If there is multiple pipeline matching an event, it will match the first one. We
 are currently not supporting multiple PipelineRuns on a single event but this
 may be something we can consider to implement in the future.
 
+### Advanced event matching
+
+If you need to do some advanced matching, `Pipelines as Code` supports CEL
+filtering.
+
+If you have the ``pipelinesascode.tekton.dev/on-cel-expression`` annotation in
+your PipelineRun, the CEL expression will be used and the `on-target-branch` or
+`on-target-branch` annotations will then be skipped.
+
+For example :
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "pull_request" && target_branch == "main" && source_branch == "wip"
+```
+
+will match a `pull_request` event targetting the branch `main` coming from a branch called `wip`.
+
+The fields available are :
+
+* `event`: `push` or `pull_request`
+* `target_branch`: The branch we are targetting.
+* `source_branch`: The branch where this pull_request come from. (on `push` this is the same as `target_branch`).
+
+Compared to the simple "on-target" annotation matching, the CEL expression
+allows you to complex filtering and most importantly express negation.
+
+For example if I want to have a `PipelineRun` targeting a `pull_request` but
+not the `experimental` branch I would have :
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "pull_request" && target_branch != experimental"
+```
+
+You can find more information about the CEL language spec here :
+
+https://github.com/google/cel-spec/blob/master/doc/langdef.md
+
 ## PipelineRuns Cleanups
 
 There can be a lot of PipelineRuns into an user namespace and Pipelines as Code
