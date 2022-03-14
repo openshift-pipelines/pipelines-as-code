@@ -5,101 +5,31 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"testing"
 
 	"github.com/google/go-github/v42/github"
-	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
-	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGithubPullRerequest(t *testing.T) {
-	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
-	ctx := context.Background()
-	runcnx, opts, ghcnx, err := githubSetup(ctx, false)
-	assert.NilError(t, err)
-
-	entries := map[string]string{
-		".tekton/info.yaml": fmt.Sprintf(`---
-apiVersion: tekton.dev/v1beta1
-kind: PipelineRun
-metadata:
-  name: pipeline
-  annotations:
-    pipelinesascode.tekton.dev/target-namespace: "%s"
-    pipelinesascode.tekton.dev/on-target-branch: "[%s]"
-    pipelinesascode.tekton.dev/on-event: "[%s]"
-spec:
-  pipelineSpec:
-    tasks:
-      - name: task
-        taskSpec:
-          steps:
-            - name: task
-              image: gcr.io/google-containers/busybox
-              command: ["/bin/echo", "HELLOMOTO"]
-`, targetNS, mainBranch, pullRequestEvent),
-	}
+	ctx := context.TODO()
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, "Github Rerequest", "testdata/pipelinerun.yaml", false)
+	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
-
-	repository := &pacv1alpha1.Repository{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: targetNS,
-		},
-		Spec: pacv1alpha1.RepositorySpec{
-			URL: repoinfo.GetHTMLURL(),
-		},
-	}
-
-	err = trepo.CreateNS(ctx, targetNS, runcnx)
-	assert.NilError(t, err)
-
-	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
-	assert.NilError(t, err)
-
-	targetRefName := fmt.Sprintf("refs/heads/%s",
-		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
-
-	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client,
-		"TestPullRequest - "+targetRefName, repoinfo.GetDefaultBranch(),
-		targetRefName,
-		opts.Organization,
-		opts.Repo,
-		entries)
-	assert.NilError(t, err)
-	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
-	title := "TestPullRerequest on " + targetRefName
-	number, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
-	assert.NilError(t, err)
-
-	defer ghtearDown(ctx, t, runcnx, ghcnx, number, targetRefName, targetNS, opts)
-
-	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
-	waitOpts := twait.Opts{
-		RepoName:        targetNS,
-		Namespace:       targetNS,
-		MinNumberStatus: 0,
-		PollTimeout:     defaultTimeout,
-		TargetSHA:       sha,
-	}
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
-	assert.NilError(t, err)
 
 	runinfo := info.Event{
 		BaseBranch:    repoinfo.GetDefaultBranch(),
@@ -125,7 +55,7 @@ spec:
 				HeadSHA:    &runinfo.SHA,
 				PullRequests: []*github.PullRequest{
 					{
-						Number: github.Int(number),
+						Number: github.Int(prNumber),
 					},
 				},
 			},
@@ -153,14 +83,13 @@ spec:
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Wait for the second repository update to be updated")
-	waitOpts = twait.Opts{
+	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, twait.Opts{
 		RepoName:        targetNS,
 		Namespace:       targetNS,
 		MinNumberStatus: 1,
-		PollTimeout:     defaultTimeout,
+		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       sha,
-	}
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+	})
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")

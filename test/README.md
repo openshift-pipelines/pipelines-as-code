@@ -15,9 +15,9 @@ Most E2E tests has this basic flow :
 - Some other stuff are done directly on the eventlistenner sink, bypassing a bit the GitHUB apis and generating the
   webhook ourselves.
 
-## Requirements
+## Settings
 
-You need to have those env variable set :
+here are all the variables that is used by the E2E tests.
 
 - `TEST_GITHUB_API_URL` -- GitHub Api URL, needs to be set
 - `TEST_GITHUB_TOKEN` -- Github token used to talk to the api url
@@ -26,6 +26,16 @@ You need to have those env variable set :
   webhook event on the console)
 - `TEST_EL_URL` - The eventlistenner public url, ingress or openshfit's route
 - `TEST_EL_WEBHOOK_SECRET` - The webhook secret.
+- `TEST_GITHUB_REPO_OWNER_WEBHOOK` - A repository/owner github repo that is configured with github webhooks.
+- `TEST_BITBUCKET_CLOUD_API_URL` - Bitbucket Cloud Api URL: probably: `https://api.bitbucket.org/2.0`
+- `TEST_BITBUCKET_CLOUD_USER` - Bitbucket Cloud user
+- `TEST_BITBUCKET_CLOUD_E2E_REPOSITORY` - Bitbucket Cloud repository (ie: `project/repo`)
+- `TEST_BITBUCKET_CLOUD_TOKEN` - Bitbucket Cloud token
+- `TEST_GITLAB_API_URL` - Gitlab API URL i.e: `https://gitlab.com`
+- `TEST_GITLAB_PROJECT_ID` - Gitlab project ID (you can get it in the repo details/settings)
+- `TEST_GITLAB_TOKEN` - Gitlab Token
+
+You don't need to configure all of those if you restrict running your e2e tests to a subset.
 
 ## Running
 
@@ -34,3 +44,11 @@ As long you have env variables set, you can just do a :
 `make test-e2e`
 
 and it will run the test-suite and cleans after itself,
+
+You can specify only a subsets of test to run with :
+
+```shell
+% cd test/; go test -tags=e2e -v -run TestGithub .
+```
+
+same goes for `TestGitlab` or other methods.
