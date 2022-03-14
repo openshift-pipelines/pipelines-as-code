@@ -16,6 +16,7 @@ import (
 )
 
 func updateRepoRunStatus(ctx context.Context, cs *params.Run, pr *tektonv1beta1.PipelineRun, repo *pacv1a1.Repository) error {
+	refsanitized := formatting.SanitizeBranch(cs.Info.Event.BaseBranch)
 	repoStatus := pacv1a1.RepositoryRunStatus{
 		Status:          pr.Status.Status,
 		PipelineRunName: pr.Name,
@@ -26,7 +27,7 @@ func updateRepoRunStatus(ctx context.Context, cs *params.Run, pr *tektonv1beta1.
 		Title:           &cs.Info.Event.SHATitle,
 		LogURL:          github.String(cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName())),
 		EventType:       &cs.Info.Event.EventType,
-		TargetBranch:    &cs.Info.Event.BaseBranch,
+		TargetBranch:    &refsanitized,
 	}
 
 	// Get repo again in case it was updated while we were running the CI

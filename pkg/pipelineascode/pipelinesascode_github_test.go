@@ -399,6 +399,9 @@ func TestRun(t *testing.T) {
 				assert.NilError(t, err)
 				assert.Assert(t, got.Status[len(got.Status)-1].PipelineRunName != "pipelinerun1", "'%s'!='%s'",
 					got.Status[len(got.Status)-1].PipelineRunName, "pipelinerun1")
+
+				lastbranchstatus := got.Status[len(got.Status)-1].TargetBranch
+				assert.Assert(t, !strings.HasPrefix(*lastbranchstatus, "refs-heads-"))
 			}
 		})
 	}
