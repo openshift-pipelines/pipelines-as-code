@@ -177,6 +177,10 @@ func (v *Provider) ParseEventType(request *http.Request, event *info.Event) erro
 }
 
 func (v *Provider) ParseEventPayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
+	if run.Info.Event.EventType == "" || run.Info.Event.TriggerTarget == "" {
+		return nil, fmt.Errorf("failed to find event type")
+	}
+
 	var data map[string]interface{}
 	_ = json.Unmarshal([]byte(payload), &data)
 

@@ -23,6 +23,7 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request, payloa
 
 	if err := s.vcx.ParseEventType(request, s.run.Info.Event); err != nil {
 		s.run.Clients.Log.Errorf("failed to find event type: %v", err)
+		return
 	}
 
 	// TODO: for webhook, set client and then parse payload
