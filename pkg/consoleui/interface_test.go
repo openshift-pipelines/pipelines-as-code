@@ -1,7 +1,6 @@
 package consoleui
 
 import (
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -11,20 +10,17 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func TestTektonDashboard(t *testing.T) {
-	tr := &TektonDashboard{
-		BaseURL: "https://test",
-	}
+func TestFallbackConsole(t *testing.T) {
+	fbc := &FallBackConsole{}
 	ctx, _ := rtesting.SetupFakeContext(t)
-
 	unsf := &unstructured.Unstructured{}
 	unsf.SetUnstructuredContent(map[string]interface{}{
 		"apiVersion": "foo.io/v1",
 		"kind":       "Random",
 	})
 	dynClient := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme(), unsf)
-	assert.NilError(t, tr.UI(ctx, dynClient))
-	assert.Assert(t, strings.Contains(tr.DetailURL("ns", "pr"), "namespaces/ns"))
-	assert.Assert(t, strings.Contains(tr.TaskLogURL("ns", "pr", "task"), "pipelineTask=task"))
-	assert.Assert(t, strings.Contains(tr.URL(), "test"))
+	assert.NilError(t, fbc.UI(ctx, dynClient))
+	assert.Assert(t, fbc.URL() != "")
+	assert.Assert(t, fbc.DetailURL("ns", "pr") != "")
+	assert.Assert(t, fbc.TaskLogURL("ns", "pr", "task") != "")
 }
