@@ -161,6 +161,21 @@ func (v *Provider) getAppToken(ctx context.Context, info *info.PacOpts) error {
 	return err
 }
 
+func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
+	event.EventType = request.Header.Get("X-GitHub-Event")
+	if event.EventType == "" {
+		return fmt.Errorf("failed to find event type in request header")
+	}
+
+	if event.EventType == "push" {
+		event.TriggerTarget = "push"
+	} else {
+		event.TriggerTarget = "pull_request"
+	}
+
+	return nil
+}
+
 func (v *Provider) ParseEventPayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
 	var data map[string]interface{}
 	_ = json.Unmarshal([]byte(payload), &data)

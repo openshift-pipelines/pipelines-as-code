@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -19,6 +20,7 @@ type StatusOpts struct {
 }
 
 type Interface interface {
+	ParseEventType(*http.Request, *info.Event) error
 	ParseEventPayload(context.Context, *params.Run, string) (*info.Event, error)
 	ParsePayload(context.Context, *params.Run, string) (*info.Event, error)
 	IsAllowed(context.Context, *info.Event) (bool, error)

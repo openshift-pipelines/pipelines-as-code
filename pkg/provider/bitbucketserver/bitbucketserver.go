@@ -3,6 +3,7 @@ package bitbucketserver
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -24,6 +25,10 @@ type Provider struct {
 	pullRequestNumber         int
 	apiURL                    string
 	projectKey                string
+}
+
+func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
+	panic("implement me")
 }
 
 func (v *Provider) ParseEventPayload(ctx context.Context, run *params.Run, s1 string) (*info.Event, error) {

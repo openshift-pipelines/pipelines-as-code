@@ -21,13 +21,8 @@ type sinker struct {
 func (s *sinker) processEvent(ctx context.Context, request *http.Request, payload []byte) {
 	s.run.Info.Pac.LogURL = s.run.Clients.ConsoleUI.URL()
 
-	// TODO: figure out which type of request in provider
-	s.run.Info.Event.EventType = request.Header.Get("X-GitHub-Event")
-
-	if s.run.Info.Event.EventType == "push" {
-		s.run.Info.Event.TriggerTarget = "push"
-	} else {
-		s.run.Info.Event.TriggerTarget = "pull_request"
+	if err := s.vcx.ParseEventType(request, s.run.Info.Event); err != nil {
+		s.run.Clients.Log.Errorf("failed to find event type: %v", err)
 	}
 
 	// TODO: for webhook, set client and then parse payload

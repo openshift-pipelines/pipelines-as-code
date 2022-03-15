@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -15,6 +16,10 @@ type TestProviderImp struct {
 	TektonDirTemplate    string
 	CreateStatusErorring bool
 	FilesInsideRepo      map[string]string
+}
+
+func (v *TestProviderImp) ParseEventType(request *http.Request, event *info.Event) error {
+	panic("implement me")
 }
 
 func (v *TestProviderImp) ParseEventPayload(ctx context.Context, run *params.Run, s string) (*info.Event, error) {
