@@ -96,10 +96,13 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 			}
 		}
 
-		if targetEvent, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
+		var targetEvent, targetBranch string
+
+		if key, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onEventAnnotation]; ok {
-			matched, err := matchOnAnnotation(targetEvent, cs.Info.Event.TriggerTarget, false)
-			configurations[prun.GetGenerateName()]["target-event"] = targetEvent
+			matched, err := matchOnAnnotation(key, cs.Info.Event.TriggerTarget, false)
+			configurations[prun.GetGenerateName()]["target-event"] = key
+			targetEvent = key
 			if err != nil {
 				return nil, nil, map[string]string{}, err
 			}
@@ -108,16 +111,22 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 			}
 		}
 
-		if targetBranch, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
+		if key, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onTargetBranchAnnotation]; ok {
-			matched, err := matchOnAnnotation(targetBranch, cs.Info.Event.BaseBranch, true)
-			configurations[prun.GetGenerateName()]["target-branch"] = targetBranch
+			matched, err := matchOnAnnotation(key, cs.Info.Event.BaseBranch, true)
+			configurations[prun.GetGenerateName()]["target-branch"] = key
+			targetBranch = key
 			if err != nil {
 				return nil, nil, map[string]string{}, err
 			}
 			if !matched {
 				continue
 			}
+		}
+
+		if targetEvent == "" || targetBranch == "" {
+			cs.Clients.Log.Infof("skipping pipelinerun %s, no on-target-event or on-target-branch has been set in pipelinerun", prun.GetGenerateName())
+			continue
 		}
 
 		cs.Clients.Log.Infof("matched pipelinerun with name: %s, annotation config: %q", prun.GetGenerateName(),
