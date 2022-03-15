@@ -97,6 +97,97 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			},
 		},
 		{
+			name:    "error on only when on annotation",
+			wantErr: true,
+			args: args{
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: targetNamespace,
+							Name:      "only-one-annotation",
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onEventAnnotation: "[pull_request]",
+							},
+						},
+					},
+				},
+				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-oldest",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+								CreateTime:       metav1.Time{Time: cw.Now().Add(-55 * time.Minute)},
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:    "error when no pac annotation has been set",
+			wantErr: true,
+			args: args{
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: targetNamespace,
+							Name:      "no pac annotation",
+							Annotations: map[string]string{
+								"foo": "bar",
+							},
+						},
+					},
+				},
+				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-oldest",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+								CreateTime:       metav1.Time{Time: cw.Now().Add(-55 * time.Minute)},
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:    "error when pac annotation has been set but empty",
+			wantErr: true,
+			args: args{
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Namespace: targetNamespace,
+							Name:      "no pac annotation",
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onEventAnnotation:        "",
+								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "",
+							},
+						},
+					},
+				},
+				runevent: info.Event{URL: targetURL, EventType: "pull_request", BaseBranch: mainBranch},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-oldest",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+								CreateTime:       metav1.Time{Time: cw.Now().Add(-55 * time.Minute)},
+							},
+						),
+					},
+				},
+			},
+		},
+		{
 			name:    "no match a repository with target NS",
 			wantErr: true,
 			wantLog: "matching a pipeline to event: URL",
@@ -138,8 +229,8 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				t.Error("We should have get an error")
 			}
 
-			if !tt.wantErr && err != nil {
-				t.Errorf("We should have not get an error %s", err)
+			if !tt.wantErr {
+				assert.NilError(t, err)
 			}
 
 			if tt.wantRepoName != "" {
