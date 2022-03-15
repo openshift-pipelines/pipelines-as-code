@@ -192,7 +192,7 @@ jobs:
           kind export logs /tmp/logs
 
           mkdir /tmp/logs/pac-runs
-          for pod in $(kubectl get pod -o name -n pipelines-as-code -l triggers.tekton.dev/eventlistener=pipelines-as-code-interceptor|sed 's,.*/,,');do kubectl logs ${pod} > /tmp/logs/pac-runs/${pod}.log; done
+          for pod in $(kubectl get pod -o name -n pipelines-as-code -l triggers.tekton.dev/eventlistener=pipelines-as-code-interceptor|sed 's,.*/,,');do kubectl -n pipelines-as-code logs ${pod} > /tmp/logs/pac-runs/${pod}.log; done
 
       - name: Upload artifacts
         if: ${{ always() }}
