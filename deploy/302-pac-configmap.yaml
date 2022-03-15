@@ -1,0 +1,54 @@
+# Copyright 2021 Red Hat
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+data:
+  # The number of days kept for pipelinerun inside pipelines-as-code namespace
+  max-keep-days: "5"
+
+  # The application name, you can customize this label
+  application-name: "Pipelines as Code CI"
+
+  # Whether to automatically create a secret with the token to be use by git-clone
+  secret-auto-create: "true"
+
+  # Tekton HUB API urls
+  hub-url: "https://api.hub.tekton.dev/v1"
+
+  # Whether to allow fetching remote tasks
+  remote-tasks: "true"
+
+  # Since public bitbucket doesn't have the concept of Secret, we need to be
+  # able to secure the request by querying https://ip-ranges.atlassian.com/,
+  # this only happen for public bitbucket (ie: when provider.url is not set in
+  # repository spec). If you want to override this, you need to bear in mind
+  # this could be a security issue, a malicious user can send a PR to your repo
+  # with a modification to your PipelineRun that would grab secrets, tunnel or
+  # others and then send a malicious webhook payload to the eventlistenner which
+  # look like a authorized owner has send the PR to run it..
+  bitbucket-cloud-check-source-ip: "true"
+
+  # Add extra IPS (ie: 127.0.0.1) or networks (127.0.0.0/16) separated by commas.
+  bitbucket-cloud-additional-source-ip: ""
+
+  # The default time to wait for a pipelineRun
+  default-pipelinerun-timeout: "2h"
+
+kind: ConfigMap
+metadata:
+  name: pipelines-as-code
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/part-of: pipelines-as-code

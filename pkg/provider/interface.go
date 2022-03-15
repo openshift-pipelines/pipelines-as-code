@@ -19,6 +19,7 @@ type StatusOpts struct {
 }
 
 type Interface interface {
+	ParseEventPayload(context.Context, *params.Run, string) (*info.Event, error)
 	ParsePayload(context.Context, *params.Run, string) (*info.Event, error)
 	IsAllowed(context.Context, *info.Event) (bool, error)
 	CreateStatus(context.Context, *info.Event, *info.PacOpts, StatusOpts) error

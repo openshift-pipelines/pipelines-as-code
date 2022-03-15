@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.2
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
+	github.com/cloudevents/sdk-go/v2 v2.8.0
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20220301131131-8e7ed04b843e
 	github.com/gobwas/glob v0.2.3
 	github.com/golang-jwt/jwt/v4 v4.4.0 // indirect
@@ -37,6 +38,7 @@ require (
 	k8s.io/apimachinery v0.22.5
 	k8s.io/client-go v0.22.5
 	k8s.io/code-generator v0.22.5
+	knative.dev/eventing v0.29.0
 	knative.dev/pkg v0.0.0-20220131144930-f4b57aef0006
 	sigs.k8s.io/yaml v1.3.0
 )

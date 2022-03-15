@@ -17,6 +17,10 @@ type TestProviderImp struct {
 	FilesInsideRepo      map[string]string
 }
 
+func (v *TestProviderImp) ParseEventPayload(ctx context.Context, run *params.Run, s string) (*info.Event, error) {
+	panic("implement me")
+}
+
 func (v *TestProviderImp) ParsePayload(ctx context.Context, run *params.Run, s string) (*info.Event, error) {
 	return v.Event, nil
 }

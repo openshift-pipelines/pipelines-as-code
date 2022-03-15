@@ -8,6 +8,7 @@ import (
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/mitchellh/mapstructure"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
@@ -23,6 +24,10 @@ type Provider struct {
 	pullRequestNumber         int
 	apiURL                    string
 	projectKey                string
+}
+
+func (v *Provider) ParseEventPayload(ctx context.Context, run *params.Run, s1 string) (*info.Event, error) {
+	panic("implement me")
 }
 
 // sanitizeTitle make sure we only get the tile by remove everything after \n.
