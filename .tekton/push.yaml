@@ -81,7 +81,7 @@ spec:
           - unit
         params:
           - name: IMAGE
-            value: quay.io/openshift-pipeline/pipelines-as-code:main
+            value: quay.io/openshift-pipeline/pipelines-as-code:{{target_branch}}
         taskRef:
           name: buildah-user
         workspaces:
