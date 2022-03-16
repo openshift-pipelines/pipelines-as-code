@@ -103,11 +103,9 @@ func TestPayLoadFix(t *testing.T) {
 		Clients: clients.Clients{
 			Log: logger,
 		},
-		Info: info.Info{
-			Event: event,
-		},
+		Info: info.Info{},
 	}
-	_, err = gprovider.ParsePayload(ctx, run, string(b))
+	_, err = gprovider.ParsePayload(ctx, run, event, string(b))
 	assert.NilError(t, err)
 
 	// would bomb out on "assertion failed: error is not nil: invalid character
@@ -302,16 +300,14 @@ func TestParsePayLoad(t *testing.T) {
 				Clients: clients.Clients{
 					Log: logger,
 				},
-				Info: info.Info{
-					Event: event,
-				},
+				Info: info.Info{},
 			}
 			bjeez, _ := json.Marshal(tt.payloadEventStruct)
 			jeez := string(bjeez)
 			if tt.jeez != "" {
 				jeez = tt.jeez
 			}
-			ret, err := gprovider.ParsePayload(ctx, run, jeez)
+			ret, err := gprovider.ParsePayload(ctx, run, event, jeez)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return
@@ -459,12 +455,11 @@ func TestAppTokenGeneration(t *testing.T) {
 					Kube: tt.seedData.Kube,
 				},
 				Info: info.Info{
-					Event: event,
-					Pac:   &info.PacOpts{},
+					Pac: &info.PacOpts{},
 				},
 			}
 
-			_, err := gprovider.ParsePayload(tt.ctx, run, string(jeez))
+			_, err := gprovider.ParsePayload(tt.ctx, run, event, string(jeez))
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 				return

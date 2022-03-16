@@ -9,24 +9,25 @@ import (
 	pacv1a1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func updateRepoRunStatus(ctx context.Context, cs *params.Run, pr *tektonv1beta1.PipelineRun, repo *pacv1a1.Repository) error {
-	refsanitized := formatting.SanitizeBranch(cs.Info.Event.BaseBranch)
+func updateRepoRunStatus(ctx context.Context, cs *params.Run, event *info.Event, pr *tektonv1beta1.PipelineRun, repo *pacv1a1.Repository) error {
+	refsanitized := formatting.SanitizeBranch(event.BaseBranch)
 	repoStatus := pacv1a1.RepositoryRunStatus{
 		Status:          pr.Status.Status,
 		PipelineRunName: pr.Name,
 		StartTime:       pr.Status.StartTime,
 		CompletionTime:  pr.Status.CompletionTime,
-		SHA:             &cs.Info.Event.SHA,
-		SHAURL:          &cs.Info.Event.SHAURL,
-		Title:           &cs.Info.Event.SHATitle,
+		SHA:             &event.SHA,
+		SHAURL:          &event.SHAURL,
+		Title:           &event.SHATitle,
 		LogURL:          github.String(cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName())),
-		EventType:       &cs.Info.Event.EventType,
+		EventType:       &event.EventType,
 		TargetBranch:    &refsanitized,
 	}
 
@@ -56,7 +57,7 @@ func updateRepoRunStatus(ctx context.Context, cs *params.Run, pr *tektonv1beta1.
 	return nil
 }
 
-func postFinalStatus(ctx context.Context, cs *params.Run, providerintf provider.Interface, createdPR *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
+func postFinalStatus(ctx context.Context, cs *params.Run, providerintf provider.Interface, event *info.Event, createdPR *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
 	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(createdPR.GetNamespace()).Get(
 		ctx, createdPR.GetName(), metav1.GetOptions{},
 	)
@@ -78,7 +79,7 @@ func postFinalStatus(ctx context.Context, cs *params.Run, providerintf provider.
 		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")],
 	}
 
-	err = providerintf.CreateStatus(ctx, cs.Info.Event, cs.Info.Pac, status)
+	err = providerintf.CreateStatus(ctx, event, cs.Info.Pac, status)
 	cs.Clients.Log.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)
 	return pr, err
 }

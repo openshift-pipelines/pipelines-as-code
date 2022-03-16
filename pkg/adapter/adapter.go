@@ -10,6 +10,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"go.uber.org/zap"
@@ -83,9 +84,10 @@ func (l listener) handleEvent() http.HandlerFunc {
 		l.run.Clients.Log = logger
 
 		s := sinker{
-			run:  l.run,
-			vcx:  gitProvider,
-			kint: l.kint,
+			run:   l.run,
+			vcx:   gitProvider,
+			kint:  l.kint,
+			event: &info.Event{},
 		}
 
 		// clone the request to use it further

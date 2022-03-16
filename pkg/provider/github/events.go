@@ -124,9 +124,9 @@ func getInstallationIDFromPayload(payload string) int64 {
 	return -1
 }
 
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
-	if run.Info.Event.EventType == "" || run.Info.Event.TriggerTarget == "" {
-		return nil, fmt.Errorf("failed to find event type")
+func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, event *info.Event, payload string) (*info.Event, error) {
+	if event.EventType == "" || event.TriggerTarget == "" {
+		return nil, fmt.Errorf("failed to find eventInt type")
 	}
 
 	id := getInstallationIDFromPayload(payload)
@@ -139,15 +139,15 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 	}
 
 	payloadTreated := v.payloadFix(payload)
-	event, err := github.ParseWebHook(run.Info.Event.EventType, payloadTreated)
+	eventInt, err := github.ParseWebHook(event.EventType, payloadTreated)
 	if err != nil {
 		return nil, err
 	}
 
 	// should not get invalid json since we already check it in github.ParseWebHook
-	_ = json.Unmarshal(payloadTreated, &event)
+	_ = json.Unmarshal(payloadTreated, &eventInt)
 
-	processedEvent, err := v.processEvent(ctx, run, event)
+	processedEvent, err := v.processEvent(ctx, run, event, eventInt)
 	if err != nil {
 		return nil, err
 	}
@@ -155,20 +155,20 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 	return processedEvent, nil
 }
 
-func (v *Provider) processEvent(ctx context.Context, run *params.Run, event interface{}) (*info.Event, error) {
+func (v *Provider) processEvent(ctx context.Context, run *params.Run, event *info.Event, eventInt interface{}) (*info.Event, error) {
 	var processedEvent *info.Event
 	var err error
 
-	switch event := event.(type) {
+	switch gitEvent := eventInt.(type) {
 	case *github.CheckRunEvent:
 		if v.Client == nil {
 			return nil, fmt.Errorf("reqrequest is only supported with github apps integration")
 		}
 
-		if *event.Action != "rerequested" {
+		if *gitEvent.Action != "rerequested" {
 			return nil, fmt.Errorf("only issue recheck is supported in checkrunevent")
 		}
-		processedEvent, err = v.handleReRequestEvent(ctx, run.Clients.Log, event)
+		processedEvent, err = v.handleReRequestEvent(ctx, run.Clients.Log, gitEvent)
 		if err != nil {
 			return nil, err
 		}
@@ -176,45 +176,45 @@ func (v *Provider) processEvent(ctx context.Context, run *params.Run, event inte
 		if v.Client == nil {
 			return nil, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
 		}
-		processedEvent, err = v.handleIssueCommentEvent(ctx, run.Clients.Log, event)
+		processedEvent, err = v.handleIssueCommentEvent(ctx, run.Clients.Log, gitEvent)
 		if err != nil {
 			return nil, err
 		}
 
 	case *github.PushEvent:
 		processedEvent = &info.Event{
-			Organization:  event.GetRepo().GetOwner().GetLogin(),
-			Repository:    event.GetRepo().GetName(),
-			DefaultBranch: event.GetRepo().GetDefaultBranch(),
-			URL:           event.GetRepo().GetHTMLURL(),
-			SHA:           event.GetHeadCommit().GetID(),
-			SHAURL:        event.GetHeadCommit().GetURL(),
-			SHATitle:      event.GetHeadCommit().GetMessage(),
-			Sender:        event.GetSender().GetLogin(),
-			BaseBranch:    event.GetRef(),
-			EventType:     run.Info.Event.TriggerTarget,
+			Organization:  gitEvent.GetRepo().GetOwner().GetLogin(),
+			Repository:    gitEvent.GetRepo().GetName(),
+			DefaultBranch: gitEvent.GetRepo().GetDefaultBranch(),
+			URL:           gitEvent.GetRepo().GetHTMLURL(),
+			SHA:           gitEvent.GetHeadCommit().GetID(),
+			SHAURL:        gitEvent.GetHeadCommit().GetURL(),
+			SHATitle:      gitEvent.GetHeadCommit().GetMessage(),
+			Sender:        gitEvent.GetSender().GetLogin(),
+			BaseBranch:    gitEvent.GetRef(),
+			EventType:     event.TriggerTarget,
 		}
 
 		processedEvent.HeadBranch = processedEvent.BaseBranch // in push events Head Branch is the same as Basebranch
 	case *github.PullRequestEvent:
 		processedEvent = &info.Event{
-			Organization:  event.GetRepo().Owner.GetLogin(),
-			Repository:    event.GetRepo().GetName(),
-			DefaultBranch: event.GetRepo().GetDefaultBranch(),
-			SHA:           event.GetPullRequest().Head.GetSHA(),
-			URL:           event.GetRepo().GetHTMLURL(),
-			BaseBranch:    event.GetPullRequest().Base.GetRef(),
-			HeadBranch:    event.GetPullRequest().Head.GetRef(),
-			Sender:        event.GetPullRequest().GetUser().GetLogin(),
-			EventType:     run.Info.Event.EventType,
+			Organization:  gitEvent.GetRepo().Owner.GetLogin(),
+			Repository:    gitEvent.GetRepo().GetName(),
+			DefaultBranch: gitEvent.GetRepo().GetDefaultBranch(),
+			SHA:           gitEvent.GetPullRequest().Head.GetSHA(),
+			URL:           gitEvent.GetRepo().GetHTMLURL(),
+			BaseBranch:    gitEvent.GetPullRequest().Base.GetRef(),
+			HeadBranch:    gitEvent.GetPullRequest().Head.GetRef(),
+			Sender:        gitEvent.GetPullRequest().GetUser().GetLogin(),
+			EventType:     event.EventType,
 		}
 
 	default:
 		return nil, errors.New("this event is not supported")
 	}
 
-	processedEvent.Event = event
-	processedEvent.TriggerTarget = run.Info.Event.TriggerTarget
+	processedEvent.Event = eventInt
+	processedEvent.TriggerTarget = event.TriggerTarget
 
 	return processedEvent, nil
 }

@@ -10,6 +10,7 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
@@ -124,7 +125,8 @@ func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interfac
 			rt := matcher.RemoteTasks{
 				Run: cs,
 			}
-			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, providerintf, pipelinerun.GetObjectMeta().GetAnnotations())
+			event := &info.Event{}
+			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, providerintf, event, pipelinerun.GetObjectMeta().GetAnnotations())
 			if err != nil {
 				return []*tektonv1beta1.PipelineRun{}, err
 			}

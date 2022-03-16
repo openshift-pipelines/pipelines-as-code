@@ -83,7 +83,6 @@ func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
 func New() *Run {
 	return &Run{
 		Info: info.Info{
-			Event: &info.Event{},
 			Pac: &info.PacOpts{
 				ApplicationName: info.PACApplicationName,
 				HubURL:          info.HubURL,

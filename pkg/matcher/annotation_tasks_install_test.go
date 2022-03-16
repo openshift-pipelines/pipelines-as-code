@@ -190,7 +190,6 @@ spec:
 					Log:  logger,
 				},
 				Info: info.Info{
-					Event: &tt.runevent,
 					Pac: &info.PacOpts{
 						HubURL: testHubURL,
 					},
@@ -203,7 +202,7 @@ spec:
 
 			got, err := rt.GetTaskFromAnnotations(ctx, &provider.TestProviderImp{
 				FilesInsideRepo: tt.filesInsideRepo,
-			}, tt.annotations)
+			}, &tt.runevent, tt.annotations)
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr, "We should have get an error with %v but we didn't", tt.wantErr)
 				return

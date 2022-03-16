@@ -282,11 +282,9 @@ func TestParsePayload(t *testing.T) {
 				defer tearDown()
 			}
 			run := &params.Run{
-				Info: info.Info{
-					Event: tt.args.event,
-				},
+				Info: info.Info{},
 			}
-			got, err := v.ParsePayload(ctx, run, tt.args.payload)
+			got, err := v.ParsePayload(ctx, run, tt.args.event, tt.args.payload)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParsePayload() error = %v, wantErr %v", err, tt.wantErr)
 				return
