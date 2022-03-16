@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -43,7 +41,7 @@ func (v *Provider) payloadFix(payload string) []byte {
 	return []byte(replacer.Replace(payload))
 }
 
-func (v *Provider) fetchAppToken(ctx context.Context, kube kubernetes.Interface, info *info.PacOpts, installationID int64) error {
+func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, info *info.PacOpts, installationID int64) error {
 	// TODO: move this out of here
 	ns := os.Getenv("SYSTEM_NAMESPACE")
 	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
@@ -97,71 +95,6 @@ func (v *Provider) fetchAppToken(ctx context.Context, kube kubernetes.Interface,
 	return err
 }
 
-func (v *Provider) getAppToken(ctx context.Context, info *info.PacOpts) error {
-	installationIDEnv := os.Getenv("PAC_INSTALLATION_ID")
-	workspacePath := os.Getenv("PAC_WORKSPACE_SECRET")
-
-	if installationIDEnv == "" || workspacePath == "" {
-		return nil
-	}
-
-	installationID, err := strconv.ParseInt(installationIDEnv, 10, 64)
-	if err != nil {
-		return fmt.Errorf("could not parse installation_id: %w", err)
-	}
-
-	// check if the path exists
-	if _, err := os.Stat(workspacePath); os.IsNotExist(err) {
-		return fmt.Errorf("workspace path %s or env PAC_WORKSPACE_SECRET does not exist", workspacePath)
-	}
-
-	// read github-application-id from the secret workspace
-	b, err := ioutil.ReadFile(filepath.Join(workspacePath, "github-application-id"))
-	if err != nil {
-		return fmt.Errorf("could not open the github-application-id key in secret: %w", err)
-	}
-	applicationID, err := strconv.ParseInt(strings.TrimSpace(string(b)), 10, 64)
-	if err != nil {
-		return fmt.Errorf("could not parse the github application_id number from secret: %w", err)
-	}
-
-	// read private_key from the secret workspace
-	privatekey := filepath.Join(workspacePath, "github-private-key")
-	tr := http.DefaultTransport
-	itr, err := ghinstallation.NewKeyFromFile(tr, applicationID, installationID, privatekey)
-	if err != nil {
-		return err
-	}
-
-	// getting the baseurl from go-github since it has all the logic in there
-	gheURL := os.Getenv("PAC_GIT_PROVIDER_APIURL")
-	if gheURL != "" {
-		if !strings.HasPrefix(gheURL, "https://") {
-			gheURL = "https://" + gheURL
-		}
-		v.Client, _ = github.NewEnterpriseClient(gheURL, "", &http.Client{Transport: itr})
-		itr.BaseURL = strings.TrimSuffix(v.Client.BaseURL.String(), "/")
-	} else {
-		v.Client = github.NewClient(&http.Client{Transport: itr})
-	}
-
-	// This is a hack when we have auth and api dissascoiated
-	reqTokenURL := os.Getenv("PAC_GIT_PROVIDER_TOKEN_APIURL")
-	if reqTokenURL != "" {
-		itr.BaseURL = reqTokenURL
-	}
-
-	// Get a token ASAP because we need it for setting private repos
-	token, err := itr.Token(ctx)
-	if err != nil {
-		return err
-	}
-	v.Token = github.String(token)
-	info.ProviderToken = token
-
-	return err
-}
-
 func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
 	event.EventType = request.Header.Get("X-GitHub-Event")
 	if event.EventType == "" {
@@ -191,7 +124,7 @@ func getInstallationIDFromPayload(payload string) int64 {
 	return -1
 }
 
-func (v *Provider) ParseEventPayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
+func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
 	if run.Info.Event.EventType == "" || run.Info.Event.TriggerTarget == "" {
 		return nil, fmt.Errorf("failed to find event type")
 	}
@@ -200,7 +133,7 @@ func (v *Provider) ParseEventPayload(ctx context.Context, run *params.Run, paylo
 
 	if id != -1 {
 		// get the app token if it exist first
-		if err := v.fetchAppToken(ctx, run.Clients.Kube, run.Info.Pac, id); err != nil {
+		if err := v.getAppToken(ctx, run.Clients.Kube, run.Info.Pac, id); err != nil {
 			return nil, err
 		}
 	}
@@ -284,32 +217,6 @@ func (v *Provider) processEvent(ctx context.Context, run *params.Run, event inte
 	processedEvent.TriggerTarget = run.Info.Event.TriggerTarget
 
 	return processedEvent, nil
-}
-
-// ParsePayload parse payload event
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
-	var processedevent *info.Event
-
-	// get the app token if it exist first
-	if err := v.getAppToken(ctx, run.Info.Pac); err != nil {
-		return nil, err
-	}
-
-	payloadTreated := v.payloadFix(payload)
-	event, err := github.ParseWebHook(run.Info.Event.EventType, payloadTreated)
-	if err != nil {
-		return nil, err
-	}
-
-	// should not get invalid json since we already check it in github.ParseWebHook
-	_ = json.Unmarshal(payloadTreated, &event)
-
-	processedevent, err = v.processEvent(ctx, run, event)
-	if err != nil {
-		return nil, err
-	}
-
-	return processedevent, nil
 }
 
 func (v *Provider) handleReRequestEvent(ctx context.Context, log *zap.SugaredLogger, event *github.CheckRunEvent) (*info.Event, error) {

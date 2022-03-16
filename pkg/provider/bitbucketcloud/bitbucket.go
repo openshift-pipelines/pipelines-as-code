@@ -8,7 +8,6 @@ import (
 
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/mitchellh/mapstructure"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
@@ -21,10 +20,6 @@ type Provider struct {
 }
 
 func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
-	panic("implement me")
-}
-
-func (v *Provider) ParseEventPayload(ctx context.Context, run *params.Run, s1 string) (*info.Event, error) {
 	panic("implement me")
 }
 

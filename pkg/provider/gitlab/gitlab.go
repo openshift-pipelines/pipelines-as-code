@@ -47,10 +47,6 @@ func (v *Provider) ParseEventType(request *http.Request, event *info.Event) erro
 	panic("implement me")
 }
 
-func (v *Provider) ParseEventPayload(ctx context.Context, run *params.Run, s1 string) (*info.Event, error) {
-	panic("implement me")
-}
-
 // If I understood properly, you can have "personal" projects and groups
 // attached projects. But this doesn't seem to show in the API, so we
 // are just doing it the path_with_namespace to get the "org".

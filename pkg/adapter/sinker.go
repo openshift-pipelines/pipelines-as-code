@@ -27,7 +27,7 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request, payloa
 	}
 
 	var err error
-	s.run.Info.Event, err = s.vcx.ParseEventPayload(ctx, s.run, string(payload))
+	s.run.Info.Event, err = s.vcx.ParsePayload(ctx, s.run, string(payload))
 	if err != nil {
 		s.run.Clients.Log.Errorf("failed to parse event: %v", err)
 		return

@@ -22,10 +22,6 @@ func (v *TestProviderImp) ParseEventType(request *http.Request, event *info.Even
 	return nil
 }
 
-func (v *TestProviderImp) ParseEventPayload(ctx context.Context, run *params.Run, s string) (*info.Event, error) {
-	return v.Event, nil
-}
-
 func (v *TestProviderImp) ParsePayload(ctx context.Context, run *params.Run, s string) (*info.Event, error) {
 	return v.Event, nil
 }
