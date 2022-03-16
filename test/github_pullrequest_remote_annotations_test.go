@@ -23,6 +23,7 @@ import (
 )
 
 func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
+	t.Skip()
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)

@@ -20,6 +20,7 @@ import (
 )
 
 func TestGithubPush(t *testing.T) {
+	t.Skip()
 	for _, onWebhook := range []bool{false, true} {
 		targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-push")
 		targetBranch := targetNS

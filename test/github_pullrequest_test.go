@@ -12,6 +12,7 @@ import (
 )
 
 func TestGithubPullRequest(t *testing.T) {
+	t.Skip()
 	t.Parallel()
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest", "testdata/pipelinerun.yaml", false)
