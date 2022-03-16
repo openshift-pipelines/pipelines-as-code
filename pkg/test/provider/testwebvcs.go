@@ -19,11 +19,11 @@ type TestProviderImp struct {
 }
 
 func (v *TestProviderImp) ParseEventType(request *http.Request, event *info.Event) error {
-	panic("implement me")
+	return nil
 }
 
 func (v *TestProviderImp) ParseEventPayload(ctx context.Context, run *params.Run, s string) (*info.Event, error) {
-	panic("implement me")
+	return v.Event, nil
 }
 
 func (v *TestProviderImp) ParsePayload(ctx context.Context, run *params.Run, s string) (*info.Event, error) {

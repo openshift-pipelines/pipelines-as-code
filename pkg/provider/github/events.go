@@ -67,6 +67,7 @@ func (v *Provider) fetchAppToken(ctx context.Context, kube kubernetes.Interface,
 	}
 
 	// TODO: figure out this part
+	// TODO: Read PAC_GIT_PROVIDER_APIURL from request header
 	// getting the baseurl from go-github since it has all the logic in there
 	gheURL := os.Getenv("PAC_GIT_PROVIDER_APIURL")
 	if gheURL != "" {
@@ -79,7 +80,7 @@ func (v *Provider) fetchAppToken(ctx context.Context, kube kubernetes.Interface,
 		v.Client = github.NewClient(&http.Client{Transport: itr})
 	}
 
-	// This is a hack when we have auth and api dissascoiated
+	// This is a hack when we have auth and api disassociated
 	reqTokenURL := os.Getenv("PAC_GIT_PROVIDER_TOKEN_APIURL")
 	if reqTokenURL != "" {
 		itr.BaseURL = reqTokenURL
