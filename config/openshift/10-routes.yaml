@@ -33,4 +33,3 @@ spec:
     name: pipelines-as-code-controller
     weight: 100
   wildcardPolicy: None
-
