@@ -68,7 +68,7 @@ func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c cl
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
 		cs.ColorStatus(status.Status.Conditions[0].Reason),
 		*status.EventType,
-		formatting.SanitizeBranch(*status.TargetBranch),
+		*status.TargetBranch,
 		cs.HyperLink(formatting.ShortSHA(*status.SHA), *status.SHAURL),
 		formatting.Age(status.StartTime, c),
 		formatting.Duration(status.StartTime, status.CompletionTime),
@@ -173,8 +173,7 @@ func DescribeCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *cli.PacCliOpts,
-	ioStreams *cli.IOStreams, repoName string) error {
+func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, repoName string) error {
 	var repository *v1alpha1.Repository
 	var err error
 

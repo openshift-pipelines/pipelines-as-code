@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// sanitizeBranch remove refs/heads from string if it's a branch or keep it if
-// it's a tag.
+// sanitizeBranch remove refs/heads from string, only removing the first prefix
+// in case we have branch that are actually called refs-heads 🙃
 func SanitizeBranch(s string) string {
 	if strings.HasPrefix(s, "refs/heads/") {
 		return strings.TrimPrefix(s, "refs/heads/")
