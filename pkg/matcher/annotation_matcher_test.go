@@ -2,6 +2,7 @@ package matcher
 
 import (
 	"fmt"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -30,10 +31,10 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pipelineTargetNSName,
 			Annotations: map[string]string{
-				pipelinesascode.GroupName + "/" + onTargetNamespace:        targetNamespace,
-				pipelinesascode.GroupName + "/" + onEventAnnotation:        "[pull_request]",
-				pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: fmt.Sprintf("[%s]", mainBranch),
-				pipelinesascode.GroupName + "/" + maxKeepRuns:              "2",
+				filepath.Join(pipelinesascode.GroupName, onTargetNamespace):        targetNamespace,
+				filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "[pull_request]",
+				filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): fmt.Sprintf("[%s]", mainBranch),
+				filepath.Join(pipelinesascode.GroupName, maxKeepRuns):              "2",
 			},
 		},
 	}
@@ -56,6 +57,75 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				runevent: info.Event{
 					URL: targetURL, TriggerTarget: "pull_request", EventType: "pull_request",
 					BaseBranch: mainBranch,
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:       "match a repository on a CEL expression",
+			wantPRName: pipelineTargetNSName,
+			args: args{
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onCelExpression: "event == \"pull_request" +
+									"\" && target_branch == \"" + mainBranch + "\" && source_branch == \"unittests\"",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "pull_request",
+					EventType:     "pull_request",
+					BaseBranch:    mainBranch,
+					HeadBranch:    "unittests",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:    "bad CEL expresion",
+			wantErr: true,
+			args: args{
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								filepath.Join(pipelinesascode.GroupName, onCelExpression): "BADDDDDDDx'ax\\\a",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "pull_request",
+					EventType:     "pull_request",
+					BaseBranch:    mainBranch,
+					HeadBranch:    "unittests",
 				},
 				data: testclient.Data{
 					Repositories: []*v1alpha1.Repository{
@@ -172,8 +242,8 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 							Namespace: targetNamespace,
 							Name:      "no pac annotation",
 							Annotations: map[string]string{
-								pipelinesascode.GroupName + "/" + onEventAnnotation:        "",
-								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "",
+								filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "",
+								filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "",
 							},
 						},
 					},
@@ -233,8 +303,8 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				tt.args.pruns,
 				client)
 
-			if tt.wantErr && err == nil {
-				t.Error("We should have get an error")
+			if tt.wantErr {
+				assert.Assert(t, err != nil, "We should have get an error")
 			}
 
 			if !tt.wantErr {
@@ -261,8 +331,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-good",
 			Annotations: map[string]string{
-				pipelinesascode.GroupName + "/" + onEventAnnotation:        "[pull_request]",
-				pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[main]",
+				filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "[pull_request]",
+				filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "[main]",
 			},
 		},
 	}
@@ -271,8 +341,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-other",
 			Annotations: map[string]string{
-				pipelinesascode.GroupName + "/" + onEventAnnotation:        "[pull_request]",
-				pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[main]",
+				filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "[pull_request]",
+				filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "[main]",
 			},
 		},
 	}
@@ -348,8 +418,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "single-event-annotation",
 							Annotations: map[string]string{
-								pipelinesascode.GroupName + "/" + onEventAnnotation:        "pull_request",
-								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[main]",
+								filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "pull_request",
+								filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "[main]",
 							},
 						},
 					},
@@ -366,8 +436,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "single-target-branch-annotation",
 							Annotations: map[string]string{
-								pipelinesascode.GroupName + "/" + onEventAnnotation:        "[pull_request]",
-								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "main",
+								filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "[pull_request]",
+								filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "main",
 							},
 						},
 					},
@@ -384,8 +454,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "bad-target-branch-annotation",
 							Annotations: map[string]string{
-								pipelinesascode.GroupName + "/" + onEventAnnotation:        "[]",
-								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[]",
+								filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "[]",
+								filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "[]",
 							},
 						},
 					},
@@ -402,8 +472,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "branch-matching",
 							Annotations: map[string]string{
-								pipelinesascode.GroupName + "/" + onEventAnnotation:        "[push]",
-								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[main]",
+								filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "[push]",
+								filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "[main]",
 							},
 						},
 					},
@@ -423,8 +493,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "branch-base-matching-not-compare",
 							Annotations: map[string]string{
-								pipelinesascode.GroupName + "/" + onEventAnnotation:        "[push]",
-								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[main]",
+								filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "[push]",
+								filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "[main]",
 							},
 						},
 					},
@@ -441,8 +511,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "branch-base-matching-not-compare",
 							Annotations: map[string]string{
-								pipelinesascode.GroupName + "/" + onEventAnnotation:        "[push]",
-								pipelinesascode.GroupName + "/" + onTargetBranchAnnotation: "[refs/heads/*]",
+								filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "[push]",
+								filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "[refs/heads/*]",
 							},
 						},
 					},

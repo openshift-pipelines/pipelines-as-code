@@ -1,6 +1,26 @@
 #!/usr/bin/env bash
 # Replay a pac pipelinerun grabbing its payload and env from the output
 # need tkn, fzf
+#
+# It will save the payload in the /tmp/pac-last-run directory so we can replay them at will.
+# There is even a /tmp/pac-last-run/run.sh to replay things as you want.
+#
+# This generate files to replay easily in vscode/lsp (intelij/goland is annoying
+# since doesn't support envFile)
+#
+# This is my launch configuration
+# {
+#    "name": "PAC last",
+#    "type": "go",
+#    "request": "launch",
+#    "cwd": "${workspaceFolder}",
+#    "program": "${workspaceFolder}/cmd/pipelines-as-code",
+#    "envFile": "/tmp/pac-last-run/env",
+#    "env": {
+#      "KUBECONFIG": "${env:HOME}/.kube/config",
+#    }
+#  },
+
 set -euf
 
 TMPD=/tmp/pac-last-run
@@ -11,7 +31,7 @@ if [[ ${1:-""} == -l ]];then
 elif [[ -n ${1:-""} ]];then
     arg="${1}"
 else
-   pr=$(tkn tr ls --no-headers|fzf  -1)
+   pr=$(tkn tr ls --no-headers|fzf  -1 --preview 'tkn tr describe `echo {}|sed "s/ .*//"`')
    [[ -z ${pr} ]] && exit 0
    arg=$(echo ${pr}|awk '{print $1}')
    echo "Selected ${arg}"
@@ -37,7 +57,11 @@ if [[ -n ${PAC_WORKSPACE_SECRET} ]];then
     sed -i "s,PAC_WORKSPACE_SECRET=.*,PAC_WORKSPACE_SECRET=$TMPD," ${TMPD}/env
 fi
 
-# for vscode easy envFile
+cat ${TMPD}/env > ${TMPD}/run.sh
+echo "go run cmd/pipelines-as-code/main.go" >> ${TMPD}/run.sh
+chmod +x ${TMPD}/run.sh
+
+
 sed -i 's/^export //' ${TMPD}/env
 cat ${TMPD}/env
 
