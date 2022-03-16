@@ -46,6 +46,7 @@ func New(run *params.Run, k *kubeinteraction.Interaction) adapter.AdapterConstru
 func (l *listener) Start(ctx context.Context) error {
 	mux := http.NewServeMux()
 
+	// TODO: to be used in health check in deployment
 	mux.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		fmt.Fprint(w, "ok")
@@ -59,6 +60,7 @@ func (l *listener) Start(ctx context.Context) error {
 			10*time.Second, "Listener Timeout!\n"),
 	}
 
+	// TODO: support TLS/Certs
 	if err := srv.ListenAndServe(); err != nil {
 		return err
 	}

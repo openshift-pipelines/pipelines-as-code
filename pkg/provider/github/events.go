@@ -176,21 +176,32 @@ func (v *Provider) ParseEventType(request *http.Request, event *info.Event) erro
 	return nil
 }
 
+func getInstallationIDFromPayload(payload string) int64 {
+	var data map[string]interface{}
+	_ = json.Unmarshal([]byte(payload), &data)
+
+	i := github.Installation{}
+	installData, ok := data["installation"]
+	if ok {
+		installation, _ := json.Marshal(installData)
+		_ = json.Unmarshal(installation, &i)
+		return *i.ID
+	}
+	return -1
+}
+
 func (v *Provider) ParseEventPayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
 	if run.Info.Event.EventType == "" || run.Info.Event.TriggerTarget == "" {
 		return nil, fmt.Errorf("failed to find event type")
 	}
 
-	var data map[string]interface{}
-	_ = json.Unmarshal([]byte(payload), &data)
+	id := getInstallationIDFromPayload(payload)
 
-	i := github.Installation{}
-	installation, _ := json.Marshal(data["installation"])
-	_ = json.Unmarshal(installation, &i)
-
-	// get the app token if it exist first
-	if err := v.fetchAppToken(ctx, run.Clients.Kube, run.Info.Pac, *i.ID); err != nil {
-		return nil, err
+	if id != -1 {
+		// get the app token if it exist first
+		if err := v.fetchAppToken(ctx, run.Clients.Kube, run.Info.Pac, id); err != nil {
+			return nil, err
+		}
 	}
 
 	payloadTreated := v.payloadFix(payload)
@@ -275,7 +286,6 @@ func (v *Provider) processEvent(ctx context.Context, run *params.Run, event inte
 }
 
 // ParsePayload parse payload event
-// TODO: this piece of code is just plain silly
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
 	var processedevent *info.Event
 

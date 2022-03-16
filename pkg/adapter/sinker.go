@@ -26,7 +26,6 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request, payloa
 		return
 	}
 
-	// TODO: for webhook, set client and then parse payload
 	var err error
 	s.run.Info.Event, err = s.vcx.ParseEventPayload(ctx, s.run, string(payload))
 	if err != nil {
