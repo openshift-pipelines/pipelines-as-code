@@ -75,6 +75,9 @@ Namespace instead of trying to match it from all available repository on cluster
   - `{{repo_name}}`: The repository name.
   - `{{repo_url}}`: The repository full URL.
   - `{{revision}}`: The commit full sha revision.
+  - `{{sender}}`: The sender username (or account id on some providers) of the commit.
+  - `{{source_branch}}`: The branch name where the event come from.
+  - `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
 
 - You need at least one `PipelineRun` with a `PipelineSpec` or a separated
   `Pipeline` object. You can have embedded `TaskSpec` inside

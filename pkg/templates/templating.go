@@ -31,9 +31,12 @@ func Process(event *info.Event, template string) string {
 	}
 
 	return ReplacePlaceHoldersVariables(template, map[string]string{
-		"revision":   event.SHA,
-		"repo_url":   repoURL,
-		"repo_owner": strings.ToLower(event.Organization),
-		"repo_name":  strings.ToLower(event.Repository),
+		"revision":      event.SHA,
+		"repo_url":      repoURL,
+		"repo_owner":    strings.ToLower(event.Organization),
+		"repo_name":     strings.ToLower(event.Repository),
+		"target_branch": strings.ToLower(event.BaseBranch),
+		"source_branch": strings.ToLower(event.HeadBranch),
+		"sender":        strings.ToLower(event.Sender),
 	})
 }
