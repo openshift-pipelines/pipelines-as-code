@@ -6,9 +6,12 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/on-event: "[push]"
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
-    pipelinesascode.tekton.dev/task: "[git-clone]"
+    pipelinesascode.tekton.dev/task: "[git-clone, .tekton/tasks/buildah-user.yaml]"
     pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]"  # send-slack-notifications task
 spec:
+  taskRunSpecs:
+    - pipelineTaskName: push-to-registry
+      taskServiceAccountName: pac-push-sa
   params:
     - name: repo_url
       value: "{{repo_url}}"
@@ -30,7 +33,6 @@ spec:
         workspaces:
           - name: output
             workspace: source
-
       - name: unit
         runAfter:
           - fetch
@@ -41,7 +43,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: registry.access.redhat.com/ubi8/go-toolset@sha256:2d56a94f1e83fe0e874f099dd8d03b876186985a7dbeea118e8c725b1b07b9f0
+            - image: registry.redhat.io/rhel8/go-toolset:1.16.12-7
               name: get-cache
               workingDir: $(workspaces.source.path)
               env:
@@ -56,16 +58,14 @@ spec:
                 set -ex
                 mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
                 cd $(dirname ${GOCACHE})
-
                 curl -fsI http://uploader:8080/golang-cache.tar || {
                     echo "no cache found"
                     exit 0
                 }
-
                 echo "Getting cache"
                 curl http://uploader:8080/golang-cache.tar|tar -x -f-
             - name: unittest
-              image: registry.access.redhat.com/ubi8/go-toolset@sha256:2d56a94f1e83fe0e874f099dd8d03b876186985a7dbeea118e8c725b1b07b9f0
+              image: registry.redhat.io/rhel8/go-toolset:1.16.12-7
               workingDir: $(workspaces.source.path)
               env:
                 - name: GOCACHE
@@ -76,6 +76,17 @@ spec:
                 #!/usr/bin/env bash
                 make test \
                     GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
+      - name: push-to-registry
+        runAfter:
+          - unit
+        params:
+          - name: IMAGE
+            value: quay.io/openshift-pipeline/pipelines-as-code:main
+        taskRef:
+          name: buildah-user
+        workspaces:
+          - name: source
+            workspace: source
       - name: codecov
         runAfter:
           - unit
@@ -88,7 +99,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: registry.access.redhat.com/ubi8/go-toolset@sha256:2d56a94f1e83fe0e874f099dd8d03b876186985a7dbeea118e8c725b1b07b9f0
+              image: registry.redhat.io/rhel8/go-toolset:1.16.12-7
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN
@@ -102,10 +113,10 @@ spec:
 
       - name: upload-release-yaml
         runAfter:
-          - fetch
+          - push-to-registry
         taskSpec:
           steps:
-            - image: registry.access.redhat.com/ubi8/python-39@sha256:86466a8a2b3981c339f84e791e170055eb3f520e8419f955efa98e93ccaaf5b9
+            - image: registry.access.redhat.com/ubi8/python-39:1-35
               name: release
               env:
                 - name: HUB_TOKEN
