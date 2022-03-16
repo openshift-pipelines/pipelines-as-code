@@ -66,9 +66,6 @@ var samplePRevent = github.PullRequestEvent{
 		},
 	},
 	Repo: sampleRepo,
-	Installation: &github.Installation{
-		ID: &testInstallationID,
-	},
 }
 
 var samplePR = github.PullRequest{
@@ -691,6 +688,9 @@ func TestFetchTokenGeneration(t *testing.T) {
 
 	testNamespace := "pipelinesascode"
 
+	ctx_nosecret, _ := rtesting.SetupFakeContext(t)
+	noSecret, _ := testclient.SeedTestData(t, ctx_nosecret, testclient.Data{})
+
 	ctx, _ := rtesting.SetupFakeContext(t)
 	vaildSecret, _ := testclient.SeedTestData(t, ctx, testclient.Data{
 		Secret: []*corev1.Secret{
@@ -751,11 +751,12 @@ func TestFetchTokenGeneration(t *testing.T) {
 	}{
 		{
 			name: "secret not found",
-			ctx:  ctx,
+			ctx:  ctx_nosecret,
 			envs: map[string]string{
 				"SYSTEM_NAMESPACE": "foo",
 			},
-			wantErr: true,
+			seedData: noSecret,
+			wantErr:  true,
 		},
 		{
 			ctx:  ctx,
@@ -791,8 +792,8 @@ func TestFetchTokenGeneration(t *testing.T) {
 
 			_, mux, url, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-			testInstallationID := strconv.FormatInt(testInstallationID, 10)
-			mux.HandleFunc(fmt.Sprintf("/app/installations/%s/access_tokens", string(testInstallationID)), func(w http.ResponseWriter, r *http.Request) {
+			testInstallID := strconv.FormatInt(testInstallationID, 10)
+			mux.HandleFunc(fmt.Sprintf("/app/installations/%s/access_tokens", string(testInstallID)), func(w http.ResponseWriter, r *http.Request) {
 				_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 			})
 			tt.envs["PAC_GIT_PROVIDER_APIURL"] = fakeGithubAuthURL
@@ -800,6 +801,11 @@ func TestFetchTokenGeneration(t *testing.T) {
 
 			envRemove := env.PatchAll(t, tt.envs)
 			defer envRemove()
+
+			// adding installation id to event to enforce client creation
+			samplePRevent.Installation = &github.Installation{
+				ID: &testInstallationID,
+			}
 
 			jeez, _ := json.Marshal(samplePRevent)
 			gprovider := Provider{}
