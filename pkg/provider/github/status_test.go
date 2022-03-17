@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v42/github"
+	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"

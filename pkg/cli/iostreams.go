@@ -6,10 +6,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"time"
 
 	surveyCore "github.com/AlecAivazis/survey/v2/core"
-	"github.com/briandowns/spinner"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 	"github.com/mgutz/ansi"
@@ -20,7 +18,6 @@ type IOStreams struct {
 	Out    io.Writer
 	ErrOut io.Writer
 
-	progressIndicator        *spinner.Spinner
 	colorEnabled             bool
 	progressIndicatorEnabled bool
 	stdoutTTYOverride        bool
@@ -28,20 +25,6 @@ type IOStreams struct {
 	stderrIsTTY              bool
 	stdoutIsTTY              bool
 	is256enabled             bool
-}
-
-func (s *IOStreams) StartProgressIndicator() {
-	sp := spinner.New(spinner.CharSets[11], 400*time.Millisecond, spinner.WithWriter(s.ErrOut))
-	sp.Start()
-	s.progressIndicator = sp
-}
-
-func (s *IOStreams) StopProgressIndicator() {
-	if s.progressIndicator == nil {
-		return
-	}
-	s.progressIndicator.Stop()
-	s.progressIndicator = nil
 }
 
 func (s *IOStreams) ColorScheme() *ColorScheme {

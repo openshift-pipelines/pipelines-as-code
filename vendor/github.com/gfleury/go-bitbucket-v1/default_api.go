@@ -3260,7 +3260,19 @@ func (a *DefaultApiService) GetBranches(project, repository string, localVarOpti
 	if err := typeCheckParameter(localVarOptionals["orderBy"], "string", "orderBy"); err != nil {
 		return nil, err
 	}
+	if err := typeCheckParameter(localVarOptionals["limit"], "int", "limit"); err != nil {
+		return nil, err
+	}
+	if err := typeCheckParameter(localVarOptionals["start"], "int", "start"); err != nil {
+		return nil, err
+	}
 
+	if localVarTempParam, localVarOk := localVarOptionals["limit"].(int); localVarOk {
+		localVarQueryParams.Add("limit", parameterToString(localVarTempParam, ""))
+	}
+	if localVarTempParam, localVarOk := localVarOptionals["start"].(int); localVarOk {
+		localVarQueryParams.Add("start", parameterToString(localVarTempParam, ""))
+	}
 	if localVarTempParam, localVarOk := localVarOptionals["base"].(string); localVarOk {
 		localVarQueryParams.Add("base", parameterToString(localVarTempParam, ""))
 	}

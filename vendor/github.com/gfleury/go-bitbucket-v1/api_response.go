@@ -7,6 +7,7 @@ package bitbucketv1
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -554,6 +555,13 @@ func GetBranchesResponse(r *APIResponse) ([]Branch, error) {
 	return m, err
 }
 
+// GetBrancheResponse cast Branch into structure
+func GetBranchResponse(r *APIResponse) (Branch, error) {
+	var m Branch
+	err := mapstructure.Decode(r.Values, &m)
+	return m, err
+}
+
 // GetRepositoriesResponse cast Repositories into structure
 func GetRepositoriesResponse(r *APIResponse) ([]Repository, error) {
 	var m []Repository
@@ -661,7 +669,6 @@ func GetActivitiesResponse(r *APIResponse) (Activities, error) {
 
 // NewAPIResponse create new APIResponse from http.Response
 func NewAPIResponse(r *http.Response) *APIResponse {
-
 	response := &APIResponse{Response: r}
 	return response
 }
@@ -681,10 +688,18 @@ func NewAPIResponseWithError(r *http.Response, bodyBytes []byte, err error) (*AP
 // NewBitbucketAPIResponse create new API response from http.response
 func NewBitbucketAPIResponse(r *http.Response) (*APIResponse, error) {
 	response := &APIResponse{Response: r}
-	err := json.NewDecoder(r.Body).Decode(&response.Values)
+
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&response.Values)
 	if err != nil {
 		return nil, err
 	}
+
+	if decoder.More() {
+		// there's more data in the stream, so discard whatever is left
+		_, _ = io.Copy(ioutil.Discard, r.Body)
+	}
+
 	return response, err
 }
 
