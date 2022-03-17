@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	ghlib "github.com/google/go-github/v42/github"
+	ghlib "github.com/google/go-github/v43/github"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
