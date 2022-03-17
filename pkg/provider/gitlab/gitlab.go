@@ -156,26 +156,26 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(ctx context.Context, opts *info.PacOpts) error {
+func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	var err error
-	if opts.ProviderToken == "" {
+	if event.ProviderToken == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
 
 	// Try to detect automatically theapi url if url is not coming from public
 	// gitlab. Unless user has set a spec.provider.url in its repo crd
 	apiURL := apiPublicURL
-	if opts.ProviderURL != "" {
-		apiURL = opts.ProviderURL
+	if event.ProviderURL != "" {
+		apiURL = event.ProviderURL
 	} else if !strings.HasPrefix(v.repoURL, apiPublicURL) {
 		apiURL = strings.ReplaceAll(v.repoURL, v.pathWithNamespace, "")
 	}
 
-	v.Client, err = gitlab.NewClient(opts.ProviderToken, gitlab.WithBaseURL(apiURL))
+	v.Client, err = gitlab.NewClient(event.ProviderToken, gitlab.WithBaseURL(apiURL))
 	if err != nil {
 		return err
 	}
-	v.Token = &opts.ProviderToken
+	v.Token = &event.ProviderToken
 	return nil
 }
 

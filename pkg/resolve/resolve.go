@@ -108,7 +108,7 @@ type Opts struct {
 // Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
 // generateName can be set as True to set the name as a generateName + "-" for
 // unique pipelinerun
-func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interface, data string, ropt *Opts) ([]*tektonv1beta1.PipelineRun, error) {
+func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interface, event *info.Event, data string, ropt *Opts) ([]*tektonv1beta1.PipelineRun, error) {
 	s := k8scheme.Scheme
 	if err := tektonv1beta1.AddToScheme(s); err != nil {
 		return []*tektonv1beta1.PipelineRun{}, err
@@ -125,7 +125,6 @@ func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interfac
 			rt := matcher.RemoteTasks{
 				Run: cs,
 			}
-			event := &info.Event{}
 			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, providerintf, event, pipelinerun.GetObjectMeta().GetAnnotations())
 			if err != nil {
 				return []*tektonv1beta1.PipelineRun{}, err

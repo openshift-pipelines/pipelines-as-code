@@ -35,7 +35,7 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 }
 
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
-func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, targetNamespace string) error {
+func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, targetNamespace string) error {
 	// Bitbucket Server have a different Clone URL than it's Repo URL, so we
 	// have to separate them 👨‍🏭
 	cloneURL := runevent.URL
@@ -49,8 +49,8 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 	}
 
 	gitUser := provider.DefaultProviderAPIUser
-	if pacopts.ProviderUser != "" {
-		gitUser = pacopts.ProviderUser
+	if runevent.ProviderUser != "" {
+		gitUser = runevent.ProviderUser
 	}
 
 	// Bitbucket server token have / into it, so unless we do urlquote them it's
@@ -62,7 +62,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 	//
 	// maybe we could patch the git-clone task too but that probably be a pain
 	// in the tuchus to do it in shell.
-	token := url.QueryEscape(pacopts.ProviderToken)
+	token := url.QueryEscape(runevent.ProviderToken)
 
 	urlWithToken := fmt.Sprintf("%s://%s:%s@%s%s", repoURL.Scheme, gitUser, token, repoURL.Host, repoURL.Path)
 	secretData := map[string]string{

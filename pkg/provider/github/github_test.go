@@ -462,13 +462,13 @@ func TestGithubGetCommitInfo(t *testing.T) {
 func TestGithubSetClient(t *testing.T) {
 	tests := []struct {
 		name        string
-		info        *info.PacOpts
+		event       *info.Event
 		expectedURL string
 		isGHE       bool
 	}{
 		{
 			name: "api url set",
-			info: &info.PacOpts{
+			event: &info.Event{
 				ProviderURL: "foo.com",
 			},
 			expectedURL: "https://foo.com",
@@ -477,14 +477,14 @@ func TestGithubSetClient(t *testing.T) {
 		{
 			name:        "default to public github",
 			expectedURL: "https://api.github.com/",
-			info:        &info.PacOpts{},
+			event:       &info.Event{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			v := Provider{}
-			err := v.SetClient(ctx, tt.info)
+			err := v.SetClient(ctx, tt.event)
 			assert.NilError(t, err)
 			assert.Equal(t, tt.expectedURL, *v.APIURL)
 			assert.Equal(t, "https", v.Client.BaseURL.Scheme)

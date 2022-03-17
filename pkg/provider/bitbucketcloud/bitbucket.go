@@ -56,7 +56,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacopts *i
 		statusopts.Conclusion = "SUCCESSFUL"
 		statusopts.Title = "✅ Completed"
 	}
-	detailsURL := pacopts.ProviderURL
+	detailsURL := event.ProviderURL
 	if statusopts.DetailsURL != "" {
 		detailsURL = statusopts.DetailsURL
 	}
@@ -123,16 +123,16 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, pa
 	return v.getBlob(runevent, runevent.SHA, path)
 }
 
-func (v *Provider) SetClient(_ context.Context, opts *info.PacOpts) error {
-	if opts.ProviderUser == "" {
+func (v *Provider) SetClient(_ context.Context, event *info.Event) error {
+	if event.ProviderUser == "" {
 		return fmt.Errorf("no git_provider.user has been set in the repo crd")
 	}
-	if opts.ProviderToken == "" {
+	if event.ProviderToken == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
-	v.Client = bitbucket.NewBasicAuth(opts.ProviderUser, opts.ProviderToken)
-	v.Token = &opts.ProviderToken
-	v.Username = &opts.ProviderUser
+	v.Client = bitbucket.NewBasicAuth(event.ProviderUser, event.ProviderToken)
+	v.Token = &event.ProviderToken
+	v.Username = &event.ProviderUser
 	return nil
 }
 

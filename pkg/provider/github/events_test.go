@@ -320,11 +320,10 @@ func TestParsePayLoad(t *testing.T) {
 }
 
 func TestAppTokenGeneration(t *testing.T) {
-
 	testNamespace := "pipelinesascode"
 
-	ctx_nosecret, _ := rtesting.SetupFakeContext(t)
-	noSecret, _ := testclient.SeedTestData(t, ctx_nosecret, testclient.Data{})
+	ctxNoSecret, _ := rtesting.SetupFakeContext(t)
+	noSecret, _ := testclient.SeedTestData(t, ctxNoSecret, testclient.Data{})
 
 	ctx, _ := rtesting.SetupFakeContext(t)
 	vaildSecret, _ := testclient.SeedTestData(t, ctx, testclient.Data{
@@ -342,8 +341,8 @@ func TestAppTokenGeneration(t *testing.T) {
 		},
 	})
 
-	ctx_invalidAppID, _ := rtesting.SetupFakeContext(t)
-	invalidAppID, _ := testclient.SeedTestData(t, ctx_invalidAppID, testclient.Data{
+	ctxInvalidAppID, _ := rtesting.SetupFakeContext(t)
+	invalidAppID, _ := testclient.SeedTestData(t, ctxInvalidAppID, testclient.Data{
 		Secret: []*corev1.Secret{
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -358,8 +357,8 @@ func TestAppTokenGeneration(t *testing.T) {
 		},
 	})
 
-	ctx_invalidPrivateKey, _ := rtesting.SetupFakeContext(t)
-	invalidPrivateKey, _ := testclient.SeedTestData(t, ctx_invalidPrivateKey, testclient.Data{
+	ctxInvalidPrivateKey, _ := rtesting.SetupFakeContext(t)
+	invalidPrivateKey, _ := testclient.SeedTestData(t, ctxInvalidPrivateKey, testclient.Data{
 		Secret: []*corev1.Secret{
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -386,7 +385,7 @@ func TestAppTokenGeneration(t *testing.T) {
 	}{
 		{
 			name: "secret not found",
-			ctx:  ctx_nosecret,
+			ctx:  ctxNoSecret,
 			envs: map[string]string{
 				"SYSTEM_NAMESPACE": "foo",
 			},
@@ -404,7 +403,7 @@ func TestAppTokenGeneration(t *testing.T) {
 			nilClient:     false,
 		},
 		{
-			ctx:  ctx_invalidAppID,
+			ctx:  ctxInvalidAppID,
 			name: "invalid app id in secret",
 			envs: map[string]string{
 				"SYSTEM_NAMESPACE": testNamespace,
@@ -413,7 +412,7 @@ func TestAppTokenGeneration(t *testing.T) {
 			seedData: invalidAppID,
 		},
 		{
-			ctx:  ctx_invalidPrivateKey,
+			ctx:  ctxInvalidPrivateKey,
 			name: "invalid app id in secret",
 			envs: map[string]string{
 				"SYSTEM_NAMESPACE": testNamespace,
@@ -424,7 +423,6 @@ func TestAppTokenGeneration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			_, mux, url, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			testInstallID := strconv.FormatInt(testInstallationID, 10)

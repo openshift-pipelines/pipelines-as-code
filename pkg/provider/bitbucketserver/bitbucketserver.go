@@ -37,7 +37,7 @@ func sanitizeTitle(s string) string {
 
 func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info.PacOpts,
 	statusOpts provider.StatusOpts) error {
-	detailsURL := pacOpts.ProviderURL
+	detailsURL := event.ProviderURL
 	switch statusOpts.Conclusion {
 	case "skipped":
 		statusOpts.Conclusion = "FAILED"
@@ -168,30 +168,30 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, event *info.Event, pat
 	return ret, err
 }
 
-func (v *Provider) SetClient(ctx context.Context, opts *info.PacOpts) error {
-	if opts.ProviderUser == "" {
+func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
+	if event.ProviderUser == "" {
 		return fmt.Errorf("no provider.user has been set in the repo crd")
 	}
-	if opts.ProviderToken == "" {
+	if event.ProviderToken == "" {
 		return fmt.Errorf("no provider.secret has been set in the repo crd")
 	}
-	if opts.ProviderURL == "" {
+	if event.ProviderURL == "" {
 		return fmt.Errorf("no provider.url has been set in the repo crd")
 	}
 
 	// make sure we have /rest at the end of the url
-	if !strings.HasSuffix(opts.ProviderURL, "/rest") {
-		opts.ProviderURL += "/rest"
+	if !strings.HasSuffix(event.ProviderURL, "/rest") {
+		event.ProviderURL += "/rest"
 	}
 
 	// make sure we strip slashes from the end of the URL
-	opts.ProviderURL = strings.TrimSuffix(opts.ProviderURL, "/")
-	v.apiURL = opts.ProviderURL
+	event.ProviderURL = strings.TrimSuffix(event.ProviderURL, "/")
+	v.apiURL = event.ProviderURL
 
-	basicAuth := bbv1.BasicAuth{UserName: opts.ProviderUser, Password: opts.ProviderToken}
+	basicAuth := bbv1.BasicAuth{UserName: event.ProviderUser, Password: event.ProviderToken}
 
 	ctx = context.WithValue(ctx, bbv1.ContextBasicAuth, basicAuth)
-	cfg := bbv1.NewConfiguration(opts.ProviderURL)
+	cfg := bbv1.NewConfiguration(event.ProviderURL)
 	v.Client = bbv1.NewAPIClient(ctx, cfg)
 
 	return nil

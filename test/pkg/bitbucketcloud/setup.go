@@ -41,12 +41,12 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, bitbucketcloud.Provid
 		Repo:         splitted[1],
 	}
 	bbc := bitbucketcloud.Provider{}
-	infopts := &info.PacOpts{
+	event := &info.Event{
 		ProviderToken: bitbucketCloudToken,
 		ProviderURL:   bitbucketCloudAPIURL,
 		ProviderUser:  bitbucketCloudUser,
 	}
-	if err := bbc.SetClient(ctx, infopts); err != nil {
+	if err := bbc.SetClient(ctx, event); err != nil {
 		return nil, options.E2E{}, bitbucketcloud.Provider{}, err
 	}
 	return run, e2eoptions, bbc, nil

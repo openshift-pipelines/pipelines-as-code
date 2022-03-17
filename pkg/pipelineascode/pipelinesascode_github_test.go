@@ -366,13 +366,13 @@ func TestRun(t *testing.T) {
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						ProviderInfoFromRepo: tt.ProviderInfoFromRepo,
-						SecretAutoCreation:   true,
-						ProviderURL:          ghTestServerURL,
-						ProviderToken:        "NONE",
+						SecretAutoCreation: true,
 					},
 				},
 			}
+			tt.runevent.ProviderInfoFromRepo = tt.ProviderInfoFromRepo
+			tt.runevent.ProviderURL = ghTestServerURL
+			tt.runevent.ProviderToken = "NONE"
 
 			k8int := &kitesthelper.KinterfaceTest{
 				ConsoleURL:               "https://console.url",

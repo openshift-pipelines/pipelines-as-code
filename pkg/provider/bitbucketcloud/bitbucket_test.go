@@ -69,19 +69,19 @@ func TestSetClient(t *testing.T) {
 	tests := []struct {
 		name          string
 		wantErrSubstr string
-		opts          *info.PacOpts
+		event         *info.Event
 		token         string
 	}{
 		{
 			name: "set token",
-			opts: &info.PacOpts{
+			event: &info.Event{
 				ProviderToken: "token",
 				ProviderUser:  "user",
 			},
 		},
 		{
 			name: "no user",
-			opts: &info.PacOpts{
+			event: &info.Event{
 				ProviderToken: "token",
 				ProviderUser:  "",
 			},
@@ -89,7 +89,7 @@ func TestSetClient(t *testing.T) {
 		},
 		{
 			name: "no token",
-			opts: &info.PacOpts{
+			event: &info.Event{
 				ProviderToken: "",
 				ProviderUser:  "user",
 			},
@@ -100,13 +100,13 @@ func TestSetClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			v := Provider{}
-			err := v.SetClient(ctx, tt.opts)
+			err := v.SetClient(ctx, tt.event)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return
 			}
-			assert.Equal(t, tt.opts.ProviderToken, *v.Token)
-			assert.Equal(t, tt.opts.ProviderUser, *v.Username)
+			assert.Equal(t, tt.event.ProviderToken, *v.Token)
+			assert.Equal(t, tt.event.ProviderUser, *v.Username)
 		})
 	}
 }
@@ -237,12 +237,12 @@ func TestCreateStatus(t *testing.T) {
 			v := &Provider{Client: bbclient}
 			event := bbcloudtest.MakeEvent(nil)
 			event.EventType = "pull_request"
+			event.ProviderToken = "token"
 
 			bbcloudtest.MuxCreateCommitstatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbcloudtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr)
 
 			err := v.CreateStatus(ctx, event, &info.PacOpts{
-				ProviderToken:   "token",
 				ApplicationName: "HELLO APP",
 			}, tt.status)
 			assert.NilError(t, err)

@@ -34,6 +34,11 @@ type Event struct {
 
 	// Bitbucket Server
 	CloneURL string // bitbucket server has a different cloneurl than normal url
+
+	ProviderToken        string
+	ProviderURL          string
+	ProviderUser         string
+	ProviderInfoFromRepo bool // whether the provider info come from the repository
 }
 
 // DeepCopyInto deep copy runinfo in another instance

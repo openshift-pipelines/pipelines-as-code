@@ -62,7 +62,6 @@ func TestGetTektonDir(t *testing.T) {
 
 func TestCreateStatus(t *testing.T) {
 	pacopts := info.PacOpts{
-		ProviderToken:   "token",
 		ApplicationName: "HELLO APP",
 	}
 	pullRequestNumber := 10
@@ -160,6 +159,7 @@ func TestCreateStatus(t *testing.T) {
 			}
 			event := bbtest.MakeEvent(nil)
 			event.EventType = "pull_request"
+			event.ProviderToken = "token"
 			v := Provider{Client: client, pullRequestNumber: pullRequestNumber, projectKey: event.Organization}
 			bbtest.MuxCreateAndTestCommitStatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr, pullRequestNumber)
@@ -222,27 +222,27 @@ func TestSetClient(t *testing.T) {
 	tests := []struct {
 		name          string
 		apiURL        string
-		opts          *info.PacOpts
+		opts          *info.Event
 		wantErrSubstr string
 	}{
 		{
 			name:          "bad/no username",
-			opts:          &info.PacOpts{},
+			opts:          &info.Event{},
 			wantErrSubstr: "no provider.user",
 		},
 		{
 			name:          "bad/no secret",
-			opts:          &info.PacOpts{ProviderUser: "foo"},
+			opts:          &info.Event{ProviderUser: "foo"},
 			wantErrSubstr: "no provider.secret",
 		},
 		{
 			name:          "bad/no url",
-			opts:          &info.PacOpts{ProviderUser: "foo", ProviderToken: "bar"},
+			opts:          &info.Event{ProviderUser: "foo", ProviderToken: "bar"},
 			wantErrSubstr: "no provider.url",
 		},
 		{
 			name:   "good/url append /rest",
-			opts:   &info.PacOpts{ProviderUser: "foo", ProviderToken: "bar", ProviderURL: "https://foo.bar"},
+			opts:   &info.Event{ProviderUser: "foo", ProviderToken: "bar", ProviderURL: "https://foo.bar"},
 			apiURL: "https://foo.bar/rest",
 		},
 	}

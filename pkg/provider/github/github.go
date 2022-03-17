@@ -26,13 +26,13 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(ctx context.Context, info *info.PacOpts) error {
+func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: info.ProviderToken},
+		&oauth2.Token{AccessToken: event.ProviderToken},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	var client *github.Client
-	apiURL := info.ProviderURL
+	apiURL := event.ProviderURL
 	if apiURL != "" {
 		if !strings.HasPrefix(apiURL, "https") {
 			apiURL = "https://" + apiURL

@@ -41,7 +41,7 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 		msg := fmt.Sprintf("could not find a namespace match for %s", event.URL)
 		cs.Clients.Log.Warn(msg)
 
-		if cs.Info.Pac.ProviderToken == "" {
+		if event.ProviderToken == "" {
 			cs.Clients.Log.Warn("cannot set status since no token has been set")
 			return nil
 		}
@@ -59,17 +59,18 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 	}
 
 	if repo.Spec.GitProvider != nil {
-		err := secretFromRepository(ctx, cs, k8int, providerintf.GetConfig(), repo)
+		err := secretFromRepository(ctx, cs, k8int, providerintf.GetConfig(), event, repo)
 		if err != nil {
 			return err
 		}
 	} else {
+		// TODO: fix WebhookType
 		cs.Clients.Log.Infof("Using git provider %s", cs.Info.Pac.WebhookType)
 	}
 
 	// Set the client, we should error out if there is a problem with
 	// token or secret or we won't be able to do much.
-	err = providerintf.SetClient(ctx, cs.Info.Pac)
+	err = providerintf.SetClient(ctx, event)
 	if err != nil {
 		return err
 	}
@@ -129,7 +130,7 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 
 	// Automatically create a secret with the token to be reused by git-clone task
 	if cs.Info.Pac.SecretAutoCreation {
-		err = k8int.CreateBasicAuthSecret(ctx, event, cs.Info.Pac, repo.GetNamespace())
+		err = k8int.CreateBasicAuthSecret(ctx, event, repo.GetNamespace())
 		if err != nil {
 			return fmt.Errorf("creating basic auth secret has failed: %w ", err)
 		}
@@ -212,7 +213,7 @@ func getAllPipelineRuns(ctx context.Context, cs *params.Run, providerintf provid
 	allTemplates = templates.Process(event, allTemplates)
 
 	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
-	return resolve.Resolve(ctx, cs, providerintf, allTemplates, &resolve.Opts{
+	return resolve.Resolve(ctx, cs, providerintf, event, allTemplates, &resolve.Opts{
 		GenerateName: true,
 		RemoteTasks:  cs.Info.Pac.RemoteTasks,
 	})

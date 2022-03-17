@@ -28,8 +28,8 @@ func TestWhichProvider(t *testing.T) {
 			name: "github payload",
 			request: &http.Request{
 				Header: map[string][]string{
-					"X-Github-Event":    []string{"pull_request"},
-					"X-GitHub-Delivery": []string{"abcd"},
+					"X-Github-Event":    {"pull_request"},
+					"X-GitHub-Delivery": {"abcd"},
 				},
 			},
 		},
@@ -56,7 +56,7 @@ func TestWhichProviderError(t *testing.T) {
 			name: "invalid payload",
 			request: &http.Request{
 				Header: map[string][]string{
-					"X-Event": []string{"pull_request"},
+					"X-Event": {"pull_request"},
 				},
 			},
 			err: fmt.Errorf("no supported Git Provider is detected"),

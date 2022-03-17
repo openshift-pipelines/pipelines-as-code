@@ -54,7 +54,7 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 	}
 	e2eoptions := options.E2E{Organization: splitted[0], Repo: splitted[1], DirectWebhook: viaDirectWebhook}
 	gprovider := github.Provider{}
-	if err := gprovider.SetClient(ctx, &info.PacOpts{ProviderToken: githubToken, ProviderURL: githubURL}); err != nil {
+	if err := gprovider.SetClient(ctx, &info.Event{ProviderToken: githubToken, ProviderURL: githubURL}); err != nil {
 		return nil, options.E2E{}, github.Provider{}, err
 	}
 

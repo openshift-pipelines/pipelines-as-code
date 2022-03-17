@@ -100,7 +100,8 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 					},
 				},
 			}
-			err := kint.CreateBasicAuthSecret(ctx, &tt.event, &info.PacOpts{ProviderToken: secrete}, tt.targetNS)
+			tt.event.ProviderToken = secrete
+			err := kint.CreateBasicAuthSecret(ctx, &tt.event, tt.targetNS)
 			assert.NilError(t, err)
 
 			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})

@@ -41,18 +41,18 @@ func (v *Provider) payloadFix(payload string) []byte {
 	return []byte(replacer.Replace(payload))
 }
 
-func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, info *info.PacOpts, installationID int64) error {
+func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, installationID int64) (string, error) {
 	// TODO: move this out of here
 	ns := os.Getenv("SYSTEM_NAMESPACE")
 	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	appID := secret.Data["github-application-id"]
 	applicationID, err := strconv.ParseInt(strings.TrimSpace(string(appID)), 10, 64)
 	if err != nil {
-		return fmt.Errorf("could not parse the github application_id number from secret: %w", err)
+		return "", fmt.Errorf("could not parse the github application_id number from secret: %w", err)
 	}
 
 	privateKey := secret.Data["github-private-key"]
@@ -61,7 +61,7 @@ func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, i
 
 	itr, err := ghinstallation.New(tr, applicationID, installationID, privateKey)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// TODO: figure out this part
@@ -87,12 +87,11 @@ func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, i
 	// Get a token ASAP because we need it for setting private repos
 	token, err := itr.Token(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 	v.Token = github.String(token)
-	info.ProviderToken = token
 
-	return err
+	return token, err
 }
 
 func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
@@ -133,7 +132,9 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, event *inf
 
 	if id != -1 {
 		// get the app token if it exist first
-		if err := v.getAppToken(ctx, run.Clients.Kube, run.Info.Pac, id); err != nil {
+		var err error
+		event.ProviderToken, err = v.getAppToken(ctx, run.Clients.Kube, id)
+		if err != nil {
 			return nil, err
 		}
 	}

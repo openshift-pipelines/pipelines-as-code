@@ -26,7 +26,7 @@ func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string)
 	return k.ConsoleURL, nil
 }
 
-func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, targetNamespace string) error {
+func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, targetNamespace string) error {
 	return nil
 }
 
