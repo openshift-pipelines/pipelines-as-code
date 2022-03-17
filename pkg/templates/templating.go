@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
 
@@ -35,8 +36,8 @@ func Process(event *info.Event, template string) string {
 		"repo_url":      repoURL,
 		"repo_owner":    strings.ToLower(event.Organization),
 		"repo_name":     strings.ToLower(event.Repository),
-		"target_branch": strings.ToLower(event.BaseBranch),
-		"source_branch": strings.ToLower(event.HeadBranch),
+		"target_branch": formatting.SanitizeBranch(event.BaseBranch),
+		"source_branch": formatting.SanitizeBranch(event.HeadBranch),
 		"sender":        strings.ToLower(event.Sender),
 	})
 }

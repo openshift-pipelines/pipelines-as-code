@@ -57,6 +57,16 @@ func TestProcessTemplates(t *testing.T) {
 			expected: "abcd owner repository http://chmouel.com ohyeah ohno apollo",
 		},
 		{
+			name: "strip refs head from branches",
+			event: &info.Event{
+				HeadBranch: "refs/heads/ohyeah",
+				BaseBranch: "refs/heads/ohno",
+				Sender:     "apollo",
+			},
+			template: `{{ source_branch }} {{ target_branch }}`,
+			expected: "ohyeah ohno",
+		},
+		{
 			name: "test process templates lowering owner and repository",
 			event: &info.Event{
 				Organization: "OWNER",
