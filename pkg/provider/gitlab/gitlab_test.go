@@ -102,6 +102,20 @@ func TestCreateStatus(t *testing.T) {
 			},
 		},
 		{
+			name:       "pending conclusion",
+			wantClient: true,
+			wantErr:    false,
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "pending",
+				},
+				event: &info.Event{
+					TriggerTarget: "pull_request",
+				},
+				postStr: "",
+			},
+		},
+		{
 			name:       "completed conclusion",
 			wantClient: true,
 			wantErr:    false,

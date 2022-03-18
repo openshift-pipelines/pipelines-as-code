@@ -181,11 +181,6 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 		return fmt.Errorf("no gitlab client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
-	// TODO: not supported it on free, we will need an account on ultimate to be able to do it :\
-	if statusOpts.Status == "in_progress" {
-		return nil
-	}
-
 	switch statusOpts.Conclusion {
 	case "skipped":
 		statusOpts.Conclusion = "canceled"
@@ -202,10 +197,15 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 	case "completed":
 		statusOpts.Conclusion = "success"
 		statusOpts.Title = "completed"
+	case "pending":
+		statusOpts.Conclusion = "running"
 	}
 	if statusOpts.DetailsURL != "" {
 		detailsURL = statusOpts.DetailsURL
 	}
+
+	body := fmt.Sprintf("**%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>",
+		pacOpts.ApplicationName, statusOpts.Title, statusOpts.Text, detailsURL)
 
 	// in case we have access set the commit status, typically on MR from
 	// another users we won't have it but it would work on push or MR from a
@@ -218,14 +218,10 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 		TargetURL:   gitlab.String(detailsURL),
 		Description: gitlab.String(statusOpts.Title),
 	}
-	_, _, toIgnoreErr := v.Client.Commits.SetCommitStatus(v.sourceProjectID, event.SHA, opt)
-
-	if toIgnoreErr != nil && event.TriggerTarget == "pull_request" {
-		opt := &gitlab.CreateMergeRequestNoteOptions{
-			Body: gitlab.String(
-				fmt.Sprintf("**%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>", pacOpts.ApplicationName,
-					statusOpts.Title, statusOpts.Text, detailsURL)),
-		}
+	// nolint: dogsled
+	_, _, _ = v.Client.Commits.SetCommitStatus(v.sourceProjectID, event.SHA, opt)
+	if statusOpts.Conclusion != "running" {
+		opt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.String(body)}
 		_, _, err := v.Client.Notes.CreateMergeRequestNote(v.targetProjectID, v.mergeRequestID, opt)
 		return err
 	}
