@@ -15,7 +15,6 @@ import (
 )
 
 func TestGithubMaxKeepRuns(t *testing.T) {
-	t.Skip()
 	ctx := context.TODO()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t,
 		"Github MacKeepRun config",

@@ -21,6 +21,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// {"severity":"ERROR","timestamp":"2022-03-18T06:58:29.133001347Z","logger":"pipelinesascode","caller":"adapter/sinker.go:34",
+// "message":"failed to parse event: could not refresh installation id 348340043's token: received non 2xx response status
+// \"404 Not Found\" when fetching https://api.github.com/app/installations/348340043/access_tokens","provider":"github","event":"",
+// "stacktrace":"github.com/openshift-pipelines/pipelines-as-code/pkg/adapter.(*sinker).processEvent\n\tgithub.com/openshift-pipelines/pipelines-as-code/pkg/adapter/sinker.go:34\ngithub.com/openshift-pipelines/pipelines-as-code/pkg/adapter.listener.handleEvent.func1.1\n\tgithub.com/openshift-pipelines/pipelines-as-code/pkg/adapter/adapter.go:104"}
+
 func TestGithubPullRequestOkToTest(t *testing.T) {
 	t.Skip()
 	ctx := context.TODO()
