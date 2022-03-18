@@ -56,7 +56,7 @@ func (l *listener) Start(ctx context.Context) error {
 	mux.HandleFunc("/", l.handleEvent())
 
 	srv := &http.Server{
-		Addr: fmt.Sprintf(":%v", "8080"),
+		Addr: ":8080",
 		Handler: http.TimeoutHandler(mux,
 			10*time.Second, "Listener Timeout!\n"),
 	}
@@ -80,7 +80,9 @@ func (l listener) handleEvent() http.HandlerFunc {
 			return
 		}
 
-		// update the logger
+		// TODO: decouple logger from clients so each event
+		// has a logger with its own fields
+		// eg. logger.With("provider", "github", "event", request.Header.Get("X-GitHub-Delivery"))
 		l.run.Clients.Log = logger
 
 		s := sinker{

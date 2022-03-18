@@ -21,8 +21,6 @@ type sinker struct {
 }
 
 func (s *sinker) processEvent(ctx context.Context, request *http.Request, payload []byte) {
-	s.run.Info.Pac.LogURL = s.run.Clients.ConsoleUI.URL()
-
 	if err := s.vcx.ParseEventType(request, s.event); err != nil {
 		s.run.Clients.Log.Errorf("failed to find event type: %v", err)
 		return

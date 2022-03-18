@@ -32,5 +32,7 @@ func main() {
 		log.Fatal("failed to get defaults : ", err)
 	}
 
+	run.Info.Pac.LogURL = run.Clients.ConsoleUI.URL()
+
 	evadapter.MainWithContext(ctx, PACControllerLogKey, adapter.NewEnvConfig, adapter.New(run, kinteract))
 }

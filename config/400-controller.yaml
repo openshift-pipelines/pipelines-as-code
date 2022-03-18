@@ -38,6 +38,7 @@ spec:
       containers:
         - name: pac-controller
           image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-controller"
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
