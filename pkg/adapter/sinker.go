@@ -8,7 +8,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/version"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
@@ -33,7 +32,6 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request, payloa
 		return
 	}
 
-	s.run.Clients.Log.Infof("Starting Pipelines as Code version: %s", version.Version)
 	err = pipelineascode.Run(ctx, s.run, s.vcx, s.kint, s.event)
 	if err != nil {
 		createStatusErr := s.vcx.CreateStatus(ctx, s.event, s.run.Info.Pac, provider.StatusOpts{

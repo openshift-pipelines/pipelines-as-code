@@ -110,7 +110,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 
 			found := false
 			for _, s := range slist.Items {
-				if s.Name == tt.expectedSecretName {
+				if s.Name == tt.expectedSecretName && s.StringData[".git-credentials"] == tt.expectedGitCredentials {
 					found = true
 				}
 			}

@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/version"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"go.uber.org/zap"
@@ -45,6 +46,8 @@ func New(run *params.Run, k *kubeinteraction.Interaction) adapter.AdapterConstru
 }
 
 func (l *listener) Start(ctx context.Context) error {
+	l.run.Clients.Log.Infof("Starting Pipelines as Code version: %s", version.Version)
+
 	mux := http.NewServeMux()
 
 	// TODO: to be used in health check in deployment
