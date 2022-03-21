@@ -124,8 +124,7 @@ func MuxRepoInfo(t *testing.T, mux *http.ServeMux, event *info.Event, repo *bitb
 	})
 }
 
-func MuxCreateCommitstatus(t *testing.T, mux *http.ServeMux, event *info.Event,
-	expectedDescSubstr string, expStatus provider.StatusOpts) {
+func MuxCreateCommitstatus(t *testing.T, mux *http.ServeMux, event *info.Event, expectedDescSubstr string, expStatus provider.StatusOpts) {
 	path := fmt.Sprintf("/repositories/%s/%s/commit/%s/statuses/build", event.Organization, event.Repository, event.SHA)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &bitbucket.CommitStatusOptions{}
@@ -145,8 +144,7 @@ func MuxCreateCommitstatus(t *testing.T, mux *http.ServeMux, event *info.Event,
 	})
 }
 
-func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event,
-	expectedCommentSubstr string) {
+func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expectedCommentSubstr string) {
 	assert.Assert(t, event.Event != nil)
 	prev, ok := event.Event.(*types.PullRequestEvent)
 	assert.Assert(t, ok)

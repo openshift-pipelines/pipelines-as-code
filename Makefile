@@ -14,7 +14,7 @@ ifeq ($(PAC_VERSION),)
 endif
 FLAGS += -ldflags "-X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version=$(PAC_VERSION) $(LDFLAGS)"
 
-all: $(OUTPUT_DIR)/pipelines-as-code $(OUTPUT_DIR)/tkn-pac test
+all: $(OUTPUT_DIR)/pipelines-as-code-controller $(OUTPUT_DIR)/tkn-pac test
 
 FORCE:
 
