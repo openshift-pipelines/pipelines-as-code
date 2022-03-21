@@ -77,9 +77,7 @@ func TestParsePayload(t *testing.T) {
 				EventType: tt.eventType,
 			}
 			run := &params.Run{
-				Info: info.Info{
-					Event: event,
-				},
+				Info: info.Info{},
 			}
 			_b, err := json.Marshal(tt.payloadEvent)
 			assert.NilError(t, err)
@@ -88,7 +86,7 @@ func TestParsePayload(t *testing.T) {
 				payload = tt.rawStr
 			}
 
-			got, err := v.ParsePayload(ctx, run, payload)
+			got, err := v.ParsePayload(ctx, run, event, payload)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return

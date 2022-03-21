@@ -5,11 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -18,6 +16,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"go.uber.org/zap"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+)
+
+const (
+	secretName = "pipelines-as-code-secret"
 )
 
 // payloadFix since we are getting a bunch of \r\n or \n and others from triggers/github, so let just
@@ -37,42 +41,31 @@ func (v *Provider) payloadFix(payload string) []byte {
 	return []byte(replacer.Replace(payload))
 }
 
-func (v *Provider) getAppToken(ctx context.Context, info *info.PacOpts) error {
-	installationIDEnv := os.Getenv("PAC_INSTALLATION_ID")
-	workspacePath := os.Getenv("PAC_WORKSPACE_SECRET")
-
-	if installationIDEnv == "" || workspacePath == "" {
-		return nil
-	}
-
-	installationID, err := strconv.ParseInt(installationIDEnv, 10, 64)
+func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, installationID int64) (string, error) {
+	// TODO: move this out of here
+	ns := os.Getenv("SYSTEM_NAMESPACE")
+	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("could not parse installation_id: %w", err)
+		return "", err
 	}
 
-	// check if the path exists
-	if _, err := os.Stat(workspacePath); os.IsNotExist(err) {
-		return fmt.Errorf("workspace path %s or env PAC_WORKSPACE_SECRET does not exist", workspacePath)
-	}
-
-	// read github-application-id from the secret workspace
-	b, err := ioutil.ReadFile(filepath.Join(workspacePath, "github-application-id"))
+	appID := secret.Data["github-application-id"]
+	applicationID, err := strconv.ParseInt(strings.TrimSpace(string(appID)), 10, 64)
 	if err != nil {
-		return fmt.Errorf("could not open the github-application-id key in secret: %w", err)
-	}
-	applicationID, err := strconv.ParseInt(strings.TrimSpace(string(b)), 10, 64)
-	if err != nil {
-		return fmt.Errorf("could not parse the github application_id number from secret: %w", err)
+		return "", fmt.Errorf("could not parse the github application_id number from secret: %w", err)
 	}
 
-	// read private_key from the secret workspace
-	privatekey := filepath.Join(workspacePath, "github-private-key")
+	privateKey := secret.Data["github-private-key"]
+
 	tr := http.DefaultTransport
-	itr, err := ghinstallation.NewKeyFromFile(tr, applicationID, installationID, privatekey)
+
+	itr, err := ghinstallation.New(tr, applicationID, installationID, privateKey)
 	if err != nil {
-		return err
+		return "", err
 	}
 
+	// TODO: figure out this part
+	// TODO: Read PAC_GIT_PROVIDER_APIURL from request header
 	// getting the baseurl from go-github since it has all the logic in there
 	gheURL := os.Getenv("PAC_GIT_PROVIDER_APIURL")
 	if gheURL != "" {
@@ -85,7 +78,7 @@ func (v *Provider) getAppToken(ctx context.Context, info *info.PacOpts) error {
 		v.Client = github.NewClient(&http.Client{Transport: itr})
 	}
 
-	// This is a hack when we have auth and api dissascoiated
+	// This is a hack when we have auth and api disassociated
 	reqTokenURL := os.Getenv("PAC_GIT_PROVIDER_TOKEN_APIURL")
 	if reqTokenURL != "" {
 		itr.BaseURL = reqTokenURL
@@ -94,43 +87,89 @@ func (v *Provider) getAppToken(ctx context.Context, info *info.PacOpts) error {
 	// Get a token ASAP because we need it for setting private repos
 	token, err := itr.Token(ctx)
 	if err != nil {
-		return err
+		return "", err
 	}
 	v.Token = github.String(token)
-	info.ProviderToken = token
 
-	return err
+	return token, err
 }
 
-// ParsePayload parse payload event
-// TODO: this piece of code is just plain silly
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
-	var processedevent *info.Event
+func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
+	event.EventType = request.Header.Get("X-GitHub-Event")
+	if event.EventType == "" {
+		return fmt.Errorf("failed to find event type in request header")
+	}
 
-	// get the app token if it exist first
-	if err := v.getAppToken(ctx, run.Info.Pac); err != nil {
-		return nil, err
+	if event.EventType == "push" {
+		event.TriggerTarget = "push"
+	} else {
+		event.TriggerTarget = "pull_request"
+	}
+
+	return nil
+}
+
+func getInstallationIDFromPayload(payload string) int64 {
+	var data map[string]interface{}
+	_ = json.Unmarshal([]byte(payload), &data)
+
+	i := github.Installation{}
+	installData, ok := data["installation"]
+	if ok {
+		installation, _ := json.Marshal(installData)
+		_ = json.Unmarshal(installation, &i)
+		return *i.ID
+	}
+	return -1
+}
+
+func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, event *info.Event, payload string) (*info.Event, error) {
+	if event.EventType == "" || event.TriggerTarget == "" {
+		return nil, fmt.Errorf("failed to find eventInt type")
+	}
+
+	id := getInstallationIDFromPayload(payload)
+
+	if id != -1 {
+		// get the app token if it exist first
+		var err error
+		event.ProviderToken, err = v.getAppToken(ctx, run.Clients.Kube, id)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	payloadTreated := v.payloadFix(payload)
-	event, err := github.ParseWebHook(run.Info.Event.EventType, payloadTreated)
+	eventInt, err := github.ParseWebHook(event.EventType, payloadTreated)
 	if err != nil {
 		return nil, err
 	}
 
 	// should not get invalid json since we already check it in github.ParseWebHook
-	_ = json.Unmarshal(payloadTreated, &event)
+	_ = json.Unmarshal(payloadTreated, &eventInt)
 
-	switch event := event.(type) {
+	processedEvent, err := v.processEvent(ctx, run, event, eventInt)
+	if err != nil {
+		return nil, err
+	}
+
+	return processedEvent, nil
+}
+
+func (v *Provider) processEvent(ctx context.Context, run *params.Run, event *info.Event, eventInt interface{}) (*info.Event, error) {
+	var processedEvent *info.Event
+	var err error
+
+	switch gitEvent := eventInt.(type) {
 	case *github.CheckRunEvent:
 		if v.Client == nil {
 			return nil, fmt.Errorf("reqrequest is only supported with github apps integration")
 		}
 
-		if *event.Action != "rerequested" {
+		if *gitEvent.Action != "rerequested" {
 			return nil, fmt.Errorf("only issue recheck is supported in checkrunevent")
 		}
-		processedevent, err = v.handleReRequestEvent(ctx, run.Clients.Log, event)
+		processedEvent, err = v.handleReRequestEvent(ctx, run.Clients.Log, gitEvent)
 		if err != nil {
 			return nil, err
 		}
@@ -138,46 +177,47 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 		if v.Client == nil {
 			return nil, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
 		}
-		processedevent, err = v.handleIssueCommentEvent(ctx, run.Clients.Log, event)
+		processedEvent, err = v.handleIssueCommentEvent(ctx, run.Clients.Log, gitEvent)
 		if err != nil {
 			return nil, err
 		}
+
 	case *github.PushEvent:
-		processedevent = &info.Event{
-			Organization:  event.GetRepo().GetOwner().GetLogin(),
-			Repository:    event.GetRepo().GetName(),
-			DefaultBranch: event.GetRepo().GetDefaultBranch(),
-			URL:           event.GetRepo().GetHTMLURL(),
-			SHA:           event.GetHeadCommit().GetID(),
-			SHAURL:        event.GetHeadCommit().GetURL(),
-			SHATitle:      event.GetHeadCommit().GetMessage(),
-			Sender:        event.GetSender().GetLogin(),
-			BaseBranch:    event.GetRef(),
-			EventType:     run.Info.Event.TriggerTarget,
+		processedEvent = &info.Event{
+			Organization:  gitEvent.GetRepo().GetOwner().GetLogin(),
+			Repository:    gitEvent.GetRepo().GetName(),
+			DefaultBranch: gitEvent.GetRepo().GetDefaultBranch(),
+			URL:           gitEvent.GetRepo().GetHTMLURL(),
+			SHA:           gitEvent.GetHeadCommit().GetID(),
+			SHAURL:        gitEvent.GetHeadCommit().GetURL(),
+			SHATitle:      gitEvent.GetHeadCommit().GetMessage(),
+			Sender:        gitEvent.GetSender().GetLogin(),
+			BaseBranch:    gitEvent.GetRef(),
+			EventType:     event.TriggerTarget,
 		}
 
-		processedevent.HeadBranch = processedevent.BaseBranch // in push events Head Branch is the same as Basebranch
+		processedEvent.HeadBranch = processedEvent.BaseBranch // in push events Head Branch is the same as Basebranch
 	case *github.PullRequestEvent:
-		processedevent = &info.Event{
-			Organization:  event.GetRepo().Owner.GetLogin(),
-			Repository:    event.GetRepo().GetName(),
-			DefaultBranch: event.GetRepo().GetDefaultBranch(),
-			SHA:           event.GetPullRequest().Head.GetSHA(),
-			URL:           event.GetRepo().GetHTMLURL(),
-			BaseBranch:    event.GetPullRequest().Base.GetRef(),
-			HeadBranch:    event.GetPullRequest().Head.GetRef(),
-			Sender:        event.GetPullRequest().GetUser().GetLogin(),
-			EventType:     run.Info.Event.EventType,
+		processedEvent = &info.Event{
+			Organization:  gitEvent.GetRepo().Owner.GetLogin(),
+			Repository:    gitEvent.GetRepo().GetName(),
+			DefaultBranch: gitEvent.GetRepo().GetDefaultBranch(),
+			SHA:           gitEvent.GetPullRequest().Head.GetSHA(),
+			URL:           gitEvent.GetRepo().GetHTMLURL(),
+			BaseBranch:    gitEvent.GetPullRequest().Base.GetRef(),
+			HeadBranch:    gitEvent.GetPullRequest().Head.GetRef(),
+			Sender:        gitEvent.GetPullRequest().GetUser().GetLogin(),
+			EventType:     event.EventType,
 		}
 
 	default:
 		return nil, errors.New("this event is not supported")
 	}
 
-	processedevent.Event = event
-	processedevent.TriggerTarget = run.Info.Event.TriggerTarget
+	processedEvent.Event = eventInt
+	processedEvent.TriggerTarget = event.TriggerTarget
 
-	return processedevent, nil
+	return processedEvent, nil
 }
 
 func (v *Provider) handleReRequestEvent(ctx context.Context, log *zap.SugaredLogger, event *github.CheckRunEvent) (*info.Event, error) {

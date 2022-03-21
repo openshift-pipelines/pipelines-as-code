@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -17,7 +18,11 @@ type TestProviderImp struct {
 	FilesInsideRepo      map[string]string
 }
 
-func (v *TestProviderImp) ParsePayload(ctx context.Context, run *params.Run, s string) (*info.Event, error) {
+func (v *TestProviderImp) ParseEventType(request *http.Request, event *info.Event) error {
+	return nil
+}
+
+func (v *TestProviderImp) ParsePayload(ctx context.Context, run *params.Run, event *info.Event, s string) (*info.Event, error) {
 	return v.Event, nil
 }
 
@@ -29,7 +34,7 @@ func (v *TestProviderImp) GetCommitInfo(ctx context.Context, runevent *info.Even
 	return nil
 }
 
-func (v *TestProviderImp) SetClient(ctx context.Context, pacopt *info.PacOpts) error {
+func (v *TestProviderImp) SetClient(ctx context.Context, event *info.Event) error {
 	return nil
 }
 

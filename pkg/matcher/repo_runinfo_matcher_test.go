@@ -124,11 +124,10 @@ func Test_getRepoByCR(t *testing.T) {
 			logger := zap.New(observer).Sugar()
 			client := &params.Run{
 				Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger},
-				Info: info.Info{
-					Event: &tt.args.runevent,
-				},
+				Info:    info.Info{},
 			}
-			got, err := MatchEventURLRepo(ctx, client, "")
+			got, err := MatchEventURLRepo(ctx, client, &tt.args.runevent, "")
+
 			if err == nil && tt.wantErr {
 				assert.NilError(t, err, "GetRepoByCR() error = %v, wantErr %v", err, tt.wantErr)
 			}

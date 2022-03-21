@@ -100,14 +100,23 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 					},
 				},
 			}
-			err := kint.CreateBasicAuthSecret(ctx, &tt.event, &info.PacOpts{ProviderToken: secrete}, tt.targetNS)
+			tt.event.ProviderToken = secrete
+			err := kint.CreateBasicAuthSecret(ctx, &tt.event, tt.targetNS)
 			assert.NilError(t, err)
 
 			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
 			assert.Assert(t, len(slist.Items) > 0, "Secret has not been created")
-			assert.Equal(t, slist.Items[0].Name, tt.expectedSecretName)
-			assert.Equal(t, slist.Items[0].StringData[".git-credentials"], tt.expectedGitCredentials)
+
+			found := false
+			for _, s := range slist.Items {
+				if s.Name == tt.expectedSecretName && s.StringData[".git-credentials"] == tt.expectedGitCredentials {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatal("failed to create secret ", tt.expectedSecretName)
+			}
 		})
 	}
 }
@@ -181,7 +190,17 @@ func TestDeleteBasicAuthSecret(t *testing.T) {
 
 			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
-			assert.Assert(t, len(slist.Items) == 0, "Secret has not been deleted")
+
+			found := false
+			secretName := getBasicAuthSecretName(&tt.event)
+			for _, s := range slist.Items {
+				if s.Name == secretName {
+					found = true
+				}
+			}
+			if found {
+				t.Fatal("failed to delete secret ", secretName)
+			}
 		})
 	}
 }

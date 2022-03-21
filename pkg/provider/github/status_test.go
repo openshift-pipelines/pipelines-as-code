@@ -161,8 +161,8 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				LogURL: "https://log",
 			}
 			if !tt.notoken {
-				pacopts.ProviderToken = "hello"
-				pacopts.ProviderURL = "moto"
+				tt.args.runevent.ProviderToken = "hello"
+				tt.args.runevent.ProviderURL = "moto"
 			}
 
 			err := gcvs.CreateStatus(ctx, &tt.args.runevent, pacopts, status)

@@ -85,14 +85,14 @@ func parsePayloadType(messageType string, rawPayload []byte) (interface{}, error
 	return payload, err
 }
 
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
-	processedevent := run.Info.Event
-	event, err := parsePayloadType(run.Info.Event.EventType, []byte(payload))
+func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, event *info.Event, payload string) (*info.Event, error) {
+	processedEvent := event
+	eventInt, err := parsePayloadType(event.EventType, []byte(payload))
 	if err != nil {
 		return &info.Event{}, err
 	}
 
-	err = json.Unmarshal([]byte(payload), &event)
+	err = json.Unmarshal([]byte(payload), &eventInt)
 	if err != nil {
 		return &info.Event{}, err
 	}
@@ -106,29 +106,29 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload st
 			bitbucketCloudIPrangesList)
 	}
 
-	processedevent.Event = event
+	processedEvent.Event = eventInt
 
-	switch e := event.(type) {
+	switch e := eventInt.(type) {
 	case *types.PullRequestEvent:
-		processedevent.Organization = e.Repository.Workspace.Slug
-		processedevent.Repository = e.Repository.Name
-		processedevent.SHA = e.PullRequest.Source.Commit.Hash
-		processedevent.URL = e.Repository.Links.HTML.HRef
-		processedevent.BaseBranch = e.PullRequest.Destination.Branch.Name
-		processedevent.HeadBranch = e.PullRequest.Source.Branch.Name
-		processedevent.AccountID = e.PullRequest.Author.AccountID
-		processedevent.Sender = e.PullRequest.Author.Nickname
+		processedEvent.Organization = e.Repository.Workspace.Slug
+		processedEvent.Repository = e.Repository.Name
+		processedEvent.SHA = e.PullRequest.Source.Commit.Hash
+		processedEvent.URL = e.Repository.Links.HTML.HRef
+		processedEvent.BaseBranch = e.PullRequest.Destination.Branch.Name
+		processedEvent.HeadBranch = e.PullRequest.Source.Branch.Name
+		processedEvent.AccountID = e.PullRequest.Author.AccountID
+		processedEvent.Sender = e.PullRequest.Author.Nickname
 	case *types.PushRequestEvent:
-		processedevent.Organization = e.Repository.Workspace.Slug
-		processedevent.Repository = e.Repository.Name
-		processedevent.SHA = e.Push.Changes[0].New.Target.Hash
-		processedevent.URL = e.Repository.Links.HTML.HRef
-		processedevent.BaseBranch = e.Push.Changes[0].New.Name
-		processedevent.HeadBranch = e.Push.Changes[0].Old.Name
-		processedevent.AccountID = e.Actor.AccountID
-		processedevent.Sender = e.Actor.Nickname
+		processedEvent.Organization = e.Repository.Workspace.Slug
+		processedEvent.Repository = e.Repository.Name
+		processedEvent.SHA = e.Push.Changes[0].New.Target.Hash
+		processedEvent.URL = e.Repository.Links.HTML.HRef
+		processedEvent.BaseBranch = e.Push.Changes[0].New.Name
+		processedEvent.HeadBranch = e.Push.Changes[0].Old.Name
+		processedEvent.AccountID = e.Actor.AccountID
+		processedEvent.Sender = e.Actor.Nickname
 	default:
-		return nil, fmt.Errorf("event %s is not recognized", run.Info.Event.EventType)
+		return nil, fmt.Errorf("event %s is not recognized", event.EventType)
 	}
-	return processedevent, nil
+	return processedEvent, nil
 }

@@ -365,15 +365,14 @@ func TestRun(t *testing.T) {
 					ConsoleUI:      consoleui.FallBackConsole{},
 				},
 				Info: info.Info{
-					Event: &tt.runevent,
 					Pac: &info.PacOpts{
-						ProviderInfoFromRepo: tt.ProviderInfoFromRepo,
-						SecretAutoCreation:   true,
-						ProviderURL:          ghTestServerURL,
-						ProviderToken:        "NONE",
+						SecretAutoCreation: true,
 					},
 				},
 			}
+			tt.runevent.ProviderInfoFromRepo = tt.ProviderInfoFromRepo
+			tt.runevent.ProviderURL = ghTestServerURL
+			tt.runevent.ProviderToken = "NONE"
 
 			k8int := &kitesthelper.KinterfaceTest{
 				ConsoleURL:               "https://console.url",
@@ -384,7 +383,7 @@ func TestRun(t *testing.T) {
 			err := Run(ctx, cs, &ghprovider.Provider{
 				Client: fakeclient,
 				Token:  github.String("None"),
-			}, k8int)
+			}, k8int, &tt.runevent)
 
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)

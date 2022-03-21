@@ -1,20 +1,24 @@
 package github
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
-	"gotest.tools/v3/fs"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -43,6 +47,8 @@ var sampleRepo = &github.Repository{
 	DefaultBranch: github.String("defaultbranch"),
 	HTMLURL:       github.String("https://github.com/owner/repo"),
 }
+
+var testInstallationID = int64(1)
 
 var samplePRevent = github.PullRequestEvent{
 	PullRequest: &github.PullRequest{
@@ -97,11 +103,9 @@ func TestPayLoadFix(t *testing.T) {
 		Clients: clients.Clients{
 			Log: logger,
 		},
-		Info: info.Info{
-			Event: event,
-		},
+		Info: info.Info{},
 	}
-	_, err = gprovider.ParsePayload(ctx, run, string(b))
+	_, err = gprovider.ParsePayload(ctx, run, event, string(b))
 	assert.NilError(t, err)
 
 	// would bomb out on "assertion failed: error is not nil: invalid character
@@ -128,17 +132,20 @@ func TestParsePayLoad(t *testing.T) {
 			name:          "bad/unknow event",
 			wantErrString: "unknown X-Github-Event",
 			eventType:     "unknown",
+			triggerTarget: "unknown",
 		},
 		{
 			name:          "bad/invalid json",
 			wantErrString: "invalid character",
 			eventType:     "pull_request",
+			triggerTarget: "unknown",
 			jeez:          "xxxx",
 		},
 		{
 			name:               "bad/not supported",
 			wantErrString:      "this event is not supported",
 			eventType:          "pull_request_review_comment",
+			triggerTarget:      "pull_request",
 			payloadEventStruct: github.PullRequestReviewCommentEvent{Action: github.String("created")},
 		},
 		{
@@ -153,25 +160,29 @@ func TestParsePayLoad(t *testing.T) {
 			name:               "bad/check run only with github apps",
 			wantErrString:      "only supported with github apps",
 			eventType:          "check_run",
+			triggerTarget:      "pull_request",
 			payloadEventStruct: github.CheckRunEvent{Action: github.String("created")},
 		},
 		{
 			name:               "bad/issue comment retest only with github apps",
 			wantErrString:      "only supported with github apps",
 			eventType:          "issue_comment",
+			triggerTarget:      "pull_request",
 			payloadEventStruct: github.IssueCommentEvent{Action: github.String("created")},
 		},
 		{
 			name:               "bad/issue comment not coming from pull request",
 			eventType:          "issue_comment",
+			triggerTarget:      "pull_request",
 			githubClient:       fakeclient,
 			payloadEventStruct: github.IssueCommentEvent{Issue: &github.Issue{}},
 			wantErrString:      "issue comment is not coming from a pull_request",
 		},
 		{
-			name:         "bad/issue comment invalid pullrequest",
-			eventType:    "issue_comment",
-			githubClient: fakeclient,
+			name:          "bad/issue comment invalid pullrequest",
+			eventType:     "issue_comment",
+			triggerTarget: "pull_request",
+			githubClient:  fakeclient,
 			payloadEventStruct: github.IssueCommentEvent{Issue: &github.Issue{
 				PullRequestLinks: &github.PullRequestLinks{
 					HTMLURL: github.String("/bad"),
@@ -196,7 +207,6 @@ func TestParsePayLoad(t *testing.T) {
 			},
 			shaRet: "samplePRsha",
 		},
-
 		{
 			name:          "good/rerequest on pull request",
 			eventType:     "check_run",
@@ -231,9 +241,10 @@ func TestParsePayLoad(t *testing.T) {
 			shaRet: "headSHACheckSuite",
 		},
 		{
-			name:         "good/issue comment",
-			eventType:    "issue_comment",
-			githubClient: fakeclient,
+			name:          "good/issue comment",
+			eventType:     "issue_comment",
+			triggerTarget: "pull_request",
+			githubClient:  fakeclient,
 			payloadEventStruct: github.IssueCommentEvent{
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
@@ -289,16 +300,14 @@ func TestParsePayLoad(t *testing.T) {
 				Clients: clients.Clients{
 					Log: logger,
 				},
-				Info: info.Info{
-					Event: event,
-				},
+				Info: info.Info{},
 			}
 			bjeez, _ := json.Marshal(tt.payloadEventStruct)
 			jeez := string(bjeez)
 			if tt.jeez != "" {
 				jeez = tt.jeez
 			}
-			ret, err := gprovider.ParsePayload(ctx, run, jeez)
+			ret, err := gprovider.ParsePayload(ctx, run, event, jeez)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return
@@ -311,122 +320,113 @@ func TestParsePayLoad(t *testing.T) {
 }
 
 func TestAppTokenGeneration(t *testing.T) {
+	testNamespace := "pipelinesascode"
+
+	ctxNoSecret, _ := rtesting.SetupFakeContext(t)
+	noSecret, _ := testclient.SeedTestData(t, ctxNoSecret, testclient.Data{})
+
+	ctx, _ := rtesting.SetupFakeContext(t)
+	vaildSecret, _ := testclient.SeedTestData(t, ctx, testclient.Data{
+		Secret: []*corev1.Secret{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pipelines-as-code-secret",
+					Namespace: testNamespace,
+				},
+				Data: map[string][]byte{
+					"github-application-id": []byte("12345"),
+					"github-private-key":    []byte(fakePrivateKey),
+				},
+			},
+		},
+	})
+
+	ctxInvalidAppID, _ := rtesting.SetupFakeContext(t)
+	invalidAppID, _ := testclient.SeedTestData(t, ctxInvalidAppID, testclient.Data{
+		Secret: []*corev1.Secret{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pipelines-as-code-secret",
+					Namespace: testNamespace,
+				},
+				Data: map[string][]byte{
+					"github-application-id": []byte("abcd"),
+					"github-private-key":    []byte(fakePrivateKey),
+				},
+			},
+		},
+	})
+
+	ctxInvalidPrivateKey, _ := rtesting.SetupFakeContext(t)
+	invalidPrivateKey, _ := testclient.SeedTestData(t, ctxInvalidPrivateKey, testclient.Data{
+		Secret: []*corev1.Secret{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pipelines-as-code-secret",
+					Namespace: testNamespace,
+				},
+				Data: map[string][]byte{
+					"github-application-id": []byte("12345"),
+					"github-private-key":    []byte("invalid-key"),
+				},
+			},
+		},
+	})
+
 	fakeGithubAuthURL := "https://fake.gitub.auth/api/v3/"
 	tests := []struct {
+		ctx           context.Context
 		name          string
 		wantErr       bool
 		nilClient     bool
+		seedData      testclient.Clients
 		envs          map[string]string
-		wsSecretFiles map[string]string
 		resultBaseURL string
 	}{
 		{
-			name: "Env not set",
+			name: "secret not found",
+			ctx:  ctxNoSecret,
 			envs: map[string]string{
-				"FOO": "bar",
+				"SYSTEM_NAMESPACE": "foo",
 			},
-			nilClient: true,
+			seedData: noSecret,
+			wantErr:  true,
 		},
 		{
-			name: "Bad Account ID",
+			ctx:  ctx,
+			name: "secret found",
 			envs: map[string]string{
-				"PAC_INSTALLATION_ID":  "bad",
-				"PAC_WORKSPACE_SECRET": "xxx",
+				"SYSTEM_NAMESPACE": testNamespace,
 			},
-			wantErr: true,
+			seedData:      vaildSecret,
+			resultBaseURL: "https://fake.gitub.auth/api/v3/",
+			nilClient:     false,
 		},
 		{
-			name: "bad/Workspace path doesn't exist",
+			ctx:  ctxInvalidAppID,
+			name: "invalid app id in secret",
 			envs: map[string]string{
-				"PAC_INSTALLATION_ID":  "11111",
-				"PAC_WORKSPACE_SECRET": "not/here",
+				"SYSTEM_NAMESPACE": testNamespace,
 			},
-			wantErr: true,
+			wantErr:  true,
+			seedData: invalidAppID,
 		},
 		{
-			name: "bad/Application ID in workspace doesn't exist",
+			ctx:  ctxInvalidPrivateKey,
+			name: "invalid app id in secret",
 			envs: map[string]string{
-				"PAC_INSTALLATION_ID":  "11111",
-				"PAC_WORKSPACE_SECRET": "here",
+				"SYSTEM_NAMESPACE": testNamespace,
 			},
-			wsSecretFiles: map[string]string{
-				"nogithub-application-id": "Foo",
-			},
-			wantErr: true,
-		},
-		{
-			name: "bad/wrong ApplicationID",
-			envs: map[string]string{
-				"PAC_INSTALLATION_ID":  "11111",
-				"PAC_WORKSPACE_SECRET": "here",
-			},
-			wsSecretFiles: map[string]string{
-				"github-application-id": "BAD",
-			},
-			wantErr: true,
-		},
-		{
-			name: "bad/Private Key not present",
-			envs: map[string]string{
-				"PAC_INSTALLATION_ID":  "11111",
-				"PAC_WORKSPACE_SECRET": "here",
-			},
-			wsSecretFiles: map[string]string{
-				"github-application-id": "2222",
-			},
-			wantErr: true,
-		},
-		{
-			name: "Bad/Private Key chelou",
-			envs: map[string]string{
-				"PAC_INSTALLATION_ID":     "11111",
-				"PAC_WORKSPACE_SECRET":    "here",
-				"PAC_GIT_PROVIDER_APIURL": "foo.bar.com",
-			},
-			wsSecretFiles: map[string]string{
-				"github-application-id": "2222",
-				"github-private-key":    "hello",
-			},
-			wantErr: true,
-		},
-		{
-			name: "Good/ghe base domain",
-			envs: map[string]string{
-				"PAC_INSTALLATION_ID":     "11111",
-				"PAC_WORKSPACE_SECRET":    "here",
-				"PAC_GIT_PROVIDER_APIURL": "foo.bar.com",
-			},
-			wsSecretFiles: map[string]string{
-				"github-application-id": "2222",
-				"github-private-key":    fakePrivateKey,
-			},
-			resultBaseURL: fakeGithubAuthURL,
-		},
-		{
-			name: "Good/full ghe url",
-			envs: map[string]string{
-				"PAC_INSTALLATION_ID":     "11111",
-				"PAC_WORKSPACE_SECRET":    "here",
-				"PAC_GIT_PROVIDER_APIURL": "https://alpha.beta.com",
-			},
-			wsSecretFiles: map[string]string{
-				"github-application-id": "2222",
-				"github-private-key":    fakePrivateKey,
-			},
-			resultBaseURL: fakeGithubAuthURL,
+			wantErr:  true,
+			seedData: invalidPrivateKey,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if s, ok := tt.envs["PAC_WORKSPACE_SECRET"]; ok && s == "here" {
-				d := fs.NewDir(t, "workspace-secret", fs.WithFiles(tt.wsSecretFiles))
-				defer d.Remove()
-				tt.envs["PAC_WORKSPACE_SECRET"] = d.Path()
-			}
-
 			_, mux, url, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-			mux.HandleFunc(fmt.Sprintf("/app/installations/%s/access_tokens", tt.envs["PAC_INSTALLATION_ID"]), func(w http.ResponseWriter, r *http.Request) {
+			testInstallID := strconv.FormatInt(testInstallationID, 10)
+			mux.HandleFunc(fmt.Sprintf("/app/installations/%s/access_tokens", string(testInstallID)), func(w http.ResponseWriter, r *http.Request) {
 				_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 			})
 			tt.envs["PAC_GIT_PROVIDER_APIURL"] = fakeGithubAuthURL
@@ -435,7 +435,11 @@ func TestAppTokenGeneration(t *testing.T) {
 			envRemove := env.PatchAll(t, tt.envs)
 			defer envRemove()
 
-			ctx, _ := rtesting.SetupFakeContext(t)
+			// adding installation id to event to enforce client creation
+			samplePRevent.Installation = &github.Installation{
+				ID: &testInstallationID,
+			}
+
 			jeez, _ := json.Marshal(samplePRevent)
 			gprovider := Provider{}
 			logger := getLogger()
@@ -445,15 +449,15 @@ func TestAppTokenGeneration(t *testing.T) {
 			}
 			run := &params.Run{
 				Clients: clients.Clients{
-					Log: logger,
+					Log:  logger,
+					Kube: tt.seedData.Kube,
 				},
 				Info: info.Info{
-					Event: event,
-					Pac:   &info.PacOpts{},
+					Pac: &info.PacOpts{},
 				},
 			}
 
-			_, err := gprovider.ParsePayload(ctx, run, string(jeez))
+			_, err := gprovider.ParsePayload(tt.ctx, run, event, string(jeez))
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 				return

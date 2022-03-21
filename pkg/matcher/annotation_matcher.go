@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
@@ -67,11 +68,11 @@ func getAnnotationValues(annotation string) ([]string, error) {
 	return splitted, nil
 }
 
-func getTargetBranch(prun *v1beta1.PipelineRun, cs *params.Run) (bool, string, string, error) {
+func getTargetBranch(prun *v1beta1.PipelineRun, cs *params.Run, event *info.Event) (bool, string, string, error) {
 	var targetEvent, targetBranch string
 	if key, ok := prun.GetObjectMeta().GetAnnotations()[filepath.Join(
 		pipelinesascode.GroupName, onEventAnnotation)]; ok {
-		matched, err := matchOnAnnotation(key, cs.Info.Event.TriggerTarget, false)
+		matched, err := matchOnAnnotation(key, event.TriggerTarget, false)
 		targetEvent = key
 		if err != nil {
 			return false, "", "", err
@@ -82,7 +83,7 @@ func getTargetBranch(prun *v1beta1.PipelineRun, cs *params.Run) (bool, string, s
 	}
 	if key, ok := prun.GetObjectMeta().GetAnnotations()[filepath.Join(
 		pipelinesascode.GroupName, onTargetBranchAnnotation)]; ok {
-		matched, err := matchOnAnnotation(key, cs.Info.Event.BaseBranch, true)
+		matched, err := matchOnAnnotation(key, event.BaseBranch, true)
 		targetBranch = key
 		if err != nil {
 			return false, "", "", err
@@ -99,14 +100,14 @@ func getTargetBranch(prun *v1beta1.PipelineRun, cs *params.Run) (bool, string, s
 	return true, targetEvent, targetBranch, nil
 }
 
-func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.PipelineRun, cs *params.Run) (*v1beta1.PipelineRun, *apipac.Repository, map[string]string, error) {
+func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.PipelineRun, cs *params.Run, event *info.Event) (*v1beta1.PipelineRun, *apipac.Repository, map[string]string, error) {
 	configurations := map[string]map[string]string{}
 	repo := &apipac.Repository{}
 	cs.Clients.Log.Infof("matching a pipeline to event: URL=%s, target-branch=%s, source-branch=%s, target-event=%s",
-		cs.Info.Event.URL,
-		cs.Info.Event.BaseBranch,
-		cs.Info.Event.HeadBranch,
-		cs.Info.Event.TriggerTarget)
+		event.URL,
+		event.BaseBranch,
+		event.HeadBranch,
+		event.TriggerTarget)
 
 	for _, prun := range pruns {
 		configurations[prun.GetGenerateName()] = map[string]string{}
@@ -123,7 +124,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 		if targetNS, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
 			GroupName+"/"+onTargetNamespace]; ok {
 			configurations[prun.GetGenerateName()]["target-namespace"] = targetNS
-			repo, _ = MatchEventURLRepo(ctx, cs, targetNS)
+			repo, _ = MatchEventURLRepo(ctx, cs, event, targetNS)
 			if repo == nil {
 				cs.Clients.Log.Warnf("could not find Repository CRD in %s while pipelineRun %s targets it", targetNS, prun.GetGenerateName())
 				continue
@@ -132,7 +133,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 
 		// nolint: nestif
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[filepath.Join(pipelinesascode.GroupName, onCelExpression)]; ok {
-			out, err := celEvaluate(celExpr, cs.Info.Event)
+			out, err := celEvaluate(celExpr, event)
 			if err != nil {
 				return nil, nil, map[string]string{}, err
 			}
@@ -142,7 +143,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 			}
 			cs.Clients.Log.Infof("CEL expression has been evaluated and matched")
 		} else {
-			matched, targetEvent, targetBranch, err := getTargetBranch(prun, cs)
+			matched, targetEvent, targetBranch, err := getTargetBranch(prun, cs, event)
 			if err != nil {
 				return nil, nil, map[string]string{}, err
 			}
@@ -166,7 +167,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, pruns []*v1beta1.Pipeline
 	}
 
 	// TODO: more descriptive error message
-	return nil, nil, map[string]string{}, fmt.Errorf("cannot match pipeline from webhook to pipelineruns on event=%s, branch=%s", cs.Info.Event.EventType, cs.Info.Event.BaseBranch)
+	return nil, nil, map[string]string{}, fmt.Errorf("cannot match pipeline from webhook to pipelineruns on event=%s, branch=%s", event.EventType, event.BaseBranch)
 }
 
 func matchOnAnnotation(annotations string, eventType string, branchMatching bool) (bool, error) {

@@ -43,6 +43,10 @@ type Provider struct {
 	repoURL           string
 }
 
+func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
+	panic("implement me")
+}
+
 // If I understood properly, you can have "personal" projects and groups
 // attached projects. But this doesn't seem to show in the API, so we
 // are just doing it the path_with_namespace to get the "org".
@@ -57,92 +61,92 @@ func getOrgRepo(pathWithNamespace string) (string, string) {
 	return org, filepath.Base(pathWithNamespace)
 }
 
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, payload string) (*info.Event, error) {
-	var processedevent *info.Event
+func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, event *info.Event, payload string) (*info.Event, error) {
+	var processedEvent *info.Event
 
 	payloadB := []byte(payload)
-	event, err := gitlab.ParseWebhook(gitlab.EventType(run.Info.Event.EventType), payloadB)
+	eventInt, err := gitlab.ParseWebhook(gitlab.EventType(event.EventType), payloadB)
 	if err != nil {
 		return nil, err
 	}
-	_ = json.Unmarshal(payloadB, &event)
+	_ = json.Unmarshal(payloadB, &eventInt)
 
-	switch event := event.(type) {
+	switch gitEvent := eventInt.(type) {
 	case *gitlab.MergeEvent:
-		processedevent = &info.Event{
+		processedEvent = &info.Event{
 			// Organization:  event.GetRepo().GetOwner().GetLogin(),
-			Sender:        event.User.Username,
-			DefaultBranch: event.Project.DefaultBranch,
-			URL:           event.Project.WebURL,
-			SHA:           event.ObjectAttributes.LastCommit.ID,
-			SHAURL:        event.ObjectAttributes.LastCommit.URL,
-			SHATitle:      event.ObjectAttributes.Title,
-			HeadBranch:    event.ObjectAttributes.SourceBranch,
-			BaseBranch:    event.ObjectAttributes.TargetBranch,
+			Sender:        gitEvent.User.Username,
+			DefaultBranch: gitEvent.Project.DefaultBranch,
+			URL:           gitEvent.Project.WebURL,
+			SHA:           gitEvent.ObjectAttributes.LastCommit.ID,
+			SHAURL:        gitEvent.ObjectAttributes.LastCommit.URL,
+			SHATitle:      gitEvent.ObjectAttributes.Title,
+			HeadBranch:    gitEvent.ObjectAttributes.SourceBranch,
+			BaseBranch:    gitEvent.ObjectAttributes.TargetBranch,
 		}
 
-		v.mergeRequestID = event.ObjectAttributes.IID
-		v.targetProjectID = event.Project.ID
-		v.sourceProjectID = event.ObjectAttributes.SourceProjectID
-		v.userID = event.User.ID
+		v.mergeRequestID = gitEvent.ObjectAttributes.IID
+		v.targetProjectID = gitEvent.Project.ID
+		v.sourceProjectID = gitEvent.ObjectAttributes.SourceProjectID
+		v.userID = gitEvent.User.ID
 
-		v.pathWithNamespace = event.ObjectAttributes.Target.PathWithNamespace
-		processedevent.Organization, processedevent.Repository = getOrgRepo(v.pathWithNamespace)
-		processedevent.TriggerTarget = "pull_request"
+		v.pathWithNamespace = gitEvent.ObjectAttributes.Target.PathWithNamespace
+		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
+		processedEvent.TriggerTarget = "pull_request"
 	case *gitlab.PushEvent:
-		if len(event.Commits) == 0 {
+		if len(gitEvent.Commits) == 0 {
 			return nil, fmt.Errorf("no commits attached to this push event")
 		}
-		processedevent = &info.Event{
-			Sender:        event.UserUsername,
-			DefaultBranch: event.Project.DefaultBranch,
-			URL:           event.Project.WebURL,
-			SHA:           event.Commits[0].ID,
-			SHAURL:        event.Commits[0].URL,
-			SHATitle:      event.Commits[0].Title,
-			HeadBranch:    event.Ref,
-			BaseBranch:    event.Ref,
+		processedEvent = &info.Event{
+			Sender:        gitEvent.UserUsername,
+			DefaultBranch: gitEvent.Project.DefaultBranch,
+			URL:           gitEvent.Project.WebURL,
+			SHA:           gitEvent.Commits[0].ID,
+			SHAURL:        gitEvent.Commits[0].URL,
+			SHATitle:      gitEvent.Commits[0].Title,
+			HeadBranch:    gitEvent.Ref,
+			BaseBranch:    gitEvent.Ref,
 		}
-		processedevent.TriggerTarget = "push"
-		v.pathWithNamespace = event.Project.PathWithNamespace
-		processedevent.Organization, processedevent.Repository = getOrgRepo(v.pathWithNamespace)
-		v.targetProjectID = event.ProjectID
-		v.sourceProjectID = event.ProjectID
-		v.userID = event.UserID
+		processedEvent.TriggerTarget = "push"
+		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
+		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
+		v.targetProjectID = gitEvent.ProjectID
+		v.sourceProjectID = gitEvent.ProjectID
+		v.userID = gitEvent.UserID
 	case *gitlab.MergeCommentEvent:
-		processedevent = &info.Event{
-			Sender:        event.User.Username,
-			DefaultBranch: event.Project.DefaultBranch,
-			URL:           event.Project.WebURL,
-			SHA:           event.MergeRequest.LastCommit.ID,
-			SHAURL:        event.MergeRequest.LastCommit.URL,
+		processedEvent = &info.Event{
+			Sender:        gitEvent.User.Username,
+			DefaultBranch: gitEvent.Project.DefaultBranch,
+			URL:           gitEvent.Project.WebURL,
+			SHA:           gitEvent.MergeRequest.LastCommit.ID,
+			SHAURL:        gitEvent.MergeRequest.LastCommit.URL,
 			// TODO: change this back to Title when we get this pr available merged https://github.com/xanzy/go-gitlab/pull/1406/files
-			SHATitle:   event.MergeRequest.LastCommit.Message,
-			BaseBranch: event.MergeRequest.TargetBranch,
-			HeadBranch: event.MergeRequest.SourceBranch,
+			SHATitle:   gitEvent.MergeRequest.LastCommit.Message,
+			BaseBranch: gitEvent.MergeRequest.TargetBranch,
+			HeadBranch: gitEvent.MergeRequest.SourceBranch,
 		}
 
-		v.pathWithNamespace = event.Project.PathWithNamespace
-		processedevent.Organization, processedevent.Repository = getOrgRepo(v.pathWithNamespace)
-		processedevent.TriggerTarget = "pull_request"
+		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
+		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
+		processedEvent.TriggerTarget = "pull_request"
 
-		v.mergeRequestID = event.MergeRequest.IID
-		v.targetProjectID = event.MergeRequest.TargetProjectID
-		v.sourceProjectID = event.MergeRequest.SourceProjectID
-		v.userID = event.User.ID
+		v.mergeRequestID = gitEvent.MergeRequest.IID
+		v.targetProjectID = gitEvent.MergeRequest.TargetProjectID
+		v.sourceProjectID = gitEvent.MergeRequest.SourceProjectID
+		v.userID = gitEvent.User.ID
 	default:
-		return nil, fmt.Errorf("event %s is not supported", run.Info.Event.EventType)
+		return nil, fmt.Errorf("event %s is not supported", event.EventType)
 	}
 
-	processedevent.Event = event
+	processedEvent.Event = eventInt
 
 	// Remove the " Hook" suffix so looks better in status, and since we don't
 	// really use it anymore we good to do whatever we want with it for
 	// cosmetics.
-	processedevent.EventType = strings.ReplaceAll(run.Info.Event.EventType, " Hook", "")
+	processedEvent.EventType = strings.ReplaceAll(event.EventType, " Hook", "")
 
-	v.repoURL = processedevent.URL
-	return processedevent, nil
+	v.repoURL = processedEvent.URL
+	return processedEvent, nil
 }
 
 func (v *Provider) GetConfig() *info.ProviderConfig {
@@ -152,26 +156,26 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(ctx context.Context, opts *info.PacOpts) error {
+func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	var err error
-	if opts.ProviderToken == "" {
+	if event.ProviderToken == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
 
 	// Try to detect automatically theapi url if url is not coming from public
 	// gitlab. Unless user has set a spec.provider.url in its repo crd
 	apiURL := apiPublicURL
-	if opts.ProviderURL != "" {
-		apiURL = opts.ProviderURL
+	if event.ProviderURL != "" {
+		apiURL = event.ProviderURL
 	} else if !strings.HasPrefix(v.repoURL, apiPublicURL) {
 		apiURL = strings.ReplaceAll(v.repoURL, v.pathWithNamespace, "")
 	}
 
-	v.Client, err = gitlab.NewClient(opts.ProviderToken, gitlab.WithBaseURL(apiURL))
+	v.Client, err = gitlab.NewClient(event.ProviderToken, gitlab.WithBaseURL(apiURL))
 	if err != nil {
 		return err
 	}
-	v.Token = &opts.ProviderToken
+	v.Token = &event.ProviderToken
 	return nil
 }
 

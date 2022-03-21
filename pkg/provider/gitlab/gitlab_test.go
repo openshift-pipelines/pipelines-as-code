@@ -296,11 +296,9 @@ func TestParsePayload(t *testing.T) {
 				defer tearDown()
 			}
 			run := &params.Run{
-				Info: info.Info{
-					Event: tt.args.event,
-				},
+				Info: info.Info{},
 			}
-			got, err := v.ParsePayload(ctx, run, tt.args.payload)
+			got, err := v.ParsePayload(ctx, run, tt.args.event, tt.args.payload)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParsePayload() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -336,12 +334,12 @@ func TestGetConfig(t *testing.T) {
 func TestSetClient(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	v := &Provider{}
-	assert.Assert(t, v.SetClient(ctx, &info.PacOpts{}) != nil)
+	assert.Assert(t, v.SetClient(ctx, &info.Event{}) != nil)
 
 	client, _, tearDown := thelp.Setup(ctx, t)
 	defer tearDown()
 	vv := &Provider{Client: client}
-	err := vv.SetClient(ctx, &info.PacOpts{ProviderToken: "hello"})
+	err := vv.SetClient(ctx, &info.Event{ProviderToken: "hello"})
 	assert.NilError(t, err)
 	assert.Assert(t, *vv.Token != "")
 }

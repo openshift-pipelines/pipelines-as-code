@@ -97,16 +97,17 @@ func TestSecretFromRepository(t *testing.T) {
 					},
 				},
 			}
+			event := &info.Event{}
 
-			err := secretFromRepository(ctx, cs, k8int, tt.providerconfig, tt.repo)
+			err := secretFromRepository(ctx, cs, k8int, tt.providerconfig, event, tt.repo)
 			assert.NilError(t, err)
 			logs := log.TakeAll()
 			assert.Equal(t, len(tt.logmatch), len(logs), "we didn't get the number of logging message: %+v", logs)
 			for key, value := range logs {
 				assert.Assert(t, tt.logmatch[key].MatchString(value.Message), "no match on logs %s => %s", tt.logmatch[key], value.Message)
 			}
-			assert.Assert(t, cs.Info.Pac.ProviderInfoFromRepo)
-			assert.Equal(t, tt.expectedSecret, cs.Info.Pac.ProviderToken)
+			assert.Assert(t, event.ProviderInfoFromRepo)
+			assert.Equal(t, tt.expectedSecret, event.ProviderToken)
 		})
 	}
 }

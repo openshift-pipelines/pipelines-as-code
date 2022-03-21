@@ -137,7 +137,7 @@ jobs:
                   pathType: Exact
                   backend:
                     service:
-                      name: el-pipelines-as-code-interceptor
+                      name: pipelines-as-code-controller
                       port:
                         number: 8080
           EOF

@@ -77,6 +77,12 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 		}
 	}
 
+	for _, n := range d.Secret {
+		if _, err := c.Kube.CoreV1().Secrets(n.Namespace).Create(ctx, n, metav1.CreateOptions{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	c.PipelineAsCode.ClearActions()
 	c.Pipeline.ClearActions()
 	c.Kube.ClearActions()

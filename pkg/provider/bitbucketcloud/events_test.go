@@ -157,9 +157,7 @@ func TestParsePayload(t *testing.T) {
 				EventType: tt.eventType,
 			}
 			run := &params.Run{
-				Info: info.Info{
-					Event: event,
-				},
+				Info: info.Info{},
 			}
 
 			envDict := map[string]string{
@@ -182,7 +180,7 @@ func TestParsePayload(t *testing.T) {
 
 			payload, err := json.Marshal(tt.payloadEvent)
 			assert.NilError(t, err)
-			got, err := v.ParsePayload(ctx, run, string(payload))
+			got, err := v.ParsePayload(ctx, run, event, string(payload))
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 				return
