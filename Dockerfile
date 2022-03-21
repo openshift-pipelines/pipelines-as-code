@@ -14,4 +14,4 @@ LABEL com.redhat.component=pipelines-as-code \
 
 COPY --from=builder /tmp/pipelines-as-code-controller /usr/bin/pipelines-as-code-controller
 COPY --from=builder /tmp/tkn-pac /usr/bin/tkn-pac
-CMD ["/usr/bin/pipelines-as-code"]
+CMD ["/usr/bin/pipelines-as-code-controller"]
