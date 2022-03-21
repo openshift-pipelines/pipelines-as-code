@@ -35,8 +35,7 @@ func sanitizeTitle(s string) string {
 	return strings.Split(s, "\n")[0]
 }
 
-func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info.PacOpts,
-	statusOpts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info.PacOpts, statusOpts provider.StatusOpts) error {
 	detailsURL := event.ProviderURL
 	switch statusOpts.Conclusion {
 	case "skipped":

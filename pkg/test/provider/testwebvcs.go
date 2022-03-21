@@ -45,8 +45,7 @@ func (v *TestProviderImp) IsAllowed(ctx context.Context, event *info.Event) (boo
 	return false, nil
 }
 
-func (v *TestProviderImp) CreateStatus(ctx context.Context, event *info.Event, opts *info.PacOpts,
-	statusOpts provider.StatusOpts) error {
+func (v *TestProviderImp) CreateStatus(ctx context.Context, event *info.Event, opts *info.PacOpts, statusOpts provider.StatusOpts) error {
 	if v.CreateStatusErorring {
 		return fmt.Errorf("you want me to error I error for you")
 	}
@@ -57,8 +56,7 @@ func (v *TestProviderImp) GetTektonDir(ctx context.Context, event *info.Event, s
 	return v.TektonDirTemplate, nil
 }
 
-func (v *TestProviderImp) GetFileInsideRepo(ctx context.Context, event *info.Event, file string,
-	targetBranch string) (string, error) {
+func (v *TestProviderImp) GetFileInsideRepo(ctx context.Context, event *info.Event, file string, targetBranch string) (string, error) {
 	if val, ok := v.FilesInsideRepo[file]; ok {
 		return val, nil
 	}

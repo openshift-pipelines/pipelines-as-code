@@ -198,8 +198,7 @@ func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, path string
 	})
 }
 
-func MuxCreateAndTestCommitStatus(t *testing.T, mux *http.ServeMux, event *info.Event,
-	expectedDescSubstr string, expStatus provider.StatusOpts) {
+func MuxCreateAndTestCommitStatus(t *testing.T, mux *http.ServeMux, event *info.Event, expectedDescSubstr string, expStatus provider.StatusOpts) {
 	path := fmt.Sprintf("/commits/%s", event.SHA)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &bbv1.BuildStatus{}

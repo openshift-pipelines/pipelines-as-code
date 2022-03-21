@@ -96,8 +96,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 // GetFileInsideRepo Get a file via Github API using the runinfo information, we
 // branch is true, the user the branch as ref isntead of the SHA
 // TODO: merge GetFileInsideRepo amd GetTektonDir
-func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, target string) (string,
-	error) {
+func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, target string) (string, error) {
 	ref := runevent.SHA
 	if target != "" {
 		ref = runevent.BaseBranch
