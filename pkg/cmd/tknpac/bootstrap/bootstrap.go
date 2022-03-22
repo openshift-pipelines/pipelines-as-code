@@ -185,7 +185,7 @@ func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationName, "github-application-name", "", "Github Application Name")
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "Github Application URL")
 	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enteprise API URL")
-	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "the URL for the eventlistenner")
+	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "the public URL for the pipelines-as-code controller")
 	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Wether to install the nightly Pipelines as Code")
 	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "webserver-port")
 	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,

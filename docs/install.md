@@ -43,7 +43,7 @@ namespace `pipelines-as-code`, the roles and all other bits needed.
 The `pipelines-as-code` namespace is where the Pipelines-as-Code infrastructure
 runs and is supposed to be accessible only by the admins.
 
-The Route for the EventListener URL is automatically created when you apply the
+The Route URL for the Pipelines as Code Controller is automatically created when you apply the
 release.yaml. You will need to grab the url for the next section when creating
 the GitHub App. You can run this command to get the route created on your
 cluster:
@@ -90,7 +90,7 @@ subjects:
 You should now create a Pipelines-as-Code GitHub App which acts as the
 integration point with OpenShift Pipelines and brings the Git workflow into
 Tekton pipelines. You need the webhook of the GitHub App pointing to your
-Pipelines-as-Code EventListener route endpoint which would then trigger
+Pipelines-as-Code Controller route/ingress endpoint which would then trigger
 pipelines on GitHub events.
 
 * Go to <https://github.com/settings/apps> (or *Settings > Developer settings > GitHub Apps*) and click on **New GitHub
@@ -98,7 +98,7 @@ pipelines on GitHub events.
 * Provide the following info in the GitHub App form
   * **GitHub Application Name**: `OpenShift Pipelines`
   * **Homepage URL**: *[OpenShift Console URL]*
-  * **Webhook URL**: *[the EventListener route URL copies in the previous section]*
+  * **Webhook URL**: *[the Pipelines as Code route/ingress URL as copied in the previous section]*
   * **Webhook secret**: *[an arbitrary secret, you can generate one with `openssl rand -hex 20`]*
 
 * Select the following repository permissions:
@@ -181,7 +181,7 @@ will have to recreate it.
 * Go to you repository or organization setting and click on *Hooks* and *"Add webhook"* links.
 
 * Set the payload URL to the event listener public URL. On OpenShift you can get the public URL of the
-  Pipelines-as-Code eventlistener like this :
+  Pipelines-as-Code controller like this :
 
   ```shell
   echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
@@ -265,7 +265,7 @@ Pipelines-As-Code supports [Gitlab](https://www.gitlab.com) via Webhook.
 * Go to your project and click on *Settings* and *"Webhooks"* from the sidebar on the left.
 
 * Set the payload URL to the event listener public URL. On OpenShift you can get the public URL of the
-  Pipelines-as-Code eventlistener like this :
+  Pipelines-as-Code controller like this :
 
   ```shell
   echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
@@ -361,7 +361,7 @@ recreate it.
 ```
 
 * Set the URL to the event listener public URL. On OpenShift you can get the
-  public URL of the Pipelines-as-Code eventlistener like this :
+  public URL of the Pipelines-as-Code route like this :
 
   ```shell
   echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
@@ -443,7 +443,7 @@ recreate it.
 * Set a **Title** (i.e: Pipelines as Code)
 
 * Set the URL to the event listener public URL. On OpenShift you can get the public URL of the Pipelines-as-Code
-  eventlistener like this :
+  controller like this :
 
   ```shell
   echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')

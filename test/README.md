@@ -12,7 +12,7 @@ Most E2E tests has this basic flow :
 - Create a commmit with files like pipelinerun inside that branch, the pipelinerun with have the namespace annotation to
   force the repository match on the namespace we have created and not catching other CR that may matching it.
 - Wait that the Repository is updated.
-- Some other stuff are done directly on the eventlistenner sink, bypassing a bit the GitHUB apis and generating the
+- Some other stuff are done directly on the controller sink, bypassing a bit the GitHUB apis and generating the
   webhook ourselves.
 
 ## Settings
@@ -24,7 +24,7 @@ here are all the variables that is used by the E2E tests.
 - `TEST_GITHUB_REPO_OWNER` - The repo and owner (i.e: organization/repo)
 - `TEST_GITHUB_REPO_INSTALLATION_ID` - The installation id when you have installed the repo on the app. (get it from the
   webhook event on the console)
-- `TEST_EL_URL` - The eventlistenner public url, ingress or openshfit's route
+- `TEST_EL_URL` - The controller public url, ingress or openshfit's route
 - `TEST_EL_WEBHOOK_SECRET` - The webhook secret.
 - `TEST_GITHUB_REPO_OWNER_WEBHOOK` - A repository/owner github repo that is configured with github webhooks.
 - `TEST_BITBUCKET_CLOUD_API_URL` - Bitbucket Cloud Api URL: probably: `https://api.bitbucket.org/2.0`

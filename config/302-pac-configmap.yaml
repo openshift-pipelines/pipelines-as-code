@@ -35,7 +35,7 @@ data:
   # repository spec). If you want to override this, you need to bear in mind
   # this could be a security issue, a malicious user can send a PR to your repo
   # with a modification to your PipelineRun that would grab secrets, tunnel or
-  # others and then send a malicious webhook payload to the eventlistenner which
+  # others and then send a malicious webhook payload to the controller which
   # look like a authorized owner has send the PR to run it..
   bitbucket-cloud-check-source-ip: "true"
 

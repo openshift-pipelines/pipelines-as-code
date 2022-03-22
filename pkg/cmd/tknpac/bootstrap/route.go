@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// detectOpenShiftRoute detect the openshift route where the eventlistener is running
+// detectOpenShiftRoute detect the openshift route where the pac controller is running
 func detectOpenShiftRoute(ctx context.Context, run *params.Run, opts *bootstrapOpts) (string, error) {
 	gvr := schema.GroupVersionResource{
 		Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource,
@@ -30,13 +30,13 @@ func detectOpenShiftRoute(ctx context.Context, run *params.Run, opts *bootstrapO
 
 	spec, ok := route.Object["spec"].(map[string]interface{})
 	if !ok {
-		return "", fmt.Errorf("couldn't find spec in the EL route")
+		return "", fmt.Errorf("couldn't find spec in the PAC Controller route")
 	}
 
 	host, ok := spec["host"].(string)
 	if !ok {
 		// this condition is satisfied if there's no metadata at all in the provided CR
-		return "", fmt.Errorf("couldn't find spec.host in the EL route")
+		return "", fmt.Errorf("couldn't find spec.host in the PAC controller route")
 	}
 
 	return fmt.Sprintf("https://%s", host), nil
@@ -51,9 +51,9 @@ func detectSelfSignedCertificate(ctx context.Context, url string) string {
 	client := http.Client{}
 	resp, err := client.Do(req)
 	if err != nil && isTLSError(err) {
-		return "⚠️ your eventlistenner route is using self signed certificate\n⚠️ make sure you allow connecting to self signed url in your github app setting."
+		return "⚠️ your controller route is using a self signed certificate\n⚠️ make sure you allow to connect to self signed url in your github app setting."
 	} else if err != nil {
-		return fmt.Sprintf("⚠️ could not connect to the route %s, make sure the eventlistenner is running", url)
+		return fmt.Sprintf("⚠️ could not connect to the route %s, make sure the pipelines-as-code controller is running", url)
 	}
 	resp.Body.Close()
 	return ""

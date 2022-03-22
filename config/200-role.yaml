@@ -35,9 +35,6 @@ metadata:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
-  - apiGroups: ["triggers.tekton.dev"]
-    resources: ["eventlisteners", "triggerbindings", "triggertemplates", "triggers"]
-    verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     # secrets are only needed for Github/Gitlab interceptors, serviceaccounts only for per trigger authorization
     resources: ["configmaps", "secrets"]
