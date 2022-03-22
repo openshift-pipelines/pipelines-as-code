@@ -50,8 +50,8 @@ func (l *listener) Start(ctx context.Context) error {
 
 	mux := http.NewServeMux()
 
-	// TODO: to be used in health check in deployment
-	mux.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+	// for handling probes
+	mux.HandleFunc("/live", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		fmt.Fprint(w, "ok")
 	})
