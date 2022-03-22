@@ -62,7 +62,9 @@ podman run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
 
 It will start checking if you have installed Pipelines as Code and if not it will ask you if you want to  install (with `kubectl`) the latest stable release. If you add the flag `--nightly` it will install the latest code ci release.
 
-It detect the OpenShift Route automatically associated to the EventListener service, you can override the URL with the flag `--route-url`.
+Bootstrap detect the OpenShift Route automatically associated to the EventListener service.
+If you don't have OpenShift Route it will ask you for your public URL (ie: an ingress spec url)
+You can override the URL with the flag `--route-url`.
 
 ### bootstrap github-app
 
