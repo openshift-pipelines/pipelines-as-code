@@ -23,11 +23,6 @@ func TestCamelCasit(t *testing.T) {
 			args: args{s: "push"},
 			want: "Push",
 		},
-		{
-			name: "all caps",
-			args: args{s: "pUSH"},
-			want: "PUSH",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

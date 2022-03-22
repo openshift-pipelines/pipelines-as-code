@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // sanitizeBranch remove refs/heads from string, only removing the first prefix
@@ -43,5 +46,6 @@ func GetRepoOwnerFromGHURL(ghURL string) (string, error) {
 
 // CamelCasit pull_request > PullRequest
 func CamelCasit(s string) string {
-	return strings.ReplaceAll(strings.Title(strings.ReplaceAll(s, "_", " ")), " ", "")
+	c := cases.Title(language.AmericanEnglish)
+	return strings.ReplaceAll(c.String(strings.ReplaceAll(s, "_", " ")), " ", "")
 }
