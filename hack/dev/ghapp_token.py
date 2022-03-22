@@ -41,12 +41,13 @@ class GitHub():
     def _app_token(self):
         key = self._load_private_key(self._private_key)
         now = int(time.time())
+
         token = jwt.JWT(
             header={"alg": "RS256"},
             claims={
                 "iat": now,
                 "exp": now + self.expiration_time,
-                "iss": self.app_id
+                "iss": int(self.app_id),
             },
             algs=["RS256"],
         )
@@ -57,13 +58,12 @@ class GitHub():
         app_token = self._app_token()
         if not installation_id:
             return app_token
-
         req = self._request(
             "POST",
             f"/app/installations/{installation_id}/access_tokens",
             headers={
                 "Authorization": f"Bearer {app_token}",
-                "Accept": "application/json"
+                "Accept": "application/vnd.github.v3+json"
             })
 
         if not req.text.strip():
