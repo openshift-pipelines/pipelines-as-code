@@ -20,6 +20,7 @@ metadata:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
     app.kubernetes.io/version: "devel"
+    pipelines-as-code/route: controller
   name: pipelines-as-code-controller
   namespace: pipelines-as-code
 spec:

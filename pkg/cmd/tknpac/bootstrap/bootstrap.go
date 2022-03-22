@@ -13,7 +13,7 @@ import (
 
 const (
 	pacNS                  = "pipelines-as-code"
-	pacLabel               = "eventlistener=pipelines-as-code-interceptor"
+	pacLabel               = "pipelines-as-code/route=controller"
 	openShiftRouteGroup    = "route.openshift.io"
 	openShiftRouteVersion  = "v1"
 	openShiftRouteResource = "routes"
