@@ -119,6 +119,7 @@ func getOrCreateNamespace(ctx context.Context, opts *createOptions) error {
 	// check if the namespace exists if it does just exit
 	_, err := opts.run.Clients.Kube.CoreV1().Namespaces().Get(ctx, chosenNS, metav1.GetOptions{})
 	if err == nil {
+		opts.repository.Namespace = chosenNS
 		return nil
 	}
 
