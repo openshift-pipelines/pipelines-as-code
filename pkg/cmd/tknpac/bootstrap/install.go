@@ -6,15 +6,19 @@ import (
 	"os/exec"
 
 	"github.com/google/go-github/v43/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 )
 
-var (
+const (
 	pacGHRepoOwner = "openshift-pipelines"
 	pacGHRepoName  = "pipelines-as-code"
 	rawGHURL       = "https://raw.githubusercontent.com"
+
+	openshiftReleaseYaml = "release.yaml"
+	k8ReleaseYaml        = "release.k8s.yaml"
 )
 
-func getLatestRelease(ctx context.Context) (string, string, error) {
+func getLatestRelease(ctx context.Context, k8release string) (string, string, error) {
 	// Always go to public
 	gh := github.NewClient(nil)
 	release, _, err := gh.Repositories.GetLatestRelease(ctx, pacGHRepoOwner, pacGHRepoName)
@@ -22,8 +26,8 @@ func getLatestRelease(ctx context.Context) (string, string, error) {
 		return "", "", err
 	}
 	return release.GetTagName(),
-		fmt.Sprintf("%s/%s/%s/release-%s/release-%s.yaml",
-			rawGHURL, pacGHRepoOwner, pacGHRepoName, release.GetTagName(), release.GetTagName()),
+		fmt.Sprintf("%s/%s/%s/release-%s/release-%s%s.yaml",
+			rawGHURL, pacGHRepoOwner, pacGHRepoName, release.GetTagName(), release.GetTagName(), k8release),
 		nil
 }
 
@@ -41,16 +45,25 @@ func kubectlApply(uri string) error {
 	return nil
 }
 
-func installPac(ctx context.Context, opts *bootstrapOpts) error {
-	var latestversion, latestReleaseYaml string
+func installPac(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
+	var latestversion, latestReleaseYaml, nightlyReleaseYaml string
+	k8Ext := ""
+
+	routeURL, _ := detectOpenShiftRoute(ctx, run, opts)
+	if routeURL != "" {
+		nightlyReleaseYaml = openshiftReleaseYaml
+	} else {
+		nightlyReleaseYaml = k8ReleaseYaml
+		k8Ext = ".k8s"
+	}
 
 	if opts.installNightly {
-		latestReleaseYaml = fmt.Sprintf("%s/%s/%s/nightly/release.yaml",
-			rawGHURL, pacGHRepoOwner, pacGHRepoName)
+		latestReleaseYaml = fmt.Sprintf("%s/%s/%s/nightly/%s",
+			rawGHURL, pacGHRepoOwner, pacGHRepoName, nightlyReleaseYaml)
 		latestversion = "nightly"
 	} else {
 		var err error
-		latestversion, latestReleaseYaml, err = getLatestRelease(ctx)
+		latestversion, latestReleaseYaml, err = getLatestRelease(ctx, k8Ext)
 		if err != nil {
 			return err
 		}

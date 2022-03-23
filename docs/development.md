@@ -17,7 +17,7 @@
 * Configure a few Repository CR and a namespace target.
 
 * If you go to your GitHub app setting in `Advanced` you can see the json and payload GitHub is sending to the
-  eventlistener.
+  controller.
 
 * If you want to replay an event without having to `git commit --amend --no-edit && git push --force`, you can capture
   that json blob into a file
@@ -29,16 +29,16 @@
 
   That script would detect github webhook secret and payload content and replay it to the event listener.
 
-  If you don't have a OpenShift route setup to the eventlistener, you can override the route with :
+  If you don't have an OpenShift route setup to the controler, you can override the route with :
 
   ```shell
   export EL_ROUTE=http://localhost:8080
   ```
 
-  This in combination with an always running port-forward to the eventlistener :
+  This in combination with an always running port-forward to the route :
 
   ```shell
-  kubectl port-forward -n pipelines-as-code deployment/el-pipelines-as-code-interceptor 8080 8888
+  kubectl port-forward -n pipelines-as-code deployment/pipelines-as-code-controller 8080 8888
   ```
 
   will give you an easy way to debug payloads on kind.

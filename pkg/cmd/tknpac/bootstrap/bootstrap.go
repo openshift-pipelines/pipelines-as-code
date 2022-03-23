@@ -73,7 +73,7 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	if !opts.forceInstall && installed {
 		// nolint:forbidigo
 		fmt.Println("👌 Pipelines as Code is already installed.")
-	} else if err := installPac(ctx, opts); err != nil {
+	} else if err := installPac(ctx, run, opts); err != nil {
 		return err
 	}
 	return nil
@@ -84,10 +84,7 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 	opts.recreateSecret = checkSecret(ctx, run, opts)
 
 	if opts.RouteName == "" {
-		opts.RouteName, err = detectOpenShiftRoute(ctx, run, opts)
-		if err != nil {
-			return fmt.Errorf("only OpenShift is suported at the moment for autodetection: %w", err)
-		}
+		opts.RouteName, _ = detectOpenShiftRoute(ctx, run, opts)
 	}
 	if err := askQuestions(opts); err != nil {
 		return err
@@ -188,7 +185,7 @@ func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationName, "github-application-name", "", "Github Application Name")
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "Github Application URL")
 	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enteprise API URL")
-	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "the URL for the eventlistenner")
+	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "the public URL for the pipelines-as-code controller")
 	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Wether to install the nightly Pipelines as Code")
 	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "webserver-port")
 	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,
