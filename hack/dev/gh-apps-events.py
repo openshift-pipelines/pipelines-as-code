@@ -34,9 +34,6 @@ ELNAME = "pipelines-as-code"
 EXPIRE_MINUTES_AS_SECONDS = int(
     os.environ.get('GITHUBAPP_TOKEN_EXPIRATION_MINUTES', 10)) * 60
 
-PUBLIC_API_URL = "https://api.github.com"
-
-
 def get_controller_route():
     elroute = subprocess.run(
         f"kubectl get route -n {NAMESPACE} -l pipelines-as-code/route=controller -o json",
@@ -57,7 +54,7 @@ def get_controller_ingress():
         json.loads(elroute.stdout)["items"][0]["spec"]["rules"][0]["host"]
 
 
-def get_token_secret(github_api_url=PUBLIC_API_URL,
+def get_token_secret(github_api_url=ghapp_token.GITHUB_API_URL,
                      expiration_time=EXPIRE_MINUTES_AS_SECONDS):
     secret = subprocess.run(
         f"kubectl get secret {SECRET_NAME} -n{NAMESPACE} -o json",
@@ -78,8 +75,8 @@ def get_token_secret(github_api_url=PUBLIC_API_URL,
     return gh.token, webhook_secret, app_id
 
 
-def _request_delivery(token, iid=None):
-    url = "https://api.github.com/app/hook/deliveries"
+def _request_delivery(token, iid=None, api_url=ghapp_token.GITHUB_API_URL):
+    url = f"{api_url}/app/hook/deliveries"
     if iid:
         url += f"/{iid}"
     headers = {
@@ -89,13 +86,16 @@ def _request_delivery(token, iid=None):
     return requests.request("GET", url, headers=headers)
 
 
-def get_delivery(token, last=False):
-    r = _request_delivery(token)
+def get_delivery(token, last=False, api_url=ghapp_token.GITHUB_API_URL):
+    r = _request_delivery(token, api_url=api_url)
     i = 1
     dico = []
     deliveries = r.json()
     if last:
-        return _request_delivery(token, deliveries[0]['id']).json()
+        return _request_delivery(token, deliveries[0]['id'], api_url=api_url).json()
+    if 'message' in deliveries:
+        print("Integration not found :\\")
+        sys.exit(0)
     for delivery in deliveries:
         print(
             f"{i}) Action={delivery['action']} Event={delivery['event']} Delivered at {delivery['delivered_at']}"
@@ -105,7 +105,7 @@ def get_delivery(token, last=False):
             break
         i += 1
     chosen = input("Choose a delivery: ")
-    return _request_delivery(token, dico[int(chosen) - 1]).json()
+    return _request_delivery(token, dico[int(chosen) - 1], api_url=api_url).json()
 
 
 def main(args):
@@ -119,8 +119,8 @@ def main(args):
             except subprocess.CalledProcessError:
                 print("Could not find an ingress or route")
                 sys.exit(1)
-    token, webhook_secret, app_id = get_token_secret()
-    delivery = get_delivery(token, args.last)
+    token, webhook_secret, app_id = get_token_secret(github_api_url=args.api_url)
+    delivery = get_delivery(token, args.last, args.api_url)
     jeez = delivery["request"]["payload"]
     payload = json.dumps(jeez)
     esha256 = hmac.new(webhook_secret.encode("utf-8"),
@@ -182,6 +182,10 @@ def parse_args():
         help="Route hostname (default to detect on openshift/ingress)",
         default=os.environ.get("EL_ROUTE"))
     parser.add_argument('--last', '-l', action='store_true')
+    parser.add_argument("-a",
+                        "--api-url",
+                        help="Github API URL",
+                        default=os.environ.get("GITHUB_API_URL", ghapp_token.GITHUB_API_URL))
     parser.add_argument('--retry',
                         type=int,
                         default=1,
