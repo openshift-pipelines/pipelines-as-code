@@ -3,13 +3,21 @@ package github
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
+)
+
+const (
+	retestRegex   = "(^|\\\\r\\\\n)/retest([ ]*$|$|\\\\r\\\\n)"
+	oktotestRegex = "(^|\\\\r\\\\n)/ok-to-test([ ]*$|$|\\\\r\\\\n)"
 )
 
 const apiPublicURL = "https://api.github.com/"
@@ -176,4 +184,76 @@ func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Eve
 		return nil, err
 	}
 	return decoded, err
+}
+
+// Detect processes event and detect if it is a github event, whether to process or reject it
+// returns (if is a GH event, whether to process or reject, error if any occurred)
+func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
+	isGH := false
+	event := reqHeader.Get("X-Github-Event")
+	if event == "" {
+		return false, false, logger, nil
+	}
+
+	// it is a Github event
+	isGH = true
+
+	setLoggerAndProceed := func() (bool, bool, *zap.SugaredLogger, error) {
+		logger = logger.With("provider", "github", "event", reqHeader.Get("X-GitHub-Delivery"))
+		return isGH, true, logger, nil
+	}
+
+	payloadTreated := v.payloadFix(string(payload))
+	eventInt, err := github.ParseWebHook(event, payloadTreated)
+	if err != nil {
+		return isGH, false, logger, err
+	}
+
+	_ = json.Unmarshal(payloadTreated, &eventInt)
+
+	switch gitEvent := eventInt.(type) {
+	case *github.CheckRunEvent:
+		if gitEvent.GetAction() == "rerequested" && gitEvent.GetCheckRun() != nil {
+			return setLoggerAndProceed()
+		}
+		return isGH, false, logger, nil
+
+	case *github.IssueCommentEvent:
+		if gitEvent.GetAction() == "created" &&
+			gitEvent.GetIssue().IsPullRequest() &&
+			gitEvent.GetIssue().GetState() == "open" {
+			if matches, _ := regexp.MatchString(retestRegex, gitEvent.GetComment().GetBody()); matches {
+				return setLoggerAndProceed()
+			}
+			if matches, _ := regexp.MatchString(oktotestRegex, gitEvent.GetComment().GetBody()); matches {
+				return setLoggerAndProceed()
+			}
+			return isGH, false, logger, nil
+		}
+		return isGH, false, logger, nil
+
+	case *github.PushEvent:
+		if gitEvent.GetPusher() != nil {
+			return setLoggerAndProceed()
+		}
+		return isGH, false, logger, nil
+
+	case *github.PullRequestEvent:
+		if valid(gitEvent.GetAction(), []string{"created", "synchronize", "opened"}) {
+			return setLoggerAndProceed()
+		}
+		return isGH, false, logger, nil
+
+	default:
+		return isGH, false, logger, fmt.Errorf("github: event %v is not supported", event)
+	}
+}
+
+func valid(value string, validValues []string) bool {
+	for _, v := range validValues {
+		if v == value {
+			return true
+		}
+	}
+	return false
 }
