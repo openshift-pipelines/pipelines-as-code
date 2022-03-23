@@ -88,13 +88,14 @@ def _request_delivery(token, iid=None, api_url=ghapp_token.GITHUB_API_URL):
 
 def get_delivery(token, last=False, api_url=ghapp_token.GITHUB_API_URL):
     r = _request_delivery(token, api_url=api_url)
+    r.raise_for_status()
     i = 1
     dico = []
     deliveries = r.json()
     if last:
         return _request_delivery(token, deliveries[0]['id'], api_url=api_url).json()
     if 'message' in deliveries:
-        print("Integration not found :\\")
+        print(deliveries)
         sys.exit(0)
     for delivery in deliveries:
         print(
@@ -107,6 +108,22 @@ def get_delivery(token, last=False, api_url=ghapp_token.GITHUB_API_URL):
     chosen = input("Choose a delivery: ")
     return _request_delivery(token, dico[int(chosen) - 1], api_url=api_url).json()
 
+def save_script(target: str, el_route: str, headers: dict, payload: str):
+    s = f"""#!/usr/bin/env python3
+import requests
+payload = \"\"\"
+{json.dumps(payload)}
+\"\"\"
+headers={headers}
+el_route = "{el_route}"
+r = requests.request("POST",el_route,data=payload.encode("utf-8"),headers=headers)
+r.raise_for_status()
+print("Request has been replayed on " + el_route)
+"""
+    with open(target, 'w') as fp:
+        fp.write(s)
+    os.chmod(target, 0o755)
+    print(f"Request saved to {target}")
 
 def main(args):
     el = args.eroute
@@ -120,7 +137,7 @@ def main(args):
                 print("Could not find an ingress or route")
                 sys.exit(1)
     token, webhook_secret, app_id = get_token_secret(github_api_url=args.api_url)
-    delivery = get_delivery(token, args.last, args.api_url)
+    delivery = get_delivery(token, args.last_event, args.api_url)
     jeez = delivery["request"]["payload"]
     payload = json.dumps(jeez)
     esha256 = hmac.new(webhook_secret.encode("utf-8"),
@@ -153,6 +170,9 @@ def main(args):
         "X-Hub-Signature-256": "sha256=" + esha256,
     }
 
+    if args.save:
+        save_script(args.save, el, headers, jeez)
+        sys.exit(0)
     for _ in range(args.retry):
         try:
             r = requests.request("POST",
@@ -181,7 +201,8 @@ def parse_args():
         dest="eroute",
         help="Route hostname (default to detect on openshift/ingress)",
         default=os.environ.get("EL_ROUTE"))
-    parser.add_argument('--last', '-l', action='store_true')
+    parser.add_argument('--last-event', '-L', action='store_true')
+    parser.add_argument('--save', '-s', help="save the request to a shell script to replay easily")
     parser.add_argument("-a",
                         "--api-url",
                         help="Github API URL",

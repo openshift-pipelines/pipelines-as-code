@@ -58,3 +58,7 @@ It will show you the last 10 events and which one to choose and replay it or
 choose `"-l`" to play directly the last one. It will replay in your controller
 that is running in debugging mode in your IDE which should catch the
 breakpoints etc...
+
+You can as well with that script save the replay in a python script, just add
+the option "--save PATH" and after launching and choosing an event there would be a
+file generated to PATH that would replay it on the controller.
