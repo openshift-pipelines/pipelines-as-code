@@ -3,7 +3,6 @@ package bitbucketserver
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -26,9 +25,9 @@ type Provider struct {
 	projectKey                string
 }
 
-func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
-	panic("implement me")
-}
+// func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
+//	panic("implement me")
+// }
 
 // sanitizeTitle make sure we only get the tile by remove everything after \n.
 func sanitizeTitle(s string) string {

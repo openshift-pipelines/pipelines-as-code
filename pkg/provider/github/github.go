@@ -75,7 +75,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path 
 }
 
 // GetCommitInfo get info (url and title) on a commit in runevent, this needs to
-// be run after parsewebhook while we already matched a token.
+// be run after sewebhook while we already matched a token.
 func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) error {
 	if v.Client == nil {
 		return fmt.Errorf("no github client has been initiliazed, " +

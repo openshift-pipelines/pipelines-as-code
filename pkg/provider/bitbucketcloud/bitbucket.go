@@ -3,7 +3,6 @@ package bitbucketcloud
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 
 	"github.com/ktrysmt/go-bitbucket"
@@ -19,9 +18,9 @@ type Provider struct {
 	Username      *string
 }
 
-func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
-	panic("implement me")
-}
+// func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
+//	panic("implement me")
+// }
 
 const taskStatusTemplate = `| **Status** | **Duration** | **Name** |
 | --- | --- | --- |

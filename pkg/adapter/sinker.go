@@ -20,13 +20,8 @@ type sinker struct {
 }
 
 func (s *sinker) processEvent(ctx context.Context, request *http.Request, payload []byte) {
-	if err := s.vcx.ParseEventType(request, s.event); err != nil {
-		s.run.Clients.Log.Errorf("failed to find event type: %v", err)
-		return
-	}
-
 	var err error
-	s.event, err = s.vcx.ParsePayload(ctx, s.run, s.event, string(payload))
+	s.event, err = s.vcx.ParsePayload(ctx, s.run, request, string(payload))
 	if err != nil {
 		s.run.Clients.Log.Errorf("failed to parse event: %v", err)
 		return

@@ -20,8 +20,7 @@ type StatusOpts struct {
 }
 
 type Interface interface {
-	ParseEventType(*http.Request, *info.Event) error
-	ParsePayload(context.Context, *params.Run, *info.Event, string) (*info.Event, error)
+	ParsePayload(context.Context, *params.Run, *http.Request, string) (*info.Event, error)
 	IsAllowed(context.Context, *info.Event) (bool, error)
 	CreateStatus(context.Context, *info.Event, *info.PacOpts, StatusOpts) error
 	GetTektonDir(context.Context, *info.Event, string) (string, error)              // ctx, event, path

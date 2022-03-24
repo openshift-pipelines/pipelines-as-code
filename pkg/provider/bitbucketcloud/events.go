@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"strings"
 
@@ -85,7 +86,9 @@ func parsePayloadType(messageType string, rawPayload []byte) (interface{}, error
 	return payload, err
 }
 
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, event *info.Event, payload string) (*info.Event, error) {
+func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
+	// TODO: parse request to figure out which event
+	event := &info.Event{}
 	processedEvent := event
 	eventInt, err := parsePayloadType(event.EventType, []byte(payload))
 	if err != nil {
