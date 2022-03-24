@@ -41,7 +41,7 @@ func (v *Provider) payloadFix(payload string) []byte {
 	return []byte(replacer.Replace(payload))
 }
 
-func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, installationID int64) (string, error) {
+func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, gheURL string, installationID int64) (string, error) {
 	// TODO: move this out of here
 	ns := os.Getenv("SYSTEM_NAMESPACE")
 	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
@@ -64,10 +64,6 @@ func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, i
 		return "", err
 	}
 
-	// TODO: figure out this part
-	// TODO: Read PAC_GIT_PROVIDER_APIURL from request header
-	// getting the baseurl from go-github since it has all the logic in there
-	gheURL := os.Getenv("PAC_GIT_PROVIDER_APIURL")
 	if gheURL != "" {
 		if !strings.HasPrefix(gheURL, "https://") {
 			gheURL = "https://" + gheURL
@@ -99,6 +95,8 @@ func (v *Provider) parseEventType(request *http.Request, event *info.Event) erro
 	if event.EventType == "" {
 		return fmt.Errorf("failed to find event type in request header")
 	}
+
+	event.ProviderURL = request.Header.Get("X-GitHub-Enterprise-Host")
 
 	if event.EventType == "push" {
 		event.TriggerTarget = "push"
@@ -135,7 +133,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	if id != -1 {
 		// get the app token if it exist first
 		var err error
-		event.ProviderToken, err = v.getAppToken(ctx, run.Clients.Kube, id)
+		event.ProviderToken, err = v.getAppToken(ctx, run.Clients.Kube, event.ProviderURL, id)
 		if err != nil {
 			return nil, err
 		}
@@ -218,6 +216,7 @@ func (v *Provider) processEvent(ctx context.Context, run *params.Run, event *inf
 
 	processedEvent.Event = eventInt
 	processedEvent.TriggerTarget = event.TriggerTarget
+	processedEvent.ProviderToken = event.ProviderToken
 
 	return processedEvent, nil
 }
