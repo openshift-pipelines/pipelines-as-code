@@ -108,7 +108,7 @@ func (l listener) handleEvent() http.HandlerFunc {
 		go func() {
 			s.processEvent(ctx, localRequest, payload)
 		}()
-
+		fmt.Fprintf(response, `{"status": "%d", "message": "accepted"}`, http.StatusAccepted)
 		response.WriteHeader(http.StatusAccepted)
 	}
 }

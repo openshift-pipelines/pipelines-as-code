@@ -65,6 +65,9 @@ def get_token_secret(github_api_url=ghapp_token.GITHUB_API_URL,
     private_key = base64.b64decode(jeez["data"]["github-private-key"])
     app_id = base64.b64decode(jeez["data"]["github-application-id"])
     webhook_secret = base64.b64decode(jeez["data"]["webhook.secret"]).decode()
+    if not private_key or not app_id or not webhook_secret:
+        print(f"private_key={private_key[1:10]} or app_id={app_id} or webhook_secret={webhook_secret} are empty")
+        sys.exit(1)
 
     gh = ghapp_token.GitHub(
         private_key,
