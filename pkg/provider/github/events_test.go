@@ -425,7 +425,6 @@ func TestAppTokenGeneration(t *testing.T) {
 			mux.HandleFunc(fmt.Sprintf("/app/installations/%s/access_tokens", string(testInstallID)), func(w http.ResponseWriter, r *http.Request) {
 				_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
 			})
-			tt.envs["PAC_GIT_PROVIDER_APIURL"] = fakeGithubAuthURL
 			tt.envs["PAC_GIT_PROVIDER_TOKEN_APIURL"] = url + "/api/v3"
 
 			envRemove := env.PatchAll(t, tt.envs)
@@ -441,6 +440,7 @@ func TestAppTokenGeneration(t *testing.T) {
 			logger := getLogger()
 			request := &http.Request{Header: map[string][]string{}}
 			request.Header.Set("X-GitHub-Event", "pull_request")
+			request.Header.Set("X-GitHub-Enterprise-Host", fakeGithubAuthURL)
 
 			run := &params.Run{
 				Clients: clients.Clients{
