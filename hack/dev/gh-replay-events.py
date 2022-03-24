@@ -139,6 +139,7 @@ def main(args):
     token, webhook_secret, app_id = get_token_secret(github_api_url=args.api_url)
     delivery = get_delivery(token, args.last_event, args.api_url)
     jeez = delivery["request"]["payload"]
+    headers = delivery["request"]["headers"]
     payload = json.dumps(jeez)
     esha256 = hmac.new(webhook_secret.encode("utf-8"),
                        msg=payload.encode("utf-8"),
@@ -148,27 +149,12 @@ def main(args):
                      digestmod=hashlib.sha1).hexdigest()
 
     print("Replay event for repo " + jeez["repository"]["full_name"])
-    if 'action' in jeez and jeez["action"] in (
-            "opened", "synchronize") and "pull_request" in jeez:
-        event_type = "pull_request"
-    elif 'action' in jeez and jeez[
-            "action"] == "rerequested" and "check_run" in jeez:
-        event_type = "check_run"
-    elif 'action' in jeez and jeez["action"] == "created" and "issue" in jeez:
-        event_type = "issue_comment"
-    elif 'pusher' in jeez:
-        event_type = "push"
-    else:
-        raise Exception("Unknown event_type")
-
-    headers = {
-        "content-type": "application/json",
-        "X-GitHub-Event": event_type,
-        "X-GitHub-Hook-Installation-Target-ID": app_id,
-        "X-GitHub-Hook-Installation-Target-Type": "integration",
-        "X-Hub-Signature": "sha1=" + esha1,
-        "X-Hub-Signature-256": "sha256=" + esha256,
-    }
+    headers.update(
+        {
+            "X-Hub-Signature": "sha1=" + esha1,
+            "X-Hub-Signature-256": "sha256=" + esha256,
+        }
+    )
 
     if args.save:
         save_script(args.save, el, headers, jeez)
