@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -26,7 +27,9 @@ func sanitizeOwner(owner string) string {
 }
 
 // ParsePayload parses the payload from the event
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, event *info.Event, payload string) (*info.Event, error) {
+func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
+	// TODO: parse request to figure out which event
+	event := &info.Event{}
 	processedEvent := event
 
 	eventPayload := parsePayloadType(event.EventType)

@@ -94,18 +94,16 @@ func TestPayLoadFix(t *testing.T) {
 	}
 
 	logger := getLogger()
+	request := &http.Request{Header: map[string][]string{}}
+	request.Header.Set("X-GitHub-Event", "pull_request")
 
-	event := &info.Event{
-		EventType:     "pull_request",
-		TriggerTarget: "pull_request",
-	}
 	run := &params.Run{
 		Clients: clients.Clients{
 			Log: logger,
 		},
 		Info: info.Info{},
 	}
-	_, err = gprovider.ParsePayload(ctx, run, event, string(b))
+	_, err = gprovider.ParsePayload(ctx, run, request, string(b))
 	assert.NilError(t, err)
 
 	// would bomb out on "assertion failed: error is not nil: invalid character
@@ -291,10 +289,8 @@ func TestParsePayLoad(t *testing.T) {
 				Client: tt.githubClient,
 			}
 			logger := getLogger()
-			event := &info.Event{
-				EventType:     tt.eventType,
-				TriggerTarget: tt.triggerTarget,
-			}
+			request := &http.Request{Header: map[string][]string{}}
+			request.Header.Set("X-GitHub-Event", tt.eventType)
 
 			run := &params.Run{
 				Clients: clients.Clients{
@@ -307,7 +303,7 @@ func TestParsePayLoad(t *testing.T) {
 			if tt.jeez != "" {
 				jeez = tt.jeez
 			}
-			ret, err := gprovider.ParsePayload(ctx, run, event, jeez)
+			ret, err := gprovider.ParsePayload(ctx, run, request, jeez)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return
@@ -443,10 +439,9 @@ func TestAppTokenGeneration(t *testing.T) {
 			jeez, _ := json.Marshal(samplePRevent)
 			gprovider := Provider{}
 			logger := getLogger()
-			event := &info.Event{
-				EventType:     "pull_request",
-				TriggerTarget: "pull_request",
-			}
+			request := &http.Request{Header: map[string][]string{}}
+			request.Header.Set("X-GitHub-Event", "pull_request")
+
 			run := &params.Run{
 				Clients: clients.Clients{
 					Log:  logger,
@@ -457,7 +452,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				},
 			}
 
-			_, err := gprovider.ParsePayload(tt.ctx, run, event, string(jeez))
+			_, err := gprovider.ParsePayload(tt.ctx, run, request, string(jeez))
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 				return

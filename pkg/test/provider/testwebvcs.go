@@ -18,11 +18,11 @@ type TestProviderImp struct {
 	FilesInsideRepo      map[string]string
 }
 
-func (v *TestProviderImp) ParseEventType(request *http.Request, event *info.Event) error {
-	return nil
-}
+// func (v *TestProviderImp) ParseEventType(request *http.Request, event *info.Event) error {
+//	return nil
+// }
 
-func (v *TestProviderImp) ParsePayload(ctx context.Context, run *params.Run, event *info.Event, s string) (*info.Event, error) {
+func (v *TestProviderImp) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
 	return v.Event, nil
 }
 

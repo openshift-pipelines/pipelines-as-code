@@ -43,9 +43,9 @@ type Provider struct {
 	repoURL           string
 }
 
-func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
-	panic("implement me")
-}
+// func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
+//	panic("implement me")
+// }
 
 // If I understood properly, you can have "personal" projects and groups
 // attached projects. But this doesn't seem to show in the API, so we
@@ -61,7 +61,9 @@ func getOrgRepo(pathWithNamespace string) (string, string) {
 	return org, filepath.Base(pathWithNamespace)
 }
 
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, event *info.Event, payload string) (*info.Event, error) {
+func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
+	// TODO: parse request to figure out which event
+	event := &info.Event{}
 	var processedEvent *info.Event
 
 	payloadB := []byte(payload)

@@ -94,7 +94,7 @@ func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, i
 	return token, err
 }
 
-func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
+func (v *Provider) parseEventType(request *http.Request, event *info.Event) error {
 	event.EventType = request.Header.Get("X-GitHub-Event")
 	if event.EventType == "" {
 		return fmt.Errorf("failed to find event type in request header")
@@ -123,9 +123,11 @@ func getInstallationIDFromPayload(payload string) int64 {
 	return -1
 }
 
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, event *info.Event, payload string) (*info.Event, error) {
-	if event.EventType == "" || event.TriggerTarget == "" {
-		return nil, fmt.Errorf("failed to find eventInt type")
+func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
+	event := &info.Event{}
+
+	if err := v.parseEventType(request, event); err != nil {
+		return nil, err
 	}
 
 	id := getInstallationIDFromPayload(payload)
