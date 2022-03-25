@@ -152,6 +152,12 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
         --from-literal webhook.secret="WEBHOOK_SECRET"
 ```
 
+**Make sure WEBHOOK_SECRET  doesn't contain a new line like \n or extra characters or it would fail**. The error message wille show this `rpc error: code = FailedPrecondition desc = payload signature check failed` in the event-listenner log. You can check the content of your secret with this command : 
+
+```bash
+kubectl get secrets -n pipelines-as-code pipelines-as-code-secret --template '{{ index .data "webhook.secret" | base64decode }}'
+```
+
 ### GitHub Enterprise
 
 Pipelines as Code supports Github Enterprise.
