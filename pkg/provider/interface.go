@@ -6,6 +6,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"go.uber.org/zap"
 )
 
 type StatusOpts struct {
@@ -20,6 +21,7 @@ type StatusOpts struct {
 }
 
 type Interface interface {
+	Detect(*http.Header, string, *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error)
 	ParsePayload(context.Context, *params.Run, *http.Request, string) (*info.Event, error)
 	IsAllowed(context.Context, *info.Event) (bool, error)
 	CreateStatus(context.Context, *info.Event, *info.PacOpts, StatusOpts) error

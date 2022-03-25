@@ -76,10 +76,17 @@ func (l listener) handleEvent() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		ctx := context.Background()
 
-		// figure out which provider request coming from
-		gitProvider, logger, err := l.whichProvider(request)
+		// event body
+		payload, err := ioutil.ReadAll(request.Body)
 		if err != nil {
-			l.logger.Error(err)
+			l.run.Clients.Log.Errorf("failed to read body : %v", err)
+			return
+		}
+
+		// figure out which provider request coming from
+		gitProvider, logger, err := l.detectProvider(&request.Header, string(payload))
+		if err != nil || gitProvider == nil {
+			l.logger.Errorf("invalid event or got error while processing : %v", err)
 			return
 		}
 
@@ -98,13 +105,6 @@ func (l listener) handleEvent() http.HandlerFunc {
 		// clone the request to use it further
 		localRequest := request.Clone(request.Context())
 
-		// event payload
-		payload, err := ioutil.ReadAll(request.Body)
-		if err != nil {
-			l.run.Clients.Log.Errorf("failed to read body : %v", err)
-			return
-		}
-
 		go func() {
 			s.processEvent(ctx, localRequest, payload)
 		}()
@@ -113,11 +113,19 @@ func (l listener) handleEvent() http.HandlerFunc {
 	}
 }
 
-func (l listener) whichProvider(request *http.Request) (provider.Interface, *zap.SugaredLogger, error) {
-	res := request.Header.Get("X-Github-Event")
-	if res != "" {
-		logger := l.logger.With("provider", "github", "event", request.Header.Get("X-GitHub-Delivery"))
-		return &github.Provider{}, logger, nil
+func (l listener) detectProvider(reqHeader *http.Header, reqBody string) (provider.Interface, *zap.SugaredLogger, error) {
+	log := *l.logger
+
+	gitHub := &github.Provider{}
+	isGH, processReq, logger, err := gitHub.Detect(reqHeader, reqBody, &log)
+	if isGH {
+		if err != nil {
+			return nil, logger, err
+		}
+		if processReq {
+			return gitHub, logger, nil
+		}
+		return nil, nil, nil
 	}
 
 	return nil, nil, fmt.Errorf("no supported Git Provider is detected")

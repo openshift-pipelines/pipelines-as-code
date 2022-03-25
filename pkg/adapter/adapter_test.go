@@ -1,10 +1,11 @@
 package adapter
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"testing"
 
+	"github.com/google/go-github/v43/github"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -21,52 +22,44 @@ func TestWhichProvider(t *testing.T) {
 		logger: getLogger(),
 	}
 	tests := []struct {
-		name    string
-		request *http.Request
+		name          string
+		event         interface{}
+		header        http.Header
+		wantErrString string
 	}{
 		{
-			name: "github payload",
-			request: &http.Request{
-				Header: map[string][]string{
-					"X-Github-Event":    {"pull_request"},
-					"X-GitHub-Delivery": {"abcd"},
-				},
+			name: "github event",
+			header: map[string][]string{
+				"X-Github-Event":    {"push"},
+				"X-GitHub-Delivery": {"abcd"},
 			},
+			event: github.PushEvent{
+				Pusher: &github.User{ID: github.Int64(123)},
+			},
+		},
+		{
+			name: "some random event",
+			header: map[string][]string{
+				"foo": {"bar"},
+			},
+			event:         "interface",
+			wantErrString: "no supported Git Provider is detected",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := l.whichProvider(tt.request)
+			jeez, err := json.Marshal(tt.event)
+			if err != nil {
+				assert.NilError(t, err)
+			}
+
+			_, _, err = l.detectProvider(&tt.header, string(jeez))
+			if tt.wantErrString != "" {
+				assert.ErrorContains(t, err, tt.wantErrString)
+				return
+			}
 			assert.NilError(t, err)
-		})
-	}
-}
-
-func TestWhichProviderError(t *testing.T) {
-	l := listener{
-		logger: getLogger(),
-	}
-	tests := []struct {
-		name    string
-		request *http.Request
-		err     error
-	}{
-		{
-			name: "invalid payload",
-			request: &http.Request{
-				Header: map[string][]string{
-					"X-Event": {"pull_request"},
-				},
-			},
-			err: fmt.Errorf("no supported Git Provider is detected"),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := l.whichProvider(tt.request)
-			assert.Equal(t, err.Error(), tt.err.Error(), fmt.Sprintf("expected %v but got %v", tt.err, err))
 		})
 	}
 }

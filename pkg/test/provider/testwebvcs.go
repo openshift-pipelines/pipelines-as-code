@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"go.uber.org/zap"
 )
 
 type TestProviderImp struct {
@@ -21,6 +22,10 @@ type TestProviderImp struct {
 // func (v *TestProviderImp) ParseEventType(request *http.Request, event *info.Event) error {
 //	return nil
 // }
+
+func (v *TestProviderImp) Detect(request *http.Header, body string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
+	return true, true, nil, nil
+}
 
 func (v *TestProviderImp) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
 	return v.Event, nil
