@@ -1,0 +1,47 @@
+baseURL = '/'
+languageCode = 'en-us'
+title = 'Pipelines as Code'
+#theme = 'hugo-theme-learn'
+theme = "hugo-book"
+# Book configuration
+disablePathToLower = true
+enableGitInfo = true
+
+[outputs]
+home = [ "HTML", "RSS", "JSON"]
+
+[params]
+custom_css = ["css/custom.css"]
+disableLandingPageButton = false
+BookLogo = "/pipelines-logo.svg"
+BookRepo = "https://github.com/openshift-pipelines/pipelines-as-code"
+BookEditPath = "edit/main/docs"
+
+[[Languages.en.menu.shortcuts]]
+name = "<i class='fas fa-fw fa-rocket'></i> Installation"
+url = "install"
+weight = 1
+
+[[Languages.en.menu.shortcuts]]
+name = "<i class='fas fa-fw fa-book'></i> Usage Documentation"
+url = "guide"
+weight = 2
+
+
+[[Languages.en.menu.shortcuts]]
+name = "<i class='fas fa-fw fa-terminal'></i> CLI Documentation"
+url = "cli"
+weight = 2
+
+[markup]
+[markup.highlight]
+style = "monokailight"
+lineNumbersInTable = false
+tabWidth = 2
+guessSyntax = true
+[markup.goldmark.renderer]
+  unsafe = true
+[markup.tableOfContents]
+  startLevel = 1
+
+

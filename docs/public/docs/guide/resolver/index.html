@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Pipelines as Code resolver #  If Pipelines as Code sees a PipelineRun with a reference to a Task or a Pipeline, it will tries to resolves it as a single PipelineRun with an embedded PipelineSpec to a PipelineRun.
+It will as well transform the Pipeline Name to a generateName based on the Pipeline name as well.
+This allows you to have multiple runs in the same namespace from the same PipelineRun with no risk of conflicts.">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="color-scheme" content="light dark"><meta property="og:title" content="Resolver" />
+<meta property="og:description" content="Pipelines as Code resolver #  If Pipelines as Code sees a PipelineRun with a reference to a Task or a Pipeline, it will tries to resolves it as a single PipelineRun with an embedded PipelineSpec to a PipelineRun.
+It will as well transform the Pipeline Name to a generateName based on the Pipeline name as well.
+This allows you to have multiple runs in the same namespace from the same PipelineRun with no risk of conflicts." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/docs/guide/resolver/" /><meta property="article:section" content="docs" />
+
+<meta property="article:modified_time" content="2022-03-28T17:35:38+02:00" />
+
+<title>Resolver | Pipelines as Code</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/book.min.82c5dbd23447cee0b4c2aa3ed08ce0961faa40e1fa370eee4f8c9f02e0d46b5f.css" >
+  <script defer src="/flexsearch.min.js"></script>
+  <script defer src="/en.search.min.7572659263b1daafc3e4d5bb97e500a1612f03dfc5e11d1be8033a18685aa68a.js" ></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><img src="/pipelines-logo.svg" alt="Logo" /><span>Pipelines as Code</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/" class="">Installation</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/github_apps/" class="">Github Apps</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/github_webhook/" class="">Github Webhook</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/gitlab/" class="">Gitlab</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/bitbucket_cloud/" class="">Bitbucket Cloud</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/bitbucket_server/" class="">Bitbucket Server</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/" class="">Usage Guide</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/resolver/" class=" active">Resolver</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/cli/" class="">CLI tkn-pac</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Resolver</strong>
+
+  <label for="toc-control">
+    
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#pipelines-as-code-resolver">Pipelines as Code resolver</a>
+      <ul>
+        <li><a href="#remote-task-support">Remote Task support</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="pipelines-as-code-resolver">
+  Pipelines as Code resolver
+  <a class="anchor" href="#pipelines-as-code-resolver">#</a>
+</h1>
+<p>If <code>Pipelines as Code</code> sees a PipelineRun with a reference to a <code>Task</code> or a
+<code>Pipeline</code>, it will tries to <em>resolves</em> it as a single PipelineRun with an
+embedded <code>PipelineSpec</code> to a <code>PipelineRun</code>.</p>
+<p>It will as well transform the Pipeline Name to a <code>generateName</code> based on the
+Pipeline name as well.</p>
+<p>This allows you to have multiple runs in the same namespace from the same
+PipelineRun with no risk of conflicts.</p>
+<p>Everything that runs your pipelinerun and its references need to be inside the
+<code>.tekton/</code> directory or referenced via a remote task (see below on how the
+remote tasks are referenced).</p>
+<p>If you have a taskRef to a task located in the <code>.tekton/</code> directory it will be
+automatically embedded even if it&rsquo;s not in the annotations.</p>
+<p>If you have a reference to a
+<a href="https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#task-vs-clustertask"><code>ClusterTask</code></a>
+or a
+<a href="https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#tekton-bundles"><code>Bundle</code></a>
+(<code>Task</code> or <code>Pipeline</code>) the resolver will just use them as is and would not try
+to do anything with it.</p>
+<p>If pipelines as code cannot resolve the referenced tasks in the <code>Pipeline</code> or
+<code>PipelineSpec</code> it will fails before applying the pipelinerun onto the cluster.</p>
+<p>If you need to test your <code>PipelineRun</code> locally before sending it in a PR, you
+can use the <code>resolve</code> command from the <code>tkn-pac</code> CLI See the <code>--help</code> of the
+command to learn about how to use it.</p>
+<h2 id="remote-task-support">
+  Remote Task support
+  <a class="anchor" href="#remote-task-support">#</a>
+</h2>
+<p><code>Pipelines as Code</code> support fetching remote tasks from remote location via
+annotations on PipelineRun.</p>
+<p>If the resolver sees a PipelineRun referencing a remote task via its name in a
+Pipeline or a PipelineSpec it will automatically inlines it.</p>
+<p>An annotation to a remote task looks like this :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">pipelinesascode.tekton.dev/task</span><span style="color:#111">:</span> <span style="color:#d88200">&#34;git-clone&#34;</span>
+</span></span></code></pre></div><p>or multiple tasks via an array :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">pipelinesascode.tekton.dev/task</span><span style="color:#111">:</span> <span style="color:#111">[</span><span style="color:#d88200">&#34;git-clone&#34;</span><span style="color:#111">,</span> <span style="color:#d88200">&#34;pylint&#34;</span><span style="color:#111">]</span>
+</span></span></code></pre></div><p>this installs the
+<a href="https://github.com/tektoncd/catalog/tree/main/task/git-clone">git-clone</a> task
+from the <a href="https://hub.tekton.dev">tekton hub</a> repository via its API.</p>
+<p>You can have multiple tasks in there if you separate them by a comma <code>,</code>:</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">pipelinesascode.tekton.dev/task</span><span style="color:#111">:</span> <span style="color:#d88200">&#34;[git-clone, golang-test, tkn]&#34;</span>
+</span></span></code></pre></div><p>You can have multiple lines if you add a <code>-NUMBER</code> suffix to the annotation, for
+example :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>  <span style="color:#f92672">pipelinesascode.tekton.dev/task</span><span style="color:#111">:</span> <span style="color:#d88200">&#34;git-clone&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">pipelinesascode.tekton.dev/task-1</span><span style="color:#111">:</span> <span style="color:#d88200">&#34;golang-test&#34;</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">pipelinesascode.tekton.dev/task-2</span><span style="color:#111">:</span> <span style="color:#d88200">&#34;tkn&#34;</span>
+</span></span></code></pre></div><p>By default <code>Pipelines as Code</code> will interpret the string as the <code>latest</code> task to
+grab
+from <a href="https://hub.tekton.dev">tekton hub</a>.</p>
+<p>If you want to have a specific version of the task, you can add a colon <code>:</code> to
+the string and a version number, like in
+this example :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>  <span style="color:#f92672">pipelinesascode.tekton.dev/task</span><span style="color:#111">:</span> <span style="color:#d88200">&#34;[git-clone:0.1]&#34;</span> <span style="color:#75715e"># will install git-clone 0.1 from tekton.hub</span>
+</span></span></code></pre></div><p>If you have a string starting with http:// or https://, <code>Pipelines as Code</code>
+will fetch the task directly from that remote url :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span>  <span style="color:#f92672">pipelinesascode.tekton.dev/task</span><span style="color:#111">:</span> <span style="color:#d88200">&#34;[https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.3/git-clone.yaml]&#34;</span>
+</span></span></code></pre></div><p>Additionally you can as well a reference to a task from a yaml file inside your
+repo if you specify the relative path to it, for example :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">pipelinesascode.tekton.dev/task</span><span style="color:#111">:</span> <span style="color:#d88200">&#34;[.tekton/tasks/git-clone.yaml]&#34;</span>
+</span></span></code></pre></div><p>will grab the <code>.tekton/tasks/git-clone.yaml</code> from the current repository on the
+<code>SHA</code> where the event come from (i.e: the current pull request or the current
+branch push).</p>
+<p>If there is any error fetching those resources, <code>Pipelines as Code</code> will error
+out and not process the pipeline.</p>
+<p>If the object fetched cannot be parsed as a Tekton <code>Task</code> it will error out.</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/openshift-pipelines/pipelines-as-code/commit/f67823ccf52c0291a9da372c7f4c88fae87a2b08" title='Last modified by Chmouel Boudjnah | March 28, 2022' target="_blank" rel="noopener">
+      <img src="/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>March 28, 2022</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/openshift-pipelines/pipelines-as-code/edit/main/docs/content/docs/guide/resolver.md" target="_blank" rel="noopener">
+      <img src="/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+
+</div>
+
+
+
+  <script>(function(){function e(n){const e=window.getSelection(),t=document.createRange();t.selectNodeContents(n),e.removeAllRanges(),e.addRange(t)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#pipelines-as-code-resolver">Pipelines as Code resolver</a>
+      <ul>
+        <li><a href="#remote-task-support">Remote Task support</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
