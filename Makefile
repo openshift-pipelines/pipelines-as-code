@@ -68,6 +68,8 @@ lint-yaml: ${YAML_FILES} ## runs yamllint on all yaml files
 
 .PHONY: test-unit
 test-unit: ## run unit tests
+	@echo "Cleaning test cache"
+	@go clean -testcache ./...
 	@echo "Running unit tests..."
 	@go test -failfast $(GO_TEST_FLAGS) ./...
 
