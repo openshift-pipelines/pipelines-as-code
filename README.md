@@ -1,10 +1,10 @@
 # Pipelines as Code
 
-**This documentation refers to the main development branch, the documentation for the latest released version is [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/0.5.3/README.md)**
-
 [![Container Repository on Quay](https://quay.io/repository/openshift-pipeline/pipelines-as-code/status "Container Repository on Quay")](https://quay.io/repository/openshift-pipeline/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code) [![E2E Tests](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/kind.yaml/badge.svg)](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/kind.yaml)
 
 Pipelines as Code -- An opinionated CI based on OpenShift Pipelines / Tekton.
+
+Documentation is available from https://pipelinesascode.com
 
 ## Introduction
 
@@ -42,7 +42,7 @@ Pipelines as Code features:
 
 The easiest way to get started is to use the `tkn pac` CLI and its bootstrap command.
 
-Download and install first the tkn-pac CLI following [these instructions](./docs/cli.md#install).
+Download and install first the tkn-pac CLI following [these instructions](/docs/cli.md#install).
 
 Connected to your cluster launch the command :
 
