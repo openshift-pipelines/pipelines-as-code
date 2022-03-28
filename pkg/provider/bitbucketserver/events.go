@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -28,11 +29,14 @@ func sanitizeOwner(owner string) string {
 
 // ParsePayload parses the payload from the event
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
-	// TODO: parse request to figure out which event
-	event := &info.Event{}
-	processedEvent := event
+	processedEvent := &info.Event{}
 
-	eventPayload := parsePayloadType(event.EventType)
+	eventType := request.Header.Get("X-Event-Key")
+	eventPayload, err := parsePayloadType(eventType)
+	if err != nil {
+		return &info.Event{}, err
+	}
+
 	if err := json.Unmarshal([]byte(payload), &eventPayload); err != nil {
 		return &info.Event{}, err
 	}
@@ -41,6 +45,18 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 
 	switch e := eventPayload.(type) {
 	case *types.PullRequestEvent:
+		if valid(eventType, []string{"pr:from_ref_updated", "pr:opened"}) {
+			processedEvent.TriggerTarget = "pull_request"
+			processedEvent.EventType = "pull_request"
+		} else if valid(eventType, []string{"pr:comment:added", "pr:comment:edited"}) {
+			if matches, _ := regexp.MatchString(retestRegex, e.Comment.Text); matches {
+				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.EventType = "retest-comment"
+			} else if matches, _ := regexp.MatchString(oktotestRegex, e.Comment.Text); matches {
+				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.EventType = "ok-to-test-comment"
+			}
+		}
 		// TODO: It's Really not an OWNER but a PROJECT
 		processedEvent.Organization = e.PulRequest.ToRef.Repository.Project.Key
 		processedEvent.Repository = e.PulRequest.ToRef.Repository.Name
@@ -57,6 +73,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		}
 		v.pullRequestNumber = e.PulRequest.ID
 	case *types.PushRequestEvent:
+		processedEvent.Event = "push"
+		processedEvent.TriggerTarget = "push"
 		processedEvent.Organization = e.Repository.Project.Key
 		processedEvent.Repository = e.Repository.Slug
 		processedEvent.SHA = e.Changes[0].ToHash
@@ -72,7 +90,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 			}
 		}
 	default:
-		return nil, fmt.Errorf("event %s is not supported", event.EventType)
+		return nil, fmt.Errorf("event %s is not supported", eventType)
 	}
 
 	v.projectKey = processedEvent.Organization
@@ -91,13 +109,28 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	return processedEvent, nil
 }
 
-func parsePayloadType(messageType string) interface{} {
+func parsePayloadType(event string) (interface{}, error) {
+	// bitbucket server event type has `pr:` prefix for pull request
+	// but in case of push event it is `repo:` prefix for both bitbucket server
+	// and cloud, so we check the event name directly
+	var localEvent string
+	if strings.HasPrefix(event, "pr:") {
+		if !valid(event, []string{"pr:from_ref_updated", "pr:opened", "pr:comment:added", "pr:comment:edited"}) {
+			return nil, fmt.Errorf("event %s is not supported", event)
+		}
+		localEvent = "pull_request"
+	} else if event == "repo:refs_changed" {
+		localEvent = "push"
+	}
+
 	var intfType interface{}
-	switch messageType {
+	switch localEvent {
 	case "pull_request":
 		intfType = &types.PullRequestEvent{}
 	case "push":
 		intfType = &types.PushRequestEvent{}
+	default:
+		intfType = nil
 	}
-	return intfType
+	return intfType, nil
 }
