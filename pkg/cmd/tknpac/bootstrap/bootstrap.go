@@ -14,6 +14,7 @@ import (
 const (
 	pacNS                  = "pipelines-as-code"
 	pacLabel               = "eventlistener=pipelines-as-code-interceptor"
+	openshiftpacNS         = "openshift-pipelines"
 	openShiftRouteGroup    = "route.openshift.io"
 	openShiftRouteVersion  = "v1"
 	openShiftRouteResource = "routes"
@@ -69,8 +70,17 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	if !tektonInstalled {
 		return errors.New("tekton API not found on the cluster. Please install Tekton first")
 	}
-	installed, _ := checkNS(ctx, run, opts)
-	if !opts.forceInstall && installed {
+
+	// if we gt a ns back it means it has been detected in here so keep it as is.
+	// or else just set the default to pacNS
+	ns, err := detectPacInstallation(ctx, opts.targetNamespace, run)
+	if ns != "" {
+		opts.targetNamespace = ns
+	} else if opts.targetNamespace == "" {
+		opts.targetNamespace = pacNS
+	}
+
+	if !opts.forceInstall && err == nil {
 		// nolint:forbidigo
 		fmt.Println("👌 Pipelines as Code is already installed.")
 	} else if err := installPac(ctx, opts); err != nil {
@@ -141,7 +151,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	}
 	cmd.AddCommand(GithubApp(run, ioStreams))
 
-	addCommonFlags(cmd, opts, ioStreams)
+	addCommonFlags(cmd, ioStreams)
 	addGithubAppFlag(cmd, opts)
 
 	cmd.PersistentFlags().BoolVar(&opts.forceInstall, "force-install", false, "whether we should force pac install even if it's already installed")
@@ -168,6 +178,12 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
+			var err error
+			opts.targetNamespace, err = detectPacInstallation(ctx, opts.targetNamespace, run)
+			if err != nil {
+				return err
+			}
+
 			if b, _ := askYN(false, "", "Are you using Github Enterprise?"); b {
 				opts.providerType = "github-enteprise-app"
 			}
@@ -178,9 +194,38 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			"commandType": "main",
 		},
 	}
-	addCommonFlags(cmd, opts, ioStreams)
+	addCommonFlags(cmd, ioStreams)
 	addGithubAppFlag(cmd, opts)
+
+	cmd.PersistentFlags().StringVarP(&opts.targetNamespace, "namespace", "n", "", "target namespace where pac is installed")
 	return cmd
+}
+
+func detectPacInstallation(ctx context.Context, wantedNS string, run *params.Run) (string, error) {
+	// detect which namespace pac is installed in
+	// verify first if the targetNamespace actually exists
+	if wantedNS != "" {
+		installed, err := checkNS(ctx, run, wantedNS)
+		if err != nil {
+			return "", err
+		}
+		if !installed {
+			return "", fmt.Errorf("PAC is not installed in namespace: %s", wantedNS)
+		}
+		return wantedNS, nil
+		// if openshift pipelines ns is installed try it from there
+	}
+
+	if installed, _ := checkNS(ctx, run, openshiftpacNS); installed {
+		return openshiftpacNS, nil
+	}
+
+	if installed, _ := checkNS(ctx, run, pacNS); installed {
+		return pacNS, nil
+	}
+
+	return "", fmt.Errorf("could not detect an installation of Pipelines as Code, " +
+		"use the -n switch to specify a namespace")
 }
 
 func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
@@ -195,7 +240,6 @@ func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 		fmt.Sprintf("target install type, choices are: %s ", strings.Join(providerTargets, ", ")))
 }
 
-func addCommonFlags(cmd *cobra.Command, opts *bootstrapOpts, ioStreams *cli.IOStreams) {
+func addCommonFlags(cmd *cobra.Command, ioStreams *cli.IOStreams) {
 	cmd.PersistentFlags().BoolP("no-color", "C", !ioStreams.ColorEnabled(), "disable coloring")
-	cmd.PersistentFlags().StringVarP(&opts.targetNamespace, "namespace", "n", pacNS, "target namespace where pac is installed")
 }

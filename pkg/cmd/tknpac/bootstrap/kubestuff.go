@@ -10,6 +10,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const configMapPacLabel = "app.kubernetes.io/part-of=pipelines-as-code"
+
 // deleteSecret delete secret first if it exists
 func deleteSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	return run.Clients.Kube.CoreV1().Secrets(opts.targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
@@ -39,14 +41,26 @@ func createPacSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts, 
 
 // checkSecret checks if the secret exists
 func checkSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) bool {
-	secret, _ := run.Clients.Kube.CoreV1().Secrets(opts.targetNamespace).Get(ctx, secretName, metav1.GetOptions{})
-	return secret.GetName() != ""
+	_, err := run.Clients.Kube.CoreV1().Secrets(opts.targetNamespace).Get(ctx, secretName, metav1.GetOptions{})
+	return err == nil
 }
 
 // check if we have the namespace created
-func checkNS(ctx context.Context, run *params.Run, opts *bootstrapOpts) (bool, error) {
-	ns, err := run.Clients.Kube.CoreV1().Namespaces().Get(ctx, opts.targetNamespace, metav1.GetOptions{})
-	return ns.GetName() != "", err
+func checkNS(ctx context.Context, run *params.Run, targetNamespace string) (bool, error) {
+	ns, err := run.Clients.Kube.CoreV1().Namespaces().Get(ctx, targetNamespace, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	// check if there is a configmap with the pipelines-as-code label in targetNamespace
+	cms, err := run.Clients.Kube.CoreV1().ConfigMaps(ns.GetName()).List(ctx, metav1.ListOptions{LabelSelector: configMapPacLabel})
+	if err != nil {
+		return false, err
+	}
+	if cms.Items == nil || len(cms.Items) == 0 {
+		return false, nil
+	}
+	return true, nil
 }
 
 func checkPipelinesInstalled(run *params.Run) (bool, error) {

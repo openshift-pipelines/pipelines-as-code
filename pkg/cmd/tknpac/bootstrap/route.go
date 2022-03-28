@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// detectOpenShiftRoute detect the openshift route where the eventlistener is running
 func detectOpenShiftRoute(ctx context.Context, run *params.Run, opts *bootstrapOpts) (string, error) {
 	gvr := schema.GroupVersionResource{
 		Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource,
