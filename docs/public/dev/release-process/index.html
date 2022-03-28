@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Release process for Pipelines as Code #   Clear out the PR needed to be merged. Wait that CI is connected. Make sure the CI PAC cluster is up. Make sure you have gpg signing setup for your commits. You need to install python package semver :  pip3 install --user semver  Use this script which should do most things :  ./hack/make-release.sh   Choose a version if it&rsquo;s a major release/minor or patch release and let it push the new tags which should kick off pipelines as code release pipelines.">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="color-scheme" content="light dark"><meta property="og:title" content="Pipelines as Code Release Process" />
+<meta property="og:description" content="Release process for Pipelines as Code #   Clear out the PR needed to be merged. Wait that CI is connected. Make sure the CI PAC cluster is up. Make sure you have gpg signing setup for your commits. You need to install python package semver :  pip3 install --user semver  Use this script which should do most things :  ./hack/make-release.sh   Choose a version if it&rsquo;s a major release/minor or patch release and let it push the new tags which should kick off pipelines as code release pipelines." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/dev/release-process/" /><meta property="article:section" content="dev" />
+
+<meta property="article:modified_time" content="2022-03-28T13:24:48+02:00" />
+
+<title>Pipelines as Code Release Process | Pipelines as Code</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/book.min.82c5dbd23447cee0b4c2aa3ed08ce0961faa40e1fa370eee4f8c9f02e0d46b5f.css" >
+  <script defer src="/flexsearch.min.js"></script>
+  <script defer src="/en.search.min.7572659263b1daafc3e4d5bb97e500a1612f03dfc5e11d1be8033a18685aa68a.js" ></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><img src="/pipelines-logo.svg" alt="Logo" /><span>Pipelines as Code</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/" class="">Installation</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/github_apps/" class="">Github Apps</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/github_webhook/" class="">Github Webhook</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/gitlab/" class="">Gitlab</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/bitbucket_cloud/" class="">Bitbucket Cloud</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/bitbucket_server/" class="">Bitbucket Server</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/" class="">Usage Guide</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/resolver/" class="">Resolver</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/cli/" class="">CLI tkn-pac</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Pipelines as Code Release Process</strong>
+
+  <label for="toc-control">
+    
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#release-process-for-pipelines-as-code">Release process for Pipelines as Code</a>
+      <ul>
+        <li><a href="#packages">Packages</a></li>
+      </ul>
+    </li>
+    <li><a href="#issues-you-may-see">Issues you may see</a></li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="release-process-for-pipelines-as-code">
+  Release process for Pipelines as Code
+  <a class="anchor" href="#release-process-for-pipelines-as-code">#</a>
+</h1>
+<ul>
+<li>Clear out the PR needed to be merged.</li>
+<li>Wait that CI is connected.</li>
+<li>Make sure the CI PAC cluster is up.</li>
+<li>Make sure you have gpg signing <a href="https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification">setup</a> for your commits.</li>
+<li>You need to install python package semver :</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>pip3 install --user semver
+</span></span></code></pre></div><ul>
+<li>Use this script which should do most things :</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-fallback" data-lang="fallback"><span style="display:flex;"><span>./hack/make-release.sh
+</span></span></code></pre></div><ul>
+<li>
+<p>Choose a version if it&rsquo;s a major release/minor or patch release and let it push the new tags which should kick off pipelines as code <a href=".tekton/release-pipeline.yaml">release pipelines</a>.</p>
+</li>
+<li>
+<p>When it started you can follow it on the pac cluster :</p>
+</li>
+</ul>
+<p><code>tkn pr logs -n pipelines-as-code-ci -Lf</code></p>
+<ul>
+<li>
+<p>After a while (gorelease takes somet ime) If everything is fine you should
+have the new version set as pre-release in
+github.com/openshift-pipelines/pipelines-as-code/releases</p>
+</li>
+<li>
+<p>Edit the release like the other releases has been done with a snippet of the highlight of the release.</p>
+</li>
+<li>
+<p>Announce it on Slack (upstream/downstream)  and twitter.</p>
+</li>
+</ul>
+<h2 id="packages">
+  Packages
+  <a class="anchor" href="#packages">#</a>
+</h2>
+<ul>
+<li><a href="https://aur.archlinux.org/packages/tkn-pac">Arch AUR</a>: Ping chmouel for an update</li>
+</ul>
+<h1 id="issues-you-may-see">
+  Issues you may see
+  <a class="anchor" href="#issues-you-may-see">#</a>
+</h1>
+<ul>
+<li>Sometime there may be some issues with system or others. If you need to rekick the release process you need to :</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>   git push --delete git@github.com:openshift-pipelines/pipelines-as-code release-1.2.3
+</span></span><span style="display:flex;"><span>   git push --delete git@github.com:openshift-pipelines/pipelines-as-code 1.2.3
+</span></span><span style="display:flex;"><span>   git tag --sign --force 1.2.3 
+</span></span><span style="display:flex;"><span>   git push git@github.com:openshift-pipelines/pipelines-as-code 1.2.3
+</span></span></code></pre></div><ul>
+<li>Some issues may be with the github token which may be expired or badly generated with a \n.</li>
+<li>Some other issues if you didn&rsquo;t do a git fetch -a origin before tagging so
+you don&rsquo;t have the latest commits from origin/main</li>
+</ul>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/openshift-pipelines/pipelines-as-code/commit/cac501d148effb9e20dd306ed0d186f7f60679fa" title='Last modified by Chmouel Boudjnah | March 28, 2022' target="_blank" rel="noopener">
+      <img src="/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>March 28, 2022</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/openshift-pipelines/pipelines-as-code/edit/main/docs/content/dev/release-process.md" target="_blank" rel="noopener">
+      <img src="/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+
+</div>
+
+
+
+  <script>(function(){function e(n){const e=window.getSelection(),t=document.createRange();t.selectNodeContents(n),e.removeAllRanges(),e.addRange(t)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#release-process-for-pipelines-as-code">Release process for Pipelines as Code</a>
+      <ul>
+        <li><a href="#packages">Packages</a></li>
+      </ul>
+    </li>
+    <li><a href="#issues-you-may-see">Issues you may see</a></li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

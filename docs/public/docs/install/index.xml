@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Installation on Pipelines as Code</title>
+    <link>/docs/install/</link>
+    <description>Recent content in Installation on Pipelines as Code</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="/docs/install/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Github Apps</title>
+      <link>/docs/install/github_apps/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/docs/install/github_apps/</guid>
+      <description>Create a Pipelines-as-Code GitHub App #  The GitHub App install is different than other install methods since it acts as the integration point with OpenShift Pipelines and brings the Git workflow into Tekton pipelines. You only need one GitHub App for every users on the cluster usually setup by the admin.
+You need the webhook of the GitHub App to point to your Pipelines-as-Code Controller route/ingress endpoint which would listen to GitHub events.</description>
+    </item>
+    
+    <item>
+      <title>Github Webhook</title>
+      <link>/docs/install/github_webhook/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/docs/install/github_webhook/</guid>
+      <description>Install Pipelines-as-Code as a GitHub Webhook #  If you are not able to create a GitHub application you can install Pipelines-as-Code on your repository as a GitHub Webhook.
+Using Pipelines as Code via Github webhook does not give you access to the GitHub CheckRun API, therefore the status of the tasks will be added as a Comment of the PR and not via the Checks Tab.
+Following the infrastructure installation</description>
+    </item>
+    
+    <item>
+      <title>Gitlab</title>
+      <link>/docs/install/gitlab/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/docs/install/gitlab/</guid>
+      <description>Install Pipelines-as-Code for Gitlab #  Pipelines-As-Code supports Gitlab via a webhook.
+Following the infrastructure installation:
+  You will have to generate a personal token as the manager of the Org or the Project, follow the steps here :
+https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html
+Note: You can create a token scoped only to the project. Since the token needs to be able to have api access to the forked repository from where the MR come from, it will fail to do it with a project scoped token.</description>
+    </item>
+    
+    <item>
+      <title>Bitbucket Cloud</title>
+      <link>/docs/install/bitbucket_cloud/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/docs/install/bitbucket_cloud/</guid>
+      <description>Install Pipelines-As-Code for Bitbucket Cloud #  Pipelines-As-Code has a full support on Bitbucket Cloud on https://bitbucket.org as Webhook.
+Following the infrastructure installation :
+ You will have to generate an app password for Pipelines-as-Code Bitbucket API operations. Follow this guide to create an app password :  https://support.atlassian.com/bitbucket-cloud/docs/app-passwords/
+Add those permissions to the token :
+image
+Make sure you note somewhere the generated token or otherwise you will have to recreate it.</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>/docs/install/bitbucket_server/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/docs/install/bitbucket_server/</guid>
+      <description>Install Pipelines-As-Code for Bitbucket Server #  Pipelines-As-Code has a full support of Bitbucket Server.
+Following the infrastructure installation :
+ You will have to generate a personal token as the manager of the Project, follow the steps here :  https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html
+The token will need to have the PROJECT_ADMIN and REPOSITORY_ADMIN permissions.
+Note that the token needs to be able to have access to the forked repository in pull requests or it would not be able to process and access the pull request.</description>
+    </item>
+    
+  </channel>
+</rss>

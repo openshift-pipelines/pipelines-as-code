@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Create a Pipelines-as-Code GitHub App #  The GitHub App install is different than other install methods since it acts as the integration point with OpenShift Pipelines and brings the Git workflow into Tekton pipelines. You only need one GitHub App for every users on the cluster usually setup by the admin.
+You need the webhook of the GitHub App to point to your Pipelines-as-Code Controller route/ingress endpoint which would listen to GitHub events.">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="color-scheme" content="light dark"><meta property="og:title" content="Github Apps" />
+<meta property="og:description" content="Create a Pipelines-as-Code GitHub App #  The GitHub App install is different than other install methods since it acts as the integration point with OpenShift Pipelines and brings the Git workflow into Tekton pipelines. You only need one GitHub App for every users on the cluster usually setup by the admin.
+You need the webhook of the GitHub App to point to your Pipelines-as-Code Controller route/ingress endpoint which would listen to GitHub events." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="/docs/install/github_apps/" /><meta property="article:section" content="docs" />
+
+<meta property="article:modified_time" content="2022-03-28T15:48:45+02:00" />
+
+<title>Github Apps | Pipelines as Code</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/book.min.82c5dbd23447cee0b4c2aa3ed08ce0961faa40e1fa370eee4f8c9f02e0d46b5f.css" >
+  <script defer src="/flexsearch.min.js"></script>
+  <script defer src="/en.search.min.7572659263b1daafc3e4d5bb97e500a1612f03dfc5e11d1be8033a18685aa68a.js" ></script>
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><img src="/pipelines-logo.svg" alt="Logo" /><span>Pipelines as Code</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/" class="">Installation</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/github_apps/" class=" active">Github Apps</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/github_webhook/" class="">Github Webhook</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/gitlab/" class="">Gitlab</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/bitbucket_cloud/" class="">Bitbucket Cloud</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/bitbucket_server/" class="">Bitbucket Server</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/" class="">Usage Guide</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/resolver/" class="">Resolver</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/cli/" class="">CLI tkn-pac</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Github Apps</strong>
+
+  <label for="toc-control">
+    
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#create-a-pipelines-as-code-github-app">Create a Pipelines-as-Code GitHub App</a>
+      <ul>
+        <li><a href="#setup">Setup</a></li>
+        <li><a href="#configure-pipelines-as-code-on-your-cluster-to-access-the-github-app">Configure Pipelines-as-Code on your cluster to access the GitHub App</a></li>
+        <li><a href="#github-enterprise">GitHub Enterprise</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="create-a-pipelines-as-code-github-app">
+  Create a Pipelines-as-Code GitHub App
+  <a class="anchor" href="#create-a-pipelines-as-code-github-app">#</a>
+</h1>
+<p>The GitHub App install is different than other install methods since it acts as
+the integration point with OpenShift Pipelines and brings the Git workflow into
+Tekton pipelines. You only need one GitHub App for every users on the cluster
+usually setup by the admin.</p>
+<p>You need the webhook of the GitHub App to point to your Pipelines-as-Code
+Controller route/ingress endpoint which would listen to GitHub events.</p>
+<h2 id="setup">
+  Setup
+  <a class="anchor" href="#setup">#</a>
+</h2>
+<ul>
+<li>
+<p>Go to <a href="https://github.com/settings/apps">https://github.com/settings/apps</a> (or <em>Settings &gt; Developer settings &gt; GitHub Apps</em>) and click on <strong>New GitHub
+App</strong> button</p>
+</li>
+<li>
+<p>Provide the following info in the GitHub App form</p>
+<ul>
+<li><strong>GitHub Application Name</strong>: <code>OpenShift Pipelines</code></li>
+<li><strong>Homepage URL</strong>: <em>[OpenShift Console URL]</em></li>
+<li><strong>Webhook URL</strong>: <em>[the Pipelines as Code route/ingress URL as copied in the previous section]</em></li>
+<li><strong>Webhook secret</strong>: <em>[an arbitrary secret, you can generate one with <code>openssl rand -hex 20</code>]</em></li>
+</ul>
+</li>
+<li>
+<p>Select the following repository permissions:</p>
+<ul>
+<li><strong>Checks</strong>: <code>Read &amp; Write</code></li>
+<li><strong>Contents</strong>: <code>Read &amp; Write</code></li>
+<li><strong>Issues</strong>: <code>Read &amp; Write</code></li>
+<li><strong>Metadata</strong>: <code>Readonly</code></li>
+<li><strong>Pull request</strong>: <code>Read &amp; Write</code></li>
+</ul>
+</li>
+<li>
+<p>Select the following organization permissions:</p>
+<ul>
+<li><strong>Members</strong>: <code>Readonly</code></li>
+<li><strong>Plan</strong>: <code>Readonly</code></li>
+</ul>
+</li>
+<li>
+<p>Select the following user permissions:</p>
+<ul>
+<li>Commit comment</li>
+<li>Issue comment</li>
+<li>Pull request</li>
+<li>Pull request review</li>
+<li>Pull request review comment</li>
+<li>Push</li>
+</ul>
+</li>
+</ul>
+<blockquote class="book-hint info">
+  <blockquote>
+<p>You can see a screenshot of how the GitHub App permissions look like <a href="https://user-images.githubusercontent.com/98980/124132813-7e53f580-da81-11eb-9eb4-e4f1487cf7a0.png">here</a></p>
+</blockquote>
+
+</blockquote>
+
+<ul>
+<li>
+<p>Click on <strong>Create GitHub App</strong>.</p>
+</li>
+<li>
+<p>Take note of the <strong>App ID</strong> at the top of the page on the details page of the GitHub App you just created.</p>
+</li>
+<li>
+<p>In <strong>Private keys</strong> section, click on *<em>Generate Private key</em> to generate a private key for the GitHub app. It will
+download automatically. Store the private key in a safe place as you need it in the next section and in future when
+reconfiguring this app to use a different cluster.</p>
+</li>
+</ul>
+<h2 id="configure-pipelines-as-code-on-your-cluster-to-access-the-github-app">
+  Configure Pipelines-as-Code on your cluster to access the GitHub App
+  <a class="anchor" href="#configure-pipelines-as-code-on-your-cluster-to-access-the-github-app">#</a>
+</h2>
+<p>In order for Pipelines-as-Code to be able to authenticate to the GitHub App and have the GitHub App securely trigger the
+Pipelines-as-Code webhook, you need to create a Kubernetes secret containing the private key of the GitHub App and the
+webhook secret of the Pipelines-as-Code as it was provided when you created the GitHub App in the previous section. This
+secret
+is <a href="https://docs.github.com/en/developers/apps/building-github-apps/identifying-and-authorizing-users-for-github-apps">used to generate</a>
+a token on behalf of the user running the event and make sure to validate the webhook via the webhook secret.</p>
+<p>Run the following command and replace:</p>
+<ul>
+<li><code>APP_ID</code> with the GitHub App <strong>App ID</strong> copied in the previous section</li>
+<li><code>WEBHOOK_SECRET</code> with the webhook secret provided when created the GitHub App in the previous section</li>
+<li><code>PATH_PRIVATE_KEY</code> with the path to the private key that was downloaded in the previous section</li>
+</ul>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-bash" data-lang="bash"><span style="display:flex;"><span>kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret <span style="color:#8045ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#8045ff"></span>        --from-literal github-private-key<span style="color:#f92672">=</span><span style="color:#d88200">&#34;</span><span style="color:#00a8c8">$(</span>cat PATH_PRIVATE_KEY<span style="color:#00a8c8">)</span><span style="color:#d88200">&#34;</span> <span style="color:#8045ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#8045ff"></span>        --from-literal github-application-id<span style="color:#f92672">=</span><span style="color:#d88200">&#34;APP_ID&#34;</span> <span style="color:#8045ff">\
+</span></span></span><span style="display:flex;"><span><span style="color:#8045ff"></span>        --from-literal webhook.secret<span style="color:#f92672">=</span><span style="color:#d88200">&#34;WEBHOOK_SECRET&#34;</span>
+</span></span></code></pre></div><h2 id="github-enterprise">
+  GitHub Enterprise
+  <a class="anchor" href="#github-enterprise">#</a>
+</h2>
+<p>Pipelines as Code supports Github Enterprise.</p>
+<p>You don&rsquo;t need to do anything special to get Pipelines as code working with GHE. Pipelines as code will automatically
+detects the header as set from GHE and use it the GHE API auth url instead of the public github.</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/openshift-pipelines/pipelines-as-code/commit/7b7c719d12a60c05f73e659bff6753b531fd92ef" title='Last modified by Chmouel Boudjnah | March 28, 2022' target="_blank" rel="noopener">
+      <img src="/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>March 28, 2022</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/openshift-pipelines/pipelines-as-code/edit/main/docs/content/docs/install/github_apps.md" target="_blank" rel="noopener">
+      <img src="/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+
+</div>
+
+
+
+  <script>(function(){function e(n){const e=window.getSelection(),t=document.createRange();t.selectNodeContents(n),e.removeAllRanges(),e.addRange(t)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#create-a-pipelines-as-code-github-app">Create a Pipelines-as-Code GitHub App</a>
+      <ul>
+        <li><a href="#setup">Setup</a></li>
+        <li><a href="#configure-pipelines-as-code-on-your-cluster-to-access-the-github-app">Configure Pipelines-as-Code on your cluster to access the GitHub App</a></li>
+        <li><a href="#github-enterprise">GitHub Enterprise</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Pipelines as Code - Installation #  Pipelines-as-Code support different installation method to Git provider platforms (i.e: GitHub, Bitbucket etc..)
+The preferred method to use Pipelines-as-Code is configured with a GitHub Application.
+Install Pipelines-as-Code #  In order to install and use Pipelines-as-Code, you need to
+ Install the Pipelines-as-Code infrastructure on your cluster Configure your Git Provider (eg: a GitHub Application) to access Pipelines as Code.  Install Pipelines as Code infrastructure #  To install Pipelines as Code on your cluster you simply need to run this command :">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="color-scheme" content="light dark"><meta property="og:title" content="Installation" />
+<meta property="og:description" content="" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="/docs/install/" />
+
+<title>Installation | Pipelines as Code</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/favicon.png" type="image/x-icon">
+<link rel="stylesheet" href="/book.min.82c5dbd23447cee0b4c2aa3ed08ce0961faa40e1fa370eee4f8c9f02e0d46b5f.css" >
+  <script defer src="/flexsearch.min.js"></script>
+  <script defer src="/en.search.min.7572659263b1daafc3e4d5bb97e500a1612f03dfc5e11d1be8033a18685aa68a.js" ></script>
+<link rel="alternate" type="application/rss+xml" href="/docs/install/index.xml" title="Pipelines as Code" />
+<!--
+Made with Book Theme
+https://github.com/alex-shpak/hugo-book
+-->
+  
+</head>
+<body dir="ltr">
+  <input type="checkbox" class="hidden toggle" id="menu-control" />
+  <input type="checkbox" class="hidden toggle" id="toc-control" />
+  <main class="container flex">
+    <aside class="book-menu">
+      <div class="book-menu-content">
+        
+  <nav>
+<h2 class="book-brand">
+  <a class="flex align-center" href="/"><img src="/pipelines-logo.svg" alt="Logo" /><span>Pipelines as Code</span>
+  </a>
+</h2>
+
+
+<div class="book-search">
+  <input type="text" id="book-search-input" placeholder="Search" aria-label="Search" maxlength="64" data-hotkeys="s/" />
+  <div class="book-search-spinner hidden"></div>
+  <ul id="book-search-results"></ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/" class=" active">Installation</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/github_apps/" class="">Github Apps</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/github_webhook/" class="">Github Webhook</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/gitlab/" class="">Gitlab</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/bitbucket_cloud/" class="">Bitbucket Cloud</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/install/bitbucket_server/" class="">Bitbucket Server</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/" class="">Usage Guide</a>
+  
+
+          
+  <ul>
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/resolver/" class="">Resolver</a>
+  
+
+        </li>
+      
+    
+      
+        <li>
+          
+  
+  
+
+  
+    <a href="/docs/guide/cli/" class="">CLI tkn-pac</a>
+  
+
+        </li>
+      
+    
+  </ul>
+
+        </li>
+      
+    
+  </ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</nav>
+
+
+
+
+  <script>(function(){var e=document.querySelector("aside .book-menu-content");addEventListener("beforeunload",function(){localStorage.setItem("menu.scrollTop",e.scrollTop)}),e.scrollTop=localStorage.getItem("menu.scrollTop")})()</script>
+
+
+ 
+      </div>
+    </aside>
+
+    <div class="book-page">
+      <header class="book-header">
+        
+  <div class="flex align-center justify-between">
+  <label for="menu-control">
+    <img src="/svg/menu.svg" class="book-icon" alt="Menu" />
+  </label>
+
+  <strong>Installation</strong>
+
+  <label for="toc-control">
+    
+    <img src="/svg/toc.svg" class="book-icon" alt="Table of Contents" />
+    
+  </label>
+</div>
+
+
+  
+  <aside class="hidden clearfix">
+    
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#pipelines-as-code---installation">Pipelines as Code - Installation</a>
+      <ul>
+        <li><a href="#install-pipelines-as-code">Install Pipelines-as-Code</a>
+          <ul>
+            <li><a href="#install-pipelines-as-code-infrastructure">Install Pipelines as Code infrastructure</a></li>
+            <li><a href="#rbac">RBAC</a></li>
+          </ul>
+        </li>
+        <li><a href="#provider-setup">Provider Setup</a></li>
+        <li><a href="#pipelines-as-code-configuration-settings">Pipelines-As-Code configuration settings</a></li>
+        <li><a href="#kubernetes">Kubernetes</a></li>
+        <li><a href="#cli">CLI</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+
+  </aside>
+  
+ 
+      </header>
+
+      
+      
+  <article class="markdown"><h1 id="pipelines-as-code---installation">
+  Pipelines as Code - Installation
+  <a class="anchor" href="#pipelines-as-code---installation">#</a>
+</h1>
+<p>Pipelines-as-Code support different installation method to Git provider
+platforms (i.e: GitHub, Bitbucket etc..)</p>
+<p>The preferred method to use Pipelines-as-Code is configured with a <a href="https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps">GitHub
+Application</a>.</p>
+<h2 id="install-pipelines-as-code">
+  Install Pipelines-as-Code
+  <a class="anchor" href="#install-pipelines-as-code">#</a>
+</h2>
+<p>In order to install and use Pipelines-as-Code, you need to</p>
+<ul>
+<li>Install the Pipelines-as-Code infrastructure on your cluster</li>
+<li>Configure your Git Provider (eg: a GitHub Application) to access Pipelines as Code.</li>
+</ul>
+<h3 id="install-pipelines-as-code-infrastructure">
+  Install Pipelines as Code infrastructure
+  <a class="anchor" href="#install-pipelines-as-code-infrastructure">#</a>
+</h3>
+<p>To install Pipelines as Code on your cluster you simply need to run this command
+:</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#111">VERSION</span><span style="color:#f92672">=</span>0.5.3
+</span></span><span style="display:flex;"><span>kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-<span style="color:#111">$VERSION</span>/release-<span style="color:#111">$VERSION</span>.yaml
+</span></span></code></pre></div><p>If you would like to install the current development version you can simply
+install it like this :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/nightly/release.yaml
+</span></span></code></pre></div><p>This will apply the <code>release.yaml</code> to your kubernetes cluster, creating the admin
+namespace <code>pipelines-as-code</code>, the roles and all other bits needed.</p>
+<p>The <code>pipelines-as-code</code> namespace is where the Pipelines-as-Code infrastructure
+runs and is supposed to be accessible only by the admins.</p>
+<p>The Route URL for the Pipelines as Code Controller is automatically created when
+you apply the release.yaml. You will need to reference this url when configuring
+your github provider.</p>
+<p>You can run this command to get the route created on your cluster:</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#111">echo</span> https://<span style="color:#00a8c8">$(</span>oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o <span style="color:#111">jsonpath</span><span style="color:#f92672">=</span><span style="color:#d88200">&#39;{.spec.host}&#39;</span><span style="color:#00a8c8">)</span>
+</span></span></code></pre></div><h3 id="rbac">
+  RBAC
+  <a class="anchor" href="#rbac">#</a>
+</h3>
+<p>Non <code>system:admin</code> users needs to be allowed explicitly to create repositories
+CRD in their namespace</p>
+<p>To allow them you need to create a <code>RoleBinding</code> on the namespace to the
+<code>openshift-pipeline-as-code-clusterrole</code>.</p>
+<p>For example assuming we want <code>user</code> being able to create repository CRD in the
+namespace <code>user-ci</code>, if we use the openshift <code>oc</code> cli :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>oc adm policy add-role-to-user openshift-pipeline-as-code-clusterrole user -n user-ci
+</span></span></code></pre></div><p>or via kubectl applying this yaml :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-yaml" data-lang="yaml"><span style="display:flex;"><span><span style="color:#f92672">apiVersion</span><span style="color:#111">:</span> <span style="color:#ae81ff">rbac.authorization.k8s.io/v1</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">kind</span><span style="color:#111">:</span> <span style="color:#ae81ff">RoleBinding</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">metadata</span><span style="color:#111">:</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span><span style="color:#111">:</span> <span style="color:#ae81ff">openshift-pipeline-as-code-clusterrole</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">namespace</span><span style="color:#111">:</span> <span style="color:#ae81ff">user-ci</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">roleRef</span><span style="color:#111">:</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">apiGroup</span><span style="color:#111">:</span> <span style="color:#ae81ff">rbac.authorization.k8s.io</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">kind</span><span style="color:#111">:</span> <span style="color:#ae81ff">ClusterRole</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span><span style="color:#111">:</span> <span style="color:#ae81ff">openshift-pipeline-as-code-clusterrole</span>
+</span></span><span style="display:flex;"><span><span style="color:#f92672">subjects</span><span style="color:#111">:</span>
+</span></span><span style="display:flex;"><span>- <span style="color:#f92672">apiGroup</span><span style="color:#111">:</span> <span style="color:#ae81ff">rbac.authorization.k8s.io</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">kind</span><span style="color:#111">:</span> <span style="color:#ae81ff">User</span>
+</span></span><span style="display:flex;"><span>  <span style="color:#f92672">name</span><span style="color:#111">:</span> <span style="color:#ae81ff">user</span>
+</span></span></code></pre></div><h2 id="provider-setup">
+  Provider Setup
+  <a class="anchor" href="#provider-setup">#</a>
+</h2>
+<p>After installing Pipelines as Code you are now ready to configure your Git
+provider. Choose your preferred install method, if you don&rsquo;t have any
+preferences the preferred install method is the Github Application method.</p>
+<ul>
+<li><a href="./github_apps">Github Application</a>.</li>
+<li><a href="./github_webhook">Github Webhook</a></li>
+<li><a href="./gitlab">Gitlab</a></li>
+<li><a href="./bitbucket_server">Bitbucket Server</a></li>
+<li><a href="./bitbucket_cloud">Bitbucket Cloud</a></li>
+</ul>
+<h2 id="pipelines-as-code-configuration-settings">
+  Pipelines-As-Code configuration settings
+  <a class="anchor" href="#pipelines-as-code-configuration-settings">#</a>
+</h2>
+<p>There is a few things you can configure via the configmap <code>pipelines-as-code</code> in
+the <code>pipelines-as-code</code> namespace.</p>
+<ul>
+<li>
+<p><code>application-name</code></p>
+<p>The name of the application showing for example in the GitHub Checks
+labels. Default to <code>&quot;Pipelines as Code CI&quot;</code></p>
+</li>
+<li>
+<p><code>max-keep-days</code></p>
+<p>The number of the day to keep the PipelineRuns runs in the <code>pipelines-as-code</code>
+namespace. We install by default a cronjob that cleans up the PipelineRuns
+generated on events in pipelines-as-code namespace. Note that these
+PipelineRuns are internal to Pipelines-as-code are separate from the
+PipelineRuns that exist in the user&rsquo;s GitHub repository. The cronjob runs
+every hour and by default cleanups PipelineRuns over a day. This configmap
+setting doesn&rsquo;t affect the cleanups of the user&rsquo;s PipelineRuns which are
+controlled by the <a href="#pipelineruns-cleanups">annotations on the PipelineRun definition in the user&rsquo;s
+GitHub repository</a>.</p>
+</li>
+<li>
+<p><code>secret-auto-create</code></p>
+<p>Whether to auto create a secret with the token generated via the Github
+application to be used with private repositories. This feature is enabled by
+default.</p>
+</li>
+<li>
+<p><code>remote-tasks</code></p>
+<p>Let allows remote tasks from pipelinerun annotations. This feature is enabled by
+default.</p>
+</li>
+<li>
+<p><code>hub-url</code></p>
+<p>The base url for the <a href="https://github.com/tektoncd/hub/">tekton hub</a>
+API. default to the <a href="https://hub.tekton.dev/">public hub</a>:</p>
+<p><a href="https://api.hub.tekton.dev/v1">https://api.hub.tekton.dev/v1</a></p>
+</li>
+</ul>
+<h2 id="kubernetes">
+  Kubernetes
+  <a class="anchor" href="#kubernetes">#</a>
+</h2>
+<p>Pipelines as Code should work directly on kubernetes/minikube/kind. You just need to install the release.yaml
+for <a href="https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml">pipeline</a>
+, <a href="https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml">triggers</a> and
+its <a href="https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml">interceptors</a> on your cluster.
+The release yaml to install pipelines are for the released version :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span><span style="color:#111">VERSION</span><span style="color:#f92672">=</span>0.5.3
+</span></span><span style="display:flex;"><span>kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-<span style="color:#111">$VERSION</span>/release-<span style="color:#111">$VERSION</span>.k8s.yaml
+</span></span></code></pre></div><p>and for the nightly :</p>
+<div class="highlight"><pre tabindex="0" style="color:#272822;background-color:#fafafa;-moz-tab-size:2;-o-tab-size:2;tab-size:2;"><code class="language-shell" data-lang="shell"><span style="display:flex;"><span>kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-<span style="color:#111">$VERSION</span>/release.k8s.yaml
+</span></span></code></pre></div><p>If you have <a href="https://github.com/tektoncd/dashboard">Tekton Dashboard</a>. You can
+just add the key <code>tekton-dashboard-url</code> in the <code>pipelines-as-code</code> configmap
+set to the full url of the <code>Ingress</code> host to get tekton dashboard logs url.</p>
+<h2 id="cli">
+  CLI
+  <a class="anchor" href="#cli">#</a>
+</h2>
+<p><code>Pipelines as Code</code> provide a CLI which is designed to work as tkn plugin. To
+install the plugin follow the instruction from the <a href="./guide/cli">CLI</a>
+documentation.</p>
+</article>
+ 
+      
+
+      <footer class="book-footer">
+        
+  <div class="flex flex-wrap justify-between">
+
+
+  <div><a class="flex align-center" href="https://github.com/openshift-pipelines/pipelines-as-code/commit/7b7c719d12a60c05f73e659bff6753b531fd92ef" title='Last modified by Chmouel Boudjnah | March 28, 2022' target="_blank" rel="noopener">
+      <img src="/svg/calendar.svg" class="book-icon" alt="Calendar" />
+      <span>March 28, 2022</span>
+    </a>
+  </div>
+
+
+
+  <div>
+    <a class="flex align-center" href="https://github.com/openshift-pipelines/pipelines-as-code/edit/main/docs/content/docs/install/_index.md" target="_blank" rel="noopener">
+      <img src="/svg/edit.svg" class="book-icon" alt="Edit" />
+      <span>Edit this page</span>
+    </a>
+  </div>
+
+
+</div>
+
+
+
+  <script>(function(){function e(n){const e=window.getSelection(),t=document.createRange();t.selectNodeContents(n),e.removeAllRanges(),e.addRange(t)}document.querySelectorAll("pre code").forEach(t=>{t.addEventListener("click",function(){e(t.parentElement),navigator.clipboard&&navigator.clipboard.writeText(t.parentElement.textContent)})})})()</script>
+
+
+ 
+        
+      </footer>
+
+      
+  
+  <div class="book-comments">
+
+</div>
+  
+ 
+
+      <label for="menu-control" class="hidden book-menu-overlay"></label>
+    </div>
+
+    
+    <aside class="book-toc">
+      <div class="book-toc-content">
+        
+  
+<nav id="TableOfContents">
+  <ul>
+    <li><a href="#pipelines-as-code---installation">Pipelines as Code - Installation</a>
+      <ul>
+        <li><a href="#install-pipelines-as-code">Install Pipelines-as-Code</a>
+          <ul>
+            <li><a href="#install-pipelines-as-code-infrastructure">Install Pipelines as Code infrastructure</a></li>
+            <li><a href="#rbac">RBAC</a></li>
+          </ul>
+        </li>
+        <li><a href="#provider-setup">Provider Setup</a></li>
+        <li><a href="#pipelines-as-code-configuration-settings">Pipelines-As-Code configuration settings</a></li>
+        <li><a href="#kubernetes">Kubernetes</a></li>
+        <li><a href="#cli">CLI</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+
+
+ 
+      </div>
+    </aside>
+    
+  </main>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
