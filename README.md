@@ -4,7 +4,7 @@
 
 Pipelines as Code -- An opinionated CI based on OpenShift Pipelines / Tekton.
 
-Documentation is available from https://pipelinesascode.com
+Full documentation is available from https://pipelinesascode.com
 
 ## Introduction
 
@@ -106,11 +106,11 @@ supports other methods :
 - Bitbucket Cloud
 - Bitbucket Server
 
-see the [INSTALL guide](docs/install.md) more details on each install method.
+see the [INSTALL guide](https://pipelinesascode.com/docs/install/) more details on each install method.
 
 ## Usage Guide
 
-The usage guide available [here](./docs/guide.md) offer a comprehensive documentation on how to use and configure Pipeline As Code.
+The usage guide available [here](https://pipelinesascode.com/docs/guide/) offer a comprehensive documentation on how to use and configure Pipeline As Code.
 
 A walkthought video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
 
