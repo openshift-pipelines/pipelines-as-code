@@ -1,6 +1,6 @@
 ---
 title: Bitbucket Cloud
-weight: 4
+weight: 14
 ---
 # Install Pipelines-As-Code for Bitbucket Cloud
 

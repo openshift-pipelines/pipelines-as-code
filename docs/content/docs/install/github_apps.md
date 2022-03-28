@@ -1,6 +1,6 @@
 ---
 title: Github Apps
-weight: 1
+weight: 10
 ---
 
 # Create a Pipelines-as-Code GitHub App

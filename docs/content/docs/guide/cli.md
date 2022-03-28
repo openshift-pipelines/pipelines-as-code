@@ -1,6 +1,6 @@
 ---
 title: CLI tkn-pac
-weight: 2
+weight: 10
 ---
 # Pipelines as Code CLI
 
