@@ -11,13 +11,9 @@ import (
 
 	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
-)
-
-const (
-	retestRegex   = "(^|\\\\r\\\\n)/retest([ ]*$|$|\\\\r\\\\n)"
-	oktotestRegex = "(^|\\\\r\\\\n)/ok-to-test([ ]*$|$|\\\\r\\\\n)"
 )
 
 const apiPublicURL = "https://api.github.com/"
@@ -222,10 +218,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		if gitEvent.GetAction() == "created" &&
 			gitEvent.GetIssue().IsPullRequest() &&
 			gitEvent.GetIssue().GetState() == "open" {
-			if matches, _ := regexp.MatchString(retestRegex, gitEvent.GetComment().GetBody()); matches {
+			if matches, _ := regexp.MatchString(provider.RetestRegex, gitEvent.GetComment().GetBody()); matches {
 				return setLoggerAndProceed()
 			}
-			if matches, _ := regexp.MatchString(oktotestRegex, gitEvent.GetComment().GetBody()); matches {
+			if matches, _ := regexp.MatchString(provider.OktotestRegex, gitEvent.GetComment().GetBody()); matches {
 				return setLoggerAndProceed()
 			}
 			return isGH, false, logger, nil
@@ -239,7 +235,7 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		return isGH, false, logger, nil
 
 	case *github.PullRequestEvent:
-		if valid(gitEvent.GetAction(), []string{"created", "synchronize", "opened"}) {
+		if provider.Valid(gitEvent.GetAction(), []string{"created", "synchronize", "opened"}) {
 			return setLoggerAndProceed()
 		}
 		return isGH, false, logger, nil
@@ -247,13 +243,4 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	default:
 		return isGH, false, logger, fmt.Errorf("github: event %v is not supported", event)
 	}
-}
-
-func valid(value string, validValues []string) bool {
-	for _, v := range validValues {
-		if v == value {
-			return true
-		}
-	}
-	return false
 }

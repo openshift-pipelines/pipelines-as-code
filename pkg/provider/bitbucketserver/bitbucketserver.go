@@ -17,11 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	retestRegex   = "(^|\\\\r\\\\n)/retest([ ]*$|$|\\\\r\\\\n)"
-	oktotestRegex = "(^|\\\\r\\\\n)/ok-to-test([ ]*$|$|\\\\r\\\\n)"
-)
-
 const taskStatusTemplate = `
 {{range $taskrun := .TaskRunList }}* **{{ formatCondition $taskrun.Status.Conditions }}**  {{ $taskrun.ConsoleLogURL }} *{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}* 
 {{ end }}`
@@ -270,21 +265,21 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 
 	switch e := eventPayload.(type) {
 	case *types.PullRequestEvent:
-		if valid(event, []string{"pr:from_ref_updated", "pr:opened"}) {
+		if provider.Valid(event, []string{"pr:from_ref_updated", "pr:opened"}) {
 			return setLoggerAndProceed()
 		}
-		if valid(event, []string{"pr:comment:added", "pr:comment:edited"}) {
-			if matches, _ := regexp.MatchString(retestRegex, e.Comment.Text); matches {
+		if provider.Valid(event, []string{"pr:comment:added", "pr:comment:edited"}) {
+			if matches, _ := regexp.MatchString(provider.RetestRegex, e.Comment.Text); matches {
 				return setLoggerAndProceed()
 			}
-			if matches, _ := regexp.MatchString(oktotestRegex, e.Comment.Text); matches {
+			if matches, _ := regexp.MatchString(provider.OktotestRegex, e.Comment.Text); matches {
 				return setLoggerAndProceed()
 			}
 		}
 		return isBitServer, false, logger, nil
 
 	case *types.PushRequestEvent:
-		if valid(event, []string{"repo:refs_changed"}) {
+		if provider.Valid(event, []string{"repo:refs_changed"}) {
 			if e.Changes != nil {
 				return setLoggerAndProceed()
 			}
@@ -294,13 +289,4 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	default:
 		return isBitServer, false, logger, fmt.Errorf("event %s is not supported", event)
 	}
-}
-
-func valid(value string, validValues []string) bool {
-	for _, v := range validValues {
-		if v == value {
-			return true
-		}
-	}
-	return false
 }

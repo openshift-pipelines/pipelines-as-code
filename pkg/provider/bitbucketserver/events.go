@@ -11,6 +11,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
 )
 
@@ -45,14 +46,14 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 
 	switch e := eventPayload.(type) {
 	case *types.PullRequestEvent:
-		if valid(eventType, []string{"pr:from_ref_updated", "pr:opened"}) {
+		if provider.Valid(eventType, []string{"pr:from_ref_updated", "pr:opened"}) {
 			processedEvent.TriggerTarget = "pull_request"
 			processedEvent.EventType = "pull_request"
-		} else if valid(eventType, []string{"pr:comment:added", "pr:comment:edited"}) {
-			if matches, _ := regexp.MatchString(retestRegex, e.Comment.Text); matches {
+		} else if provider.Valid(eventType, []string{"pr:comment:added", "pr:comment:edited"}) {
+			if matches, _ := regexp.MatchString(provider.RetestRegex, e.Comment.Text); matches {
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "retest-comment"
-			} else if matches, _ := regexp.MatchString(oktotestRegex, e.Comment.Text); matches {
+			} else if matches, _ := regexp.MatchString(provider.OktotestRegex, e.Comment.Text); matches {
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "ok-to-test-comment"
 			}
@@ -115,7 +116,7 @@ func parsePayloadType(event string) (interface{}, error) {
 	// and cloud, so we check the event name directly
 	var localEvent string
 	if strings.HasPrefix(event, "pr:") {
-		if !valid(event, []string{"pr:from_ref_updated", "pr:opened", "pr:comment:added", "pr:comment:edited"}) {
+		if !provider.Valid(event, []string{"pr:from_ref_updated", "pr:opened", "pr:comment:added", "pr:comment:edited"}) {
 			return nil, fmt.Errorf("event %s is not supported", event)
 		}
 		localEvent = "pull_request"
