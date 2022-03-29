@@ -17,21 +17,16 @@ BookLogo = "/pipelines-logo.svg"
 BookRepo = "https://github.com/openshift-pipelines/pipelines-as-code"
 BookEditPath = "edit/main/docs"
 
-[[Languages.en.menu.shortcuts]]
-name = "<i class='fas fa-fw fa-rocket'></i> Installation"
-url = "install"
-weight = 1
+[menu]
+[[menu.after]]
+  name = "Github Pipelines as Code"
+  url = "https://github.com/openshift-pipelines/pipelines-as-code"
+  weight = 10
 
-[[Languages.en.menu.shortcuts]]
-name = "<i class='fas fa-fw fa-book'></i> Usage Documentation"
-url = "guide"
-weight = 2
-
-
-[[Languages.en.menu.shortcuts]]
-name = "<i class='fas fa-fw fa-terminal'></i> CLI Documentation"
-url = "cli"
-weight = 2
+[[menu.after]]
+  name = "TektonCD Documentation"
+  url = "https://tekton.dev/docs/"
+  weight = 20
 
 [markup]
 [markup.highlight]

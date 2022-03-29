@@ -36,7 +36,7 @@ Pipelines as Code features:
 
 - `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
 
-- Bitbucket Server, Bitbucket Cloud and Github Webhook support.
+- Gitlab, Bitbucket Server, Bitbucket Cloud and Github via Webhook support.
 
 ## Installation Guide
 

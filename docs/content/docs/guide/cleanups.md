@@ -1,7 +1,7 @@
 ---
 title: PipelineRuns Cleanup
 weight: 8
-----
+---
 # PipelineRuns Cleanups
 
 There can be a lot of PipelineRuns into an user namespace and Pipelines as Code
@@ -18,4 +18,3 @@ successful execution keeping only the maxNumber of PipelineRuns.
 
 It will skip the `Running` PipelineRuns but will not skip the PipelineRuns with
 `Unknown` status.
-
