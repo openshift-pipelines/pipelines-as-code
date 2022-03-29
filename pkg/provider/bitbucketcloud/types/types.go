@@ -55,16 +55,17 @@ type PullRequest struct {
 type PullRequestEvent struct {
 	Repository  Repository  `json:"repository"`
 	PullRequest PullRequest `json:"pullrequest"`
+	Comment     Comment     `json:"comment"`
 }
 
 type Push struct {
-	Changes []Change
+	Changes []Change `json:"changes"`
 }
 
 type PushRequestEvent struct {
 	Repository Repository
 	Actor      User
-	Push       Push
+	Push       Push `json:"push"`
 }
 
 type ChangeType struct {
@@ -104,11 +105,11 @@ type Members struct {
 }
 
 type Content struct {
-	Raw string
+	Raw string `json:"raw"`
 }
 
 type Comment struct {
-	Content Content
+	Content Content `json:"content"`
 	User    User
 }
 

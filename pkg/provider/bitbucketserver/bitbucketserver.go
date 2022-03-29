@@ -245,12 +245,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	}
 
 	eventPayload, err := parsePayloadType(event)
-	if err != nil {
+	if err != nil || eventPayload == nil {
 		return false, false, logger, err
 	}
-	if eventPayload == nil {
-		return false, false, logger, nil
-	}
+
 	// it is a Bitbucket server event
 	isBitServer = true
 

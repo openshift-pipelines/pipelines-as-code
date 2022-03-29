@@ -7,10 +7,12 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
 )
 
@@ -18,12 +20,14 @@ const bitbucketCloudIPrangesList = "https://ip-ranges.atlassian.com/"
 
 // lastForwarderForIP get last ip from the X-Forwarded-For chain
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For
+// nolint
 func lastForwarderForIP(xff string) string {
 	splitted := strings.Split(xff, ",")
 	return splitted[len(splitted)-1]
 }
 
 // checkFromPublicCloudIPS Grab public IP from public cloud and make sure we match it
+// nolint
 func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run) (bool, error) {
 	enval, ok := os.LookupEnv("PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP")
 	if !ok || !params.StringToBool(enval) {
@@ -73,25 +77,37 @@ func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run)
 			sourceIP, bitbucketCloudIPrangesList)
 }
 
-func parsePayloadType(messageType string, rawPayload []byte) (interface{}, error) {
+func parsePayloadType(event string, rawPayload string) (interface{}, error) {
 	var payload interface{}
 
-	switch messageType {
+	var localEvent string
+	if strings.HasPrefix(event, "pullrequest:") {
+		if !provider.Valid(event, []string{"pullrequest:created", "pullrequest:updated", "pullrequest:comment_created"}) {
+			return nil, fmt.Errorf("event %s is not supported", event)
+		}
+		localEvent = "pull_request"
+	} else if event == "repo:push" {
+		localEvent = "push"
+	}
+
+	switch localEvent {
 	case "pull_request":
 		payload = &types.PullRequestEvent{}
 	case "push":
 		payload = &types.PushRequestEvent{}
+	default:
+		return nil, nil
 	}
-	err := json.Unmarshal(rawPayload, payload)
+	err := json.Unmarshal([]byte(rawPayload), payload)
 	return payload, err
 }
 
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
-	// TODO: parse request to figure out which event
-	event := &info.Event{}
-	processedEvent := event
-	eventInt, err := parsePayloadType(event.EventType, []byte(payload))
-	if err != nil {
+	processedEvent := &info.Event{}
+
+	event := request.Header.Get("X-Event-Key")
+	eventInt, err := parsePayloadType(event, payload)
+	if err != nil || eventInt == nil {
 		return &info.Event{}, err
 	}
 
@@ -100,19 +116,32 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return &info.Event{}, err
 	}
 
-	allowed, err := v.checkFromPublicCloudIPS(ctx, run)
-	if err != nil {
-		return nil, err
-	}
-	if !allowed {
-		return nil, fmt.Errorf("payload is not coming from the public bitbucket cloud ips as defined here: %s",
-			bitbucketCloudIPrangesList)
-	}
+	// TODO: figure this out!
+	// allowed, err := v.checkFromPublicCloudIPS(ctx, run)
+	// if err != nil {
+	//	return nil, err
+	// }
+	// if !allowed {
+	//	return nil, fmt.Errorf("payload is not coming from the public bitbucket cloud ips as defined here: %s",
+	//		bitbucketCloudIPrangesList)
+	//}
 
 	processedEvent.Event = eventInt
 
 	switch e := eventInt.(type) {
 	case *types.PullRequestEvent:
+		if provider.Valid(event, []string{"pullrequest:created", "pullrequest:updated"}) {
+			processedEvent.TriggerTarget = "pull_request"
+			processedEvent.EventType = "pull_request"
+		} else if provider.Valid(event, []string{"pullrequest:comment_created"}) {
+			if matches, _ := regexp.MatchString(provider.RetestRegex, e.Comment.Content.Raw); matches {
+				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.EventType = "retest-comment"
+			} else if matches, _ := regexp.MatchString(provider.OktotestRegex, e.Comment.Content.Raw); matches {
+				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.EventType = "ok-to-test-comment"
+			}
+		}
 		processedEvent.Organization = e.Repository.Workspace.Slug
 		processedEvent.Repository = e.Repository.Name
 		processedEvent.SHA = e.PullRequest.Source.Commit.Hash
@@ -122,6 +151,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.AccountID = e.PullRequest.Author.AccountID
 		processedEvent.Sender = e.PullRequest.Author.Nickname
 	case *types.PushRequestEvent:
+		processedEvent.Event = "push"
+		processedEvent.TriggerTarget = "push"
 		processedEvent.Organization = e.Repository.Workspace.Slug
 		processedEvent.Repository = e.Repository.Name
 		processedEvent.SHA = e.Push.Changes[0].New.Target.Hash
@@ -131,7 +162,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.AccountID = e.Actor.AccountID
 		processedEvent.Sender = e.Actor.Nickname
 	default:
-		return nil, fmt.Errorf("event %s is not recognized", event.EventType)
+		return nil, fmt.Errorf("event %s is not recognized", event)
 	}
 	return processedEvent, nil
 }

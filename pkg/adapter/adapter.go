@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/version"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"go.uber.org/zap"
@@ -138,6 +139,18 @@ func (l listener) detectProvider(reqHeader *http.Header, reqBody string) (provid
 		}
 		if processReq {
 			return bitServer, logger, nil
+		}
+		return nil, nil, nil
+	}
+
+	bitCloud := &bitbucketcloud.Provider{}
+	isBitCloud, processReq, logger, err := bitCloud.Detect(reqHeader, reqBody, &log)
+	if isBitCloud {
+		if err != nil {
+			return nil, logger, err
+		}
+		if processReq {
+			return bitCloud, logger, nil
 		}
 		return nil, nil, nil
 	}

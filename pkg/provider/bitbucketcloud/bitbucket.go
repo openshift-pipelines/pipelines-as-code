@@ -2,7 +2,10 @@ package bitbucketcloud
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/ktrysmt/go-bitbucket"
@@ -10,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
+	"go.uber.org/zap"
 )
 
 type Provider struct {
@@ -17,10 +21,6 @@ type Provider struct {
 	Token, APIURL *string
 	Username      *string
 }
-
-// func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
-//	panic("implement me")
-// }
 
 const taskStatusTemplate = `| **Status** | **Duration** | **Name** |
 | --- | --- | --- |
@@ -221,4 +221,57 @@ func (v *Provider) getPullRequestNumber(eventPayload interface{}) (string, error
 		return "", fmt.Errorf("could not detect pull request ID")
 	}
 	return fmt.Sprintf("%d", prID), nil
+}
+
+func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
+	isBitCloud := false
+	event := reqHeader.Get("X-Event-Key")
+	if event == "" {
+		return false, false, logger, nil
+	}
+
+	eventInt, err := parsePayloadType(event, payload)
+	if err != nil || eventInt == nil {
+		return false, false, logger, err
+	}
+
+	// it is a Bitbucket cloud event
+	isBitCloud = true
+
+	setLoggerAndProceed := func() (bool, bool, *zap.SugaredLogger, error) {
+		logger = logger.With("provider", "bitbucket-cloud", "event", reqHeader.Get("X-Request-Id"))
+		return isBitCloud, true, logger, nil
+	}
+
+	err = json.Unmarshal([]byte(payload), &eventInt)
+	if err != nil {
+		return isBitCloud, false, logger, err
+	}
+
+	switch e := eventInt.(type) {
+	case *types.PullRequestEvent:
+		if provider.Valid(event, []string{"pullrequest:created", "pullrequest:updated"}) {
+			return setLoggerAndProceed()
+		}
+		if provider.Valid(event, []string{"pullrequest:comment_created"}) {
+			if matches, _ := regexp.MatchString(provider.RetestRegex, e.Comment.Content.Raw); matches {
+				return setLoggerAndProceed()
+			}
+			if matches, _ := regexp.MatchString(provider.OktotestRegex, e.Comment.Content.Raw); matches {
+				return setLoggerAndProceed()
+			}
+		}
+		return isBitCloud, false, logger, nil
+
+	case *types.PushRequestEvent:
+		if provider.Valid(event, []string{"repo:push"}) {
+			if e.Push.Changes != nil {
+				return setLoggerAndProceed()
+			}
+		}
+		return isBitCloud, false, logger, nil
+
+	default:
+		return isBitCloud, false, logger, fmt.Errorf("event %s is not recognized", event)
+	}
 }
