@@ -13,12 +13,12 @@ directly with OpenShift Pipelines.
 
 The goal of Pipelines as Code is to let you define your
 [Tekton](https://tekton.cd) templates inside your source code repository and have the pipeline run and report the status
-of the execution when triggered by a Pull Request or a Push.
+of the execution when triggered by a `Pull Request` or a `Push`.
 
 ## Features
 
 {{< columns >}} <!-- begin columns block -->
-- Pull-request status support: When iterating over a Pull Request, status and control is done on the GitHub.
+- Pull-request status support: When iterating over a Pull Request. Statuses and Control is done on GitHub.
 
 - GitHub Checks API support to set the status of a PipelineRun including rechecks
 
@@ -28,7 +28,7 @@ of the execution when triggered by a Pull Request or a Push.
 
 - Pull-request actions in comments such as `/retest`
 
-- Automatic Task resolution in Pipelines (local Tasks, Tekton Hub and remote URLs)
+- Automatic Task resolution in Pipelines (local Tasks, Tekton Hub, and remote URLs)
 
 - Efficient use of GitHub blobs and objects API for retrieving configurations
 
@@ -42,11 +42,11 @@ of the execution when triggered by a Pull Request or a Push.
 
 {{< /columns >}}
 
-## Installation Guide
+## Getting Started
 
-The easiest way to get started is to use the `tkn pac` CLI and its bootstrap command.
+The easiest way to get started is to use the `tkn pac` CLI and its [bootstrap](/docs/guide/cli/#commands) command.
 
-Download and install first the tkn-pac CLI following [these instructions](/docs/guide/cli#install) and
+Start downloading and install the tkn-pac CLI following [these instructions](/docs/guide/cli#install) and
 while Connected to your cluster launch the command :
 
 
@@ -54,20 +54,20 @@ while Connected to your cluster launch the command :
 -$ tkn pac bootstrap
 ```
 
-and follow the questions and installation methods which will install Pipelines as Code on cluster and help you create a Github Application.
-
-feel free to look over the `--help` to see the different options on how to install for example on Github Enterprise.
+and follow the questions to get Pipelines as Code installed on your cluster. 
+It will then help you to create create a Github Application to connect your repositories to Pipelines as Code. 
+If you are in a source code project, it will immediately ask you if you want to have a sample `PipelineRun` for `Pipelines as Code`
 
 ## Walkthrough video
 
-This 10 minute video will guide you thought the `tkn-pac bootstrap` flow :
+This 10-minute video will guide you through the `tkn-pac bootstrap` flow :
 
 {{< youtube ytm3brml8is >}}
 
 ## Documentation
 
-For more details on the different installation method please follow [the
-installation document](/docs/install/overview) detailling the Pipelines as Code
+For more details on the different installation methods please follow [the
+installation document](/docs/install/overview) detailing the Pipelines as Code
 installation steps.
 
 If you need to use `Pipelines as Code` and author `PipelineRuns` you can follow
