@@ -46,7 +46,7 @@ of the execution when triggered by a Pull Request or a Push.
 
 The easiest way to get started is to use the `tkn pac` CLI and its bootstrap command.
 
-Download and install first the tkn-pac CLI following [these instructions](/docs/cli#install) and
+Download and install first the tkn-pac CLI following [these instructions](/docs/guide/cli#install) and
 while Connected to your cluster launch the command :
 
 
