@@ -22,7 +22,7 @@ cat <<EOF|kubectl create -n my-pipeline-ci -f-
 apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
 kind: Repository
 metadata:
-  name: scratch-my-back
+  name: project-repository
 spec:
   url: "https://github.com/linda/project"
 EOF
