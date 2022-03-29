@@ -5,7 +5,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// pipelineRunStatus return status of PR  success failed or skipped
+// PipelineRunStatus return status of PR  success failed or skipped
 func PipelineRunStatus(pr *tektonv1beta1.PipelineRun) string {
 	if len(pr.Status.Conditions) == 0 {
 		return "neutral"
