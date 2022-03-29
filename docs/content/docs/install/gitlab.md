@@ -1,6 +1,6 @@
 ---
 title: Gitlab
-weight: 3
+weight: 13
 ---
 
 # Install Pipelines-as-Code for Gitlab

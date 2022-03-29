@@ -1,4 +1,8 @@
-# Install Pipelines-As-Code for Bitbucket Server
+---
+title: Bitbucket Server
+weight: 15
+---
+# Install Pipelines-As-Code on Bitbucket Server
 
 Pipelines-As-Code has a full support of [Bitbucket
 Server](https://www.atlassian.com/software/bitbucket/enterprise).

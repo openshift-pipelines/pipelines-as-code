@@ -1,6 +1,6 @@
 ---
 title: Github Webhook
-weight: 2
+weight: 12
 ---
 
 # Install Pipelines-as-Code as a GitHub Webhook

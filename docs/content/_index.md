@@ -1,7 +1,9 @@
 ---
-disableToc: false
+bookToc: false
 ---
-# Pipelines as Code -- An opinionated CI based on OpenShift Pipelines / Tekton.
+# Pipelines as Code
+
+An opinionated CI based on OpenShift Pipelines / Tekton.
 
 ## Introduction
 
