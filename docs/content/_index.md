@@ -15,27 +15,32 @@ The goal of Pipelines as Code is to let you define your
 [Tekton](https://tekton.cd) templates inside your source code repository and have the pipeline run and report the status
 of the execution when triggered by a Pull Request or a Push.
 
-Pipelines as Code features:
+## Features
 
-- Pull-request status support: When iterating over a Pull Request, status and control is done on the platform.
+{{< columns >}} <!-- begin columns block -->
+- Pull-request status support: When iterating over a Pull Request, status and control is done on the GitHub.
 
 - GitHub Checks API support to set the status of a PipelineRun including rechecks
 
-- GitHub Pull Request and Commit event support
+- GitHub Pull Request and Push event support
+
+<--->
 
 - Pull-request actions in comments such as `/retest`
-
-- Git events filtering and support for separate pipelines for each event
 
 - Automatic Task resolution in Pipelines (local Tasks, Tekton Hub and remote URLs)
 
 - Efficient use of GitHub blobs and objects API for retrieving configurations
 
-- ACL over a GitHub organization or via a Prow style [`OWNER`](https://www.kubernetes.dev/docs/guide/owners/) file.
+<--->
+
+- Git events Filtering and support for separate pipelines for each event
+
+- Gitlab, Bitbucket Server, Bitbucket Cloud and Github Webhook support.
 
 - `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
 
-- Bitbucket Server, Bitbucket Cloud and Github Webhook support.
+{{< /columns >}}
 
 ## Installation Guide
 
@@ -53,8 +58,17 @@ and follow the questions and installation methods which will install Pipelines a
 
 feel free to look over the `--help` to see the different options on how to install for example on Github Enterprise.
 
+## Walkthrough video
+
 This 10 minute video will guide you thought the `tkn-pac bootstrap` flow :
 
 {{< youtube ytm3brml8is >}}
 
-For more details on the different installation method please follow [this document](/docs/install) detailling the Pipelines as Code installation steps.
+## Documentation
+
+For more details on the different installation method please follow [the
+installation document](/docs/install/overview) detailling the Pipelines as Code
+installation steps.
+
+If you need to use `Pipelines as Code` and author `PipelineRuns` you can follow
+the [usage guide](/docs/guide)
