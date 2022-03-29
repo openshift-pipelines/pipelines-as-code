@@ -2,14 +2,19 @@ package bitbucketserver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
+	"go.uber.org/zap"
 )
 
 const taskStatusTemplate = `
@@ -227,5 +232,61 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 func (v *Provider) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{
 		TaskStatusTMPL: taskStatusTemplate,
+	}
+}
+
+// Detect processes event and detect if it is a bitbucket server event, whether to process or reject it
+// returns (if is a bitbucket server event, whether to process or reject, error if any occurred)
+func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
+	isBitServer := false
+	event := reqHeader.Get("X-Event-Key")
+	if event == "" {
+		return false, false, logger, nil
+	}
+
+	eventPayload, err := parsePayloadType(event)
+	if err != nil {
+		return false, false, logger, err
+	}
+	if eventPayload == nil {
+		return false, false, logger, nil
+	}
+	// it is a Bitbucket server event
+	isBitServer = true
+
+	setLoggerAndProceed := func() (bool, bool, *zap.SugaredLogger, error) {
+		logger = logger.With("provider", "bitbucket-server", "event", reqHeader.Get("X-Request-Id"))
+		return isBitServer, true, logger, nil
+	}
+
+	if err := json.Unmarshal([]byte(payload), &eventPayload); err != nil {
+		return isBitServer, false, logger, err
+	}
+
+	switch e := eventPayload.(type) {
+	case *types.PullRequestEvent:
+		if provider.Valid(event, []string{"pr:from_ref_updated", "pr:opened"}) {
+			return setLoggerAndProceed()
+		}
+		if provider.Valid(event, []string{"pr:comment:added", "pr:comment:edited"}) {
+			if matches, _ := regexp.MatchString(provider.RetestRegex, e.Comment.Text); matches {
+				return setLoggerAndProceed()
+			}
+			if matches, _ := regexp.MatchString(provider.OktotestRegex, e.Comment.Text); matches {
+				return setLoggerAndProceed()
+			}
+		}
+		return isBitServer, false, logger, nil
+
+	case *types.PushRequestEvent:
+		if provider.Valid(event, []string{"repo:refs_changed"}) {
+			if e.Changes != nil {
+				return setLoggerAndProceed()
+			}
+		}
+		return isBitServer, false, logger, nil
+
+	default:
+		return isBitServer, false, logger, fmt.Errorf("event %s is not supported", event)
 	}
 }

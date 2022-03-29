@@ -14,8 +14,6 @@ import (
 )
 
 func TestParsePayload(t *testing.T) {
-	// TODO: fix event parsing logic
-	t.Skip()
 	ev1 := &info.Event{
 		AccountID:    "12345",
 		Sender:       "sender",
@@ -37,20 +35,20 @@ func TestParsePayload(t *testing.T) {
 	}{
 		{
 			name:          "bad/invalid event type",
-			eventType:     "nono",
+			eventType:     "pr:nono",
 			payloadEvent:  bbv1.PullRequest{},
-			wantErrSubstr: "event nono is not supported",
+			wantErrSubstr: "event pr:nono is not supported",
 		},
 		{
 			name:          "bad/bad json",
-			eventType:     "pull_request",
+			eventType:     "pr:opened",
 			payloadEvent:  bbv1.PullRequest{},
 			rawStr:        "rageAgainst",
 			wantErrSubstr: "invalid character",
 		},
 		{
 			name:      "bad/url",
-			eventType: "pull_request",
+			eventType: "pr:opened",
 			payloadEvent: bbv1test.MakePREvent(
 				&info.Event{
 					AccountID:    "12345",
@@ -66,7 +64,7 @@ func TestParsePayload(t *testing.T) {
 		},
 		{
 			name:         "good/pull_request",
-			eventType:    "pull_request",
+			eventType:    "pr:opened",
 			payloadEvent: pr1,
 			expEvent:     ev1,
 		},
@@ -76,9 +74,10 @@ func TestParsePayload(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			v := &Provider{}
-			// event := &info.Event{
-			//	EventType: tt.eventType,
-			// }
+
+			req := &http.Request{Header: map[string][]string{}}
+			req.Header.Set("X-Event-Key", tt.eventType)
+
 			run := &params.Run{
 				Info: info.Info{},
 			}
@@ -89,7 +88,7 @@ func TestParsePayload(t *testing.T) {
 				payload = tt.rawStr
 			}
 
-			got, err := v.ParsePayload(ctx, run, &http.Request{}, payload)
+			got, err := v.ParsePayload(ctx, run, req, payload)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return

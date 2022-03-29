@@ -12,6 +12,7 @@ type EventActor struct {
 type PullRequestEvent struct {
 	Actor      EventActor
 	PulRequest bbv1.PullRequest `json:"pullRequest"`
+	Comment    bbv1.Comment     `json:"comment"`
 }
 
 type PushRequestEventChange struct {
@@ -20,7 +21,7 @@ type PushRequestEventChange struct {
 }
 
 type PushRequestEvent struct {
-	Actor      EventActor `json:"actor"`
-	Repository bbv1.Repository
-	Changes    []PushRequestEventChange
+	Actor      EventActor               `json:"actor"`
+	Repository bbv1.Repository          `json:"repository"`
+	Changes    []PushRequestEventChange `json:"changes"`
 }

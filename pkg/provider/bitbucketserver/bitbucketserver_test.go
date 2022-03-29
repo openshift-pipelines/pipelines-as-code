@@ -1,6 +1,8 @@
 package bitbucketserver
 
 import (
+	"encoding/json"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -9,6 +11,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/test"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -306,4 +311,117 @@ func TestGetConfig(t *testing.T) {
 	v := &Provider{}
 	config := v.GetConfig()
 	assert.Equal(t, config.TaskStatusTMPL, taskStatusTemplate)
+}
+
+func TestProvider_Detect(t *testing.T) {
+	tests := []struct {
+		name          string
+		wantErrString string
+		isBS          bool
+		processReq    bool
+		event         interface{}
+		eventType     string
+	}{
+		{
+			name:       "not a bitbucket server Event",
+			eventType:  "",
+			isBS:       false,
+			processReq: false,
+		},
+		{
+			name:       "invalid bitbucket server Event",
+			eventType:  "validator",
+			isBS:       false,
+			processReq: false,
+		},
+		{
+			name: "push event",
+			event: types.PushRequestEvent{
+				Actor: types.EventActor{
+					ID: 111,
+				},
+				Repository: bbv1.Repository{},
+				Changes: []types.PushRequestEventChange{
+					{
+						ToHash: "test",
+						RefID:  "refID",
+					},
+				},
+			},
+			eventType:  "repo:refs_changed",
+			isBS:       true,
+			processReq: true,
+		},
+		{
+			name:       "pull_request event",
+			event:      types.PullRequestEvent{},
+			eventType:  "pr:opened",
+			isBS:       true,
+			processReq: true,
+		},
+		{
+			name:       "updated pull_request event",
+			event:      types.PullRequestEvent{},
+			eventType:  "pr:from_ref_updated",
+			isBS:       true,
+			processReq: true,
+		},
+		{
+			name: "retest comment",
+			event: types.PullRequestEvent{
+				Comment: bbv1.Comment{Text: "/retest"},
+			},
+			eventType:  "pr:comment:added",
+			isBS:       true,
+			processReq: true,
+		},
+		{
+			name: "random comment",
+			event: types.PullRequestEvent{
+				Comment: bbv1.Comment{Text: "random string, ignore me :)"},
+			},
+			eventType:  "pr:comment:added",
+			isBS:       true,
+			processReq: false,
+		},
+		{
+			name: "random comment",
+			event: types.PullRequestEvent{
+				Comment: bbv1.Comment{Text: "/ok-to-test"},
+			},
+			eventType:  "pr:comment:added",
+			isBS:       true,
+			processReq: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bprovider := Provider{}
+			logger := getLogger()
+
+			jeez, err := json.Marshal(tt.event)
+			if err != nil {
+				assert.NilError(t, err)
+			}
+
+			header := &http.Header{}
+			header.Set("X-Event-Key", tt.eventType)
+
+			isBS, processReq, _, err := bprovider.Detect(header, string(jeez), logger)
+			if tt.wantErrString != "" {
+				assert.ErrorContains(t, err, tt.wantErrString)
+				return
+			}
+			assert.NilError(t, err)
+			assert.Equal(t, tt.isBS, isBS)
+			assert.Equal(t, tt.processReq, processReq)
+		})
+	}
+}
+
+func getLogger() *zap.SugaredLogger {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+	return logger
 }
