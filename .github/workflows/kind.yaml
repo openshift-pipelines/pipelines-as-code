@@ -95,14 +95,12 @@ jobs:
       - name: Install Tekton
         run: |
           kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
-          kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/release.yaml
-          kubectl apply --filename https://storage.googleapis.com/tekton-releases/triggers/latest/interceptors.yaml
           kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/latest/tekton-dashboard-release.yaml
 
       - name: Wait for Tekton to be installed
         run: |
           i=0
-          for tt in pipelines triggers;do
+          for tt in pipelines;do
             while true;do
               [[ ${i} == 120 ]] && exit 1
               ep=$(kubectl get ep -n tekton-pipelines tekton-${tt}-webhook -o jsonpath='{.subsets[*].addresses[*].ip}')
@@ -219,8 +217,7 @@ jobs:
           mkdir -p /tmp/logs
           kind export logs /tmp/logs
 
-          mkdir /tmp/logs/pac-runs
-          for pod in $(kubectl get pod -o name -n pipelines-as-code -l triggers.tekton.dev/eventlistener=pipelines-as-code-interceptor|sed 's,.*/,,');do kubectl -n pipelines-as-code logs ${pod} > /tmp/logs/pac-runs/${pod}.log 2>&1 || true; done
+          kubectl get configmap -n pipelines-as-code -o yaml > /tmp/logs/pac-configmap
 
       - name: Upload artifacts
         if: ${{ always() }}
