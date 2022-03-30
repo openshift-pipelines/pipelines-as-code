@@ -77,6 +77,14 @@ func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
 		r.Info.Pac.DefaultPipelineRunTimeout = info.DefaultPipelineRunTimeout
 	}
 
+	if check, ok := cfg.Data["bitbucket-cloud-check-source-ip"]; ok {
+		r.Info.Pac.BitbucketCloudCheckSourceIP = StringToBool(check)
+	}
+
+	if sourceIP, ok := cfg.Data["bitbucket-cloud-additional-source-ip"]; ok {
+		r.Info.Pac.BitbucketCloudAdditionalSourceIP = sourceIP
+	}
+
 	return nil
 }
 

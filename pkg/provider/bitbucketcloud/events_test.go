@@ -10,7 +10,6 @@ import (
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
 	"gotest.tools/v3/assert"
-	"gotest.tools/v3/env"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -43,112 +42,111 @@ func TestParsePayload(t *testing.T) {
 			expectedSHA:       "SHABidou",
 			eventType:         "pullrequest:created",
 		},
-		// TODO: enable after fixing v.checkFromPublicCloudIPS in parse payload
-		// {
-		//	name:              "check source ip allowed",
-		//	payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha"),
-		//	expectedAccountID: "account",
-		//	expectedSender:    "sender",
-		//	expectedSHA:       "sha",
-		//	eventType:         "pullrequest:created",
-		//	sourceIP:          "1.2.3.1",
-		//	allowedConfig: map[string]map[string]string{
-		//		bitbucketCloudIPrangesList: {
-		//			"body": `{"items": [{"cidr": "1.2.3.10/16"}]}`,
-		//			"code": "200",
-		//		},
-		//	},
-		// },
-		// {
-		//	name:              "check source ip allowed multiple xff",
-		//	payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha"),
-		//	expectedAccountID: "account",
-		//	expectedSender:    "sender",
-		//	expectedSHA:       "sha",
-		//	eventType:         "pullrequest:updated",
-		//	sourceIP:          "127.0.0.1,30.30.30.30,1.2.3.1",
-		//	allowedConfig: map[string]map[string]string{
-		//		bitbucketCloudIPrangesList: {
-		//			"body": `{"items": [{"cidr": "1.2.3.10/16"}]}`,
-		//			"code": "200",
-		//		},
-		//	},
-		// },
-		// {
-		//	name:              "check source ip not allowed",
-		//	wantErr:           true,
-		//	payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha"),
-		//	expectedAccountID: "account",
-		//	expectedSender:    "sender",
-		//	expectedSHA:       "sha",
-		//	eventType:         "pullrequest:created",
-		//	sourceIP:          "1.2.3.1",
-		//	allowedConfig: map[string]map[string]string{
-		//		bitbucketCloudIPrangesList: {
-		//			"body": `{"items": [{"cidr": "10.12.33.22/16"}]}`,
-		//			"code": "200",
-		//		},
-		//	},
-		// },
-		// {
-		//	name:                      "additional source ip allowed",
-		//	payloadEvent:              bbcloudtest.MakePREvent("account", "sender", "sha"),
-		//	expectedAccountID:         "account",
-		//	expectedSender:            "sender",
-		//	expectedSHA:               "sha",
-		//	eventType:                 "pullrequest:created",
-		//	sourceIP:                  "1.2.3.1",
-		//	additionalAllowedsourceIP: "1.2.3.1",
-		//	allowedConfig: map[string]map[string]string{
-		//		bitbucketCloudIPrangesList: {
-		//			"body": `{"items": [{"cidr": "10.12.33.22/16"}]}`,
-		//			"code": "200",
-		//		},
-		//	},
-		// },
-		// {
-		//	name:                      "additional network allowed with spaces",
-		//	payloadEvent:              bbcloudtest.MakePREvent("account", "sender", "sha"),
-		//	expectedAccountID:         "account",
-		//	expectedSender:            "sender",
-		//	expectedSHA:               "sha",
-		//	eventType:                 "pullrequest:created",
-		//	sourceIP:                  "1.2.3.3",
-		//	additionalAllowedsourceIP: "1.2.3.4, 1.2.3.0/16",
-		//	allowedConfig: map[string]map[string]string{
-		//		bitbucketCloudIPrangesList: {
-		//			"body": `{"items": [{"cidr": "10.12.33.22/16"}]}`,
-		//			"code": "200",
-		//		},
-		//	},
-		// },
-		// {
-		//	name:                      "not allowed with additional ips",
-		//	wantErr:                   true,
-		//	payloadEvent:              bbcloudtest.MakePREvent("account", "sender", "sha"),
-		//	eventType:                 "pullrequest:created",
-		//	sourceIP:                  "1.2.3.3",
-		//	additionalAllowedsourceIP: "1.1.3.0/16",
-		//	allowedConfig: map[string]map[string]string{
-		//		bitbucketCloudIPrangesList: {
-		//			"body": `{"items": [{"cidr": "10.12.33.22/16"}]}`,
-		//			"code": "200",
-		//		},
-		//	},
-		// },
-		// {
-		//	name:         "check xff hijack",
-		//	wantErr:      true,
-		//	payloadEvent: bbcloudtest.MakePREvent("account", "sender", "sha"),
-		//	eventType:    "pull_request",
-		//	sourceIP:     "1.2.3.1,127.0.0.1",
-		//	allowedConfig: map[string]map[string]string{
-		//		bitbucketCloudIPrangesList: {
-		//			"body": `{"items": [{"cidr": "1.2.3.10/16"}]}`,
-		//			"code": "200",
-		//		},
-		//	},
-		// },
+		{
+			name:              "check source ip allowed",
+			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha"),
+			expectedAccountID: "account",
+			expectedSender:    "sender",
+			expectedSHA:       "sha",
+			eventType:         "pullrequest:created",
+			sourceIP:          "1.2.3.1",
+			allowedConfig: map[string]map[string]string{
+				bitbucketCloudIPrangesList: {
+					"body": `{"items": [{"cidr": "1.2.3.10/16"}]}`,
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:              "check source ip allowed multiple xff",
+			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha"),
+			expectedAccountID: "account",
+			expectedSender:    "sender",
+			expectedSHA:       "sha",
+			eventType:         "pullrequest:updated",
+			sourceIP:          "127.0.0.1,30.30.30.30,1.2.3.1",
+			allowedConfig: map[string]map[string]string{
+				bitbucketCloudIPrangesList: {
+					"body": `{"items": [{"cidr": "1.2.3.10/16"}]}`,
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:              "check source ip not allowed",
+			wantErr:           true,
+			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha"),
+			expectedAccountID: "account",
+			expectedSender:    "sender",
+			expectedSHA:       "sha",
+			eventType:         "pullrequest:created",
+			sourceIP:          "1.2.3.1",
+			allowedConfig: map[string]map[string]string{
+				bitbucketCloudIPrangesList: {
+					"body": `{"items": [{"cidr": "10.12.33.22/16"}]}`,
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:                      "additional source ip allowed",
+			payloadEvent:              bbcloudtest.MakePREvent("account", "sender", "sha"),
+			expectedAccountID:         "account",
+			expectedSender:            "sender",
+			expectedSHA:               "sha",
+			eventType:                 "pullrequest:created",
+			sourceIP:                  "1.2.3.1",
+			additionalAllowedsourceIP: "1.2.3.1",
+			allowedConfig: map[string]map[string]string{
+				bitbucketCloudIPrangesList: {
+					"body": `{"items": [{"cidr": "10.12.33.22/16"}]}`,
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:                      "additional network allowed with spaces",
+			payloadEvent:              bbcloudtest.MakePREvent("account", "sender", "sha"),
+			expectedAccountID:         "account",
+			expectedSender:            "sender",
+			expectedSHA:               "sha",
+			eventType:                 "pullrequest:created",
+			sourceIP:                  "1.2.3.3",
+			additionalAllowedsourceIP: "1.2.3.4, 1.2.3.0/16",
+			allowedConfig: map[string]map[string]string{
+				bitbucketCloudIPrangesList: {
+					"body": `{"items": [{"cidr": "10.12.33.22/16"}]}`,
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:                      "not allowed with additional ips",
+			wantErr:                   true,
+			payloadEvent:              bbcloudtest.MakePREvent("account", "sender", "sha"),
+			eventType:                 "pullrequest:created",
+			sourceIP:                  "1.2.3.3",
+			additionalAllowedsourceIP: "1.1.3.0/16",
+			allowedConfig: map[string]map[string]string{
+				bitbucketCloudIPrangesList: {
+					"body": `{"items": [{"cidr": "10.12.33.22/16"}]}`,
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:         "check xff hijack",
+			wantErr:      true,
+			payloadEvent: bbcloudtest.MakePREvent("account", "sender", "sha"),
+			eventType:    "pullrequest:created",
+			sourceIP:     "1.2.3.1,127.0.0.1",
+			allowedConfig: map[string]map[string]string{
+				bitbucketCloudIPrangesList: {
+					"body": `{"items": [{"cidr": "1.2.3.10/16"}]}`,
+					"code": "200",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -157,28 +155,24 @@ func TestParsePayload(t *testing.T) {
 
 			req := &http.Request{Header: map[string][]string{}}
 			req.Header.Set("X-Event-Key", tt.eventType)
+			req.Header.Set("X-Forwarded-For", tt.sourceIP)
 
 			run := &params.Run{
-				Info: info.Info{},
+				Info: info.Info{
+					Pac: &info.PacOpts{
+						BitbucketCloudCheckSourceIP:      false,
+						BitbucketCloudAdditionalSourceIP: "",
+					},
+				},
 			}
 
-			envDict := map[string]string{
-				"PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP": "",
-				"PAC_SOURCE_IP":                       "",
-			}
 			if tt.sourceIP != "" {
-				envDict = map[string]string{
-					"PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP": "True",
-					"PAC_SOURCE_IP":                       tt.sourceIP,
-				}
-				if tt.additionalAllowedsourceIP != "" {
-					envDict["PAC_BITBUCKET_CLOUD_ADDITIONAL_SOURCE_IP"] = tt.additionalAllowedsourceIP
-				}
+				run.Info.Pac.BitbucketCloudCheckSourceIP = true
+				run.Info.Pac.BitbucketCloudAdditionalSourceIP = tt.additionalAllowedsourceIP
 
 				httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.allowedConfig)
 				run.Clients.HTTP = *httpTestClient
 			}
-			defer env.PatchAll(t, envDict)()
 
 			payload, err := json.Marshal(tt.payloadEvent)
 			assert.NilError(t, err)

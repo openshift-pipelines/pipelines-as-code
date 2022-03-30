@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 
@@ -20,22 +19,18 @@ const bitbucketCloudIPrangesList = "https://ip-ranges.atlassian.com/"
 
 // lastForwarderForIP get last ip from the X-Forwarded-For chain
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For
-// nolint
 func lastForwarderForIP(xff string) string {
 	splitted := strings.Split(xff, ",")
 	return splitted[len(splitted)-1]
 }
 
 // checkFromPublicCloudIPS Grab public IP from public cloud and make sure we match it
-// nolint
-func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run) (bool, error) {
-	enval, ok := os.LookupEnv("PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP")
-	if !ok || !params.StringToBool(enval) {
+func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run, sourceIP string) (bool, error) {
+	if !run.Info.Pac.BitbucketCloudCheckSourceIP {
 		return true, nil
 	}
 
-	sourceIP, ok := os.LookupEnv("PAC_SOURCE_IP")
-	if !ok {
+	if sourceIP == "" {
 		return false, fmt.Errorf("we need to check the source_ip but no source_ip has been passed")
 	}
 	sourceIP = lastForwarderForIP(sourceIP)
@@ -52,7 +47,7 @@ func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run)
 		return false, err
 	}
 
-	extraIPEnv, _ := os.LookupEnv("PAC_BITBUCKET_CLOUD_ADDITIONAL_SOURCE_IP")
+	extraIPEnv := run.Info.Pac.BitbucketCloudAdditionalSourceIP
 	if extraIPEnv != "" {
 		for _, value := range strings.Split(extraIPEnv, ",") {
 			if !strings.Contains(value, "/") {
@@ -116,15 +111,15 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return &info.Event{}, err
 	}
 
-	// TODO: figure this out!
-	// allowed, err := v.checkFromPublicCloudIPS(ctx, run)
-	// if err != nil {
-	//	return nil, err
-	// }
-	// if !allowed {
-	//	return nil, fmt.Errorf("payload is not coming from the public bitbucket cloud ips as defined here: %s",
-	//		bitbucketCloudIPrangesList)
-	//}
+	sourceIP := request.Header.Get("X-Forwarded-For")
+	allowed, err := v.checkFromPublicCloudIPS(ctx, run, sourceIP)
+	if err != nil {
+		return nil, err
+	}
+	if !allowed {
+		return nil, fmt.Errorf("payload is not coming from the public bitbucket cloud ips as defined here: %s",
+			bitbucketCloudIPrangesList)
+	}
 
 	processedEvent.Event = eventInt
 
