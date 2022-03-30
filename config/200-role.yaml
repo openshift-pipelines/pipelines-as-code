@@ -36,20 +36,8 @@ metadata:
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
   - apiGroups: [""]
-    # secrets are only needed for Github/Gitlab interceptors, serviceaccounts only for per trigger authorization
-    resources: ["configmaps", "secrets"]
+    resources: ["configmaps"]
     verbs: ["get", "list", "watch"]
-  # Permissions to create resources in associated TriggerTemplates
-  - apiGroups: ["tekton.dev"]
-    resources: ["pipelineruns", "taskruns"]
-    verbs: ["create"]
-  - apiGroups: [""]
-    resources: ["serviceaccounts"]
-    verbs: ["impersonate"]
-  - apiGroups: ["policy"]
-    resources: ["podsecuritypolicies"]
-    resourceNames: ["tekton-triggers"]
-    verbs: ["use"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -91,9 +79,6 @@ rules:
   - apiGroups: ["pipelinesascode.tekton.dev"]
     resources: ["repositories"]
     verbs: ["create", "get", "list", "update"]
-  - apiGroups: ["triggers.tekton.dev"]
-    resources: ["clustertriggerbindings", "clusterinterceptors"]
-    verbs: ["get", "list", "watch"]
   - apiGroups: ["tekton.dev"]
     resources: ["pipelineruns"]
     verbs: ["get", "delete", "list", "create", "watch"]

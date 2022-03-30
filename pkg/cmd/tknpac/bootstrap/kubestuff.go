@@ -69,14 +69,10 @@ func checkPipelinesInstalled(run *params.Run) (bool, error) {
 		return false, err
 	}
 	tektonFound := false
-	triggersFound := false
 	for _, t := range sg.Groups {
 		if t.Name == "tekton.dev" {
 			tektonFound = true
 		}
-		if t.Name == "triggers.tekton.dev" {
-			triggersFound = true
-		}
 	}
-	return tektonFound && triggersFound, nil
+	return tektonFound, nil
 }
