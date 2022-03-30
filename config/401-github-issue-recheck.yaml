@@ -163,6 +163,10 @@ spec:
                   value: $(workspaces.secrets.path)
                 - name: PAC_PAYLOAD_FILE
                   value: "/tmp/payload.json"
+                - name: PAC_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
               script: |
                 #!/usr/bin/env bash
                 set -euf
