@@ -28,7 +28,7 @@ Following the [infrastructure installation](install.md#install-pipelines-as-code
   Pipelines-as-Code controller like this :
 
   ```shell
-  echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
+  echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
   ```
 
 * Add a secret or generate a random one with this command  :
