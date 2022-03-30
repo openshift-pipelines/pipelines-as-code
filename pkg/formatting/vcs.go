@@ -41,7 +41,7 @@ func GetRepoOwnerFromGHURL(ghURL string) (string, error) {
 	if len(sp) == 1 {
 		return "", fmt.Errorf("not a URL with a REPO/OWNER at the end")
 	}
-	return fmt.Sprintf("%s/%s", sp[len(sp)-2], sp[len(sp)-1]), nil
+	return fmt.Sprintf("%s/%s", strings.ToLower(sp[len(sp)-2]), strings.ToLower(sp[len(sp)-1])), nil
 }
 
 // CamelCasit pull_request > PullRequest
