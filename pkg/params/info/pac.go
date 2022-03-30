@@ -18,6 +18,10 @@ type PacOpts struct {
 	HubURL                    string
 	RemoteTasks               bool
 	DefaultPipelineRunTimeout time.Duration
+
+	// bitbucket cloud specific fields
+	BitbucketCloudCheckSourceIP      bool
+	BitbucketCloudAdditionalSourceIP string
 }
 
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {

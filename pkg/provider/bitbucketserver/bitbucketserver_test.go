@@ -385,7 +385,7 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: false,
 		},
 		{
-			name: "random comment",
+			name: "ok-to-test comment",
 			event: types.PullRequestEvent{
 				Comment: bbv1.Comment{Text: "/ok-to-test"},
 			},

@@ -15,7 +15,6 @@ import (
 )
 
 func TestBitbucketCloudPullRequest(t *testing.T) {
-	t.Skip()
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 

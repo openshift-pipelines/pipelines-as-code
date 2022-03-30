@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
+	"regexp"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
 )
 
@@ -24,14 +25,12 @@ func lastForwarderForIP(xff string) string {
 }
 
 // checkFromPublicCloudIPS Grab public IP from public cloud and make sure we match it
-func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run) (bool, error) {
-	enval, ok := os.LookupEnv("PAC_BITBUCKET_CLOUD_CHECK_SOURCE_IP")
-	if !ok || !params.StringToBool(enval) {
+func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run, sourceIP string) (bool, error) {
+	if !run.Info.Pac.BitbucketCloudCheckSourceIP {
 		return true, nil
 	}
 
-	sourceIP, ok := os.LookupEnv("PAC_SOURCE_IP")
-	if !ok {
+	if sourceIP == "" {
 		return false, fmt.Errorf("we need to check the source_ip but no source_ip has been passed")
 	}
 	sourceIP = lastForwarderForIP(sourceIP)
@@ -48,7 +47,7 @@ func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run)
 		return false, err
 	}
 
-	extraIPEnv, _ := os.LookupEnv("PAC_BITBUCKET_CLOUD_ADDITIONAL_SOURCE_IP")
+	extraIPEnv := run.Info.Pac.BitbucketCloudAdditionalSourceIP
 	if extraIPEnv != "" {
 		for _, value := range strings.Split(extraIPEnv, ",") {
 			if !strings.Contains(value, "/") {
@@ -73,25 +72,37 @@ func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run)
 			sourceIP, bitbucketCloudIPrangesList)
 }
 
-func parsePayloadType(messageType string, rawPayload []byte) (interface{}, error) {
+func parsePayloadType(event string, rawPayload string) (interface{}, error) {
 	var payload interface{}
 
-	switch messageType {
+	var localEvent string
+	if strings.HasPrefix(event, "pullrequest:") {
+		if !provider.Valid(event, []string{"pullrequest:created", "pullrequest:updated", "pullrequest:comment_created"}) {
+			return nil, fmt.Errorf("event %s is not supported", event)
+		}
+		localEvent = "pull_request"
+	} else if event == "repo:push" {
+		localEvent = "push"
+	}
+
+	switch localEvent {
 	case "pull_request":
 		payload = &types.PullRequestEvent{}
 	case "push":
 		payload = &types.PushRequestEvent{}
+	default:
+		return nil, nil
 	}
-	err := json.Unmarshal(rawPayload, payload)
+	err := json.Unmarshal([]byte(rawPayload), payload)
 	return payload, err
 }
 
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
-	// TODO: parse request to figure out which event
-	event := &info.Event{}
-	processedEvent := event
-	eventInt, err := parsePayloadType(event.EventType, []byte(payload))
-	if err != nil {
+	processedEvent := &info.Event{}
+
+	event := request.Header.Get("X-Event-Key")
+	eventInt, err := parsePayloadType(event, payload)
+	if err != nil || eventInt == nil {
 		return &info.Event{}, err
 	}
 
@@ -100,7 +111,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return &info.Event{}, err
 	}
 
-	allowed, err := v.checkFromPublicCloudIPS(ctx, run)
+	sourceIP := request.Header.Get("X-Forwarded-For")
+	allowed, err := v.checkFromPublicCloudIPS(ctx, run, sourceIP)
 	if err != nil {
 		return nil, err
 	}
@@ -113,6 +125,18 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 
 	switch e := eventInt.(type) {
 	case *types.PullRequestEvent:
+		if provider.Valid(event, []string{"pullrequest:created", "pullrequest:updated"}) {
+			processedEvent.TriggerTarget = "pull_request"
+			processedEvent.EventType = "pull_request"
+		} else if provider.Valid(event, []string{"pullrequest:comment_created"}) {
+			if matches, _ := regexp.MatchString(provider.RetestRegex, e.Comment.Content.Raw); matches {
+				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.EventType = "retest-comment"
+			} else if matches, _ := regexp.MatchString(provider.OktotestRegex, e.Comment.Content.Raw); matches {
+				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.EventType = "ok-to-test-comment"
+			}
+		}
 		processedEvent.Organization = e.Repository.Workspace.Slug
 		processedEvent.Repository = e.Repository.Name
 		processedEvent.SHA = e.PullRequest.Source.Commit.Hash
@@ -122,6 +146,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.AccountID = e.PullRequest.Author.AccountID
 		processedEvent.Sender = e.PullRequest.Author.Nickname
 	case *types.PushRequestEvent:
+		processedEvent.Event = "push"
+		processedEvent.TriggerTarget = "push"
 		processedEvent.Organization = e.Repository.Workspace.Slug
 		processedEvent.Repository = e.Repository.Name
 		processedEvent.SHA = e.Push.Changes[0].New.Target.Hash
@@ -131,7 +157,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.AccountID = e.Actor.AccountID
 		processedEvent.Sender = e.Actor.Nickname
 	default:
-		return nil, fmt.Errorf("event %s is not recognized", event.EventType)
+		return nil, fmt.Errorf("event %s is not recognized", event)
 	}
 	return processedEvent, nil
 }
