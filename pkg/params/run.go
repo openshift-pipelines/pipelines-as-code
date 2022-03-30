@@ -2,6 +2,7 @@ package params
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -28,7 +29,12 @@ func StringToBool(s string) bool {
 // GetConfigFromConfigMap get config from configmap, we should remove all the
 // logics from cobra flags and just support configmap config and env config in the future.
 func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
-	cfg, err := r.Clients.Kube.CoreV1().ConfigMaps(info.PACInstallNS).Get(ctx, info.PACConfigmapNS, v1.GetOptions{})
+	ns := os.Getenv("PAC_NAMESPACE")
+	if ns == "" {
+		return fmt.Errorf("failed to find pipelines-as-code installation namespace")
+	}
+
+	cfg, err := r.Clients.Kube.CoreV1().ConfigMaps(ns).Get(ctx, info.PACConfigmapNS, v1.GetOptions{})
 	if err != nil {
 		return err
 	}
