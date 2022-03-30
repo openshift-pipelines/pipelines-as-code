@@ -8,7 +8,7 @@ To install Pipelines as Code on your cluster you simply need to run this command
 :
 
 ```shell
-VERSION=0.5.3
+VERSION=0.5.5
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.yaml
 ```
 
@@ -32,7 +32,7 @@ your github provider.
 You can run this command to get the route created on your cluster:
 
 ```shell
-echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
+echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
 ```
 
 ## RBAC

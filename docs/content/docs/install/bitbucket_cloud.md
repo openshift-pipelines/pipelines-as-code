@@ -30,7 +30,7 @@ recreate it.
   controller like this :
 
   ```shell
-  echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
+  echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
   ```
 
 * [Refer to this screenshot](/images/bitbucket-cloud-create-webhook.png) on how to configure the Webhook. The
@@ -47,7 +47,7 @@ recreate it.
   * First create the secret with the app password in the `target-namespace` :
 
   ```shell
-  kubectl -n target-namespace create secret generic bitbucket-app-password \
+  kubectl -n target-namespace create secret generic bitbucket-cloud-token \
           --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
   ```
 

@@ -36,7 +36,7 @@ recreate it.
   public URL of the Pipelines-as-Code route like this :
 
   ```shell
-  echo https://$(oc get route -n pipelines-as-code el-pipelines-as-code-interceptor -o jsonpath='{.spec.host}')
+  echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
   ```
 
 * Install the secret in the pipelines-as-code namespace (we currently only
@@ -55,6 +55,13 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
   * Pull Request -> Opened
   * Pull Request -> Source branch updated
   * Pull Request -> Comments added
+
+* Create a secret with personal token in the `target-namespace`
+  
+  ```shell
+  kubectl -n target-namespace create secret generic bitbucket-server-token \
+          --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
+  ```
 
 * And finally create Repository CRD with the secret field referencing it.
 
