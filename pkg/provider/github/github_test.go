@@ -1,8 +1,16 @@
 package github
 
 import (
+	"context"
+	"crypto/hmac"
+
+	// nolint: gosec
+	"crypto/sha1"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -471,7 +479,9 @@ func TestGithubSetClient(t *testing.T) {
 		{
 			name: "api url set",
 			event: &info.Event{
-				ProviderURL: "foo.com",
+				Provider: &info.Provider{
+					URL: "foo.com",
+				},
 			},
 			expectedURL: "https://foo.com",
 			isGHE:       true,
@@ -479,7 +489,7 @@ func TestGithubSetClient(t *testing.T) {
 		{
 			name:        "default to public github",
 			expectedURL: "https://api.github.com/",
-			event:       &info.Event{},
+			event:       info.NewEvent(),
 		},
 	}
 	for _, tt := range tests {
@@ -706,6 +716,70 @@ func TestProvider_Detect(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Equal(t, tt.isGH, isGh)
 			assert.Equal(t, tt.processReq, processReq)
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	header := http.Header{}
+	header.Set(github.SHA256SignatureHeader, "hello")
+	tests := []struct {
+		name         string
+		wantErr      bool
+		secret       string
+		payload      string
+		hashFunc     func() hash.Hash
+		header       string
+		prefixheader string
+	}{
+		{
+			name:         "good/SHA256Signature",
+			secret:       "secrete",
+			payload:      `{"hello": "moto"}`,
+			hashFunc:     sha256.New,
+			header:       github.SHA256SignatureHeader,
+			prefixheader: "sha256",
+		},
+		{
+			name:         "good/SHA1Signature",
+			secret:       "secrete",
+			payload:      `{"ola": "amigo"}`,
+			hashFunc:     sha1.New,
+			header:       github.SHA1SignatureHeader,
+			prefixheader: "sha1",
+		},
+		{
+			name:         "bad/signature",
+			payload:      `{"ciao": "ragazzo"}`,
+			hashFunc:     sha256.New,
+			header:       github.SHA1SignatureHeader,
+			prefixheader: "sha1",
+			wantErr:      true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &Provider{}
+
+			hmac := hmac.New(tt.hashFunc, []byte(tt.secret))
+			hmac.Write([]byte(tt.payload))
+			signature := hex.EncodeToString(hmac.Sum(nil))
+
+			httpHeader := http.Header{}
+			httpHeader.Add(tt.header, fmt.Sprintf("%s=%s", tt.prefixheader, signature))
+
+			event := info.NewEvent()
+			event.Request = &info.Request{
+				Header:  httpHeader,
+				Payload: []byte(tt.payload),
+			}
+			event.Provider = &info.Provider{
+				WebhookSecret: tt.secret,
+			}
+
+			if err := v.Validate(context.TODO(), nil, event); (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }

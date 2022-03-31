@@ -64,9 +64,10 @@ type RepositorySpec struct {
 }
 
 type GitProvider struct {
-	URL    string             `json:"url,omitempty"`
-	User   string             `json:"user,omitempty"`
-	Secret *GitProviderSecret `json:"secret,omitempty"`
+	URL           string             `json:"url,omitempty"`
+	User          string             `json:"user,omitempty"`
+	Secret        *GitProviderSecret `json:"secret,omitempty"`
+	WebhookSecret *GitProviderSecret `json:"webhook_secret,omitempty"`
 }
 
 type GitProviderSecret struct {

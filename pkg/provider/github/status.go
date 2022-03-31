@@ -153,7 +153,7 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, pacop
 		status.Summary = fmt.Sprintf("%s is running.", pacopts.ApplicationName)
 	}
 
-	if runevent.ProviderInfoFromRepo {
+	if runevent.Provider.InfoFromRepo {
 		return v.createStatusCommit(ctx, runevent, pacopts, status)
 	}
 	return v.createCheckRunStatus(ctx, runevent, pacopts, status)

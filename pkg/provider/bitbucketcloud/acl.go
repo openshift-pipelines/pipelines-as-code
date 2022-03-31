@@ -95,16 +95,15 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event) (bo
 	}
 	for _, comment := range comments.Values {
 		if acl.MatchRegexp(acl.OKToTestCommentRegexp, comment.Content.Raw) {
-			commenterEvent := &info.Event{
-				Event:         event.Event,
-				Sender:        comment.User.Nickname,
-				AccountID:     comment.User.AccountID,
-				BaseBranch:    event.BaseBranch,
-				HeadBranch:    event.HeadBranch,
-				Repository:    event.Repository,
-				Organization:  event.Organization,
-				DefaultBranch: event.DefaultBranch,
-			}
+			commenterEvent := info.NewEvent()
+			commenterEvent.Event = event.Event
+			commenterEvent.Sender = comment.User.Nickname
+			commenterEvent.AccountID = comment.User.AccountID
+			commenterEvent.BaseBranch = event.BaseBranch
+			commenterEvent.HeadBranch = event.HeadBranch
+			commenterEvent.Repository = event.Repository
+			commenterEvent.Organization = event.Organization
+			commenterEvent.DefaultBranch = event.DefaultBranch
 			allowed, err := v.checkMember(commenterEvent)
 			if err != nil {
 				return false, err

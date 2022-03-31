@@ -44,6 +44,10 @@ type Provider struct {
 	repoURL           string
 }
 
+func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
+	return nil
+}
+
 // Detect processes event and detect if it is a gitlab event, whether to process or reject it
 // returns (if is a GL event, whether to process or reject, logger with event metadata,, error if any occurred)
 func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
@@ -102,6 +106,7 @@ func getOrgRepo(pathWithNamespace string) (string, string) {
 }
 
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
+	// TODO: parse request to figure out which event
 	var processedEvent *info.Event
 
 	event := request.Header.Get("X-Gitlab-Event")
@@ -118,17 +123,16 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 
 	switch gitEvent := eventInt.(type) {
 	case *gitlab.MergeEvent:
-		processedEvent = &info.Event{
-			// Organization:  event.GetRepo().GetOwner().GetLogin(),
-			Sender:        gitEvent.User.Username,
-			DefaultBranch: gitEvent.Project.DefaultBranch,
-			URL:           gitEvent.Project.WebURL,
-			SHA:           gitEvent.ObjectAttributes.LastCommit.ID,
-			SHAURL:        gitEvent.ObjectAttributes.LastCommit.URL,
-			SHATitle:      gitEvent.ObjectAttributes.Title,
-			HeadBranch:    gitEvent.ObjectAttributes.SourceBranch,
-			BaseBranch:    gitEvent.ObjectAttributes.TargetBranch,
-		}
+		processedEvent = info.NewEvent()
+		// Organization:  event.GetRepo().GetOwner().GetLogin(),
+		processedEvent.Sender = gitEvent.User.Username
+		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
+		processedEvent.URL = gitEvent.Project.WebURL
+		processedEvent.SHA = gitEvent.ObjectAttributes.LastCommit.ID
+		processedEvent.SHAURL = gitEvent.ObjectAttributes.LastCommit.URL
+		processedEvent.SHATitle = gitEvent.ObjectAttributes.Title
+		processedEvent.HeadBranch = gitEvent.ObjectAttributes.SourceBranch
+		processedEvent.BaseBranch = gitEvent.ObjectAttributes.TargetBranch
 
 		v.mergeRequestID = gitEvent.ObjectAttributes.IID
 		v.targetProjectID = gitEvent.Project.ID
@@ -142,16 +146,15 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		if len(gitEvent.Commits) == 0 {
 			return nil, fmt.Errorf("no commits attached to this push event")
 		}
-		processedEvent = &info.Event{
-			Sender:        gitEvent.UserUsername,
-			DefaultBranch: gitEvent.Project.DefaultBranch,
-			URL:           gitEvent.Project.WebURL,
-			SHA:           gitEvent.Commits[0].ID,
-			SHAURL:        gitEvent.Commits[0].URL,
-			SHATitle:      gitEvent.Commits[0].Title,
-			HeadBranch:    gitEvent.Ref,
-			BaseBranch:    gitEvent.Ref,
-		}
+		processedEvent = info.NewEvent()
+		processedEvent.Sender = gitEvent.UserUsername
+		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
+		processedEvent.URL = gitEvent.Project.WebURL
+		processedEvent.SHA = gitEvent.Commits[0].ID
+		processedEvent.SHAURL = gitEvent.Commits[0].URL
+		processedEvent.SHATitle = gitEvent.Commits[0].Title
+		processedEvent.HeadBranch = gitEvent.Ref
+		processedEvent.BaseBranch = gitEvent.Ref
 		processedEvent.TriggerTarget = "push"
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
@@ -159,17 +162,16 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		v.sourceProjectID = gitEvent.ProjectID
 		v.userID = gitEvent.UserID
 	case *gitlab.MergeCommentEvent:
-		processedEvent = &info.Event{
-			Sender:        gitEvent.User.Username,
-			DefaultBranch: gitEvent.Project.DefaultBranch,
-			URL:           gitEvent.Project.WebURL,
-			SHA:           gitEvent.MergeRequest.LastCommit.ID,
-			SHAURL:        gitEvent.MergeRequest.LastCommit.URL,
-			// TODO: change this back to Title when we get this pr available merged https://github.com/xanzy/go-gitlab/pull/1406/files
-			SHATitle:   gitEvent.MergeRequest.LastCommit.Message,
-			BaseBranch: gitEvent.MergeRequest.TargetBranch,
-			HeadBranch: gitEvent.MergeRequest.SourceBranch,
-		}
+		processedEvent = info.NewEvent()
+		processedEvent.Sender = gitEvent.User.Username
+		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
+		processedEvent.URL = gitEvent.Project.WebURL
+		processedEvent.SHA = gitEvent.MergeRequest.LastCommit.ID
+		processedEvent.SHAURL = gitEvent.MergeRequest.LastCommit.URL
+		// TODO: change this back to Title when we get this pr available merged https://github.com/xanzy/go-gitlab/pull/1406/files
+		processedEvent.SHATitle = gitEvent.MergeRequest.LastCommit.Message
+		processedEvent.BaseBranch = gitEvent.MergeRequest.TargetBranch
+		processedEvent.HeadBranch = gitEvent.MergeRequest.SourceBranch
 
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
@@ -203,24 +205,24 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 
 func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	var err error
-	if event.ProviderToken == "" {
+	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
 
 	// Try to detect automatically theapi url if url is not coming from public
 	// gitlab. Unless user has set a spec.provider.url in its repo crd
 	apiURL := apiPublicURL
-	if event.ProviderURL != "" {
-		apiURL = event.ProviderURL
+	if event.Provider.URL != "" {
+		apiURL = event.Provider.URL
 	} else if !strings.HasPrefix(v.repoURL, apiPublicURL) {
 		apiURL = strings.ReplaceAll(v.repoURL, v.pathWithNamespace, "")
 	}
 
-	v.Client, err = gitlab.NewClient(event.ProviderToken, gitlab.WithBaseURL(apiURL))
+	v.Client, err = gitlab.NewClient(event.Provider.Token, gitlab.WithBaseURL(apiURL))
 	if err != nil {
 		return err
 	}
-	v.Token = &event.ProviderToken
+	v.Token = &event.Provider.Token
 	return nil
 }
 

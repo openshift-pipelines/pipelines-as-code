@@ -164,7 +164,7 @@ func TestCreateStatus(t *testing.T) {
 			}
 			event := bbtest.MakeEvent(nil)
 			event.EventType = "pull_request"
-			event.ProviderToken = "token"
+			event.Provider.Token = "token"
 			v := Provider{Client: client, pullRequestNumber: pullRequestNumber, projectKey: event.Organization}
 			bbtest.MuxCreateAndTestCommitStatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr, pullRequestNumber)
@@ -232,22 +232,37 @@ func TestSetClient(t *testing.T) {
 	}{
 		{
 			name:          "bad/no username",
-			opts:          &info.Event{},
+			opts:          info.NewEvent(),
 			wantErrSubstr: "no provider.user",
 		},
 		{
-			name:          "bad/no secret",
-			opts:          &info.Event{ProviderUser: "foo"},
+			name: "bad/no secret",
+			opts: &info.Event{
+				Provider: &info.Provider{
+					User: "foo",
+				},
+			},
 			wantErrSubstr: "no provider.secret",
 		},
 		{
-			name:          "bad/no url",
-			opts:          &info.Event{ProviderUser: "foo", ProviderToken: "bar"},
+			name: "bad/no url",
+			opts: &info.Event{
+				Provider: &info.Provider{
+					User:  "foo",
+					Token: "bar",
+				},
+			},
 			wantErrSubstr: "no provider.url",
 		},
 		{
-			name:   "good/url append /rest",
-			opts:   &info.Event{ProviderUser: "foo", ProviderToken: "bar", ProviderURL: "https://foo.bar"},
+			name: "good/url append /rest",
+			opts: &info.Event{
+				Provider: &info.Provider{
+					User:  "foo",
+					Token: "bar",
+					URL:   "https://foo.bar",
+				},
+			},
 			apiURL: "https://foo.bar/rest",
 		},
 	}

@@ -1,6 +1,7 @@
 package pipelineascode
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 
@@ -17,31 +18,38 @@ import (
 
 func TestSecretFromRepository(t *testing.T) {
 	tests := []struct {
-		name           string
-		repo           *apipac.Repository
-		providerconfig *info.ProviderConfig
-		logmatch       []*regexp.Regexp
-		expectedSecret string
-		providerType   string
+		name                  string
+		repo                  *apipac.Repository
+		providerconfig        *info.ProviderConfig
+		logmatch              []*regexp.Regexp
+		expectedSecret        string
+		expectedWebhookSecret string
+		providerType          string
 	}{
 		{
 			name: "config default",
 			providerconfig: &info.ProviderConfig{
 				APIURL: "https://apiurl.default",
 			},
-			expectedSecret: "configdefault",
+			expectedSecret:        "configdefault",
+			expectedWebhookSecret: "webhooksecret",
 			repo: &apipac.Repository{
 				Spec: apipac.RepositorySpec{
 					GitProvider: &apipac.GitProvider{
 						Secret: &apipac.GitProviderSecret{
 							Name: "repo-secret",
 						},
+						WebhookSecret: &apipac.GitProviderSecret{
+							Name: "repo-webhook-secret",
+						},
 					},
 				},
 			},
 			providerType: "lalala",
 			logmatch: []*regexp.Regexp{
-				regexp.MustCompile("^Using git provider lalala: apiurl=https://apiurl.default user= token-secret=repo-secret in token-key=" + defaultGitProviderSecretKey),
+				regexp.MustCompile(fmt.Sprintf(
+					"^Using git provider lalala: apiurl=https://apiurl.default user= token-secret=repo-secret token-key=%s",
+					defaultGitProviderSecretKey)),
 			},
 		},
 		{
@@ -84,8 +92,20 @@ func TestSecretFromRepository(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			observer, log := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
+			retsecret := map[string]string{}
+			if tt.repo.Spec.GitProvider.Secret != nil {
+				retsecret[tt.repo.Spec.GitProvider.Secret.Name] = tt.expectedSecret
+			} else {
+				tt.repo.Spec.GitProvider.Secret = &apipac.GitProviderSecret{}
+			}
+			if tt.repo.Spec.GitProvider.WebhookSecret != nil {
+				retsecret[tt.repo.Spec.GitProvider.WebhookSecret.Name] = tt.expectedWebhookSecret
+			} else {
+				tt.repo.Spec.GitProvider.WebhookSecret = &apipac.GitProviderSecret{}
+			}
+
 			k8int := &kitesthelper.KinterfaceTest{
-				GetSecretResult: tt.expectedSecret,
+				GetSecretResult: retsecret,
 			}
 			cs := &params.Run{
 				Clients: clients.Clients{
@@ -97,8 +117,7 @@ func TestSecretFromRepository(t *testing.T) {
 					},
 				},
 			}
-			event := &info.Event{}
-
+			event := info.NewEvent()
 			err := secretFromRepository(ctx, cs, k8int, tt.providerconfig, event, tt.repo)
 			assert.NilError(t, err)
 			logs := log.TakeAll()
@@ -106,8 +125,8 @@ func TestSecretFromRepository(t *testing.T) {
 			for key, value := range logs {
 				assert.Assert(t, tt.logmatch[key].MatchString(value.Message), "no match on logs %s => %s", tt.logmatch[key], value.Message)
 			}
-			assert.Assert(t, event.ProviderInfoFromRepo)
-			assert.Equal(t, tt.expectedSecret, event.ProviderToken)
+			assert.Assert(t, event.Provider.InfoFromRepo)
+			assert.Equal(t, tt.expectedSecret, event.Provider.Token)
 		})
 	}
 }

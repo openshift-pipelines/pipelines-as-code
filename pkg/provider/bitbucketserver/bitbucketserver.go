@@ -10,6 +10,7 @@ import (
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/mitchellh/mapstructure"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
@@ -29,6 +30,10 @@ type Provider struct {
 	projectKey                string
 }
 
+func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
+	return nil
+}
+
 // func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
 //	panic("implement me")
 // }
@@ -39,7 +44,7 @@ func sanitizeTitle(s string) string {
 }
 
 func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info.PacOpts, statusOpts provider.StatusOpts) error {
-	detailsURL := event.ProviderURL
+	detailsURL := event.Provider.URL
 	switch statusOpts.Conclusion {
 	case "skipped":
 		statusOpts.Conclusion = "FAILED"
@@ -171,29 +176,29 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, event *info.Event, pat
 }
 
 func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
-	if event.ProviderUser == "" {
+	if event.Provider.User == "" {
 		return fmt.Errorf("no provider.user has been set in the repo crd")
 	}
-	if event.ProviderToken == "" {
+	if event.Provider.Token == "" {
 		return fmt.Errorf("no provider.secret has been set in the repo crd")
 	}
-	if event.ProviderURL == "" {
+	if event.Provider.URL == "" {
 		return fmt.Errorf("no provider.url has been set in the repo crd")
 	}
 
 	// make sure we have /rest at the end of the url
-	if !strings.HasSuffix(event.ProviderURL, "/rest") {
-		event.ProviderURL += "/rest"
+	if !strings.HasSuffix(event.Provider.URL, "/rest") {
+		event.Provider.URL += "/rest"
 	}
 
 	// make sure we strip slashes from the end of the URL
-	event.ProviderURL = strings.TrimSuffix(event.ProviderURL, "/")
-	v.apiURL = event.ProviderURL
+	event.Provider.URL = strings.TrimSuffix(event.Provider.URL, "/")
+	v.apiURL = event.Provider.URL
 
-	basicAuth := bbv1.BasicAuth{UserName: event.ProviderUser, Password: event.ProviderToken}
+	basicAuth := bbv1.BasicAuth{UserName: event.Provider.User, Password: event.Provider.Token}
 
 	ctx = context.WithValue(ctx, bbv1.ContextBasicAuth, basicAuth)
-	cfg := bbv1.NewConfiguration(event.ProviderURL)
+	cfg := bbv1.NewConfiguration(event.Provider.URL)
 	v.Client = bbv1.NewAPIClient(ctx, cfg)
 
 	return nil

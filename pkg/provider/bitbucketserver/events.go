@@ -29,16 +29,16 @@ func sanitizeOwner(owner string) string {
 
 // ParsePayload parses the payload from the event
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
-	processedEvent := &info.Event{}
+	processedEvent := info.NewEvent()
 
 	eventType := request.Header.Get("X-Event-Key")
 	eventPayload, err := parsePayloadType(eventType)
 	if err != nil {
-		return &info.Event{}, err
+		return info.NewEvent(), err
 	}
 
 	if err := json.Unmarshal([]byte(payload), &eventPayload); err != nil {
-		return &info.Event{}, err
+		return info.NewEvent(), err
 	}
 
 	processedEvent.Event = eventPayload

@@ -22,7 +22,7 @@ func ReplacePlaceHoldersVariables(template string, dico map[string]string) strin
 	})
 }
 
-// processTemplates process all templates replacing
+// Process process all templates replacing
 func Process(event *info.Event, template string) string {
 	repoURL := event.URL
 	// On bitbucket server you are have a special url for checking it out, they

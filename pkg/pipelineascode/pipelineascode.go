@@ -41,7 +41,7 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 		msg := fmt.Sprintf("could not find a namespace match for %s", event.URL)
 		cs.Clients.Log.Warn(msg)
 
-		if event.ProviderToken == "" {
+		if event.Provider.Token == "" {
 			cs.Clients.Log.Warn("cannot set status since no token has been set")
 			return nil
 		}
@@ -58,16 +58,26 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 		return nil
 	}
 
+	// If we have a git_provider field in repository spec, then get all the
+	// information from there, including the webhook secret.
+	// otherwise get the secret from the current ns (i.e: pipelines-as-code/openshift-pipelines.)
+	//
+	// TODO: there is going to be some improvements later we may want to do if
+	// they are use cases for it :
+	// allow webhook providers users to have a global webhook secret to be used,
+	// so instead of having to specify their in Repo each time, they use a
+	// shared one from pac.
 	if repo.Spec.GitProvider != nil {
 		err := secretFromRepository(ctx, cs, k8int, providerintf.GetConfig(), event, repo)
 		if err != nil {
 			return err
 		}
 	} else {
-		// TODO: fix WebhookType
-		cs.Clients.Log.Infof("Using git provider %s", cs.Info.Pac.WebhookType)
+		event.Provider.WebhookSecret, _ = getCurrentNSWebhookSecret(ctx, k8int)
 	}
-
+	if err := providerintf.Validate(ctx, cs, event); err != nil {
+		return fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
+	}
 	// Set the client, we should error out if there is a problem with
 	// token or secret or we won't be able to do much.
 	err = providerintf.SetClient(ctx, event)

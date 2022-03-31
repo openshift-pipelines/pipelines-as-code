@@ -13,6 +13,15 @@ import (
 )
 
 func TestAddLabelsAndAnnotations(t *testing.T) {
+	event := info.NewEvent()
+	event.Organization = "org"
+	event.Repository = "repo"
+	event.SHA = "sha"
+	event.Sender = "sender"
+	event.EventType = "pull_request"
+	event.BaseBranch = "main"
+	event.SHAURL = "https://url/sha"
+
 	type args struct {
 		event       *info.Event
 		pipelineRun *tektonv1beta1.PipelineRun
@@ -25,15 +34,7 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 		{
 			name: "test label and annotation added to pr",
 			args: args{
-				event: &info.Event{
-					Organization: "org",
-					Repository:   "repo",
-					SHA:          "sha",
-					Sender:       "sender",
-					EventType:    "pull_request",
-					BaseBranch:   "main",
-					SHAURL:       "https://url/sha",
-				},
+				event: event,
 				pipelineRun: &tektonv1beta1.PipelineRun{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels:      map[string]string{},

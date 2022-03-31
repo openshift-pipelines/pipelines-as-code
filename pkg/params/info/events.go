@@ -1,5 +1,7 @@
 package info
 
+import "net/http"
+
 type Event struct {
 	Event interface{}
 
@@ -8,6 +10,9 @@ type Event struct {
 	// GitLab -> Merge Request Hook
 	// Usually used for payload filtering passed from trigger directly
 	EventType string
+
+	// Full request
+	Request *Request
 
 	// TriggerTarget stable field across providers, ie: on Gitlab, Github and
 	// others it would be always be pull_request we can rely on to know if it's
@@ -33,15 +38,32 @@ type Event struct {
 	AccountID string
 
 	// Bitbucket Server
-	CloneURL string // bitbucket server has a different cloneurl than normal url
+	CloneURL string // bitbucket server has a different url for cloning the repo than normal public html url
+	Provider *Provider
+}
 
-	ProviderToken        string
-	ProviderURL          string
-	ProviderUser         string
-	ProviderInfoFromRepo bool // whether the provider info come from the repository
+type Provider struct {
+	Token                 string
+	URL                   string
+	User                  string
+	InfoFromRepo          bool // whether the provider info come from the repository
+	WebhookSecret         string
+	WebhookSecretFromRepo bool
+}
+
+type Request struct {
+	Header  http.Header
+	Payload []byte
 }
 
 // DeepCopyInto deep copy runinfo in another instance
 func (r *Event) DeepCopyInto(out *Event) {
 	*out = *r
+}
+
+// NewEvent returns a new Event
+func NewEvent() *Event {
+	return &Event{
+		Provider: &Provider{},
+	}
 }

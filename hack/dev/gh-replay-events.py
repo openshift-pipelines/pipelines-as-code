@@ -226,9 +226,7 @@ def app_get_delivery(
 def save_script(target: str, el_route: str, headers: dict, payload: str):
     s = f"""#!/usr/bin/env python3
 import requests
-payload = \"\"\"
-{json.dumps(payload)}
-\"\"\"
+payload = \"\"\"{json.dumps(payload)}\"\"\"
 headers={headers}
 el_route = "{el_route}"
 r = requests.request("POST",el_route,data=payload.encode("utf-8"),headers=headers)

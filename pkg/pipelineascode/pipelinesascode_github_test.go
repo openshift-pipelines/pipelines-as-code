@@ -1,7 +1,10 @@
 package pipelineascode
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -310,23 +313,30 @@ func TestRun(t *testing.T) {
 			fakeclient, mux, ghTestServerURL, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 
-			var secretName, providerURL string
+			var providerURL string
+			secrets := map[string]string{}
+			webhookSecret := "don'tlookatmeplease"
+			repoToken := "repo-token"
+
+			repo := testnewrepo.RepoTestcreationOpts{
+				Name:             "test-run",
+				URL:              tt.runevent.URL,
+				InstallNamespace: "namespace",
+				ProviderURL:      providerURL,
+			}
+
 			if tt.ProviderInfoFromRepo {
-				providerURL = ghTestServerURL
-				secretName = "ziesecretee"
+				secrets[repoToken] = "token"
+				repo.SecretName = repoToken
+				repo.WebhookSecretName = defaultPipelinesAscodeSecretName
+				secrets[defaultPipelinesAscodeSecretName] = webhookSecret
+			} else {
+				secrets[defaultPipelinesAscodeSecretName] = webhookSecret
 			}
 
 			if tt.repositories == nil {
 				tt.repositories = []*v1alpha1.Repository{
-					testnewrepo.NewRepo(
-						testnewrepo.RepoTestcreationOpts{
-							Name:             "test-run",
-							URL:              tt.runevent.URL,
-							InstallNamespace: "namespace",
-							SecretName:       secretName,
-							ProviderURL:      providerURL,
-						},
-					),
+					testnewrepo.NewRepo(repo),
 				}
 			}
 			tdata := testclient.Data{
@@ -370,14 +380,28 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}
-			tt.runevent.ProviderInfoFromRepo = tt.ProviderInfoFromRepo
-			tt.runevent.ProviderURL = ghTestServerURL
-			tt.runevent.ProviderToken = "NONE"
+
+			mac := hmac.New(sha256.New, []byte(webhookSecret))
+			payload := []byte(`{"iam": "batman"}`)
+			mac.Write(payload)
+			hexs := hex.EncodeToString(mac.Sum(nil))
+
+			tt.runevent.Request = &info.Request{
+				Header: map[string][]string{
+					github.SHA256SignatureHeader: {"sha256=" + hexs},
+				},
+				Payload: payload,
+			}
+			tt.runevent.Provider = &info.Provider{
+				InfoFromRepo: tt.ProviderInfoFromRepo,
+				URL:          ghTestServerURL,
+				Token:        "NONE",
+			}
 
 			k8int := &kitesthelper.KinterfaceTest{
 				ConsoleURL:               "https://console.url",
 				ExpectedNumberofCleanups: tt.expectedNumberofCleanups,
-				GetSecretResult:          secretName,
+				GetSecretResult:          secrets,
 			}
 
 			err := Run(ctx, cs, &ghprovider.Provider{

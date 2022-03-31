@@ -73,9 +73,12 @@ func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expec
 // MakeEvent should we try to reflect? or json.Marshall? may be better ways, right?
 func MakeEvent(event *info.Event) *info.Event {
 	if event == nil {
-		event = &info.Event{}
+		event = info.NewEvent()
 	}
 	rev := event
+	if event.Provider == nil {
+		rev.Provider = &info.Provider{}
+	}
 	if rev.HeadBranch == "" {
 		rev.HeadBranch = "pr"
 	}

@@ -62,16 +62,15 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event) (bo
 		}
 		for _, activity := range activities.Values {
 			if acl.MatchRegexp(acl.OKToTestCommentRegexp, activity.Comment.Text) {
-				commenterEvent := &info.Event{
-					Sender:        activity.Comment.Author.Slug,
-					AccountID:     fmt.Sprintf("%d", activity.Comment.Author.ID),
-					Event:         event.Event,
-					BaseBranch:    event.BaseBranch,
-					HeadBranch:    event.HeadBranch,
-					Repository:    event.Repository,
-					Organization:  v.projectKey,
-					DefaultBranch: event.DefaultBranch,
-				}
+				commenterEvent := info.NewEvent()
+				commenterEvent.Sender = activity.Comment.Author.Slug
+				commenterEvent.AccountID = fmt.Sprintf("%d", activity.Comment.Author.ID)
+				commenterEvent.Event = event.Event
+				commenterEvent.BaseBranch = event.BaseBranch
+				commenterEvent.HeadBranch = event.HeadBranch
+				commenterEvent.Repository = event.Repository
+				commenterEvent.Organization = v.projectKey
+				commenterEvent.DefaultBranch = event.DefaultBranch
 				allowed, err := v.checkMemberShip(commenterEvent)
 				if err != nil {
 					return false, err

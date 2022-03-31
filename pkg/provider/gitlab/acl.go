@@ -43,13 +43,12 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event, pag
 		// TODO: maybe we do threads in the future but for now we just check the top thread for ops related comments
 		topthread := comment.Notes[0]
 		if acl.MatchRegexp(acl.OKToTestCommentRegexp, topthread.Body) {
-			commenterEvent := &info.Event{
-				Event:         event.Event,
-				Sender:        topthread.Author.Username,
-				BaseBranch:    event.BaseBranch,
-				HeadBranch:    event.HeadBranch,
-				DefaultBranch: event.DefaultBranch,
-			}
+			commenterEvent := info.NewEvent()
+			commenterEvent.Event = event.Event
+			commenterEvent.Sender = topthread.Author.Username
+			commenterEvent.BaseBranch = event.BaseBranch
+			commenterEvent.HeadBranch = event.HeadBranch
+			commenterEvent.DefaultBranch = event.DefaultBranch
 			// TODO: we could probably do with caching when checking all issues?
 			if v.checkMembership(commenterEvent, topthread.Author.ID) {
 				return true, nil

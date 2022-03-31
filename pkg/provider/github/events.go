@@ -96,7 +96,7 @@ func (v *Provider) parseEventType(request *http.Request, event *info.Event) erro
 		return fmt.Errorf("failed to find event type in request header")
 	}
 
-	event.ProviderURL = request.Header.Get("X-GitHub-Enterprise-Host")
+	event.Provider.URL = request.Header.Get("X-GitHub-Enterprise-Host")
 
 	if event.EventType == "push" {
 		event.TriggerTarget = "push"
@@ -122,7 +122,7 @@ func getInstallationIDFromPayload(payload string) int64 {
 }
 
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
-	event := &info.Event{}
+	event := info.NewEvent()
 
 	if err := v.parseEventType(request, event); err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	if id != -1 {
 		// get the app token if it exist first
 		var err error
-		event.ProviderToken, err = v.getAppToken(ctx, run.Clients.Kube, event.ProviderURL, id)
+		event.Provider.Token, err = v.getAppToken(ctx, run.Clients.Kube, event.Provider.URL, id)
 		if err != nil {
 			return nil, err
 		}
@@ -183,54 +183,49 @@ func (v *Provider) processEvent(ctx context.Context, run *params.Run, event *inf
 		}
 
 	case *github.PushEvent:
-		processedEvent = &info.Event{
-			Organization:  gitEvent.GetRepo().GetOwner().GetLogin(),
-			Repository:    gitEvent.GetRepo().GetName(),
-			DefaultBranch: gitEvent.GetRepo().GetDefaultBranch(),
-			URL:           gitEvent.GetRepo().GetHTMLURL(),
-			SHA:           gitEvent.GetHeadCommit().GetID(),
-			SHAURL:        gitEvent.GetHeadCommit().GetURL(),
-			SHATitle:      gitEvent.GetHeadCommit().GetMessage(),
-			Sender:        gitEvent.GetSender().GetLogin(),
-			BaseBranch:    gitEvent.GetRef(),
-			EventType:     event.TriggerTarget,
-		}
+		processedEvent = info.NewEvent()
+		processedEvent.Organization = gitEvent.GetRepo().GetOwner().GetLogin()
+		processedEvent.Repository = gitEvent.GetRepo().GetName()
+		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
+		processedEvent.URL = gitEvent.GetRepo().GetHTMLURL()
+		processedEvent.SHA = gitEvent.GetHeadCommit().GetID()
+		processedEvent.SHAURL = gitEvent.GetHeadCommit().GetURL()
+		processedEvent.SHATitle = gitEvent.GetHeadCommit().GetMessage()
+		processedEvent.Sender = gitEvent.GetSender().GetLogin()
+		processedEvent.BaseBranch = gitEvent.GetRef()
+		processedEvent.EventType = event.TriggerTarget
 
 		processedEvent.HeadBranch = processedEvent.BaseBranch // in push events Head Branch is the same as Basebranch
 	case *github.PullRequestEvent:
-		processedEvent = &info.Event{
-			Organization:  gitEvent.GetRepo().Owner.GetLogin(),
-			Repository:    gitEvent.GetRepo().GetName(),
-			DefaultBranch: gitEvent.GetRepo().GetDefaultBranch(),
-			SHA:           gitEvent.GetPullRequest().Head.GetSHA(),
-			URL:           gitEvent.GetRepo().GetHTMLURL(),
-			BaseBranch:    gitEvent.GetPullRequest().Base.GetRef(),
-			HeadBranch:    gitEvent.GetPullRequest().Head.GetRef(),
-			Sender:        gitEvent.GetPullRequest().GetUser().GetLogin(),
-			EventType:     event.EventType,
-		}
-
+		processedEvent = info.NewEvent()
+		processedEvent.Organization = gitEvent.GetRepo().Owner.GetLogin()
+		processedEvent.Repository = gitEvent.GetRepo().GetName()
+		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
+		processedEvent.SHA = gitEvent.GetPullRequest().Head.GetSHA()
+		processedEvent.URL = gitEvent.GetRepo().GetHTMLURL()
+		processedEvent.BaseBranch = gitEvent.GetPullRequest().Base.GetRef()
+		processedEvent.HeadBranch = gitEvent.GetPullRequest().Head.GetRef()
+		processedEvent.Sender = gitEvent.GetPullRequest().GetUser().GetLogin()
+		processedEvent.EventType = event.EventType
 	default:
 		return nil, errors.New("this event is not supported")
 	}
 
 	processedEvent.Event = eventInt
 	processedEvent.TriggerTarget = event.TriggerTarget
-	processedEvent.ProviderToken = event.ProviderToken
+	processedEvent.Provider.Token = event.Provider.Token
 
 	return processedEvent, nil
 }
 
 func (v *Provider) handleReRequestEvent(ctx context.Context, log *zap.SugaredLogger, event *github.CheckRunEvent) (*info.Event, error) {
-	runevent := &info.Event{
-		Organization:  event.GetRepo().GetOwner().GetLogin(),
-		Repository:    event.GetRepo().GetName(),
-		URL:           event.GetRepo().GetHTMLURL(),
-		DefaultBranch: event.GetRepo().GetDefaultBranch(),
-		SHA:           event.GetCheckRun().GetCheckSuite().GetHeadSHA(),
-		HeadBranch:    event.GetCheckRun().GetCheckSuite().GetHeadBranch(),
-	}
-
+	runevent := info.NewEvent()
+	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
+	runevent.Repository = event.GetRepo().GetName()
+	runevent.URL = event.GetRepo().GetHTMLURL()
+	runevent.DefaultBranch = event.GetRepo().GetDefaultBranch()
+	runevent.SHA = event.GetCheckRun().GetCheckSuite().GetHeadSHA()
+	runevent.HeadBranch = event.GetCheckRun().GetCheckSuite().GetHeadBranch()
 	// If we don't have a pull_request in this it probably mean a push
 	if len(event.GetCheckRun().GetCheckSuite().PullRequests) == 0 {
 		runevent.BaseBranch = runevent.HeadBranch
@@ -254,15 +249,14 @@ func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
 }
 
 func (v *Provider) handleIssueCommentEvent(ctx context.Context, log *zap.SugaredLogger, event *github.IssueCommentEvent) (*info.Event, error) {
-	runevent := &info.Event{
-		Organization: event.GetRepo().GetOwner().GetLogin(),
-		Repository:   event.GetRepo().GetName(),
-		Sender:       event.GetSender().GetLogin(),
-		// Always set the trigger target as pull_request on issue comment events
-		TriggerTarget: "pull_request",
-	}
+	runevent := info.NewEvent()
+	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
+	runevent.Repository = event.GetRepo().GetName()
+	runevent.Sender = event.GetSender().GetLogin()
+	// Always set the trigger target as pull_request on issue comment events
+	runevent.TriggerTarget = "pull_request"
 	if !event.GetIssue().IsPullRequest() {
-		return &info.Event{}, fmt.Errorf("issue comment is not coming from a pull_request")
+		return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
 	}
 
 	// We are getting the full URL so we have to get the last part to get the PR number,
@@ -270,7 +264,7 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, log *zap.Sugared
 	// that comes up from the API.
 	prNumber, err := convertPullRequestURLtoNumber(event.GetIssue().GetPullRequestLinks().GetHTMLURL())
 	if err != nil {
-		return &info.Event{}, err
+		return info.NewEvent(), err
 	}
 
 	log.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runevent.Organization, runevent.Repository, prNumber)
