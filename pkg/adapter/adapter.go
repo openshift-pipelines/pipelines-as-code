@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/pkg/logging"
@@ -139,6 +140,18 @@ func (l listener) detectProvider(reqHeader *http.Header, reqBody string) (provid
 		}
 		if processReq {
 			return bitServer, logger, nil
+		}
+		return nil, nil, nil
+	}
+
+	gitLab := &gitlab.Provider{}
+	isGitlab, processReq, logger, err := gitLab.Detect(reqHeader, reqBody, &log)
+	if isGitlab {
+		if err != nil {
+			return nil, logger, err
+		}
+		if processReq {
+			return gitLab, logger, nil
 		}
 		return nil, nil, nil
 	}

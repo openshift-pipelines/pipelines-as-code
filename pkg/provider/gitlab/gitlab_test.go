@@ -11,6 +11,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	"github.com/xanzy/go-gitlab"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -173,8 +175,6 @@ func TestCreateStatus(t *testing.T) {
 }
 
 func TestParsePayload(t *testing.T) {
-	// TODO: fix event parsing logic
-	t.Skip()
 	sample := thelp.TEvent{
 		Username:          "foo",
 		DefaultBranch:     "main",
@@ -197,7 +197,7 @@ func TestParsePayload(t *testing.T) {
 		userID          int
 	}
 	type args struct {
-		// event   *info.Event
+		event   gitlab.EventType
 		payload string
 	}
 	tests := []struct {
@@ -212,16 +212,14 @@ func TestParsePayload(t *testing.T) {
 			name: "bad payload",
 			args: args{
 				payload: "nono",
-				// event:   &info.Event{EventType: "none"},
+				event:   "none",
 			},
 			wantErr: true,
 		},
 		{
 			name: "event not supported",
 			args: args{
-				// event: &info.Event{
-				//	EventType: string(gitlab.EventTypePipeline),
-				// },
+				event:   gitlab.EventTypePipeline,
 				payload: sample.MREventAsJSON(),
 			},
 			wantErr: true,
@@ -229,9 +227,7 @@ func TestParsePayload(t *testing.T) {
 		{
 			name: "merge event",
 			args: args{
-				// event: &info.Event{
-				//	EventType: string(gitlab.EventTypeMergeRequest),
-				// },
+				event:   gitlab.EventTypeMergeRequest,
 				payload: sample.MREventAsJSON(),
 			},
 			want: &info.Event{
@@ -244,9 +240,7 @@ func TestParsePayload(t *testing.T) {
 		{
 			name: "push event no commits",
 			args: args{
-				// event: &info.Event{
-				//	EventType: string(gitlab.EventTypePush),
-				// },
+				event:   gitlab.EventTypePush,
 				payload: sample.PushEventAsJSON(false),
 			},
 			wantErr: true,
@@ -254,9 +248,7 @@ func TestParsePayload(t *testing.T) {
 		{
 			name: "push event",
 			args: args{
-				// event: &info.Event{
-				//	EventType: string(gitlab.EventTypePush),
-				// },
+				event:   gitlab.EventTypePush,
 				payload: sample.PushEventAsJSON(true),
 			},
 			want: &info.Event{
@@ -270,10 +262,8 @@ func TestParsePayload(t *testing.T) {
 		{
 			name: "note event",
 			args: args{
-				// event: &info.Event{
-				//	EventType: string(gitlab.EventTypeNote),
-				// },
-				payload: sample.NoteEventAsJSON(),
+				event:   gitlab.EventTypeNote,
+				payload: sample.NoteEventAsJSON(""),
 			},
 			want: &info.Event{
 				EventType:     "Note",
@@ -302,7 +292,10 @@ func TestParsePayload(t *testing.T) {
 				Info: info.Info{},
 			}
 
-			got, err := v.ParsePayload(ctx, run, &http.Request{}, tt.args.payload)
+			request := &http.Request{Header: map[string][]string{}}
+			request.Header.Set("X-Gitlab-Event", string(tt.args.event))
+
+			got, err := v.ParsePayload(ctx, run, request, tt.args.payload)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParsePayload() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -470,4 +463,111 @@ func TestGetFileInsideRepo(t *testing.T) {
 
 	_, err = v.GetFileInsideRepo(ctx, event, "notfound", "")
 	assert.Assert(t, err != nil)
+}
+
+func TestProvider_Detect(t *testing.T) {
+	sample := thelp.TEvent{
+		Username:          "foo",
+		DefaultBranch:     "main",
+		URL:               "https://foo.com",
+		SHA:               "sha",
+		SHAurl:            "https://url",
+		SHAtitle:          "commit it",
+		Headbranch:        "branch",
+		Basebranch:        "main",
+		UserID:            10,
+		MRID:              1,
+		TargetProjectID:   100,
+		SourceProjectID:   200,
+		PathWithNameSpace: "hello/this/is/me/ze/project",
+	}
+	tests := []struct {
+		name          string
+		wantErrString string
+		isGL          bool
+		processReq    bool
+		event         string
+		eventType     gitlab.EventType
+	}{
+		{
+			name:       "not a gitlab Event",
+			eventType:  "",
+			isGL:       false,
+			processReq: false,
+		},
+		{
+			name:          "invalid gitlab Event",
+			eventType:     "invalid",
+			wantErrString: "unexpected event type: invalid",
+			isGL:          false,
+			processReq:    false,
+		},
+		{
+			name:       "valid merge Event",
+			event:      sample.MREventAsJSON(),
+			eventType:  gitlab.EventTypeMergeRequest,
+			isGL:       true,
+			processReq: true,
+		},
+		{
+			name:       "issue note event with no valid comment",
+			event:      sample.NoteEventAsJSON("abc"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: false,
+		},
+		{
+			name:       "issue note Event with ok-to-test comment",
+			event:      sample.NoteEventAsJSON("/ok-to-test"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: true,
+		},
+		{
+			name:       "issue comment Event with ok-to-test and some string",
+			event:      sample.NoteEventAsJSON("abc /ok-to-test"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: false,
+		},
+		{
+			name:       "issue comment Event with retest",
+			event:      sample.NoteEventAsJSON("/retest"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: true,
+		},
+		{
+			name:       "push event",
+			event:      sample.PushEventAsJSON(true),
+			eventType:  gitlab.EventTypePush,
+			isGL:       true,
+			processReq: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gprovider := Provider{}
+			logger := getLogger()
+
+			header := &http.Header{}
+			header.Set("X-Gitlab-Event", string(tt.eventType))
+
+			isGL, processReq, _, err := gprovider.Detect(header, tt.event, logger)
+			if tt.wantErrString != "" {
+				assert.ErrorContains(t, err, tt.wantErrString)
+				return
+			}
+			assert.NilError(t, err)
+			assert.Equal(t, tt.isGL, isGL)
+			assert.Equal(t, tt.processReq, processReq)
+		})
+	}
+}
+
+func getLogger() *zap.SugaredLogger {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+	return logger
 }

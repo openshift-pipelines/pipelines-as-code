@@ -105,7 +105,7 @@ func MuxGetFile(t *testing.T, mux *http.ServeMux, pid int, fname, content string
 type TEvent struct {
 	Username, DefaultBranch, URL, SHA, SHAurl, SHAtitle, Headbranch, Basebranch string
 	UserID, MRID, TargetProjectID, SourceProjectID                              int
-	PathWithNameSpace                                                           string
+	PathWithNameSpace, Comment                                                  string
 }
 
 func (t TEvent) PushEventAsJSON(withcommits bool) string {
@@ -135,13 +135,14 @@ func (t TEvent) PushEventAsJSON(withcommits bool) string {
 	return jeez
 }
 
-func (t TEvent) NoteEventAsJSON() string {
+func (t TEvent) NoteEventAsJSON(comment string) string {
 	// nolint:misspell
 	return fmt.Sprintf(`{
 	"object_kind": "note",
 	"event_type": "note",
     "object_attributes": {
-        "noteable_type": "MergeRequest"
+        "noteable_type": "MergeRequest",
+	    "note": "%s"
     },
     "user": {
         "username": "%s"
@@ -152,6 +153,7 @@ func (t TEvent) NoteEventAsJSON() string {
         "path_with_namespace": "%s"
     },
     "merge_request": {
+	    "state": "opened",
         "iid": %d,
         "target_project_id": %d,
         "source_project_id": %d,
@@ -164,7 +166,7 @@ func (t TEvent) NoteEventAsJSON() string {
             "message": "%s"
         }
     }
-}`, t.Username, t.DefaultBranch, t.URL, t.PathWithNameSpace, t.MRID, t.TargetProjectID, t.SourceProjectID, t.Basebranch, t.Headbranch, t.SHA, t.SHAurl, t.SHAtitle, t.SHAtitle)
+}`, comment, t.Username, t.DefaultBranch, t.URL, t.PathWithNameSpace, t.MRID, t.TargetProjectID, t.SourceProjectID, t.Basebranch, t.Headbranch, t.SHA, t.SHAurl, t.SHAtitle, t.SHAtitle)
 }
 
 func (t TEvent) MREventAsJSON() string {

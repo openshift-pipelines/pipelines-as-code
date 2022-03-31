@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/xanzy/go-gitlab"
+	"go.uber.org/zap"
 )
 
 const (
@@ -43,9 +45,48 @@ type Provider struct {
 	repoURL           string
 }
 
-// func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
-//	panic("implement me")
-// }
+// Detect processes event and detect if it is a gitlab event, whether to process or reject it
+// returns (if is a GL event, whether to process or reject, logger with event metadata,, error if any occurred)
+func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
+	isGL := false
+	event := reqHeader.Get("X-Gitlab-Event")
+	if event == "" {
+		return false, false, logger, nil
+	}
+
+	// it is a Gitlab event
+	isGL = true
+
+	setLoggerAndProceed := func() (bool, bool, *zap.SugaredLogger, error) {
+		logger = logger.With("provider", "gitlab", "event", reqHeader.Get("X-Request-Id"))
+		return isGL, true, logger, nil
+	}
+
+	eventInt, err := gitlab.ParseWebhook(gitlab.EventType(event), []byte(payload))
+	if err != nil {
+		return isGL, false, logger, err
+	}
+	_ = json.Unmarshal([]byte(payload), &eventInt)
+
+	switch gitEvent := eventInt.(type) {
+	case *gitlab.MergeEvent:
+		return setLoggerAndProceed()
+	case *gitlab.PushEvent:
+		return setLoggerAndProceed()
+	case *gitlab.MergeCommentEvent:
+		if gitEvent.MergeRequest.State == "opened" {
+			if matches, _ := regexp.MatchString(provider.RetestRegex, gitEvent.ObjectAttributes.Note); matches {
+				return setLoggerAndProceed()
+			}
+			if matches, _ := regexp.MatchString(provider.OktotestRegex, gitEvent.ObjectAttributes.Note); matches {
+				return setLoggerAndProceed()
+			}
+		}
+		return isGL, false, logger, nil
+	default:
+		return isGL, false, logger, fmt.Errorf("event %s is not supported", event)
+	}
+}
 
 // If I understood properly, you can have "personal" projects and groups
 // attached projects. But this doesn't seem to show in the API, so we
@@ -62,12 +103,15 @@ func getOrgRepo(pathWithNamespace string) (string, string) {
 }
 
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
-	// TODO: parse request to figure out which event
-	event := &info.Event{}
 	var processedEvent *info.Event
 
+	event := request.Header.Get("X-Gitlab-Event")
+	if event == "" {
+		return nil, fmt.Errorf("failed to find event type in request header")
+	}
+
 	payloadB := []byte(payload)
-	eventInt, err := gitlab.ParseWebhook(gitlab.EventType(event.EventType), payloadB)
+	eventInt, err := gitlab.ParseWebhook(gitlab.EventType(event), payloadB)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +181,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		v.sourceProjectID = gitEvent.MergeRequest.SourceProjectID
 		v.userID = gitEvent.User.ID
 	default:
-		return nil, fmt.Errorf("event %s is not supported", event.EventType)
+		return nil, fmt.Errorf("event %s is not supported", event)
 	}
 
 	processedEvent.Event = eventInt
@@ -145,7 +189,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	// Remove the " Hook" suffix so looks better in status, and since we don't
 	// really use it anymore we good to do whatever we want with it for
 	// cosmetics.
-	processedEvent.EventType = strings.ReplaceAll(event.EventType, " Hook", "")
+	processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
 
 	v.repoURL = processedEvent.URL
 	return processedEvent, nil
