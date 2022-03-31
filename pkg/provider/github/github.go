@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/google/go-github/v43/github"
@@ -218,10 +217,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		if gitEvent.GetAction() == "created" &&
 			gitEvent.GetIssue().IsPullRequest() &&
 			gitEvent.GetIssue().GetState() == "open" {
-			if matches, _ := regexp.MatchString(provider.RetestRegex, gitEvent.GetComment().GetBody()); matches {
+			if provider.IsRetestComment(gitEvent.GetComment().GetBody()) {
 				return setLoggerAndProceed()
 			}
-			if matches, _ := regexp.MatchString(provider.OktotestRegex, gitEvent.GetComment().GetBody()); matches {
+			if provider.IsOkToTestComment(gitEvent.GetComment().GetBody()) {
 				return setLoggerAndProceed()
 			}
 			return isGH, false, logger, nil

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -50,10 +49,10 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 			processedEvent.TriggerTarget = "pull_request"
 			processedEvent.EventType = "pull_request"
 		} else if provider.Valid(eventType, []string{"pr:comment:added", "pr:comment:edited"}) {
-			if matches, _ := regexp.MatchString(provider.RetestRegex, e.Comment.Text); matches {
+			if provider.IsRetestComment(e.Comment.Text) {
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "retest-comment"
-			} else if matches, _ := regexp.MatchString(provider.OktotestRegex, e.Comment.Text); matches {
+			} else if provider.IsOkToTestComment(e.Comment.Text) {
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "ok-to-test-comment"
 			}

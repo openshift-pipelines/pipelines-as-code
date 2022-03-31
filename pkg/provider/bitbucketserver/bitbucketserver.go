@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
@@ -267,10 +266,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 			return setLoggerAndProceed()
 		}
 		if provider.Valid(event, []string{"pr:comment:added", "pr:comment:edited"}) {
-			if matches, _ := regexp.MatchString(provider.RetestRegex, e.Comment.Text); matches {
+			if provider.IsRetestComment(e.Comment.Text) {
 				return setLoggerAndProceed()
 			}
-			if matches, _ := regexp.MatchString(provider.OktotestRegex, e.Comment.Text); matches {
+			if provider.IsOkToTestComment(e.Comment.Text) {
 				return setLoggerAndProceed()
 			}
 		}

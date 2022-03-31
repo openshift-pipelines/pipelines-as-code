@@ -1,8 +1,10 @@
 package provider
 
+import "regexp"
+
 const (
-	RetestRegex   = "(^|\\\\r\\\\n)/retest([ ]*$|$|\\\\r\\\\n)"
-	OktotestRegex = "(^|\\\\r\\\\n)/ok-to-test([ ]*$|$|\\\\r\\\\n)"
+	retestRegex   = "(^|\\\\r\\\\n)/retest([ ]*$|$|\\\\r\\\\n)"
+	oktotestRegex = "(^|\\\\r\\\\n)/ok-to-test([ ]*$|$|\\\\r\\\\n)"
 )
 
 func Valid(value string, validValues []string) bool {
@@ -12,4 +14,14 @@ func Valid(value string, validValues []string) bool {
 		}
 	}
 	return false
+}
+
+func IsRetestComment(comment string) bool {
+	matches, _ := regexp.MatchString(retestRegex, comment)
+	return matches
+}
+
+func IsOkToTestComment(comment string) bool {
+	matches, _ := regexp.MatchString(oktotestRegex, comment)
+	return matches
 }
