@@ -21,6 +21,7 @@ type StatusOpts struct {
 }
 
 type Interface interface {
+	Validate(ctx context.Context, params *params.Run, event *info.Event) error
 	Detect(*http.Header, string, *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error)
 	ParsePayload(context.Context, *params.Run, *http.Request, string) (*info.Event, error)
 	IsAllowed(context.Context, *info.Event) (bool, error)

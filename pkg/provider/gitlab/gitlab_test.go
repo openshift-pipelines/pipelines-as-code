@@ -331,12 +331,16 @@ func TestGetConfig(t *testing.T) {
 func TestSetClient(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	v := &Provider{}
-	assert.Assert(t, v.SetClient(ctx, &info.Event{}) != nil)
+	assert.Assert(t, v.SetClient(ctx, info.NewEvent()) != nil)
 
 	client, _, tearDown := thelp.Setup(ctx, t)
 	defer tearDown()
 	vv := &Provider{Client: client}
-	err := vv.SetClient(ctx, &info.Event{ProviderToken: "hello"})
+	err := vv.SetClient(ctx, &info.Event{
+		Provider: &info.Provider{
+			Token: "hello",
+		},
+	})
 	assert.NilError(t, err)
 	assert.Assert(t, *vv.Token != "")
 }

@@ -8,36 +8,32 @@ weight: 12
 If you are not able to create a GitHub application you can install Pipelines-as-Code on your repository as a
 [GitHub Webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks).
 
-Using Pipelines as Code via Github webhook does not give you access to the GitHub CheckRun API, therefore the status of
+Using Pipelines as Code via Github webhook does not give you access to the [GitHub CheckRun API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api), therefore the status of
 the tasks will be added as a Comment of the PR and not via the **Checks** Tab.
 
-Following the [infrastructure installation](install.md#install-pipelines-as-code-infrastructure)
+After you have finished the [infrastructure installation](install.md#install-pipelines-as-code-infrastructure) you can generate an app password for Pipelines-as-Code Github API operations.
 
-* You will have to generate a personal token for Pipelines-as-Code Github API operations.
-
-  Follow this guide to create a personal token :
+Follow this guide to create a personal token :
 
 <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token>
 
-  The only permission needed is the *repo* permission. Make sure you note somewhere the generated token or otherwise you
-  will have to recreate it.
+The only permission needed is the *repo* permission. Make sure you note the generated token somewhere or otherwise you will have to recreate it.
 
 * Go to you repository or organization setting and click on *Hooks* and *"Add webhook"* links.
 
-* Set the payload URL to the event listener public URL. On OpenShift you can get the public URL of the
-  Pipelines-as-Code controller like this :
+* Set the payload URL to Pipeline as Code public URL. On OpenShift you can get the public URL of the Pipelines-as-Code controller like this:
 
   ```shell
   echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
   ```
 
-* Add a secret or generate a random one with this command  :
+* Add a Webhook secret or generate a random one with this command (and note it, we will need it later):
 
   ```shell
   openssl rand -hex 20
   ```
 
-* You will need to create a webhook on your repository. The individual events for the webhook to select are :
+* Click "Let me select individual events" and select these events:
   * Commit comments
   * Issue comments
   * Pull request reviews
@@ -45,19 +41,11 @@ Following the [infrastructure installation](install.md#install-pipelines-as-code
   * Pushes
 
 {{< hint info >}}
-[Refer to this screenshot](/images/pac-direct-webhook-create.png) on how to configure the Webhook.
+[Refer to this screenshot](../../../images/pac-direct-webhook-create.png) to make sure  you have properly configured the webhook.
 {{< /hint >}}
 
-* On your cluster you need create the webhook secret as generated previously in the *pipelines-as-code* namespace.
-
-```shell
-kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
-        --from-literal webhook.secret="$WEBHOOK_SECRET_AS_GENERATED"
-```
-
-* You are now able to create a Repository CRD. The repository CRD will have a
-  Secret that contains the Personal token as generated and Pipelines as Code
-  will know how to use it for GitHub API operations.
+* You are now able to create a Repository CRD. The repository CRD will reference a
+  Kubernetes Secret containing the Personal token as generated previously and another reference to a Kubernetes secret to validate the Webhook payload as set previously in your Webhook configuration .
 
 * First create the secret with the personal token in the `target-namespace` :
 
@@ -66,9 +54,14 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
           --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
   ```
 
-* And now create Repository CRD with the secret field referencing it.
+* Then create the secret with the secret name as set in the Webhook configuration :
 
-Here is an example of a Repository CRD :
+  ```shell
+  kubectl -n target-namespace create secret generic github-webhook-secret \
+          --from-literal secret="SECRET_NAME_AS_SET_IN_WEBHOOK_CONFIGURATION"
+  ```
+
+* And now create Repository CRD referencing everything :
 
 ```yaml
 ---
@@ -80,13 +73,16 @@ metadata:
 spec:
   url: "https://github.com/owner/repo"
   git_provider:
-    url: "https://github.enterprise.com"
     secret:
       name: "github-personal-token"
       # Set this if you have a different key in your secret
       # key: "token"
+    webhook_secret:
+      name: "github-webhook-secret"
+      # Set this if you have a different key for your secret
+      # key: "secret-name"
 ```
 
-* Note that `git_provider.secret` cannot reference a secret in another
-  namespace, Pipelines as code assumes always it will be the same namespace as
-  where the repository has been created.
+## Github webhook Notes
+
+* Secrets needs to be in the same namespace as installed on Repository, they cannot be on another namespace.

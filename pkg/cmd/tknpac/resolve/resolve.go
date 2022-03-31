@@ -150,7 +150,7 @@ func resolveFilenames(cs *params.Run, filenames []string, params map[string]stri
 	}
 	// We use github here but since we don't do remotetask we would not care
 	providerintf := &github.Provider{}
-	event := &info.Event{}
+	event := info.NewEvent()
 	prun, err := resolve.Resolve(ctx, cs, providerintf, event, allTemplates, ropt)
 	if err != nil {
 		return "", err

@@ -9,6 +9,7 @@ import (
 
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/mitchellh/mapstructure"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
@@ -25,6 +26,10 @@ const taskStatusTemplate = `| **Status** | **Duration** | **Name** |
 | --- | --- | --- |
 {{range $taskrun := .TaskRunList }}|{{ formatCondition $taskrun.Status.Conditions }}|{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}|{{ $taskrun.ConsoleLogURL }}|
 {{ end }}`
+
+func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
+	return nil
+}
 
 func (v *Provider) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{
@@ -54,7 +59,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacopts *i
 		statusopts.Conclusion = "SUCCESSFUL"
 		statusopts.Title = "✅ Completed"
 	}
-	detailsURL := event.ProviderURL
+	detailsURL := event.Provider.URL
 	if statusopts.DetailsURL != "" {
 		detailsURL = statusopts.DetailsURL
 	}
@@ -122,15 +127,15 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, pa
 }
 
 func (v *Provider) SetClient(_ context.Context, event *info.Event) error {
-	if event.ProviderUser == "" {
+	if event.Provider.User == "" {
 		return fmt.Errorf("no git_provider.user has been set in the repo crd")
 	}
-	if event.ProviderToken == "" {
+	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
-	v.Client = bitbucket.NewBasicAuth(event.ProviderUser, event.ProviderToken)
-	v.Token = &event.ProviderToken
-	v.Username = &event.ProviderUser
+	v.Client = bitbucket.NewBasicAuth(event.Provider.User, event.Provider.Token)
+	v.Token = &event.Provider.Token
+	v.Username = &event.Provider.User
 	return nil
 }
 

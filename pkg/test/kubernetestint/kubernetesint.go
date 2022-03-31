@@ -16,7 +16,7 @@ type KinterfaceTest struct {
 	ConsoleURL               string
 	ConsoleURLErorring       bool
 	ExpectedNumberofCleanups int
-	GetSecretResult          string
+	GetSecretResult          map[string]string
 }
 
 func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string) (string, error) {
@@ -35,7 +35,7 @@ func (k *KinterfaceTest) DeleteBasicAuthSecret(ctx context.Context, runevent *in
 }
 
 func (k *KinterfaceTest) GetSecret(ctx context.Context, secretopt kubeinteraction.GetSecretOpt) (string, error) {
-	return k.GetSecretResult, nil
+	return k.GetSecretResult[secretopt.Name], nil
 }
 
 func (k *KinterfaceTest) WaitForPipelineRunSucceed(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun, polltimeout time.Duration) error {

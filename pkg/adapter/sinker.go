@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -25,6 +26,10 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request, payloa
 	if err != nil {
 		s.run.Clients.Log.Errorf("failed to parse event: %v", err)
 		return
+	}
+	s.event.Request = &info.Request{
+		Header:  request.Header,
+		Payload: bytes.TrimSpace(payload),
 	}
 
 	err = pipelineascode.Run(ctx, s.run, s.vcx, s.kint, s.event)

@@ -9,7 +9,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-// sanitizeBranch remove refs/heads from string, only removing the first prefix
+// SanitizeBranch remove refs/heads from string, only removing the first prefix
 // in case we have branch that are actually called refs-heads 🙃
 func SanitizeBranch(s string) string {
 	if strings.HasPrefix(s, "refs/heads/") {

@@ -97,17 +97,17 @@ func parsePayloadType(event string, rawPayload string) (interface{}, error) {
 }
 
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
-	processedEvent := &info.Event{}
+	processedEvent := info.NewEvent()
 
 	event := request.Header.Get("X-Event-Key")
 	eventInt, err := parsePayloadType(event, payload)
 	if err != nil || eventInt == nil {
-		return &info.Event{}, err
+		return info.NewEvent(), err
 	}
 
 	err = json.Unmarshal([]byte(payload), &eventInt)
 	if err != nil {
-		return &info.Event{}, err
+		return info.NewEvent(), err
 	}
 
 	sourceIP := request.Header.Get("X-Forwarded-For")

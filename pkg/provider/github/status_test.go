@@ -33,10 +33,13 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 func TestGithubProviderCreateStatus(t *testing.T) {
 	checkrunid := int64(2026)
 	resultid := int64(666)
-	runEvent := info.Event{Organization: "check", Repository: "run", CheckRunID: &checkrunid}
+	runEvent := info.NewEvent()
+	runEvent.Organization = "check"
+	runEvent.Repository = "run"
+	runEvent.CheckRunID = &checkrunid
 
 	type args struct {
-		runevent           info.Event
+		runevent           *info.Event
 		status             string
 		conclusion         string
 		text               string
@@ -161,11 +164,14 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				LogURL: "https://log",
 			}
 			if !tt.notoken {
-				tt.args.runevent.ProviderToken = "hello"
-				tt.args.runevent.ProviderURL = "moto"
+				tt.args.runevent.Provider = &info.Provider{
+					Token: "hello",
+					URL:   "moto",
+				}
+			} else {
+				tt.args.runevent = info.NewEvent()
 			}
-
-			err := gcvs.CreateStatus(ctx, &tt.args.runevent, pacopts, status)
+			err := gcvs.CreateStatus(ctx, tt.args.runevent, pacopts, status)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GithubProvider.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
 				return

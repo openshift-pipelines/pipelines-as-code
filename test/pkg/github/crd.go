@@ -30,12 +30,26 @@ func CreateCRD(ctx context.Context, t *testing.T, repoinfo *ghlib.Repository, ru
 
 	if opts.DirectWebhook {
 		token, _ := os.LookupEnv("TEST_GITHUB_TOKEN")
+		webhookSecret, _ := os.LookupEnv("TEST_EL_WEBHOOK_SECRET")
 		apiURL, _ := os.LookupEnv("TEST_GITHUB_API_URL")
-		err := secret.Create(ctx, run, map[string]string{"token": token}, targetNS, "webhook-token")
+		err := secret.Create(ctx, run,
+			map[string]string{
+				"webhook-secret": webhookSecret,
+				"token":          token,
+			},
+			targetNS,
+			"webhook-token")
 		assert.NilError(t, err)
 		repo.Spec.GitProvider = &v1alpha1.GitProvider{
-			URL:    apiURL,
-			Secret: &v1alpha1.GitProviderSecret{Name: "webhook-token", Key: "token"},
+			URL: apiURL,
+			Secret: &v1alpha1.GitProviderSecret{
+				Name: "webhook-token",
+				Key:  "token",
+			},
+			WebhookSecret: &v1alpha1.GitProviderSecret{
+				Name: "webhook-token",
+				Key:  "webhook-secret",
+			},
 		}
 	}
 

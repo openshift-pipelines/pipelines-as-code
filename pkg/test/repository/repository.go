@@ -10,13 +10,14 @@ import (
 )
 
 type RepoTestcreationOpts struct {
-	Name             string
-	URL              string
-	InstallNamespace string
-	SecretName       string
-	ProviderURL      string
-	CreateTime       metav1.Time
-	RepoStatus       []v1alpha1.RepositoryRunStatus
+	Name              string
+	URL               string
+	InstallNamespace  string
+	SecretName        string
+	WebhookSecretName string
+	ProviderURL       string
+	CreateTime        metav1.Time
+	RepoStatus        []v1alpha1.RepositoryRunStatus
 }
 
 func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
@@ -70,7 +71,7 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 		Status: opts.RepoStatus,
 	}
 
-	if opts.SecretName != "" || opts.ProviderURL != "" {
+	if opts.SecretName != "" || opts.ProviderURL != "" || opts.WebhookSecretName != "" {
 		repo.Spec.GitProvider = &v1alpha1.GitProvider{
 			Secret: &v1alpha1.GitProviderSecret{},
 		}
@@ -83,6 +84,12 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 	}
 	if opts.ProviderURL != "" {
 		repo.Spec.GitProvider.URL = opts.ProviderURL
+	}
+
+	if opts.WebhookSecretName != "" {
+		repo.Spec.GitProvider.WebhookSecret = &v1alpha1.GitProviderSecret{
+			Name: opts.WebhookSecretName,
+		}
 	}
 	return repo
 }

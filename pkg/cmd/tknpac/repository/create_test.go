@@ -190,7 +190,7 @@ func TestGetNamespace(t *testing.T) {
 			}
 			io, _, stdout, _ := cli.IOTest()
 			err := getOrCreateNamespace(ctx, &createOptions{
-				event:      &info.Event{},
+				event:      info.NewEvent(),
 				repository: &tt.repo,
 				gitInfo:    &tt.gitinfo,
 				ioStreams:  io,

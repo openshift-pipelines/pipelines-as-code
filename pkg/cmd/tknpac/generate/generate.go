@@ -36,7 +36,7 @@ type Opts struct {
 
 func MakeOpts() *Opts {
 	return &Opts{
-		event:   &info.Event{},
+		event:   info.NewEvent(),
 		GitInfo: &git.Info{},
 
 		IOStreams: &cli.IOStreams{},

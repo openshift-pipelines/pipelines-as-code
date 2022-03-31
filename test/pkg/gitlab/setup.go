@@ -42,8 +42,10 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitlab.Provider, erro
 	glprovider := gitlab.Provider{}
 	err = glprovider.SetClient(ctx,
 		&info.Event{
-			ProviderToken: gitlabToken,
-			ProviderURL:   gitlabURL,
+			Provider: &info.Provider{
+				Token: gitlabToken,
+				URL:   gitlabURL,
+			},
 		},
 	)
 	if err != nil {

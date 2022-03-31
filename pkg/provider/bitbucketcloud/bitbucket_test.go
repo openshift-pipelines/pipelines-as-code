@@ -79,23 +79,29 @@ func TestSetClient(t *testing.T) {
 		{
 			name: "set token",
 			event: &info.Event{
-				ProviderToken: "token",
-				ProviderUser:  "user",
+				Provider: &info.Provider{
+					Token: "token",
+					User:  "user",
+				},
 			},
 		},
 		{
 			name: "no user",
 			event: &info.Event{
-				ProviderToken: "token",
-				ProviderUser:  "",
+				Provider: &info.Provider{
+					Token: "token",
+					User:  "",
+				},
 			},
 			wantErrSubstr: "no git_provider.user",
 		},
 		{
 			name: "no token",
 			event: &info.Event{
-				ProviderToken: "",
-				ProviderUser:  "user",
+				Provider: &info.Provider{
+					Token: "",
+					User:  "user",
+				},
 			},
 			wantErrSubstr: "no git_provider.secret",
 		},
@@ -109,8 +115,8 @@ func TestSetClient(t *testing.T) {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return
 			}
-			assert.Equal(t, tt.event.ProviderToken, *v.Token)
-			assert.Equal(t, tt.event.ProviderUser, *v.Username)
+			assert.Equal(t, tt.event.Provider.Token, *v.Token)
+			assert.Equal(t, tt.event.Provider.User, *v.Username)
 		})
 	}
 }
@@ -241,7 +247,7 @@ func TestCreateStatus(t *testing.T) {
 			v := &Provider{Client: bbclient}
 			event := bbcloudtest.MakeEvent(nil)
 			event.EventType = "pull_request"
-			event.ProviderToken = "token"
+			event.Provider.Token = "token"
 
 			bbcloudtest.MuxCreateCommitstatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbcloudtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr)

@@ -33,7 +33,7 @@ type createOptions struct {
 
 func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	createOpts := &createOptions{
-		event:      &info.Event{},
+		event:      info.NewEvent(),
 		repository: &apipac.Repository{},
 		run:        run,
 	}

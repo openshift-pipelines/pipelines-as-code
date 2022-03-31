@@ -49,8 +49,8 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 	}
 
 	gitUser := provider.DefaultProviderAPIUser
-	if runevent.ProviderUser != "" {
-		gitUser = runevent.ProviderUser
+	if runevent.Provider.User != "" {
+		gitUser = runevent.Provider.User
 	}
 
 	// Bitbucket server token have / into it, so unless we do urlquote them it's
@@ -62,7 +62,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 	//
 	// maybe we could patch the git-clone task too but that probably be a pain
 	// in the tuchus to do it in shell.
-	token := url.QueryEscape(runevent.ProviderToken)
+	token := url.QueryEscape(runevent.Provider.Token)
 
 	urlWithToken := fmt.Sprintf("%s://%s:%s@%s%s", repoURL.Scheme, gitUser, token, repoURL.Host, repoURL.Path)
 	secretData := map[string]string{

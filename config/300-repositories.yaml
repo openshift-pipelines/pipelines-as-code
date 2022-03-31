@@ -86,6 +86,17 @@ spec:
                         name:
                           type: string
                           description: "The secret name"
+                    webhook_secret:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          description: "Key inside the secret"
+                          default: "secret"
+                        name:
+                          type: string
+                          description: "The secret name"
+
               type: object
           type: object
   scope: Namespaced

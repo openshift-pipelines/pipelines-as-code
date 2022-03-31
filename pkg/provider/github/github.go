@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/google/go-github/v43/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
@@ -22,6 +23,14 @@ type Provider struct {
 	Token, APIURL *string
 }
 
+func (v *Provider) Validate(ctx context.Context, cs *params.Run, event *info.Event) error {
+	signature := event.Request.Header.Get(github.SHA256SignatureHeader)
+	if signature == "" {
+		signature = event.Request.Header.Get(github.SHA1SignatureHeader)
+	}
+	return github.ValidateSignature(signature, event.Request.Payload, []byte(event.Provider.WebhookSecret))
+}
+
 func (v *Provider) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{
 		TaskStatusTMPL: taskStatusTemplate,
@@ -31,11 +40,11 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 
 func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: event.ProviderToken},
+		&oauth2.Token{AccessToken: event.Provider.Token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	var client *github.Client
-	apiURL := event.ProviderURL
+	apiURL := event.Provider.URL
 	if apiURL != "" {
 		if !strings.HasPrefix(apiURL, "https") {
 			apiURL = "https://" + apiURL

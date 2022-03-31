@@ -102,7 +102,7 @@ func (l listener) handleEvent() http.HandlerFunc {
 			run:   l.run,
 			vcx:   gitProvider,
 			kint:  l.kint,
-			event: &info.Event{},
+			event: info.NewEvent(),
 		}
 
 		// clone the request to use it further

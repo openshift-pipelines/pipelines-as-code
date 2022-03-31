@@ -287,9 +287,12 @@ func MakePushEvent(accountid, nickname, sha string) types.PushRequestEvent {
 // MakeEvent should we try to reflect? or json.Marshall? may be better ways, right?
 func MakeEvent(event *info.Event) *info.Event {
 	if event == nil {
-		event = &info.Event{}
+		event = info.NewEvent()
 	}
 	rev := event
+	if event.Provider == nil {
+		event.Provider = &info.Provider{}
+	}
 	if rev.HeadBranch == "" {
 		rev.HeadBranch = "pr"
 	}
