@@ -63,7 +63,8 @@ spec:
                     exit 0
                 }
                 echo "Getting cache"
-                curl http://uploader:8080/golang-cache.tar|tar -x -f-
+                curl http://uploader:8080/golang-cache.tar|tar -x -f- || \
+                   curl -X DELETE -F "file=golang-cache.tar" http://uploader:8080/upload
             - name: unittest
               image: registry.redhat.io/rhel8/go-toolset:1.16.12-7
               workingDir: $(workspaces.source.path)
