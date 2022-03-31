@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/ktrysmt/go-bitbucket"
@@ -254,10 +253,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 			return setLoggerAndProceed()
 		}
 		if provider.Valid(event, []string{"pullrequest:comment_created"}) {
-			if matches, _ := regexp.MatchString(provider.RetestRegex, e.Comment.Content.Raw); matches {
+			if provider.IsRetestComment(e.Comment.Content.Raw) {
 				return setLoggerAndProceed()
 			}
-			if matches, _ := regexp.MatchString(provider.OktotestRegex, e.Comment.Content.Raw); matches {
+			if provider.IsOkToTestComment(e.Comment.Content.Raw) {
 				return setLoggerAndProceed()
 			}
 		}

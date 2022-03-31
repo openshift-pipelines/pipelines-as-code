@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -75,10 +74,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		return setLoggerAndProceed()
 	case *gitlab.MergeCommentEvent:
 		if gitEvent.MergeRequest.State == "opened" {
-			if matches, _ := regexp.MatchString(provider.RetestRegex, gitEvent.ObjectAttributes.Note); matches {
+			if provider.IsRetestComment(gitEvent.ObjectAttributes.Note) {
 				return setLoggerAndProceed()
 			}
-			if matches, _ := regexp.MatchString(provider.OktotestRegex, gitEvent.ObjectAttributes.Note); matches {
+			if provider.IsOkToTestComment(gitEvent.ObjectAttributes.Note) {
 				return setLoggerAndProceed()
 			}
 		}
