@@ -64,3 +64,5 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: K_METRICS_CONFIG
+              value: '{"Domain":"pipelinesascode.tekton.dev/controller","Component":"controller","PrometheusPort":0,"PrometheusHost":"","ConfigMap":{}}'
