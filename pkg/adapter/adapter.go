@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -84,6 +85,14 @@ func (l listener) handleEvent() http.HandlerFunc {
 		if err != nil {
 			l.run.Clients.Log.Errorf("failed to read body : %v", err)
 			response.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// payload validation
+		var event map[string]interface{}
+		if err := json.Unmarshal(payload, &event); err != nil {
+			l.run.Clients.Log.Errorf("Invalid event body format format: %s", err)
+			response.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
