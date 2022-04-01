@@ -67,7 +67,7 @@ spec:
                 msg="Release ${version}, Stable Tag: ${stable_tag}"
                 echo ${msg}
                 # Used by the ./hack/generate-releaseyaml script
-                export TARGET_PAC_VERSION=${version} TARGET_BRANCH=${version}
+                export PAC_VERSION=${version} TARGET_BRANCH=${version}
                 hack/upload-file-to-github.py \
                     --message "Release yaml generated for ${msg}" \
                     --owner-repository openshift-pipelines/pipelines-as-code \
