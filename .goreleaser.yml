@@ -40,19 +40,30 @@ release:
     - glob: ./release.k8s.yaml
   prerelease: true
   header: |
-    ## OpenShift Pipelines version $VERSION
+    # OpenShift Pipelines version {{.Tags}}
 
-    OpenShift Pipelines as Code version  has been released 🥳
+    OpenShift Pipelines as Code patch version {{.Tags}} has been released 🥳
 
-    To install this version you can just do :
+    TODO: XXXXX add high level changelog before setting this as released XXXXX
 
+    To install this version you can install the release.yaml with [`kubectl`](https://kubernetes.io/docs/tasks/tools/#kubectl) for your platform :
+
+    ## Installation
+
+    ### Openshift
     ```shell
-    kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.yaml
+    kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.yaml
+    ```
+    ### Kubernetes
+    ```shell
+    kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.k8s.yaml
     ```
 
-    and make sure you follow the setup documentation :
+    ### Documentation
 
-    https://github.com/openshift-pipelines/pipelines-as-code/tree/main/INSTALL.md
+    full install documentation is available here:
+
+    https://github.com/openshift-pipelines/pipelines-as-code/blob/stable/docs/install.md
 
 brews:
   - name: tektoncd-pac
