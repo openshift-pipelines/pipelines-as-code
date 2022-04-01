@@ -1,24 +1,46 @@
 #!/usr/bin/env python3
-# Upload a file to github directly to a branch
-# i.e: upload-file-to-github.py --branch-ref refs/heads/nightly \
-#    --owner-repository openshift-pipelines/pipelines-as-code \
-#    --token $(git config --get github.oauth-token) \
-#    --message "Automatically uploaded from branch blah" \
-#    --destination release.yaml --filename <(./hack/generate-releaseyaml.sh)
+# Upload a file to github directly to a branch and create tags and release branch
+# Example:
+#
+# ./hack/upload-file-to-github.py -t token \
+# --owner-repository owner/repo
+# --from-tag refs/heads/0.5.5 \
+# -f file.txt:dest.txt \
+# -f hello.txt:moto.txt
+# -m "Add file"
+# --update-tags=stable,0.5
+#
+# This will :
+#
+# - On Github owner/repo using the refs/heads/0.5.5 tag (can be a branch/sha or whatever git ref) using token token
+# - Create a branch from 0.5.5 tag
+# - Create the branch release-0.5.5
+# - Upload the file file.txt to the destination dest.txt
+# - Upload another file hello.txt to the destination moto.txt
+# - Force update or create the tag stable to point to the release-0.5.5 branch
+# - Force update or create the tag 0.5 to point to the release-0.5.5 branch
 import argparse
 import base64
 import http.client
 import json
 import os.path
+import re
 import urllib
 
+RE_RELEASE = re.compile(r"(\d+\.\d+)\.\d+")
+GIT_NAME = "Openshift Pipeline Release Team"
+GIT_EMAIL = "pipelines@redhat.com"
 
-def github_request(token: str,
-                   method: str,
-                   url: str,
-                   headers=None,
-                   data=None,
-                   params=None):
+
+def github_request(
+    token: str,
+    method: str,
+    url: str,
+    headers=None,
+    data=None,
+    params=None,
+    return_status_on_error: bool = False,
+):
     if not headers:
         headers = {}
 
@@ -41,7 +63,10 @@ def github_request(token: str,
         return github_request(token, method, response.headers["Location"])
 
     if response.status >= 400:
-        headers.pop('Authorization', None)
+        headers.pop("Authorization", None)
+        if return_status_on_error:
+            return (response, {})
+
         raise Exception(
             f"Error: {response.status} - {json.loads(response.read())} - {method} - {url} - {data} - {headers}"
         )
@@ -49,104 +74,147 @@ def github_request(token: str,
     return (response, json.loads(response.read()))
 
 
-def create_ref_from_tags(args):
+def make_or_update_ref(token, owner_repository, ref, sha: str) -> None:
     resp, jeez = github_request(
+        token,
+        "GET",
+        f"/repos/{owner_repository}/git/{ref}",
+        return_status_on_error=True,
+    )
+
+    if resp.status == 404 or jeez["ref"] != ref:
+        resp, _ = github_request(
+            token,
+            "POST",
+            f"/repos/{owner_repository}/git/refs",
+            data={
+                "ref": ref,
+                "sha": sha
+            },
+        )
+        print(f"{ref} has been created to {sha}")
+    else:
+        resp, _ = github_request(
+            token,
+            "PATCH",
+            f"/repos/{owner_repository}/git/{ref}",
+            data={
+                "ref": ref,
+                "sha": sha,
+                "force": True
+            },
+        )
+        print(f"{ref} has been updated to {sha}")
+
+
+def create_ref_from_tags(args):
+    _, jeez = github_request(
         args.token, "GET",
         f"/repos/{args.owner_repository}/git/{args.from_tag}")
     last_commit_sha = jeez["object"]["sha"]
     if jeez["object"]["type"] == "tag":
         _, jeez = github_request(args.token, "GET", jeez["object"]["url"])
-        last_commit_sha = jeez['object']["sha"]
+        last_commit_sha = jeez["object"]["sha"]
 
     print("TAG SHA: " + last_commit_sha)
 
-    branchname = f"release-{os.path.basename(args.from_tag)}"
+    basename = os.path.basename(args.from_tag)
+
+    branchname = f"release-{basename}"
     branch_ref = f"refs/heads/{branchname}"
-    print(f"Create branch: {branchname}")
-    try:
-        resp, jeez = github_request(args.token,
-                                    "POST",
-                                    f"/repos/{args.owner_repository}/git/refs",
-                                    data={
-                                        "ref": branch_ref,
-                                        "sha": last_commit_sha
-                                    })
-    except Exception as e:
-        raise e
     args.branch_ref = branch_ref
-    return upload_to_github(args)
+
+    print(f"Create or update branch: {branchname}")
+    make_or_update_ref(args.token, args.owner_repository, args.branch_ref,
+                       last_commit_sha)
+
+    new_sha = upload_to_github(args)
+    if args.update_tags:
+        for tag in args.update_tags.split(","):
+            make_or_update_ref(args.token, args.owner_repository,
+                               f"refs/tags/{tag}", new_sha)
+    return new_sha
 
 
 def upload_to_github(args):
+    last_commit_sha = None
     if not args.branch_ref:
         raise Exception("Need a branch-ref args")
+    if not args.filename:
+        raise Exception("Need at least one filename")
+
     # Get last commit SHA of a branch
-    resp, jeez = github_request(
+    _, jeez = github_request(
         args.token, "GET",
         f"/repos/{args.owner_repository}/git/{args.branch_ref}")
     last_commit_sha = jeez["object"]["sha"]
-    print("Last commit SHA: " + last_commit_sha)
 
-    base64content = base64.b64encode(open(args.filename, "rb").read())
-    resp, jeez = github_request(
-        args.token,
-        "POST",
-        f"/repos/{args.owner_repository}/git/blobs",
-        data={
-            "content": base64content.decode(),
-            "encoding": "base64"
-        },
-    )
-    blob_content_sha = jeez["sha"]
+    for entry in args.filename:
+        filename, dest = entry.split(":")
+        print(f"Upload file {filename} to {dest} based on {last_commit_sha}")
 
-    resp, jeez = github_request(
-        args.token,
-        "POST",
-        f"/repos/{args.owner_repository}/git/trees",
-        data={
-            "base_tree":
-            last_commit_sha,
-            "tree": [{
-                "path": args.destination,
-                "mode": "100644",
-                "type": "blob",
-                "sha": blob_content_sha,
-            }],
-        },
-    )
-    tree_sha = jeez["sha"]
-
-    resp, jeez = github_request(
-        args.token,
-        "POST",
-        f"/repos/{args.owner_repository}/git/commits",
-        data={
-            "message": args.message,
-            "author": {
-                "name": "Tekton as a Code",
-                "email": "pipelines@redhat.com",
+        base64content = base64.b64encode(open(filename, "rb").read())
+        _, jeez = github_request(
+            args.token,
+            "POST",
+            f"/repos/{args.owner_repository}/git/blobs",
+            data={
+                "content": base64content.decode(),
+                "encoding": "base64"
             },
-            "parents": [last_commit_sha],
-            "tree": tree_sha,
-        },
-    )
-    new_commit_sha = jeez["sha"]
+        )
+        blob_content_sha = jeez["sha"]
 
-    resp, jeez = github_request(
-        args.token,
-        "PATCH",
-        f"/repos/{args.owner_repository}/git/{args.branch_ref}",
-        data={"sha": new_commit_sha},
-    )
-    return (resp, jeez)
+        _, jeez = github_request(
+            args.token,
+            "POST",
+            f"/repos/{args.owner_repository}/git/trees",
+            data={
+                "base_tree":
+                last_commit_sha,
+                "tree": [{
+                    "path": dest,
+                    "mode": "100644",
+                    "type": "blob",
+                    "sha": blob_content_sha,
+                }],
+            },
+        )
+        tree_sha = jeez["sha"]
+
+        resp, jeez = github_request(
+            args.token,
+            "POST",
+            f"/repos/{args.owner_repository}/git/commits",
+            data={
+                "message": args.message,
+                "author": {
+                    "name": GIT_NAME,
+                    "email": GIT_EMAIL,
+                },
+                "parents": [last_commit_sha],
+                "tree": tree_sha,
+            },
+        )
+        last_commit_sha = jeez["sha"]
+
+        resp, jeez = github_request(
+            args.token,
+            "PATCH",
+            f"/repos/{args.owner_repository}/git/{args.branch_ref}",
+            data={"sha": last_commit_sha},
+        )
+    return last_commit_sha
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Upload a file to github ref')
-    parser.add_argument("--filename", "-f", required=True)
+    parser = argparse.ArgumentParser(description="Upload a file to github ref")
+    parser.add_argument("--filename", "-f", required=True, action='append')
     parser.add_argument("--message", "-m", required=True)
-    parser.add_argument("--destination", "-d", required=True)
     parser.add_argument("--owner-repository", "-o", required=True)
+    parser.add_argument(
+        "--update-tags",
+        help="Update tag (or multiple separated by comma) after upload to ref")
     parser.add_argument("--token", "-t", required=True)
     parser.add_argument("--branch-ref", "-r", required=False)
     parser.add_argument("--from-tag", required=False)
@@ -155,10 +223,9 @@ def parse_args():
 
 def main(args):
     if args.from_tag:
-        resp, jz = create_ref_from_tags(args)
+        create_ref_from_tags(args)
     else:
-        resp, jz = upload_to_github(args)
-    print(resp.status)
+        upload_to_github(args)
 
 
 if __name__ == "__main__":

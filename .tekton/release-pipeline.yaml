@@ -63,24 +63,17 @@ spec:
                     echo "No tags detected"
                     exit
                 }
-                msg="Release version ${version}"
+                stable_tag=${version%.*}.x
+                msg="Release ${version}, Stable Tag: ${stable_tag}"
                 echo ${msg}
-                export TARGET_BRANCH=${version}
-                export PAC_VERSION=${version}
                 hack/upload-file-to-github.py \
-                    --message "Release yaml generated for Release ${TARGET_BRANCH}" \
+                    --message "Release yaml generated for ${msg}" \
                     --owner-repository openshift-pipelines/pipelines-as-code \
                     --token ${HUB_TOKEN} \
-                    --from-tag=refs/tags/${TARGET_BRANCH} \
-                    -d release-${TARGET_BRANCH}.k8s.yaml -f <(./hack/generate-releaseyaml.sh)
-
-                hack/upload-file-to-github.py \
-                    --message "OpenShift release.yaml generated for Release ${TARGET_BRANCH}" \
-                    --owner-repository openshift-pipelines/pipelines-as-code \
-                    --token ${HUB_TOKEN} \
-                    --branch-ref refs/heads/release-${TARGET_BRANCH} \
-                    -d release-${TARGET_BRANCH}.yaml -f <(env TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh)
-                exit 0
+                    --update-tags=stable,${stable_tag} \
+                    --from-tag=refs/tags/${version} \
+                    -f <(./hack/generate-releaseyaml.sh):release.k8s.yaml \
+                    -f <(env TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh):release.yaml
       - name: gorelease
         runAfter:
           - release-yaml

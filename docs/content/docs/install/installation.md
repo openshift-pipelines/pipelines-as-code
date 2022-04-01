@@ -9,7 +9,7 @@ To install Pipelines as Code on your cluster you simply need to run this command
 
 ```shell
 VERSION=0.5.5
-kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.yaml
+kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.yaml
 ```
 
 If you would like to install the current development version you can simply
