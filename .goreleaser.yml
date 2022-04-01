@@ -1,5 +1,8 @@
-# This is an example goreleaser.yaml file with some sane defaults.
-# Make sure to check the documentation at http://goreleaser.com
+before:
+  hooks:
+    - /bin/sh -c "env TARGET_BRANCH={{.Tag}} TARGET_PAC_VERSION={{.Tag}} TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh  > release.yaml"
+    - /bin/sh -c "env TARGET_BRANCH={{.Tag}} TARGET_PAC_VERSION={{.Tag}} ./hack/generate-releaseyaml.sh  > release.k8s.yaml"
+
 builds:
   - env:
       - CGO_ENABLED=0
@@ -28,10 +31,13 @@ archives:
       - goos: windows
         format: zip
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 snapshot:
   name_template: "{{ .Tag }}-next"
 release:
+  extra_files:
+    - glob: ./release.yaml
+    - glob: ./release.k8s.yaml
   prerelease: true
   header: |
     ## OpenShift Pipelines version $VERSION
@@ -92,12 +98,12 @@ changelog:
   use: github
   filters:
     exclude:
-    - '^docs:'
-    - '^test:'
-    - Merge pull request
-    - Merge branch
-    - go mod tidy
+      - "^docs:"
+      - "^test:"
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
 
 universal_binaries:
-- replace: true
-  name_template: 'tkn-pac'
+  - replace: true
+    name_template: "tkn-pac"
