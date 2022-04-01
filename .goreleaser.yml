@@ -1,7 +1,7 @@
 before:
   hooks:
-    - /bin/sh -c "env TARGET_BRANCH={{.Tag}} TARGET_PAC_VERSION={{.Tag}} TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh  > release.yaml"
-    - /bin/sh -c "env TARGET_BRANCH={{.Tag}} TARGET_PAC_VERSION={{.Tag}} ./hack/generate-releaseyaml.sh  > release.k8s.yaml"
+    - /bin/sh -c "env TARGET_BRANCH={{.Tag}} PAC_VERSION={{.Tag}} TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh  > release.yaml"
+    - /bin/sh -c "env TARGET_BRANCH={{.Tag}} PAC_VERSION={{.Tag}} ./hack/generate-releaseyaml.sh  > release.k8s.yaml"
 
 builds:
   - env:
