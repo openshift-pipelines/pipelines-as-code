@@ -7,7 +7,7 @@ metadata:
     pipelinesascode.tekton.dev/on-event: "[push]"
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
     pipelinesascode.tekton.dev/task: "[git-clone, .tekton/tasks/buildah-user.yaml]"
-    pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]"  # send-slack-notifications task
+    pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]"
 spec:
   taskRunSpecs:
     - pipelineTaskName: push-to-registry
@@ -129,9 +129,13 @@ spec:
                 #!/usr/bin/env bash
                 set -eu
                 set +x # Do not show TOKEN in logs
-                hack/upload-file-to-github.py --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" --branch-ref refs/heads/nightly --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} -d release.k8s.yaml -f <(./hack/generate-releaseyaml.sh)
-
-                hack/upload-file-to-github.py --message "OpenShift release yaml generated from {{repo_url}}/commit/{{revision}}" --branch-ref refs/heads/nightly --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} -d release.yaml -f <(env TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh)
+                hack/upload-file-to-github.py \
+                --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" \
+                --branch-ref refs/heads/nightly \
+                --owner-repository openshift-pipelines/pipelines-as-code \
+                --token ${HUB_TOKEN} \
+                -f <(./hack/generate-releaseyaml.sh):release.k8s.yaml  \
+                -f <(env TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh):release.yaml
               workingDir: $(workspaces.source.path)
           workspaces:
             - name: source

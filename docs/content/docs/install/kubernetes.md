@@ -12,16 +12,15 @@ The release yaml to install pipelines are for the released version :
 
 ```shell
 VERSION=0.5.3
-kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release-$VERSION.k8s.yaml
+kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.k8s.yaml
 ```
 
 and for the nightly :
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/release-$VERSION/release.k8s.yaml
+kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/nightly/release.k8s.yaml
 ```
 
 If you have [Tekton Dashboard](https://github.com/tektoncd/dashboard). You can
 just add the key `tekton-dashboard-url` in the `pipelines-as-code` configmap
 set to the full url of the `Ingress` host to get tekton dashboard logs url.
-
