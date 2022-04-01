@@ -1,6 +1,7 @@
 package gitlab
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -574,4 +575,58 @@ func getLogger() *zap.SugaredLogger {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	return logger
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name        string
+		wantErr     bool
+		secretToken string
+		eventToken  string
+	}{
+		{
+			name:        "valid event",
+			wantErr:     false,
+			secretToken: "test",
+			eventToken:  "test",
+		},
+		{
+			name:        "fail validation, no secret defined",
+			wantErr:     true,
+			secretToken: "",
+			eventToken:  "test",
+		},
+		{
+			name:        "fail validation",
+			wantErr:     true,
+			secretToken: "secret",
+			eventToken:  "test",
+		},
+		{
+			name:        "fail validation, missing event token",
+			wantErr:     true,
+			secretToken: "secret",
+			eventToken:  "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &Provider{}
+
+			httpHeader := http.Header{}
+			httpHeader.Set("X-Gitlab-Token", tt.eventToken)
+
+			event := info.NewEvent()
+			event.Request = &info.Request{
+				Header: httpHeader,
+			}
+			event.Provider = &info.Provider{
+				WebhookSecret: tt.secretToken,
+			}
+
+			if err := v.Validate(context.TODO(), nil, event); (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

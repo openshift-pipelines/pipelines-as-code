@@ -45,6 +45,13 @@ type Provider struct {
 }
 
 func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
+	token := event.Request.Header.Get("X-Gitlab-Token")
+	if event.Provider.WebhookSecret == "" && token != "" {
+		return fmt.Errorf("gitlab failed validaton: failed to find webhook secret")
+	}
+	if event.Provider.WebhookSecret != token {
+		return fmt.Errorf("gitlab failed validaton: event's secret doesn't match with webhook secret")
+	}
 	return nil
 }
 

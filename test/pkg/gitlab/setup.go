@@ -32,6 +32,12 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitlab.Provider, erro
 			return nil, options.E2E{}, gitlab.Provider{}, fmt.Errorf("\"TEST_%s\" env variable is required, cannot continue", value)
 		}
 	}
+
+	gitlabWebhookSecret := os.Getenv("TEST_EL_WEBHOOK_SECRET")
+	if gitlabWebhookSecret == "" {
+		return nil, options.E2E{}, gitlab.Provider{}, fmt.Errorf("TEST_EL_WEBHOOK_SECRET env variable is required, cannot continue")
+	}
+
 	run := &params.Run{}
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return nil, options.E2E{}, gitlab.Provider{}, err
