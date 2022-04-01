@@ -83,13 +83,15 @@ func (l listener) handleEvent() http.HandlerFunc {
 		payload, err := ioutil.ReadAll(request.Body)
 		if err != nil {
 			l.run.Clients.Log.Errorf("failed to read body : %v", err)
+			response.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		// figure out which provider request coming from
 		gitProvider, logger, err := l.detectProvider(&request.Header, string(payload))
 		if err != nil || gitProvider == nil {
-			l.logger.Errorf("invalid event or got error while processing : %v", err)
+			response.WriteHeader(http.StatusOK)
+			fmt.Fprintf(response, `{"status": "%d", "message": "%v"}`, http.StatusOK, err)
 			return
 		}
 
@@ -120,53 +122,42 @@ func (l listener) handleEvent() http.HandlerFunc {
 func (l listener) detectProvider(reqHeader *http.Header, reqBody string) (provider.Interface, *zap.SugaredLogger, error) {
 	log := *l.logger
 
+	processRes := func(processEvent bool, provider provider.Interface, logger *zap.SugaredLogger, err error) (provider.Interface, *zap.SugaredLogger, error) {
+		if processEvent {
+			return provider, logger, nil
+		}
+		if err != nil {
+			errStr := fmt.Sprintf("got error while processing : %v", err)
+			logger.Error(errStr)
+			return nil, logger, fmt.Errorf(errStr)
+		}
+		logger.Info("skips processing event !")
+		return nil, logger, fmt.Errorf("skips processing event")
+	}
+
 	gitHub := &github.Provider{}
 	isGH, processReq, logger, err := gitHub.Detect(reqHeader, reqBody, &log)
 	if isGH {
-		if err != nil {
-			return nil, logger, err
-		}
-		if processReq {
-			return gitHub, logger, nil
-		}
-		return nil, nil, nil
+		return processRes(processReq, gitHub, logger, err)
 	}
 
 	bitServer := &bitbucketserver.Provider{}
 	isBitServer, processReq, logger, err := bitServer.Detect(reqHeader, reqBody, &log)
 	if isBitServer {
-		if err != nil {
-			return nil, logger, err
-		}
-		if processReq {
-			return bitServer, logger, nil
-		}
-		return nil, nil, nil
+		return processRes(processReq, bitServer, logger, err)
 	}
 
 	gitLab := &gitlab.Provider{}
 	isGitlab, processReq, logger, err := gitLab.Detect(reqHeader, reqBody, &log)
 	if isGitlab {
-		if err != nil {
-			return nil, logger, err
-		}
-		if processReq {
-			return gitLab, logger, nil
-		}
-		return nil, nil, nil
+		return processRes(processReq, gitLab, logger, err)
 	}
 
 	bitCloud := &bitbucketcloud.Provider{}
 	isBitCloud, processReq, logger, err := bitCloud.Detect(reqHeader, reqBody, &log)
 	if isBitCloud {
-		if err != nil {
-			return nil, logger, err
-		}
-		if processReq {
-			return bitCloud, logger, nil
-		}
-		return nil, nil, nil
+		return processRes(processReq, bitCloud, logger, err)
 	}
 
-	return nil, nil, fmt.Errorf("no supported Git Provider is detected")
+	return processRes(false, nil, logger, fmt.Errorf("no supported Git Provider is detected"))
 }

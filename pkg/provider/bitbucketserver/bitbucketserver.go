@@ -257,39 +257,37 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	// it is a Bitbucket server event
 	isBitServer = true
 
-	setLoggerAndProceed := func() (bool, bool, *zap.SugaredLogger, error) {
+	setLoggerAndProceed := func(processEvent bool, err error) (bool, bool, *zap.SugaredLogger, error) {
 		logger = logger.With("provider", "bitbucket-server", "event", reqHeader.Get("X-Request-Id"))
-		return isBitServer, true, logger, nil
+		return isBitServer, processEvent, logger, err
 	}
 
-	if err := json.Unmarshal([]byte(payload), &eventPayload); err != nil {
-		return isBitServer, false, logger, err
-	}
+	_ = json.Unmarshal([]byte(payload), &eventPayload)
 
 	switch e := eventPayload.(type) {
 	case *types.PullRequestEvent:
 		if provider.Valid(event, []string{"pr:from_ref_updated", "pr:opened"}) {
-			return setLoggerAndProceed()
+			return setLoggerAndProceed(true, nil)
 		}
 		if provider.Valid(event, []string{"pr:comment:added"}) {
 			if provider.IsRetestComment(e.Comment.Text) {
-				return setLoggerAndProceed()
+				return setLoggerAndProceed(true, nil)
 			}
 			if provider.IsOkToTestComment(e.Comment.Text) {
-				return setLoggerAndProceed()
+				return setLoggerAndProceed(true, nil)
 			}
 		}
-		return isBitServer, false, logger, nil
+		return setLoggerAndProceed(false, nil)
 
 	case *types.PushRequestEvent:
 		if provider.Valid(event, []string{"repo:refs_changed"}) {
 			if e.Changes != nil {
-				return setLoggerAndProceed()
+				return setLoggerAndProceed(true, nil)
 			}
 		}
-		return isBitServer, false, logger, nil
+		return setLoggerAndProceed(false, nil)
 
 	default:
-		return isBitServer, false, logger, fmt.Errorf("event %s is not supported", event)
+		return setLoggerAndProceed(false, fmt.Errorf("bitbucket-server: event %s is not supported", event))
 	}
 }
