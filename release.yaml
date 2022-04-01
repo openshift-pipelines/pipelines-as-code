@@ -845,7 +845,7 @@ spec:
           steps:
             - name: apply-and-launch
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.6"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:main"
               env:
                 - name: PAC_GIT_PROVIDER_APIURL
                   value: $(params.ghe_host)
@@ -1076,7 +1076,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.6"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:main"
               script: |
                 #!/usr/bin/env bash
                 set -euf
@@ -1257,7 +1257,7 @@ spec:
           steps:
             - name: apply-and-launch
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.6"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:main"
               env:
                 - name: PAC_GIT_PROVIDER_APIURL
                   value: $(params.ghe_host)
@@ -1428,7 +1428,7 @@ spec:
           steps:
             - name: apply-and-launch
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.6"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:main"
               env:
                 - name: PAC_GIT_PROVIDER_APIURL
                   value: $(params.ghe_host)
@@ -1702,7 +1702,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.6"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:main"
               script: |
                 #!/usr/bin/env bash
                 set -euf
@@ -1901,7 +1901,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.6"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:main"
               script: |
                 #!/usr/bin/env bash
                 set -euf
@@ -2196,7 +2196,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.6"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:main"
               script: |
                 #!/usr/bin/env bash
                 set -euf
@@ -2405,7 +2405,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.6"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:main"
               script: |
                 #!/usr/bin/env bash
                 set -euf
