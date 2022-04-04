@@ -73,7 +73,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 
 	switch gitEvent := eventInt.(type) {
 	case *gitlab.MergeEvent:
-		return setLoggerAndProceed()
+		if provider.Valid(gitEvent.ObjectAttributes.Action, []string{"open", "update", "reopen"}) {
+			return setLoggerAndProceed()
+		}
+		return isGL, false, logger, nil
 	case *gitlab.PushEvent:
 		return setLoggerAndProceed()
 	case *gitlab.MergeCommentEvent:

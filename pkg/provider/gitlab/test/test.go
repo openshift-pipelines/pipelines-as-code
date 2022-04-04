@@ -181,6 +181,7 @@ func (t TEvent) MREventAsJSON() string {
         "default_branch": "%s"
     },
     "object_attributes": {
+		"action": "open",
         "iid": %d,
         "source_project_id": %d,
         "title": "%s",

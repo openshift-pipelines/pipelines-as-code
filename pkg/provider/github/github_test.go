@@ -678,7 +678,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "pull request event",
 			event: github.PullRequestEvent{
-				Action: github.String("created"),
+				Action: github.String("opened"),
 			},
 			eventType:  "pull_request",
 			isGH:       true,
