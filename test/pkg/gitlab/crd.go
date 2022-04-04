@@ -19,8 +19,13 @@ func CreateCRD(ctx context.Context, projectinfo *gitlab.Project, run *params.Run
 	}
 
 	token, _ := os.LookupEnv("TEST_GITLAB_TOKEN")
+	webhookSecret, _ := os.LookupEnv("TEST_EL_WEBHOOK_SECRET")
 	apiURL, _ := os.LookupEnv("TEST_GITLAB_API_URL")
 	err = secret.Create(ctx, run, map[string]string{"token": token}, targetNS, "webhook-token")
+	if err != nil {
+		return err
+	}
+	err = secret.Create(ctx, run, map[string]string{"secret": webhookSecret}, targetNS, "webhook-secret")
 	if err != nil {
 		return err
 	}
@@ -31,8 +36,9 @@ func CreateCRD(ctx context.Context, projectinfo *gitlab.Project, run *params.Run
 		Spec: v1alpha1.RepositorySpec{
 			URL: projectinfo.WebURL,
 			GitProvider: &v1alpha1.GitProvider{
-				URL:    apiURL,
-				Secret: &v1alpha1.GitProviderSecret{Name: "webhook-token", Key: "token"},
+				URL:           apiURL,
+				Secret:        &v1alpha1.GitProviderSecret{Name: "webhook-token", Key: "token"},
+				WebhookSecret: &v1alpha1.GitProviderSecret{Name: "webhook-secret", Key: "secret"},
 			},
 		},
 	}
