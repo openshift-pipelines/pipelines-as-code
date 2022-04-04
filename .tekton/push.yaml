@@ -156,8 +156,6 @@ spec:
   workspaces:
     - name: source
       volumeClaimTemplate:
-        metadata:
-          creationTimestamp: null
         spec:
           accessModes:
             - ReadWriteOnce
