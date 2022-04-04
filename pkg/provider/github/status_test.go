@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -23,11 +24,43 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 	event := &info.Event{
 		Organization: "check",
 		Repository:   "info",
+		SHA:          "createCheckRunSHA",
 	}
 
-	err := gcvs.createCheckRunStatus(ctx, event, &info.PacOpts{LogURL: "http://nowhere"}, provider.StatusOpts{Status: "hello moto"})
+	err := gcvs.getOrUpdateCheckRunStatus(ctx, event, &info.PacOpts{LogURL: "http://nowhere"}, provider.StatusOpts{Status: "hello moto"})
 	assert.NilError(t, err)
 	assert.Equal(t, *event.CheckRunID, int64(555))
+}
+
+func TestGetExistingCheckRunID(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	client, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+
+	gvcs := &Provider{
+		Client: client,
+	}
+	event := &info.Event{
+		Organization: "owner",
+		Repository:   "repository",
+		SHA:          "sha",
+	}
+
+	checkRunID := int64(55555)
+	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA), func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintf(w, `{
+			"total_count": 1,
+			"check_runs": [
+				{
+					"id": %v
+				}
+			]
+		}`, checkRunID)
+	})
+
+	id, err := gvcs.getExistingCheckRunID(ctx, event)
+	assert.NilError(t, err)
+	assert.Equal(t, *id, checkRunID)
 }
 
 func TestGithubProviderCreateStatus(t *testing.T) {
@@ -306,6 +339,66 @@ func TestGetCheckName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := getCheckName(tt.args.status, tt.args.pacopts); got != tt.want {
 				t.Errorf("getCheckName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProviderGetExistingCheckRunID(t *testing.T) {
+	tests := []struct {
+		name       string
+		jsonret    string
+		expectedID *int64
+		wantErr    bool
+	}{
+		{
+			name: "has check runs",
+			jsonret: `{
+			"total_count": 1,
+			"check_runs": [
+				{
+					"id": 55555
+				}
+			]
+		}`,
+			expectedID: github.Int64(55555),
+		},
+		{
+			name:       "no check runs",
+			jsonret:    `{"total_count": 0,"check_runs": []}`,
+			expectedID: nil,
+		},
+		{
+			name:       "error it",
+			jsonret:    `BLAHALALACLCALWA`,
+			expectedID: nil,
+			wantErr:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			client, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			event := &info.Event{
+				Organization: "owner",
+				Repository:   "repository",
+				SHA:          "sha",
+			}
+			v := &Provider{
+				Client: client,
+			}
+			mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA), func(w http.ResponseWriter, r *http.Request) {
+				_, _ = fmt.Fprintf(w, tt.jsonret)
+			})
+
+			got, err := v.getExistingCheckRunID(ctx, event)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getExistingCheckRunID() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.expectedID) {
+				t.Errorf("getExistingCheckRunID() got = %v, want %v", got, tt.expectedID)
 			}
 		})
 	}

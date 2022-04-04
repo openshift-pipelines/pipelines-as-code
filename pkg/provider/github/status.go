@@ -35,25 +35,53 @@ func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 	return status.OriginalPipelineRunName
 }
 
-// createCheckRunStatus create a status via the checkRun API, which is only
+func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event) (*int64, error) {
+	res, _, err := v.Client.Checks.ListCheckRunsForRef(ctx, runevent.Organization, runevent.Repository,
+		runevent.SHA, &github.ListCheckRunsOptions{
+			AppID: v.ApplicationID,
+		})
+	if err != nil {
+		return nil, err
+	}
+	if *res.Total > 0 {
+		// Their should be only one, since we CRUD it.. maybe one day we
+		// will offer the ability to do multiple pipelineruns per commit then
+		// things will get more complicated here.
+		return res.CheckRuns[0].ID, nil
+	}
+	return nil, nil
+}
+
+func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) (*int64, error) {
+	now := github.Timestamp{Time: time.Now()}
+	checkrunoption := github.CreateCheckRunOptions{
+		Name:       getCheckName(status, pacopts),
+		HeadSHA:    runevent.SHA,
+		Status:     github.String("in_progress"),
+		DetailsURL: github.String(pacopts.LogURL),
+		StartedAt:  &now,
+	}
+
+	checkRun, _, err := v.Client.Checks.CreateCheckRun(ctx, runevent.Organization, runevent.Repository, checkrunoption)
+	if err != nil {
+		return nil, err
+	}
+	return checkRun.ID, nil
+}
+
+// getOrUpdateCheckRunStatus create a status via the checkRun API, which is only
 // available with Github apps tokens.
-func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
+func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
+	var err error
+
 	now := github.Timestamp{Time: time.Now()}
 	if runevent.CheckRunID == nil {
-		now := github.Timestamp{Time: time.Now()}
-		checkrunoption := github.CreateCheckRunOptions{
-			Name:       getCheckName(status, pacopts),
-			HeadSHA:    runevent.SHA,
-			Status:     github.String("in_progress"),
-			DetailsURL: github.String(pacopts.LogURL),
-			StartedAt:  &now,
+		if runevent.CheckRunID, _ = v.getExistingCheckRunID(ctx, runevent); runevent.CheckRunID == nil {
+			runevent.CheckRunID, err = v.createCheckRunStatus(ctx, runevent, pacopts, status)
+			if err != nil {
+				return err
+			}
 		}
-
-		checkRun, _, err := v.Client.Checks.CreateCheckRun(ctx, runevent.Organization, runevent.Repository, checkrunoption)
-		if err != nil {
-			return err
-		}
-		runevent.CheckRunID = checkRun.ID
 	}
 
 	checkRunOutput := &github.CheckRunOutput{
@@ -78,7 +106,7 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 		opts.Conclusion = &status.Conclusion
 	}
 
-	_, _, err := v.Client.Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *runevent.CheckRunID, opts)
+	_, _, err = v.Client.Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *runevent.CheckRunID, opts)
 	return err
 }
 
@@ -156,5 +184,5 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, pacop
 	if runevent.Provider.InfoFromRepo {
 		return v.createStatusCommit(ctx, runevent, pacopts, status)
 	}
-	return v.createCheckRunStatus(ctx, runevent, pacopts, status)
+	return v.getOrUpdateCheckRunStatus(ctx, runevent, pacopts, status)
 }
