@@ -26,8 +26,8 @@ func getLatestRelease(ctx context.Context, k8release string) (string, string, er
 		return "", "", err
 	}
 	return release.GetTagName(),
-		fmt.Sprintf("%s/%s/%s/release-%s/release-%s%s.yaml",
-			rawGHURL, pacGHRepoOwner, pacGHRepoName, release.GetTagName(), release.GetTagName(), k8release),
+		fmt.Sprintf("%s/%s/%s/release-%s/release%s.yaml",
+			rawGHURL, pacGHRepoOwner, pacGHRepoName, release.GetTagName(), k8release),
 		nil
 }
 

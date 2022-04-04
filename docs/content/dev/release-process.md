@@ -7,21 +7,22 @@ title: Pipelines as Code Release Process
 * Wait that CI is connected.
 * Make sure the CI PAC cluster is up.
 * Make sure you have gpg signing [setup](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification) for your commits.
-* You need to install python package semver :
 
-```
-pip3 install --user semver
-```
+* Prepare to tag the release with a version, you need to choose between a major release/minor or patch release.
 
-* Use this script which should do most things : 
+* If for example you choose to do the release 1.2.3 you tag it locally :
 
-```
-./hack/make-release.sh
+```shell
+git tag 1.2.3
 ```
 
-* Choose a version if it's a major release/minor or patch release and let it push the new tags which should kick off pipelines as code [release pipelines](.tekton/release-pipeline.yaml).
+* And pushing it directly to the repo (you need access) :
 
-* When it started you can follow it on the pac cluster : 
+```shell
+% NOTESTS=ci git push git@github.com:openshift-pipelines/pipelines-as-code refs/tags/1.2.3
+```
+
+* When it started you can follow it on the pac cluster :
 
 `tkn pr logs -n pipelines-as-code-ci -Lf`
 
@@ -37,15 +38,13 @@ pip3 install --user semver
 
 * [Arch AUR](https://aur.archlinux.org/packages/tkn-pac): Ping chmouel for an update
 
-# Issues you may see 
+# Issues you may see
 
 * Sometime there may be some issues with system or others. If you need to rekick the release process you need to :
 
 ```shell
-   git push --delete git@github.com:openshift-pipelines/pipelines-as-code release-1.2.3
-   git push --delete git@github.com:openshift-pipelines/pipelines-as-code 1.2.3
-   git tag --sign --force 1.2.3 
-   git push git@github.com:openshift-pipelines/pipelines-as-code 1.2.3
+   git tag --sign --force 1.2.3
+   git push --force git@github.com:openshift-pipelines/pipelines-as-code 1.2.3
 ```
 
 * Some issues may be with the github token which may be expired or badly generated with a \n.
