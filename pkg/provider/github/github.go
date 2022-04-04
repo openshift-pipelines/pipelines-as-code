@@ -17,6 +17,7 @@ const apiPublicURL = "https://api.github.com/"
 type Provider struct {
 	Client        *github.Client
 	Token, APIURL *string
+	ApplicationID *int64
 }
 
 func (v *Provider) GetConfig() *info.ProviderConfig {
