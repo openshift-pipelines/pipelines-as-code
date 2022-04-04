@@ -54,6 +54,7 @@ func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, g
 	if err != nil {
 		return "", fmt.Errorf("could not parse the github application_id number from secret: %w", err)
 	}
+	v.ApplicationID = &applicationID
 
 	privateKey := secret.Data["github-private-key"]
 
