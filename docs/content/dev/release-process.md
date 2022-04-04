@@ -8,7 +8,7 @@ title: Pipelines as Code Release Process
 * Make sure the CI PAC cluster is up.
 * Make sure you have gpg signing [setup](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification) for your commits.
 
-* Prepare to tag the releasw with a version, you need to choose between a major release/minor or patch release.
+* Prepare to tag the release with a version, you need to choose between a major release/minor or patch release.
 
 * If for example you choose to do the release 1.2.3 you tag it locally :
 
