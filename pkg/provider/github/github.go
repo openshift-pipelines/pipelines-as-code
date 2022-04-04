@@ -70,21 +70,36 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 
 // GetTektonDir Get all yaml files in tekton directory return as a single concated file
 func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path string) (string, error) {
-	fp, objects, resp, err := v.Client.Repositories.GetContents(ctx, runevent.Organization,
-		runevent.Repository, path, &github.RepositoryContentGetOptions{Ref: runevent.SHA})
+	tektonDirSha := ""
 
-	if fp != nil {
-		return "", fmt.Errorf("the object %s is a file instead of a directory", path)
-	}
-	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
-		return "", nil
-	}
-
+	rootobjects, _, err := v.Client.Git.GetTree(ctx, runevent.Organization, runevent.Repository, runevent.SHA, false)
 	if err != nil {
 		return "", err
 	}
+	for _, object := range rootobjects.Entries {
+		if object.GetPath() == path {
+			if object.GetType() != "tree" {
+				return "", fmt.Errorf("%s has been found but is not a directory", path)
+			}
+			tektonDirSha = object.GetSHA()
+		}
+	}
 
-	return v.concatAllYamlFiles(ctx, objects, runevent)
+	// If we didn't find a .tekton directory then just silently ignore the error.
+	if tektonDirSha == "" {
+		return "", nil
+	}
+
+	// Get all files in the .tekton directory recursively
+	// there is a limit on this recursive calls to 500 entries, as documented here:
+	// https://docs.github.com/en/rest/reference/git#get-a-tree
+	// so we may need to address it in the future.
+	tektonDirObjects, _, err := v.Client.Git.GetTree(ctx, runevent.Organization, runevent.Repository, tektonDirSha,
+		true)
+	if err != nil {
+		return "", err
+	}
+	return v.concatAllYamlFiles(ctx, tektonDirObjects.Entries, runevent)
 }
 
 // GetCommitInfo get info (url and title) on a commit in runevent, this needs to
@@ -115,16 +130,13 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 		ref = runevent.BaseBranch
 	}
 
-	fp, objects, resp, err := v.Client.Repositories.GetContents(ctx, runevent.Organization,
+	fp, objects, _, err := v.Client.Repositories.GetContents(ctx, runevent.Organization,
 		runevent.Repository, path, &github.RepositoryContentGetOptions{Ref: ref})
 	if err != nil {
 		return "", err
 	}
 	if objects != nil {
 		return "", fmt.Errorf("referenced file inside the Github Repository %s is a directory", path)
-	}
-	if resp.Response.StatusCode == http.StatusNotFound {
-		return "", fmt.Errorf("cannot find %s in this repository", path)
 	}
 
 	getobj, err := v.getObject(ctx, fp.GetSHA(), runevent)
@@ -136,12 +148,12 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 }
 
 // concatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string
-func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []*github.RepositoryContent, runevent *info.Event) (string, error) {
+func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []*github.TreeEntry, runevent *info.Event) (string, error) {
 	var allTemplates string
 
 	for _, value := range objects {
-		if strings.HasSuffix(value.GetName(), ".yaml") ||
-			strings.HasSuffix(value.GetName(), ".yml") {
+		if strings.HasSuffix(value.GetPath(), ".yaml") ||
+			strings.HasSuffix(value.GetPath(), ".yml") {
 			data, err := v.getObject(ctx, value.GetSHA(), runevent)
 			if err != nil {
 				return "", err

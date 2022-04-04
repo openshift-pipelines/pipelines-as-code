@@ -3,14 +3,11 @@ package pipelineascode
 import (
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -40,36 +37,6 @@ func replyString(mux *http.ServeMux, url, body string) {
 	mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, body)
 	})
-}
-
-func testSetupTektonDir(mux *http.ServeMux, runevent info.Event, directory string) {
-	var tektonDirContent string
-	_ = filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
-		basename := filepath.Base(path)
-		trimmed := strings.TrimSuffix(basename, filepath.Ext(basename))
-		if info == nil {
-			return fmt.Errorf("should not be nil: %s", directory)
-		}
-		tektonDirContent += fmt.Sprintf(`{
-			"name": "%s",
-			"path": ".tekton/%s",
-			"sha": "shaof%s",
-			"size": %d,
-			"type": "file"
-		},`, basename, basename, trimmed, info.Size())
-
-		contentB, _ := ioutil.ReadFile(path)
-		replyString(mux,
-			fmt.Sprintf("/repos/%s/%s/git/blobs/shaof%s", runevent.Organization, runevent.Repository, trimmed),
-			fmt.Sprintf(`{"encoding": "base64","content": "%s"}`,
-				base64.StdEncoding.EncodeToString(contentB)))
-
-		return nil
-	})
-
-	replyString(mux,
-		fmt.Sprintf("/repos/%s/%s/contents/.tekton", runevent.Organization, runevent.Repository),
-		fmt.Sprintf("[%s]", strings.TrimSuffix(tektonDirContent, ",")))
 }
 
 func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, finalStatus, finalStatusText string, noReplyOrgPublicMembers bool) {
@@ -359,7 +326,7 @@ func TestRun(t *testing.T) {
 
 			testSetupCommonGhReplies(t, mux, tt.runevent, tt.finalStatus, tt.finalStatusText, tt.skipReplyingOrgPublicMembers)
 			if tt.tektondir != "" {
-				testSetupTektonDir(mux, tt.runevent, tt.tektondir)
+				ghtesthelper.SetupGitTree(t, mux, tt.tektondir, &tt.runevent, false)
 			}
 
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)

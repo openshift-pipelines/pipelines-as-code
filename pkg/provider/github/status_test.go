@@ -19,8 +19,19 @@ import (
 
 func TestGithubProviderCreateCheckRun(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gcvs, teardown := setupFakesURLS()
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+	gcvs := Provider{
+		Client: fakeclient,
+	}
 	defer teardown()
+	mux.HandleFunc("/repos/check/info/check-runs", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"id": 555}`)
+	})
+
+	mux.HandleFunc("/repos/check/info/check-runs/555", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprint(w, `{"id": 555}`)
+	})
+
 	event := &info.Event{
 		Organization: "check",
 		Repository:   "info",

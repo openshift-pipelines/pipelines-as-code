@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"crypto/hmac"
+	"strings"
 
 	// nolint: gosec
 	"crypto/sha1"
@@ -20,7 +21,6 @@ import (
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	rtesting "knative.dev/pkg/reconciler/testing"
 
-	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -32,270 +32,133 @@ func getLogger() *zap.SugaredLogger {
 	return logger
 }
 
-func setupFakesURLS() (client Provider, teardown func()) {
-	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
-
-	mux.HandleFunc("/repos/check/info/check-runs", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{"id": 555}`)
-	})
-
-	mux.HandleFunc("/repos/check/info/check-runs/555", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{"id": 555}`)
-	})
-
-	mux.HandleFunc("/repos/check/info/check-runs/2026", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{"id": 666}`)
-	})
-
-	mux.HandleFunc("/repos/foo/bar/contents/README.md", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{
-"name": "README.md",
-"sha": "readmemdsha",
-"type": "file"
-}`)
-	})
-
-	mux.HandleFunc("/repos/foo/bar/git/blobs/readmemdsha", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{
-"name": "README.md",
-"content": "aGVsbG8gbW90bwo=",
-"encoding": "base64"
-}`)
-	})
-
-	mux.HandleFunc("/repos/tekton/dir/git/blobs/pipelineyaml", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{
-"name": "README.md",
-"content": "aGVsbG8gcGlwZWxpbmV5YW1s",
-"encoding": "base64"
-}`)
-	})
-
-	mux.HandleFunc("/repos/tekton/dir/git/blobs/runyaml", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{
-"name": "README.md",
-"content": "aGVsbG8gcnVueWFtbA==",
-"encoding": "base64"
-}`)
-	})
-
-	mux.HandleFunc("/repos/tekton/dir/git/blobs/tektonyaml", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{
-"name": "README.md",
-"content": "aGVsbG8gdGVrdG9ueWFtbA==",
-"encoding": "base64"
-}`)
-	})
-
-	mux.HandleFunc("/repos/tekton/dir/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `[{
-
-				  "name": "pipeline.yaml",
-				  "path": ".tekton/pipeline.yaml",
-				  "sha": "pipelineyaml",
-				  "type": "file"
-				},
-				{
-				  "name": "run.yaml",
-				  "path": ".tekton/run.yaml",
-				  "sha": "runyaml",
-				  "type": "file"
-				}]`)
-	})
-	mux.HandleFunc("/repos/throw/error/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, "ERRROR")
-	})
-
-	mux.HandleFunc("/repos/its/afile/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{
-"name": ".tekton",
-"sha": "decfae2653959f7c6c25f21f026c3819bea41ecf",
-"type": "file",
-"content": "WyFbQ29udGFpbmVyIFJlcG9zaXRvcnkgb24gUXVheV0oaHR0cHM6Ly9xdWF5\nLmlvL3JlcG9zaXRvcnkvY2htb3VlbC90ZWt0b24tYXNhLWNvZGUvc3RhdHVz"}`)
-	})
-	mux.HandleFunc("/repos/pas/la/contents/.tekton", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	})
-
-	gcvs := Provider{
-		Client: fakeclient,
+func TestGetTektonDir(t *testing.T) {
+	testGetTektonDir := []struct {
+		treepath       string
+		event          *info.Event
+		name           string
+		expectedString string
+	}{
+		{
+			name: "test no subtree",
+			event: &info.Event{
+				Organization: "tekton",
+				Repository:   "cat",
+				SHA:          "123",
+			},
+			expectedString: "PipelineRun",
+			treepath:       "testdata/tree/simple",
+		},
+		{
+			name: "test with subtree",
+			event: &info.Event{
+				Organization: "tekton",
+				Repository:   "cat",
+				SHA:          "123",
+			},
+			expectedString: "FROMSUBTREE",
+			treepath:       "testdata/tree/subdir",
+		},
 	}
-	return gcvs, teardown
+	for _, tt := range testGetTektonDir {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			gvcs := Provider{
+				Client: fakeclient,
+			}
+			shaDir := fmt.Sprintf("%x", sha256.Sum256([]byte(tt.treepath)))
+			tt.event.SHA = shaDir
+			ghtesthelper.SetupGitTree(t, mux, tt.treepath, tt.event, false)
+
+			got, err := gvcs.GetTektonDir(ctx, tt.event, ".tekton")
+			assert.NilError(t, err)
+			assert.Assert(t, strings.Contains(got, tt.expectedString), "expected %s, got %s", tt.expectedString, got)
+		})
+	}
 }
 
 func TestGetFileInsideRepo(t *testing.T) {
-	ctx, _ := rtesting.SetupFakeContext(t)
-	gcvs, teardown := setupFakesURLS()
-	defer teardown()
-	type args struct {
-		path      string
-		runevent  info.Event
-		assertion func(t *testing.T, got string, err error)
-	}
-
 	testGetTektonDir := []struct {
-		name string
-		args args
+		name       string
+		rets       map[string]func(w http.ResponseWriter, r *http.Request)
+		filepath   string
+		wantErrStr string
 	}{
 		{
-			name: "testgood",
-			args: args{
-				assertion: func(t *testing.T, got string, err error) {
-					assert.NilError(t, err)
-				},
-				path: "README.md",
-				runevent: info.Event{
-					Organization: "foo",
-					Repository:   "bar",
+			name:     "fail/trying to get a subdir",
+			filepath: "retdir",
+			rets: map[string]func(w http.ResponseWriter, r *http.Request){
+				"/repos/tekton/thecat/contents/retdir": func(w http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(w, `[{"name": "directory", "path": "a/directory"}]`)
 				},
 			},
+
+			wantErrStr: "referenced file inside the Github Repository retdir is a directory",
 		},
 		{
-			name: "notfound",
-			args: args{
-				assertion: func(t *testing.T, got string, err error) {
-					assert.ErrorContains(t, err, "404")
-				},
-				path: ".tekton",
-				runevent: info.Event{
-					Organization: "pas",
-					Repository:   "la",
+			name:     "fail/bad json",
+			filepath: "retfile",
+			rets: map[string]func(w http.ResponseWriter, r *http.Request){
+				"/repos/tekton/thecat/contents/retfile": func(w http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(w, `nonono`)
 				},
 			},
+
+			wantErrStr: "invalid character",
 		},
 		{
-			name: "file_should_be_a_dir",
-			args: args{
-				assertion: func(t *testing.T, got string, err error) {
-					assert.ErrorContains(t, err, "is a directory")
+			name:     "fail/bad encoding",
+			filepath: "retfile",
+			rets: map[string]func(w http.ResponseWriter, r *http.Request){
+				"/repos/tekton/thecat/contents/retfile": func(w http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(w, `{"name": "file", "path": "a/file", "sha": "shafile"}`)
 				},
-				path: ".tekton",
-				runevent: info.Event{
-					Organization: "tekton",
-					Repository:   "dir",
+				"/repos/tekton/thecat/git/blobs/shafile": func(w http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(w, `{"content": "xxxxxx", "sha": "shafile"}`)
 				},
 			},
+
+			wantErrStr: "illegal base64 data",
 		},
 		{
-			name: "throwerror",
-			args: args{
-				assertion: func(t *testing.T, got string, err error) {
-					assert.ErrorContains(t, err, "invalid character")
-				},
-				path: ".tekton",
-				runevent: info.Event{
-					Organization: "throw",
-					Repository:   "error",
+			name:     "error/cannot get blob",
+			filepath: "retfile",
+			rets: map[string]func(w http.ResponseWriter, r *http.Request){
+				"/repos/tekton/thecat/contents/retfile": func(w http.ResponseWriter, _ *http.Request) {
+					fmt.Fprint(w, `{"name": "file", "path": "a/file", "sha": "shafile"}`)
 				},
 			},
+
+			wantErrStr: "404",
 		},
 	}
 	for _, tt := range testGetTektonDir {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gcvs.GetFileInsideRepo(ctx, &tt.args.runevent, tt.args.path, "")
-			tt.args.assertion(t, got, err)
+			ctx, _ := rtesting.SetupFakeContext(t)
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			gvcs := Provider{
+				Client: fakeclient,
+			}
+			for s, f := range tt.rets {
+				mux.HandleFunc(s, f)
+			}
+			event := &info.Event{
+				Organization: "tekton",
+				Repository:   "thecat",
+				SHA:          "123",
+			}
+			got, err := gvcs.GetFileInsideRepo(ctx, event, tt.filepath, "")
+			if tt.wantErrStr != "" {
+				assert.Assert(t, err != nil, "we should have get an error here")
+				assert.Assert(t, strings.Contains(err.Error(), tt.wantErrStr), err.Error(), tt.wantErrStr)
+				return
+			}
+			assert.NilError(t, err)
+			assert.Assert(t, got != "")
 		})
-	}
-}
-
-func TestGetTektonDir(t *testing.T) {
-	ctx, _ := rtesting.SetupFakeContext(t)
-	gcvs, teardown := setupFakesURLS()
-	defer teardown()
-
-	type args struct {
-		path      string
-		runevent  info.Event
-		assertion func(t *testing.T, got string, err error)
-	}
-
-	testGetTektonDir := []struct {
-		name string
-		args args
-	}{
-		{
-			name: "testgood",
-			args: args{
-				assertion: func(t *testing.T, got string, err error) {
-					assert.NilError(t, err)
-					assert.Assert(t, got != "")
-				},
-				path: ".tekton",
-				runevent: info.Event{
-					Organization: "tekton",
-					Repository:   "dir",
-				},
-			},
-		},
-		{
-			name: "notfound",
-			args: args{
-				assertion: func(t *testing.T, got string, err error) {
-					assert.NilError(t, err)
-					assert.Assert(t, got == "")
-				},
-				path: ".tekton",
-				runevent: info.Event{
-					Organization: "pas",
-					Repository:   "la",
-				},
-			},
-		},
-		{
-			name: "tektondirisafile",
-			args: args{
-				assertion: func(t *testing.T, got string, err error) {
-					assert.Error(t, err, "the object .tekton is a file instead of a directory")
-					assert.Assert(t, got == "")
-				},
-				path: ".tekton",
-				runevent: info.Event{
-					Organization: "its",
-					Repository:   "afile",
-				},
-			},
-		},
-		{
-			name: "throwerror",
-			args: args{
-				assertion: func(t *testing.T, got string, err error) {
-					assert.ErrorContains(t, err, "invalid character")
-					assert.Assert(t, got == "")
-				},
-				path: ".tekton",
-				runevent: info.Event{
-					Organization: "throw",
-					Repository:   "error",
-				},
-			},
-		},
-	}
-	for _, tt := range testGetTektonDir {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := gcvs.GetTektonDir(ctx, &tt.args.runevent, tt.args.path)
-			tt.args.assertion(t, got, err)
-		})
-	}
-}
-
-func TestGetTektonDirTemplate(t *testing.T) {
-	const expected = `
-hello pipelineyaml
----
-hello runyaml
-`
-	ctx, _ := rtesting.SetupFakeContext(t)
-	gcvs, teardown := setupFakesURLS()
-	defer teardown()
-	runevent := &info.Event{
-		Organization: "tekton",
-		Repository:   "dir",
-	}
-
-	got, err := gcvs.GetTektonDir(ctx, runevent, ".tekton")
-	assert.NilError(t, err)
-	if d := cmp.Diff(got, expected); d != "" {
-		t.Fatalf("-got, +want: %v", d)
 	}
 }
 
@@ -761,9 +624,9 @@ func TestValidate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			v := &Provider{}
 
-			hmac := hmac.New(tt.hashFunc, []byte(tt.secret))
-			hmac.Write([]byte(tt.payload))
-			signature := hex.EncodeToString(hmac.Sum(nil))
+			hm := hmac.New(tt.hashFunc, []byte(tt.secret))
+			hm.Write([]byte(tt.payload))
+			signature := hex.EncodeToString(hm.Sum(nil))
 
 			httpHeader := http.Header{}
 			httpHeader.Add(tt.header, fmt.Sprintf("%s=%s", tt.prefixheader, signature))
