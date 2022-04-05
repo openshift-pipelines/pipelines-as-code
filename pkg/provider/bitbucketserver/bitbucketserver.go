@@ -271,7 +271,7 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		if provider.Valid(event, []string{"pr:from_ref_updated", "pr:opened"}) {
 			return setLoggerAndProceed()
 		}
-		if provider.Valid(event, []string{"pr:comment:added", "pr:comment:edited"}) {
+		if provider.Valid(event, []string{"pr:comment:added"}) {
 			if provider.IsRetestComment(e.Comment.Text) {
 				return setLoggerAndProceed()
 			}

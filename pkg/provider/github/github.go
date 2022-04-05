@@ -243,7 +243,7 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		return isGH, false, logger, nil
 
 	case *github.PullRequestEvent:
-		if provider.Valid(gitEvent.GetAction(), []string{"created", "synchronize", "opened"}) {
+		if provider.Valid(gitEvent.GetAction(), []string{"opened", "synchronize", "reopened"}) {
 			return setLoggerAndProceed()
 		}
 		return isGH, false, logger, nil
