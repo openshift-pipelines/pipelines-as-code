@@ -1,31 +1,48 @@
 ---
-title: Infrastructure install
+title: Installation
 weight: 2
 ---
-# Manual install
+# Installation
 
-To install Pipelines as Code on your cluster you simply need to run this command
-:
+## Operator Install
+
+The easiest way to install Pipelines as Code on OpenShift is with the [Red Hat Openshift Pipelines Operator](https://docs.openshift.com/container-platform/latest/cicd/pipelines/installing-pipelines.html).
+
+On the Openshift Pipelines Operator the default namespace is `openshift-pipelines`.
+
+## Manual Install
+
+If you would like to do a manual installation of the stable release of Pipelines as Code
+on your OpenShift cluster you can apply the template with kubectl :
 
 ```shell
-VERSION=0.5.5
+# OpenShift
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.yaml
+
+# Kubernetes
+kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.k8s.yaml
 ```
 
 If you would like to install the current development version you can simply
 install it like this :
 
 ```shell
+# OpenShift
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/nightly/release.yaml
+
+# Kubernetes
+kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/nightly/release.k8s.yaml
 ```
 
-This will apply the `release.yaml` to your kubernetes cluster, creating the admin
+This will apply the `release.yaml` to your OpenShift cluster, creating the admin
 namespace `pipelines-as-code`, the roles and all other bits needed.
 
 The `pipelines-as-code` namespace is where the Pipelines-as-Code infrastructure
 runs and is supposed to be accessible only by the admins.
 
-The Route URL for the Pipelines as Code Controller is automatically created when
+### OpenShift
+
+On Openshift the Route URL for the Pipelines as Code Controller is automatically created when
 you apply the release.yaml. You will need to reference this url when configuring
 your github provider.
 
@@ -34,6 +51,10 @@ You can run this command to get the route created on your cluster:
 ```shell
 echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
 ```
+
+### Kubernetes
+
+Kubernetes installation is a bit more involved head over [here](./kubernetes) for more details.
 
 ## RBAC
 
