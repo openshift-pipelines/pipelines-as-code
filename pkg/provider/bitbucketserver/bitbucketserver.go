@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
+	"github.com/google/go-github/v43/github"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -31,12 +32,12 @@ type Provider struct {
 }
 
 func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
-	return nil
+	signature := event.Request.Header.Get("X-Hub-Signature")
+	if event.Provider.WebhookSecret == "" && signature != "" {
+		return fmt.Errorf("bitbucket-server failed validaton: failed to find webhook secret")
+	}
+	return github.ValidateSignature(signature, event.Request.Payload, []byte(event.Provider.WebhookSecret))
 }
-
-// func (v *Provider) ParseEventType(request *http.Request, event *info.Event) error {
-//	panic("implement me")
-// }
 
 // sanitizeTitle make sure we only get the tile by remove everything after \n.
 func sanitizeTitle(s string) string {
