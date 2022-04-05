@@ -74,6 +74,10 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			gopt.IOStreams = createOpts.ioStreams
 			gopt.CLIOpts = createOpts.cliOpts
 
+			// defaulting the values for repo create command
+			gopt.Event.EventType = "[pull_request, push]"
+			gopt.Event.BaseBranch = "main"
+
 			return generate.Generate(gopt)
 		},
 		Annotations: map[string]string{

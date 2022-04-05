@@ -130,7 +130,7 @@ func TestGetRepoURL(t *testing.T) {
 			}
 
 			err := Generate(&Opts{
-				event:     &tt.event,
+				Event:     &tt.event,
 				GitInfo:   &tt.gitinfo,
 				IOStreams: io,
 				CLIOpts:   &cli.PacCliOpts{},
