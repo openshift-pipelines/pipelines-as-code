@@ -37,6 +37,11 @@ type listener struct {
 	logger *zap.SugaredLogger
 }
 
+type Response struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+}
+
 var _ adapter.Adapter = (*listener)(nil)
 
 func New(run *params.Run, k *kubeinteraction.Interaction) adapter.AdapterConstructor {
@@ -99,8 +104,7 @@ func (l listener) handleEvent() http.HandlerFunc {
 		// figure out which provider request coming from
 		gitProvider, logger, err := l.detectProvider(&request.Header, string(payload))
 		if err != nil || gitProvider == nil {
-			response.WriteHeader(http.StatusOK)
-			fmt.Fprintf(response, `{"status": "%d", "message": "%v"}`, http.StatusOK, err)
+			l.writeResponse(response, http.StatusOK, err.Error())
 			return
 		}
 
@@ -123,8 +127,7 @@ func (l listener) handleEvent() http.HandlerFunc {
 			s.processEvent(ctx, localRequest, payload)
 		}()
 
-		response.WriteHeader(http.StatusAccepted)
-		fmt.Fprintf(response, `{"status": "%d", "message": "accepted"}`, http.StatusAccepted)
+		l.writeResponse(response, http.StatusAccepted, "accepted")
 	}
 }
 
@@ -169,4 +172,16 @@ func (l listener) detectProvider(reqHeader *http.Header, reqBody string) (provid
 	}
 
 	return processRes(false, nil, logger, fmt.Errorf("no supported Git Provider is detected"))
+}
+
+func (l listener) writeResponse(response http.ResponseWriter, statusCode int, message string) {
+	response.WriteHeader(statusCode)
+	response.Header().Set("Content-Type", "application/json")
+	body := Response{
+		Status:  statusCode,
+		Message: message,
+	}
+	if err := json.NewEncoder(response).Encode(body); err != nil {
+		l.logger.Errorf("failed to write back sink response: %v", err)
+	}
 }
