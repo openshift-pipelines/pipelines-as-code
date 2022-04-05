@@ -21,15 +21,53 @@ func TestOkToTestComment(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name:          "good",
+			name:          "good issue comment event",
 			commentsReply: `[{"body": "/ok-to-test", "user": {"login": "owner"}}]`,
 			runevent: info.Event{
 				Organization: "owner",
 				Sender:       "nonowner",
 				EventType:    "issue_comment",
+				Event: &github.IssueCommentEvent{
+					Issue: &github.Issue{
+						PullRequestLinks: &github.PullRequestLinks{
+							HTMLURL: github.String("http://url.com/owner/repo/1"),
+						},
+					},
+				},
 			},
 			allowed: true,
 			wantErr: false,
+		},
+		{
+			name:          "good issue pull request event",
+			commentsReply: `[{"body": "/ok-to-test", "user": {"login": "owner"}}]`,
+			runevent: info.Event{
+				Organization: "owner",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event: &github.PullRequestEvent{
+					PullRequest: &github.PullRequest{
+						HTMLURL: github.String("http://url.com/owner/repo/1"),
+					},
+				},
+			},
+			allowed: true,
+			wantErr: false,
+		},
+		{
+			name:          "bad event origin",
+			commentsReply: `[{"body": "/ok-to-test", "user": {"login": "owner"}}]`,
+			runevent: info.Event{
+				Organization: "owner",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event: &github.CheckRunEvent{
+					CheckRun: &github.CheckRun{
+						HTMLURL: github.String("http://url.com/owner/repo/1"),
+					},
+				},
+			},
+			allowed: false,
 		},
 		{
 			name:          "no-ok-to-test",
@@ -38,6 +76,13 @@ func TestOkToTestComment(t *testing.T) {
 				Organization: "owner",
 				Sender:       "nonowner",
 				EventType:    "issue_comment",
+				Event: &github.IssueCommentEvent{
+					Issue: &github.Issue{
+						PullRequestLinks: &github.PullRequestLinks{
+							HTMLURL: github.String("http://url.com/owner/repo/1"),
+						},
+					},
+				},
 			},
 			allowed: false,
 			wantErr: false,
@@ -49,6 +94,13 @@ func TestOkToTestComment(t *testing.T) {
 				Organization: "owner",
 				Sender:       "nonowner",
 				EventType:    "issue_comment",
+				Event: &github.IssueCommentEvent{
+					Issue: &github.Issue{
+						PullRequestLinks: &github.PullRequestLinks{
+							HTMLURL: github.String("http://url.com/owner/repo/1"),
+						},
+					},
+				},
 			},
 			allowed: false,
 			wantErr: false,
@@ -56,14 +108,6 @@ func TestOkToTestComment(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repoOwnerURL := "http://url.com/owner/repo/1"
-			tt.runevent.Event = &github.IssueCommentEvent{
-				Issue: &github.Issue{
-					PullRequestLinks: &github.PullRequestLinks{
-						HTMLURL: &repoOwnerURL,
-					},
-				},
-			}
 			tt.runevent.TriggerTarget = "ok-to-test-comment"
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
