@@ -18,6 +18,7 @@ of the execution when triggered by a `Pull Request` or a `Push`.
 ## Features
 
 {{< columns >}} <!-- begin columns block -->
+
 - Pull-request status support: When iterating over a Pull Request. Statuses and Control is done on GitHub.
 
 - GitHub Checks API support to set the status of a PipelineRun including rechecks
@@ -49,13 +50,12 @@ The easiest way to get started is to use the `tkn pac` CLI and its [bootstrap](/
 Start downloading and install the tkn-pac CLI following [these instructions](/docs/guide/cli#install) and
 while Connected to your cluster launch the command :
 
-
 ```bash
 -$ tkn pac bootstrap
 ```
 
-and follow the questions to get Pipelines as Code installed on your cluster. 
-It will then help you to create create a Github Application to connect your repositories to Pipelines as Code. 
+and follow the questions to get Pipelines as Code installed on your cluster.
+It will then help you to create create a Github Application to connect your repositories to Pipelines as Code.
 If you are in a source code project, it will immediately ask you if you want to have a sample `PipelineRun` for `Pipelines as Code`
 
 ## Walkthrough video

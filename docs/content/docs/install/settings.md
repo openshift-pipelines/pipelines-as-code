@@ -42,4 +42,3 @@ the `pipelines-as-code` namespace.
   API. default to the [public hub](https://hub.tekton.dev/):
 
   <https://api.hub.tekton.dev/v1>
-

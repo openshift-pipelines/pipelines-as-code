@@ -1,4 +1,6 @@
 {
   "line-length": false,
-  "first-header-h1": false
+  "first-header-h1": false,
+  "no-inline-html": false,
+  "MD025": false,
 }

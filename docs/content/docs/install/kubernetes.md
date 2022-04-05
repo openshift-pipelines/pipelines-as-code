@@ -8,11 +8,11 @@ Pipelines as Code works on kubernetes/minikube/kind.
 
 ## Prerequisites
 
-You will need to pre-install the [pipeline](https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml) `release.yaml` 
-file on your kubernetes cluster. 
-
+You will need to pre-install the [pipeline](https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml) `release.yaml`
+file on your kubernetes cluster.
 
 ## Install
+
 The release yaml to install pipelines are for the released version :
 
 ```shell

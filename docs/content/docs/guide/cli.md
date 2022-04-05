@@ -62,6 +62,7 @@ If you want to install from the git repository you can just do :
 ```shell
 go install github.com/openshift-pipelines/pipelines-as-code/cmd/tkn-pac
 ```
+
 {{< /tab >}}
 
 {{< tab "Arch" >}}
@@ -70,15 +71,15 @@ You can install `tkn-pac` from the [Arch User Repository](https://aur.archlinux.
 ```shell
 yay -S tkn-pac
 ```
+
 {{< /tab >}}
 
-
 {{< /tabs >}}
-
 
 ## Commands
 
 {{< details "tkn pac bootstrap" >}}
+
 ### bootstrap
 
 `tkn pac bootstrap` command will help you getting started installing and configuring Pipelines as code. It currently supports the following providers:
@@ -94,6 +95,7 @@ You can override the URL with the flag `--route-url`.
 {{< /details >}}
 
 {{< details "tkn pac bootstrap github-app" >}}
+
 ### bootstrap github-app
 
 If you only want to create the Github application you can use `tkn pac bootstrap
@@ -104,18 +106,21 @@ github application and the secret with all the information needed in the
 {{< /details >}}
 
 {{< details "tkn pac repo create" >}}
+
 ### Repository creation
 
 `tkn pac repo create` -- will create a new Pipelines as Code Repository and a namespace where the pipelineruns command. It will launch the `tkn pac generate` command right after the creation.
 {{< /details >}}
 
 {{< details "tkn pac repo list" >}}
+
 ### Repository Listing
 
 `tkn pac repo list` -- will list all the Pipelines as Code Repositories and display the last status of the runs associated with it.
 {{< /details >}}
 
 {{< details "tkn pac repo describe" >}}
+
 ### Repository Describe
 
 `tkn pac repo describe` -- will describe a Pipelines as Code Repository and the runs associated with it.
@@ -124,6 +129,7 @@ On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows Terminal](https:
 {{< /details >}}
 
 {{< details "tkn pac generate" >}}
+
 ### Generate
 
 `tkn pac generate`: will generate a simple pipelinerun to get you started with Pipelines as Code. It will try to be as smart as possible by detecting the current git information if you run the command from your source code.
@@ -132,6 +138,7 @@ It has some basic language detection and add extra task depending of the languag
 {{< /details >}}
 
 {{< details "tkn pac resolve" >}}
+
 ### Resolve
 
 `tkn-pac resolve`: will run a pipelinerun as if it were executed by pipelines

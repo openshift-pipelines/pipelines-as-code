@@ -2,7 +2,8 @@
 title: Repository CRD
 weight: 1
 ---
-## Repository CRD
+# Repository CRD
+
 The purposes of the Repository CRD  is:
 
 - To let _Pipelines as Code_ know that this event from this URL needs to be handled.
@@ -55,5 +56,3 @@ pipelinesascode.tekton.dev/target-namespace: "mynamespace"
 
 and Pipelines as Code will only match the repository in the mynamespace
 Namespace instead of trying to match it from all available repository on cluster.
-
-
