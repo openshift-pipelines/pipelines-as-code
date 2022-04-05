@@ -85,6 +85,11 @@ func (l listener) handleEvent() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		ctx := context.Background()
 
+		if request.Method != http.MethodPost {
+			l.writeResponse(response, http.StatusOK, "ok")
+			return
+		}
+
 		// event body
 		payload, err := ioutil.ReadAll(request.Body)
 		if err != nil {

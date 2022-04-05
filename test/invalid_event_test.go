@@ -84,3 +84,27 @@ func TestSkippedEvent(t *testing.T) {
 
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 }
+
+func TestGETCall(t *testing.T) {
+	ctx := context.TODO()
+
+	elURL := os.Getenv("TEST_EL_URL")
+	if elURL == "" {
+		t.Fatal("failed to find event listener url")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", elURL, nil)
+	if err != nil {
+		t.Fatal("failed to build request : ", err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal("failed to send request : ", err)
+	}
+	assert.NilError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+}
