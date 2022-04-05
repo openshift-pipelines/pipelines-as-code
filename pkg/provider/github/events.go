@@ -24,23 +24,6 @@ const (
 	secretName = "pipelines-as-code-secret"
 )
 
-// payloadFix since we are getting a bunch of \r\n or \n and others from triggers/github, so let just
-// workaround it. Originally from https://stackoverflow.com/a/52600147
-func (v *Provider) payloadFix(payload string) []byte {
-	replacement := " "
-	replacer := strings.NewReplacer(
-		"\r\n", replacement,
-		"\r", replacement,
-		"\n", replacement,
-		"\v", replacement,
-		"\f", replacement,
-		"\u0085", replacement,
-		"\u2028", replacement,
-		"\u2029", replacement,
-	)
-	return []byte(replacer.Replace(payload))
-}
-
 func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, gheURL string, installationID int64) (string, error) {
 	// TODO: move this out of here
 	ns := os.Getenv("SYSTEM_NAMESPACE")
@@ -140,14 +123,13 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		}
 	}
 
-	payloadTreated := v.payloadFix(payload)
-	eventInt, err := github.ParseWebHook(event.EventType, payloadTreated)
+	eventInt, err := github.ParseWebHook(event.EventType, []byte(payload))
 	if err != nil {
 		return nil, err
 	}
 
 	// should not get invalid json since we already check it in github.ParseWebHook
-	_ = json.Unmarshal(payloadTreated, &eventInt)
+	_ = json.Unmarshal([]byte(payload), &eventInt)
 
 	processedEvent, err := v.processEvent(ctx, run, event, eventInt)
 	if err != nil {

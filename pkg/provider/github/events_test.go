@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"testing"
@@ -73,42 +72,6 @@ var samplePR = github.PullRequest{
 		SHA:  github.String("samplePRsha"),
 		Repo: sampleRepo,
 	},
-}
-
-// TODO: better testing matrix against only public function like we do for bitbucket-cloud
-func TestPayLoadFix(t *testing.T) {
-	b, err := ioutil.ReadFile("testdata/pull_request_with_newlines.json")
-	assert.NilError(t, err)
-	ctx, _ := rtesting.SetupFakeContext(t)
-	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
-	defer teardown()
-	mux.HandleFunc("/repos/repo/owner/commits/SHA", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
-	})
-	mux.HandleFunc("/repos/repo/owner/git/commits/SHA", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
-	})
-
-	gprovider := Provider{
-		Client: fakeclient,
-	}
-
-	logger := getLogger()
-	request := &http.Request{Header: map[string][]string{}}
-	request.Header.Set("X-GitHub-Event", "pull_request")
-
-	run := &params.Run{
-		Clients: clients.Clients{
-			Log: logger,
-		},
-		Info: info.Info{},
-	}
-	_, err = gprovider.ParsePayload(ctx, run, request, string(b))
-	assert.NilError(t, err)
-
-	// would bomb out on "assertion failed: error is not nil: invalid character
-	// '\n' in string literal" if we don't fix the payload
-	assert.NilError(t, err)
 }
 
 func TestParsePayLoad(t *testing.T) {
