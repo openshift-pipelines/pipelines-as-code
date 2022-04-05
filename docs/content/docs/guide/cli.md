@@ -106,7 +106,7 @@ github application and the secret with all the information needed in the
 {{< details "tkn pac repo create" >}}
 ### Repository creation
 
-`tkn pac repo create` -- will create a new Pipelines as Code Repository and a namespace where the pipelineruns command. It will launch the `tkn pac generate` command right after the creation.
+`tkn pac repo create` -- will create a new Pipelines as Code Repository and a namespace where the pipelineruns command. It will also generate a sample file with a [PipelineRun](./autoringprs/) in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch and the `pull_request` and `push` events.  You can customize this by editing the [PipelineRun](./autoringprs/) to target a different branch or event. 
 {{< /details >}}
 
 {{< details "tkn pac repo list" >}}

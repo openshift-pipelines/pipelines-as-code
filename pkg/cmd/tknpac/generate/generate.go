@@ -22,7 +22,7 @@ var (
 )
 
 type Opts struct {
-	event   *info.Event
+	Event   *info.Event
 	GitInfo *git.Info
 
 	IOStreams *cli.IOStreams
@@ -36,7 +36,7 @@ type Opts struct {
 
 func MakeOpts() *Opts {
 	return &Opts{
-		event:   info.NewEvent(),
+		Event:   info.NewEvent(),
 		GitInfo: &git.Info{},
 
 		IOStreams: &cli.IOStreams{},
@@ -66,11 +66,11 @@ func Command(ioStreams *cli.IOStreams) *cobra.Command {
 			"commandType": "main",
 		},
 	}
-	cmd.PersistentFlags().StringVar(&gopt.event.BaseBranch, "branch", "",
+	cmd.PersistentFlags().StringVar(&gopt.Event.BaseBranch, "branch", "",
 		"The target branch of the repository  event to handle (eg: main, nightly)")
-	cmd.PersistentFlags().StringVar(&gopt.event.EventType, "event-type", "",
+	cmd.PersistentFlags().StringVar(&gopt.Event.EventType, "event-type", "",
 		"The event type of the repository event to handle (eg: pull_request, push)")
-	cmd.PersistentFlags().StringVar(&gopt.event.URL, "url", "",
+	cmd.PersistentFlags().StringVar(&gopt.Event.URL, "url", "",
 		"The repository URL from where the event will come from")
 	cmd.PersistentFlags().StringVar(&gopt.pipelineRunName, "pipeline-name", "",
 		"The pipeline name")
@@ -100,7 +100,7 @@ func Generate(o *Opts) error {
 
 func (o *Opts) targetEvent() error {
 	var choice string
-	if o.event.EventType != "" {
+	if o.Event.EventType != "" {
 		return nil
 	}
 	msg := "Enter the Git event type for triggering the pipeline: "
@@ -124,7 +124,7 @@ func (o *Opts) targetEvent() error {
 
 	for k, v := range eventTypes {
 		if v == choice {
-			o.event.EventType = k
+			o.Event.EventType = k
 			return nil
 		}
 	}
@@ -135,15 +135,15 @@ func (o *Opts) targetEvent() error {
 func (o *Opts) branchOrTag() error {
 	var msg string
 	choice := new(string)
-	if o.event.BaseBranch != "" {
+	if o.Event.BaseBranch != "" {
 		return nil
 	}
 
-	o.event.BaseBranch = mainBranch
+	o.Event.BaseBranch = mainBranch
 
-	if o.event.EventType == "pull_request" {
+	if o.Event.EventType == "pull_request" {
 		msg = "Enter the target GIT branch for the Pull Request (default: %s): "
-	} else if o.event.EventType == "push" {
+	} else if o.Event.EventType == "push" {
 		msg = "Enter a target GIT branch or a tag for the push (default: %s)"
 	}
 
@@ -155,9 +155,20 @@ func (o *Opts) branchOrTag() error {
 	}
 
 	if *choice != "" {
-		o.event.BaseBranch = *choice
+		o.Event.BaseBranch = *choice
 	}
 	return nil
+}
+
+func generatefileName(eventType string) string {
+	var filename string
+	types := strings.Split(eventType, ",")
+	if len(types) > 1 {
+		filename = "pipelinerun"
+	} else {
+		filename = strings.ReplaceAll(eventType, "_", "-")
+	}
+	return fmt.Sprintf("%s.yaml", filename)
 }
 
 // samplePipeline will try to create a basic pipeline in tekton
@@ -170,7 +181,7 @@ func (o *Opts) samplePipeline() error {
 		fpath = o.fileName
 		relpath = fpath
 	} else {
-		fname := fmt.Sprintf("%s.yaml", strings.ReplaceAll(o.event.EventType, "_", "-"))
+		fname := generatefileName(o.Event.EventType)
 		fpath = filepath.Join(o.GitInfo.TopLevelPath, ".tekton", fname)
 		relpath, _ = filepath.Rel(o.GitInfo.TopLevelPath, fpath)
 		if _, err := os.Stat(filepath.Join(o.GitInfo.TopLevelPath, ".tekton")); os.IsNotExist(err) {

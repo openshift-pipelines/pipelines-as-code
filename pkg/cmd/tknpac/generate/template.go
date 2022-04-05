@@ -172,14 +172,14 @@ func (o *Opts) genTmpl() (bytes.Buffer, error) {
 	t := template.Must(template.New("PipelineRun").Delims("<<", ">>").Parse(pipelineRunTmpl))
 	prName := fmt.Sprintf("%s-%s",
 		filepath.Base(o.GitInfo.URL),
-		strings.ReplaceAll(o.event.EventType, "_", "-"))
+		strings.ReplaceAll(o.Event.EventType, "_", "-"))
 	lang, err := o.detectLanguage()
 	if err != nil {
 		return bytes.Buffer{}, err
 	}
 	data := map[string]interface{}{
 		"prName":                  prName,
-		"event":                   o.event,
+		"event":                   o.Event,
 		"extra_task":              lang,
 		"language_specific_tasks": "",
 	}
