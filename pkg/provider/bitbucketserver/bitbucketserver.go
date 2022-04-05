@@ -2,21 +2,14 @@ package bitbucketserver
 
 import (
 	"context"
-	"crypto/hmac"
-
-	//nolint
-	"crypto/sha1"
-	"crypto/sha256"
-	"crypto/sha512"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"hash"
 	"net/http"
 	"path/filepath"
 	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
+	"github.com/google/go-github/v43/github"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -40,35 +33,10 @@ type Provider struct {
 
 func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
 	signature := event.Request.Header.Get("X-Hub-Signature")
-	key := event.Provider.WebhookSecret
 	if event.Provider.WebhookSecret == "" && signature != "" {
 		return fmt.Errorf("bitbucket-server failed validaton: failed to find webhook secret")
 	}
-
-	sigParts := strings.Split(signature, "=")
-
-	var hashFunc func() hash.Hash
-	switch sigParts[0] {
-	case "sha1":
-		hashFunc = sha1.New
-	case "sha256":
-		hashFunc = sha256.New
-	case "sha512":
-		hashFunc = sha512.New
-	default:
-		return fmt.Errorf("bitbucket-server failed validaton: unknown hash type prefix: %q", sigParts[0])
-	}
-
-	hash := hmac.New(hashFunc, []byte(key))
-	if _, err := hash.Write(event.Request.Payload); err != nil {
-		return fmt.Errorf("bitbucket-server failed validaton: cannot compute the HMAC for request: %w", err)
-	}
-	expectedHash := hex.EncodeToString(hash.Sum(nil))
-
-	if sigParts[1] != expectedHash {
-		return fmt.Errorf("bitbucket-server failed validaton: payload hash doesn't match with computed hash")
-	}
-	return nil
+	return github.ValidateSignature(signature, event.Request.Payload, []byte(event.Provider.WebhookSecret))
 }
 
 // sanitizeTitle make sure we only get the tile by remove everything after \n.
