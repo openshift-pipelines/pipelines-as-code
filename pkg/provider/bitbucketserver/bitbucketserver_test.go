@@ -1,7 +1,16 @@
 package bitbucketserver
 
 import (
+	"context"
+	"crypto/hmac"
+
+	//nolint
+	"crypto/sha1"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"hash"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -439,4 +448,70 @@ func getLogger() *zap.SugaredLogger {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	return logger
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name         string
+		wantErr      bool
+		secret       string
+		payload      string
+		hashFunc     func() hash.Hash
+		prefixheader string
+	}{
+		{
+			name:         "secret missing",
+			secret:       "",
+			payload:      `{"hello": "moto"}`,
+			hashFunc:     sha256.New,
+			prefixheader: "sha256",
+			wantErr:      true,
+		},
+		{
+			name:         "good/SHA256Signature",
+			secret:       "secrete",
+			payload:      `{"hello": "moto"}`,
+			hashFunc:     sha256.New,
+			prefixheader: "sha256",
+		},
+		{
+			name:         "good/SHA1Signature",
+			secret:       "secrete",
+			payload:      `{"ola": "amigo"}`,
+			hashFunc:     sha1.New,
+			prefixheader: "sha1",
+		},
+		{
+			name:         "bad/signature",
+			payload:      `{"ciao": "ragazzo"}`,
+			hashFunc:     sha256.New,
+			prefixheader: "sha1",
+			wantErr:      true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := &Provider{}
+
+			hmac := hmac.New(tt.hashFunc, []byte(tt.secret))
+			hmac.Write([]byte(tt.payload))
+			signature := hex.EncodeToString(hmac.Sum(nil))
+
+			httpHeader := http.Header{}
+			httpHeader.Add("X-Hub-Signature", fmt.Sprintf("%s=%s", tt.prefixheader, signature))
+
+			event := info.NewEvent()
+			event.Request = &info.Request{
+				Header:  httpHeader,
+				Payload: []byte(tt.payload),
+			}
+			event.Provider = &info.Provider{
+				WebhookSecret: tt.secret,
+			}
+
+			if err := v.Validate(context.TODO(), nil, event); (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }
