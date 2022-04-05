@@ -207,13 +207,12 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		return isGH, true, logger, nil
 	}
 
-	payloadTreated := v.payloadFix(string(payload))
-	eventInt, err := github.ParseWebHook(event, payloadTreated)
+	eventInt, err := github.ParseWebHook(event, []byte(payload))
 	if err != nil {
 		return isGH, false, logger, err
 	}
 
-	_ = json.Unmarshal(payloadTreated, &eventInt)
+	_ = json.Unmarshal([]byte(payload), &eventInt)
 
 	switch gitEvent := eventInt.(type) {
 	case *github.CheckRunEvent:
