@@ -46,9 +46,9 @@ release:
 
     TODO: XXXXX add high level changelog before setting this as released XXXXX
 
-    To install this version you can install the release.yaml with [`kubectl`](https://kubernetes.io/docs/tasks/tools/#kubectl) for your platform :
-
     ## Installation
+
+    To install this version you can install the release.yaml with [`kubectl`](https://kubernetes.io/docs/tasks/tools/#kubectl) for your platform :
 
     ### Openshift
     ```shell
@@ -58,7 +58,6 @@ release:
     ```shell
     kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/{{.Tags}}/release.k8s.yaml
     ```
-
     ### Documentation
 
     full install documentation is available here:
