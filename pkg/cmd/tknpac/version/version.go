@@ -13,7 +13,7 @@ func Command(ioStreams *cli.IOStreams) *cobra.Command {
 		Use:   "version",
 		Short: "Print tkn pac version",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Fprintln(ioStreams.ErrOut, version.Version)
+			fmt.Fprintln(ioStreams.Out, version.Version)
 		},
 		Annotations: map[string]string{
 			"commandType": "main",
