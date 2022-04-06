@@ -39,4 +39,5 @@ guessSyntax = true
 [markup.tableOfContents]
   startLevel = 2
 
-
+[privacy.youtube]
+privacyEnhanced = true

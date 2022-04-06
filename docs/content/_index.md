@@ -1,5 +1,6 @@
 ---
 bookToc: false
+title: Overview
 ---
 # Pipelines as Code
 
@@ -12,14 +13,16 @@ the [Pipelines as Code flow](https://www.thoughtworks.com/radar/techniques/pipel
 directly with OpenShift Pipelines.
 
 The goal of Pipelines as Code is to let you define your
-[Tekton](https://tekton.cd) templates inside your source code repository and have the pipeline run and report the status
+[Tekton](https://tekton.cd) templates inside your source code repository and
+have the pipeline run and report the status
 of the execution when triggered by a `Pull Request` or a `Push`.
 
 ## Features
 
 {{< columns >}} <!-- begin columns block -->
 
-- Pull-request status support: When iterating over a Pull Request. Statuses and Control is done on GitHub.
+- Pull-request status support: When iterating over a Pull Request. Statuses and
+  Control is done on GitHub.
 
 - GitHub Checks API support to set the status of a PipelineRun including rechecks
 
