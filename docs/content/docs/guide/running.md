@@ -18,7 +18,7 @@ The user flow looks like this :
   - The user is a public member on the organization of the repository.
 
 - If the user is sending the Pull Request is inside an OWNER file located in the
-  repository root on the main branch (the main branch as defined in the Github
+  repository root on the main branch (the main branch as defined in the GitHub
   configuration for the repo) and added to either `approvers` or `reviewers`
   sections like this :
 
@@ -44,4 +44,4 @@ tkn pr logs -n my-pipeline-ci -Lf
 
 Or with the OpenShift console inside your namespace you can follow the
 pipelinerun execution via the URL provided on the "Checks" tab if you run with
-Github App.
+GitHub App.

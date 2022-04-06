@@ -15,7 +15,7 @@ will create or update a secret called :
 `pac-git-basic-auth-REPOSITORY_OWNER-REPOSITORY_NAME`
 
 The secret contains a `.gitconfig` and a git credentials `.git-credentials` with
-the https url using the token it discovered from the Github application or
+the https url using the token it discovered from the GitHub application or
 attached to the secret.
 
 As documented :

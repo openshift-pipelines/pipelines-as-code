@@ -40,7 +40,7 @@ of the execution when triggered by a `Pull Request` or a `Push`.
 
 - Git events Filtering and support for separate pipelines for each event
 
-- Gitlab, Bitbucket Server, Bitbucket Cloud and Github Webhook support.
+- Gitlab, Bitbucket Server, Bitbucket Cloud and GitHub Webhook support.
 
 - `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
 
@@ -58,7 +58,7 @@ while Connected to your cluster launch the command :
 ```
 
 and follow the questions to get Pipelines as Code installed on your cluster.
-It will then help you to create create a Github Application to connect your repositories to Pipelines as Code.
+It will then help you to create create a GitHub Application to connect your repositories to Pipelines as Code.
 If you are in a source code project, it will immediately ask you if you want to have a sample `PipelineRun` for `Pipelines as Code`
 
 ## Walkthrough video
