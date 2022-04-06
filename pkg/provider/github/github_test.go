@@ -485,11 +485,11 @@ func TestProvider_Detect(t *testing.T) {
 				Installation: &github.Installation{
 					ID: github.Int64(123),
 				},
-				Comment: &github.IssueComment{Body: github.String("/ok-to-test \n, don't let me in :)")},
+				Comment: &github.IssueComment{Body: github.String("/ok-to-test \n let me in :)")},
 			},
 			eventType:  "issue_comment",
 			isGH:       true,
-			processReq: false,
+			processReq: true,
 		},
 		{
 			name: "issue comment Event with retest",
@@ -527,7 +527,7 @@ func TestProvider_Detect(t *testing.T) {
 			},
 			eventType:  "issue_comment",
 			isGH:       true,
-			processReq: false,
+			processReq: true,
 		},
 		{
 			name: "push event",

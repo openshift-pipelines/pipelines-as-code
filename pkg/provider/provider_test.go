@@ -18,8 +18,28 @@ func TestIsOkToTestComment(t *testing.T) {
 			want:    true,
 		},
 		{
+			name:    "valid with some string before",
+			comment: "/lgtm \n/ok-to-test",
+			want:    true,
+		},
+		{
+			name:    "valid with some string before and after",
+			comment: "hi, trigger the ci \n/ok-to-test \n then report the status back",
+			want:    true,
+		},
+		{
+			name:    "valid comments",
+			comment: "/lgtm \n/ok-to-test \n/approve",
+			want:    true,
+		},
+		{
 			name:    "invalid",
 			comment: "/ok",
+			want:    false,
+		},
+		{
+			name:    "invalid comment",
+			comment: "/ok-to-test abc",
 			want:    false,
 		},
 	}
@@ -44,8 +64,28 @@ func TestIsRetestComment(t *testing.T) {
 			want:    true,
 		},
 		{
+			name:    "valid with some string before",
+			comment: "/lgtm \n/retest",
+			want:    true,
+		},
+		{
+			name:    "valid with some string before and after",
+			comment: "hi, trigger the ci \n/retest \n then report the status back",
+			want:    true,
+		},
+		{
+			name:    "valid comments",
+			comment: "/lgtm \n/retest \n/approve",
+			want:    true,
+		},
+		{
 			name:    "invalid",
 			comment: "/ok",
+			want:    false,
+		},
+		{
+			name:    "invalid comment",
+			comment: "/retest abc",
 			want:    false,
 		},
 	}
