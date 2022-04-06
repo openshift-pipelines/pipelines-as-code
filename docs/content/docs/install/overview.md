@@ -22,7 +22,7 @@ To get started with Pipelines-as-Code, you need to
   * If you run on OpenShift Pipelines (from 1.7.x) Pipelines as Code should be
      automatically installed
   * If you want to do a manual install you can
-      follow the [installation guide](installation.md).
+      follow the [installation guide](../installation).
 * Configure your Git Provider (eg: a GitHub Application) to access Pipelines as
   Code.
 
