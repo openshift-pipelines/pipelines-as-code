@@ -14,9 +14,7 @@ Pipeline name as well.
 This allows you to have multiple runs in the same namespace from the same
 PipelineRun with no risk of conflicts.
 
-Everything that runs your pipelinerun and its references need to be inside the
-`.tekton/` directory and subdirectories or referenced via a remote task (see
-below on how the remote tasks are referenced).
+Everything that runs your pipelinerun and its references need to be inside the `.tekton/` directory and subdirectories as referenced with a remote task (see below on how the remote tasks are referenced).
 
 If you have a taskRef to a task located in any directory or subdirectorie of the
 `.tekton/` directory it will be automatically embedded even if it's not in the
@@ -32,7 +30,7 @@ to do anything with it.
 If pipelines as code cannot resolve the referenced tasks in the `Pipeline` or
 `PipelineSpec`, the run will fail before applying the pipelinerun onto the
 cluster. You should be able to the issue on your Git provider platform or
-via the log of the controller.
+through the log of the controller.
 
 If you need to test your `PipelineRun` locally before sending it in a PR, you
 can use the `resolve` command from the `tkn-pac` CLI See the `--help` of the
@@ -40,29 +38,31 @@ command to learn about how to use it.
 
 ## Remote Task support
 
-`Pipelines as Code` support fetching remote tasks from remote location via
+`Pipelines as Code` support fetching remote tasks from remote location through
 annotations on PipelineRun.
 
-If the resolver sees a PipelineRun referencing a remote task via its name in a
-Pipeline or a PipelineSpec it will automatically inline it.
+If the resolver sees a PipelineRun referencing a remote task through its name in
+a Pipeline or a PipelineSpec it will automatically inlines it.
 
 An annotation to a remote task looks like this :
 
-  ```yaml
-  pipelinesascode.tekton.dev/task: "git-clone"
-  ```
+```yaml
+pipelinesascode.tekton.dev/task: "git-clone"
+```
 
-or multiple tasks via an array :
+or multiple tasks with an array :
 
-  ```yaml
-  pipelinesascode.tekton.dev/task: ["git-clone", "pylint"]
-  ```
+```yaml
+pipelinesascode.tekton.dev/task: ["git-clone", "pylint"]
+```
 
 The syntax above installs the
 [git-clone](https://github.com/tektoncd/catalog/tree/main/task/git-clone) task
-from the [tekton hub](https://hub.tekton.dev) repository via its API.
+from the [tekton hub](https://hub.tekton.dev) repository querying for the latest
+one with the tekton hub API.
 
-You can have multiple tasks in there if you separate them by a comma `,`:
+You can have multiple tasks in there if you separate them by a comma `,` around
+an array syntax with bracket:
 
 ```yaml
 pipelinesascode.tekton.dev/task: "[git-clone, golang-test, tkn]"
@@ -86,22 +86,23 @@ the string and a version number, like in
 this example :
 
 ```yaml
-  pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # will install git-clone 0.1 from tekton.hub
-  ```
+pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # will install git-clone 0.1 from tekton.hub
+```
 
 If you have a string starting with http:// or https://, `Pipelines as Code`
-will fetch the task directly from that remote url :
+will fetch the task directly from that remote URL :
 
 ```yaml
   pipelinesascode.tekton.dev/task: "[https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.3/git-clone.yaml]"
 ```
 
-Additionally, you can as well a reference to a task from a yaml file inside your
+Additionally, you can as well a reference to a task from a YAML file inside your
+>>>>>>> ebf9e67d (Add vale grammar editing)
 repo if you specify the relative path to it, for example :
 
-  ```yaml
-  pipelinesascode.tekton.dev/task: "[share/tasks/git-clone.yaml]"
-  ```
+```yaml
+pipelinesascode.tekton.dev/task: "[share/tasks/git-clone.yaml]"
+```
 
 This will grab the file `share/tasks/git-clone.yaml` from the current
 repository on the `SHA` where the event come from (i.e: the current pull

@@ -13,7 +13,7 @@ file on your kubernetes cluster.
 
 ## Install
 
-The release yaml to install pipelines are for the released version :
+The release YAML to install pipelines are for the released version :
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.k8s.yaml
@@ -52,10 +52,10 @@ spec:
         pathType: Prefix
 ```
 
-In this example `webhook.host.tld` is the hostname for your pipelines controller to fill as the webhook url in the provider platform setup.
+In this example `webhook.host.tld` is the hostname for your pipelines controller to fill as the webhook URL in the provider platform setup.
 
 ## Tekton Dashboard integration
 
 If you have [Tekton Dashboard](https://github.com/tektoncd/dashboard). You can
-just add the key `tekton-dashboard-url` in the `pipelines-as-code` configmap
-set to the full url of the `Ingress` host to get tekton dashboard logs url.
+just add the key `tekton-dashboard-url` in the `pipelines-as-code` configmap set
+to the full URL of the `Ingress` host to get tekton dashboard logs URL.

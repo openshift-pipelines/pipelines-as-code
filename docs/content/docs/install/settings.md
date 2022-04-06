@@ -5,8 +5,8 @@ weight: 3
 
 ## Pipelines-As-Code configuration settings
 
-There is a few things you can configure via the configmap `pipelines-as-code` in
-the `pipelines-as-code` namespace.
+There is a few things you can configure through the configmap
+`pipelines-as-code` in the `pipelines-as-code` namespace.
 
 * `application-name`
 
@@ -27,7 +27,7 @@ the `pipelines-as-code` namespace.
 
 * `secret-auto-create`
 
-  Whether to auto create a secret with the token generated via the GitHub
+  Whether to auto create a secret with the token generated through the GitHub
   application to be used with private repositories. This feature is enabled by
   default.
 
@@ -38,7 +38,7 @@ the `pipelines-as-code` namespace.
 
 * `hub-url`
 
-  The base url for the [tekton hub](https://github.com/tektoncd/hub/)
+  The base URL for the [tekton hub](https://github.com/tektoncd/hub/)
   API. default to the [public hub](https://hub.tekton.dev/):
 
   <https://api.hub.tekton.dev/v1>

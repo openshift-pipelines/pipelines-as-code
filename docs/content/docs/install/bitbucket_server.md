@@ -19,7 +19,7 @@ The token will need to have the `PROJECT_ADMIN` and `REPOSITORY_ADMIN` permissio
 Note that the token needs to be able to have access to the forked repository in
 pull requests or it would not be able to process and access the pull request.
 
-Make sure you note somewhere the generated token or otherwise you will have to
+You may want to note somewhere the generated token or otherwise you will have to
 recreate it.
 
 * Create a Webhook on the repository following this guide :
@@ -57,7 +57,7 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
   * Pull Request -> Comments added
 
 * Create a secret with personal token in the `target-namespace`
-  
+
   ```shell
   kubectl -n target-namespace create secret generic bitbucket-server-token \
           --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"

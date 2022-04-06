@@ -42,7 +42,7 @@ of the execution when triggered by a `Pull Request` or a `Push`.
 
 - Gitlab, Bitbucket Server, Bitbucket Cloud and GitHub Webhook support.
 
-- `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
+- `tkn-pac` plug-in for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
 
 {{< /columns >}}
 
@@ -51,7 +51,7 @@ of the execution when triggered by a `Pull Request` or a `Push`.
 The easiest way to get started is to use the `tkn pac` CLI and its [bootstrap](/docs/guide/cli/#commands) command.
 
 Start downloading and install the tkn-pac CLI following [these instructions](/docs/guide/cli#install) and
-while Connected to your cluster launch the command :
+while Connected to your cluster run the command :
 
 ```bash
 -$ tkn pac bootstrap

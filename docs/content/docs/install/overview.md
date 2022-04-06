@@ -5,22 +5,23 @@ weight: 1
 # Pipelines as Code - Installation
 
 Pipelines-as-Code support different installation method to Git provider
-platforms (i.e: GitHub, Bitbucket etc..)
+platforms (i.e: GitHub, Bitbucket and so on)
 
 The preferred method to use Pipelines-as-Code is configured with a [GitHub
 Application](https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps).
 
 # Install Pipelines as Code infrastructure
 
-Pipelines-as-Code support different installation method to Git provider platforms (i.e: GitHub, Bitbucket etc..)
-The preferred method to use Pipelines-as-Code is configured with a GitHub Application.
+Pipelines-as-Code support different installation method to Git provider
+platforms (ie: GitHub, Bitbucket and so on) The preferred method to use
+Pipelines-as-Code is configured with a GitHub Application.
 
-In order to get started with Pipelines-as-Code, you need to
+To get started with Pipelines-as-Code, you need to
 
 * Install Pipelines as Code.
   * If you run on OpenShift Pipelines (from 1.7.x) Pipelines as Code should be
      automatically installed
-  * If you would like to do a manual install you can
+  * If you want to do a manual install you can
       follow the [installation guide](installation.md).
 * Configure your Git Provider (eg: a GitHub Application) to access Pipelines as
   Code.

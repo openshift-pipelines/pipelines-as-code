@@ -22,11 +22,10 @@ check these boxes to add the permissions to the token :
 - Pull requests: `Read`, `Write`
 
 {{< hint info >}}
-[Refer to this screenshot](/images/bitbucket-cloud-create-secrete.png) to make sure you have properly configured the app password.
+[Refer to this screenshot](/images/bitbucket-cloud-create-secrete.png) to verify you have properly configured the app password.
 {{< /hint >}}
 
-Make sure you note the generated token somewhere or otherwise you will have to
-recreate it.
+Keep the generated token noted somewhere or otherwise you will have to recreate it.
 
 - Go to you **"Repository setting"** tab on your **Repository** and click on the
   **WebHooks** tab and **"Add webhook"** button.
@@ -103,11 +102,11 @@ reasoning :
 
 - There is no Webhook secret support in Bitbucket Cloud. To be able to secure
   the payload and not let a user hijack the CI, Pipelines-as-Code will fetch the
-  ip addresses list from <https://ip-ranges.atlassian.com/> and make sure the
-  webhook only comes from the Bitbucket Cloud IPS.
+  ip addresses list from <https://ip-ranges.atlassian.com/> and enforce the
+  webhook receptions comes only from the Bitbucket Cloud IPS.
 - If you want to add some ips address or networks you can add them to the
   key **bitbucket-cloud-additional-source-ip** in the pipelines-as-code
-  configmap in the pipelines-as-code namespace.  You can added multiple
+  configmap in the pipelines-as-code namespace. You can added multiple
   network or ips separated by a comma.
 
 - If you want to disable this behavior you can set the key

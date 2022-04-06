@@ -5,7 +5,7 @@ weight: 3
 # Authoring PipelineRuns in `.tekton/` directory
 
 * Pipelines as Code will always try to be as close to the tekton template as
-  possible. Usually you will write your template and save them with a ".yaml"
+  possible. Usually you will write your template and save them with a `.yaml`
   extension and Pipelines as Code will run them.
 
 * Using its [resolver](./resolver) Pipelines as Code will try to bundle the
@@ -18,7 +18,7 @@ weight: 3
   [git-clone](https://github.com/tektoncd/catalog/blob/main/task/git-clone/)
   task from the [tektoncd/catalog](https://github.com/tektoncd/catalog).
 
-  To be able to specify the parameters of your commit and url, Pipelines as Code
+  To be able to specify the parameters of your commit and URL, Pipelines as Code
   allows you to have those "dynamic" variables expanded. Those variables look
   like this `{{ var }}` and those are the one you can use:
 
@@ -36,7 +36,7 @@ weight: 3
 
 ## Matching an event to a PipelineRun
 
-Each `PipelineRun` can match different git provider events via some special
+Each `PipelineRun` can match different Git provider events through some special
 annotations on the `PipelineRun`. For example when you have these metadatas in
 your `PipelineRun`:
 
@@ -48,7 +48,7 @@ your `PipelineRun`:
     pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-`Pipelines as Code` will match the pipelinerun `pipeline-pr-main` if the git
+`Pipelines as Code` will match the pipelinerun `pipeline-pr-main` if the Git
 provider events target the branch `main` and it's coming from a `[pull_request]`
 
 Multiple target branch can be specified separated by comma, i.e:

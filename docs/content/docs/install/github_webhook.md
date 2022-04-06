@@ -8,8 +8,11 @@ weight: 12
 If you are not able to create a GitHub application you can install Pipelines-as-Code on your repository as a
 [GitHub Webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks).
 
-Using Pipelines as Code via GitHub webhook does not give you access to the [GitHub CheckRun API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api), therefore the status of
-the tasks will be added as a Comment of the PR and not via the **Checks** Tab.
+Using Pipelines as Code through GitHub webhook does not give you access to the
+[GitHub CheckRun
+API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api),
+therefore the status of
+the tasks will be added as a Comment of the PR and not through the **Checks** Tab.
 
 After you have finished the [infrastructure installation](install.md#install-pipelines-as-code-infrastructure) you can generate an app password for Pipelines-as-Code GitHub API operations.
 
@@ -17,7 +20,7 @@ Follow this guide to create a personal token :
 
 <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token>
 
-The only permission needed is the *repo* permission. Make sure you note the generated token somewhere or otherwise you will have to recreate it.
+The only permission needed is the *repo* permission. You will have to note the generated token somewhere or otherwise you will have to recreate it.
 
 * Go to you repository or organization setting and click on *Hooks* and *"Add webhook"* links.
 
@@ -41,7 +44,7 @@ The only permission needed is the *repo* permission. Make sure you note the gene
   * Pushes
 
 {{< hint info >}}
-[Refer to this screenshot](../../../images/pac-direct-webhook-create.png) to make sure  you have properly configured the webhook.
+[Refer to this screenshot](../../../images/pac-direct-webhook-create.png) to verify you have properly configured the webhook.
 {{< /hint >}}
 
 * You are now able to create a Repository CRD. The repository CRD will reference a

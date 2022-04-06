@@ -8,14 +8,14 @@ The purposes of the Repository CRD  is:
 
 - To let _Pipelines as Code_ know that this event from this URL needs to be handled.
 - To let _Pipelines as Code_ know on which namespace the PipelineRuns are going to be executed.
-- To reference a api secret, username or api URL if needed for the git provider
+- To reference a api secret, username or api URL if needed for the Git provider
   platforms that requires it (ie: when you are using webhooks method and not
-  the github application).
+  the GitHub application).
 - To give the last Pipelinerun status for that Repository (5 by default).
 
 The flow looks like this :
 
-Via the tkn pac CLI or other method the user creates a `Repository` CR
+Using the tkn pac CLI or other method the user creates a `Repository` CR
 inside the target namespace `my-pipeline-ci` :
 
 ```yaml
@@ -55,4 +55,4 @@ pipelinesascode.tekton.dev/target-namespace: "mynamespace"
 ```
 
 and Pipelines as Code will only match the repository in the mynamespace
-Namespace instead of trying to match it from all available repository on cluster.
+Namespace rather than trying to match it from all available repository on cluster.

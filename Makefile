@@ -8,7 +8,7 @@ LDFLAGS=
 OUTPUT_DIR=bin
 
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
-MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./vendor/.*' -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
+MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./vendor/.*'  -not -regex '^./.vale/.*'  -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
 
 ifeq ($(PAC_VERSION),)
 	PAC_VERSION="$(shell git describe --tags --exact-match 2>/dev/null || echo nightly-`date +'%Y%m%d'`-`git rev-parse --short HEAD`)"
@@ -72,6 +72,7 @@ lint-yaml: ${YAML_FILES} ## runs yamllint on all yaml files
 lint-md: ${MD_FILES} ## runs markdownlint on all markdown files
 	@echo "Linting markdown files..."
 	@markdownlint $(MD_FILES)
+	@printf "Checking vale grammars: ";vale docs/content --minAlertLevel=error
 
 .PHONY: test-unit
 test-unit: ## run unit tests
