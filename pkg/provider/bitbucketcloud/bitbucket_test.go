@@ -37,7 +37,7 @@ func TestGetTektonDir(t *testing.T) {
 			name:            "Get Tekton Directory",
 			event:           bbcloudtest.MakeEvent(nil),
 			path:            ".tekton",
-			testDirPath:     "../../pipelineascode/testdata/pull_request/",
+			testDirPath:     "../../pipelineascode/testdata/pull_request/.tekton",
 			contentContains: "kind: PipelineRun",
 		},
 		{
