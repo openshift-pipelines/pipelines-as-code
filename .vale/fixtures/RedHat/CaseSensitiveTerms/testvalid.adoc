@@ -1,0 +1,127 @@
+BIND
+bind 
+BIOS
+Btrfs
+CapEx
+CD #1
+CDs
+cgroup
+CSV
+Ctrl
+Cygmon
+denial of service
+denial-of-service
+DevOps
+Disk Druid
+DNS
+DVD writer
+Exec-Shield
+Exif
+FAQ
+Fedora™ Project
+Fortran
+FQDN
+GB
+Gbps
+GID
+GIMP
+Git
+GNOME
+GNOME Classic
+GNU
+GPL
+GRUB
+GTK+
+HP ProLiant
+Hyper-Threading
+hypervisor
+IBM eServer System p
+IBM S 390
+IBM S 390
+IBM Z
+InfiniBand
+Insight
+Intel Virtualization Technology
+Intel(R) EP80579 Integrated Processor
+IOPS
+IP
+IPsec
+ISeries
+ISO
+ISO image
+Itanium
+Itanium 2
+JBoss Community
+JVM
+Kernel-based Virtual Machine
+Kickstart
+KVM
+LAN
+Linux
+Microsoft
+ms
+MS-DOS
+MySQL
+Node.js
+Objective C
+operating environment
+operating system
+OperatorHub
+OpEx
+Podman
+pop-up
+POSIX
+PostScript
+PowerPC
+PPP
+PROM
+Q and A
+QCOW2
+qeth
+RAM
+RAM disk
+raw
+Red Hat Network Proxy Server
+Red Hat Network Satellite Server
+RedBoot
+ROM
+RPM
+S-record
+Samba
+SELinux
+shadow passwords
+shadow utilities
+Shadowman
+SOCKS
+Software Collection
+Spring Boot
+SR-IOV
+SSH
+SSL/TLS
+StarOffice
+startx
+su
+systemd
+SysV
+TTL
+UID
+UltraSPARC
+UNIX
+URL
+VAR
+VDSM
+vi
+Vim
+virtual console
+Visual Studio Code
+VLAN
+vNIC
+vNUMA node
+VPN
+WAN
+WCA
+web UI
+Window Maker
+XEmacs
+xterm
+YAML

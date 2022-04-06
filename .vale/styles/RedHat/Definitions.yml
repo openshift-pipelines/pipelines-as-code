@@ -1,0 +1,125 @@
+---
+extends: conditional
+ignorecase: false
+level: suggestion
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/definitions/
+message: "Define acronyms and abbreviations (such as '%s') on first occurrence if they're likely to be unfamiliar."
+source: "IBM - Abbreviations, p. 1"
+# Ensures that the existence of 'first' implies the existence of 'second'.
+first: '\b([A-Z]{3,5}s?)\b'
+second: '\(([A-Z]{3,5}s?)\)'
+# ... with the exception of these:
+exceptions:
+  - API
+  - ASP
+  - BIND
+  - CD
+  - CLI
+  - CPU
+  - CSS
+  - CSV
+  - DEBUG
+  - DNS
+  - DOM
+  - DPI
+  - DRL
+  - DSL
+  - EIP
+  - FAQ
+  - FQDN
+  - GAS
+  - GB
+  - GCC
+  - GCJ
+  - GDB
+  - GET
+  - GID
+  - GIMP
+  - GNU
+  - GNUPro
+  - GPL
+  - GPU
+  - GRUB
+  - GTK+
+  - GUI
+  - HP
+  - HTML
+  - HTTP
+  - HTTPS
+  - IBM
+  - IDE
+  - IOPS
+  - IOV
+  - IP
+  - ISO
+  - IT
+  - JAR
+  - JSON
+  - JSX
+  - JVM
+  - KB
+  - KIE
+  - KVM
+  - LAN
+  - LESS
+  - LLDB
+  - LPAR
+  - MB
+  - MBR
+  - MDS
+  - NET
+  - NIC
+  - NOTE
+  - NVDA
+  - OEM
+  - OSS
+  - PATH
+  - PC
+  - POSIX
+  - PDF
+  - PHP
+  - PID
+  - PPP
+  - POST
+  - PROM
+  - PXE
+  - QCOW2
+  - RADOS
+  - RAM
+  - RBD
+  - REPL
+  - REST
+  - RGW
+  - RHEL
+  - ROM
+  - RSA
+  - SCM
+  - SCSS
+  - SDK
+  - SFTP
+  - SHA
+  - SOCKS
+  - SQL
+  - SSH
+  - SSL
+  - SVG
+  - SWAT
+  - TBD
+  - TCP
+  - TLS
+  - TODO
+  - TTL
+  - UID
+  - URI
+  - URL
+  - USB
+  - UTF
+  - VAR
+  - VDSM
+  - VPN
+  - WAN
+  - WCA
+  - XML
+  - XSS
+  - YAML
+  - ZIP

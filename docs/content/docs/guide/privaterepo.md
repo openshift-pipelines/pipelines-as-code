@@ -14,8 +14,8 @@ will create or update a secret called :
 
 `pac-git-basic-auth-REPOSITORY_OWNER-REPOSITORY_NAME`
 
-The secret contains a `.gitconfig` and a git credentials `.git-credentials` with
-the https url using the token it discovered from the GitHub application or
+The secret contains a `.gitconfig` and a Git credentials `.git-credentials` with
+the https URL using the token it discovered from the GitHub application or
 attached to the secret.
 
 As documented :
@@ -35,7 +35,7 @@ Secret :
       secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"
 ```
 
-And inside your pipeline, you are referencing them for the git-clone to reuse  :
+And inside your pipeline, you are referencing them for the `git-clone` to reuse  :
 
 ```yaml
 [...]
@@ -61,7 +61,7 @@ tasks:
           value: $(params.revision)
 ```
 
-The git-clone task will pick up the basic-auth (optional) workspace and
+The `git-clone` task will pick up the basic-auth (optional) workspace and
 automatically use it to be able to clone the private repository.
 
 You can see as well a full example [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/testdata/pipelinerun_git_clone_private.yaml)

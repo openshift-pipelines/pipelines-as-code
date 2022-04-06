@@ -4,7 +4,7 @@ weight: 10
 ---
 # Pipelines as Code CLI
 
-Pipelines as Code provide a powerful CLI designed to work with tkn plugin.  tkn-pac allows you to :
+Pipelines as Code provide a powerful CLI designed to work with tkn plug-in.  tkn-pac allows you to :
 
 * `bootstrap`: quickly bootstrap a Pipelines as Code installation.
 * `create`: create a new Pipelines as Code Repository.
@@ -17,7 +17,7 @@ Pipelines as Code provide a powerful CLI designed to work with tkn plugin.  tkn-
 
 {{< tabs "installbinary" >}}
 {{< tab "Binary" >}}
-You can grab the latest binary directly for your Operating System from the
+You can grab the latest binary directly for your operating system from the
 [releases](https://github.com/openshift-pipelines/pipelines-as-code/releases)
 page.
 
@@ -57,7 +57,7 @@ podman run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
 {{< /tab >}}
 
 {{< tab "GO" >}}
-If you want to install from the git repository you can just do :
+If you want to install from the Git repository you can just do :
 
 ```shell
 go install github.com/openshift-pipelines/pipelines-as-code/cmd/tkn-pac
@@ -90,7 +90,7 @@ yay -S tkn-pac
 It will start checking if you have installed Pipelines as Code and if not it will ask you if you want to  install (with `kubectl`) the latest stable release. If you add the flag `--nightly` it will install the latest code ci release.
 
 Bootstrap detect the OpenShift Route automatically associated to the Pipelines as code controller service.
-If you don't have an OpenShift install it will ask you for your public URL (ie: an ingress spec url)
+If you don't have an OpenShift install it will ask you for your public URL (ie: an ingress spec URL)
 You can override the URL with the flag `--route-url`.
 {{< /details >}}
 
@@ -109,7 +109,7 @@ github application and the secret with all the information needed in the
 
 ### Repository creation
 
-`tkn pac repo create` -- will create a new Pipelines as Code Repository and a namespace where the pipelineruns command. It will also generate a sample file with a [PipelineRun](./autoringprs/) in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch and the `pull_request` and `push` events.  You can customize this by editing the [PipelineRun](./autoringprs/) to target a different branch or event.
+`tkn pac repo create` -- will create a new Pipelines as Code Repository and a namespace where the pipelineruns command. It will also generate a sample file with a [PipelineRun](./autoringprs/) in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch and the `pull_request` and `push` events. You can customize this by editing the [PipelineRun](./autoringprs/) to target a different branch or event.
 {{< /details >}}
 
 {{< details "tkn pac repo list" >}}
@@ -132,7 +132,7 @@ On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows Terminal](https:
 
 ### Generate
 
-`tkn pac generate`: will generate a simple pipelinerun to get you started with Pipelines as Code. It will try to be as smart as possible by detecting the current git information if you run the command from your source code.
+`tkn pac generate`: will generate a simple pipelinerun to get you started with Pipelines as Code. It will try to be as smart as possible by detecting the current Git information if you run the command from your source code.
 
 It has some basic language detection and add extra task depending of the language. For example if it detects a file named `setup.py` at the repository root it will add the [pylint task](https://hub.tekton.dev/tekton/task/pylint) to the generated pipelinerun.
 {{< /details >}}
@@ -152,19 +152,19 @@ tkn pac resolve -f .tekton/pull-request.yaml|kubectl apply -f -
 
 Combined with a kubernetes install running on your local machine (like[Code Ready Containers](https://developers.redhat.com/products/codeready-containers/overview) or [Kubernetes Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) ) you can see your run in action without having to generate a new commit.
 
-If you run the command from your source code repository it will try to detect the current git information and resolve the parameters like current revision or branch. You can override those params with the `-p` option. For example if you want to use a git branch as revision and another repo name than the current repo name you can just use :
+If you run the command from your source code repository it will try to detect the current Git information and resolve the parameters like current revision or branch. You can override those params with the `-p` option. For example if you want to use a Git branch as revision and another repo name than the current repo name you can just use :
 
 `tkn pac resolve -f .tekton/pr.yaml -p revision=main -p repo_name=othername`
 
-`-f` can as well accept a directory path instead of just a filename and grab every `yaml`/`yml` from the directory.
+`-f` can as well accept a directory path rather than just a filename and grab every `yaml`/`yml` from the directory.
 
 You can specify multiple `-f` on the command line.
 
-You need to make sure that git-clone task (if you use it) can access the repository to the SHA. Which mean if you test your current source code you need to push it first tbefore using `tkn pac resolve|kubectl apply`.
+You need to verify that `git-clone` task (if you use it) can access the repository to the SHA. Which mean if you test your current source code you need to push it first tbefore using `tkn pac resolve|kubectl apply`.
 
 Compared with running directly on CI, you need to explicitely specify the list of filenames or directory where you have the templates.
 {{< /details >}}
 
 ## Screenshot
 
-![tkn-plugin](/images/tkn-pac-cli.png)
+![tkn-plug-in](/images/tkn-pac-cli.png)

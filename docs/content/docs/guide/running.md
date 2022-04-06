@@ -43,5 +43,5 @@ tkn pr logs -n my-pipeline-ci -Lf
 ```
 
 Or with the OpenShift console inside your namespace you can follow the
-pipelinerun execution via the URL provided on the "Checks" tab if you run with
+pipelinerun execution with the URL provided on the "Checks" tab if you run with
 GitHub App.

@@ -5,8 +5,8 @@ title: Pipelines as Code Release Process
 
 * Clear out the PR needed to be merged.
 * Wait that CI is connected.
-* Make sure the CI PAC cluster is up.
-* Make sure you have gpg signing [setup](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification) for your commits.
+* Verify PAC CI cluster is up.
+* Verify that you have gpg signing [setup](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification) for your commits.
 
 * Prepare to tag the release with a version, you need to choose between a major release/minor or patch release.
 
@@ -48,5 +48,5 @@ git tag 1.2.3
 ```
 
 * Some issues may be with the GitHub token which may be expired or badly generated with a \n.
-* Some other issues if you didn't do a git fetch -a origin before tagging so
+* Some other issues if you didn't do a Git fetch -a origin before tagging so
   you don't have the latest commits from origin/main

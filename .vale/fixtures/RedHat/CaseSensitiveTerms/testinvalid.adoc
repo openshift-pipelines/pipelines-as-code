@@ -1,0 +1,222 @@
+Bios
+btrfs
+burner
+c group
+capex
+capEx
+Capex
+CD 1
+Cds
+CDS
+CGroup
+classic mode
+control key
+csv
+ctrl
+cygmon
+CygMon
+CYGMON
+Denial of Service
+Denial-of-Service
+Dev Ops
+Dev-Ops
+devops
+Devops
+disk druid
+Disk druid
+diskdruid
+dns
+DVD burner
+Exec Shield
+exif
+EXIF
+F.A.Q
+faq
+Faq
+fedora project
+fortran
+fqdn
+Fqdn
+gb
+Gb
+gbps
+GBPS
+GDBTK
+gid
+Gid
+gimp
+Gimp
+git
+GIT
+gnome
+Gnome
+gnu
+Gnu
+gpl
+Gpl
+Grub
+gtk
+Gtk
+HP Proliant
+hyper-threading
+hyperthreading
+Hyperviser
+HyperVisor
+ia64
+IA64
+IBM z Systems
+Infiniband
+Intel Tolapai
+Iops
+IOPs
+Ip
+IPSec
+iSeries
+iso
+iso image
+Itanium2
+JBoss.org
+jvm
+Jvm
+kernel-based virtual machine
+kickstart
+kvm
+lan
+Lan
+linux
+LINUX
+MicroSoft
+MS
+ms-dos
+Ms-Dos
+MS-dos
+msdos
+MSDOS
+MSFT
+mySQL
+MYSQL
+node.js
+node.JS
+Node.JS
+nodejs
+Nodejs
+Objective-C
+Open InfiniBand
+Operating Environment
+Operating System
+Operator hub
+Operator Hub
+operatorhub
+Operatorhub
+opEx
+Opex
+Opex
+OPEX
+OS
+P-PC
+podman
+Pop-up
+popup
+posix
+Posix
+Postscript
+PPC
+PPC64
+ppp
+Ppp
+prom
+Prom
+pSeries
+q & a
+Q & A
+q&a
+Q&A
+qcow2
+Qcow2
+Qeth
+QETH
+ram
+Ram
+RAM-disk
+ramdisk
+RAMdisk
+RAW
+Red Boot
+Red Hat Proxy
+Red Hat Satellite
+Redboot
+rom
+Rom
+rpm
+S-E Linux
+s-record
+s-Record
+S-Record
+S90
+samba
+SAMBA
+SE Linux
+SE-Linux
+selinux
+Shadow Man
+Shadow passwords
+Shadow utilities
+ShadowMan
+socks
+software collection
+Software collection
+Spring boot
+SR IOV
+SREC
+ssh
+Ssh
+SSL
+Star Office
+Staroffice
+StartX
+SU
+Sys V
+system d
+system D
+system D
+System V
+SystemD
+Tolapai
+ttl
+uid
+UltraSparc
+ULTRASPARC
+unix
+Unix
+UNIX-like
+url
+var
+VI
+vim
+VIM
+Virtual Console
+Virtual Desktop Server Management
+Virtual Network Interface Card
+virtual-console
+VisualStudio Code
+VisualStudioCode
+vlan
+vLAN
+vnic
+VNIC
+vnuma
+VNUMA
+vpn
+VS Code
+VSCode
+VT
+VT-i
+wan
+wca
+web-UI
+webUI
+Window-Maker
+WindowMaker
+Xemacs
+Xterm
+yaml

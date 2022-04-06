@@ -5,7 +5,7 @@ weight: 13
 
 # Install Pipelines-as-Code for Gitlab
 
-Pipelines-As-Code supports [Gitlab](https://www.gitlab.com) via a webhook.
+Pipelines-As-Code supports [Gitlab](https://www.gitlab.com) through a webhook.
 
 Following the [infrastructure installation](install.md#install-pipelines-as-code-infrastructure):
 
@@ -83,7 +83,7 @@ spec:
 
 ## Notes
 
-* Private instance are automatically detected, no need to specify the api url. Unless you want to override it then you can simply add it to the spec`.git_provider.url` field.
+* Private instance are automatically detected, no need to specify the api URL. Unless you want to override it then you can simply add it to the spec`.git_provider.url` field.
 
 * `git_provider.secret` cannot reference a secret in another namespace,
   Pipelines as code assumes always it will be the same namespace as where the

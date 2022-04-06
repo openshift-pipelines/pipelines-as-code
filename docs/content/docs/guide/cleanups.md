@@ -4,8 +4,8 @@ weight: 8
 ---
 # PipelineRuns Cleanups
 
-There can be a lot of PipelineRuns into an user namespace and Pipelines as Code
-has the ability to only keep a number of PipelineRuns that matches an event.
+There can be many PipelineRuns into an user namespace and Pipelines as Code
+has the ability to only keep several PipelineRuns that matches an event.
 
 For example if the PipelineRun has this annotation :
 
