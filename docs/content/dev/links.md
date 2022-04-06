@@ -6,4 +6,4 @@
 
 * [Bitbucket Server Rest API](https://docs.atlassian.com/bitbucket-server/rest/7.17.0/bitbucket-rest.html)
 * [GitHub API](https://docs.github.com/en/rest/reference)
-* [https://docs.gitlab.com/ee/api/api_resources.html](Gitlab API)
+* [Gitlab API](https://docs.gitlab.com/ee/api/api_resources.html)

@@ -96,9 +96,7 @@ will fetch the task directly from that remote URL :
   pipelinesascode.tekton.dev/task: "[https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.3/git-clone.yaml]"
 ```
 
-Additionally, you can as well a reference to a task from a YAML file inside your
->>>>>>> ebf9e67d (Add vale grammar editing)
-repo if you specify the relative path to it, for example :
+Additionally, you can as well have a reference to a task from a YAML file inside your repo if you specify the relative path to it, for example :
 
 ```yaml
 pipelinesascode.tekton.dev/task: "[share/tasks/git-clone.yaml]"
