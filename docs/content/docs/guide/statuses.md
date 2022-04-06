@@ -89,5 +89,3 @@ The push pipeline of Pipelines as Code use this task, you can see the example
 here :
 
 [.tekton/push.yaml](https://github.com/openshift-pipelines/pipelines-as-code/blob/7b41cc3f769af40a84b7ead41c6f037637e95070/.tekton/push.yaml#L116)
-
-

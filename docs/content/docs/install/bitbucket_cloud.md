@@ -53,10 +53,10 @@ recreate it.
 
 - You are now able to create a [`Repository CRD`](../../guide/repositorycrd/).
   The repository CRD will have:
-  
+
   - A **Username** (i.e: your Bitbucket username).
   - A reference to a kubernetes **Secret** containing the App Password as generated previously for Pipelines-as-Code operations.
-  
+
 - First create the secret with the app password in the `target-namespace`:
 
   ```shell

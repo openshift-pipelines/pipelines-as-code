@@ -4,7 +4,7 @@
 
 Pipelines as Code -- An opinionated CI based on OpenShift Pipelines / Tekton.
 
-Full documentation is available from https://pipelinesascode.com
+Full documentation is available from <https://pipelinesascode.com>
 
 ## Introduction
 

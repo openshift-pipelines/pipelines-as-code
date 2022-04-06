@@ -5,8 +5,6 @@ weight: 10
 
 # Create a Pipelines-as-Code GitHub App
 
-
-
 The GitHub App install is different than other install methods since it acts as
 the integration point with OpenShift Pipelines and brings the Git workflow into
 Tekton pipelines. You only need one GitHub App for every users on the cluster

@@ -4,7 +4,6 @@ weight: 3
 ---
 # Authoring PipelineRuns in `.tekton/` directory
 
-
 * Pipelines as Code will always try to be as close to the tekton template as
   possible. Usually you will write your template and save them with a ".yaml"
   extension and Pipelines as Code will run them.
@@ -23,13 +22,13 @@ weight: 3
   allows you to have those "dynamic" variables expanded. Those variables look
   like this `{{ var }}` and those are the one you can use:
 
-  - `{{repo_owner}}`: The repository owner.
-  - `{{repo_name}}`: The repository name.
-  - `{{repo_url}}`: The repository full URL.
-  - `{{revision}}`: The commit full sha revision.
-  - `{{sender}}`: The sender username (or accountid on some providers) of the commit.
-  - `{{source_branch}}`: The branch name where the event come from.
-  - `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
+  * `{{repo_owner}}`: The repository owner.
+  * `{{repo_name}}`: The repository name.
+  * `{{repo_url}}`: The repository full URL.
+  * `{{revision}}`: The commit full sha revision.
+  * `{{sender}}`: The sender username (or accountid on some providers) of the commit.
+  * `{{source_branch}}`: The branch name where the event come from.
+  * `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
 
 * You need at least one `PipelineRun` with a `PipelineSpec` or a separated
   `Pipeline` object. You can have embedded `TaskSpec` inside
@@ -111,6 +110,7 @@ For example :
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "pull_request" && target_branch == "main" && source_branch == "wip"
 ```
+
 Will match a `pull_request` event targeting the branch `main` coming from a branch called `wip`.
 
 The fields available are :
@@ -132,7 +132,7 @@ not the `experimental` branch I would have :
 
 You can find more information about the CEL language spec here :
 
-https://github.com/google/cel-spec/blob/master/doc/langdef.md
+<https://github.com/google/cel-spec/blob/master/doc/langdef.md>
 
 ## Example
 

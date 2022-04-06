@@ -8,6 +8,7 @@ LDFLAGS=
 OUTPUT_DIR=bin
 
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
+MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./vendor/.*' -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
 
 ifeq ($(PAC_VERSION),)
 	PAC_VERSION="$(shell git describe --tags --exact-match 2>/dev/null || echo nightly-`date +'%Y%m%d'`-`git rev-parse --short HEAD`)"
@@ -51,7 +52,7 @@ test-e2e:  test-e2e-cleanup ## run e2e tests
 	@go test -failfast -count=1 -tags=e2e $(GO_TEST_FLAGS) ./test
 
 .PHONY: lint
-lint: lint-go lint-yaml ## run all linters
+lint: lint-go lint-yaml lint-md ## run all linters
 
 .PHONY: lint-go
 lint-go: ## runs go linter on all go files
@@ -65,6 +66,12 @@ lint-go: ## runs go linter on all go files
 lint-yaml: ${YAML_FILES} ## runs yamllint on all yaml files
 	@echo "Linting yaml files..."
 	@yamllint -c .yamllint $(YAML_FILES)
+
+
+.PHONY: lint-md
+lint-md: ${MD_FILES} ## runs markdownlint on all markdown files
+	@echo "Linting markdown files..."
+	@markdownlint $(MD_FILES)
 
 .PHONY: test-unit
 test-unit: ## run unit tests

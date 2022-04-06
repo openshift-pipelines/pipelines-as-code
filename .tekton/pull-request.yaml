@@ -47,6 +47,22 @@ spec:
           - name: source
             workspace: source
 
+      - name: markdownlint
+        runAfter:
+          - fetchit
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: markdown-lint
+              image: quay.io/thegeeklab/markdownlint-cli
+              workingDir: $(workspaces.source.path)
+              script: |
+                markdownlint $(find . -type f -regex ".*md"  -not -regex '^./vendor/.*' -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
+        workspaces:
+          - name: source
+            workspace: source
+
       - name: unitlint
         runAfter:
           - fetchit
