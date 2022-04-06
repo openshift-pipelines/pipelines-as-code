@@ -67,37 +67,37 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	// it is a Gitlab event
 	isGL = true
 
-	setLoggerAndProceed := func() (bool, bool, *zap.SugaredLogger, error) {
+	setLoggerAndProceed := func(processEvent bool, err error) (bool, bool, *zap.SugaredLogger, error) {
 		logger = logger.With("provider", "gitlab", "event", reqHeader.Get("X-Request-Id"))
-		return isGL, true, logger, nil
+		return isGL, processEvent, logger, err
 	}
 
 	eventInt, err := gitlab.ParseWebhook(gitlab.EventType(event), []byte(payload))
 	if err != nil {
-		return isGL, false, logger, err
+		return setLoggerAndProceed(false, err)
 	}
 	_ = json.Unmarshal([]byte(payload), &eventInt)
 
 	switch gitEvent := eventInt.(type) {
 	case *gitlab.MergeEvent:
 		if provider.Valid(gitEvent.ObjectAttributes.Action, []string{"open", "update", "reopen"}) {
-			return setLoggerAndProceed()
+			return setLoggerAndProceed(true, nil)
 		}
-		return isGL, false, logger, nil
+		return setLoggerAndProceed(false, nil)
 	case *gitlab.PushEvent:
-		return setLoggerAndProceed()
+		return setLoggerAndProceed(true, nil)
 	case *gitlab.MergeCommentEvent:
 		if gitEvent.MergeRequest.State == "opened" {
 			if provider.IsRetestComment(gitEvent.ObjectAttributes.Note) {
-				return setLoggerAndProceed()
+				return setLoggerAndProceed(true, nil)
 			}
 			if provider.IsOkToTestComment(gitEvent.ObjectAttributes.Note) {
-				return setLoggerAndProceed()
+				return setLoggerAndProceed(true, nil)
 			}
 		}
-		return isGL, false, logger, nil
+		return setLoggerAndProceed(false, nil)
 	default:
-		return isGL, false, logger, fmt.Errorf("event %s is not supported", event)
+		return setLoggerAndProceed(false, fmt.Errorf("gitlab: event %s is not supported", event))
 	}
 }
 

@@ -242,40 +242,37 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	// it is a Bitbucket cloud event
 	isBitCloud = true
 
-	setLoggerAndProceed := func() (bool, bool, *zap.SugaredLogger, error) {
+	setLoggerAndProceed := func(processEvent bool, err error) (bool, bool, *zap.SugaredLogger, error) {
 		logger = logger.With("provider", "bitbucket-cloud", "event", reqHeader.Get("X-Request-Id"))
-		return isBitCloud, true, logger, nil
+		return isBitCloud, processEvent, logger, err
 	}
 
-	err = json.Unmarshal([]byte(payload), &eventInt)
-	if err != nil {
-		return isBitCloud, false, logger, err
-	}
+	_ = json.Unmarshal([]byte(payload), &eventInt)
 
 	switch e := eventInt.(type) {
 	case *types.PullRequestEvent:
 		if provider.Valid(event, []string{"pullrequest:created", "pullrequest:updated"}) {
-			return setLoggerAndProceed()
+			return setLoggerAndProceed(true, nil)
 		}
 		if provider.Valid(event, []string{"pullrequest:comment_created"}) {
 			if provider.IsRetestComment(e.Comment.Content.Raw) {
-				return setLoggerAndProceed()
+				return setLoggerAndProceed(true, nil)
 			}
 			if provider.IsOkToTestComment(e.Comment.Content.Raw) {
-				return setLoggerAndProceed()
+				return setLoggerAndProceed(true, nil)
 			}
 		}
-		return isBitCloud, false, logger, nil
+		return setLoggerAndProceed(false, nil)
 
 	case *types.PushRequestEvent:
 		if provider.Valid(event, []string{"repo:push"}) {
 			if e.Push.Changes != nil {
-				return setLoggerAndProceed()
+				return setLoggerAndProceed(true, nil)
 			}
 		}
-		return isBitCloud, false, logger, nil
+		return setLoggerAndProceed(false, nil)
 
 	default:
-		return isBitCloud, false, logger, fmt.Errorf("event %s is not recognized", event)
+		return setLoggerAndProceed(false, fmt.Errorf("bitbucket-cloud: event %s is not recognized", event))
 	}
 }

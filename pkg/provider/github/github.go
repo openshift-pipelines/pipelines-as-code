@@ -203,14 +203,14 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	// it is a Github event
 	isGH = true
 
-	setLoggerAndProceed := func() (bool, bool, *zap.SugaredLogger, error) {
+	setLoggerAndProceed := func(processEvent bool, err error) (bool, bool, *zap.SugaredLogger, error) {
 		logger = logger.With("provider", "github", "event", reqHeader.Get("X-GitHub-Delivery"))
-		return isGH, true, logger, nil
+		return isGH, processEvent, logger, err
 	}
 
 	eventInt, err := github.ParseWebHook(event, []byte(payload))
 	if err != nil {
-		return isGH, false, logger, err
+		return setLoggerAndProceed(false, err)
 	}
 
 	_ = json.Unmarshal([]byte(payload), &eventInt)
@@ -218,37 +218,36 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	switch gitEvent := eventInt.(type) {
 	case *github.CheckRunEvent:
 		if gitEvent.GetAction() == "rerequested" && gitEvent.GetCheckRun() != nil {
-			return setLoggerAndProceed()
+			return setLoggerAndProceed(true, nil)
 		}
-		return isGH, false, logger, nil
+		return setLoggerAndProceed(false, nil)
 
 	case *github.IssueCommentEvent:
 		if gitEvent.GetAction() == "created" &&
 			gitEvent.GetIssue().IsPullRequest() &&
 			gitEvent.GetIssue().GetState() == "open" {
 			if provider.IsRetestComment(gitEvent.GetComment().GetBody()) {
-				return setLoggerAndProceed()
+				return setLoggerAndProceed(true, nil)
 			}
 			if provider.IsOkToTestComment(gitEvent.GetComment().GetBody()) {
-				return setLoggerAndProceed()
+				return setLoggerAndProceed(true, nil)
 			}
-			return isGH, false, logger, nil
+			return setLoggerAndProceed(false, nil)
 		}
-		return isGH, false, logger, nil
-
+		return setLoggerAndProceed(false, nil)
 	case *github.PushEvent:
 		if gitEvent.GetPusher() != nil {
-			return setLoggerAndProceed()
+			return setLoggerAndProceed(true, nil)
 		}
-		return isGH, false, logger, nil
+		return setLoggerAndProceed(false, nil)
 
 	case *github.PullRequestEvent:
 		if provider.Valid(gitEvent.GetAction(), []string{"opened", "synchronize", "reopened"}) {
-			return setLoggerAndProceed()
+			return setLoggerAndProceed(true, nil)
 		}
-		return isGH, false, logger, nil
+		return setLoggerAndProceed(false, nil)
 
 	default:
-		return isGH, false, logger, fmt.Errorf("github: event %v is not supported", event)
+		return setLoggerAndProceed(false, fmt.Errorf("github: event %v is not supported", event))
 	}
 }
