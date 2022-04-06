@@ -1,5 +1,5 @@
 ---
-title: Github Webhook
+title: GitHub Webhook
 weight: 12
 ---
 
@@ -8,10 +8,10 @@ weight: 12
 If you are not able to create a GitHub application you can install Pipelines-as-Code on your repository as a
 [GitHub Webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks).
 
-Using Pipelines as Code via Github webhook does not give you access to the [GitHub CheckRun API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api), therefore the status of
+Using Pipelines as Code via GitHub webhook does not give you access to the [GitHub CheckRun API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api), therefore the status of
 the tasks will be added as a Comment of the PR and not via the **Checks** Tab.
 
-After you have finished the [infrastructure installation](install.md#install-pipelines-as-code-infrastructure) you can generate an app password for Pipelines-as-Code Github API operations.
+After you have finished the [infrastructure installation](install.md#install-pipelines-as-code-infrastructure) you can generate an app password for Pipelines-as-Code GitHub API operations.
 
 Follow this guide to create a personal token :
 
@@ -83,6 +83,6 @@ spec:
       # key: "secret-name"
 ```
 
-## Github webhook Notes
+## GitHub webhook Notes
 
 * Secrets needs to be in the same namespace as installed on Repository, they cannot be on another namespace.

@@ -19,7 +19,7 @@ BookEditPath = "edit/main/docs"
 
 [menu]
 [[menu.after]]
-  name = "Github Pipelines as Code"
+  name = "GitHub Pipelines as Code"
   url = "https://github.com/openshift-pipelines/pipelines-as-code"
   weight = 10
 
@@ -39,4 +39,5 @@ guessSyntax = true
 [markup.tableOfContents]
   startLevel = 2
 
-
+[privacy.youtube]
+privacyEnhanced = true

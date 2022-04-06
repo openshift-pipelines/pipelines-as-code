@@ -6,7 +6,7 @@ weight: 6
 
 ## GitHub
 
-When the pipeline finishes, the status will be added in the Github Check tabs
+When the pipeline finishes, the status will be added in the GitHub Check tabs
 with a short recap of how long each task of your pipeline took and the output of
 `tkn pr describe`.
 
@@ -74,7 +74,7 @@ directly like this :
 
 Notifications is not handled by Pipelines as Code, the only place where we
 notify a status in a interface is when we do a Pull Request on for example the
-Github checks interface to show the results of the pull request.
+GitHub checks interface to show the results of the pull request.
 
 If you need some other type of notification you can use
 the [finally feature of tekton pipeline](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#adding-finally-to-the-pipeline)

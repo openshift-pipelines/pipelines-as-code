@@ -39,6 +39,7 @@
 ## Installation
 
 ### Install as git submodule
+
 Navigate to your hugo project root and run:
 
 ```
@@ -56,6 +57,7 @@ hugo server --minify --theme hugo-book
 You can also add this theme as a Hugo module instead of a git submodule.
 
 Start with initializing hugo modules, if not done yet:
+
 ```
 hugo mod init github.com/repo/path
 ```
@@ -193,7 +195,7 @@ disableKinds = ['taxonomy', 'taxonomyTerm']
   # type.
   # Required if 'BookRepo' param is set.
   # Value used to construct a URL consisting of BookRepo/BookCommitPath/<commit-hash>
-  # Github uses 'commit', Bitbucket uses 'commits'
+  # GitHub uses 'commit', Bitbucket uses 'commits'
   BookCommitPath = 'commit'
 
   # Enable 'Edit this page' links for 'doc' page type.
@@ -310,6 +312,7 @@ There are a few hugo templates inserted in `<head>`
 
 To disable Open Graph inclusion you can create your own empty file `\layouts\_internal\opengraph.html`.
 In fact almost empty not quite empty because an empty file looks like absent for HUGO. For example:
+
 ```
 <!-- -->
 ```

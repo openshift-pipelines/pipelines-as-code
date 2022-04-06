@@ -47,6 +47,6 @@ git tag 1.2.3
    git push --force git@github.com:openshift-pipelines/pipelines-as-code 1.2.3
 ```
 
-* Some issues may be with the github token which may be expired or badly generated with a \n.
+* Some issues may be with the GitHub token which may be expired or badly generated with a \n.
 * Some other issues if you didn't do a git fetch -a origin before tagging so
   you don't have the latest commits from origin/main

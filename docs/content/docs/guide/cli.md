@@ -84,8 +84,8 @@ yay -S tkn-pac
 
 `tkn pac bootstrap` command will help you getting started installing and configuring Pipelines as code. It currently supports the following providers:
 
-* Github application on public Github
-* Github application on Github Enterprise
+* GitHub application on public GitHub
+* GitHub application on GitHub Enterprise
 
 It will start checking if you have installed Pipelines as Code and if not it will ask you if you want to  install (with `kubectl`) the latest stable release. If you add the flag `--nightly` it will install the latest code ci release.
 
@@ -98,7 +98,7 @@ You can override the URL with the flag `--route-url`.
 
 ### bootstrap github-app
 
-If you only want to create the Github application you can use `tkn pac bootstrap
+If you only want to create the GitHub application you can use `tkn pac bootstrap
 github-app` directly which would skip the installation and only create the
 github application and the secret with all the information needed in the
 `pipelines-as-code` namespace.
@@ -109,7 +109,7 @@ github application and the secret with all the information needed in the
 
 ### Repository creation
 
-`tkn pac repo create` -- will create a new Pipelines as Code Repository and a namespace where the pipelineruns command. It will also generate a sample file with a [PipelineRun](./autoringprs/) in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch and the `pull_request` and `push` events.  You can customize this by editing the [PipelineRun](./autoringprs/) to target a different branch or event. 
+`tkn pac repo create` -- will create a new Pipelines as Code Repository and a namespace where the pipelineruns command. It will also generate a sample file with a [PipelineRun](./autoringprs/) in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch and the `pull_request` and `push` events.  You can customize this by editing the [PipelineRun](./autoringprs/) to target a different branch or event.
 {{< /details >}}
 
 {{< details "tkn pac repo list" >}}

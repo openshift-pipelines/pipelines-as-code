@@ -1,5 +1,5 @@
 ---
-title: Github Apps
+title: GitHub Apps
 weight: 10
 ---
 
@@ -78,7 +78,7 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
 
 ## GitHub Enterprise
 
-Pipelines as Code supports Github Enterprise.
+Pipelines as Code supports GitHub Enterprise.
 
 You don't need to do anything special to get Pipelines as code working with GHE. Pipelines as code will automatically
 detects the header as set from GHE and use it the GHE API auth url instead of the public github.

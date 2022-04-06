@@ -27,7 +27,7 @@ the `pipelines-as-code` namespace.
 
 * `secret-auto-create`
 
-  Whether to auto create a secret with the token generated via the Github
+  Whether to auto create a secret with the token generated via the GitHub
   application to be used with private repositories. This feature is enabled by
   default.
 

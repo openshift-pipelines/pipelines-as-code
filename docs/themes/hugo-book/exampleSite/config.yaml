@@ -37,7 +37,7 @@ languages:
 menu:
   # before: []
   after:
-    - name: "Github"
+    - name: "GitHub"
       url: "https://github.com/alex-shpak/hugo-book"
       weight: 10
     - name: "Hugo Themes"
@@ -75,7 +75,7 @@ params:
   # commit hash for 'doc' page type.
   # Requires 'BookRepo' param.
   # Value used to construct a URL consisting of BookRepo/BookCommitPath/<commit-hash>
-  # Github uses 'commit', Bitbucket uses 'commits'
+  # GitHub uses 'commit', Bitbucket uses 'commits'
   # BookCommitPath: commit
 
   # Enable "Edit this page" links for 'doc' page type.

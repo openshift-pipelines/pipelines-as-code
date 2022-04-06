@@ -29,10 +29,10 @@ In order to get started with Pipelines-as-Code, you need to
 
 After installing Pipelines as Code you are now ready to configure your Git
 provider. Choose your preferred install method, if you don't have any
-preferences the preferred install method is the Github Application method.
+preferences the preferred install method is the GitHub Application method.
 
-* [Github Application](./github_apps).
-* [Github Webhook](./github_webhook)
+* [GitHub Application](./github_apps).
+* [GitHub Webhook](./github_webhook)
 * [Gitlab](./gitlab)
 * [Bitbucket Server](./bitbucket_server)
 * [Bitbucket Cloud](./bitbucket_cloud)
