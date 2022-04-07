@@ -7,4 +7,3 @@ title: Tools to install
 * [yamllint](https://github.com/adrienverge/yamllint)
 * [vale](https://github.com/errata-ai/vale)
 * [markdownlint](https://github.com/golangci/golangci-lint)
-* [goreleaser](https://github.com/goreleaser/goreleaser) for release
