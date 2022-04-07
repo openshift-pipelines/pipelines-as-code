@@ -38,18 +38,18 @@ Secret :
 And inside your pipeline, you are referencing them for the `git-clone` to reuse  :
 
 ```yaml
-[...]
+[…]
 workspaces:
   - name basic-auth
 params:
     - name: repo_url
     - name: revision
-[...]
+[…]
 tasks:
   workspaces:
     - name: basic-auth
       workspace: basic-auth
-  [...]
+  […]
   tasks:
   - name: git-clone-from-catalog
       taskRef:

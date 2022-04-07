@@ -18,7 +18,7 @@ Following the [infrastructure installation](install.md#install-pipelines-as-code
   token needs to be able to have `api` access to the forked repository from where
   the MR come from, it will fail to do it with a project scoped token. We try
   to fallback nicely by showing the status of the pipeline directly as comment
-  of the the Merge Request.
+  of the Merge Request.
 
 * Go to your project and click on *Settings* and *"Webhooks"* from the sidebar on the left.
 

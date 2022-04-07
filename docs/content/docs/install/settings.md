@@ -11,7 +11,7 @@ There is a few things you can configure through the configmap
 * `application-name`
 
   The name of the application showing for example in the GitHub Checks
-  labels. Default to `"Pipelines as Code CI"`
+  labels. Default to `Pipelines as Code CI`
 
 * `max-keep-days`
 
