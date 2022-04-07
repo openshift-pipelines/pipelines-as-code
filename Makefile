@@ -1,11 +1,13 @@
 TARGET_NAMESPACE=pipelines-as-code
 QUAY_REPOSITORY=quay.io/openshift-pipeline/pipelines-as-code
 QUAY_REPOSITORY_BRANCH=main
-GO_TEST_FLAGS=-v -cover
 GOLANGCI_LINT=golangci-lint
 GOFUMPT=gofumpt
 LDFLAGS=
 OUTPUT_DIR=bin
+GO           = go
+TIMEOUT_UNIT = 5m
+
 
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
 MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./vendor/.*'  -not -regex '^./.vale/.*'  -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
@@ -40,8 +42,21 @@ releaseko: ## Generate release.yaml with ko but changing the target_namespace an
 
 check: lint test
 
-.PHONY: test
-test: test-unit ## run all tests
+## Tests
+TEST_UNIT_TARGETS := test-unit-verbose test-unit-race test-unit-failfast
+test-unit-verbose: ARGS=-v
+test-unit-failfast: ARGS=-failfast
+test-unit-race:    ARGS=-race
+$(TEST_UNIT_TARGETS): test-unit
+test-clean:  ## Clean testcache
+	@echo "Cleaning test cache"
+	@go clean -testcache ./...
+.PHONY: $(TEST_UNIT_TARGETS) test test-unit
+test: test-unit ## Run test-unit
+test-unit: ## Run unit tests
+	@echo "Running unit tests..."
+	@set -o pipefail ; \
+		$(GO) test -timeout $(TIMEOUT_UNIT) $(ARGS) ./... | { grep -v 'no test files'; true; }
 
 .PHONY: test-e2e-cleanup
 test-e2e-cleanup: ## cleanup test e2e namespace/pr left open
@@ -69,17 +84,11 @@ lint-yaml: ${YAML_FILES} ## runs yamllint on all yaml files
 
 
 .PHONY: lint-md
-lint-md: ${MD_FILES} ## runs markdownlint on all markdown files
+lint-md: ${MD_FILES} ## runs markdownlint and vale on all markdown files
 	@echo "Linting markdown files..."
 	@markdownlint $(MD_FILES)
-	@printf "Checking vale grammars: ";vale docs/content --minAlertLevel=error
-
-.PHONY: test-unit
-test-unit: ## run unit tests
-	@echo "Cleaning test cache"
-	@go clean -testcache ./...
-	@echo "Running unit tests..."
-	@go test -failfast $(GO_TEST_FLAGS) ./...
+	@echo "Grammar check with vale of documentation..."
+	@vale docs/content --minAlertLevel=error --output=line
 
 .PHONY: update-golden
 update-golden: ./vendor ## run unit tests (updating golden files)
