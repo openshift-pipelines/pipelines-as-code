@@ -49,7 +49,7 @@ func (v *Provider) getAppToken(ctx context.Context, info *info.PacOpts) error {
 	if err != nil {
 		return fmt.Errorf("could not parse installation_id: %w", err)
 	}
-	v.ApplicationID = &applicationID
+	v.ApplicationID = &installationID
 
 	// check if the path exists
 	if _, err := os.Stat(workspacePath); os.IsNotExist(err) {
