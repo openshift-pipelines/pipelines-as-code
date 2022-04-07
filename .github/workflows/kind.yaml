@@ -4,7 +4,6 @@ on:
   push: # yamllint disable-line
     paths:
       - "**.go"
-      - "**.yaml"
       - "Makefile"
       - "go.mod"
       - "go.sum"
@@ -13,7 +12,6 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - "**.go"
-      - "**.yaml"
       - "Makefile"
       - "go.mod"
       - "go.sum"
