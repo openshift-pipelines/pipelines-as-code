@@ -60,10 +60,15 @@ spec:
                     secretKeyRef:
                       name: "nightly-ci-github-hub-token"
                       key: "hub-token"
+                - name: UPLOADER_UPLOAD_CREDENTIALS
+                  valueFrom:
+                    secretKeyRef:
+                      name: "uploader-upload-credentials"
+                      key: "credentials"
               script: |
                 cd docs
                 [[ -d {{ revision }} ]]  || exit 0
-                tar czf - {{ revision }} | curl -F path=docs -F targz=true -X POST -F file=@- http://uploader:8080/upload
+                tar czf - {{ revision }} | curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -F path=docs -F targz=true -X POST -F file=@- http://uploader:8080/upload
                 # Post as status
                 set +x
                 curl -H "Authorization: Bearer ${HUB_TOKEN}" -H 'Accept: application/vnd.github.v3+json' -X POST https://api.github.com/repos/{{repo_owner}}/{{repo_name}}/statuses/{{revision}} -d '{"state": "success", "target_url": "https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ revision }}", "description": "Generated with brio.", "context": "Pipelines as Code Preview URL"}'
@@ -135,6 +140,11 @@ spec:
                   value: $(workspaces.source.path)/go-build-cache/mod
                 - name: GOLANGCILINT_CACHE
                   value: $(workspaces.source.path)/go-build-cache/golangci-cache
+                - name: UPLOADER_UPLOAD_CREDENTIALS
+                  valueFrom:
+                    secretKeyRef:
+                      name: "uploader-upload-credentials"
+                      key: "credentials"
               name: get-cache
               workingDir: $(workspaces.source.path)
               script: |
@@ -149,7 +159,7 @@ spec:
                 }
 
                 echo "Getting cache"
-                curl http://uploader:8080/golang-cache.tar|tar -x -f- || \
+                curl -u ${UPLOADER_UPLOAD_CREDENTIALS} http://uploader:8080/golang-cache.tar|tar -x -f- || \
                    curl -X DELETE -F "file=golang-cache.tar" http://uploader:8080/upload
             - name: unittest
               # we get bumped out when usingh the official image with docker.io
@@ -198,6 +208,12 @@ spec:
               # Has everything we need in there and we already fetched it!
               image: registry.access.redhat.com/ubi8/python-39@sha256:86466a8a2b3981c339f84e791e170055eb3f520e8419f955efa98e93ccaaf5b9
               workingDir: $(workspaces.source.path)
+              env:
+                - name: UPLOADER_UPLOAD_CREDENTIALS
+                  valueFrom:
+                    secretKeyRef:
+                      name: "uploader-upload-credentials"
+                      key: "credentials"
               script: |
                 #!/usr/bin/env bash
                 set -eux
@@ -216,7 +232,8 @@ spec:
                 fi
 
                 cd $(workspaces.source.path)/go-build-cache
-                tar cf - . |curl -# -L -f -F path=golang-cache.tar -X POST -F "file=@-" http://uploader:8080/upload
+                tar cf - . |curl -u ${UPLOADER_UPLOAD_CREDENTIALS} \
+                    -# -L -f -F path=golang-cache.tar -X POST -F "file=@-" http://uploader:8080/upload
 
       - name: codecov
         runAfter:
