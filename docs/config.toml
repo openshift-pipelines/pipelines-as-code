@@ -5,7 +5,7 @@ title = 'Pipelines as Code'
 theme = "hugo-book"
 # Book configuration
 disablePathToLower = true
-enableGitInfo = true
+#enableGitInfo = true
 
 [outputs]
 home = [ "HTML", "RSS", "JSON"]
