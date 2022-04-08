@@ -9,6 +9,7 @@ GO           = go
 TIMEOUT_UNIT = 5m
 
 
+PY_FILES := $(shell find . -type f -regex ".*py" -print)
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
 MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./vendor/.*'  -not -regex '^./.vale/.*'  -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
 
@@ -23,7 +24,8 @@ FORCE:
 
 .PHONY: vendor
 vendor:
-	go mod tidy && go mod vendor
+	@echo Generating vendor directory
+	@go mod tidy && go mod vendor
 
 $(OUTPUT_DIR)/%: cmd/% FORCE
 	go build -mod=vendor $(FLAGS)  -v -o $@ ./$<
@@ -69,6 +71,10 @@ test-e2e:  test-e2e-cleanup ## run e2e tests
 .PHONY: lint
 lint: lint-go lint-yaml lint-md ## run all linters
 
+.PHONY: pre-commit
+pre-commit: ## Run pre-commit hooks script manually
+	@pre-commit run --all-files
+
 .PHONY: lint-go
 lint-go: ## runs go linter on all go files
 	@echo "Linting go files..."
@@ -90,6 +96,11 @@ lint-md: ${MD_FILES} ## runs markdownlint and vale on all markdown files
 	@echo "Grammar check with vale of documentation..."
 	@vale docs/content --minAlertLevel=error --output=line
 
+.PHONY: lint-py
+lint-py: ${PY_FILES} ## runs pylint on all python files
+	@echo "Linting python files..."
+	@pylint $(PY_FILES)
+
 .PHONY: update-golden
 update-golden: ./vendor ## run unit tests (updating golden files)
 	@echo "Running unit tests to update golden files..."
@@ -102,6 +113,11 @@ generated: update-golden fumpt ## generate all files that needs to be generated
 html-coverage: ./vendor ## generate html coverage
 	@mkdir -p tmp
 	@go test -coverprofile=tmp/c.out ./.../ && go tool cover -html=tmp/c.out
+
+check-generated: # vendor update-golden
+	@git status -uno |grep -E "modified:[ ]*(vendor/|.*.golden$)" && \
+		{ echo "Vendor directory or Golden files has not been generated properly, commit the change first" ; \
+		  git status -uno ;	exit 1 ;} || true
 
 .PHONY: clean
 clean: ## clean build artifacts
