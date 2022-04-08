@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
+	"go.uber.org/zap"
 )
 
 const bitbucketCloudIPrangesList = "https://ip-ranges.atlassian.com/"
@@ -144,6 +145,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.HeadBranch = e.PullRequest.Source.Branch.Name
 		processedEvent.AccountID = e.PullRequest.Author.AccountID
 		processedEvent.Sender = e.PullRequest.Author.Nickname
+		processedEvent.PullRequestNumber = e.PullRequest.ID
 	case *types.PushRequestEvent:
 		processedEvent.Event = "push"
 		processedEvent.TriggerTarget = "push"
@@ -159,4 +161,54 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return nil, fmt.Errorf("event %s is not recognized", event)
 	}
 	return processedEvent, nil
+}
+
+func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
+	isBitCloud := false
+	event := reqHeader.Get("X-Event-Key")
+	if event == "" {
+		return false, false, logger, nil
+	}
+
+	eventInt, err := parsePayloadType(event, payload)
+	if err != nil || eventInt == nil {
+		return false, false, logger, err
+	}
+
+	// it is a Bitbucket cloud event
+	isBitCloud = true
+
+	setLoggerAndProceed := func(processEvent bool, err error) (bool, bool, *zap.SugaredLogger, error) {
+		logger = logger.With("provider", "bitbucket-cloud", "event", reqHeader.Get("X-Request-Id"))
+		return isBitCloud, processEvent, logger, err
+	}
+
+	_ = json.Unmarshal([]byte(payload), &eventInt)
+
+	switch e := eventInt.(type) {
+	case *types.PullRequestEvent:
+		if provider.Valid(event, []string{"pullrequest:created", "pullrequest:updated"}) {
+			return setLoggerAndProceed(true, nil)
+		}
+		if provider.Valid(event, []string{"pullrequest:comment_created"}) {
+			if provider.IsRetestComment(e.Comment.Content.Raw) {
+				return setLoggerAndProceed(true, nil)
+			}
+			if provider.IsOkToTestComment(e.Comment.Content.Raw) {
+				return setLoggerAndProceed(true, nil)
+			}
+		}
+		return setLoggerAndProceed(false, nil)
+
+	case *types.PushRequestEvent:
+		if provider.Valid(event, []string{"repo:push"}) {
+			if e.Push.Changes != nil {
+				return setLoggerAndProceed(true, nil)
+			}
+		}
+		return setLoggerAndProceed(false, nil)
+
+	default:
+		return setLoggerAndProceed(false, fmt.Errorf("bitbucket-cloud: event %s is not recognized", event))
+	}
 }

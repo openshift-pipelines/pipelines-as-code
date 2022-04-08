@@ -14,7 +14,9 @@ Pipeline name as well.
 This allows you to have multiple runs in the same namespace from the same
 PipelineRun with no risk of conflicts.
 
-Everything that runs your pipelinerun and its references need to be inside the `.tekton/` directory and subdirectories as referenced with a remote task (see below on how the remote tasks are referenced).
+Everything that runs your pipelinerun and its references need to be inside the
+`.tekton/` directory and subdirectories as referenced with a remote task (see
+below on how the remote tasks are referenced).
 
 If you have a taskRef to a task located in any directory or subdirectorie of the
 `.tekton/` directory it will be automatically embedded even if it's not in the

@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
+	"go.uber.org/zap"
 )
 
 // sanitizeEventURL returns the URL to the event without the /browse
@@ -61,6 +62,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.Organization = e.PulRequest.ToRef.Repository.Project.Key
 		processedEvent.Repository = e.PulRequest.ToRef.Repository.Name
 		processedEvent.SHA = e.PulRequest.FromRef.LatestCommit
+		processedEvent.PullRequestNumber = e.PulRequest.ID
 		processedEvent.URL = e.PulRequest.ToRef.Repository.Links.Self[0].Href
 		processedEvent.BaseBranch = e.PulRequest.ToRef.DisplayID
 		processedEvent.HeadBranch = e.PulRequest.FromRef.DisplayID
@@ -133,4 +135,56 @@ func parsePayloadType(event string) (interface{}, error) {
 		intfType = nil
 	}
 	return intfType, nil
+}
+
+// Detect processes event and detect if it is a bitbucket server event, whether to process or reject it
+// returns (if is a bitbucket server event, whether to process or reject, error if any occurred)
+func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
+	isBitServer := false
+	event := reqHeader.Get("X-Event-Key")
+	if event == "" {
+		return false, false, logger, nil
+	}
+
+	eventPayload, err := parsePayloadType(event)
+	if err != nil || eventPayload == nil {
+		return false, false, logger, err
+	}
+
+	// it is a Bitbucket server event
+	isBitServer = true
+
+	setLoggerAndProceed := func(processEvent bool, err error) (bool, bool, *zap.SugaredLogger, error) {
+		logger = logger.With("provider", "bitbucket-server", "event", reqHeader.Get("X-Request-Id"))
+		return isBitServer, processEvent, logger, err
+	}
+
+	_ = json.Unmarshal([]byte(payload), &eventPayload)
+
+	switch e := eventPayload.(type) {
+	case *types.PullRequestEvent:
+		if provider.Valid(event, []string{"pr:from_ref_updated", "pr:opened"}) {
+			return setLoggerAndProceed(true, nil)
+		}
+		if provider.Valid(event, []string{"pr:comment:added"}) {
+			if provider.IsRetestComment(e.Comment.Text) {
+				return setLoggerAndProceed(true, nil)
+			}
+			if provider.IsOkToTestComment(e.Comment.Text) {
+				return setLoggerAndProceed(true, nil)
+			}
+		}
+		return setLoggerAndProceed(false, nil)
+
+	case *types.PushRequestEvent:
+		if provider.Valid(event, []string{"repo:refs_changed"}) {
+			if e.Changes != nil {
+				return setLoggerAndProceed(true, nil)
+			}
+		}
+		return setLoggerAndProceed(false, nil)
+
+	default:
+		return setLoggerAndProceed(false, fmt.Errorf("bitbucket-server: event %s is not supported", event))
+	}
 }

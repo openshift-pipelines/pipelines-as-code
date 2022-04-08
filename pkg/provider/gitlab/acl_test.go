@@ -12,7 +12,6 @@ func TestIsAllowed(t *testing.T) {
 	type fields struct {
 		targetProjectID int
 		sourceProjectID int
-		mergeRequestID  int
 		userID          int
 	}
 	type args struct {
@@ -68,10 +67,9 @@ func TestIsAllowed(t *testing.T) {
 			fields: fields{
 				userID:          6666,
 				targetProjectID: 2525,
-				mergeRequestID:  1,
 			},
 			args: args{
-				event: &info.Event{Sender: "noowner"},
+				event: &info.Event{Sender: "noowner", PullRequestNumber: 1},
 			},
 			allowMemberID:   1111,
 			commentContent:  "/ok-to-test",
@@ -84,10 +82,9 @@ func TestIsAllowed(t *testing.T) {
 			fields: fields{
 				userID:          6666,
 				targetProjectID: 2525,
-				mergeRequestID:  1,
 			},
 			args: args{
-				event: &info.Event{Sender: "noowner"},
+				event: &info.Event{Sender: "noowner", PullRequestNumber: 1},
 			},
 			commentContent: "/ok-to-test",
 			commentAuthor:  "notallowed",
@@ -100,7 +97,6 @@ func TestIsAllowed(t *testing.T) {
 			v := &Provider{
 				targetProjectID: tt.fields.targetProjectID,
 				sourceProjectID: tt.fields.sourceProjectID,
-				mergeRequestID:  tt.fields.mergeRequestID,
 				userID:          tt.fields.userID,
 			}
 			if tt.wantClient {
@@ -113,7 +109,7 @@ func TestIsAllowed(t *testing.T) {
 					thelp.MuxGetFile(t, mux, tt.fields.targetProjectID, "OWNERS", tt.ownerFile)
 				}
 				if tt.commentContent != "" {
-					thelp.MuxDiscussionsNote(t, mux, tt.fields.targetProjectID, tt.fields.mergeRequestID, tt.commentAuthor, tt.commentAuthorID, tt.commentContent)
+					thelp.MuxDiscussionsNote(t, mux, tt.fields.targetProjectID, tt.args.event.PullRequestNumber, tt.commentAuthor, tt.commentAuthorID, tt.commentContent)
 				}
 
 				defer tearDown()

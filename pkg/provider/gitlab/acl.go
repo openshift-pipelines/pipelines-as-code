@@ -31,7 +31,7 @@ func (v *Provider) checkMembership(event *info.Event, userid int) bool {
 func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event, page int) (bool, error) {
 	var nextPage int
 	opt := &gitlab.ListMergeRequestDiscussionsOptions{Page: page}
-	discussions, resp, err := v.Client.Discussions.ListMergeRequestDiscussions(v.targetProjectID, v.mergeRequestID, opt)
+	discussions, resp, err := v.Client.Discussions.ListMergeRequestDiscussions(v.targetProjectID, event.PullRequestNumber, opt)
 	if err != nil {
 		return false, err
 	}

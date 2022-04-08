@@ -38,7 +38,6 @@ type Provider struct {
 	Token             *string
 	targetProjectID   int
 	sourceProjectID   int
-	mergeRequestID    int
 	userID            int
 	pathWithNamespace string
 	repoURL           string
@@ -144,7 +143,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.HeadBranch = gitEvent.ObjectAttributes.SourceBranch
 		processedEvent.BaseBranch = gitEvent.ObjectAttributes.TargetBranch
 
-		v.mergeRequestID = gitEvent.ObjectAttributes.IID
+		processedEvent.PullRequestNumber = gitEvent.ObjectAttributes.IID
 		v.targetProjectID = gitEvent.Project.ID
 		v.sourceProjectID = gitEvent.ObjectAttributes.SourceProjectID
 		v.userID = gitEvent.User.ID
@@ -187,7 +186,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
 		processedEvent.TriggerTarget = "pull_request"
 
-		v.mergeRequestID = gitEvent.MergeRequest.IID
+		processedEvent.PullRequestNumber = gitEvent.MergeRequest.IID
 		v.targetProjectID = gitEvent.MergeRequest.TargetProjectID
 		v.sourceProjectID = gitEvent.MergeRequest.SourceProjectID
 		v.userID = gitEvent.User.ID
@@ -283,7 +282,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 	_, _, _ = v.Client.Commits.SetCommitStatus(v.sourceProjectID, event.SHA, opt)
 	if statusOpts.Conclusion != "running" {
 		opt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.String(body)}
-		_, _, err := v.Client.Notes.CreateMergeRequestNote(v.targetProjectID, v.mergeRequestID, opt)
+		_, _, err := v.Client.Notes.CreateMergeRequestNote(v.targetProjectID, event.PullRequestNumber, opt)
 		return err
 	}
 

@@ -19,14 +19,15 @@ type Event struct {
 	// a push or a pull_request
 	TriggerTarget string
 
-	BaseBranch    string // branch against where we are making the PR
-	DefaultBranch string // master/main branches to know where things like the OWNERS file is located.
-	HeadBranch    string // branch from where our SHA get tested
-	SHA           string
-	Sender        string
-	URL           string // WEB url not the git URL, which would match to the repo.spec
-	SHAURL        string // pretty URL for web browsing for UIs (cli/web)
-	SHATitle      string // commit title for UIs
+	BaseBranch        string // branch against where we are making the PR
+	DefaultBranch     string // master/main branches to know where things like the OWNERS file is located.
+	HeadBranch        string // branch from where our SHA get tested
+	SHA               string
+	Sender            string
+	URL               string // WEB url not the git URL, which would match to the repo.spec
+	SHAURL            string // pretty URL for web browsing for UIs (cli/web)
+	SHATitle          string // commit title for UIs
+	PullRequestNumber int    // Pull or Merge Request number
 
 	// TODO: move forge specifics to each driver
 	// Github
