@@ -27,8 +27,8 @@ check these boxes to add the permissions to the token :
 
 Keep the generated token noted somewhere or otherwise you will have to recreate it.
 
-- Go to you **"Repository setting"** tab on your **Repository** and click on the
-  **WebHooks** tab and **"Add webhook"** button.
+- Go to you **“Repository setting“** tab on your **Repository** and click on the
+  **WebHooks** tab and **“Add webhook“** button.
 
 - Set a **Title** (i.e: Pipelines as Code)
 
@@ -60,27 +60,27 @@ Keep the generated token noted somewhere or otherwise you will have to recreate 
 
   ```shell
   kubectl -n target-namespace create secret generic bitbucket-cloud-token \
-          --from-literal "APP_PASSWORD_AS_GENERATED_PREVIOUSLY"
+          --from-literal “APP_PASSWORD_AS_GENERATED_PREVIOUSLY“
   ```
 
 - And then create the Repository CRD with the secret field referencing it, for example:
 
 ```yaml
 ---
-apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+apiVersion: “pipelinesascode.tekton.dev/v1alpha1“
 kind: Repository
 metadata:
   name: my-repo
   namespace: target-namespace
 spec:
-  url: "https://bitbucket.com/workspace/repo"
-  branch: "main"
+  url: “https://bitbucket.com/workspace/repo“
+  branch: “main“
   git_provider:
-    user: "yourbitbucketusername"
+    user: “yourbitbucketusername“
     secret:
-      name: "bitbucket-cloud-token"
+      name: “bitbucket-cloud-token“
       # Set this if you have a different key in your secret
-      # key: "token"
+      # key: “token“
 ```
 
 ## Bitbucket Cloud Notes

@@ -22,7 +22,7 @@ Follow this guide to create a personal token :
 
 The only permission needed is the *repo* permission. You will have to note the generated token somewhere or otherwise you will have to recreate it.
 
-* Go to you repository or organization setting and click on *Hooks* and *"Add webhook"* links.
+* Go to you repository or organization setting and click on *Hooks* and *“Add webhook“* links.
 
 * Set the payload URL to Pipeline as Code public URL. On OpenShift you can get the public URL of the Pipelines-as-Code controller like this:
 

@@ -17,8 +17,8 @@ with the string `/retest` to ask Pipelines as Code to retest the current PR.
 Example :
 
 ```text
-Thanks for contributing! This is a much needed bugfix! ❤️
-The failure is not with your PR but seems to be an infra issue.
+Thanks for contributing, This is a much needed bugfix, and we love it ❤️ The
+failure is not with your PR but seems to be an infra issue.
 
 /retest
 ```
@@ -67,7 +67,7 @@ directly like this :
     "pipelineRunName": "pipelines-as-code-test-run-2fhhg",
     "startTime": "2021-05-05T11:11:20Z"
   },
-  [...]
+  […]
 ```
 
 ## Notifications
