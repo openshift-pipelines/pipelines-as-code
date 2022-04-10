@@ -49,7 +49,7 @@
 
   /**
    * @param {String} character
-   * @returns {Boolean} 
+   * @returns {Boolean}
    */
   function isHotkey(character) {
     const dataHotkeys = input.getAttribute('data-hotkeys') || '';

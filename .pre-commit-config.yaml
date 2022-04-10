@@ -1,0 +1,56 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+default_install_hook_types: ["pre-push"]
+exclude: '(^docs/themes/hugo-book|^vendor|.*golden$|^\.vale)'
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.2.0
+  hooks:
+  - id: check-added-large-files
+  - id: check-toml
+  - id: check-shebang-scripts-are-executable
+  - id: check-json
+  - id: check-vcs-permalinks
+  - id: detect-private-key
+    exclude: "pkg/provider/github/events_test.go"
+- repo: local
+  hooks:
+  - id: lint-markdown
+    name: "Lint Markdown"
+    entry: make
+    args: ["lint-md"]
+    language: system
+    types: [markdown]
+    pass_filenames: false
+  - id: lint-go
+    name: "Lint GO"
+    entry: make
+    args: ["lint-go"]
+    language: system
+    types: [go]
+    pass_filenames: false
+  - id: test
+    name: "Unit testing"
+    entry: make
+    args: ["test"]
+    language: system
+    types: [go]
+    pass_filenames: false
+  - id: lint-yaml
+    name: "Lint YAML"
+    entry: make
+    args: ["lint-yaml"]
+    language: system
+    types: [yaml]
+    pass_filenames: false
+  - id: check-generated
+    name: "Check generated vendor and golden files"
+    entry: make
+    args: ["check-generated"]
+    language: system
+    types: [go]
+    pass_filenames: false
+
+# TODO: add a lint-py when we have the errors fix
+# TODO: add a lint-sh when we have the errors fix
+#
