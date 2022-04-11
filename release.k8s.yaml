@@ -17,7 +17,7 @@ kind: Namespace
 metadata:
   name: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 ---
@@ -44,7 +44,7 @@ metadata:
   name: pipelines-as-code-sa-el
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 ---
@@ -54,7 +54,7 @@ metadata:
   name: pipelines-as-code-role-el
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -83,7 +83,7 @@ metadata:
   name: pipelines-as-code-binding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -101,7 +101,7 @@ metadata:
   name: openshift-pipeline-as-code-clusterrole
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -137,7 +137,7 @@ metadata:
   name: pipelines-as-code-clusterbinding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -154,7 +154,7 @@ kind: ClusterRole
 metadata:
   name: pipelines-as-code-aggregate
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -193,7 +193,7 @@ kind: CustomResourceDefinition
 metadata:
   name: repositories.pipelinesascode.tekton.dev
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -324,7 +324,7 @@ metadata:
   name: pipelines-as-code
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/part-of: pipelines-as-code
 ---
 # Copyright 2021 Red Hat
@@ -347,7 +347,7 @@ metadata:
   name: pipelines-as-code-pr-cleanup
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   concurrencyPolicy: Replace
@@ -412,7 +412,7 @@ metadata:
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   serviceAccountName: pipelines-as-code-sa-el
@@ -741,7 +741,7 @@ metadata:
   name: pipelines-as-code-github-recheck
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -780,7 +780,7 @@ metadata:
   name: pipelines-as-code-github-recheck
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -806,11 +806,12 @@ spec:
       metadata:
         generateName: pipelines-as-code-run-
         labels:
-          app.kubernetes.io/version: "0.5.7"
+          app.kubernetes.io/version: "0.5.8"
           app.kubernetes.io/managed-by: pipelines-as-code
           pipelinesascode.tekton.dev/event: $(tt.params.event_type)
       spec:
         serviceAccountName: pipelines-as-code-sa-el
+        timeout: 24h0m0s
         params:
           - name: action
             value: $(tt.params.action)
@@ -870,7 +871,7 @@ spec:
           steps:
             - name: apply-and-launch
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.7"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.8"
               env:
                 - name: PAC_GIT_PROVIDER_APIURL
                   value: $(params.ghe_host)
@@ -948,7 +949,7 @@ metadata:
   name: pipelines-as-code-github-pullreq
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -988,7 +989,7 @@ metadata:
   name: pipelines-as-code-github-pullreq
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1015,10 +1016,11 @@ spec:
       metadata:
         generateName: pipelines-as-code-run-
         labels:
-          app.kubernetes.io/version: "0.5.7"
+          app.kubernetes.io/version: "0.5.8"
           app.kubernetes.io/managed-by: pipelines-as-code
           pipelinesascode.tekton.dev/event: $(tt.params.event_type)
       spec:
+        timeout: 24h0m0s
         serviceAccountName: pipelines-as-code-sa-el
         params:
           - name: ghe_host
@@ -1101,7 +1103,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.7"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.8"
               script: |
                 #!/usr/bin/env bash
                 set -euf
@@ -1161,7 +1163,7 @@ metadata:
   name: pipelines-as-code-github-push
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1198,7 +1200,7 @@ metadata:
   name: pipelines-as-code-github-push
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1223,10 +1225,11 @@ spec:
       metadata:
         generateName: pipelines-as-code-run-
         labels:
-          app.kubernetes.io/version: "0.5.7"
+          app.kubernetes.io/version: "0.5.8"
           app.kubernetes.io/managed-by: pipelines-as-code
           pipelinesascode.tekton.dev/event: $(tt.params.event_type)
       spec:
+        timeout: 24h0m0s
         serviceAccountName: pipelines-as-code-sa-el
         params:
           - name: ghe_host
@@ -1282,7 +1285,7 @@ spec:
           steps:
             - name: apply-and-launch
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.7"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.8"
               env:
                 - name: PAC_GIT_PROVIDER_APIURL
                   value: $(params.ghe_host)
@@ -1354,7 +1357,7 @@ metadata:
   name: pipelines-as-code-github-retest-comment
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1384,7 +1387,7 @@ metadata:
   name: pipelines-as-code-github-retest-comment
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1406,10 +1409,11 @@ spec:
       metadata:
         generateName: pipelines-as-code-run-
         labels:
-          app.kubernetes.io/version: "0.5.7"
+          app.kubernetes.io/version: "0.5.8"
           app.kubernetes.io/managed-by: pipelines-as-code
           pipelinesascode.tekton.dev/event: $(tt.params.event_type)
       spec:
+        timeout: 24h0m0s
         serviceAccountName: pipelines-as-code-sa-el
         params:
           - name: ghe_host
@@ -1453,7 +1457,7 @@ spec:
           steps:
             - name: apply-and-launch
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.7"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.8"
               env:
                 - name: PAC_GIT_PROVIDER_APIURL
                   value: $(params.ghe_host)
@@ -1525,7 +1529,7 @@ metadata:
   name: pipelines-as-code-github-ok-to-test-comment
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1569,7 +1573,7 @@ metadata:
   name: pipelines-as-code-bitbucket-cloud-pullreq
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1587,7 +1591,7 @@ metadata:
   name: pipelines-as-code-bitbucket-cloud-pullreq-common
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1619,7 +1623,7 @@ metadata:
   name: pipelines-as-code-bitbucket-cloud-pullreq
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1642,12 +1646,13 @@ spec:
       metadata:
         generateName: pipelines-as-code-run-
         labels:
-          app.kubernetes.io/version: "0.5.7"
+          app.kubernetes.io/version: "0.5.8"
           app.kubernetes.io/managed-by: pipelines-as-code
           # TODO: maybe do a truncate here to at least know the pull_request event
           # pipelinesascode.tekton.dev/event: $(tt.params.event_type)
       spec:
         serviceAccountName: pipelines-as-code-sa-el
+        timeout: 24h0m0s
         params:
           - name: source_ip
             value: $(tt.params.source_ip)
@@ -1727,7 +1732,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.7"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.8"
               script: |
                 #!/usr/bin/env bash
                 set -euf
@@ -1790,7 +1795,7 @@ metadata:
   name: pipelines-as-code-bitbucket-cloud-push
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1824,7 +1829,7 @@ metadata:
   name: pipelines-as-code-bitbucket-cloud-push
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -1847,10 +1852,11 @@ spec:
       metadata:
         generateName: pipelines-as-code-run-
         labels:
-          app.kubernetes.io/version: "0.5.7"
+          app.kubernetes.io/version: "0.5.8"
           app.kubernetes.io/managed-by: pipelines-as-code
       spec:
         serviceAccountName: pipelines-as-code-sa-el
+        timeout: 24h0m0s
         params:
           - name: source_ip
             value: $(tt.params.source_ip)
@@ -1926,7 +1932,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.7"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.8"
               script: |
                 #!/usr/bin/env bash
                 set -euf
@@ -1986,7 +1992,7 @@ metadata:
   name: pipelines-as-code-bitbucket-cloud-retest-comment
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -2003,7 +2009,7 @@ metadata:
   name: pipelines-as-code-bitbucket-cloud-ok-to-test-comment
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -2033,7 +2039,7 @@ metadata:
   name: pipelines-as-code-bitbucket-server-pullreq
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -2051,7 +2057,7 @@ metadata:
   name: pipelines-as-code-bitbucket-server-pullreq-common
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -2106,7 +2112,7 @@ metadata:
   name: pipelines-as-code-bitbucket-server-pullreq
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -2134,9 +2140,10 @@ spec:
       metadata:
         generateName: pipelines-as-code-run-
         labels:
-          app.kubernetes.io/version: "0.5.7"
+          app.kubernetes.io/version: "0.5.8"
           app.kubernetes.io/managed-by: pipelines-as-code
       spec:
+        timeout: 24h0m0s
         serviceAccountName: pipelines-as-code-sa-el
         params:
           - name: trigger_target
@@ -2221,7 +2228,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.7"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.8"
               script: |
                 #!/usr/bin/env bash
                 set -euf
@@ -2303,7 +2310,7 @@ metadata:
   name: pipelines-as-code-bitbucket-server-push
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -2340,7 +2347,7 @@ metadata:
   name: pipelines-as-code-bitbucket-server-push
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -2363,9 +2370,10 @@ spec:
       metadata:
         generateName: pipelines-as-code-run-
         labels:
-          app.kubernetes.io/version: "0.5.7"
+          app.kubernetes.io/version: "0.5.8"
           app.kubernetes.io/managed-by: pipelines-as-code
       spec:
+        timeout: 24h0m0s
         serviceAccountName: pipelines-as-code-sa-el
         params:
           - name: "event_type"
@@ -2430,7 +2438,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
               imagePullPolicy: Always
-              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.7"
+              image: "quay.io/openshift-pipeline/pipelines-as-code:0.5.8"
               script: |
                 #!/usr/bin/env bash
                 set -euf
@@ -2475,7 +2483,7 @@ metadata:
   name: pipelines-as-code-bitbucket-server-retest-comment
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -2492,7 +2500,7 @@ metadata:
   name: pipelines-as-code-bitbucket-server-ok-to-test-comment
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.5.7"
+    app.kubernetes.io/version: "0.5.8"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
