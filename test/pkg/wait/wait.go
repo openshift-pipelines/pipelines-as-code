@@ -23,7 +23,7 @@ type Opts struct {
 func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts Opts) error {
 	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
 	defer cancel()
-	return kubeinteraction.PollImmediateWithContext(ctx, func() (bool, error) {
+	return kubeinteraction.PollImmediateWithContext(ctx, opts.PollTimeout, func() (bool, error) {
 		clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace)
 		r, err := clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Get(ctx, opts.RepoName,
 			metav1.GetOptions{})

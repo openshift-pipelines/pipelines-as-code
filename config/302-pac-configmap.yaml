@@ -42,8 +42,9 @@ data:
   # Add extra IPS (ie: 127.0.0.1) or networks (127.0.0.0/16) separated by commas.
   bitbucket-cloud-additional-source-ip: ""
 
-  # The default time to wait for a pipelineRun
-  default-pipelinerun-timeout: "2h"
+  # Global setting for pipelinerun timeout regardless of how the user
+  # pipelinerun timeout.
+  # default-pipelinerun-timeout: "2h"
 
 kind: ConfigMap
 metadata:

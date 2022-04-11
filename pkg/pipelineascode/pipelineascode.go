@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
@@ -173,9 +174,18 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 		return fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
 	}
 
+	var duration time.Duration
+	if cs.Info.Pac.DefaultPipelineRunTimeout != nil {
+		duration = *cs.Info.Pac.DefaultPipelineRunTimeout
+	} else {
+		// Tekton Pipeline controller should always set this value.
+		duration = pr.Spec.Timeout.Duration + 1*time.Minute
+	}
 	cs.Clients.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes",
-		pr.Namespace, pr.Name, formatting.HumanDuration(cs.Info.Pac.DefaultPipelineRunTimeout))
-	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, cs.Info.Pac.DefaultPipelineRunTimeout); err != nil {
+		pr.Namespace, pr.Name, formatting.HumanDuration(duration))
+	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, duration); err != nil {
+		// if we have a timeout from the pipeline run, we would not know it. We would need to get the PR status to know.
+		// maybe something to improve in the future.
 		return fmt.Errorf("pipelinerun %s in namespace %s has a failed status: %w",
 			pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
 	}

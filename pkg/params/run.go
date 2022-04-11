@@ -33,6 +33,7 @@ func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
 	if ns == "" {
 		return fmt.Errorf("failed to find pipelines-as-code installation namespace")
 	}
+	// TODO: move this to kubeinteractions class so we can add unittests.
 	cfg, err := r.Clients.Kube.CoreV1().ConfigMaps(ns).Get(ctx, info.PACConfigmapName, v1.GetOptions{})
 	if err != nil {
 		return err
@@ -72,14 +73,10 @@ func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
 	if timeout, ok := cfg.Data["default-pipelinerun-timeout"]; ok {
 		parsedTimeout, err := time.ParseDuration(timeout)
 		if err != nil {
-			r.Clients.Log.Infof("failed to parse default-pipelinerun-timeout: %s, using %v as default timeout",
-				cfg.Data["default-pipelinerun-timeout"], info.DefaultPipelineRunTimeout)
-			r.Info.Pac.DefaultPipelineRunTimeout = info.DefaultPipelineRunTimeout
+			r.Clients.Log.Errorf("failed to parse default-pipelinerun-timeout: %s", cfg.Data["default-pipelinerun-timeout"])
 		} else {
-			r.Info.Pac.DefaultPipelineRunTimeout = parsedTimeout
+			r.Info.Pac.DefaultPipelineRunTimeout = &parsedTimeout
 		}
-	} else {
-		r.Info.Pac.DefaultPipelineRunTimeout = info.DefaultPipelineRunTimeout
 	}
 
 	if check, ok := cfg.Data["bitbucket-cloud-check-source-ip"]; ok {

@@ -20,12 +20,12 @@ type sinker struct {
 	event *info.Event
 }
 
-func (s *sinker) processEvent(ctx context.Context, request *http.Request, payload []byte) {
+func (s *sinker) processEvent(ctx context.Context, request *http.Request, payload []byte) error {
 	var err error
 	s.event, err = s.vcx.ParsePayload(ctx, s.run, request, string(payload))
 	if err != nil {
 		s.run.Clients.Log.Errorf("failed to parse event: %v", err)
-		return
+		return err
 	}
 	s.event.Request = &info.Request{
 		Header:  request.Header,
@@ -44,4 +44,5 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request, payloa
 			s.run.Clients.Log.Errorf("Cannot create status: %s %s", err, createStatusErr)
 		}
 	}
+	return err
 }
