@@ -2,7 +2,10 @@ package generate
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,98 +55,8 @@ var languageDetection = map[string]langOpts{
 	},
 }
 
-var pipelineRunTmpl = `---
-apiVersion: tekton.dev/v1beta1
-kind: PipelineRun
-metadata:
-  name: << .prName >>
-  annotations:
-    # The event we are targeting as seen from the webhook payload
-    # this can be an array too, i.e: [pull_request, push]
-    pipelinesascode.tekton.dev/on-event: "<< .event.EventType >>"
-
-    # The branch or tag we are targeting (ie: main, refs/tags/*)
-    pipelinesascode.tekton.dev/on-target-branch: "<< .event.BaseBranch >>"
-
-    # Fetch the git-clone task from hub, we are able to reference later on it
-    # with taskRef and it will automatically be embedded into our pipeline.
-    pipelinesascode.tekton.dev/task: "git-clone"
-    <<- if .extra_task.AnnotationTask >>
-
-    # Task for <<.extra_task.Language >>
-    pipelinesascode.tekton.dev/task-1: "[<< .extra_task.AnnotationTask >>]"
-    << end >>
-    # You can add more tasks in here to reuse, browse the one you like from here
-    # https://hub.tekton.dev/
-    # example:
-    # pipelinesascode.tekton.dev/task-2: "[maven, buildah]"
-
-    # How many runs we want to keep attached to this event
-    pipelinesascode.tekton.dev/max-keep-runs: "5"
-spec:
-  params:
-    # The variable with brackets are special to Pipelines as Code
-    # They will automatically be expanded with the events from Github.
-    - name: repo_url
-      value: "{{ repo_url }}"
-    - name: revision
-      value: "{{ revision }}"
-  pipelineSpec:
-    params:
-      - name: repo_url
-      - name: revision
-    workspaces:
-      - name: source
-      - name: basic-auth
-    tasks:
-      - name: fetch-repository
-        taskRef:
-          name: git-clone
-        workspaces:
-          - name: output
-            workspace: source
-          - name: basic-auth
-            workspace: basic-auth
-        params:
-          - name: url
-            value: $(params.repo_url)
-          - name: revision
-            value: $(params.revision)
-      << if .extra_task.Task>>
-      << .extra_task.Task >>
-      <<- end >>
-      # Customize this task if you like, or just do a taskRef
-      # to one of the hub task.
-      - name: noop-task
-        runAfter:
-          - fetch-repository
-        workspaces:
-          - name: source
-            workspace: source
-        taskSpec:
-          workspaces:
-            - name: source
-          steps:
-            - name: noop-task
-              image: registry.access.redhat.com/ubi8/ubi-micro:8.5
-              workingDir: $(workspaces.source.path)
-              script: |
-                exit 0
-  workspaces:
-  - name: source
-    volumeClaimTemplate:
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
-  # This workspace will inject secret to help the git-clone task to be able to
-  # checkout the private repositories
-  - name: basic-auth
-    secret:
-      secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"
-`
+//go:embed templates
+var resource embed.FS
 
 func (o *Opts) detectLanguage() (langOpts, error) {
 	if o.language != "" {
@@ -169,10 +82,19 @@ func (o *Opts) detectLanguage() (langOpts, error) {
 
 func (o *Opts) genTmpl() (bytes.Buffer, error) {
 	var outputBuffer bytes.Buffer
-	t := template.Must(template.New("PipelineRun").Delims("<<", ">>").Parse(pipelineRunTmpl))
+	embedfile, err := resource.Open("templates/pipelinerun.yaml.tmpl")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer embedfile.Close()
+	tmplB, _ := ioutil.ReadAll(embedfile)
+	// can't figure out how ParseFS works, so doing this manually..
+	t := template.Must(template.New("PipelineRun").Delims("<<", ">>").Parse(string(tmplB)))
+
 	prName := fmt.Sprintf("%s-%s",
 		filepath.Base(o.GitInfo.URL),
 		strings.ReplaceAll(o.Event.EventType, "_", "-"))
+
 	lang, err := o.detectLanguage()
 	if err != nil {
 		return bytes.Buffer{}, err
@@ -181,6 +103,7 @@ func (o *Opts) genTmpl() (bytes.Buffer, error) {
 		"prName":                  prName,
 		"event":                   o.Event,
 		"extra_task":              lang,
+		"use_cluster_task":        o.generateWithClusterTask,
 		"language_specific_tasks": "",
 	}
 	if err := t.Execute(&outputBuffer, data); err != nil {
