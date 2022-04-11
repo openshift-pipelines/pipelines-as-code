@@ -1,6 +1,7 @@
 package generate
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,14 +12,18 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	eventTypes       = map[string]string{"pull_request": "Pull Request", "push": "Push to a Branch or a Tag"}
-	defaultEventType = "Pull Request"
-	mainBranch       = "main"
+var eventTypes = map[string]string{"pull_request": "Pull Request", "push": "Push to a Branch or a Tag"}
+
+const (
+	gitCloneClusterTaskName = "git-clone"
+	defaultEventType        = "Pull Request"
+	mainBranch              = "main"
 )
 
 type Opts struct {
@@ -28,10 +33,11 @@ type Opts struct {
 	IOStreams *cli.IOStreams
 	CLIOpts   *cli.PacCliOpts
 
-	pipelineRunName string
-	fileName        string
-	overwrite       bool
-	language        string
+	pipelineRunName         string
+	fileName                string
+	overwrite               bool
+	language                string
+	generateWithClusterTask bool
 }
 
 func MakeOpts() *Opts {
@@ -44,7 +50,7 @@ func MakeOpts() *Opts {
 	}
 }
 
-func Command(ioStreams *cli.IOStreams) *cobra.Command {
+func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	gopt := MakeOpts()
 	gopt.IOStreams = ioStreams
 	cmd := &cobra.Command{
@@ -52,9 +58,22 @@ func Command(ioStreams *cli.IOStreams) *cobra.Command {
 		Aliases: []string{"gen"},
 		Short:   "Generate PipelineRun",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
 			gopt.CLIOpts = cli.NewCliOptions(cmd)
 			gopt.IOStreams.SetColorEnabled(!gopt.CLIOpts.NoColoring)
 
+			if !gopt.generateWithClusterTask {
+				if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
+					// if we don't have access to the cluster we can't do much about it
+					gopt.generateWithClusterTask = false
+				} else {
+					_, err := run.Clients.Tekton.TektonV1beta1().ClusterTasks().Get(ctx, gitCloneClusterTaskName,
+						metav1.GetOptions{})
+					if err == nil {
+						gopt.generateWithClusterTask = true
+					}
+				}
+			}
 			cwd, err := os.Getwd()
 			if err != nil {
 				return err
@@ -80,6 +99,8 @@ func Command(ioStreams *cli.IOStreams) *cobra.Command {
 		"Wether to overwrite the file if it exist")
 	cmd.PersistentFlags().StringVarP(&gopt.language, "language", "l", "",
 		"Generate for this programming language")
+	cmd.PersistentFlags().BoolVarP(&gopt.generateWithClusterTask, "use-clustertasks", "", false,
+		"By default we will generate the pipeline using task from hub. If you want to use cluster tasks, set this flag")
 	return cmd
 }
 
