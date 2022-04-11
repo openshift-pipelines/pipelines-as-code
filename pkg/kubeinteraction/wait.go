@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	interval = 1 * time.Second
-	timeout  = 10 * time.Minute
+	interval = 2 * time.Second
 )
 
 type ConditionAccessorFn func(ca knativeapi.ConditionAccessor) (bool, error)
@@ -83,11 +82,11 @@ func PipelineRunSucceed(name string) ConditionAccessorFn {
 	return Succeed(name)
 }
 
-func PollImmediateWithContext(ctx context.Context, fn func() (bool, error)) error {
-	return wait.PollImmediate(interval, timeout, func() (bool, error) {
+func PollImmediateWithContext(ctx context.Context, pollTimeout time.Duration, fn func() (bool, error)) error {
+	return wait.PollImmediate(interval, pollTimeout, func() (bool, error) {
 		select {
 		case <-ctx.Done():
-			return true, ctx.Err()
+			return true, fmt.Errorf("polling timed out, pipelinerun has exceeded its timeout: %v", pollTimeout)
 		default:
 		}
 		return fn()
@@ -101,7 +100,7 @@ func PollImmediateWithContext(ctx context.Context, fn func() (bool, error)) erro
 func waitForPipelineRunState(ctx context.Context, tektonbeta1 tektonv1beta1client.TektonV1beta1Interface, pr *v1beta1.PipelineRun, polltimeout time.Duration, inState ConditionAccessorFn) error {
 	ctx, cancel := context.WithTimeout(ctx, polltimeout)
 	defer cancel()
-	return PollImmediateWithContext(ctx, func() (bool, error) {
+	return PollImmediateWithContext(ctx, polltimeout, func() (bool, error) {
 		r, err := tektonbeta1.PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
 		if err != nil {
 			return true, err

@@ -80,7 +80,8 @@ func skippingTask(taskName string, skippedTasks []string) bool {
 }
 
 func inlineTasks(tasks []tektonv1beta1.PipelineTask, ropt *Opts, types Types) ([]tektonv1beta1.PipelineTask,
-	error) {
+	error,
+) {
 	pipelineTasks := []tektonv1beta1.PipelineTask{}
 	for _, task := range tasks {
 		if task.TaskRef != nil && task.TaskRef.Bundle == "" &&
@@ -109,7 +110,8 @@ type Opts struct {
 // generateName can be set as True to set the name as a generateName + "-" for
 // unique pipelinerun
 func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interface, data string, ropt *Opts) (
-	[]*tektonv1beta1.PipelineRun, error) {
+	[]*tektonv1beta1.PipelineRun, error,
+) {
 	s := k8scheme.Scheme
 	if err := tektonv1beta1.AddToScheme(s); err != nil {
 		return []*tektonv1beta1.PipelineRun{}, err

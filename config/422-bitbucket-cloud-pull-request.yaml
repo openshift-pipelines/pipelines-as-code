@@ -97,6 +97,7 @@ spec:
           # pipelinesascode.tekton.dev/event: $(tt.params.event_type)
       spec:
         serviceAccountName: pipelines-as-code-sa-el
+        timeout: 24h0m0s
         params:
           - name: source_ip
             value: $(tt.params.source_ip)

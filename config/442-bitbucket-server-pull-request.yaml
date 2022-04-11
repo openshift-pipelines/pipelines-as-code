@@ -122,6 +122,7 @@ spec:
           app.kubernetes.io/version: "devel"
           app.kubernetes.io/managed-by: pipelines-as-code
       spec:
+        timeout: 24h0m0s
         serviceAccountName: pipelines-as-code-sa-el
         params:
           - name: trigger_target

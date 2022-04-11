@@ -14,7 +14,8 @@ import (
 )
 
 func (k Interaction) CleanupPipelines(ctx context.Context, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun,
-	maxKeep int) error {
+	maxKeep int,
+) error {
 	repoLabel := filepath.Join(pipelinesascode.GroupName, "repository")
 	originalPRLabel := filepath.Join(pipelinesascode.GroupName, "original-prname")
 	if _, ok := pr.GetLabels()[originalPRLabel]; !ok {

@@ -164,8 +164,7 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 	cs.Clients.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes",
 		pr.Namespace, pr.Name, formatting.HumanDuration(cs.Info.Pac.DefaultPipelineRunTimeout))
 	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, cs.Info.Pac.DefaultPipelineRunTimeout); err != nil {
-		cs.Clients.Log.Warnf("pipelinerun %s in namespace %s has a failed status",
-			pipelineRun.GetGenerateName(), repo.GetNamespace())
+		return fmt.Errorf("pipelinerun %s in namespace %s has failed: %w", pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
 	}
 
 	// Do cleanups

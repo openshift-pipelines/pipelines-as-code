@@ -468,6 +468,18 @@ the `pipelines-as-code` namespace.
 
   <https://api.hub.tekton.dev/v1>
 
+* `default-pipelinerun-timeout`: Default timeout to wait for pipelinerun
+  (default value is 2 hours).
+  Note that PaaC doesn't respect the user pipelinerun timeout if it's greater than
+  this value.
+  In other words, if you set paac `default-pipelinerun-timeout` to 2h and
+  your PipelineRun timeout is set to 3h the PipelineRun will timeout after 2h.
+  If your pipelinerun timeout is set to 1h and your
+  `default-pipelinerun-timeout` value is 2h, the PipelineRun will timeout after
+  1h by the tekton controller.
+
+  This value cannot exceed 24 hours.
+
 ## Kubernetes
 
 Pipelines as Code should work directly on kubernetes/minikube/kind. You just need to install the release.yaml

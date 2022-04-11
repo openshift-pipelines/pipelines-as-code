@@ -84,6 +84,7 @@ spec:
           app.kubernetes.io/managed-by: pipelines-as-code
           pipelinesascode.tekton.dev/event: $(tt.params.event_type)
       spec:
+        timeout: 24h0m0s
         serviceAccountName: pipelines-as-code-sa-el
         params:
           - name: ghe_host
