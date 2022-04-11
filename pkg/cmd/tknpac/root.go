@@ -31,6 +31,6 @@ func Root(clients *params.Run) *cobra.Command {
 	cmd.AddCommand(resolve.Command(clients))
 	cmd.AddCommand(completion.Command())
 	cmd.AddCommand(bootstrap.Command(clients, ioStreams))
-	cmd.AddCommand(generate.Command(ioStreams))
+	cmd.AddCommand(generate.Command(clients, ioStreams))
 	return cmd
 }
