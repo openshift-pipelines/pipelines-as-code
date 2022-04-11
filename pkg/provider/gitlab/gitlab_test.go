@@ -21,7 +21,6 @@ import (
 func TestCreateStatus(t *testing.T) {
 	type fields struct {
 		targetProjectID int
-		mergeRequestID  int
 	}
 	type args struct {
 		event      *info.Event
@@ -154,17 +153,17 @@ func TestCreateStatus(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			v := &Provider{
 				targetProjectID: tt.fields.targetProjectID,
-				mergeRequestID:  tt.fields.mergeRequestID,
 			}
+			if tt.args.event == nil {
+				tt.args.event = info.NewEvent()
+			}
+			tt.args.event.PullRequestNumber = 666
+
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(ctx, t)
 				v.Client = client
 				defer tearDown()
-				thelp.MuxNotePost(t, mux, v.targetProjectID, v.mergeRequestID, tt.args.postStr)
-			}
-
-			if tt.args.event == nil {
-				tt.args.event = &info.Event{}
+				thelp.MuxNotePost(t, mux, v.targetProjectID, tt.args.event.PullRequestNumber, tt.args.postStr)
 			}
 
 			pacOpts := &info.PacOpts{ApplicationName: "Test me"}
@@ -194,7 +193,6 @@ func TestParsePayload(t *testing.T) {
 	type fields struct {
 		targetProjectID int
 		sourceProjectID int
-		mergeRequestID  int
 		userID          int
 	}
 	type args struct {
@@ -281,7 +279,6 @@ func TestParsePayload(t *testing.T) {
 				Token:           gitlab.String("tokeneuneu"),
 				targetProjectID: tt.fields.targetProjectID,
 				sourceProjectID: tt.fields.sourceProjectID,
-				mergeRequestID:  tt.fields.mergeRequestID,
 				userID:          tt.fields.userID,
 			}
 			if tt.wantClient {
@@ -352,7 +349,6 @@ func TestGetTektonDir(t *testing.T) {
 	type fields struct {
 		targetProjectID int
 		sourceProjectID int
-		mergeRequestID  int
 		userID          int
 	}
 	type args struct {
@@ -424,7 +420,6 @@ func TestGetTektonDir(t *testing.T) {
 			v := &Provider{
 				targetProjectID: tt.fields.targetProjectID,
 				sourceProjectID: tt.fields.sourceProjectID,
-				mergeRequestID:  tt.fields.mergeRequestID,
 				userID:          tt.fields.userID,
 			}
 			if tt.wantClient {

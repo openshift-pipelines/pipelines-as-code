@@ -67,6 +67,20 @@ func TestProcessTemplates(t *testing.T) {
 			expected: "ohyeah ohno",
 		},
 		{
+			name: "process pull request number",
+			event: &info.Event{
+				PullRequestNumber: 666,
+			},
+			template: `{{ pull_request_number }}`,
+			expected: "666",
+		},
+		{
+			name:     "no pull request no nothing",
+			event:    &info.Event{},
+			template: `{{ pull_request_number }}`,
+			expected: `{{ pull_request_number }}`,
+		},
+		{
 			name: "test process templates lowering owner and repository",
 			event: &info.Event{
 				Organization: "OWNER",

@@ -29,6 +29,7 @@ weight: 3
   * `{{sender}}`: The sender username (or accountid on some providers) of the commit.
   * `{{source_branch}}`: The branch name where the event come from.
   * `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
+  * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
 
 * You need at least one `PipelineRun` with a `PipelineSpec` or a separated
   `Pipeline` object. You can have embedded `TaskSpec` inside

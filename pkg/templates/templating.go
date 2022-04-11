@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -31,7 +32,7 @@ func Process(event *info.Event, template string) string {
 		repoURL = event.CloneURL
 	}
 
-	return ReplacePlaceHoldersVariables(template, map[string]string{
+	maptemplate := map[string]string{
 		"revision":      event.SHA,
 		"repo_url":      repoURL,
 		"repo_owner":    strings.ToLower(event.Organization),
@@ -39,5 +40,10 @@ func Process(event *info.Event, template string) string {
 		"target_branch": formatting.SanitizeBranch(event.BaseBranch),
 		"source_branch": formatting.SanitizeBranch(event.HeadBranch),
 		"sender":        strings.ToLower(event.Sender),
-	})
+	}
+	// we don't want to get a 0 replaced
+	if event.PullRequestNumber != 0 {
+		maptemplate["pull_request_number"] = fmt.Sprintf("%d", event.PullRequestNumber)
+	}
+	return ReplacePlaceHoldersVariables(template, maptemplate)
 }

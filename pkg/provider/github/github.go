@@ -168,8 +168,8 @@ func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []*github.Tre
 }
 
 // getPullRequest get a pull request details
-func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event, prNumber int) (*info.Event, error) {
-	pr, _, err := v.Client.PullRequests.Get(ctx, runevent.Organization, runevent.Repository, prNumber)
+func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*info.Event, error) {
+	pr, _, err := v.Client.PullRequests.Get(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	if err != nil {
 		return runevent, err
 	}

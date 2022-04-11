@@ -190,6 +190,7 @@ func (v *Provider) processEvent(ctx context.Context, run *params.Run, event *inf
 		processedEvent.HeadBranch = gitEvent.GetPullRequest().Head.GetRef()
 		processedEvent.Sender = gitEvent.GetPullRequest().GetUser().GetLogin()
 		processedEvent.EventType = event.EventType
+		processedEvent.PullRequestNumber = gitEvent.GetPullRequest().GetNumber()
 	default:
 		return nil, errors.New("this event is not supported")
 	}
@@ -218,9 +219,9 @@ func (v *Provider) handleReRequestEvent(ctx context.Context, log *zap.SugaredLog
 		runevent.Sender = event.GetSender().GetLogin()
 		return runevent, nil
 	}
-	prNumber := event.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
-	log.Infof("Recheck of PR %s/%s#%d has been requested", runevent.Organization, runevent.Repository, prNumber)
-	return v.getPullRequest(ctx, runevent, prNumber)
+	runevent.PullRequestNumber = event.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
+	log.Infof("Recheck of PR %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	return v.getPullRequest(ctx, runevent)
 }
 
 func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
@@ -245,11 +246,12 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, log *zap.Sugared
 	// We are getting the full URL so we have to get the last part to get the PR number,
 	// we don't have to care about URL query string/hash and other stuff because
 	// that comes up from the API.
-	prNumber, err := convertPullRequestURLtoNumber(event.GetIssue().GetPullRequestLinks().GetHTMLURL())
+	var err error
+	runevent.PullRequestNumber, err = convertPullRequestURLtoNumber(event.GetIssue().GetPullRequestLinks().GetHTMLURL())
 	if err != nil {
 		return info.NewEvent(), err
 	}
 
-	log.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runevent.Organization, runevent.Repository, prNumber)
-	return v.getPullRequest(ctx, runevent, prNumber)
+	log.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	return v.getPullRequest(ctx, runevent)
 }
