@@ -38,8 +38,6 @@ Controller route or ingress endpoint which would listen to GitHub events.
   * Commit comment
   * Issue comment
   * Pull request
-  * Pull request review
-  * Pull request review comment
   * Push
 
 {{< hint info >}}

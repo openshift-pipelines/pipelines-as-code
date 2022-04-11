@@ -39,7 +39,6 @@ The only permission needed is the *repo* permission. You will have to note the g
 * Click "Let me select individual events" and select these events:
   * Commit comments
   * Issue comments
-  * Pull request reviews
   * Pull request
   * Pushes
 
