@@ -35,7 +35,7 @@ Controller route or ingress endpoint which would listen to GitHub events.
   * **Plan**: `Readonly`
 
 * Select the following user permissions:
-  * Commit comment
+  * Check run
   * Issue comment
   * Pull request
   * Push
