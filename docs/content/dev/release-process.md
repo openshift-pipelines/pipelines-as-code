@@ -26,7 +26,7 @@ git tag 1.2.3
 
 `tkn pr logs -n pipelines-as-code-ci -Lf`
 
-* After a while (gorelease takes somet ime) If everything is fine you should
+* After a while (gorelease takes sometime) If everything is fine you should
   have the new version set as pre-release in
   github.com/openshift-pipelines/pipelines-as-code/releases
 
@@ -40,7 +40,7 @@ git tag 1.2.3
 
 # Issues you may see
 
-* Sometime there may be some issues with system or others. If you need to rekick the release process you need to :
+* Sometimes, there may be some issues with system or others. If you need to re-kick the release process you need to :
 
 ```shell
    git tag --sign --force 1.2.3
@@ -48,5 +48,5 @@ git tag 1.2.3
 ```
 
 * Some issues may be with the GitHub token which may be expired or badly generated with a \n.
-* Some other issues if you didn't do a Git fetch -a origin before tagging so
+* Some other issues if you didn't do a `git fetch -a origin` before tagging so,
   you don't have the latest commits from origin/main

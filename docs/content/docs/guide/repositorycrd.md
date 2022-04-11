@@ -8,7 +8,7 @@ The purposes of the Repository CRD  is:
 
 - To let _Pipelines as Code_ know that this event from this URL needs to be handled.
 - To let _Pipelines as Code_ know on which namespace the PipelineRuns are going to be executed.
-- To reference a api secret, username or api URL if needed for the Git provider
+- To reference an api secret, username or api URL if needed for the Git provider
   platforms that requires it (ie: when you are using webhooks method and not
   the GitHub application).
 - To give the last Pipelinerun status for that Repository (5 by default).
@@ -29,7 +29,7 @@ spec:
 EOF
 ```
 
-Whenever there is a event coming from `github.com/linda/project` Pipelines as
+Whenever there is an event coming from `github.com/linda/project` Pipelines as
 Code will match it and starts checking out the content of the `linda/project`
 for pipelinerun to match in the `.tekton/` directory.
 

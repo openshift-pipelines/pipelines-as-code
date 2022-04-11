@@ -52,7 +52,7 @@ spec:
         pathType: Prefix
 ```
 
-In this example `webhook.host.tld` is the hostname for your pipelines controller to fill as the webhook URL in the provider platform setup.
+In this example `webhook.host.tld` is the hostname for your pipeline's controller to fill as the webhook URL in the provider platform setup.
 
 ## Tekton Dashboard integration
 

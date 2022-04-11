@@ -7,19 +7,19 @@ weight: 15
 Pipelines-As-Code has a full support of [Bitbucket
 Server](https://www.atlassian.com/software/bitbucket/enterprise).
 
-Following the [infrastructure installation](install.md#install-pipelines-as-code-infrastructure) :
+After following the [installation](/docs/install/installation):
 
 * You will have to generate a personal token as the manager of the Project,
-  follow the steps here :
+  follow the steps here:
 
 <https://confluence.atlassian.com/bitbucketserver/personal-access-tokens-939515499.html>
 
 The token will need to have the `PROJECT_ADMIN` and `REPOSITORY_ADMIN` permissions.
 
 Note that the token needs to be able to have access to the forked repository in
-pull requests or it would not be able to process and access the pull request.
+pull requests, or it would not be able to process and access the pull request.
 
-You may want to note somewhere the generated token or otherwise you will have to
+You may want to note somewhere the generated token, or otherwise you will have to
 recreate it.
 
 * Create a Webhook on the repository following this guide :
@@ -32,20 +32,12 @@ recreate it.
   openssl rand -hex 20
 ```
 
-* Set the URL to the event listener public URL. On OpenShift you can get the
+* Set the URL to the event listener public URL. On OpenShift, you can get the
   public URL of the Pipelines-as-Code route like this :
 
   ```shell
   echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
   ```
-
-* Install the secret in the pipelines-as-code namespace (we currently only
-supports one webhook secret per cluster ) :
-
-```shell
-kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
-        --from-literal webhook.secret="$WEBHOOK_SECRET_AS_GENERATED"
-```
 
 * [Refer to this screenshot](/images/bitbucket-server-create-webhook.png) on
   which events to handle on the Webhook. The individual events to select are :
@@ -60,7 +52,14 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
 
   ```shell
   kubectl -n target-namespace create secret generic bitbucket-server-token \
-          --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
+    --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
+  ```
+
+* Then create the secret with the secret name as set in the Webhook configuration :
+
+  ```shell
+  kubectl -n target-namespace create secret generic bitbucket-server-webhook-secret \
+    --from-literal secret="SECRET_NAME_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
 
 * And finally create Repository CRD with the secret field referencing it.
@@ -68,27 +67,31 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
   * Here is an example of a Repository CRD :
 
 ```yaml
----
-apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
-kind: Repository
-metadata:
-  name: my-repo
-  namespace: target-namespace
-spec:
-  url: "https://bitbucket.com/workspace/repo"
-  git_provider:
-    url: "https://bitbucket.server.api.url"
-    user: "yourbitbucketusername"
-    secret:
-      name: "bitbucket-server-token"
-      # Set this if you have a different key in your secret
-      # key: "token"
+  ---
+  apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+  kind: Repository
+  metadata:
+    name: my-repo
+    namespace: target-namespace
+  spec:
+    url: "https://bitbucket.com/workspace/repo"
+    git_provider:
+      url: "https://bitbucket.server.api.url"
+      user: "your-bitbucket-username"
+      secret:
+        name: "bitbucket-server-token"
+        # Set this if you have a different key in your secret
+        # key: "token"
+      webhook_secret::
+        name: "bitbucket-server-webhook-secret"
+        # Set this if you have a different key for your secret
+        # key: "secret-name"
 ```
 
 ## Notes
 
 * `git_provider.secret` cannot reference a secret in another namespace,
-  Pipelines as code assumes always it will be the same namespace as where the
+  Pipelines as code always assumes it will be the same namespace as where the
   repository has been created.
 
 * `tkn-pac create` and `bootstrap` is not supported on Bitbucket Server.

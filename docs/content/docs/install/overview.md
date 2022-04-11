@@ -22,7 +22,7 @@ To get started with Pipelines-as-Code, you need to
   * If you run on OpenShift Pipelines (from 1.7.x) Pipelines as Code should be
      automatically installed
   * If you want to do a manual install you can
-      follow the [installation guide](../installation).
+      follow the [installation guide](/docs/install/installation).
 * Configure your Git Provider (eg: a GitHub Application) to access Pipelines as
   Code.
 
@@ -32,8 +32,8 @@ After installing Pipelines as Code you are now ready to configure your Git
 provider. Choose your preferred install method, if you don't have any
 preferences the preferred install method is the GitHub Application method.
 
-* [GitHub Application](./github_apps).
-* [GitHub Webhook](./github_webhook)
-* [Gitlab](./gitlab)
-* [Bitbucket Server](./bitbucket_server)
-* [Bitbucket Cloud](./bitbucket_cloud)
+* [GitHub Application](/docs/install/github_apps).
+* [GitHub Webhook](/docs/install/github_webhook)
+* [Gitlab](/docs/install/gitlab)
+* [Bitbucket Server](/docs/install/bitbucket_server)
+* [Bitbucket Cloud](/docs/install/bitbucket_cloud)

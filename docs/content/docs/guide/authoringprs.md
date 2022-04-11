@@ -58,7 +58,7 @@ Multiple target branch can be specified separated by comma, i.e:
 [main, release-nightly]
 ```
 
-You can match on `pull_request` events as above and you can as well match
+You can match on `pull_request` events as above, and you can as well match
 pipelineRuns on `push` events to a repository
 
 For example this will match the pipeline when there is a push to a commit in the

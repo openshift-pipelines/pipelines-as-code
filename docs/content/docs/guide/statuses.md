@@ -11,7 +11,7 @@ with a short recap of how long each task of your pipeline took and the output of
 `tkn pr describe`.
 
 If there was a failure you can click on the "Re-Run" button on the left to rerun
-the Pipeline or you can issue a issue comment with a line starting and finishing
+the Pipeline or you can issue an issue comment with a line starting and finishing
 with the string `/retest` to ask Pipelines as Code to retest the current PR.
 
 Example :
@@ -72,15 +72,15 @@ directly like this :
 
 ## Notifications
 
-Notifications is not handled by Pipelines as Code, the only place where we
-notify a status in a interface is when we do a Pull Request on for example the
+Notifications are not handled by Pipelines as Code, the only place where we
+notify a status in an interface is when we do a Pull Request on for example the
 GitHub checks interface to show the results of the pull request.
 
 If you need some other type of notification you can use
 the [finally feature of tekton pipeline](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#adding-finally-to-the-pipeline)
 .
 
-Here is an example task to send a slack message on failures (or success if you
+Here is an example task to send a Slack message on failures (or success if you
 like) :
 
 <https://github.com/chmouel/tekton-slack-task-status>
