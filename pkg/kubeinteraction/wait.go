@@ -15,7 +15,7 @@ import (
 
 const (
 	interval = 1 * time.Second
-	timeout  = 10 * time.Minute
+	timeout  = 120 * time.Minute
 )
 
 type ConditionAccessorFn func(ca knativeapi.ConditionAccessor) (bool, error)
