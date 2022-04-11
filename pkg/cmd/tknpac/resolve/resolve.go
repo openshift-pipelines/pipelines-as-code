@@ -38,7 +38,7 @@ substitutions with -p flags. Output on the standard output the full PipelineRun
 resolved.
 
 A simple example that would parse the .tekton/pull-request.yaml with all the
-remote task embedded into it applying the parameters substitutions: 
+remote task embedded into it applying the parameters substitutions:
 
 pipelines-as-code resolve \
 		-f .tekton/pull-request.yaml \

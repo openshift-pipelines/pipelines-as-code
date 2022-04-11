@@ -21,8 +21,6 @@ func generateManifest(opts *bootstrapOpts) ([]byte, error) {
 			"commit_comment",
 			"issue_comment",
 			"pull_request",
-			"pull_request_review",
-			"pull_request_review_comment",
 			"push",
 		},
 		DefaultPermissions: &github.InstallationPermissions{

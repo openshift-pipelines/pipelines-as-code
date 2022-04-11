@@ -1,5 +1,5 @@
 ---
-title: Resolver 
+title: Resolver
 weight: 2
 ---
 # Pipelines as Code resolver

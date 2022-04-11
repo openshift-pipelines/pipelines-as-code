@@ -37,7 +37,7 @@ const (
 
 {{- if (gt (len .Statuses) 1) }}
 
-{{ $.ColorScheme.Underline "Last Run:" }} 
+{{ $.ColorScheme.Underline "Last Run:" }}
 {{ end }}
 {{ $.ColorScheme.Bold "Status:" }}	{{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
 {{ $.ColorScheme.Bold "Log:"  }}	{{ $status.LogURL}}

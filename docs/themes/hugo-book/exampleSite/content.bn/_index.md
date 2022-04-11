@@ -6,7 +6,7 @@ type: docs
 # বাংলা ভাষায় শুরু করুন
 
 {{< columns >}}
-## অস্ট্রিস চিপসে ফুর্তিভা 
+## অস্ট্রিস চিপসে ফুর্তিভা
 
 Est in vagis et Pittheus tu arge accipiter regia iram vocatur nurus. Omnes ut
 olivae sensit **arma sorori** deducit, inesset **crudus**, ego vetuere aliis,

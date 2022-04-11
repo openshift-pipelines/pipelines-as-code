@@ -34,6 +34,7 @@ for file in ${files};do
     sed -r -e "s,(.*image:.*)ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-controller.*,\1${TARGET_REPO}:${TARGET_BRANCH}\"," \
         -e "s/(namespace: )\w+.*/\1${TARGET_NAMESPACE}/g" \
         -e "s,app.kubernetes.io/version:.*,app.kubernetes.io/version: \"${TARGET_PAC_VERSION}\"," \
+        -e "s/Copyright[ ]*[0-9]{4}/Copyright $(date "+%Y")/" \
         -e "/kind: Namespace$/ { n;n;s/name: .*/name: ${TARGET_NAMESPACE}/;}" \
         ${file}
 done
