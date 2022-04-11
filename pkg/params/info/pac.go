@@ -17,7 +17,7 @@ type PacOpts struct {
 	TektonDashboardURL        string
 	HubURL                    string
 	RemoteTasks               bool
-	DefaultPipelineRunTimeout time.Duration
+	DefaultPipelineRunTimeout *time.Duration
 
 	// bitbucket cloud specific fields
 	BitbucketCloudCheckSourceIP      bool

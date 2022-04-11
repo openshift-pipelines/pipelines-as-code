@@ -129,7 +129,10 @@ func (l listener) handleEvent() http.HandlerFunc {
 		localRequest := request.Clone(request.Context())
 
 		go func() {
-			s.processEvent(ctx, localRequest, payload)
+			err := s.processEvent(ctx, localRequest, payload)
+			if err != nil {
+				l.run.Clients.Log.Errorf("an error occurred: %v", err)
+			}
 		}()
 
 		l.writeResponse(response, http.StatusAccepted, "accepted")
