@@ -18,7 +18,7 @@ func generateManifest(opts *bootstrapOpts) ([]byte, error) {
 		Description:    github.String("Pipeline as Code Application"),
 		Public:         github.Bool(true),
 		DefaultEvents: []string{
-			"commit_comment",
+			"check_run",
 			"issue_comment",
 			"pull_request",
 			"push",
