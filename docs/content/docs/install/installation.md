@@ -44,7 +44,7 @@ runs and is supposed to be accessible only by the admins.
 
 On Openshift the Route URL for the Pipelines as Code Controller is automatically created when
 you apply the `release.yaml`. You will need to reference this URL when configuring
-your github provider.
+your GitHub provider.
 
 You can run this command to get the route created on your cluster:
 
@@ -54,7 +54,7 @@ echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o
 
 ### Kubernetes
 
-Kubernetes installation is a bit more involved head over [here](./kubernetes) for more details.
+Kubernetes installation is a bit more involved head over [here](/docs/install/kubernetes) for more details.
 
 ## RBAC
 
@@ -92,5 +92,5 @@ subjects:
 ## CLI
 
 `Pipelines as Code` provide a CLI which is designed to work as tkn plug-in. To
-install the plug-in follow the instruction from the [CLI](./guide/cli)
+install the plug-in follow the instruction from the [CLI](/docs/guide/cli)
 documentation.

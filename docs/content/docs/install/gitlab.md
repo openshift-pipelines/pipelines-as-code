@@ -7,7 +7,7 @@ weight: 13
 
 Pipelines-As-Code supports [Gitlab](https://www.gitlab.com) through a webhook.
 
-Following the [infrastructure installation](install.md#install-pipelines-as-code-infrastructure):
+Follow the pipelines-as-code [installation](/docs/install/installation) according to your kubernetes cluster.
 
 * You will have to generate a personal token as the manager of the Org or the Project,
   follow the steps here :
@@ -22,7 +22,7 @@ Following the [infrastructure installation](install.md#install-pipelines-as-code
 
 * Go to your project and click on *Settings* and *"Webhooks"* from the sidebar on the left.
 
-* Set the payload URL to the event listener public URL. On OpenShift you can get the public URL of the
+* Set the payload URL to the event listener public URL. On OpenShift, you can get the public URL of the
   Pipelines-as-Code controller like this :
 
   ```shell
@@ -33,7 +33,7 @@ Following the [infrastructure installation](install.md#install-pipelines-as-code
 
   ```shell
   openssl rand -hex 20
-  ``
+  ```
 
 * [Refer to this screenshot](/images/gitlab-add-webhook.png) on how to configure the Webhook.
 
@@ -43,48 +43,51 @@ Following the [infrastructure installation](install.md#install-pipelines-as-code
   * Push Events
   * Note Events
 
-* On your cluster you need create the webhook secret as generated previously in the *pipelines-as-code* namespace.
-
-```shell
-kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
-        --from-literal webhook.secret="$WEBHOOK_SECRET_AS_GENERATED"
-```
-
-* You are now able to create a Repository CRD. The repository CRD will have a
-  Secret that contains the Personal token as generated and Pipelines as Code
-  will know how to use it for Gitlab API operations.
+* You are now able to create a Repository CRD. The repository CRD will reference a Kubernetes Secret containing the Personal token
+and another reference to a Kubernetes secret to validate the Webhook payload as set previously in your Webhook configuration.
 
 * First create the secret with the personal token in the `target-namespace` (where you are planning to run your pipeline CI) :
 
   ```shell
   kubectl -n target-namespace create secret generic gitlab-personal-token \
-          --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
+    --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
+  ```
+
+* Then create the secret with the secret name as set in the Webhook configuration :
+
+  ```shell
+  kubectl -n target-namespace create secret generic gitlab-webhook-secret \
+    --from-literal secret="SECRET_NAME_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
 
 * And now create Repository CRD with the secret field referencing it.
 
 Here is an example of a Repository CRD :
 
-```yaml
----
-apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
-kind: Repository
-metadata:
-  name: my-repo
-  namespace: target-namespace
-spec:
-  url: "https://gitlab.com/group/project"
-  git_provider:
-    secret:
-      name: "gitlab-personal-token"
-      # Set this if you have a different key in your secret
-      # key: "token"
-```
+  ```yaml
+  ---
+  apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+  kind: Repository
+  metadata:
+    name: my-repo
+    namespace: target-namespace
+  spec:
+    url: "https://gitlab.com/group/project"
+    git_provider:
+      secret:
+        name: "gitlab-personal-token"
+        # Set this if you have a different key in your secret
+        # key: "token"
+      webhook_secret:
+        name: "gitlab-webhook-secret"
+        # Set this if you have a different key in your secret
+        # key: "secret-name"
+  ```
 
 ## Notes
 
 * Private instance are automatically detected, no need to specify the api URL. Unless you want to override it then you can simply add it to the spec`.git_provider.url` field.
 
 * `git_provider.secret` cannot reference a secret in another namespace,
-  Pipelines as code assumes always it will be the same namespace as where the
+  Pipelines as code always assumes it will be the same namespace as where the
   repository has been created.

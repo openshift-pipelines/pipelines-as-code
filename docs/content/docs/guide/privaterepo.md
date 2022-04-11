@@ -67,4 +67,4 @@ automatically use it to be able to clone the private repository.
 You can see as well a full example [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/testdata/pipelinerun_git_clone_private.yaml)
 
 This behavior can be disabled by configuration, setting the `secret-auto-create` to false or true
-inside the [Pipelines-as-Code Configmap](/docs/install#pipelines-as-code-configuration-settings).
+inside the [Pipelines-as-Code Configmap](/docs/install/settings#pipelines-as-code-configuration-settings).

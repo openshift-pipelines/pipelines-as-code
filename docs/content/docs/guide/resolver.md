@@ -18,7 +18,7 @@ Everything that runs your pipelinerun and its references need to be inside the
 `.tekton/` directory and subdirectories as referenced with a remote task (see
 below on how the remote tasks are referenced).
 
-If you have a taskRef to a task located in any directory or subdirectorie of the
+If you have a taskRef to a task located in any directory or subdirectories of the
 `.tekton/` directory it will be automatically embedded even if it's not in the
 annotations.
 

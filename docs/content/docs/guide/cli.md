@@ -82,10 +82,10 @@ yay -S tkn-pac
 
 ### bootstrap
 
-`tkn pac bootstrap` command will help you getting started installing and configuring Pipelines as code. It currently supports the following providers:
+`tkn pac bootstrap` command will help you to get started installing and configuring Pipelines as code. It currently supports the following providers:
 
-* GitHub application on public GitHub
-* GitHub application on GitHub Enterprise
+* GitHub Application on public GitHub
+* GitHub Application on GitHub Enterprise
 
 It will start checking if you have installed Pipelines as Code and if not it will ask you if you want to  install (with `kubectl`) the latest stable release. If you add the flag `--nightly` it will install the latest code ci release.
 
@@ -100,7 +100,7 @@ You can override the URL with the flag `--route-url`.
 
 If you only want to create the GitHub application you can use `tkn pac bootstrap
 github-app` directly which would skip the installation and only create the
-github application and the secret with all the information needed in the
+GitHub application and the secret with all the information needed in the
 `pipelines-as-code` namespace.
 
 {{< /details >}}
@@ -109,7 +109,7 @@ github application and the secret with all the information needed in the
 
 ### Repository creation
 
-`tkn pac repo create` -- will create a new Pipelines as Code Repository and a namespace where the pipelineruns command. It will also generate a sample file with a [PipelineRun](./autoringprs/) in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch and the `pull_request` and `push` events. You can customize this by editing the [PipelineRun](./autoringprs/) to target a different branch or event.
+`tkn pac repo create` -- will create a new Pipelines as Code Repository and a namespace where the pipelineruns command. It will also generate a sample file with a [PipelineRun](/docs/guide/authoringprs) in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch and the `pull_request` and `push` events. You can customize this by editing the [PipelineRun](/docs/guide/authoringprs) to target a different branch or event.
 {{< /details >}}
 
 {{< details "tkn pac repo list" >}}
@@ -125,7 +125,7 @@ github application and the secret with all the information needed in the
 
 `tkn pac repo describe` -- will describe a Pipelines as Code Repository and the runs associated with it.
 
-On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows Terminal](https://github.com/microsoft/terminal), gnome-terminal etc..) the links are clickable via control+click or ⌘+click and will open the browser to the UI URL to see the Pipelinerun associated with it.
+On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows Terminal](https://github.com/microsoft/terminal), gnome-terminal etc...) the links are clickable via control+click or ⌘+click and will open the browser to the UI URL to see the Pipelinerun associated with it.
 {{< /details >}}
 
 {{< details "tkn pac generate" >}}
@@ -134,7 +134,7 @@ On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows Terminal](https:
 
 `tkn pac generate`: will generate a simple pipelinerun to get you started with Pipelines as Code. It will try to be as smart as possible by detecting the current Git information if you run the command from your source code.
 
-It has some basic language detection and add extra task depending of the language. For example if it detects a file named `setup.py` at the repository root it will add the [pylint task](https://hub.tekton.dev/tekton/task/pylint) to the generated pipelinerun.
+It has some basic language detection and add extra task depending on the language. For example if it detects a file named `setup.py` at the repository root it will add the [pylint task](https://hub.tekton.dev/tekton/task/pylint) to the generated pipelinerun.
 {{< /details >}}
 
 {{< details "tkn pac resolve" >}}
@@ -160,9 +160,9 @@ If you run the command from your source code repository it will try to detect th
 
 You can specify multiple `-f` on the command line.
 
-You need to verify that `git-clone` task (if you use it) can access the repository to the SHA. Which mean if you test your current source code you need to push it first tbefore using `tkn pac resolve|kubectl apply`.
+You need to verify that `git-clone` task (if you use it) can access the repository to the SHA. Which mean if you test your current source code you need to push it first before using `tkn pac resolve|kubectl apply`.
 
-Compared with running directly on CI, you need to explicitely specify the list of filenames or directory where you have the templates.
+Compared with running directly on CI, you need to explicitly specify the list of filenames or directory where you have the templates.
 {{< /details >}}
 
 ## Screenshot

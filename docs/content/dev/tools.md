@@ -24,7 +24,7 @@ reason), you can do :
 
     git push --no-verify
 
-or you can disable indivual hook with the `SKIP` variable:
+or you can disable individual hook with the `SKIP` variable:
 
     SKIP=lint-md git push
 
@@ -43,7 +43,7 @@ For example to test and lint the go files :
 
 ## Tools
 
-several tools is used on CI and in `pre-commit`, the non exhaustive list you
+several tools are used on CI and in `pre-commit`, the non exhaustive list you
 need to have on your system:
 
 * [golangci-lint](https://github.com/golangci/golangci-lint)

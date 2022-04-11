@@ -23,7 +23,7 @@ There is a few things you can configure through the configmap
   every hour and by default cleanups PipelineRuns over a day. This configmap
   setting doesn't affect the cleanups of the user's PipelineRuns which are
   controlled by the [annotations on the PipelineRun definition in the user's
-  GitHub repository](#pipelineruns-cleanups).
+  GitHub repository](/docs/guide/cleanups).
 
 * `secret-auto-create`
 
@@ -39,6 +39,4 @@ There is a few things you can configure through the configmap
 * `hub-url`
 
   The base URL for the [tekton hub](https://github.com/tektoncd/hub/)
-  API. default to the [public hub](https://hub.tekton.dev/):
-
-  <https://api.hub.tekton.dev/v1>
+  API. default to the [public hub](https://hub.tekton.dev/): <https://api.hub.tekton.dev/v1>

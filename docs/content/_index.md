@@ -58,7 +58,7 @@ while Connected to your cluster run the command :
 ```
 
 and follow the questions to get Pipelines as Code installed on your cluster.
-It will then help you to create create a GitHub Application to connect your repositories to Pipelines as Code.
+It will then help you create a GitHub Application to connect your repositories to Pipelines as Code.
 If you are in a source code project, it will immediately ask you if you want to have a sample `PipelineRun` for `Pipelines as Code`
 
 ## Walkthrough video
