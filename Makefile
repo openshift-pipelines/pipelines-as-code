@@ -54,7 +54,7 @@ test-clean:  ## Clean testcache
 	@echo "Cleaning test cache"
 	@go clean -testcache ./...
 .PHONY: $(TEST_UNIT_TARGETS) test test-unit
-test: test-unit ## Run test-unit
+test: test-clean test-unit ## Run test-unit
 test-unit: ## Run unit tests
 	@echo "Running unit tests..."
 	@set -o pipefail ; \
