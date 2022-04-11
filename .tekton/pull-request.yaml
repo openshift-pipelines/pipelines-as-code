@@ -48,10 +48,8 @@ spec:
                   git diff --name-only FETCH_HEAD | grep -q '^docs/' || exit 0
                 cd docs
                 sed -i '1acanonifyURLs = true' config.toml
-                # TODO: use a params and {{ pull_request_number }} so we get url
-                # by pull_request_number instead of revision
-                hugo --gc --minify -d {{ revision }} -b https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ revision }}
-                echo "Preview URL: https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ revision }}"
+                hugo --gc --minify -d {{ pull_request_number }} -b https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ pull_request_number }}
+                echo "Preview URL: https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ pull_request_number }}"
             - name: upload-to-static-server
               # it has curl and we already pulled it
               image: registry.redhat.io/rhel8/go-toolset:1.16.12-7
@@ -69,11 +67,11 @@ spec:
                       key: "credentials"
               script: |
                 cd docs
-                [[ -d {{ revision }} ]]  || exit 0
-                tar czf - {{ revision }} | curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -F path=docs -F targz=true -X POST -F file=@- http://uploader:8080/upload
+                [[ -d {{ pull_request_number }} ]]  || exit 0
+                tar czf - {{ pull_request_number }} | curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -F path=docs -F targz=true -X POST -F file=@- http://uploader:8080/upload
                 # Post as status
                 set +x
-                curl -H "Authorization: Bearer ${HUB_TOKEN}" -H 'Accept: application/vnd.github.v3+json' -X POST https://api.github.com/repos/{{repo_owner}}/{{repo_name}}/statuses/{{revision}} -d '{"state": "success", "target_url": "https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ revision }}", "description": "Generated with brio.", "context": "Pipelines as Code Preview URL"}'
+                curl -H "Authorization: Bearer ${HUB_TOKEN}" -H 'Accept: application/vnd.github.v3+json' -X POST https://api.github.com/repos/{{repo_owner}}/{{repo_name}}/statuses/{{revision}} -d '{"state": "success", "target_url": "https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ pull_request_number }}", "description": "Generated with brio.", "context": "Pipelines as Code Preview URL"}'
 
         workspaces:
           - name: source
