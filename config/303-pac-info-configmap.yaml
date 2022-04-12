@@ -17,6 +17,9 @@ data:
   # pipelines as code controller version
   version: "devel"
 
+  # controller url to be used for configuring webhook using cli
+  controller-url: ""
+
 kind: ConfigMap
 metadata:
   name: pipelines-as-code-info

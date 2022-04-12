@@ -12,7 +12,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-const routePacLabel = "pipelines-as-code/route=controller"
+const (
+	routePacLabel = "pipelines-as-code/route=controller"
+	infoConfigMap = "pipelines-as-code-info"
+)
 
 // detectOpenShiftRoute detect the openshift route where the pac controller is running
 func detectOpenShiftRoute(ctx context.Context, run *params.Run, opts *bootstrapOpts) (string, error) {
@@ -63,4 +66,23 @@ func detectSelfSignedCertificate(ctx context.Context, url string) string {
 
 func isTLSError(err error) bool {
 	return errors.As(err, &x509.UnknownAuthorityError{}) || errors.As(err, &x509.CertificateInvalidError{})
+}
+
+func updateInfoConfigMap(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
+	cm, err := run.Clients.Kube.CoreV1().ConfigMaps(opts.targetNamespace).Get(ctx, infoConfigMap, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	cm.Data["controller-url"] = opts.RouteName
+
+	// the user will have read access to configmap
+	// but it might be the case, user is not admin and don't have access to update
+	// so don't error out, continue with printing a warning
+	_, err = run.Clients.Kube.CoreV1().ConfigMaps(opts.targetNamespace).Update(ctx, cm, metav1.UpdateOptions{})
+	if err != nil {
+		run.Clients.Log.Warnf("failed to update pipelines-as-code-info configmap: %v", err)
+		return nil
+	}
+	return nil
 }
