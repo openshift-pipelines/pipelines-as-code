@@ -105,10 +105,6 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 		}
 	}
 
-	if err := updateInfoConfigMap(ctx, run, opts); err != nil {
-		return err
-	}
-
 	jeez, err := generateManifest(opts)
 	if err != nil {
 		return err

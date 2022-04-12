@@ -68,13 +68,20 @@ func isTLSError(err error) bool {
 	return errors.As(err, &x509.UnknownAuthorityError{}) || errors.As(err, &x509.CertificateInvalidError{})
 }
 
-func updateInfoConfigMap(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
+type infoOptions struct {
+	targetNamespace string
+	controllerURL   string
+	provider        string
+}
+
+func updateInfoConfigMap(ctx context.Context, run *params.Run, opts *infoOptions) error {
 	cm, err := run.Clients.Kube.CoreV1().ConfigMaps(opts.targetNamespace).Get(ctx, infoConfigMap, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	cm.Data["controller-url"] = opts.RouteName
+	cm.Data["controller-url"] = opts.controllerURL
+	cm.Data["provider"] = opts.provider
 
 	// the user will have read access to configmap
 	// but it might be the case, user is not admin and don't have access to update

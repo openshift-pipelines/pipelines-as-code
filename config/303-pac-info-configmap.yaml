@@ -20,6 +20,11 @@ data:
   # controller url to be used for configuring webhook using cli
   controller-url: ""
 
+  # provider let know which provider is configured
+  # only one provider type to be configured at a time
+  # eg. if GitHub App is configured, then webhooks should not be configured
+  provider: ""
+
 kind: ConfigMap
 metadata:
   name: pipelines-as-code-info
