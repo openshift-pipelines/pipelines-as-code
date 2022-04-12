@@ -1,7 +1,7 @@
 before:
   hooks:
-    - /bin/sh -c "env TARGET_BRANCH={{.Tag}} PAC_VERSION={{.Tag}} TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh  > release.yaml"
-    - /bin/sh -c "env TARGET_BRANCH={{.Tag}} PAC_VERSION={{.Tag}} ./hack/generate-releaseyaml.sh  > release.k8s.yaml"
+    - /bin/sh -c "env TARGET_BRANCH={{.Tag }} PAC_VERSION={{.Tag }} TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh  > release.yaml"
+    - /bin/sh -c "env TARGET_BRANCH={{.Tag }} PAC_VERSION={{.Tag }} ./hack/generate-releaseyaml.sh  > release.k8s.yaml"
 
 builds:
   - env:
@@ -40,9 +40,9 @@ release:
     - glob: ./release.k8s.yaml
   prerelease: true
   header: |
-    # OpenShift Pipelines version {{.Tags}}
+    # OpenShift Pipelines version {{.Tag}}
 
-    OpenShift Pipelines as Code patch version {{.Tags}} has been released 🥳
+    OpenShift Pipelines as Code patch version {{.Tag }} has been released 🥳
 
     TODO: XXXXX add high level changelog before setting this as released XXXXX
 
@@ -52,17 +52,17 @@ release:
 
     ### Openshift
     ```shell
-    kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/{{.Tags}}/release.yaml
+    kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/{{.Tag}}/release.yaml
     ```
     ### Kubernetes
     ```shell
-    kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/{{.Tags}}/release.k8s.yaml
+    kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/{{.Tag}}/release.k8s.yaml
     ```
     ### Documentation
 
     full install documentation is available here:
 
-    https://github.com/openshift-pipelines/pipelines-as-code/blob/{{.Tags}}/docs/install.md
+    https://github.com/openshift-pipelines/pipelines-as-code/blob/{{.Tag}}/docs/install.md
 
 brews:
   - name: tektoncd-pac
