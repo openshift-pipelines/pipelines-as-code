@@ -8,6 +8,10 @@ on:
       - "go.mod"
       - "go.sum"
       - "!docs/**"
+    tags-ignore:
+      - '*.*'
+    branches:
+      - main
   pull_request_target:
     types: [opened, synchronize, reopened]
     paths:
