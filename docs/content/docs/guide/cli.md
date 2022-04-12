@@ -98,8 +98,9 @@ You can override the URL with the flag `--route-url`.
 
 ### bootstrap github-app
 
-If you only want to create the GitHub application you can use `tkn pac bootstrap
-github-app` directly which would skip the installation and only create the
+If you only want to create a GitHub application to use with Pipelines as Code
+and not the full `bootstrap` excercise, you can use `tkn pac bootstrap
+github-app` directly which will skip the installation and only create the
 GitHub application and the secret with all the information needed in the
 `pipelines-as-code` namespace.
 

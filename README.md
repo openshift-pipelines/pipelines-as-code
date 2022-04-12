@@ -9,8 +9,7 @@ Full documentation is available from <https://pipelinesascode.com>
 ## Introduction
 
 Pipelines as Code let you use
-the [Pipelines as Code flow]([https://www.thoughtworks.com/radar/techniques/pipelines-as-code](https://www.thoughtworks.com/radar/techniques/pipelines-as-code))
-directly with OpenShift Pipelines.
+the [Pipelines as Code flow]([https://www.thoughtworks.com/radar/techniques/pipelines-as-code](https://www.thoughtworks.com/radar/techniques/pipelines-as-code)) directly with Tekton and OpenShift Pipelines.
 
 The goal of Pipelines as Code is to let you define your
 [Tekton](https://tekton.cd) templates inside your source code repository and have the pipeline run and report the status
