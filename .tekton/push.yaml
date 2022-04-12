@@ -131,7 +131,8 @@ spec:
                 set +x # Do not show TOKEN in logs
                 hack/upload-file-to-github.py \
                 --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" \
-                --branch-ref refs/heads/nightly \
+                --from-ref refs/heads/main \
+                --to-ref refs/heads/nightly \
                 --owner-repository openshift-pipelines/pipelines-as-code \
                 --token ${HUB_TOKEN} \
                 -f <(./hack/generate-releaseyaml.sh):release.k8s.yaml  \

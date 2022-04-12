@@ -55,6 +55,13 @@ spec:
                       key: "hub-token"
               script: |
                 #!/usr/bin/env bash
+                # Grab the latest tag we release in
+                # Generate release.yaml for that version, for stable and for
+                # stable version release
+                # ie:
+                # if we tag 0.5.6
+                # It will generate release yamls and upload to branch
+                # release-0.5.6, release-0.5.x and stable
                 set -euf
                 set -x
                 git fetch --tag -v
@@ -64,18 +71,18 @@ spec:
                     exit
                 }
                 stable_tag=${version%.*}.x
-                msg="Release ${version}, Stable Tag: ${stable_tag}"
-                echo ${msg}
-                # Used by the ./hack/generate-releaseyaml script
-                export PAC_VERSION=${version} TARGET_BRANCH=${version}
-                hack/upload-file-to-github.py \
-                    --message "Release yaml generated for ${msg}" \
-                    --owner-repository openshift-pipelines/pipelines-as-code \
-                    --token ${HUB_TOKEN} \
-                    --update-tags=stable,${stable_tag} \
-                    --from-tag=refs/tags/${version} \
-                    -f <(./hack/generate-releaseyaml.sh):release.k8s.yaml \
-                    -f <(env TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh):release.yaml
+                for target in release-${version} release-${stable_tag} stable;do
+                  export PAC_VERSION=${version} TARGET_BRANCH=${target//release-}
+                  msg="pac release ${version} on branch ${target}"
+                  hack/upload-file-to-github.py \
+                      --message "Release yaml generated for ${msg}" \
+                      --owner-repository openshift-pipelines/pipelines-as-code \
+                      --token ${HUB_TOKEN} \
+                      --to-ref=refs/heads/${target} \
+                      --from-ref=refs/tags/${version} \
+                      -f <(./hack/generate-releaseyaml.sh):release.k8s.yaml \
+                      -f <(env TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh):release.yaml
+                done
       - name: gorelease
         runAfter:
           - release-yaml

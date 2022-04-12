@@ -107,46 +107,32 @@ def make_or_update_ref(token, owner_repository, ref, sha: str) -> None:
         print(f"{ref} has been updated to {sha}")
 
 
-def create_ref_from_tags(args):
+def create_from_refs(args):
     _, jeez = github_request(
-        args.token, "GET",
-        f"/repos/{args.owner_repository}/git/{args.from_tag}")
+        args.token, "GET", f"/repos/{args.owner_repository}/git/{args.from_ref}"
+    )
     last_commit_sha = jeez["object"]["sha"]
     if jeez["object"]["type"] == "tag":
         _, jeez = github_request(args.token, "GET", jeez["object"]["url"])
         last_commit_sha = jeez["object"]["sha"]
 
     print("TAG SHA: " + last_commit_sha)
-
-    basename = os.path.basename(args.from_tag)
-
-    branchname = f"release-{basename}"
-    branch_ref = f"refs/heads/{branchname}"
-    args.branch_ref = branch_ref
-
-    print(f"Create or update branch: {branchname}")
-    make_or_update_ref(args.token, args.owner_repository, args.branch_ref,
-                       last_commit_sha)
-
-    new_sha = upload_to_github(args)
-    if args.update_tags:
-        for tag in args.update_tags.split(","):
-            make_or_update_ref(args.token, args.owner_repository,
-                               f"refs/tags/{tag}", new_sha)
-    return new_sha
+    print(f"Create or update branch: {os.path.basename(args.to_ref)}")
+    make_or_update_ref(args.token, args.owner_repository, args.to_ref, last_commit_sha)
+    return upload_to_github(args)
 
 
 def upload_to_github(args):
     last_commit_sha = None
-    if not args.branch_ref:
-        raise Exception("Need a branch-ref args")
+    if not args.to_ref:
+        raise Exception("Need a to-ref args")
     if not args.filename:
         raise Exception("Need at least one filename")
 
     # Get last commit SHA of a branch
     _, jeez = github_request(
-        args.token, "GET",
-        f"/repos/{args.owner_repository}/git/{args.branch_ref}")
+        args.token, "GET", f"/repos/{args.owner_repository}/git/{args.to_ref}"
+    )
     last_commit_sha = jeez["object"]["sha"]
 
     for entry in args.filename:
@@ -201,7 +187,7 @@ def upload_to_github(args):
         resp, jeez = github_request(
             args.token,
             "PATCH",
-            f"/repos/{args.owner_repository}/git/{args.branch_ref}",
+            f"/repos/{args.owner_repository}/git/{args.to_ref}",
             data={"sha": last_commit_sha},
         )
     return last_commit_sha
@@ -212,21 +198,17 @@ def parse_args():
     parser.add_argument("--filename", "-f", required=True, action='append')
     parser.add_argument("--message", "-m", required=True)
     parser.add_argument("--owner-repository", "-o", required=True)
-    parser.add_argument(
-        "--update-tags",
-        help="Update tag (or multiple separated by comma) after upload to ref")
     parser.add_argument("--token", "-t", required=True)
-    parser.add_argument("--branch-ref", "-r", required=False)
-    parser.add_argument("--from-tag", required=False)
+    parser.add_argument("--to-ref", "-r", required=False)
+    parser.add_argument("--from-ref", required=False)
     return parser.parse_args()
 
 
 def main(args):
-    if args.from_tag:
-        create_ref_from_tags(args)
+    if args.from_ref:
+        create_from_refs(args)
     else:
         upload_to_github(args)
-
 
 if __name__ == "__main__":
     main(parse_args())
