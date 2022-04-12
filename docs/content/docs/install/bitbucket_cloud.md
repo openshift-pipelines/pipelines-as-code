@@ -59,7 +59,7 @@ Keep the generated token noted somewhere, or otherwise you will have to recreate
 
   ```shell
   kubectl -n target-namespace create secret generic bitbucket-cloud-token \
-          --from-literal “APP_PASSWORD_AS_GENERATED_PREVIOUSLY“
+          --from-literal provider.token="APP_PASSWORD_AS_GENERATED_PREVIOUSLY"
   ```
 
 - And then create the Repository CRD with the secret field referencing it, for example:
@@ -79,7 +79,7 @@ Keep the generated token noted somewhere, or otherwise you will have to recreate
       secret:
         name: “bitbucket-cloud-token“
         # Set this if you have a different key in your secret
-        # key: “token“
+        # key: “provider.token“
 ```
 
 ## Bitbucket Cloud Notes

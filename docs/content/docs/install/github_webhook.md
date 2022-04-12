@@ -49,20 +49,14 @@ The only permission needed is the *repo* permission. You will have to note the g
 * You are now able to create a Repository CRD. The repository CRD will reference a
   Kubernetes Secret containing the Personal token as generated previously and another reference to a Kubernetes secret to validate the Webhook payload as set previously in your Webhook configuration .
 
-* First create the secret with the personal token in the `target-namespace` :
+* First create the secret with the personal token and webhook secret in the `target-namespace` :
 
   ```shell
-  kubectl -n target-namespace create secret generic github-personal-token \
-    --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
+  kubectl -n target-namespace create secret generic github-webhook-config \
+    --from-literal provider.token="TOKEN_AS_GENERATED_PREVIOUSLY" \
+    --from-literal webhook.secret="SECRET_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
-
-* Then create the secret with the secret name as set in the Webhook configuration :
-
-  ```shell
-  kubectl -n target-namespace create secret generic github-webhook-secret \
-    --from-literal secret="SECRET_NAME_AS_SET_IN_WEBHOOK_CONFIGURATION"
-  ```
-
+  
 * And now create Repository CRD referencing everything :
 
   ```yaml
@@ -76,13 +70,13 @@ The only permission needed is the *repo* permission. You will have to note the g
     url: "https://github.com/owner/repo"
     git_provider:
       secret:
-        name: "github-personal-token"
+        name: "github-webhook-config"
         # Set this if you have a different key in your secret
-        # key: "token"
+        # key: "provider.token"
       webhook_secret:
-        name: "github-webhook-secret"
+        name: "github-webhook-config"
         # Set this if you have a different key for your secret
-        # key: "secret-name"
+        # key: "webhook.secret"
   ```
 
 ## GitHub webhook Notes
