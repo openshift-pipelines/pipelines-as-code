@@ -2,8 +2,11 @@ name: github pages
 
 on:
   push:
+    tags:
+      - stable
     branches:
-      - main  # Set a branch to deploy
+      - nightly
+
 jobs:
   deploy:
     runs-on: ubuntu-20.04
@@ -13,9 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          # otherwise, the token used is the GITHUB_TOKEN, instead of your personal access token.
           persist-credentials: false
-          # otherwise, there would be errors pushing refs to the destination repository.
           fetch-depth: 0
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
@@ -27,9 +28,18 @@ jobs:
         run: hugo --minify --gc
         working-directory: ./docs
 
-      - name: Deploy
+      - name: Nightly Doc
         uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/nightly'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/public
+          publish_branch: docs-nightly
+
+      - name: Stable Doc
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/tags/stable'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/public
+          publish_branch: docs-stable
