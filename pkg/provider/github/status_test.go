@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/go-github/v43/github"
@@ -20,8 +21,9 @@ import (
 func TestGithubProviderCreateCheckRun(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
-	gcvs := Provider{
-		Client: fakeclient,
+	cnx := Provider{
+		Client:      fakeclient,
+		CheckRunIDS: &sync.Map{},
 	}
 	defer teardown()
 	mux.HandleFunc("/repos/check/info/check-runs", func(w http.ResponseWriter, r *http.Request) {
@@ -38,18 +40,26 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 		SHA:          "createCheckRunSHA",
 	}
 
-	err := gcvs.getOrUpdateCheckRunStatus(ctx, event, &info.PacOpts{LogURL: "http://nowhere"}, provider.StatusOpts{Status: "hello moto"})
+	err := cnx.getOrUpdateCheckRunStatus(ctx, event, &info.PacOpts{LogURL: "http://nowhere"}, provider.StatusOpts{
+		PipelineRunName: "pr1",
+		Status:          "hello moto",
+	})
 	assert.NilError(t, err)
-	assert.Equal(t, *event.CheckRunID, int64(555))
+	v, ok := cnx.CheckRunIDS.Load("pr1")
+	assert.Assert(t, ok)
+	vv, ook := v.(*int64)
+	assert.Assert(t, ook)
+	assert.Equal(t, *vv, int64(555))
 }
 
-func TestGetExistingCheckRunID(t *testing.T) {
+func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	client, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 
-	gvcs := &Provider{
-		Client: client,
+	cnx := &Provider{
+		Client:      client,
+		CheckRunIDS: &sync.Map{},
 	}
 	event := &info.Event{
 		Organization: "owner",
@@ -57,30 +67,38 @@ func TestGetExistingCheckRunID(t *testing.T) {
 		SHA:          "sha",
 	}
 
-	checkRunID := int64(55555)
+	chosenOne := "chosenOne"
+	chosenID := int64(55555)
 	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA), func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(w, `{
-			"total_count": 1,
+			"total_count": 2,
 			"check_runs": [
 				{
-					"id": %v
+					"id": %v,
+					"external_id": "%s"
+				},
+				{
+					"id": 123456,
+					"external_id": "notworthy"
 				}
 			]
-		}`, checkRunID)
+		}`, chosenID, chosenOne)
 	})
 
-	id, err := gvcs.getExistingCheckRunID(ctx, event)
+	id, err := cnx.getExistingCheckRunID(ctx, event, provider.StatusOpts{
+		PipelineRunName: chosenOne,
+	})
 	assert.NilError(t, err)
-	assert.Equal(t, *id, checkRunID)
+	assert.Equal(t, *id, chosenID)
 }
 
 func TestGithubProviderCreateStatus(t *testing.T) {
 	checkrunid := int64(2026)
 	resultid := int64(666)
 	runEvent := info.NewEvent()
+	prname := "pr1"
 	runEvent.Organization = "check"
 	runEvent.Repository = "run"
-	runEvent.CheckRunID = &checkrunid
 
 	type args struct {
 		runevent           *info.Event
@@ -176,8 +194,10 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gcvs := Provider{
-				Client: fakeclient,
+				Client:      fakeclient,
+				CheckRunIDS: &sync.Map{},
 			}
+			gcvs.CheckRunIDS.Store(prname, &checkrunid)
 			mux.HandleFunc(fmt.Sprintf("/repos/check/run/check-runs/%d", checkrunid), func(rw http.ResponseWriter, r *http.Request) {
 				bit, _ := ioutil.ReadAll(r.Body)
 				checkRun := &github.CheckRun{}
@@ -199,10 +219,11 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			})
 
 			status := provider.StatusOpts{
-				Status:     tt.args.status,
-				Conclusion: tt.args.conclusion,
-				Text:       tt.args.text,
-				DetailsURL: tt.args.detailsURL,
+				PipelineRunName: prname,
+				Status:          tt.args.status,
+				Conclusion:      tt.args.conclusion,
+				Text:            tt.args.text,
+				DetailsURL:      tt.args.detailsURL,
 			}
 			pacopts := &info.PacOpts{
 				LogURL: "https://log",
@@ -361,6 +382,7 @@ func TestProviderGetExistingCheckRunID(t *testing.T) {
 		jsonret    string
 		expectedID *int64
 		wantErr    bool
+		prname     string
 	}{
 		{
 			name: "has check runs",
@@ -368,11 +390,13 @@ func TestProviderGetExistingCheckRunID(t *testing.T) {
 			"total_count": 1,
 			"check_runs": [
 				{
-					"id": 55555
+					"id": 55555,
+					"external_id": "blahpr"
 				}
 			]
 		}`,
 			expectedID: github.Int64(55555),
+			prname:     "blahpr",
 		},
 		{
 			name:       "no check runs",
@@ -403,7 +427,9 @@ func TestProviderGetExistingCheckRunID(t *testing.T) {
 				_, _ = fmt.Fprintf(w, tt.jsonret)
 			})
 
-			got, err := v.getExistingCheckRunID(ctx, event)
+			got, err := v.getExistingCheckRunID(ctx, event, provider.StatusOpts{
+				PipelineRunName: tt.prname,
+			})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getExistingCheckRunID() error = %v, wantErr %v", err, tt.wantErr)
 				return

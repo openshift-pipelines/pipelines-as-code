@@ -33,7 +33,6 @@ type Event struct {
 	// Github
 	Organization string
 	Repository   string
-	CheckRunID   *int64
 
 	// Bitbucket Cloud
 	AccountID string

@@ -115,7 +115,7 @@ func getTaskFromLocalFS(taskName string, logger *zap.SugaredLogger) (string, err
 	// let's try by any chance to check locally if the task is here on
 	// the filesystem
 	if _, err := os.Stat(taskName); errors.Is(err, os.ErrNotExist) {
-		logger.Warnf("could not find remote task %s inside repo", taskName)
+		logger.Warnf("could not find remote task %s inside Repo", taskName)
 		return "", nil
 	}
 
