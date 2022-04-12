@@ -11,8 +11,12 @@ metadata:
     # The branch or tag we are targeting (ie: main, refs/tags/*)
     pipelinesascode.tekton.dev/on-target-branch: "<< .event.BaseBranch >>"
     << if .use_cluster_task >>
-    # If we want to use the git-clone task from hub we can simply grab it with this annotations.
-    # and referencing in the taskRef. Pipelines as Code will grab it from hub and automatically use the latest version.
+    # If we want to use the git-clone task from hub we could specify the
+    # annotation `pipelinesascode.tekton.dev/task annotation` and reference it
+    # in the taskRef. Pipelines as Code when it sees this will grab it from hub
+    # and automatically use the latest version. right now by default we will
+    # use the `git-clone` ClusterTasks as shipped on this cluster.
+    #
     # pipelinesascode.tekton.dev/task: "git-clone"
 
     <<- else >>
