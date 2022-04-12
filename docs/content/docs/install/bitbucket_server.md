@@ -48,20 +48,14 @@ recreate it.
   * Pull Request -> Source branch updated
   * Pull Request -> Comments added
 
-* Create a secret with personal token in the `target-namespace`
+  * Create a secret with personal token in the `target-namespace`
 
   ```shell
-  kubectl -n target-namespace create secret generic bitbucket-server-token \
-    --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
+  kubectl -n target-namespace create secret generic bitbucket-server-webhook-config \
+    --from-literal provider.token="TOKEN_AS_GENERATED_PREVIOUSLY" \
+    --from-literal webhook.secret="SECRET_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
-
-* Then create the secret with the secret name as set in the Webhook configuration :
-
-  ```shell
-  kubectl -n target-namespace create secret generic bitbucket-server-webhook-secret \
-    --from-literal secret="SECRET_NAME_AS_SET_IN_WEBHOOK_CONFIGURATION"
-  ```
-
+  
 * And finally create Repository CRD with the secret field referencing it.
 
   * Here is an example of a Repository CRD :
@@ -79,13 +73,13 @@ recreate it.
       url: "https://bitbucket.server.api.url"
       user: "your-bitbucket-username"
       secret:
-        name: "bitbucket-server-token"
+        name: "bitbucket-server-webhook-config"
         # Set this if you have a different key in your secret
-        # key: "token"
+        # key: "provider.token"
       webhook_secret::
-        name: "bitbucket-server-webhook-secret"
+        name: "bitbucket-server-webhook-config"
         # Set this if you have a different key for your secret
-        # key: "secret-name"
+        # key: "webhook.secret"
 ```
 
 ## Notes

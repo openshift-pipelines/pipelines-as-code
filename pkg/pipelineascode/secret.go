@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	defaultGitProviderSecretKey                  = "token"
-	defaultGitProviderWebhookSecretKey           = "secret"
+	defaultGitProviderSecretKey                  = "provider.token"
+	defaultGitProviderWebhookSecretKey           = "webhook.secret"
 	defaultPipelinesAscodeSecretName             = "pipelines-as-code-secret"
 	defaultPipelinesAscodeSecretWebhookSecretKey = "webhook.secret"
 )

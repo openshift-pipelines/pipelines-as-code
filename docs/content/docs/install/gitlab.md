@@ -46,20 +46,14 @@ Follow the pipelines-as-code [installation](/docs/install/installation) accordin
 * You are now able to create a Repository CRD. The repository CRD will reference a Kubernetes Secret containing the Personal token
 and another reference to a Kubernetes secret to validate the Webhook payload as set previously in your Webhook configuration.
 
-* First create the secret with the personal token in the `target-namespace` (where you are planning to run your pipeline CI) :
+* First create the secret with the personal token and webhook secret in the `target-namespace` (where you are planning to run your pipeline CI) :
 
   ```shell
-  kubectl -n target-namespace create secret generic gitlab-personal-token \
-    --from-literal token="TOKEN_AS_GENERATED_PREVIOUSLY"
+  kubectl -n target-namespace create secret generic gitlab-webhook-config \
+    --from-literal provider.token="TOKEN_AS_GENERATED_PREVIOUSLY" \
+    --from-literal webhook.secret="SECRET_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
-
-* Then create the secret with the secret name as set in the Webhook configuration :
-
-  ```shell
-  kubectl -n target-namespace create secret generic gitlab-webhook-secret \
-    --from-literal secret="SECRET_NAME_AS_SET_IN_WEBHOOK_CONFIGURATION"
-  ```
-
+  
 * And now create Repository CRD with the secret field referencing it.
 
 Here is an example of a Repository CRD :
@@ -75,13 +69,13 @@ Here is an example of a Repository CRD :
     url: "https://gitlab.com/group/project"
     git_provider:
       secret:
-        name: "gitlab-personal-token"
+        name: "gitlab-webhook-config"
         # Set this if you have a different key in your secret
-        # key: "token"
+        # key: "provider.token"
       webhook_secret:
-        name: "gitlab-webhook-secret"
+        name: "gitlab-webhook-config"
         # Set this if you have a different key in your secret
-        # key: "secret-name"
+        # key: "webhook.secret"
   ```
 
 ## Notes
