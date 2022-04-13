@@ -62,8 +62,7 @@ spec:
                 # if we tag 0.5.6
                 # It will generate release yamls and upload to branch
                 # release-0.5.6, release-0.5.x and stable
-                set -euf
-                set -x
+                set -eufx
                 git fetch --tag -v
                 version=$(git  --no-pager tag --points-at HEAD)
                 [[ -z ${version} ]] && {
@@ -73,17 +72,13 @@ spec:
                 stable_tag=${version%.*}.x
                 for target in release-${version} release-${stable_tag} stable;do
                   export PAC_VERSION=${version} TARGET_BRANCH=${target//release-}
-                  hack/generate-releaseyaml.sh > release.k8s.yaml
-                  env TARGET_OPENSHIFT=true hack/generate-releaseyaml.sh > release.yaml
+                  bash hack/generate-releaseyaml.sh > release.k8s.yaml
+                  env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > release.yaml
                   msg="pac release ${version} on branch ${target}"
-                  hack/upload-file-to-github.py \
-                      --message "Release yaml generated for ${msg}" \
-                      --owner-repository openshift-pipelines/pipelines-as-code \
-                      --token ${HUB_TOKEN} \
-                      --to-ref=refs/heads/${target} \
-                      --from-ref=refs/tags/${version} \
-                      -f release.k8s.yaml:release.k8s.yaml \
-                      -f release.yaml:release.yaml
+                  set +x
+                  echo python hack/upload-file-to-github.py --message "Release yaml generated for ${msg}" --owner-repository openshift-pipelines/pipelines-as-code --token "TOKEN" --to-ref=refs/heads/${target} --from-ref=refs/tags/${version} -f release.k8s.yaml:release.k8s.yaml -f release.yaml:release.yaml
+                  python hack/upload-file-to-github.py --message "Release yaml generated for ${msg}" --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} --to-ref=refs/heads/${target} --from-ref=refs/tags/${version} -f release.k8s.yaml:release.k8s.yaml -f release.yaml:release.yaml
+                  set -x
                 done
       - name: gorelease
         runAfter:
