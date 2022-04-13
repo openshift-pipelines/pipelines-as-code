@@ -99,9 +99,9 @@ spec:
                 bash <(curl https://codecov.io/bash)
 
       - name: upload-release-yaml
+        runAfter:
+          - fetch-repository
         taskSpec:
-          runAfter:
-            - fetch-repository
           steps:
             - image: registry.access.redhat.com/ubi8/python-39:1-35
               name: release
@@ -113,7 +113,7 @@ spec:
                       key: "hub-token"
               script: |
                 #!/usr/bin/env bash
-                set -eu
+                set -eux
                 bash hack/generate-releaseyaml.sh > release.k8s.yaml
                 env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > release.yaml
                 set +x # Do not show TOKEN in logs
