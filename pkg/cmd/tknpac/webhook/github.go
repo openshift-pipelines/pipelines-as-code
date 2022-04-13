@@ -23,8 +23,7 @@ type gitHubWebhookConfig struct {
 }
 
 func (w Webhook) githubWebhook(ctx context.Context) error {
-
-	msg := fmt.Sprintf("Would you like me to configure GitHub Webhook for your repository? ")
+	msg := "Would you like me to configure GitHub Webhook for your repository? "
 	var configureWebhook bool
 	if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &configureWebhook); err != nil {
 		return err
@@ -48,13 +47,15 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 	if repoURL != "" {
 		if repo, _ := formatting.GetRepoOwnerFromGHURL(repoURL); repo != "" {
 			defaultRepo = repo
-			msg := fmt.Sprintf("Please enter the repository which needs to be configured (default: %s):", repo)
-			if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repo); err != nil {
-				return nil, err
-			}
+		}
+	}
+	if defaultRepo != "" {
+		msg := fmt.Sprintf("Please enter the repository which needs to be configured (default: %s):", defaultRepo)
+		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repo); err != nil {
+			return nil, err
 		}
 	} else {
-		msg := fmt.Sprintf("Please enter the repository which needs to be configured (eg. repo-owner/repo-name) ")
+		msg := "Please enter the repository which needs to be configured (eg. repo-owner/repo-name) : "
 		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repo,
 			survey.WithValidator(survey.Required)); err != nil {
 			return nil, err
@@ -86,6 +87,7 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 		return nil, err
 	}
 
+	// nolint:forbidigo
 	fmt.Println("🔑 Next, you need to create a GitHub access token with scopes `public_repo` & `admin:repo_hook`")
 	if err := prompt.SurveyAskOne(&survey.Input{
 		Message: "Please enter the GitHub access token: ",
@@ -122,13 +124,14 @@ func (gh gitHubWebhookConfig) create(ctx context.Context) error {
 	if res.Response.StatusCode != http.StatusCreated {
 		payload, err := ioutil.ReadAll(res.Body)
 		if err != nil {
-			return fmt.Errorf("failed to read request body: %v", err)
+			return fmt.Errorf("failed to read response body: %w", err)
 		}
 
 		return fmt.Errorf("failed to create webhook on repository %v/%v, status code: %v, error : %v",
 			gh.RepoOwner, gh.RepoName, res.Response.StatusCode, payload)
 	}
 
+	// nolint:forbidigo
 	fmt.Printf("✓ Webhook has been created on repository %v/%v\n", gh.RepoOwner, gh.RepoName)
 	return nil
 }

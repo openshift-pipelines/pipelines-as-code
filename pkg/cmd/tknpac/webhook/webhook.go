@@ -16,10 +16,6 @@ type Webhook struct {
 }
 
 func (w Webhook) Install(ctx context.Context, run *params.Run) error {
-
-	// TODO: generalise for different provider
-	// currently, only support GitHub Webhook
-
 	// figure out pac installation namespace
 	installationNS, err := bootstrap.DetectPacInstallation(ctx, w.PACNamespace, run)
 	if err != nil {
