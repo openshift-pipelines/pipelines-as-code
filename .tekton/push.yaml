@@ -100,7 +100,7 @@ spec:
 
       - name: upload-release-yaml
         runAfter:
-          - fetch-repository
+          - fetch
         taskSpec:
           steps:
             - image: registry.access.redhat.com/ubi8/python-39:1-35
