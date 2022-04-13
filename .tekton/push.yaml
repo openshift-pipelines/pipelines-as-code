@@ -9,9 +9,6 @@ metadata:
     pipelinesascode.tekton.dev/task: "[git-clone, .tekton/tasks/buildah-user.yaml]"
     pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]"
 spec:
-  taskRunSpecs:
-    - pipelineTaskName: push-to-registry
-      taskServiceAccountName: pac-push-sa
   params:
     - name: repo_url
       value: "{{repo_url}}"
@@ -77,17 +74,6 @@ spec:
                 #!/usr/bin/env bash
                 make test \
                     GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
-      - name: push-to-registry
-        runAfter:
-          - unit
-        params:
-          - name: IMAGE
-            value: quay.io/openshift-pipeline/pipelines-as-code:{{target_branch}}
-        taskRef:
-          name: buildah-user
-        workspaces:
-          - name: source
-            workspace: source
       - name: codecov
         runAfter:
           - unit
@@ -113,8 +99,6 @@ spec:
                 bash <(curl https://codecov.io/bash)
 
       - name: upload-release-yaml
-        runAfter:
-          - push-to-registry
         taskSpec:
           steps:
             - image: registry.access.redhat.com/ubi8/python-39:1-35
