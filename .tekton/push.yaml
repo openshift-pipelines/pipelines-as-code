@@ -113,14 +113,16 @@ spec:
                 #!/usr/bin/env bash
                 set -eu
                 set +x # Do not show TOKEN in logs
+                hack/generate-releaseyaml.sh > release.k8s.yaml
+                env TARGET_OPENSHIFT=true hack/generate-releaseyaml.sh > release.yaml
                 hack/upload-file-to-github.py \
                 --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" \
                 --from-ref refs/heads/main \
                 --to-ref refs/heads/nightly \
                 --owner-repository openshift-pipelines/pipelines-as-code \
                 --token ${HUB_TOKEN} \
-                -f <(./hack/generate-releaseyaml.sh):release.k8s.yaml  \
-                -f <(env TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh):release.yaml
+                -f release.k8s.yaml:release.k8s.yaml  \
+                -f release.yaml:release.yaml
               workingDir: $(workspaces.source.path)
           workspaces:
             - name: source

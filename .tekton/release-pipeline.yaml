@@ -73,6 +73,8 @@ spec:
                 stable_tag=${version%.*}.x
                 for target in release-${version} release-${stable_tag} stable;do
                   export PAC_VERSION=${version} TARGET_BRANCH=${target//release-}
+                  hack/generate-releaseyaml.sh > release.k8s.yaml
+                  env TARGET_OPENSHIFT=true hack/generate-releaseyaml.sh > release.yaml
                   msg="pac release ${version} on branch ${target}"
                   hack/upload-file-to-github.py \
                       --message "Release yaml generated for ${msg}" \
@@ -80,8 +82,8 @@ spec:
                       --token ${HUB_TOKEN} \
                       --to-ref=refs/heads/${target} \
                       --from-ref=refs/tags/${version} \
-                      -f <(./hack/generate-releaseyaml.sh):release.k8s.yaml \
-                      -f <(env TARGET_OPENSHIFT=true ./hack/generate-releaseyaml.sh):release.yaml
+                      -f release.k8s.yaml:release.k8s.yaml \
+                      -f release.yaml:release.yaml
                 done
       - name: gorelease
         runAfter:
