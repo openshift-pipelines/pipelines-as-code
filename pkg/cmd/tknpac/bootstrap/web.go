@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
-
-const ghAppProvider = "GitHub App"
 
 // openWebBrowser opens the specified URL in the default browser of the user.
 func openWebBrowser(url string) error {
@@ -84,10 +84,10 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 		return err
 	}
 
-	if err := updateInfoConfigMap(ctx, run, &infoOptions{
-		targetNamespace: opts.targetNamespace,
-		controllerURL:   opts.RouteName,
-		provider:        ghAppProvider,
+	if err := info.UpdateInfoConfigMap(ctx, run, &info.Options{
+		TargetNamespace: opts.targetNamespace,
+		ControllerURL:   opts.RouteName,
+		Provider:        provider.ProviderGitHubApp,
 	}); err != nil {
 		return err
 	}

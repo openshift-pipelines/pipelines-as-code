@@ -14,15 +14,14 @@ import (
 
 const (
 	routePacLabel = "pipelines-as-code/route=controller"
-	infoConfigMap = "pipelines-as-code-info"
 )
 
-// detectOpenShiftRoute detect the openshift route where the pac controller is running
-func detectOpenShiftRoute(ctx context.Context, run *params.Run, opts *bootstrapOpts) (string, error) {
+// DetectOpenShiftRoute detect the openshift route where the pac controller is running
+func DetectOpenShiftRoute(ctx context.Context, run *params.Run, targetNamespace string) (string, error) {
 	gvr := schema.GroupVersionResource{
 		Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource,
 	}
-	routes, err := run.Clients.Dynamic.Resource(gvr).Namespace(opts.targetNamespace).List(ctx, metav1.ListOptions{
+	routes, err := run.Clients.Dynamic.Resource(gvr).Namespace(targetNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: routePacLabel,
 	})
 	if err != nil {
@@ -66,30 +65,4 @@ func detectSelfSignedCertificate(ctx context.Context, url string) string {
 
 func isTLSError(err error) bool {
 	return errors.As(err, &x509.UnknownAuthorityError{}) || errors.As(err, &x509.CertificateInvalidError{})
-}
-
-type infoOptions struct {
-	targetNamespace string
-	controllerURL   string
-	provider        string
-}
-
-func updateInfoConfigMap(ctx context.Context, run *params.Run, opts *infoOptions) error {
-	cm, err := run.Clients.Kube.CoreV1().ConfigMaps(opts.targetNamespace).Get(ctx, infoConfigMap, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	cm.Data["controller-url"] = opts.controllerURL
-	cm.Data["provider"] = opts.provider
-
-	// the user will have read access to configmap
-	// but it might be the case, user is not admin and don't have access to update
-	// so don't error out, continue with printing a warning
-	_, err = run.Clients.Kube.CoreV1().ConfigMaps(opts.targetNamespace).Update(ctx, cm, metav1.UpdateOptions{})
-	if err != nil {
-		run.Clients.Log.Warnf("failed to update pipelines-as-code-info configmap: %v", err)
-		return nil
-	}
-	return nil
 }

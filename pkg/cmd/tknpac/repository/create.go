@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/webhook"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -22,10 +23,11 @@ import (
 )
 
 type createOptions struct {
-	event      *info.Event
-	repository *apipac.Repository
-	run        *params.Run
-	gitInfo    *git.Info
+	event        *info.Event
+	repository   *apipac.Repository
+	run          *params.Run
+	gitInfo      *git.Info
+	pacNamespace string
 
 	ioStreams *cli.IOStreams
 	cliOpts   *cli.PacCliOpts
@@ -78,7 +80,20 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			gopt.Event.EventType = "[pull_request, push]"
 			gopt.Event.BaseBranch = "main"
 
-			return generate.Generate(gopt)
+			if err := generate.Generate(gopt); err != nil {
+				return err
+			}
+
+			config := &webhook.Webhook{
+				RepositoryURL: createOpts.gitInfo.URL,
+				PACNamespace:  createOpts.pacNamespace,
+			}
+
+			if err := config.Install(ctx, run); err != nil {
+				return err
+			}
+
+			return nil
 		},
 		Annotations: map[string]string{
 			"commandType": "main",
@@ -86,10 +101,12 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolP(noColorFlag, "C", !ioStreams.ColorEnabled(), "disable coloring")
-	cmd.PersistentFlags().StringVar(&createOpts.repository.Name, "name", "", "Repository name")
-	cmd.PersistentFlags().StringVar(&createOpts.event.URL, "url", "", "Repository URL")
+	cmd.PersistentFlags().StringVar(&createOpts.repository.Name, "name", "", "RepositoryURL name")
+	cmd.PersistentFlags().StringVar(&createOpts.event.URL, "url", "", "RepositoryURL URL")
 	cmd.PersistentFlags().StringVarP(&createOpts.repository.Namespace, "namespace", "n", "",
 		"The target namespace where the runs will be created")
+	cmd.PersistentFlags().StringVarP(&createOpts.pacNamespace, "pac-namespace",
+		"", "", "namespace where pac is installed")
 
 	return cmd
 }

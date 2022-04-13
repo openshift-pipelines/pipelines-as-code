@@ -72,7 +72,7 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 
 	// if we gt a ns back it means it has been detected in here so keep it as is.
 	// or else just set the default to pacNS
-	ns, err := detectPacInstallation(ctx, opts.targetNamespace, run)
+	ns, err := DetectPacInstallation(ctx, opts.targetNamespace, run)
 	if ns != "" {
 		opts.targetNamespace = ns
 	} else if opts.targetNamespace == "" {
@@ -93,7 +93,7 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 	opts.recreateSecret = checkSecret(ctx, run, opts)
 
 	if opts.RouteName == "" {
-		opts.RouteName, _ = detectOpenShiftRoute(ctx, run, opts)
+		opts.RouteName, _ = DetectOpenShiftRoute(ctx, run, opts.targetNamespace)
 	}
 	if err := askQuestions(opts); err != nil {
 		return err
@@ -176,7 +176,7 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 
 			var err error
-			opts.targetNamespace, err = detectPacInstallation(ctx, opts.targetNamespace, run)
+			opts.targetNamespace, err = DetectPacInstallation(ctx, opts.targetNamespace, run)
 			if err != nil {
 				return err
 			}
@@ -198,7 +198,7 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func detectPacInstallation(ctx context.Context, wantedNS string, run *params.Run) (string, error) {
+func DetectPacInstallation(ctx context.Context, wantedNS string, run *params.Run) (string, error) {
 	// detect which namespace pac is installed in
 	// verify first if the targetNamespace actually exists
 	if wantedNS != "" {

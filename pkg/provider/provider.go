@@ -9,6 +9,10 @@ var (
 	oktotestRegex = regexp.MustCompile(`(?m)^/ok-to-test\s*$`)
 )
 
+const (
+	ProviderGitHubApp     = "GitHub App"
+)
+
 func Valid(value string, validValues []string) bool {
 	for _, v := range validValues {
 		if v == value {
