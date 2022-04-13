@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euf
 
-export TARGET_REPO=${TARGET_REPO:-quay.io/openshift-pipeline/pipelines-as-code}
+export TARGET_REPO=${TARGET_REPO:-ghcr.io/openshift-pipelines/pipelines-as-code}
 export TARGET_BRANCH=${TARGET_BRANCH:-main}
 export TARGET_NAMESPACE=${TARGET_NAMESPACE:-pipelines-as-code}
 export TARGET_OPENSHIFT=${TARGET_OPENSHIFT:-""}
