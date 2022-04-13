@@ -39,5 +39,14 @@ func (w Webhook) Install(ctx context.Context, run *params.Run) error {
 		w.ControllerURL = route
 	}
 
-	return w.githubWebhook(ctx)
+	controllerURL, err := w.githubWebhook(ctx)
+	if err != nil || controllerURL == "" {
+		return err
+	}
+
+	return info.UpdateInfoConfigMap(ctx, run, &info.Options{
+		TargetNamespace: installationNS,
+		ControllerURL:   controllerURL,
+		Provider:        provider.ProviderGitHubWebhook,
+	})
 }

@@ -10,7 +10,8 @@ var (
 )
 
 const (
-	ProviderGitHubApp = "GitHub App"
+	ProviderGitHubApp     = "GitHub App"
+	ProviderGitHubWebhook = "GitHub Webhook"
 )
 
 func Valid(value string, validValues []string) bool {
