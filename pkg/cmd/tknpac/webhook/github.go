@@ -14,12 +14,15 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const defaultPublicGithub = "https://github.com"
+
 type gitHubWebhookConfig struct {
 	ControllerURL       string
 	RepoOwner           string
 	RepoName            string
 	WebhookSecret       string
 	PersonalAccessToken string
+	APIURL              string
 }
 
 func (w Webhook) githubWebhook(ctx context.Context) error {
@@ -36,6 +39,7 @@ func (w Webhook) githubWebhook(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	ghWebhook.APIURL = w.ProviderAPIURL
 
 	return ghWebhook.create(ctx)
 }
@@ -115,7 +119,11 @@ func (gh gitHubWebhookConfig) create(ctx context.Context) error {
 		},
 	}
 
-	ghClient := newGHClientByToken(ctx, gh.PersonalAccessToken)
+	ghClient, err := newGHClientByToken(ctx, gh.PersonalAccessToken, gh.APIURL)
+	if err != nil {
+		return err
+	}
+
 	_, res, err := ghClient.Repositories.CreateHook(ctx, gh.RepoOwner, gh.RepoName, hook)
 	if err != nil {
 		return err
@@ -136,9 +144,18 @@ func (gh gitHubWebhookConfig) create(ctx context.Context) error {
 	return nil
 }
 
-func newGHClientByToken(ctx context.Context, token string) *github.Client {
+func newGHClientByToken(ctx context.Context, token, apiURL string) (*github.Client, error) {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
-	return github.NewClient(oauth2.NewClient(ctx, ts))
+
+	if apiURL == defaultPublicGithub {
+		return github.NewClient(oauth2.NewClient(ctx, ts)), nil
+	}
+
+	gprovider, err := github.NewEnterpriseClient(apiURL, "", oauth2.NewClient(ctx, ts))
+	if err != nil {
+		return nil, err
+	}
+	return gprovider, nil
 }

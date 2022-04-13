@@ -10,9 +10,10 @@ import (
 )
 
 type Webhook struct {
-	RepositoryURL string
-	PACNamespace  string
-	ControllerURL string
+	RepositoryURL  string
+	PACNamespace   string
+	ControllerURL  string
+	ProviderAPIURL string
 }
 
 func (w Webhook) Install(ctx context.Context, run *params.Run) error {

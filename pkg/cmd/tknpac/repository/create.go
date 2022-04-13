@@ -34,6 +34,7 @@ type createOptions struct {
 }
 
 func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+	var githubURLForWebhook string
 	createOpts := &createOptions{
 		event:      info.NewEvent(),
 		repository: &apipac.Repository{},
@@ -85,8 +86,9 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 
 			config := &webhook.Webhook{
-				RepositoryURL: createOpts.gitInfo.URL,
-				PACNamespace:  createOpts.pacNamespace,
+				RepositoryURL:  createOpts.gitInfo.URL,
+				PACNamespace:   createOpts.pacNamespace,
+				ProviderAPIURL: githubURLForWebhook,
 			}
 
 			if err := config.Install(ctx, run); err != nil {
@@ -107,6 +109,7 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		"The target namespace where the runs will be created")
 	cmd.PersistentFlags().StringVarP(&createOpts.pacNamespace, "pac-namespace",
 		"", "", "namespace where pac is installed")
+	cmd.PersistentFlags().StringVarP(&githubURLForWebhook, "github-api-url", "", "", "Github Enterprise API URL")
 
 	return cmd
 }
