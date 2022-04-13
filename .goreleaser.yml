@@ -52,17 +52,18 @@ release:
 
     ### Openshift
     ```shell
-    kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/{{.Tag}}/release.yaml
+    kubectl apply -f https://github.com/openshift-pipelines/pipelines-as-code/releases/download/{{.Tag}}/release.yaml
     ```
     ### Kubernetes
     ```shell
-    kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/{{.Tag}}/release.k8s.yaml
+    kubectl apply -f https://github.com/openshift-pipelines/pipelines-as-code/releases/download/{{.Tag}}/release.k8s.yaml
     ```
     ### Documentation
 
-    full install documentation is available here:
+    documentation is available here :
 
-    https://github.com/openshift-pipelines/pipelines-as-code/blob/{{.Tag}}/docs/install.md
+    https://pipelineascode.com
+
 
 brews:
   - name: tektoncd-pac
