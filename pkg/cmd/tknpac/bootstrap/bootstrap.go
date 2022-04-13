@@ -21,7 +21,7 @@ const (
 	defaultProviderType    = "github-app"
 )
 
-var providerTargets = []string{"github-app", "github-enteprise-app"}
+var providerTargets = []string{"github-app", "github-enterprise-app"}
 
 type bootstrapOpts struct {
 	providerType    string
@@ -182,7 +182,7 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 
 			if b, _ := askYN(false, "", "Are you using Github Enterprise?"); b {
-				opts.providerType = "github-enteprise-app"
+				opts.providerType = "github-enterprise-app"
 			}
 
 			return createSecret(ctx, run, opts)
@@ -229,9 +229,9 @@ func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 	cmd.PersistentFlags().StringVar(&opts.GithubOrganizationName, "github-organization-name", "", "Whether you want to target an organization instead of the current user")
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationName, "github-application-name", "", "Github Application Name")
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "Github Application URL")
-	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enteprise API URL")
+	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enterprise API URL")
 	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "the public URL for the pipelines-as-code controller")
-	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Wether to install the nightly Pipelines as Code")
+	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Whether to install the nightly Pipelines as Code")
 	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "webserver-port")
 	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,
 		fmt.Sprintf("target install type, choices are: %s ", strings.Join(providerTargets, ", ")))
