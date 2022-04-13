@@ -186,11 +186,10 @@ func Run(ctx context.Context, cs *params.Run, providerintf provider.Interface, k
 	if err := k8int.WaitForPipelineRunSucceed(ctx, cs.Clients.Tekton.TektonV1beta1(), pr, duration); err != nil {
 		// if we have a timeout from the pipeline run, we would not know it. We would need to get the PR status to know.
 		// maybe something to improve in the future.
-		return fmt.Errorf("pipelinerun %s in namespace %s has a failed status: %w",
-			pipelineRun.GetGenerateName(), repo.GetNamespace(), err)
+		cs.Clients.Log.Errorf("pipelinerun has failed: %s", err.Error())
 	}
 
-	// Do cleanups
+	// Cleanup old succeeded pipelineruns
 	if keepMaxPipeline, ok := config["max-keep-runs"]; ok {
 		max, err := strconv.Atoi(keepMaxPipeline)
 		if err != nil {
