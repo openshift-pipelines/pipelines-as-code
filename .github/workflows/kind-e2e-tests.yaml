@@ -1,4 +1,4 @@
-name: E2E Tests
+name: E2E Tests on Kind
 on:
   workflow_dispatch: # yamllint disable-line
   push: # yamllint disable-line
