@@ -72,12 +72,12 @@ spec:
                 stable_tag=${version%.*}.x
                 for target in release-${version} release-${stable_tag} stable;do
                   export PAC_VERSION=${version} TARGET_BRANCH=${target//release-}
-                  bash hack/generate-releaseyaml.sh > release.k8s.yaml
-                  env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > release.yaml
+                  bash hack/generate-releaseyaml.sh > /tmp/release.k8s.yaml
+                  env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > /tmp/release.yaml
                   msg="pac release ${version} on branch ${target}"
                   set +x
                   echo python hack/upload-file-to-github.py --message "Release yaml generated for ${msg}" --owner-repository openshift-pipelines/pipelines-as-code --token "TOKEN" --to-ref=refs/heads/${target} --from-ref=refs/tags/${version} -f release.k8s.yaml:release.k8s.yaml -f release.yaml:release.yaml
-                  python hack/upload-file-to-github.py --message "Release yaml generated for ${msg}" --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} --to-ref=refs/heads/${target} --from-ref=refs/tags/${version} -f release.k8s.yaml:release.k8s.yaml -f release.yaml:release.yaml
+                  python hack/upload-file-to-github.py --message "Release yaml generated for ${msg}" --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} --to-ref=refs/heads/${target} --from-ref=refs/tags/${version} -f /tmp/release.k8s.yaml:release.k8s.yaml -f /tmp/release.yaml:release.yaml
                   set -x
                 done
       - name: gorelease
