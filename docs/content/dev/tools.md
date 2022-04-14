@@ -1,12 +1,13 @@
 ---
 title: Developers tools
 ---
-# Tools to user as Openshift Pipelines as Code developer
+# Openshift Pipelines as Code developer Resources
 
 ## Pre-commit
 
 We are using several tools to verify that pipelines-as-code is up to a good
-coding and documentation standard.
+coding and documentation standard. We use pre-commit tools to ensure before you
+send your PR that the commit is valid.
 
 First you need to install pre-commit:
 
@@ -41,12 +42,35 @@ For example to test and lint the go files :
 
     make test lint-go
 
+## Documentation
+
+Documentation is important to us, most of the time new features or change of
+behaviour needs to include documentation part of the Pull Request.
+
+We use hugo, if you want to preview your change, you need to install
+[hugo](https://gohugo.io) and do a :
+
+    cd docs;hugo server
+
+this will start a hugo server with live preview of the docs on :
+
+<https://localhost:1313>
+
+When we push the release, the docs get rebuilded by CloudFare.
+
+By default the website <https://pipelinesascode.com> only contains the "stable"
+documentation. If you want to preview the dev documentation as from `main` you
+need to go to this URL:
+
+<https://main.pipelines-as-code.pages.dev>
+
 ## Tools
 
-several tools are used on CI and in `pre-commit`, the non exhaustive list you
+Several tools are used on CI and in `pre-commit`, the non exhaustive list you
 need to have on your system:
 
 * [golangci-lint](https://github.com/golangci/golangci-lint)
 * [yamllint](https://github.com/adrienverge/yamllint)
 * [vale](https://github.com/errata-ai/vale)
 * [markdownlint](https://github.com/golangci/golangci-lint)
+* [hugo](https://gohugo.io)

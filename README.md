@@ -1,6 +1,6 @@
 # Pipelines as Code
 
-[![Container Repository on Quay](https://quay.io/repository/openshift-pipeline/pipelines-as-code/status "Container Repository on Quay")](https://quay.io/repository/openshift-pipeline/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code) [![E2E Tests](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/kind.yaml/badge.svg)](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/kind.yaml)
+[![Container Repository on Quay](https://quay.io/repository/openshift-pipeline/pipelines-as-code/status "Container Repository on Quay")](https://quay.io/repository/openshift-pipeline/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code) [![E2E Tests](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/kind.yaml/badge.svg)](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/kind-e2e-tests.yaml)
 
 Pipelines as Code -- An opinionated CI based on OpenShift Pipelines / Tekton.
 
@@ -31,11 +31,11 @@ Pipelines as Code features:
 
 - Efficient use of GitHub blobs and objects API for retrieving configurations
 
-- ACL over a GitHub organization or via a Prow style [`OWNER`](https://www.kubernetes.dev/docs/guide/owners/) file.
+- ACL over a GitHub organization or with a Prow style [`OWNER`](https://www.kubernetes.dev/docs/guide/owners/) file.
 
-- `tkn-pac` plugin for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
+- `tkn-pac` plug-in for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
 
-- Gitlab, Bitbucket Server, Bitbucket Cloud and Github via Webhook support.
+- Gitlab, Bitbucket Server, Bitbucket Cloud and Github through Webhook support.
 
 ## Installation Guide
 
@@ -43,7 +43,7 @@ The easiest way to get started is to use the `tkn pac` CLI and its bootstrap com
 
 Download and install first the tkn-pac CLI following [these instructions](/docs/cli.md#install).
 
-Connected to your cluster launch the command :
+Connected to your cluster execture the command :
 
 ```bash
 -$ tkn pac bootstrap
@@ -62,15 +62,17 @@ For more details on the different installation method please follow [this docume
 ## Getting Started
 
 The flow for using pipelines as code generally begins with admin installing the Pipelines-as-Code infrastructure,
-creating a GitHub App and sharing the GitHub App url across the organization for app teams to enable the app on their
+creating a GitHub App and sharing the GitHub App URL across the organization for app teams to enable the app on their
 GitHub repositories.
 
-In order to enable the GitHub App provided by admin on your Git repository as
-documented [here](https://docs.github.com/en/developers/apps/managing-github-apps/installing-github-apps). Otherwise you
-can go to the *Settings > Applications* and then click on *Configure* button near the GitHub App you had created. In
-the **Repository access** section, select the repositories that you want to enable and have access to Pipelines-as-code.
+To enable the GitHub App provided by admin on your Git repository as documented
+[here](https://docs.github.com/en/developers/apps/managing-github-apps/installing-github-apps).
+Otherwise you can go to the *Settings > Applications* and then click on
+*Configure* button near the GitHub App you had created. In the **Repository
+access** section, select the repositories that you want to enable and have
+access to Pipelines-as-code.
 
-Once you have enabled your GitHub App for your GitHub repository, you can use the `pac` Tekton CLI plugin to bootstrap
+Once you have enabled your GitHub App for your GitHub repository, you can use the `pac` Tekton CLI plug-in to bootstrap
 pipelines as code:
 
 ```bash
@@ -97,7 +99,7 @@ The above command would create a `Repository` CRD in your `demo` namespace which
 PipelineRuns for your GitHub repository should run. It also generates an example pipeline in the `.tekton` folder.
 Commit and push the pipeline to your repo to start using pipelines as code.
 
-Note that even if installing via Github application is the preferred installation method, Pipeline As Code
+Note that even if installing with Github application is the preferred installation method, Pipeline As Code
 supports other methods :
 
 - Github direct Webhook
@@ -117,3 +119,4 @@ A walkthought video is available [here](https://www.youtube.com/watch?v=Uh1YhOGP
 
 - [OpenShift Developer Experience Office Hours: Pipeline as Code with OpenShift Pipelines](https://www.youtube.com/watch?v=PhqzGsJnFEI)
 - [How to make a release pipeline with Pipelines as Code](https://blog.chmouel.com/2021/07/01/how-to-make-a-release-pipeline-with-pipelines-as-code)
+- Main branch documentation - <https://main.pipelines-as-code.pages.dev/>
