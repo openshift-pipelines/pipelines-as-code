@@ -117,7 +117,7 @@ spec:
                 bash hack/generate-releaseyaml.sh > release.k8s.yaml
                 env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > release.yaml
                 set +x # Do not show TOKEN in logs
-                python hack/upload-file-to-github.py --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" --from-ref refs/heads/main --to-ref refs/heads/nightly --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} -f release.k8s.yaml:release.k8s.yaml -f release.yaml:release.yaml
+                python hack/upload-file-to-github.py --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" --from-ref refs/heads/main --to-ref refs/heads/nightly --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} -f release.k8s.yaml:release.k8s.yaml -f release.yaml:release.yaml -f <(echo nightly):docs/content/VERSION
               workingDir: $(workspaces.source.path)
           workspaces:
             - name: source
