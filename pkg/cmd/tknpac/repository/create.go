@@ -11,8 +11,8 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/webhook"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/webhook"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -103,12 +103,12 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolP(noColorFlag, "C", !ioStreams.ColorEnabled(), "disable coloring")
-	cmd.PersistentFlags().StringVar(&createOpts.repository.Name, "name", "", "RepositoryURL name")
-	cmd.PersistentFlags().StringVar(&createOpts.event.URL, "url", "", "RepositoryURL URL")
+	cmd.PersistentFlags().StringVar(&createOpts.repository.Name, "name", "", "Repository name")
+	cmd.PersistentFlags().StringVar(&createOpts.event.URL, "url", "", "Repository URL")
 	cmd.PersistentFlags().StringVarP(&createOpts.repository.Namespace, "namespace", "n", "",
 		"The target namespace where the runs will be created")
 	cmd.PersistentFlags().StringVarP(&createOpts.pacNamespace, "pac-namespace",
-		"", "", "namespace where pac is installed")
+		"", "", "the namespace where pac is installed")
 	cmd.PersistentFlags().StringVarP(&githubURLForWebhook, "github-api-url", "", "", "Github Enterprise API URL")
 
 	return cmd

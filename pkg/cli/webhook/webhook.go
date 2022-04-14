@@ -3,8 +3,8 @@ package webhook
 import (
 	"context"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/bootstrap"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )

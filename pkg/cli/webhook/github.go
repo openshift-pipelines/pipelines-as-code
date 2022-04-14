@@ -26,7 +26,7 @@ type gitHubWebhookConfig struct {
 }
 
 func (w Webhook) githubWebhook(ctx context.Context) (string, error) {
-	msg := "Would you like me to configure GitHub Webhook for your repository? "
+	msg := "Would you like me to configure a GitHub Webhook for your repository? "
 	var configureWebhook bool
 	if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &configureWebhook); err != nil {
 		return "", err
@@ -54,12 +54,12 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 		}
 	}
 	if defaultRepo != "" {
-		msg := fmt.Sprintf("Please enter the repository which needs to be configured (default: %s):", defaultRepo)
+		msg := fmt.Sprintf("Please enter the repository you want to be configured (default: %s):", defaultRepo)
 		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repo); err != nil {
 			return nil, err
 		}
 	} else {
-		msg := "Please enter the repository which needs to be configured (eg. repo-owner/repo-name) : "
+		msg := "Please enter the repository you want to be configured (eg. repo-owner/repo-name) : "
 		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repo,
 			survey.WithValidator(survey.Required)); err != nil {
 			return nil, err
@@ -71,7 +71,7 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 	}
 	repoArr := strings.Split(repo, "/")
 	if len(repoArr) != 2 {
-		return nil, fmt.Errorf("invalid repository, needs to be in format 'org-name/repo-name'")
+		return nil, fmt.Errorf("invalid repository, needs to be of format 'org-name/repo-name'")
 	}
 
 	gh.RepoOwner = repoArr[0]
@@ -86,13 +86,15 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 	}
 
 	if err := prompt.SurveyAskOne(&survey.Input{
-		Message: "Please enter secret for configuring with webhook for payload validation: ",
+		Message: "Please enter the secret to configure the webhook for payload validation: ",
 	}, &gh.WebhookSecret, survey.WithValidator(survey.Required)); err != nil {
 		return nil, err
 	}
 
 	// nolint:forbidigo
-	fmt.Println("🔑 Next, you need to create a GitHub access token with scopes `public_repo` & `admin:repo_hook`")
+	fmt.Println(" ℹ ️You now need to create a GitHub personal token with scopes  `public_repo` & `admin:repo_hook`")
+	// nolint:forbidigo
+	fmt.Println(" ℹ ️Go to this URL to generate one https://github.com/settings/tokens/new, see https://is.gd/BMgLH5 for documentation ")
 	if err := prompt.SurveyAskOne(&survey.Input{
 		Message: "Please enter the GitHub access token: ",
 	}, &gh.PersonalAccessToken, survey.WithValidator(survey.Required)); err != nil {
