@@ -114,6 +114,10 @@ html-coverage: ./vendor ## generate html coverage
 	@mkdir -p tmp
 	@go test -coverprofile=tmp/c.out ./.../ && go tool cover -html=tmp/c.out
 
+.PHONY: docs-dev
+docs-dev: ## preview live your docs with hugo
+	@hugo server -s docs/
+
 check-generated: # vendor update-golden
 	@git status -uno |grep -E "modified:[ ]*(vendor/|.*.golden$)" && \
 		{ echo "Vendor directory or Golden files has not been generated properly, commit the change first" ; \

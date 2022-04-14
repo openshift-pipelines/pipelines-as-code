@@ -1,10 +1,11 @@
 <div class="flex flex-wrap justify-between">
 
 {{ if fileExists "VERSION" }}
+{{ $version := os.ReadFile "VERSION" }}
 <div>
-  <a class="flex align-center" href="{{ .Site.Params.BookRepo }}/tree/{{ .Site.Params.TargetVersion }}" target="_blank" rel="noopener">
+  <a class="flex align-center" href="{{ .Site.Params.BookRepo }}/tree/{{ trim $version "\n" }}" target="_blank" rel="noopener">
       <img src="{{ "svg/version.svg" | relURL }}" class="book-icon" alt="Calendar" />
-      <span>{{ os.ReadFile "VERSION" | title }}</span>
+      <span>{{ $version | title }}</span>
   </a>
 </div>
 {{ end }}
