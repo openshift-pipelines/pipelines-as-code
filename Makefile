@@ -44,6 +44,9 @@ releaseko: ## Generate release.yaml with ko but changing the target_namespace an
 
 check: lint test
 
+allinone: ## Run kind all in one install
+	@cd ./hack/dev/kind/;./install.sh
+
 ## Tests
 TEST_UNIT_TARGETS := test-unit-verbose test-unit-race test-unit-failfast
 test-unit-verbose: ARGS=-v

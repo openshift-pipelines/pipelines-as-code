@@ -7,15 +7,21 @@ title: Developer Resources
 
 It's important: <https://github.com/openshift-pipelines/pipelines-as-code/blob/main/code-of-conduct.md>
 
-## Use the kind install to develop
+## Use the all in one install on kind to develop
 
-It uses kind under docker. When you execute the ./hack/dev/kind/install.sh script you will have a :
+It uses kind under docker. You start it with:
+
+```shell
+make allinone
+```
+
+When it finished you will have the following installed in your kind cluster:
 
 - Kind Cluser Deployer
 - Internal registry to push to from `ko`
 - A ingress controller with nginx for routing.
 - Tekton and Dashboard installed with a ingress route.
-- Pipelines as code deployed from ko.
+- Pipelines as code deployed from your repo with ko.
 
 By default it will try to install from
 $GOPATH/src/github.com/openshift-pipelines/pipelines-as-code, if you want to
@@ -151,6 +157,8 @@ need to have on your system:
 - [vale](https://github.com/errata-ai/vale)
 - [markdownlint](https://github.com/golangci/golangci-lint)
 - [hugo](https://gohugo.io)
+- [ko](https://github.com/google/ko)
+- [kind](https://kind.sigs.k8s.io/)
 - [sugarjazy](https://github.com/chmouel/sugarjazy)
 
 # Links
