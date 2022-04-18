@@ -64,15 +64,23 @@ func checkNS(ctx context.Context, run *params.Run, targetNamespace string) (bool
 }
 
 func checkPipelinesInstalled(run *params.Run) (bool, error) {
+	return checkGroupInstalled(run, "tekton.dev")
+}
+
+func checkOpenshiftRoute(run *params.Run) (bool, error) {
+	return checkGroupInstalled(run, openShiftRouteGroup)
+}
+
+func checkGroupInstalled(run *params.Run, resourceGroup string) (bool, error) {
 	sg, err := run.Clients.Kube.Discovery().ServerGroups()
 	if err != nil {
 		return false, err
 	}
-	tektonFound := false
+	found := false
 	for _, t := range sg.Groups {
-		if t.Name == "tekton.dev" {
-			tektonFound = true
+		if t.Name == resourceGroup {
+			found = true
 		}
 	}
-	return tektonFound, nil
+	return found, nil
 }
