@@ -35,6 +35,7 @@ type createOptions struct {
 
 func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	var githubURLForWebhook string
+	var onlyWebhook bool
 	createOpts := &createOptions{
 		event:      info.NewEvent(),
 		repository: &apipac.Repository{},
@@ -60,29 +61,31 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			if err := getRepoURL(createOpts); err != nil {
-				return err
-			}
+			if !onlyWebhook {
+				if err := getRepoURL(createOpts); err != nil {
+					return err
+				}
 
-			if err := getOrCreateNamespace(ctx, createOpts); err != nil {
-				return err
-			}
+				if err := getOrCreateNamespace(ctx, createOpts); err != nil {
+					return err
+				}
 
-			if err := createRepoCRD(ctx, createOpts); err != nil {
-				return err
-			}
+				if err := createRepoCRD(ctx, createOpts); err != nil {
+					return err
+				}
 
-			gopt := generate.MakeOpts()
-			gopt.GitInfo = createOpts.gitInfo
-			gopt.IOStreams = createOpts.ioStreams
-			gopt.CLIOpts = createOpts.cliOpts
+				gopt := generate.MakeOpts()
+				gopt.GitInfo = createOpts.gitInfo
+				gopt.IOStreams = createOpts.ioStreams
+				gopt.CLIOpts = createOpts.cliOpts
 
-			// defaulting the values for repo create command
-			gopt.Event.EventType = "[pull_request, push]"
-			gopt.Event.BaseBranch = "main"
+				// defaulting the values for repo create command
+				gopt.Event.EventType = "[pull_request, push]"
+				gopt.Event.BaseBranch = "main"
 
-			if err := generate.Generate(gopt); err != nil {
-				return err
+				if err := generate.Generate(gopt); err != nil {
+					return err
+				}
 			}
 
 			config := &webhook.Webhook{
@@ -110,6 +113,7 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&createOpts.pacNamespace, "pac-namespace",
 		"", "", "the namespace where pac is installed")
 	cmd.PersistentFlags().StringVarP(&githubURLForWebhook, "github-api-url", "", "", "Github Enterprise API URL")
+	cmd.PersistentFlags().BoolVar(&onlyWebhook, "webhook", false, "Skip repository creation, proceed with configuring webhook")
 
 	return cmd
 }
