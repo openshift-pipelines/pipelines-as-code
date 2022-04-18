@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/spf13/cobra"
 )
 
@@ -133,6 +135,15 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				if err := install(ctx, run, opts); err != nil {
 					return err
 				}
+			}
+
+			pacInfo, err := info.GetPACInfo(ctx, run, opts.targetNamespace)
+			if err != nil {
+				return err
+			}
+
+			if pacInfo.Provider != "" && pacInfo.Provider != provider.ProviderGitHubApp {
+				return fmt.Errorf("skipping bootstraping GitHub App, %s is already configured", pacInfo.Provider)
 			}
 
 			if !opts.skipGithubAPP {
