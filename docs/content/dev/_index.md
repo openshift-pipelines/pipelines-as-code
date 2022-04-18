@@ -17,7 +17,7 @@ make allinone
 
 When it finished you will have the following installed in your kind cluster:
 
-- Kind Cluser Deployer
+- Kind Cluster Deployer
 - Internal registry to push to from `ko`
 - A ingress controller with nginx for routing.
 - Tekton and Dashboard installed with a ingress route.
