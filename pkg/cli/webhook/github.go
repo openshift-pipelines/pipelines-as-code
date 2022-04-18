@@ -14,7 +14,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const defaultPublicGithub = "https://github.com"
+const apiPublicURL = "https://api.github.com/"
 
 type gitHubWebhookConfig struct {
 	ControllerURL       string
@@ -92,9 +92,9 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 	}
 
 	// nolint:forbidigo
-	fmt.Println(" ℹ ️You now need to create a GitHub personal token with scopes  `public_repo` & `admin:repo_hook`")
+	fmt.Println("ℹ ️You now need to create a GitHub personal token with scopes  `public_repo` & `admin:repo_hook`")
 	// nolint:forbidigo
-	fmt.Println(" ℹ ️Go to this URL to generate one https://github.com/settings/tokens/new, see https://is.gd/BMgLH5 for documentation ")
+	fmt.Println("ℹ ️Go to this URL to generate one https://github.com/settings/tokens/new, see https://is.gd/BMgLH5 for documentation ")
 	if err := prompt.SurveyAskOne(&survey.Input{
 		Message: "Please enter the GitHub access token: ",
 	}, &gh.PersonalAccessToken, survey.WithValidator(survey.Required)); err != nil {
@@ -151,7 +151,7 @@ func newGHClientByToken(ctx context.Context, token, apiURL string) (*github.Clie
 		&oauth2.Token{AccessToken: token},
 	)
 
-	if apiURL == defaultPublicGithub {
+	if apiURL == "" || apiURL == apiPublicURL {
 		return github.NewClient(oauth2.NewClient(ctx, ts)), nil
 	}
 
