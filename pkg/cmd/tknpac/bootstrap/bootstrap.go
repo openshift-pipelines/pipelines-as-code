@@ -192,6 +192,15 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
+			pacInfo, err := info.GetPACInfo(ctx, run, opts.targetNamespace)
+			if err != nil {
+				return err
+			}
+
+			if pacInfo.Provider != "" && pacInfo.Provider != provider.ProviderGitHubApp {
+				return fmt.Errorf("skipping bootstraping GitHub App, %s is already configured", pacInfo.Provider)
+			}
+
 			if b, _ := askYN(false, "", "Are you using Github Enterprise?"); b {
 				opts.providerType = "github-enterprise-app"
 			}
