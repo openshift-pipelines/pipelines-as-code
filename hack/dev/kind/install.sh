@@ -3,9 +3,9 @@
 #
 # You should forward the URL via smee,
 # - create a URL in there by going to https://smee.io
-# - install pysmee: pip3 install --user pysmee
+# - install gosmee: go install -v github.com/chmouel/gosmee@latest
 # - run somewhere in a terminal :
-#    pysmee forward https://smee.io/smee-url-id http://kind.pipelines.devcluster.openshift.com
+#    gosmee https://smee.io/aBcDeF http://controller.paac-127-0-0-1.nip.io
 #
 # You probably need to install passwordstore https://www.passwordstore.org/ and
 # add your github secrets : github-application-id github-private-key
@@ -176,8 +176,8 @@ function configure_pac() {
 
     echo "Set Active Namespace to pipelines-as-code"
     kubectl config set-context --current --namespace=pipelines-as-code >/dev/null
-    type -p pysmee || echo "You may want to install psmee with: pip3 install -U pysmee and run it with:
-pysmee forward --save /tmp/req.json https://smee.io/SMEEID http://controller.${DOMAIN_NAME}"
+    type -p gosmee || echo "You may want to install psmee with: go install -v github.com/chmouel/gosmee@latest and run:
+gosmee --saveDir /tmp/replays https://smee.io/SMEEID http://controller.${DOMAIN_NAME}"
     echo "And we are done :) URLS: "
     echo "controller: http://controller.${DOMAIN_NAME}"
     echo "dashboard: http://dashboard.${DOMAIN_NAME}"
