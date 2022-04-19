@@ -44,6 +44,9 @@ releaseko: ## Generate release.yaml with ko but changing the target_namespace an
 
 check: lint test
 
+allinone: ## Run kind all in one install
+	@cd ./hack/dev/kind/;./install.sh
+
 ## Tests
 TEST_UNIT_TARGETS := test-unit-verbose test-unit-race test-unit-failfast
 test-unit-verbose: ARGS=-v
@@ -113,6 +116,10 @@ generated: update-golden fumpt ## generate all files that needs to be generated
 html-coverage: ./vendor ## generate html coverage
 	@mkdir -p tmp
 	@go test -coverprofile=tmp/c.out ./.../ && go tool cover -html=tmp/c.out
+
+.PHONY: docs-dev
+docs-dev: ## preview live your docs with hugo
+	@hugo server -s docs/
 
 check-generated: # vendor update-golden
 	@git status -uno |grep -E "modified:[ ]*(vendor/|.*.golden$)" && \

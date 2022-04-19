@@ -115,6 +115,12 @@ The usage guide available [here](https://pipelinesascode.com/docs/guide/) offer 
 
 A walkthought video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
 
+## Developer Guide
+
+If you want to help and contribute to the `pipelines-as-code` project, you can
+see the documentation here to get started: <https://pipelinesascode.com/dev/>
+(and thank you).
+
 ## Videos/Blog Posts
 
 - [OpenShift Developer Experience Office Hours: Pipeline as Code with OpenShift Pipelines](https://www.youtube.com/watch?v=PhqzGsJnFEI)

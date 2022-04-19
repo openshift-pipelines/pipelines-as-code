@@ -1,7 +1,169 @@
 ---
-title: Openshift Pipelines as code Dev Guide
-weight: 3
+title: Developer Resources
 ---
-# Resources for Openshift Pipelines as code developers
+# How to get started developing for the Pipelines as Code project
 
-{{<section>}}
+## Please read the Code of conduct
+
+It's important: <https://github.com/openshift-pipelines/pipelines-as-code/blob/main/code-of-conduct.md>
+
+## Use the all in one install on kind to develop
+
+It uses kind under docker. You start it with:
+
+```shell
+make allinone
+```
+
+When it finished you will have the following installed in your kind cluster:
+
+- Kind Cluster Deployer
+- Internal registry to push to from `ko`
+- A ingress controller with nginx for routing.
+- Tekton and Dashboard installed with a ingress route.
+- Pipelines as code deployed from your repo with ko.
+
+By default it will try to install from
+$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code, if you want to
+override it you can set the `PAC_DIRS` environment variable.
+
+- It will deploy under the nip.io domain reflector, the URL will be :
+  - <http://controller.paac-127-0-0-1.nip.io>
+  - <http://dashboard.paac-127-0-0-1.nip.io>
+
+- You will need to create secret yourself, if you have the [pass cli](https://www.passwordstore.org/)
+  installed you can point to a folder which contains : github-application-id github-private-key webhook.secret
+  As configured from your GitHub application. Configre `PAC_PASS_SECRET_FOLDER`
+  environment variable to point to it.
+  For example :
+
+  ```shell
+  pass insert github-app/github-application-id
+  pass insert github-app/webhook.secret
+  pass insert -m github-app/github-private-key
+  ```
+
+- If you need to redeploy your pac install (and only pac) you can do :
+
+  ```shell
+  ./install.sh -p
+  ```
+
+  or directly with ko :
+
+  ```shell
+  env KO_DOCKER_REPO=localhost:5000 ko apply -f ${1:-"config"} -B
+  ```
+
+- more flags: `-b` to only do the kind creation+nginx+docker image, `-r` to
+  install from latest stable release (override with env variable `PAC_RELEASE`)
+  instead of ko. `-c` will only do the pac configuration (ie: creation of
+  secrets/ingress etc..)
+
+## Using the Makefile targets
+
+Several target in the Makefile is available, if you need to run them
+manually. You can list all the makefile targets with:
+
+```shell
+make help
+```
+
+For example to test and lint the go files :
+
+```shell
+make test lint-go
+```
+
+If you add a CLI command with help you will need to regenerate the golden files :
+
+```shell
+make update-golden
+```
+
+## Configuring the Pre Push Git checks
+
+We are using several tools to verify that pipelines-as-code is up to a good
+coding and documentation standard. We use pre-commit tools to ensure before you
+send your PR that the commit is valid.
+
+First you need to install pre-commit:
+
+<https://pre-commit.com/>
+
+It should be available as package on Fedora and Brew or install it with `pip`.
+
+When you have it installed add the hook to your repo by doing :
+
+```shell
+pre-commit install
+```
+
+This will run several `hooks` on the files that has been changed before you
+*push* to your remote branch. If you need to skip the verification (for whatever
+reason), you can do :
+
+```shell
+git push --no-verify
+```
+
+or you can disable individual hook with the `SKIP` variable:
+
+```shell
+SKIP=lint-md git push
+```
+
+If you want to manually run on everything:
+
+```shell
+make pre-commit
+```
+
+## Developing the Documentation
+
+Documentation is important to us, most of the time new features or change of
+behaviour needs to include documentation part of the Pull Request.
+
+We use hugo, if you want to preview your change, you need to install
+[hugo](https://gohugo.io) and do a :
+
+```shell
+make docs-dev
+```
+
+this will start a hugo server with live preview of the docs on :
+
+<https://localhost:1313>
+
+When we push the release, the docs get rebuilded by CloudFare.
+
+By default the website <https://pipelinesascode.com> only contains the "stable"
+documentation. If you want to preview the dev documentation as from `main` you
+need to go to this URL:
+
+<https://main.pipelines-as-code.pages.dev>
+
+## Documentation when we are doign the Release Process
+
+- See here [release-process](release-process)
+
+## Tools that are useful
+
+Several tools are used on CI and in `pre-commit`, the non exhaustive list you
+need to have on your system:
+
+- [golangci-lint](https://github.com/golangci/golangci-lint)
+- [yamllint](https://github.com/adrienverge/yamllint)
+- [vale](https://github.com/errata-ai/vale)
+- [markdownlint](https://github.com/golangci/golangci-lint)
+- [hugo](https://gohugo.io)
+- [ko](https://github.com/google/ko)
+- [kind](https://kind.sigs.k8s.io/)
+- [sugarjazy](https://github.com/chmouel/sugarjazy)
+
+# Links
+
+- [Jira Backlog](https://issues.redhat.com/browse/SRVKP-2144?jql=component%20%3D%20%22Pipeline%20as%20Code%22%20%20AND%20status%20!%3D%20Done)
+- [Bitbucket Server Rest API](https://docs.atlassian.com/bitbucket-server/rest/7.17.0/bitbucket-rest.html)
+- [GitHub API](https://docs.github.com/en/rest/reference)
+- [Gitlab API](https://docs.gitlab.com/ee/api/api_resources.html)
