@@ -89,9 +89,11 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 
 			config := &webhook.Webhook{
-				RepositoryURL:  createOpts.gitInfo.URL,
-				PACNamespace:   createOpts.pacNamespace,
-				ProviderAPIURL: githubURLForWebhook,
+				RepositoryURL:       createOpts.gitInfo.URL,
+				PACNamespace:        createOpts.pacNamespace,
+				ProviderAPIURL:      githubURLForWebhook,
+				RepositoryName:      createOpts.repository.Name,
+				RepositoryNamespace: createOpts.repository.Namespace,
 			}
 
 			if err := config.Install(ctx, run); err != nil {
@@ -206,7 +208,7 @@ func createRepoCRD(ctx context.Context, opts *createOptions) error {
 		return fmt.Errorf("invalid git URL: %s, it should be of format: https://gitprovider/project/repository", opts.event.URL)
 	}
 	repositoryName := strings.ReplaceAll(repoOwner, "/", "-")
-	_, err = opts.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.repository.Namespace).Create(
+	opts.repository, err = opts.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.repository.Namespace).Create(
 		ctx,
 		&apipac.Repository{
 			ObjectMeta: metav1.ObjectMeta{

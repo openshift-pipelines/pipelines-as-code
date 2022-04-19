@@ -25,23 +25,28 @@ type gitHubWebhookConfig struct {
 	APIURL              string
 }
 
-func (w Webhook) githubWebhook(ctx context.Context) (string, error) {
+func (w Webhook) githubWebhook(ctx context.Context) (*response, error) {
 	msg := "Would you like me to configure a GitHub Webhook for your repository? "
 	var configureWebhook bool
 	if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &configureWebhook); err != nil {
-		return "", err
+		return nil, err
 	}
 	if !configureWebhook {
-		return "", nil
+		return &response{UserDeclined: true}, nil
 	}
 
 	ghWebhook, err := askGHWebhookConfig(w.RepositoryURL, w.ControllerURL)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	ghWebhook.APIURL = w.ProviderAPIURL
 
-	return ghWebhook.ControllerURL, ghWebhook.create(ctx)
+	return &response{
+		UserDeclined:        false,
+		ControllerURL:       ghWebhook.ControllerURL,
+		PersonalAccessToken: ghWebhook.PersonalAccessToken,
+		WebhookSecret:       ghWebhook.WebhookSecret,
+	}, ghWebhook.create(ctx)
 }
 
 func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, error) {
