@@ -226,9 +226,10 @@ def app_get_delivery(
 def save_script(target: str, el_route: str, headers: dict, payload: str):
     s = f"""#!/usr/bin/env python3
 import requests
+import sys
 payload = \"\"\"{json.dumps(payload)}\"\"\"
 headers={headers}
-el_route = "{el_route}"
+el_route = "http://localhost:8080" if (len(sys.argv) > 1 and sys.argv[1] == "-l") else "{el_route}"
 r = requests.request("POST",el_route,data=payload.encode("utf-8"),headers=headers)
 r.raise_for_status()
 print("Request has been replayed on " + el_route)
