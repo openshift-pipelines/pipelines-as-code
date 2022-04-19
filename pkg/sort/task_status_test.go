@@ -8,6 +8,9 @@ import (
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
+	knativeapi "knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 func TestStatusTmpl(t *testing.T) {
@@ -52,8 +55,22 @@ func TestStatusTmpl(t *testing.T) {
 		},
 		{
 			name:       "test sorted status nada",
-			wantRegexp: regexp.MustCompile("PipelineRun has failed to start"),
+			wantRegexp: regexp.MustCompile("PipelineRun has no taskruns"),
 			pr:         tektontest.MakePR("nada", "ns", nil, nil),
+		},
+		{
+			name:       "pipelinerun no apply",
+			wantRegexp: regexp.MustCompile("PipelineRun has failed to be created: looozeuuur"),
+			pr: tektontest.MakePR("pr1", "looz", map[string]*tektonv1beta1.PipelineRunTaskRunStatus{},
+				&duckv1beta1.Status{
+					Conditions: duckv1beta1.Conditions{
+						{
+							Status:  corev1.ConditionFalse,
+							Type:    knativeapi.ConditionSucceeded,
+							Message: "looozeuuur",
+						},
+					},
+				}),
 		},
 	}
 	for _, tt := range tests {

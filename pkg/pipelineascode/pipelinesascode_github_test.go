@@ -118,7 +118,7 @@ func TestRun(t *testing.T) {
 			},
 			tektondir:       "testdata/pull_request",
 			finalStatus:     "neutral",
-			finalStatusText: "PipelineRun has failed to start",
+			finalStatusText: "PipelineRun has no taskruns",
 		},
 		{
 			name: "pull request/with webhook",
@@ -271,7 +271,7 @@ func TestRun(t *testing.T) {
 			},
 			tektondir:                "testdata/max-keep-runs",
 			finalStatus:              "neutral",
-			finalStatusText:          "PipelineRun has failed to start",
+			finalStatusText:          "PipelineRun has no taskruns",
 			expectedNumberofCleanups: 10,
 		},
 	}
