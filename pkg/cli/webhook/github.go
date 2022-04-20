@@ -17,6 +17,7 @@ import (
 const apiPublicURL = "https://api.github.com/"
 
 type gitHubWebhookConfig struct {
+	Client              *github.Client
 	ControllerURL       string
 	RepoOwner           string
 	RepoName            string
@@ -126,7 +127,7 @@ func (gh gitHubWebhookConfig) create(ctx context.Context) error {
 		},
 	}
 
-	ghClient, err := newGHClientByToken(ctx, gh.PersonalAccessToken, gh.APIURL)
+	ghClient, err := gh.newGHClientByToken(ctx, gh.PersonalAccessToken, gh.APIURL)
 	if err != nil {
 		return err
 	}
@@ -151,7 +152,10 @@ func (gh gitHubWebhookConfig) create(ctx context.Context) error {
 	return nil
 }
 
-func newGHClientByToken(ctx context.Context, token, apiURL string) (*github.Client, error) {
+func (gh gitHubWebhookConfig) newGHClientByToken(ctx context.Context, token, apiURL string) (*github.Client, error) {
+	if gh.Client != nil {
+		return gh.Client, nil
+	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
