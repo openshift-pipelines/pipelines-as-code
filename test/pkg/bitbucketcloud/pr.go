@@ -22,7 +22,7 @@ func MakePR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Run,
 	entries, err := payload.GetEntries([]string{"testdata/pipelinerun.yaml"}, targetNS, options.MainBranch,
 		options.PullRequestEvent)
 	assert.NilError(t, err)
-	tmpfile := fs.NewFile(t, "pipelinerun", fs.WithContent(entries[".tekton/pr.yaml"]))
+	tmpfile := fs.NewFile(t, "pipelinerun", fs.WithContent(entries[".tekton/pipelinerun.yaml"]))
 	defer tmpfile.Remove()
 
 	err = bprovider.Client.Workspaces.Repositories.Repository.WriteFileBlob(&bitbucket.RepositoryBlobWriteOptions{

@@ -10,18 +10,21 @@ var (
 )
 
 func PushFilesToRef(client *ghlib.Client, commitMessage, baseBranch, targetRef string, pid int, files map[string]string) error {
-	for fileName, content := range files {
-		_, _, err := client.RepositoryFiles.CreateFile(pid, fileName, &ghlib.CreateFileOptions{
-			Branch:        ghlib.String(targetRef),
-			StartBranch:   ghlib.String(baseBranch),
-			AuthorEmail:   ghlib.String(commitEmail),
-			AuthorName:    ghlib.String(commitAuthor),
-			Content:       ghlib.String(content),
-			CommitMessage: ghlib.String(commitMessage),
-		})
-		if err != nil {
-			return err
-		}
+	fullYaml := ""
+	for _, content := range files {
+		fullYaml += "---\n"
+		fullYaml += content
+	}
+	_, _, err := client.RepositoryFiles.CreateFile(pid, ".tekton/pr.yaml", &ghlib.CreateFileOptions{
+		Branch:        ghlib.String(targetRef),
+		StartBranch:   ghlib.String(baseBranch),
+		AuthorEmail:   ghlib.String(commitEmail),
+		AuthorName:    ghlib.String(commitAuthor),
+		Content:       ghlib.String(fullYaml),
+		CommitMessage: ghlib.String(commitMessage),
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }
