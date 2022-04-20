@@ -112,7 +112,7 @@ GitHub application and the secret with all the information needed in the
 
 `tkn pac repo create` -- will create a new Pipelines as Code Repository, a namespace where the pipelineruns command and configure webhook. It will also generate a sample file with a [PipelineRun](/docs/guide/authoringprs) in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch and the `pull_request` and `push` events. You can customize this by editing the [PipelineRun](/docs/guide/authoringprs) to target a different branch or event.
 
-After creating repository, it will ask you if you want to configure Webhook if none of the providers are yet configured.
+If you haven't configured a provider previously, it will follow up with questions if you want to configure a webhook for your provider of choice.
 {{< /details >}}
 
 {{< details "tkn pac repo list" >}}
