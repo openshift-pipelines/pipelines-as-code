@@ -153,7 +153,7 @@ jobs:
 
       - name: Create Ambassador Route
         run: |
-          sudo echo "127.0.0.1 $EL_NAME" | sudo tee -a /etc/hosts
+          echo "127.0.0.1 $EL_NAME" | sudo tee -a /etc/hosts
           cat <<EOF | kubectl apply -f-
           apiVersion: networking.k8s.io/v1
           kind: Ingress
@@ -235,6 +235,7 @@ jobs:
           kind export logs /tmp/logs
           cp -a /tmp/gosmee-replay /tmp/logs/
 
+          kubectl get repositories.pipelinesascode.tekton.dev -A -o yaml > /tmp/logs/pac-repositories
           kubectl get configmap -n pipelines-as-code -o yaml > /tmp/logs/pac-configmap
 
       - name: Upload artifacts

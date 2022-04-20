@@ -3,7 +3,6 @@ package adapter
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -32,17 +31,6 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request, payloa
 		Payload: bytes.TrimSpace(payload),
 	}
 
-	err = pipelineascode.Run(ctx, s.run, s.vcx, s.kint, s.event)
-	if err != nil {
-		createStatusErr := s.vcx.CreateStatus(ctx, s.event, s.run.Info.Pac, provider.StatusOpts{
-			Status:     "completed",
-			Conclusion: "failure",
-			Text:       fmt.Sprintf("There was an issue validating the commit: %q", err),
-			DetailsURL: s.run.Clients.ConsoleUI.URL(),
-		})
-		if createStatusErr != nil {
-			s.run.Clients.Log.Errorf("Cannot create status: %s %s", err, createStatusErr)
-		}
-	}
-	return err
+	p := pipelineascode.NewPacs(s.event, s.vcx, s.run, s.kint)
+	return p.Run(ctx)
 }

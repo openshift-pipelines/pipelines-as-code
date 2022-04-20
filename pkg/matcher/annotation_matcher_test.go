@@ -266,7 +266,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "no match a repository with target NS",
 			wantErr: true,
-			wantLog: "matching a pipeline to event: URL",
+			wantLog: "matching pipelineruns to event: URL",
 			args: args{
 				pruns: []*tektonv1beta1.PipelineRun{pipelineTargetNS},
 				runevent: info.Event{
@@ -297,7 +297,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger},
 				Info:    info.Info{},
 			}
-			got, repo, _, err := MatchPipelinerunByAnnotation(ctx,
+			matches, err := MatchPipelinerunByAnnotation(ctx,
 				tt.args.pruns,
 				client, &tt.args.runevent)
 
@@ -310,10 +310,10 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			}
 
 			if tt.wantRepoName != "" {
-				assert.Assert(t, tt.wantRepoName == repo.GetName())
+				assert.Assert(t, tt.wantRepoName == matches[0].Repo.GetName())
 			}
 			if tt.wantPRName != "" {
-				assert.Assert(t, tt.wantPRName == got.GetName())
+				assert.Assert(t, tt.wantPRName == matches[0].PipelineRun.GetName())
 			}
 			if tt.wantLog != "" {
 				logmsg := log.TakeAll()
@@ -529,14 +529,15 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				},
 				Info: info.Info{},
 			}
-			got, _, _, err := MatchPipelinerunByAnnotation(ctx, tt.args.pruns, cs, &tt.args.runevent)
+			matches, err := MatchPipelinerunByAnnotation(ctx, tt.args.pruns, cs, &tt.args.runevent)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if tt.wantPrName != "" {
-				assert.Assert(t, got.GetName() == tt.wantPrName, "Pipelinerun hasn't been matched: "+got.GetName()+"!="+tt.wantPrName)
+				assert.Assert(t, matches[0].PipelineRun.GetName() == tt.wantPrName, "Pipelinerun hasn't been matched: %+v",
+					matches[0].PipelineRun.GetName(), tt.wantPrName)
 			}
 			if tt.wantLog != "" {
 				logmsg := log.TakeAll()

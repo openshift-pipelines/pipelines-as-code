@@ -142,7 +142,7 @@ spec:
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[not/here]",
 			},
-			wantLog: "could not find remote task not/here inside repo",
+			wantLog: "could not find remote task not/here inside Repo",
 		},
 		{
 			name:        "test-get-from-hub-latest",

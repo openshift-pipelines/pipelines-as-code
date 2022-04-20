@@ -32,7 +32,8 @@ func TestGitlabMergeRequest(t *testing.T) {
 	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS)
 	assert.NilError(t, err)
 
-	entries, err := payload.GetEntries("testdata/pipelinerun.yaml", targetNS, projectinfo.DefaultBranch, options.PullRequestEvent)
+	entries, err := payload.GetEntries([]string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"}, targetNS, projectinfo.DefaultBranch,
+		options.PullRequestEvent)
 	assert.NilError(t, err)
 
 	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
@@ -48,7 +49,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("MergeRequest %s/-/merge_requests/%d has been created", projectinfo.WebURL, mrID)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
-	wait.Succeeded(ctx, t, runcnx, opts, "Merge_Request", targetNS, "", title)
+	wait.Succeeded(ctx, t, runcnx, opts, "Merge_Request", targetNS, 2, "", title)
 }
 
 // Local Variables:

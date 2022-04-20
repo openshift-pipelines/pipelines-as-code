@@ -35,7 +35,7 @@ func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 	return status.OriginalPipelineRunName
 }
 
-func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event) (*int64, error) {
+func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	res, _, err := v.Client.Checks.ListCheckRunsForRef(ctx, runevent.Organization, runevent.Repository,
 		runevent.SHA, &github.ListCheckRunsOptions{
 			AppID: v.ApplicationID,
@@ -43,12 +43,16 @@ func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Eve
 	if err != nil {
 		return nil, err
 	}
-	if *res.Total > 0 {
-		// Their should be only one, since we CRUD it.. maybe one day we
-		// will offer the ability to do multiple pipelineruns per commit then
-		// things will get more complicated here.
-		return res.CheckRuns[0].ID, nil
+	if *res.Total == 0 {
+		return nil, nil
 	}
+
+	for _, checkrun := range res.CheckRuns {
+		if *checkrun.ExternalID == status.PipelineRunName {
+			return checkrun.ID, nil
+		}
+	}
+
 	return nil, nil
 }
 
@@ -59,6 +63,7 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 		HeadSHA:    runevent.SHA,
 		Status:     github.String("in_progress"),
 		DetailsURL: github.String(pacopts.LogURL),
+		ExternalID: github.String(status.PipelineRunName),
 		StartedAt:  &now,
 	}
 
@@ -73,16 +78,25 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 // available with Github apps tokens.
 func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
 	var err error
+	var ok bool
+	var checkRunID *int64
 
-	now := github.Timestamp{Time: time.Now()}
-	if runevent.CheckRunID == nil {
-		if runevent.CheckRunID, _ = v.getExistingCheckRunID(ctx, runevent); runevent.CheckRunID == nil {
-			runevent.CheckRunID, err = v.createCheckRunStatus(ctx, runevent, pacopts, status)
+	vintf, ok := v.CheckRunIDS.Load(status.PipelineRunName)
+	if ok {
+		checkRunID, ok = vintf.(*int64)
+		if !ok {
+			return fmt.Errorf("api error: cannot convert checkrunid")
+		}
+	}
+	if !ok {
+		if checkRunID, _ = v.getExistingCheckRunID(ctx, runevent, status); checkRunID == nil {
+			checkRunID, err = v.createCheckRunStatus(ctx, runevent, pacopts, status)
 			if err != nil {
 				return err
 			}
 		}
 	}
+	v.CheckRunIDS.Store(status.PipelineRunName, checkRunID)
 
 	checkRunOutput := &github.CheckRunOutput{
 		Title:   &status.Title,
@@ -102,11 +116,11 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 
 	// Only set completed-at if conclusion is set (which means finished)
 	if status.Conclusion != "" && status.Conclusion != "pending" {
-		opts.CompletedAt = &now
+		opts.CompletedAt = &github.Timestamp{Time: time.Now()}
 		opts.Conclusion = &status.Conclusion
 	}
 
-	_, _, err = v.Client.Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *runevent.CheckRunID, opts)
+	_, _, err = v.Client.Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *checkRunID, opts)
 	return err
 }
 

@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -374,10 +375,13 @@ func TestRun(t *testing.T) {
 				GetSecretResult:          secrets,
 			}
 
-			err := Run(ctx, cs, &ghprovider.Provider{
-				Client: fakeclient,
-				Token:  github.String("None"),
-			}, k8int, &tt.runevent)
+			vcx := &ghprovider.Provider{
+				Client:      fakeclient,
+				Token:       github.String("None"),
+				CheckRunIDS: &sync.Map{},
+			}
+			p := NewPacs(&tt.runevent, vcx, cs, k8int)
+			err := p.Run(ctx)
 
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)

@@ -22,7 +22,8 @@ import (
 
 func TestGithubPullRerequest(t *testing.T) {
 	ctx := context.TODO()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, "Github Rerequest", "testdata/pipelinerun.yaml", false)
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, "Github Rerequest",
+		[]string{"testdata/pipelinerun.yaml"}, false)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)

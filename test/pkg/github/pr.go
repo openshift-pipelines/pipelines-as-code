@@ -98,7 +98,7 @@ func PRCreate(ctx context.Context, cs *params.Run, ghcnx ghprovider.Provider, ow
 	return pr.GetNumber(), nil
 }
 
-func RunPullRequest(ctx context.Context, t *testing.T, label string, prFile string, webhook bool) (*params.Run, ghprovider.Provider, options.E2E, string, string, int, string) {
+func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles []string, webhook bool) (*params.Run, ghprovider.Provider, options.E2E, string, string, int, string) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	runcnx, opts, ghcnx, err := Setup(ctx, webhook)
 	assert.NilError(t, err)
@@ -115,7 +115,7 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, prFile stri
 	err = CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
 	assert.NilError(t, err)
 
-	entries, err := payload.GetEntries(prFile, targetNS, options.MainBranch, options.PullRequestEvent)
+	entries, err := payload.GetEntries(yamlFiles, targetNS, options.MainBranch, options.PullRequestEvent)
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",
@@ -130,6 +130,6 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, prFile stri
 		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), logmsg)
 	assert.NilError(t, err)
 
-	wait.Succeeded(ctx, t, runcnx, opts, options.PullRequestEvent, targetNS, sha, logmsg)
+	wait.Succeeded(ctx, t, runcnx, opts, options.PullRequestEvent, targetNS, len(yamlFiles), sha, logmsg)
 	return runcnx, ghcnx, opts, targetNS, targetRefName, number, sha
 }

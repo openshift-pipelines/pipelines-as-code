@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -22,6 +23,8 @@ type Provider struct {
 	Client        *github.Client
 	Token, APIURL *string
 	ApplicationID *int64
+
+	CheckRunIDS *sync.Map
 }
 
 func (v *Provider) Validate(ctx context.Context, cs *params.Run, event *info.Event) error {
@@ -63,6 +66,8 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	if v.Client == nil {
 		v.Client = client
 	}
+	v.CheckRunIDS = &sync.Map{}
+
 	v.APIURL = &apiURL
 
 	return nil

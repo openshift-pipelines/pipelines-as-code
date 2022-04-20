@@ -12,13 +12,15 @@ import (
 
 func TestGithubPullRequestPrivateRepository(t *testing.T) {
 	ctx := context.TODO()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github Private Repo", "testdata/pipelinerun_git_clone_private.yaml", false)
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t,
+		"Github Private Repo", []string{"testdata/pipelinerun_git_clone_private.yaml"}, false)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
 func TestGithubPullRequestPrivateRepositoryOnWebhook(t *testing.T) {
 	ctx := context.TODO()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github Private Repo OnWebhook", "testdata/pipelinerun_git_clone_private.yaml", true)
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t,
+		"Github Private Repo OnWebhook", []string{"testdata/pipelinerun_git_clone_private.yaml"}, true)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
