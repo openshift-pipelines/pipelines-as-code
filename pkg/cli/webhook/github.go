@@ -91,7 +91,7 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 		}
 	}
 
-	if err := prompt.SurveyAskOne(&survey.Input{
+	if err := prompt.SurveyAskOne(&survey.Password{
 		Message: "Please enter the secret to configure the webhook for payload validation: ",
 	}, &gh.WebhookSecret, survey.WithValidator(survey.Required)); err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 	fmt.Println("ℹ ️You now need to create a GitHub personal token with scopes  `public_repo` & `admin:repo_hook`")
 	// nolint:forbidigo
 	fmt.Println("ℹ ️Go to this URL to generate one https://github.com/settings/tokens/new, see https://is.gd/BMgLH5 for documentation ")
-	if err := prompt.SurveyAskOne(&survey.Input{
+	if err := prompt.SurveyAskOne(&survey.Password{
 		Message: "Please enter the GitHub access token: ",
 	}, &gh.PersonalAccessToken, survey.WithValidator(survey.Required)); err != nil {
 		return nil, err
