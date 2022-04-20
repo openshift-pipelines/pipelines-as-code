@@ -12,14 +12,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-const routePacLabel = "pipelines-as-code/route=controller"
+const (
+	routePacLabel = "pipelines-as-code/route=controller"
+)
 
-// detectOpenShiftRoute detect the openshift route where the pac controller is running
-func detectOpenShiftRoute(ctx context.Context, run *params.Run, opts *bootstrapOpts) (string, error) {
+// DetectOpenShiftRoute detect the openshift route where the pac controller is running
+func DetectOpenShiftRoute(ctx context.Context, run *params.Run, targetNamespace string) (string, error) {
 	gvr := schema.GroupVersionResource{
 		Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource,
 	}
-	routes, err := run.Clients.Dynamic.Resource(gvr).Namespace(opts.targetNamespace).List(ctx, metav1.ListOptions{
+	routes, err := run.Clients.Dynamic.Resource(gvr).Namespace(targetNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: routePacLabel,
 	})
 	if err != nil {

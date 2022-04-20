@@ -10,7 +10,9 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
 
 // openWebBrowser opens the specified URL in the default browser of the user.
@@ -79,6 +81,14 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 
 	err = createPacSecret(ctx, run, opts, manifest)
 	if err != nil {
+		return err
+	}
+
+	if err := info.UpdateInfoConfigMap(ctx, run, &info.Options{
+		TargetNamespace: opts.targetNamespace,
+		ControllerURL:   opts.RouteName,
+		Provider:        provider.ProviderGitHubApp,
+	}); err != nil {
 		return err
 	}
 

@@ -11,6 +11,7 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/webhook"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
@@ -22,16 +23,19 @@ import (
 )
 
 type createOptions struct {
-	event      *info.Event
-	repository *apipac.Repository
-	run        *params.Run
-	gitInfo    *git.Info
+	event        *info.Event
+	repository   *apipac.Repository
+	run          *params.Run
+	gitInfo      *git.Info
+	pacNamespace string
 
 	ioStreams *cli.IOStreams
 	cliOpts   *cli.PacCliOpts
 }
 
 func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+	var githubURLForWebhook string
+	var onlyWebhook bool
 	createOpts := &createOptions{
 		event:      info.NewEvent(),
 		repository: &apipac.Repository{},
@@ -57,28 +61,46 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			if err := getRepoURL(createOpts); err != nil {
+			if !onlyWebhook {
+				if err := getRepoURL(createOpts); err != nil {
+					return err
+				}
+
+				if err := getOrCreateNamespace(ctx, createOpts); err != nil {
+					return err
+				}
+
+				if err := createRepoCRD(ctx, createOpts); err != nil {
+					return err
+				}
+
+				gopt := generate.MakeOpts()
+				gopt.GitInfo = createOpts.gitInfo
+				gopt.IOStreams = createOpts.ioStreams
+				gopt.CLIOpts = createOpts.cliOpts
+
+				// defaulting the values for repo create command
+				gopt.Event.EventType = "[pull_request, push]"
+				gopt.Event.BaseBranch = "main"
+
+				if err := generate.Generate(gopt); err != nil {
+					return err
+				}
+			}
+
+			config := &webhook.Webhook{
+				RepositoryURL:       createOpts.gitInfo.URL,
+				PACNamespace:        createOpts.pacNamespace,
+				ProviderAPIURL:      githubURLForWebhook,
+				RepositoryName:      createOpts.repository.Name,
+				RepositoryNamespace: createOpts.repository.Namespace,
+			}
+
+			if err := config.Install(ctx, run); err != nil {
 				return err
 			}
 
-			if err := getOrCreateNamespace(ctx, createOpts); err != nil {
-				return err
-			}
-
-			if err := createRepoCRD(ctx, createOpts); err != nil {
-				return err
-			}
-
-			gopt := generate.MakeOpts()
-			gopt.GitInfo = createOpts.gitInfo
-			gopt.IOStreams = createOpts.ioStreams
-			gopt.CLIOpts = createOpts.cliOpts
-
-			// defaulting the values for repo create command
-			gopt.Event.EventType = "[pull_request, push]"
-			gopt.Event.BaseBranch = "main"
-
-			return generate.Generate(gopt)
+			return nil
 		},
 		Annotations: map[string]string{
 			"commandType": "main",
@@ -90,6 +112,10 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&createOpts.event.URL, "url", "", "Repository URL")
 	cmd.PersistentFlags().StringVarP(&createOpts.repository.Namespace, "namespace", "n", "",
 		"The target namespace where the runs will be created")
+	cmd.PersistentFlags().StringVarP(&createOpts.pacNamespace, "pac-namespace",
+		"", "", "the namespace where pac is installed")
+	cmd.PersistentFlags().StringVarP(&githubURLForWebhook, "github-api-url", "", "", "Github Enterprise API URL")
+	cmd.PersistentFlags().BoolVar(&onlyWebhook, "webhook", false, "Skip repository creation, proceed with configuring webhook")
 
 	return cmd
 }
@@ -111,7 +137,7 @@ func getOrCreateNamespace(ctx context.Context, opts *createOptions) error {
 	}
 
 	var chosenNS string
-	msg := fmt.Sprintf("Please enter the namespace where the pipeline will be created (default: %s):", autoNS)
+	msg := fmt.Sprintf("Please enter the namespace where the pipeline should run (default: %s):", autoNS)
 	if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &chosenNS); err != nil {
 		return err
 	}
@@ -182,7 +208,7 @@ func createRepoCRD(ctx context.Context, opts *createOptions) error {
 		return fmt.Errorf("invalid git URL: %s, it should be of format: https://gitprovider/project/repository", opts.event.URL)
 	}
 	repositoryName := strings.ReplaceAll(repoOwner, "/", "-")
-	_, err = opts.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.repository.Namespace).Create(
+	opts.repository, err = opts.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.repository.Namespace).Create(
 		ctx,
 		&apipac.Repository{
 			ObjectMeta: metav1.ObjectMeta{

@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +23,7 @@ const (
 	defaultProviderType    = "github-app"
 )
 
-var providerTargets = []string{"github-app", "github-enteprise-app"}
+var providerTargets = []string{"github-app", "github-enterprise-app"}
 
 type bootstrapOpts struct {
 	providerType    string
@@ -72,7 +74,7 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 
 	// if we gt a ns back it means it has been detected in here so keep it as is.
 	// or else just set the default to pacNS
-	ns, err := detectPacInstallation(ctx, opts.targetNamespace, run)
+	ns, err := DetectPacInstallation(ctx, opts.targetNamespace, run)
 	if ns != "" {
 		opts.targetNamespace = ns
 	} else if opts.targetNamespace == "" {
@@ -93,7 +95,7 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 	opts.recreateSecret = checkSecret(ctx, run, opts)
 
 	if opts.RouteName == "" {
-		opts.RouteName, _ = detectOpenShiftRoute(ctx, run, opts)
+		opts.RouteName, _ = DetectOpenShiftRoute(ctx, run, opts.targetNamespace)
 	}
 	if err := askQuestions(opts); err != nil {
 		return err
@@ -104,6 +106,7 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 			return err
 		}
 	}
+
 	jeez, err := generateManifest(opts)
 	if err != nil {
 		return err
@@ -132,6 +135,15 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				if err := install(ctx, run, opts); err != nil {
 					return err
 				}
+			}
+
+			pacInfo, err := info.GetPACInfo(ctx, run, opts.targetNamespace)
+			if err != nil {
+				return err
+			}
+
+			if pacInfo.Provider != "" && pacInfo.Provider != provider.ProviderGitHubApp {
+				return fmt.Errorf("skipping bootstraping GitHub App, %s is already configured", pacInfo.Provider)
 			}
 
 			if !opts.skipGithubAPP {
@@ -175,13 +187,22 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 
 			var err error
-			opts.targetNamespace, err = detectPacInstallation(ctx, opts.targetNamespace, run)
+			opts.targetNamespace, err = DetectPacInstallation(ctx, opts.targetNamespace, run)
 			if err != nil {
 				return err
 			}
 
+			pacInfo, err := info.GetPACInfo(ctx, run, opts.targetNamespace)
+			if err != nil {
+				return err
+			}
+
+			if pacInfo.Provider != "" && pacInfo.Provider != provider.ProviderGitHubApp {
+				return fmt.Errorf("skipping bootstraping GitHub App, %s is already configured", pacInfo.Provider)
+			}
+
 			if b, _ := askYN(false, "", "Are you using Github Enterprise?"); b {
-				opts.providerType = "github-enteprise-app"
+				opts.providerType = "github-enterprise-app"
 			}
 
 			return createSecret(ctx, run, opts)
@@ -197,7 +218,7 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func detectPacInstallation(ctx context.Context, wantedNS string, run *params.Run) (string, error) {
+func DetectPacInstallation(ctx context.Context, wantedNS string, run *params.Run) (string, error) {
 	// detect which namespace pac is installed in
 	// verify first if the targetNamespace actually exists
 	if wantedNS != "" {
@@ -228,9 +249,9 @@ func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 	cmd.PersistentFlags().StringVar(&opts.GithubOrganizationName, "github-organization-name", "", "Whether you want to target an organization instead of the current user")
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationName, "github-application-name", "", "Github Application Name")
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "Github Application URL")
-	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enteprise API URL")
+	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enterprise API URL")
 	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "the public URL for the pipelines-as-code controller")
-	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Wether to install the nightly Pipelines as Code")
+	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Whether to install the nightly Pipelines as Code")
 	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "webserver-port")
 	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,
 		fmt.Sprintf("target install type, choices are: %s ", strings.Join(providerTargets, ", ")))
