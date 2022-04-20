@@ -46,11 +46,11 @@ func kubectlApply(uri string) error {
 }
 
 func installPac(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
-	var latestversion, latestReleaseYaml, nightlyReleaseYaml string
+	var latestVersion, latestReleaseYaml, nightlyReleaseYaml string
 	k8Ext := ""
 
-	routeURL, _ := detectOpenShiftRoute(ctx, run, opts)
-	if routeURL != "" {
+	routeExist, _ := checkOpenshiftRoute(run)
+	if routeExist {
 		nightlyReleaseYaml = openshiftReleaseYaml
 	} else {
 		nightlyReleaseYaml = k8ReleaseYaml
@@ -60,10 +60,10 @@ func installPac(ctx context.Context, run *params.Run, opts *bootstrapOpts) error
 	if opts.installNightly {
 		latestReleaseYaml = fmt.Sprintf("%s/%s/%s/nightly/%s",
 			rawGHURL, pacGHRepoOwner, pacGHRepoName, nightlyReleaseYaml)
-		latestversion = "nightly"
+		latestVersion = "nightly"
 	} else {
 		var err error
-		latestversion, latestReleaseYaml, err = getLatestRelease(ctx, k8Ext)
+		latestVersion, latestReleaseYaml, err = getLatestRelease(ctx, k8Ext)
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func installPac(ctx context.Context, run *params.Run, opts *bootstrapOpts) error
 	if !opts.forceInstall {
 		doinstall, err := askYN(true,
 			fmt.Sprintf("🕵️ Pipelines as Code doesn't seems to be installed in %s namespace", opts.targetNamespace),
-			fmt.Sprintf("Do you want me to install Pipelines as Code %s?", latestversion))
+			fmt.Sprintf("Do you want me to install Pipelines as Code %s?", latestVersion))
 		if err != nil {
 			return err
 		}
@@ -86,6 +86,6 @@ func installPac(ctx context.Context, run *params.Run, opts *bootstrapOpts) error
 	}
 
 	// nolint:forbidigo
-	fmt.Printf("✓ Pipelines-as-Code %s has been installed\n", latestversion)
+	fmt.Printf("✓ Pipelines-as-Code %s has been installed\n", latestVersion)
 	return nil
 }
