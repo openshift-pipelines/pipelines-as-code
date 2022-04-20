@@ -137,7 +137,7 @@ func getOrCreateNamespace(ctx context.Context, opts *createOptions) error {
 	}
 
 	var chosenNS string
-	msg := fmt.Sprintf("Please enter the namespace where the pipeline will be created (default: %s):", autoNS)
+	msg := fmt.Sprintf("Please enter the namespace where the pipeline should run (default: %s):", autoNS)
 	if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &chosenNS); err != nil {
 		return err
 	}
