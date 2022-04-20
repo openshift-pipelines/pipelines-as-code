@@ -171,7 +171,7 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                curl -o/dev/null -s -f -X POST -F path=test -F file=@/etc/motd  http://uploader:8080/upload || {
+                curl -o/dev/null -u ${UPLOADER_UPLOAD_CREDENTIALS}  -s -f -X POST -F path=test -F file=@/etc/motd  http://uploader:8080/upload || {
                     echo "No cache server found"
                     exit 0
                 }
