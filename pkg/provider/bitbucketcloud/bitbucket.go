@@ -88,13 +88,16 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacopts *i
 			return err
 		}
 
+		onPr := ""
+		if statusopts.OriginalPipelineRunName != "" {
+			onPr = "/" + statusopts.OriginalPipelineRunName
+		}
 		_, err = v.Client.Repositories.PullRequests.AddComment(
 			&bitbucket.PullRequestCommentOptions{
 				Owner:         event.Organization,
 				RepoSlug:      event.Repository,
 				PullRequestID: prNumber,
-				Content: fmt.Sprintf("**%s** - %s\n\n%s", pacopts.ApplicationName,
-					statusopts.Title, statusopts.Text),
+				Content:       fmt.Sprintf("**%s%s** - %s\n\n%s", pacopts.ApplicationName, onPr, statusopts.Title, statusopts.Text),
 			})
 		if err != nil {
 			return err

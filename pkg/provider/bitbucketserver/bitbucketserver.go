@@ -88,8 +88,12 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 		return err
 	}
 
+	onPr := ""
+	if statusOpts.OriginalPipelineRunName != "" {
+		onPr = "/" + statusOpts.OriginalPipelineRunName
+	}
 	bbcomment := bbv1.Comment{
-		Text: fmt.Sprintf("**%s** - %s\n\n%s", pacOpts.ApplicationName,
+		Text: fmt.Sprintf("**%s%s** - %s\n\n%s", pacOpts.ApplicationName, onPr,
 			statusOpts.Title, statusOpts.Text),
 	}
 
