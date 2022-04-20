@@ -9,6 +9,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	knativeapi "knative.dev/pkg/apis"
 )
 
 type tkr struct {
@@ -40,9 +42,13 @@ func (trs taskrunList) Less(i, j int) bool {
 func TaskStatusTmpl(pr *tektonv1beta1.PipelineRun, console consoleui.Interface, statusTemplate string) (string, error) {
 	trl := taskrunList{}
 	outputBuffer := bytes.Buffer{}
+	c := pr.GetStatusCondition().GetCondition(knativeapi.ConditionSucceeded)
+	if c != nil && c.Status != corev1.ConditionTrue {
+		return fmt.Sprintf("PipelineRun has failed to be created: %s", c.Message), nil
+	}
 
 	if len(pr.Status.TaskRuns) == 0 {
-		return "<b>PipelineRun has failed to start</b><br>", nil
+		return "PipelineRun has no taskruns", nil
 	}
 
 	for _, taskrunStatus := range pr.Status.TaskRuns {

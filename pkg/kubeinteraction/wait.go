@@ -69,7 +69,7 @@ func Succeed(name string) ConditionAccessorFn {
 			if c.Status == corev1.ConditionTrue {
 				return true, nil
 			} else if c.Status == corev1.ConditionFalse {
-				return true, fmt.Errorf("%q failed", name)
+				return true, fmt.Errorf("%q failed: %s", name, c.Message)
 			}
 		}
 		return false, nil
