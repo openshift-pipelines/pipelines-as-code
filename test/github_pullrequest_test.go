@@ -14,7 +14,16 @@ import (
 func TestGithubPullRequest(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest", "testdata/pipelinerun.yaml", false)
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
+		[]string{"testdata/pipelinerun.yaml"}, false)
+	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+}
+
+func TestGithubPullRequestMultiples(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
+		[]string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"}, false)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
@@ -22,7 +31,7 @@ func TestGithubPullRequestMatchOnCEL(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
-		"testdata/pipelinerun-cel-annotation.yaml", false)
+		[]string{"testdata/pipelinerun-cel-annotation.yaml"}, false)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
@@ -33,7 +42,8 @@ func TestGithubPullRequestWebhook(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest onWebhook", "testdata/pipelinerun.yaml", true)
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t,
+		"Github PullRequest onWebhook", []string{"testdata/pipelinerun.yaml"}, true)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
