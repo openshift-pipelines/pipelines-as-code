@@ -92,9 +92,9 @@ tags into your repository.
 Matching annotations are currently mandated or `Pipelines as Code` will not
 match your `PipelineRun`.
 
-If there is multiple pipeline matching an event, it will match the first one. We
-are currently not supporting multiple PipelineRuns on a single event, but this
-may be something we can consider implementing in the future.
+If there is multiple pipelinerun matching an event, it will run all of them in
+parallel and posting the results to the provider as soon the PipelineRun
+finishes.
 
 ## Advanced event matching
 
