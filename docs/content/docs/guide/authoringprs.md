@@ -92,7 +92,7 @@ tags into your repository.
 Matching annotations are currently mandated or `Pipelines as Code` will not
 match your `PipelineRun`.
 
-If there is multiple pipelinerun matching an event, it will run all of them in
+If there are multiple pipelinerun matching an event, it will run all of them in
 parallel and posting the results to the provider as soon the PipelineRun
 finishes.
 
