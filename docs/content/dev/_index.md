@@ -152,14 +152,18 @@ need to go to this URL:
 Several tools are used on CI and in `pre-commit`, the non exhaustive list you
 need to have on your system:
 
-- [golangci-lint](https://github.com/golangci/golangci-lint)
-- [yamllint](https://github.com/adrienverge/yamllint)
-- [vale](https://github.com/errata-ai/vale)
-- [markdownlint](https://github.com/golangci/golangci-lint)
-- [hugo](https://gohugo.io)
-- [ko](https://github.com/google/ko)
-- [kind](https://kind.sigs.k8s.io/)
-- [sugarjazy](https://github.com/chmouel/sugarjazy)
+- [golangci-lint](https://github.com/golangci/golangci-lint) - For golang lint
+- [yamllint](https://github.com/adrienverge/yamllint) - For YAML lint
+- [vale](https://github.com/errata-ai/vale) - For grammar check
+- [markdownlint](https://github.com/markdownlint/markdownlint) - For markdown lint
+- [hugo](https://gohugo.io) - For documentation
+- [ko](https://github.com/google/ko) - To rebuild and push change to kube cluster.
+- [kind](https://kind.sigs.k8s.io/) - For local devs
+- [sugarjazy](https://github.com/chmouel/sugarjazy) - To parse json logs nicely
+- [pre-commit](https://pre-commit.com/) - For checking commits before sending it
+  to the outer loop.
+- [pass](https://www.passwordstore.org/) - For getting/storing secrets
+- [gosmee](https://github.com/chmouel/gosmee) - For replaying webhooks
 
 # Links
 
