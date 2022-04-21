@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	tektonv1beta1client "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1beta1"
+	"go.uber.org/zap"
 )
 
 type KinterfaceTest struct {
@@ -26,11 +27,11 @@ func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string)
 	return k.ConsoleURL, nil
 }
 
-func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, targetNamespace string) error {
+func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) error {
 	return nil
 }
 
-func (k *KinterfaceTest) DeleteBasicAuthSecret(ctx context.Context, runevent *info.Event, targetNamespace string) error {
+func (k *KinterfaceTest) DeleteBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) error {
 	return nil
 }
 
@@ -42,7 +43,7 @@ func (k *KinterfaceTest) WaitForPipelineRunSucceed(ctx context.Context, tektonbe
 	return nil
 }
 
-func (k *KinterfaceTest) CleanupPipelines(ctx context.Context, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun, limitnumber int) error {
+func (k *KinterfaceTest) CleanupPipelines(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun, limitnumber int) error {
 	if k.ExpectedNumberofCleanups != limitnumber {
 		return fmt.Errorf("we wanted %d and we got %d", k.ExpectedNumberofCleanups, limitnumber)
 	}

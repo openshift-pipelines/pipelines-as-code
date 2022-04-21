@@ -200,7 +200,7 @@ spec:
 				Run: cs,
 			}
 
-			got, err := rt.GetTaskFromAnnotations(ctx, &provider.TestProviderImp{
+			got, err := rt.GetTaskFromAnnotations(ctx, logger, &provider.TestProviderImp{
 				FilesInsideRepo: tt.filesInsideRepo,
 			}, &tt.runevent, tt.annotations)
 			if tt.wantErr != "" {

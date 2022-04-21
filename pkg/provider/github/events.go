@@ -130,7 +130,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	// should not get invalid json since we already check it in github.ParseWebHook
 	_ = json.Unmarshal([]byte(payload), &eventInt)
 
-	processedEvent, err := v.processEvent(ctx, run, event, eventInt)
+	processedEvent, err := v.processEvent(ctx, event, eventInt)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	return processedEvent, nil
 }
 
-func (v *Provider) processEvent(ctx context.Context, run *params.Run, event *info.Event, eventInt interface{}) (*info.Event, error) {
+func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt interface{}) (*info.Event, error) {
 	var processedEvent *info.Event
 	var err error
 

@@ -294,10 +294,10 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			observer, log := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 			client := &params.Run{
-				Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode, Log: logger},
+				Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode},
 				Info:    info.Info{},
 			}
-			matches, err := MatchPipelinerunByAnnotation(ctx,
+			matches, err := MatchPipelinerunByAnnotation(ctx, logger,
 				tt.args.pruns,
 				client, &tt.args.runevent)
 
@@ -524,12 +524,10 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			cs := &params.Run{
-				Clients: clients.Clients{
-					Log: logger,
-				},
-				Info: info.Info{},
+				Clients: clients.Clients{},
+				Info:    info.Info{},
 			}
-			matches, err := MatchPipelinerunByAnnotation(ctx, tt.args.pruns, cs, &tt.args.runevent)
+			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return

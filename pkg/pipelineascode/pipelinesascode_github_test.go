@@ -380,7 +380,7 @@ func TestRun(t *testing.T) {
 				Token:       github.String("None"),
 				CheckRunIDS: &sync.Map{},
 			}
-			p := NewPacs(&tt.runevent, vcx, cs, k8int)
+			p := NewPacs(&tt.runevent, vcx, cs, k8int, logger)
 			err := p.Run(ctx)
 
 			if tt.wantErr != "" {
