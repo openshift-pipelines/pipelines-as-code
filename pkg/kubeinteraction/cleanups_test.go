@@ -110,13 +110,12 @@ func TestCleanupPipelines(t *testing.T) {
 				Run: &params.Run{
 					Clients: clients.Clients{
 						Kube:   stdata.Kube,
-						Log:    fakelogger,
 						Tekton: stdata.Pipeline,
 					},
 				},
 			}
 
-			err := kint.CleanupPipelines(ctx, repo, tt.args.prunCurrent, tt.args.maxKeep)
+			err := kint.CleanupPipelines(ctx, fakelogger, repo, tt.args.prunCurrent, tt.args.maxKeep)
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 			}

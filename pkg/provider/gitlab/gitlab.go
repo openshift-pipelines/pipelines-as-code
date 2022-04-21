@@ -35,12 +35,17 @@ const (
 
 type Provider struct {
 	Client            *gitlab.Client
+	Logger            *zap.SugaredLogger
 	Token             *string
 	targetProjectID   int
 	sourceProjectID   int
 	userID            int
 	pathWithNamespace string
 	repoURL           string
+}
+
+func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
+	v.Logger = logger
 }
 
 func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {

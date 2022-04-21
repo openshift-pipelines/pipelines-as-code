@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"go.uber.org/zap"
 )
 
 const taskStatusTemplate = `
@@ -20,11 +21,16 @@ const taskStatusTemplate = `
 
 type Provider struct {
 	Client                    *bbv1.APIClient
+	Logger                    *zap.SugaredLogger
 	baseURL                   string
 	defaultBranchLatestCommit string
 	pullRequestNumber         int
 	apiURL                    string
 	projectKey                string
+}
+
+func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
+	v.Logger = logger
 }
 
 func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {

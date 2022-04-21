@@ -56,7 +56,7 @@ func New(run *params.Run, k *kubeinteraction.Interaction) adapter.AdapterConstru
 }
 
 func (l *listener) Start(ctx context.Context) error {
-	l.run.Clients.Log.Infof("Starting Pipelines as Code version: %s", version.Version)
+	l.logger.Infof("Starting Pipelines as Code version: %s", version.Version)
 
 	mux := http.NewServeMux()
 
@@ -94,7 +94,7 @@ func (l listener) handleEvent() http.HandlerFunc {
 		// event body
 		payload, err := ioutil.ReadAll(request.Body)
 		if err != nil {
-			l.run.Clients.Log.Errorf("failed to read body : %v", err)
+			l.logger.Errorf("failed to read body : %v", err)
 			response.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -102,7 +102,7 @@ func (l listener) handleEvent() http.HandlerFunc {
 		// payload validation
 		var event map[string]interface{}
 		if err := json.Unmarshal(payload, &event); err != nil {
-			l.run.Clients.Log.Errorf("Invalid event body format format: %s", err)
+			l.logger.Errorf("Invalid event body format format: %s", err)
 			response.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -114,16 +114,12 @@ func (l listener) handleEvent() http.HandlerFunc {
 			return
 		}
 
-		// TODO: decouple logger from clients so each event
-		// has a logger with its own fields
-		// eg. logger.With("provider", "github", "event", request.Header.Get("X-GitHub-Delivery"))
-		l.run.Clients.Log = logger
-
 		s := sinker{
-			run:   l.run,
-			vcx:   gitProvider,
-			kint:  l.kint,
-			event: info.NewEvent(),
+			run:    l.run,
+			vcx:    gitProvider,
+			kint:   l.kint,
+			event:  info.NewEvent(),
+			logger: logger,
 		}
 
 		// clone the request to use it further
@@ -132,7 +128,7 @@ func (l listener) handleEvent() http.HandlerFunc {
 		go func() {
 			err := s.processEvent(ctx, localRequest, payload)
 			if err != nil {
-				l.run.Clients.Log.Errorf("an error occurred: %v", err)
+				logger.Errorf("an error occurred: %v", err)
 			}
 		}()
 
@@ -145,6 +141,7 @@ func (l listener) detectProvider(reqHeader *http.Header, reqBody string) (provid
 
 	processRes := func(processEvent bool, provider provider.Interface, logger *zap.SugaredLogger, err error) (provider.Interface, *zap.SugaredLogger, error) {
 		if processEvent {
+			provider.SetLogger(logger)
 			return provider, logger, nil
 		}
 		if err != nil {

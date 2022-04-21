@@ -11,10 +11,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
+	"go.uber.org/zap"
 )
 
 type Provider struct {
 	Client        *bitbucket.Client
+	Logger        *zap.SugaredLogger
 	Token, APIURL *string
 	Username      *string
 }
@@ -26,6 +28,10 @@ const taskStatusTemplate = `| **Status** | **Duration** | **Name** |
 
 func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
 	return nil
+}
+
+func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
+	v.Logger = logger
 }
 
 func (v *Provider) GetConfig() *info.ProviderConfig {

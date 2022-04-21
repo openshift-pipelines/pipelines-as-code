@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +36,7 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 }
 
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
-func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.Event, targetNamespace string) error {
+func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) error {
 	// Bitbucket Server have a different Clone URL than it's Repo URL, so we
 	// have to separate them 👨‍🏭
 	cloneURL := runevent.URL
@@ -85,7 +86,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, runevent *info.E
 		return fmt.Errorf("cannot create secret: %w", err)
 	}
 
-	k.Run.Clients.Log.Infof("Secret %s has been generated in namespace %s", secretName, targetNamespace)
+	logger.Infof("Secret %s has been generated in namespace %s", secretName, targetNamespace)
 	return nil
 }
 
@@ -103,13 +104,13 @@ func getBasicAuthSecretName(runEvent *info.Event) string {
 }
 
 // DeleteBasicAuthSecret deletes the secret created for git-clone basic-auth
-func (k Interaction) DeleteBasicAuthSecret(ctx context.Context, runEvent *info.Event, targetNamespace string) error {
+func (k Interaction) DeleteBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runEvent *info.Event, targetNamespace string) error {
 	secretName := getBasicAuthSecretName(runEvent)
 	err := k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 
-	k.Run.Clients.Log.Infof("Secret %s has been deleted in namespace %s", secretName, targetNamespace)
+	logger.Infof("Secret %s has been deleted in namespace %s", secretName, targetNamespace)
 	return nil
 }

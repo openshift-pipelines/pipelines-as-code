@@ -9,8 +9,6 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	pacv1a1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -54,26 +52,26 @@ func (p *PacRun) updateRepoRunStatus(ctx context.Context, pr *tektonv1beta1.Pipe
 			ctx, lastrepo, metav1.UpdateOptions{})
 		if err != nil {
 			if err != nil {
-				p.run.Clients.Log.Infof("Could not update repo %s, retrying %d/%d: %s", lastrepo.Namespace, i, maxRun, err.Error())
+				p.logger.Infof("Could not update repo %s, retrying %d/%d: %s", lastrepo.Namespace, i, maxRun, err.Error())
 				continue
 			}
 		}
-		p.run.Clients.Log.Infof("Repository status of %s has been updated", nrepo.Name)
+		p.logger.Infof("Repository status of %s has been updated", nrepo.Name)
 		return nil
 	}
 
 	return fmt.Errorf("cannot update %s", repo.Name)
 }
 
-func postFinalStatus(ctx context.Context, cs *params.Run, providerintf provider.Interface, event *info.Event, createdPR *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
-	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(createdPR.GetNamespace()).Get(
+func (p *PacRun) postFinalStatus(ctx context.Context, createdPR *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
+	pr, err := p.run.Clients.Tekton.TektonV1beta1().PipelineRuns(createdPR.GetNamespace()).Get(
 		ctx, createdPR.GetName(), metav1.GetOptions{},
 	)
 	if err != nil {
 		return pr, err
 	}
 
-	taskStatus, err := sort.TaskStatusTmpl(pr, cs.Clients.ConsoleUI, providerintf.GetConfig().TaskStatusTMPL)
+	taskStatus, err := sort.TaskStatusTmpl(pr, p.run.Clients.ConsoleUI, p.vcx.GetConfig().TaskStatusTMPL)
 	if err != nil {
 		return pr, err
 	}
@@ -83,11 +81,11 @@ func postFinalStatus(ctx context.Context, cs *params.Run, providerintf provider.
 		Conclusion:              formatting.PipelineRunStatus(pr),
 		Text:                    taskStatus,
 		PipelineRunName:         pr.Name,
-		DetailsURL:              cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
+		DetailsURL:              p.run.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
 		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")],
 	}
 
-	err = providerintf.CreateStatus(ctx, event, cs.Info.Pac, status)
-	cs.Clients.Log.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)
+	err = p.vcx.CreateStatus(ctx, p.event, p.run.Info.Pac, status)
+	p.logger.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)
 	return pr, err
 }

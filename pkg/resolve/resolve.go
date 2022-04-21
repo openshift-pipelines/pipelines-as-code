@@ -108,8 +108,8 @@ type Opts struct {
 // Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
 // generateName can be set as True to set the name as a generateName + "-" for
 // unique pipelinerun
-func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interface, event *info.Event, data string, ropt *Opts) ([]*tektonv1beta1.PipelineRun, error) {
-	types := readTypes(cs.Clients.Log, data)
+func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, providerintf provider.Interface, event *info.Event, data string, ropt *Opts) ([]*tektonv1beta1.PipelineRun, error) {
+	types := readTypes(logger, data)
 	if len(types.PipelineRuns) == 0 {
 		return []*tektonv1beta1.PipelineRun{}, errors.New("we need at least one pipelinerun to start with")
 	}
@@ -120,7 +120,7 @@ func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interfac
 			rt := matcher.RemoteTasks{
 				Run: cs,
 			}
-			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, providerintf, event, pipelinerun.GetObjectMeta().GetAnnotations())
+			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, logger, providerintf, event, pipelinerun.GetObjectMeta().GetAnnotations())
 			if err != nil {
 				return []*tektonv1beta1.PipelineRun{}, err
 			}

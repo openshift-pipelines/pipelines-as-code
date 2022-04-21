@@ -248,17 +248,15 @@ func TestParsePayLoad(t *testing.T) {
 					fmt.Fprint(rw, string(bjeez))
 				})
 			}
+			logger := getLogger()
 			gprovider := Provider{
 				Client: tt.githubClient,
+				Logger: logger,
 			}
-			logger := getLogger()
 			request := &http.Request{Header: map[string][]string{}}
 			request.Header.Set("X-GitHub-Event", tt.eventType)
 
 			run := &params.Run{
-				Clients: clients.Clients{
-					Log: logger,
-				},
 				Info: info.Info{},
 			}
 			bjeez, _ := json.Marshal(tt.payloadEventStruct)
@@ -399,15 +397,14 @@ func TestAppTokenGeneration(t *testing.T) {
 			}
 
 			jeez, _ := json.Marshal(samplePRevent)
-			gprovider := Provider{}
 			logger := getLogger()
+			gprovider := Provider{Logger: logger}
 			request := &http.Request{Header: map[string][]string{}}
 			request.Header.Set("X-GitHub-Event", "pull_request")
 			request.Header.Set("X-GitHub-Enterprise-Host", fakeGithubAuthURL)
 
 			run := &params.Run{
 				Clients: clients.Clients{
-					Log:  logger,
 					Kube: tt.seedData.Kube,
 				},
 				Info: info.Info{

@@ -15,7 +15,6 @@ import (
 	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -152,7 +151,7 @@ func (v *Provider) processEvent(ctx context.Context, run *params.Run, event *inf
 		if *gitEvent.Action != "rerequested" {
 			return nil, fmt.Errorf("only issue recheck is supported in checkrunevent")
 		}
-		processedEvent, err = v.handleReRequestEvent(ctx, run.Clients.Log, gitEvent)
+		processedEvent, err = v.handleReRequestEvent(ctx, gitEvent)
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +159,7 @@ func (v *Provider) processEvent(ctx context.Context, run *params.Run, event *inf
 		if v.Client == nil {
 			return nil, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
 		}
-		processedEvent, err = v.handleIssueCommentEvent(ctx, run.Clients.Log, gitEvent)
+		processedEvent, err = v.handleIssueCommentEvent(ctx, gitEvent)
 		if err != nil {
 			return nil, err
 		}
@@ -202,7 +201,7 @@ func (v *Provider) processEvent(ctx context.Context, run *params.Run, event *inf
 	return processedEvent, nil
 }
 
-func (v *Provider) handleReRequestEvent(ctx context.Context, log *zap.SugaredLogger, event *github.CheckRunEvent) (*info.Event, error) {
+func (v *Provider) handleReRequestEvent(ctx context.Context, event *github.CheckRunEvent) (*info.Event, error) {
 	runevent := info.NewEvent()
 	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
 	runevent.Repository = event.GetRepo().GetName()
@@ -220,7 +219,7 @@ func (v *Provider) handleReRequestEvent(ctx context.Context, log *zap.SugaredLog
 		return runevent, nil
 	}
 	runevent.PullRequestNumber = event.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
-	log.Infof("Recheck of PR %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	v.Logger.Infof("Recheck of PR %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	return v.getPullRequest(ctx, runevent)
 }
 
@@ -232,7 +231,7 @@ func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
 	return prNumber, nil
 }
 
-func (v *Provider) handleIssueCommentEvent(ctx context.Context, log *zap.SugaredLogger, event *github.IssueCommentEvent) (*info.Event, error) {
+func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.IssueCommentEvent) (*info.Event, error) {
 	runevent := info.NewEvent()
 	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
 	runevent.Repository = event.GetRepo().GetName()
@@ -252,6 +251,6 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, log *zap.Sugared
 		return info.NewEvent(), err
 	}
 
-	log.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	v.Logger.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	return v.getPullRequest(ctx, runevent)
 }
