@@ -11,22 +11,27 @@ import (
 	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"golang.org/x/oauth2"
 )
 
 const apiPublicURL = "https://api.github.com/"
 
-type gitHubWebhookConfig struct {
+type gitHubConfig struct {
 	Client              *github.Client
-	ControllerURL       string
-	RepoOwner           string
-	RepoName            string
-	WebhookSecret       string
-	PersonalAccessToken string
+	controllerURL       string
+	repoOwner           string
+	repoName            string
+	webhookSecret       string
+	personalAccessToken string
 	APIURL              string
 }
 
-func (w Webhook) githubWebhook(ctx context.Context) (*response, error) {
+func (gh *gitHubConfig) GetName() string {
+	return provider.ProviderGitHubWebhook
+}
+
+func (gh *gitHubConfig) Run(ctx context.Context, opts *Options) (*response, error) {
 	msg := "Would you like me to configure a GitHub Webhook for your repository? "
 	var configureWebhook bool
 	if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &configureWebhook); err != nil {
@@ -36,23 +41,21 @@ func (w Webhook) githubWebhook(ctx context.Context) (*response, error) {
 		return &response{UserDeclined: true}, nil
 	}
 
-	ghWebhook, err := askGHWebhookConfig(w.RepositoryURL, w.ControllerURL)
+	err := gh.askGHWebhookConfig(opts.RepositoryURL, opts.ControllerURL)
 	if err != nil {
 		return nil, err
 	}
-	ghWebhook.APIURL = w.ProviderAPIURL
+	gh.APIURL = opts.ProviderAPIURL
 
 	return &response{
 		UserDeclined:        false,
-		ControllerURL:       ghWebhook.ControllerURL,
-		PersonalAccessToken: ghWebhook.PersonalAccessToken,
-		WebhookSecret:       ghWebhook.WebhookSecret,
-	}, ghWebhook.create(ctx)
+		ControllerURL:       gh.controllerURL,
+		PersonalAccessToken: gh.personalAccessToken,
+		WebhookSecret:       gh.webhookSecret,
+	}, gh.create(ctx)
 }
 
-func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, error) {
-	gh := &gitHubWebhookConfig{}
-
+func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL string) error {
 	var repo, defaultRepo string
 	if repoURL != "" {
 		if repo, _ := formatting.GetRepoOwnerFromGHURL(repoURL); repo != "" {
@@ -62,13 +65,13 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 	if defaultRepo != "" {
 		msg := fmt.Sprintf("Please enter the repository you want to be configured (default: %s):", defaultRepo)
 		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repo); err != nil {
-			return nil, err
+			return err
 		}
 	} else {
 		msg := "Please enter the repository you want to be configured (eg. repo-owner/repo-name) : "
 		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repo,
 			survey.WithValidator(survey.Required)); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -77,24 +80,24 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 	}
 	repoArr := strings.Split(repo, "/")
 	if len(repoArr) != 2 {
-		return nil, fmt.Errorf("invalid repository, needs to be of format 'org-name/repo-name'")
+		return fmt.Errorf("invalid repository, needs to be of format 'org-name/repo-name'")
 	}
 
-	gh.RepoOwner = repoArr[0]
-	gh.RepoName = repoArr[1]
+	gh.repoOwner = repoArr[0]
+	gh.repoName = repoArr[1]
 
 	if controllerURL == "" {
 		if err := prompt.SurveyAskOne(&survey.Input{
 			Message: "Please enter your controller public route URL: ",
-		}, &gh.ControllerURL, survey.WithValidator(survey.Required)); err != nil {
-			return nil, err
+		}, &gh.controllerURL, survey.WithValidator(survey.Required)); err != nil {
+			return err
 		}
 	}
 
 	if err := prompt.SurveyAskOne(&survey.Password{
 		Message: "Please enter the secret to configure the webhook for payload validation: ",
-	}, &gh.WebhookSecret, survey.WithValidator(survey.Required)); err != nil {
-		return nil, err
+	}, &gh.webhookSecret, survey.WithValidator(survey.Required)); err != nil {
+		return err
 	}
 
 	// nolint:forbidigo
@@ -103,14 +106,14 @@ func askGHWebhookConfig(repoURL, controllerURL string) (*gitHubWebhookConfig, er
 	fmt.Println("ℹ ️Go to this URL to generate one https://github.com/settings/tokens/new, see https://is.gd/BMgLH5 for documentation ")
 	if err := prompt.SurveyAskOne(&survey.Password{
 		Message: "Please enter the GitHub access token: ",
-	}, &gh.PersonalAccessToken, survey.WithValidator(survey.Required)); err != nil {
-		return nil, err
+	}, &gh.personalAccessToken, survey.WithValidator(survey.Required)); err != nil {
+		return err
 	}
 
-	return gh, nil
+	return nil
 }
 
-func (gh gitHubWebhookConfig) create(ctx context.Context) error {
+func (gh *gitHubConfig) create(ctx context.Context) error {
 	hook := &github.Hook{
 		Name:   github.String("web"),
 		Active: github.Bool(true),
@@ -120,19 +123,19 @@ func (gh gitHubWebhookConfig) create(ctx context.Context) error {
 			"push",
 		},
 		Config: map[string]interface{}{
-			"url":          gh.ControllerURL,
+			"url":          gh.controllerURL,
 			"content_type": "json",
 			"insecure_ssl": "0",
-			"secret":       gh.WebhookSecret,
+			"secret":       gh.webhookSecret,
 		},
 	}
 
-	ghClient, err := gh.newGHClientByToken(ctx, gh.PersonalAccessToken, gh.APIURL)
+	ghClient, err := gh.newGHClientByToken(ctx)
 	if err != nil {
 		return err
 	}
 
-	_, res, err := ghClient.Repositories.CreateHook(ctx, gh.RepoOwner, gh.RepoName, hook)
+	_, res, err := ghClient.Repositories.CreateHook(ctx, gh.repoOwner, gh.repoName, hook)
 	if err != nil {
 		return err
 	}
@@ -144,27 +147,27 @@ func (gh gitHubWebhookConfig) create(ctx context.Context) error {
 		}
 
 		return fmt.Errorf("failed to create webhook on repository %v/%v, status code: %v, error : %v",
-			gh.RepoOwner, gh.RepoName, res.Response.StatusCode, payload)
+			gh.repoOwner, gh.repoName, res.Response.StatusCode, payload)
 	}
 
 	// nolint:forbidigo
-	fmt.Printf("✓ Webhook has been created on repository %v/%v\n", gh.RepoOwner, gh.RepoName)
+	fmt.Printf("✓ Webhook has been created on repository %v/%v\n", gh.repoOwner, gh.repoName)
 	return nil
 }
 
-func (gh gitHubWebhookConfig) newGHClientByToken(ctx context.Context, token, apiURL string) (*github.Client, error) {
+func (gh *gitHubConfig) newGHClientByToken(ctx context.Context) (*github.Client, error) {
 	if gh.Client != nil {
 		return gh.Client, nil
 	}
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
+		&oauth2.Token{AccessToken: gh.personalAccessToken},
 	)
 
-	if apiURL == "" || apiURL == apiPublicURL {
+	if gh.APIURL == "" || gh.APIURL == apiPublicURL {
 		return github.NewClient(oauth2.NewClient(ctx, ts)), nil
 	}
 
-	gprovider, err := github.NewEnterpriseClient(apiURL, "", oauth2.NewClient(ctx, ts))
+	gprovider, err := github.NewEnterpriseClient(gh.APIURL, "", oauth2.NewClient(ctx, ts))
 	if err != nil {
 		return nil, err
 	}
