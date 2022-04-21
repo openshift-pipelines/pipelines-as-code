@@ -243,8 +243,8 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 	if err := p.k8int.WaitForPipelineRunSucceed(ctx, p.run.Clients.Tekton.TektonV1beta1(), pr, duration); err != nil {
 		// if we have a timeout from the pipeline run, we would not know it. We would need to get the PR status to know.
 		// maybe something to improve in the future.
-		p.run.Clients.Log.Errorf("pipelinerun %s in namespace %s has failed: %w",
-			match.PipelineRun.GetGenerateName(), match.Repo.GetNamespace(), err)
+		p.run.Clients.Log.Errorf("pipelinerun %s in namespace %s has failed: %s",
+			match.PipelineRun.GetGenerateName(), match.Repo.GetNamespace(), err.Error())
 	}
 
 	// Cleanup old succeeded pipelineruns

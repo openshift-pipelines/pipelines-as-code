@@ -109,11 +109,6 @@ type Opts struct {
 // generateName can be set as True to set the name as a generateName + "-" for
 // unique pipelinerun
 func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interface, event *info.Event, data string, ropt *Opts) ([]*tektonv1beta1.PipelineRun, error) {
-	s := k8scheme.Scheme
-	if err := tektonv1beta1.AddToScheme(s); err != nil {
-		return []*tektonv1beta1.PipelineRun{}, err
-	}
-
 	types := readTypes(cs.Clients.Log, data)
 	if len(types.PipelineRuns) == 0 {
 		return []*tektonv1beta1.PipelineRun{}, errors.New("we need at least one pipelinerun to start with")
@@ -198,4 +193,9 @@ func Resolve(ctx context.Context, cs *params.Run, providerintf provider.Interfac
 		pipelinerun.ObjectMeta.Labels[filepath.Join(apipac.GroupName, "original-prname")] = originPipelinerunName
 	}
 	return types.PipelineRuns, nil
+}
+
+// nolint:gochecknoinits
+func init() {
+	_ = tektonv1beta1.AddToScheme(k8scheme.Scheme)
 }
