@@ -488,6 +488,7 @@ func TestProvider_Detect(t *testing.T) {
 		processReq    bool
 		event         string
 		eventType     gitlab.EventType
+		wantReason    string
 	}{
 		{
 			name:       "not a gitlab Event",
@@ -554,12 +555,16 @@ func TestProvider_Detect(t *testing.T) {
 			header := &http.Header{}
 			header.Set("X-Gitlab-Event", string(tt.eventType))
 
-			isGL, processReq, _, err := gprovider.Detect(header, tt.event, logger)
+			isGL, processReq, _, reason, err := gprovider.Detect(header, tt.event, logger)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return
 			}
 			assert.NilError(t, err)
+			if tt.wantReason != "" {
+				assert.Assert(t, strings.Contains(reason, tt.wantReason))
+				return
+			}
 			assert.Equal(t, tt.isGL, isGL)
 			assert.Equal(t, tt.processReq, processReq)
 		})

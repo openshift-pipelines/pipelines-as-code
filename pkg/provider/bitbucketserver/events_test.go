@@ -37,7 +37,7 @@ func TestParsePayload(t *testing.T) {
 			name:          "bad/invalid event type",
 			eventType:     "pr:nono",
 			payloadEvent:  bbv1.PullRequest{},
-			wantErrSubstr: "event pr:nono is not supported",
+			wantErrSubstr: "event \"pr:nono\" is not supported",
 		},
 		{
 			name:          "bad/bad json",

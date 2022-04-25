@@ -138,7 +138,7 @@ func TestWhichProvider(t *testing.T) {
 				"foo": {"bar"},
 			},
 			event:         "interface",
-			wantErrString: "no supported Git Provider is detected",
+			wantErrString: "no supported Git provider has been detected",
 		},
 	}
 

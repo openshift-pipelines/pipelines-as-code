@@ -215,24 +215,28 @@ func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Eve
 
 // Detect processes event and detect if it is a github event, whether to process or reject it
 // returns (if is a GH event, whether to process or reject, error if any occurred)
-func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
+func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool,
+	*zap.SugaredLogger, string, error,
+) {
 	isGH := false
 	event := reqHeader.Get("X-Github-Event")
 	if event == "" {
-		return false, false, logger, nil
+		return false, false, logger, "", nil
 	}
 
 	// it is a Github event
 	isGH = true
 
-	setLoggerAndProceed := func(processEvent bool, err error) (bool, bool, *zap.SugaredLogger, error) {
+	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger,
+		string, error,
+	) {
 		logger = logger.With("provider", "github", "event", reqHeader.Get("X-GitHub-Delivery"))
-		return isGH, processEvent, logger, err
+		return isGH, processEvent, logger, reason, err
 	}
 
 	eventInt, err := github.ParseWebHook(event, []byte(payload))
 	if err != nil {
-		return setLoggerAndProceed(false, err)
+		return setLoggerAndProceed(false, "", err)
 	}
 
 	_ = json.Unmarshal([]byte(payload), &eventInt)
@@ -240,36 +244,36 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	switch gitEvent := eventInt.(type) {
 	case *github.CheckRunEvent:
 		if gitEvent.GetAction() == "rerequested" && gitEvent.GetCheckRun() != nil {
-			return setLoggerAndProceed(true, nil)
+			return setLoggerAndProceed(true, "", nil)
 		}
-		return setLoggerAndProceed(false, nil)
+		return setLoggerAndProceed(false, fmt.Sprintf("unsupported action \"%s\"", gitEvent.GetAction()), nil)
 
 	case *github.IssueCommentEvent:
 		if gitEvent.GetAction() == "created" &&
 			gitEvent.GetIssue().IsPullRequest() &&
 			gitEvent.GetIssue().GetState() == "open" {
 			if provider.IsRetestComment(gitEvent.GetComment().GetBody()) {
-				return setLoggerAndProceed(true, nil)
+				return setLoggerAndProceed(true, "", nil)
 			}
 			if provider.IsOkToTestComment(gitEvent.GetComment().GetBody()) {
-				return setLoggerAndProceed(true, nil)
+				return setLoggerAndProceed(true, "", nil)
 			}
-			return setLoggerAndProceed(false, nil)
+			return setLoggerAndProceed(false, "", nil)
 		}
-		return setLoggerAndProceed(false, nil)
+		return setLoggerAndProceed(false, fmt.Sprintf("not a gitops pull request comment"), nil)
 	case *github.PushEvent:
 		if gitEvent.GetPusher() != nil {
-			return setLoggerAndProceed(true, nil)
+			return setLoggerAndProceed(true, "", nil)
 		}
-		return setLoggerAndProceed(false, nil)
+		return setLoggerAndProceed(false, fmt.Sprintf("no push in event"), nil)
 
 	case *github.PullRequestEvent:
 		if provider.Valid(gitEvent.GetAction(), []string{"opened", "synchronize", "reopened"}) {
-			return setLoggerAndProceed(true, nil)
+			return setLoggerAndProceed(true, "", nil)
 		}
-		return setLoggerAndProceed(false, nil)
+		return setLoggerAndProceed(false, fmt.Sprintf("unsupported action \"%s\"", gitEvent.GetAction()), nil)
 
 	default:
-		return setLoggerAndProceed(false, fmt.Errorf("github: event %v is not supported", event))
+		return setLoggerAndProceed(false, fmt.Sprintf("github: event \"%v\" is not supported", event), nil)
 	}
 }
