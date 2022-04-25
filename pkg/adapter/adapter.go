@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -155,7 +156,7 @@ func (l listener) detectProvider(reqHeader *http.Header, reqBody string) (provid
 		return nil, logger, fmt.Errorf("skips processing event")
 	}
 
-	gitHub := &github.Provider{}
+	gitHub := &github.Provider{CheckRunIDS: &sync.Map{}}
 	isGH, processReq, logger, err := gitHub.Detect(reqHeader, reqBody, &log)
 	if isGH {
 		return processRes(processReq, gitHub, logger, err)

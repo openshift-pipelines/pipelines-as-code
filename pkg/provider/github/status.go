@@ -170,33 +170,39 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 	return nil
 }
 
-func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
+func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, statusOpts provider.StatusOpts) error {
 	if v.Client == nil {
 		return fmt.Errorf("cannot set status on github no token or url set")
 	}
 
-	switch status.Conclusion {
+	switch statusOpts.Conclusion {
 	case "success":
-		status.Title = "✅ Success"
-		status.Summary = fmt.Sprintf("%s has <b>successfully</b> validated your commit.", pacopts.ApplicationName)
+		statusOpts.Title = "✅ Success"
+		statusOpts.Summary = "has <b>successfully</b> validated your commit."
 	case "failure":
-		status.Title = "❌ Failed"
-		status.Summary = fmt.Sprintf("%s has <b>failed</b>.", pacopts.ApplicationName)
+		statusOpts.Title = "❌ Failed"
+		statusOpts.Summary = "has <b>failed</b>."
 	case "skipped":
-		status.Title = "➖ Skipped"
-		status.Summary = fmt.Sprintf("%s is skipping this commit.", pacopts.ApplicationName)
+		statusOpts.Title = "➖ Skipped"
+		statusOpts.Summary = "is skipping this commit."
 	case "neutral":
-		status.Title = "❓ Unknown"
-		status.Summary = fmt.Sprintf("%s doesn't know what happened with this commit.", pacopts.ApplicationName)
+		statusOpts.Title = "❓ Unknown"
+		statusOpts.Summary = "doesn't know what happened with this commit."
 	}
 
-	if status.Status == "in_progress" {
-		status.Title = "CI has Started"
-		status.Summary = fmt.Sprintf("%s is running.", pacopts.ApplicationName)
+	if statusOpts.Status == "in_progress" {
+		statusOpts.Title = "CI has Started"
+		statusOpts.Summary = "is running."
 	}
+
+	onPr := ""
+	if statusOpts.OriginalPipelineRunName != "" {
+		onPr = "/" + statusOpts.OriginalPipelineRunName
+	}
+	statusOpts.Summary = fmt.Sprintf("%s%s %s", pacopts.ApplicationName, onPr, statusOpts.Summary)
 
 	if runevent.Provider.InfoFromRepo {
-		return v.createStatusCommit(ctx, runevent, pacopts, status)
+		return v.createStatusCommit(ctx, runevent, pacopts, statusOpts)
 	}
-	return v.getOrUpdateCheckRunStatus(ctx, runevent, pacopts, status)
+	return v.getOrUpdateCheckRunStatus(ctx, runevent, pacopts, statusOpts)
 }

@@ -264,8 +264,12 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 		detailsURL = statusOpts.DetailsURL
 	}
 
-	body := fmt.Sprintf("**%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>",
-		pacOpts.ApplicationName, statusOpts.Title, statusOpts.Text, detailsURL)
+	onPr := ""
+	if statusOpts.OriginalPipelineRunName != "" {
+		onPr = "/" + statusOpts.OriginalPipelineRunName
+	}
+	body := fmt.Sprintf("**%s%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>",
+		pacOpts.ApplicationName, onPr, statusOpts.Title, statusOpts.Text, detailsURL)
 
 	// in case we have access set the commit status, typically on MR from
 	// another users we won't have it but it would work on push or MR from a
