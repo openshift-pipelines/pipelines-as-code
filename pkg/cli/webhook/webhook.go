@@ -121,6 +121,8 @@ func (w *Options) proceed(alreadyConfigured, toConfigure string) bool {
 func detectProvider(url string) Interface {
 	if strings.Contains(url, "github.com") {
 		return &gitHubConfig{}
+	} else if strings.Contains(url, "gitlab.com") {
+		return &gitLabConfig{}
 	}
 	return nil
 }

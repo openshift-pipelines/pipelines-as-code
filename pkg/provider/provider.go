@@ -12,6 +12,7 @@ var (
 const (
 	ProviderGitHubApp     = "GitHubApp"
 	ProviderGitHubWebhook = "GitHubWebhook"
+	ProviderGitLabWebhook = "GitLabWebhook"
 )
 
 func Valid(value string, validValues []string) bool {
