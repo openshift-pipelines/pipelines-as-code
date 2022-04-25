@@ -16,6 +16,7 @@ const (
 
 	// nolint
 	githubWebhookSecretName = "github-webhook-secret"
+	// nolint
 	gitlabWebhookSecretName = "gitlab-webhook-secret"
 )
 

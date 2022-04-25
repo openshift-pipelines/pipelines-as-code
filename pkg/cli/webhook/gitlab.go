@@ -25,7 +25,7 @@ func (gl *gitLabConfig) GetName() string {
 	return provider.ProviderGitLabWebhook
 }
 
-func (gl *gitLabConfig) Run(ctx context.Context, opts *Options) (*response, error) {
+func (gl *gitLabConfig) Run(_ context.Context, opts *Options) (*response, error) {
 	err := gl.askGLWebhookConfig(opts.ControllerURL)
 	if err != nil {
 		return nil, err
@@ -36,11 +36,11 @@ func (gl *gitLabConfig) Run(ctx context.Context, opts *Options) (*response, erro
 		ControllerURL:       gl.controllerURL,
 		PersonalAccessToken: gl.personalAccessToken,
 		WebhookSecret:       gl.webhookSecret,
-	}, gl.create(ctx)
+	}, gl.create()
 }
 
 func (gl *gitLabConfig) askGLWebhookConfig(controllerURL string) error {
-	msg := fmt.Sprintf("Please enter project ID for the repository you want to be configured :")
+	msg := "Please enter project ID for the repository you want to be configured :"
 	if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &gl.projectID,
 		survey.WithValidator(survey.Required)); err != nil {
 		return err
@@ -73,7 +73,7 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL string) error {
 	return nil
 }
 
-func (gl *gitLabConfig) create(ctx context.Context) error {
+func (gl *gitLabConfig) create() error {
 	glClient, err := gl.newClient()
 	if err != nil {
 		return err
@@ -90,13 +90,13 @@ func (gl *gitLabConfig) create(ctx context.Context) error {
 
 	_, resp, err := glClient.Projects.AddProjectHook(gl.projectID, hookOpts)
 	if err != nil {
-
+		return err
 	}
 
 	if resp.Response.StatusCode != http.StatusCreated {
 		payload, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("failed to read response body: %v", err)
+			return fmt.Errorf("failed to read response body: %w", err)
 		}
 		return fmt.Errorf("failed to create webhook, status code: %v, error : %v",
 			resp.Response.StatusCode, payload)

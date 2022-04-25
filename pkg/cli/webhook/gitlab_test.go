@@ -66,6 +66,7 @@ func TestGLCreate(t *testing.T) {
 	// webhook created
 	mux.HandleFunc("/projects/11/hooks", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(201)
+		_, _ = fmt.Fprint(w, `{"status": "ok"}`)
 	})
 
 	// webhook failed
@@ -93,12 +94,11 @@ func TestGLCreate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, _ := rtesting.SetupFakeContext(t)
 			gl := gitLabConfig{
 				Client:    fakeclient,
 				projectID: tt.projectID,
 			}
-			err := gl.create(ctx)
+			err := gl.create()
 			if !tt.wantErr {
 				assert.NilError(t, err)
 			}
