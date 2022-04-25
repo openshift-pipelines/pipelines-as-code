@@ -32,15 +32,6 @@ func (gh *gitHubConfig) GetName() string {
 }
 
 func (gh *gitHubConfig) Run(ctx context.Context, opts *Options) (*response, error) {
-	msg := "Would you like me to configure a GitHub Webhook for your repository? "
-	var configureWebhook bool
-	if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &configureWebhook); err != nil {
-		return nil, err
-	}
-	if !configureWebhook {
-		return &response{UserDeclined: true}, nil
-	}
-
 	err := gh.askGHWebhookConfig(opts.RepositoryURL, opts.ControllerURL)
 	if err != nil {
 		return nil, err
@@ -48,7 +39,6 @@ func (gh *gitHubConfig) Run(ctx context.Context, opts *Options) (*response, erro
 	gh.APIURL = opts.ProviderAPIURL
 
 	return &response{
-		UserDeclined:        false,
 		ControllerURL:       gh.controllerURL,
 		PersonalAccessToken: gh.personalAccessToken,
 		WebhookSecret:       gh.webhookSecret,

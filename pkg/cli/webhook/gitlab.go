@@ -26,15 +26,6 @@ func (gl *gitLabConfig) GetName() string {
 }
 
 func (gl *gitLabConfig) Run(ctx context.Context, opts *Options) (*response, error) {
-	msg := "Would you like me to configure a GitLab Webhook for your repository? "
-	var configureWebhook bool
-	if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &configureWebhook); err != nil {
-		return nil, err
-	}
-	if !configureWebhook {
-		return &response{UserDeclined: true}, nil
-	}
-
 	err := gl.askGLWebhookConfig(opts.ControllerURL)
 	if err != nil {
 		return nil, err
@@ -42,7 +33,6 @@ func (gl *gitLabConfig) Run(ctx context.Context, opts *Options) (*response, erro
 	gl.APIURL = opts.ProviderAPIURL
 
 	return &response{
-		UserDeclined:        false,
 		ControllerURL:       gl.controllerURL,
 		PersonalAccessToken: gl.personalAccessToken,
 		WebhookSecret:       gl.webhookSecret,

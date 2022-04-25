@@ -11,42 +11,6 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func TestGithubWebhook(t *testing.T) {
-	tests := []struct {
-		name       string
-		wantErrStr string
-		askStubs   func(*prompt.AskStubber)
-		response   response
-	}{
-		{
-			name: "declined by user",
-			askStubs: func(as *prompt.AskStubber) {
-				as.StubOne("n")
-			},
-			response: response{UserDeclined: true},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx, _ := rtesting.SetupFakeContext(t)
-			as, teardown := prompt.InitAskStubber()
-			defer teardown()
-			if tt.askStubs != nil {
-				tt.askStubs(as)
-			}
-			gh := gitHubConfig{}
-			res, err := gh.Run(ctx, &Options{})
-			if tt.wantErrStr != "" {
-				assert.Equal(t, err.Error(), tt.wantErrStr)
-				return
-			}
-			assert.NilError(t, err)
-			assert.Equal(t, res.UserDeclined, tt.response.UserDeclined)
-		})
-	}
-}
-
 func TestAskGHWebhookConfig(t *testing.T) {
 	tests := []struct {
 		name          string
