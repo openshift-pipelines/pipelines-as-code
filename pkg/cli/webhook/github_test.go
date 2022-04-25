@@ -30,13 +30,13 @@ func TestGithubWebhook(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			w := Webhook{}
 			as, teardown := prompt.InitAskStubber()
 			defer teardown()
 			if tt.askStubs != nil {
 				tt.askStubs(as)
 			}
-			res, err := w.githubWebhook(ctx)
+			gh := gitHubConfig{}
+			res, err := gh.Run(ctx, &Options{})
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
 				return
@@ -92,7 +92,8 @@ func TestAskGHWebhookConfig(t *testing.T) {
 			if tt.askStubs != nil {
 				tt.askStubs(as)
 			}
-			_, err := askGHWebhookConfig(tt.repoURL, tt.controllerURL)
+			gh := gitHubConfig{}
+			err := gh.askGHWebhookConfig(tt.repoURL, tt.controllerURL)
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
 				return
@@ -139,10 +140,10 @@ func TestCreate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			gh := gitHubWebhookConfig{
+			gh := gitHubConfig{
 				Client:    fakeclient,
-				RepoOwner: tt.repoOwner,
-				RepoName:  tt.repoName,
+				repoOwner: tt.repoOwner,
+				repoName:  tt.repoName,
 			}
 			err := gh.create(ctx)
 			if !tt.wantErr {

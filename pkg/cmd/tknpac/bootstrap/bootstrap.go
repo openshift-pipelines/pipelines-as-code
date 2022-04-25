@@ -142,7 +142,8 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			if pacInfo.Provider != "" && pacInfo.Provider != provider.ProviderGitHubApp {
+			// allow bootstrap if no provider is configured yet or if it is GitHub
+			if pacInfo.Provider != "" && (pacInfo.Provider != provider.ProviderGitHubApp && pacInfo.Provider != provider.ProviderGitHubWebhook) {
 				return fmt.Errorf("skipping bootstraping GitHub App, %s is already configured", pacInfo.Provider)
 			}
 

@@ -35,7 +35,7 @@ type createOptions struct {
 
 func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	var githubURLForWebhook string
-	var onlyWebhook bool
+	var onlyWebhook, githubWebhook bool
 	createOpts := &createOptions{
 		event:      info.NewEvent(),
 		repository: &apipac.Repository{},
@@ -88,15 +88,17 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				}
 			}
 
-			config := &webhook.Webhook{
+			config := &webhook.Options{
+				Run:                 run,
 				RepositoryURL:       createOpts.gitInfo.URL,
 				PACNamespace:        createOpts.pacNamespace,
 				ProviderAPIURL:      githubURLForWebhook,
 				RepositoryName:      createOpts.repository.Name,
 				RepositoryNamespace: createOpts.repository.Namespace,
+				GitHubWebhook:       githubWebhook,
 			}
 
-			if err := config.Install(ctx, run); err != nil {
+			if err := config.Install(ctx); err != nil {
 				return err
 			}
 
@@ -116,6 +118,7 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		"", "", "the namespace where pac is installed")
 	cmd.PersistentFlags().StringVarP(&githubURLForWebhook, "github-api-url", "", "", "Github Enterprise API URL")
 	cmd.PersistentFlags().BoolVar(&onlyWebhook, "webhook", false, "Skip repository creation, proceed with configuring webhook")
+	cmd.PersistentFlags().BoolVar(&githubWebhook, "github-webhook", false, "Allows configuring webhook if GitHub App is already configured")
 
 	return cmd
 }
