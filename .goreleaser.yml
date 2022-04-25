@@ -62,7 +62,7 @@ release:
 
     documentation is available here :
 
-    https://pipelineascode.com
+    https://pipelinesascode.com
 
 
 brews:
@@ -75,8 +75,8 @@ brews:
       - name: tektoncd-cli
         type: optional
       - name: git
-    homepage: "https://github.com/openshift-pipelines/pipelines-as-code"
-    description: Tekton PAC - The command line interface for interacting with Pipelines as Code
+    homepage: "https://pipelinesascode.com"
+    description: tkn-pac - A command line interface for interacting with Pipelines as Code
     install: |
       bin.install "tkn-pac" => "tkn-pac"
       output = Utils.popen_read("SHELL=bash #{bin}/tkn-pac completion bash")
@@ -86,10 +86,10 @@ brews:
       prefix.install_metafiles
 nfpms:
   - file_name_template: "tkn-pac-{{.Version}}_{{.Os}}-{{.Arch}}"
-    homepage: https://github.com/openshift-pipelines/pipelines-as-code
-    description: Command line interface to OpenShift Pipelines as Code
+    homepage: https://pipelinesascode.com
+    description: A command line interface to OpenShift Pipelines as Code
     maintainer: OpenShift Pipelines Developers <pipelines-dev@redhat.com>
-    license: BSD
+    license: Apache 2.0
     vendor: Red Hat
     formats:
       - deb
@@ -114,6 +114,32 @@ changelog:
       - Merge pull request
       - Merge branch
       - go mod tidy
+
+aurs:
+  - name: tkn-pac
+    homepage: "https://pipelinesascode.com"
+    description: tkn-pac - A command line interface for interacting with Pipelines as Code
+    maintainers:
+      - "Chmouel Boudjnah <chmouel@chmouel.com>"
+    license: Apache 2.0
+    private_key: "{{ .Env.AUR_PRIVATE_KEY }}"
+    git_url: ssh://aur@aur.archlinux.org/tkn-pac.git
+    package: |-
+      # bin
+      install -Dm755 "./tkn-pac" "${pkgdir}/usr/bin/tkn-pac"
+
+      # license
+      install -Dm644 "./LICENSE" "${pkgdir}/usr/share/licenses/tkn-pac/LICENSE"
+
+      # completions
+      mkdir -p "${pkgdir}/usr/share/bash-completion/completions/"
+      mkdir -p "${pkgdir}/usr/share/zsh/site-functions/"
+
+      ./tkn-pac completion zsh > tkn-pac.zsh
+      ./tkn-pac completion bash > tkn-pac.bash
+
+      install -Dm644 "tkn-pac.bash" "${pkgdir}/usr/share/bash-completion/completions/tkn-pac"
+      install -Dm644 "tkn-pac.zsh" "${pkgdir}/usr/share/zsh/site-functions/_tkn-pac"
 
 universal_binaries:
   - replace: true

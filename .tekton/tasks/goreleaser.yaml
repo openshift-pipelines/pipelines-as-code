@@ -22,6 +22,12 @@ spec:
   params:
     - name: package
       description: base package to build in
+    - name: aur-privatekey-secret
+      description: name of the secret holding the aur private key
+      default: aur-private-secret
+    - name: aur-privatekey-secret-key
+      description: name of the key for the secret holding the aur private key
+      default: key
     - name: github-token-secret
       description: name of the secret holding the github-token
       default: bot-token-github
@@ -45,6 +51,11 @@ spec:
       env:
         - name: GOPATH
           value: /workspace
+        - name: AUR_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: $(params.aur-privatekey-secret)
+              key: $(params.aur-privatekey-secret-key)
         - name: GITHUB_TOKEN
           valueFrom:
             secretKeyRef:
