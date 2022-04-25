@@ -16,6 +16,8 @@ const (
 
 	// nolint
 	githubWebhookSecretName = "github-webhook-secret"
+	// nolint
+	gitlabWebhookSecretName = "gitlab-webhook-secret"
 )
 
 func (w *Options) createWebhookSecret(ctx context.Context, provider string, response *response) error {
@@ -71,8 +73,12 @@ func (w *Options) updateRepositoryCR(ctx context.Context, provider string) error
 }
 
 func getSecretName(providerName string) string {
-	if providerName == provider.ProviderGitHubWebhook {
+	switch providerName {
+	case provider.ProviderGitHubWebhook:
 		return githubWebhookSecretName
+	case provider.ProviderGitLabWebhook:
+		return gitlabWebhookSecretName
+	default:
+		return ""
 	}
-	return ""
 }

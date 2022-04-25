@@ -6,30 +6,22 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
-	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func TestAskGHWebhookConfig(t *testing.T) {
+func TestAskGLWebhookConfig(t *testing.T) {
 	tests := []struct {
 		name          string
 		wantErrStr    string
 		askStubs      func(*prompt.AskStubber)
-		repoURL       string
 		controllerURL string
 	}{
 		{
-			name: "invalid repo format",
-			askStubs: func(as *prompt.AskStubber) {
-				as.StubOne("invalid-repo")
-			},
-			wantErrStr: "invalid repository, needs to be of format 'org-name/repo-name'",
-		},
-		{
 			name: "ask all details no defaults",
 			askStubs: func(as *prompt.AskStubber) {
-				as.StubOne("pac/demo")
+				as.StubOne("id")
 				as.StubOne("https://test")
 				as.StubOne("webhook-secret")
 				as.StubOne("token")
@@ -39,11 +31,10 @@ func TestAskGHWebhookConfig(t *testing.T) {
 		{
 			name: "with defaults",
 			askStubs: func(as *prompt.AskStubber) {
-				as.StubOne("") // use default
+				as.StubOne("id")
 				as.StubOne("webhook-secret")
 				as.StubOne("token")
 			},
-			repoURL:       "https:/github.com/pac/demo",
 			controllerURL: "https://test",
 			wantErrStr:    "",
 		},
@@ -56,8 +47,8 @@ func TestAskGHWebhookConfig(t *testing.T) {
 			if tt.askStubs != nil {
 				tt.askStubs(as)
 			}
-			gh := gitHubConfig{}
-			err := gh.askGHWebhookConfig(tt.repoURL, tt.controllerURL)
+			gl := gitLabConfig{}
+			err := gl.askGLWebhookConfig(tt.controllerURL)
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
 				return
@@ -67,49 +58,47 @@ func TestAskGHWebhookConfig(t *testing.T) {
 	}
 }
 
-func TestCreate(t *testing.T) {
-	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+func TestGLCreate(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	fakeclient, mux, teardown := thelp.Setup(ctx, t)
 	defer teardown()
 
-	// webhook created for repo pac/valid
-	mux.HandleFunc("/repos/pac/valid/hooks", func(w http.ResponseWriter, r *http.Request) {
+	// webhook created
+	mux.HandleFunc("/projects/11/hooks", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(201)
+		_, _ = fmt.Fprint(w, `{"status": "ok"}`)
 	})
 
-	// webhook failed for repo pac/invalid
-	mux.HandleFunc("/repos/pac/invalid/hooks", func(w http.ResponseWriter, r *http.Request) {
+	// webhook failed
+	mux.HandleFunc("/projects/13/hooks", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(403)
 		_, _ = fmt.Fprint(w, `{"status": "forbidden"}`)
 	})
 
 	tests := []struct {
 		name      string
+		projectID string
 		wantErr   bool
-		repoName  string
-		repoOwner string
 	}{
 		{
 			name:      "webhook created",
-			repoOwner: "pac",
-			repoName:  "valid",
+			projectID: "11",
+			wantErr:   false,
 		},
 		{
 			name:      "webhook failed",
-			repoOwner: "pac",
-			repoName:  "invalid",
+			projectID: "13",
 			wantErr:   true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, _ := rtesting.SetupFakeContext(t)
-			gh := gitHubConfig{
+			gl := gitLabConfig{
 				Client:    fakeclient,
-				repoOwner: tt.repoOwner,
-				repoName:  tt.repoName,
+				projectID: tt.projectID,
 			}
-			err := gh.create(ctx)
+			err := gl.create()
 			if !tt.wantErr {
 				assert.NilError(t, err)
 			}

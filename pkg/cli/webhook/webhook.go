@@ -2,6 +2,7 @@ package webhook
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -32,7 +33,6 @@ type Options struct {
 }
 
 type response struct {
-	UserDeclined        bool
 	ControllerURL       string
 	WebhookSecret       string
 	PersonalAccessToken string
@@ -65,6 +65,16 @@ func (w *Options) Install(ctx context.Context) error {
 		return nil
 	}
 
+	msg := fmt.Sprintf("Would you like me to configure a %s Webhook for your repository? ",
+		strings.TrimSuffix(webhookProvider.GetName(), "Webhook"))
+	var configureWebhook bool
+	if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &configureWebhook); err != nil {
+		return err
+	}
+	if !configureWebhook {
+		return nil
+	}
+
 	// check if info configmap has url then use that otherwise try to detec
 	if pacInfo.ControllerURL != "" && w.ControllerURL == "" {
 		w.ControllerURL = pacInfo.ControllerURL
@@ -73,7 +83,7 @@ func (w *Options) Install(ctx context.Context) error {
 	}
 
 	response, err := webhookProvider.Run(ctx, w)
-	if err != nil || response.UserDeclined {
+	if err != nil {
 		return err
 	}
 
@@ -121,6 +131,8 @@ func (w *Options) proceed(alreadyConfigured, toConfigure string) bool {
 func detectProvider(url string) Interface {
 	if strings.Contains(url, "github.com") {
 		return &gitHubConfig{}
+	} else if strings.Contains(url, "gitlab.com") {
+		return &gitLabConfig{}
 	}
 	return nil
 }
