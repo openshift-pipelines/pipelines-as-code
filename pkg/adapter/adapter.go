@@ -55,7 +55,7 @@ func New(run *params.Run, k *kubeinteraction.Interaction) adapter.AdapterConstru
 	}
 }
 
-func (l *listener) Start(ctx context.Context) error {
+func (l *listener) Start(_ context.Context) error {
 	l.logger.Infof("Starting Pipelines as Code version: %s", version.Version)
 
 	mux := http.NewServeMux()
@@ -63,7 +63,7 @@ func (l *listener) Start(ctx context.Context) error {
 	// for handling probes
 	mux.HandleFunc("/live", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		fmt.Fprint(w, "ok")
+		_, _ = fmt.Fprint(w, "ok")
 	})
 
 	mux.HandleFunc("/", l.handleEvent())
@@ -139,7 +139,9 @@ func (l listener) handleEvent() http.HandlerFunc {
 func (l listener) detectProvider(reqHeader *http.Header, reqBody string) (provider.Interface, *zap.SugaredLogger, error) {
 	log := *l.logger
 
-	processRes := func(processEvent bool, provider provider.Interface, logger *zap.SugaredLogger, err error) (provider.Interface, *zap.SugaredLogger, error) {
+	processRes := func(processEvent bool, provider provider.Interface, logger *zap.SugaredLogger, skipReason string,
+		err error,
+	) (provider.Interface, *zap.SugaredLogger, error) {
 		if processEvent {
 			provider.SetLogger(logger)
 			return provider, logger, nil
@@ -149,35 +151,38 @@ func (l listener) detectProvider(reqHeader *http.Header, reqBody string) (provid
 			logger.Error(errStr)
 			return nil, logger, fmt.Errorf(errStr)
 		}
-		logger.Info("skips processing event !")
-		return nil, logger, fmt.Errorf("skips processing event")
+
+		if skipReason != "" {
+			logger.Infof("skipping event: %s", skipReason)
+		}
+		return nil, logger, fmt.Errorf("skipping event")
 	}
 
 	gitHub := &github.Provider{CheckRunIDS: &sync.Map{}}
-	isGH, processReq, logger, err := gitHub.Detect(reqHeader, reqBody, &log)
+	isGH, processReq, logger, reason, err := gitHub.Detect(reqHeader, reqBody, &log)
 	if isGH {
-		return processRes(processReq, gitHub, logger, err)
+		return processRes(processReq, gitHub, logger, reason, err)
 	}
 
 	bitServer := &bitbucketserver.Provider{}
-	isBitServer, processReq, logger, err := bitServer.Detect(reqHeader, reqBody, &log)
+	isBitServer, processReq, logger, reason, err := bitServer.Detect(reqHeader, reqBody, &log)
 	if isBitServer {
-		return processRes(processReq, bitServer, logger, err)
+		return processRes(processReq, bitServer, logger, reason, err)
 	}
 
 	gitLab := &gitlab.Provider{}
-	isGitlab, processReq, logger, err := gitLab.Detect(reqHeader, reqBody, &log)
+	isGitlab, processReq, logger, reason, err := gitLab.Detect(reqHeader, reqBody, &log)
 	if isGitlab {
-		return processRes(processReq, gitLab, logger, err)
+		return processRes(processReq, gitLab, logger, reason, err)
 	}
 
 	bitCloud := &bitbucketcloud.Provider{}
-	isBitCloud, processReq, logger, err := bitCloud.Detect(reqHeader, reqBody, &log)
+	isBitCloud, processReq, logger, reason, err := bitCloud.Detect(reqHeader, reqBody, &log)
 	if isBitCloud {
-		return processRes(processReq, bitCloud, logger, err)
+		return processRes(processReq, bitCloud, logger, reason, err)
 	}
 
-	return processRes(false, nil, logger, fmt.Errorf("no supported Git Provider is detected"))
+	return processRes(false, nil, logger, "", fmt.Errorf("no supported Git provider has been detected"))
 }
 
 func (l listener) writeResponse(response http.ResponseWriter, statusCode int, message string) {

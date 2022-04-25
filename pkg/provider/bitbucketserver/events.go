@@ -29,7 +29,9 @@ func sanitizeOwner(owner string) string {
 }
 
 // ParsePayload parses the payload from the event
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
+func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
+	payload string,
+) (*info.Event, error) {
 	processedEvent := info.NewEvent()
 
 	eventType := request.Header.Get("X-Event-Key")
@@ -102,12 +104,12 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	// TODO: is this the right way? I guess i have no way to know what is the
 	// baseURL of a server unless there is something in the API?
 	// remove everything after /project in the URL to get the basePath
-	url, err := url.Parse(processedEvent.URL)
+	pURL, err := url.Parse(processedEvent.URL)
 	if err != nil {
 		return nil, err
 	}
 
-	v.baseURL = fmt.Sprintf("%s://%s", url.Scheme, url.Host)
+	v.baseURL = fmt.Sprintf("%s://%s", pURL.Scheme, pURL.Host)
 	return processedEvent, nil
 }
 
@@ -117,8 +119,10 @@ func parsePayloadType(event string) (interface{}, error) {
 	// and cloud, so we check the event name directly
 	var localEvent string
 	if strings.HasPrefix(event, "pr:") {
-		if !provider.Valid(event, []string{"pr:from_ref_updated", "pr:opened", "pr:comment:added", "pr:comment:edited"}) {
-			return nil, fmt.Errorf("event %s is not supported", event)
+		if !provider.Valid(event, []string{
+			"pr:from_ref_updated", "pr:opened", "pr:comment:added", "pr:comment:edited",
+		}) {
+			return nil, fmt.Errorf("event \"%s\" is not supported", event)
 		}
 		localEvent = "pull_request"
 	} else if event == "repo:refs_changed" {
@@ -139,24 +143,28 @@ func parsePayloadType(event string) (interface{}, error) {
 
 // Detect processes event and detect if it is a bitbucket server event, whether to process or reject it
 // returns (if is a bitbucket server event, whether to process or reject, error if any occurred)
-func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
+func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool,
+	*zap.SugaredLogger, string, error,
+) {
 	isBitServer := false
 	event := reqHeader.Get("X-Event-Key")
 	if event == "" {
-		return false, false, logger, nil
+		return false, false, logger, "", nil
 	}
 
 	eventPayload, err := parsePayloadType(event)
 	if err != nil || eventPayload == nil {
-		return false, false, logger, err
+		return false, false, logger, "", err
 	}
 
 	// it is a Bitbucket server event
 	isBitServer = true
 
-	setLoggerAndProceed := func(processEvent bool, err error) (bool, bool, *zap.SugaredLogger, error) {
+	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger, string,
+		error,
+	) {
 		logger = logger.With("provider", "bitbucket-server", "event", reqHeader.Get("X-Request-Id"))
-		return isBitServer, processEvent, logger, err
+		return isBitServer, processEvent, logger, reason, err
 	}
 
 	_ = json.Unmarshal([]byte(payload), &eventPayload)
@@ -164,27 +172,27 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	switch e := eventPayload.(type) {
 	case *types.PullRequestEvent:
 		if provider.Valid(event, []string{"pr:from_ref_updated", "pr:opened"}) {
-			return setLoggerAndProceed(true, nil)
+			return setLoggerAndProceed(true, "", nil)
 		}
 		if provider.Valid(event, []string{"pr:comment:added"}) {
 			if provider.IsRetestComment(e.Comment.Text) {
-				return setLoggerAndProceed(true, nil)
+				return setLoggerAndProceed(true, "", nil)
 			}
 			if provider.IsOkToTestComment(e.Comment.Text) {
-				return setLoggerAndProceed(true, nil)
+				return setLoggerAndProceed(true, "", nil)
 			}
 		}
-		return setLoggerAndProceed(false, nil)
+		return setLoggerAndProceed(false, fmt.Sprintf("not a recognized bitbucket event: \"%s\"", event), nil)
 
 	case *types.PushRequestEvent:
 		if provider.Valid(event, []string{"repo:refs_changed"}) {
 			if e.Changes != nil {
-				return setLoggerAndProceed(true, nil)
+				return setLoggerAndProceed(true, "", nil)
 			}
 		}
-		return setLoggerAndProceed(false, nil)
+		return setLoggerAndProceed(false, fmt.Sprintf("not an event we support: \"%s\"", event), nil)
 
 	default:
-		return setLoggerAndProceed(false, fmt.Errorf("bitbucket-server: event %s is not supported", event))
+		return setLoggerAndProceed(false, "", fmt.Errorf("bitbucket-server: event \"%s\" is not supported", event))
 	}
 }

@@ -48,7 +48,7 @@ func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 	v.Logger = logger
 }
 
-func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
+func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event) error {
 	token := event.Request.Header.Get("X-Gitlab-Token")
 	if event.Provider.WebhookSecret == "" && token != "" {
 		return fmt.Errorf("gitlab failed validaton: failed to find webhook secret")
@@ -61,47 +61,52 @@ func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info
 
 // Detect processes event and detect if it is a gitlab event, whether to process or reject it
 // returns (if is a GL event, whether to process or reject, logger with event metadata,, error if any occurred)
-func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
+func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool,
+	*zap.SugaredLogger, string, error,
+) {
 	isGL := false
 	event := reqHeader.Get("X-Gitlab-Event")
 	if event == "" {
-		return false, false, logger, nil
+		return false, false, logger, "no gitlab event", nil
 	}
 
 	// it is a Gitlab event
 	isGL = true
 
-	setLoggerAndProceed := func(processEvent bool, err error) (bool, bool, *zap.SugaredLogger, error) {
+	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger,
+		string, error,
+	) {
 		logger = logger.With("provider", "gitlab", "event", reqHeader.Get("X-Request-Id"))
-		return isGL, processEvent, logger, err
+		return isGL, processEvent, logger, reason, err
 	}
 
 	eventInt, err := gitlab.ParseWebhook(gitlab.EventType(event), []byte(payload))
 	if err != nil {
-		return setLoggerAndProceed(false, err)
+		return setLoggerAndProceed(false, "", err)
 	}
 	_ = json.Unmarshal([]byte(payload), &eventInt)
 
 	switch gitEvent := eventInt.(type) {
 	case *gitlab.MergeEvent:
 		if provider.Valid(gitEvent.ObjectAttributes.Action, []string{"open", "update", "reopen"}) {
-			return setLoggerAndProceed(true, nil)
+			return setLoggerAndProceed(true, "", nil)
 		}
-		return setLoggerAndProceed(false, nil)
+		return setLoggerAndProceed(false, fmt.Sprintf("not a merge event we care about: \"%s\"",
+			gitEvent.ObjectAttributes.Action), nil)
 	case *gitlab.PushEvent:
-		return setLoggerAndProceed(true, nil)
+		return setLoggerAndProceed(true, "", nil)
 	case *gitlab.MergeCommentEvent:
 		if gitEvent.MergeRequest.State == "opened" {
 			if provider.IsRetestComment(gitEvent.ObjectAttributes.Note) {
-				return setLoggerAndProceed(true, nil)
+				return setLoggerAndProceed(true, "", nil)
 			}
 			if provider.IsOkToTestComment(gitEvent.ObjectAttributes.Note) {
-				return setLoggerAndProceed(true, nil)
+				return setLoggerAndProceed(true, "", nil)
 			}
 		}
-		return setLoggerAndProceed(false, nil)
+		return setLoggerAndProceed(false, "not a gitops style merge comment event", nil)
 	default:
-		return setLoggerAndProceed(false, fmt.Errorf("gitlab: event %s is not supported", event))
+		return setLoggerAndProceed(false, "", fmt.Errorf("gitlab: event \"%s\" is not supported", event))
 	}
 }
 
@@ -119,7 +124,9 @@ func getOrgRepo(pathWithNamespace string) (string, string) {
 	return org, filepath.Base(pathWithNamespace)
 }
 
-func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
+func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
+	payload string,
+) (*info.Event, error) {
 	// TODO: parse request to figure out which event
 	var processedEvent *info.Event
 
@@ -217,13 +224,13 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, event *info.Event) error {
 	var err error
 	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
 
-	// Try to detect automatically theapi url if url is not coming from public
+	// Try to detect automatically the API url if url is not coming from public
 	// gitlab. Unless user has set a spec.provider.url in its repo crd
 	apiURL := apiPublicURL
 	if event.Provider.URL != "" {
@@ -240,7 +247,9 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	return nil
 }
 
-func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts *info.PacOpts, statusOpts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacOpts *info.PacOpts,
+	statusOpts provider.StatusOpts,
+) error {
 	var detailsURL string
 	if v.Client == nil {
 		return fmt.Errorf("no gitlab client has been initiliazed, " +
@@ -298,7 +307,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, pacOpts 
 	return nil
 }
 
-func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path string) (string, error) {
+func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path string) (string, error) {
 	if v.Client == nil {
 		return "", fmt.Errorf("no gitlab client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
@@ -355,7 +364,7 @@ func (v *Provider) getObject(fname, branch string, pid int) ([]byte, error) {
 	return file, nil
 }
 
-func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, _ string) (string, error) {
+func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, path, _ string) (string, error) {
 	getobj, err := v.getObject(path, runevent.HeadBranch, v.sourceProjectID)
 	if err != nil {
 		return "", err
@@ -363,7 +372,7 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 	return string(getobj), nil
 }
 
-func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
+func (v *Provider) GetCommitInfo(_ context.Context, _ *info.Event) error {
 	if v.Client == nil {
 		return fmt.Errorf("no gitlab client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")

@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/hmac"
 
-	//nolint
+	// nolint
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
@@ -345,6 +345,7 @@ func TestProvider_Detect(t *testing.T) {
 		processReq    bool
 		event         interface{}
 		eventType     string
+		wantReason    string
 	}{
 		{
 			name:       "not a bitbucket server Event",
@@ -432,9 +433,13 @@ func TestProvider_Detect(t *testing.T) {
 			header := &http.Header{}
 			header.Set("X-Event-Key", tt.eventType)
 
-			isBS, processReq, _, err := bprovider.Detect(header, string(jeez), logger)
+			isBS, processReq, _, reason, err := bprovider.Detect(header, string(jeez), logger)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
+				return
+			}
+			if tt.wantReason != "" {
+				assert.Assert(t, strings.Contains(reason, tt.wantReason))
 				return
 			}
 			assert.NilError(t, err)

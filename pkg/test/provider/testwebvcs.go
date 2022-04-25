@@ -26,8 +26,10 @@ func (v *TestProviderImp) Validate(ctx context.Context, params *params.Run, even
 	return nil
 }
 
-func (v *TestProviderImp) Detect(request *http.Header, body string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, error) {
-	return true, true, nil, nil
+func (v *TestProviderImp) Detect(request *http.Header, body string, logger *zap.SugaredLogger) (bool, bool,
+	*zap.SugaredLogger, string, error,
+) {
+	return true, true, nil, "", nil
 }
 
 func (v *TestProviderImp) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {

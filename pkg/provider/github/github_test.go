@@ -380,6 +380,7 @@ func TestProvider_Detect(t *testing.T) {
 		processReq    bool
 		event         interface{}
 		eventType     string
+		wantReason    string
 	}{
 		{
 			name:       "not a github Event",
@@ -411,10 +412,10 @@ func TestProvider_Detect(t *testing.T) {
 			event: github.CommitCommentEvent{
 				Action: github.String("something"),
 			},
-			eventType:     "commit_comment",
-			wantErrString: "github: event commit_comment is not supported",
-			isGH:          true,
-			processReq:    false,
+			eventType:  "commit_comment",
+			wantReason: "event \"commit_comment\" is not supported",
+			isGH:       true,
+			processReq: false,
 		},
 		{
 			name: "invalid check run Event",
@@ -571,9 +572,13 @@ func TestProvider_Detect(t *testing.T) {
 			header := &http.Header{}
 			header.Set("X-GitHub-Event", tt.eventType)
 
-			isGh, processReq, _, err := gprovider.Detect(header, string(jeez), logger)
+			isGh, processReq, _, reason, err := gprovider.Detect(header, string(jeez), logger)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
+				return
+			}
+			if tt.wantReason != "" {
+				assert.Assert(t, strings.Contains(reason, tt.wantReason), reason, tt.wantReason)
 				return
 			}
 			assert.NilError(t, err)
