@@ -260,12 +260,12 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 			}
 			return setLoggerAndProceed(false, "", nil)
 		}
-		return setLoggerAndProceed(false, fmt.Sprintf("not a gitops pull request comment"), nil)
+		return setLoggerAndProceed(false, "not a gitops pull request comment", nil)
 	case *github.PushEvent:
 		if gitEvent.GetPusher() != nil {
 			return setLoggerAndProceed(true, "", nil)
 		}
-		return setLoggerAndProceed(false, fmt.Sprintf("no push in event"), nil)
+		return setLoggerAndProceed(false, "no push in event", nil)
 
 	case *github.PullRequestEvent:
 		if provider.Valid(gitEvent.GetAction(), []string{"opened", "synchronize", "reopened"}) {
