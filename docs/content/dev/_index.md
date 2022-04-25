@@ -60,6 +60,22 @@ override it you can set the `PAC_DIRS` environment variable.
   instead of ko. `-c` will only do the pac configuration (ie: creation of
   secrets/ingress etc..)
 
+## Debugging controller
+
+Create a [smee](https://smee.io) URL and point your app/webhook to it. Use
+[gosmee](https://github.com/chmouel/gosmee) to forward the requests from github to your locally
+installed controller (this can be either run on your debugger or inside kind).
+
+An option of gosmee is to save the replay to a directory with `--saveDir
+/tmp/save`. If go to that directory a shell script will be created to replay
+the request that was sent directly to the controller without having to go via
+another push.
+
+Use [snazy](https://github.com/chmouel/snazy) to watch the logs, it support pac
+by adding some context like which github provider.
+
+![snazy screenshot](/images/pac-snazy.png)
+
 ## Using the Makefile targets
 
 Several target in the Makefile is available, if you need to run them
@@ -143,7 +159,7 @@ need to go to this URL:
 
 <https://main.pipelines-as-code.pages.dev>
 
-## Documentation when we are doign the Release Process
+## Documentation when we are doing the Release Process
 
 - See here [release-process](release-process)
 
@@ -159,7 +175,7 @@ need to have on your system:
 - [hugo](https://gohugo.io) - For documentation
 - [ko](https://github.com/google/ko) - To rebuild and push change to kube cluster.
 - [kind](https://kind.sigs.k8s.io/) - For local devs
-- [sugarjazy](https://github.com/chmouel/sugarjazy) - To parse json logs nicely
+- [snazy](https://github.com/chmouel/snazy) - To parse json logs nicely
 - [pre-commit](https://pre-commit.com/) - For checking commits before sending it
   to the outer loop.
 - [pass](https://www.passwordstore.org/) - For getting/storing secrets
