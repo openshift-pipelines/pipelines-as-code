@@ -21,10 +21,15 @@ const apiPublicURL = "https://api.github.com/"
 
 type Provider struct {
 	Client        *github.Client
+	Logger        *zap.SugaredLogger
 	Token, APIURL *string
 	ApplicationID *int64
 
 	CheckRunIDS *sync.Map
+}
+
+func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
+	v.Logger = logger
 }
 
 func (v *Provider) Validate(ctx context.Context, cs *params.Run, event *info.Event) error {

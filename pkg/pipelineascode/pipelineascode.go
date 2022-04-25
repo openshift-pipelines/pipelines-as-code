@@ -19,6 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,14 +33,15 @@ const (
 )
 
 type PacRun struct {
-	event *info.Event
-	vcx   provider.Interface
-	run   *params.Run
-	k8int kubeinteraction.Interface
+	event  *info.Event
+	vcx    provider.Interface
+	run    *params.Run
+	k8int  kubeinteraction.Interface
+	logger *zap.SugaredLogger
 }
 
-func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, k8int kubeinteraction.Interface) PacRun {
-	return PacRun{event: event, run: run, vcx: vcx, k8int: k8int}
+func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, k8int kubeinteraction.Interface, logger *zap.SugaredLogger) PacRun {
+	return PacRun{event: event, run: run, vcx: vcx, k8int: k8int, logger: logger}
 }
 
 // matchRepoPR matches the repo and the PRs from the event
@@ -52,11 +54,11 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 
 	if repo == nil {
 		if p.event.Provider.Token == "" {
-			p.run.Clients.Log.Warn("cannot set status since no token has been set")
+			p.logger.Warn("cannot set status since no token has been set")
 			return nil, nil, nil
 		}
 		msg := fmt.Sprintf("cannot find a namespace match for %s", p.event.URL)
-		p.run.Clients.Log.Warn(msg)
+		p.logger.Warn(msg)
 
 		status := provider.StatusOpts{
 			Status:     "completed",
@@ -80,7 +82,7 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	// so instead of having to specify their in Repo each time, they use a
 	// shared one from pac.
 	if repo.Spec.GitProvider != nil {
-		err := secretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo)
+		err := secretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo, p.logger)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -112,7 +114,7 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 
 	if !allowed {
 		msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", p.event.Sender)
-		p.run.Clients.Log.Info(msg)
+		p.logger.Info(msg)
 		if p.event.AccountID != "" {
 			msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", p.event.Sender, p.event.AccountID)
 		}
@@ -128,23 +130,23 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 		return nil, nil, nil
 	}
 
-	pipelineRuns, err := getAllPipelineRuns(ctx, p.run, p.vcx, p.event)
+	pipelineRuns, err := getAllPipelineRuns(ctx, p.logger, p.run, p.vcx, p.event)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	if pipelineRuns == nil {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
-		p.run.Clients.Log.Info(msg)
+		p.logger.Info(msg)
 		return nil, nil, nil
 	}
 
 	// Match the PipelineRun with annotation
-	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, pipelineRuns, p.run, p.event)
+	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event)
 	if err != nil {
 		// Don't fail when you don't have a match between pipeline and annotations
 		// TODO: better reporting
-		p.run.Clients.Log.Warn(err.Error())
+		p.logger.Warn(err.Error())
 		return nil, nil, nil
 	}
 
@@ -161,7 +163,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 			DetailsURL: p.run.Clients.ConsoleUI.URL(),
 		})
 		if createStatusErr != nil {
-			p.run.Clients.Log.Errorf("Cannot create status: %s %s", err, createStatusErr)
+			p.logger.Errorf("Cannot create status: %s %s", err, createStatusErr)
 		}
 	}
 
@@ -169,8 +171,8 @@ func (p *PacRun) Run(ctx context.Context) error {
 	// it shows more when we do multiplex so disabling it for now.
 	// we probably need a new design.
 	if len(matchedPRs) > 1 {
-		p.run.Clients.Log.Infof("we have matched %d pipelineruns on this event", len(matchedPRs))
-		p.run.Clients.Log.Infof("disabling auto secret creation in a multiprs run")
+		p.logger.Infof("we have matched %d pipelineruns on this event", len(matchedPRs))
+		p.logger.Infof("disabling auto secret creation in a multiprs run")
 		p.run.Info.Pac.SecretAutoCreation = false
 	}
 
@@ -184,7 +186,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 		go func(match matcher.Match) {
 			defer wg.Done()
 			if err := p.startPR(ctx, match); err != nil {
-				p.run.Clients.Log.Errorf("PipelineRun %s has failed: %s", match.PipelineRun.GetGenerateName(), err.Error())
+				p.logger.Errorf("PipelineRun %s has failed: %s", match.PipelineRun.GetGenerateName(), err.Error())
 			}
 		}(match)
 	}
@@ -196,7 +198,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 	// Automatically create a secret with the token to be reused by git-clone task
 	if p.run.Info.Pac.SecretAutoCreation {
-		if err := p.k8int.CreateBasicAuthSecret(ctx, p.event, match.Repo.GetNamespace()); err != nil {
+		if err := p.k8int.CreateBasicAuthSecret(ctx, p.logger, p.event, match.Repo.GetNamespace()); err != nil {
 			return fmt.Errorf("creating basic auth secret has failed: %w ", err)
 		}
 	}
@@ -213,7 +215,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 	}
 
 	// Create status with the log url
-	p.run.Clients.Log.Infof("pipelinerun %s has been created in namespace %s for SHA: %s Target Branch: %s",
+	p.logger.Infof("pipelinerun %s has been created in namespace %s for SHA: %s Target Branch: %s",
 		pr.GetName(), match.Repo.GetNamespace(), p.event.SHA, p.event.BaseBranch)
 	consoleURL := p.run.Clients.ConsoleUI.DetailURL(match.Repo.GetNamespace(), pr.GetName())
 	// Create status with the log url
@@ -238,7 +240,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 		// Tekton Pipeline controller should always set this value.
 		duration = pr.Spec.Timeout.Duration + 1*time.Minute
 	}
-	p.run.Clients.Log.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes",
+	p.logger.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes",
 		pr.Namespace, pr.Name, formatting.HumanDuration(duration))
 	if err := p.k8int.WaitForPipelineRunSucceed(ctx, p.run.Clients.Tekton.TektonV1beta1(), pr, duration); err != nil {
 		// if we have a timeout from the pipeline run, we would not know it. We would need to get the PR status to know.
@@ -254,7 +256,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 			return err
 		}
 
-		err = p.k8int.CleanupPipelines(ctx, match.Repo, pr, max)
+		err = p.k8int.CleanupPipelines(ctx, p.logger, match.Repo, pr, max)
 		if err != nil {
 			return err
 		}
@@ -262,7 +264,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 
 	// remove the generated secret after completion of pipelinerun
 	if p.run.Info.Pac.SecretAutoCreation {
-		err = p.k8int.DeleteBasicAuthSecret(ctx, p.event, match.Repo.GetNamespace())
+		err = p.k8int.DeleteBasicAuthSecret(ctx, p.logger, p.event, match.Repo.GetNamespace())
 		if err != nil {
 			return fmt.Errorf("deleting basic auth secret has failed: %w ", err)
 		}
@@ -270,7 +272,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 
 	// Post the final status to GitHub check status with a nice breakdown and
 	// tekton cli describe output.
-	newPr, err := postFinalStatus(ctx, p.run, p.vcx, p.event, pr)
+	newPr, err := p.postFinalStatus(ctx, pr)
 	if err != nil {
 		return err
 	}
@@ -278,7 +280,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 	return p.updateRepoRunStatus(ctx, newPr, match.Repo)
 }
 
-func getAllPipelineRuns(ctx context.Context, cs *params.Run, providerintf provider.Interface, event *info.Event) ([]*tektonv1beta1.PipelineRun, error) {
+func getAllPipelineRuns(ctx context.Context, logger *zap.SugaredLogger, cs *params.Run, providerintf provider.Interface, event *info.Event) ([]*tektonv1beta1.PipelineRun, error) {
 	// Get everything in tekton directory
 	allTemplates, err := providerintf.GetTektonDir(ctx, event, tektonDir)
 	if allTemplates == "" || err != nil {
@@ -290,7 +292,7 @@ func getAllPipelineRuns(ctx context.Context, cs *params.Run, providerintf provid
 	allTemplates = templates.Process(event, allTemplates)
 
 	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
-	return resolve.Resolve(ctx, cs, providerintf, event, allTemplates, &resolve.Opts{
+	return resolve.Resolve(ctx, cs, logger, providerintf, event, allTemplates, &resolve.Opts{
 		GenerateName: true,
 		RemoteTasks:  cs.Info.Pac.RemoteTasks,
 	})

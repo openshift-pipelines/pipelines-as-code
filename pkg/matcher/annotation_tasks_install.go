@@ -42,7 +42,7 @@ func (rt RemoteTasks) convertTotask(data string) (*tektonv1beta1.Task, error) {
 	return task, nil
 }
 
-func (rt RemoteTasks) getTask(ctx context.Context, providerintf provider.Interface, event *info.Event, task string) (*tektonv1beta1.Task, error) {
+func (rt RemoteTasks) getTask(ctx context.Context, logger *zap.SugaredLogger, providerintf provider.Interface, event *info.Event, task string) (*tektonv1beta1.Task, error) {
 	var ret *tektonv1beta1.Task
 
 	// TODO: print a log info when getting the task from which location
@@ -65,7 +65,7 @@ func (rt RemoteTasks) getTask(ctx context.Context, providerintf provider.Interfa
 				return ret, err
 			}
 		} else {
-			data, err = getTaskFromLocalFS(task, rt.Run.Clients.Log)
+			data, err = getTaskFromLocalFS(task, logger)
 			if err != nil {
 				return nil, err
 			}
@@ -85,7 +85,7 @@ func (rt RemoteTasks) getTask(ctx context.Context, providerintf provider.Interfa
 }
 
 // GetTaskFromAnnotations Get task remotely if they are on Annotations
-func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, providerintf provider.Interface, event *info.Event, annotations map[string]string) ([]*tektonv1beta1.Task, error) {
+func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, logger *zap.SugaredLogger, providerintf provider.Interface, event *info.Event, annotations map[string]string) ([]*tektonv1beta1.Task, error) {
 	var ret []*tektonv1beta1.Task
 	rtareg := regexp.MustCompile(fmt.Sprintf("%s/%s", pipelinesascode.GroupName, taskAnnotationsRegexp))
 	for annotationK, annotationV := range annotations {
@@ -97,7 +97,7 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, providerintf p
 			return ret, err
 		}
 		for _, v := range tasks {
-			task, err := rt.getTask(ctx, providerintf, event, v)
+			task, err := rt.getTask(ctx, logger, providerintf, event, v)
 			if err != nil {
 				return ret, err
 			}

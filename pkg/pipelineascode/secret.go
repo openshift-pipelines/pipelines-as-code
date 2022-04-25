@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"go.uber.org/zap"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 )
 
 // secretFromRepository grab the secret from the repository CRD
-func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.ProviderConfig, event *info.Event, repo *apipac.Repository) error {
+func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.ProviderConfig, event *info.Event, repo *apipac.Repository, logger *zap.SugaredLogger) error {
 	var err error
 	if repo.Spec.GitProvider.URL == "" {
 		repo.Spec.GitProvider.URL = config.APIURL
@@ -76,7 +77,7 @@ func secretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 			repo.Spec.GitProvider.WebhookSecret.Name,
 			gitProviderWebhookSecretKey)
 	}
-	cs.Clients.Log.Infof(logmsg)
+	logger.Infof(logmsg)
 	return nil
 }
 

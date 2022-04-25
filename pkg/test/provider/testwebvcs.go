@@ -19,9 +19,8 @@ type TestProviderImp struct {
 	FilesInsideRepo      map[string]string
 }
 
-// func (v *TestProviderImp) ParseEventType(request *http.Request, event *info.Event) error {
-//	return nil
-// }
+func (v *TestProviderImp) SetLogger(logger *zap.SugaredLogger) {
+}
 
 func (v *TestProviderImp) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
 	return nil

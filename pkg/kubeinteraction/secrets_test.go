@@ -100,12 +100,11 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 				Run: &params.Run{
 					Clients: clients.Clients{
 						Kube: stdata.Kube,
-						Log:  fakelogger,
 					},
 				},
 			}
 			tt.event.Provider.Token = secrete
-			err := kint.CreateBasicAuthSecret(ctx, tt.event, tt.targetNS)
+			err := kint.CreateBasicAuthSecret(ctx, fakelogger, tt.event, tt.targetNS)
 			assert.NilError(t, err)
 
 			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})
@@ -185,11 +184,10 @@ func TestDeleteBasicAuthSecret(t *testing.T) {
 				Run: &params.Run{
 					Clients: clients.Clients{
 						Kube: stdata.Kube,
-						Log:  fakelogger,
 					},
 				},
 			}
-			err := kint.DeleteBasicAuthSecret(ctx, &tt.event, tt.targetNS)
+			err := kint.DeleteBasicAuthSecret(ctx, fakelogger, &tt.event, tt.targetNS)
 			assert.NilError(t, err)
 
 			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})

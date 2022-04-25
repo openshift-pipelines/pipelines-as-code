@@ -108,9 +108,7 @@ func TestSecretFromRepository(t *testing.T) {
 				GetSecretResult: retsecret,
 			}
 			cs := &params.Run{
-				Clients: clients.Clients{
-					Log: logger,
-				},
+				Clients: clients.Clients{},
 				Info: info.Info{
 					Pac: &info.PacOpts{
 						WebhookType: tt.providerType,
@@ -118,7 +116,7 @@ func TestSecretFromRepository(t *testing.T) {
 				},
 			}
 			event := info.NewEvent()
-			err := secretFromRepository(ctx, cs, k8int, tt.providerconfig, event, tt.repo)
+			err := secretFromRepository(ctx, cs, k8int, tt.providerconfig, event, tt.repo, logger)
 			assert.NilError(t, err)
 			logs := log.TakeAll()
 			assert.Equal(t, len(tt.logmatch), len(logs), "we didn't get the number of logging message: %+v", logs)

@@ -32,7 +32,6 @@ func TestHandleEvent(t *testing.T) {
 		run: &params.Run{
 			Clients: clients.Clients{
 				PipelineAsCode: cs.PipelineAsCode,
-				Log:            getLogger(),
 			},
 		},
 		logger: getLogger(),

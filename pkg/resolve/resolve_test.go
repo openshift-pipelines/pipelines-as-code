@@ -42,10 +42,8 @@ func readTDfile(t *testing.T, testname string, generateName bool, remoteTasking 
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	cs := &params.Run{
-		Clients: clients.Clients{
-			Log: logger,
-		},
-		Info: info.Info{},
+		Clients: clients.Clients{},
+		Info:    info.Info{},
 	}
 	ropt := &Opts{
 		GenerateName: generateName,
@@ -53,7 +51,7 @@ func readTDfile(t *testing.T, testname string, generateName bool, remoteTasking 
 	}
 	event := &info.Event{}
 	tprovider := &testprovider.TestProviderImp{}
-	resolved, err := Resolve(ctx, cs, tprovider, event, string(data), ropt)
+	resolved, err := Resolve(ctx, cs, logger, tprovider, event, string(data), ropt)
 	if err != nil {
 		return &tektonv1beta1.PipelineRun{}, nil, err
 	}
