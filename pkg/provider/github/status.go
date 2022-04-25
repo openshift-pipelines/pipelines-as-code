@@ -177,16 +177,16 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, pacop
 
 	switch statusOpts.Conclusion {
 	case "success":
-		statusOpts.Title = "✅ Success"
+		statusOpts.Title = "Success"
 		statusOpts.Summary = "has <b>successfully</b> validated your commit."
 	case "failure":
-		statusOpts.Title = "❌ Failed"
+		statusOpts.Title = "Failed"
 		statusOpts.Summary = "has <b>failed</b>."
 	case "skipped":
-		statusOpts.Title = "➖ Skipped"
+		statusOpts.Title = "Skipped"
 		statusOpts.Summary = "is skipping this commit."
 	case "neutral":
-		statusOpts.Title = "❓ Unknown"
+		statusOpts.Title = "Unknown"
 		statusOpts.Summary = "doesn't know what happened with this commit."
 	}
 
