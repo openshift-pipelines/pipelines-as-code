@@ -82,7 +82,7 @@ spec:
                         key:
                           type: string
                           description: "Key inside the secret"
-                          default: "token"
+                          default: "provider.token"
                         name:
                           type: string
                           description: "The secret name"
@@ -92,7 +92,7 @@ spec:
                         key:
                           type: string
                           description: "Key inside the secret"
-                          default: "secret"
+                          default: "webhook.secret"
                         name:
                           type: string
                           description: "The secret name"

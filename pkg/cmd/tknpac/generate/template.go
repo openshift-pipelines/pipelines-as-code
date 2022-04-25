@@ -91,9 +91,13 @@ func (o *Opts) genTmpl() (bytes.Buffer, error) {
 	// can't figure out how ParseFS works, so doing this manually..
 	t := template.Must(template.New("PipelineRun").Delims("<<", ">>").Parse(string(tmplB)))
 
-	prName := fmt.Sprintf("%s-%s",
-		filepath.Base(o.GitInfo.URL),
-		strings.ReplaceAll(o.Event.EventType, "_", "-"))
+	prName := filepath.Base(o.GitInfo.URL)
+
+	// if eventType has both the events [push, pull_request] then skip
+	// adding it to pipelinerun name
+	if !strings.Contains(o.Event.EventType, ",") {
+		prName = prName + "-" + strings.ReplaceAll(o.Event.EventType, "_", "-")
+	}
 
 	lang, err := o.detectLanguage()
 	if err != nil {
