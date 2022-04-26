@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
 
@@ -33,13 +34,14 @@ func Process(event *info.Event, template string) string {
 	}
 
 	maptemplate := map[string]string{
-		"revision":      event.SHA,
-		"repo_url":      repoURL,
-		"repo_owner":    strings.ToLower(event.Organization),
-		"repo_name":     strings.ToLower(event.Repository),
-		"target_branch": formatting.SanitizeBranch(event.BaseBranch),
-		"source_branch": formatting.SanitizeBranch(event.HeadBranch),
-		"sender":        strings.ToLower(event.Sender),
+		"revision":        event.SHA,
+		"repo_url":        repoURL,
+		"repo_owner":      strings.ToLower(event.Organization),
+		"repo_name":       strings.ToLower(event.Repository),
+		"target_branch":   formatting.SanitizeBranch(event.BaseBranch),
+		"source_branch":   formatting.SanitizeBranch(event.HeadBranch),
+		"sender":          strings.ToLower(event.Sender),
+		"git_auth_secret": kubeinteraction.GetBasicAuthSecretName(event),
 	}
 	// we don't want to get a 0 replaced
 	if event.PullRequestNumber != 0 {

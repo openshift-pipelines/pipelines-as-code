@@ -167,15 +167,6 @@ func (p *PacRun) Run(ctx context.Context) error {
 		}
 	}
 
-	// TODO: We need to figure out secretCreation, it's buggy normally without multiplexing ie:bug #543
-	// it shows more when we do multiplex so disabling it for now.
-	// we probably need a new design.
-	if len(matchedPRs) > 1 {
-		p.logger.Infof("we have matched %d pipelineruns on this event", len(matchedPRs))
-		p.logger.Infof("disabling auto secret creation in a multiprs run")
-		p.run.Info.Pac.SecretAutoCreation = false
-	}
-
 	var wg sync.WaitGroup
 	for _, match := range matchedPRs {
 		if match.Repo == nil {
@@ -196,9 +187,12 @@ func (p *PacRun) Run(ctx context.Context) error {
 }
 
 func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
+	var gitAuthSecretName string
+
 	// Automatically create a secret with the token to be reused by git-clone task
 	if p.run.Info.Pac.SecretAutoCreation {
-		if err := p.k8int.CreateBasicAuthSecret(ctx, p.logger, p.event, match.Repo.GetNamespace()); err != nil {
+		var err error
+		if gitAuthSecretName, err = p.k8int.CreateBasicAuthSecret(ctx, p.logger, p.event, match.Repo.GetNamespace()); err != nil {
 			return fmt.Errorf("creating basic auth secret has failed: %w ", err)
 		}
 	}
@@ -264,7 +258,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 
 	// remove the generated secret after completion of pipelinerun
 	if p.run.Info.Pac.SecretAutoCreation {
-		err = p.k8int.DeleteBasicAuthSecret(ctx, p.logger, p.event, match.Repo.GetNamespace())
+		err = p.k8int.DeleteBasicAuthSecret(ctx, p.logger, match.Repo.GetNamespace(), gitAuthSecretName)
 		if err != nil {
 			return fmt.Errorf("deleting basic auth secret has failed: %w ", err)
 		}

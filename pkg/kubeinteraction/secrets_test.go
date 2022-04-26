@@ -1,6 +1,8 @@
 package kubeinteraction
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -62,32 +64,33 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 	lowercaseEvent.URL = "https://forge/UPPER/CASE"
 
 	tests := []struct {
-		name                   string
-		targetNS               string
-		event                  *info.Event
-		expectedGitCredentials string
-		expectedSecretName     string
+		name                    string
+		targetNS                string
+		event                   *info.Event
+		expectedGitCredentials  string
+		expectedStartSecretName string
+		expectedError           bool
 	}{
 		{
-			name:                   "Target secret not there",
-			targetNS:               nsNotThere,
-			event:                  event,
-			expectedGitCredentials: "https://git:verysecrete@forge/owner/repo",
-			expectedSecretName:     "pac-git-basic-auth-owner-repo",
+			name:                    "Target secret not there",
+			targetNS:                nsNotThere,
+			event:                   event,
+			expectedGitCredentials:  "https://git:verysecrete@forge/owner/repo",
+			expectedStartSecretName: "pac-gitauth-owner-repo",
 		},
 		{
-			name:                   "Target secret already there",
-			targetNS:               nsthere,
-			event:                  event,
-			expectedGitCredentials: "https://git:verysecrete@forge/owner/repo",
-			expectedSecretName:     "pac-git-basic-auth-owner-repo",
+			name:                    "Target secret already there",
+			targetNS:                nsthere,
+			event:                   event,
+			expectedGitCredentials:  "https://git:verysecrete@forge/owner/repo",
+			expectedStartSecretName: "pac-gitauth-owner-repo",
 		},
 		{
-			name:                   "Lowercase secrets",
-			targetNS:               nsthere,
-			event:                  lowercaseEvent,
-			expectedGitCredentials: "https://git:verysecrete@forge/UPPER/CASE",
-			expectedSecretName:     "pac-git-basic-auth-upper-case",
+			name:                    "Lowercase secrets",
+			targetNS:                nsthere,
+			event:                   lowercaseEvent,
+			expectedGitCredentials:  "https://git:verysecrete@forge/UPPER/CASE",
+			expectedStartSecretName: "pac-gitauth-upper-case",
 		},
 	}
 	for _, tt := range tests {
@@ -104,7 +107,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 				},
 			}
 			tt.event.Provider.Token = secrete
-			err := kint.CreateBasicAuthSecret(ctx, fakelogger, tt.event, tt.targetNS)
+			_, err := kint.CreateBasicAuthSecret(ctx, fakelogger, tt.event, tt.targetNS)
 			assert.NilError(t, err)
 
 			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})
@@ -113,12 +116,12 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 
 			found := false
 			for _, s := range slist.Items {
-				if s.Name == tt.expectedSecretName && s.StringData[".git-credentials"] == tt.expectedGitCredentials {
+				if strings.HasPrefix(s.GetName(), tt.expectedStartSecretName) && s.StringData[".git-credentials"] == tt.expectedGitCredentials {
 					found = true
 				}
 			}
 			if !found {
-				t.Fatal("failed to create secret ", tt.expectedSecretName)
+				t.Fatal(fmt.Sprintf("we could not find the secret %s out of secrets created: %+v", tt.expectedStartSecretName, slist.Items))
 			}
 		})
 	}
@@ -187,14 +190,14 @@ func TestDeleteBasicAuthSecret(t *testing.T) {
 					},
 				},
 			}
-			err := kint.DeleteBasicAuthSecret(ctx, fakelogger, &tt.event, tt.targetNS)
+			err := kint.DeleteBasicAuthSecret(ctx, fakelogger, "", tt.targetNS)
 			assert.NilError(t, err)
 
 			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
 
 			found := false
-			secretName := getBasicAuthSecretName(&tt.event)
+			secretName := GetBasicAuthSecretName(&tt.event)
 			for _, s := range slist.Items {
 				if s.Name == secretName {
 					found = true
@@ -205,4 +208,10 @@ func TestDeleteBasicAuthSecret(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetBasicAuthSecret(t *testing.T) {
+	t1 := GetBasicAuthSecretName(&info.Event{})
+	t2 := GetBasicAuthSecretName(&info.Event{})
+	assert.Assert(t, t1 != t2)
 }

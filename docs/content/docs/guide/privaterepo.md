@@ -10,11 +10,11 @@ in the target namespace with the user token for the
 to use and be able to clone private repositories.
 
 Whenever Pipelines as Code create a new PipelineRun in the target namespace it
-will create or update a secret called :
+will create or update a secret called:
 
-`pac-git-basic-auth-REPOSITORY_OWNER-REPOSITORY_NAME`
+`pac-gitauth-REPOSITORY_OWNER-REPOSITORY_NAME-RANDOM_STRING`
 
-The secret contains a `.gitconfig` and a Git credentials `.git-credentials` with
+The secret contains a `.gitconfig` and Git credentials `.git-credentials` with
 the https URL using the token it discovered from the GitHub application or
 attached to the secret.
 
@@ -22,7 +22,7 @@ As documented :
 
 <https://github.com/tektoncd/catalog/blob/main/task/git-clone/0.4/README.md>
 
-the secret needs to be referenced inside your PipelineRun and Pipeline as a
+The secret needs to be referenced inside your PipelineRun and Pipeline as a
 workspace called basic-auth to be passed to the `git-clone` task.
 
 For example in your PipelineRun you will add the workspace referencing the
@@ -32,10 +32,10 @@ Secret :
   workspace:
   - name: basic-auth
     secret:
-      secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"
+      secretName: "{{ git_auth_secret }}"
 ```
 
-And inside your pipeline, you are referencing them for the `git-clone` to reuse  :
+And inside your pipeline, you are referencing them for the `git-clone` to reuse:
 
 ```yaml
 […]

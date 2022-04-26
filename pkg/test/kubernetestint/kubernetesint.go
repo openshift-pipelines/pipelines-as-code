@@ -27,11 +27,11 @@ func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string)
 	return k.ConsoleURL, nil
 }
 
-func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) error {
-	return nil
+func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) (string, error) {
+	return "", nil
 }
 
-func (k *KinterfaceTest) DeleteBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) error {
+func (k *KinterfaceTest) DeleteBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, targetNamespace, secretName string) error {
 	return nil
 }
 

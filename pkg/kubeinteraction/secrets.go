@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -16,7 +17,7 @@ import (
 
 const (
 	// nolint:gosec
-	basicAuthSecretName    = `pac-git-basic-auth-%s-%s`
+	basicAuthSecretName    = `pac-gitauth-%s-%s-%s`
 	basicAuthGitConfigData = `
 	[credential "%s"]
 	helper=store
@@ -36,7 +37,7 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 }
 
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
-func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) error {
+func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) (string, error) {
 	// Bitbucket Server have a different Clone URL than it's Repo URL, so we
 	// have to separate them 👨‍🏭
 	cloneURL := runevent.URL
@@ -46,7 +47,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.Suga
 
 	repoURL, err := url.Parse(cloneURL)
 	if err != nil {
-		return fmt.Errorf("cannot parse url %s: %w", cloneURL, err)
+		return "", fmt.Errorf("cannot parse url %s: %w", cloneURL, err)
 	}
 
 	gitUser := provider.DefaultProviderAPIUser
@@ -73,21 +74,15 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.Suga
 
 	// Try to create secrete if that fails then delete it first and then create
 	// This allows up not to give List and Get right clusterwide
-	secretName := getBasicAuthSecretName(runevent)
+	secretName := GetBasicAuthSecretName(runevent)
 	err = k.createSecret(ctx, secretData, targetNamespace, secretName)
+	// this should not happen since each secret  is unique with a random string
 	if err != nil {
-		err = k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-		if err == nil {
-			err = k.createSecret(ctx, secretData, targetNamespace, secretName)
-		}
-	}
-
-	if err != nil {
-		return fmt.Errorf("cannot create secret: %w", err)
+		return "", fmt.Errorf("cannot create git auth secret %s: %w", secretName, err)
 	}
 
 	logger.Infof("Secret %s has been generated in namespace %s", secretName, targetNamespace)
-	return nil
+	return secretName, nil
 }
 
 func (k Interaction) GetSecret(ctx context.Context, secretopt GetSecretOpt) (string, error) {
@@ -99,13 +94,14 @@ func (k Interaction) GetSecret(ctx context.Context, secretopt GetSecretOpt) (str
 	return string(secret.Data[secretopt.Key]), nil
 }
 
-func getBasicAuthSecretName(runEvent *info.Event) string {
-	return fmt.Sprintf(basicAuthSecretName, strings.ToLower(runEvent.Organization), strings.ToLower(runEvent.Repository))
+func GetBasicAuthSecretName(e *info.Event) string {
+	return strings.ToLower(
+		fmt.Sprintf(basicAuthSecretName, strings.ToLower(e.Organization), (e.Repository),
+			random.AlphaString(4)))
 }
 
 // DeleteBasicAuthSecret deletes the secret created for git-clone basic-auth
-func (k Interaction) DeleteBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runEvent *info.Event, targetNamespace string) error {
-	secretName := getBasicAuthSecretName(runEvent)
+func (k Interaction) DeleteBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, targetNamespace, secretName string) error {
 	err := k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err

@@ -135,7 +135,7 @@ func Test_getRepoByCR(t *testing.T) {
 				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.GetNamespace(), tt.wantTargetNS)
 			}
 			if tt.wantTargetNS != "" && got == nil {
-				t.Errorf("GetRepoByCR() got = '%v', want '%v'", got.GetNamespace(), tt.wantTargetNS)
+				t.Errorf("GetRepoByCR() want nil got '%v'", tt.wantTargetNS)
 			}
 
 			if tt.wantTargetNS != "" && tt.wantTargetNS != got.GetNamespace() {
