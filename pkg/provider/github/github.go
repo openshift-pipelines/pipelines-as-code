@@ -246,7 +246,7 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		if gitEvent.GetAction() == "rerequested" && gitEvent.GetCheckRun() != nil {
 			return setLoggerAndProceed(true, "", nil)
 		}
-		return setLoggerAndProceed(false, fmt.Sprintf("unsupported action \"%s\"", gitEvent.GetAction()), nil)
+		return setLoggerAndProceed(false, fmt.Sprintf("check_run: unsupported action \"%s\"", gitEvent.GetAction()), nil)
 
 	case *github.IssueCommentEvent:
 		if gitEvent.GetAction() == "created" &&
@@ -260,18 +260,18 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 			}
 			return setLoggerAndProceed(false, "", nil)
 		}
-		return setLoggerAndProceed(false, "not a gitops pull request comment", nil)
+		return setLoggerAndProceed(false, "issue: not a gitops pull request comment", nil)
 	case *github.PushEvent:
 		if gitEvent.GetPusher() != nil {
 			return setLoggerAndProceed(true, "", nil)
 		}
-		return setLoggerAndProceed(false, "no push in event", nil)
+		return setLoggerAndProceed(false, "push: no pusher in event", nil)
 
 	case *github.PullRequestEvent:
 		if provider.Valid(gitEvent.GetAction(), []string{"opened", "synchronize", "reopened"}) {
 			return setLoggerAndProceed(true, "", nil)
 		}
-		return setLoggerAndProceed(false, fmt.Sprintf("unsupported action \"%s\"", gitEvent.GetAction()), nil)
+		return setLoggerAndProceed(false, fmt.Sprintf("pull_request: unsupported action \"%s\"", gitEvent.GetAction()), nil)
 
 	default:
 		return setLoggerAndProceed(false, fmt.Sprintf("github: event \"%v\" is not supported", event), nil)
