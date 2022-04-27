@@ -39,12 +39,6 @@ func createPacSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts, 
 	return nil
 }
 
-// checkSecret checks if the secret exists
-func checkSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) bool {
-	_, err := run.Clients.Kube.CoreV1().Secrets(opts.targetNamespace).Get(ctx, secretName, metav1.GetOptions{})
-	return err == nil
-}
-
 // check if we have the namespace created
 func checkNS(ctx context.Context, run *params.Run, targetNamespace string) (bool, error) {
 	ns, err := run.Clients.Kube.CoreV1().Namespaces().Get(ctx, targetNamespace, metav1.GetOptions{})

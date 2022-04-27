@@ -35,7 +35,6 @@ type bootstrapOpts struct {
 	cliOpts         *cli.PacCliOpts
 	ioStreams       *cli.IOStreams
 	targetNamespace string
-	recreateSecret  bool
 
 	RouteName              string
 	GithubAPIURL           string
@@ -93,7 +92,6 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 
 func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	var err error
-	opts.recreateSecret = checkSecret(ctx, run, opts)
 
 	if opts.RouteName == "" {
 		opts.RouteName, _ = DetectOpenShiftRoute(ctx, run, opts.targetNamespace)
@@ -102,7 +100,7 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 		return err
 	}
 
-	if opts.recreateSecret {
+	if opts.forceGitHubApp {
 		if err := deleteSecret(ctx, run, opts); err != nil {
 			return err
 		}
@@ -145,7 +143,9 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 			if !opts.forceGitHubApp {
 				if pacInfo.Provider == provider.ProviderGitHubApp {
-					return fmt.Errorf("skipping bootstraping GitHub App, as it is already configured. Please pass --force to override existing")
+					// nolint
+					fmt.Printf("👌 Skips bootstrapping GitHub App, as one is already configured. Please pass --force-configure to override existing\n")
+					return nil
 				}
 			}
 
@@ -202,7 +202,9 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 			if !opts.forceGitHubApp {
 				if pacInfo.Provider == provider.ProviderGitHubApp {
-					return fmt.Errorf("skipping bootstraping GitHub App, as it is already configured. Please pass --override-app to override existing")
+					// nolint
+					fmt.Printf("👌 Skips bootstrapping GitHub App, as one is already configured. Please pass --force-configure to override existing\n")
+					return nil
 				}
 			}
 

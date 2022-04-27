@@ -61,6 +61,7 @@ func (w *Options) Install(ctx context.Context) error {
 
 	if !w.GitHubWebhook {
 		if webhookProvider.GetName() == provider.ProviderGitHubWebhook && pacInfo.Provider == provider.ProviderGitHubApp {
+			// nolint
 			fmt.Printf("✓ Skips configuring GitHub Webhook as GitHub App is already configured." +
 				" Please pass --github-webhook flag to still configure it")
 			return nil
