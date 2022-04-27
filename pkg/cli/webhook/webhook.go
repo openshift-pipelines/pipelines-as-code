@@ -10,7 +10,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/bootstrap"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
 
 type Interface interface {
@@ -45,7 +44,7 @@ func (w *Options) Install(ctx context.Context) error {
 		return err
 	}
 
-	// check if any other provider is already configured
+	// fetch configmap to get controller url
 	pacInfo, err := info.GetPACInfo(ctx, w.Run, installationNS)
 	if err != nil {
 		return err
@@ -56,12 +55,6 @@ func (w *Options) Install(ctx context.Context) error {
 
 	// TODO: if couldn't detect then ask user providing a list
 	if webhookProvider == nil {
-		return nil
-	}
-
-	// check if a provider is already configured and do we want
-	// to allow this one
-	if !w.proceed(pacInfo.Provider, webhookProvider.GetName()) {
 		return nil
 	}
 
@@ -97,35 +90,7 @@ func (w *Options) Install(ctx context.Context) error {
 	}
 
 	// update repo cr with webhook secret
-	if err := w.updateRepositoryCR(ctx, webhookProvider.GetName()); err != nil {
-		return err
-	}
-
-	// finally update info configmap with the provider configured so that
-	// later if user runs bootstrap, they will know a provider is already
-	// configured
-	return info.UpdateInfoConfigMap(ctx, w.Run, &info.Options{
-		TargetNamespace: installationNS,
-		ControllerURL:   response.ControllerURL,
-		Provider:        provider.ProviderGitHubWebhook,
-	})
-}
-
-func (w *Options) proceed(alreadyConfigured, toConfigure string) bool {
-	if alreadyConfigured == "" {
-		return true
-	}
-
-	// if github app is configured then allow github webhook if
-	// github-webhook flag is passed
-	if alreadyConfigured == provider.ProviderGitHubApp {
-		if toConfigure == provider.ProviderGitHubWebhook && w.GitHubWebhook {
-			return true
-		}
-		return false
-	}
-
-	return alreadyConfigured == toConfigure
+	return w.updateRepositoryCR(ctx, webhookProvider.GetName())
 }
 
 func detectProvider(url string) Interface {
