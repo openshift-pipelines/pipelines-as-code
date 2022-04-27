@@ -171,6 +171,10 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
 		processedEvent.URL = gitEvent.GetRepo().GetHTMLURL()
 		processedEvent.SHA = gitEvent.GetHeadCommit().GetID()
+		// on push event we may not get a head commit but only
+		if processedEvent.SHA == "" {
+			processedEvent.SHA = gitEvent.GetBefore()
+		}
 		processedEvent.SHAURL = gitEvent.GetHeadCommit().GetURL()
 		processedEvent.SHATitle = gitEvent.GetHeadCommit().GetMessage()
 		processedEvent.Sender = gitEvent.GetSender().GetLogin()
