@@ -82,6 +82,8 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL string) error 
 		}, &gh.controllerURL, survey.WithValidator(survey.Required)); err != nil {
 			return err
 		}
+	} else {
+		gh.controllerURL = controllerURL
 	}
 
 	if err := prompt.SurveyAskOne(&survey.Password{
