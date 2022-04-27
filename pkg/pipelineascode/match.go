@@ -3,13 +3,13 @@ package pipelineascode
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
 // matchRepoPR matches the repo and the PRs from the event
@@ -98,13 +98,25 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 		return nil, nil, nil
 	}
 
-	pipelineRuns, err := p.getAllPipelineRuns(ctx)
-	if err != nil {
-		return nil, nil, err
+	rawTemplates := p.getAllPipelineRuns(ctx)
+	// check for condition if need update the pipelinerun with regexp from the
+	// "raw" pipelinerun string
+	if msg, needUpdate := p.checkNeedUpdate(rawTemplates); needUpdate {
+		p.logger.Info(msg)
+		return nil, nil, fmt.Errorf(msg)
 	}
 
-	if pipelineRuns == nil {
+	// Replace those {{var}} placeholders user has in her template to the run.Info variable
+	allTemplates := templates.Process(p.event, rawTemplates)
+	pipelineRuns, err := resolve.Resolve(ctx, p.run, p.logger, p.vcx, p.event, allTemplates, &resolve.Opts{
+		GenerateName: true,
+		RemoteTasks:  p.run.Info.Pac.RemoteTasks,
+	})
+	if pipelineRuns == nil || err != nil {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
+		if err != nil {
+			msg += fmt.Sprintf("err: %s", err.Error())
+		}
 		p.logger.Info(msg)
 		return nil, nil, nil
 	}
@@ -121,20 +133,26 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	return matchedPRs, repo, nil
 }
 
-func (p *PacRun) getAllPipelineRuns(ctx context.Context) ([]*tektonv1beta1.PipelineRun, error) {
+// checkNeedUpdate using regexp, try to match some pattern for some issue in PR
+// to let the user know they need to update. or otherwise we will fail.
+// checks are depreacted/removed to n+1 release of OSP.
+// each check should give a good error message on how to update.
+func (p *PacRun) checkNeedUpdate(tmpl string) (string, bool) {
+	// nolint: gosec
+	oldBasicAuthSecretName := `\W*secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"`
+	if matched, _ := regexp.MatchString(oldBasicAuthSecretName, tmpl); matched {
+		return `!Update needed! you have a old basic auth secret name, you need to modify your pipelinerun and change the string "secret: pac-git-basic-auth-{{repo_owner}}-{{repo_name}}" to "secret: {{ git_auth_secret }}"`, true
+	}
+	return "", false
+}
+
+func (p *PacRun) getAllPipelineRuns(ctx context.Context) string {
 	// Get everything in tekton directory
 	allTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir)
 	if allTemplates == "" || err != nil {
-		// nolint: nilerr
-		return nil, nil
+		if err != nil {
+			p.logger.Errorw("there was an error getting all files in tektondir: %w", err)
+		}
 	}
-
-	// Replace those {{var}} placeholders user has in her template to the run.Info variable
-	allTemplates = templates.Process(p.event, allTemplates)
-
-	// Merge everything (i.e: tasks/pipeline etc..) as a single pipelinerun
-	return resolve.Resolve(ctx, p.run, p.logger, p.vcx, p.event, allTemplates, &resolve.Opts{
-		GenerateName: true,
-		RemoteTasks:  p.run.Info.Pac.RemoteTasks,
-	})
+	return allTemplates
 }
