@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/bootstrap"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
 
 type Interface interface {
@@ -56,6 +57,14 @@ func (w *Options) Install(ctx context.Context) error {
 	// TODO: if couldn't detect then ask user providing a list
 	if webhookProvider == nil {
 		return nil
+	}
+
+	if !w.GitHubWebhook {
+		if webhookProvider.GetName() == provider.ProviderGitHubWebhook && pacInfo.Provider == provider.ProviderGitHubApp {
+			fmt.Printf("✓ Skips configuring GitHub Webhook as GitHub App is already configured." +
+				" Please pass --github-webhook flag to still configure it")
+			return nil
+		}
 	}
 
 	msg := fmt.Sprintf("Would you like me to configure a %s Webhook for your repository? ",
