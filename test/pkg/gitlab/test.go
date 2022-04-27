@@ -9,13 +9,13 @@ var (
 	commitEmail  = "e2e-pipelines@redhat.com"
 )
 
-func PushFilesToRef(client *ghlib.Client, commitMessage, baseBranch, targetRef string, pid int, files map[string]string) error {
+func PushFilesToRef(client *ghlib.Client, commitMessage, baseBranch, targetRef string, pid int, files map[string]string, targetFile string) error {
 	fullYaml := ""
 	for _, content := range files {
 		fullYaml += "---\n"
 		fullYaml += content
 	}
-	_, _, err := client.RepositoryFiles.CreateFile(pid, ".tekton/pr.yaml", &ghlib.CreateFileOptions{
+	_, _, err := client.RepositoryFiles.CreateFile(pid, targetFile, &ghlib.CreateFileOptions{
 		Branch:        ghlib.String(targetRef),
 		StartBranch:   ghlib.String(baseBranch),
 		AuthorEmail:   ghlib.String(commitEmail),

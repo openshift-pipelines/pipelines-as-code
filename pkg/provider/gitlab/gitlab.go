@@ -314,8 +314,9 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path strin
 	}
 
 	opt := &gitlab.ListTreeOptions{
-		Path: gitlab.String(path),
-		Ref:  gitlab.String(event.HeadBranch),
+		Path:      gitlab.String(path),
+		Ref:       gitlab.String(event.HeadBranch),
+		Recursive: gitlab.Bool(true),
 	}
 
 	objects, resp, err := v.Client.Repositories.ListTree(v.sourceProjectID, opt)

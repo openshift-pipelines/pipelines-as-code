@@ -457,7 +457,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 		Client:          client,
 	}
 	thelp.MuxListTektonDir(t, mux, v.sourceProjectID, event.HeadBranch, content)
-	got, err := v.GetFileInsideRepo(ctx, event, ".tekton/pr.yaml", "")
+	got, err := v.GetFileInsideRepo(ctx, event, ".tekton/subtree/pr.yaml", "")
 	assert.NilError(t, err)
 	assert.Equal(t, content, got)
 
