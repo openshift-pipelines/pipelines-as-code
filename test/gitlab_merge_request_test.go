@@ -32,7 +32,9 @@ func TestGitlabMergeRequest(t *testing.T) {
 	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS)
 	assert.NilError(t, err)
 
-	entries, err := payload.GetEntries([]string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"}, targetNS, projectinfo.DefaultBranch,
+	entries, err := payload.GetEntries([]string{
+		"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml",
+	}, targetNS, projectinfo.DefaultBranch,
 		options.PullRequestEvent)
 	assert.NilError(t, err)
 
@@ -42,7 +44,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 		projectinfo.DefaultBranch,
 		targetRefName,
 		opts.ProjectID,
-		entries)
+		entries, ".tekton/subdir/pr.yaml")
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
 	mrID, err := tgitlab.CreateMR(glprovider.Client, opts.ProjectID, targetRefName, projectinfo.DefaultBranch, title)
