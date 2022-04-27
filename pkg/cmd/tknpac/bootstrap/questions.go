@@ -27,18 +27,6 @@ func askYN(deflt bool, title, question string) (bool, error) {
 func askQuestions(opts *bootstrapOpts) error {
 	var qs []*survey.Question
 
-	if opts.recreateSecret {
-		answer, err := askYN(false,
-			fmt.Sprintf("👀 A secret named %s in %s namespace has been detected.", secretName, opts.targetNamespace),
-			"Do you want me to override the secret?")
-		if err != nil {
-			return err
-		}
-		if !answer {
-			return fmt.Errorf("not overriding the secret")
-		}
-	}
-
 	if opts.GithubAPIURL == "" {
 		if opts.providerType == "github-enteprise-app" {
 			prompt := "Enter your Github enteprise API URL: "

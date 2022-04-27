@@ -35,13 +35,13 @@ type bootstrapOpts struct {
 	cliOpts         *cli.PacCliOpts
 	ioStreams       *cli.IOStreams
 	targetNamespace string
-	recreateSecret  bool
 
 	RouteName              string
 	GithubAPIURL           string
 	GithubApplicationName  string
 	GithubApplicationURL   string
 	GithubOrganizationName string
+	forceGitHubApp         bool
 }
 
 const indexTmpl = `
@@ -92,7 +92,6 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 
 func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	var err error
-	opts.recreateSecret = checkSecret(ctx, run, opts)
 
 	if opts.RouteName == "" {
 		opts.RouteName, _ = DetectOpenShiftRoute(ctx, run, opts.targetNamespace)
@@ -101,7 +100,7 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 		return err
 	}
 
-	if opts.recreateSecret {
+	if opts.forceGitHubApp {
 		if err := deleteSecret(ctx, run, opts); err != nil {
 			return err
 		}
@@ -142,9 +141,12 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			// allow bootstrap if no provider is configured yet or if it is GitHub
-			if pacInfo.Provider != "" && (pacInfo.Provider != provider.ProviderGitHubApp && pacInfo.Provider != provider.ProviderGitHubWebhook) {
-				return fmt.Errorf("skipping bootstraping GitHub App, %s is already configured", pacInfo.Provider)
+			if !opts.forceGitHubApp {
+				if pacInfo.Provider == provider.ProviderGitHubApp {
+					// nolint
+					fmt.Printf("👌 Skips bootstrapping GitHub App, as one is already configured. Please pass --force-configure to override existing\n")
+					return nil
+				}
 			}
 
 			if !opts.skipGithubAPP {
@@ -198,8 +200,12 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			if pacInfo.Provider != "" && pacInfo.Provider != provider.ProviderGitHubApp {
-				return fmt.Errorf("skipping bootstraping GitHub App, %s is already configured", pacInfo.Provider)
+			if !opts.forceGitHubApp {
+				if pacInfo.Provider == provider.ProviderGitHubApp {
+					// nolint
+					fmt.Printf("👌 Skips bootstrapping GitHub App, as one is already configured. Please pass --force-configure to override existing\n")
+					return nil
+				}
 			}
 
 			if b, _ := askYN(false, "", "Are you using Github Enterprise?"); b {
@@ -256,6 +262,7 @@ func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "webserver-port")
 	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,
 		fmt.Sprintf("target install type, choices are: %s ", strings.Join(providerTargets, ", ")))
+	cmd.PersistentFlags().BoolVar(&opts.forceGitHubApp, "force-configure", false, "Whether we should override existing GitHub App")
 }
 
 func addCommonFlags(cmd *cobra.Command, ioStreams *cli.IOStreams) {
