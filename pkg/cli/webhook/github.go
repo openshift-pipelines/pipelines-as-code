@@ -76,14 +76,32 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL string) error 
 	gh.repoOwner = repoArr[0]
 	gh.repoName = repoArr[1]
 
-	if controllerURL == "" {
+	// set controller url
+	gh.controllerURL = controllerURL
+
+	// confirm whether to use the detected url
+	if gh.controllerURL != "" {
+		var answer bool
+		// nolint
+		fmt.Printf("👀 I have detected a controller url: %s", gh.controllerURL)
+		err := prompt.SurveyAskOne(&survey.Confirm{
+			Message: "Do you want me to use it?",
+			Default: true,
+		}, &answer)
+		if err != nil {
+			return err
+		}
+		if !answer {
+			gh.controllerURL = ""
+		}
+	}
+
+	if gh.controllerURL == "" {
 		if err := prompt.SurveyAskOne(&survey.Input{
 			Message: "Please enter your controller public route URL: ",
 		}, &gh.controllerURL, survey.WithValidator(survey.Required)); err != nil {
 			return err
 		}
-	} else {
-		gh.controllerURL = controllerURL
 	}
 
 	if err := prompt.SurveyAskOne(&survey.Password{
