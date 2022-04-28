@@ -32,6 +32,7 @@ func TestAskGLWebhookConfig(t *testing.T) {
 			name: "with defaults",
 			askStubs: func(as *prompt.AskStubber) {
 				as.StubOne("id")
+				as.StubOne(true)
 				as.StubOne("webhook-secret")
 				as.StubOne("token")
 			},
