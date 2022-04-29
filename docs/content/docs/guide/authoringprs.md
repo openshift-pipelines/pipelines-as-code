@@ -30,6 +30,7 @@ weight: 3
   * `{{source_branch}}`: The branch name where the event come from.
   * `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
   * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
+  * `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
 
 * You need at least one `PipelineRun` with a `PipelineSpec` or a separated
   `Pipeline` object. You can have embedded `TaskSpec` inside
