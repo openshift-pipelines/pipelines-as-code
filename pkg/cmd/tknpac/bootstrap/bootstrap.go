@@ -48,7 +48,7 @@ const indexTmpl = `
 <html>
 <body>
   <form method="post" action="%s/settings/apps/new">
-  <input type="submit" value="Create your Github APP"></input>
+  <input type="submit" value="Create your GitHub APP"></input>
   <input type="hidden" name="manifest" value='%s'"/>
   </form>
 </body>
@@ -56,7 +56,7 @@ const indexTmpl = `
 `
 
 const successTmpl = `
-<html><body>You have <span style=\"color: green\">successfully</span> created a new Github application, go back to the tkn pac cli to finish the installation.</body></html>
+<html><body>You have <span style=\"color: green\">successfully</span> created a new GitHub application, go back to the tkn pac cli to finish the installation.</body></html>
 `
 
 func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
@@ -179,8 +179,8 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "github-app",
-		Long:  "A command helper to help you create the Pipelines as Code Github Application",
-		Short: "Create PAC Github Application",
+		Long:  "A command helper to help you create the Pipelines as Code GitHub Application",
+		Short: "Create PAC GitHub Application",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 			opts.cliOpts = cli.NewCliOptions(cmd)
@@ -208,7 +208,7 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				}
 			}
 
-			if b, _ := askYN(false, "", "Are you using Github Enterprise?"); b {
+			if b, _ := askYN(false, "", "Are you using GitHub Enterprise?"); b {
 				opts.providerType = "github-enterprise-app"
 			}
 
@@ -254,12 +254,12 @@ func DetectPacInstallation(ctx context.Context, wantedNS string, run *params.Run
 
 func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 	cmd.PersistentFlags().StringVar(&opts.GithubOrganizationName, "github-organization-name", "", "Whether you want to target an organization instead of the current user")
-	cmd.PersistentFlags().StringVar(&opts.GithubApplicationName, "github-application-name", "", "Github Application Name")
-	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "Github Application URL")
+	cmd.PersistentFlags().StringVar(&opts.GithubApplicationName, "github-application-name", "", "GitHub Application Name")
+	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "GitHub Application URL")
 	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enterprise API URL")
-	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "the public URL for the pipelines-as-code controller")
+	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "The public URL for the pipelines-as-code controller")
 	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Whether to install the nightly Pipelines as Code")
-	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "webserver-port")
+	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "Webserver port")
 	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,
 		fmt.Sprintf("target install type, choices are: %s ", strings.Join(providerTargets, ", ")))
 	cmd.PersistentFlags().BoolVar(&opts.forceGitHubApp, "force-configure", false, "Whether we should override existing GitHub App")
