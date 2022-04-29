@@ -2,15 +2,20 @@ package pipelineascode
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
+
+var gitAuthSecretAnnotation = "pipelinesascode.tekton.dev/git-auth-secret"
 
 // matchRepoPR matches the repo and the PRs from the event
 func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Repository, error) {
@@ -121,6 +126,11 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 		return nil, nil, nil
 	}
 
+	err = changeSecret(pipelineRuns)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// Match the PipelineRun with annotation
 	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event)
 	if err != nil {
@@ -131,6 +141,32 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	}
 
 	return matchedPRs, repo, nil
+}
+
+// changeSecret we need to go in each pipelinerun,
+// change the secret template variable with a random one as generated from GetBasicAuthSecretName and store in in the
+// annotations so we can create one delete after.
+func changeSecret(prs []*tektonv1beta1.PipelineRun) error {
+	for k, p := range prs {
+		b, err := json.Marshal(p)
+		if err != nil {
+			return err
+		}
+
+		name := kubeinteraction.GetBasicAuthSecretName()
+		processed := templates.ReplacePlaceHoldersVariables(string(b), map[string]string{
+			"git_auth_secret": name,
+		})
+
+		var np *tektonv1beta1.PipelineRun
+		err = json.Unmarshal([]byte(processed), &np)
+		if err != nil {
+			return err
+		}
+		np.Annotations[gitAuthSecretAnnotation] = name
+		prs[k] = np
+	}
+	return nil
 }
 
 // checkNeedUpdate using regexp, try to match some pattern for some issue in PR

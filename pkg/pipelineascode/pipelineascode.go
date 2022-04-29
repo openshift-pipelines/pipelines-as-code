@@ -78,9 +78,15 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 
 	// Automatically create a secret with the token to be reused by git-clone task
 	if p.run.Info.Pac.SecretAutoCreation {
+		if annotation, ok := match.PipelineRun.GetAnnotations()[gitAuthSecretAnnotation]; ok {
+			gitAuthSecretName = annotation
+		} else {
+			return fmt.Errorf("cannot get annotation %s as set on PR", gitAuthSecretAnnotation)
+		}
+
 		var err error
-		if gitAuthSecretName, err = p.k8int.CreateBasicAuthSecret(ctx, p.logger, p.event, match.Repo.GetNamespace()); err != nil {
-			return fmt.Errorf("creating basic auth secret has failed: %w ", err)
+		if err = p.k8int.CreateBasicAuthSecret(ctx, p.logger, p.event, match.Repo.GetNamespace(), gitAuthSecretName); err != nil {
+			return fmt.Errorf("creating basic auth secret: %s has failed: %w ", gitAuthSecretName, err)
 		}
 	}
 

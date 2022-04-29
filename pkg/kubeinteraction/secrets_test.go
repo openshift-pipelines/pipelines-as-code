@@ -107,7 +107,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 				},
 			}
 			tt.event.Provider.Token = secrete
-			_, err := kint.CreateBasicAuthSecret(ctx, fakelogger, tt.event, tt.targetNS)
+			err := kint.CreateBasicAuthSecret(ctx, fakelogger, tt.event, tt.targetNS, tt.expectedStartSecretName)
 			assert.NilError(t, err)
 
 			slist, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.targetNS).List(ctx, metav1.ListOptions{})
@@ -150,31 +150,18 @@ func TestDeleteBasicAuthSecret(t *testing.T) {
 			},
 		},
 	}
-	event := info.Event{
-		Organization: "owner",
-		Repository:   "repo",
-		URL:          "https://forge/owner/repo",
-	}
-	event2 := info.Event{
-		Organization: "owner2",
-		Repository:   "repo2",
-		URL:          "https://forge/owner/repo2",
-	}
 
 	tests := []struct {
 		name     string
 		targetNS string
-		event    info.Event
 	}{
 		{
 			name:     "auth basic secret there",
 			targetNS: nsthere,
-			event:    event,
 		},
 		{
 			name:     "auth basic secret not there",
 			targetNS: nsthere,
-			event:    event2,
 		},
 	}
 	for _, tt := range tests {
@@ -197,7 +184,7 @@ func TestDeleteBasicAuthSecret(t *testing.T) {
 			assert.NilError(t, err)
 
 			found := false
-			secretName := GetBasicAuthSecretName(&tt.event)
+			secretName := GetBasicAuthSecretName()
 			for _, s := range slist.Items {
 				if s.Name == secretName {
 					found = true
@@ -211,7 +198,7 @@ func TestDeleteBasicAuthSecret(t *testing.T) {
 }
 
 func TestGetBasicAuthSecret(t *testing.T) {
-	t1 := GetBasicAuthSecretName(&info.Event{})
-	t2 := GetBasicAuthSecretName(&info.Event{})
+	t1 := GetBasicAuthSecretName()
+	t2 := GetBasicAuthSecretName()
 	assert.Assert(t, t1 != t2)
 }

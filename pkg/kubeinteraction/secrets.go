@@ -17,18 +17,21 @@ import (
 
 const (
 	// nolint:gosec
-	basicAuthSecretName    = `pac-gitauth-%s-%s-%s`
+	basicAuthSecretName    = `pac-gitauth-%s`
 	basicAuthGitConfigData = `
 	[credential "%s"]
 	helper=store
 	`
 )
 
-func (k Interaction) createSecret(ctx context.Context, secretData map[string]string, targetNamespace, secretName string) error {
+func (k Interaction) createSecret(ctx context.Context, secretData map[string]string, targetNamespace,
+	secretName string, annotations map[string]string,
+) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   secretName,
-			Labels: map[string]string{"app.kubernetes.io/managed-by": "pipelines-as-code"},
+			Name:        secretName,
+			Labels:      map[string]string{"app.kubernetes.io/managed-by": "pipelines-as-code"},
+			Annotations: annotations,
 		},
 	}
 	secret.StringData = secretData
@@ -37,7 +40,9 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 }
 
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
-func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) (string, error) {
+func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event,
+	targetNamespace string, secretName string,
+) error {
 	// Bitbucket Server have a different Clone URL than it's Repo URL, so we
 	// have to separate them 👨‍🏭
 	cloneURL := runevent.URL
@@ -47,7 +52,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.Suga
 
 	repoURL, err := url.Parse(cloneURL)
 	if err != nil {
-		return "", fmt.Errorf("cannot parse url %s: %w", cloneURL, err)
+		return fmt.Errorf("cannot parse url %s: %w", cloneURL, err)
 	}
 
 	gitUser := provider.DefaultProviderAPIUser
@@ -71,18 +76,19 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.Suga
 		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, cloneURL),
 		".git-credentials": urlWithToken,
 	}
+	annotations := map[string]string{
+		"pipelinesascode.tekton.dev/url": cloneURL,
+		"pipelinesascode.tekton.dev/sha": runevent.SHA,
+	}
 
-	// Try to create secrete if that fails then delete it first and then create
-	// This allows up not to give List and Get right clusterwide
-	secretName := GetBasicAuthSecretName(runevent)
-	err = k.createSecret(ctx, secretData, targetNamespace, secretName)
+	err = k.createSecret(ctx, secretData, targetNamespace, secretName, annotations)
 	// this should not happen since each secret  is unique with a random string
 	if err != nil {
-		return "", fmt.Errorf("cannot create git auth secret %s: %w", secretName, err)
+		return fmt.Errorf("cannot create git auth secret %s: %w", secretName, err)
 	}
 
 	logger.Infof("Secret %s has been generated in namespace %s", secretName, targetNamespace)
-	return secretName, nil
+	return nil
 }
 
 func (k Interaction) GetSecret(ctx context.Context, secretopt GetSecretOpt) (string, error) {
@@ -94,10 +100,9 @@ func (k Interaction) GetSecret(ctx context.Context, secretopt GetSecretOpt) (str
 	return string(secret.Data[secretopt.Key]), nil
 }
 
-func GetBasicAuthSecretName(e *info.Event) string {
+func GetBasicAuthSecretName() string {
 	return strings.ToLower(
-		fmt.Sprintf(basicAuthSecretName, strings.ToLower(e.Organization), (e.Repository),
-			random.AlphaString(4)))
+		fmt.Sprintf(basicAuthSecretName, random.AlphaString(4)))
 }
 
 // DeleteBasicAuthSecret deletes the secret created for git-clone basic-auth
