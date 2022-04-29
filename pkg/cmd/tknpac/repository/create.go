@@ -34,7 +34,7 @@ type createOptions struct {
 }
 
 func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
-	var githubURLForWebhook string
+	var githubURLForWebhook, gitlabURLForWebhook string
 	var onlyWebhook, githubWebhook bool
 	createOpts := &createOptions{
 		event:      info.NewEvent(),
@@ -92,17 +92,18 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				Run:                 run,
 				RepositoryURL:       createOpts.gitInfo.URL,
 				PACNamespace:        createOpts.pacNamespace,
-				ProviderAPIURL:      githubURLForWebhook,
 				RepositoryName:      createOpts.repository.Name,
 				RepositoryNamespace: createOpts.repository.Namespace,
 				GitHubWebhook:       githubWebhook,
 			}
 
-			if err := config.Install(ctx); err != nil {
-				return err
+			if githubURLForWebhook == "" {
+				config.ProviderAPIURL = githubURLForWebhook
+			} else if gitlabURLForWebhook == "" {
+				config.ProviderAPIURL = gitlabURLForWebhook
 			}
 
-			return nil
+			return config.Install(ctx)
 		},
 		Annotations: map[string]string{
 			"commandType": "main",
@@ -117,6 +118,7 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&createOpts.pacNamespace, "pac-namespace",
 		"", "", "the namespace where pac is installed")
 	cmd.PersistentFlags().StringVarP(&githubURLForWebhook, "github-api-url", "", "", "Github Enterprise API URL")
+	cmd.PersistentFlags().StringVarP(&gitlabURLForWebhook, "gitlab-api-url", "", "", "GitLab Hosted API URL")
 	cmd.PersistentFlags().BoolVar(&onlyWebhook, "webhook", false, "Skip repository creation, proceed with configuring webhook")
 	cmd.PersistentFlags().BoolVar(&githubWebhook, "github-webhook", false, "Allows configuring webhook if GitHub App is already configured")
 

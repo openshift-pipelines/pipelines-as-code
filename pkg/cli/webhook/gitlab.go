@@ -46,7 +46,27 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL string) error {
 		return err
 	}
 
-	if controllerURL == "" {
+	// set controller url
+	gl.controllerURL = controllerURL
+
+	// confirm whether to use the detected url
+	if gl.controllerURL != "" {
+		var answer bool
+		// nolint
+		fmt.Printf("👀 I have detected a controller url: %s", gl.controllerURL)
+		err := prompt.SurveyAskOne(&survey.Confirm{
+			Message: "Do you want me to use it?",
+			Default: true,
+		}, &answer)
+		if err != nil {
+			return err
+		}
+		if !answer {
+			gl.controllerURL = ""
+		}
+	}
+
+	if gl.controllerURL == "" {
 		if err := prompt.SurveyAskOne(&survey.Input{
 			Message: "Please enter your controller public route URL: ",
 		}, &gl.controllerURL, survey.WithValidator(survey.Required)); err != nil {
@@ -112,5 +132,8 @@ func (gl *gitLabConfig) newClient() (*gitlab.Client, error) {
 		return gl.Client, nil
 	}
 
+	if gl.APIURL == "" {
+		return gitlab.NewClient(gl.personalAccessToken)
+	}
 	return gitlab.NewClient(gl.personalAccessToken, gitlab.WithBaseURL(gl.APIURL))
 }
