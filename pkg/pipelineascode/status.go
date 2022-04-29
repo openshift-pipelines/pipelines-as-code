@@ -51,10 +51,8 @@ func (p *PacRun) updateRepoRunStatus(ctx context.Context, pr *tektonv1beta1.Pipe
 		nrepo, err := p.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
 			ctx, lastrepo, metav1.UpdateOptions{})
 		if err != nil {
-			if err != nil {
-				p.logger.Infof("Could not update repo %s, retrying %d/%d: %s", lastrepo.Namespace, i, maxRun, err.Error())
-				continue
-			}
+			p.logger.Infof("Could not update repo %s, retrying %d/%d: %s", lastrepo.Namespace, i, maxRun, err.Error())
+			continue
 		}
 		p.logger.Infof("Repository status of %s has been updated", nrepo.Name)
 		return nil

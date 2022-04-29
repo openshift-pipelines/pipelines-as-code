@@ -34,9 +34,11 @@ type Event struct {
 	Organization string
 	Repository   string
 
+	// TODO: move out inside the provider
 	// Bitbucket Cloud
 	AccountID string
 
+	// TODO: move out inside the provider
 	// Bitbucket Server
 	CloneURL string // bitbucket server has a different url for cloning the repo than normal public html url
 	Provider *Provider

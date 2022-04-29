@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -16,18 +17,21 @@ import (
 
 const (
 	// nolint:gosec
-	basicAuthSecretName    = `pac-git-basic-auth-%s-%s`
+	basicAuthSecretName    = `pac-gitauth-%s`
 	basicAuthGitConfigData = `
 	[credential "%s"]
 	helper=store
 	`
 )
 
-func (k Interaction) createSecret(ctx context.Context, secretData map[string]string, targetNamespace, secretName string) error {
+func (k Interaction) createSecret(ctx context.Context, secretData map[string]string, targetNamespace,
+	secretName string, annotations map[string]string,
+) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   secretName,
-			Labels: map[string]string{"app.kubernetes.io/managed-by": "pipelines-as-code"},
+			Name:        secretName,
+			Labels:      map[string]string{"app.kubernetes.io/managed-by": "pipelines-as-code"},
+			Annotations: annotations,
 		},
 	}
 	secret.StringData = secretData
@@ -36,7 +40,9 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 }
 
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
-func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) error {
+func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event,
+	targetNamespace string, secretName string,
+) error {
 	// Bitbucket Server have a different Clone URL than it's Repo URL, so we
 	// have to separate them 👨‍🏭
 	cloneURL := runevent.URL
@@ -70,20 +76,15 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.Suga
 		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, cloneURL),
 		".git-credentials": urlWithToken,
 	}
-
-	// Try to create secrete if that fails then delete it first and then create
-	// This allows up not to give List and Get right clusterwide
-	secretName := getBasicAuthSecretName(runevent)
-	err = k.createSecret(ctx, secretData, targetNamespace, secretName)
-	if err != nil {
-		err = k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-		if err == nil {
-			err = k.createSecret(ctx, secretData, targetNamespace, secretName)
-		}
+	annotations := map[string]string{
+		"pipelinesascode.tekton.dev/url": cloneURL,
+		"pipelinesascode.tekton.dev/sha": runevent.SHA,
 	}
 
+	err = k.createSecret(ctx, secretData, targetNamespace, secretName, annotations)
+	// this should not happen since each secret  is unique with a random string
 	if err != nil {
-		return fmt.Errorf("cannot create secret: %w", err)
+		return fmt.Errorf("cannot create git auth secret %s: %w", secretName, err)
 	}
 
 	logger.Infof("Secret %s has been generated in namespace %s", secretName, targetNamespace)
@@ -99,13 +100,13 @@ func (k Interaction) GetSecret(ctx context.Context, secretopt GetSecretOpt) (str
 	return string(secret.Data[secretopt.Key]), nil
 }
 
-func getBasicAuthSecretName(runEvent *info.Event) string {
-	return fmt.Sprintf(basicAuthSecretName, strings.ToLower(runEvent.Organization), strings.ToLower(runEvent.Repository))
+func GetBasicAuthSecretName() string {
+	return strings.ToLower(
+		fmt.Sprintf(basicAuthSecretName, random.AlphaString(4)))
 }
 
 // DeleteBasicAuthSecret deletes the secret created for git-clone basic-auth
-func (k Interaction) DeleteBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runEvent *info.Event, targetNamespace string) error {
-	secretName := getBasicAuthSecretName(runEvent)
+func (k Interaction) DeleteBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, targetNamespace, secretName string) error {
 	err := k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err

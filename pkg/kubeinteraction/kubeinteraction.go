@@ -22,14 +22,17 @@ type GetSecretOpt struct {
 type Interface interface {
 	WaitForPipelineRunSucceed(context.Context, tektonv1beta1client.TektonV1beta1Interface, *v1beta1.PipelineRun, time.Duration) error
 	CleanupPipelines(context.Context, *zap.SugaredLogger, *v1alpha1.Repository, *v1beta1.PipelineRun, int) error
-	CreateBasicAuthSecret(context.Context, *zap.SugaredLogger, *info.Event, string) error
-	DeleteBasicAuthSecret(context.Context, *zap.SugaredLogger, *info.Event, string) error
+	CreateBasicAuthSecret(context.Context, *zap.SugaredLogger, *info.Event, string, string) error
+	DeleteBasicAuthSecret(context.Context, *zap.SugaredLogger, string, string) error
 	GetSecret(context.Context, GetSecretOpt) (string, error)
 }
 
 type Interaction struct {
 	Run *params.Run
 }
+
+// validate the interface implementation
+var _ Interface = (*Interaction)(nil)
 
 func NewKubernetesInteraction(c *params.Run) (*Interaction, error) {
 	return &Interaction{

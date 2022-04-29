@@ -20,6 +20,8 @@ type KinterfaceTest struct {
 	GetSecretResult          map[string]string
 }
 
+var _ kubeinteraction.Interface = (*KinterfaceTest)(nil)
+
 func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string) (string, error) {
 	if k.ConsoleURLErorring {
 		return "", fmt.Errorf("i want you to errit")
@@ -27,15 +29,17 @@ func (k *KinterfaceTest) GetConsoleUI(ctx context.Context, ns string, pr string)
 	return k.ConsoleURL, nil
 }
 
-func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) error {
+func (k *KinterfaceTest) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event,
+	targetNamespace, secretName string,
+) error {
 	return nil
 }
 
-func (k *KinterfaceTest) DeleteBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event, targetNamespace string) error {
+func (k *KinterfaceTest) DeleteBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, targetNamespace, secretName string) error {
 	return nil
 }
 
-func (k *KinterfaceTest) GetSecret(ctx context.Context, secretopt kubeinteraction.GetSecretOpt) (string, error) {
+func (k *KinterfaceTest) GetSecret(_ context.Context, secretopt kubeinteraction.GetSecretOpt) (string, error) {
 	return k.GetSecretResult[secretopt.Name], nil
 }
 
