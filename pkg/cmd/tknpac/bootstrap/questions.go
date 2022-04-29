@@ -28,8 +28,8 @@ func askQuestions(opts *bootstrapOpts) error {
 	var qs []*survey.Question
 
 	if opts.GithubAPIURL == "" {
-		if opts.providerType == "github-enteprise-app" {
-			prompt := "Enter your Github enteprise API URL: "
+		if opts.providerType == "github-enterprise-app" {
+			prompt := "Enter your GitHub enterprise API URL: "
 			qs = append(qs, &survey.Question{
 				Name: "GithubAPIURL",
 				Prompt: &survey.Input{

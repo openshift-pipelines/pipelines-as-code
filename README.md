@@ -12,7 +12,7 @@ Pipelines as Code let you use
 the [Pipelines as Code flow]([https://www.thoughtworks.com/radar/techniques/pipelines-as-code](https://www.thoughtworks.com/radar/techniques/pipelines-as-code)) directly with Tekton and OpenShift Pipelines.
 
 The goal of Pipelines as Code is to let you define your
-[Tekton](https://tekton.cd) templates inside your source code repository and have the pipeline run and report the status
+[Tekton](https://tekton.dev) templates inside your source code repository and have the pipeline run and report the status
 of the execution when triggered by a Pull Request or a Push.
 
 Pipelines as Code features:
@@ -35,7 +35,7 @@ Pipelines as Code features:
 
 - `tkn-pac` plug-in for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
 
-- Gitlab, Bitbucket Server, Bitbucket Cloud and Github through Webhook support.
+- Gitlab, Bitbucket Server, Bitbucket Cloud and GitHub through Webhook support.
 
 ## Installation Guide
 
@@ -43,17 +43,17 @@ The easiest way to get started is to use the `tkn pac` CLI and its bootstrap com
 
 Download and install first the tkn-pac CLI following [these instructions](/docs/cli.md#install).
 
-Connected to your cluster execture the command :
+Connected to your cluster execute the command :
 
 ```bash
 -$ tkn pac bootstrap
 ```
 
-and follow the questions and installation methods which will install Pipelines as Code on cluster and help you create a Github Application.
+and follow the questions and installation methods which will install Pipelines as Code on cluster and help you create a GitHub Application.
 
-feel free to look over the `--help` to see the different options on how to install for example on Github Enterprise.
+feel free to look over the `--help` to see the different options on how to install for example on GitHub Enterprise.
 
-This 10 minute video will guide you thought the `tkn-pac bootstrap` flow :
+This 10 minutes video will guide you thought the `tkn-pac bootstrap` flow :
 
 [![Getting started to Pipelines as Code](https://img.youtube.com/vi/ytm3brml8is/0.jpg)](https://www.youtube.com/watch?v=ytm3brml8is)
 
@@ -67,7 +67,7 @@ GitHub repositories.
 
 To enable the GitHub App provided by admin on your Git repository as documented
 [here](https://docs.github.com/en/developers/apps/managing-github-apps/installing-github-apps).
-Otherwise you can go to the *Settings > Applications* and then click on
+Otherwise, you can go to the *Settings > Applications* and then click on
 *Configure* button near the GitHub App you had created. In the **Repository
 access** section, select the repositories that you want to enable and have
 access to Pipelines-as-code.
@@ -99,10 +99,10 @@ The above command would create a `Repository` CRD in your `demo` namespace which
 PipelineRuns for your GitHub repository should run. It also generates an example pipeline in the `.tekton` folder.
 Commit and push the pipeline to your repo to start using pipelines as code.
 
-Note that even if installing with Github application is the preferred installation method, Pipeline As Code
+Note that even if installing with GitHub application is the preferred installation method, Pipeline As Code
 supports other methods :
 
-- Github direct Webhook
+- GitHub direct Webhook
 - Gitlab public and private instances.
 - Bitbucket Cloud
 - Bitbucket Server
@@ -113,7 +113,7 @@ see the [INSTALL guide](https://pipelinesascode.com/docs/install/) more details 
 
 The usage guide available [here](https://pipelinesascode.com/docs/guide/) offer a comprehensive documentation on how to use and configure Pipeline As Code.
 
-A walkthought video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
+A walkthrough video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
 
 ## Developer Guide
 

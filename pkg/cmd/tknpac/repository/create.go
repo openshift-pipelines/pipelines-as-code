@@ -110,14 +110,14 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().BoolP(noColorFlag, "C", !ioStreams.ColorEnabled(), "disable coloring")
+	cmd.PersistentFlags().BoolP(noColorFlag, "C", !ioStreams.ColorEnabled(), "Disable coloring")
 	cmd.PersistentFlags().StringVar(&createOpts.repository.Name, "name", "", "Repository name")
 	cmd.PersistentFlags().StringVar(&createOpts.event.URL, "url", "", "Repository URL")
 	cmd.PersistentFlags().StringVarP(&createOpts.repository.Namespace, "namespace", "n", "",
 		"The target namespace where the runs will be created")
 	cmd.PersistentFlags().StringVarP(&createOpts.pacNamespace, "pac-namespace",
-		"", "", "the namespace where pac is installed")
-	cmd.PersistentFlags().StringVarP(&githubURLForWebhook, "github-api-url", "", "", "Github Enterprise API URL")
+		"", "", "The namespace where pac is installed")
+	cmd.PersistentFlags().StringVarP(&githubURLForWebhook, "github-api-url", "", "", "GitHub Enterprise API URL")
 	cmd.PersistentFlags().StringVarP(&gitlabURLForWebhook, "gitlab-api-url", "", "", "GitLab Hosted API URL")
 	cmd.PersistentFlags().BoolVar(&onlyWebhook, "webhook", false, "Skip repository creation, proceed with configuring webhook")
 	cmd.PersistentFlags().BoolVar(&githubWebhook, "github-webhook", false, "Allows configuring webhook if GitHub App is already configured")
