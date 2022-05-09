@@ -29,6 +29,8 @@ type Event struct {
 	SHATitle          string // commit title for UIs
 	PullRequestNumber int    // Pull or Merge Request number
 
+	TestPipelineRun string // PipelineRun name to run
+
 	// TODO: move forge specifics to each driver
 	// Github
 	Organization string

@@ -427,3 +427,39 @@ func TestAppTokenGeneration(t *testing.T) {
 		})
 	}
 }
+
+func TestTestComment(t *testing.T) {
+	tests := []struct {
+		name    string
+		comment string
+		want    string
+	}{
+		{
+			name:    "test a pipeline",
+			comment: "/test abc-01-pr",
+			want:    "abc-01-pr",
+		},
+		{
+			name:    "string before test command",
+			comment: "abc \n /test abc-01-pr",
+			want:    "abc-01-pr",
+		},
+		{
+			name:    "string after test command",
+			comment: "/test abc-01-pr \n abc",
+			want:    "abc-01-pr",
+		},
+		{
+			name:    "string before and after test command",
+			comment: "before \n /test abc-01-pr \n after",
+			want:    "abc-01-pr",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getPipelineRunFromComment(tt.comment)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -246,6 +247,11 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 		return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
 	}
 
+	// if it is a /test comment figure out the pipelinerun name
+	if provider.IsTestComment(event.GetComment().GetBody()) {
+		runevent.TestPipelineRun = getPipelineRunFromComment(event.GetComment().GetBody())
+	}
+
 	// We are getting the full URL so we have to get the last part to get the PR number,
 	// we don't have to care about URL query string/hash and other stuff because
 	// that comes up from the API.
@@ -257,4 +263,13 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 
 	v.Logger.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	return v.getPullRequest(ctx, runevent)
+}
+
+func getPipelineRunFromComment(comment string) string {
+	// get string after /test command
+	splitTest := strings.Split(comment, "/test")
+	// now get the first line
+	getFirstLine := strings.Split(splitTest[1], "\n")
+	// trim spaces
+	return strings.TrimSpace(getFirstLine[0])
 }

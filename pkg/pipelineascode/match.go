@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
 
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
@@ -126,6 +128,13 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 		return nil, nil, nil
 	}
 
+	// if /test command is used then filter out the pipelinerun
+	pipelineRuns = filterPipelineRun(p.event.TestPipelineRun, pipelineRuns)
+	if pipelineRuns == nil {
+		p.logger.Info(fmt.Sprintf("cannot find pipelinerun %s in this repository", p.event.TestPipelineRun))
+		return nil, nil, nil
+	}
+
 	err = changeSecret(pipelineRuns)
 	if err != nil {
 		return nil, nil, err
@@ -141,6 +150,20 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	}
 
 	return matchedPRs, repo, nil
+}
+
+func filterPipelineRun(testPipeline string, prs []*tektonv1beta1.PipelineRun) []*tektonv1beta1.PipelineRun {
+	if testPipeline == "" {
+		return prs
+	}
+	for _, pr := range prs {
+		if prName, ok := pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")]; ok {
+			if prName == testPipeline {
+				return []*tektonv1beta1.PipelineRun{pr}
+			}
+		}
+	}
+	return nil
 }
 
 // changeSecret we need to go in each pipelinerun,
