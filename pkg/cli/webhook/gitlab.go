@@ -83,7 +83,7 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL string) error {
 	// nolint:forbidigo
 	fmt.Println("ℹ ️You now need to create a GitLab personal access token with `api` scope")
 	// nolint:forbidigo
-	fmt.Println("ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/WIXECN for documentation ")
+	fmt.Println("ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation ")
 	if err := prompt.SurveyAskOne(&survey.Password{
 		Message: "Please enter the GitLab access token: ",
 	}, &gl.personalAccessToken, survey.WithValidator(survey.Required)); err != nil {

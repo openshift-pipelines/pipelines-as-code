@@ -14,18 +14,38 @@ API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api)
 therefore the status of
 the tasks will be added as a Comment of the PR and not through the **Checks** Tab.
 
-After you have finished the [installation](/docs/install/installation) you can generate an app password for Pipelines-as-Code GitHub API operations.
+After you have finished the [installation](/docs/install/installation) you can
+generate an app password for Pipelines-as-Code GitHub API operations.
+
+## Generate a token for Pipelines as Code
 
 Follow this guide to create a personal token :
 
 <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token>
 
-The only permission needed is the *repo* permission. You will have to note the generated token somewhere, or otherwise you will have to recreate it.
+The only permission needed is the *repo* permission. You will have to note the
+generated token somewhere, or otherwise you will have to recreate it.
 
-Now, you have 2 ways to configure webhook
+{{< hint danger >}}
+For best security practice you will probably want to have a short token
+expiration (like the rdefault 30 days). GitHub will send you a notification email
+if you token expires. When you have regenerated a new token you will need to
+update it on cluster. For example through the command line, you will want to replace
+`$NEW_TOKEN` and `$target_namespace` by their respective values:
 
-* You could use [`tkn pac repository create`](/docs/guide/cli) command which will create repository CR and configure webhook, or
-* You could follow [configuring webhook](#configure-webhook) to do it manually
+```shell
+kubectl -n $target_namespace patch secret githubwebhook -p "{\"data\": {\"foo\": \"$(echo -n $NEW_TOKEN|base64 -w0)\"}}"
+```
+
+{{< /hint >}}
+
+## Repository creation
+
+Now, you have 2 ways to configure the webhook:
+
+* You could use [`tkn pac repository create`](/docs/guide/cli) command which
+  will create repository CR and configure webhook, or
+* You could follow the [configuring webhook](#configure-webhook) guide to do it manually
 
 ## Configure webhook
 
@@ -65,7 +85,7 @@ follow below instruction to configure webhook manually
     --from-literal provider.token="TOKEN_AS_GENERATED_PREVIOUSLY" \
     --from-literal webhook.secret="SECRET_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
-  
+
 * And now create Repository CRD referencing everything :
 
   ```yaml
