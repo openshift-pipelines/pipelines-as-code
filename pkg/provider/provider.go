@@ -7,6 +7,7 @@ import (
 var (
 	retestRegex   = regexp.MustCompile(`(?m)^/retest\s*$`)
 	oktotestRegex = regexp.MustCompile(`(?m)^/ok-to-test\s*$`)
+	testRegex     = regexp.MustCompile(`(?m)^/test[ \t]+\S+`)
 )
 
 const (
@@ -30,4 +31,8 @@ func IsRetestComment(comment string) bool {
 
 func IsOkToTestComment(comment string) bool {
 	return oktotestRegex.MatchString(comment)
+}
+
+func IsTestComment(comment string) bool {
+	return testRegex.MatchString(comment)
 }

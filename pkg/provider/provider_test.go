@@ -97,3 +97,44 @@ func TestIsRetestComment(t *testing.T) {
 		})
 	}
 }
+
+func TestTestComment(t *testing.T) {
+	tests := []struct {
+		name    string
+		comment string
+		want    bool
+	}{
+		{
+			name:    "invalid need an input",
+			comment: "/test",
+			want:    false,
+		},
+		{
+			name:    "invalid comment",
+			comment: "/test-all",
+			want:    false,
+		},
+		{
+			name:    "run a specific pipeline",
+			comment: "/test abc-01-pr",
+			want:    true,
+		},
+		{
+			name:    "valid with some string before",
+			comment: "/lgtm \n/test abc",
+			want:    true,
+		},
+		{
+			name:    "valid with some string before and after",
+			comment: "hi, trigger the pipeline abc ci \n/test abc \n then report the status back",
+			want:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsTestComment(tt.comment)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
