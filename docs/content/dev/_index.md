@@ -60,6 +60,56 @@ override it you can set the `PAC_DIRS` environment variable.
   instead of ko. `-c` will only do the pac configuration (ie: creation of
   secrets/ingress etc..)
 
+## Gitea
+
+Gitea is "unofficially" supported. You just need to configure Gitea the same way
+you do for Github enteprise and Pipelines as Code will recognize it.
+
+Here is an example of a Gitea NS/CRD/Secret (set to empty):
+
+```yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: gitea
+
+---
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: gitea
+  namespace: gitea
+spec:
+  url: "https://gitea.my.com/owner/repo"
+  git_provider:
+    user: "git"
+    url: "Your gitea installation URL, i.e: https://gitea.my.com/"
+    secret:
+      name: "secret"
+      key: token
+    webhook_secret:
+      name: "secret"
+      key: "webhook"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitea-home-chmouel
+  namespace: gitea
+type: Opaque
+stringData:
+  token: "your token has generated in gitea"
+  webhook: "" # make sure it's empty when you set this up on the interface and here
+```
+
+There is some gotchas with the webhook validation secret, Pipelines as Code
+detect a Gitea install and let the user set a empty webhook secret (by default
+it's enforced).
+
+Other than that YMMV, feel free to raise a bug if you find some.
+
 ## Debugging controller
 
 Create a [smee](https://smee.io) URL and point your app/webhook to it. Use
@@ -68,7 +118,7 @@ installed controller (this can be either run on your debugger or inside kind).
 
 An option of gosmee is to save the replay to a directory with `--saveDir
 /tmp/save`. If go to that directory a shell script will be created to replay
-the request that was sent directly to the controller without having to go via
+the request that was sent directly to the controller without having to go through
 another push.
 
 Use [snazy](https://github.com/chmouel/snazy) to watch the logs, it support pac
