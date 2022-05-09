@@ -17,6 +17,7 @@ on your OpenShift cluster you can apply the template with kubectl :
 
 ```shell
 # OpenShift
+kubectl patch tektonconfig config --type="merge" -p '{"spec": {"addon":{"enablePipelinesAsCode": false}}}'
 kubectl apply -f https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/stable/release.yaml
 
 # Kubernetes
