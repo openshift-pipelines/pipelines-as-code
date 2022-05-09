@@ -13,7 +13,7 @@ the [Pipelines as Code flow](https://www.thoughtworks.com/radar/techniques/pipel
 directly with OpenShift Pipelines.
 
 The goal of Pipelines as Code is to let you define your
-[Tekton](https://tekton.cd) templates inside your source code repository and
+[Tekton](https://tekton.dev) templates inside your source code repository and
 have the pipeline run and report the status
 of the execution when triggered by a `Pull Request` or a `Push`.
 
