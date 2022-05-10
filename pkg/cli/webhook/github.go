@@ -46,29 +46,20 @@ func (gh *gitHubConfig) Run(ctx context.Context, opts *Options) (*response, erro
 }
 
 func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL string) error {
-	var repo, defaultRepo string
+	var defaultRepo string
 	if repoURL != "" {
-		if repo, _ := formatting.GetRepoOwnerFromGHURL(repoURL); repo != "" {
-			defaultRepo = repo
-		}
+		defaultRepo, _ = formatting.GetRepoOwnerFromGHURL(repoURL)
 	}
-	if defaultRepo != "" {
-		msg := fmt.Sprintf("Please enter the repository you want to be configured (default: %s):", defaultRepo)
-		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repo); err != nil {
-			return err
-		}
-	} else {
+
+	if repoURL == "" || defaultRepo == "" {
 		msg := "Please enter the repository you want to be configured (eg. repo-owner/repo-name) : "
-		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repo,
+		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &defaultRepo,
 			survey.WithValidator(survey.Required)); err != nil {
 			return err
 		}
 	}
 
-	if repo == "" {
-		repo = defaultRepo
-	}
-	repoArr := strings.Split(repo, "/")
+	repoArr := strings.Split(defaultRepo, "/")
 	if len(repoArr) != 2 {
 		return fmt.Errorf("invalid repository, needs to be of format 'org-name/repo-name'")
 	}

@@ -39,7 +39,6 @@ func TestAskGHWebhookConfig(t *testing.T) {
 		{
 			name: "with defaults",
 			askStubs: func(as *prompt.AskStubber) {
-				as.StubOne("") // use default
 				as.StubOne(true)
 				as.StubOne("webhook-secret")
 				as.StubOne("token")
