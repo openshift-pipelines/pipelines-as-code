@@ -34,6 +34,7 @@ func setup() {
 
 // Not sure how to get testParams fixtures working
 func readTDfile(t *testing.T, testname string, generateName bool, remoteTasking bool) (*tektonv1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
+	t.Helper()
 	ctx, _ := rtesting.SetupFakeContext(t)
 	data, err := ioutil.ReadFile("testdata/" + testname + ".yaml")
 	if err != nil {
@@ -95,6 +96,14 @@ func TestClusterTasksSkipped(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].Name, "clustertask")
 	assert.Equal(t, string(resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Kind), "ClusterTask")
+}
+
+func TestCustomTasksSkipped(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-with-a-customtask", false, true)
+	assert.NilError(t, err)
+	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].Name, "shipwright")
+	assert.Equal(t, string(resolved.Spec.PipelineSpec.Tasks[0].TaskRef.APIVersion), "shipwright.io/v1alpha1")
+	assert.Equal(t, string(resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Kind), "Build")
 }
 
 func TestPipelineRunPipelineSpecTaskSpec(t *testing.T) {

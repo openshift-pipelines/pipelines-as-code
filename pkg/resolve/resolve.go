@@ -80,10 +80,15 @@ func skippingTask(taskName string, skippedTasks []string) bool {
 	return false
 }
 
+func isTektonAPIVersion(apiVersion string) bool {
+	return strings.HasPrefix(apiVersion, "tekton.dev/") || apiVersion == ""
+}
+
 func inlineTasks(tasks []tektonv1beta1.PipelineTask, ropt *Opts, types Types) ([]tektonv1beta1.PipelineTask, error) {
 	pipelineTasks := []tektonv1beta1.PipelineTask{}
 	for _, task := range tasks {
 		if task.TaskRef != nil && task.TaskRef.Bundle == "" &&
+			isTektonAPIVersion(task.TaskRef.APIVersion) &&
 			string(task.TaskRef.Kind) != "ClusterTask" &&
 			!skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
 			taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)

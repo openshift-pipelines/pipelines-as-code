@@ -22,12 +22,13 @@ If you have a taskRef to a task located in any directory or subdirectories of th
 `.tekton/` directory it will be automatically embedded even if it's not in the
 annotations.
 
-If you have a reference to a
-[`ClusterTask`](https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#task-vs-clustertask)
-or a
-[`Bundle`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#tekton-bundles)
-(`Task` or `Pipeline`) the resolver will just use them as is and would not try
-to do anything with it.
+The resolver will skip resolving if he sees these type of tasks:
+
+* a reference to a [`ClusterTask`](https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#task-vs-clustertask)
+* a `Task` or `Pipeline` [`Bundle`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#tekton-bundles)
+* or a [Custom Task](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#using-custom-tasks) with an apiVersion that doesn't have a `tekton.dev/` prefix.
+
+It just use them "as is" and will not try to do anything with it.
 
 If pipelines as code cannot resolve the referenced tasks in the `Pipeline` or
 `PipelineSpec`, the run will fail before applying the pipelinerun onto the
