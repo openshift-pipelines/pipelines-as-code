@@ -1,7 +1,6 @@
 package kubeinteraction
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -121,7 +120,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 				}
 			}
 			if !found {
-				t.Fatal(fmt.Sprintf("we could not find the secret %s out of secrets created: %+v", tt.expectedStartSecretName, slist.Items))
+				t.Fatalf("we could not find the secret %s out of secrets created: %+v", tt.expectedStartSecretName, slist.Items)
 			}
 		})
 	}
