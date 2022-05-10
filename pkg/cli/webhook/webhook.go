@@ -54,12 +54,7 @@ func (w *Options) Install(ctx context.Context) error {
 	// figure out which git provider from the Repo URL
 	webhookProvider := detectProvider(w.RepositoryURL)
 
-	// TODO: if couldn't detect then ask user providing a list
-	if webhookProvider == nil {
-		return nil
-	}
-
-	if !w.GitHubWebhook {
+	if !w.GitHubWebhook && webhookProvider != nil {
 		if webhookProvider.GetName() == provider.ProviderGitHubWebhook && pacInfo.Provider == provider.ProviderGitHubApp {
 			// nolint
 			fmt.Printf("✓ Skips configuring GitHub Webhook as GitHub App is already configured." +
@@ -68,14 +63,26 @@ func (w *Options) Install(ctx context.Context) error {
 		}
 	}
 
-	msg := fmt.Sprintf("Would you like me to configure a %s Webhook for your repository? ",
-		strings.TrimSuffix(webhookProvider.GetName(), "Webhook"))
+	var msg string
+	if webhookProvider != nil {
+		msg = fmt.Sprintf("Would you like me to configure a %s Webhook for your repository? ",
+			strings.TrimSuffix(webhookProvider.GetName(), "Webhook"))
+	} else {
+		msg = "Would you like me to configure a Webhook for your repository?"
+	}
+
 	var configureWebhook bool
 	if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &configureWebhook); err != nil {
 		return err
 	}
 	if !configureWebhook {
 		return nil
+	}
+
+	if webhookProvider == nil {
+		if webhookProvider, err = askProvider(); webhookProvider == nil || err != nil {
+			return err
+		}
 	}
 
 	// check if info configmap has url then use that otherwise try to detec
@@ -103,6 +110,23 @@ func (w *Options) Install(ctx context.Context) error {
 	return w.updateRepositoryCR(ctx, webhookProvider.GetName())
 }
 
+func askProvider() (Interface, error) {
+	var answer string
+	if err := survey.AskOne(&survey.Select{
+		Message: "Please select the provider you wish to configure with your repository:",
+		Options: []string{"GitHub", "GitLab"},
+	}, &answer, survey.WithValidator(survey.Required)); err != nil {
+		return nil, err
+	}
+
+	if answer == "GitHub" {
+		return &gitHubConfig{}, nil
+	} else if answer == "GitLab" {
+		return &gitLabConfig{}, nil
+	}
+	return nil, nil
+}
+
 func detectProvider(url string) Interface {
 	if strings.Contains(url, "github.com") {
 		return &gitHubConfig{}
@@ -128,6 +152,5 @@ func (w *Options) askRepositoryCRDetails() error {
 			return err
 		}
 	}
-
 	return nil
 }
