@@ -113,7 +113,7 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL string) error 
 	// nolint:forbidigo
 	fmt.Println("ℹ ️You now need to create a GitHub personal token with scopes  `public_repo` & `admin:repo_hook`")
 	// nolint:forbidigo
-	fmt.Println("ℹ ️Go to this URL to generate one https://github.com/settings/tokens/new, see https://is.gd/BMgLH5 for documentation ")
+	fmt.Println("ℹ ️Go to this URL to generate a new token https://github.com/settings/tokens/new, see https://is.gd/G5gBFI for documentation ")
 	if err := prompt.SurveyAskOne(&survey.Password{
 		Message: "Please enter the GitHub access token: ",
 	}, &gh.personalAccessToken, survey.WithValidator(survey.Required)); err != nil {

@@ -9,6 +9,8 @@ Pipelines-As-Code supports [Gitlab](https://www.gitlab.com) through a webhook.
 
 Follow the pipelines-as-code [installation](/docs/install/installation) according to your kubernetes cluster.
 
+## Generate a token for Pipelines as Code
+
 * You will have to generate a personal token as the manager of the Org or the Project,
   follow the steps here :
 
@@ -19,6 +21,29 @@ Follow the pipelines-as-code [installation](/docs/install/installation) accordin
   the MR come from, it will fail to do it with a project scoped token. We try
   to fallback nicely by showing the status of the pipeline directly as comment
   of the Merge Request.
+
+{{< hint danger >}}
+For best security practice you will probably want to have a short token
+expiration (like the default 30 days). Gitlab will send you a notification email
+if you token expires. When you have regenerated a new token you will need to
+update it on cluster. For example through the command line, you will want to replace
+`$NEW_TOKEN` and `$target_namespace` by their respective values:
+
+```shell
+kubectl -n $target_namespace patch secret gitlabwebhook -p "{\"data\": {\"foo\": \"$(echo -n $NEW_TOKEN|base64 -w0)\"}}"
+```
+
+{{< /hint >}}
+
+## Repository creation
+
+Now, you have 2 ways to configure the webhook:
+
+* You could use [`tkn pac repository create`](/docs/guide/cli) command which
+  will create repository CR and configure webhook, or
+* You could follow the [configuring webhook](#configure-webhook) guide to do it manually
+
+## Configure webhook
 
 * Go to your project and click on *Settings* and *"Webhooks"* from the sidebar on the left.
 
@@ -53,7 +78,7 @@ and another reference to a Kubernetes secret to validate the Webhook payload as 
     --from-literal provider.token="TOKEN_AS_GENERATED_PREVIOUSLY" \
     --from-literal webhook.secret="SECRET_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
-  
+
 * And now create Repository CRD with the secret field referencing it.
 
 Here is an example of a Repository CRD :
