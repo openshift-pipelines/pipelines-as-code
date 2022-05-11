@@ -30,9 +30,6 @@ func MakeHTTPTestClient(t *testing.T, config map[string]map[string]string) *http
 				}
 			}
 		}
-		if resp == nil {
-			t.Fatalf("No url matching config: %v", config)
-		}
 		return resp
 	})
 }

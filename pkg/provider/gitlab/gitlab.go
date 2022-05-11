@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -53,7 +54,8 @@ func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event)
 	if event.Provider.WebhookSecret == "" && token != "" {
 		return fmt.Errorf("gitlab failed validaton: failed to find webhook secret")
 	}
-	if event.Provider.WebhookSecret != token {
+
+	if subtle.ConstantTimeCompare([]byte(event.Provider.WebhookSecret), []byte(token)) == 0 {
 		return fmt.Errorf("gitlab failed validaton: event's secret doesn't match with webhook secret")
 	}
 	return nil
