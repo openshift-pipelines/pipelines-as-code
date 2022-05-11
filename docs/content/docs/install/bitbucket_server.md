@@ -70,7 +70,9 @@ recreate it.
   spec:
     url: "https://bitbucket.com/workspace/repo"
     git_provider:
-      url: "https://bitbucket.server.api.url"
+      # make sure you have the right bitbucket server api url without the
+      # /api/v1.0 usually the # default install will have a /rest suffix
+      url: "https://bitbucket.server.api.url/rest" 
       user: "your-bitbucket-username"
       secret:
         name: "bitbucket-server-webhook-config"
