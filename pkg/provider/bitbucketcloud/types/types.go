@@ -97,7 +97,7 @@ type IPRanges struct {
 }
 
 type Member struct {
-	User User
+	User User `json:"user"`
 }
 
 type Members struct {

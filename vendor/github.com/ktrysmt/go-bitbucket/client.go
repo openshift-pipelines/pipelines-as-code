@@ -40,9 +40,12 @@ type Client struct {
 	Teams        teams
 	Repositories *Repositories
 	Workspaces   *Workspace
-	Pagelen      uint64
-	MaxDepth     uint64
-	apiBaseURL   *url.URL
+	Pagelen      int
+	MaxDepth     int
+	// DisableAutoPaging allows you to disable the default behavior of automatically requesting
+	// all the pages for a paginated response.
+	DisableAutoPaging bool
+	apiBaseURL        *url.URL
 
 	HttpClient *http.Client
 }
@@ -201,34 +204,7 @@ func (c *Client) executeRaw(method string, urlStr string, text string) (io.ReadC
 }
 
 func (c *Client) execute(method string, urlStr string, text string) (interface{}, error) {
-	// Use pagination if changed from default value
-	const DEC_RADIX = 10
-	if strings.Contains(urlStr, "/repositories/") {
-		if c.Pagelen != DEFAULT_PAGE_LENGTH {
-			urlObj, err := url.Parse(urlStr)
-			if err != nil {
-				return nil, err
-			}
-			q := urlObj.Query()
-			q.Set("pagelen", strconv.FormatUint(c.Pagelen, DEC_RADIX))
-			urlObj.RawQuery = q.Encode()
-			urlStr = urlObj.String()
-		}
-
-		if c.MaxDepth != DEFAULT_MAX_DEPTH {
-			urlObj, err := url.Parse(urlStr)
-			if err != nil {
-				return nil, err
-			}
-			q := urlObj.Query()
-			q.Set("max_depth", strconv.FormatUint(c.MaxDepth, DEC_RADIX))
-			urlObj.RawQuery = q.Encode()
-			urlStr = urlObj.String()
-		}
-	}
-
 	body := strings.NewReader(text)
-
 	req, err := http.NewRequest(method, urlStr, body)
 	if err != nil {
 		return nil, err
@@ -239,6 +215,36 @@ func (c *Client) execute(method string, urlStr string, text string) (interface{}
 
 	c.authenticateRequest(req)
 	result, err := c.doRequest(req, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (c *Client) executePaginated(method string, urlStr string, text string) (interface{}, error) {
+	if c.Pagelen != DEFAULT_PAGE_LENGTH {
+		urlObj, err := url.Parse(urlStr)
+		if err != nil {
+			return nil, err
+		}
+		q := urlObj.Query()
+		q.Set("pagelen", strconv.Itoa(c.Pagelen))
+		urlObj.RawQuery = q.Encode()
+		urlStr = urlObj.String()
+	}
+
+	body := strings.NewReader(text)
+	req, err := http.NewRequest(method, urlStr, body)
+	if err != nil {
+		return nil, err
+	}
+	if text != "" {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	c.authenticateRequest(req)
+	result, err := c.doPaginatedRequest(req, false)
 	if err != nil {
 		return nil, err
 	}
@@ -318,13 +324,37 @@ func (c *Client) doRequest(req *http.Request, emptyResponse bool) (interface{}, 
 		return resBody, err
 	}
 
+	var result interface{}
+	if err := json.Unmarshal(responseBytes, &result); err != nil {
+		log.Println("Could not unmarshal JSON payload, returning raw response")
+		return resBody, err
+	}
+	return result, nil
+}
+
+func (c *Client) doPaginatedRequest(req *http.Request, emptyResponse bool) (interface{}, error) {
+	resBody, err := c.doRawRequest(req, emptyResponse)
+	if err != nil {
+		return nil, err
+	}
+	if emptyResponse || resBody == nil {
+		return nil, nil
+	}
+
+	defer resBody.Close()
+
+	responseBytes, err := ioutil.ReadAll(resBody)
+	if err != nil {
+		return resBody, err
+	}
+
 	responsePaginated := &Response{}
 	err = json.Unmarshal(responseBytes, responsePaginated)
 	if err == nil && len(responsePaginated.Values) > 0 {
 		var values []interface{}
 		for {
 			values = append(values, responsePaginated.Values...)
-			if responsePaginated.Pagelen == 0 || responsePaginated.Size/responsePaginated.Pagelen <= responsePaginated.Page {
+			if c.DisableAutoPaging || len(responsePaginated.Next) == 0 {
 				break
 			}
 			newReq, err := http.NewRequest(req.Method, responsePaginated.Next, nil)
@@ -336,6 +366,8 @@ func (c *Client) doRequest(req *http.Request, emptyResponse bool) (interface{}, 
 			if err != nil {
 				return resBody, err
 			}
+
+			responsePaginated = &Response{}
 			json.NewDecoder(resp).Decode(responsePaginated)
 		}
 		responsePaginated.Values = values
@@ -404,4 +436,15 @@ func (c *Client) requestUrl(template string, args ...interface{}) string {
 		return c.GetApiBaseURL() + template
 	}
 	return c.GetApiBaseURL() + fmt.Sprintf(template, args...)
+}
+
+func (c *Client) addMaxDepthParam(params *url.Values, customMaxDepth *int) {
+	maxDepth := c.MaxDepth
+	if customMaxDepth != nil && *customMaxDepth > 0 {
+		maxDepth = *customMaxDepth
+	}
+
+	if maxDepth != DEFAULT_MAX_DEPTH {
+		params.Set("max_depth", strconv.Itoa(maxDepth))
+	}
 }

@@ -28,6 +28,8 @@ type Repository struct {
 	Has_issues  bool
 	Mainbranch  RepositoryBranch
 	Type        string
+	CreatedOn   string `mapstructure:"created_on"`
+	UpdatedOn   string `mapstructure:"updated_on"`
 	Owner       map[string]interface{}
 	Links       map[string]interface{}
 	Parent      *Repository
@@ -243,8 +245,20 @@ func (r *Repository) Get(ro *RepositoryOptions) (*Repository, error) {
 
 func (r *Repository) ListFiles(ro *RepositoryFilesOptions) ([]RepositoryFile, error) {
 	filePath := path.Join("/repositories", ro.Owner, ro.RepoSlug, "src", ro.Ref, ro.Path) + "/"
+
 	urlStr := r.c.requestUrl(filePath)
-	response, err := r.c.execute("GET", urlStr, "")
+	url, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, err
+	}
+
+	query := url.Query()
+	r.c.addMaxDepthParam(&query, nil)
+	url.RawQuery = query.Encode()
+
+	urlStr = url.String()
+
+	response, err := r.c.executePaginated("GET", urlStr, "")
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +363,7 @@ func (r *Repository) ListBranches(rbo *RepositoryBranchOptions) (*RepositoryBran
 	}
 
 	if rbo.MaxDepth > 0 {
-		params.Add("max_depth", strconv.Itoa(rbo.MaxDepth))
+		r.c.addMaxDepthParam(&params, &rbo.MaxDepth)
 	}
 
 	urlStr := r.c.requestUrl("/repositories/%s/%s/refs/branches?%s", rbo.Owner, rbo.RepoSlug, params.Encode())
@@ -503,18 +517,18 @@ func (r *Repository) Delete(ro *RepositoryOptions) (interface{}, error) {
 
 func (r *Repository) ListWatchers(ro *RepositoryOptions) (interface{}, error) {
 	urlStr := r.c.requestUrl("/repositories/%s/%s/watchers", ro.Owner, ro.RepoSlug)
-	return r.c.execute("GET", urlStr, "")
+	return r.c.executePaginated("GET", urlStr, "")
 }
 
 func (r *Repository) ListForks(ro *RepositoryOptions) (interface{}, error) {
 	urlStr := r.c.requestUrl("/repositories/%s/%s/forks", ro.Owner, ro.RepoSlug)
-	return r.c.execute("GET", urlStr, "")
+	return r.c.executePaginated("GET", urlStr, "")
 }
 
 func (r *Repository) ListDefaultReviewers(ro *RepositoryOptions) (*DefaultReviewers, error) {
 	urlStr := r.c.requestUrl("/repositories/%s/%s/default-reviewers?pagelen=1", ro.Owner, ro.RepoSlug)
 
-	res, err := r.c.execute("GET", urlStr, "")
+	res, err := r.c.executePaginated("GET", urlStr, "")
 	if err != nil {
 		return nil, err
 	}

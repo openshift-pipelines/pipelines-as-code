@@ -66,6 +66,13 @@ func TestIsAllowed(t *testing.T) {
 				Sender: "NotAllowedAtFirst",
 			}),
 			fields: fields{
+				workspaceMembers: []types.Member{
+					{
+						User: types.User{
+							AccountID: "Randomweirdo",
+						},
+					},
+				},
 				comments: []types.Comment{
 					{
 						Content: types.Content{Raw: "/ok-to-test"},

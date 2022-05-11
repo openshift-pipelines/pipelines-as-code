@@ -61,7 +61,7 @@ func (r *Webhooks) buildWebhooksBody(ro *WebhooksOptions) (string, error) {
 
 func (r *Webhooks) Gets(ro *WebhooksOptions) (interface{}, error) {
 	urlStr := r.c.requestUrl("/repositories/%s/%s/hooks/", ro.Owner, ro.RepoSlug)
-	return r.c.execute("GET", urlStr, "")
+	return r.c.executePaginated("GET", urlStr, "")
 }
 
 func (r *Webhooks) Create(ro *WebhooksOptions) (*Webhook, error) {
