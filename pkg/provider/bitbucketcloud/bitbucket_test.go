@@ -27,7 +27,6 @@ func TestGetTektonDir(t *testing.T) {
 	tests := []struct {
 		name            string
 		event           *info.Event
-		path            string
 		testDirPath     string
 		contentContains string
 		wantErr         bool
@@ -36,15 +35,19 @@ func TestGetTektonDir(t *testing.T) {
 		{
 			name:            "Get Tekton Directory",
 			event:           bbcloudtest.MakeEvent(nil),
-			path:            ".tekton",
 			testDirPath:     "../../pipelineascode/testdata/pull_request/.tekton",
+			contentContains: "kind: PipelineRun",
+		},
+		{
+			name:            "Get Tekton Directory and subdirectory",
+			event:           bbcloudtest.MakeEvent(nil),
+			testDirPath:     "../../pipelineascode/testdata/subdir/.tekton",
 			contentContains: "kind: PipelineRun",
 		},
 		{
 			name:            "No yaml files in there",
 			event:           bbcloudtest.MakeEvent(nil),
-			path:            ".tekton",
-			testDirPath:     "./",
+			testDirPath:     "../../pipelineascode/testdata/no_yaml/.tekton",
 			contentContains: "",
 		},
 	}
@@ -54,8 +57,8 @@ func TestGetTektonDir(t *testing.T) {
 			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
 			v := &Provider{Client: bbclient}
-			bbcloudtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path)
-			content, err := v.GetTektonDir(ctx, tt.event, tt.path)
+			bbcloudtest.MuxDirContent(t, mux, tt.event, tt.testDirPath)
+			content, err := v.GetTektonDir(ctx, tt.event, ".tekton")
 			if tt.wantErr {
 				assert.Assert(t, err != nil, "GetTektonDir() error = %v, wantErr %v", err, tt.wantErr)
 				return

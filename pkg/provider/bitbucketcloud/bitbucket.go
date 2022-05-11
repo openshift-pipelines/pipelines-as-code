@@ -113,6 +113,15 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacopts *i
 }
 
 func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path string) (string, error) {
+	repositoryFiles, err := v.getDir(event, path)
+	if err != nil {
+		return "", err
+	}
+
+	return v.concatAllYamlFiles(repositoryFiles, event)
+}
+
+func (v *Provider) getDir(event *info.Event, path string) ([]bitbucket.RepositoryFile, error) {
 	repoFileOpts := &bitbucket.RepositoryFilesOptions{
 		Owner:    event.Organization,
 		RepoSlug: event.Repository,
@@ -122,10 +131,9 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path strin
 
 	repositoryFiles, err := v.Client.Repositories.Repository.ListFiles(repoFileOpts)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	return v.concatAllYamlFiles(repositoryFiles, event)
+	return repositoryFiles, nil
 }
 
 func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, path string, targetBranch string) (string, error) {
@@ -133,11 +141,11 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, pa
 }
 
 func (v *Provider) SetClient(_ context.Context, event *info.Event) error {
-	if event.Provider.User == "" {
-		return fmt.Errorf("no git_provider.user has been set in the repo crd")
-	}
 	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
+	}
+	if event.Provider.User == "" {
+		return fmt.Errorf("no git_provider.user has been in repo crd")
 	}
 	v.Client = bitbucket.NewBasicAuth(event.Provider.User, event.Provider.Token)
 	v.Token = &event.Provider.Token
@@ -192,7 +200,20 @@ func (v *Provider) concatAllYamlFiles(objects []bitbucket.RepositoryFile, runeve
 	var allTemplates string
 
 	for _, value := range objects {
-		if strings.HasSuffix(value.Path, ".yaml") ||
+		if value.Type == "commit_directory" {
+			objects, err := v.getDir(runevent, value.Path)
+			if err != nil {
+				return "", err
+			}
+			subdirdata, err := v.concatAllYamlFiles(objects, runevent)
+			if err != nil {
+				return "", err
+			}
+			if allTemplates != "" && !strings.HasPrefix(subdirdata, "---") {
+				allTemplates += "---"
+			}
+			allTemplates += fmt.Sprintf("\n%s\n", subdirdata)
+		} else if strings.HasSuffix(value.Path, ".yaml") ||
 			strings.HasSuffix(value.Path, ".yml") {
 			data, err := v.getBlob(runevent, runevent.SHA, value.Path)
 			if err != nil {

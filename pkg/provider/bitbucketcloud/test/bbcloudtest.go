@@ -22,6 +22,7 @@ import (
 const bbBaseURLPath = "/2.0"
 
 func SetupBBCloudClient(t *testing.T) (*bitbucket.Client, *http.ServeMux, func()) {
+	t.Helper()
 	mux := http.NewServeMux()
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(bbBaseURLPath+"/", http.StripPrefix(bbBaseURLPath, mux))
@@ -52,6 +53,8 @@ func SetupBBCloudClient(t *testing.T) (*bitbucket.Client, *http.ServeMux, func()
 }
 
 func MuxComments(t *testing.T, mux *http.ServeMux, event *info.Event, comments []types.Comment) {
+	t.Helper()
+
 	assert.Assert(t, event.Event != nil)
 
 	pr, ok := event.Event.(*types.PullRequestEvent)
@@ -69,6 +72,7 @@ func MuxComments(t *testing.T, mux *http.ServeMux, event *info.Event, comments [
 }
 
 func MuxOrgMember(t *testing.T, mux *http.ServeMux, event *info.Event, members []types.Member) {
+	t.Helper()
 	mux.HandleFunc("/workspaces/"+event.Organization+"/members",
 		func(rw http.ResponseWriter, r *http.Request) {
 			members := &types.Members{
@@ -81,6 +85,8 @@ func MuxOrgMember(t *testing.T, mux *http.ServeMux, event *info.Event, members [
 }
 
 func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, filescontents map[string]string) {
+	t.Helper()
+
 	for key := range filescontents {
 		target := fmt.Sprintf("/repositories/%s/%s/src/%s", event.Organization, event.Repository, event.SHA)
 		mux.HandleFunc(target+"/"+key, func(rw http.ResponseWriter, r *http.Request) {
@@ -91,7 +97,9 @@ func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, filescontents
 	}
 }
 
-func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, dirs map[string][]bitbucket.RepositoryFile) {
+func MuxListDirFiles(t *testing.T, mux *http.ServeMux, event *info.Event, dirs map[string][]bitbucket.RepositoryFile) {
+	t.Helper()
+
 	for key, value := range dirs {
 		urlp := "/repositories/" + event.Organization + "/" + event.Repository + "/src/" + event.SHA + "/" + key + "/"
 		mux.HandleFunc(urlp, func(rw http.ResponseWriter, r *http.Request) {
@@ -106,6 +114,8 @@ func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, dirs map[st
 }
 
 func MuxCommits(t *testing.T, mux *http.ServeMux, event *info.Event, commits []types.Commit) {
+	t.Helper()
+
 	path := fmt.Sprintf("/repositories/%s/%s/commits/%s", event.Organization, event.Repository, event.SHA)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		dircontents := map[string][]types.Commit{
@@ -117,6 +127,8 @@ func MuxCommits(t *testing.T, mux *http.ServeMux, event *info.Event, commits []t
 }
 
 func MuxRepoInfo(t *testing.T, mux *http.ServeMux, event *info.Event, repo *bitbucket.Repository) {
+	t.Helper()
+
 	path := fmt.Sprintf("/repositories/%s/%s", event.Organization, event.Repository)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		b, _ := json.Marshal(repo)
@@ -125,6 +137,8 @@ func MuxRepoInfo(t *testing.T, mux *http.ServeMux, event *info.Event, repo *bitb
 }
 
 func MuxCreateCommitstatus(t *testing.T, mux *http.ServeMux, event *info.Event, expectedDescSubstr string, expStatus provider.StatusOpts) {
+	t.Helper()
+
 	path := fmt.Sprintf("/repositories/%s/%s/commit/%s/statuses/build", event.Organization, event.Repository, event.SHA)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &bitbucket.CommitStatusOptions{}
@@ -145,6 +159,8 @@ func MuxCreateCommitstatus(t *testing.T, mux *http.ServeMux, event *info.Event, 
 }
 
 func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expectedCommentSubstr string) {
+	t.Helper()
+
 	assert.Assert(t, event.Event != nil)
 	prev, ok := event.Event.(*types.PullRequestEvent)
 	assert.Assert(t, ok)
@@ -165,32 +181,39 @@ func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expec
 	})
 }
 
-func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir string, targetDirName string) {
-	files, err := ioutil.ReadDir(testDir)
-	if err != nil {
-		// no error just disapointed
-		return
-	}
+func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testdir string) {
+	t.Helper()
+	files, err := ioutil.ReadDir(testdir)
+	assert.NilError(t, err)
+	lastindex := strings.LastIndex(testdir, ".tekton")
 
-	repofiles := []bitbucket.RepositoryFile{}
+	relativenamedir := testdir[lastindex:]
 	filecontents := map[string]string{}
-	for _, value := range files {
-		path := filepath.Join(targetDirName, value.Name())
-		repofiles = append(repofiles, bitbucket.RepositoryFile{
-			Path: path,
-		})
-		fpath := filepath.Join(testDir, value.Name())
-		if info, err := os.Stat(fpath); err == nil && info.IsDir() {
-			continue
-		}
-		content, err := ioutil.ReadFile(fpath)
-		assert.NilError(t, err)
-		filecontents[path] = string(content)
-	}
+	brfiles := map[string][]bitbucket.RepositoryFile{}
 
-	MuxListDir(t, mux, event, map[string][]bitbucket.RepositoryFile{
-		targetDirName: repofiles,
-	})
+	for _, file := range files {
+		relativename := filepath.Join(relativenamedir, file.Name())
+		fpath := filepath.Join(testdir, file.Name())
+		if file.IsDir() {
+			btype := "commit_directory"
+			brfiles[relativenamedir] = append(brfiles[relativenamedir], bitbucket.RepositoryFile{
+				Path: relativename,
+				Type: btype,
+			})
+
+			MuxDirContent(t, mux, event, fpath)
+		} else {
+			btype := "file"
+			brfiles[relativenamedir] = append(brfiles[relativenamedir], bitbucket.RepositoryFile{
+				Path: relativename,
+				Type: btype,
+			})
+			content, err := ioutil.ReadFile(fpath)
+			assert.NilError(t, err)
+			filecontents[relativename] = string(content)
+		}
+	}
+	MuxListDirFiles(t, mux, event, brfiles)
 	MuxFiles(t, mux, event, filecontents)
 }
 
@@ -321,7 +344,4 @@ func MakeEvent(event *info.Event) *info.Event {
 		rev.Event = &types.PullRequestEvent{PullRequest: types.PullRequest{ID: 666}}
 	}
 	return rev
-}
-
-func MakeMuxedHTTPClient() {
 }

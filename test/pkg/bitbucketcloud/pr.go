@@ -28,7 +28,7 @@ func MakePR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Run,
 	err = bprovider.Client.Workspaces.Repositories.Repository.WriteFileBlob(&bitbucket.RepositoryBlobWriteOptions{
 		Owner:    opts.Organization,
 		RepoSlug: opts.Repo,
-		FileName: ".tekton/pr.yaml",
+		FileName: ".tekton/sub/dir/pr.yaml",
 		FilePath: tmpfile.Path(),
 		Message:  title,
 		Branch:   targetRefName,
