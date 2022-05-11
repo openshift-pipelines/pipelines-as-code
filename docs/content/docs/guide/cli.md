@@ -128,7 +128,7 @@ If you haven't configured a provider previously, it will follow up with question
 
 `tkn pac repo describe` -- will describe a Pipelines as Code Repository and the runs associated with it.
 
-On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows Terminal](https://github.com/microsoft/terminal), gnome-terminal etc...) the links are clickable via control+click or ⌘+click and will open the browser to the UI URL to see the Pipelinerun associated with it.
+On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows Terminal](https://github.com/microsoft/terminal), GNOME-terminal and so on...) the links are clickable with control+click or ⌘+click and will open the browser to the UI URL to see the Pipelinerun associated with it.
 {{< /details >}}
 
 {{< details "tkn pac generate" >}}
