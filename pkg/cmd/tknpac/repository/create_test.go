@@ -214,3 +214,40 @@ func TestGetNamespace(t *testing.T) {
 		})
 	}
 }
+
+func TestCleanUpURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		repoURL string
+		wantURL string
+	}{
+		{
+			name:    "normal url",
+			repoURL: "https://github.com/openshift-pipelines/pipelines-as-code",
+			wantURL: "https://github.com/openshift-pipelines/pipelines-as-code",
+		},
+		{
+			name:    "url with creds",
+			repoURL: "https://username:password@github.com/openshift-pipelines/pipelines-as-code",
+			wantURL: "https://github.com/openshift-pipelines/pipelines-as-code",
+		},
+		{
+			name:    "url with creds",
+			repoURL: "http://username@github.com/openshift-pipelines/pipelines-as-code",
+			wantURL: "http://github.com/openshift-pipelines/pipelines-as-code",
+		},
+		{
+			name:    "url with creds and port",
+			repoURL: "https://username:password@githubenteprise.company.com:8080/openshift-pipelines/pipelines-as-code",
+			wantURL: "https://githubenteprise.company.com:8080/openshift-pipelines/pipelines-as-code",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := cleanupGitURL(tt.repoURL)
+			assert.NilError(t, err)
+			assert.Equal(t, got, tt.wantURL)
+		})
+	}
+}

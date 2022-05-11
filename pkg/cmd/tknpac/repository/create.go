@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -190,7 +191,11 @@ func getRepoURL(opts *createOptions) error {
 
 	q := "Enter the Git repository url containing the pipelines "
 	if opts.gitInfo.URL != "" {
-		q += fmt.Sprintf("(default: %s)", opts.gitInfo.URL)
+		repoURL, err := cleanupGitURL(opts.gitInfo.URL)
+		if err != nil {
+			return err
+		}
+		q += fmt.Sprintf("(default: %s)", repoURL)
 	}
 	q += ": "
 	if err := prompt.SurveyAskOne(&survey.Input{Message: q}, &opts.event.URL); err != nil {
@@ -205,6 +210,14 @@ func getRepoURL(opts *createOptions) error {
 	}
 
 	return fmt.Errorf("no url has been provided")
+}
+
+func cleanupGitURL(rawURL string) (string, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Host, parsedURL.Path), nil
 }
 
 func createRepoCRD(ctx context.Context, opts *createOptions) error {
