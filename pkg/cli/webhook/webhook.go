@@ -102,12 +102,12 @@ func (w *Options) Install(ctx context.Context) error {
 	}
 
 	// create webhook secret in namespace where repository CR is created
-	if err := w.createWebhookSecret(ctx, webhookProvider.GetName(), response); err != nil {
+	if err := w.createWebhookSecret(ctx, response); err != nil {
 		return err
 	}
 
 	// update repo cr with webhook secret
-	return w.updateRepositoryCR(ctx, webhookProvider.GetName())
+	return w.updateRepositoryCR(ctx)
 }
 
 func askProvider() (Interface, error) {
