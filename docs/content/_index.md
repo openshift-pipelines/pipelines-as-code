@@ -30,7 +30,7 @@ of the execution when triggered by a `Pull Request` or a `Push`.
 
 <--->
 
-- Pull-request actions in comments such as `/retest`
+- Pull-request "*GitOps*" actions through comments with  `/retest`, `/test <pipeline-name>` and so on.
 
 - Automatic Task resolution in Pipelines (local Tasks, Tekton Hub, and remote URLs)
 
