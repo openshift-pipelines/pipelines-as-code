@@ -141,7 +141,6 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			}
 		}
 
-		// nolint: nestif
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[filepath.Join(pipelinesascode.GroupName, onCelExpression)]; ok {
 			out, err := celEvaluate(celExpr, event)
 			if err != nil {
