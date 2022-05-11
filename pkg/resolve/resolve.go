@@ -104,8 +104,8 @@ func inlineTasks(tasks []tektonv1beta1.PipelineTask, ropt *Opts, types Types) ([
 }
 
 type Opts struct {
-	GenerateName bool     // wether to GenerateName
-	RemoteTasks  bool     // wether to parse annotation to fetch tasks from remote
+	GenerateName bool     // whether to GenerateName
+	RemoteTasks  bool     // whether to parse annotation to fetch tasks from remote
 	SkipInlining []string // task to skip inlining
 }
 

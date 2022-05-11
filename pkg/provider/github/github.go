@@ -309,6 +309,9 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 			if provider.IsOkToTestComment(gitEvent.GetComment().GetBody()) {
 				return setLoggerAndProceed(true, "", nil)
 			}
+			if provider.IsTestComment(gitEvent.GetComment().GetBody()) {
+				return setLoggerAndProceed(true, "", nil)
+			}
 			return setLoggerAndProceed(false, "", nil)
 		}
 		return setLoggerAndProceed(false, "issue: not a gitops pull request comment", nil)

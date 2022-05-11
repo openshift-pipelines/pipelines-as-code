@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -244,6 +245,11 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 	runevent.TriggerTarget = "pull_request"
 	if !event.GetIssue().IsPullRequest() {
 		return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
+	}
+
+	// if it is a /test comment figure out the pipelinerun name
+	if provider.IsTestComment(event.GetComment().GetBody()) {
+		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(event.GetComment().GetBody())
 	}
 
 	// We are getting the full URL so we have to get the last part to get the PR number,

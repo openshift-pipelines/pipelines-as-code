@@ -23,6 +23,17 @@ failure is not with your PR but seems to be an infra issue.
 /retest
 ```
 
+Note that `/retest` runs every `PipelineRun` matching the Pull Request. If you want to retest an individual `PipelineRun`
+you can run it again by adding a comment with `/test <pipelinerun-name>`.
+
+Example:
+
+```yaml
+/test <pipelineRun-name>
+```
+
+NOTE: `/test` is currently supported only on GitHub Apps.
+
 ## CRD
 
 Status of your pipeline execution is stored inside the Repo CustomResource :

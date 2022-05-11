@@ -3,6 +3,7 @@ package info
 import "net/http"
 
 type Event struct {
+	State
 	Event interface{}
 
 	// EventType is what coming from the provider header, i.e:
@@ -42,6 +43,10 @@ type Event struct {
 	// Bitbucket Server
 	CloneURL string // bitbucket server has a different url for cloning the repo than normal public html url
 	Provider *Provider
+}
+
+type State struct {
+	TargetTestPipelineRun string // PipelineRun name to run
 }
 
 type Provider struct {

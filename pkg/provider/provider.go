@@ -2,11 +2,13 @@ package provider
 
 import (
 	"regexp"
+	"strings"
 )
 
 var (
 	retestRegex   = regexp.MustCompile(`(?m)^/retest\s*$`)
 	oktotestRegex = regexp.MustCompile(`(?m)^/ok-to-test\s*$`)
+	testRegex     = regexp.MustCompile(`(?m)^/test[ \t]+\S+`)
 )
 
 const (
@@ -30,4 +32,17 @@ func IsRetestComment(comment string) bool {
 
 func IsOkToTestComment(comment string) bool {
 	return oktotestRegex.MatchString(comment)
+}
+
+func IsTestComment(comment string) bool {
+	return testRegex.MatchString(comment)
+}
+
+func GetPipelineRunFromComment(comment string) string {
+	// get string after /test command
+	splitTest := strings.Split(comment, "/test")
+	// now get the first line
+	getFirstLine := strings.Split(splitTest[1], "\n")
+	// trim spaces
+	return strings.TrimSpace(getFirstLine[0])
 }
