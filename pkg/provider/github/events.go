@@ -249,7 +249,7 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 
 	// if it is a /test comment figure out the pipelinerun name
 	if provider.IsTestComment(event.GetComment().GetBody()) {
-		runevent.TestPipelineRun = getPipelineRunFromComment(event.GetComment().GetBody())
+		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(event.GetComment().GetBody())
 	}
 
 	// We are getting the full URL so we have to get the last part to get the PR number,
@@ -263,13 +263,4 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 
 	v.Logger.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	return v.getPullRequest(ctx, runevent)
-}
-
-func getPipelineRunFromComment(comment string) string {
-	// get string after /test command
-	splitTest := strings.Split(comment, "/test")
-	// now get the first line
-	getFirstLine := strings.Split(splitTest[1], "\n")
-	// trim spaces
-	return strings.TrimSpace(getFirstLine[0])
 }

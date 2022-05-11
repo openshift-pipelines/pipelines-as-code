@@ -129,9 +129,9 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	}
 
 	// if /test command is used then filter out the pipelinerun
-	pipelineRuns = filterPipelineRun(p.event.TestPipelineRun, pipelineRuns)
+	pipelineRuns = filterPipelineRun(p.event.TargetTestPipelineRun, pipelineRuns)
 	if pipelineRuns == nil {
-		p.logger.Info(fmt.Sprintf("cannot find pipelinerun %s in this repository", p.event.TestPipelineRun))
+		p.logger.Info(fmt.Sprintf("cannot find pipelinerun %s in this repository", p.event.TargetTestPipelineRun))
 		return nil, nil, nil
 	}
 

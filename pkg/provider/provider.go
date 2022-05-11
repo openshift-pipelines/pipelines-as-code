@@ -2,6 +2,7 @@ package provider
 
 import (
 	"regexp"
+	"strings"
 )
 
 var (
@@ -35,4 +36,13 @@ func IsOkToTestComment(comment string) bool {
 
 func IsTestComment(comment string) bool {
 	return testRegex.MatchString(comment)
+}
+
+func GetPipelineRunFromComment(comment string) string {
+	// get string after /test command
+	splitTest := strings.Split(comment, "/test")
+	// now get the first line
+	getFirstLine := strings.Split(splitTest[1], "\n")
+	// trim spaces
+	return strings.TrimSpace(getFirstLine[0])
 }
