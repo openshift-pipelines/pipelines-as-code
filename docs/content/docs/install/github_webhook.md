@@ -23,8 +23,13 @@ Follow this guide to create a personal token :
 
 <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token>
 
-The only permission needed is the *repo* permission. You will have to note the
-generated token somewhere, or otherwise you will have to recreate it.
+Depending on Repository, the token needs certain permission
+for public repository: `public_repo` scope
+for private repository: `repo` scope
+
+You will have to note the generated token somewhere, or otherwise you will have to recreate it.
+
+NOTE: If you are going to configure webhook through CLI, you will need to also add a scope `admin:repo_hook`.
 
 {{< hint danger >}}
 For best security practice you will probably want to have a short token
@@ -39,15 +44,20 @@ kubectl -n $target_namespace patch secret githubwebhook -p "{\"data\": {\"foo\":
 
 {{< /hint >}}
 
-## Repository creation
+## Create Repository and Configure webhook
 
 Now, you have 2 ways to configure the webhook:
 
 * You could use [`tkn pac repository create`](/docs/guide/cli) command which
-  will create repository CR and configure webhook, or
-* You could follow the [configuring webhook](#configure-webhook) guide to do it manually
+  will create repository CR and configure webhook
 
-## Configure webhook
+  You need personal access token created before to have `admin:repo_hook` scope. CLI will use this token to configure
+webhook and add it in a secret on cluster which will be used by controller for accessing the repository.
+After configuring webhook, you can update the token in secret with just the scopes mentioned [here](#generate-a-token-for-pipelines-as-code).
+ or
+* You could follow the [Configure webhook manually](#configure-webhook-manually) guide to do it manually
+
+## Configure webhook manually
 
 follow below instruction to configure webhook manually
 
