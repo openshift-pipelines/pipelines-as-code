@@ -40,7 +40,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: registry.redhat.io/rhel8/go-toolset:1.16.12-7
+            - image: registry.redhat.io/rhel8/go-toolset:1.17
               name: get-cache
               workingDir: $(workspaces.source.path)
               env:
@@ -63,7 +63,7 @@ spec:
                 curl http://uploader:8080/golang-cache.tar|tar -x -f- || \
                    curl -X DELETE -F "file=golang-cache.tar" http://uploader:8080/upload
             - name: unittest
-              image: registry.redhat.io/rhel8/go-toolset:1.16.12-7
+              image: registry.redhat.io/rhel8/go-toolset:1.17
               workingDir: $(workspaces.source.path)
               env:
                 - name: GOCACHE
@@ -86,7 +86,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: registry.redhat.io/rhel8/go-toolset:1.16.12-7
+              image: registry.redhat.io/rhel8/go-toolset:1.17
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN

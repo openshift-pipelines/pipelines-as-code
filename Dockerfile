@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/go-toolset:latest	 AS builder
+FROM registry.access.redhat.com/ubi8/go-toolset:1.17	 AS builder
 
 
 COPY . /src

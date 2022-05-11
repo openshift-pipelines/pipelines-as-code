@@ -294,7 +294,7 @@ spec:
           - name: lint
             # we get bumped out when usingh the official image with docker.io
             # ratelimit so workaround this.
-            image: registry.access.redhat.com/ubi8/go-toolset:1.14.12
+            image: registry.access.redhat.com/ubi8/go-toolset:1.17
             workingdir: $(workspaces.source.path)
             script: |
               version=$(params.version)
