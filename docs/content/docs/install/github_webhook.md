@@ -23,9 +23,14 @@ Follow this guide to create a personal token :
 
 <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token>
 
-Depending on Repository, the token needs certain permission
-for public repository: `public_repo` scope
-for private repository: `repo` scope
+Depending on the Repository access scope, the token will need different permissions.
+For public repositories the scope are:
+
+* `public_repo` scope
+
+For private repositories:
+
+* The whole `repo` scope
 
 You will have to note the generated token somewhere, or otherwise you will have to recreate it.
 
@@ -44,20 +49,20 @@ kubectl -n $target_namespace patch secret githubwebhook -p "{\"data\": {\"foo\":
 
 {{< /hint >}}
 
-## Create Repository and Configure webhook
+## Creating a Repository CR and Configuring webhook
 
 Now, you have 2 ways to configure the webhook:
 
-* You could use [`tkn pac repository create`](/docs/guide/cli) command which
+You could use [`tkn pac repository create`](/docs/guide/cli) command which
   will create repository CR and configure webhook
 
-  You need personal access token created before to have `admin:repo_hook` scope. CLI will use this token to configure
+  You need to have a personal access token created with `admin:repo_hook` scope. tkn-pac will use this token to configure the
 webhook and add it in a secret on cluster which will be used by controller for accessing the repository.
-After configuring webhook, you can update the token in secret with just the scopes mentioned [here](#generate-a-token-for-pipelines-as-code).
- or
-* You could follow the [Configure webhook manually](#configure-webhook-manually) guide to do it manually
+After configuring the webhook, you will be able to update the token in the secret with just the scopes mentioned [here](#generate-a-token-for-pipelines-as-code).
 
-## Configure webhook manually
+Alternatively, you could follow the [Configure webhook manually](#configure-webhook-manually) guide to do it manually
+
+## Configuring webhook manually
 
 follow below instruction to configure webhook manually
 
