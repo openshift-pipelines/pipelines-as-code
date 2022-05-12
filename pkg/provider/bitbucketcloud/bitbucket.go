@@ -38,6 +38,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{
 		TaskStatusTMPL: taskStatusTemplate,
 		APIURL:         bitbucket.DEFAULT_BITBUCKET_API_BASE_URL,
+		Name:           "bitbucket-cloud",
 	}
 }
 

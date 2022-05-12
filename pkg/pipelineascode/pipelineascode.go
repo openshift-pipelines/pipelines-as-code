@@ -91,7 +91,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 	}
 
 	// Add labels and annotations to pipelinerun
-	kubeinteraction.AddLabelsAndAnnotations(p.event, match.PipelineRun, match.Repo)
+	kubeinteraction.AddLabelsAndAnnotations(p.event, match.PipelineRun, match.Repo, p.vcx.GetConfig())
 
 	// Create the actual pipeline
 	pr, err := p.run.Clients.Tekton.TektonV1beta1().PipelineRuns(match.Repo.GetNamespace()).Create(ctx,
