@@ -123,7 +123,7 @@ func askProvider() (Interface, error) {
 	if answer == "GitHub" {
 		return &gitHubConfig{Hosted: true}, nil
 	} else if answer == "GitLab" {
-		return &gitLabConfig{}, nil
+		return &gitLabConfig{Hosted: true}, nil
 	}
 	return nil, nil
 }

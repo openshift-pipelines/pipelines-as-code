@@ -19,6 +19,7 @@ type gitLabConfig struct {
 	webhookSecret       string
 	personalAccessToken string
 	APIURL              string
+	Hosted              bool
 }
 
 func (gl *gitLabConfig) GetName() string {
@@ -26,20 +27,20 @@ func (gl *gitLabConfig) GetName() string {
 }
 
 func (gl *gitLabConfig) Run(_ context.Context, opts *Options) (*response, error) {
-	err := gl.askGLWebhookConfig(opts.ControllerURL)
+	err := gl.askGLWebhookConfig(opts.ControllerURL, opts.ProviderAPIURL)
 	if err != nil {
 		return nil, err
 	}
-	gl.APIURL = opts.ProviderAPIURL
 
 	return &response{
 		ControllerURL:       gl.controllerURL,
 		PersonalAccessToken: gl.personalAccessToken,
 		WebhookSecret:       gl.webhookSecret,
+		APIURL:              gl.APIURL,
 	}, gl.create()
 }
 
-func (gl *gitLabConfig) askGLWebhookConfig(controllerURL string) error {
+func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
 	msg := "Please enter the project ID for the repository you want to be configured :"
 	if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &gl.projectID,
 		survey.WithValidator(survey.Required)); err != nil {
@@ -88,6 +89,16 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL string) error {
 		Message: "Please enter the GitLab access token: ",
 	}, &gl.personalAccessToken, survey.WithValidator(survey.Required)); err != nil {
 		return err
+	}
+
+	if apiURL == "" && gl.Hosted {
+		if err := prompt.SurveyAskOne(&survey.Input{
+			Message: "Please enter your GitLab API URL:: ",
+		}, &gl.APIURL, survey.WithValidator(survey.Required)); err != nil {
+			return err
+		}
+	} else {
+		gl.APIURL = apiURL
 	}
 
 	return nil
