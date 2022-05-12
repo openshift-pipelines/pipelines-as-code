@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -65,6 +66,12 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 		p.event.Provider.WebhookSecret, _ = getCurrentNSWebhookSecret(ctx, p.k8int)
 	}
 	if err := p.vcx.Validate(ctx, p.run, p.event); err != nil {
+		// check that webhook secret has no /n or space into it
+		if strings.ContainsAny(p.event.Provider.WebhookSecret, "\n ") {
+			p.logger.Error(`we have failed to validate the payload with the webhook secret, 
+it seems that we have detected a \n or a space at the end of your webhook secret, 
+is that what you want? make sure you use -n when generating the secret, eg: echo -n secret|base64`)
+		}
 		return nil, nil, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
 	}
 

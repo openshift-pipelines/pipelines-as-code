@@ -90,7 +90,7 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 }
 
 func TestRun(t *testing.T) {
-	observer, _ := zapobserver.New(zap.InfoLevel)
+	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	tests := []struct {
 		name                         string
@@ -103,6 +103,9 @@ func TestRun(t *testing.T) {
 		skipReplyingOrgPublicMembers bool
 		expectedNumberofCleanups     int
 		ProviderInfoFromRepo         bool
+		WebHookSecretValue           string
+		PayloadEncodedSecret         string
+		expectedLogSnippet           string
 	}{
 		{
 			name: "pull request/fail-to-start-apps",
@@ -143,6 +146,58 @@ func TestRun(t *testing.T) {
 			finalStatus:          "neutral",
 			finalStatusText:      "<th>Status</th><th>Duration</th><th>Name</th>",
 			ProviderInfoFromRepo: true,
+		},
+		{
+			name: "pull request/webhook secret new line",
+			runevent: info.Event{
+				Event: &github.PullRequestEvent{
+					PullRequest: &github.PullRequest{
+						Number: github.Int(666),
+					},
+				},
+				SHA:           "fromwebhook",
+				Organization:  "organizationes",
+				Repository:    "lagaffe",
+				URL:           "https://service/documentation",
+				HeadBranch:    "press",
+				BaseBranch:    "main",
+				Sender:        "fantasio",
+				EventType:     "pull_request",
+				TriggerTarget: "pull_request",
+			},
+			tektondir:            "testdata/pull_request",
+			finalStatus:          "skipped",
+			finalStatusText:      "<th>Status</th><th>Duration</th><th>Name</th>",
+			ProviderInfoFromRepo: true,
+			WebHookSecretValue:   "secret\n",
+			PayloadEncodedSecret: "secret",
+			expectedLogSnippet:   "it seems that we have detected a \\n or a space at the end",
+		},
+		{
+			name: "pull request/webhook secret space at the end",
+			runevent: info.Event{
+				Event: &github.PullRequestEvent{
+					PullRequest: &github.PullRequest{
+						Number: github.Int(666),
+					},
+				},
+				SHA:           "fromwebhook",
+				Organization:  "organizationes",
+				Repository:    "lagaffe",
+				URL:           "https://service/documentation",
+				HeadBranch:    "press",
+				BaseBranch:    "main",
+				Sender:        "fantasio",
+				EventType:     "pull_request",
+				TriggerTarget: "pull_request",
+			},
+			tektondir:            "testdata/pull_request",
+			finalStatus:          "skipped",
+			finalStatusText:      "<th>Status</th><th>Duration</th><th>Name</th>",
+			ProviderInfoFromRepo: true,
+			WebHookSecretValue:   "secret ",
+			PayloadEncodedSecret: "secret",
+			expectedLogSnippet:   "it seems that we have detected a \\n or a space at the end",
 		},
 		{
 			name: "Push/branch",
@@ -285,6 +340,14 @@ func TestRun(t *testing.T) {
 			var providerURL string
 			secrets := map[string]string{}
 			webhookSecret := "don'tlookatmeplease"
+			if tt.WebHookSecretValue != "" {
+				webhookSecret = tt.WebHookSecretValue
+			}
+			payloadEncodedSecret := webhookSecret
+			if tt.PayloadEncodedSecret != "" {
+				payloadEncodedSecret = tt.PayloadEncodedSecret
+			}
+
 			repoToken := "repo-token"
 
 			repo := testnewrepo.RepoTestcreationOpts{
@@ -351,8 +414,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}
-
-			mac := hmac.New(sha256.New, []byte(webhookSecret))
+			mac := hmac.New(sha256.New, []byte(payloadEncodedSecret))
 			payload := []byte(`{"iam": "batman"}`)
 			mac.Write(payload)
 			hexs := hex.EncodeToString(mac.Sum(nil))
@@ -389,6 +451,11 @@ func TestRun(t *testing.T) {
 			}
 
 			assert.NilError(t, err)
+
+			if tt.expectedLogSnippet != "" {
+				logmsg := log.FilterMessageSnippet(tt.expectedLogSnippet).TakeAll()
+				assert.Assert(t, len(logmsg) > 0, "log messages", logmsg, tt.expectedLogSnippet)
+			}
 
 			if tt.finalStatus != "skipped" {
 				got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(
