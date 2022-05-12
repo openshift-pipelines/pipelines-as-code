@@ -128,7 +128,8 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                make test GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
+                export GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
+                make test
 
             - name: lint
               image: quay.io/app-sre/golangci-lint:v1.46.0

@@ -7,6 +7,7 @@ LDFLAGS=
 OUTPUT_DIR=bin
 GO           = go
 TIMEOUT_UNIT = 5m
+GO_TEST_FLAGS +=
 
 
 PY_FILES := $(shell find . -type f -regex ".*py" -print)
@@ -61,7 +62,7 @@ test: test-clean test-unit ## Run test-unit
 test-unit: ## Run unit tests
 	@echo "Running unit tests..."
 	@set -o pipefail ; \
-		$(GO) test -timeout $(TIMEOUT_UNIT) $(ARGS) ./... | { grep -v 'no test files'; true; }
+		$(GO) test $(GO_TEST_FLAGS) -timeout $(TIMEOUT_UNIT) $(ARGS) ./... | { grep -v 'no test files'; true; }
 
 .PHONY: test-e2e-cleanup
 test-e2e-cleanup: ## cleanup test e2e namespace/pr left open
