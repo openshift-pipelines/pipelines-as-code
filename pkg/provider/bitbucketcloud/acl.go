@@ -25,19 +25,13 @@ func (v *Provider) IsAllowed(_ context.Context, event *info.Event) (bool, error)
 }
 
 func (v *Provider) isWorkspaceMember(event *info.Event) (bool, error) {
-	membersIntf, err := v.Client.Workspaces.Members(event.Organization)
+	members, err := v.Client.Workspaces.Members(event.Organization)
 	if err != nil {
 		return false, err
 	}
 
-	members := &types.Members{}
-	err = mapstructure.Decode(membersIntf, members)
-	if err != nil {
-		return false, err
-	}
-
-	for _, member := range members.Values {
-		if member.User.AccountID == event.AccountID {
+	for _, member := range members.Members {
+		if member.AccountId == event.AccountID {
 			return true, nil
 		}
 	}

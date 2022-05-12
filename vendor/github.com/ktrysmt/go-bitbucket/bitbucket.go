@@ -1,7 +1,7 @@
 package bitbucket
 
 type users interface {
-	Get(username string) (interface{}, error)
+	Get(username string) (*User, error)
 	Followers(username string) (interface{}, error)
 	Following(username string) (interface{}, error)
 	Repositories(username string) (interface{}, error)

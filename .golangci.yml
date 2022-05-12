@@ -52,7 +52,6 @@ linters:
     - goheader
     - gomodguard
     - goprintffuncname
-    - nestif
     - nilerr
     - noctx
     - nolintlint
