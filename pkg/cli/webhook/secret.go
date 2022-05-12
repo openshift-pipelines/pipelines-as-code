@@ -38,7 +38,7 @@ func (w *Options) createWebhookSecret(ctx context.Context, response *response) e
 	return nil
 }
 
-func (w *Options) updateRepositoryCR(ctx context.Context) error {
+func (w *Options) updateRepositoryCR(ctx context.Context, res *response) error {
 	repo, err := w.Run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(w.RepositoryNamespace).
 		Get(ctx, w.RepositoryName, metav1.GetOptions{})
 	if err != nil {
@@ -56,6 +56,10 @@ func (w *Options) updateRepositoryCR(ctx context.Context) error {
 	repo.Spec.GitProvider.WebhookSecret = &v1alpha1.GitProviderSecret{
 		Name: w.RepositoryName,
 		Key:  webhookSecretKey,
+	}
+
+	if res.APIURL != "" {
+		repo.Spec.GitProvider.URL = res.APIURL
 	}
 
 	_, err = w.Run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(w.RepositoryNamespace).

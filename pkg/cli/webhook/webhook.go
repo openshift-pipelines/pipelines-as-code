@@ -36,6 +36,7 @@ type response struct {
 	ControllerURL       string
 	WebhookSecret       string
 	PersonalAccessToken string
+	APIURL              string
 }
 
 func (w *Options) Install(ctx context.Context) error {
@@ -107,7 +108,7 @@ func (w *Options) Install(ctx context.Context) error {
 	}
 
 	// update repo cr with webhook secret
-	return w.updateRepositoryCR(ctx)
+	return w.updateRepositoryCR(ctx, response)
 }
 
 func askProvider() (Interface, error) {
@@ -120,7 +121,7 @@ func askProvider() (Interface, error) {
 	}
 
 	if answer == "GitHub" {
-		return &gitHubConfig{}, nil
+		return &gitHubConfig{Hosted: true}, nil
 	} else if answer == "GitLab" {
 		return &gitLabConfig{}, nil
 	}
@@ -128,9 +129,9 @@ func askProvider() (Interface, error) {
 }
 
 func detectProvider(url string) Interface {
-	if strings.Contains(url, "github.com") {
+	if strings.Contains(url, "https://github.com") {
 		return &gitHubConfig{}
-	} else if strings.Contains(url, "gitlab.com") {
+	} else if strings.Contains(url, "https://gitlab.com") {
 		return &gitLabConfig{}
 	}
 	return nil
