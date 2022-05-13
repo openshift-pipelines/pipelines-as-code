@@ -105,6 +105,9 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 			if provider.IsOkToTestComment(gitEvent.ObjectAttributes.Note) {
 				return setLoggerAndProceed(true, "", nil)
 			}
+			if provider.IsTestComment(gitEvent.ObjectAttributes.Note) {
+				return setLoggerAndProceed(true, "", nil)
+			}
 		}
 		return setLoggerAndProceed(false, "not a gitops style merge comment event", nil)
 	default:
@@ -195,6 +198,10 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.SHATitle = gitEvent.MergeRequest.LastCommit.Message
 		processedEvent.BaseBranch = gitEvent.MergeRequest.TargetBranch
 		processedEvent.HeadBranch = gitEvent.MergeRequest.SourceBranch
+		// if it is a /test comment figure out the pipelineRun name
+		if provider.IsTestComment(gitEvent.ObjectAttributes.Note) {
+			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(gitEvent.ObjectAttributes.Note)
+		}
 
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
