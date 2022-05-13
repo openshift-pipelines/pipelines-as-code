@@ -70,7 +70,7 @@ test-e2e-cleanup: ## cleanup test e2e namespace/pr left open
 
 .PHONY: test-e2e
 test-e2e:  test-e2e-cleanup ## run e2e tests
-	@go test -failfast -count=1 -tags=e2e $(GO_TEST_FLAGS) ./test
+	@go test $(GO_TEST_FLAGS) -failfast -count=1 -tags=e2e $(GO_TEST_FLAGS) ./test
 
 .PHONY: lint
 lint: lint-go lint-yaml lint-md ## run all linters
