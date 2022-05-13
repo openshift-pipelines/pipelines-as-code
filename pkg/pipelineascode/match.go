@@ -89,27 +89,28 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	}
 
 	// Check if the submitter is allowed to run this.
-	allowed, err := p.vcx.IsAllowed(ctx, p.event)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if !allowed {
-		msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", p.event.Sender)
-		p.logger.Info(msg)
-		if p.event.AccountID != "" {
-			msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", p.event.Sender, p.event.AccountID)
+	if p.event.EventType != "push" {
+		allowed, err := p.vcx.IsAllowed(ctx, p.event)
+		if err != nil {
+			return nil, nil, err
 		}
-		status := provider.StatusOpts{
-			Status:     "completed",
-			Conclusion: "skipped",
-			Text:       msg,
-			DetailsURL: "https://tenor.com/search/police-cat-gifs",
+		if !allowed {
+			msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", p.event.Sender)
+			p.logger.Info(msg)
+			if p.event.AccountID != "" {
+				msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", p.event.Sender, p.event.AccountID)
+			}
+			status := provider.StatusOpts{
+				Status:     "completed",
+				Conclusion: "skipped",
+				Text:       msg,
+				DetailsURL: "https://tenor.com/search/police-cat-gifs",
+			}
+			if err := p.vcx.CreateStatus(ctx, p.event, p.run.Info.Pac, status); err != nil {
+				return nil, nil, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
+			}
+			return nil, nil, nil
 		}
-		if err := p.vcx.CreateStatus(ctx, p.event, p.run.Info.Pac, status); err != nil {
-			return nil, nil, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
-		}
-		return nil, nil, nil
 	}
 
 	rawTemplates := p.getAllPipelineRuns(ctx)
@@ -146,7 +147,6 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	if err != nil {
 		return nil, nil, err
 	}
-
 	// Match the PipelineRun with annotation
 	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event)
 	if err != nil {
