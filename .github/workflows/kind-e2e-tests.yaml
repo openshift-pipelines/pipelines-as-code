@@ -1,7 +1,7 @@
 name: E2E Tests on Kind
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   issues: write
 
