@@ -19,7 +19,7 @@ func getSpecificVersion(ctx context.Context, cs *params.Run, task string) (strin
 	data, err := cs.Clients.GetURL(ctx,
 		fmt.Sprintf("%s/resource/%s/task/%s/%s", cs.Info.Pac.HubURL, tektonCatalogHubName, taskName, version))
 	if err != nil {
-		return "", fmt.Errorf("could not fetch specific task version from the hub %s:%s: %w", task, version, err)
+		return "", fmt.Errorf("could not fetch specific task version from the hub API %s:%s: %w", task, version, err)
 	}
 	err = json.Unmarshal(data, &hr)
 	if err != nil {
