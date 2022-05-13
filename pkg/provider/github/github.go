@@ -27,6 +27,8 @@ type Provider struct {
 	ApplicationID *int64
 
 	CheckRunIDS *sync.Map
+
+	providerName string
 }
 
 func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
@@ -57,6 +59,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{
 		TaskStatusTMPL: taskStatusTemplate,
 		APIURL:         apiPublicURL,
+		Name:           v.providerName,
 	}
 }
 
@@ -101,7 +104,9 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 		}
 	}
 
+	v.providerName = "github"
 	if apiURL != "" && apiURL != apiPublicURL {
+		v.providerName = "github-enteprise"
 		client, _ = github.NewEnterpriseClient(apiURL, apiURL, tc)
 	} else {
 		client = github.NewClient(tc)
@@ -115,6 +120,7 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 		if err != nil {
 			return fmt.Errorf("cannot make a gitea client: %w", err)
 		}
+		v.providerName = "gitea"
 	}
 
 	// Make sure Client is not already set, so we don't override our fakeclient

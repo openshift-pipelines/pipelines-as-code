@@ -223,6 +223,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{
 		TaskStatusTMPL: taskStatusTemplate,
 		APIURL:         apiPublicURL,
+		Name:           "gitlab",
 	}
 }
 

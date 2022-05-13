@@ -11,7 +11,7 @@ import (
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
-func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.PipelineRun, repo *apipac.Repository) {
+func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.PipelineRun, repo *apipac.Repository, providerinfo *info.ProviderConfig) {
 	// Add labels on the soon to be created pipelinerun so UI/CLI can easily
 	// query them.
 	labels := map[string]string{
@@ -24,6 +24,7 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.Pipel
 		filepath.Join(pipelinesascode.GroupName, "event-type"):     formatting.K8LabelsCleanup(event.EventType),
 		filepath.Join(pipelinesascode.GroupName, "branch"):         formatting.K8LabelsCleanup(event.BaseBranch),
 		filepath.Join(pipelinesascode.GroupName, "repository"):     formatting.K8LabelsCleanup(repo.GetName()),
+		filepath.Join(pipelinesascode.GroupName, "git-provider"):   providerinfo.Name,
 	}
 
 	annotations := map[string]string{

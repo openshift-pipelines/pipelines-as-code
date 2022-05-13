@@ -243,5 +243,6 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 func (v *Provider) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{
 		TaskStatusTMPL: taskStatusTemplate,
+		Name:           "bitbucket-server",
 	}
 }
