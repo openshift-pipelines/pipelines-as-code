@@ -3,51 +3,56 @@ title: GitHub Webhook
 weight: 12
 ---
 
-# Install Pipelines-as-Code as a GitHub Webhook
+# Use Pipelines-as-Code with GitHub Webhook
 
-If you are not able to create a GitHub application you can install Pipelines-as-Code on your repository as a
-[GitHub Webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks).
+If you are not able to create a GitHub application you can use Pipelines-as-Code with [GitHub Webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks) on your repository.
 
 Using Pipelines as Code through GitHub webhook does not give you access to the
 [GitHub CheckRun
 API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api),
 therefore the status of
-the tasks will be added as a Comment of the PR and not through the **Checks** Tab.
+the tasks will be added as a Comment on the PullRequest and not through the **Checks** Tab.
 
-After you have finished the [installation](/docs/install/installation) you can
-generate an app password for Pipelines-as-Code GitHub API operations.
+After you have finished the [installation](/docs/install/installation), you need to create
+a GitHub personal access token for Pipelines-as-Code GitHub API operations.
 
-## Generate a token for Pipelines as Code
+## Create GitHub Personal Access Token
 
 Follow this guide to create a personal token :
 
 <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token>
 
-The only permission needed is the *repo* permission. You will have to note the
-generated token somewhere, or otherwise you will have to recreate it.
+Depending on the Repository access scope, the token will need different permissions.
+For public repositories the scope are:
 
-{{< hint danger >}}
+* `public_repo` scope
+
+For private repositories:
+
+* The whole `repo` scope
+
+You will have to note the generated token somewhere, or otherwise you will have to recreate it.
+
 For best security practice you will probably want to have a short token
-expiration (like the rdefault 30 days). GitHub will send you a notification email
-if you token expires. When you have regenerated a new token you will need to
-update it on cluster. For example through the command line, you will want to replace
-`$NEW_TOKEN` and `$target_namespace` by their respective values:
+expiration (like the default 30 days). GitHub will send you a notification email
+if your token expires. Follow [Update Token](#update-token) to replace expired token with a new one.
 
-```shell
-kubectl -n $target_namespace patch secret githubwebhook -p "{\"data\": {\"foo\": \"$(echo -n $NEW_TOKEN|base64 -w0)\"}}"
-```
+NOTE: If you are going to configure webhook through CLI, you will need to also add a scope `admin:repo_hook`
 
-{{< /hint >}}
+## Setup Git Repository
 
-## Repository creation
+Now, you have 2 ways to set up the repository and configure the webhook:
 
-Now, you have 2 ways to configure the webhook:
+You could use [`tkn pac repository create`](/docs/guide/cli) command which
+  will create set up your repository and configure webhook.
 
-* You could use [`tkn pac repository create`](/docs/guide/cli) command which
-  will create repository CR and configure webhook, or
-* You could follow the [configuring webhook](#configure-webhook) guide to do it manually
+  You need to have a personal access token created with `admin:repo_hook` scope. tkn-pac will use this token to configure the
+webhook and add it in a secret on cluster which will be used by pipelines-as-code controller for accessing the repository.
+After configuring the webhook, you will be able to update the token in the secret with just the scopes mentioned [here](#create-github-personal-access-token).
 
-## Configure webhook
+Alternatively, you could follow the [Setup Git Repository manually](#setup-git-repository-manually) guide to do it manually
+
+### Setup Git Repository manually
 
 follow below instruction to configure webhook manually
 
@@ -108,6 +113,24 @@ follow below instruction to configure webhook manually
         # key: "webhook.secret"
   ```
 
-## GitHub webhook Notes
+### GitHub webhook Notes
 
 * Secrets need to be in the same namespace as installed on Repository, they cannot be on another namespace.
+
+### Update Token
+
+When you have regenerated a new token you will need to  update it on cluster.
+For example through the command line, you will want to replace `$NEW_TOKEN` and `$target_namespace` by their respective values:
+
+You can find the secret name in Repository CR created.
+
+  ```yaml
+  spec:
+    git_provider:
+      secret:
+        name: "github-webhook-config"
+  ```
+
+```shell
+kubectl -n $target_namespace patch secret githubwebhook -p "{\"data\": {\"foo\": \"$(echo -n $NEW_TOKEN|base64 -w0)\"}}"
+```

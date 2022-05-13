@@ -25,6 +25,7 @@ type gitHubConfig struct {
 	webhookSecret       string
 	personalAccessToken string
 	APIURL              string
+	Hosted              bool
 }
 
 func (gh *gitHubConfig) GetName() string {
@@ -32,20 +33,20 @@ func (gh *gitHubConfig) GetName() string {
 }
 
 func (gh *gitHubConfig) Run(ctx context.Context, opts *Options) (*response, error) {
-	err := gh.askGHWebhookConfig(opts.RepositoryURL, opts.ControllerURL)
+	err := gh.askGHWebhookConfig(opts.RepositoryURL, opts.ControllerURL, opts.ProviderAPIURL)
 	if err != nil {
 		return nil, err
 	}
-	gh.APIURL = opts.ProviderAPIURL
 
 	return &response{
 		ControllerURL:       gh.controllerURL,
 		PersonalAccessToken: gh.personalAccessToken,
 		WebhookSecret:       gh.webhookSecret,
+		APIURL:              gh.APIURL,
 	}, gh.create(ctx)
 }
 
-func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL string) error {
+func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string) error {
 	var defaultRepo string
 	if repoURL != "" {
 		defaultRepo, _ = formatting.GetRepoOwnerFromGHURL(repoURL)
@@ -109,6 +110,16 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL string) error 
 		Message: "Please enter the GitHub access token: ",
 	}, &gh.personalAccessToken, survey.WithValidator(survey.Required)); err != nil {
 		return err
+	}
+
+	if apiURL == "" && gh.Hosted {
+		if err := prompt.SurveyAskOne(&survey.Input{
+			Message: "Please enter your GitHub enterprise API URL:: ",
+		}, &gh.APIURL, survey.WithValidator(survey.Required)); err != nil {
+			return err
+		}
+	} else {
+		gh.APIURL = apiURL
 	}
 
 	return nil

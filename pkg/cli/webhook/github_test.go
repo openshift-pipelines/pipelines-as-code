@@ -57,7 +57,7 @@ func TestAskGHWebhookConfig(t *testing.T) {
 				tt.askStubs(as)
 			}
 			gh := gitHubConfig{}
-			err := gh.askGHWebhookConfig(tt.repoURL, tt.controllerURL)
+			err := gh.askGHWebhookConfig(tt.repoURL, tt.controllerURL, "")
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
 				return

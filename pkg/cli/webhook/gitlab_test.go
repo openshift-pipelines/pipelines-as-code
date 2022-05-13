@@ -49,7 +49,7 @@ func TestAskGLWebhookConfig(t *testing.T) {
 				tt.askStubs(as)
 			}
 			gl := gitLabConfig{}
-			err := gl.askGLWebhookConfig(tt.controllerURL)
+			err := gl.askGLWebhookConfig(tt.controllerURL, "")
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
 				return

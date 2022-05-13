@@ -36,6 +36,7 @@ type response struct {
 	ControllerURL       string
 	WebhookSecret       string
 	PersonalAccessToken string
+	APIURL              string
 }
 
 func (w *Options) Install(ctx context.Context) error {
@@ -102,12 +103,12 @@ func (w *Options) Install(ctx context.Context) error {
 	}
 
 	// create webhook secret in namespace where repository CR is created
-	if err := w.createWebhookSecret(ctx, webhookProvider.GetName(), response); err != nil {
+	if err := w.createWebhookSecret(ctx, response); err != nil {
 		return err
 	}
 
 	// update repo cr with webhook secret
-	return w.updateRepositoryCR(ctx, webhookProvider.GetName())
+	return w.updateRepositoryCR(ctx, response)
 }
 
 func askProvider() (Interface, error) {
@@ -120,17 +121,17 @@ func askProvider() (Interface, error) {
 	}
 
 	if answer == "GitHub" {
-		return &gitHubConfig{}, nil
+		return &gitHubConfig{Hosted: true}, nil
 	} else if answer == "GitLab" {
-		return &gitLabConfig{}, nil
+		return &gitLabConfig{Hosted: true}, nil
 	}
 	return nil, nil
 }
 
 func detectProvider(url string) Interface {
-	if strings.Contains(url, "github.com") {
+	if strings.Contains(url, "https://github.com") {
 		return &gitHubConfig{}
-	} else if strings.Contains(url, "gitlab.com") {
+	} else if strings.Contains(url, "https://gitlab.com") {
 		return &gitLabConfig{}
 	}
 	return nil
