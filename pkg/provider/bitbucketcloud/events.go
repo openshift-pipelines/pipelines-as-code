@@ -137,6 +137,10 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 			} else if provider.IsOkToTestComment(e.Comment.Content.Raw) {
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "ok-to-test-comment"
+			} else if provider.IsTestComment(e.Comment.Content.Raw) {
+				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.EventType = "test-comment"
+				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(e.Comment.Content.Raw)
 			}
 		}
 		processedEvent.Organization = e.Repository.Workspace.Slug
@@ -201,6 +205,9 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 				return setLoggerAndProceed(true, "", nil)
 			}
 			if provider.IsOkToTestComment(e.Comment.Content.Raw) {
+				return setLoggerAndProceed(true, "", nil)
+			}
+			if provider.IsTestComment(e.Comment.Content.Raw) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 		}
