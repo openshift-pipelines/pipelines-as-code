@@ -58,6 +58,10 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 			} else if provider.IsOkToTestComment(e.Comment.Text) {
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "ok-to-test-comment"
+			} else if provider.IsTestComment(e.Comment.Text) {
+				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.EventType = "test-comment"
+				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(e.Comment.Text)
 			}
 		}
 		// TODO: It's Really not an OWNER but a PROJECT
@@ -179,6 +183,9 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 				return setLoggerAndProceed(true, "", nil)
 			}
 			if provider.IsOkToTestComment(e.Comment.Text) {
+				return setLoggerAndProceed(true, "", nil)
+			}
+			if provider.IsTestComment(e.Comment.Text) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 		}
