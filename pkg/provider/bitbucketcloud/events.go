@@ -131,13 +131,14 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 			processedEvent.TriggerTarget = "pull_request"
 			processedEvent.EventType = "pull_request"
 		} else if provider.Valid(event, []string{"pullrequest:comment_created"}) {
-			if provider.IsRetestComment(e.Comment.Content.Raw) {
+			switch {
+			case provider.IsRetestComment(e.Comment.Content.Raw):
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "retest-comment"
-			} else if provider.IsOkToTestComment(e.Comment.Content.Raw) {
+			case provider.IsOkToTestComment(e.Comment.Content.Raw):
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "ok-to-test-comment"
-			} else if provider.IsTestComment(e.Comment.Content.Raw) {
+			case provider.IsTestComment(e.Comment.Content.Raw):
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "test-comment"
 				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(e.Comment.Content.Raw)
