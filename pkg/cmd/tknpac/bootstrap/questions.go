@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -10,11 +11,10 @@ import (
 
 const defaultPublicGithub = "https://github.com"
 
-func askYN(deflt bool, title, question string) (bool, error) {
+func askYN(deflt bool, title, question string, writer io.Writer) (bool, error) {
 	var answer bool
-	// nolint:forbidigo
 	if title != "" {
-		fmt.Printf("%s\n", title)
+		fmt.Fprintf(writer, "%s\n", title)
 	}
 	err := prompt.SurveyAskOne(&survey.Confirm{
 		Message: question,
@@ -63,7 +63,7 @@ func askQuestions(opts *bootstrapOpts) error {
 	if opts.RouteName != "" {
 		answer, err := askYN(true,
 			fmt.Sprintf("👀 I have detected an OpenShift Route on: %s", opts.RouteName),
-			"Do you want me to use it?")
+			"Do you want me to use it?", opts.ioStreams.Out)
 		if err != nil {
 			return err
 		}

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -45,7 +46,8 @@ func TestSplitArgsInMap(t *testing.T) {
 func TestCommandFilenameSetProperly(t *testing.T) {
 	tdata := testclient.Data{}
 	ctx, _ := rtesting.SetupFakeContext(t)
-
+	// nolint
+	io, _, _, _ := cli.IOTest()
 	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 	cs := &params.Run{
 		Clients: clients.Clients{
@@ -54,7 +56,7 @@ func TestCommandFilenameSetProperly(t *testing.T) {
 		},
 		Info: info.Info{Pac: &info.PacOpts{}},
 	}
-	cmd := Command(cs)
+	cmd := Command(cs, io)
 	e := bytes.NewBufferString("")
 	o := bytes.NewBufferString("")
 	cmd.SetErr(e)

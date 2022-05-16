@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/xanzy/go-gitlab"
@@ -14,6 +15,7 @@ import (
 
 type gitLabConfig struct {
 	Client              *gitlab.Client
+	IOStream            *cli.IOStreams
 	controllerURL       string
 	projectID           string
 	webhookSecret       string
@@ -53,8 +55,7 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
 	// confirm whether to use the detected url
 	if gl.controllerURL != "" {
 		var answer bool
-		// nolint
-		fmt.Printf("👀 I have detected a controller url: %s", gl.controllerURL)
+		fmt.Fprintf(gl.IOStream.Out, "👀 I have detected a controller url: %s", gl.controllerURL)
 		err := prompt.SurveyAskOne(&survey.Confirm{
 			Message: "Do you want me to use it?",
 			Default: true,
@@ -81,10 +82,8 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
 		return err
 	}
 
-	// nolint:forbidigo
-	fmt.Println("ℹ ️You now need to create a GitLab personal access token with `api` scope")
-	// nolint:forbidigo
-	fmt.Println("ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation ")
+	fmt.Fprintln(gl.IOStream.Out, "ℹ ️You now need to create a GitLab personal access token with `api` scope")
+	fmt.Fprintln(gl.IOStream.Out, "ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation ")
 	if err := prompt.SurveyAskOne(&survey.Password{
 		Message: "Please enter the GitLab access token: ",
 	}, &gl.personalAccessToken, survey.WithValidator(survey.Required)); err != nil {
@@ -133,8 +132,7 @@ func (gl *gitLabConfig) create() error {
 			resp.Response.StatusCode, payload)
 	}
 
-	// nolint:forbidigo
-	fmt.Printf("✓ Webhook has been created on your repository\n")
+	fmt.Fprintln(gl.IOStream.Out, "✓ Webhook has been created on your repository")
 	return nil
 }
 

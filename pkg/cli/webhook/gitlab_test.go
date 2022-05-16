@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	"gotest.tools/v3/assert"
@@ -12,6 +13,8 @@ import (
 )
 
 func TestAskGLWebhookConfig(t *testing.T) {
+	// nolint
+	io, _, _, _ := cli.IOTest()
 	tests := []struct {
 		name          string
 		wantErrStr    string
@@ -48,7 +51,7 @@ func TestAskGLWebhookConfig(t *testing.T) {
 			if tt.askStubs != nil {
 				tt.askStubs(as)
 			}
-			gl := gitLabConfig{}
+			gl := gitLabConfig{IOStream: io}
 			err := gl.askGLWebhookConfig(tt.controllerURL, "")
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
@@ -63,6 +66,8 @@ func TestGLCreate(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeclient, mux, teardown := thelp.Setup(ctx, t)
 	defer teardown()
+	// nolint
+	io, _, _, _ := cli.IOTest()
 
 	// webhook created
 	mux.HandleFunc("/projects/11/hooks", func(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +101,7 @@ func TestGLCreate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gl := gitLabConfig{
+				IOStream:  io,
 				Client:    fakeclient,
 				projectID: tt.projectID,
 			}

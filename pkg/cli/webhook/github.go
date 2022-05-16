@@ -9,6 +9,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/google/go-github/v43/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -19,6 +20,7 @@ const apiPublicURL = "https://api.github.com/"
 
 type gitHubConfig struct {
 	Client              *github.Client
+	IOStream            *cli.IOStreams
 	controllerURL       string
 	repoOwner           string
 	repoName            string
@@ -74,8 +76,7 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string
 	// confirm whether to use the detected url
 	if gh.controllerURL != "" {
 		var answer bool
-		// nolint
-		fmt.Printf("👀 I have detected a controller url: %s", gh.controllerURL)
+		fmt.Fprintf(gh.IOStream.Out, "👀 I have detected a controller url: %s", gh.controllerURL)
 		err := prompt.SurveyAskOne(&survey.Confirm{
 			Message: "Do you want me to use it?",
 			Default: true,
@@ -102,10 +103,8 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string
 		return err
 	}
 
-	// nolint:forbidigo
-	fmt.Println("ℹ ️You now need to create a GitHub personal token with scopes  `public_repo` & `admin:repo_hook`")
-	// nolint:forbidigo
-	fmt.Println("ℹ ️Go to this URL to generate a new token https://github.com/settings/tokens/new, see https://is.gd/G5gBFI for documentation ")
+	fmt.Fprintln(gh.IOStream.Out, "ℹ ️You now need to create a GitHub personal token with scopes  `public_repo` & `admin:repo_hook`")
+	fmt.Fprintln(gh.IOStream.Out, "ℹ ️Go to this URL to generate a new token https://github.com/settings/tokens/new, see https://is.gd/G5gBFI for documentation ")
 	if err := prompt.SurveyAskOne(&survey.Password{
 		Message: "Please enter the GitHub access token: ",
 	}, &gh.personalAccessToken, survey.WithValidator(survey.Required)); err != nil {
@@ -162,8 +161,7 @@ func (gh *gitHubConfig) create(ctx context.Context) error {
 			gh.repoOwner, gh.repoName, res.Response.StatusCode, payload)
 	}
 
-	// nolint:forbidigo
-	fmt.Printf("✓ Webhook has been created on repository %v/%v\n", gh.repoOwner, gh.repoName)
+	fmt.Fprintf(gh.IOStream.Out, "✓ Webhook has been created on repository %v/%v\n", gh.repoOwner, gh.repoName)
 	return nil
 }
 

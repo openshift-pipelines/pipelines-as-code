@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"gotest.tools/v3/assert"
@@ -12,6 +13,8 @@ import (
 )
 
 func TestAskGHWebhookConfig(t *testing.T) {
+	// nolint
+	io, _, _, _ := cli.IOTest()
 	tests := []struct {
 		name          string
 		wantErrStr    string
@@ -56,7 +59,7 @@ func TestAskGHWebhookConfig(t *testing.T) {
 			if tt.askStubs != nil {
 				tt.askStubs(as)
 			}
-			gh := gitHubConfig{}
+			gh := gitHubConfig{IOStream: io}
 			err := gh.askGHWebhookConfig(tt.repoURL, tt.controllerURL, "")
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
@@ -70,6 +73,8 @@ func TestAskGHWebhookConfig(t *testing.T) {
 func TestCreate(t *testing.T) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
+	// nolint
+	io, _, _, _ := cli.IOTest()
 
 	// webhook created for repo pac/valid
 	mux.HandleFunc("/repos/pac/valid/hooks", func(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +110,7 @@ func TestCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gh := gitHubConfig{
+				IOStream:  io,
 				Client:    fakeclient,
 				repoOwner: tt.repoOwner,
 				repoName:  tt.repoName,

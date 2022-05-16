@@ -96,6 +96,7 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				RepositoryName:      createOpts.repository.Name,
 				RepositoryNamespace: createOpts.repository.Namespace,
 				GitHubWebhook:       githubWebhook,
+				IOStreams:           ioStreams,
 			}
 
 			if githubURLForWebhook != "" {
