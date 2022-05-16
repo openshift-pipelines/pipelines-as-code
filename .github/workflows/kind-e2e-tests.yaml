@@ -33,9 +33,10 @@ jobs:
       REGISTRY_NAME: registry.local
       REGISTRY_PORT: 5000
       KO_DOCKER_REPO: registry.local:5000/ko
-      EL_NAME: kind.pac
+      CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
       TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
       # TEST_GITHUB_REPO_OWNER_WEBHOOK: pac/pac-test-webhooks
+      KUBECONFIG: /home/runner/.kube/config.kind
 
     steps:
       - uses: actions/setup-go@v2
@@ -58,12 +59,12 @@ jobs:
       - name: Install and run gosmee
         run: |
           go install -v github.com/chmouel/gosmee@latest
-          nohup gosmee --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} http://${EL_NAME} &
+          nohup gosmee --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} http://${CONTROLLER_DOMAIN_URL} &
 
       - name: Install ko
         run: curl -sfL https://github.com/google/ko/releases/download/v0.9.3/ko_0.9.3_Linux_x86_64.tar.gz -o-|tar xvzf - -C /usr/local/bin ko
 
-      - name: Apply config with KO
+      - name: Start installing cluster
         run: |
           export PAC_DIR=${PWD}
           bash -x ./hack/dev/kind/install.sh
@@ -102,7 +103,7 @@ jobs:
           export TEST_GITHUB_TOKEN="${{ secrets.GH_APPS_TOKEN }}"
           export TEST_EL_WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"
           export TEST_GITHUB_REPO_INSTALLATION_ID="${{ secrets.INSTALLATION_ID }}"
-          export TEST_EL_URL="http://${EL_NAME}"
+          export TEST_EL_URL="http://${CONTROLLER_DOMAIN_URL}"
           export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0
           export TEST_BITBUCKET_CLOUD_USER=chmouelb
           export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=chmouelb/pac-e2e-test
