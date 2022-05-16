@@ -53,8 +53,7 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 	})
 	go func() {
 		url := fmt.Sprintf("http://localhost:%d", opts.webserverPort)
-		// nolint:forbidigo
-		fmt.Printf("🌍 Starting a web browser on %s, click on the button to create your GitHub APP\n", url)
+		fmt.Fprintf(opts.ioStreams.Out, "🌍 Starting a web browser on %s, click on the button to create your GitHub APP\n", url)
 		// nolint:errcheck
 		go openWebBrowser(url)
 		if err := s.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -92,16 +91,12 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 		return err
 	}
 
-	// nolint:forbidigo
-	fmt.Printf("🚀 You can now add your newly created application on your repository by going to this URL:\n\n%s\n\n", *manifest.HTMLURL)
-
-	// nolint:forbidigo
-	fmt.Println("💡 Don't forget to run the \"tkn pac repo create\" to create a new Repository CRD on your cluster.")
+	fmt.Fprintf(opts.ioStreams.Out, "🚀 You can now add your newly created application on your repository by going to this URL:\n\n%s\n\n", *manifest.HTMLURL)
+	fmt.Fprintln(opts.ioStreams.Out, "💡 Don't forget to run the \"tkn pac repo create\" to create a new Repository CRD on your cluster.")
 
 	detectString := detectSelfSignedCertificate(ctx, opts.RouteName)
 	if detectString != "" {
-		// nolint:forbidigo
-		fmt.Println(detectString)
+		fmt.Fprintln(opts.ioStreams.Out, detectString)
 	}
 
 	return nil

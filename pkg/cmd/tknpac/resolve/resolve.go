@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -57,7 +58,7 @@ pipelines-as-code resolve -f .tekton/
 *It does not support task from local directory referenced in annotations at the
  moment*.`
 
-func Command(run *params.Run) *cobra.Command {
+func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "resolve",
 		Long:  longhelp,
@@ -102,8 +103,7 @@ func Command(run *params.Run) *cobra.Command {
 				mapped["repo_name"] = strings.Split(repoOwner, "/")[1]
 			}
 			s, err := resolveFilenames(run, filenames, mapped)
-			// nolint:forbidigo
-			fmt.Println(s)
+			fmt.Fprintln(streams.Out, s)
 			return err
 		},
 		Annotations: map[string]string{

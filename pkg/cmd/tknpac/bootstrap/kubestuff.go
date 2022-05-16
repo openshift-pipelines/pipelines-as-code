@@ -33,9 +33,7 @@ func createPacSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts, 
 		return err
 	}
 
-	// nolint:forbidigo
-	fmt.Printf("🔑 Secret %s has been created in the %s namespace\n", secretName, opts.targetNamespace)
-
+	fmt.Fprintf(opts.ioStreams.Out, "🔑 Secret %s has been created in the %s namespace\n", secretName, opts.targetNamespace)
 	return nil
 }
 

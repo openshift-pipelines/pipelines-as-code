@@ -61,8 +61,7 @@ const successTmpl = `
 
 func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	if !opts.forceInstall {
-		// nolint:forbidigo
-		fmt.Println("🏃 Checking if Pipelines as Code is installed.")
+		fmt.Fprintln(opts.ioStreams.Out, "🏃 Checking if Pipelines as Code is installed.")
 	}
 	tektonInstalled, err := checkPipelinesInstalled(run)
 	if err != nil {
@@ -82,8 +81,7 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	}
 
 	if !opts.forceInstall && err == nil {
-		// nolint:forbidigo
-		fmt.Println("👌 Pipelines as Code is already installed.")
+		fmt.Fprintln(opts.ioStreams.Out, "👌 Pipelines as Code is already installed.")
 	} else if err := installPac(ctx, run, opts); err != nil {
 		return err
 	}
@@ -143,8 +141,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 			if !opts.forceGitHubApp {
 				if pacInfo.Provider == provider.ProviderGitHubApp {
-					// nolint
-					fmt.Printf("👌 Skips bootstrapping GitHub App, as one is already configured. Please pass --force-configure to override existing\n")
+					fmt.Fprintln(opts.ioStreams.Out, "👌 Skips bootstrapping GitHub App, as one is already configured. Please pass --force-configure to override existing")
 					return nil
 				}
 			}
@@ -202,13 +199,12 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 			if !opts.forceGitHubApp {
 				if pacInfo.Provider == provider.ProviderGitHubApp {
-					// nolint
-					fmt.Printf("👌 Skips bootstrapping GitHub App, as one is already configured. Please pass --force-configure to override existing\n")
+					fmt.Fprintln(opts.ioStreams.Out, "👌 Skips bootstrapping GitHub App, as one is already configured. Please pass --force-configure to override existing")
 					return nil
 				}
 			}
 
-			if b, _ := askYN(false, "", "Are you using GitHub Enterprise?"); b {
+			if b, _ := askYN(false, "", "Are you using GitHub Enterprise?", opts.ioStreams.Out); b {
 				opts.providerType = "github-enterprise-app"
 			}
 

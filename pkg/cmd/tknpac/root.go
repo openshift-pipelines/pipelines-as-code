@@ -28,7 +28,7 @@ func Root(clients *params.Run) *cobra.Command {
 
 	cmd.AddCommand(version.Command(ioStreams))
 	cmd.AddCommand(repository.Root(clients, ioStreams))
-	cmd.AddCommand(resolve.Command(clients))
+	cmd.AddCommand(resolve.Command(clients, ioStreams))
 	cmd.AddCommand(completion.Command())
 	cmd.AddCommand(bootstrap.Command(clients, ioStreams))
 	cmd.AddCommand(generate.Command(clients, ioStreams))

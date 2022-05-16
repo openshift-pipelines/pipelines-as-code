@@ -12,11 +12,6 @@ import (
 const (
 	providerTokenKey = "provider.token"
 	webhookSecretKey = "webhook.secret"
-
-	// nolint
-	githubWebhookSecretName = "github-webhook-secret"
-	// nolint
-	gitlabWebhookSecretName = "gitlab-webhook-secret"
 )
 
 func (w *Options) createWebhookSecret(ctx context.Context, response *response) error {
@@ -33,8 +28,7 @@ func (w *Options) createWebhookSecret(ctx context.Context, response *response) e
 		return err
 	}
 
-	// nolint:forbidigo
-	fmt.Printf("🔑 Webhook Secret %s has been created in the %s namespace\n", w.RepositoryName, w.RepositoryNamespace)
+	fmt.Fprintf(w.IOStreams.Out, "🔑 Webhook Secret %s has been created in the %s namespace.", w.RepositoryName, w.RepositoryNamespace)
 	return nil
 }
 
@@ -68,7 +62,6 @@ func (w *Options) updateRepositoryCR(ctx context.Context, res *response) error {
 		return err
 	}
 
-	// nolint:forbidigo
-	fmt.Printf("🔑 Repository CR %s has been updated with webhook secret in the %s namespace\n", w.RepositoryName, w.RepositoryNamespace)
+	fmt.Fprintf(w.IOStreams.Out, "🔑 Repository CR %s has been updated with webhook secret in the %s namespace\n", w.RepositoryName, w.RepositoryNamespace)
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/bootstrap"
@@ -20,6 +21,7 @@ type Interface interface {
 
 type Options struct {
 	Run                 *params.Run
+	IOStreams           *cli.IOStreams
 	PACNamespace        string
 	ControllerURL       string
 	RepositoryURL       string
@@ -53,12 +55,11 @@ func (w *Options) Install(ctx context.Context) error {
 	}
 
 	// figure out which git provider from the Repo URL
-	webhookProvider := detectProvider(w.RepositoryURL)
+	webhookProvider := detectProvider(w.RepositoryURL, w.IOStreams)
 
 	if !w.GitHubWebhook && webhookProvider != nil {
 		if webhookProvider.GetName() == provider.ProviderGitHubWebhook && pacInfo.Provider == provider.ProviderGitHubApp {
-			// nolint
-			fmt.Printf("✓ Skips configuring GitHub Webhook as GitHub App is already configured." +
+			fmt.Fprintln(w.IOStreams.Out, "✓ Skips configuring GitHub Webhook as GitHub App is already configured."+
 				" Please pass --github-webhook flag to still configure it")
 			return nil
 		}
@@ -81,7 +82,7 @@ func (w *Options) Install(ctx context.Context) error {
 	}
 
 	if webhookProvider == nil {
-		if webhookProvider, err = askProvider(); webhookProvider == nil || err != nil {
+		if webhookProvider, err = askProvider(w.IOStreams); webhookProvider == nil || err != nil {
 			return err
 		}
 	}
@@ -111,7 +112,7 @@ func (w *Options) Install(ctx context.Context) error {
 	return w.updateRepositoryCR(ctx, response)
 }
 
-func askProvider() (Interface, error) {
+func askProvider(ioStreams *cli.IOStreams) (Interface, error) {
 	var answer string
 	if err := survey.AskOne(&survey.Select{
 		Message: "Please select the provider you wish to configure with your repository:",
@@ -121,18 +122,18 @@ func askProvider() (Interface, error) {
 	}
 
 	if answer == "GitHub" {
-		return &gitHubConfig{Hosted: true}, nil
+		return &gitHubConfig{Hosted: true, IOStream: ioStreams}, nil
 	} else if answer == "GitLab" {
-		return &gitLabConfig{Hosted: true}, nil
+		return &gitLabConfig{Hosted: true, IOStream: ioStreams}, nil
 	}
 	return nil, nil
 }
 
-func detectProvider(url string) Interface {
+func detectProvider(url string, ioStreams *cli.IOStreams) Interface {
 	if strings.Contains(url, "https://github.com") {
-		return &gitHubConfig{}
+		return &gitHubConfig{IOStream: ioStreams}
 	} else if strings.Contains(url, "https://gitlab.com") {
-		return &gitLabConfig{}
+		return &gitLabConfig{IOStream: ioStreams}
 	}
 	return nil
 }
