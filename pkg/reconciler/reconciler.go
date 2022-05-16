@@ -78,6 +78,16 @@ func (r *Reconciler) reportStatus(ctx context.Context, pr *v1beta1.PipelineRun) 
 
 	event := eventFromPipelineRun(pr)
 
+	// if its a GH app pipelinerun then init client
+	if event.InstallationID != -1 {
+		gh := &github.Provider{}
+		event.Provider.Token, err = gh.GetAppToken(ctx, r.run.Clients.Kube, event.GHEURL, event.InstallationID)
+		if err != nil {
+			return err
+		}
+		provider = gh
+	}
+
 	return nil
 }
 
