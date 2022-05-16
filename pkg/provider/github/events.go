@@ -49,7 +49,7 @@ func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, g
 	}
 
 	if gheURL != "" {
-		if !strings.HasPrefix(gheURL, "https://") {
+		if !strings.HasPrefix(gheURL, "https://") && !strings.HasPrefix(gheURL, "http://") {
 			gheURL = "https://" + gheURL
 		}
 		v.Client, _ = github.NewEnterpriseClient(gheURL, "", &http.Client{Transport: itr})

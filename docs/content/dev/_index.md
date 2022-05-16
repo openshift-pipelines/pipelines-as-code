@@ -91,7 +91,6 @@ spec:
     webhook_secret:
       name: "secret"
       key: "webhook"
-
 ---
 apiVersion: v1
 kind: Secret
@@ -108,6 +107,7 @@ There is some gotchas with the webhook validation secret, Pipelines as Code
 detect a Gitea install and let the user set a empty webhook secret (by default
 it's enforced).
 
+Gitops comment like `/retest` or `/ok-to-test` is not working at the moment.
 Other than that YMMV, feel free to raise a bug if you find some.
 
 ## Debugging controller
