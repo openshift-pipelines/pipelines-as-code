@@ -38,6 +38,11 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get", "list", "watch"]
+  # Required for the reconciler/watcher
+  # TODO: create separate role for reconciler
+  - apiGroups: [ "coordination.k8s.io" ]
+    resources: [ "leases" ]
+    verbs: [ "get", "list", "create", "update", "delete", "patch", "watch" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
