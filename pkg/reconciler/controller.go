@@ -3,13 +3,17 @@ package reconciler
 import (
 	"context"
 	"log"
+	"path/filepath"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	pipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun"
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 )
 
 func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
@@ -36,22 +40,22 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 		}
 		impl := pipelinerunreconciler.NewImpl(ctx, c)
 
-		pipelineRunInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
-
-		//pipelineRunInformer.Informer().AddEventHandler(controller.HandleAll(checkAndEnqueue(impl)))
+		pipelineRunInformer.Informer().AddEventHandler(controller.HandleAll(checkStateAndEnqueue(impl)))
 
 		return impl
 	}
 }
 
-//func checkAndEnqueue(impl *controller.Impl) func(obj interface{}) {
-//	return func(obj interface{}) {
-//		object, err := kmeta.DeletionHandlingAccessor(obj)
-//		if err == nil {
-//			_, exist := object.GetLabels()["pipelinesascode.tekton.dev/provider"]
-//			if exist {
-//				impl.EnqueueKey(types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()})
-//			}
-//		}
-//	}
-//}
+// enqueue only the pipelineruns which are in `started` state
+// pipelinerun will have a label `pipelinesascode.tekton.dev/state` to describe the state
+func checkStateAndEnqueue(impl *controller.Impl) func(obj interface{}) {
+	return func(obj interface{}) {
+		object, err := kmeta.DeletionHandlingAccessor(obj)
+		if err == nil {
+			state, exist := object.GetLabels()[filepath.Join(pipelinesascode.GroupName, "state")]
+			if exist && state == kubeinteraction.StateStarted {
+				impl.EnqueueKey(types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()})
+			}
+		}
+	}
+}
