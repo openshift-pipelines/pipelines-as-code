@@ -2,6 +2,7 @@ package kubeinteraction
 
 import (
 	"path/filepath"
+	"strconv"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -33,6 +34,20 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.Pipel
 	annotations := map[string]string{
 		filepath.Join(pipelinesascode.GroupName, "sha-title"): event.SHATitle,
 		filepath.Join(pipelinesascode.GroupName, "sha-url"):   event.SHAURL,
+	}
+
+	if event.PullRequestNumber != 0 {
+		annotations[filepath.Join(pipelinesascode.GroupName, "pull-request")] = strconv.Itoa(event.PullRequestNumber)
+	}
+
+	// TODO: move to provider specific function
+	if providerinfo.Name == "github" || providerinfo.Name == "github-enterprise" {
+		if event.InstallationID != -1 {
+			annotations[filepath.Join(pipelinesascode.GroupName, "installation-id")] = strconv.FormatInt(event.InstallationID, 10)
+		}
+		if event.GHEURL != "" {
+			annotations[filepath.Join(pipelinesascode.GroupName, "ghe-url")] = event.GHEURL
+		}
 	}
 
 	for k, v := range labels {

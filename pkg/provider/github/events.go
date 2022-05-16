@@ -136,6 +136,9 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return nil, err
 	}
 
+	processedEvent.InstallationID = id
+	processedEvent.GHEURL = event.Provider.URL
+
 	return processedEvent, nil
 }
 

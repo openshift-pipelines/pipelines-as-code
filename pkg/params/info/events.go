@@ -32,8 +32,10 @@ type Event struct {
 
 	// TODO: move forge specifics to each driver
 	// Github
-	Organization string
-	Repository   string
+	Organization   string
+	Repository     string
+	InstallationID int64
+	GHEURL         string
 
 	// TODO: move out inside the provider
 	// Bitbucket Cloud
