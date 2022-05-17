@@ -20,6 +20,7 @@ func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd.AddCommand(ListCommand(clients, ioStreams))
 	cmd.AddCommand(DescribeCommand(clients, ioStreams))
 	cmd.AddCommand(CreateCommand(clients, ioStreams))
+	cmd.AddCommand(DeleteCommand(clients, ioStreams))
 
 	return cmd
 }
