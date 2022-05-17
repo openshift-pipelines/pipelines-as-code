@@ -313,6 +313,23 @@ func TestRun(t *testing.T) {
 			skipReplyingOrgPublicMembers: true,
 		},
 		{
+			name: "allowed/push event even from non allowed user",
+			runevent: info.Event{
+				SHA:           "principale",
+				Organization:  "organizationes",
+				Repository:    "lagaffe",
+				URL:           "https://service/documentation",
+				HeadBranch:    "press",
+				Sender:        "evilbro",
+				BaseBranch:    "main",
+				EventType:     "push",
+				TriggerTarget: "push",
+			},
+			tektondir:                    "testdata/push_branch",
+			finalStatus:                  "skipped",
+			skipReplyingOrgPublicMembers: true,
+		},
+		{
 			name: "Keep max number of pipelineruns",
 			runevent: info.Event{
 				SHA:           "principale",
