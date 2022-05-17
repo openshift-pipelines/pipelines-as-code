@@ -132,15 +132,16 @@ func TestRun(t *testing.T) {
 						Number: github.Int(666),
 					},
 				},
-				SHA:           "fromwebhook",
-				Organization:  "organizationes",
-				Repository:    "lagaffe",
-				URL:           "https://service/documentation",
-				HeadBranch:    "press",
-				BaseBranch:    "main",
-				Sender:        "fantasio",
-				EventType:     "pull_request",
-				TriggerTarget: "pull_request",
+				SHA:               "fromwebhook",
+				Organization:      "organizationes",
+				Repository:        "lagaffe",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				Sender:            "fantasio",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
 			},
 			tektondir:            "testdata/pull_request",
 			finalStatus:          "neutral",
@@ -155,15 +156,16 @@ func TestRun(t *testing.T) {
 						Number: github.Int(666),
 					},
 				},
-				SHA:           "fromwebhook",
-				Organization:  "organizationes",
-				Repository:    "lagaffe",
-				URL:           "https://service/documentation",
-				HeadBranch:    "press",
-				BaseBranch:    "main",
-				Sender:        "fantasio",
-				EventType:     "pull_request",
-				TriggerTarget: "pull_request",
+				SHA:               "fromwebhook",
+				Organization:      "organizationes",
+				Repository:        "lagaffe",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				Sender:            "fantasio",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
 			},
 			tektondir:            "testdata/pull_request",
 			finalStatus:          "skipped",
@@ -181,15 +183,16 @@ func TestRun(t *testing.T) {
 						Number: github.Int(666),
 					},
 				},
-				SHA:           "fromwebhook",
-				Organization:  "organizationes",
-				Repository:    "lagaffe",
-				URL:           "https://service/documentation",
-				HeadBranch:    "press",
-				BaseBranch:    "main",
-				Sender:        "fantasio",
-				EventType:     "pull_request",
-				TriggerTarget: "pull_request",
+				SHA:               "fromwebhook",
+				Organization:      "organizationes",
+				Repository:        "lagaffe",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				Sender:            "fantasio",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
 			},
 			tektondir:            "testdata/pull_request",
 			finalStatus:          "skipped",
@@ -472,17 +475,6 @@ func TestRun(t *testing.T) {
 			if tt.expectedLogSnippet != "" {
 				logmsg := log.FilterMessageSnippet(tt.expectedLogSnippet).TakeAll()
 				assert.Assert(t, len(logmsg) > 0, "log messages", logmsg, tt.expectedLogSnippet)
-			}
-
-			if tt.finalStatus != "skipped" {
-				got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(
-					ctx, "test-run", metav1.GetOptions{})
-				assert.NilError(t, err)
-				assert.Assert(t, got.Status[len(got.Status)-1].PipelineRunName != "pipelinerun1", "'%s'!='%s'",
-					got.Status[len(got.Status)-1].PipelineRunName, "pipelinerun1")
-
-				lastbranchstatus := got.Status[len(got.Status)-1].TargetBranch
-				assert.Assert(t, !strings.HasPrefix(*lastbranchstatus, "refs-heads-"))
 			}
 		})
 	}

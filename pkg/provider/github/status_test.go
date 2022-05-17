@@ -248,11 +248,12 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 func TestGithubProvidercreateStatusCommit(t *testing.T) {
 	issuenumber := 666
 	anevent := &info.Event{
-		Event:        &github.PullRequestEvent{PullRequest: &github.PullRequest{Number: github.Int(issuenumber)}},
-		Organization: "owner",
-		Repository:   "repository",
-		SHA:          "createStatusCommitSHA",
-		EventType:    "pull_request",
+		Event:             &github.PullRequestEvent{PullRequest: &github.PullRequest{Number: github.Int(issuenumber)}},
+		Organization:      "owner",
+		Repository:        "repository",
+		SHA:               "createStatusCommitSHA",
+		EventType:         "pull_request",
+		PullRequestNumber: issuenumber,
 	}
 	tests := []struct {
 		name               string

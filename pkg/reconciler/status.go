@@ -18,12 +18,7 @@ import (
 )
 
 const (
-	tektonDir               = ".tekton"
 	maxPipelineRunStatusRun = 5
-	startingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
-  <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
-  the command line with :
-	<br><code>tkn pr logs -f -n %s %s</code>`
 )
 
 func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1beta1.PipelineRun, repo *pacv1a1.Repository, event *info.Event) error {

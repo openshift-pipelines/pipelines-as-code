@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"sync"
-	"time"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -20,7 +18,6 @@ import (
 
 const (
 	tektonDir               = ".tekton"
-	maxPipelineRunStatusRun = 5
 	startingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
   <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
   the command line with :
@@ -118,51 +115,5 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 	if err := p.vcx.CreateStatus(ctx, p.event, p.run.Info.Pac, status); err != nil {
 		return fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
 	}
-
-	var duration time.Duration
-	if p.run.Info.Pac.DefaultPipelineRunTimeout != nil {
-		duration = *p.run.Info.Pac.DefaultPipelineRunTimeout
-	} else {
-		// Tekton Pipeline controller should always set this value.
-		duration = pr.Spec.Timeout.Duration + 1*time.Minute
-	}
-	p.logger.Infof("Waiting for PipelineRun %s/%s to Succeed in a maximum time of %s minutes",
-		pr.Namespace, pr.Name, formatting.HumanDuration(duration))
-	//if err := p.k8int.WaitForPipelineRunSucceed(ctx, p.run.Clients.Tekton.TektonV1beta1(), pr, duration); err != nil {
-	//	// if we have a timeout from the pipeline run, we would not know it. We would need to get the PR status to know.
-	//	// maybe something to improve in the future.
-	//	p.run.Clients.Log.Errorf("pipelinerun %s in namespace %s has failed: %s",
-	//		match.PipelineRun.GetGenerateName(), match.Repo.GetNamespace(), err.Error())
-	//}
-	//
-	//// Cleanup old succeeded pipelineruns
-	//if keepMaxPipeline, ok := match.Config["max-keep-runs"]; ok {
-	//	max, err := strconv.Atoi(keepMaxPipeline)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	err = p.k8int.CleanupPipelines(ctx, p.logger, match.Repo, pr, max)
-	//	if err != nil {
-	//		return err
-	//	}
-	//}
-	//
-	//// remove the generated secret after completion of pipelinerun
-	//if p.run.Info.Pac.SecretAutoCreation {
-	//	err = p.k8int.DeleteBasicAuthSecret(ctx, p.logger, match.Repo.GetNamespace(), gitAuthSecretName)
-	//	if err != nil {
-	//		return fmt.Errorf("deleting basic auth secret has failed: %w ", err)
-	//	}
-	//}
-	//
-	//// Post the final status to GitHub check status with a nice breakdown and
-	//// tekton cli describe output.
-	//newPr, err := p.postFinalStatus(ctx, pr)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//return p.updateRepoRunStatus(ctx, newPr, match.Repo)
 	return nil
 }

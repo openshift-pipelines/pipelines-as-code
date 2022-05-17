@@ -20,7 +20,6 @@ import (
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 )
@@ -31,9 +30,7 @@ type Reconciler struct {
 	kinteract         *kubeinteraction.Interaction
 }
 
-var (
-	_ pipelinerunreconciler.Interface = (*Reconciler)(nil)
-)
+var _ pipelinerunreconciler.Interface = (*Reconciler)(nil)
 
 var gitAuthSecretAnnotation = "pipelinesascode.tekton.dev/git-auth-secret"
 
@@ -55,7 +52,7 @@ func (r *Reconciler) reportStatus(ctx context.Context, pr *v1beta1.PipelineRun) 
 	// fetch repository CR for pipelineRun
 	repoName := prLabels[filepath.Join(pipelinesascode.GroupName, "repository")]
 	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
-		Repositories(pr.Namespace).Get(ctx, repoName, v1.GetOptions{})
+		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -82,7 +79,7 @@ func (r *Reconciler) reportStatus(ctx context.Context, pr *v1beta1.PipelineRun) 
 
 	event := eventFromPipelineRun(pr)
 
-	// if its a GH app pipelinerun then init client
+	// if its a GH app pipelineRun then init client
 	if event.InstallationID != 0 {
 		gh := &github.Provider{}
 		event.Provider.Token, err = gh.GetAppToken(ctx, r.run.Clients.Kube, event.GHEURL, event.InstallationID)
