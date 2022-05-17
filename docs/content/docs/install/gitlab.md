@@ -3,13 +3,13 @@ title: Gitlab
 weight: 13
 ---
 
-# Install Pipelines-as-Code for Gitlab
+# Use Pipelines-as-Code with Gitlab Webhook
 
 Pipelines-As-Code supports [Gitlab](https://www.gitlab.com) through a webhook.
 
 Follow the pipelines-as-code [installation](/docs/install/installation) according to your kubernetes cluster.
 
-## Generate a token for Pipelines as Code
+## Create GitHub Personal Access Token
 
 * You will have to generate a personal token as the manager of the Org or the Project,
   follow the steps here :
@@ -22,28 +22,19 @@ Follow the pipelines-as-code [installation](/docs/install/installation) accordin
   to fallback nicely by showing the status of the pipeline directly as comment
   of the Merge Request.
 
-{{< hint danger >}}
-For best security practice you will probably want to have a short token
-expiration (like the default 30 days). Gitlab will send you a notification email
-if you token expires. When you have regenerated a new token you will need to
-update it on cluster. For example through the command line, you will want to replace
-`$NEW_TOKEN` and `$target_namespace` by their respective values:
+## Setup Git Repository
 
-```shell
-kubectl -n $target_namespace patch secret gitlabwebhook -p "{\"data\": {\"foo\": \"$(echo -n $NEW_TOKEN|base64 -w0)\"}}"
-```
+Now, you have 2 ways to set up the repository and configure the webhook:
 
-{{< /hint >}}
+You could use [`tkn pac repository create`](/docs/guide/cli) command which
+  will create repository CR and configure webhook.
 
-## Repository creation
+  You need to have a personal access token created with `admin:repo_hook` scope. tkn-pac will use this token to configure the
+  webhook and add it in a secret on cluster which will be used by pipelines-as-code controller for accessing the repository.
 
-Now, you have 2 ways to configure the webhook:
+Alternatively, you could follow the [Setup Git Repository manually](#setup-git-repository-manually) guide to do it manually
 
-* You could use [`tkn pac repository create`](/docs/guide/cli) command which
-  will create repository CR and configure webhook, or
-* You could follow the [configuring webhook](#configure-webhook) guide to do it manually
-
-## Configure webhook
+## Setup Git Repository manually
 
 * Go to your project and click on *Settings* and *"Webhooks"* from the sidebar on the left.
 
@@ -110,3 +101,21 @@ Here is an example of a Repository CRD :
 * `git_provider.secret` cannot reference a secret in another namespace,
   Pipelines as code always assumes it will be the same namespace as where the
   repository has been created.
+
+## Update Token
+
+When you have regenerated a new token you will need to  update it on cluster.
+For example through the command line, you will want to replace `$NEW_TOKEN` and `$target_namespace` by their respective values:
+
+You can find the secret name in Repository CR created.
+
+  ```yaml
+  spec:
+    git_provider:
+      secret:
+        name: "gitlab-webhook-config"
+  ```
+
+```shell
+kubectl -n $target_namespace patch secret gitlab-webhook-config -p "{\"data\": {\"provider.token\": \"$(echo -n $NEW_TOKEN|base64 -w0)\"}}"
+```
