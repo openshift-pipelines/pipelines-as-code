@@ -32,8 +32,6 @@ Example:
 /test <pipelineRun-name>
 ```
 
-NOTE: `/test` is currently supported only on GitHub Apps.
-
 ## CRD
 
 Status of your pipeline execution is stored inside the Repo CustomResource :
