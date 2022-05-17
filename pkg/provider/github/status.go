@@ -152,12 +152,8 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		return err
 	}
 	if status.Status == "completed" && status.Text != "" && runevent.EventType == "pull_request" {
-		payloadevent, ok := runevent.Event.(*github.PullRequestEvent)
-		if !ok {
-			return fmt.Errorf("could not parse event: %+v", payloadevent)
-		}
 		_, _, err = v.Client.Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
-			payloadevent.GetPullRequest().GetNumber(),
+			runevent.PullRequestNumber,
 			&github.IssueComment{
 				Body: github.String(fmt.Sprintf("%s<br>%s", status.Summary, status.Text)),
 			},

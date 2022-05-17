@@ -34,9 +34,9 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 		pipelineRunInformer := pipelineruninformer.Get(ctx)
 
 		c := &Reconciler{
-			run:         run,
-			kinteract:   kinteract,
-			pipelinerun: pipelineRunInformer,
+			run:               run,
+			kinteract:         kinteract,
+			pipelineRunLister: pipelineRunInformer.Lister(),
 		}
 		impl := pipelinerunreconciler.NewImpl(ctx, c)
 

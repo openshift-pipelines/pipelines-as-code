@@ -58,12 +58,12 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	// so instead of having to specify their in Repo each time, they use a
 	// shared one from pac.
 	if repo.Spec.GitProvider != nil {
-		err := secretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo, p.logger)
+		err := SecretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo, p.logger)
 		if err != nil {
 			return nil, nil, err
 		}
 	} else {
-		p.event.Provider.WebhookSecret, _ = getCurrentNSWebhookSecret(ctx, p.k8int)
+		p.event.Provider.WebhookSecret, _ = GetCurrentNSWebhookSecret(ctx, p.k8int)
 	}
 	if err := p.vcx.Validate(ctx, p.run, p.event); err != nil {
 		// check that webhook secret has no /n or space into it

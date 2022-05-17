@@ -12,7 +12,10 @@ import (
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
-const StateStarted = "started"
+const (
+	StateStarted   = "started"
+	StateCompleted = "completed"
+)
 
 func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.PipelineRun, repo *apipac.Repository, providerinfo *info.ProviderConfig) {
 	// Add labels on the soon to be created pipelinerun so UI/CLI can easily

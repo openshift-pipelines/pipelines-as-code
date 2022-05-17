@@ -1,0 +1,100 @@
+package reconciler
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+
+	"github.com/google/go-github/v43/github"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	pacv1a1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	tektonDir               = ".tekton"
+	maxPipelineRunStatusRun = 5
+	startingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
+  <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
+  the command line with :
+	<br><code>tkn pr logs -f -n %s %s</code>`
+)
+
+func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1beta1.PipelineRun, repo *pacv1a1.Repository, event *info.Event) error {
+	refsanitized := formatting.SanitizeBranch(event.BaseBranch)
+	repoStatus := pacv1a1.RepositoryRunStatus{
+		Status:          pr.Status.Status,
+		PipelineRunName: pr.Name,
+		StartTime:       pr.Status.StartTime,
+		CompletionTime:  pr.Status.CompletionTime,
+		SHA:             &event.SHA,
+		SHAURL:          &event.SHAURL,
+		Title:           &event.SHATitle,
+		LogURL:          github.String(r.run.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName())),
+		EventType:       &event.EventType,
+		TargetBranch:    &refsanitized,
+	}
+
+	// Get repo again in case it was updated while we were running the CI
+	// we try multiple time until we get right in case of conflicts.
+	// that's what the error message tell us anyway, so i guess we listen.
+	maxRun := 10
+	for i := 0; i < maxRun; i++ {
+		lastrepo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(
+			pr.GetNamespace()).Get(ctx, repo.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		// Append pipelinerun status files to the repo status
+		if len(lastrepo.Status) >= maxPipelineRunStatusRun {
+			copy(lastrepo.Status, lastrepo.Status[len(lastrepo.Status)-maxPipelineRunStatusRun+1:])
+			lastrepo.Status = lastrepo.Status[:maxPipelineRunStatusRun-1]
+		}
+
+		lastrepo.Status = append(lastrepo.Status, repoStatus)
+		nrepo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
+			ctx, lastrepo, metav1.UpdateOptions{})
+		if err != nil {
+			logger.Infof("Could not update repo %s, retrying %d/%d: %s", lastrepo.Namespace, i, maxRun, err.Error())
+			continue
+		}
+		logger.Infof("Repository status of %s has been updated", nrepo.Name)
+		return nil
+	}
+
+	return fmt.Errorf("cannot update %s", repo.Name)
+}
+
+func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLogger, vcx provider.Interface, event *info.Event, createdPR *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
+	pr, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(createdPR.GetNamespace()).Get(
+		ctx, createdPR.GetName(), metav1.GetOptions{},
+	)
+	if err != nil {
+		return pr, err
+	}
+
+	taskStatus, err := sort.TaskStatusTmpl(pr, r.run.Clients.ConsoleUI, vcx.GetConfig().TaskStatusTMPL)
+	if err != nil {
+		return pr, err
+	}
+
+	status := provider.StatusOpts{
+		Status:                  "completed",
+		Conclusion:              formatting.PipelineRunStatus(pr),
+		Text:                    taskStatus,
+		PipelineRunName:         pr.Name,
+		DetailsURL:              r.run.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
+		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")],
+	}
+
+	err = vcx.CreateStatus(ctx, event, r.run.Info.Pac, status)
+	logger.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)
+	return pr, err
+}
