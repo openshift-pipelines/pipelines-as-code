@@ -99,7 +99,7 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	var client *github.Client
 	apiURL := event.Provider.URL
 	if apiURL != "" {
-		if !strings.HasPrefix(apiURL, "https") {
+		if !strings.HasPrefix(apiURL, "https") && !strings.HasPrefix(apiURL, "http") {
 			apiURL = "https://" + apiURL
 		}
 	}
@@ -328,7 +328,7 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		return setLoggerAndProceed(false, "push: no pusher in event", nil)
 
 	case *github.PullRequestEvent:
-		if provider.Valid(gitEvent.GetAction(), []string{"opened", "synchronize", "reopened"}) {
+		if provider.Valid(gitEvent.GetAction(), []string{"opened", "synchronize", "synchronized", "reopened"}) {
 			return setLoggerAndProceed(true, "", nil)
 		}
 		return setLoggerAndProceed(false, fmt.Sprintf("pull_request: unsupported action \"%s\"", gitEvent.GetAction()), nil)
