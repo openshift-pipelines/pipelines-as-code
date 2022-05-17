@@ -103,8 +103,7 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string
 		return err
 	}
 
-	fmt.Fprintln(gh.IOStream.Out, "ℹ ️You now need to create a GitHub personal token with scopes  `public_repo` & `admin:repo_hook`")
-	fmt.Fprintln(gh.IOStream.Out, "ℹ ️Go to this URL to generate a new token https://github.com/settings/tokens/new, see https://is.gd/G5gBFI for documentation ")
+	fmt.Fprintln(gh.IOStream.Out, "ℹ ️You now need to create a GitHub personal access token, please checkout the docs at https://is.gd/KJ1dDH for the required scopes")
 	if err := prompt.SurveyAskOne(&survey.Password{
 		Message: "Please enter the GitHub access token: ",
 	}, &gh.personalAccessToken, survey.WithValidator(survey.Required)); err != nil {

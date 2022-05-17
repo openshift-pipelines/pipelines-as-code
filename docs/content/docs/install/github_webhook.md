@@ -52,7 +52,7 @@ After configuring the webhook, you will be able to update the token in the secre
 
 Alternatively, you could follow the [Setup Git Repository manually](#setup-git-repository-manually) guide to do it manually
 
-### Setup Git Repository manually
+## Setup Git Repository manually
 
 follow below instruction to configure webhook manually
 
@@ -113,11 +113,11 @@ follow below instruction to configure webhook manually
         # key: "webhook.secret"
   ```
 
-### GitHub webhook Notes
+## GitHub webhook Notes
 
 * Secrets need to be in the same namespace as installed on Repository, they cannot be on another namespace.
 
-### Update Token
+## Update Token
 
 When you have regenerated a new token you will need to  update it on cluster.
 For example through the command line, you will want to replace `$NEW_TOKEN` and `$target_namespace` by their respective values:
@@ -132,5 +132,5 @@ You can find the secret name in Repository CR created.
   ```
 
 ```shell
-kubectl -n $target_namespace patch secret githubwebhook -p "{\"data\": {\"foo\": \"$(echo -n $NEW_TOKEN|base64 -w0)\"}}"
+kubectl -n $target_namespace patch secret github-webhook-config -p "{\"data\": {\"provider.token\": \"$(echo -n $NEW_TOKEN|base64 -w0)\"}}"
 ```
