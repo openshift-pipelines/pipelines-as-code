@@ -45,7 +45,7 @@ spec:
             - name: source
           steps:
             - name: push-release-to-branch
-              image: registry.access.redhat.com/ubi8/python-39:latest
+              image: registry.access.redhat.com/ubi9/python-39
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
