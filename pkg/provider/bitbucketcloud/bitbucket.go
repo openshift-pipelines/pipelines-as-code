@@ -3,6 +3,7 @@ package bitbucketcloud
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/ktrysmt/go-bitbucket"
@@ -91,11 +92,6 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 	}
 	if statusopts.Conclusion != "STOPPED" && statusopts.Status == "completed" &&
 		statusopts.Text != "" && event.EventType == "pull_request" {
-		prNumber, err := v.getPullRequestNumber(event.Event)
-		if err != nil {
-			return err
-		}
-
 		onPr := ""
 		if statusopts.OriginalPipelineRunName != "" {
 			onPr = "/" + statusopts.OriginalPipelineRunName
@@ -104,7 +100,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 			&bitbucket.PullRequestCommentOptions{
 				Owner:         event.Organization,
 				RepoSlug:      event.Repository,
-				PullRequestID: prNumber,
+				PullRequestID: strconv.Itoa(event.PullRequestNumber),
 				Content:       fmt.Sprintf("**%s%s** - %s\n\n%s", pacopts.ApplicationName, onPr, statusopts.Title, statusopts.Text),
 			})
 		if err != nil {
@@ -242,16 +238,4 @@ func (v *Provider) getBlob(runevent *info.Event, ref, path string) (string, erro
 		return "", fmt.Errorf("cannot find %s on branch %s in repo %s/%s", path, ref, runevent.Organization, runevent.Repository)
 	}
 	return blob.String(), nil
-}
-
-func (v *Provider) getPullRequestNumber(eventPayload interface{}) (string, error) {
-	prevent, ok := eventPayload.(*types.PullRequestEvent)
-	if !ok {
-		return "", fmt.Errorf("cannot convert event to PullRequestEvent")
-	}
-	prID := prevent.PullRequest.ID
-	if prID == 0 {
-		return "", fmt.Errorf("could not detect pull request ID")
-	}
-	return fmt.Sprintf("%d", prID), nil
 }
