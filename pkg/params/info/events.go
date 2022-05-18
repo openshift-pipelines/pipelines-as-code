@@ -45,6 +45,10 @@ type Event struct {
 	// Bitbucket Server
 	CloneURL string // bitbucket server has a different url for cloning the repo than normal public html url
 	Provider *Provider
+
+	// Gitlab
+	SourceProjectID int
+	TargetProjectID int
 }
 
 type State struct {

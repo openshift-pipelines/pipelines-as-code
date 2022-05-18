@@ -206,5 +206,13 @@ func eventFromPipelineRun(pr *v1beta1.PipelineRun) *info.Event {
 	if gheURL, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "ghe-url")]; ok {
 		event.GHEURL = gheURL
 	}
+
+	// Gitlab specific
+	if projectID, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "source-project-id")]; ok {
+		event.SourceProjectID, _ = strconv.Atoi(projectID)
+	}
+	if projectID, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "target-project-id")]; ok {
+		event.TargetProjectID, _ = strconv.Atoi(projectID)
+	}
 	return event
 }

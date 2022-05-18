@@ -53,6 +53,14 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.Pipel
 		}
 	}
 
+	// GitLab
+	if event.SourceProjectID != 0 {
+		annotations[filepath.Join(pipelinesascode.GroupName, "source-project-id")] = strconv.Itoa(event.SourceProjectID)
+	}
+	if event.TargetProjectID != 0 {
+		annotations[filepath.Join(pipelinesascode.GroupName, "target-project-id")] = strconv.Itoa(event.TargetProjectID)
+	}
+
 	for k, v := range labels {
 		pipelineRun.Labels[k] = v
 	}
