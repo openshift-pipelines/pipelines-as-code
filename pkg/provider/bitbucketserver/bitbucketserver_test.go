@@ -177,7 +177,7 @@ func TestCreateStatus(t *testing.T) {
 			v := Provider{Client: client, pullRequestNumber: pullRequestNumber, projectKey: event.Organization}
 			bbtest.MuxCreateAndTestCommitStatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr, pullRequestNumber)
-			err := v.CreateStatus(ctx, event, &tt.pacOpts, tt.status)
+			err := v.CreateStatus(ctx, nil, event, &tt.pacOpts, tt.status)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return

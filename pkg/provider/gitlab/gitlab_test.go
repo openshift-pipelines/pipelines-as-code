@@ -167,7 +167,7 @@ func TestCreateStatus(t *testing.T) {
 			}
 
 			pacOpts := &info.PacOpts{ApplicationName: "Test me"}
-			if err := v.CreateStatus(ctx, tt.args.event, pacOpts, tt.args.statusOpts); (err != nil) != tt.wantErr {
+			if err := v.CreateStatus(ctx, nil, tt.args.event, pacOpts, tt.args.statusOpts); (err != nil) != tt.wantErr {
 				t.Errorf("CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
