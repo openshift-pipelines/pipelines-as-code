@@ -10,27 +10,9 @@ When the pipeline finishes, the status will be added in the GitHub Check tabs
 with a short recap of how long each task of your pipeline took and the output of
 `tkn pr describe`.
 
-If there was a failure you can click on the "Re-Run" button on the left to rerun
-the Pipeline or you can issue an issue comment with a line starting and finishing
-with the string `/retest` to ask Pipelines as Code to retest the current PR.
+## Webhook
 
-Example :
-
-```text
-Thanks for contributing, This is a much needed bugfix, and we love it ❤️ The
-failure is not with your PR but seems to be an infra issue.
-
-/retest
-```
-
-Note that `/retest` runs every `PipelineRun` matching the Pull Request. If you want to retest an individual `PipelineRun`
-you can run it again by adding a comment with `/test <pipelinerun-name>`.
-
-Example:
-
-```yaml
-/test <pipelineRun-name>
-```
+On webhook if it's a pull request
 
 ## CRD
 
