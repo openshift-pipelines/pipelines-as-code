@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
+	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 )
 
@@ -42,7 +43,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacopts *info.PacOpts, statusopts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event *info.Event, pacopts *info.PacOpts, statusopts provider.StatusOpts) error {
 	switch statusopts.Conclusion {
 	case "skipped":
 		statusopts.Conclusion = "STOPPED"

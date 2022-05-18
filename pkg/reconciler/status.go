@@ -82,6 +82,7 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 
 	status := provider.StatusOpts{
 		Status:                  "completed",
+		PipelineRun:             pr,
 		Conclusion:              formatting.PipelineRunStatus(pr),
 		Text:                    taskStatus,
 		PipelineRunName:         pr.Name,
@@ -89,7 +90,7 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")],
 	}
 
-	err = vcx.CreateStatus(ctx, event, r.run.Info.Pac, status)
+	err = vcx.CreateStatus(ctx, r.run.Clients.Tekton, event, r.run.Info.Pac, status)
 	logger.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)
 	return pr, err
 }

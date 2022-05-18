@@ -39,7 +39,7 @@ func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, k8int k
 func (p *PacRun) Run(ctx context.Context) error {
 	matchedPRs, repo, err := p.matchRepoPR(ctx)
 	if err != nil {
-		createStatusErr := p.vcx.CreateStatus(ctx, p.event, p.run.Info.Pac, provider.StatusOpts{
+		createStatusErr := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, provider.StatusOpts{
 			Status:     "completed",
 			Conclusion: "failure",
 			Text:       fmt.Sprintf("There was an issue validating the commit: %q", err),
@@ -110,9 +110,10 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 		Text:                    msg,
 		DetailsURL:              consoleURL,
 		PipelineRunName:         pr.GetName(),
+		PipelineRun:             pr,
 		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")],
 	}
-	if err := p.vcx.CreateStatus(ctx, p.event, p.run.Info.Pac, status); err != nil {
+	if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
 		return fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
 	}
 	return nil

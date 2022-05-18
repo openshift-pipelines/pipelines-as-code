@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
 )
@@ -257,7 +258,7 @@ func (v *Provider) SetClient(_ context.Context, event *info.Event) error {
 	return nil
 }
 
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacOpts *info.PacOpts,
+func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event *info.Event, pacOpts *info.PacOpts,
 	statusOpts provider.StatusOpts,
 ) error {
 	var detailsURL string

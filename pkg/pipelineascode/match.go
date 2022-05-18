@@ -42,7 +42,7 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
 		}
-		if err := p.vcx.CreateStatus(ctx, p.event, p.run.Info.Pac, status); err != nil {
+		if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
 			return nil, nil, fmt.Errorf("failed to run create status on repo not found: %w", err)
 		}
 		return nil, nil, nil
@@ -106,7 +106,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 				Text:       msg,
 				DetailsURL: "https://tenor.com/search/police-cat-gifs",
 			}
-			if err := p.vcx.CreateStatus(ctx, p.event, p.run.Info.Pac, status); err != nil {
+			if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
 				return nil, nil, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
 			}
 			return nil, nil, nil

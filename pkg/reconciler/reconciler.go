@@ -76,11 +76,18 @@ func (r *Reconciler) reportStatus(ctx context.Context, pr *v1beta1.PipelineRun) 
 		logger.Error(err)
 		return nil
 	}
+	provider.SetLogger(logger)
 
 	event := eventFromPipelineRun(pr)
 
 	// if its a GH app pipelineRun then init client
 	if event.InstallationID != 0 {
+		// if check run id doesn't exist on the pipelineRun, then wait for it
+		_, ok := prLabels[filepath.Join(pipelinesascode.GroupName, "check-run-id")]
+		if !ok {
+			logger.Infof("could not find check run id")
+			return nil
+		}
 		gh := &github.Provider{}
 		event.Provider.Token, err = gh.GetAppToken(ctx, r.run.Clients.Kube, event.GHEURL, event.InstallationID)
 		if err != nil {

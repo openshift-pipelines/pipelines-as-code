@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 
 	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -25,10 +24,7 @@ type Provider struct {
 	Logger        *zap.SugaredLogger
 	Token, APIURL *string
 	ApplicationID *int64
-
-	CheckRunIDS *sync.Map
-
-	providerName string
+	providerName  string
 }
 
 func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
@@ -128,7 +124,6 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	if v.Client == nil {
 		v.Client = client
 	}
-	v.CheckRunIDS = &sync.Map{}
 
 	v.APIURL = &apiURL
 
