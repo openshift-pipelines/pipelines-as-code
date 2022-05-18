@@ -33,8 +33,9 @@ func NewEnvConfig() adapter.EnvConfigAccessor {
 
 type listener struct {
 	run    *params.Run
-	kint   *kubeinteraction.Interaction
+	kint   kubeinteraction.Interface
 	logger *zap.SugaredLogger
+	event  *info.Event
 }
 
 type Response struct {
@@ -98,34 +99,50 @@ func (l listener) handleEvent() http.HandlerFunc {
 			return
 		}
 
-		// payload validation
 		var event map[string]interface{}
-		if err := json.Unmarshal(payload, &event); err != nil {
-			l.logger.Errorf("Invalid event body format format: %s", err)
-			response.WriteHeader(http.StatusBadRequest)
+		if string(payload) != "" {
+			if err := json.Unmarshal(payload, &event); err != nil {
+				l.logger.Errorf("Invalid event body format format: %s", err)
+				response.WriteHeader(http.StatusBadRequest)
+			}
+		}
+
+		var gitProvider provider.Interface
+		var logger *zap.SugaredLogger
+
+		l.event = info.NewEvent()
+		isIncoming, targettedRepo, err := l.detectIncoming(ctx, request, payload)
+		if err != nil {
+			l.logger.Errorf("error processing incoming webhook: %v", err)
 			return
 		}
 
+		if isIncoming {
+			gitProvider, logger, err = l.processIncoming(targettedRepo)
+		} else {
+			gitProvider, logger, err = l.detectProvider(request, string(payload))
+		}
+
 		// figure out which provider request coming from
-		gitProvider, logger, err := l.detectProvider(&request.Header, string(payload))
 		if err != nil || gitProvider == nil {
 			l.writeResponse(response, http.StatusOK, err.Error())
 			return
 		}
 
 		s := sinker{
-			run:    l.run,
-			vcx:    gitProvider,
-			kint:   l.kint,
-			event:  info.NewEvent(),
-			logger: logger,
+			run:     l.run,
+			vcx:     gitProvider,
+			kint:    l.kint,
+			event:   l.event,
+			logger:  logger,
+			payload: payload,
 		}
 
 		// clone the request to use it further
 		localRequest := request.Clone(request.Context())
 
 		go func() {
-			err := s.processEvent(ctx, localRequest, payload)
+			err := s.processEvent(ctx, localRequest)
 			if err != nil {
 				logger.Errorf("an error occurred: %v", err)
 			}
@@ -135,53 +152,57 @@ func (l listener) handleEvent() http.HandlerFunc {
 	}
 }
 
-func (l listener) detectProvider(reqHeader *http.Header, reqBody string) (provider.Interface, *zap.SugaredLogger, error) {
+func (l listener) processRes(processEvent bool, provider provider.Interface, logger *zap.SugaredLogger, skipReason string, err error) (provider.Interface, *zap.SugaredLogger, error) {
+	if processEvent {
+		provider.SetLogger(logger)
+		return provider, logger, nil
+	}
+	if err != nil {
+		errStr := fmt.Sprintf("got error while processing : %v", err)
+		logger.Error(errStr)
+		return nil, logger, fmt.Errorf(errStr)
+	}
+
+	if skipReason != "" {
+		logger.Infof("skipping event: %s", skipReason)
+	}
+	return nil, logger, fmt.Errorf("skipping event")
+}
+
+func (l listener) detectProvider(req *http.Request, reqBody string) (provider.Interface, *zap.SugaredLogger, error) {
 	log := *l.logger
 
-	processRes := func(processEvent bool, provider provider.Interface, logger *zap.SugaredLogger, skipReason string,
-		err error,
-	) (provider.Interface, *zap.SugaredLogger, error) {
-		if processEvent {
-			provider.SetLogger(logger)
-			return provider, logger, nil
-		}
-		if err != nil {
-			errStr := fmt.Sprintf("got error while processing : %v", err)
-			logger.Error(errStr)
-			return nil, logger, fmt.Errorf(errStr)
-		}
-
-		if skipReason != "" {
-			logger.Infof("skipping event: %s", skipReason)
-		}
-		return nil, logger, fmt.Errorf("skipping event")
+	// payload validation
+	var event map[string]interface{}
+	if err := json.Unmarshal([]byte(reqBody), &event); err != nil {
+		return nil, &log, fmt.Errorf("invalid event body format: %w", err)
 	}
 
 	gitHub := &github.Provider{}
-	isGH, processReq, logger, reason, err := gitHub.Detect(reqHeader, reqBody, &log)
+	isGH, processReq, logger, reason, err := gitHub.Detect(req, reqBody, &log)
 	if isGH {
-		return processRes(processReq, gitHub, logger, reason, err)
+		return l.processRes(processReq, gitHub, logger, reason, err)
 	}
 
 	bitServer := &bitbucketserver.Provider{}
-	isBitServer, processReq, logger, reason, err := bitServer.Detect(reqHeader, reqBody, &log)
+	isBitServer, processReq, logger, reason, err := bitServer.Detect(req, reqBody, &log)
 	if isBitServer {
-		return processRes(processReq, bitServer, logger, reason, err)
+		return l.processRes(processReq, bitServer, logger, reason, err)
 	}
 
 	gitLab := &gitlab.Provider{}
-	isGitlab, processReq, logger, reason, err := gitLab.Detect(reqHeader, reqBody, &log)
+	isGitlab, processReq, logger, reason, err := gitLab.Detect(req, reqBody, &log)
 	if isGitlab {
-		return processRes(processReq, gitLab, logger, reason, err)
+		return l.processRes(processReq, gitLab, logger, reason, err)
 	}
 
 	bitCloud := &bitbucketcloud.Provider{}
-	isBitCloud, processReq, logger, reason, err := bitCloud.Detect(reqHeader, reqBody, &log)
+	isBitCloud, processReq, logger, reason, err := bitCloud.Detect(req, reqBody, &log)
 	if isBitCloud {
-		return processRes(processReq, bitCloud, logger, reason, err)
+		return l.processRes(processReq, bitCloud, logger, reason, err)
 	}
 
-	return processRes(false, nil, logger, "", fmt.Errorf("no supported Git provider has been detected"))
+	return l.processRes(false, nil, logger, "", fmt.Errorf("no supported Git provider has been detected"))
 }
 
 func (l listener) writeResponse(response http.ResponseWriter, statusCode int, message string) {

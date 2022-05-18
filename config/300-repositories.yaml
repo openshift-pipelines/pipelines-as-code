@@ -32,10 +32,10 @@ spec:
           type: string
         - name: Succeeded
           type: string
-          jsonPath: ".pipelinerun_status[-1].conditions[?(@.type==\"Succeeded\")].status"
+          jsonPath: '.pipelinerun_status[-1].conditions[?(@.type=="Succeeded")].status'
         - name: Reason
           type: string
-          jsonPath: ".pipelinerun_status[-1].conditions[?(@.type==\"Succeeded\")].reason"
+          jsonPath: '.pipelinerun_status[-1].conditions[?(@.type=="Succeeded")].reason'
         - name: StartTime
           type: date
           jsonPath: ".pipelinerun_status[-1].startTime"
@@ -50,14 +50,16 @@ spec:
           description: Schema for the repository API
           properties:
             apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
+              description:
+                "APIVersion defines the versioned schema of this representation
                 of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/  api-conventions.md#resources'
+                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/  api-conventions.md#resources"
               type: string
             kind:
-              description: 'Kind is a string value representing the REST resource this
+              description:
+                "Kind is a string value representing the REST resource this
                 object represents. Servers may infer this from the endpoint the client
-                submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+                submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds"
               type: string
             metadata:
               type: object
@@ -67,6 +69,42 @@ spec:
                 url:
                   description: Repository URL
                   type: string
+                type:
+                  description: Git repository provider
+                  type: string
+                  enum:
+                    - github
+                    - gitea
+                    - bitbucket
+                    - gitlab
+                    - bitbucket-enteprise
+                incoming:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        description: Type of webhook
+                        type: string
+                        enum:
+                          - webhook-url
+                      targets:
+                        description: List of target branches or ref to trigger webhooks on
+                        type: array
+                        items:
+                          description: Branch name
+                          type: string
+                      secret:
+                        description: Secret to use for the webhook
+                        type: object
+                        properties:
+                          key:
+                            description: Key of the secret
+                            type: string
+                            default: "secret"
+                          name:
+                            description: Name of the secret
+                            type: string
                 git_provider:
                   type: object
                   properties:
@@ -75,6 +113,9 @@ spec:
                       type: string
                     user:
                       description: The Git provider api user
+                      type: string
+                    type:
+                      description: The Git provider type
                       type: string
                     secret:
                       type: object
@@ -105,4 +146,4 @@ spec:
     singular: repository
     kind: Repository
     shortNames:
-    - repo
+      - repo

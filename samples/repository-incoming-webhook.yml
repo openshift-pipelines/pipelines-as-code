@@ -1,0 +1,21 @@
+# Sample repository showing incoming webhook repository
+---
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: sample-app
+  namespace: "sample-ci-webhook"
+spec:
+  # which URL this Repository handles
+  url: "https://forge.com/owner/sample-app"
+  incoming:
+    - type: webhook-url
+      targets:
+        - main
+      secret:
+        name: "webhook-secret"
+        key: "webhook.secret"
+  git_provider:
+    secret:
+      name: "provider.secret"
+      key: "tokenkey"

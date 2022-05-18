@@ -33,7 +33,7 @@ const (
 func branchMatch(prunBranch, baseBranch string) bool {
 	// If we have targetBranch in annotation and refs/heads/targetBranch from
 	// webhook, then allow it.
-	if filepath.Base(baseBranch) == prunBranch {
+	if filepath.Base(baseBranch) == filepath.Base(prunBranch) {
 		return true
 	}
 
@@ -73,7 +73,11 @@ func getTargetBranch(prun *v1beta1.PipelineRun, logger *zap.SugaredLogger, event
 	var targetEvent, targetBranch string
 	if key, ok := prun.GetObjectMeta().GetAnnotations()[filepath.Join(
 		pipelinesascode.GroupName, onEventAnnotation)]; ok {
-		matched, err := matchOnAnnotation(key, event.TriggerTarget, false)
+		targetEvent = event.TriggerTarget
+		if event.EventType == "incoming" {
+			targetEvent = "incoming"
+		}
+		matched, err := matchOnAnnotation(key, targetEvent, false)
 		targetEvent = key
 		if err != nil {
 			return false, "", "", err
@@ -121,6 +125,13 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			PipelineRun: prun,
 			Config:      map[string]string{},
 		}
+
+		if event.TargetPipelineRun != "" && event.TargetPipelineRun == strings.TrimSuffix(prun.GetGenerateName(), "-") {
+			logger.Infof("matched target pipelinerun with name: %s, annotation Config: %q", prun.GetGenerateName(), prMatch.Config)
+			matchedPRs = append(matchedPRs, prMatch)
+			continue
+		}
+
 		if prun.GetObjectMeta().GetAnnotations() == nil {
 			logger.Warnf("PipelineRun %s does not have any annotations", prun.GetName())
 			continue

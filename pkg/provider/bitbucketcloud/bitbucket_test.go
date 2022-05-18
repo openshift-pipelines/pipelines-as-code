@@ -366,10 +366,10 @@ func TestProvider_Detect(t *testing.T) {
 				assert.NilError(t, err)
 			}
 
-			header := &http.Header{}
+			header := http.Header{}
 			header.Set("X-Event-Key", tt.eventType)
-
-			isBS, processReq, _, reason, err := bprovider.Detect(header, string(jeez), logger)
+			req := &http.Request{Header: header}
+			isBS, processReq, _, reason, err := bprovider.Detect(req, string(jeez), logger)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return

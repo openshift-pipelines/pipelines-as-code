@@ -43,11 +43,11 @@ func (w *Options) updateRepositoryCR(ctx context.Context, res *response) error {
 		repo.Spec.GitProvider = &v1alpha1.GitProvider{}
 	}
 
-	repo.Spec.GitProvider.Secret = &v1alpha1.GitProviderSecret{
+	repo.Spec.GitProvider.Secret = &v1alpha1.Secret{
 		Name: w.RepositoryName,
 		Key:  providerTokenKey,
 	}
-	repo.Spec.GitProvider.WebhookSecret = &v1alpha1.GitProviderSecret{
+	repo.Spec.GitProvider.WebhookSecret = &v1alpha1.Secret{
 		Name: w.RepositoryName,
 		Key:  webhookSecretKey,
 	}

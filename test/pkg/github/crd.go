@@ -42,11 +42,11 @@ func CreateCRD(ctx context.Context, t *testing.T, repoinfo *ghlib.Repository, ru
 		assert.NilError(t, err)
 		repo.Spec.GitProvider = &v1alpha1.GitProvider{
 			URL: apiURL,
-			Secret: &v1alpha1.GitProviderSecret{
+			Secret: &v1alpha1.Secret{
 				Name: "webhook-token",
 				Key:  "token",
 			},
-			WebhookSecret: &v1alpha1.GitProviderSecret{
+			WebhookSecret: &v1alpha1.Secret{
 				Name: "webhook-token",
 				Key:  "webhook-secret",
 			},

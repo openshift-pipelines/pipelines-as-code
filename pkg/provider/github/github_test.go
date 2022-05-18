@@ -569,10 +569,11 @@ func TestProvider_Detect(t *testing.T) {
 				assert.NilError(t, err)
 			}
 
-			header := &http.Header{}
+			header := http.Header{}
 			header.Set("X-GitHub-Event", tt.eventType)
 
-			isGh, processReq, _, reason, err := gprovider.Detect(header, string(jeez), logger)
+			req := &http.Request{Header: header}
+			isGh, processReq, _, reason, err := gprovider.Detect(req, string(jeez), logger)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return

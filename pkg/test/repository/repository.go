@@ -73,12 +73,12 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 
 	if opts.SecretName != "" || opts.ProviderURL != "" || opts.WebhookSecretName != "" {
 		repo.Spec.GitProvider = &v1alpha1.GitProvider{
-			Secret: &v1alpha1.GitProviderSecret{},
+			Secret: &v1alpha1.Secret{},
 		}
 	}
 
 	if opts.SecretName != "" {
-		repo.Spec.GitProvider.Secret = &v1alpha1.GitProviderSecret{
+		repo.Spec.GitProvider.Secret = &v1alpha1.Secret{
 			Name: opts.SecretName,
 		}
 	}
@@ -87,7 +87,7 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 	}
 
 	if opts.WebhookSecretName != "" {
-		repo.Spec.GitProvider.WebhookSecret = &v1alpha1.GitProviderSecret{
+		repo.Spec.GitProvider.WebhookSecret = &v1alpha1.Secret{
 			Name: opts.WebhookSecretName,
 		}
 	}

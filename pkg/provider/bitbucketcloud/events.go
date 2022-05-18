@@ -171,10 +171,9 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	return processedEvent, nil
 }
 
-func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool,
-	*zap.SugaredLogger, string, error,
-) {
+func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	isBitCloud := false
+	reqHeader := req.Header
 	event := reqHeader.Get("X-Event-Key")
 	if event == "" {
 		return false, false, logger, "", nil

@@ -64,11 +64,9 @@ func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event)
 
 // Detect processes event and detect if it is a gitlab event, whether to process or reject it
 // returns (if is a GL event, whether to process or reject, logger with event metadata,, error if any occurred)
-func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool,
-	*zap.SugaredLogger, string, error,
-) {
+func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	isGL := false
-	event := reqHeader.Get("X-Gitlab-Event")
+	event := req.Header.Get("X-Gitlab-Event")
 	if event == "" {
 		return false, false, logger, "no gitlab event", nil
 	}
@@ -79,7 +77,7 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger,
 		string, error,
 	) {
-		logger = logger.With("provider", "gitlab", "event-id", reqHeader.Get("X-Request-Id"))
+		logger = logger.With("provider", "gitlab", "event-id", req.Header.Get("X-Request-Id"))
 		return isGL, processEvent, logger, reason, err
 	}
 

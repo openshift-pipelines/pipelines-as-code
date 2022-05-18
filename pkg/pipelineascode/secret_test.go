@@ -36,10 +36,10 @@ func TestSecretFromRepository(t *testing.T) {
 			repo: &apipac.Repository{
 				Spec: apipac.RepositorySpec{
 					GitProvider: &apipac.GitProvider{
-						Secret: &apipac.GitProviderSecret{
+						Secret: &apipac.Secret{
 							Name: "repo-secret",
 						},
-						WebhookSecret: &apipac.GitProviderSecret{
+						WebhookSecret: &apipac.Secret{
 							Name: "repo-webhook-secret",
 						},
 					},
@@ -61,7 +61,7 @@ func TestSecretFromRepository(t *testing.T) {
 				Spec: apipac.RepositorySpec{
 					GitProvider: &apipac.GitProvider{
 						URL:    "https://dowant",
-						Secret: &apipac.GitProviderSecret{},
+						Secret: &apipac.Secret{},
 					},
 				},
 			},
@@ -77,7 +77,7 @@ func TestSecretFromRepository(t *testing.T) {
 				Spec: apipac.RepositorySpec{
 					GitProvider: &apipac.GitProvider{
 						User:   "userfoo",
-						Secret: &apipac.GitProviderSecret{},
+						Secret: &apipac.Secret{},
 					},
 				},
 			},
@@ -96,12 +96,12 @@ func TestSecretFromRepository(t *testing.T) {
 			if tt.repo.Spec.GitProvider.Secret != nil {
 				retsecret[tt.repo.Spec.GitProvider.Secret.Name] = tt.expectedSecret
 			} else {
-				tt.repo.Spec.GitProvider.Secret = &apipac.GitProviderSecret{}
+				tt.repo.Spec.GitProvider.Secret = &apipac.Secret{}
 			}
 			if tt.repo.Spec.GitProvider.WebhookSecret != nil {
 				retsecret[tt.repo.Spec.GitProvider.WebhookSecret.Name] = tt.expectedWebhookSecret
 			} else {
-				tt.repo.Spec.GitProvider.WebhookSecret = &apipac.GitProviderSecret{}
+				tt.repo.Spec.GitProvider.WebhookSecret = &apipac.Secret{}
 			}
 
 			k8int := &kitesthelper.KinterfaceTest{

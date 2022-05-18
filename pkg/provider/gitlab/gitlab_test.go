@@ -552,10 +552,10 @@ func TestProvider_Detect(t *testing.T) {
 			gprovider := Provider{}
 			logger := getLogger()
 
-			header := &http.Header{}
+			header := http.Header{}
 			header.Set("X-Gitlab-Event", string(tt.eventType))
-
-			isGL, processReq, _, reason, err := gprovider.Detect(header, tt.event, logger)
+			req := &http.Request{Header: header}
+			isGL, processReq, _, reason, err := gprovider.Detect(req, tt.event, logger)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return

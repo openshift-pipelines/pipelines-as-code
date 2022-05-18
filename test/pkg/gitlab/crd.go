@@ -37,8 +37,8 @@ func CreateCRD(ctx context.Context, projectinfo *gitlab.Project, run *params.Run
 			URL: projectinfo.WebURL,
 			GitProvider: &v1alpha1.GitProvider{
 				URL:           apiURL,
-				Secret:        &v1alpha1.GitProviderSecret{Name: "webhook-token", Key: "token"},
-				WebhookSecret: &v1alpha1.GitProviderSecret{Name: "webhook-secret", Key: "secret"},
+				Secret:        &v1alpha1.Secret{Name: "webhook-token", Key: "token"},
+				WebhookSecret: &v1alpha1.Secret{Name: "webhook-secret", Key: "secret"},
 			},
 		},
 	}

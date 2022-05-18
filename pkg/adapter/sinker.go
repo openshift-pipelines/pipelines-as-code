@@ -14,16 +14,17 @@ import (
 )
 
 type sinker struct {
-	run    *params.Run
-	vcx    provider.Interface
-	kint   *kubeinteraction.Interaction
-	event  *info.Event
-	logger *zap.SugaredLogger
+	run     *params.Run
+	vcx     provider.Interface
+	kint    kubeinteraction.Interface
+	event   *info.Event
+	logger  *zap.SugaredLogger
+	payload []byte
 }
 
-func (s *sinker) processEvent(ctx context.Context, request *http.Request, payload []byte) error {
+func (s *sinker) processEventPayload(ctx context.Context, request *http.Request) error {
 	var err error
-	s.event, err = s.vcx.ParsePayload(ctx, s.run, request, string(payload))
+	s.event, err = s.vcx.ParsePayload(ctx, s.run, request, string(s.payload))
 	if err != nil {
 		s.logger.Errorf("failed to parse event: %v", err)
 		return err
@@ -35,7 +36,16 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request, payloa
 
 	s.event.Request = &info.Request{
 		Header:  request.Header,
-		Payload: bytes.TrimSpace(payload),
+		Payload: bytes.TrimSpace(s.payload),
+	}
+	return nil
+}
+
+func (s *sinker) processEvent(ctx context.Context, request *http.Request) error {
+	if s.event.EventType != "incoming" {
+		if err := s.processEventPayload(ctx, request); err != nil {
+			return err
+		}
 	}
 
 	p := pipelineascode.NewPacs(s.event, s.vcx, s.run, s.kint, s.logger)

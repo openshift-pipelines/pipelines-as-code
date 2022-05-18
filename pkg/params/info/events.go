@@ -9,6 +9,7 @@ type Event struct {
 	// EventType is what coming from the provider header, i.e:
 	// GitHub -> pull_request
 	// GitLab -> Merge Request Hook
+	// Incoming Webhook  -> incoming (always a push)
 	// Usually used for payload filtering passed from trigger directly
 	EventType string
 
@@ -19,6 +20,9 @@ type Event struct {
 	// others it would be always be pull_request we can rely on to know if it's
 	// a push or a pull_request
 	TriggerTarget string
+
+	// Target PipelineRun, the target PipelineRun user request. Used in incoming webhook
+	TargetPipelineRun string
 
 	BaseBranch        string // branch against where we are making the PR
 	DefaultBranch     string // master/main branches to know where things like the OWNERS file is located.
@@ -78,5 +82,6 @@ func (r *Event) DeepCopyInto(out *Event) {
 func NewEvent() *Event {
 	return &Event{
 		Provider: &Provider{},
+		Request:  &Request{},
 	}
 }

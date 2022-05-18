@@ -48,7 +48,7 @@ func CreateCRD(ctx context.Context, t *testing.T, bprovider bitbucketcloud.Provi
 	repository.Spec.GitProvider = &v1alpha1.GitProvider{
 		URL:    apiURL,
 		User:   apiUser,
-		Secret: &v1alpha1.GitProviderSecret{Name: "webhook-token", Key: "token"},
+		Secret: &v1alpha1.Secret{Name: "webhook-token", Key: "token"},
 	}
 
 	err = pacrepo.CreateRepo(ctx, targetNS, run, repository)
