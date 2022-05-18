@@ -19,6 +19,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
+	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -37,15 +38,18 @@ var gitAuthSecretAnnotation = "pipelinesascode.tekton.dev/git-auth-secret"
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
 	if pr.IsDone() {
-		logger.Infof("pipelineRun %v is done !!!  ", pr.GetName())
-		return r.reportStatus(ctx, pr)
+		logger = logger.With(
+			"pipeline-run", pr.GetName(),
+			"event-sha", pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "sha")],
+		)
+		logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
+
+		return r.reportStatus(ctx, logger, pr)
 	}
 	return nil
 }
 
-func (r *Reconciler) reportStatus(ctx context.Context, pr *v1beta1.PipelineRun) error {
-	logger := logging.FromContext(ctx)
-
+func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
 	prLabels := pr.GetLabels()
 	prAnno := pr.GetAnnotations()
 
@@ -57,7 +61,7 @@ func (r *Reconciler) reportStatus(ctx context.Context, pr *v1beta1.PipelineRun) 
 		return err
 	}
 
-	// Cleanup old succeeded pipelineruns
+	// Cleanup old succeeded pipelineRuns
 	keepMaxPipeline, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "max-keep-runs")]
 	if ok {
 		max, err := strconv.Atoi(keepMaxPipeline)
@@ -132,10 +136,10 @@ func (r *Reconciler) reportStatus(ctx context.Context, pr *v1beta1.PipelineRun) 
 		return err
 	}
 
-	return r.updatePipelineRunState(ctx, pr)
+	return r.updatePipelineRunState(ctx, logger, pr)
 }
 
-func (r *Reconciler) updatePipelineRunState(ctx context.Context, pr *v1beta1.PipelineRun) error {
+func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
 	newPr, err := r.pipelineRunLister.PipelineRuns(pr.Namespace).Get(pr.Name)
 	if err != nil {
 		return fmt.Errorf("error getting PipelineRun %s when updating state: %w", pr.Name, err)
@@ -145,6 +149,10 @@ func (r *Reconciler) updatePipelineRunState(ctx context.Context, pr *v1beta1.Pip
 	newPr.Labels[filepath.Join(pipelinesascode.GroupName, "state")] = kubeinteraction.StateCompleted
 
 	_, err = r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Update(ctx, newPr, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	logger.Infof("updated pac state in pipelinerun")
 	return err
 }
 
@@ -198,6 +206,5 @@ func eventFromPipelineRun(pr *v1beta1.PipelineRun) *info.Event {
 	if gheURL, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "ghe-url")]; ok {
 		event.GHEURL = gheURL
 	}
-
 	return event
 }
