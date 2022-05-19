@@ -18,7 +18,7 @@ import (
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
-var gitAuthSecretAnnotation = "pipelinesascode.tekton.dev/git-auth-secret"
+var gitAuthSecretAnnotation = filepath.Join(apipac.GroupName, "git-auth-secret")
 
 // matchRepoPR matches the repo and the PRs from the event
 func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Repository, error) {

@@ -475,6 +475,14 @@ func TestRun(t *testing.T) {
 				logmsg := log.FilterMessageSnippet(tt.expectedLogSnippet).TakeAll()
 				assert.Assert(t, len(logmsg) > 0, "log messages", logmsg, tt.expectedLogSnippet)
 			}
+
+			if tt.finalStatus != "skipped" {
+				prs, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns("").List(ctx, metav1.ListOptions{})
+				assert.NilError(t, err)
+				if len(prs.Items) == 0 {
+					t.Error("failed to create pipelineRun for case: ", tt.name)
+				}
+			}
 		})
 	}
 }
