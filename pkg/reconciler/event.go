@@ -1,6 +1,7 @@
 package reconciler
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -15,16 +16,24 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
-func detectProvider(pr *v1beta1.PipelineRun) (provider.Interface, error) {
+func (r *Reconciler) detectProvider(ctx context.Context, pr *v1beta1.PipelineRun) (provider.Interface, *info.Event, error) {
 	gitProvider, ok := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "git-provider")]
 	if !ok {
-		return nil, fmt.Errorf("failed to detect git provider for pipleinerun %s : git-provider label not found", pr.GetName())
+		return nil, nil, fmt.Errorf("failed to detect git provider for pipleinerun %s : git-provider label not found", pr.GetName())
 	}
+
+	event := buildEventFromPipelineRun(pr)
 
 	var provider provider.Interface
 	switch gitProvider {
 	case "github", "github-enterprise", "gitea":
-		provider = &github.Provider{}
+		gh := &github.Provider{}
+		if event.InstallationID != 0 {
+			if err := gh.InitAppClient(ctx, r.run.Clients.Kube, event); err != nil {
+				return nil, nil, err
+			}
+		}
+		provider = gh
 	case "gitlab":
 		provider = &gitlab.Provider{}
 	case "bitbucket-cloud":
@@ -32,9 +41,9 @@ func detectProvider(pr *v1beta1.PipelineRun) (provider.Interface, error) {
 	case "bitbucket-server":
 		provider = &bitbucketserver.Provider{}
 	default:
-		return nil, fmt.Errorf("failed to detect provider for pipelinerun: %s : unknown provider", pr.GetName())
+		return nil, nil, fmt.Errorf("failed to detect provider for pipelinerun: %s : unknown provider", pr.GetName())
 	}
-	return provider, nil
+	return provider, event, nil
 }
 
 func buildEventFromPipelineRun(pr *v1beta1.PipelineRun) *info.Event {

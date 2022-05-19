@@ -10,7 +10,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
@@ -70,30 +69,12 @@ func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger
 		}
 	}
 
-	provider, err := detectProvider(pr)
+	provider, event, err := r.detectProvider(ctx, pr)
 	if err != nil {
 		logger.Error(err)
 		return nil
 	}
 	provider.SetLogger(logger)
-
-	event := buildEventFromPipelineRun(pr)
-
-	// if its a GH app pipelineRun then init client
-	if event.InstallationID != 0 {
-		// if check run id doesn't exist on the pipelineRun, then wait for it
-		_, ok := prLabels[filepath.Join(pipelinesascode.GroupName, "check-run-id")]
-		if !ok {
-			logger.Infof("could not find check run id")
-			return nil
-		}
-		gh := &github.Provider{}
-		event.Provider.Token, err = gh.GetAppToken(ctx, r.run.Clients.Kube, event.GHEURL, event.InstallationID)
-		if err != nil {
-			return err
-		}
-		provider = gh
-	}
 
 	if repo.Spec.GitProvider != nil {
 		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, provider.GetConfig(), event, repo, logger); err != nil {

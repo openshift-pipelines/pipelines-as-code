@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
+	"k8s.io/client-go/kubernetes"
 )
 
 const apiPublicURL = "https://api.github.com/"
@@ -25,6 +26,15 @@ type Provider struct {
 	Token, APIURL *string
 	ApplicationID *int64
 	providerName  string
+}
+
+func (v *Provider) InitAppClient(ctx context.Context, kube kubernetes.Interface, event *info.Event) error {
+	var err error
+	event.Provider.Token, err = v.getAppToken(ctx, kube, event.GHEURL, event.InstallationID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (v *Provider) SetLogger(logger *zap.SugaredLogger) {

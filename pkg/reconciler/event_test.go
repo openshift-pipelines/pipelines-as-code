@@ -1,6 +1,7 @@
 package reconciler
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
@@ -85,7 +86,7 @@ func TestDetectProvider(t *testing.T) {
 	}{
 		{
 			name:   "known provider",
-			label:  "github",
+			label:  "gitlab",
 			errStr: "",
 		},
 		{
@@ -115,7 +116,8 @@ func TestDetectProvider(t *testing.T) {
 					},
 				}
 			}
-			_, err := detectProvider(pr)
+			r := Reconciler{}
+			_, _, err := r.detectProvider(context.Background(), pr)
 			if tt.errStr == "" {
 				assert.NilError(t, err)
 				return
