@@ -5,15 +5,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/google/go-github/v43/github"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -85,11 +90,18 @@ func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 }
 
 func TestGithubProviderCreateStatus(t *testing.T) {
-	t.Skip()
 	checkrunid := int64(2026)
 	resultid := int64(666)
 	runEvent := info.NewEvent()
 	prname := "pr1"
+	pr := &v1beta1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: prname,
+			Labels: map[string]string{
+				filepath.Join(apipac.GroupName, checkRunIDKey): strconv.Itoa(int(checkrunid)),
+			},
+		},
+	}
 	runEvent.Organization = "check"
 	runEvent.Repository = "run"
 
@@ -211,6 +223,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 
 			status := provider.StatusOpts{
 				PipelineRunName: prname,
+				PipelineRun:     pr,
 				Status:          tt.args.status,
 				Conclusion:      tt.args.conclusion,
 				Text:            tt.args.text,

@@ -89,7 +89,6 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 }
 
 func TestRun(t *testing.T) {
-	t.Skip()
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	tests := []struct {
@@ -460,6 +459,7 @@ func TestRun(t *testing.T) {
 			vcx := &ghprovider.Provider{
 				Client: fakeclient,
 				Token:  github.String("None"),
+				Logger: logger,
 			}
 			p := NewPacs(&tt.runevent, vcx, cs, k8int, logger)
 			err := p.Run(ctx)

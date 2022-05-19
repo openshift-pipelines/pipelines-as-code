@@ -153,7 +153,7 @@ func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton v
 		pr = pr.DeepCopy()
 		pr.GetLabels()[filepath.Join(apipac.GroupName, checkRunIDKey)] = strconv.FormatInt(*checkRunID, 10)
 
-		_, err = tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Update(ctx, pr, v1.UpdateOptions{})
+		pr, err = tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Update(ctx, pr, v1.UpdateOptions{})
 		if err != nil {
 			v.Logger.Infof("Could not update Pipelinerun with checkRunID, retrying %v/%v: %v", pr.GetNamespace(), pr.GetName(), err)
 			continue
