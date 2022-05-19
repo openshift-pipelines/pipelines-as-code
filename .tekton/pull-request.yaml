@@ -161,7 +161,7 @@ spec:
           steps:
             - name: save-cache
               # Has everything we need in there and we already fetched it!
-              image: registry.access.redhat.com/ubi8/python-39@sha256:86466a8a2b3981c339f84e791e170055eb3f520e8419f955efa98e93ccaaf5b9
+              image: registry.access.redhat.com/ubi9/python-39
               workingDir: $(workspaces.source.path)
               env:
                 - name: UPLOADER_UPLOAD_CREDENTIALS
