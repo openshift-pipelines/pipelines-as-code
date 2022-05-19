@@ -27,13 +27,13 @@ to add new and/or missing endpoints. Currently, the following services are suppo
 - [x] Custom Attributes
 - [x] Deploy Keys
 - [x] Deployments
-- [ ] Discussions (threaded comments)
+- [x] Discussions (threaded comments)
 - [x] Environments
-- [ ] Epic Issues
-- [ ] Epics
+- [x] Epic Issues
+- [x] Epics
 - [x] Events
 - [x] Feature Flags
-- [ ] Geo Nodes
+- [x] Geo Nodes
 - [x] Generic Packages
 - [x] GitLab CI Config Templates
 - [x] Gitignores Templates
@@ -90,6 +90,7 @@ to add new and/or missing endpoints. Currently, the following services are suppo
 - [x] System Hooks
 - [x] Tags
 - [x] Todos
+- [x] Topics
 - [x] Users
 - [x] Validate CI Configuration
 - [x] Version
