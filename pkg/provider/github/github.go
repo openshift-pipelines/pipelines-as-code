@@ -102,7 +102,7 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 
 	v.providerName = "github"
 	if apiURL != "" && apiURL != apiPublicURL {
-		v.providerName = "github-enteprise"
+		v.providerName = "github-enterprise"
 		client, _ = github.NewEnterpriseClient(apiURL, apiURL, tc)
 	} else {
 		client = github.NewClient(tc)
