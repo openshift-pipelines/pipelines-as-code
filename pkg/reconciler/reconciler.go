@@ -9,13 +9,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
@@ -82,7 +77,7 @@ func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger
 	}
 	provider.SetLogger(logger)
 
-	event := eventFromPipelineRun(pr)
+	event := buildEventFromPipelineRun(pr)
 
 	// if its a GH app pipelineRun then init client
 	if event.InstallationID != 0 {
@@ -154,65 +149,4 @@ func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.Sug
 	}
 	logger.Infof("updated pac state in pipelinerun")
 	return err
-}
-
-func detectProvider(pr *v1beta1.PipelineRun) (provider.Interface, error) {
-	gitProvider, ok := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "git-provider")]
-	if !ok {
-		return nil, fmt.Errorf("failed to detect git provider for pipleinerun %s : git-provider label not found", pr.GetName())
-	}
-
-	var provider provider.Interface
-	switch gitProvider {
-	case "github", "github-enterprise", "gitea":
-		provider = &github.Provider{}
-	case "gitlab":
-		provider = &gitlab.Provider{}
-	case "bitbucket-cloud":
-		provider = &bitbucketcloud.Provider{}
-	case "bitbucket-server":
-		provider = &bitbucketserver.Provider{}
-	default:
-		return nil, fmt.Errorf("failed to detect provider for pipelinerun: %s : unknown provider", pr.GetName())
-	}
-	return provider, nil
-}
-
-func eventFromPipelineRun(pr *v1beta1.PipelineRun) *info.Event {
-	event := info.NewEvent()
-
-	prLabels := pr.GetLabels()
-	prAnno := pr.GetAnnotations()
-
-	event.Organization = prLabels[filepath.Join(pipelinesascode.GroupName, "url-org")]
-	event.Repository = prLabels[filepath.Join(pipelinesascode.GroupName, "url-repository")]
-	event.EventType = prLabels[filepath.Join(pipelinesascode.GroupName, "event-type")]
-	event.BaseBranch = prLabels[filepath.Join(pipelinesascode.GroupName, "branch")]
-	event.SHA = prLabels[filepath.Join(pipelinesascode.GroupName, "sha")]
-
-	event.SHATitle = prAnno[filepath.Join(pipelinesascode.GroupName, "sha-title")]
-	event.SHAURL = prAnno[filepath.Join(pipelinesascode.GroupName, "sha-url")]
-
-	prNumber := prAnno[filepath.Join(pipelinesascode.GroupName, "pull-request")]
-	if prNumber != "" {
-		event.PullRequestNumber, _ = strconv.Atoi(prNumber)
-	}
-
-	// GitHub Specific
-	if prNumber, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "installation-id")]; ok {
-		id, _ := strconv.Atoi(prNumber)
-		event.InstallationID = int64(id)
-	}
-	if gheURL, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "ghe-url")]; ok {
-		event.GHEURL = gheURL
-	}
-
-	// Gitlab specific
-	if projectID, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "source-project-id")]; ok {
-		event.SourceProjectID, _ = strconv.Atoi(projectID)
-	}
-	if projectID, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "target-project-id")]; ok {
-		event.TargetProjectID, _ = strconv.Atoi(projectID)
-	}
-	return event
 }
