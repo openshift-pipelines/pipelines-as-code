@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -132,15 +131,16 @@ func TestRun(t *testing.T) {
 						Number: github.Int(666),
 					},
 				},
-				SHA:           "fromwebhook",
-				Organization:  "organizationes",
-				Repository:    "lagaffe",
-				URL:           "https://service/documentation",
-				HeadBranch:    "press",
-				BaseBranch:    "main",
-				Sender:        "fantasio",
-				EventType:     "pull_request",
-				TriggerTarget: "pull_request",
+				SHA:               "fromwebhook",
+				Organization:      "organizationes",
+				Repository:        "lagaffe",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				Sender:            "fantasio",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
 			},
 			tektondir:            "testdata/pull_request",
 			finalStatus:          "neutral",
@@ -155,15 +155,16 @@ func TestRun(t *testing.T) {
 						Number: github.Int(666),
 					},
 				},
-				SHA:           "fromwebhook",
-				Organization:  "organizationes",
-				Repository:    "lagaffe",
-				URL:           "https://service/documentation",
-				HeadBranch:    "press",
-				BaseBranch:    "main",
-				Sender:        "fantasio",
-				EventType:     "pull_request",
-				TriggerTarget: "pull_request",
+				SHA:               "fromwebhook",
+				Organization:      "organizationes",
+				Repository:        "lagaffe",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				Sender:            "fantasio",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
 			},
 			tektondir:            "testdata/pull_request",
 			finalStatus:          "skipped",
@@ -181,15 +182,16 @@ func TestRun(t *testing.T) {
 						Number: github.Int(666),
 					},
 				},
-				SHA:           "fromwebhook",
-				Organization:  "organizationes",
-				Repository:    "lagaffe",
-				URL:           "https://service/documentation",
-				HeadBranch:    "press",
-				BaseBranch:    "main",
-				Sender:        "fantasio",
-				EventType:     "pull_request",
-				TriggerTarget: "pull_request",
+				SHA:               "fromwebhook",
+				Organization:      "organizationes",
+				Repository:        "lagaffe",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				Sender:            "fantasio",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
 			},
 			tektondir:            "testdata/pull_request",
 			finalStatus:          "skipped",
@@ -455,9 +457,9 @@ func TestRun(t *testing.T) {
 			}
 
 			vcx := &ghprovider.Provider{
-				Client:      fakeclient,
-				Token:       github.String("None"),
-				CheckRunIDS: &sync.Map{},
+				Client: fakeclient,
+				Token:  github.String("None"),
+				Logger: logger,
 			}
 			p := NewPacs(&tt.runevent, vcx, cs, k8int, logger)
 			err := p.Run(ctx)
@@ -475,14 +477,11 @@ func TestRun(t *testing.T) {
 			}
 
 			if tt.finalStatus != "skipped" {
-				got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("namespace").Get(
-					ctx, "test-run", metav1.GetOptions{})
+				prs, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns("").List(ctx, metav1.ListOptions{})
 				assert.NilError(t, err)
-				assert.Assert(t, got.Status[len(got.Status)-1].PipelineRunName != "pipelinerun1", "'%s'!='%s'",
-					got.Status[len(got.Status)-1].PipelineRunName, "pipelinerun1")
-
-				lastbranchstatus := got.Status[len(got.Status)-1].TargetBranch
-				assert.Assert(t, !strings.HasPrefix(*lastbranchstatus, "refs-heads-"))
+				if len(prs.Items) == 0 {
+					t.Error("failed to create pipelineRun for case: ", tt.name)
+				}
 			}
 		})
 	}

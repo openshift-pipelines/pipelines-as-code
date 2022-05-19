@@ -32,8 +32,10 @@ type Event struct {
 
 	// TODO: move forge specifics to each driver
 	// Github
-	Organization string
-	Repository   string
+	Organization   string
+	Repository     string
+	InstallationID int64
+	GHEURL         string
 
 	// TODO: move out inside the provider
 	// Bitbucket Cloud
@@ -43,6 +45,10 @@ type Event struct {
 	// Bitbucket Server
 	CloneURL string // bitbucket server has a different url for cloning the repo than normal public html url
 	Provider *Provider
+
+	// Gitlab
+	SourceProjectID int
+	TargetProjectID int
 }
 
 type State struct {

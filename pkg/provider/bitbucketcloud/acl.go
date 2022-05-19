@@ -2,6 +2,7 @@ package bitbucketcloud
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/mitchellh/mapstructure"
@@ -70,14 +71,10 @@ func (v *Provider) checkMember(event *info.Event) (bool, error) {
 }
 
 func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event) (bool, error) {
-	prNumber, err := v.getPullRequestNumber(event.Event)
-	if err != nil {
-		return false, err
-	}
 	commentsIntf, err := v.Client.Repositories.PullRequests.GetComments(&bitbucket.PullRequestsOptions{
 		Owner:    event.Organization,
 		RepoSlug: event.Repository,
-		ID:       prNumber,
+		ID:       strconv.Itoa(event.PullRequestNumber),
 	})
 	if err != nil {
 		return false, err

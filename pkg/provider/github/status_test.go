@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/google/go-github/v43/github"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -22,8 +26,7 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	cnx := Provider{
-		Client:      fakeclient,
-		CheckRunIDS: &sync.Map{},
+		Client: fakeclient,
 	}
 	defer teardown()
 	mux.HandleFunc("/repos/check/info/check-runs", func(w http.ResponseWriter, r *http.Request) {
@@ -40,16 +43,11 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 		SHA:          "createCheckRunSHA",
 	}
 
-	err := cnx.getOrUpdateCheckRunStatus(ctx, event, &info.PacOpts{LogURL: "http://nowhere"}, provider.StatusOpts{
+	err := cnx.getOrUpdateCheckRunStatus(ctx, nil, event, &info.PacOpts{LogURL: "http://nowhere"}, provider.StatusOpts{
 		PipelineRunName: "pr1",
 		Status:          "hello moto",
 	})
 	assert.NilError(t, err)
-	v, ok := cnx.CheckRunIDS.Load("pr1")
-	assert.Assert(t, ok)
-	vv, ook := v.(*int64)
-	assert.Assert(t, ook)
-	assert.Equal(t, *vv, int64(555))
 }
 
 func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
@@ -58,8 +56,7 @@ func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 	defer teardown()
 
 	cnx := &Provider{
-		Client:      client,
-		CheckRunIDS: &sync.Map{},
+		Client: client,
 	}
 	event := &info.Event{
 		Organization: "owner",
@@ -97,6 +94,14 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 	resultid := int64(666)
 	runEvent := info.NewEvent()
 	prname := "pr1"
+	pr := &v1beta1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: prname,
+			Labels: map[string]string{
+				filepath.Join(apipac.GroupName, checkRunIDKey): strconv.Itoa(int(checkrunid)),
+			},
+		},
+	}
 	runEvent.Organization = "check"
 	runEvent.Repository = "run"
 
@@ -194,10 +199,8 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gcvs := Provider{
-				Client:      fakeclient,
-				CheckRunIDS: &sync.Map{},
+				Client: fakeclient,
 			}
-			gcvs.CheckRunIDS.Store(prname, &checkrunid)
 			mux.HandleFunc(fmt.Sprintf("/repos/check/run/check-runs/%d", checkrunid), func(rw http.ResponseWriter, r *http.Request) {
 				bit, _ := ioutil.ReadAll(r.Body)
 				checkRun := &github.CheckRun{}
@@ -220,6 +223,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 
 			status := provider.StatusOpts{
 				PipelineRunName: prname,
+				PipelineRun:     pr,
 				Status:          tt.args.status,
 				Conclusion:      tt.args.conclusion,
 				Text:            tt.args.text,
@@ -236,7 +240,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			} else {
 				tt.args.runevent = info.NewEvent()
 			}
-			err := gcvs.CreateStatus(ctx, tt.args.runevent, pacopts, status)
+			err := gcvs.CreateStatus(ctx, nil, tt.args.runevent, pacopts, status)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GithubProvider.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -248,11 +252,12 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 func TestGithubProvidercreateStatusCommit(t *testing.T) {
 	issuenumber := 666
 	anevent := &info.Event{
-		Event:        &github.PullRequestEvent{PullRequest: &github.PullRequest{Number: github.Int(issuenumber)}},
-		Organization: "owner",
-		Repository:   "repository",
-		SHA:          "createStatusCommitSHA",
-		EventType:    "pull_request",
+		Event:             &github.PullRequestEvent{PullRequest: &github.PullRequest{Number: github.Int(issuenumber)}},
+		Organization:      "owner",
+		Repository:        "repository",
+		SHA:               "createStatusCommitSHA",
+		EventType:         "pull_request",
+		PullRequestNumber: issuenumber,
 	}
 	tests := []struct {
 		name               string

@@ -343,5 +343,6 @@ func MakeEvent(event *info.Event) *info.Event {
 	if rev.Event == nil {
 		rev.Event = &types.PullRequestEvent{PullRequest: types.PullRequest{ID: 666}}
 	}
+	rev.PullRequestNumber = 666
 	return rev
 }

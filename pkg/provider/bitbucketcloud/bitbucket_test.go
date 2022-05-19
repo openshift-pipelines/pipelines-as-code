@@ -255,7 +255,7 @@ func TestCreateStatus(t *testing.T) {
 			bbcloudtest.MuxCreateCommitstatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbcloudtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr)
 
-			err := v.CreateStatus(ctx, event, &info.PacOpts{
+			err := v.CreateStatus(ctx, nil, event, &info.PacOpts{
 				ApplicationName: "HELLO APP",
 			}, tt.status)
 			assert.NilError(t, err)

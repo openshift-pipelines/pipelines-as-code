@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 
 	"github.com/google/go-github/v43/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -16,6 +15,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
+	"k8s.io/client-go/kubernetes"
 )
 
 const apiPublicURL = "https://api.github.com/"
@@ -25,10 +25,16 @@ type Provider struct {
 	Logger        *zap.SugaredLogger
 	Token, APIURL *string
 	ApplicationID *int64
+	providerName  string
+}
 
-	CheckRunIDS *sync.Map
-
-	providerName string
+func (v *Provider) InitAppClient(ctx context.Context, kube kubernetes.Interface, event *info.Event) error {
+	var err error
+	event.Provider.Token, err = v.getAppToken(ctx, kube, event.GHEURL, event.InstallationID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
@@ -106,7 +112,7 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 
 	v.providerName = "github"
 	if apiURL != "" && apiURL != apiPublicURL {
-		v.providerName = "github-enteprise"
+		v.providerName = "github-enterprise"
 		client, _ = github.NewEnterpriseClient(apiURL, apiURL, tc)
 	} else {
 		client = github.NewClient(tc)
@@ -128,7 +134,6 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	if v.Client == nil {
 		v.Client = client
 	}
-	v.CheckRunIDS = &sync.Map{}
 
 	v.APIURL = &apiURL
 

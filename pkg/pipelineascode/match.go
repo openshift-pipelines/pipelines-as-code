@@ -18,7 +18,7 @@ import (
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
-var gitAuthSecretAnnotation = "pipelinesascode.tekton.dev/git-auth-secret"
+var gitAuthSecretAnnotation = filepath.Join(apipac.GroupName, "git-auth-secret")
 
 // matchRepoPR matches the repo and the PRs from the event
 func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Repository, error) {
@@ -42,7 +42,7 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 			Text:       msg,
 			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
 		}
-		if err := p.vcx.CreateStatus(ctx, p.event, p.run.Info.Pac, status); err != nil {
+		if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
 			return nil, nil, fmt.Errorf("failed to run create status on repo not found: %w", err)
 		}
 		return nil, nil, nil
@@ -58,12 +58,12 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	// so instead of having to specify their in Repo each time, they use a
 	// shared one from pac.
 	if repo.Spec.GitProvider != nil {
-		err := secretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo, p.logger)
+		err := SecretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo, p.logger)
 		if err != nil {
 			return nil, nil, err
 		}
 	} else {
-		p.event.Provider.WebhookSecret, _ = getCurrentNSWebhookSecret(ctx, p.k8int)
+		p.event.Provider.WebhookSecret, _ = GetCurrentNSWebhookSecret(ctx, p.k8int)
 	}
 	if err := p.vcx.Validate(ctx, p.run, p.event); err != nil {
 		// check that webhook secret has no /n or space into it
@@ -106,7 +106,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 				Text:       msg,
 				DetailsURL: "https://tenor.com/search/police-cat-gifs",
 			}
-			if err := p.vcx.CreateStatus(ctx, p.event, p.run.Info.Pac, status); err != nil {
+			if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
 				return nil, nil, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
 			}
 			return nil, nil, nil

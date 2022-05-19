@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 )
 
@@ -55,7 +56,7 @@ func (v *TestProviderImp) IsAllowed(ctx context.Context, event *info.Event) (boo
 	return false, nil
 }
 
-func (v *TestProviderImp) CreateStatus(ctx context.Context, event *info.Event, opts *info.PacOpts, statusOpts provider.StatusOpts) error {
+func (v *TestProviderImp) CreateStatus(ctx context.Context, _ versioned.Interface, event *info.Event, opts *info.PacOpts, statusOpts provider.StatusOpts) error {
 	if v.CreateStatusErorring {
 		return fmt.Errorf("you want me to error I error for you")
 	}

@@ -2,6 +2,7 @@ package kubeinteraction
 
 import (
 	"path/filepath"
+	"strconv"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -9,6 +10,11 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/version"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+)
+
+const (
+	StateStarted   = "started"
+	StateCompleted = "completed"
 )
 
 func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.PipelineRun, repo *apipac.Repository, providerinfo *info.ProviderConfig) {
@@ -25,11 +31,34 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.Pipel
 		filepath.Join(pipelinesascode.GroupName, "branch"):         formatting.K8LabelsCleanup(event.BaseBranch),
 		filepath.Join(pipelinesascode.GroupName, "repository"):     formatting.K8LabelsCleanup(repo.GetName()),
 		filepath.Join(pipelinesascode.GroupName, "git-provider"):   providerinfo.Name,
+		filepath.Join(pipelinesascode.GroupName, "state"):          StateStarted,
 	}
 
 	annotations := map[string]string{
 		filepath.Join(pipelinesascode.GroupName, "sha-title"): event.SHATitle,
 		filepath.Join(pipelinesascode.GroupName, "sha-url"):   event.SHAURL,
+	}
+
+	if event.PullRequestNumber != 0 {
+		annotations[filepath.Join(pipelinesascode.GroupName, "pull-request")] = strconv.Itoa(event.PullRequestNumber)
+	}
+
+	// TODO: move to provider specific function
+	if providerinfo.Name == "github" || providerinfo.Name == "github-enterprise" {
+		if event.InstallationID != -1 {
+			annotations[filepath.Join(pipelinesascode.GroupName, "installation-id")] = strconv.FormatInt(event.InstallationID, 10)
+		}
+		if event.GHEURL != "" {
+			annotations[filepath.Join(pipelinesascode.GroupName, "ghe-url")] = event.GHEURL
+		}
+	}
+
+	// GitLab
+	if event.SourceProjectID != 0 {
+		annotations[filepath.Join(pipelinesascode.GroupName, "source-project-id")] = strconv.Itoa(event.SourceProjectID)
+	}
+	if event.TargetProjectID != 0 {
+		annotations[filepath.Join(pipelinesascode.GroupName, "target-project-id")] = strconv.Itoa(event.TargetProjectID)
 	}
 
 	for k, v := range labels {

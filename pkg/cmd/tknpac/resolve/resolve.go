@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
@@ -150,7 +149,7 @@ func resolveFilenames(cs *params.Run, filenames []string, params map[string]stri
 		SkipInlining: skipInlining,
 	}
 	// We use github here but since we don't do remotetask we would not care
-	providerintf := &github.Provider{CheckRunIDS: &sync.Map{}}
+	providerintf := &github.Provider{}
 	event := info.NewEvent()
 	prun, err := resolve.Resolve(ctx, cs, cs.Clients.Log, providerintf, event, allTemplates, ropt)
 	if err != nil {

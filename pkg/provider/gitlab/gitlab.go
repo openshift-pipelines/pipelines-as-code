@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
 )
@@ -168,6 +169,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		v.pathWithNamespace = gitEvent.ObjectAttributes.Target.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
 		processedEvent.TriggerTarget = "pull_request"
+		processedEvent.SourceProjectID = gitEvent.ObjectAttributes.SourceProjectID
+		processedEvent.TargetProjectID = gitEvent.Project.ID
 	case *gitlab.PushEvent:
 		if len(gitEvent.Commits) == 0 {
 			return nil, fmt.Errorf("no commits attached to this push event")
@@ -187,6 +190,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		v.targetProjectID = gitEvent.ProjectID
 		v.sourceProjectID = gitEvent.ProjectID
 		v.userID = gitEvent.UserID
+		processedEvent.SourceProjectID = gitEvent.ProjectID
+		processedEvent.TargetProjectID = gitEvent.ProjectID
 	case *gitlab.MergeCommentEvent:
 		processedEvent = info.NewEvent()
 		processedEvent.Sender = gitEvent.User.Username
@@ -211,6 +216,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		v.targetProjectID = gitEvent.MergeRequest.TargetProjectID
 		v.sourceProjectID = gitEvent.MergeRequest.SourceProjectID
 		v.userID = gitEvent.User.ID
+		processedEvent.SourceProjectID = gitEvent.MergeRequest.SourceProjectID
+		processedEvent.TargetProjectID = gitEvent.MergeRequest.TargetProjectID
 	default:
 		return nil, fmt.Errorf("event %s is not supported", event)
 	}
@@ -257,7 +264,7 @@ func (v *Provider) SetClient(_ context.Context, event *info.Event) error {
 	return nil
 }
 
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacOpts *info.PacOpts,
+func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event *info.Event, pacOpts *info.PacOpts,
 	statusOpts provider.StatusOpts,
 ) error {
 	var detailsURL string
@@ -307,10 +314,10 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, pacOpts *i
 		Description: gitlab.String(statusOpts.Title),
 	}
 	// nolint: dogsled
-	_, _, _ = v.Client.Commits.SetCommitStatus(v.sourceProjectID, event.SHA, opt)
+	_, _, _ = v.Client.Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
 	if statusOpts.Conclusion != "running" {
 		opt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.String(body)}
-		_, _, err := v.Client.Notes.CreateMergeRequestNote(v.targetProjectID, event.PullRequestNumber, opt)
+		_, _, err := v.Client.Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, opt)
 		return err
 	}
 
