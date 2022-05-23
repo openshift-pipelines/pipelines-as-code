@@ -2,6 +2,7 @@
 set -euf
 
 export TARGET_REPO=${TARGET_REPO:-ghcr.io/openshift-pipelines/pipelines-as-code}
+export TARGET_REPO_WATCHER=${TARGET_REPO_WATCHER:-ghcr.io/openshift-pipelines/pipelines-as-code-watcher}
 export TARGET_BRANCH=${TARGET_BRANCH:-main}
 export TARGET_NAMESPACE=${TARGET_NAMESPACE:-pipelines-as-code}
 export TARGET_OPENSHIFT=${TARGET_OPENSHIFT:-""}
@@ -32,6 +33,7 @@ fi
 for file in ${files};do
     head -1 ${file} | grep -q -- "---" || echo "---"
     sed -r -e "s,(.*image:.*)ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-controller.*,\1${TARGET_REPO}:${TARGET_BRANCH}\"," \
+        -r -e "s,(.*image:.*)ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-watcher.*,\1${TARGET_REPO_WATCHER}:${TARGET_BRANCH}\"," \
         -e "s/(namespace: )\w+.*/\1${TARGET_NAMESPACE}/g" \
         -e "s,app.kubernetes.io/version:.*,app.kubernetes.io/version: \"${TARGET_PAC_VERSION}\"," \
         -e "s/Copyright[ ]*[0-9]{4}/Copyright $(date "+%Y")/" \
