@@ -86,7 +86,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: registry.redhat.io/rhel8/go-toolset:1.17.7
+            - image: registry.redhat.io/rhel9/go-toolset:1.17.7
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -107,18 +107,18 @@ spec:
                 mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
                 cd $(dirname ${GOCACHE})
 
-                curl -fsI http://uploader:8080/golang-cache.tar || {
+                curl -fsI http://uploader:8080/golang-cache.tar.gz || {
                     echo "no cache found"
                     exit 0
                 }
 
                 echo "Getting cache"
-                curl -u ${UPLOADER_UPLOAD_CREDENTIALS} http://uploader:8080/golang-cache.tar|tar -x -f- || \
-                   curl -X DELETE -F "file=golang-cache.tar" http://uploader:8080/upload
+                curl -u ${UPLOADER_UPLOAD_CREDENTIALS} http://uploader:8080/golang-cache.tar.gz|tar -z -x -f- || \
+                   curl -X DELETE -F "file=golang-cache.tar.gz" http://uploader:8080/upload
             - name: unittest
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
-              image: registry.redhat.io/rhel8/go-toolset:1.17.7
+              image: registry.redhat.io/rhel9/go-toolset:1.17.7
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -177,7 +177,7 @@ spec:
                     exit 0
                 }
 
-                lm="$(curl -fsI http://uploader:8080/golang-cache.tar|sed -n '/Last-Modified/ { s/Last-Modified: //;s/\r//; p}')"
+                lm="$(curl -fsI http://uploader:8080/golang-cache.tar.gz|sed -n '/Last-Modified/ { s/Last-Modified: //;s/\r//; p}')"
                 if [[ -n ${lm} ]];then
                     expired=$(python -c "import datetime, sys;print(datetime.datetime.now() > datetime.datetime.strptime(sys.argv[1], '%a, %d %b %Y %X %Z') + datetime.timedelta(days=1))" "${lm}")
                     [[ ${expired} == "False" ]] && {
@@ -187,8 +187,7 @@ spec:
                 fi
 
                 cd $(workspaces.source.path)/go-build-cache
-                tar cf - . |curl -u ${UPLOADER_UPLOAD_CREDENTIALS} \
-                    -# -L -f -F path=golang-cache.tar -X POST -F "file=@-" http://uploader:8080/upload
+                tar czf - . |curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -# -L -f -F path=golang-cache.tar.gz -X POST -F "file=@-" http://uploader:8080/upload"
 
       - name: codecov
         runAfter:
@@ -202,7 +201,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: registry.redhat.io/rhel8/go-toolset:1.17.7
+              image: registry.redhat.io/rhel9/go-toolset:1.17.7
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN

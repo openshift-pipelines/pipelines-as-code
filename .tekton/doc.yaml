@@ -51,7 +51,7 @@ spec:
                 echo "Preview URL: https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ pull_request_number }}"
             - name: upload-to-static-server
               # it has curl and we already pulled it
-              image: registry.redhat.io/rhel8/go-toolset:1.17.7
+              image: registry.redhat.io/rhel9/go-toolset:1.17.7
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
