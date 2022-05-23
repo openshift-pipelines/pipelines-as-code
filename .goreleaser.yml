@@ -124,8 +124,6 @@ aurs:
     license: Apache 2.0
     private_key: "{{ .Env.AUR_PRIVATE_KEY }}"
     git_url: ssh://aur@aur.archlinux.org/tkn-pac.git
-    # until we get https://github.com/goreleaser/goreleaser/issues/3076 resolved
-    skip_upload: true
     package: |-
       # bin
       install -Dm755 "./tkn-pac" "${pkgdir}/usr/bin/tkn-pac"
