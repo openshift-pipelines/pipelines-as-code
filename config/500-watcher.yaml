@@ -44,5 +44,24 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          ports:
+          - name: probes
+            containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /live
+              port: probes
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: probes
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
 
 # don't remove this line
