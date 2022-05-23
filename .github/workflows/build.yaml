@@ -4,7 +4,8 @@ on: ["push"]
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  CONTROLLER_IMAGE_NAME: ${{ github.repository }}
+  WATCHER_IMAGE_NAME: ${{ github.repository }}-watcher
 
 jobs:
   build-and-push-image:
@@ -24,16 +25,34 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata (tags, labels) for Docker (Controller)
         id: meta
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.CONTROLLER_IMAGE_NAME }}
 
-      - name: Build and push Docker image
+      - name: Build and push controller docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           context: .
+          build-args: |
+            COMPONENT=controller
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Extract metadata (tags, labels) for Docker (Watcher)
+        id: meta-watcher
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.WATCHER_IMAGE_NAME }}
+
+      - name: Build and push watcher docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          build-args: |
+            COMPONENT=watcher
+          push: true
+          tags: ${{ steps.meta-watcher.outputs.tags }}
+          labels: ${{ steps.meta-watcher.outputs.labels }}
