@@ -31,7 +31,7 @@ fi
 
 
 for file in ${files};do
-    head -1 ${file} | grep -q -- "---" || echo "---"
+    head -1 ${file} | grep -q -- "---" || echo -e "\n---\n"
     sed -r -e "s,(.*image:.*)ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-controller.*,\1${TARGET_REPO_CONTROLLER}:${TARGET_BRANCH}\"," \
         -r -e "s,(.*image:.*)ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-watcher.*,\1${TARGET_REPO_WATCHER}:${TARGET_BRANCH}\"," \
         -e "s/(namespace: )\w+.*/\1${TARGET_NAMESPACE}/g" \
