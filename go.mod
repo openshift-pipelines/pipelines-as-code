@@ -3,15 +3,16 @@ module github.com/openshift-pipelines/pipelines-as-code
 go 1.17
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.3.2
+	github.com/AlecAivazis/survey/v2 v2.3.4
 	github.com/bradleyfalzon/ghinstallation/v2 v2.0.4
 	github.com/cloudevents/sdk-go/v2 v2.8.0
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20220301131131-8e7ed04b843e
 	github.com/gobwas/glob v0.2.3
 	github.com/google/cel-go v0.10.1
-	github.com/google/go-cmp v0.5.7
+	github.com/google/go-cmp v0.5.8
 	github.com/google/go-github/scrape v0.0.0-20220315141941-f85909825349
 	github.com/google/go-github/v43 v43.0.0
+	github.com/google/go-github/v44 v44.1.0
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/jonboulle/clockwork v0.2.2
 	github.com/juju/ansiterm v0.0.0-20210929141451-8b71cc96ebdc
@@ -23,7 +24,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.4.0
 	github.com/tektoncd/pipeline v0.33.0
-	github.com/xanzy/go-gitlab v0.59.0
+	github.com/xanzy/go-gitlab v0.65.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	golang.org/x/text v0.3.7

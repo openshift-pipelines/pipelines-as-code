@@ -273,6 +273,10 @@ type IssueEvent struct {
 	Assignees *[]EventUser `json:"assignees"`
 	Labels    []Label      `json:"labels"`
 	Changes   struct {
+		Assignees struct {
+			Previous []*EventUser `json:"previous"`
+			Current  []*EventUser `json:"current"`
+		} `json:"assignees"`
 		Description struct {
 			Previous string `json:"previous"`
 			Current  string `json:"current"`
@@ -430,6 +434,7 @@ type MergeCommentEvent struct {
 		Target                    *Repository  `json:"target"`
 		LastCommit                struct {
 			ID        string     `json:"id"`
+			Title     string     `json:"title"`
 			Message   string     `json:"message"`
 			Timestamp *time.Time `json:"timestamp"`
 			URL       string     `json:"url"`
@@ -869,20 +874,20 @@ type SnippetCommentEvent struct {
 		URL          string `json:"url"`
 	} `json:"object_attributes"`
 	Snippet *struct {
-		ID                 int        `json:"id"`
-		Title              string     `json:"title"`
-		Content            string     `json:"content"`
-		AuthorID           int        `json:"author_id"`
-		ProjectID          int        `json:"project_id"`
-		CreatedAt          string     `json:"created_at"`
-		UpdatedAt          string     `json:"updated_at"`
-		Filename           string     `json:"file_name"`
-		ExpiresAt          string     `json:"expires_at"`
-		Type               string     `json:"type"`
-		VisibilityLevel    int        `json:"visibility_level"`
-		Description        string     `json:"description"`
-		Secret             bool       `json:"secret"`
-		RepositoryReadOnly bool       `json:"repository_read_only"`
+		ID                 int    `json:"id"`
+		Title              string `json:"title"`
+		Content            string `json:"content"`
+		AuthorID           int    `json:"author_id"`
+		ProjectID          int    `json:"project_id"`
+		CreatedAt          string `json:"created_at"`
+		UpdatedAt          string `json:"updated_at"`
+		Filename           string `json:"file_name"`
+		ExpiresAt          string `json:"expires_at"`
+		Type               string `json:"type"`
+		VisibilityLevel    int    `json:"visibility_level"`
+		Description        string `json:"description"`
+		Secret             bool   `json:"secret"`
+		RepositoryReadOnly bool   `json:"repository_read_only"`
 	} `json:"snippet"`
 }
 

@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/go-github/v43/github"
+	"github.com/google/go-github/v44/github"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
