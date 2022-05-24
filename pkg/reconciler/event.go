@@ -24,6 +24,11 @@ func (r *Reconciler) detectProvider(ctx context.Context, pr *v1beta1.PipelineRun
 
 	event := buildEventFromPipelineRun(pr)
 
+	// for testing, if already initialised then use it
+	if r.provider != nil {
+		return r.provider, event, nil
+	}
+
 	var provider provider.Interface
 	switch gitProvider {
 	case "github", "github-enterprise", "gitea":

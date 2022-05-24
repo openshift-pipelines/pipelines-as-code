@@ -7,9 +7,11 @@ import (
 	"strconv"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
@@ -22,7 +24,9 @@ import (
 type Reconciler struct {
 	run               *params.Run
 	pipelineRunLister v1beta12.PipelineRunLister
-	kinteract         *kubeinteraction.Interaction
+	kinteract         kubeinteraction.Interface
+	// added for testing
+	provider provider.Interface
 }
 
 var _ pipelinerunreconciler.Interface = (*Reconciler)(nil)
@@ -45,7 +49,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 
 func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
 	prLabels := pr.GetLabels()
-	prAnno := pr.GetAnnotations()
 
 	// fetch repository CR for pipelineRun
 	repoName := prLabels[filepath.Join(pipelinesascode.GroupName, "repository")]
@@ -55,18 +58,8 @@ func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger
 		return err
 	}
 
-	// Cleanup old succeeded pipelineRuns
-	keepMaxPipeline, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "max-keep-runs")]
-	if ok {
-		max, err := strconv.Atoi(keepMaxPipeline)
-		if err != nil {
-			return err
-		}
-
-		err = r.kinteract.CleanupPipelines(ctx, logger, repo, pr, max)
-		if err != nil {
-			return err
-		}
+	if err := r.cleanupPipelineRuns(ctx, logger, repo, pr); err != nil {
+		return err
 	}
 
 	provider, event, err := r.detectProvider(ctx, pr)
@@ -85,16 +78,8 @@ func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger
 	}
 
 	if r.run.Info.Pac.SecretAutoCreation {
-		var gitAuthSecretName string
-		if annotation, ok := prAnno[gitAuthSecretAnnotation]; ok {
-			gitAuthSecretName = annotation
-		} else {
-			return fmt.Errorf("cannot get annotation %s as set on PR", gitAuthSecretAnnotation)
-		}
-
-		err = r.kinteract.DeleteBasicAuthSecret(ctx, logger, repo.GetNamespace(), gitAuthSecretName)
-		if err != nil {
-			return fmt.Errorf("deleting basic auth secret has failed: %w ", err)
+		if err := r.cleanupSecrets(ctx, logger, repo, pr); err != nil {
+			return err
 		}
 	}
 
@@ -113,6 +98,38 @@ func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger
 	}
 
 	return r.updatePipelineRunState(ctx, logger, pr)
+}
+
+func (r *Reconciler) cleanupSecrets(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
+	var gitAuthSecretName string
+	if annotation, ok := pr.Annotations[gitAuthSecretAnnotation]; ok {
+		gitAuthSecretName = annotation
+	} else {
+		return fmt.Errorf("cannot get annotation %s as set on PR", gitAuthSecretAnnotation)
+	}
+
+	err := r.kinteract.DeleteBasicAuthSecret(ctx, logger, repo.GetNamespace(), gitAuthSecretName)
+	if err != nil {
+		return fmt.Errorf("deleting basic auth secret has failed: %w ", err)
+	}
+	return nil
+}
+
+// Cleanup old succeeded pipelineRuns
+func (r *Reconciler) cleanupPipelineRuns(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
+	keepMaxPipeline, ok := pr.Annotations[filepath.Join(pipelinesascode.GroupName, "max-keep-runs")]
+	if ok {
+		max, err := strconv.Atoi(keepMaxPipeline)
+		if err != nil {
+			return err
+		}
+
+		err = r.kinteract.CleanupPipelines(ctx, logger, repo, pr, max)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
