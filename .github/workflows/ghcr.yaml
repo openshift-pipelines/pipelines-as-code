@@ -59,17 +59,17 @@ jobs:
           labels: ${{ steps.meta-watcher.outputs.labels }}
 
       - name: Extract metadata (tags, labels) for tkn-pac
-        id: meta-watcher
+        id: meta-cli
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
           images: ${{ env.REGISTRY }}/${{ env.TKN_PAC_IMAGE_NAME }}
 
-      - name: Build and push watcher docker image
+      - name: Build and push cli docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
           context: .
           build-args: |
             BINARY_NAME=tkn-pac
           push: true
-          tags: ${{ steps.meta-watcher.outputs.tags }}
-          labels: ${{ steps.meta-watcher.outputs.labels }}
+          tags: ${{ steps.meta-cli.outputs.tags }}
+          labels: ${{ steps.meta-cli.outputs.labels }}
