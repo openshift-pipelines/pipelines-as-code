@@ -53,7 +53,7 @@ brew upgrade openshift-pipelines/pipelines-as-code/tektoncd-pac
 ```shell
 # use docker
 podman run -e KUBECONFIG=/tmp/kube/config -v ${HOME}/.kube:/tmp/kube \
-     -it  ghcr.io/openshift-pipelines/pipelines-as-code:stable tkn-pac help
+     -it  ghcr.io/openshift-pipelines/tkn-pac:stable tkn-pac help
 ```
 
 {{< /tab >}}

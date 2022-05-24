@@ -1,6 +1,4 @@
 TARGET_NAMESPACE=pipelines-as-code
-QUAY_REPOSITORY=quay.io/openshift-pipeline/pipelines-as-code
-QUAY_REPOSITORY_BRANCH=main
 GOLANGCI_LINT=golangci-lint
 GOFUMPT=gofumpt
 LDFLAGS=
@@ -30,18 +28,6 @@ vendor:
 
 $(OUTPUT_DIR)/%: cmd/% FORCE
 	go build -mod=vendor $(FLAGS)  -v -o $@ ./$<
-
-.PHONY: releaseyaml
-releaseyaml: ## Generate release.yaml, use it like this `make releaseyaml|kubectl apply -f-`
-	@env TARGET_REPO=$(QUAY_REPOSITORY) TARGET_BRANCH=$(QUAY_REPOSITORY_BRANCH) TARGET_NAMESPACE=$(TARGET_NAMESPACE) \
-		PAC_VERSION=$(PAC_VERSION) \
-		./hack/generate-releaseyaml.sh
-
-.PHONY: releaseko
-releaseko: ## Generate release.yaml with ko but changing the target_namespace and branch if needed
-	@env TARGET_BRANCH=$(QUAY_REPOSITORY_BRANCH) TARGET_NAMESPACE=$(TARGET_NAMESPACE) \
-		PAC_VERSION=$(PAC_VERSION) \
-		./hack/generate-releaseyaml.sh ko
 
 check: lint test
 

@@ -177,9 +177,9 @@ spec:
                     exit 0
                 }
 
-                lm="$(curl -fsI http://uploader:8080/golang-cache.tar.gz|sed -n '/Last-Modified/ { s/Last-Modified: //;s/\r//; p}')"
+                lm="$(curl -fsI http://uploader:8080/golang-cache.tar.gz|sed -En '/Last-Modified/ { s/Last-Modified:\s*//;p;}')"
                 if [[ -n ${lm} ]];then
-                    expired=$(python -c "import datetime, sys;print(datetime.datetime.now() > datetime.datetime.strptime(sys.argv[1], '%a, %d %b %Y %X %Z') + datetime.timedelta(days=1))" "${lm}")
+                    expired=$(python -c "import datetime, sys;print(datetime.datetime.now() > datetime.datetime.strptime(sys.argv[1].strip(), '%a, %d %b %Y %X %Z') + datetime.timedelta(days=1))" "${lm}")
                     [[ ${expired} == "False" ]] && {
                       echo "Cache is younger than a day"
                       exit
@@ -187,7 +187,7 @@ spec:
                 fi
 
                 cd $(workspaces.source.path)/go-build-cache
-                tar czf - . |curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -# -L -f -F path=golang-cache.tar.gz -X POST -F "file=@-" http://uploader:8080/upload"
+                tar czf - . |curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -# -L -f -F path=golang-cache.tar.gz -X POST -F "file=@-" http://uploader:8080/upload
 
       - name: codecov
         runAfter:
