@@ -1,21 +1,20 @@
 FROM registry.access.redhat.com/ubi9/go-toolset AS builder
 
-ARG COMPONENT=controller
+ARG BINARY_NAME=pipelines-as-code-controller
 COPY . /src
 WORKDIR /src
 RUN \
-    make /tmp/tkn-pac /tmp/pipelines-as-code-${COMPONENT} LDFLAGS="-s -w" OUTPUT_DIR=/tmp
+    make /tmp/${BINARY_NAME} LDFLAGS="-s -w" OUTPUT_DIR=/tmp
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal
 
-ARG COMPONENT=controller
-LABEL com.redhat.component=pipelines-as-code-${COMPONENT} \
-    name=openshift-pipelines/pipelines-as-code-${COMPONENT} \
+ARG BINARY_NAME=pipelines-as-code-controller
+LABEL com.redhat.component=${BINARY_NAME} \
+    name=openshift-pipelines/${BINARY_NAME} \
     maintainer=pipelines@redhat.com \
-    summary="This image is to run Pipelines as Code ${COMPONENT} component"
+    summary="This image is to run Pipelines as Code ${BINARY_NAME} component"
 
-COPY --from=builder /tmp/pipelines-as-code-${COMPONENT} /usr/bin/pipelines-as-code-${COMPONENT}
-COPY --from=builder /tmp/tkn-pac /usr/bin/tkn-pac
+COPY --from=builder /tmp/${BINARY_NAME} /usr/bin/${BINARY_NAME}
 
-ENV RUN_COMPONENT=$COMPONENT
-CMD /usr/bin/pipelines-as-code-${RUN_COMPONENT}
+ENV RUN_BINARY_NAME=$BINARY_NAME
+CMD /usr/bin/${RUN_BINARY_NAME}

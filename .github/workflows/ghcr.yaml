@@ -4,8 +4,9 @@ on: ["push"]
 
 env:
   REGISTRY: ghcr.io
-  CONTROLLER_IMAGE_NAME: ${{ github.repository }}
+  CONTROLLER_IMAGE_NAME: ${{ github.repository }}-controller
   WATCHER_IMAGE_NAME: ${{ github.repository }}-watcher
+  TKN_PAC_IMAGE_NAME: tkn-pac
 
 jobs:
   build-and-push-image:
@@ -36,7 +37,7 @@ jobs:
         with:
           context: .
           build-args: |
-            COMPONENT=controller
+            BINARY_NAME=pipelines-as-code-controller
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -52,7 +53,23 @@ jobs:
         with:
           context: .
           build-args: |
-            COMPONENT=watcher
+            BINARY_NAME=pipelines-as-code-watcher
+          push: true
+          tags: ${{ steps.meta-watcher.outputs.tags }}
+          labels: ${{ steps.meta-watcher.outputs.labels }}
+
+      - name: Extract metadata (tags, labels) for tkn-pac
+        id: meta-watcher
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.TKN_PAC_IMAGE_NAME }}
+
+      - name: Build and push watcher docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          build-args: |
+            BINARY_NAME=tkn-pac
           push: true
           tags: ${{ steps.meta-watcher.outputs.tags }}
           labels: ${{ steps.meta-watcher.outputs.labels }}
