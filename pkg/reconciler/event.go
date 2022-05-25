@@ -14,20 +14,16 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
 )
 
-func (r *Reconciler) detectProvider(ctx context.Context, pr *v1beta1.PipelineRun) (provider.Interface, *info.Event, error) {
+func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) (provider.Interface, *info.Event, error) {
 	gitProvider, ok := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "git-provider")]
 	if !ok {
 		return nil, nil, fmt.Errorf("failed to detect git provider for pipleinerun %s : git-provider label not found", pr.GetName())
 	}
 
 	event := buildEventFromPipelineRun(pr)
-
-	// for testing, if already initialised then use it
-	if r.provider != nil {
-		return r.provider, event, nil
-	}
 
 	var provider provider.Interface
 	switch gitProvider {
@@ -48,6 +44,7 @@ func (r *Reconciler) detectProvider(ctx context.Context, pr *v1beta1.PipelineRun
 	default:
 		return nil, nil, fmt.Errorf("failed to detect provider for pipelinerun: %s : unknown provider", pr.GetName())
 	}
+	provider.SetLogger(logger)
 	return provider, event, nil
 }
 

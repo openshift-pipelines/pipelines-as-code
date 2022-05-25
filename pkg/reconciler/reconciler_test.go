@@ -21,6 +21,8 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,6 +83,8 @@ var (
 )
 
 func TestReconciler_ReconcileKind(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	fakelogger := zap.New(observer).Sugar()
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 
@@ -143,7 +147,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			}
 			stdata, _ := testclient.SeedTestData(t, ctx, testData)
 
-			testSetupCommonGhReplies(t, mux, runEvent, tt.checkRunID, tt.finalStatus, tt.finalStatusText)
+			testSetupGHReplies(t, mux, runEvent, tt.checkRunID, tt.finalStatus, tt.finalStatusText)
 
 			r := Reconciler{
 				run: &params.Run{
@@ -168,10 +172,10 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 						},
 					},
 				},
-				provider: vcx,
 			}
 
-			err = r.ReconcileKind(ctx, &pr)
+			event := buildEventFromPipelineRun(&pr)
+			err = r.reportStatus(ctx, fakelogger, event, &pr, vcx)
 			assert.NilError(t, err)
 
 			got, err := stdata.Pipeline.TektonV1beta1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
@@ -187,15 +191,13 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 	}
 }
 
-func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, checkrunID, finalStatus, finalStatusText string) {
+func testSetupGHReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, checkrunID, finalStatus, finalStatusText string) {
 	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/%s", runevent.Organization, runevent.Repository, checkrunID),
 		func(w http.ResponseWriter, r *http.Request) {
 			body, _ := ioutil.ReadAll(r.Body)
 			created := github.CreateCheckRunOptions{}
 			err := json.Unmarshal(body, &created)
 			assert.NilError(t, err)
-			// We created multiple status but the last one should be completed.
-			// TODO: we could maybe refine this test
 			if created.GetStatus() == "completed" {
 				assert.Equal(t, created.GetConclusion(), finalStatus, "we got the status `%s` but we should have get the status `%s`", created.GetConclusion(), finalStatus)
 				assert.Assert(t, strings.Contains(created.GetOutput().GetText(), finalStatusText),

@@ -9,6 +9,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -78,6 +80,8 @@ func TestBuildEventFromPipelineRun(t *testing.T) {
 }
 
 func TestDetectProvider(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	fakelogger := zap.New(observer).Sugar()
 	tests := []struct {
 		name         string
 		missTheLabel bool
@@ -117,7 +121,7 @@ func TestDetectProvider(t *testing.T) {
 				}
 			}
 			r := Reconciler{}
-			_, _, err := r.detectProvider(context.Background(), pr)
+			_, _, err := r.detectProvider(context.Background(), fakelogger, pr)
 			if tt.errStr == "" {
 				assert.NilError(t, err)
 				return

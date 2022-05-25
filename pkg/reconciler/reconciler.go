@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -25,13 +26,11 @@ type Reconciler struct {
 	run               *params.Run
 	pipelineRunLister v1beta12.PipelineRunLister
 	kinteract         kubeinteraction.Interface
-	// added for testing
-	provider provider.Interface
 }
 
 var _ pipelinerunreconciler.Interface = (*Reconciler)(nil)
 
-var gitAuthSecretAnnotation = "pipelinesascode.tekton.dev/git-auth-secret"
+var gitAuthSecretAnnotation = filepath.Join(pipelinesascode.GroupName, "git-auth-secret")
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
@@ -42,32 +41,24 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 		)
 		logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
 
-		return r.reportStatus(ctx, logger, pr)
+		provider, event, err := r.detectProvider(ctx, logger, pr)
+		if err != nil {
+			logger.Error(err)
+			return nil
+		}
+
+		return r.reportStatus(ctx, logger, event, pr, provider)
 	}
 	return nil
 }
 
-func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
-	prLabels := pr.GetLabels()
-
-	// fetch repository CR for pipelineRun
-	repoName := prLabels[filepath.Join(pipelinesascode.GroupName, "repository")]
+func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *v1beta1.PipelineRun, provider provider.Interface) error {
+	repoName := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "repository")]
 	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
 		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-
-	if err := r.cleanupPipelineRuns(ctx, logger, repo, pr); err != nil {
-		return err
-	}
-
-	provider, event, err := r.detectProvider(ctx, pr)
-	if err != nil {
-		logger.Error(err)
-		return nil
-	}
-	provider.SetLogger(logger)
 
 	if repo.Spec.GitProvider != nil {
 		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, provider.GetConfig(), event, repo, logger); err != nil {
@@ -77,15 +68,19 @@ func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger
 		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
 	}
 
+	err = provider.SetClient(ctx, event)
+	if err != nil {
+		return err
+	}
+
+	if err := r.cleanupPipelineRuns(ctx, logger, repo, pr); err != nil {
+		return err
+	}
+
 	if r.run.Info.Pac.SecretAutoCreation {
 		if err := r.cleanupSecrets(ctx, logger, repo, pr); err != nil {
 			return err
 		}
-	}
-
-	err = provider.SetClient(ctx, event)
-	if err != nil {
-		return err
 	}
 
 	newPr, err := r.postFinalStatus(ctx, logger, provider, event, pr)
