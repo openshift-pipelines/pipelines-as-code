@@ -11,9 +11,10 @@ import (
 	fakerepositoryinformers "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/informers/pipelinesascode/v1alpha1/repository/fake"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	fakepipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
-	pipelineinformersv1alpha1 "github.com/tektoncd/pipeline/pkg/client/informers/externalversions/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/client/informers/externalversions/pipeline/v1beta1"
 	fakepipelineclient "github.com/tektoncd/pipeline/pkg/client/injection/client/fake"
-	fakepipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1alpha1/pipelinerun/fake"
+	fakepipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun/fake"
+	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
@@ -24,11 +25,12 @@ type Clients struct {
 	Pipeline       *fakepipelineclientset.Clientset
 	PipelineAsCode *fakepacclientset.Clientset
 	Kube           *fakekubeclientset.Clientset
+	PipelineLister v1beta12.PipelineRunLister
 }
 
 // Informers holds references to informers which are useful for reconciler tests.
 type Informers struct {
-	PipelineRun pipelineinformersv1alpha1.PipelineRunInformer
+	PipelineRun v1beta1.PipelineRunInformer
 	Repository  informersv1alpha1.RepositoryInformer
 }
 
@@ -52,6 +54,7 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 		Repository:  fakerepositoryinformers.Get(ctx),
 		PipelineRun: fakepipelineruninformer.Get(ctx),
 	}
+	c.PipelineLister = i.PipelineRun.Lister()
 
 	for _, pr := range d.PipelineRuns {
 		if err := i.PipelineRun.Informer().GetIndexer().Add(pr); err != nil {

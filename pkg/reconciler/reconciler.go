@@ -7,9 +7,12 @@ import (
 	"strconv"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
@@ -22,12 +25,12 @@ import (
 type Reconciler struct {
 	run               *params.Run
 	pipelineRunLister v1beta12.PipelineRunLister
-	kinteract         *kubeinteraction.Interaction
+	kinteract         kubeinteraction.Interface
 }
 
 var _ pipelinerunreconciler.Interface = (*Reconciler)(nil)
 
-var gitAuthSecretAnnotation = "pipelinesascode.tekton.dev/git-auth-secret"
+var gitAuthSecretAnnotation = filepath.Join(pipelinesascode.GroupName, "git-auth-secret")
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
@@ -38,43 +41,24 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 		)
 		logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
 
-		return r.reportStatus(ctx, logger, pr)
+		provider, event, err := r.detectProvider(ctx, logger, pr)
+		if err != nil {
+			logger.Error(err)
+			return nil
+		}
+
+		return r.reportStatus(ctx, logger, event, pr, provider)
 	}
 	return nil
 }
 
-func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
-	prLabels := pr.GetLabels()
-	prAnno := pr.GetAnnotations()
-
-	// fetch repository CR for pipelineRun
-	repoName := prLabels[filepath.Join(pipelinesascode.GroupName, "repository")]
+func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *v1beta1.PipelineRun, provider provider.Interface) error {
+	repoName := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "repository")]
 	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
 		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-
-	// Cleanup old succeeded pipelineRuns
-	keepMaxPipeline, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "max-keep-runs")]
-	if ok {
-		max, err := strconv.Atoi(keepMaxPipeline)
-		if err != nil {
-			return err
-		}
-
-		err = r.kinteract.CleanupPipelines(ctx, logger, repo, pr, max)
-		if err != nil {
-			return err
-		}
-	}
-
-	provider, event, err := r.detectProvider(ctx, pr)
-	if err != nil {
-		logger.Error(err)
-		return nil
-	}
-	provider.SetLogger(logger)
 
 	if repo.Spec.GitProvider != nil {
 		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, provider.GetConfig(), event, repo, logger); err != nil {
@@ -84,23 +68,19 @@ func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger
 		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
 	}
 
-	if r.run.Info.Pac.SecretAutoCreation {
-		var gitAuthSecretName string
-		if annotation, ok := prAnno[gitAuthSecretAnnotation]; ok {
-			gitAuthSecretName = annotation
-		} else {
-			return fmt.Errorf("cannot get annotation %s as set on PR", gitAuthSecretAnnotation)
-		}
-
-		err = r.kinteract.DeleteBasicAuthSecret(ctx, logger, repo.GetNamespace(), gitAuthSecretName)
-		if err != nil {
-			return fmt.Errorf("deleting basic auth secret has failed: %w ", err)
-		}
-	}
-
 	err = provider.SetClient(ctx, event)
 	if err != nil {
 		return err
+	}
+
+	if err := r.cleanupPipelineRuns(ctx, logger, repo, pr); err != nil {
+		return err
+	}
+
+	if r.run.Info.Pac.SecretAutoCreation {
+		if err := r.cleanupSecrets(ctx, logger, repo, pr); err != nil {
+			return err
+		}
 	}
 
 	newPr, err := r.postFinalStatus(ctx, logger, provider, event, pr)
@@ -113,6 +93,38 @@ func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger
 	}
 
 	return r.updatePipelineRunState(ctx, logger, pr)
+}
+
+func (r *Reconciler) cleanupSecrets(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
+	var gitAuthSecretName string
+	if annotation, ok := pr.Annotations[gitAuthSecretAnnotation]; ok {
+		gitAuthSecretName = annotation
+	} else {
+		return fmt.Errorf("cannot get annotation %s as set on PR", gitAuthSecretAnnotation)
+	}
+
+	err := r.kinteract.DeleteBasicAuthSecret(ctx, logger, repo.GetNamespace(), gitAuthSecretName)
+	if err != nil {
+		return fmt.Errorf("deleting basic auth secret has failed: %w ", err)
+	}
+	return nil
+}
+
+// Cleanup old succeeded pipelineRuns
+func (r *Reconciler) cleanupPipelineRuns(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
+	keepMaxPipeline, ok := pr.Annotations[filepath.Join(pipelinesascode.GroupName, "max-keep-runs")]
+	if ok {
+		max, err := strconv.Atoi(keepMaxPipeline)
+		if err != nil {
+			return err
+		}
+
+		err = r.kinteract.CleanupPipelines(ctx, logger, repo, pr, max)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
