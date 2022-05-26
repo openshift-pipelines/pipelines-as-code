@@ -53,16 +53,17 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 			processedEvent.EventType = "pull_request"
 		} else if provider.Valid(eventType, []string{"pr:comment:added", "pr:comment:edited"}) {
 			switch {
-			case provider.IsRetestComment(e.Comment.Text):
+			case provider.IsTestRetestComment(e.Comment.Text):
 				processedEvent.TriggerTarget = "pull_request"
-				processedEvent.EventType = "retest-comment"
+				if strings.Contains(e.Comment.Text, "/test") {
+					processedEvent.EventType = "test-comment"
+				} else {
+					processedEvent.EventType = "retest-comment"
+				}
+				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(e.Comment.Text)
 			case provider.IsOkToTestComment(e.Comment.Text):
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "ok-to-test-comment"
-			case provider.IsTestComment(e.Comment.Text):
-				processedEvent.TriggerTarget = "pull_request"
-				processedEvent.EventType = "test-comment"
-				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(e.Comment.Text)
 			}
 		}
 		// TODO: It's Really not an OWNER but a PROJECT
@@ -180,13 +181,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 			return setLoggerAndProceed(true, "", nil)
 		}
 		if provider.Valid(event, []string{"pr:comment:added"}) {
-			if provider.IsRetestComment(e.Comment.Text) {
+			if provider.IsTestRetestComment(e.Comment.Text) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 			if provider.IsOkToTestComment(e.Comment.Text) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if provider.IsTestComment(e.Comment.Text) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 		}

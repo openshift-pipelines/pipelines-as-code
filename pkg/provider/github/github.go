@@ -314,13 +314,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		if gitEvent.GetAction() == "created" &&
 			gitEvent.GetIssue().IsPullRequest() &&
 			gitEvent.GetIssue().GetState() == "open" {
-			if provider.IsRetestComment(gitEvent.GetComment().GetBody()) {
+			if provider.IsTestRetestComment(gitEvent.GetComment().GetBody()) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 			if provider.IsOkToTestComment(gitEvent.GetComment().GetBody()) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if provider.IsTestComment(gitEvent.GetComment().GetBody()) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 			return setLoggerAndProceed(false, "", nil)

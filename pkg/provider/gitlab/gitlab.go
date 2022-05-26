@@ -100,13 +100,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 		return setLoggerAndProceed(true, "", nil)
 	case *gitlab.MergeCommentEvent:
 		if gitEvent.MergeRequest.State == "opened" {
-			if provider.IsRetestComment(gitEvent.ObjectAttributes.Note) {
+			if provider.IsTestRetestComment(gitEvent.ObjectAttributes.Note) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 			if provider.IsOkToTestComment(gitEvent.ObjectAttributes.Note) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if provider.IsTestComment(gitEvent.ObjectAttributes.Note) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 		}
@@ -203,8 +200,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.SHATitle = gitEvent.MergeRequest.LastCommit.Message
 		processedEvent.BaseBranch = gitEvent.MergeRequest.TargetBranch
 		processedEvent.HeadBranch = gitEvent.MergeRequest.SourceBranch
-		// if it is a /test comment figure out the pipelineRun name
-		if provider.IsTestComment(gitEvent.ObjectAttributes.Note) {
+		// if it is a /test or /retest comment with pipelinerun name figure out the pipelineRun name
+		if provider.IsTestRetestComment(gitEvent.ObjectAttributes.Note) {
 			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(gitEvent.ObjectAttributes.Note)
 		}
 

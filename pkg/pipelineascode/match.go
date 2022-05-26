@@ -136,7 +136,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 		return nil, nil, nil
 	}
 
-	// if /test command is used then filter out the pipelinerun
+	// if /test or /retest command is used passing a pipelinerun then filter out the pipelinerun
 	pipelineRuns = filterPipelineRun(p.event.TargetTestPipelineRun, pipelineRuns)
 	if pipelineRuns == nil {
 		p.logger.Info(fmt.Sprintf("cannot find pipelinerun %s in this repository", p.event.TargetTestPipelineRun))
