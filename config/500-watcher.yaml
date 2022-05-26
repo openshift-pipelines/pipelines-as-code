@@ -34,7 +34,7 @@ spec:
         app.kubernetes.io/part-of: pipelines-as-code
         app.kubernetes.io/version: "devel"
     spec:
-      serviceAccountName: pipelines-as-code-controller
+      serviceAccountName: pipelines-as-code-watcher
       containers:
         - name: pac-watcher
           image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-watcher"
