@@ -6,7 +6,7 @@ env:
   REGISTRY: ghcr.io
   CONTROLLER_IMAGE_NAME: ${{ github.repository }}-controller
   WATCHER_IMAGE_NAME: ${{ github.repository }}-watcher
-  TKN_PAC_IMAGE_NAME: tkn-pac
+  TKN_PAC_IMAGE_NAME: ${{ github.repository }}-tkn-pac
 
 jobs:
   build-and-push-image:
