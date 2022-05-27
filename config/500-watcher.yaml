@@ -63,5 +63,3 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5
-
-# don't remove this line
