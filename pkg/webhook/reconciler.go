@@ -113,9 +113,11 @@ func (ac *reconciler) reconcileValidatingWebhook(ctx context.Context, caCert []b
 		webhook.Webhooks[i].ClientConfig.Service.Path = ptr.String(ac.Path())
 	}
 
-	if ok, err := kmp.SafeEqual(configuredWebhook, webhook); err != nil {
+	ok, err := kmp.SafeEqual(configuredWebhook, webhook)
+	if err != nil {
 		return fmt.Errorf("error diffing webhooks: %w", err)
-	} else if !ok {
+	}
+	if !ok {
 		logger.Info("Updating webhook")
 		mwhclient := ac.client.AdmissionregistrationV1().ValidatingWebhookConfigurations()
 		if _, err := mwhclient.Update(ctx, webhook, metav1.UpdateOptions{}); err != nil {

@@ -40,6 +40,25 @@ func TestReconciler_Admit(t *testing.T) {
 			allowed: false,
 			result:  "repository already exist with url: https://pac.test/already/installed",
 		},
+		{
+			name: "allow as it is be update to existing repo",
+			repo: testnewrepo.NewRepo(testnewrepo.RepoTestcreationOpts{
+				Name:             "test-repo-already-installed",
+				InstallNamespace: "namespace",
+				URL:              "https://pac.test/already/installed",
+			}),
+			allowed: true,
+		},
+		{
+			name: "reject as repo namespace different",
+			repo: testnewrepo.NewRepo(testnewrepo.RepoTestcreationOpts{
+				Name:             "test-repo-already-installed",
+				InstallNamespace: "test",
+				URL:              "https://pac.test/already/installed",
+			}),
+			allowed: false,
+			result:  "repository already exist with url: https://pac.test/already/installed",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

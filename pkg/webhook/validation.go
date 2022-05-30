@@ -48,7 +48,8 @@ func checkIfRepoExist(ctx context.Context, pac versioned.Interface, repo *v1alph
 	}
 	for i := len(repositories.Items) - 1; i >= 0; i-- {
 		repoFromCluster := repositories.Items[i]
-		if repoFromCluster.Spec.URL == repo.Spec.URL {
+		if repoFromCluster.Spec.URL == repo.Spec.URL &&
+			(repoFromCluster.Name != repo.Name || repoFromCluster.Namespace != repo.Namespace) {
 			return true, nil
 		}
 	}
