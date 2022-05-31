@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
-	clientset "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
+	pac "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
 	"go.uber.org/zap"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +39,7 @@ type reconciler struct {
 	disallowUnknownFields bool
 	secretName            string
 
-	pacClient clientset.Interface
+	pacLister pac.RepositoryLister
 }
 
 var (

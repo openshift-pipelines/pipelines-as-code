@@ -2,15 +2,14 @@ package webhook
 
 import (
 	"context"
-	"log"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/informers/pipelinesascode/v1alpha1/repository"
+
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	vwhinformer "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/injection"
 	secretinformer "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -29,13 +28,9 @@ func NewAdmissionController(
 	vwhInformer := vwhinformer.Get(ctx)
 	secretInformer := secretinformer.Get(ctx)
 	options := webhook.GetOptions(ctx)
+	repositoryInformer := repository.Get(ctx)
 
 	key := types.NamespacedName{Name: name}
-
-	pacClient, err := versioned.NewForConfig(injection.GetConfig(ctx))
-	if err != nil {
-		log.Fatal("failed to init clients : ", err)
-	}
 
 	wh := &reconciler{
 		LeaderAwareFuncs: pkgreconciler.LeaderAwareFuncs{
@@ -57,7 +52,7 @@ func NewAdmissionController(
 		vwhlister:    vwhInformer.Lister(),
 		secretlister: secretInformer.Lister(),
 
-		pacClient: pacClient,
+		pacLister: repositoryInformer.Lister(),
 	}
 
 	logger := logging.FromContext(ctx)

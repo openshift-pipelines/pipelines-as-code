@@ -73,7 +73,7 @@ func TestReconciler_Admit(t *testing.T) {
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 
 			r := reconciler{
-				pacClient: stdata.PipelineAsCode,
+				pacLister: stdata.RepositoryLister,
 			}
 
 			userRepo, err := json.Marshal(tt.repo)

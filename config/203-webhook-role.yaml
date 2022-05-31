@@ -78,7 +78,7 @@ metadata:
 rules:
   - apiGroups: ["pipelinesascode.tekton.dev"]
     resources: ["repositories"]
-    verbs: ["get", "list"]
+    verbs: ["get", "list", "watch"]
     # The webhook performs a reconciliation on this resource and continuously
     # updates configuration.
   - apiGroups: ["admissionregistration.k8s.io"]
