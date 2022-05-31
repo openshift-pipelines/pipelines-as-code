@@ -6,6 +6,7 @@ env:
   REGISTRY: ghcr.io
   CONTROLLER_IMAGE_NAME: ${{ github.repository }}-controller
   WATCHER_IMAGE_NAME: ${{ github.repository }}-watcher
+  WEBHOOK_IMAGE_NAME: ${{ github.repository }}-webhook
   TKN_PAC_IMAGE_NAME: ${{ github.repository }}-tkn-pac
 
 jobs:
@@ -57,6 +58,22 @@ jobs:
           push: true
           tags: ${{ steps.meta-watcher.outputs.tags }}
           labels: ${{ steps.meta-watcher.outputs.labels }}
+
+      - name: Extract metadata (tags, labels) for Docker (Webhook)
+        id: meta-webhook
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.WEBHOOK_IMAGE_NAME }}
+
+      - name: Build and push webhook docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          build-args: |
+            BINARY_NAME=pipelines-as-code-webhook
+          push: true
+          tags: ${{ steps.meta-webhook.outputs.tags }}
+          labels: ${{ steps.meta-webhook.outputs.labels }}
 
       - name: Extract metadata (tags, labels) for tkn-pac
         id: meta-cli
