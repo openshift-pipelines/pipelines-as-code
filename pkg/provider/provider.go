@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	retestRegex   = regexp.MustCompile(`(?m)^/retest\s*$`)
-	oktotestRegex = regexp.MustCompile(`(?m)^/ok-to-test\s*$`)
-	testRegex     = regexp.MustCompile(`(?m)^/test[ \t]+\S+`)
+	testRetestAllRegex    = regexp.MustCompile(`(?m)^(/retest|/test)\s*$`)
+	testRetestSingleRegex = regexp.MustCompile(`(?m)^(/test|/retest)[ \t]+\S+`)
+	oktotestRegex         = regexp.MustCompile(`(?m)^/ok-to-test\s*$`)
 )
 
 const (
@@ -26,21 +26,21 @@ func Valid(value string, validValues []string) bool {
 	return false
 }
 
-func IsRetestComment(comment string) bool {
-	return retestRegex.MatchString(comment)
+func IsTestRetestComment(comment string) bool {
+	return testRetestSingleRegex.MatchString(comment) || testRetestAllRegex.MatchString(comment)
 }
 
 func IsOkToTestComment(comment string) bool {
 	return oktotestRegex.MatchString(comment)
 }
 
-func IsTestComment(comment string) bool {
-	return testRegex.MatchString(comment)
-}
-
 func GetPipelineRunFromComment(comment string) string {
-	// get string after /test command
-	splitTest := strings.Split(comment, "/test")
+	var splitTest []string
+	if strings.Contains(comment, "/test") {
+		splitTest = strings.Split(comment, "/test")
+	} else {
+		splitTest = strings.Split(comment, "/retest")
+	}
 	// now get the first line
 	getFirstLine := strings.Split(splitTest[1], "\n")
 	// trim spaces

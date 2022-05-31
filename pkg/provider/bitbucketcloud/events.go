@@ -132,16 +132,17 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 			processedEvent.EventType = "pull_request"
 		} else if provider.Valid(event, []string{"pullrequest:comment_created"}) {
 			switch {
-			case provider.IsRetestComment(e.Comment.Content.Raw):
+			case provider.IsTestRetestComment(e.Comment.Content.Raw):
 				processedEvent.TriggerTarget = "pull_request"
-				processedEvent.EventType = "retest-comment"
+				if strings.Contains(e.Comment.Content.Raw, "/test") {
+					processedEvent.EventType = "test-comment"
+				} else {
+					processedEvent.EventType = "retest-comment"
+				}
+				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(e.Comment.Content.Raw)
 			case provider.IsOkToTestComment(e.Comment.Content.Raw):
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "ok-to-test-comment"
-			case provider.IsTestComment(e.Comment.Content.Raw):
-				processedEvent.TriggerTarget = "pull_request"
-				processedEvent.EventType = "test-comment"
-				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(e.Comment.Content.Raw)
 			}
 		}
 		processedEvent.Organization = e.Repository.Workspace.Slug
@@ -202,13 +203,10 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 			return setLoggerAndProceed(true, "", nil)
 		}
 		if provider.Valid(event, []string{"pullrequest:comment_created"}) {
-			if provider.IsRetestComment(e.Comment.Content.Raw) {
+			if provider.IsTestRetestComment(e.Comment.Content.Raw) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 			if provider.IsOkToTestComment(e.Comment.Content.Raw) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if provider.IsTestComment(e.Comment.Content.Raw) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 		}

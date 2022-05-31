@@ -250,8 +250,8 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 		return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
 	}
 
-	// if it is a /test comment figure out the pipelinerun name
-	if provider.IsTestComment(event.GetComment().GetBody()) {
+	// if it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
+	if provider.IsTestRetestComment(event.GetComment().GetBody()) {
 		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(event.GetComment().GetBody())
 	}
 
