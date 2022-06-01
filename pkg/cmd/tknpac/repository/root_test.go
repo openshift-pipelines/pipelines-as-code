@@ -39,10 +39,6 @@ func TestCommands(t *testing.T) {
 		want    *cobra.Command
 	}{
 		{
-			name:    "List",
-			command: ListCommand,
-		},
-		{
 			name:    "Describe",
 			command: DescribeCommand,
 		},

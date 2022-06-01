@@ -1,4 +1,4 @@
-package repository
+package describe
 
 import (
 	"context"
@@ -24,6 +24,8 @@ import (
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var namespaceFlag = "namespace"
 
 const (
 	describeTemplate = `{{ $.ColorScheme.Bold "Name" }}:	{{.Repository.Name}}
@@ -64,8 +66,6 @@ STATUS	Event	Branch	 SHA	 STARTED TIME	DURATION	PIPELINERUN
 `
 )
 
-var namespaceFlag = "namespace"
-
 func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock) string {
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
 		cs.ColorStatus(status.Status.Conditions[0].Reason),
@@ -92,7 +92,7 @@ func askRepo(ctx context.Context, cs *params.Run, namespace string) (*v1alpha1.R
 
 	allRepositories := []string{}
 	for _, repository := range repositories.Items {
-		repoOwner, err := formatting.GetRepoOwnerFromURL(repository.Spec.URL)
+		repoOwner, err := formatting.GetRepoOwnerFromGHURL(repository.Spec.URL)
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +124,7 @@ func askRepo(ctx context.Context, cs *params.Run, namespace string) (*v1alpha1.R
 	return nil, fmt.Errorf("cannot match repository")
 }
 
-func DescribeCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "describe",
 		Aliases: []string{"desc"},
