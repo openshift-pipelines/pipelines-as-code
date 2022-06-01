@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -22,6 +23,8 @@ import (
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/pkg/logging"
 )
+
+const globalAdapterPort = "8080"
 
 type envConfig struct {
 	adapter.EnvConfig
@@ -56,6 +59,11 @@ func New(run *params.Run, k *kubeinteraction.Interaction) adapter.AdapterConstru
 }
 
 func (l *listener) Start(_ context.Context) error {
+	adapterPort := globalAdapterPort
+	envAdapterPort := os.Getenv("PAC_CONTROLLER_PORT")
+	if envAdapterPort != "" {
+		adapterPort = envAdapterPort
+	}
 	l.logger.Infof("Starting Pipelines as Code version: %s", version.Version)
 
 	mux := http.NewServeMux()
@@ -69,7 +77,7 @@ func (l *listener) Start(_ context.Context) error {
 	mux.HandleFunc("/", l.handleEvent())
 
 	srv := &http.Server{
-		Addr: ":8080",
+		Addr: ":" + adapterPort,
 		Handler: http.TimeoutHandler(mux,
 			10*time.Second, "Listener Timeout!\n"),
 	}
