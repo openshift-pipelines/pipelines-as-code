@@ -1,0 +1,3 @@
+STATUS    NAME    AGE              URL                            NAMESPACE
+Success   repo1   15 minutes ago   https://anurl.com/owner/repo   namespace1
+Success   repo2   15 minutes ago   https://anurl.com/owner/repo   namespace2
