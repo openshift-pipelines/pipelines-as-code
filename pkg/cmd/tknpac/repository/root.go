@@ -17,7 +17,6 @@ func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			"commandType": "main",
 		},
 	}
-	cmd.AddCommand(DescribeCommand(clients, ioStreams))
 	cmd.AddCommand(DeleteCommand(clients, ioStreams))
 
 	return cmd
