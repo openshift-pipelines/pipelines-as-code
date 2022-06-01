@@ -9,7 +9,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/describe"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/list"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/version"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -35,7 +34,6 @@ func Root(clients *params.Run) *cobra.Command {
 	cmd.AddCommand(list.Root(clients, ioStreams))
 	cmd.AddCommand(delete.Root(clients, ioStreams))
 	cmd.AddCommand(describe.Root(clients, ioStreams))
-	cmd.AddCommand(repository.Root(clients, ioStreams))
 	cmd.AddCommand(resolve.Command(clients, ioStreams))
 	cmd.AddCommand(completion.Command())
 	cmd.AddCommand(bootstrap.Command(clients, ioStreams))
