@@ -3,6 +3,7 @@ package formatting
 import (
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/text/cases"
@@ -32,16 +33,26 @@ func ShortSHA(sha string) string {
 	return sha[0:shortShaLength]
 }
 
-func GetRepoOwnerFromGHURL(ghURL string) (string, error) {
-	u, err := url.Parse(ghURL)
+func GetRepoOwnerFromURL(ghURL string) (string, error) {
+	org, repo, err := GetRepoOwnerSplitted(ghURL)
 	if err != nil {
 		return "", err
 	}
-	sp := strings.Split(u.Path, "/")
-	if len(sp) == 1 {
-		return "", fmt.Errorf("not a URL with a REPO/OWNER at the end")
+	return strings.ToLower(fmt.Sprintf("%s/%s", org, repo)), nil
+}
+
+func GetRepoOwnerSplitted(u string) (string, string, error) {
+	uparse, err := url.Parse(u)
+	if err != nil {
+		return "", "", err
 	}
-	return fmt.Sprintf("%s/%s", strings.ToLower(sp[len(sp)-2]), strings.ToLower(sp[len(sp)-1])), nil
+	parts := strings.Split(uparse.Path, "/")
+	if len(parts) < 3 {
+		return "", "", fmt.Errorf("invalid repo url at least a organization/project and a repo needs to be specified: %s", u)
+	}
+	org := filepath.Join(parts[0 : len(parts)-1]...)
+	repo := parts[len(parts)-1]
+	return org, repo, nil
 }
 
 // CamelCasit pull_request > PullRequest

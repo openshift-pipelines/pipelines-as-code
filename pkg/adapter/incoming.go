@@ -5,10 +5,9 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -88,16 +87,12 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 
 func (l *listener) processIncoming(targetRepo *v1alpha1.Repository) (provider.Interface, *zap.SugaredLogger, error) {
 	// can a git ssh URL be a Repo URL? I don't think this will even ever work
-	uparse, err := url.Parse(targetRepo.Spec.URL)
+	org, repo, err := formatting.GetRepoOwnerSplitted(targetRepo.Spec.URL)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error parsing url: %w", err)
+		return nil, nil, err
 	}
-	parts := strings.Split(uparse.Path, "/")
-	if len(parts) < 2 {
-		return nil, nil, fmt.Errorf("invalid repo url: %s", targetRepo.Spec.URL)
-	}
-	l.event.Organization = parts[len(parts)-2]
-	l.event.Repository = parts[len(parts)-1]
+	l.event.Organization = org
+	l.event.Repository = repo
 
 	var provider provider.Interface
 	switch targetRepo.Spec.GitProvider.Type {

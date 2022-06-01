@@ -51,7 +51,7 @@ func (gh *gitHubConfig) Run(ctx context.Context, opts *Options) (*response, erro
 func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string) error {
 	var defaultRepo string
 	if repoURL != "" {
-		defaultRepo, _ = formatting.GetRepoOwnerFromGHURL(repoURL)
+		defaultRepo, _ = formatting.GetRepoOwnerFromURL(repoURL)
 	}
 
 	if repoURL == "" || defaultRepo == "" {

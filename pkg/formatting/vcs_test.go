@@ -33,6 +33,54 @@ func TestCamelCasit(t *testing.T) {
 	}
 }
 
+func TestGetRepoOwnerSplitted(t *testing.T) {
+	tests := []struct {
+		name    string
+		retOrg  string
+		retRepo string
+		wantErr bool
+		url     string
+	}{
+		{
+			name:    "good/parse url",
+			url:     "https://forge/owner/repo",
+			retOrg:  "owner",
+			retRepo: "repo",
+		},
+		{
+			name:    "good/parse url gitlab subpath",
+			url:     "https://forge/foo/bar/owner/repo",
+			retOrg:  "foo/bar/owner",
+			retRepo: "repo",
+		},
+		{
+			name:    "bad/no org/repo in url",
+			url:     "https://forge/repo",
+			wantErr: true,
+		},
+		{
+			name:    "bad/url",
+			url:     "hello/repo",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, err := GetRepoOwnerSplitted(tt.url)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getOrgRepoURL() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.retOrg {
+				t.Errorf("getOrgRepoURL() got = %v, retOrg %v", got, tt.retOrg)
+			}
+			if got1 != tt.retRepo {
+				t.Errorf("getOrgRepoURL() got1 = %v, retOrg %v", got1, tt.retRepo)
+			}
+		})
+	}
+}
+
 func TestGetRepoOwnerFromGHURL(t *testing.T) {
 	type args struct {
 		ghURL string
@@ -69,7 +117,7 @@ func TestGetRepoOwnerFromGHURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetRepoOwnerFromGHURL(tt.args.ghURL)
+			got, err := GetRepoOwnerFromURL(tt.args.ghURL)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetRepoOwnerFromGHURL() error = %v, wantErr %v", err, tt.wantErr)
 				return

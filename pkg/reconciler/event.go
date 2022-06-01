@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
@@ -52,13 +53,18 @@ func buildEventFromPipelineRun(pr *v1beta1.PipelineRun) *info.Event {
 	event := info.NewEvent()
 
 	prLabels := pr.GetLabels()
-	event.Organization = prLabels[filepath.Join(pipelinesascode.GroupName, "url-org")]
-	event.Repository = prLabels[filepath.Join(pipelinesascode.GroupName, "url-repository")]
+	prAnno := pr.GetAnnotations()
+
+	event.URL = prAnno[filepath.Join(pipelinesascode.GroupName, "repo-url")]
+	// it's safer to get repo, org from repo.url since we have to remove the / and other chars in labels which drops
+	// the SubPath that gitlab is using.
+	repo, org, _ := formatting.GetRepoOwnerSplitted(event.URL)
+	event.Organization = repo
+	event.Repository = org
 	event.EventType = prLabels[filepath.Join(pipelinesascode.GroupName, "event-type")]
 	event.BaseBranch = prLabels[filepath.Join(pipelinesascode.GroupName, "branch")]
 	event.SHA = prLabels[filepath.Join(pipelinesascode.GroupName, "sha")]
 
-	prAnno := pr.GetAnnotations()
 	event.SHATitle = prAnno[filepath.Join(pipelinesascode.GroupName, "sha-title")]
 	event.SHAURL = prAnno[filepath.Join(pipelinesascode.GroupName, "sha-url")]
 

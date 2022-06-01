@@ -90,7 +90,7 @@ func askRepo(ctx context.Context, cs *params.Run, namespace string) (*v1alpha1.R
 
 	allRepositories := []string{}
 	for _, repository := range repositories.Items {
-		repoOwner, err := formatting.GetRepoOwnerFromGHURL(repository.Spec.URL)
+		repoOwner, err := formatting.GetRepoOwnerFromURL(repository.Spec.URL)
 		if err != nil {
 			return nil, err
 		}
