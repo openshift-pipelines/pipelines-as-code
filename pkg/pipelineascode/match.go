@@ -135,7 +135,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	if pipelineRuns == nil || err != nil {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
 		if err != nil {
-			msg += fmt.Sprintf("err: %s", err.Error())
+			msg += fmt.Sprintf(" err: %s", err.Error())
 		}
 		p.logger.Info(msg)
 		return nil, nil, nil
@@ -211,7 +211,7 @@ func changeSecret(prs []*tektonv1beta1.PipelineRun) error {
 
 // checkNeedUpdate using regexp, try to match some pattern for some issue in PR
 // to let the user know they need to update. or otherwise we will fail.
-// checks are depreacted/removed to n+1 release of OSP.
+// checks are deprecated/removed to n+1 release of OSP.
 // each check should give a good error message on how to update.
 func (p *PacRun) checkNeedUpdate(tmpl string) (string, bool) {
 	// nolint: gosec

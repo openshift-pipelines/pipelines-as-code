@@ -12,21 +12,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CreateCRD(ctx context.Context, projectinfo *gitlab.Project, run *params.Run, targetNS string) error {
-	err := pacrepo.CreateNS(ctx, targetNS, run)
-	if err != nil {
+func CreateCRD(ctx context.Context, projectinfo *gitlab.Project, run *params.Run, targetNS string, incomings *[]v1alpha1.Incoming) error {
+	if err := pacrepo.CreateNS(ctx, targetNS, run); err != nil {
 		return err
 	}
 
 	token, _ := os.LookupEnv("TEST_GITLAB_TOKEN")
 	webhookSecret, _ := os.LookupEnv("TEST_EL_WEBHOOK_SECRET")
 	apiURL, _ := os.LookupEnv("TEST_GITLAB_API_URL")
-	err = secret.Create(ctx, run, map[string]string{"token": token}, targetNS, "webhook-token")
-	if err != nil {
+	if err := secret.Create(ctx, run, map[string]string{"token": token}, targetNS, "webhook-token"); err != nil {
 		return err
 	}
-	err = secret.Create(ctx, run, map[string]string{"secret": webhookSecret}, targetNS, "webhook-secret")
-	if err != nil {
+	if err := secret.Create(ctx, run, map[string]string{"secret": webhookSecret}, targetNS, "webhook-secret"); err != nil {
 		return err
 	}
 	repository := &v1alpha1.Repository{
@@ -36,10 +33,12 @@ func CreateCRD(ctx context.Context, projectinfo *gitlab.Project, run *params.Run
 		Spec: v1alpha1.RepositorySpec{
 			URL: projectinfo.WebURL,
 			GitProvider: &v1alpha1.GitProvider{
+				Type:          "gitlab",
 				URL:           apiURL,
 				Secret:        &v1alpha1.Secret{Name: "webhook-token", Key: "token"},
 				WebhookSecret: &v1alpha1.Secret{Name: "webhook-secret", Key: "secret"},
 			},
+			Incomings: incomings,
 		},
 	}
 
