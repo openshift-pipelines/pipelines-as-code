@@ -40,15 +40,3 @@ There is a few things you can configure through the configmap
 
   The base URL for the [tekton hub](https://github.com/tektoncd/hub/)
   API. default to the [public hub](https://hub.tekton.dev/): <https://api.hub.tekton.dev/v1>
-
-* `default-pipelinerun-timeout`
-
-  Let specify a global timeout across all pipeline. If you define the value
-  every PipelineRun running under Pipelines-as-Code
-
-  If it hasn't been set the timeout setting ordering will be :
-
-  * Picked up from the timeout setting [as
-    defined](https://tekton.dev/docs/pipelines/pipelineruns/#configuring-a-failure-timeout)
-    in the `PipelineRun` spec.timeout.
-  * If it hasn't defined it will use the default tekton controller timeout setting (default: 1 hour).
