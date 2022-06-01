@@ -1,4 +1,4 @@
-package repository
+package delete
 
 import (
 	"context"
@@ -22,15 +22,15 @@ eg:
 	tkn pac repository delete <repository-name> <repository-name2>
 	`
 
-func DeleteCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	var repository string
 	var cascade bool
 	cmd := &cobra.Command{
 		Args:    cobra.MinimumNArgs(0),
-		Use:     "delete",
+		Use:     "repository",
 		Short:   "Delete a Pipelines as Code Repository or multiple of them",
 		Long:    longHelp,
-		Aliases: []string{"rm"},
+		Aliases: []string{"repo"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			opts := cli.NewCliOptions(cmd)
