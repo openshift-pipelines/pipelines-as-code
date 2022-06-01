@@ -12,7 +12,6 @@ import (
 )
 
 func TestGithubPullRequest(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
 		[]string{"testdata/pipelinerun.yaml"}, false)
@@ -20,7 +19,6 @@ func TestGithubPullRequest(t *testing.T) {
 }
 
 func TestGithubPullRequestMultiples(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
 		[]string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"}, false)
@@ -28,7 +26,6 @@ func TestGithubPullRequestMultiples(t *testing.T) {
 }
 
 func TestGithubPullRequestMatchOnCEL(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
 		[]string{"testdata/pipelinerun-cel-annotation.yaml"}, false)

@@ -1,0 +1,110 @@
+# Copyright 2022 Red Hat
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pipelines-as-code-webhook
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pipelines-as-code-webhook-role
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "update"]
+    resourceNames: ["pipelines-as-code-webhook-certs"]
+    # The webhook daemon makes a reconciliation loop on webhook-certs. Whenever
+    # the secret changes it updates the webhook configurations with the certificates
+    # stored in the secret.
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch"]
+    # webhook uses leases for leader election
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pipelines-as-code-webhook-binding
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+subjects:
+  - kind: ServiceAccount
+    name: pipelines-as-code-webhook
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pipelines-as-code-webhook-role
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pipeline-as-code-webhook-clusterrole
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+rules:
+  - apiGroups: ["pipelinesascode.tekton.dev"]
+    resources: ["repositories"]
+    verbs: ["get", "list", "watch"]
+    # The webhook performs a reconciliation on this resource and continuously
+    # updates configuration.
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["validatingwebhookconfigurations"]
+    verbs: ["list", "watch"]
+    # When there are changes to the configs or secrets, knative updates the validating webhook config
+    # with the updated certificates or the refreshed set of rules.
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["validatingwebhookconfigurations"]
+    verbs: ["get", "update", "delete"]
+    resourceNames: ["validation.pipelinesascode.tekton.dev"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pipelines-as-code-webhook-clusterbinding
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+subjects:
+- kind: ServiceAccount
+  name: pipelines-as-code-webhook
+  namespace: pipelines-as-code
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pipeline-as-code-webhook-clusterrole
