@@ -1,4 +1,4 @@
-package delete
+package deleterepo
 
 import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
