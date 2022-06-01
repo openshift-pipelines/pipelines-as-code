@@ -28,6 +28,11 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request, payloa
 		s.logger.Errorf("failed to parse event: %v", err)
 		return err
 	}
+
+	// set logger with sha and event type
+	s.logger = s.logger.With("event-sha", s.event.SHA, "event-type", s.event.EventType)
+	s.vcx.SetLogger(s.logger)
+
 	s.event.Request = &info.Request{
 		Header:  request.Header,
 		Payload: bytes.TrimSpace(payload),

@@ -191,7 +191,7 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger,
 		string, error,
 	) {
-		logger = logger.With("provider", "bitbucket-cloud", "event", reqHeader.Get("X-Request-Id"))
+		logger = logger.With("provider", "bitbucket-cloud", "event-id", reqHeader.Get("X-Request-Id"))
 		return isBitCloud, processEvent, logger, reason, err
 	}
 
