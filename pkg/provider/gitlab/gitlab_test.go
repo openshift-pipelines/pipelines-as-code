@@ -314,10 +314,10 @@ func TestGetCommitInfo(t *testing.T) {
 	v := &Provider{Client: client}
 
 	defer tearDown()
-	assert.NilError(t, v.GetCommitInfo(ctx, nil))
+	assert.NilError(t, v.GetCommitInfo(ctx, info.NewEvent()))
 
 	ncv := &Provider{}
-	assert.Assert(t, ncv.GetCommitInfo(ctx, nil) != nil)
+	assert.Assert(t, ncv.GetCommitInfo(ctx, info.NewEvent()) != nil)
 }
 
 func TestGetConfig(t *testing.T) {
