@@ -16,6 +16,7 @@ spec:
         name: "webhook-secret"
         key: "webhook.secret"
   git_provider:
+    type: github
     secret:
       name: "provider.secret"
       key: "tokenkey"
