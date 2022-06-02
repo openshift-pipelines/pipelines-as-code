@@ -30,8 +30,8 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 	if req.URL.Path != "/incoming" {
 		return false, nil, nil
 	}
-	if repository == "" || querySecret == "" || branch == "" {
-		return false, nil, fmt.Errorf("missing query URL argument: branch, repository, secret: %+v",
+	if pipelineRun == "" || repository == "" || querySecret == "" || branch == "" {
+		return false, nil, fmt.Errorf("missing query URL argument: pipelinerun, branch, repository, secret: %+v",
 			req.URL.Query())
 	}
 
