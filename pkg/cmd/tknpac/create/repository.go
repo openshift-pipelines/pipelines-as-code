@@ -227,7 +227,7 @@ func cleanupGitURL(rawURL string) (string, error) {
 }
 
 func createRepoCRD(ctx context.Context, opts *repoOptions) error {
-	repoOwner, err := formatting.GetRepoOwnerFromGHURL(opts.event.URL)
+	repoOwner, err := formatting.GetRepoOwnerFromURL(opts.event.URL)
 	if err != nil {
 		return fmt.Errorf("invalid git URL: %s, it should be of format: https://gitprovider/project/repository", opts.event.URL)
 	}
