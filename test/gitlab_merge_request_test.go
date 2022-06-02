@@ -29,7 +29,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS, nil)
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries([]string{

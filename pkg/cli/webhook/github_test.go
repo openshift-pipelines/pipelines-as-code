@@ -46,7 +46,7 @@ func TestAskGHWebhookConfig(t *testing.T) {
 				as.StubOne("webhook-secret")
 				as.StubOne("token")
 			},
-			repoURL:       "https:/github.com/pac/demo",
+			repoURL:       "https://github.com/pac/demo",
 			controllerURL: "https://test",
 			wantErrStr:    "",
 		},

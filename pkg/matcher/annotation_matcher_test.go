@@ -107,6 +107,34 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			},
 		},
 		{
+			name:    "match TargetPipelineRun",
+			wantErr: false,
+			args: args{
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							GenerateName: fmt.Sprintf("%s-", pipelineTargetNSName),
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TargetPipelineRun: pipelineTargetNSName,
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
 			name:    "bad CEL expresion",
 			wantErr: true,
 			args: args{

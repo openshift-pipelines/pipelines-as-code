@@ -37,6 +37,7 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.Pipel
 	annotations := map[string]string{
 		filepath.Join(pipelinesascode.GroupName, "sha-title"): event.SHATitle,
 		filepath.Join(pipelinesascode.GroupName, "sha-url"):   event.SHAURL,
+		filepath.Join(pipelinesascode.GroupName, "repo-url"):  event.URL,
 	}
 
 	if event.PullRequestNumber != 0 {

@@ -182,13 +182,26 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
-	commit, _, err := v.Client.Git.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA)
+	// if we don't have a sha we may have a branch (ie: incoming webhook) then
+	// use the branch as sha since github supports it
+	var commit *github.Commit
+	sha := runevent.SHA
+	if runevent.SHA == "" && runevent.HeadBranch != "" {
+		branchinfo, _, err := v.Client.Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, runevent.HeadBranch, true)
+		if err != nil {
+			return err
+		}
+		sha = branchinfo.Commit.GetSHA()
+	}
+	var err error
+	commit, _, err = v.Client.Git.GetCommit(ctx, runevent.Organization, runevent.Repository, sha)
 	if err != nil {
 		return err
 	}
 
 	runevent.SHAURL = commit.GetHTMLURL()
 	runevent.SHATitle = strings.Split(commit.GetMessage(), "\n\n")[0]
+	runevent.SHA = commit.GetSHA()
 
 	return nil
 }
@@ -277,11 +290,9 @@ func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Eve
 
 // Detect processes event and detect if it is a github event, whether to process or reject it
 // returns (if is a GH event, whether to process or reject, error if any occurred)
-func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool,
-	*zap.SugaredLogger, string, error,
-) {
+func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	isGH := false
-	event := reqHeader.Get("X-Github-Event")
+	event := req.Header.Get("X-Github-Event")
 	if event == "" {
 		return false, false, logger, "", nil
 	}
@@ -292,7 +303,7 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger,
 		string, error,
 	) {
-		logger = logger.With("provider", "github", "event-id", reqHeader.Get("X-GitHub-Delivery"))
+		logger = logger.With("provider", "github", "event-id", req.Header.Get("X-GitHub-Delivery"))
 		return isGH, processEvent, logger, reason, err
 	}
 

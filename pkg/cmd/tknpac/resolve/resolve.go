@@ -94,7 +94,7 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 			}
 
 			if _, ok := mapped["repo_owner"]; !ok && gitinfo.URL != "" {
-				repoOwner, err := formatting.GetRepoOwnerFromGHURL(gitinfo.URL)
+				repoOwner, err := formatting.GetRepoOwnerFromURL(gitinfo.URL)
 				if err != nil {
 					return err
 				}

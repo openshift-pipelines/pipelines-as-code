@@ -91,6 +91,6 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 	}
 
 	err = vcx.CreateStatus(ctx, r.run.Clients.Tekton, event, r.run.Info.Pac, status)
-	logger.Infof("pipelinerun %s has %s", pr.Name, status.Conclusion)
+	logger.Infof("pipelinerun %s has a status of '%s'", pr.Name, status.Conclusion)
 	return pr, err
 }

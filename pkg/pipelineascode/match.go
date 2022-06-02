@@ -65,14 +65,19 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	} else {
 		p.event.Provider.WebhookSecret, _ = GetCurrentNSWebhookSecret(ctx, p.k8int)
 	}
-	if err := p.vcx.Validate(ctx, p.run, p.event); err != nil {
-		// check that webhook secret has no /n or space into it
-		if strings.ContainsAny(p.event.Provider.WebhookSecret, "\n ") {
-			p.logger.Error(`we have failed to validate the payload with the webhook secret, 
+
+	// validate payload  for webhook secret
+	// we don't need to validate it in incoming since we already do this
+	if p.event.EventType != "incoming" {
+		if err := p.vcx.Validate(ctx, p.run, p.event); err != nil {
+			// check that webhook secret has no /n or space into it
+			if strings.ContainsAny(p.event.Provider.WebhookSecret, "\n ") {
+				p.logger.Error(`we have failed to validate the payload with the webhook secret, 
 it seems that we have detected a \n or a space at the end of your webhook secret, 
 is that what you want? make sure you use -n when generating the secret, eg: echo -n secret|base64`)
+			}
+			return nil, nil, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
 		}
-		return nil, nil, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
 	}
 
 	// Set the client, we should error out if there is a problem with
@@ -89,7 +94,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	}
 
 	// Check if the submitter is allowed to run this.
-	if p.event.EventType != "push" {
+	if p.event.TriggerTarget != "push" {
 		allowed, err := p.vcx.IsAllowed(ctx, p.event)
 		if err != nil {
 			return nil, nil, err
@@ -130,14 +135,14 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	if pipelineRuns == nil || err != nil {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
 		if err != nil {
-			msg += fmt.Sprintf("err: %s", err.Error())
+			msg += fmt.Sprintf(" err: %s", err.Error())
 		}
 		p.logger.Info(msg)
 		return nil, nil, nil
 	}
 
-	// if /test or /retest command is used passing a pipelinerun then filter out the pipelinerun
-	pipelineRuns = filterPipelineRun(p.event.TargetTestPipelineRun, pipelineRuns)
+	// if /test command is used then filter out the pipelinerun
+	pipelineRuns = filterRunningPipelineRunOnTargetTest(p.event.TargetTestPipelineRun, pipelineRuns)
 	if pipelineRuns == nil {
 		p.logger.Info(fmt.Sprintf("cannot find pipelinerun %s in this repository", p.event.TargetTestPipelineRun))
 		return nil, nil, nil
@@ -147,6 +152,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	if err != nil {
 		return nil, nil, err
 	}
+
 	// Match the PipelineRun with annotation
 	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event)
 	if err != nil {
@@ -159,7 +165,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	return matchedPRs, repo, nil
 }
 
-func filterPipelineRun(testPipeline string, prs []*tektonv1beta1.PipelineRun) []*tektonv1beta1.PipelineRun {
+func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1beta1.PipelineRun) []*tektonv1beta1.PipelineRun {
 	if testPipeline == "" {
 		return prs
 	}
@@ -193,6 +199,10 @@ func changeSecret(prs []*tektonv1beta1.PipelineRun) error {
 		if err != nil {
 			return err
 		}
+		// don't crash when we don't have any annotations
+		if np.Annotations == nil {
+			np.Annotations = map[string]string{}
+		}
 		np.Annotations[gitAuthSecretAnnotation] = name
 		prs[k] = np
 	}
@@ -201,7 +211,7 @@ func changeSecret(prs []*tektonv1beta1.PipelineRun) error {
 
 // checkNeedUpdate using regexp, try to match some pattern for some issue in PR
 // to let the user know they need to update. or otherwise we will fail.
-// checks are depreacted/removed to n+1 release of OSP.
+// checks are deprecated/removed to n+1 release of OSP.
 // each check should give a good error message on how to update.
 func (p *PacRun) checkNeedUpdate(tmpl string) (string, bool) {
 	// nolint: gosec

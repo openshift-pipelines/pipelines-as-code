@@ -61,16 +61,24 @@ type RepositoryRunStatus struct {
 type RepositorySpec struct {
 	URL         string       `json:"url"`
 	GitProvider *GitProvider `json:"git_provider,omitempty"`
+	Incomings   *[]Incoming  `json:"incoming,omitempty"`
+}
+
+type Incoming struct {
+	Type    string   `json:"type"`
+	Secret  Secret   `json:"secret"`
+	Targets []string `json:"targets,omitempty"`
 }
 
 type GitProvider struct {
-	URL           string             `json:"url,omitempty"`
-	User          string             `json:"user,omitempty"`
-	Secret        *GitProviderSecret `json:"secret,omitempty"`
-	WebhookSecret *GitProviderSecret `json:"webhook_secret,omitempty"`
+	URL           string  `json:"url,omitempty"`
+	User          string  `json:"user,omitempty"`
+	Secret        *Secret `json:"secret,omitempty"`
+	WebhookSecret *Secret `json:"webhook_secret,omitempty"`
+	Type          string  `json:"type,omitempty"`
 }
 
-type GitProviderSecret struct {
+type Secret struct {
 	Name string `json:"name"`
 	Key  string `json:"key"`
 }

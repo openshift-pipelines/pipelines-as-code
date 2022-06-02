@@ -64,11 +64,9 @@ func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event)
 
 // Detect processes event and detect if it is a gitlab event, whether to process or reject it
 // returns (if is a GL event, whether to process or reject, logger with event metadata,, error if any occurred)
-func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool,
-	*zap.SugaredLogger, string, error,
-) {
+func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	isGL := false
-	event := reqHeader.Get("X-Gitlab-Event")
+	event := req.Header.Get("X-Gitlab-Event")
 	if event == "" {
 		return false, false, logger, "no gitlab event", nil
 	}
@@ -79,7 +77,7 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger,
 		string, error,
 	) {
-		logger = logger.With("provider", "gitlab", "event-id", reqHeader.Get("X-Request-Id"))
+		logger = logger.With("provider", "gitlab", "event-id", req.Header.Get("X-Request-Id"))
 		return isGL, processEvent, logger, reason, err
 	}
 
@@ -238,26 +236,43 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(_ context.Context, event *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, runevent *info.Event) error {
 	var err error
-	if event.Provider.Token == "" {
+	if runevent.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
 
 	// Try to detect automatically the API url if url is not coming from public
 	// gitlab. Unless user has set a spec.provider.url in its repo crd
 	apiURL := apiPublicURL
-	if event.Provider.URL != "" {
-		apiURL = event.Provider.URL
+	if runevent.Provider.URL != "" {
+		apiURL = runevent.Provider.URL
 	} else if !strings.HasPrefix(v.repoURL, apiPublicURL) {
 		apiURL = strings.ReplaceAll(v.repoURL, v.pathWithNamespace, "")
 	}
 
-	v.Client, err = gitlab.NewClient(event.Provider.Token, gitlab.WithBaseURL(apiURL))
+	v.Client, err = gitlab.NewClient(runevent.Provider.Token, gitlab.WithBaseURL(apiURL))
 	if err != nil {
 		return err
 	}
-	v.Token = &event.Provider.Token
+	v.Token = &runevent.Provider.Token
+
+	// if we don't have sourceProjectID (ie: incoming-webhook) then try to set
+	// it ASAP if we can.
+	if v.sourceProjectID == 0 && runevent.Organization != "" && runevent.Repository != "" {
+		projectSlug := filepath.Join(runevent.Organization, runevent.Repository)
+		projectinfo, _, err := v.Client.Projects.GetProject(projectSlug, &gitlab.GetProjectOptions{})
+		if err != nil {
+			return err
+		}
+		// TODO: we really need to move out the runevent.*ProjecTID to v.*ProjectID,
+		// I just spent half an hour debugging because i didn't realise it was there instead in v.*
+		v.sourceProjectID = projectinfo.ID
+		runevent.SourceProjectID = projectinfo.ID
+		runevent.TargetProjectID = projectinfo.ID
+		runevent.DefaultBranch = projectinfo.DefaultBranch
+	}
+
 	return nil
 }
 
@@ -312,12 +327,13 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 	}
 	// nolint: dogsled
 	_, _, _ = v.Client.Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
-	if statusOpts.Conclusion != "running" {
-		opt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.String(body)}
-		_, _, err := v.Client.Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, opt)
+
+	// only add a note when we are on a MR
+	if event.EventType == "pull_request" {
+		mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.String(body)}
+		_, _, err := v.Client.Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
 		return err
 	}
-
 	return nil
 }
 
@@ -387,10 +403,23 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, pa
 	return string(getobj), nil
 }
 
-func (v *Provider) GetCommitInfo(_ context.Context, _ *info.Event) error {
+func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error {
 	if v.Client == nil {
 		return fmt.Errorf("no gitlab client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
+
+	// if we don't have a SHA (ie: incoming-webhook) then get it from the branch
+	// and populate in the runevent.
+	if runevent.SHA == "" && runevent.HeadBranch != "" {
+		branchinfo, _, err := v.Client.Commits.GetCommit(v.sourceProjectID, runevent.HeadBranch)
+		if err != nil {
+			return err
+		}
+		runevent.SHA = branchinfo.ID
+		runevent.SHATitle = branchinfo.Title
+		runevent.SHAURL = branchinfo.WebURL
+	}
+
 	return nil
 }

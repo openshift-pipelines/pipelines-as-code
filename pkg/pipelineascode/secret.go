@@ -33,6 +33,7 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	if gitProviderSecretKey == "" {
 		gitProviderSecretKey = defaultGitProviderSecretKey
 	}
+
 	if event.Provider.Token, err = k8int.GetSecret(ctx, kubeinteraction.GetSecretOpt{
 		Namespace: repo.GetNamespace(),
 		Name:      repo.Spec.GitProvider.Secret.Name,
@@ -40,6 +41,7 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	}); err != nil {
 		return err
 	}
+
 	// if we don't have a provider token in repo crd we won't be able to do much with it
 	// let it go and it will fail later on when doing SetClients or success if it was done from a github app
 	if event.Provider.Token == "" {

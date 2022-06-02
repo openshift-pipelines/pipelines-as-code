@@ -149,11 +149,9 @@ func parsePayloadType(event string) (interface{}, error) {
 
 // Detect processes event and detect if it is a bitbucket server event, whether to process or reject it
 // returns (if is a bitbucket server event, whether to process or reject, error if any occurred)
-func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.SugaredLogger) (bool, bool,
-	*zap.SugaredLogger, string, error,
-) {
+func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	isBitServer := false
-	event := reqHeader.Get("X-Event-Key")
+	event := req.Header.Get("X-Event-Key")
 	if event == "" {
 		return false, false, logger, "", nil
 	}
@@ -169,7 +167,7 @@ func (v *Provider) Detect(reqHeader *http.Header, payload string, logger *zap.Su
 	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger, string,
 		error,
 	) {
-		logger = logger.With("provider", "bitbucket-server", "event-id", reqHeader.Get("X-Request-Id"))
+		logger = logger.With("provider", "bitbucket-server", "event-id", req.Header.Get("X-Request-Id"))
 		return isBitServer, processEvent, logger, reason, err
 	}
 

@@ -69,6 +69,12 @@ func TestHandleEvent(t *testing.T) {
 			statusCode:  400,
 		},
 		{
+			name:        "invalid json body only when payload has been set",
+			requestType: "POST",
+			event:       []byte(""),
+			statusCode:  200,
+		},
+		{
 			name:        "valid event",
 			requestType: "POST",
 			eventType:   "push",
@@ -137,7 +143,7 @@ func TestWhichProvider(t *testing.T) {
 			header: map[string][]string{
 				"foo": {"bar"},
 			},
-			event:         "interface",
+			event:         map[string]string{"foo": "bar"},
 			wantErrString: "no supported Git provider has been detected",
 		},
 	}
@@ -148,8 +154,11 @@ func TestWhichProvider(t *testing.T) {
 			if err != nil {
 				assert.NilError(t, err)
 			}
+			req := &http.Request{
+				Header: tt.header,
+			}
 
-			_, _, err = l.detectProvider(&tt.header, string(jeez))
+			_, _, err = l.detectProvider(req, string(jeez))
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return

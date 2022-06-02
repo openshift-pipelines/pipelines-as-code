@@ -24,3 +24,33 @@ func MatchEventURLRepo(ctx context.Context, cs *params.Run, event *info.Event, n
 
 	return nil, nil
 }
+
+// GetRepo get a repo by name anywhere on a cluster
+func GetRepo(ctx context.Context, cs *params.Run, repoName string) (*apipac.Repository, error) {
+	repositories, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(
+		ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+	for i := len(repositories.Items) - 1; i >= 0; i-- {
+		repo := repositories.Items[i]
+		if repo.GetName() == repoName {
+			return &repo, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// IncomingWebhookRule will match a rule to an incoming rule, currently a rule is a target branch
+func IncomingWebhookRule(branch string, incomingWebhooks []apipac.Incoming) *apipac.Incoming {
+	// TODO: one day we will match the hook.Type here when we get something else than the dumb one (ie: slack)
+	for _, hook := range incomingWebhooks {
+		for _, v := range hook.Targets {
+			if v == branch {
+				return &hook
+			}
+		}
+	}
+	return nil
+}

@@ -10,6 +10,7 @@ metadata:
     pipelinesascode.tekton.dev/pull-request: "28"
     pipelinesascode.tekton.dev/sha-title: fail it
     pipelinesascode.tekton.dev/sha-url: https://github.com/sm43/pac-app/commit/1e65fcc114bf71045c86c25dd204755735b28d09
+    pipelinesascode.tekton.dev/repo-url: https://github.com/sm43/pac-app
     pipelinesascode.tekton.dev/task: git-clone
   creationTimestamp: "2022-05-24T04:22:12Z"
   generateName: pac-app-pull-request-

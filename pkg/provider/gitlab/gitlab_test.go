@@ -314,10 +314,10 @@ func TestGetCommitInfo(t *testing.T) {
 	v := &Provider{Client: client}
 
 	defer tearDown()
-	assert.NilError(t, v.GetCommitInfo(ctx, nil))
+	assert.NilError(t, v.GetCommitInfo(ctx, info.NewEvent()))
 
 	ncv := &Provider{}
-	assert.Assert(t, ncv.GetCommitInfo(ctx, nil) != nil)
+	assert.Assert(t, ncv.GetCommitInfo(ctx, info.NewEvent()) != nil)
 }
 
 func TestGetConfig(t *testing.T) {
@@ -552,10 +552,10 @@ func TestProvider_Detect(t *testing.T) {
 			gprovider := Provider{}
 			logger := getLogger()
 
-			header := &http.Header{}
+			header := http.Header{}
 			header.Set("X-Gitlab-Event", string(tt.eventType))
-
-			isGL, processReq, _, reason, err := gprovider.Detect(header, tt.event, logger)
+			req := &http.Request{Header: header}
+			isGL, processReq, _, reason, err := gprovider.Detect(req, tt.event, logger)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return
