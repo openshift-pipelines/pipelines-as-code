@@ -40,12 +40,13 @@ spec:
           image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-controller"
           imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - name: api
+              containerPort: 8080
           readinessProbe:
             failureThreshold: 3
             httpGet:
               path: /live
-              port: 8080
+              port: api
               scheme: HTTP
             periodSeconds: 15
             successThreshold: 1
@@ -54,15 +55,30 @@ spec:
             failureThreshold: 3
             httpGet:
               path: /live
-              port: 8080
+              port: api
               scheme: HTTP
             periodSeconds: 15
             successThreshold: 1
             timeoutSeconds: 1
           env:
+            - name: TLS_KEY
+              value: "key"
+            - name: TLS_CERT
+              value: "cert"
+            - name: TLS_SECRET_NAME
+              value: "pipelines-as-code-tls-secret"
             - name: SYSTEM_NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: K_METRICS_CONFIG
               value: '{"Domain":"pipelinesascode.tekton.dev/controller","Component":"controller","PrometheusPort":0,"PrometheusHost":"","ConfigMap":{}}'
+          volumeMounts:
+            - mountPath: "/etc/pipelines-as-code/tls"
+              readOnly: true
+              name: tls
+      volumes:
+      - name: tls
+        secret:
+          secretName: pipelines-as-code-tls-secret
+          optional: true
