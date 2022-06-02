@@ -61,7 +61,7 @@ after setting this up, you will be able to trigger a PipelineRun called
 `https://github.com/owner/repo`. As an example here is the full curl snippet:
 
 ```shell
-curl -X POST https://control.pac.url/incoming?secret=very-secure-secret&repository=repo,branch=main
+curl -X POST https://control.pac.url/incoming?secret=very-secure-secret&repository=repo,branch=main&pipelinerun=target_pipelinerun
 ```
 
 note two things the `"/incoming"` path to the controller URL and the `"POST"`
