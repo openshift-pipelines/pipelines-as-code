@@ -116,11 +116,11 @@ GitHub application and the secret with all the information needed in the
 
 {{< /details >}}
 
-{{< details "tkn pac repo create" >}}
+{{< details "tkn pac create repo" >}}
 
-### Repository creation
+### Repository Creation
 
-`tkn pac repo create` -- will create a new Pipelines as Code Repository
+`tkn pac create repo` -- will create a new Pipelines as Code Repository
 definition, a namespace where the pipelineruns command and configure webhook. It
 will also generate a sample file with a [PipelineRun](/docs/guide/authoringprs)
 in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch
@@ -131,30 +131,30 @@ If you haven't configured a provider previously, it will follow up with
 questions if you want to configure a webhook for your provider of choice.
 {{< /details >}}
 
-{{< details "tkn pac repo delete" >}}
+{{< details "tkn pac delete repo" >}}
 
-### Repository delete
+### Repository Deletion
 
-`tkn pac repo delete` -- will delete a Pipelines as Code Repository definition.
+`tkn pac delete repo` -- will delete a Pipelines as Code Repository definition.
 
 You can specify the flag `--cascade` to optionally delete the attached secrets
 (ie: webhook or provider secret) to the Pipelines as Code Repository definition.
 
 {{< /details >}}
 
-{{< details "tkn pac repo list" >}}
+{{< details "tkn pac list" >}}
 
 ### Repository Listing
 
-`tkn pac repo list` -- will list all the Pipelines as Code Repositories
+`tkn pac list` -- will list all the Pipelines as Code Repositories
 definition and display the last status of the runs associated with it.
 {{< /details >}}
 
-{{< details "tkn pac repo describe" >}}
+{{< details "tkn pac describe" >}}
 
 ### Repository Describe
 
-`tkn pac repo describe` -- will describe a Pipelines as Code Repository
+`tkn pac describe` -- will describe a Pipelines as Code Repository
 definition and the runs associated with it.
 
 On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows
