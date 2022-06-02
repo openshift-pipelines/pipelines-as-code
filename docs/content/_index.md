@@ -51,7 +51,7 @@ of the execution when triggered by a `Pull Request` or a `Push`.
 The easiest way to get started is to use the `tkn pac` CLI and its [bootstrap](/docs/guide/cli/#commands) command.
 
 Start downloading and install the tkn-pac CLI following [these instructions](/docs/guide/cli#install) and
-while Connected to your cluster run the command :
+while connected to your cluster (for example using [kind](https://kind.sigs.k8s.io/) for testing) run the command :
 
 ```bash
 -$ tkn pac bootstrap
