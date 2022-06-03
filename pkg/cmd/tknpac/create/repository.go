@@ -1,4 +1,4 @@
-package repository
+package create
 
 import (
 	"context"
@@ -23,7 +23,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type createOptions struct {
+const (
+	noColorFlag = "no-color"
+)
+
+type repoOptions struct {
 	event        *info.Event
 	repository   *apipac.Repository
 	run          *params.Run
@@ -34,18 +38,18 @@ type createOptions struct {
 	cliOpts   *cli.PacCliOpts
 }
 
-func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	var githubURLForWebhook, gitlabURLForWebhook string
 	var onlyWebhook, githubWebhook bool
-	createOpts := &createOptions{
+	createOpts := &repoOptions{
 		event:      info.NewEvent(),
 		repository: &apipac.Repository{},
 		run:        run,
 	}
 	cmd := &cobra.Command{
-		Use:     "create",
-		Aliases: []string{"new"},
-		Short:   "Create  a repository",
+		Use:     "repository",
+		Aliases: []string{"repo"},
+		Short:   "Create a repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			ctx := context.Background()
@@ -128,7 +132,7 @@ func CreateCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 }
 
 // getOrCreateNamespace ask and create namespace or use the default one
-func getOrCreateNamespace(ctx context.Context, opts *createOptions) error {
+func getOrCreateNamespace(ctx context.Context, opts *repoOptions) error {
 	if opts.repository.Namespace != "" {
 		return nil
 	}
@@ -185,7 +189,7 @@ func getOrCreateNamespace(ctx context.Context, opts *createOptions) error {
 }
 
 // getRepoURL get the repository URL from the user using the git url as default.
-func getRepoURL(opts *createOptions) error {
+func getRepoURL(opts *repoOptions) error {
 	if opts.event.URL != "" {
 		return nil
 	}
@@ -222,7 +226,7 @@ func cleanupGitURL(rawURL string) (string, error) {
 	return fmt.Sprintf("%s://%s%s", parsedURL.Scheme, parsedURL.Host, parsedURL.Path), nil
 }
 
-func createRepoCRD(ctx context.Context, opts *createOptions) error {
+func createRepoCRD(ctx context.Context, opts *repoOptions) error {
 	repoOwner, err := formatting.GetRepoOwnerFromURL(opts.event.URL)
 	if err != nil {
 		return fmt.Errorf("invalid git URL: %s, it should be of format: https://gitprovider/project/repository", opts.event.URL)

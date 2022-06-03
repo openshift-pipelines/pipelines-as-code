@@ -1,4 +1,4 @@
-package repository
+package list
 
 import (
 	"context"
@@ -20,17 +20,21 @@ var (
 	body              = "%s\t%s\t%s\t%s"
 	allNamespacesFlag = "all-namespaces"
 	namespaceFlag     = "namespace"
-	noColorFlag       = "no-color"
 )
 
-func ListCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	var noheaders, allNamespaces bool
 	var selectors string
 
 	cmd := &cobra.Command{
-		Use:     "list",
-		Aliases: []string{"ls"},
-		Short:   "List repositories",
+		Use:          "list",
+		Aliases:      []string{"ls"},
+		Short:        "List Pipelines as Code Repository",
+		Long:         `List Pipelines as Code Repository`,
+		SilenceUsage: true,
+		Annotations: map[string]string{
+			"commandType": "main",
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			opts := cli.NewCliOptions(cmd)
@@ -49,9 +53,6 @@ func ListCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 			cw := clockwork.NewRealClock()
 			return list(ctx, run, opts, ioStreams, cw, selectors, noheaders)
-		},
-		Annotations: map[string]string{
-			"commandType": "main",
 		},
 	}
 

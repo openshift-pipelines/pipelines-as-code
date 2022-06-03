@@ -1,7 +1,9 @@
-package repository
+package list
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"strings"
 	"testing"
 	"time"
@@ -21,6 +23,17 @@ import (
 	"knative.dev/pkg/apis/duck/v1beta1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func newIOStream() (*cli.IOStreams, *bytes.Buffer) {
+	in := &bytes.Buffer{}
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	return &cli.IOStreams{
+		In:     ioutil.NopCloser(in),
+		Out:    out,
+		ErrOut: errOut,
+	}, out
+}
 
 func TestList(t *testing.T) {
 	cw := clockwork.NewFakeClock()

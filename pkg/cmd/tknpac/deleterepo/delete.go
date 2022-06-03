@@ -1,4 +1,4 @@
-package repository
+package deleterepo
 
 import (
 	"context"
@@ -11,22 +11,24 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var namespaceFlag = "namespace"
+
 const longHelp = `
 Delete a Pipelines as Code Repository or multiple of them
 
 eg:
-	tkn pac repository delete <repository-name> <repository-name2>
+	tkn pac delete repository <repository-name> <repository-name2>
 	`
 
-func DeleteCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	var repository string
 	var cascade bool
 	cmd := &cobra.Command{
 		Args:    cobra.MinimumNArgs(0),
-		Use:     "delete",
+		Use:     "repository",
 		Short:   "Delete a Pipelines as Code Repository or multiple of them",
 		Long:    longHelp,
-		Aliases: []string{"rm"},
+		Aliases: []string{"repo"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			opts := cli.NewCliOptions(cmd)

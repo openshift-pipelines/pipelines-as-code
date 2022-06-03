@@ -1,4 +1,4 @@
-package repository
+package create
 
 import (
 	"fmt"
@@ -77,7 +77,7 @@ func TestGetRepoURL(t *testing.T) {
 				tt.askStubs(as)
 			}
 			io, _, _, _ := cli.IOTest()
-			err := getRepoURL(&createOptions{
+			err := getRepoURL(&repoOptions{
 				event:      &tt.event,
 				repository: &tt.repo,
 				gitInfo:    &tt.gitinfo,
@@ -189,7 +189,7 @@ func TestGetNamespace(t *testing.T) {
 				tt.askStubs(as)
 			}
 			io, _, stdout, _ := cli.IOTest()
-			err := getOrCreateNamespace(ctx, &createOptions{
+			err := getOrCreateNamespace(ctx, &repoOptions{
 				event:      info.NewEvent(),
 				repository: &tt.repo,
 				gitInfo:    &tt.gitinfo,

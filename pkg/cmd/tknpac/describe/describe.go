@@ -1,4 +1,4 @@
-package repository
+package describe
 
 import (
 	"context"
@@ -24,6 +24,8 @@ import (
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var namespaceFlag = "namespace"
 
 const (
 	describeTemplate = `{{ $.ColorScheme.Bold "Name" }}:	{{.Repository.Name}}
@@ -122,7 +124,7 @@ func askRepo(ctx context.Context, cs *params.Run, namespace string) (*v1alpha1.R
 	return nil, fmt.Errorf("cannot match repository")
 }
 
-func DescribeCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "describe",
 		Aliases: []string{"desc"},

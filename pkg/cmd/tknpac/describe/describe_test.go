@@ -1,4 +1,4 @@
-package repository
+package describe
 
 import (
 	"bytes"

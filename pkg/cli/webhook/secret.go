@@ -28,7 +28,7 @@ func (w *Options) createWebhookSecret(ctx context.Context, response *response) e
 		return err
 	}
 
-	fmt.Fprintf(w.IOStreams.Out, "🔑 Webhook Secret %s has been created in the %s namespace.", w.RepositoryName, w.RepositoryNamespace)
+	fmt.Fprintf(w.IOStreams.Out, "🔑 Webhook Secret %s has been created in the %s namespace.\n", w.RepositoryName, w.RepositoryNamespace)
 	return nil
 }
 
