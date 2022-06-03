@@ -95,3 +95,33 @@ subjects:
 `Pipelines as Code` provide a CLI which is designed to work as tkn plug-in. To
 install the plug-in follow the instruction from the [CLI](/docs/guide/cli)
 documentation.
+
+## Controller TLS Setup
+
+Pipelines As Code Controller now support both `HTTP` and `HTTPS`. Usually, you configure the TLS directly on the
+ingress/Route pointing to the controller. If you want to configure the TLS directly on the controller you can do so
+by following this guide.
+
+First, create a secret which includes those certificates
+
+```shell
+  kubectl create secret generic -n pipelines-as-code pipelines-as-code-tls-secret \
+    --from-file=cert=/path/to/crt/file \
+    --from-file=key=/path/to/key/file
+```
+
+You can now restart the `pipelines-as-code-controller` pod in `pipelines-as-code` namespace and by the time the controller will be
+restarted it will use the tls secrets.
+
+NOTE:
+
+- It is required to create the secret named `pipelines-as-code-tls-secret`, or you will have to update the secret name in
+controller deployment.
+- If you have different keys in your secret other than `cert` and `key`, you will need to update controller deployment envs
+and subsequently apply this changes on upgrade (for example through [kustomize](https://kustomize.io/) or other methods)
+
+You can use following command to update the envs on the controller
+
+```shell
+  kubectl set env deployment pipelines-as-code-controller -n pipelines-as-code TLS_KEY=<key> TLS_CERT=<cert>
+```

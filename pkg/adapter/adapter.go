@@ -82,11 +82,16 @@ func (l *listener) Start(_ context.Context) error {
 			10*time.Second, "Listener Timeout!\n"),
 	}
 
-	// TODO: support TLS/Certs
-	if err := srv.ListenAndServe(); err != nil {
-		return err
+	enabled, tlsCertFile, tlsKeyFile := l.isTLSEnabled()
+	if enabled {
+		if err := srv.ListenAndServeTLS(tlsCertFile, tlsKeyFile); err != nil {
+			return err
+		}
+	} else {
+		if err := srv.ListenAndServe(); err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 
