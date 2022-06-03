@@ -34,6 +34,13 @@ var gitAuthSecretAnnotation = filepath.Join(pipelinesascode.GroupName, "git-auth
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
+
+	// if pipelineRun is in completed state then return
+	state, exist := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "state")]
+	if exist && state == kubeinteraction.StateCompleted {
+		return nil
+	}
+
 	if pr.IsDone() {
 		logger = logger.With(
 			"pipeline-run", pr.GetName(),
