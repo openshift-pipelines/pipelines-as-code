@@ -12,7 +12,6 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/webhook"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
@@ -39,8 +38,6 @@ type repoOptions struct {
 }
 
 func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
-	var githubURLForWebhook, gitlabURLForWebhook string
-	var onlyWebhook, githubWebhook bool
 	createOpts := &repoOptions{
 		event:      info.NewEvent(),
 		repository: &apipac.Repository{},
@@ -66,50 +63,33 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 				return err
 			}
 
-			if !onlyWebhook {
-				if err := getRepoURL(createOpts); err != nil {
-					return err
-				}
-
-				if err := getOrCreateNamespace(ctx, createOpts); err != nil {
-					return err
-				}
-
-				if err := createRepoCRD(ctx, createOpts); err != nil {
-					return err
-				}
-
-				gopt := generate.MakeOpts()
-				gopt.GitInfo = createOpts.gitInfo
-				gopt.IOStreams = createOpts.ioStreams
-				gopt.CLIOpts = createOpts.cliOpts
-
-				// defaulting the values for create repo command
-				gopt.Event.EventType = "[pull_request, push]"
-				gopt.Event.BaseBranch = "main"
-
-				if err := generate.Generate(gopt); err != nil {
-					return err
-				}
+			if err := getRepoURL(createOpts); err != nil {
+				return err
 			}
 
-			config := &webhook.Options{
-				Run:                 run,
-				RepositoryURL:       createOpts.gitInfo.URL,
-				PACNamespace:        createOpts.pacNamespace,
-				RepositoryName:      createOpts.repository.Name,
-				RepositoryNamespace: createOpts.repository.Namespace,
-				GitHubWebhook:       githubWebhook,
-				IOStreams:           ioStreams,
+			if err := getOrCreateNamespace(ctx, createOpts); err != nil {
+				return err
 			}
 
-			if githubURLForWebhook != "" {
-				config.ProviderAPIURL = githubURLForWebhook
-			} else if gitlabURLForWebhook != "" {
-				config.ProviderAPIURL = gitlabURLForWebhook
+			if err := createRepoCRD(ctx, createOpts); err != nil {
+				return err
 			}
 
-			return config.Install(ctx)
+			gopt := generate.MakeOpts()
+			gopt.GitInfo = createOpts.gitInfo
+			gopt.IOStreams = createOpts.ioStreams
+			gopt.CLIOpts = createOpts.cliOpts
+
+			// defaulting the values for repo create command
+			gopt.Event.EventType = "[pull_request, push]"
+			gopt.Event.BaseBranch = "main"
+
+			if err := generate.Generate(gopt); err != nil {
+				return err
+			}
+
+			fmt.Fprintln(ioStreams.Out, "🚀 You can use \"tkn pac setup\" command to setup a webhook with your repository")
+			return nil
 		},
 		Annotations: map[string]string{
 			"commandType": "main",
@@ -123,11 +103,6 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 		"The target namespace where the runs will be created")
 	cmd.PersistentFlags().StringVarP(&createOpts.pacNamespace, "pac-namespace",
 		"", "", "The namespace where pac is installed")
-	cmd.PersistentFlags().StringVarP(&githubURLForWebhook, "github-api-url", "", "", "GitHub Enterprise API URL")
-	cmd.PersistentFlags().StringVarP(&gitlabURLForWebhook, "gitlab-api-url", "", "", "GitLab Hosted API URL")
-	cmd.PersistentFlags().BoolVar(&onlyWebhook, "webhook", false, "Skip repository creation, proceed with configuring webhook")
-	cmd.PersistentFlags().BoolVar(&githubWebhook, "github-webhook", false, "Allows configuring webhook if GitHub App is already configured")
-
 	return cmd
 }
 
