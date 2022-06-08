@@ -77,13 +77,13 @@ func TestGetRepoURL(t *testing.T) {
 				tt.askStubs(as)
 			}
 			io, _, _, _ := cli.IOTest()
-			err := getRepoURL(&repoOptions{
-				event:      &tt.event,
-				repository: &tt.repo,
-				gitInfo:    &tt.gitinfo,
-				ioStreams:  io,
+			err := getRepoURL(&RepoOptions{
+				Event:      &tt.event,
+				Repository: &tt.repo,
+				GitInfo:    &tt.gitinfo,
+				IoStreams:  io,
 				cliOpts:    &cli.PacCliOpts{},
-				run: &params.Run{
+				Run: &params.Run{
 					Clients: clients.Clients{
 						Kube: stdata.Kube,
 					},
@@ -189,13 +189,13 @@ func TestGetNamespace(t *testing.T) {
 				tt.askStubs(as)
 			}
 			io, _, stdout, _ := cli.IOTest()
-			err := getOrCreateNamespace(ctx, &repoOptions{
-				event:      info.NewEvent(),
-				repository: &tt.repo,
-				gitInfo:    &tt.gitinfo,
-				ioStreams:  io,
+			err := getOrCreateNamespace(ctx, &RepoOptions{
+				Event:      info.NewEvent(),
+				Repository: &tt.repo,
+				GitInfo:    &tt.gitinfo,
+				IoStreams:  io,
 				cliOpts:    &cli.PacCliOpts{},
-				run: &params.Run{
+				Run: &params.Run{
 					Clients: clients.Clients{
 						Kube: stdata.Kube,
 					},

@@ -32,8 +32,8 @@ func TestAskGHWebhookConfig(t *testing.T) {
 		{
 			name: "ask all details no defaults",
 			askStubs: func(as *prompt.AskStubber) {
-				as.StubOne("pac/demo")
-				as.StubOne("https://test")
+				as.StubOne("https://github.com/pac/test")
+				as.StubOne("https://controller.url")
 				as.StubOne("webhook-secret")
 				as.StubOne("token")
 			},

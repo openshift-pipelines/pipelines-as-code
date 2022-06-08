@@ -27,7 +27,6 @@ type gitHubConfig struct {
 	webhookSecret       string
 	personalAccessToken string
 	APIURL              string
-	Hosted              bool
 }
 
 func (gh *gitHubConfig) GetName() string {
@@ -49,18 +48,17 @@ func (gh *gitHubConfig) Run(ctx context.Context, opts *Options) (*response, erro
 }
 
 func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string) error {
-	var defaultRepo string
-	if repoURL != "" {
-		defaultRepo, _ = formatting.GetRepoOwnerFromURL(repoURL)
-	}
-
-	if repoURL == "" || defaultRepo == "" {
-		msg := "Please enter the repository you want to be configured (eg. repo-owner/repo-name) : "
-		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &defaultRepo,
+	if repoURL == "" {
+		msg := "Please enter the git repository url you want to be configured: "
+		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repoURL,
 			survey.WithValidator(survey.Required)); err != nil {
 			return err
 		}
+	} else {
+		fmt.Fprintf(gh.IOStream.Out, "✓ Setting up GitHub Webhook for Repository %s\n", repoURL)
 	}
+
+	defaultRepo, _ := formatting.GetRepoOwnerFromURL(repoURL)
 
 	repoArr := strings.Split(defaultRepo, "/")
 	if len(repoArr) != 2 {
@@ -76,7 +74,7 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string
 	// confirm whether to use the detected url
 	if gh.controllerURL != "" {
 		var answer bool
-		fmt.Fprintf(gh.IOStream.Out, "👀 I have detected a controller url: %s", gh.controllerURL)
+		fmt.Fprintf(gh.IOStream.Out, "👀 I have detected a controller url: %s\n", gh.controllerURL)
 		err := prompt.SurveyAskOne(&survey.Confirm{
 			Message: "Do you want me to use it?",
 			Default: true,
@@ -110,7 +108,7 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string
 		return err
 	}
 
-	if apiURL == "" && gh.Hosted {
+	if apiURL == "" && !strings.Contains(repoURL, "https://github.com") {
 		if err := prompt.SurveyAskOne(&survey.Input{
 			Message: "Please enter your GitHub enterprise API URL:: ",
 		}, &gh.APIURL, survey.WithValidator(survey.Required)); err != nil {
