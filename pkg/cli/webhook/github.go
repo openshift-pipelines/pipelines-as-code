@@ -12,7 +12,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"golang.org/x/oauth2"
 )
 
@@ -27,10 +26,6 @@ type gitHubConfig struct {
 	webhookSecret       string
 	personalAccessToken string
 	APIURL              string
-}
-
-func (gh *gitHubConfig) GetName() string {
-	return provider.ProviderGitHubWebhook
 }
 
 func (gh *gitHubConfig) Run(ctx context.Context, opts *Options) (*response, error) {
@@ -58,7 +53,10 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string
 		fmt.Fprintf(gh.IOStream.Out, "✓ Setting up GitHub Webhook for Repository %s\n", repoURL)
 	}
 
-	defaultRepo, _ := formatting.GetRepoOwnerFromURL(repoURL)
+	defaultRepo, err := formatting.GetRepoOwnerFromURL(repoURL)
+	if err != nil {
+		return err
+	}
 
 	repoArr := strings.Split(defaultRepo, "/")
 	if len(repoArr) != 2 {
@@ -108,7 +106,7 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string
 		return err
 	}
 
-	if apiURL == "" && !strings.Contains(repoURL, "https://github.com") {
+	if apiURL == "" && !strings.HasPrefix(repoURL, "https://github.com") {
 		if err := prompt.SurveyAskOne(&survey.Input{
 			Message: "Please enter your GitHub enterprise API URL:: ",
 		}, &gh.APIURL, survey.WithValidator(survey.Required)); err != nil {

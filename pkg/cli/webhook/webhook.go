@@ -22,7 +22,6 @@ type ProviderType string
 const ProviderTypeGitHub ProviderType = "GitHub"
 
 type Interface interface {
-	GetName() string
 	Run(context.Context, *Options) (*response, error)
 }
 
@@ -88,8 +87,8 @@ func (w *Options) Install(ctx context.Context, providerType ProviderType) error 
 		return err
 	}
 	if !createRepo {
-		fmt.Fprintln(w.IOStreams.Out, "✓ Skips creating Repository CR")
-		fmt.Fprintln(w.IOStreams.Out, "💡 Don't forget to create a secret with webhook secret and provider token & attaching in Repository CR.")
+		fmt.Fprintln(w.IOStreams.Out, "✓ Skipping Repository creation")
+		fmt.Fprintln(w.IOStreams.Out, "💡 Don't forget to create a secret with webhook secret and provider token & attaching in Repository.")
 		return nil
 	}
 

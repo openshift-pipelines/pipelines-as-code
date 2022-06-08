@@ -27,7 +27,7 @@ func TestAskGHWebhookConfig(t *testing.T) {
 			askStubs: func(as *prompt.AskStubber) {
 				as.StubOne("invalid-repo")
 			},
-			wantErrStr: "invalid repository, needs to be of format 'org-name/repo-name'",
+			wantErrStr: "invalid repo url at least a organization/project and a repo needs to be specified: invalid-repo",
 		},
 		{
 			name: "ask all details no defaults",

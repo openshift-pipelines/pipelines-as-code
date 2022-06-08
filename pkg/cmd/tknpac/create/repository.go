@@ -84,7 +84,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 				return err
 			}
 
-			fmt.Fprintln(ioStreams.Out, "🚀 You can use \"tkn pac setup\" command to setup a webhook with your repository")
+			fmt.Fprintln(ioStreams.Out, "🚀 You can use the command \"tkn pac setup\" to setup a repository with webhook")
 			return nil
 		},
 		Annotations: map[string]string{
