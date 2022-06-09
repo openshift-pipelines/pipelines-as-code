@@ -41,7 +41,7 @@ Pipelines as Code features:
 
 The easiest way to get started is to use the `tkn pac` CLI and its bootstrap command.
 
-Download and install first the tkn-pac CLI following [these instructions](/docs/cli.md#install).
+Download and install first the tkn-pac CLI following [these instructions](/docs/content/docs/guide/cli.md#install).
 
 Connected to your cluster execute the command :
 
