@@ -152,10 +152,14 @@ func (v *Provider) SetClient(_ context.Context, event *info.Event) error {
 }
 
 func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
+	branchortag := event.SHA
+	if branchortag == "" {
+		branchortag = event.HeadBranch
+	}
 	response, err := v.Client.Repositories.Commits.GetCommits(&bitbucket.CommitsOptions{
 		Owner:       event.Organization,
 		RepoSlug:    event.Repository,
-		Branchortag: event.SHA,
+		Branchortag: branchortag,
 	})
 	if err != nil {
 		return err

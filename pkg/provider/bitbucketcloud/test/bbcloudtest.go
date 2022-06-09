@@ -325,6 +325,9 @@ func MakeEvent(event *info.Event) *info.Event {
 	if rev.SHA == "" {
 		rev.SHA = "1234"
 	}
+	if rev.SHA == "none" {
+		rev.SHA = ""
+	}
 	if rev.Organization == "" {
 		rev.Organization = "owner"
 	}
