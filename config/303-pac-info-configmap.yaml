@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This configmap is filled by bootstrap command or repo create command
-# GitHub App or webhook which ever is configured first, is added as
-# provider and later this is checked before configuring any of them
-# so that we don't configure only one of them is configured with PAC
+# This configmap is filled by bootstrap command
+# GitHub App is added as provider and later this is checked
+# before configuring a new GitHub App so that we don't
+# configure more than one App
 
 apiVersion: v1
 data:
