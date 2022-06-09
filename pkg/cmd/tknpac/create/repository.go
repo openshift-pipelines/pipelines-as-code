@@ -84,7 +84,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 				gopt.IOStreams = createOpts.ioStreams
 				gopt.CLIOpts = createOpts.cliOpts
 
-				// defaulting the values for repo create command
+				// defaulting the values for create repo command
 				gopt.Event.EventType = "[pull_request, push]"
 				gopt.Event.BaseBranch = "main"
 
