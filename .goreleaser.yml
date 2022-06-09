@@ -118,6 +118,7 @@ changelog:
 aurs:
   - name: tkn-pac
     homepage: "https://pipelinesascode.com"
+    skip_upload: true
     description: tkn-pac - A command line interface for interacting with Pipelines as Code
     maintainers:
       - "Chmouel Boudjnah <chmouel@chmouel.com>"
