@@ -149,6 +149,28 @@ func TestGetCommitInfo(t *testing.T) {
 				Mainbranch: bitbucket.RepositoryBranch{Name: "branshe"},
 			},
 		},
+		{
+			name: "Get commit info no SHA",
+			event: bbcloudtest.MakeEvent(&info.Event{
+				Organization: "org",
+				Repository:   "repo",
+				HeadBranch:   "hello",
+				SHA:          "none",
+			}),
+			commitinfo: types.Commit{
+				Hash: "convertedcommit",
+				Links: types.Links{
+					HTML: types.HTMLLink{
+						HRef: "https://everywhereigo",
+					},
+				},
+				Message: "Das Commit",
+				Author:  types.Author{},
+			},
+			repoinfo: &bitbucket.Repository{
+				Mainbranch: bitbucket.RepositoryBranch{Name: "branshe"},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
