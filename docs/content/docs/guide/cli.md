@@ -13,6 +13,7 @@ Pipelines as Code provide a powerful CLI designed to work with tkn plug-in.  `tk
 * `list`: list Pipelines as Code Repositories.
 * `describe`: describe a Pipelines as Code Repository and the runs associated with it.
 * `resolve`: Resolve a pipelinerun as if it were executed by pipelines as code on service.
+* `setup`: Setup a Git provider app or webhook with pipelines as code service.
 
 ## Install
 
@@ -216,6 +217,17 @@ to push it first before using `tkn pac resolve|kubectl apply`.
 
 Compared with running directly on CI, you need to explicitly specify the list of
 filenames or directory where you have the templates.
+{{< /details >}}
+
+{{< details "tkn pac setup github-app" >}}
+
+### Setup GitHub Webhook
+
+`tkn-pac setup github-webhook`: will allow you to set up a GitHub webhook with pipelines
+as code service.
+
+After setting up webhook, it will provide an option to create Repository and configure it with
+required secrets.
 {{< /details >}}
 
 ## Screenshot
