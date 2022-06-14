@@ -21,7 +21,6 @@ type gitLabConfig struct {
 	webhookSecret       string
 	personalAccessToken string
 	APIURL              string
-	Hosted              bool
 }
 
 func (gl *gitLabConfig) GetName() string {
@@ -90,7 +89,7 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
 		return err
 	}
 
-	if apiURL == "" && gl.Hosted {
+	if apiURL == "" {
 		if err := prompt.SurveyAskOne(&survey.Input{
 			Message: "Please enter your GitLab API URL:: ",
 		}, &gl.APIURL, survey.WithValidator(survey.Required)); err != nil {

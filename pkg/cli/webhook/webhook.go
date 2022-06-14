@@ -17,10 +17,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ProviderType string
-
-const ProviderTypeGitHub ProviderType = "GitHub"
-
 type Interface interface {
 	Run(context.Context, *Options) (*response, error)
 }
@@ -43,7 +39,7 @@ type response struct {
 	APIURL              string
 }
 
-func (w *Options) Install(ctx context.Context, providerType ProviderType) error {
+func (w *Options) Install(ctx context.Context, providerType string) error {
 	if w.RepositoryURL == "" {
 		q := "Please enter the Git repository url containing the pipelines: "
 		if err := prompt.SurveyAskOne(&survey.Input{Message: q}, &w.RepositoryURL,
@@ -72,8 +68,13 @@ func (w *Options) Install(ctx context.Context, providerType ProviderType) error 
 	}
 
 	var webhookProvider Interface
-	if providerType == ProviderTypeGitHub {
+	switch providerType {
+	case "github":
 		webhookProvider = &gitHubConfig{IOStream: w.IOStreams}
+	case "gitlab":
+		webhookProvider = &gitLabConfig{IOStream: w.IOStreams}
+	default:
+		return fmt.Errorf("invalid webhook provider")
 	}
 
 	response, err := webhookProvider.Run(ctx, w)

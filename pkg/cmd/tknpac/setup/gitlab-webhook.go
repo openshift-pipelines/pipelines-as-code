@@ -6,6 +6,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func githubWebhookCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
-	return buildProviderCommand(run, ioStreams, "github")
+func gitlabWebhookCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+	return buildProviderCommand(run, ioStreams, "gitlab")
 }
