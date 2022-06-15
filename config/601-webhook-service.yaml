@@ -18,8 +18,8 @@ metadata:
   name: pipelines-as-code-webhook
   namespace: pipelines-as-code
   labels:
-    name: pipelines-as-code-webhook
-    app: pipelines-as-code
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/part-of: pipelines-as-code
 spec:
   ports:
     - name: https-webhook
