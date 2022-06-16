@@ -219,15 +219,22 @@ Compared with running directly on CI, you need to explicitly specify the list of
 filenames or directory where you have the templates.
 {{< /details >}}
 
-{{< details "tkn pac setup github-app" >}}
+{{< details "tkn pac setup github-webhook" >}}
 
 ### Setup GitHub Webhook
 
-`tkn-pac setup github-webhook`: will allow you to set up a GitHub webhook with pipelines
-as code service.
+`tkn-pac setup github-webhook`: will let you set up a GitHub webhook to interact with Pipelines as Code
 
-After setting up webhook, it will provide an option to create Repository and configure it with
-required secrets.
+It will let you provide an option to create a Repository and configure it with the required secrets.
+{{< /details >}}
+
+{{< details "tkn pac setup gitlab-webhook" >}}
+
+### Setup GitLab Webhook
+
+`tkn-pac setup gitlab-webhook`: will let you set up a GitLab webhook to interact with Pipelines as Code.
+
+It will let you provide an option to create a Repository and configure it with the required secrets.
 {{< /details >}}
 
 ## Screenshot
