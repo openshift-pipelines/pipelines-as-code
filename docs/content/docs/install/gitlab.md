@@ -9,7 +9,7 @@ Pipelines-As-Code supports [Gitlab](https://www.gitlab.com) through a webhook.
 
 Follow the pipelines-as-code [installation](/docs/install/installation) according to your kubernetes cluster.
 
-## Create GitHub Personal Access Token
+## Create GitLab Personal Access Token
 
 * You will have to generate a personal token as the manager of the Org or the Project,
   follow the steps here :
@@ -26,7 +26,7 @@ Follow the pipelines-as-code [installation](/docs/install/installation) accordin
 
 Now, you have 2 ways to set up the repository and configure the webhook:
 
-You could use [`tkn pac repository create`](/docs/guide/cli) command which
+You could use [`tkn pac setup gitlab-webhook`](/docs/guide/cli) command which
   will create repository CR and configure webhook.
 
   You need to have a personal access token created with `admin:repo_hook` scope. tkn-pac will use this token to configure the
