@@ -17,6 +17,9 @@ kind: Deployment
 metadata:
   name: pipelines-as-code-controller
   namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/part-of: pipelines-as-code
 spec:
   replicas: 1
   selector:
