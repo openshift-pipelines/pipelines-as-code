@@ -39,7 +39,7 @@ spec:
     spec:
       serviceAccountName: pipelines-as-code-webhook
       containers:
-        - name: pipelines-as-code-webhook
+        - name: pac-webhook
           image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-webhook"
           env:
             - name: SYSTEM_NAMESPACE
