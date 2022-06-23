@@ -26,6 +26,7 @@ func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 	cmd.AddCommand(githubWebhookCommand(clients, ioStreams))
 	cmd.AddCommand(gitlabWebhookCommand(clients, ioStreams))
+	cmd.AddCommand(bitbucketCloudWebhookCommand(clients, ioStreams))
 	return cmd
 }
 

@@ -43,7 +43,7 @@ NOTE: If you are going to configure webhook through CLI, you will need to also a
 
 Now, you have 2 ways to set up the repository and configure the webhook:
 
-You could use [`tkn pac repository create`](/docs/guide/cli) command which
+You could use [`tkn pac setup github-webhook`](/docs/guide/cli) command which
   will create set up your repository and configure webhook.
 
   You need to have a personal access token created with `admin:repo_hook` scope. tkn-pac will use this token to configure the

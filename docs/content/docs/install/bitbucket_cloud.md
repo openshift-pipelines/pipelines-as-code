@@ -2,12 +2,13 @@
 title: Bitbucket Cloud
 weight: 14
 ---
-# Install Pipelines-As-Code for Bitbucket Cloud
+# Use Pipelines-as-Code with Bitbucket Cloud
 
-Pipelines-As-Code has a full support on Bitbucket Cloud
-(<https://bitbucket.org>) as Webhook.
+Pipelines-As-Code supports on [Bitbucket Cloud](https://bitbucket.org) through a webhook.
 
-After you have finished the [installation](/docs/install/installation) you can generate an app password for Pipelines-as-Code Bitbucket API operations.
+Follow the pipelines-as-code [installation](/docs/install/installation) according to your kubernetes cluster.
+
+## Create Bitbucket Cloud App Password
 
 Follow this guide to create an app password :
 
@@ -21,11 +22,29 @@ check these boxes to add the permissions to the token :
 - Issues: `Read`, `Write`
 - Pull requests: `Read`, `Write`
 
+NOTE: If you are going to configure webhook through CLI, you will need to also add additional permission
+
+- Webhooks: `Read and write`
+
 {{< hint info >}}
 [Refer to this screenshot](/images/bitbucket-cloud-create-secrete.png) to verify you have properly configured the app password.
 {{< /hint >}}
 
 Keep the generated token noted somewhere, or otherwise you will have to recreate it.
+
+## Setup Git Repository
+
+Now, you have 2 ways to set up the repository and configure the webhook:
+
+You could use [`tkn pac setup bitbucket-cloud-webhook`](/docs/guide/cli) command which
+will configure webhook and create repository CR.
+
+You need to have a App Password created. tkn-pac will use this token to configure the webhook and add it in a secret
+on cluster which will be used by pipelines-as-code controller for accessing the repository.
+
+Alternatively, you could follow the [Setup Git Repository manually](#setup-git-repository-manually) guide to do it manually
+
+## Setup Git Repository manually
 
 - Go to you **“Repository setting“** tab on your **Repository** and click on the
   **WebHooks** tab and **“Add webhook“** button.
@@ -112,3 +131,21 @@ reasoning :
   **bitbucket-cloud-check-source-ip** to false in the pipelines-as-code
   configmap in the pipelines-as-code namespace.
 {{< /hint >}}
+
+## Update Token
+
+When you have regenerated an app password you will need to  update it on cluster.
+For example through the command line, you will want to replace `$password` and `$target_namespace` by their respective values:
+
+You can find the secret name in Repository CR created.
+
+  ```yaml
+  spec:
+    git_provider:
+      secret:
+        name: "bitbucket-cloud-token"
+  ```
+
+```shell
+kubectl -n $target_namespace patch secret bitbucket-cloud-token -p "{\"data\": {\"provider.token\": \"$(echo -n $password|base64 -w0)\"}}"
+```

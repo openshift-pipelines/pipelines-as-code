@@ -33,6 +33,7 @@ type Options struct {
 }
 
 type response struct {
+	UserName            string
 	ControllerURL       string
 	WebhookSecret       string
 	PersonalAccessToken string
@@ -73,6 +74,8 @@ func (w *Options) Install(ctx context.Context, providerType string) error {
 		webhookProvider = &gitHubConfig{IOStream: w.IOStreams}
 	case "gitlab":
 		webhookProvider = &gitLabConfig{IOStream: w.IOStreams}
+	case "bitbucket-cloud":
+		webhookProvider = &bitbucketCloudConfig{IOStream: w.IOStreams}
 	default:
 		return fmt.Errorf("invalid webhook provider")
 	}

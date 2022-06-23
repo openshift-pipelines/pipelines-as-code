@@ -52,6 +52,10 @@ func (w *Options) updateRepositoryCR(ctx context.Context, res *response) error {
 		Key:  webhookSecretKey,
 	}
 
+	if res.UserName != "" {
+		repo.Spec.GitProvider.User = res.UserName
+	}
+
 	if res.APIURL != "" {
 		repo.Spec.GitProvider.URL = res.APIURL
 	}
