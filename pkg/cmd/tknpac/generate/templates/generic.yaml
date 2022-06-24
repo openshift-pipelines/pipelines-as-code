@@ -2,37 +2,27 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: << .prName >>
+  name: pipelinerun-generic
   annotations:
     # The event we are targeting as seen from the webhook payload
     # this can be an array too, i.e: [pull_request, push]
-    pipelinesascode.tekton.dev/on-event: "<< .event.EventType >>"
+    pipelinesascode.tekton.dev/on-event: "pull_request"
 
     # The branch or tag we are targeting (ie: main, refs/tags/*)
-    pipelinesascode.tekton.dev/on-target-branch: "<< .event.BaseBranch >>"
-    << if .use_cluster_task >>
-    # If we want to use the git-clone task from hub we could specify the
-    # annotation `pipelinesascode.tekton.dev/task annotation` and reference it
-    # in the taskRef. Pipelines as Code when it sees this will grab it from hub
-    # and automatically use the latest version. right now by default we will
-    # use the `git-clone` ClusterTasks as shipped on this cluster.
-    #
-    # pipelinesascode.tekton.dev/task: "git-clone"
+    pipelinesascode.tekton.dev/on-target-branch: "main"
 
-    <<- else >>
     # Fetch the git-clone task from hub, we are able to reference later on it
     # with taskRef and it will automatically be embedded into our pipeline.
     pipelinesascode.tekton.dev/task: "git-clone"
-    << end >>
-    <<- if .extra_task.AnnotationTask >>
 
-    # Task for <<.extra_task.Language >>
-    pipelinesascode.tekton.dev/task-1: "[<< .extra_task.AnnotationTask >>]"
-    << end >>
+    # Use maven task from hub
+    pipelinesascode.tekton.dev/task-1: "[maven]"
+
     # You can add more tasks in here to reuse, browse the one you like from here
     # https://hub.tekton.dev/
     # example:
     # pipelinesascode.tekton.dev/task-2: "[maven, buildah]"
+
 
     # How many runs we want to keep attached to this event
     pipelinesascode.tekton.dev/max-keep-runs: "5"
@@ -55,9 +45,7 @@ spec:
       - name: fetch-repository
         taskRef:
           name: git-clone
-          <<- if .use_cluster_task >>
           kind: ClusterTask
-          <<- end >>
         workspaces:
           - name: output
             workspace: source
@@ -68,9 +56,6 @@ spec:
             value: $(params.repo_url)
           - name: revision
             value: $(params.revision)
-      <<- if .extra_task.Task>>
-      << .extra_task.Task >>
-      <<- end >>
       # Customize this task if you like, or just do a taskRef
       # to one of the hub task.
       - name: noop-task

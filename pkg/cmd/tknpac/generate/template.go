@@ -9,87 +9,73 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type langOpts struct {
-	Language       string
-	detectionFile  string
-	Task           string
-	AnnotationTask string
+	detectionFile string
 }
 
 // I hate this part of the code so much.. but we are waiting for UBI images
 // having >1.6 golang for integrated templates.
 var languageDetection = map[string]langOpts{
 	"go": {
-		Language:       "Golang",
-		detectionFile:  "go.mod",
-		AnnotationTask: "golangci-lint",
-		Task: `- name: golangci-lint
-        taskRef:
-          name: golangci-lint
-        runAfter:
-          - fetch-repository
-        params:
-          - name: package
-            value: .
-        workspaces:
-        - name: source
-          workspace: source
-`,
+		detectionFile: "go.mod",
 	},
 	"python": {
-		Language:       "Python",
-		detectionFile:  "setup.py",
-		AnnotationTask: "pylint",
-		Task: `- name: pylint
-        taskRef:
-          name: pylint
-        runAfter:
-          - fetch-repository
-        workspaces:
-        - name: source
-          workspace: source
-`,
+		detectionFile: "setup.py",
 	},
+	"nodejs": {
+		detectionFile: "package.json",
+	},
+	"java": {
+		detectionFile: "pom.xml",
+	},
+	"generic": {},
 }
 
 //go:embed templates
 var resource embed.FS
 
-func (o *Opts) detectLanguage() (langOpts, error) {
+func (o *Opts) detectLanguage() (string, error) {
 	if o.language != "" {
 		if _, ok := languageDetection[o.language]; !ok {
-			return langOpts{}, fmt.Errorf("no template available for %s", o.language)
+			return "", fmt.Errorf("no template available for %s", o.language)
 		}
-		return languageDetection[o.language], nil
+		return o.language, nil
 	}
 
 	cs := o.IOStreams.ColorScheme()
-	for _, v := range languageDetection {
+	for t, v := range languageDetection {
+		if v.detectionFile == "" {
+			continue
+		}
 		fpath := filepath.Join(o.GitInfo.TopLevelPath, v.detectionFile)
 		if _, err := os.Stat(fpath); !os.IsNotExist(err) {
 			fmt.Fprintf(o.IOStreams.Out, "%s We have detected your repository using the programming language %s.\n",
 				cs.SuccessIcon(),
-				cs.Bold(v.Language),
+				cs.Bold(cases.Title(language.Und, cases.NoLower).String(t)),
 			)
-			return v, nil
+			return t, nil
 		}
 	}
-	return langOpts{}, nil
+	return "generic", nil
 }
 
-func (o *Opts) genTmpl() (bytes.Buffer, error) {
-	var outputBuffer bytes.Buffer
-	embedfile, err := resource.Open("templates/pipelinerun.yaml.tmpl")
+func (o *Opts) genTmpl() (*bytes.Buffer, error) {
+	lang, err := o.detectLanguage()
+	if err != nil {
+		return nil, err
+	}
+
+	embedfile, err := resource.Open(fmt.Sprintf("templates/%s.yaml", lang))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer embedfile.Close()
 	tmplB, _ := ioutil.ReadAll(embedfile)
-	// can't figure out how ParseFS works, so doing this manually..
-	t := template.Must(template.New("PipelineRun").Delims("<<", ">>").Parse(string(tmplB)))
 
 	prName := filepath.Base(o.GitInfo.URL)
 
@@ -99,19 +85,14 @@ func (o *Opts) genTmpl() (bytes.Buffer, error) {
 		prName = prName + "-" + strings.ReplaceAll(o.Event.EventType, "_", "-")
 	}
 
-	lang, err := o.detectLanguage()
-	if err != nil {
-		return bytes.Buffer{}, err
-	}
-	data := map[string]interface{}{
-		"prName":                  prName,
-		"event":                   o.Event,
-		"extra_task":              lang,
-		"use_cluster_task":        o.generateWithClusterTask,
-		"language_specific_tasks": "",
-	}
-	if err := t.Execute(&outputBuffer, data); err != nil {
-		return bytes.Buffer{}, err
-	}
-	return outputBuffer, nil
+	tmplB = bytes.ReplaceAll(tmplB, []byte("pipelinesascode.tekton.dev/on-event: \"pull_request\""),
+		[]byte(fmt.Sprintf("pipelinesascode.tekton.dev/on-event: \"%s\"", o.Event.EventType)))
+
+	tmplB = bytes.ReplaceAll(tmplB, []byte("pipelinesascode.tekton.dev/on-target-branch: \"main\""),
+		[]byte(fmt.Sprintf("pipelinesascode.tekton.dev/on-target-branch: \"%s\"", o.Event.BaseBranch)))
+
+	tmplB = bytes.ReplaceAll(tmplB, []byte(fmt.Sprintf("name: pipelinerun-%s", lang)),
+		[]byte(fmt.Sprintf("name: %s", prName)))
+
+	return bytes.NewBuffer(tmplB), nil
 }
