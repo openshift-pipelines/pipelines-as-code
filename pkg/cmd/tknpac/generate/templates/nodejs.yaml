@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: python-template
+  name: pipelinerun-nodejs
   annotations:
     # The event we are targeting as seen from the webhook payload
     # this can be an array too, i.e: [pull_request, push]
@@ -15,9 +15,8 @@ metadata:
     # with taskRef and it will automatically be embedded into our pipeline.
     pipelinesascode.tekton.dev/task: "git-clone"
 
-
-    # Task for Python
-    pipelinesascode.tekton.dev/task-1: "[pylint]"
+    # Task for Nodejs
+    pipelinesascode.tekton.dev/task-1: "[npm]"
 
     # You can add more tasks in here to reuse, browse the one you like from here
     # https://hub.tekton.dev/
@@ -55,14 +54,18 @@ spec:
             value: $(params.repo_url)
           - name: revision
             value: $(params.revision)
-      - name: pylint
+      - name: run-test
         taskRef:
-          name: pylint
-        runAfter:
-          - fetch-repository
+          name: npm
         workspaces:
           - name: source
             workspace: source
+        params:
+          - name: ARGS
+            value:
+              - test
+        runAfter:
+          - fetch-repository
 
   workspaces:
     - name: source
