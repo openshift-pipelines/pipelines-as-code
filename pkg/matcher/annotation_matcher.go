@@ -14,6 +14,7 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 )
@@ -111,7 +112,7 @@ type Match struct {
 	Config      map[string]string
 }
 
-func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger, pruns []*v1beta1.PipelineRun, cs *params.Run, event *info.Event) ([]Match, error) {
+func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger, pruns []*v1beta1.PipelineRun, cs *params.Run, event *info.Event, vcx provider.Interface) ([]Match, error) {
 	matchedPRs := []Match{}
 	configurations := map[string]map[string]string{}
 	logger.Infof("matching pipelineruns to event: URL=%s, target-branch=%s, source-branch=%s, target-event=%s",
@@ -153,7 +154,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		}
 
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[filepath.Join(pipelinesascode.GroupName, onCelExpression)]; ok {
-			out, err := celEvaluate(celExpr, event)
+			out, err := celEvaluate(celExpr, event, vcx, ctx)
 			if err != nil {
 				logger.Error(fmt.Errorf("there was an error evaluating CEL expression, skipping: %w", err))
 				continue

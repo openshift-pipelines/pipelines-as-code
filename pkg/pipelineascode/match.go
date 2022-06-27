@@ -154,7 +154,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	}
 
 	// Match the PipelineRun with annotation
-	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event)
+	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx)
 	if err != nil {
 		// Don't fail when you don't have a match between pipeline and annotations
 		// TODO: better reporting

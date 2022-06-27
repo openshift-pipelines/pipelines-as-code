@@ -71,3 +71,7 @@ func (v *TestProviderImp) GetFileInsideRepo(ctx context.Context, event *info.Eve
 	}
 	return "", fmt.Errorf("could not find %s in tests", file)
 }
+
+func (v *TestProviderImp) GetFiles(ctx context.Context, event *info.Event) ([]string, error) {
+	return []string{}, nil
+}

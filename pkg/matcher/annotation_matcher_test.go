@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -327,7 +328,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			}
 			matches, err := MatchPipelinerunByAnnotation(ctx, logger,
 				tt.args.pruns,
-				client, &tt.args.runevent)
+				client, &tt.args.runevent, &github.Provider{})
 
 			if tt.wantErr {
 				assert.Assert(t, err != nil, "We should have get an error")
@@ -555,7 +556,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				Clients: clients.Clients{},
 				Info:    info.Info{},
 			}
-			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent)
+			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent, &github.Provider{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return

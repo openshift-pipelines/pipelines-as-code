@@ -274,6 +274,20 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 	return runevent, nil
 }
 
+// GetFiles get a files from pull request
+func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string, error) {
+	commitListOption := &github.ListOptions{}
+	repoCommit, _, err := v.Client.PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, commitListOption)
+	if err != nil {
+		return []string{}, err
+	}
+	var result []string
+	for j := range repoCommit {
+		result = append(result, *repoCommit[j].Filename)
+	}
+	return result, nil
+}
+
 // getObject Get an object from a repository
 func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Event) ([]byte, error) {
 	blob, _, err := v.Client.Git.GetBlob(ctx, runevent.Organization, runevent.Repository, sha)

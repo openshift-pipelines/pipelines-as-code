@@ -247,3 +247,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 		Name:           "bitbucket-server",
 	}
 }
+
+func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
+	return []string{}, nil
+}

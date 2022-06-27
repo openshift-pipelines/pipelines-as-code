@@ -423,3 +423,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 
 	return nil
 }
+
+func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
+	return []string{}, nil
+}
