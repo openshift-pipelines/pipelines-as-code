@@ -11,7 +11,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v44/github"
+	"github.com/google/go-github/v45/github"
 	"gotest.tools/v3/assert"
 )
 

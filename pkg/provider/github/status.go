@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/go-github/v44/github"
+	"github.com/google/go-github/v45/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"

@@ -9,7 +9,7 @@ import (
 	"text/template"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/google/go-github/v44/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/juju/ansiterm"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
