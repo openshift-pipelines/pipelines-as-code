@@ -14,24 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package config
 
 import (
 	"context"
-
-	"knative.dev/pkg/apis"
 )
 
-var _ apis.Defaultable = (*Condition)(nil)
+// isSubstituted is used for associating the parameter substitution inside the context.Context.
+type isSubstituted struct{}
 
-// SetDefaults sets the Condition's Spec's default values.
-func (c *Condition) SetDefaults(ctx context.Context) {
-	c.Spec.SetDefaults(ctx)
+// WithinSubstituted is used to note that it is calling within
+// the context of a substitute variable operation.
+func WithinSubstituted(ctx context.Context) context.Context {
+	return context.WithValue(ctx, isSubstituted{}, true)
 }
 
-// SetDefaults sets defaults for all params on the ConditionSpec.
-func (cs *ConditionSpec) SetDefaults(ctx context.Context) {
-	for i := range cs.Params {
-		cs.Params[i].SetDefaults(ctx)
-	}
+// IsSubstituted indicates that the variables have been substituted.
+func IsSubstituted(ctx context.Context) bool {
+	return ctx.Value(isSubstituted{}) != nil
 }

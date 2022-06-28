@@ -87,12 +87,13 @@ github.com/evanphx/json-patch
 # github.com/evanphx/json-patch/v5 v5.6.0
 ## explicit; go 1.12
 github.com/evanphx/json-patch/v5
+# github.com/fatih/color v1.13.0
+## explicit; go 1.13
+# github.com/fsnotify/fsnotify v1.5.1
+## explicit; go 1.13
 # github.com/gfleury/go-bitbucket-v1 v0.0.0-20220418082332-711d7d5e805f
 ## explicit; go 1.14
 github.com/gfleury/go-bitbucket-v1
-# github.com/ghodss/yaml v1.0.0
-## explicit
-github.com/ghodss/yaml
 # github.com/go-kit/log v0.1.0
 ## explicit; go 1.16
 github.com/go-kit/log
@@ -170,8 +171,8 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.8.1-0.20220211173031-41f8d92709b7
-## explicit; go 1.14
+# github.com/google/go-containerregistry v0.8.1-0.20220216220642-00c59d91847c
+## explicit; go 1.17
 github.com/google/go-containerregistry/pkg/name
 # github.com/google/go-github/scrape v0.0.0-20220627203501-fd22ee93382e
 ## explicit; go 1.13
@@ -212,6 +213,8 @@ github.com/hashicorp/errwrap
 # github.com/hashicorp/go-cleanhttp v0.5.2
 ## explicit; go 1.13
 github.com/hashicorp/go-cleanhttp
+# github.com/hashicorp/go-hclog v1.0.0
+## explicit; go 1.13
 # github.com/hashicorp/go-multierror v1.1.1
 ## explicit; go 1.13
 github.com/hashicorp/go-multierror
@@ -327,8 +330,8 @@ github.com/spf13/pflag
 # github.com/stoewer/go-strcase v1.2.0
 ## explicit; go 1.11
 github.com/stoewer/go-strcase
-# github.com/tektoncd/pipeline v0.33.0
-## explicit; go 1.16
+# github.com/tektoncd/pipeline v0.37.0
+## explicit; go 1.17
 github.com/tektoncd/pipeline/pkg/apis/config
 github.com/tektoncd/pipeline/pkg/apis/pipeline
 github.com/tektoncd/pipeline/pkg/apis/pipeline/pod
@@ -358,7 +361,6 @@ github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pip
 github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun
 github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1alpha1
 github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1
-github.com/tektoncd/pipeline/pkg/clock
 github.com/tektoncd/pipeline/pkg/list
 github.com/tektoncd/pipeline/pkg/names
 github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag
@@ -476,7 +478,7 @@ golang.org/x/text/width
 # golang.org/x/time v0.0.0-20220609170525-579cf78fd858
 ## explicit
 golang.org/x/time/rate
-# golang.org/x/tools v0.1.8
+# golang.org/x/tools v0.1.9
 ## explicit; go 1.17
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
@@ -502,8 +504,8 @@ golang.org/x/xerrors/internal
 # gomodules.xyz/jsonpatch/v2 v2.2.0
 ## explicit; go 1.12
 gomodules.xyz/jsonpatch/v2
-# google.golang.org/api v0.65.0
-## explicit; go 1.11
+# google.golang.org/api v0.70.0
+## explicit; go 1.15
 google.golang.org/api/support/bundler
 # google.golang.org/appengine v1.6.7
 ## explicit; go 1.11
@@ -1046,7 +1048,7 @@ k8s.io/klog/v2
 k8s.io/klog/v2/internal/buffer
 k8s.io/klog/v2/internal/serialize
 k8s.io/klog/v2/internal/severity
-# k8s.io/kube-openapi v0.0.0-20220114203427-a0453230fd26
+# k8s.io/kube-openapi v0.0.0-20220124234850-424119656bbf
 ## explicit; go 1.16
 k8s.io/kube-openapi/pkg/common
 k8s.io/kube-openapi/pkg/schemaconv
@@ -1125,8 +1127,8 @@ knative.dev/pkg/version
 knative.dev/pkg/webhook
 knative.dev/pkg/webhook/certificates
 knative.dev/pkg/webhook/certificates/resources
-# sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6
-## explicit; go 1.16
+# sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2
+## explicit; go 1.17
 sigs.k8s.io/json
 sigs.k8s.io/json/internal/golang/encoding/json
 # sigs.k8s.io/structured-merge-diff/v4 v4.2.1
