@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	ghlib "github.com/google/go-github/v44/github"
+	ghlib "github.com/google/go-github/v45/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"

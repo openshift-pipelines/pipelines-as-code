@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/google/go-github/v44/github"
+	"github.com/google/go-github/v45/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"

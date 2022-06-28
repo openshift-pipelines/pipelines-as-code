@@ -80,8 +80,6 @@ func (ps *PipelineRunSpec) Validate(ctx context.Context) (errs *apis.FieldError)
 			errs = errs.Also(apis.ErrDisallowedFields("timeout", "timeouts"))
 		}
 
-		errs = errs.Also(ValidateEnabledAPIFields(ctx, "timeouts", config.AlphaAPIFields))
-
 		// tasks timeout should be a valid duration of at least 0.
 		errs = errs.Also(validateTimeoutDuration("tasks", ps.Timeouts.Tasks))
 
@@ -129,20 +127,15 @@ func validateSpecStatus(ctx context.Context, status PipelineRunSpecStatus) *apis
 	case PipelineRunSpecStatusCancelled,
 		PipelineRunSpecStatusCancelledRunFinally,
 		PipelineRunSpecStatusStoppedRunFinally:
-		return ValidateEnabledAPIFields(ctx, "graceful termination", "alpha")
+		return nil
 	}
 
-	cfg := config.FromContextOrDefaults(ctx)
-	if cfg.FeatureFlags.EnableAPIFields == config.AlphaAPIFields {
-		return apis.ErrInvalidValue(fmt.Sprintf("%s should be %s, %s, %s or %s", status,
-			PipelineRunSpecStatusCancelled,
-			PipelineRunSpecStatusCancelledRunFinally,
-			PipelineRunSpecStatusStoppedRunFinally,
-			PipelineRunSpecStatusPending), "status")
-	}
-	return apis.ErrInvalidValue(fmt.Sprintf("%s should be %s or %s", status,
-		PipelineRunSpecStatusCancelledDeprecated,
+	return apis.ErrInvalidValue(fmt.Sprintf("%s should be %s, %s, %s or %s", status,
+		PipelineRunSpecStatusCancelled,
+		PipelineRunSpecStatusCancelledRunFinally,
+		PipelineRunSpecStatusStoppedRunFinally,
 		PipelineRunSpecStatusPending), "status")
+
 }
 
 func validateTimeoutDuration(field string, d *metav1.Duration) (errs *apis.FieldError) {

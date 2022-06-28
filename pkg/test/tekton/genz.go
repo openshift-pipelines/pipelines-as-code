@@ -37,7 +37,6 @@ func MakePrTrStatus(ptaskname string, completionmn int) *tektonv1beta1.PipelineR
 			},
 			Status: conditionTrue,
 		},
-		ConditionChecks: map[string]*tektonv1beta1.PipelineRunConditionCheckStatus{},
 		WhenExpressions: []tektonv1beta1.WhenExpression{},
 	}
 }

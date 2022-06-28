@@ -62,6 +62,7 @@ type Repository struct {
 	Slug          string   `json:"slug,omitempty"`
 	ID            int      `json:"id,omitempty"`
 	Name          string   `json:"name,omitempty"`
+	Description   string   `json:"description,omitempty"`
 	ScmID         string   `json:"scmId,omitempty"`
 	State         string   `json:"state,omitempty"`
 	StatusMessage string   `json:"statusMessage,omitempty"`

@@ -243,20 +243,46 @@ func (r *Repository) Get(ro *RepositoryOptions) (*Repository, error) {
 	return decodeRepository(response)
 }
 
-func (r *Repository) ListFiles(ro *RepositoryFilesOptions) ([]RepositoryFile, error) {
+func (r *Repository) buildContentsURL(ro *RepositoryFilesOptions) (string, error) {
 	filePath := path.Join("/repositories", ro.Owner, ro.RepoSlug, "src", ro.Ref, ro.Path) + "/"
 
 	urlStr := r.c.requestUrl(filePath)
 	url, err := url.Parse(urlStr)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	query := url.Query()
-	r.c.addMaxDepthParam(&query, nil)
+	r.c.addMaxDepthParam(&query, &ro.MaxDepth)
 	url.RawQuery = query.Encode()
 
-	urlStr = url.String()
+	return url.String(), nil
+}
+
+func (r *Repository) GetFileContent(ro *RepositoryFilesOptions) ([]byte, error) {
+	urlStr, err := r.buildContentsURL(ro)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := r.c.execute("GET", urlStr, "")
+	if err != nil {
+		return nil, err
+	}
+
+	content, ok := response.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("requested path is not a file")
+	}
+
+	return content, nil
+}
+
+func (r *Repository) ListFiles(ro *RepositoryFilesOptions) ([]RepositoryFile, error) {
+	urlStr, err := r.buildContentsURL(ro)
+	if err != nil {
+		return nil, err
+	}
 
 	response, err := r.c.executePaginated("GET", urlStr, "")
 	if err != nil {

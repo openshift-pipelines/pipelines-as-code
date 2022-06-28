@@ -179,6 +179,7 @@ type RepositoryFilesOptions struct {
 	RepoSlug string `json:"repo_slug"`
 	Ref      string `json:"ref"`
 	Path     string `json:"path"`
+	MaxDepth int    `json:"max_depth"`
 }
 
 type RepositoryBlobOptions struct {
