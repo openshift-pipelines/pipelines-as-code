@@ -11,6 +11,7 @@ Pipelines as Code provide a powerful CLI designed to work with tkn plug-in.  `tk
 * `delete`: delete an existing Pipelines as Code Repository definition.
 * `generate`: generate a simple pipelinerun to get you started with Pipelines as Code.
 * `list`: list Pipelines as Code Repositories.
+* `logs`: show the logs of a PipelineRun form a Repository CRD.
 * `describe`: describe a Pipelines as Code Repository and the runs associated with it.
 * `resolve`: Resolve a pipelinerun as if it were executed by pipelines as code on service.
 * `setup`: Setup a Git provider app or webhook with pipelines as code service.
@@ -165,6 +166,21 @@ to the UI URL to see the Pipelinerun associated with it.
 {{< /details >}}
 
 {{< details "tkn pac generate" >}}
+
+### Logs
+
+`tkn pac logs` -- will show the logs attached to a Repository.
+
+If you don't specify a repository on the command line it will as for one or auto
+select it if there is only one.
+
+This will show the latest pipelinerun to a repo unless you specify the flag `-s`
+which *shift* the pipelinerun status. So for example :
+
+`tkn pac logs -s 2` will show the logs of the second latest pipelinerun.
+
+[`tkn`](https://github.com/tektoncd/cli) binary needs to be installed to show
+the logs.
 
 ### Generate
 
