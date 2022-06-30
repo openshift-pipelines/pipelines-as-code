@@ -158,6 +158,7 @@ func log(ctx context.Context, lo *logOption) error {
 	fmt.Fprintf(lo.ioStreams.Out, "Showing logs from Repository: %s PR: %s\n", repository.GetName(), prName)
 
 	// if we have found the plugin then sysexec it by replacing current process.
+	// nolint: gosec
 	if err := syscall.Exec(lo.tknPath, []string{lo.tknPath, "pr", "logs", "-n", lo.cs.Info.Kube.Namespace, pr.GetName()}, os.Environ()); err != nil {
 		fmt.Fprintf(os.Stderr, "Command finished with error: %v", err)
 		os.Exit(127)
