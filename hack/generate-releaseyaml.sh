@@ -9,6 +9,10 @@ export TARGET_NAMESPACE=${TARGET_NAMESPACE:-pipelines-as-code}
 export TARGET_OPENSHIFT=${TARGET_OPENSHIFT:-""}
 export TARGET_PAC_VERSION=${PAC_VERSION:-"devel"}
 
+TMP=$(mktemp /tmp/.mm.XXXXXX)
+clean() { rm -f ${TMP}; }
+trap clean EXIT
+
 MODE=${1:-""}
 
 if [[ -n ${MODE} && ${MODE} == ko ]];then
@@ -40,5 +44,12 @@ for file in ${files};do
         -e "s,app.kubernetes.io/version:.*,app.kubernetes.io/version: \"${TARGET_PAC_VERSION}\"," \
         -e "s/Copyright[ ]*[0-9]{4}/Copyright $(date "+%Y")/" \
         -e "/kind: Namespace$/ { n;n;s/name: .*/name: ${TARGET_NAMESPACE}/;}" \
-        ${file}
+        ${file} > ${TMP}
+
+    # Remove openshift stuff apiGroups if we are not targetting openshift...
+    [[ -z ${TARGET_OPENSHIFT} ]] && {
+        sed -ir '/^[ ]*- apiGroups:.*route.openshift.io/,/verbs.*/d' ${TMP}
+    }
+
+    cat ${TMP}
 done
