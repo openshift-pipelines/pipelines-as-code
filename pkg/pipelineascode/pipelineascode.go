@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -22,6 +23,8 @@ const (
   <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
   the command line with :
 	<br><code>tkn pr logs -f -n %s %s</code>`
+	queuingPipelineRunText = `PipelineRun <b>%s</b> has been queued Queuing in namespace
+  <b>%s</b><br><br>`
 )
 
 type PacRun struct {
@@ -89,6 +92,15 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 	// Add labels and annotations to pipelinerun
 	kubeinteraction.AddLabelsAndAnnotations(p.event, match.PipelineRun, match.Repo, p.vcx.GetConfig())
 
+	// if concurrency is defined then start the pipelineRun in pending state and
+	// state as queued
+	if match.Repo.Spec.ConcurrencyLimit != nil && *match.Repo.Spec.ConcurrencyLimit != 0 {
+		// pending status
+		match.PipelineRun.Spec.Status = v1beta1.PipelineRunSpecStatusPending
+		// pac state as queued
+		match.PipelineRun.Labels[filepath.Join(apipac.GroupName, "state")] = kubeinteraction.StateQueued
+	}
+
 	// Create the actual pipeline
 	pr, err := p.run.Clients.Tekton.TektonV1beta1().PipelineRuns(match.Repo.GetNamespace()).Create(ctx,
 		match.PipelineRun, metav1.CreateOptions{})
@@ -113,6 +125,13 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 		PipelineRun:             pr,
 		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")],
 	}
+
+	// if pipelineRun is in pending state then report status as queued
+	if pr.Spec.Status == v1beta1.PipelineRunSpecStatusPending {
+		status.Status = "queued"
+		status.Text = fmt.Sprintf(queuingPipelineRunText, pr.GetName(), match.Repo.GetNamespace())
+	}
+
 	if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
 		return fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
 	}

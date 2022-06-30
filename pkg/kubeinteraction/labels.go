@@ -14,6 +14,7 @@ import (
 
 const (
 	StateStarted   = "started"
+	StateQueued    = "queued"
 	StateCompleted = "completed"
 )
 

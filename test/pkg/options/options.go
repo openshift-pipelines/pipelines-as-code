@@ -5,6 +5,7 @@ type E2E struct {
 	DirectWebhook      bool
 	ProjectID          int
 	ControllerURL      string
+	Concurrency        int
 }
 
 var (

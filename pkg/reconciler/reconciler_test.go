@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -150,6 +151,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			testSetupGHReplies(t, mux, runEvent, tt.checkRunID, tt.finalStatus, tt.finalStatusText)
 
 			r := Reconciler{
+				qm: sync.NewQueueManager(fakelogger),
 				run: &params.Run{
 					Clients: clients.Clients{
 						PipelineAsCode: stdata.PipelineAsCode,
@@ -175,7 +177,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			}
 
 			event := buildEventFromPipelineRun(&pr)
-			err = r.reportStatus(ctx, fakelogger, event, &pr, vcx)
+			err = r.reportFinalStatus(ctx, fakelogger, event, &pr, vcx)
 			assert.NilError(t, err)
 
 			got, err := stdata.Pipeline.TektonV1beta1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
@@ -204,4 +206,70 @@ func testSetupGHReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, c
 					"GetStatus/CheckRun %s != %s", created.GetOutput().GetText(), finalStatusText)
 			}
 		})
+}
+
+func TestUpdatePipelineRunState(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	fakelogger := zap.New(observer).Sugar()
+
+	tests := []struct {
+		name        string
+		pipelineRun *v1beta1.PipelineRun
+		state       string
+	}{
+		{
+			name: "queued to started",
+			pipelineRun: &v1beta1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test",
+					Name:      "test",
+					Labels: map[string]string{
+						filepath.Join(pipelinesascode.GroupName, "state"): kubeinteraction.StateQueued,
+					},
+				},
+				Spec: v1beta1.PipelineRunSpec{
+					Status: v1beta1.PipelineRunSpecStatusPending,
+				},
+				Status: v1beta1.PipelineRunStatus{},
+			},
+			state: kubeinteraction.StateStarted,
+		},
+		{
+			name: "started to completed",
+			pipelineRun: &v1beta1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "test",
+					Name:      "test",
+					Labels: map[string]string{
+						filepath.Join(pipelinesascode.GroupName, "state"): kubeinteraction.StateStarted,
+					},
+				},
+				Spec:   v1beta1.PipelineRunSpec{},
+				Status: v1beta1.PipelineRunStatus{},
+			},
+			state: kubeinteraction.StateCompleted,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			testData := testclient.Data{
+				PipelineRuns: []*v1beta1.PipelineRun{tt.pipelineRun},
+			}
+			stdata, _ := testclient.SeedTestData(t, ctx, testData)
+			r := &Reconciler{
+				run: &params.Run{
+					Clients: clients.Clients{
+						Tekton: stdata.Pipeline,
+					},
+				},
+			}
+
+			updatedPR, err := r.updatePipelineRunState(ctx, fakelogger, tt.pipelineRun, tt.state)
+			assert.NilError(t, err)
+
+			assert.Equal(t, updatedPR.Labels[filepath.Join(pipelinesascode.GroupName, "state")], tt.state)
+			assert.Equal(t, updatedPR.Spec.Status, v1beta1.PipelineRunSpecStatus(""))
+		})
+	}
 }
