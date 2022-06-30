@@ -12,7 +12,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/spf13/cobra"
 
@@ -30,7 +29,17 @@ the PipelineRun needs to exist on the kubernetes cluster to be able to display t
 var (
 	namespaceFlag = "namespace"
 	shiftFlag     = "shift"
+	tknPathFlag   = "tkn-path"
 )
+
+type logOption struct {
+	cs        *params.Run
+	opts      *cli.PacCliOpts
+	ioStreams *cli.IOStreams
+	repoName  string
+	tknPath   string
+	shift     int
+}
 
 func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
@@ -61,20 +70,39 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			// The only way to know the tekton dashboard url is if the user specify it because we are not supposed to have access to the configmap.
-			// so let the user specify a env variable to implicitly set tekton dashboard
-			if os.Getenv("TEKTON_DASHBOARD_URL") != "" {
-				run.Clients.ConsoleUI = &consoleui.TektonDashboard{BaseURL: os.Getenv("TEKTON_DASHBOARD_URL")}
-			}
-
 			shift, err := cmd.Flags().GetInt(shiftFlag)
 			if err != nil {
 				return err
 			}
 
-			return log(ctx, run, opts, ioStreams, repoName, shift)
+			tknPath, err := cmd.Flags().GetString(tknPathFlag)
+			if err != nil {
+				return err
+			}
+			if tknPath == "" {
+				if tknPath, err = getTknPath(); err != nil {
+					return err
+				}
+
+				if tknPath == "" {
+					return fmt.Errorf("cannot find tkn binary in Path")
+				}
+			}
+
+			lopts := &logOption{
+				cs:        run,
+				opts:      opts,
+				ioStreams: ioStreams,
+				repoName:  repoName,
+				shift:     shift,
+				tknPath:   tknPath,
+			}
+			return log(ctx, lopts)
 		},
 	}
+
+	cmd.Flags().StringP(
+		tknPathFlag, "", "", "Path to the tkn binary (default to search for it in you $PATH)")
 
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
@@ -94,43 +122,43 @@ func getTknPath() (string, error) {
 	return filepath.Abs(fname)
 }
 
-func log(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, repoName string, shift int) error {
+func log(ctx context.Context, lo *logOption) error {
 	var repository *v1alpha1.Repository
 	var err error
 
-	if opts.Namespace != "" {
-		cs.Info.Kube.Namespace = opts.Namespace
+	if lo.opts.Namespace != "" {
+		lo.cs.Info.Kube.Namespace = lo.opts.Namespace
 	}
 
-	if repoName != "" {
-		repository, err = cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(cs.Info.Kube.Namespace).Get(ctx,
-			repoName, metav1.GetOptions{})
+	if lo.repoName != "" {
+		repository, err = lo.cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lo.cs.Info.Kube.Namespace).Get(ctx,
+			lo.repoName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 	} else {
-		repository, err = prompt.SelectRepo(ctx, cs, cs.Info.Kube.Namespace)
+		repository, err = prompt.SelectRepo(ctx, lo.cs, lo.cs.Info.Kube.Namespace)
 		if err != nil {
 			return err
 		}
 	}
 
-	tknpac, err := getTknPath()
-	if err != nil {
-		return err
-	}
 	if len(repository.Status) == 0 {
 		return fmt.Errorf("no status on repository")
 	}
-	prName := repository.Status[len(repository.Status)-shift].PipelineRunName
-	pr, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(cs.Info.Kube.Namespace).Get(ctx, prName, metav1.GetOptions{})
+	shiftedinto := len(repository.Status) - lo.shift
+	if shiftedinto < 0 {
+		return fmt.Errorf("you have specified a shift of %d but we only have %d statuses", lo.shift, len(repository.Status))
+	}
+	prName := repository.Status[shiftedinto].PipelineRunName
+	pr, err := lo.cs.Clients.Tekton.TektonV1beta1().PipelineRuns(lo.cs.Info.Kube.Namespace).Get(ctx, prName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(ioStreams.Out, "Showing logs from Repository: %s PR: %s\n", repository.GetName(), prName)
+	fmt.Fprintf(lo.ioStreams.Out, "Showing logs from Repository: %s PR: %s\n", repository.GetName(), prName)
 
 	// if we have found the plugin then sysexec it by replacing current process.
-	if err := syscall.Exec(tknpac, []string{tknpac, "pr", "logs", "-n", cs.Info.Kube.Namespace, pr.GetName()}, os.Environ()); err != nil {
+	if err := syscall.Exec(lo.tknPath, []string{lo.tknPath, "pr", "logs", "-n", lo.cs.Info.Kube.Namespace, pr.GetName()}, os.Environ()); err != nil {
 		fmt.Fprintf(os.Stderr, "Command finished with error: %v", err)
 		os.Exit(127)
 	}
