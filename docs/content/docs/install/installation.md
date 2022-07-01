@@ -8,7 +8,7 @@ weight: 2
 
 The easiest way to install Pipelines as Code on OpenShift is with the [Red Hat Openshift Pipelines Operator](https://docs.openshift.com/container-platform/latest/cicd/pipelines/installing-pipelines.html).
 
-On the Openshift Pipelines Operator the default namespace is `openshift-pipelines`.
+On the Openshift Pipelines Operator, the default namespace is `openshift-pipelines`.
 
 ## Manual Install
 
