@@ -57,7 +57,7 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	// allow webhook providers users to have a global webhook secret to be used,
 	// so instead of having to specify their in Repo each time, they use a
 	// shared one from pac.
-	if repo.Spec.GitProvider != nil {
+	if repo.Spec.GitProvider != nil && p.event.InstallationID <= 0 {
 		err := SecretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo, p.logger)
 		if err != nil {
 			return nil, nil, err

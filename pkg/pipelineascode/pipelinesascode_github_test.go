@@ -445,15 +445,20 @@ func TestRun(t *testing.T) {
 				Payload: payload,
 			}
 			tt.runevent.Provider = &info.Provider{
-				InfoFromRepo: tt.ProviderInfoFromRepo,
-				URL:          ghTestServerURL,
-				Token:        "NONE",
+				URL:   ghTestServerURL,
+				Token: "NONE",
 			}
 
 			k8int := &kitesthelper.KinterfaceTest{
 				ConsoleURL:               "https://console.url",
 				ExpectedNumberofCleanups: tt.expectedNumberofCleanups,
 				GetSecretResult:          secrets,
+			}
+
+			// InstallationID > 0 is used to detect if we are a GitHub APP
+			tt.runevent.InstallationID = 12345
+			if tt.ProviderInfoFromRepo {
+				tt.runevent.InstallationID = 0
 			}
 
 			vcx := &ghprovider.Provider{

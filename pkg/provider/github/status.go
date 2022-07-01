@@ -237,8 +237,11 @@ func (v *Provider) CreateStatus(ctx context.Context, tekton versioned.Interface,
 	}
 	statusOpts.Summary = fmt.Sprintf("%s%s %s", pacopts.ApplicationName, onPr, statusOpts.Summary)
 
-	if runevent.Provider.InfoFromRepo {
-		return v.createStatusCommit(ctx, runevent, pacopts, statusOpts)
+	// If we have an installationID which mean we have a github apps and we can use the checkRun API
+	if runevent.InstallationID > 0 {
+		return v.getOrUpdateCheckRunStatus(ctx, tekton, runevent, pacopts, statusOpts)
 	}
-	return v.getOrUpdateCheckRunStatus(ctx, tekton, runevent, pacopts, statusOpts)
+
+	// Otherwise use the update status commit API
+	return v.createStatusCommit(ctx, runevent, pacopts, statusOpts)
 }
