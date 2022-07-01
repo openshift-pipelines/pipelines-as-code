@@ -1,9 +1,7 @@
 package describe
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	tcli "github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -26,17 +25,6 @@ import (
 	"knative.dev/pkg/apis/duck/v1beta1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
-
-func newIOStream() (*cli.IOStreams, *bytes.Buffer) {
-	in := &bytes.Buffer{}
-	out := &bytes.Buffer{}
-	errOut := &bytes.Buffer{}
-	return &cli.IOStreams{
-		In:     ioutil.NopCloser(in),
-		Out:    out,
-		ErrOut: errOut,
-	}, out
-}
 
 func TestDescribe(t *testing.T) {
 	cw := clockwork.NewFakeClock()
@@ -249,7 +237,7 @@ func TestDescribe(t *testing.T) {
 				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.args.currentNamespace}},
 			}
 
-			io, out := newIOStream()
+			io, out := tcli.NewIOStream()
 			if err := describe(
 				ctx, cs, cw, tt.args.opts, io,
 				tt.args.repoName); (err != nil) != tt.wantErr {

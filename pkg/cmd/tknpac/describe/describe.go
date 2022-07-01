@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"text/tabwriter"
 	"text/template"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/google/go-github/v45/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/juju/ansiterm"
@@ -77,53 +75,6 @@ func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c cl
 		cs.HyperLink(status.PipelineRunName, *status.LogURL))
 }
 
-func askRepo(ctx context.Context, cs *params.Run, namespace string) (*v1alpha1.Repository, error) {
-	repositories, err := cs.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(repositories.Items) == 0 {
-		return nil, fmt.Errorf("no repo found")
-	}
-	if len(repositories.Items) == 1 {
-		return &repositories.Items[0], nil
-	}
-
-	allRepositories := []string{}
-	for _, repository := range repositories.Items {
-		repoOwner, err := formatting.GetRepoOwnerFromURL(repository.Spec.URL)
-		if err != nil {
-			return nil, err
-		}
-		allRepositories = append(allRepositories,
-			fmt.Sprintf("%s - %s",
-				repository.GetName(),
-				repoOwner))
-	}
-
-	var replyString string
-	if err := prompt.SurveyAskOne(&survey.Select{
-		Message: "Select a repository",
-		Options: allRepositories,
-	}, &replyString); err != nil {
-		return nil, err
-	}
-
-	if replyString == "" {
-		return nil, fmt.Errorf("you need to choose a repository")
-	}
-	replyName := strings.Fields(replyString)[0]
-
-	for _, repository := range repositories.Items {
-		if repository.GetName() == replyName {
-			return &repository, nil
-		}
-	}
-
-	return nil, fmt.Errorf("cannot match repository")
-}
-
 func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "describe",
@@ -190,7 +141,7 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 			return err
 		}
 	} else {
-		repository, err = askRepo(ctx, cs, cs.Info.Kube.Namespace)
+		repository, err = prompt.SelectRepo(ctx, cs, cs.Info.Kube.Namespace)
 		if err != nil {
 			return err
 		}
