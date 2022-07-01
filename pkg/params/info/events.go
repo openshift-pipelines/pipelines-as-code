@@ -63,7 +63,6 @@ type Provider struct {
 	Token                 string
 	URL                   string
 	User                  string
-	InfoFromRepo          bool // whether the provider info come from the repository
 	WebhookSecret         string
 	WebhookSecretFromRepo bool
 }
