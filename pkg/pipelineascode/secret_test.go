@@ -123,7 +123,6 @@ func TestSecretFromRepository(t *testing.T) {
 			for key, value := range logs {
 				assert.Assert(t, tt.logmatch[key].MatchString(value.Message), "no match on logs %s => %s", tt.logmatch[key], value.Message)
 			}
-			assert.Assert(t, event.Provider.InfoFromRepo)
 			assert.Equal(t, tt.expectedSecret, event.Provider.Token)
 		})
 	}

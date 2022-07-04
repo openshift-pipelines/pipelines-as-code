@@ -47,7 +47,6 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	if event.Provider.Token == "" {
 		return nil
 	}
-	event.Provider.InfoFromRepo = true
 	event.Provider.User = repo.Spec.GitProvider.User
 
 	if repo.Spec.GitProvider.WebhookSecret == nil {

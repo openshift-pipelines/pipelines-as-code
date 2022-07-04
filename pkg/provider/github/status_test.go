@@ -113,6 +113,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 		detailsURL         string
 		titleSubstr        string
 		nilCompletedAtDate bool
+		githubApps         bool
 	}
 	tests := []struct {
 		name    string
@@ -130,6 +131,21 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				text:        "Yay",
 				detailsURL:  "https://cireport.com",
 				titleSubstr: "Success",
+				githubApps:  true,
+			},
+			want:    &github.CheckRun{ID: &resultid},
+			wantErr: false,
+		},
+		{
+			name: "success coming from webhook",
+			args: args{
+				runevent:    runEvent,
+				status:      "completed",
+				conclusion:  "success",
+				text:        "Yay",
+				detailsURL:  "https://cireport.com",
+				titleSubstr: "Success",
+				githubApps:  false,
 			},
 			want:    &github.CheckRun{ID: &resultid},
 			wantErr: false,
@@ -143,6 +159,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				text:               "Yay",
 				detailsURL:         "https://cireport.com",
 				nilCompletedAtDate: true,
+				githubApps:         true,
 			},
 			want:    &github.CheckRun{ID: &resultid},
 			wantErr: false,
@@ -156,6 +173,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				text:        "Nay",
 				detailsURL:  "https://cireport.com",
 				titleSubstr: "Failed",
+				githubApps:  true,
 			},
 			want:    &github.CheckRun{ID: &resultid},
 			wantErr: false,
@@ -169,6 +187,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				text:        "Skipit",
 				detailsURL:  "https://cireport.com",
 				titleSubstr: "Skipped",
+				githubApps:  true,
 			},
 			want:    &github.CheckRun{ID: &resultid},
 			wantErr: false,
@@ -182,6 +201,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				text:        "Je sais pas ce qui se passe wesh",
 				detailsURL:  "https://cireport.com",
 				titleSubstr: "Unknown",
+				githubApps:  true,
 			},
 			want:    &github.CheckRun{ID: &resultid},
 			wantErr: false,
@@ -201,6 +221,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			gcvs := Provider{
 				Client: fakeclient,
 			}
+			mux.HandleFunc("/repos/check/run/statuses/sha", func(rw http.ResponseWriter, r *http.Request) {})
 			mux.HandleFunc(fmt.Sprintf("/repos/check/run/check-runs/%d", checkrunid), func(rw http.ResponseWriter, r *http.Request) {
 				bit, _ := ioutil.ReadAll(r.Body)
 				checkRun := &github.CheckRun{}
@@ -232,13 +253,18 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			pacopts := &info.PacOpts{
 				LogURL: "https://log",
 			}
-			if !tt.notoken {
+			if tt.notoken {
+				tt.args.runevent = info.NewEvent()
+			} else {
 				tt.args.runevent.Provider = &info.Provider{
 					Token: "hello",
 					URL:   "moto",
 				}
-			} else {
-				tt.args.runevent = info.NewEvent()
+				if tt.args.githubApps {
+					tt.args.runevent.InstallationID = 12345
+				} else {
+					tt.args.runevent.SHA = "sha"
+				}
 			}
 			err := gcvs.CreateStatus(ctx, nil, tt.args.runevent, pacopts, status)
 			if (err != nil) != tt.wantErr {
