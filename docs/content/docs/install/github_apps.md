@@ -13,7 +13,14 @@ the cluster usually setup by the admin.
 You need the webhook of the GitHub App to point to your Pipelines-as-Code
 Controller route or ingress endpoint which would listen to GitHub events.
 
-## Setup
+There are 2 ways to set up GitHub App:
+
+You could use [`tkn pac bootstrap`](/docs/guide/cli) command which will a create GitHub App, provide
+steps to configure it with your git repository and also creates required secrets.
+
+or, you could set up manually by following the steps [here](#setup-manually)
+
+## Setup Manually
 
 * Go to <https://github.com/settings/apps> (or *Settings > Developer settings > GitHub Apps*) and click on **New GitHub
   App** button
