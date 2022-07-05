@@ -25,6 +25,10 @@ func CreateCRD(ctx context.Context, t *testing.T, repoinfo *ghlib.Repository, ru
 		},
 	}
 
+	if opts.Concurrency != 0 {
+		repo.Spec.ConcurrencyLimit = intPtr(opts.Concurrency)
+	}
+
 	err := repository.CreateNS(ctx, targetNS, run)
 	assert.NilError(t, err)
 
@@ -57,3 +61,5 @@ func CreateCRD(ctx context.Context, t *testing.T, repoinfo *ghlib.Repository, ru
 	assert.NilError(t, err)
 	return err
 }
+
+var intPtr = func(val int) *int { return &val }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strconv"
+	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
@@ -22,15 +23,22 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 )
 
+const startingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
+  <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
+  the command line with :
+	<br><code>tkn pr logs -f -n %s %s</code>`
+
 type Reconciler struct {
 	run               *params.Run
 	pipelineRunLister v1beta12.PipelineRunLister
 	kinteract         kubeinteraction.Interface
+	qm                *sync.QueueManager
 }
 
-var _ pipelinerunreconciler.Interface = (*Reconciler)(nil)
-
-var gitAuthSecretAnnotation = filepath.Join(pipelinesascode.GroupName, "git-auth-secret")
+var (
+	_ pipelinerunreconciler.Interface = (*Reconciler)(nil)
+	_ pipelinerunreconciler.Finalizer = (*Reconciler)(nil)
+)
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
@@ -39,6 +47,17 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 	state, exist := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "state")]
 	if exist && state == kubeinteraction.StateCompleted {
 		return nil
+	}
+
+	// if its a GitHub App pipelineRun PR then process only if check run id is added otherwise wait
+	if _, ok := pr.Annotations[filepath.Join(pipelinesascode.GroupName, "installation-id")]; ok {
+		if _, ok := pr.Labels[filepath.Join(pipelinesascode.GroupName, "check-run-id")]; !ok {
+			return nil
+		}
+	}
+
+	if state == kubeinteraction.StateQueued {
+		return r.queuePipelineRun(ctx, logger, pr)
 	}
 
 	if pr.IsDone() {
@@ -54,12 +73,47 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 			return nil
 		}
 
-		return r.reportStatus(ctx, logger, event, pr, provider)
+		return r.reportFinalStatus(ctx, logger, event, pr, provider)
 	}
 	return nil
 }
 
-func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *v1beta1.PipelineRun, provider provider.Interface) error {
+func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
+	repoName := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "repository")]
+	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
+		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit == 0 {
+		_ = r.qm.RemoveFromQueue(repo, pr)
+		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
+			logger.Error("failed to update pipelineRun to in_progress: ", err)
+			return err
+		}
+		return nil
+	}
+
+	started, msg, err := r.qm.AddToQueue(repo, pr)
+	if err != nil {
+		logger.Error("failed to add to queue: ", pr.GetName())
+		return err
+	}
+
+	if started {
+		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
+			logger.Error("failed to update pipelineRun to in_progress: ", err)
+			return err
+		}
+		return nil
+	}
+
+	logger.Infof("pipelineRun %s yet to start, %s", pr.Name, msg)
+	return nil
+}
+
+func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *v1beta1.PipelineRun, provider provider.Interface) error {
 	repoName := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "repository")]
 	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
 		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
@@ -99,54 +153,97 @@ func (r *Reconciler) reportStatus(ctx context.Context, logger *zap.SugaredLogger
 		return err
 	}
 
-	return r.updatePipelineRunState(ctx, logger, pr)
-}
-
-func (r *Reconciler) cleanupSecrets(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
-	var gitAuthSecretName string
-	if annotation, ok := pr.Annotations[gitAuthSecretAnnotation]; ok {
-		gitAuthSecretName = annotation
-	} else {
-		return fmt.Errorf("cannot get annotation %s as set on PR", gitAuthSecretAnnotation)
+	if _, err := r.updatePipelineRunState(ctx, logger, pr, kubeinteraction.StateCompleted); err != nil {
+		return err
 	}
 
-	err := r.kinteract.DeleteBasicAuthSecret(ctx, logger, repo.GetNamespace(), gitAuthSecretName)
-	if err != nil {
-		return fmt.Errorf("deleting basic auth secret has failed: %w ", err)
-	}
-	return nil
-}
-
-// Cleanup old succeeded pipelineRuns
-func (r *Reconciler) cleanupPipelineRuns(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
-	keepMaxPipeline, ok := pr.Annotations[filepath.Join(pipelinesascode.GroupName, "max-keep-runs")]
-	if ok {
-		max, err := strconv.Atoi(keepMaxPipeline)
+	// remove pipelineRun from Queue and start the next one
+	next := r.qm.RemoveFromQueue(repo, pr)
+	if next != "" {
+		key := strings.Split(next, "/")
+		pr, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(key[0]).Get(ctx, key[1], metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
-
-		err = r.kinteract.CleanupPipelines(ctx, logger, repo, pr, max)
-		if err != nil {
+		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
+			logger.Error("failed to update status: ", err)
 			return err
 		}
+		return nil
 	}
+
 	return nil
 }
 
-func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
-	newPr, err := r.pipelineRunLister.PipelineRuns(pr.Namespace).Get(pr.Name)
-	if err != nil {
-		return fmt.Errorf("error getting PipelineRun %s when updating state: %w", pr.Name, err)
-	}
-
-	newPr = newPr.DeepCopy()
-	newPr.Labels[filepath.Join(pipelinesascode.GroupName, "state")] = kubeinteraction.StateCompleted
-
-	_, err = r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Update(ctx, newPr, metav1.UpdateOptions{})
+func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
+	pr, err := r.updatePipelineRunState(ctx, logger, pr, kubeinteraction.StateStarted)
 	if err != nil {
 		return err
 	}
-	logger.Infof("updated pac state in pipelinerun")
-	return err
+
+	p, event, err := r.detectProvider(ctx, logger, pr)
+	if err != nil {
+		logger.Error(err)
+		return nil
+	}
+
+	if repo.Spec.GitProvider != nil {
+		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, p.GetConfig(), event, repo, logger); err != nil {
+			return err
+		}
+	} else {
+		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
+	}
+
+	err = p.SetClient(ctx, event)
+	if err != nil {
+		return err
+	}
+
+	consoleURL := r.run.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
+	// Create status with the log url
+	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), repo.GetNamespace(), consoleURL,
+		repo.GetNamespace(), pr.GetName())
+	status := provider.StatusOpts{
+		Status:                  "in_progress",
+		Conclusion:              "pending",
+		Text:                    msg,
+		DetailsURL:              consoleURL,
+		PipelineRunName:         pr.GetName(),
+		PipelineRun:             pr,
+		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "original-prname")],
+	}
+
+	if err := p.CreateStatus(ctx, r.run.Clients.Tekton, event, r.run.Info.Pac, status); err != nil {
+		return fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
+	}
+
+	logger.Info("updated in_progress status on provider platform for pipelineRun ", pr.GetName())
+	return nil
+}
+
+func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun, state string) (*v1beta1.PipelineRun, error) {
+	maxRun := 10
+	for i := 0; i < maxRun; i++ {
+		newPr, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		newPr = newPr.DeepCopy()
+		newPr.Labels[filepath.Join(pipelinesascode.GroupName, "state")] = state
+
+		if state == kubeinteraction.StateStarted {
+			newPr.Spec.Status = ""
+		}
+
+		updatedPR, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(newPr.Namespace).Update(ctx, newPr, metav1.UpdateOptions{})
+		if err != nil {
+			logger.Infof("could not update Pipelinerun with State change, retrying %v/%v: %v", newPr.GetNamespace(), newPr.GetName(), err)
+			continue
+		}
+		logger.Infof("updated pac state in pipelinerun: %v/%v", updatedPR.Namespace, updatedPR.Name)
+		return updatedPR, nil
+	}
+	return nil, nil
 }

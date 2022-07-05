@@ -59,9 +59,10 @@ type RepositoryRunStatus struct {
 
 // RepositorySpec is the spec of a repo
 type RepositorySpec struct {
-	URL         string       `json:"url"`
-	GitProvider *GitProvider `json:"git_provider,omitempty"`
-	Incomings   *[]Incoming  `json:"incoming,omitempty"`
+	ConcurrencyLimit *int         `json:"concurrency_limit,omitempty"`
+	URL              string       `json:"url"`
+	GitProvider      *GitProvider `json:"git_provider,omitempty"`
+	Incomings        *[]Incoming  `json:"incoming,omitempty"`
 }
 
 type Incoming struct {

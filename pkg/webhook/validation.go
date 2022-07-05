@@ -37,6 +37,10 @@ func (ac *reconciler) Admit(_ context.Context, request *v1.AdmissionRequest) *v1
 		return webhook.MakeErrorStatus(fmt.Sprintf("repository already exist with url: %s", repo.Spec.URL))
 	}
 
+	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit == 0 {
+		return webhook.MakeErrorStatus("concurrency limit must be greater than 0")
+	}
+
 	return &v1.AdmissionResponse{Allowed: true}
 }
 

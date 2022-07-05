@@ -1,0 +1,21 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pipeline-long-running
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "%s"
+    pipelinesascode.tekton.dev/on-target-branch: "[%s]"
+    pipelinesascode.tekton.dev/on-event: "[%s]"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: task
+        taskSpec:
+          steps:
+            - name: task
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                echo "hello pipeline"
+                sleep 10
+                exit 0

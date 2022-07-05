@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	pipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun"
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,8 +38,13 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			run:               run,
 			kinteract:         kinteract,
 			pipelineRunLister: pipelineRunInformer.Lister(),
+			qm:                sync.NewQueueManager(run.Clients.Log),
 		}
 		impl := pipelinerunreconciler.NewImpl(ctx, c)
+
+		if err := c.qm.InitQueues(ctx, run.Clients.Tekton, run.Clients.PipelineAsCode); err != nil {
+			log.Fatal("failed to init queues", err)
+		}
 
 		pipelineRunInformer.Informer().AddEventHandler(controller.HandleAll(checkStateAndEnqueue(impl)))
 
@@ -52,8 +58,8 @@ func checkStateAndEnqueue(impl *controller.Impl) func(obj interface{}) {
 	return func(obj interface{}) {
 		object, err := kmeta.DeletionHandlingAccessor(obj)
 		if err == nil {
-			state, exist := object.GetLabels()[filepath.Join(pipelinesascode.GroupName, "state")]
-			if exist && state == kubeinteraction.StateStarted {
+			_, exist := object.GetLabels()[filepath.Join(pipelinesascode.GroupName, "state")]
+			if exist {
 				impl.EnqueueKey(types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()})
 			}
 		}

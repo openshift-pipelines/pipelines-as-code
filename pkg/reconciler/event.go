@@ -74,8 +74,8 @@ func buildEventFromPipelineRun(pr *v1beta1.PipelineRun) *info.Event {
 	}
 
 	// GitHub
-	if prNumber, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "installation-id")]; ok {
-		id, _ := strconv.Atoi(prNumber)
+	if installationID, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "installation-id")]; ok {
+		id, _ := strconv.Atoi(installationID)
 		event.InstallationID = int64(id)
 	}
 	if gheURL, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "ghe-url")]; ok {

@@ -66,6 +66,9 @@ spec:
             spec:
               description: Spec defines the desired state of Repository
               properties:
+                concurrency_limit:
+                  description: Number of maximum pipelinerun running at any moment
+                  type: integer
                 url:
                   description: Repository URL
                   type: string

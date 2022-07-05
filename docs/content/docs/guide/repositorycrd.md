@@ -56,3 +56,17 @@ pipelinesascode.tekton.dev/target-namespace: "mynamespace"
 
 and Pipelines as Code will only match the repository in the mynamespace
 Namespace rather than trying to match it from all available repository on cluster.
+
+## Concurrency
+
+`concurrency_limit` allows you to define the maximum number of PipelineRuns running at any time for a Repository.
+
+```yaml
+spec:
+  concurrency_limit: <number> 
+```
+
+Example:
+Lets say you have 3 pipelines in `.tekton` directory, and you create a pull request with `concurrency_limit` defined as 1 in
+Repository CR. Then all the pipelineruns will run one after the another, at any time only one pipelinerun would be in running
+state and rest of them will be queued.
