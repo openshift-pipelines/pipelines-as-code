@@ -12,6 +12,16 @@ On the Openshift Pipelines Operator, the default namespace is `openshift-pipelin
 
 ## Manual Install
 
+### Prerequisite
+
+Before installing Pipelines As Code, please verify [tektoncd/pipeline](https://github.com/tektoncd/pipeline) is installed. You can install the latest released version using the following command
+
+```shell
+  kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
+```
+
+If already installed, please verify it is **_>= v0.25.0_**
+
 If you want to do a manual installation of the stable release of Pipelines as Code
 on your OpenShift cluster you can apply the template with kubectl :
 
