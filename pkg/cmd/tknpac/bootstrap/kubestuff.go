@@ -37,24 +37,6 @@ func createPacSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts, 
 	return nil
 }
 
-// check if we have the namespace created
-func checkNS(ctx context.Context, run *params.Run, targetNamespace string) (bool, error) {
-	ns, err := run.Clients.Kube.CoreV1().Namespaces().Get(ctx, targetNamespace, metav1.GetOptions{})
-	if err != nil {
-		return false, err
-	}
-
-	// check if there is a configmap with the pipelines-as-code label in targetNamespace
-	cms, err := run.Clients.Kube.CoreV1().ConfigMaps(ns.GetName()).List(ctx, metav1.ListOptions{LabelSelector: configMapPacLabel})
-	if err != nil {
-		return false, err
-	}
-	if cms.Items == nil || len(cms.Items) == 0 {
-		return false, nil
-	}
-	return true, nil
-}
-
 func checkPipelinesInstalled(run *params.Run) (bool, error) {
 	return checkGroupInstalled(run, "tekton.dev")
 }

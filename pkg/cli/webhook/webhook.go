@@ -41,17 +41,12 @@ type response struct {
 }
 
 func (w *Options) Install(ctx context.Context, providerType string) error {
-	if w.RepositoryURL == "" {
-		q := "Please enter the Git repository url containing the pipelines: "
-		if err := prompt.SurveyAskOne(&survey.Input{Message: q}, &w.RepositoryURL,
-			survey.WithValidator(survey.Required)); err != nil {
-			return err
-		}
-	}
-
 	// figure out pac installation namespace
-	installationNS, err := bootstrap.DetectPacInstallation(ctx, w.PACNamespace, w.Run)
-	if err != nil {
+	installed, installationNS, err := bootstrap.DetectPacInstallation(ctx, w.PACNamespace, w.Run)
+	if !installed {
+		return fmt.Errorf("pipelines as code not installed")
+	}
+	if installed && err != nil {
 		return err
 	}
 
@@ -66,6 +61,14 @@ func (w *Options) Install(ctx context.Context, providerType string) error {
 		w.ControllerURL = pacInfo.ControllerURL
 	} else {
 		w.ControllerURL, _ = bootstrap.DetectOpenShiftRoute(ctx, w.Run, w.PACNamespace)
+	}
+
+	if w.RepositoryURL == "" {
+		q := "Please enter the Git repository url containing the pipelines: "
+		if err := prompt.SurveyAskOne(&survey.Input{Message: q}, &w.RepositoryURL,
+			survey.WithValidator(survey.Required)); err != nil {
+			return err
+		}
 	}
 
 	var webhookProvider Interface
