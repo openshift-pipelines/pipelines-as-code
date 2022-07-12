@@ -76,6 +76,10 @@ spec:
                   fieldPath: metadata.namespace
             - name: K_METRICS_CONFIG
               value: '{"Domain":"pipelinesascode.tekton.dev/controller","Component":"controller","PrometheusPort":0,"PrometheusHost":"","ConfigMap":{}}'
+            - name: K_TRACING_CONFIG
+              value: '{"backend":"","debug":"false","sample-rate":"0"}'
+            - name: K_SINK_TIMEOUT
+              value: "30"
           volumeMounts:
             - mountPath: "/etc/pipelines-as-code/tls"
               readOnly: true
