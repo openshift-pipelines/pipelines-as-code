@@ -11,11 +11,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/spf13/cobra"
+	errors2 "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
 	pacNS                  = "pipelines-as-code"
-	openshiftpacNS         = "openshift-pipelines"
 	openShiftRouteGroup    = "route.openshift.io"
 	openShiftRouteVersion  = "v1"
 	openShiftRouteResource = "routes"
@@ -43,6 +44,8 @@ type bootstrapOpts struct {
 	GithubOrganizationName string
 	forceGitHubApp         bool
 }
+
+const infoConfigMap = "pipelines-as-code-info"
 
 const indexTmpl = `
 <html>
@@ -73,14 +76,19 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 
 	// if we gt a ns back it means it has been detected in here so keep it as is.
 	// or else just set the default to pacNS
-	ns, err := DetectPacInstallation(ctx, opts.targetNamespace, run)
+	installed, ns, err := DetectPacInstallation(ctx, opts.targetNamespace, run)
+
+	// installed but there is error for missing resources
+	if installed && err != nil && !opts.forceInstall {
+		return err
+	}
 	if ns != "" {
 		opts.targetNamespace = ns
 	} else if opts.targetNamespace == "" {
 		opts.targetNamespace = pacNS
 	}
 
-	if !opts.forceInstall && err == nil {
+	if !opts.forceInstall && err == nil && installed {
 		fmt.Fprintln(opts.ioStreams.Out, "👌 Pipelines as Code is already installed.")
 	} else if err := installPac(ctx, run, opts); err != nil {
 		return err
@@ -187,8 +195,13 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 
 			var err error
-			opts.targetNamespace, err = DetectPacInstallation(ctx, opts.targetNamespace, run)
+			var installed bool
+			installed, opts.targetNamespace, err = DetectPacInstallation(ctx, opts.targetNamespace, run)
 			if err != nil {
+				return err
+			}
+			// installed but there is error for missing resources
+			if installed && err != nil && !opts.forceInstall {
 				return err
 			}
 
@@ -221,31 +234,36 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func DetectPacInstallation(ctx context.Context, wantedNS string, run *params.Run) (string, error) {
-	// detect which namespace pac is installed in
-	// verify first if the targetNamespace actually exists
+// installed?
+// where?
+
+func DetectPacInstallation(ctx context.Context, wantedNS string, run *params.Run) (bool, string, error) {
+	var installed bool
+	_, err := run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(ctx, metav1.ListOptions{})
+	if err != nil && errors2.IsNotFound(err) {
+		return false, "", nil
+	}
+
+	installed = true
 	if wantedNS != "" {
-		installed, err := checkNS(ctx, run, wantedNS)
-		if err != nil {
-			return "", err
+		_, err := run.Clients.Kube.CoreV1().ConfigMaps(wantedNS).Get(ctx, infoConfigMap, metav1.GetOptions{})
+		if err == nil {
+			return installed, wantedNS, nil
 		}
-		if !installed {
-			return "", fmt.Errorf("PAC is not installed in namespace: %s", wantedNS)
+		return installed, "", fmt.Errorf("could not detect Pipelines as Code configmap in %s namespace : %w, please reinstall", wantedNS, err)
+	}
+
+	cms, err := run.Clients.Kube.CoreV1().ConfigMaps("").List(ctx, metav1.ListOptions{
+		LabelSelector: configMapPacLabel,
+	})
+	if err == nil {
+		for _, cm := range cms.Items {
+			if cm.Name == infoConfigMap {
+				return installed, cm.Namespace, nil
+			}
 		}
-		return wantedNS, nil
-		// if openshift pipelines ns is installed try it from there
 	}
-
-	if installed, _ := checkNS(ctx, run, openshiftpacNS); installed {
-		return openshiftpacNS, nil
-	}
-
-	if installed, _ := checkNS(ctx, run, pacNS); installed {
-		return pacNS, nil
-	}
-
-	return "", fmt.Errorf("could not detect an installation of Pipelines as Code, " +
-		"use the -n switch to specify a namespace")
+	return installed, "", fmt.Errorf("could not detect Pipelines as Code configmap on the cluster, please reinstall")
 }
 
 func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
