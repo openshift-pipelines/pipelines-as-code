@@ -13,7 +13,7 @@ title: Pipelines as Code Release Process
 * If for example you choose to do the release 1.2.3 you tag it locally :
 
 ```shell
-git tag 1.2.3
+git tag v1.2.3
 ```
 
 * And pushing it directly to the repo (you need access) :
@@ -44,7 +44,7 @@ git tag 1.2.3
 
 ```shell
    git tag --sign --force 1.2.3
-   git push --force git@github.com:openshift-pipelines/pipelines-as-code 1.2.3
+   git push --force git@github.com:openshift-pipelines/pipelines-as-code v1.2.3
 ```
 
 * Some issues may be with the GitHub token which may be expired or badly generated with a \n.
