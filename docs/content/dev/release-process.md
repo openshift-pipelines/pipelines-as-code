@@ -43,7 +43,7 @@ git tag v1.2.3
 * Sometimes, there may be some issues with system or others. If you need to re-kick the release process you need to :
 
 ```shell
-   git tag --sign --force 1.2.3
+   git tag --sign --force v1.2.3
    git push --force git@github.com:openshift-pipelines/pipelines-as-code v1.2.3
 ```
 
