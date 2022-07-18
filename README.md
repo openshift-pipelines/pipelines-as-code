@@ -66,34 +66,31 @@ The flow for using pipelines as code generally begins with admin installing the 
 creating a GitHub App and sharing the GitHub App URL across the organization for app teams to enable the app on their
 GitHub repositories.
 
-To enable the GitHub App provided by admin on your Git repository as documented
-[here](https://docs.github.com/en/developers/apps/managing-github-apps/installing-github-apps).
-Otherwise, you can go to the *Settings > Applications* and then click on
-*Configure* button near the GitHub App you had created. In the **Repository
-access** section, select the repositories that you want to enable and have
-access to Pipelines-as-code.
+Start creating a GitHub repository by going to this URL
+<https://github.com/new>, you will need to provide a name (eg: `pac-demo`) and check
+the `"[ ] Add a README file"` box before pressing the `"Create Repository"` button.
 
-Once you have enabled your GitHub App for your GitHub repository, you can use the `pac` Tekton CLI plug-in to bootstrap
-pipelines as code:
+You are now able to enable the `Pipelines as Code` Github Application as created
+by the Admin onto your new repository by following this guide
+[here](https://docs.github.com/en/developers/apps/managing-github-apps/installing-github-apps).
+
+Once you have enabled your GitHub App for your GitHub repository, you can use
+the  Tekton CLI [pac plug-in](https://pipelinesascode.com/docs/guide/cli/#install)
+to bootstrap pipelines as code:
 
 ```bash
-$ git clone https://github.com/siamaksade/pipeline-as-code-demo
-$ cd pipeline-as-code-demo
-$ tkn pac repository create
-
-? Enter the namespace where the pipeline should run (default: pipelines-as-code):  demo
-? Enter the Git repository url containing the pipelines (default: https://github.com/siamaksade/pipeline-as-code-demo):
-? Enter the target GIT branch (default: main):
-? Enter the Git event type for triggering the pipeline:  pull_request
-! Namespace demo is not created yet
-? Would you like me to create the namespace demo? Yes
-✓ Repository pipeline-as-code-demo-pull-request has been created in demo namespace
-? Would you like me to create a basic PipelineRun file into the file .tekton/pull_request.yaml ? True
-✓ A basic template has been created in /Users/ssadeghi/Projects/pipelines/pac-demo/.tekton/pull_request.yaml, feel free to customize it.
-ℹ You can test your pipeline manually with : tkn-pac resolve -f .tekton/pull_request.yaml | kubectl create -f-
-ℹ Don't forget to install the GitHub application into your repo https://github.com/siamaksade/pipeline-as-code-demo
-✓ and we are done! enjoy :)))
-
+$ git clone https://github.com/youruser/pac-demo
+$ cd pac-demo
+$ tkn pac create repository
+? Enter the Git repository url containing the pipelines (default: https://github.com/youruser/pac-demo):
+? Please enter the namespace where the pipeline should run (default: pac-demo):
+! Namespace pac-demo is not found
+? Would you like me to create the namespace pac-demo? (Y/n)
+? Would you like me to create the namespace pac-demo? Yes
+✓ Repository youruser-pac-demo has been created in pac-demo namespace
+✓ A basic template has been created in .tekton/pipelinerun.yaml, feel free to customize it.
+ℹ You can test your pipeline manually with: tkn-pac resolve -f .tekton/pipelinerun.yaml | kubectl create -f-
+🚀 You can use the command "tkn pac setup" to setup a repository with webhook
 ```
 
 The above command would create a `Repository` CRD in your `demo` namespace which is used to determine where the
@@ -108,7 +105,7 @@ supports other methods :
 - Bitbucket Cloud
 - Bitbucket Server
 
-see the [INSTALL guide](https://pipelinesascode.com/docs/install/) more details on each install method.
+You can use the command `tkn pac setup` to help you setup webhooks on your repository. See the [INSTALL guide](https://pipelinesascode.com/docs/install/) for more details on each install method.
 
 ## Usage Guide
 
