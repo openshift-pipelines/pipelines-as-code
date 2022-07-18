@@ -18,10 +18,10 @@ metadata:
     # Task for Nodejs
     pipelinesascode.tekton.dev/task-1: "[npm]"
 
-    # You can add more tasks in here to reuse, browse the one you like from here
-    # https://hub.tekton.dev/
-    # example:
-    # pipelinesascode.tekton.dev/task-2: "[maven, buildah]"
+    # You can add more tasks by increasing the suffix number, you can specify them as array to have multiple of them.
+    # browse the tasks you want to include from hub on https://hub.tekton.dev/
+    #
+    # pipelinesascode.tekton.dev/task-2: "[curl, buildah]"
 
     # How many runs we want to keep attached to this event
     pipelinesascode.tekton.dev/max-keep-runs: "5"
@@ -66,7 +66,6 @@ spec:
               - test
         runAfter:
           - fetch-repository
-
   workspaces:
     - name: source
       volumeClaimTemplate:
