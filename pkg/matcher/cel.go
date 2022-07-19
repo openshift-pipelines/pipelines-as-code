@@ -16,7 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
 
-func celEvaluate(expr string, event *info.Event, vcx provider.Interface, ctx context.Context) (ref.Val, error) {
+func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface) (ref.Val, error) {
 	data := map[string]interface{}{
 		"event":         event.TriggerTarget,
 		"target_branch": event.BaseBranch,
