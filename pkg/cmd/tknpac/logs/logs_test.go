@@ -1,10 +1,12 @@
 package logs
 
 import (
+	"fmt"
 	"os/exec"
 	"testing"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
@@ -32,7 +34,6 @@ func TestLogs(t *testing.T) {
 		wantErr          bool
 		repoName         string
 		currentNamespace string
-		statuses         []v1alpha1.RepositoryRunStatus
 		shift            int
 		pruns            []*tektonv1beta1.PipelineRun
 	}{
@@ -41,14 +42,11 @@ func TestLogs(t *testing.T) {
 			wantErr:          false,
 			repoName:         "test",
 			currentNamespace: ns,
-			shift:            1,
-			statuses: []v1alpha1.RepositoryRunStatus{
-				{
-					PipelineRunName: "test-pipeline",
-				},
-			},
+			shift:            0,
 			pruns: []*tektonv1beta1.PipelineRun{
-				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{}, 30),
+				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
+					fmt.Sprintf("%s/repository", pipelinesascode.GroupName): "test",
+				}, 30),
 			},
 		},
 		{
@@ -57,24 +55,17 @@ func TestLogs(t *testing.T) {
 			repoName:         "test",
 			currentNamespace: ns,
 			shift:            2,
-			statuses: []v1alpha1.RepositoryRunStatus{
-				{
-					PipelineRunName: "test-pipeline",
-				},
-			},
 			pruns: []*tektonv1beta1.PipelineRun{
-				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{}, 30),
+				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
+					fmt.Sprintf("%s/repository", pipelinesascode.GroupName): "test",
+				}, 30),
 			},
 		},
 		{
-			name:             "bad/no status",
+			name:             "bad/no prs",
 			wantErr:          true,
 			repoName:         "test",
 			currentNamespace: ns,
-			shift:            2,
-			pruns: []*tektonv1beta1.PipelineRun{
-				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{}, 30),
-			},
 		},
 	}
 	for _, tt := range tests {
@@ -88,7 +79,6 @@ func TestLogs(t *testing.T) {
 					Spec: v1alpha1.RepositorySpec{
 						URL: "https://anurl.com",
 					},
-					Status: tt.statuses,
 				},
 			}
 			tdata := testclient.Data{
@@ -119,11 +109,12 @@ func TestLogs(t *testing.T) {
 			io, _ := tcli.NewIOStream()
 			lopts := &logOption{
 				cs: cs,
+				cw: clockwork.NewFakeClock(),
 				opts: &cli.PacCliOpts{
 					Namespace: tt.currentNamespace,
 				},
 				repoName:  tt.repoName,
-				shift:     tt.shift,
+				limit:     1,
 				tknPath:   tknPath,
 				ioStreams: io,
 			}

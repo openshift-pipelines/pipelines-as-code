@@ -6,13 +6,21 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/browser"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/spf13/cobra"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,19 +34,23 @@ tkn pac logs will get the logs of a PipelineRun belonging to a Repository.
 
 the PipelineRun needs to exist on the kubernetes cluster to be able to display the logs.`
 
-var (
-	namespaceFlag = "namespace"
-	shiftFlag     = "shift"
-	tknPathFlag   = "tkn-path"
+const (
+	namespaceFlag      = "namespace"
+	limitFlag          = "limit"
+	tknPathFlag        = "tkn-path"
+	defaultLimit       = -1
+	openWebBrowserFlag = "web"
 )
 
 type logOption struct {
-	cs        *params.Run
-	opts      *cli.PacCliOpts
-	ioStreams *cli.IOStreams
-	repoName  string
-	tknPath   string
-	shift     int
+	cs         *params.Run
+	cw         clockwork.Clock
+	opts       *cli.PacCliOpts
+	ioStreams  *cli.IOStreams
+	repoName   string
+	tknPath    string
+	limit      int
+	webBrowser bool
 }
 
 func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
@@ -70,7 +82,12 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			shift, err := cmd.Flags().GetInt(shiftFlag)
+			limit, err := cmd.Flags().GetInt(limitFlag)
+			if err != nil {
+				return err
+			}
+
+			webBrowser, err := cmd.Flags().GetBool(openWebBrowserFlag)
 			if err != nil {
 				return err
 			}
@@ -90,12 +107,14 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 
 			lopts := &logOption{
-				cs:        run,
-				opts:      opts,
-				ioStreams: ioStreams,
-				repoName:  repoName,
-				shift:     shift,
-				tknPath:   tknPath,
+				cs:         run,
+				cw:         clockwork.NewRealClock(),
+				opts:       opts,
+				ioStreams:  ioStreams,
+				repoName:   repoName,
+				limit:      limit,
+				webBrowser: webBrowser,
+				tknPath:    tknPath,
 			}
 			return log(ctx, lopts)
 		},
@@ -107,8 +126,11 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
 
+	cmd.Flags().BoolP(
+		openWebBrowserFlag, "w", false, "Open Web browser to detected console instead of using tkn")
+
 	cmd.Flags().IntP(
-		shiftFlag, "s", 1, "Show the last N number of Repository if it exist")
+		limitFlag, "", defaultLimit, "Limit the number of PipelineRun to show (-1 is unlimited)")
 
 	return cmd
 }
@@ -120,6 +142,41 @@ func getTknPath() (string, error) {
 	}
 
 	return filepath.Abs(fname)
+}
+
+// getPipelineRunsToRepo returns all pipelinesruns running in a namespace
+func getPipelineRunsToRepo(ctx context.Context, lopt *logOption, repoName string) ([]string, error) {
+	opts := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s/repository=%s",
+			pipelinesascode.GroupName, repoName),
+	}
+	runs, err := lopt.cs.Clients.Tekton.TektonV1beta1().PipelineRuns(lopt.opts.Namespace).List(ctx, opts)
+	if err != nil {
+		return []string{}, err
+	}
+	runslen := len(runs.Items)
+	if runslen > 1 {
+		sort.PipelineRunSortByStartTime(runs.Items)
+	}
+
+	if lopt.limit > runslen {
+		lopt.limit = runslen
+	}
+
+	ret := []string{}
+	for i, run := range runs.Items {
+		label := "running since"
+		date := run.Status.StartTime
+		if run.Status.CompletionTime != nil {
+			label = "completed"
+			date = run.Status.CompletionTime
+		}
+		if lopt.limit > -1 && i > lopt.limit {
+			continue
+		}
+		ret = append(ret, fmt.Sprintf("%s %s %s", run.ObjectMeta.Name, label, formatting.Age(date, lopt.cw)))
+	}
+	return ret, nil
 }
 
 func log(ctx context.Context, lo *logOption) error {
@@ -143,23 +200,43 @@ func log(ctx context.Context, lo *logOption) error {
 		}
 	}
 
-	if len(repository.Status) == 0 {
-		return fmt.Errorf("no status on repository")
-	}
-	shiftedinto := len(repository.Status) - lo.shift
-	if shiftedinto < 0 {
-		return fmt.Errorf("you have specified a shift of %d but we only have %d statuses", lo.shift, len(repository.Status))
-	}
-	prName := repository.Status[shiftedinto].PipelineRunName
-	pr, err := lo.cs.Clients.Tekton.TektonV1beta1().PipelineRuns(lo.cs.Info.Kube.Namespace).Get(ctx, prName, metav1.GetOptions{})
+	allprs, err := getPipelineRunsToRepo(ctx, lo, repository.GetName())
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(lo.ioStreams.Out, "Showing logs from Repository: %s PR: %s\n", repository.GetName(), prName)
+	if len(allprs) == 0 {
+		return fmt.Errorf("cannot detect pipelineruns belonging to repository: %s", repository.GetName())
+	}
+	var replyString string
+	if len(allprs) == 1 {
+		replyString = allprs[0]
+	} else {
+		if err := prompt.SurveyAskOne(&survey.Select{
+			Message: "Select a PipelineRun",
+			Options: allprs,
+		}, &replyString); err != nil {
+			return err
+		}
+	}
+	replyName := strings.Fields(replyString)[0]
 
-	// if we have found the plugin then sysexec it by replacing current process.
+	if lo.webBrowser {
+		return showLogsWithWebConsole(lo, replyName)
+	}
+	return showlogswithtkn(lo.tknPath, replyName, lo.cs.Info.Kube.Namespace)
+}
+
+func showLogsWithWebConsole(lo *logOption, pr string) error {
+	if os.Getenv("PAC_TEKTON_DASHBOARD_URL") != "" {
+		lo.cs.Clients.ConsoleUI = &consoleui.TektonDashboard{BaseURL: os.Getenv("PAC_TEKTON_DASHBOARD_URL")}
+	}
+
+	return browser.OpenWebBrowser(lo.cs.Clients.ConsoleUI.DetailURL(lo.cs.Info.Kube.Namespace, pr))
+}
+
+func showlogswithtkn(tknPath, pr, ns string) error {
 	// nolint: gosec
-	if err := syscall.Exec(lo.tknPath, []string{lo.tknPath, "pr", "logs", "-n", lo.cs.Info.Kube.Namespace, pr.GetName()}, os.Environ()); err != nil {
+	if err := syscall.Exec(tknPath, []string{tknPath, "pr", "logs", "-f", "-n", ns, pr}, os.Environ()); err != nil {
 		fmt.Fprintf(os.Stderr, "Command finished with error: %v", err)
 		os.Exit(127)
 	}
