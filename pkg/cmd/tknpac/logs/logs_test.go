@@ -1,6 +1,7 @@
 package logs
 
 import (
+	"os/exec"
 	"testing"
 
 	"github.com/jonboulle/clockwork"
@@ -14,6 +15,7 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
@@ -22,6 +24,7 @@ import (
 func TestLogs(t *testing.T) {
 	cw := clockwork.NewFakeClock()
 	ns := "ns"
+
 	completed := tektonv1beta1.PipelineRunReasonCompleted.String()
 
 	tests := []struct {
@@ -110,6 +113,9 @@ func TestLogs(t *testing.T) {
 				},
 				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.currentNamespace}},
 			}
+
+			tknPath, err := exec.LookPath("true")
+			assert.NilError(t, err)
 			io, _ := tcli.NewIOStream()
 			lopts := &logOption{
 				cs: cs,
@@ -118,11 +124,11 @@ func TestLogs(t *testing.T) {
 				},
 				repoName:  tt.repoName,
 				shift:     tt.shift,
-				tknPath:   "/bin/true",
+				tknPath:   tknPath,
 				ioStreams: io,
 			}
 
-			err := log(ctx, lopts)
+			err = log(ctx, lopts)
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("log() wantError is true but no error has been set")
