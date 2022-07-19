@@ -36,6 +36,7 @@ func openWebBrowser(url string) error {
 // startWebServer starts a webserver that will redirect the user to the github app creation page.
 func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, jeez string) error {
 	m := http.NewServeMux()
+	// nolint: gosec
 	s := http.Server{Addr: fmt.Sprintf(":%d", opts.webserverPort), Handler: m}
 	codeCh := make(chan string)
 	m.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {

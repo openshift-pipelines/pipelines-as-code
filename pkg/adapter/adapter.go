@@ -76,6 +76,7 @@ func (l *listener) Start(_ context.Context) error {
 
 	mux.HandleFunc("/", l.handleEvent())
 
+	// nolint: gosec
 	srv := &http.Server{
 		Addr: ":" + adapterPort,
 		Handler: http.TimeoutHandler(mux,
