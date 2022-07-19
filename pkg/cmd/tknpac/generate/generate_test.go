@@ -16,7 +16,7 @@ import (
 	"gotest.tools/v3/fs"
 )
 
-func TestGetRepoURL(t *testing.T) {
+func TestGenerateTemplate(t *testing.T) {
 	tests := []struct {
 		name                    string
 		wantErrStr              string
@@ -78,7 +78,7 @@ func TestGetRepoURL(t *testing.T) {
 			checkRegInGeneratedFile: []*regexp.Regexp{
 				regexp.MustCompile("name: golang-pull-request"),
 				regexp.MustCompile(".*on-event.*pull_request"),
-				regexp.MustCompile("# Task for Golang"),
+				regexp.MustCompile(".*test our Golang project"),
 				regexp.MustCompile("- name: golangci-lint"),
 			},
 			gitinfo: git.Info{
@@ -99,7 +99,7 @@ func TestGetRepoURL(t *testing.T) {
 			checkRegInGeneratedFile: []*regexp.Regexp{
 				regexp.MustCompile("name: pythonrulez-pull-request"),
 				regexp.MustCompile(".*on-event.*pull_request"),
-				regexp.MustCompile("# Task for Python"),
+				regexp.MustCompile(".*test our Python project"),
 				regexp.MustCompile("- name: pylint"),
 			},
 			gitinfo: git.Info{
