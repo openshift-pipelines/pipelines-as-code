@@ -19,11 +19,6 @@ BookEditPath = "edit/main/docs"
 
 [menu]
 [[menu.after]]
-    name = "PAC Flow Diagram"
-    url = "/diagram/"
-    weight = 5
-
-[[menu.after]]
   name = "GitHub Pipelines as Code"
   url = "https://github.com/openshift-pipelines/pipelines-as-code"
   weight = 10
