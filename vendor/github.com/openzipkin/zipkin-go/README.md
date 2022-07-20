@@ -1,5 +1,5 @@
 <!--
-Copyright 2021 The OpenZipkin Authors
+Copyright 2022 The OpenZipkin Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ limitations under the License.
 [![Gitter chat](https://badges.gitter.im/openzipkin/zipkin.svg)](https://gitter.im/openzipkin/zipkin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Sourcegraph](https://sourcegraph.com/github.com/openzipkin/zipkin-go/-/badge.svg)](https://sourcegraph.com/github.com/openzipkin/zipkin-go?badge)
 
-Zipkin Go is the official Go Tracer implementation for Zipkin, supported by the
+Zipkin Go is the official Go Tracer / Tracing implementation for Zipkin, supported by the
 OpenZipkin community.
 
 ## package organization
