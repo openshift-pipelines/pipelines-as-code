@@ -171,13 +171,10 @@ to the UI URL to see the Pipelinerun associated with it.
 
 `tkn pac logs` -- will show the logs attached to a Repository.
 
-If you don't specify a repository on the command line it will as for one or auto
+If you don't specify a repository on the command line it will ask you to choose one or auto
 select it if there is only one.
 
-This will show the latest pipelinerun to a repo unless you specify the flag `-s`
-which *shift* the pipelinerun status. So for example :
-
-`tkn pac logs -s 2` will show the logs of the second latest pipelinerun.
+IF you add the "-w" flag it will directly open the console URL to the log.
 
 [`tkn`](https://github.com/tektoncd/cli) binary needs to be installed to show
 the logs.
