@@ -281,7 +281,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string
 	if err != nil {
 		return []string{}, err
 	}
-	var result []string
+	result := []string{}
 	for j := range repoCommit {
 		result = append(result, *repoCommit[j].Filename)
 	}

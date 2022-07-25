@@ -66,8 +66,10 @@ func (t celPac) ProgramOptions() []cel.ProgramOption {
 		cel.Functions(
 			&functions.Overload{
 				Operator: "pathChanged",
-				Unary:    t.pathChanged},
-		)}
+				Unary:    t.pathChanged,
+			},
+		),
+	}
 }
 
 func (t celPac) pathChanged(vals ref.Val) ref.Val {
@@ -77,11 +79,12 @@ func (t celPac) pathChanged(vals ref.Val) ref.Val {
 		return types.Bool(false)
 	}
 	for i := range fileList {
-		if strings.Contains(fileList[i], vals.Value().(string)) {
-			return types.Bool(true)
-		} else {
-			match = false
+		if v, ok := vals.Value().(string); ok {
+			if strings.Contains(fileList[i], v) {
+				return types.Bool(true)
+			}
 		}
+		match = types.Bool(false)
 	}
 
 	return match
