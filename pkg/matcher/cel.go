@@ -17,8 +17,14 @@ import (
 )
 
 func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface) (ref.Val, error) {
+	eventTitle := event.PullRequestTitle
+	if event.TriggerTarget == "push" {
+		eventTitle = event.SHATitle
+	}
+
 	data := map[string]interface{}{
 		"event":         event.TriggerTarget,
+		"event_title":   eventTitle,
 		"target_branch": event.BaseBranch,
 		"source_branch": event.HeadBranch,
 	}
@@ -27,6 +33,7 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 		cel.Lib(celPac{vcx, ctx, event}),
 		cel.Declarations(
 			decls.NewVar("event", decls.String),
+			decls.NewVar("event_title", decls.String),
 			decls.NewVar("target_branch", decls.String),
 			decls.NewVar("source_branch", decls.String)))
 	if err != nil {

@@ -50,6 +50,7 @@ type PullRequest struct {
 	Source      Source      `json:"source"`
 	ID          int         `json:"id"`
 	Links       Links
+	Title       string `json:"title"`
 }
 
 type PullRequestEvent struct {

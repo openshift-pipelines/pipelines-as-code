@@ -263,6 +263,7 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 	runevent.URL = pr.GetBase().GetRepo().GetHTMLURL()
 	runevent.SHA = pr.GetHead().GetSHA()
 	runevent.SHAURL = fmt.Sprintf("%s/commit/%s", pr.GetHTMLURL(), pr.GetHead().GetSHA())
+	runevent.PullRequestTitle = pr.GetTitle()
 
 	// TODO: check if we really need this
 	if runevent.Sender == "" {

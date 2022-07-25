@@ -165,6 +165,121 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			},
 		},
 		{
+			name:       "cel/match path title pr",
+			wantPRName: pipelineTargetNSName,
+			args: args{
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onCelExpression: "event_title.startsWith(\"[UPSTREAM]\")",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					PullRequestTitle:  "[UPSTREAM] test me cause i'm famous",
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+
+		{
+			name:       "cel/match path title push",
+			wantPRName: pipelineTargetNSName,
+			args: args{
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onCelExpression: "event_title.startsWith(\"[UPSTREAM]\")",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					EventType:     "push",
+					BaseBranch:    mainBranch,
+					HeadBranch:    "unittests",
+					SHATitle:      "[UPSTREAM] test me cause i'm famous",
+					Organization:  "mylittle",
+					Repository:    "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+
+		{
+			name:    "cel/no match path title pr",
+			wantErr: true,
+			args: args{
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onCelExpression: "event_title.startsWith(\"[UPSTREAM]\")",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					PullRequestTitle:  "[DOWNSTREAM] don't test me cause i'm famous",
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
 			name:    "cel/no match path by glob",
 			wantErr: true,
 			args: args{

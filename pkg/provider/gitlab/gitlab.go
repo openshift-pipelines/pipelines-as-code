@@ -155,8 +155,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.SHATitle = gitEvent.ObjectAttributes.Title
 		processedEvent.HeadBranch = gitEvent.ObjectAttributes.SourceBranch
 		processedEvent.BaseBranch = gitEvent.ObjectAttributes.TargetBranch
-
 		processedEvent.PullRequestNumber = gitEvent.ObjectAttributes.IID
+		processedEvent.PullRequestTitle = gitEvent.ObjectAttributes.Title
 		v.targetProjectID = gitEvent.Project.ID
 		v.sourceProjectID = gitEvent.ObjectAttributes.SourceProjectID
 		v.userID = gitEvent.User.ID
