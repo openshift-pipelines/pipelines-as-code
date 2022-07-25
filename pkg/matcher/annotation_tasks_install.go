@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -48,8 +49,8 @@ func (rt RemoteTasks) getTask(ctx context.Context, logger *zap.SugaredLogger, pr
 	// TODO: print a log info when getting the task from which location
 	switch {
 	case strings.HasPrefix(task, "https://"), strings.HasPrefix(task, "http://"):
-		// TODO: Add a context
-		res, err := rt.Run.Clients.HTTP.Get(task)
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, task, nil)
+		res, err := rt.Run.Clients.HTTP.Do(req)
 		if err != nil {
 			return ret, err
 		}

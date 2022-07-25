@@ -34,7 +34,7 @@ func replyGhListFiles(t *testing.T, mux *http.ServeMux, url string, commitFiles 
 	mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
 		jeez, err := json.Marshal(commitFiles)
 		assert.NilError(t, err)
-		w.Write(jeez)
+		_, _ = w.Write(jeez)
 	})
 }
 
