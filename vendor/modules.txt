@@ -137,7 +137,7 @@ github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
-# github.com/google/cel-go v0.12.4
+# github.com/google/cel-go v0.11.3
 ## explicit; go 1.17
 github.com/google/cel-go/cel
 github.com/google/cel-go/checker
