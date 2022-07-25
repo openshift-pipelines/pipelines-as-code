@@ -424,6 +424,16 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 	return nil
 }
 
-func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
-	return []string{}, nil
+func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string, error) {
+	mrchanges, _, err := v.Client.MergeRequests.GetMergeRequestChanges(v.sourceProjectID, runevent.PullRequestNumber, &gitlab.GetMergeRequestChangesOptions{})
+	if err != nil {
+		return []string{}, err
+	}
+
+	result := []string{}
+	for _, change := range mrchanges.Changes {
+		result = append(result, change.NewPath)
+	}
+
+	return result, nil
 }
