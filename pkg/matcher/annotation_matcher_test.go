@@ -1,6 +1,7 @@
 package matcher
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,13 +12,18 @@ import (
 	"time"
 
 	"github.com/google/go-github/v45/github"
+	"github.com/xanzy/go-gitlab"
+
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+	glprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
+	gltesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
@@ -29,13 +35,17 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func replyGhListFiles(t *testing.T, mux *http.ServeMux, url string, commitFiles []*github.CommitFile) {
-	t.Helper()
-	mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
-		jeez, err := json.Marshal(commitFiles)
-		assert.NilError(t, err)
-		_, _ = w.Write(jeez)
-	})
+type annotationTestArgs struct {
+	fileChanged []string
+	pruns       []*tektonv1beta1.PipelineRun
+	runevent    info.Event
+	data        testclient.Data
+}
+
+type annotationTest struct {
+	name, wantPRName, wantRepoName, wantLog string
+	args                                    annotationTestArgs
+	wantErr                                 bool
 }
 
 func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
@@ -53,21 +63,11 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		},
 	}
 
-	type args struct {
-		fileChanged []*github.CommitFile
-		pruns       []*tektonv1beta1.PipelineRun
-		runevent    info.Event
-		data        testclient.Data
-	}
-	tests := []struct {
-		name, wantPRName, wantRepoName, wantLog string
-		args                                    args
-		wantErr                                 bool
-	}{
+	tests := []annotationTest{
 		{
 			name:       "match a repository with target NS",
 			wantPRName: pipelineTargetNSName,
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{pipelineTargetNS},
 				runevent: info.Event{
 					URL: targetURL, TriggerTarget: "pull_request", EventType: "pull_request",
@@ -89,7 +89,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:       "cel/match source/target",
 			wantPRName: pipelineTargetNSName,
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -124,12 +124,8 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:       "cel/match path by glob",
 			wantPRName: pipelineTargetNSName,
-			args: args{
-				fileChanged: []*github.CommitFile{
-					{
-						Filename: github.String(".tekton/pull_request.yaml"),
-					},
-				},
+			args: annotationTestArgs{
+				fileChanged: []string{".tekton/pull_request.yaml"},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -167,7 +163,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:       "cel/match path title pr",
 			wantPRName: pipelineTargetNSName,
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -206,7 +202,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:       "cel/match path title push",
 			wantPRName: pipelineTargetNSName,
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -244,7 +240,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "cel/no match path title pr",
 			wantErr: true,
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -282,11 +278,9 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "cel/no match path by glob",
 			wantErr: true,
-			args: args{
-				fileChanged: []*github.CommitFile{
-					{
-						Filename: github.String(".tekton/foo.json"),
-					},
+			args: annotationTestArgs{
+				fileChanged: []string{
+					".tekton/foo.json",
 				},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
@@ -326,11 +320,9 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:       "cel/match by direct path",
 			wantPRName: pipelineTargetNSName,
-			args: args{
-				fileChanged: []*github.CommitFile{
-					{
-						Filename: github.String(".tekton/pull_request.yaml"),
-					},
+			args: annotationTestArgs{
+				fileChanged: []string{
+					".tekton/pull_request.yaml",
 				},
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
@@ -370,7 +362,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "match TargetPipelineRun",
 			wantErr: false,
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -398,7 +390,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "cel/bad expression",
 			wantErr: true,
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -433,7 +425,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:         "match same webhook on multiple repos takes the oldest one",
 			wantPRName:   pipelineTargetNSName,
 			wantRepoName: "test-oldest",
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{pipelineTargetNS},
 				runevent: info.Event{
 					URL: targetURL, TriggerTarget: "pull_request", EventType: "pull_request",
@@ -464,7 +456,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "error on only when on annotation",
 			wantErr: true,
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -494,7 +486,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "error when no pac annotation has been set",
 			wantErr: true,
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -524,7 +516,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "error when pac annotation has been set but empty",
 			wantErr: true,
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -556,7 +548,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:    "no match a repository with target NS",
 			wantErr: true,
 			wantLog: "matching pipelineruns to event: URL",
-			args: args{
+			args: annotationTestArgs{
 				pruns: []*tektonv1beta1.PipelineRun{pipelineTargetNS},
 				runevent: info.Event{
 					URL: targetURL, TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: mainBranch,
@@ -579,55 +571,104 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			cs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
-			observer, log := zapobserver.New(zap.InfoLevel)
-			logger := zap.New(observer).Sugar()
-			client := &params.Run{
-				Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode},
-				Info:    info.Info{},
-			}
-
 			fakeclient, mux, ghTestServerURL, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			vcx := &ghprovider.Provider{
 				Client: fakeclient,
 				Token:  github.String("None"),
-				Logger: logger,
 			}
 			if len(tt.args.fileChanged) > 0 {
+				commitFiles := []*github.CommitFile{}
+				for _, v := range tt.args.fileChanged {
+					commitFiles = append(commitFiles, &github.CommitFile{Filename: github.String(v)})
+				}
 				url := fmt.Sprintf("/repos/%s/%s/pulls/%d/files", tt.args.runevent.Organization,
 					tt.args.runevent.Repository, tt.args.runevent.PullRequestNumber)
-				replyGhListFiles(t, mux, url, tt.args.fileChanged)
+				mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+					jeez, err := json.Marshal(commitFiles)
+					assert.NilError(t, err)
+					_, _ = w.Write(jeez)
+				})
 			}
 
 			tt.args.runevent.Provider = &info.Provider{
 				URL:   ghTestServerURL,
 				Token: "NONE",
 			}
-			matches, err := MatchPipelinerunByAnnotation(ctx, logger,
-				tt.args.pruns,
-				client, &tt.args.runevent, vcx)
 
-			if tt.wantErr {
-				assert.Assert(t, err != nil, "We should have get an error")
+			ghCs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
+			runTest(ctx, t, tt, vcx, ghCs)
+
+			glFakeClient, glMux, glTeardown := gltesthelper.Setup(ctx, t)
+			defer glTeardown()
+			glVcx := &glprovider.Provider{
+				Client: glFakeClient,
+				Token:  github.String("None"),
+			}
+			if len(tt.args.fileChanged) > 0 {
+				commitFiles := &gitlab.MergeRequest{}
+				for _, v := range tt.args.fileChanged {
+					commitFiles.Changes = append(commitFiles.Changes,
+						struct {
+							OldPath     string `json:"old_path"`
+							NewPath     string `json:"new_path"`
+							AMode       string `json:"a_mode"`
+							BMode       string `json:"b_mode"`
+							Diff        string `json:"diff"`
+							NewFile     bool   `json:"new_file"`
+							RenamedFile bool   `json:"renamed_file"`
+							DeletedFile bool   `json:"deleted_file"`
+						}{NewPath: v})
+				}
+				url := fmt.Sprintf("/projects/0/merge_requests/%d/changes", tt.args.runevent.PullRequestNumber)
+				glMux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+					jeez, err := json.Marshal(commitFiles)
+					assert.NilError(t, err)
+					_, _ = w.Write(jeez)
+				})
 			}
 
-			if !tt.wantErr {
-				assert.NilError(t, err)
+			tt.args.runevent.Provider = &info.Provider{
+				Token: "NONE",
 			}
 
-			if tt.wantRepoName != "" {
-				assert.Assert(t, tt.wantRepoName == matches[0].Repo.GetName())
-			}
-			if tt.wantPRName != "" {
-				assert.Assert(t, tt.wantPRName == matches[0].PipelineRun.GetName())
-			}
-			if tt.wantLog != "" {
-				logmsg := log.TakeAll()
-				assert.Assert(t, len(logmsg) > 0, "We didn't get any log message")
-				assert.Assert(t, strings.Contains(logmsg[0].Message, tt.wantLog), logmsg[0].Message, tt.wantLog)
-			}
+			runTest(ctx, t, tt, glVcx, ghCs)
 		})
+	}
+}
+
+func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.Interface, cs testclient.Clients) {
+	observer, log := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+	vcx.SetLogger(logger)
+	client := &params.Run{
+		Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode},
+		Info:    info.Info{},
+	}
+
+	matches, err := MatchPipelinerunByAnnotation(ctx, logger,
+		tt.args.pruns,
+		client, &tt.args.runevent, vcx,
+	)
+
+	if tt.wantErr {
+		assert.Assert(t, err != nil, "We should have get an error")
+	}
+
+	if !tt.wantErr {
+		assert.NilError(t, err)
+	}
+
+	if tt.wantRepoName != "" {
+		assert.Assert(t, tt.wantRepoName == matches[0].Repo.GetName())
+	}
+	if tt.wantPRName != "" {
+		assert.Assert(t, tt.wantPRName == matches[0].PipelineRun.GetName())
+	}
+	if tt.wantLog != "" {
+		logmsg := log.TakeAll()
+		assert.Assert(t, len(logmsg) > 0, "We didn't get any log message")
+		assert.Assert(t, strings.Contains(logmsg[0].Message, tt.wantLog), logmsg[0].Message, tt.wantLog)
 	}
 }
 
