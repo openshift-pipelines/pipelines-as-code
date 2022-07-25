@@ -302,8 +302,18 @@ func (p *planner) planCall(expr *exprpb.Expr) (Interpretable, error) {
 	case 0:
 		return p.planCallZero(expr, fnName, oName, fnDef)
 	case 1:
+		// If the FunctionOp has been used, then use it as it may exist for the purposes
+		// of dynamic dispatch within a singleton function implementation.
+		if fnDef != nil && fnDef.Unary == nil && fnDef.Function != nil {
+			return p.planCallVarArgs(expr, fnName, oName, fnDef, args)
+		}
 		return p.planCallUnary(expr, fnName, oName, fnDef, args)
 	case 2:
+		// If the FunctionOp has been used, then use it as it may exist for the purposes
+		// of dynamic dispatch within a singleton function implementation.
+		if fnDef != nil && fnDef.Binary == nil && fnDef.Function != nil {
+			return p.planCallVarArgs(expr, fnName, oName, fnDef, args)
+		}
 		return p.planCallBinary(expr, fnName, oName, fnDef, args)
 	default:
 		return p.planCallVarArgs(expr, fnName, oName, fnDef, args)

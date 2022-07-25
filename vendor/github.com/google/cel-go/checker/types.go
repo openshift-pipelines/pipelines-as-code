@@ -88,6 +88,8 @@ func FormatCheckedType(t *exprpb.Type) string {
 			FormatCheckedType(decls.NewPrimitiveType(t.GetWrapper())))
 	case kindError:
 		return "!error!"
+	case kindTypeParam:
+		return t.GetTypeParam()
 	}
 	return t.String()
 }
@@ -251,7 +253,12 @@ func isValidTypeSubstitution(m *mapping, t1, t2 *exprpb.Type) (valid, hasSub boo
 		}
 		// If the types are compatible, pick the more general type and return true
 		if internalIsAssignable(m, t1, t2Sub) {
-			m.add(t2, mostGeneral(t1, t2Sub))
+			t2New := mostGeneral(t1, t2Sub)
+			// only update the type reference map if the target type does not occur within it.
+			if notReferencedIn(m, t2, t2New) {
+				m.add(t2, t2New)
+			}
+			// acknowledge the type agreement, and that the substitution is already tracked.
 			return true, true
 		}
 		return false, true
