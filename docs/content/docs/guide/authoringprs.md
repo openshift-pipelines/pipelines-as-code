@@ -106,20 +106,32 @@ If you have the ``pipelinesascode.tekton.dev/on-cel-expression`` annotation in
 your PipelineRun, the CEL expression will be used and the `on-target-branch` or
 `on-target-branch` annotations will then be skipped.
 
-For example :
+For example this will match a `pull_request` event targeting the branch `main` coming from a branch called `wip`:
 
 ```yaml
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "pull_request" && target_branch == "main" && source_branch == "wip"
 ```
 
-Will match a `pull_request` event targeting the branch `main` coming from a branch called `wip`.
+Another example, if you want to have a PipelineRun running only if a path has
+changed you can use the `.pathChanged` suffix function with a [glob
+pattern](https://github.com/ganbarodigital/go_glob#what-does-a-glob-pattern-look-like). Here
+is a concrete example matching every markdown files (as files who has the `.md`
+suffix) in the `docs` directory :
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "pull_request" && "docs/*.md".pathChanged()
+```
 
 The fields available are :
 
 * `event`: `push` or `pull_request`
 * `target_branch`: The branch we are targeting.
-* `source_branch`: The branch where this pull_request come from. (on `push` this is the same as `target_branch`).
+* `source_branch`: The branch where this pull_request come from. (on `push` this
+  is the same as `target_branch`).
+* `.pathChanged`: a suffix function to a string which can be a glob of a path to
+  check if changed (only `GitHub` and `Gitlab` provider is supported)
 
 Compared to the simple "on-target" annotation matching, the CEL expression
 allows you to complex filtering and most importantly express negation.

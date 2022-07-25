@@ -3,8 +3,8 @@ package matcher
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	"github.com/gobwas/glob"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/interpreter/functions"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -80,7 +80,8 @@ func (t celPac) pathChanged(vals ref.Val) ref.Val {
 	}
 	for i := range fileList {
 		if v, ok := vals.Value().(string); ok {
-			if strings.Contains(fileList[i], v) {
+			g := glob.MustCompile(v)
+			if g.Match(fileList[i]) {
 				return types.Bool(true)
 			}
 		}
@@ -91,9 +92,11 @@ func (t celPac) pathChanged(vals ref.Val) ref.Val {
 }
 
 func (celPac) CompileOptions() []cel.EnvOption {
-	return []cel.EnvOption{cel.Declarations(
-		decls.NewFunction("pathChanged",
-			decls.NewInstanceOverload("pathChanged",
-				[]*exprpb.Type{decls.String}, decls.Bool)),
-	)}
+	return []cel.EnvOption{
+		cel.Declarations(
+			decls.NewFunction("pathChanged",
+				decls.NewInstanceOverload("pathChanged",
+					[]*exprpb.Type{decls.String}, decls.Bool)),
+		),
+	}
 }
