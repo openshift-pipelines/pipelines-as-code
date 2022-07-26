@@ -106,7 +106,8 @@ If you have the ``pipelinesascode.tekton.dev/on-cel-expression`` annotation in
 your PipelineRun, the CEL expression will be used and the `on-target-branch` or
 `on-target-branch` annotations will then be skipped.
 
-For example this will match a `pull_request` event targeting the branch `main` coming from a branch called `wip`:
+This example will match a `pull_request` event targeting the branch `main`
+coming from a branch called `wip`:
 
 ```yaml
     pipelinesascode.tekton.dev/on-cel-expression: |
@@ -124,12 +125,22 @@ suffix) in the `docs` directory :
       event == "pull_request" && "docs/*.md".pathChanged()
 ```
 
+This example will match all pull request starting with the title `[DOWNSTREAM]`:
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "pull_request && event_title.startsWith("[DOWNSTREAM]")
+```
+
 The fields available are :
 
 * `event`: `push` or `pull_request`
 * `target_branch`: The branch we are targeting.
 * `source_branch`: The branch where this pull_request come from. (on `push` this
   is the same as `target_branch`).
+* `event_title`: Match the title of the event. When doing a push this will match
+  the commit title and when matching on PR it will match the Pull or Merge
+  Request title. (only `GitHub`, `Gitlab` and `BitbucketCloud` providers are supported)
 * `.pathChanged`: a suffix function to a string which can be a glob of a path to
   check if changed (only `GitHub` and `Gitlab` provider is supported)
 

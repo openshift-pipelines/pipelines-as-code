@@ -154,6 +154,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.AccountID = e.PullRequest.Author.AccountID
 		processedEvent.Sender = e.PullRequest.Author.Nickname
 		processedEvent.PullRequestNumber = e.PullRequest.ID
+		processedEvent.PullRequestTitle = e.PullRequest.Title
 	case *types.PushRequestEvent:
 		processedEvent.Event = "push"
 		processedEvent.TriggerTarget = "push"

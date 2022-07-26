@@ -33,6 +33,7 @@ type Event struct {
 	SHAURL            string // pretty URL for web browsing for UIs (cli/web)
 	SHATitle          string // commit title for UIs
 	PullRequestNumber int    // Pull or Merge Request number
+	PullRequestTitle  string // Title of the pull Request
 
 	// TODO: move forge specifics to each driver
 	// Github
