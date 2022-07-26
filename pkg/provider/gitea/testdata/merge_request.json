@@ -1,0 +1,133 @@
+{
+  "object_kind": "merge_request",
+  "event_type": "merge_request",
+  "user": {
+    "id": 11054441,
+    "name": "Sam Chmoutest",
+    "username": "samchmou",
+    "avatar_url": "https://secure.gravatar.com/avatar/b306ae95de49ed804955160aab9dccd7?s=80&d=identicon",
+    "email": "[REDACTED]"
+  },
+  "project": {
+    "id": 29286785,
+    "name": "pac-test",
+    "description": "",
+    "web_url": "https://gitlab.com/chmouel/pac-test",
+    "avatar_url": null,
+    "git_ssh_url": "git@gitlab.com:chmouel/pac-test.git",
+    "git_http_url": "https://gitlab.com/chmouel/pac-test.git",
+    "namespace": "Chmouel Boudjnah",
+    "visibility_level": 20,
+    "path_with_namespace": "chmouel/pac-test",
+    "default_branch": "main",
+    "ci_config_path": "",
+    "homepage": "https://gitlab.com/chmouel/pac-test",
+    "url": "git@gitlab.com:chmouel/pac-test.git",
+    "ssh_url": "git@gitlab.com:chmouel/pac-test.git",
+    "http_url": "https://gitlab.com/chmouel/pac-test.git"
+  },
+  "object_attributes": {
+    "assignee_id": null,
+    "author_id": 11054441,
+    "created_at": "2022-03-07 16:08:41 UTC",
+    "description": "",
+    "head_pipeline_id": null,
+    "id": 143707145,
+    "iid": 2,
+    "last_edited_at": null,
+    "last_edited_by_id": null,
+    "merge_commit_sha": null,
+    "merge_error": null,
+    "merge_params": {
+      "force_remove_source_branch": "1"
+    },
+    "merge_status": "preparing",
+    "merge_user_id": null,
+    "merge_when_pipeline_succeeds": false,
+    "milestone_id": null,
+    "source_branch": "samchmou-main-patch-92252",
+    "source_project_id": 34282506,
+    "state_id": 1,
+    "target_branch": "main",
+    "target_project_id": 29286785,
+    "time_estimate": 0,
+    "title": "rickrolled",
+    "updated_at": "2022-03-07 16:08:41 UTC",
+    "updated_by_id": null,
+    "url": "https://gitlab.com/chmouel/pac-test/-/merge_requests/2",
+    "source": {
+      "id": 34282506,
+      "name": "pac-test",
+      "description": "",
+      "web_url": "https://gitlab.com/samchmou/pac-test",
+      "avatar_url": null,
+      "git_ssh_url": "git@gitlab.com:samchmou/pac-test.git",
+      "git_http_url": "https://gitlab.com/samchmou/pac-test.git",
+      "namespace": "Sam Chmoutest",
+      "visibility_level": 20,
+      "path_with_namespace": "samchmou/pac-test",
+      "default_branch": "main",
+      "ci_config_path": "",
+      "homepage": "https://gitlab.com/samchmou/pac-test",
+      "url": "git@gitlab.com:samchmou/pac-test.git",
+      "ssh_url": "git@gitlab.com:samchmou/pac-test.git",
+      "http_url": "https://gitlab.com/samchmou/pac-test.git"
+    },
+    "target": {
+      "id": 29286785,
+      "name": "pac-test",
+      "description": "",
+      "web_url": "https://gitlab.com/chmouel/pac-test",
+      "avatar_url": null,
+      "git_ssh_url": "git@gitlab.com:chmouel/pac-test.git",
+      "git_http_url": "https://gitlab.com/chmouel/pac-test.git",
+      "namespace": "Chmouel Boudjnah",
+      "visibility_level": 20,
+      "path_with_namespace": "chmouel/pac-test",
+      "default_branch": "main",
+      "ci_config_path": "",
+      "homepage": "https://gitlab.com/chmouel/pac-test",
+      "url": "git@gitlab.com:chmouel/pac-test.git",
+      "ssh_url": "git@gitlab.com:chmouel/pac-test.git",
+      "http_url": "https://gitlab.com/chmouel/pac-test.git"
+    },
+    "last_commit": {
+      "id": "125601039510dd5894d137f39e91a62cd46cd12c",
+      "message": "rickrolled",
+      "title": "rickrolled",
+      "timestamp": "2022-03-07T16:08:31+00:00",
+      "url": "https://gitlab.com/chmouel/pac-test/-/commit/125601039510dd5894d137f39e91a62cd46cd12c",
+      "author": {
+        "name": "Sam Chmoutest",
+        "email": "samuel@chmouel.com"
+      }
+    },
+    "work_in_progress": false,
+    "total_time_spent": 0,
+    "time_change": 0,
+    "human_total_time_spent": null,
+    "human_time_change": null,
+    "human_time_estimate": null,
+    "assignee_ids": [
+
+    ],
+    "state": "opened",
+    "blocking_discussions_resolved": true,
+    "action": "open"
+  },
+  "labels": [
+
+  ],
+  "changes": {
+    "merge_status": {
+      "previous": "unchecked",
+      "current": "preparing"
+    }
+  },
+  "repository": {
+    "name": "pac-test",
+    "url": "git@gitlab.com:chmouel/pac-test.git",
+    "description": "",
+    "homepage": "https://gitlab.com/chmouel/pac-test"
+  }
+}

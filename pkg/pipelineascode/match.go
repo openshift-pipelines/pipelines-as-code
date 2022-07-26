@@ -30,7 +30,7 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 
 	if repo == nil {
 		if p.event.Provider.Token == "" {
-			p.logger.Warn("cannot set status since no token has been set")
+			p.logger.Warnf("cannot set status since no repository has been matched on %s", p.event.URL)
 			return nil, nil, nil
 		}
 		msg := fmt.Sprintf("cannot find a namespace match for %s", p.event.URL)

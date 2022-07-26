@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	"go.uber.org/zap"
@@ -198,6 +199,12 @@ func (l listener) detectProvider(req *http.Request, reqBody string) (provider.In
 	isGH, processReq, logger, reason, err := gitHub.Detect(req, reqBody, &log)
 	if isGH {
 		return l.processRes(processReq, gitHub, logger, reason, err)
+	}
+
+	zegitea := &gitea.Provider{}
+	isGitea, processReq, logger, reason, err := zegitea.Detect(req, reqBody, &log)
+	if isGitea {
+		return l.processRes(processReq, zegitea, logger, reason, err)
 	}
 
 	bitServer := &bitbucketserver.Provider{}
