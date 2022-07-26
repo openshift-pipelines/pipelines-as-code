@@ -1,20 +1,25 @@
 package matcher
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/go-github/v45/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
@@ -23,6 +28,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func replyGhListFiles(t *testing.T, mux *http.ServeMux, url string, commitFiles []*github.CommitFile) {
+	t.Helper()
+	mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+		jeez, err := json.Marshal(commitFiles)
+		assert.NilError(t, err)
+		_, _ = w.Write(jeez)
+	})
+}
 
 func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 	cw := clockwork.NewFakeClock()
@@ -40,9 +54,10 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 	}
 
 	type args struct {
-		pruns    []*tektonv1beta1.PipelineRun
-		runevent info.Event
-		data     testclient.Data
+		fileChanged []*github.CommitFile
+		pruns       []*tektonv1beta1.PipelineRun
+		runevent    info.Event
+		data        testclient.Data
 	}
 	tests := []struct {
 		name, wantPRName, wantRepoName, wantLog string
@@ -72,7 +87,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			},
 		},
 		{
-			name:       "match a repository on a CEL expression",
+			name:       "cel/match source/target",
 			wantPRName: pipelineTargetNSName,
 			args: args{
 				pruns: []*tektonv1beta1.PipelineRun{
@@ -107,6 +122,137 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			},
 		},
 		{
+			name:       "cel/match path by glob",
+			wantPRName: pipelineTargetNSName,
+			args: args{
+				fileChanged: []*github.CommitFile{
+					{
+						Filename: github.String(".tekton/pull_request.yaml"),
+					},
+				},
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onCelExpression: "\".tekton/*yaml\"." +
+									"pathChanged()",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:    "cel/no match path by glob",
+			wantErr: true,
+			args: args{
+				fileChanged: []*github.CommitFile{
+					{
+						Filename: github.String(".tekton/foo.json"),
+					},
+				},
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onCelExpression: "\".tekton/*yaml\"." +
+									"pathChanged()",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+
+		{
+			name:       "cel/match by direct path",
+			wantPRName: pipelineTargetNSName,
+			args: args{
+				fileChanged: []*github.CommitFile{
+					{
+						Filename: github.String(".tekton/pull_request.yaml"),
+					},
+				},
+				pruns: []*tektonv1beta1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								pipelinesascode.GroupName + "/" + onCelExpression: "\".tekton/pull_request.yaml\"." +
+									"pathChanged()",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+
+		{
 			name:    "match TargetPipelineRun",
 			wantErr: false,
 			args: args{
@@ -135,7 +281,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			},
 		},
 		{
-			name:    "bad CEL expresion",
+			name:    "cel/bad expression",
 			wantErr: true,
 			args: args{
 				pruns: []*tektonv1beta1.PipelineRun{
@@ -325,9 +471,27 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode},
 				Info:    info.Info{},
 			}
+
+			fakeclient, mux, ghTestServerURL, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			vcx := &ghprovider.Provider{
+				Client: fakeclient,
+				Token:  github.String("None"),
+				Logger: logger,
+			}
+			if len(tt.args.fileChanged) > 0 {
+				url := fmt.Sprintf("/repos/%s/%s/pulls/%d/files", tt.args.runevent.Organization,
+					tt.args.runevent.Repository, tt.args.runevent.PullRequestNumber)
+				replyGhListFiles(t, mux, url, tt.args.fileChanged)
+			}
+
+			tt.args.runevent.Provider = &info.Provider{
+				URL:   ghTestServerURL,
+				Token: "NONE",
+			}
 			matches, err := MatchPipelinerunByAnnotation(ctx, logger,
 				tt.args.pruns,
-				client, &tt.args.runevent)
+				client, &tt.args.runevent, vcx)
 
 			if tt.wantErr {
 				assert.Assert(t, err != nil, "We should have get an error")
@@ -555,7 +719,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				Clients: clients.Clients{},
 				Info:    info.Info{},
 			}
-			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent)
+			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent, &ghprovider.Provider{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return

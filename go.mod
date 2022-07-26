@@ -8,7 +8,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.10.1
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20220418082332-711d7d5e805f
 	github.com/gobwas/glob v0.2.3
-	github.com/google/cel-go v0.12.4
+	github.com/google/cel-go v0.11.3
 	github.com/google/go-cmp v0.5.8
 	github.com/google/go-github/scrape v0.0.0-20220716231147-3a432d62bf03
 	github.com/google/go-github/v45 v45.2.0
@@ -28,6 +28,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20220718184931-c8730f7fcb92
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	golang.org/x/text v0.3.7
+	google.golang.org/genproto v0.0.0-20220719170305-83ca9fad585f
 	gotest.tools/v3 v3.3.0
 	k8s.io/api v0.23.5
 	k8s.io/apimachinery v0.23.5
@@ -116,7 +117,6 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/api v0.88.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220719170305-83ca9fad585f // indirect
 	google.golang.org/grpc v1.48.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

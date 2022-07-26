@@ -187,7 +187,7 @@ func (c *checker) checkSelect(e *exprpb.Expr) {
 
 	// Interpret as field selection, first traversing down the operand.
 	c.check(sel.Operand)
-	targetType := substitute(c.mappings, c.getType(sel.Operand), false)
+	targetType := c.getType(sel.Operand)
 	// Assume error type by default as most types do not support field selection.
 	resultType := decls.Error
 	switch kindOf(targetType) {
@@ -224,7 +224,7 @@ func (c *checker) checkSelect(e *exprpb.Expr) {
 	if sel.TestOnly {
 		resultType = decls.Bool
 	}
-	c.setType(e, substitute(c.mappings, resultType, false))
+	c.setType(e, resultType)
 }
 
 func (c *checker) checkCall(e *exprpb.Expr) {
@@ -469,18 +469,18 @@ func (c *checker) checkCreateMessage(e *exprpb.Expr) {
 
 func (c *checker) checkComprehension(e *exprpb.Expr) {
 	comp := e.GetComprehensionExpr()
-	c.check(comp.GetIterRange())
-	c.check(comp.GetAccuInit())
-	accuType := c.getType(comp.GetAccuInit())
-	rangeType := substitute(c.mappings, c.getType(comp.GetIterRange()), false)
+	c.check(comp.IterRange)
+	c.check(comp.AccuInit)
+	accuType := c.getType(comp.AccuInit)
+	rangeType := c.getType(comp.IterRange)
 	var varType *exprpb.Type
 
 	switch kindOf(rangeType) {
 	case kindList:
-		varType = rangeType.GetListType().GetElemType()
+		varType = rangeType.GetListType().ElemType
 	case kindMap:
 		// Ranges over the keys.
-		varType = rangeType.GetMapType().GetKeyType()
+		varType = rangeType.GetMapType().KeyType
 	case kindDyn, kindError, kindTypeParam:
 		// Set the range type to DYN to prevent assignment to a potentially incorrect type
 		// at a later point in type-checking. The isAssignable call will update the type
@@ -489,28 +489,28 @@ func (c *checker) checkComprehension(e *exprpb.Expr) {
 		// Set the range iteration variable to type DYN as well.
 		varType = decls.Dyn
 	default:
-		c.errors.notAComprehensionRange(c.location(comp.GetIterRange()), rangeType)
+		c.errors.notAComprehensionRange(c.location(comp.IterRange), rangeType)
 		varType = decls.Error
 	}
 
 	// Create a scope for the comprehension since it has a local accumulation variable.
 	// This scope will contain the accumulation variable used to compute the result.
 	c.env = c.env.enterScope()
-	c.env.Add(decls.NewVar(comp.GetAccuVar(), accuType))
+	c.env.Add(decls.NewVar(comp.AccuVar, accuType))
 	// Create a block scope for the loop.
 	c.env = c.env.enterScope()
-	c.env.Add(decls.NewVar(comp.GetIterVar(), varType))
+	c.env.Add(decls.NewVar(comp.IterVar, varType))
 	// Check the variable references in the condition and step.
-	c.check(comp.GetLoopCondition())
-	c.assertType(comp.GetLoopCondition(), decls.Bool)
-	c.check(comp.GetLoopStep())
-	c.assertType(comp.GetLoopStep(), accuType)
+	c.check(comp.LoopCondition)
+	c.assertType(comp.LoopCondition, decls.Bool)
+	c.check(comp.LoopStep)
+	c.assertType(comp.LoopStep, accuType)
 	// Exit the loop's block scope before checking the result.
 	c.env = c.env.exitScope()
-	c.check(comp.GetResult())
+	c.check(comp.Result)
 	// Exit the comprehension scope.
 	c.env = c.env.exitScope()
-	c.setType(e, substitute(c.mappings, c.getType(comp.GetResult()), false))
+	c.setType(e, c.getType(comp.Result))
 }
 
 // Checks compatibility of joined types, and returns the most general common type.

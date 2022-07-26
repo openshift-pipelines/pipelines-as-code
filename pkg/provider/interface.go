@@ -35,6 +35,7 @@ type Interface interface {
 	SetClient(context.Context, *info.Event) error
 	GetCommitInfo(context.Context, *info.Event) error
 	GetConfig() *info.ProviderConfig
+	GetFiles(context.Context, *info.Event) ([]string, error)
 }
 
 const DefaultProviderAPIUser = "git"

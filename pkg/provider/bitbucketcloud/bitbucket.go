@@ -243,3 +243,7 @@ func (v *Provider) getBlob(runevent *info.Event, ref, path string) (string, erro
 	}
 	return blob.String(), nil
 }
+
+func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
+	return []string{}, nil
+}

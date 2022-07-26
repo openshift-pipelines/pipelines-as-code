@@ -29,6 +29,7 @@ import (
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/google/cel-go/interpreter"
 	"github.com/google/cel-go/interpreter/functions"
+	"github.com/google/cel-go/parser"
 
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	descpb "google.golang.org/protobuf/types/descriptorpb"
@@ -56,11 +57,6 @@ const (
 	// Enable eager validation of declarations to ensure that Env values created
 	// with `Extend` inherit a validated list of declarations from the parent Env.
 	featureEagerlyValidateDeclarations
-
-	// Enable the use of the default UTC timezone when a timezone is not specified
-	// on a CEL timestamp operation. This fixes the scenario where the input time
-	// is not already in UTC.
-	featureDefaultUTCTimeZone
 )
 
 // EnvOption is a functional interface for configuring the environment.
@@ -72,7 +68,7 @@ type EnvOption func(e *Env) (*Env, error)
 // comprehensions such as `all` and `exists` are enabled only via macros.
 func ClearMacros() EnvOption {
 	return func(e *Env) (*Env, error) {
-		e.macros = NoMacros
+		e.macros = parser.NoMacros
 		return e, nil
 	}
 }
@@ -103,6 +99,8 @@ func CustomTypeProvider(provider ref.TypeProvider) EnvOption {
 // for the environment. The NewEnv call builds on top of the standard CEL declarations. For a
 // purely custom set of declarations use NewCustomEnv.
 func Declarations(decls ...*exprpb.Decl) EnvOption {
+	// TODO: provide an alternative means of specifying declarations that doesn't refer
+	// to the underlying proto implementations.
 	return func(e *Env) (*Env, error) {
 		e.declarations = append(e.declarations, decls...)
 		return e, nil
@@ -134,7 +132,7 @@ func HomogeneousAggregateLiterals() EnvOption {
 // Macros option extends the macro set configured in the environment.
 //
 // Note: This option must be specified after ClearMacros if used together.
-func Macros(macros ...Macro) EnvOption {
+func Macros(macros ...parser.Macro) EnvOption {
 	return func(e *Env) (*Env, error) {
 		e.macros = append(e.macros, macros...)
 		return e, nil
@@ -334,9 +332,6 @@ func CustomDecorator(dec interpreter.InterpretableDecorator) ProgramOption {
 }
 
 // Functions adds function overloads that extend or override the set of CEL built-ins.
-//
-// Deprecated: use Function() instead to declare the function, its overload signatures,
-// and the overload implementations.
 func Functions(funcs ...*functions.Overload) ProgramOption {
 	return func(p *prog) (*prog, error) {
 		if err := p.dispatcher.Add(funcs...); err != nil {
@@ -447,7 +442,7 @@ func CostLimit(costLimit uint64) ProgramOption {
 }
 
 func fieldToCELType(field protoreflect.FieldDescriptor) (*exprpb.Type, error) {
-	if field.Kind() == protoreflect.MessageKind || field.Kind() == protoreflect.GroupKind {
+	if field.Kind() == protoreflect.MessageKind {
 		msgName := (string)(field.Message().FullName())
 		wellKnownType, found := pb.CheckedWellKnowns[msgName]
 		if found {
@@ -526,12 +521,6 @@ func EnableMacroCallTracking() EnvOption {
 // CrossTypeNumericComparisons makes it possible to compare across numeric types, e.g. double < int
 func CrossTypeNumericComparisons(enabled bool) EnvOption {
 	return features(featureCrossTypeNumericComparisons, enabled)
-}
-
-// DefaultUTCTimeZone ensures that time-based operations use the UTC timezone rather than the
-// input time's local timezone.
-func DefaultUTCTimeZone(enabled bool) EnvOption {
-	return features(featureDefaultUTCTimeZone, enabled)
 }
 
 // features sets the given feature flags.  See list of Feature constants above.
