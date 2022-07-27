@@ -22,7 +22,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.5.0
-	github.com/tektoncd/pipeline v0.37.2
+	github.com/tektoncd/pipeline v0.38.0
 	github.com/xanzy/go-gitlab v0.69.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/oauth2 v0.0.0-20220718184931-c8730f7fcb92
