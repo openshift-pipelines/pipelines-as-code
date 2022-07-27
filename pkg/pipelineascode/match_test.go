@@ -1,10 +1,14 @@
 package pipelineascode
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestPacRun_checkNeedUpdate(t *testing.T) {
@@ -36,4 +40,39 @@ func TestPacRun_checkNeedUpdate(t *testing.T) {
 			assert.Assert(t, needupdate == tt.needupdate)
 		})
 	}
+}
+
+func TestChangeSecret(t *testing.T) {
+	prs := []*tektonv1beta1.PipelineRun{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "{{git_auth_secret}}",
+			},
+		},
+	}
+	err := changeSecret(prs)
+	assert.NilError(t, err)
+	assert.Assert(t, strings.HasPrefix(prs[0].GetName(), "pac-gitauth"), prs[0].GetName(), "has no pac-gitauth prefix")
+	assert.Assert(t, prs[0].GetAnnotations()[gitAuthSecretAnnotation] != "")
+}
+
+func TestFilterRunningPipelineRunOnTargetTest(t *testing.T) {
+	testPipeline := "test"
+	prs := []*tektonv1beta1.PipelineRun{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "pipelinerun-" + testPipeline,
+				Labels: map[string]string{
+					filepath.Join(apipac.GroupName, "original-prname"): testPipeline,
+				},
+			},
+		},
+	}
+	ret := filterRunningPipelineRunOnTargetTest("", prs)
+	assert.Equal(t, prs[0].GetName(), ret[0].GetName())
+	ret = filterRunningPipelineRunOnTargetTest(testPipeline, prs)
+	assert.Equal(t, prs[0].GetName(), ret[0].GetName())
+	prs = []*tektonv1beta1.PipelineRun{}
+	ret = filterRunningPipelineRunOnTargetTest(testPipeline, prs)
+	assert.Assert(t, ret == nil)
 }
