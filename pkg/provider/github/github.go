@@ -278,8 +278,7 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 // GetFiles get a files from pull request
 func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string, error) {
 	if runevent.TriggerTarget == "pull_request" {
-		commitListOption := &github.ListOptions{}
-		repoCommit, _, err := v.Client.PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, commitListOption)
+		repoCommit, _, err := v.Client.PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, &github.ListOptions{})
 		if err != nil {
 			return []string{}, err
 		}
