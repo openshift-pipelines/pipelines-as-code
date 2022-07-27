@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	"knative.dev/pkg/ptr"
 )
 
 func getLogger() *zap.SugaredLogger {
@@ -649,6 +650,89 @@ func TestValidate(t *testing.T) {
 
 			if err := v.Validate(context.TODO(), nil, event); (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestGetFiles(t *testing.T) {
+	tests := []struct {
+		name        string
+		event       *info.Event
+		commitFiles []*github.CommitFile
+		commit      *github.RepositoryCommit
+	}{
+		{
+			name: "pull-request",
+			event: &info.Event{
+				TriggerTarget:     "pull_request",
+				Organization:      "pullrequestowner",
+				Repository:        "pullrequestrepository",
+				PullRequestNumber: 10,
+			},
+			commitFiles: []*github.CommitFile{{
+				Filename: ptr.String("first.yaml"),
+			}, {
+				Filename: ptr.String("second.doc"),
+			}},
+		},
+		{
+			name: "push",
+			event: &info.Event{
+				TriggerTarget: "push",
+				Organization:  "pushrequestowner",
+				Repository:    "pushrequestrepository",
+				SHA:           "shacommitinfo",
+			},
+			commit: &github.RepositoryCommit{
+				Files: []*github.CommitFile{{
+					Filename: ptr.String("first.yaml"),
+				}, {
+					Filename: ptr.String("second.doc"),
+				}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			commitFiles := []*github.CommitFile{{
+				Filename: ptr.String("first.yaml"),
+			}, {
+				Filename: ptr.String("second.doc"),
+			}}
+			if tt.event.TriggerTarget == "pull_request" {
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/pulls/%d/files",
+					tt.event.Organization, tt.event.Repository, tt.event.PullRequestNumber), func(rw http.ResponseWriter, r *http.Request) {
+					b, _ := json.Marshal(commitFiles)
+					fmt.Fprint(rw, string(b))
+				})
+			}
+			if tt.event.TriggerTarget == "push" {
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/commits/%s",
+					tt.event.Organization, tt.event.Repository, tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
+					c := &github.RepositoryCommit{
+						Files: commitFiles,
+					}
+					b, _ := json.Marshal(c)
+					fmt.Fprint(rw, string(b))
+				})
+			}
+
+			ctx, _ := rtesting.SetupFakeContext(t)
+			provider := &Provider{Client: fakeclient}
+			fileData, err := provider.GetFiles(ctx, tt.event)
+			assert.NilError(t, err, nil)
+			if tt.event.TriggerTarget == "pull_request" {
+				for i := range fileData {
+					assert.Equal(t, *tt.commitFiles[i].Filename, fileData[i])
+				}
+			}
+			if tt.event.TriggerTarget == "push" {
+				for i := range fileData {
+					assert.Equal(t, *tt.commit.Files[i].Filename, fileData[i])
+				}
 			}
 		})
 	}
