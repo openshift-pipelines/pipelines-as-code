@@ -2,6 +2,8 @@ package webhook
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -75,11 +77,15 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
 		}
 	}
 
-	if err := prompt.SurveyAskOne(&survey.Password{
-		Message: "Please enter the secret to configure the webhook for payload validation: ",
-	}, &gl.webhookSecret, survey.WithValidator(survey.Required)); err != nil {
-		return err
+	RandomCrypto, randErr := rand.Prime(rand.Reader, 16)
+	if randErr != nil {
+		return randErr
 	}
+	data, marshalErr := json.Marshal(RandomCrypto)
+	if marshalErr != nil {
+		return marshalErr
+	}
+	gl.webhookSecret = string(data)
 
 	fmt.Fprintln(gl.IOStream.Out, "ℹ ️You now need to create a GitLab personal access token with `api` scope")
 	fmt.Fprintln(gl.IOStream.Out, "ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation ")
