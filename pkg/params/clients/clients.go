@@ -129,6 +129,8 @@ func (c *Clients) NewClients(ctx context.Context, info *info.Info) error {
 	if err != nil {
 		return err
 	}
+	config.QPS = 50
+	config.Burst = 50
 
 	c.Kube, err = c.kubeClient(config)
 	if err != nil {
