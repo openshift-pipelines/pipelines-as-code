@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	pipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun"
@@ -34,11 +35,17 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 
 		pipelineRunInformer := pipelineruninformer.Get(ctx)
 
+		metrics, err := metrics.NewRecorder()
+		if err != nil {
+			log.Fatalf("Failed to create pipeline as code metrics recorder %v", err)
+		}
+
 		c := &Reconciler{
 			run:               run,
 			kinteract:         kinteract,
 			pipelineRunLister: pipelineRunInformer.Lister(),
 			qm:                sync.NewQueueManager(run.Clients.Log),
+			metrics:           metrics,
 		}
 		impl := pipelinerunreconciler.NewImpl(ctx, c)
 

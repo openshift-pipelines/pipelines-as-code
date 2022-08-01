@@ -83,6 +83,8 @@ github.com/evanphx/json-patch
 github.com/evanphx/json-patch/v5
 # github.com/fatih/color v1.13.0
 ## explicit; go 1.13
+# github.com/fsnotify/fsnotify v1.5.1
+## explicit; go 1.13
 # github.com/gfleury/go-bitbucket-v1 v0.0.0-20220418082332-711d7d5e805f
 ## explicit; go 1.14
 github.com/gfleury/go-bitbucket-v1

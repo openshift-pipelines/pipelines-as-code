@@ -13,11 +13,22 @@
 # limitations under the License.
 ---
 apiVersion: v1
-kind: Namespace
+kind: Service
 metadata:
-  name: pipelines-as-code
+  name: pipelines-as-code-watcher
+  namespace: pipelines-as-code
   labels:
     app.kubernetes.io/version: "devel"
+    app.kubernetes.io/part-of: pipelines-as-code
+    app: pipelines-as-code-watcher
+spec:
+  ports:
+  - name: http-metrics
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app.kubernetes.io/name: watcher
+    app.kubernetes.io/component: watcher
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
-    openshift.io/cluster-monitoring: "true"
