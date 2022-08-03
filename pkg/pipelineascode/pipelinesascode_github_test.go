@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/go-github/v45/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -416,7 +415,6 @@ func TestRun(t *testing.T) {
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 			tdc := testDynamic.Options{}
 			dc, _ := tdc.Client()
-			duration, _ := time.ParseDuration("0h0m5s")
 			cs := &params.Run{
 				Clients: clients.Clients{
 					PipelineAsCode: stdata.PipelineAsCode,
@@ -428,8 +426,7 @@ func TestRun(t *testing.T) {
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						SecretAutoCreation:        true,
-						DefaultPipelineRunTimeout: &duration,
+						SecretAutoCreation: true,
 					},
 				},
 			}
