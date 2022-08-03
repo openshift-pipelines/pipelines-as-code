@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
@@ -68,15 +67,6 @@ func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
 
 	if remoteTask, ok := cfg.Data["remote-tasks"]; ok {
 		r.Info.Pac.RemoteTasks = StringToBool(remoteTask)
-	}
-
-	if timeout, ok := cfg.Data["default-pipelinerun-timeout"]; ok {
-		parsedTimeout, err := time.ParseDuration(timeout)
-		if err != nil {
-			r.Clients.Log.Errorf("failed to parse default-pipelinerun-timeout: %s", cfg.Data["default-pipelinerun-timeout"])
-		} else {
-			r.Info.Pac.DefaultPipelineRunTimeout = &parsedTimeout
-		}
 	}
 
 	if check, ok := cfg.Data["bitbucket-cloud-check-source-ip"]; ok {
