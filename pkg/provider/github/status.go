@@ -2,7 +2,6 @@ package github
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -15,7 +14,6 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 const taskStatusTemplate = `
@@ -111,9 +109,6 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 				return err
 			}
 		}
-		if err := v.updatePipelineRunWithCheckRunID(ctx, tekton, status.PipelineRun, checkRunID); err != nil {
-			return err
-		}
 	}
 
 	checkRunOutput := &github.CheckRunOutput{
@@ -139,6 +134,15 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 	}
 
 	_, _, err = v.Client.Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *checkRunID, opts)
+	if err != nil {
+		return err
+	}
+
+	if !found {
+		if err := v.updatePipelineRunWithCheckRunID(ctx, tekton, status.PipelineRun, checkRunID); err != nil {
+			return err
+		}
+	}
 	return err
 }
 
@@ -148,28 +152,29 @@ func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton v
 	}
 	maxRun := 10
 	for i := 0; i < maxRun; i++ {
-		mergePatch := map[string]interface{}{
-			"metadata": map[string]interface{}{
-				"labels": map[string]string{
-					filepath.Join(apipac.GroupName, checkRunIDKey): strconv.FormatInt(*checkRunID, 10),
-				},
-			},
-		}
-		patch, err := json.Marshal(mergePatch)
+		pr, err := tekton.TektonV1beta1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), v1.GetOptions{})
 		if err != nil {
 			return err
 		}
-
-		updatedPR, err := tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Patch(ctx, pr.GetName(), types.MergePatchType, patch, v1.PatchOptions{})
-		if err != nil {
-			v.Logger.Infof("Could not patch Pipelinerun with checkRunID, retrying %v/%v: %v", pr.GetNamespace(), pr.GetName(), err)
+		// temp fix: wait for tekton.dev/pipeline label to avoid race condition
+		// https://github.com/openshift-pipelines/pipelines-as-code/issues/786
+		if _, ok := pr.Labels["tekton.dev/pipeline"]; !ok {
+			v.Logger.Infof("PipelineRun %v/%v don't have tekton label yet, waiting for it", pr.GetNamespace(), pr.GetName())
+			time.Sleep(2 * time.Second)
 			continue
 		}
+		pr = pr.DeepCopy()
+		pr.GetLabels()[filepath.Join(apipac.GroupName, checkRunIDKey)] = strconv.FormatInt(*checkRunID, 10)
 
-		v.Logger.Infof("PipelineRun %v/%v patched with checkRunID : %v", pr.GetNamespace(), pr.GetName(), updatedPR.Labels[filepath.Join(apipac.GroupName, checkRunIDKey)])
+		pr, err = tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Update(ctx, pr, v1.UpdateOptions{})
+		if err != nil {
+			v.Logger.Infof("Could not update Pipelinerun with checkRunID, retrying %v/%v: %v", pr.GetNamespace(), pr.GetName(), err)
+			continue
+		}
+		v.Logger.Infof("PipelineRun %v/%v updated with checkRunID", pr.GetNamespace(), pr.GetName())
 		return nil
 	}
-	return fmt.Errorf("cannot patch pipelineRun %v/%v with checkRunID", pr.GetNamespace(), pr.GetName())
+	return fmt.Errorf("cannot update pipelineRun %v/%v with checkRunID", pr.GetNamespace(), pr.GetName())
 }
 
 // createStatusCommit use the classic/old statuses API which is available when we
