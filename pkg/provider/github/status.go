@@ -109,9 +109,6 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 				return err
 			}
 		}
-		if err := v.updatePipelineRunWithCheckRunID(ctx, tekton, status.PipelineRun, checkRunID); err != nil {
-			return err
-		}
 	}
 
 	checkRunOutput := &github.CheckRunOutput{
@@ -137,6 +134,15 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 	}
 
 	_, _, err = v.Client.Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *checkRunID, opts)
+	if err != nil {
+		return err
+	}
+
+	if !found {
+		if err := v.updatePipelineRunWithCheckRunID(ctx, tekton, status.PipelineRun, checkRunID); err != nil {
+			return err
+		}
+	}
 	return err
 }
 
@@ -149,6 +155,13 @@ func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton v
 		pr, err := tekton.TektonV1beta1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), v1.GetOptions{})
 		if err != nil {
 			return err
+		}
+		// temp fix: wait for tekton.dev/pipeline label to avoid race condition
+		// https://github.com/openshift-pipelines/pipelines-as-code/issues/786
+		if _, ok := pr.Labels["tekton.dev/pipeline"]; !ok {
+			v.Logger.Infof("PipelineRun %v/%v don't have tekton label yet, waiting for it", pr.GetNamespace(), pr.GetName())
+			time.Sleep(2 * time.Second)
+			continue
 		}
 		pr = pr.DeepCopy()
 		pr.GetLabels()[filepath.Join(apipac.GroupName, checkRunIDKey)] = strconv.FormatInt(*checkRunID, 10)
