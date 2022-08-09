@@ -20,7 +20,7 @@ kind: Namespace
 metadata:
   name: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 
@@ -45,7 +45,7 @@ metadata:
   name: pipelines-as-code-info
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -64,7 +64,7 @@ metadata:
   name: pipelines-as-code-info
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -81,7 +81,7 @@ kind: ClusterRole
 metadata:
   name: pipelines-as-code-aggregate
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -121,7 +121,7 @@ metadata:
   name: pipelines-as-code-controller
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 ---
@@ -131,7 +131,7 @@ metadata:
   name: pipelines-as-code-controller-role
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -145,7 +145,7 @@ metadata:
   name: pipelines-as-code-controller-binding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -162,7 +162,7 @@ metadata:
   name: pipeline-as-code-controller-clusterrole
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -185,7 +185,7 @@ metadata:
   name: pipelines-as-code-controller-clusterbinding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -218,7 +218,7 @@ metadata:
   name: pipelines-as-code-watcher
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 ---
@@ -228,7 +228,7 @@ metadata:
   name: pipelines-as-code-watcher-role
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -245,7 +245,7 @@ metadata:
   name: pipelines-as-code-watcher-binding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -262,7 +262,7 @@ metadata:
   name: pipeline-as-code-watcher-clusterrole
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -285,7 +285,7 @@ metadata:
   name: pipelines-as-code-watcher-clusterbinding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -318,7 +318,7 @@ metadata:
   name: pipelines-as-code-webhook
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 ---
@@ -328,7 +328,7 @@ metadata:
   name: pipelines-as-code-webhook-role
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -356,7 +356,7 @@ metadata:
   name: pipelines-as-code-webhook-binding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -373,7 +373,7 @@ metadata:
   name: pipeline-as-code-webhook-clusterrole
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -398,7 +398,7 @@ metadata:
   name: pipelines-as-code-webhook-clusterbinding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -431,7 +431,7 @@ kind: CustomResourceDefinition
 metadata:
   name: repositories.pipelinesascode.tekton.dev
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -616,7 +616,7 @@ metadata:
   name: pipelines-as-code
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/part-of: pipelines-as-code
 
 ---
@@ -658,7 +658,7 @@ metadata:
   name: pipelines-as-code-info
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/part-of: pipelines-as-code
 
 ---
@@ -682,7 +682,7 @@ metadata:
   name: pipelines-as-code-webhook-certs
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/part-of: pipelines-as-code
 # The data is populated at install time
 ---
@@ -691,7 +691,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: validation.pipelinesascode.tekton.dev
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/part-of: pipelines-as-code
 webhooks:
   - admissionReviewVersions: ["v1"]
@@ -725,7 +725,7 @@ metadata:
   name: pipelines-as-code-controller
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   replicas: 1
@@ -742,7 +742,7 @@ spec:
         app.kubernetes.io/component: controller
         app.kubernetes.io/instance: default
         app.kubernetes.io/part-of: pipelines-as-code
-        app.kubernetes.io/version: "v0.11.0"
+        app.kubernetes.io/version: "v0.11.1"
     spec:
       serviceAccountName: pipelines-as-code-controller
       containers:
@@ -819,7 +819,7 @@ metadata:
   name: pipelines-as-code-controller
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   ports:
@@ -855,7 +855,7 @@ metadata:
   name: pipelines-as-code-watcher
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   replicas: 1
@@ -872,7 +872,7 @@ spec:
         app.kubernetes.io/component: watcher
         app.kubernetes.io/instance: default
         app.kubernetes.io/part-of: pipelines-as-code
-        app.kubernetes.io/version: "v0.11.0"
+        app.kubernetes.io/version: "v0.11.1"
     spec:
       serviceAccountName: pipelines-as-code-watcher
       containers:
@@ -927,7 +927,7 @@ metadata:
   name: pipelines-as-code-webhook
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   replicas: 1
@@ -944,7 +944,7 @@ spec:
         app.kubernetes.io/component: webhook
         app.kubernetes.io/instance: default
         app.kubernetes.io/part-of: pipelines-as-code
-        app.kubernetes.io/version: "v0.11.0"
+        app.kubernetes.io/version: "v0.11.1"
     spec:
       serviceAccountName: pipelines-as-code-webhook
       containers:
@@ -987,7 +987,7 @@ metadata:
   name: pipelines-as-code-webhook
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "v0.11.0"
+    app.kubernetes.io/version: "v0.11.1"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   ports:
