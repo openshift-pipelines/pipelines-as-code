@@ -425,15 +425,33 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 }
 
 func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string, error) {
-	mrchanges, _, err := v.Client.MergeRequests.GetMergeRequestChanges(v.sourceProjectID, runevent.PullRequestNumber, &gitlab.GetMergeRequestChangesOptions{})
-	if err != nil {
-		return []string{}, err
+	if v.Client == nil {
+		return []string{}, fmt.Errorf("no gitlab client has been initiliazed, " +
+			"exiting... (hint: did you forget setting a secret on your repo?)")
+	}
+	if runevent.TriggerTarget == "pull_request" {
+		mrchanges, _, err := v.Client.MergeRequests.GetMergeRequestChanges(v.sourceProjectID, runevent.PullRequestNumber, &gitlab.GetMergeRequestChangesOptions{})
+		if err != nil {
+			return []string{}, err
+		}
+
+		result := []string{}
+		for _, change := range mrchanges.Changes {
+			result = append(result, change.NewPath)
+		}
+		return result, nil
 	}
 
-	result := []string{}
-	for _, change := range mrchanges.Changes {
-		result = append(result, change.NewPath)
+	if runevent.TriggerTarget == "push" {
+		pushChanges, _, err := v.Client.Commits.GetCommitDiff(v.sourceProjectID, runevent.SHA, &gitlab.GetCommitDiffOptions{})
+		if err != nil {
+			return []string{}, err
+		}
+		result := []string{}
+		for _, change := range pushChanges {
+			result = append(result, change.NewPath)
+		}
+		return result, nil
 	}
-
-	return result, nil
+	return []string{}, nil
 }

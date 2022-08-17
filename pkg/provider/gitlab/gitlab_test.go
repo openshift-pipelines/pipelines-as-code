@@ -2,6 +2,8 @@ package gitlab
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -626,6 +628,108 @@ func TestValidate(t *testing.T) {
 
 			if err := v.Validate(context.TODO(), nil, event); (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestGetFiles(t *testing.T) {
+	commitFiles := &gitlab.MergeRequest{}
+	tests := []struct {
+		name        string
+		event       *info.Event
+		mrchanges   *gitlab.MergeRequest
+		pushChanges []*gitlab.Diff
+	}{
+		{
+			name: "pull-request",
+			event: &info.Event{
+				TriggerTarget:     "pull_request",
+				Organization:      "pullrequestowner",
+				Repository:        "pullrequestrepository",
+				PullRequestNumber: 10,
+			},
+			mrchanges: &gitlab.MergeRequest{
+				Changes: append(commitFiles.Changes,
+					struct {
+						OldPath     string `json:"old_path"`
+						NewPath     string `json:"new_path"`
+						AMode       string `json:"a_mode"`
+						BMode       string `json:"b_mode"`
+						Diff        string `json:"diff"`
+						NewFile     bool   `json:"new_file"`
+						RenamedFile bool   `json:"renamed_file"`
+						DeletedFile bool   `json:"deleted_file"`
+					}{NewPath: "test.txt"}),
+			},
+		},
+		{
+			name: "push",
+			event: &info.Event{
+				TriggerTarget: "push",
+				Organization:  "pushrequestowner",
+				Repository:    "pushrequestrepository",
+				SHA:           "shacommitinfo",
+			},
+			pushChanges: []*gitlab.Diff{{
+				NewPath: "first.txt",
+			}, {
+				NewPath: "second.yaml",
+			}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			fakeclient, mux, teardown := thelp.Setup(ctx, t)
+			defer teardown()
+			mergeFileChanges := &gitlab.MergeRequest{
+				Changes: append(commitFiles.Changes,
+					struct {
+						OldPath     string `json:"old_path"`
+						NewPath     string `json:"new_path"`
+						AMode       string `json:"a_mode"`
+						BMode       string `json:"b_mode"`
+						Diff        string `json:"diff"`
+						NewFile     bool   `json:"new_file"`
+						RenamedFile bool   `json:"renamed_file"`
+						DeletedFile bool   `json:"deleted_file"`
+					}{NewPath: "test.txt"}),
+			}
+			if tt.event.TriggerTarget == "pull_request" {
+				mux.HandleFunc(fmt.Sprintf("/projects/0/merge_requests/%d/changes",
+					tt.event.PullRequestNumber), func(rw http.ResponseWriter, r *http.Request) {
+					jeez, err := json.Marshal(mergeFileChanges)
+					assert.NilError(t, err)
+					_, _ = rw.Write(jeez)
+				})
+			}
+			pushFileChanges := []*gitlab.Diff{{
+				NewPath: "first.txt",
+			}, {
+				NewPath: "second.yaml",
+			}}
+			if tt.event.TriggerTarget == "push" {
+				mux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff",
+					tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
+					jeez, err := json.Marshal(pushFileChanges)
+					assert.NilError(t, err)
+					_, _ = rw.Write(jeez)
+				})
+			}
+
+			providerInfo := &Provider{Client: fakeclient}
+			fileData, err := providerInfo.GetFiles(ctx, tt.event)
+			assert.NilError(t, err, nil)
+			if tt.event.TriggerTarget == "pull_request" {
+				for i := range fileData {
+					assert.Equal(t, tt.mrchanges.Changes[i].NewPath, fileData[i])
+				}
+			}
+			if tt.event.TriggerTarget == "push" {
+				for i := range fileData {
+					assert.Equal(t, tt.pushChanges[i].NewPath, fileData[i])
+				}
 			}
 		})
 	}
