@@ -32,7 +32,7 @@ recreate it.
   openssl rand -hex 20
 ```
 
-* Set the URL to the event listener public URL. On OpenShift, you can get the
+* Set the payload URL to Pipeline as Code public URL. On OpenShift, you can get the
   public URL of the Pipelines-as-Code route like this :
 
   ```shell
