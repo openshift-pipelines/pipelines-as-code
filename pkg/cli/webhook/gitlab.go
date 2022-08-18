@@ -56,7 +56,7 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
 	// confirm whether to use the detected url
 	if gl.controllerURL != "" {
 		var answer bool
-		fmt.Fprintf(gl.IOStream.Out, "👀 I have detected a controller url: %s", gl.controllerURL)
+		fmt.Fprintf(gl.IOStream.Out, "👀 I have detected a controller url: %s\n", gl.controllerURL)
 		err := prompt.SurveyAskOne(&survey.Confirm{
 			Message: "Do you want me to use it?",
 			Default: true,
