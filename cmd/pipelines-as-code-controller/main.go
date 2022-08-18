@@ -28,9 +28,11 @@ func main() {
 		log.Fatal("failed to init kinit client : ", err)
 	}
 
-	if err := run.GetConfigFromConfigMap(ctx); err != nil {
-		log.Fatal("failed to get defaults : ", err)
-	}
+	go func() {
+		if err := run.WatchConfigMapChanges(ctx, run); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	run.Info.Pac.LogURL = run.Clients.ConsoleUI.URL()
 
