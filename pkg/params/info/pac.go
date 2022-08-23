@@ -3,21 +3,19 @@ package info
 import (
 	"os"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 )
 
 type PacOpts struct {
-	LogURL                    string
-	ApplicationName           string // the Application Name for example "Pipelines as Code"
-	SecretAutoCreation        bool   // secret auto creation in target namespace
-	WebhookType               string
-	PayloadFile               string
-	TektonDashboardURL        string
-	HubURL                    string
-	RemoteTasks               bool
-	DefaultPipelineRunTimeout *time.Duration
+	LogURL             string
+	ApplicationName    string // the Application Name for example "Pipelines as Code"
+	SecretAutoCreation bool   // secret auto creation in target namespace
+	WebhookType        string
+	PayloadFile        string
+	TektonDashboardURL string
+	HubURL             string
+	RemoteTasks        bool
 
 	// bitbucket cloud specific fields
 	BitbucketCloudCheckSourceIP      bool
