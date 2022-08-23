@@ -44,7 +44,7 @@ func (gl *gitLabConfig) Run(_ context.Context, opts *Options) (*response, error)
 }
 
 func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
-	msg := "Please enter the project ID for the repository you want to be configured, \n  project ID refers to an unique ID shown at the top of your GitLab project :"
+	msg := "Please enter the project ID for the repository you want to be configured, \n  project ID refers to an unique ID (e.g. 34405323) shown at the top of your GitLab project :"
 	if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &gl.projectID,
 		survey.WithValidator(survey.Required)); err != nil {
 		return err
