@@ -1,6 +1,6 @@
 ---
 bookToc: false
-title: Overview
+title: An opinionated CI based on OpenShift Pipelines / Tekton
 ---
 # Pipelines as Code
 

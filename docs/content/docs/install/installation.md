@@ -20,7 +20,9 @@ Before installing Pipelines As Code, please verify [tektoncd/pipeline](https://g
   kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
 ```
 
-If already installed, please verify it is **_>= v0.25.0_**
+{{< hint info >}}
+If you are not installing the latest version, ensure you are running Tekton Pipeline greater than v0.25.0_
+{{< /hint >}}
 
 If you want to do a manual installation of the stable release of Pipelines as Code
 on your OpenShift cluster you can apply the template with kubectl :
