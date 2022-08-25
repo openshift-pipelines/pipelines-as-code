@@ -15,10 +15,12 @@ Controller route or ingress endpoint which would listen to GitHub events.
 
 There are 2 ways to set up GitHub App:
 
-You could use [`tkn pac bootstrap`](/docs/guide/cli) command which will a create GitHub App, provide
+## Setup using tkn pac cli
+
+You could use [`tkn pac bootstrap`](/docs/guide/cli) command which will a create GitHub App, provides
 steps to configure it with your git repository and also creates required secrets.
 
-or, you could set up manually by following the steps [here](#setup-manually)
+Alternatively, you could set up manually by following the steps [here](#setup-manually)
 
 ## Setup Manually
 
