@@ -44,6 +44,7 @@ for file in ${files};do
         -e "s,app.kubernetes.io/version:.*,app.kubernetes.io/version: \"${TARGET_PAC_VERSION}\"," \
         -e "s/Copyright[ ]*[0-9]{4}/Copyright $(date "+%Y")/" \
         -e "/kind: Namespace$/ { n;n;s/name: .*/name: ${TARGET_NAMESPACE}/;}" \
+        -e "s/\"devel\"/\"${TARGET_PAC_VERSION}\"/" \
         ${file} > ${TMP}
 
     # Remove openshift stuff apiGroups if we are not targetting openshift...
