@@ -25,7 +25,7 @@ const (
 	githubBaseURLPath = "/api/v3"
 )
 
-// SetupGH Setup a GitHUB httptest connexion, from go-github test-suit
+// SetupGH Setup a GitHUB httptest connection, from go-github test-suit
 func SetupGH() (client *github.Client, mux *http.ServeMux, serverURL string, teardown func()) {
 	// mux is the HTTP request multiplexer used with the test server.
 	mux = http.NewServeMux()

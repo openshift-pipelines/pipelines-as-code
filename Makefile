@@ -24,7 +24,7 @@ FORCE:
 .PHONY: vendor
 vendor:
 	@echo Generating vendor directory
-	@go mod tidy && go mod vendor
+	@go mod tidy -compat=1.17 && go mod vendor
 
 $(OUTPUT_DIR)/%: cmd/% FORCE
 	go build -mod=vendor $(FLAGS)  -v -o $@ ./$<

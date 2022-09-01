@@ -2,6 +2,8 @@ package webhook
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -42,7 +44,7 @@ func (gl *gitLabConfig) Run(_ context.Context, opts *Options) (*response, error)
 }
 
 func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
-	msg := "Please enter the project ID for the repository you want to be configured :"
+	msg := "Please enter the project ID for the repository you want to be configured, \n  project ID refers to an unique ID (e.g. 34405323) shown at the top of your GitLab project :"
 	if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &gl.projectID,
 		survey.WithValidator(survey.Required)); err != nil {
 		return err
@@ -54,7 +56,7 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
 	// confirm whether to use the detected url
 	if gl.controllerURL != "" {
 		var answer bool
-		fmt.Fprintf(gl.IOStream.Out, "👀 I have detected a controller url: %s", gl.controllerURL)
+		fmt.Fprintf(gl.IOStream.Out, "👀 I have detected a controller url: %s\n", gl.controllerURL)
 		err := prompt.SurveyAskOne(&survey.Confirm{
 			Message: "Do you want me to use it?",
 			Default: true,
@@ -75,11 +77,15 @@ func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
 		}
 	}
 
-	if err := prompt.SurveyAskOne(&survey.Password{
-		Message: "Please enter the secret to configure the webhook for payload validation: ",
-	}, &gl.webhookSecret, survey.WithValidator(survey.Required)); err != nil {
-		return err
+	RandomCrypto, randErr := rand.Prime(rand.Reader, 16)
+	if randErr != nil {
+		return randErr
 	}
+	data, marshalErr := json.Marshal(RandomCrypto)
+	if marshalErr != nil {
+		return marshalErr
+	}
+	gl.webhookSecret = string(data)
 
 	fmt.Fprintln(gl.IOStream.Out, "ℹ ️You now need to create a GitLab personal access token with `api` scope")
 	fmt.Fprintln(gl.IOStream.Out, "ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation ")

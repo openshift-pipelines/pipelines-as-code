@@ -24,21 +24,45 @@ Follow the pipelines-as-code [installation](/docs/install/installation) accordin
 
 ## Setup Git Repository
 
-Now, you have 2 ways to set up the repository and configure the webhook:
+There are 2 ways to set up the repository and configure the webhook:
 
-You could use [`tkn pac setup gitlab-webhook`](/docs/guide/cli) command which
+### Setup Git Repository using tkn pac cli
+
+* Use [`tkn pac setup gitlab-webhook`](/docs/guide/cli) command which
   will create repository CR and configure webhook.
 
   You need to have a personal access token created with `admin:repo_hook` scope. tkn-pac will use this token to configure the
   webhook and add it in a secret on cluster which will be used by pipelines-as-code controller for accessing the repository.
 
+Below is the sample format for `tkn pac setup gitlab-webhook`
+
+```shell script
+$ tkn pac setup gitlab-webhook
+
+? Please enter the project ID for the repository you want to be configured,
+  project ID refers to an unique ID shown at the top of your GitLab project : 17103
+? Please enter your controller public route URL:  <Pipeline As Code controller public URL>
+ℹ ️You now need to create a GitLab personal access token with `api` scope
+ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation
+? Please enter the GitLab access token:  **************************
+? Please enter your GitLab API URL::  https://gitlab.com/
+✓ Webhook has been created on your repository
+? Would you like me to create the Repository CR for your git repository? Yes
+? Please enter the namespace where the pipeline should run (default: project-pipelines):
+! Namespace project-pipelines is not found
+? Would you like me to create the namespace project-pipelines? Yes
+✓ Repository group-project has been created in project-pipelines namespace
+🔑 Webhook Secret group-project has been created in the project-pipelines namespace.
+🔑 Repository CR group-project has been updated with webhook secret in the project-pipelines namespace
+```
+
 Alternatively, you could follow the [Setup Git Repository manually](#setup-git-repository-manually) guide to do it manually
 
-## Setup Git Repository manually
+### Setup Git Repository manually
 
 * Go to your project and click on *Settings* and *"Webhooks"* from the sidebar on the left.
 
-* Set the payload URL to the event listener public URL. On OpenShift, you can get the public URL of the
+* Set the *URL* to Pipeline as Code controller public URL. On OpenShift, you can get the public URL of the
   Pipelines-as-Code controller like this :
 
   ```shell
@@ -57,7 +81,9 @@ Alternatively, you could follow the [Setup Git Repository manually](#setup-git-r
 
   * Merge request Events
   * Push Events
-  * Note Events
+  * Comments
+
+* Click on *Add webhook*
 
 * You are now able to create a Repository CRD. The repository CRD will reference a Kubernetes Secret containing the Personal token
 and another reference to a Kubernetes secret to validate the Webhook payload as set previously in your Webhook configuration.

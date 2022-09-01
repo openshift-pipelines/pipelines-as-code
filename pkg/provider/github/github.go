@@ -277,16 +277,30 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 
 // GetFiles get a files from pull request
 func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string, error) {
-	commitListOption := &github.ListOptions{}
-	repoCommit, _, err := v.Client.PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, commitListOption)
-	if err != nil {
-		return []string{}, err
+	if runevent.TriggerTarget == "pull_request" {
+		repoCommit, _, err := v.Client.PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, &github.ListOptions{})
+		if err != nil {
+			return []string{}, err
+		}
+		result := []string{}
+		for j := range repoCommit {
+			result = append(result, *repoCommit[j].Filename)
+		}
+		return result, nil
 	}
-	result := []string{}
-	for j := range repoCommit {
-		result = append(result, *repoCommit[j].Filename)
+
+	if runevent.TriggerTarget == "push" {
+		result := []string{}
+		rC, _, err := v.Client.Repositories.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA, &github.ListOptions{})
+		if err != nil {
+			return []string{}, err
+		}
+		for i := range rC.Files {
+			result = append(result, *rC.Files[i].Filename)
+		}
+		return result, nil
 	}
-	return result, nil
+	return []string{}, nil
 }
 
 // getObject Get an object from a repository

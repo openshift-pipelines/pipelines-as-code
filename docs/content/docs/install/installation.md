@@ -137,3 +137,71 @@ You can use following command to update the envs on the controller
 ```shell
   kubectl set env deployment pipelines-as-code-controller -n pipelines-as-code TLS_KEY=<key> TLS_CERT=<cert>
 ```
+
+## Proxy service for PAC controller
+
+### What
+
+proxy service is used to forward request coming to `pipelines-as-code-controller` service
+
+### Why
+
+PAC requires externally accessible URL to configure for GitHub, GitLab, BitBucket and there are few clusters which doesn't expose services to external world ex: Minikube, Kind and so on.
+
+### Proposed solution
+
+To handle such scenario for minikube/kind cluster lets use [smee.io](https://smee.io/)
+
+### Steps to configure smee.io
+
+- Generate your own URL by going to [smee.io/new](https://smee.io/new)
+- Copy `Webhook Proxy URL`
+- Add `Webhook Proxy URL` URL in container args of `deployment.yaml`.
+
+Ex: `'<replace Webhook Proxy URL>'` -> `'https://smee.io/oLHu7IjUV4wGm2tJ'`
+
+```yaml
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: gosmee-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gosmee-client
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: gosmee-client
+    spec:
+      containers:
+        - name: gosmee-client
+          image: 'ghcr.io/chmouel/gosmee:latest'
+          args:
+            - '<replace Webhook Proxy URL>'
+            - $(SVC)
+          env:
+            - name: SVC
+              value: >-
+                http://pipelines-as-code-controller.pipelines-as-code.svc.cluster.local:8080
+      restartPolicy: Always
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+```
+
+- Execute
+
+```yaml
+kubectl create -f deployment.yaml -n pipelines-as-code
+```
+
+- Use `Webhook Proxy URL` to configure in GitHub, GitLab and BitBucket.
+
+Basically use `Webhook Proxy URL` in all the places wherever `pipelines-as-code-controller` service URL used.

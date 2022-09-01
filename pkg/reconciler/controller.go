@@ -30,6 +30,12 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			log.Fatal("failed to init kinit client : ", err)
 		}
 
+		go func() {
+			if err := run.WatchConfigMapChanges(ctx, run); err != nil {
+				log.Fatal(err)
+			}
+		}()
+
 		run.Info.Pac.LogURL = run.Clients.ConsoleUI.URL()
 
 		pipelineRunInformer := pipelineruninformer.Get(ctx)

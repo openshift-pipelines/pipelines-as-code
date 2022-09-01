@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 type Run struct {
@@ -26,9 +26,50 @@ func StringToBool(s string) bool {
 	return false
 }
 
-// GetConfigFromConfigMap get config from configmap, we should remove all the
+// WatchConfigMapChanges watches for provide configmap
+func (r *Run) WatchConfigMapChanges(ctx context.Context, run *Run) error {
+	ns := os.Getenv("SYSTEM_NAMESPACE")
+	if ns == "" {
+		return fmt.Errorf("failed to find pipelines-as-code installation namespace")
+	}
+	watcher, err := r.Clients.Kube.CoreV1().ConfigMaps(ns).Watch(ctx, v1.SingleObject(v1.ObjectMeta{
+		Name:      info.PACConfigmapName,
+		Namespace: ns,
+	}))
+	if err != nil {
+		return fmt.Errorf("unable to create watcher : %w", err)
+	}
+	if err := run.getConfigFromConfigMapWatcher(ctx, watcher.ResultChan()); err != nil {
+		return fmt.Errorf("failed to get defaults : %w", err)
+	}
+	return nil
+}
+
+// getConfigFromConfigMapWatcher get config from configmap, we should remove all the
 // logics from cobra flags and just support configmap config and env config in the future.
-func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
+func (r *Run) getConfigFromConfigMapWatcher(ctx context.Context, eventChannel <-chan watch.Event) error {
+	for {
+		event, open := <-eventChannel
+		if open {
+			switch event.Type {
+			case watch.Added, watch.Modified:
+				if err := r.UpdatePACInfo(ctx); err != nil {
+					return err
+				}
+			case watch.Deleted, watch.Bookmark, watch.Error:
+				// added this case block to avoid lint issues
+				// Do nothing
+			default:
+				// Do nothing
+			}
+		} else {
+			// If eventChannel is closed, it means the server has closed the connection
+			return nil
+		}
+	}
+}
+
+func (r *Run) UpdatePACInfo(ctx context.Context) error {
 	ns := os.Getenv("SYSTEM_NAMESPACE")
 	if ns == "" {
 		return fmt.Errorf("failed to find pipelines-as-code installation namespace")
@@ -68,15 +109,6 @@ func (r *Run) GetConfigFromConfigMap(ctx context.Context) error {
 
 	if remoteTask, ok := cfg.Data["remote-tasks"]; ok {
 		r.Info.Pac.RemoteTasks = StringToBool(remoteTask)
-	}
-
-	if timeout, ok := cfg.Data["default-pipelinerun-timeout"]; ok {
-		parsedTimeout, err := time.ParseDuration(timeout)
-		if err != nil {
-			r.Clients.Log.Errorf("failed to parse default-pipelinerun-timeout: %s", cfg.Data["default-pipelinerun-timeout"])
-		} else {
-			r.Info.Pac.DefaultPipelineRunTimeout = &parsedTimeout
-		}
 	}
 
 	if check, ok := cfg.Data["bitbucket-cloud-check-source-ip"]; ok {

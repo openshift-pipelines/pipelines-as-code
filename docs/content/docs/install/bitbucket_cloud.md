@@ -34,24 +34,46 @@ Keep the generated token noted somewhere, or otherwise you will have to recreate
 
 ## Setup Git Repository
 
-Now, you have 2 ways to set up the repository and configure the webhook:
+There are 2 ways to set up the repository and configure the webhook:
 
-You could use [`tkn pac setup bitbucket-cloud-webhook`](/docs/guide/cli) command which
+### Setup Git Repository using tkn pac cli
+
+- Use [`tkn pac setup bitbucket-cloud-webhook`](/docs/guide/cli) command which
 will configure webhook and create repository CR.
 
 You need to have a App Password created. tkn-pac will use this token to configure the webhook and add it in a secret
 on cluster which will be used by pipelines-as-code controller for accessing the repository.
 
+Below is the sample format for `tkn pac setup bitbucket-cloud-webhook`
+
+```shell script
+$ tkn pac setup bitbucket-cloud-webhook
+
+✓ Setting up Bitbucket Webhook for Repository https://bitbucket.org/workspace/repo
+? Please enter your bitbucket cloud username:  <username>
+ℹ ️You now need to create a Bitbucket Cloud app password, please checkout the docs at https://is.gd/fqMHiJ for the required permissions
+? Please enter the Bitbucket Cloud app password:  ************************************
+? Please enter your controller public route URL:  <Pipeline As Code controller public URL>
+✓ Webhook has been created on repository workspace/repo
+? Would you like me to create the Repository CR for your git repository? Yes
+? Please enter the namespace where the pipeline should run (default: repo-pipelines): 
+! Namespace repo-pipelines is not found
+? Would you like me to create the namespace repo-pipelines? Yes
+✓ Repository workspace-repo has been created in repo-pipelines namespace
+🔑 Webhook Secret workspace-repo has been created in the repo-pipelines namespace.
+🔑 Repository CR workspace-repo has been updated with webhook secret in the repo-pipelines namespace
+```
+
 Alternatively, you could follow the [Setup Git Repository manually](#setup-git-repository-manually) guide to do it manually
 
-## Setup Git Repository manually
+### Setup Git Repository manually
 
-- Go to you **“Repository setting“** tab on your **Repository** and click on the
-  **WebHooks** tab and **“Add webhook“** button.
+- Go to you **“Repository settings“** tab on your **Repository** and click on the
+  **Webhooks** tab and **“Add webhook“** button.
 
 - Set a **Title** (i.e: Pipelines as Code)
 
-- Set the URL to the controller public URL. On OpenShift, you can get the public URL of the Pipelines-as-Code
+- Set the *URL* to Pipeline as Code controller public URL. On OpenShift, you can get the public URL of the Pipelines-as-Code
   controller like this :
 
   ```shell
@@ -67,6 +89,8 @@ Alternatively, you could follow the [Setup Git Repository manually](#setup-git-r
 {{< hint info >}}
 [Refer to this screenshot](/images/bitbucket-cloud-create-webhook.png) to make sure you have properly configured the Webhook.
 {{< /hint >}}
+
+- Click on *Save*
 
 - You are now able to create a [`Repository CRD`](/docs/guide/repositorycrd)
   The repository CRD will have:
@@ -85,18 +109,18 @@ Alternatively, you could follow the [Setup Git Repository manually](#setup-git-r
 
 ```yaml
   ---
-  apiVersion: “pipelinesascode.tekton.dev/v1alpha1“
+  apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
   kind: Repository
   metadata:
     name: my-repo
     namespace: target-namespace
   spec:
-    url: “https://bitbucket.com/workspace/repo“
-    branch: “main“
+    url: "https://bitbucket.com/workspace/repo"
+    branch: "main"
     git_provider:
-      user: “yourbitbucketusername“
+      user: "yourbitbucketusername"
       secret:
-        name: “bitbucket-cloud-token“
+        name: "bitbucket-cloud-token"
         # Set this if you have a different key in your secret
         # key: “provider.token“
 ```
