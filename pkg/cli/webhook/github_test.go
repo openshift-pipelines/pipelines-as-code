@@ -13,7 +13,7 @@ import (
 )
 
 func TestAskGHWebhookConfig(t *testing.T) {
-	// nolint
+	//nolint
 	io, _, _, _ := cli.IOTest()
 	tests := []struct {
 		name          string
@@ -73,7 +73,7 @@ func TestAskGHWebhookConfig(t *testing.T) {
 func TestCreate(t *testing.T) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
-	// nolint
+	//nolint
 	io, _, _, _ := cli.IOTest()
 
 	// webhook created for repo pac/valid

@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -129,7 +129,7 @@ func (gl *gitLabConfig) create() error {
 	}
 
 	if resp.Response.StatusCode != http.StatusCreated {
-		payload, err := ioutil.ReadAll(resp.Body)
+		payload, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("failed to read response body: %w", err)
 		}

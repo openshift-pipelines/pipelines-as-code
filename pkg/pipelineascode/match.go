@@ -214,7 +214,7 @@ func changeSecret(prs []*tektonv1beta1.PipelineRun) error {
 // checks are deprecated/removed to n+1 release of OSP.
 // each check should give a good error message on how to update.
 func (p *PacRun) checkNeedUpdate(tmpl string) (string, bool) {
-	// nolint: gosec
+	//nolint: gosec
 	oldBasicAuthSecretName := `\W*secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"`
 	if matched, _ := regexp.MatchString(oldBasicAuthSecretName, tmpl); matched {
 		return `!Update needed! you have a old basic auth secret name, you need to modify your pipelinerun and change the string "secret: pac-git-basic-auth-{{repo_owner}}-{{repo_name}}" to "secret: {{ git_auth_secret }}"`, true

@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
+	"io"
 	"os"
 
-	// nolint:gosec
+	//nolint:gosec
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -58,6 +58,6 @@ func Send(ctx context.Context, cs *params.Run, elURL, elWebHookSecret, githubURL
 		return fmt.Errorf("responses Error: %+d", resp.StatusCode)
 	}
 	defer resp.Body.Close()
-	_, err = ioutil.ReadAll(resp.Body)
+	_, err = io.ReadAll(resp.Body)
 	return err
 }

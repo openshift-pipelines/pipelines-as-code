@@ -55,7 +55,7 @@ func TestParsePayload(t *testing.T) {
 					Sender:       "sender",
 					Organization: "PROJ",
 					Repository:   "repo",
-					// nolint: stylecheck
+					//nolint: stylecheck
 					URL: "💢",
 					SHA: "abcd",
 				},

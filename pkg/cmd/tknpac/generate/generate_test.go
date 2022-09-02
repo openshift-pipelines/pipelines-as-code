@@ -1,7 +1,6 @@
 package generate
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -125,7 +124,7 @@ func TestGenerateTemplate(t *testing.T) {
 				err := os.MkdirAll(filepath.Dir(nd.Join(key)), os.ModePerm)
 				assert.NilError(t, err, "failed to create dir: %s", filepath.Dir(nd.Join(key)))
 
-				err = ioutil.WriteFile(nd.Join(key), []byte(value), 0o600)
+				err = os.WriteFile(nd.Join(key), []byte(value), 0o600)
 				assert.NilError(t, err, "failed to create file", key)
 			}
 
@@ -145,7 +144,7 @@ func TestGenerateTemplate(t *testing.T) {
 			}
 			if tt.checkRegInGeneratedFile != nil {
 				// check if file contains the expected strings
-				b, err := ioutil.ReadFile(nd.Join(tt.checkGeneratedFile))
+				b, err := os.ReadFile(nd.Join(tt.checkGeneratedFile))
 				assert.NilError(t, err)
 				for _, s := range tt.checkRegInGeneratedFile {
 					// check if regexp matches

@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -153,7 +153,7 @@ func (gh *gitHubConfig) create(ctx context.Context) error {
 	}
 
 	if res.Response.StatusCode != http.StatusCreated {
-		payload, err := ioutil.ReadAll(res.Body)
+		payload, err := io.ReadAll(res.Body)
 		if err != nil {
 			return fmt.Errorf("failed to read response body: %w", err)
 		}

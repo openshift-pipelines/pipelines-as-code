@@ -5,7 +5,7 @@ import (
 	"crypto/hmac"
 	"strings"
 
-	// nolint: gosec
+	//nolint: gosec
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"

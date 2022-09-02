@@ -1,7 +1,6 @@
 package resolve
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -36,7 +35,7 @@ func setup() {
 func readTDfile(t *testing.T, testname string, generateName bool, remoteTasking bool) (*tektonv1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
 	t.Helper()
 	ctx, _ := rtesting.SetupFakeContext(t)
-	data, err := ioutil.ReadFile("testdata/" + testname + ".yaml")
+	data, err := os.ReadFile("testdata/" + testname + ".yaml")
 	if err != nil {
 		return &tektonv1beta1.PipelineRun{}, nil, err
 	}

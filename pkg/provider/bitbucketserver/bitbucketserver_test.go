@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/hmac"
 
-	// nolint
+	//nolint
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"

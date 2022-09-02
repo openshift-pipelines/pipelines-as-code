@@ -6,8 +6,8 @@ package test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -28,13 +28,13 @@ func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
 	assert.NilError(t, err)
 
-	prun, err := ioutil.ReadFile("testdata/pipelinerun_remote_annotations.yaml")
+	prun, err := os.ReadFile("testdata/pipelinerun_remote_annotations.yaml")
 	assert.NilError(t, err)
 
-	pipeline, err := ioutil.ReadFile("testdata/pipeline_remote_annotations.yaml")
+	pipeline, err := os.ReadFile("testdata/pipeline_remote_annotations.yaml")
 	assert.NilError(t, err)
 
-	taskreferencedinternally, err := ioutil.ReadFile("testdata/task_referenced_internally.yaml")
+	taskreferencedinternally, err := os.ReadFile("testdata/task_referenced_internally.yaml")
 	assert.NilError(t, err)
 
 	entries := map[string]string{

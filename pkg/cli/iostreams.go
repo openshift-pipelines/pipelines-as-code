@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	surveyCore "github.com/AlecAivazis/survey/v2/core"
@@ -117,7 +116,7 @@ func IOTest() (*IOStreams, *bytes.Buffer, *bytes.Buffer, *bytes.Buffer) {
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
 	return &IOStreams{
-		In:     ioutil.NopCloser(in),
+		In:     io.NopCloser(in),
 		Out:    out,
 		ErrOut: errOut,
 	}, in, out, errOut

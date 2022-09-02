@@ -19,8 +19,8 @@ func TestPacRun_checkNeedUpdate(t *testing.T) {
 		needupdate           bool
 	}{
 		{
-			name: "old secrets",
-			tmpl: `		  secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"`,
+			name:                 "old secrets",
+			tmpl:                 `		  secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"`,
 			upgradeMessageSubstr: "old basic auth secret name",
 			needupdate:           true,
 		},

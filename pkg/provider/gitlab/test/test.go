@@ -3,7 +3,7 @@ package test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -44,7 +44,7 @@ func Setup(ctx context.Context, t *testing.T) (*gitlab.Client, *http.ServeMux, f
 func MuxNotePost(t *testing.T, mux *http.ServeMux, projectNumber int, mrID int, catchStr string) {
 	path := fmt.Sprintf("/projects/%d/merge_requests/%d/notes", projectNumber, mrID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
-		bit, _ := ioutil.ReadAll(r.Body)
+		bit, _ := io.ReadAll(r.Body)
 		s := string(bit)
 		if catchStr != "" {
 			assert.Assert(t, strings.Contains(s, catchStr), "%s is not in %s", catchStr, s)
@@ -136,7 +136,7 @@ func (t TEvent) PushEventAsJSON(withcommits bool) string {
 }
 
 func (t TEvent) NoteEventAsJSON(comment string) string {
-	// nolint:misspell
+	//nolint:misspell
 	return fmt.Sprintf(`{
 	"object_kind": "note",
 	"event_type": "note",

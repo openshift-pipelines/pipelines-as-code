@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -58,7 +58,7 @@ func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expec
 	path := fmt.Sprintf("/projects/%s/repos/%s/pull-requests/%d/comments", event.Organization, event.Repository, prID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &bbv1.Comment{}
-		bit, _ := ioutil.ReadAll(r.Body)
+		bit, _ := io.ReadAll(r.Body)
 		err := json.Unmarshal(bit, cso)
 		assert.NilError(t, err)
 		if expectedCommentSubstr != "" {
@@ -112,7 +112,7 @@ func MakeEvent(event *info.Event) *info.Event {
 }
 
 func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir string, targetDirName string) {
-	files, err := ioutil.ReadDir(testDir)
+	files, err := os.ReadDir(testDir)
 	if err != nil {
 		// no error just disapointed
 		return
@@ -127,7 +127,7 @@ func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir 
 		if info, err := os.Stat(fpath); err == nil && info.IsDir() {
 			continue
 		}
-		content, err := ioutil.ReadFile(fpath)
+		content, err := os.ReadFile(fpath)
 		assert.NilError(t, err)
 		filecontents[path] = string(content)
 	}
@@ -205,7 +205,7 @@ func MuxCreateAndTestCommitStatus(t *testing.T, mux *http.ServeMux, event *info.
 	path := fmt.Sprintf("/commits/%s", event.SHA)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &bbv1.BuildStatus{}
-		bit, _ := ioutil.ReadAll(r.Body)
+		bit, _ := io.ReadAll(r.Body)
 		err := json.Unmarshal(bit, cso)
 		assert.NilError(t, err)
 

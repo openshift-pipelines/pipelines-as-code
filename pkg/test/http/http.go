@@ -2,7 +2,7 @@ package http
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strconv"
 	"testing"
@@ -26,7 +26,7 @@ func MakeHTTPTestClient(t *testing.T, config map[string]map[string]string) *http
 					Header:     make(http.Header),
 				}
 				if body, ok := v["body"]; ok {
-					resp.Body = ioutil.NopCloser(bytes.NewBufferString(body))
+					resp.Body = io.NopCloser(bytes.NewBufferString(body))
 				}
 			}
 		}

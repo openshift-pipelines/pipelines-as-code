@@ -3,7 +3,7 @@ package test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -142,7 +142,7 @@ func MuxCreateCommitstatus(t *testing.T, mux *http.ServeMux, event *info.Event, 
 	path := fmt.Sprintf("/repositories/%s/%s/commit/%s/statuses/build", event.Organization, event.Repository, event.SHA)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &bitbucket.CommitStatusOptions{}
-		bit, _ := ioutil.ReadAll(r.Body)
+		bit, _ := io.ReadAll(r.Body)
 		err := json.Unmarshal(bit, cso)
 		assert.NilError(t, err)
 
@@ -169,7 +169,7 @@ func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expec
 	path := fmt.Sprintf("/repositories/%s/%s/pullrequests/%s/comments", event.Organization, event.Repository, prID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		cso := &types.Comment{}
-		bit, _ := ioutil.ReadAll(r.Body)
+		bit, _ := io.ReadAll(r.Body)
 		err := json.Unmarshal(bit, cso)
 		assert.NilError(t, err)
 		if expectedCommentSubstr != "" {
@@ -183,7 +183,7 @@ func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expec
 
 func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testdir string) {
 	t.Helper()
-	files, err := ioutil.ReadDir(testdir)
+	files, err := os.ReadDir(testdir)
 	assert.NilError(t, err)
 	lastindex := strings.LastIndex(testdir, ".tekton")
 
@@ -208,7 +208,7 @@ func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testdir 
 				Path: relativename,
 				Type: btype,
 			})
-			content, err := ioutil.ReadFile(fpath)
+			content, err := os.ReadFile(fpath)
 			assert.NilError(t, err)
 			filecontents[relativename] = string(content)
 		}

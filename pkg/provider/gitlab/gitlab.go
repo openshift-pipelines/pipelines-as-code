@@ -325,7 +325,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 		TargetURL:   gitlab.String(detailsURL),
 		Description: gitlab.String(statusOpts.Title),
 	}
-	// nolint: dogsled
+	//nolint: dogsled
 	_, _, _ = v.Client.Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
 
 	// only add a note when we are on a MR

@@ -3,8 +3,9 @@ package reconciler
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -123,7 +124,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			b, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s.yaml", tt.pipelineRunfile))
+			b, err := os.ReadFile(fmt.Sprintf("testdata/%s.yaml", tt.pipelineRunfile))
 			if err != nil {
 				t.Fatalf("ReadFile() = %v", err)
 			}
@@ -196,7 +197,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 func testSetupGHReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, checkrunID, finalStatus, finalStatusText string) {
 	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/%s", runevent.Organization, runevent.Repository, checkrunID),
 		func(w http.ResponseWriter, r *http.Request) {
-			body, _ := ioutil.ReadAll(r.Body)
+			body, _ := io.ReadAll(r.Body)
 			created := github.CreateCheckRunOptions{}
 			err := json.Unmarshal(body, &created)
 			assert.NilError(t, err)

@@ -3,7 +3,7 @@ package list
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 	"time"
@@ -29,7 +29,7 @@ func newIOStream() (*cli.IOStreams, *bytes.Buffer) {
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
 	return &cli.IOStreams{
-		In:     ioutil.NopCloser(in),
+		In:     io.NopCloser(in),
 		Out:    out,
 		ErrOut: errOut,
 	}, out

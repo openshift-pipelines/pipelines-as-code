@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -76,7 +75,7 @@ func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Even
 		})
 		assert.NilError(t, err)
 	} else {
-		dfiles, err := ioutil.ReadDir(dir)
+		dfiles, err := os.ReadDir(dir)
 		assert.NilError(t, err)
 
 		for _, f := range dfiles {
@@ -113,7 +112,7 @@ func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Even
 					}
 					assert.Assert(t, chosenf.name != "", "sha %s not found", sha)
 
-					s, err := ioutil.ReadFile(chosenf.name)
+					s, err := os.ReadFile(chosenf.name)
 					assert.NilError(t, err)
 					// encode content as base64
 					blob := &github.Blob{

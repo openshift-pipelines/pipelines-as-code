@@ -235,7 +235,7 @@ func showLogsWithWebConsole(lo *logOption, pr string) error {
 }
 
 func showlogswithtkn(tknPath, pr, ns string) error {
-	// nolint: gosec
+	//nolint: gosec
 	if err := syscall.Exec(tknPath, []string{tknPath, "pr", "logs", "-f", "-n", ns, pr}, os.Environ()); err != nil {
 		fmt.Fprintf(os.Stderr, "Command finished with error: %v", err)
 		os.Exit(127)
