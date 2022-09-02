@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	// nolint:gosec
+	//nolint:gosec
 	basicAuthSecretName    = `pac-gitauth-%s`
 	basicAuthGitConfigData = `
 	[credential "%s"]

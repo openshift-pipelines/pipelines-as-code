@@ -17,7 +17,7 @@ type Info struct {
 func RunGit(dir string, args ...string) (string, error) {
 	gitPath, err := exec.LookPath("git")
 	if err != nil {
-		// nolint: nilerr
+		//nolint: nilerr
 		return "", nil
 	}
 	c := exec.Command(gitPath, args...)

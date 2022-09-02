@@ -12,7 +12,7 @@ import (
 )
 
 func TestAskBBWebhookConfig(t *testing.T) {
-	// nolint
+	//nolint
 	io, _, _, _ := cli.IOTest()
 	tests := []struct {
 		name          string
@@ -74,7 +74,7 @@ func TestAskBBWebhookConfig(t *testing.T) {
 func TestBBCreate(t *testing.T) {
 	bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 	defer tearDown()
-	// nolint
+	//nolint
 	io, _, _, _ := cli.IOTest()
 
 	// webhook created for repo pac/repo

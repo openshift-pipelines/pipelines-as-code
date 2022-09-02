@@ -3,7 +3,6 @@ package generate
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -234,8 +233,8 @@ func (o *Opts) samplePipeline() error {
 		return err
 	}
 
-	// nolint: gosec
-	err = ioutil.WriteFile(fpath, tmpl.Bytes(), 0o644)
+	//nolint: gosec
+	err = os.WriteFile(fpath, tmpl.Bytes(), 0o644)
 	if err != nil {
 		return fmt.Errorf("cannot write template to %s: %w", fpath, err)
 	}

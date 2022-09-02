@@ -17,7 +17,6 @@ linters:
     - dogsled
     - durationcheck
     - exhaustive
-    # - exhaustivestruct
     - exportloopref
     - forbidigo
     - forcetypeassert
@@ -30,11 +29,9 @@ linters:
     - gosec
     - gocritic
     - misspell
-    - deadcode
     - gosec
     - gosimple
     - govet
-    - ifshort
     - importas
     - makezero
     - nakedret

@@ -13,7 +13,7 @@ import (
 )
 
 func TestAskGLWebhookConfig(t *testing.T) {
-	// nolint
+	//nolint
 	io, _, _, _ := cli.IOTest()
 	tests := []struct {
 		name          string
@@ -69,7 +69,7 @@ func TestGLCreate(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeclient, mux, teardown := thelp.Setup(ctx, t)
 	defer teardown()
-	// nolint
+	//nolint
 	io, _, _, _ := cli.IOTest()
 
 	// webhook created

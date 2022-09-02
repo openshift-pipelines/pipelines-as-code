@@ -2,7 +2,7 @@ package cli
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 )
@@ -13,7 +13,7 @@ func NewIOStream() (*cli.IOStreams, *bytes.Buffer) {
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
 	return &cli.IOStreams{
-		In:     ioutil.NopCloser(in),
+		In:     io.NopCloser(in),
 		Out:    out,
 		ErrOut: errOut,
 	}, out

@@ -3,7 +3,6 @@ package resolve
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -167,7 +166,7 @@ func resolveFilenames(cs *params.Run, filenames []string, params map[string]stri
 }
 
 func appendYaml(filename string) string {
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		log.Fatal(err)
 	}

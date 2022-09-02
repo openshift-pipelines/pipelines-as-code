@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -76,7 +76,7 @@ func (l *listener) Start(_ context.Context) error {
 
 	mux.HandleFunc("/", l.handleEvent())
 
-	// nolint: gosec
+	//nolint: gosec
 	srv := &http.Server{
 		Addr: ":" + adapterPort,
 		Handler: http.TimeoutHandler(mux,
@@ -105,8 +105,10 @@ func (l listener) handleEvent() http.HandlerFunc {
 			return
 		}
 
+		// read request Body
+
 		// event body
-		payload, err := ioutil.ReadAll(request.Body)
+		payload, err := io.ReadAll(request.Body)
 		if err != nil {
 			l.logger.Errorf("failed to read body : %v", err)
 			response.WriteHeader(http.StatusInternalServerError)

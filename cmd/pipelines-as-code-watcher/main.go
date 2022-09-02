@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/reconciler"
 	"knative.dev/pkg/injection/sharedmain"
@@ -27,7 +28,15 @@ func main() {
 	go func() {
 		// start the web server on port and accept requests
 		log.Printf("Readiness and health check server listening on port %s", probesPort)
-		log.Fatal(http.ListenAndServe(":"+probesPort, mux))
+		// timeout values same as default one from triggers eventlistener
+		// https://github.com/tektoncd/triggers/blame/b5b0ee1249402187d1ceff68e0b9d4e49f2ee957/pkg/sink/initialization.go#L48-L52
+		srv := &http.Server{
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 40 * time.Second,
+			Addr:         ":" + probesPort,
+			Handler:      mux,
+		}
+		log.Fatal(srv.ListenAndServe())
 	}()
 
 	sharedmain.Main("pac-watcher", reconciler.NewController())

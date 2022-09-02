@@ -39,7 +39,6 @@ func (bb *bitbucketCloudConfig) Run(_ context.Context, opts *Options) (*response
 	}, bb.create()
 }
 
-// nolint: duplicate
 func (bb *bitbucketCloudConfig) askBBWebhookConfig(repositoryURL, controllerURL, apiURL string) error {
 	if repositoryURL == "" {
 		msg := "Please enter the git repository url you want to be configured: "

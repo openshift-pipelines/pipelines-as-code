@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"regexp"
@@ -54,7 +54,7 @@ func (rt RemoteTasks) getTask(ctx context.Context, logger *zap.SugaredLogger, pr
 		if err != nil {
 			return ret, err
 		}
-		data, _ := ioutil.ReadAll(res.Body)
+		data, _ := io.ReadAll(res.Body)
 		defer res.Body.Close()
 		return rt.convertTotask(string(data))
 	case strings.Contains(task, "/"):
@@ -120,7 +120,7 @@ func getTaskFromLocalFS(taskName string, logger *zap.SugaredLogger) (string, err
 		return "", nil
 	}
 
-	b, err := ioutil.ReadFile(taskName)
+	b, err := os.ReadFile(taskName)
 	data = string(b)
 	if err != nil {
 		return "", err

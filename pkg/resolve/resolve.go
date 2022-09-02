@@ -200,7 +200,7 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 	return types.PipelineRuns, nil
 }
 
-// nolint:gochecknoinits
+//nolint:gochecknoinits
 func init() {
 	_ = tektonv1beta1.AddToScheme(k8scheme.Scheme)
 }

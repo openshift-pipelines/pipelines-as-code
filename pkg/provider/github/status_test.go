@@ -3,7 +3,7 @@ package github
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path/filepath"
 	"reflect"
@@ -223,7 +223,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			}
 			mux.HandleFunc("/repos/check/run/statuses/sha", func(rw http.ResponseWriter, r *http.Request) {})
 			mux.HandleFunc(fmt.Sprintf("/repos/check/run/check-runs/%d", checkrunid), func(rw http.ResponseWriter, r *http.Request) {
-				bit, _ := ioutil.ReadAll(r.Body)
+				bit, _ := io.ReadAll(r.Body)
 				checkRun := &github.CheckRun{}
 				err := json.Unmarshal(bit, checkRun)
 				assert.NilError(t, err)
@@ -334,13 +334,13 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 			defer teardown()
 			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/statuses/%s",
 				tt.event.Organization, tt.event.Repository, tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
-				body, _ := ioutil.ReadAll(r.Body)
+				body, _ := io.ReadAll(r.Body)
 				assert.Check(t, strings.Contains(string(body), fmt.Sprintf(`"state":"%s"`, tt.expectedConclusion)))
 			})
 			if tt.status.Status == "completed" {
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/issues/%d/comments",
 					tt.event.Organization, tt.event.Repository, issuenumber), func(rw http.ResponseWriter, r *http.Request) {
-					body, _ := ioutil.ReadAll(r.Body)
+					body, _ := io.ReadAll(r.Body)
 					assert.Equal(t, fmt.Sprintf(`{"body":"%s<br>%s"}`, tt.status.Summary, tt.status.Text)+"\n", string(body))
 				})
 			}

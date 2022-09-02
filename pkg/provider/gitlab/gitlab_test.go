@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -346,7 +346,7 @@ func TestSetClient(t *testing.T) {
 }
 
 func TestGetTektonDir(t *testing.T) {
-	samplePR, err := ioutil.ReadFile("../../resolve/testdata/pipeline-finally.yaml")
+	samplePR, err := os.ReadFile("../../resolve/testdata/pipeline-finally.yaml")
 	assert.NilError(t, err)
 	type fields struct {
 		targetProjectID int

@@ -46,7 +46,7 @@ func TestSplitArgsInMap(t *testing.T) {
 func TestCommandFilenameSetProperly(t *testing.T) {
 	tdata := testclient.Data{}
 	ctx, _ := rtesting.SetupFakeContext(t)
-	// nolint
+	//nolint
 	io, _, _, _ := cli.IOTest()
 	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 	cs := &params.Run{

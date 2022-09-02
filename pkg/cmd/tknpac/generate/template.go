@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -75,7 +75,7 @@ func (o *Opts) genTmpl() (*bytes.Buffer, error) {
 		log.Fatal(err)
 	}
 	defer embedfile.Close()
-	tmplB, _ := ioutil.ReadAll(embedfile)
+	tmplB, _ := io.ReadAll(embedfile)
 
 	prName := filepath.Base(o.GitInfo.URL)
 
