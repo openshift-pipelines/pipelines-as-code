@@ -47,6 +47,7 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 		}
 		return nil, nil, nil
 	}
+	p.repoMatched = repo
 
 	// If we have a git_provider field in repository spec, then get all the
 	// information from there, including the webhook secret.
@@ -72,9 +73,10 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 		if err := p.vcx.Validate(ctx, p.run, p.event); err != nil {
 			// check that webhook secret has no /n or space into it
 			if strings.ContainsAny(p.event.Provider.WebhookSecret, "\n ") {
-				p.logger.Error(`we have failed to validate the payload with the webhook secret, 
+				msg := `we have failed to validate the payload with the webhook secret,
 it seems that we have detected a \n or a space at the end of your webhook secret, 
-is that what you want? make sure you use -n when generating the secret, eg: echo -n secret|base64`)
+is that what you want? make sure you use -n when generating the secret, eg: echo -n secret|base64`
+				p.emitMessage(msg, "error")
 			}
 			return nil, nil, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
 		}
@@ -101,7 +103,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 		}
 		if !allowed {
 			msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", p.event.Sender)
-			p.logger.Info(msg)
+			p.emitMessage(msg, "info")
 			if p.event.AccountID != "" {
 				msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", p.event.Sender, p.event.AccountID)
 			}
@@ -122,7 +124,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	// check for condition if need update the pipelinerun with regexp from the
 	// "raw" pipelinerun string
 	if msg, needUpdate := p.checkNeedUpdate(rawTemplates); needUpdate {
-		p.logger.Info(msg)
+		p.emitMessage(msg, "info")
 		return nil, nil, fmt.Errorf(msg)
 	}
 
@@ -137,14 +139,14 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 		if err != nil {
 			msg += fmt.Sprintf(" err: %s", err.Error())
 		}
-		p.logger.Info(msg)
+		p.emitMessage(msg, "info")
 		return nil, nil, nil
 	}
 
 	// if /test command is used then filter out the pipelinerun
 	pipelineRuns = filterRunningPipelineRunOnTargetTest(p.event.TargetTestPipelineRun, pipelineRuns)
 	if pipelineRuns == nil {
-		p.logger.Info(fmt.Sprintf("cannot find pipelinerun %s in this repository", p.event.TargetTestPipelineRun))
+		p.emitMessage(fmt.Sprintf("cannot find pipelinerun %s in this repository", p.event.TargetTestPipelineRun), "info")
 		return nil, nil, nil
 	}
 
@@ -157,8 +159,8 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx)
 	if err != nil {
 		// Don't fail when you don't have a match between pipeline and annotations
-		// TODO: better reporting
-		p.logger.Warn(err.Error())
+		p.emitMessage(
+			fmt.Sprintf("cannot find pipelinerun %s in this repository: %s", p.event.TargetTestPipelineRun, err.Error()), "warn")
 		return nil, nil, nil
 	}
 
