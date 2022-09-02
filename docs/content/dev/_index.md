@@ -63,7 +63,7 @@ override it you can set the `PAC_DIRS` environment variable.
 ## Gitea
 
 Gitea is "unofficially" supported. You just need to configure Gitea the same way
-you do for Github enteprise and Pipelines as Code will recognize it.
+you do for GitHub enteprise and Pipelines as Code will recognize it.
 
 Here is an example of a Gitea NS/CRD/Secret (set to empty):
 

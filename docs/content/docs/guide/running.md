@@ -51,9 +51,9 @@ GitHub App.
 You can restart a PipelineRun without having to send a new commit to
 your branch or pull_request.
 
-### Github APPS
+### GitHub APPS
 
-On Github if you are using the Github apps, you can go to the Checks tab and
+On GitHub if you are using the Github apps, you can go to the Checks tab and
 click on the upper left button called "Re-Run" and Pipelines as Code will react
 to the event and restart testing the PipelineRun
 
