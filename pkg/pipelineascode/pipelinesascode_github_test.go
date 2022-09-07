@@ -119,8 +119,8 @@ func TestRun(t *testing.T) {
 				TriggerTarget: "pull_request",
 			},
 			tektondir:       "testdata/pull_request",
-			finalStatus:     "neutral",
-			finalStatusText: "PipelineRun has no taskruns",
+			finalStatus:     "failure",
+			finalStatusText: "we need at least one pipelinerun to start with",
 		},
 		{
 			name: "pull request/with webhook",

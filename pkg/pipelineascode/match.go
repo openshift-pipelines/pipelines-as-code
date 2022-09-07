@@ -118,7 +118,12 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 		}
 	}
 
-	rawTemplates := p.getAllPipelineRuns(ctx)
+	rawTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir)
+	if err != nil {
+		p.logger.Info("I could not get the tekton directory: %s", err.Error())
+		return nil, nil, nil
+	}
+
 	// check for condition if need update the pipelinerun with regexp from the
 	// "raw" pipelinerun string
 	if msg, needUpdate := p.checkNeedUpdate(rawTemplates); needUpdate {
@@ -132,11 +137,11 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 		GenerateName: true,
 		RemoteTasks:  p.run.Info.Pac.RemoteTasks,
 	})
-	if pipelineRuns == nil || err != nil {
+	if err != nil && !strings.Contains(err.Error(), "404 Not Found") {
+		return nil, nil, err
+	}
+	if pipelineRuns == nil {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
-		if err != nil {
-			msg += fmt.Sprintf(" err: %s", err.Error())
-		}
 		p.logger.Info(msg)
 		return nil, nil, nil
 	}
@@ -220,15 +225,4 @@ func (p *PacRun) checkNeedUpdate(tmpl string) (string, bool) {
 		return `!Update needed! you have a old basic auth secret name, you need to modify your pipelinerun and change the string "secret: pac-git-basic-auth-{{repo_owner}}-{{repo_name}}" to "secret: {{ git_auth_secret }}"`, true
 	}
 	return "", false
-}
-
-func (p *PacRun) getAllPipelineRuns(ctx context.Context) string {
-	// Get everything in tekton directory
-	allTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir)
-	if allTemplates == "" || err != nil {
-		if err != nil {
-			p.logger.Errorw("there was an error getting all files in tektondir: %w", err)
-		}
-	}
-	return allTemplates
 }
