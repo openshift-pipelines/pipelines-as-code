@@ -46,8 +46,9 @@ func TestGithubPush(t *testing.T) {
 		err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
 		assert.NilError(t, err)
 
-		entries, err := payload.GetEntries([]string{"testdata/pipelinerun-on-push.yaml"}, targetNS, targetBranch,
-			targetEvent)
+		entries, err := payload.GetEntries(
+			map[string]string{".tekton/pipelinerun-on-push.yaml": "testdata/pipelinerun-on-push.yaml"},
+			targetNS, targetBranch, targetEvent)
 		assert.NilError(t, err)
 
 		title := "TestPush "

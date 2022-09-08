@@ -34,13 +34,10 @@ func TestGithubPullRequestOkToTest(t *testing.T) {
 	}
 
 	runevent := info.Event{
-		BaseBranch:    repoinfo.GetDefaultBranch(),
 		DefaultBranch: repoinfo.GetDefaultBranch(),
-		HeadBranch:    targetRefName,
 		Organization:  opts.Organization,
 		Repository:    opts.Repo,
 		URL:           repoinfo.GetHTMLURL(),
-		SHA:           sha,
 		Sender:        opts.Organization,
 	}
 

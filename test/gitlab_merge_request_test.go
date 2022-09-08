@@ -32,8 +32,9 @@ func TestGitlabMergeRequest(t *testing.T) {
 	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS, nil)
 	assert.NilError(t, err)
 
-	entries, err := payload.GetEntries([]string{
-		"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml",
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun.yaml":       "testdata/pipelinerun.yaml",
+		".tekton/pipelinerun-clone.yaml": "testdata/pipelinerun-clone.yaml",
 	}, targetNS, projectinfo.DefaultBranch,
 		options.PullRequestEvent)
 	assert.NilError(t, err)

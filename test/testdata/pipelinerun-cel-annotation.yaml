@@ -2,11 +2,11 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: pipeline-annotation-cel
+  name: {{.PipelineName}}
   annotations:
-    pipelinesascode.tekton.dev/target-namespace: "%s"
+    pipelinesascode.tekton.dev/target-namespace: "{{.TargetNamespace}}"
     pipelinesascode.tekton.dev/on-cel-expression: |
-      target_branch == "%s" && event == "%s"
+      target_branch == "{{.TargetBranch}}" && event == "{{.TargetEvent}}"
 spec:
   pipelineSpec:
     tasks:
