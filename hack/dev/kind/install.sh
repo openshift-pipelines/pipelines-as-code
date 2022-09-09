@@ -71,7 +71,7 @@ containerdConfigPatches:
     endpoint = ["http://${REG_NAME}:5000"]
 EOF
 
-	${SUDO} ${kind} create cluster --name ${KIND_CLUSTER_NAME} --config  ${TMPD}/kconfig.yaml
+	${SUDO} ${kind} create cluster --image kindest/node:v1.24.0 --name ${KIND_CLUSTER_NAME} --config  ${TMPD}/kconfig.yaml
 	mkdir -p $(dirname ${KUBECONFIG})
 	${SUDO} ${kind} --name ${KIND_CLUSTER_NAME} get kubeconfig > ${KUBECONFIG}
 
