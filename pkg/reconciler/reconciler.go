@@ -56,6 +56,17 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 		}
 	}
 
+	// update repo status of running pipelinerun
+	for i := range pr.Status.Conditions {
+		if pr.Status.Conditions[i].Reason == v1beta1.PipelineRunReasonRunning.String() {
+			if err := r.updateRepoForInprogressPipelineRun(ctx, logger, pr); err != nil {
+				logger.Error(err)
+				return err
+			}
+		}
+
+	}
+
 	if state == kubeinteraction.StateQueued {
 		return r.queuePipelineRun(ctx, logger, pr)
 	}
@@ -75,6 +86,31 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 
 		return r.reportFinalStatus(ctx, logger, event, pr, provider)
 	}
+	return nil
+}
+
+func (r *Reconciler) updateRepoForInprogressPipelineRun(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
+	repoName := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "repository")]
+	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
+		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	_, event, err := r.detectProvider(ctx, logger, pr)
+	if err != nil {
+		logger.Error(err)
+		return nil
+	}
+
+	if !r.isPipelinerunNameAlreadyExistInRepoStatus(repo.Status, pr.Name) {
+		if err := r.updateRepoRunStatus(ctx, logger, pr, repo, event); err != nil {
+			return err
+		}
+	}
+
+	logger.Info("updated in_progress/running status of pipelinerun ", pr.GetName(), " in repository ", repo.Name)
+
 	return nil
 }
 

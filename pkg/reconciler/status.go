@@ -52,8 +52,12 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 			copy(lastrepo.Status, lastrepo.Status[len(lastrepo.Status)-maxPipelineRunStatusRun+1:])
 			lastrepo.Status = lastrepo.Status[:maxPipelineRunStatusRun-1]
 		}
+		if r.isPipelinerunNameAlreadyExistInRepoStatus(lastrepo.Status, repoStatus.PipelineRunName) {
+			lastrepo.Status = removePipelinerunNameFromLastRepo(lastrepo.Status, repoStatus.PipelineRunName)
+		}
 
 		lastrepo.Status = append(lastrepo.Status, repoStatus)
+
 		nrepo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
 			ctx, lastrepo, metav1.UpdateOptions{})
 		if err != nil {
@@ -65,6 +69,26 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 	}
 
 	return fmt.Errorf("cannot update %s", repo.Name)
+}
+
+// isPipelinerunNameAlreadyExistInStatus checks if a pipelinerun is present in a last repository status
+func (r *Reconciler) isPipelinerunNameAlreadyExistInRepoStatus(s []pacv1a1.RepositoryRunStatus, str string) bool {
+	for _, v := range s {
+		if v.PipelineRunName == str {
+			return true
+		}
+	}
+	return false
+}
+
+// removePipelinerunNameFromLastRepo will remove duplicate pipelinerun from repo status
+func removePipelinerunNameFromLastRepo(s []pacv1a1.RepositoryRunStatus, str string) []pacv1a1.RepositoryRunStatus {
+	for j, v := range s {
+		if v.PipelineRunName == str {
+			s = append(s[:j], s[j+1:]...)
+		}
+	}
+	return s
 }
 
 func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLogger, vcx provider.Interface, event *info.Event, createdPR *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {

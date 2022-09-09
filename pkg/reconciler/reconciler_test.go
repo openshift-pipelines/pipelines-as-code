@@ -1,6 +1,7 @@
 package reconciler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,6 +29,7 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 	rtesting "knative.dev/pkg/reconciler/testing"
 	"sigs.k8s.io/yaml"
 )
@@ -272,5 +274,114 @@ func TestUpdatePipelineRunState(t *testing.T) {
 			assert.Equal(t, updatedPR.Labels[filepath.Join(pipelinesascode.GroupName, "state")], tt.state)
 			assert.Equal(t, updatedPR.Spec.Status, v1beta1.PipelineRunSpecStatus(""))
 		})
+	}
+}
+
+func TestUpdateRepoForInprogressPipelineRun(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	fakelogger := zap.New(observer).Sugar()
+	tests := []struct {
+		name            string
+		pipelineRunfile string
+		pipelineRun     *v1beta1.PipelineRun
+	}{
+		{
+			name:            "test running and completed pipelinerun",
+			pipelineRunfile: "test-running-pipelinerun",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			b, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s.yaml", tt.pipelineRunfile))
+			if err != nil {
+				t.Fatalf("ReadFile() = %v", err)
+			}
+			pr := v1beta1.PipelineRun{}
+			if err := yaml.Unmarshal(b, &pr); err != nil {
+				t.Fatalf("yaml.Unmarshal() = %v", err)
+			}
+			testData := testclient.Data{
+				Repositories: []*v1alpha1.Repository{testRepo},
+				PipelineRuns: []*v1beta1.PipelineRun{&pr},
+			}
+			stdata, _ := testclient.SeedTestData(t, ctx, testData)
+
+			r := Reconciler{
+				qm: sync.NewQueueManager(fakelogger),
+				run: &params.Run{
+					Clients: clients.Clients{
+						PipelineAsCode: stdata.PipelineAsCode,
+						Tekton:         stdata.Pipeline,
+						Kube:           stdata.Kube,
+						ConsoleUI:      consoleui.FallBackConsole{},
+					},
+					Info: info.Info{
+						Pac: &info.PacOpts{
+							SecretAutoCreation: true,
+						},
+					},
+				},
+				pipelineRunLister: stdata.PipelineLister,
+				kinteract: &kubeinteraction.Interaction{
+					Run: &params.Run{
+						Clients: clients.Clients{
+							Kube:   stdata.Kube,
+							Tekton: stdata.Pipeline,
+						},
+					},
+				},
+			}
+
+			event := buildEventFromPipelineRun(&pr)
+
+			// update repo status when status is nil
+			err = r.updateRepoForInprogressPipelineRun(ctx, fakelogger, &pr)
+			assert.NilError(t, err)
+
+			// check that update repo status won't happen for same pipelinerun name
+			err = r.updateRepoForInprogressPipelineRun(ctx, fakelogger, &pr)
+			assert.NilError(t, err)
+
+			verifyResult(t, ctx, stdata, corev1.ConditionUnknown)
+
+			// once pipelinerun is completed then remove pipelinerun which was in running state from lastrepo status.
+			//b, err = ioutil.ReadFile(fmt.Sprintf("testdata/test-completed-pipelinerun.yaml"))
+			b, err = ioutil.ReadFile(fmt.Sprintf("testdata/test-succeeded-pipelinerun.yaml"))
+			if err != nil {
+				t.Fatalf("ReadFile() = %v", err)
+			}
+			completedPR := v1beta1.PipelineRun{}
+			if err := yaml.Unmarshal(b, &completedPR); err != nil {
+				t.Fatalf("yaml.Unmarshal() = %v", err)
+			}
+			err = r.updateRepoRunStatus(ctx, fakelogger, &completedPR, testRepo, event)
+			assert.NilError(t, err)
+
+			verifyResult(t, ctx, stdata, corev1.ConditionTrue)
+		})
+	}
+}
+
+func verifyResult(t *testing.T, ctx context.Context, stdata testclient.Clients, status corev1.ConditionStatus) {
+	got, err := stdata.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(testRepo.Namespace).Get(ctx, testRepo.Name, metav1.GetOptions{})
+	assert.NilError(t, err)
+
+	if len(got.Status) == 0 && len(got.Status) > 1 {
+		t.Fatal("repository should have atleast one pipelinerun")
+	}
+
+	var finalStatusData = &apis.Conditions{}
+
+	for i := range got.Status {
+		data, err := json.Marshal(got.Status[i].Conditions)
+		assert.NilError(t, err)
+		err = json.Unmarshal(data, finalStatusData)
+		assert.NilError(t, err)
+	}
+	for _, v := range *finalStatusData {
+		if v.Status != status {
+			t.Fatal("expected repository pipelinerun status to be", status, "but got", v.Status)
+		}
 	}
 }
