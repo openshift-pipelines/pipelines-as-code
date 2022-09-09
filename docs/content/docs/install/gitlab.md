@@ -122,7 +122,9 @@ Here is an example of a Repository CRD :
 
 ## Notes
 
-* Private instance are automatically detected, no need to specify the api URL. Unless you want to override it then you can simply add it to the spec`.git_provider.url` field.
+* Private instances are not automatically detected for GitLab yet, so you will need to specify the API URL under the spec `git_provider.url`.
+
+* If you want to override the API URL then you can simply add it to the spec`.git_provider.url` field.
 
 * `git_provider.secret` cannot reference a secret in another namespace,
   Pipelines as code always assumes it will be the same namespace as where the
