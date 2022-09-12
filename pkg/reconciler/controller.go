@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	pipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun"
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	"k8s.io/apimachinery/pkg/types"
@@ -76,6 +77,10 @@ func ctrlOpts() func(impl *controller.Impl) controller.Options {
 	return func(impl *controller.Impl) controller.Options {
 		return controller.Options{
 			FinalizerName: pipelinesascode.GroupName,
+			PromoteFilterFunc: func(obj interface{}) bool {
+				_, exist := obj.(*v1beta1.PipelineRun).GetLabels()[filepath.Join(pipelinesascode.GroupName, "state")]
+				return exist
+			},
 		}
 	}
 }
