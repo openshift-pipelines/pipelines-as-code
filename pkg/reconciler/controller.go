@@ -46,7 +46,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			pipelineRunLister: pipelineRunInformer.Lister(),
 			qm:                sync.NewQueueManager(run.Clients.Log),
 		}
-		impl := pipelinerunreconciler.NewImpl(ctx, c)
+		impl := pipelinerunreconciler.NewImpl(ctx, c, ctrlOpts())
 
 		if err := c.qm.InitQueues(ctx, run.Clients.Tekton, run.Clients.PipelineAsCode); err != nil {
 			log.Fatal("failed to init queues", err)
@@ -68,6 +68,14 @@ func checkStateAndEnqueue(impl *controller.Impl) func(obj interface{}) {
 			if exist {
 				impl.EnqueueKey(types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()})
 			}
+		}
+	}
+}
+
+func ctrlOpts() func(impl *controller.Impl) controller.Options {
+	return func(impl *controller.Impl) controller.Options {
+		return controller.Options{
+			FinalizerName: pipelinesascode.GroupName,
 		}
 	}
 }
