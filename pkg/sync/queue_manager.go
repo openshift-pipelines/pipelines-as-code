@@ -175,3 +175,11 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 
 	return nil
 }
+
+func (qm *QueueManager) RemoveRepository(repo *v1alpha1.Repository) {
+	qm.lock.Lock()
+	defer qm.lock.Unlock()
+
+	repoKey := repoKey(repo)
+	delete(qm.queueMap, repoKey)
+}

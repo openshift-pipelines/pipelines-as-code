@@ -18,6 +18,7 @@ import (
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -83,9 +84,15 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
 		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
 	if err != nil {
+		// if repository is not found, then skip processing the pipelineRun and return nil
+		if errors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 
+	// if concurrency was set and later removed or changed to zero
+	// then remove pipelineRun from Queue and update pending state to running
 	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit == 0 {
 		_ = r.qm.RemoveFromQueue(repo, pr)
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
