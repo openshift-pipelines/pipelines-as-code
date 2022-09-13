@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
@@ -33,6 +34,7 @@ type Reconciler struct {
 	pipelineRunLister v1beta12.PipelineRunLister
 	kinteract         kubeinteraction.Interface
 	qm                *sync.QueueManager
+	metrics           *metrics.Recorder
 }
 
 var (
@@ -157,6 +159,10 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		return err
 	}
 
+	if err := r.emitMetrics(pr); err != nil {
+		logger.Error("failed to emit metrics: ", err)
+	}
+
 	// remove pipelineRun from Queue and start the next one
 	next := r.qm.RemoveFromQueue(repo, pr)
 	if next != "" {
@@ -173,6 +179,21 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	}
 
 	return nil
+}
+
+func (r *Reconciler) emitMetrics(pr *v1beta1.PipelineRun) error {
+	gitProvider := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "git-provider")]
+	eventType := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "event-type")]
+
+	if strings.HasPrefix(gitProvider, "github") {
+		if _, ok := pr.GetAnnotations()[filepath.Join(pipelinesascode.GroupName, "installation-id")]; ok {
+			gitProvider += "-app"
+		} else {
+			gitProvider += "-webhook"
+		}
+	}
+
+	return r.metrics.Count(gitProvider, eventType)
 }
 
 func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {

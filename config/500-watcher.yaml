@@ -36,6 +36,7 @@ spec:
         app.kubernetes.io/instance: default
         app.kubernetes.io/part-of: pipelines-as-code
         app.kubernetes.io/version: "devel"
+        app: pipelines-as-code-watcher
     spec:
       serviceAccountName: pipelines-as-code-watcher
       containers:
@@ -49,9 +50,13 @@ spec:
                 fieldPath: metadata.namespace
           - name: METRICS_DOMAIN
             value: tekton.dev/pipelinesascode
+          - name: CONFIG_OBSERVABILITY_NAME
+            value: pipelines-as-code-config-observability
           ports:
           - name: probes
             containerPort: 8080
+          - name: metrics
+            containerPort: 9090
           readinessProbe:
             httpGet:
               path: /live

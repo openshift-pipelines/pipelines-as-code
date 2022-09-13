@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -151,6 +152,9 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 
 			testSetupGHReplies(t, mux, runEvent, tt.checkRunID, tt.finalStatus, tt.finalStatusText)
 
+			metrics, err := metrics.NewRecorder()
+			assert.NilError(t, err)
+
 			r := Reconciler{
 				qm: sync.NewQueueManager(fakelogger),
 				run: &params.Run{
@@ -175,6 +179,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 						},
 					},
 				},
+				metrics: metrics,
 			}
 
 			event := buildEventFromPipelineRun(&pr)
