@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -28,7 +29,12 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, pr *v1beta1.PipelineRun) 
 		}
 		repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
 			Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
+
+		// if repository is not found then remove the queue for that repository if exist
 		if errors.IsNotFound(err) {
+			r.qm.RemoveRepository(&v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{Name: repoName, Namespace: pr.Namespace},
+			})
 			return nil
 		}
 		if err != nil {
