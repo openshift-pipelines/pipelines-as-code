@@ -70,8 +70,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 
 		provider, event, err := r.detectProvider(ctx, logger, pr)
 		if err != nil {
-			logger.Error(err)
-			return nil
+			return fmt.Errorf("detectProvider: %w", err)
 		}
 
 		return r.reportFinalStatus(ctx, logger, event, pr, provider)
@@ -88,7 +87,7 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 		if errors.IsNotFound(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("updateError: %w", err)
 	}
 
 	// if concurrency was set and later removed or changed to zero
@@ -96,22 +95,19 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit == 0 {
 		_ = r.qm.RemoveFromQueue(repo, pr)
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-			logger.Error("failed to update pipelineRun to in_progress: ", err)
-			return err
+			return fmt.Errorf("failed to update PipelineRun to in_progress: %w", err)
 		}
 		return nil
 	}
 
 	started, msg, err := r.qm.AddToQueue(repo, pr)
 	if err != nil {
-		logger.Error("failed to add to queue: ", pr.GetName())
-		return err
+		return fmt.Errorf("failed to add to queue: %s: %w", pr.GetName(), err)
 	}
 
 	if started {
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-			logger.Error("failed to update pipelineRun to in_progress: ", err)
-			return err
+			return fmt.Errorf("failed to update pipelineRun to in_progress: %w", err)
 		}
 		return nil
 	}
@@ -125,12 +121,12 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
 		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("reportFinalStatus: %w", err)
 	}
 
 	if repo.Spec.GitProvider != nil {
 		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, provider.GetConfig(), event, repo, logger); err != nil {
-			return err
+			return fmt.Errorf("cannot get secret from repository: %w", err)
 		}
 	} else {
 		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
@@ -138,30 +134,30 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 
 	err = provider.SetClient(ctx, event)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot set client: %w", err)
 	}
 
 	if err := r.cleanupPipelineRuns(ctx, logger, repo, pr); err != nil {
-		return err
+		return fmt.Errorf("cannot clean prs: %w", err)
 	}
 
 	if r.run.Info.Pac.SecretAutoCreation {
 		if err := r.cleanupSecrets(ctx, logger, repo, pr); err != nil {
-			return err
+			return fmt.Errorf("cannot clean secret: %w", err)
 		}
 	}
 
 	newPr, err := r.postFinalStatus(ctx, logger, provider, event, pr)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot post final status: %w", err)
 	}
 
 	if err := r.updateRepoRunStatus(ctx, logger, newPr, repo, event); err != nil {
-		return err
+		return fmt.Errorf("cannot update run status: %w", err)
 	}
 
 	if _, err := r.updatePipelineRunState(ctx, logger, pr, kubeinteraction.StateCompleted); err != nil {
-		return err
+		return fmt.Errorf("cannot update state: %w", err)
 	}
 
 	// remove pipelineRun from Queue and start the next one
@@ -170,11 +166,10 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		key := strings.Split(next, "/")
 		pr, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(key[0]).Get(ctx, key[1], metav1.GetOptions{})
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot get pipeline: %w", err)
 		}
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-			logger.Error("failed to update status: ", err)
-			return err
+			return fmt.Errorf("failed to update status: %w", err)
 		}
 		return nil
 	}
@@ -185,7 +180,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
 	pr, err := r.updatePipelineRunState(ctx, logger, pr, kubeinteraction.StateStarted)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot update state: %w", err)
 	}
 
 	p, event, err := r.detectProvider(ctx, logger, pr)
@@ -196,7 +191,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 
 	if repo.Spec.GitProvider != nil {
 		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, p.GetConfig(), event, repo, logger); err != nil {
-			return err
+			return fmt.Errorf("cannot get secret from repo: %w", err)
 		}
 	} else {
 		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
@@ -204,7 +199,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 
 	err = p.SetClient(ctx, event)
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot set client: %w", err)
 	}
 
 	consoleURL := r.run.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
@@ -234,7 +229,7 @@ func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.Sug
 	for i := 0; i < maxRun; i++ {
 		newPr, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot get pipeline: %w", err)
 		}
 
 		newPr = newPr.DeepCopy()
