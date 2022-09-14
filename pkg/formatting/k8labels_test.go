@@ -18,6 +18,11 @@ func TestK8LabelsCleanup(t *testing.T) {
 			str:  "foo-bar_hello",
 			want: "foo-bar_hello",
 		},
+		{
+			name: "github bot name",
+			str:  "github-actions[bot]",
+			want: "github-actions__bot__",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
