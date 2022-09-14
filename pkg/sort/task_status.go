@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
@@ -37,7 +38,7 @@ func (trs taskrunList) Less(i, j int) bool {
 }
 
 // TaskStatusTmpl generate a template of all status of a taskruns sorted to a statusTemplate as defined by the git provider
-func TaskStatusTmpl(pr *tektonv1beta1.PipelineRun, console consoleui.Interface, statusTemplate string) (string, error) {
+func TaskStatusTmpl(pr *tektonv1beta1.PipelineRun, console consoleui.Interface, config *info.ProviderConfig) (string, error) {
 	trl := taskrunList{}
 	outputBuffer := bytes.Buffer{}
 
@@ -62,9 +63,13 @@ func TaskStatusTmpl(pr *tektonv1beta1.PipelineRun, console consoleui.Interface, 
 		"formatCondition": formatting.ConditionEmoji,
 	}
 
+	if config.SkipEmoji {
+		funcMap["formatCondition"] = formatting.ConditionSad
+	}
+
 	data := struct{ TaskRunList taskrunList }{TaskRunList: trl}
 
-	t := template.Must(template.New("Task Status").Funcs(funcMap).Parse(statusTemplate))
+	t := template.Must(template.New("Task Status").Funcs(funcMap).Parse(config.TaskStatusTMPL))
 	if err := t.Execute(&outputBuffer, data); err != nil {
 		fmt.Fprintf(&outputBuffer, "failed to execute template: ")
 		return "", err

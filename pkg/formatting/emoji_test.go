@@ -55,3 +55,9 @@ func TestConditionEmoji(t *testing.T) {
 		})
 	}
 }
+
+func TestSkipEmoji(t *testing.T) {
+	got := ConditionSad(
+		duckv1beta1.Conditions{{Status: corev1.ConditionTrue}})
+	assert.Assert(t, !strings.Contains(got, "✅"))
+}
