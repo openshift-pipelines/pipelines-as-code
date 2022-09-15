@@ -86,10 +86,10 @@ func (o *Opts) genTmpl() (*bytes.Buffer, error) {
 	}
 
 	tmplB = bytes.ReplaceAll(tmplB, []byte("pipelinesascode.tekton.dev/on-event: \"pull_request\""),
-		[]byte(fmt.Sprintf("pipelinesascode.tekton.dev/on-event: \"%s\"", o.Event.EventType)))
+		[]byte(fmt.Sprintf("pipelinesascode.tekton.dev/on-event: \"[%s]\"", o.Event.EventType)))
 
 	tmplB = bytes.ReplaceAll(tmplB, []byte("pipelinesascode.tekton.dev/on-target-branch: \"main\""),
-		[]byte(fmt.Sprintf("pipelinesascode.tekton.dev/on-target-branch: \"%s\"", o.Event.BaseBranch)))
+		[]byte(fmt.Sprintf("pipelinesascode.tekton.dev/on-target-branch: \"[%s]\"", o.Event.BaseBranch)))
 
 	tmplB = bytes.ReplaceAll(tmplB, []byte(fmt.Sprintf("name: pipelinerun-%s", lang)),
 		[]byte(fmt.Sprintf("name: %s", prName)))
