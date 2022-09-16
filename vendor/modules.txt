@@ -13,7 +13,7 @@ contrib.go.opencensus.io/exporter/prometheus
 # contrib.go.opencensus.io/exporter/zipkin v0.1.2
 ## explicit
 contrib.go.opencensus.io/exporter/zipkin
-# github.com/AlecAivazis/survey/v2 v2.3.5
+# github.com/AlecAivazis/survey/v2 v2.3.6
 ## explicit; go 1.13
 github.com/AlecAivazis/survey/v2
 github.com/AlecAivazis/survey/v2/core

@@ -5,7 +5,7 @@ go 1.17
 require (
 	code.gitea.io/gitea/modules/structs v0.0.0-20190610152049-835b53fc259c
 	code.gitea.io/sdk/gitea v0.15.1
-	github.com/AlecAivazis/survey/v2 v2.3.5
+	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/bradleyfalzon/ghinstallation/v2 v2.1.0
 	github.com/cloudevents/sdk-go/v2 v2.10.1
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20220418082332-711d7d5e805f
