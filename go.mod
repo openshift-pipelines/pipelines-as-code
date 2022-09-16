@@ -17,7 +17,7 @@ require (
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/jonboulle/clockwork v0.3.0
 	github.com/juju/ansiterm v1.0.0
-	github.com/ktrysmt/go-bitbucket v0.9.48
+	github.com/ktrysmt/go-bitbucket v0.9.51
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mattn/go-isatty v0.0.16
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
