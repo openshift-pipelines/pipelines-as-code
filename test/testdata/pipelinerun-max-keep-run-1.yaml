@@ -2,11 +2,11 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: {{.PipelineName}}
+  name: "\\ .PipelineName //"
   annotations:
-    pipelinesascode.tekton.dev/target-namespace: "{{.TargetNamespace}}"
-    pipelinesascode.tekton.dev/on-target-branch: "[{{.TargetBranch}}]"
-    pipelinesascode.tekton.dev/on-event: "[{{.TargetEvent}}]"
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
+    pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
     pipelinesascode.tekton.dev/max-keep-runs: "1"
 spec:
   pipelineSpec:

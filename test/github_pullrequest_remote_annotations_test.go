@@ -7,13 +7,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"testing"
 
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
@@ -28,21 +28,12 @@ func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
 	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
 	assert.NilError(t, err)
 
-	prun, err := os.ReadFile("testdata/pipelinerun_remote_annotations.yaml")
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pr.yaml":                              "testdata/pipelinerun_remote_annotations.yaml",
+		".tekton/pipeline.yaml":                        "testdata/pipeline_remote_annotations.yaml",
+		".other-tasks/task-referenced-internally.yaml": "testdata/task_referenced_internally.yaml",
+	}, targetNS, options.MainBranch, options.PullRequestEvent)
 	assert.NilError(t, err)
-
-	pipeline, err := os.ReadFile("testdata/pipeline_remote_annotations.yaml")
-	assert.NilError(t, err)
-
-	taskreferencedinternally, err := os.ReadFile("testdata/task_referenced_internally.yaml")
-	assert.NilError(t, err)
-
-	entries := map[string]string{
-		".tekton/pr.yaml": fmt.Sprintf(string(prun),
-			targetNS, options.MainBranch, options.PullRequestEvent),
-		".tekton/pipeline.yaml":                        string(pipeline),
-		".other-tasks/task-referenced-internally.yaml": string(taskreferencedinternally),
-	}
 
 	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)

@@ -2,11 +2,11 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: "{{ .PipelineName }}"
+  name: "\\ .PipelineName //"
   annotations:
-    pipelinesascode.tekton.dev/target-namespace: "{{.TargetNamespace}}"
-    pipelinesascode.tekton.dev/on-target-branch: "[{{.TargetBranch}}]"
-    pipelinesascode.tekton.dev/on-event: "[{{.TargetEvent}}]"
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
+    pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
     pipelinesascode.tekton.dev/task: "[git-clone]"
 spec:
   workspaces:
@@ -20,15 +20,15 @@ spec:
               storage: 1Gi
     - name: basic-auth
       secret:
-        secretName: "{{"{{"}} git_auth_secret {{"}}"}}"
+        secretName: "{{ git_auth_secret }}"
   params:
     - name: repo_url
       # not great but can't do otherwise due of networking and how we run self contained tests
       # under gitea. Since we are working on convention here this will break
       # easily on refactoring so something to watch out.
-      value: "http://gitea.gitea:3000/pac/{{.TargetNamespace}}"
+      value: "http://gitea.gitea:3000/pac/\\ .TargetNamespace //"
     - name: revision
-      value: "{{"{{"}} revision {{"}}"}}"
+      value: "{{ revision }}"
     - name: sslVerify
       value: "false"
   pipelineSpec:
