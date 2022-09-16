@@ -374,20 +374,16 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, pa
 		ref = runevent.BaseBranch
 	}
 
-	fp, _, err := v.Client.GetContents(runevent.Organization, runevent.Repository, ref, path)
+	content, _, err := v.Client.GetContents(runevent.Organization, runevent.Repository, ref, path)
 	if err != nil {
 		return "", err
 	}
-	if fp.Type != "file" {
-		return "", fmt.Errorf("referenced file inside the Gitea Repository %s is a directory", path)
-	}
-
-	getobj, err := v.getObject(fp.SHA, runevent)
+	// base64 decode to string
+	decoded, err := base64.StdEncoding.DecodeString(*content.Content)
 	if err != nil {
 		return "", err
 	}
-
-	return string(getobj), nil
+	return string(decoded), nil
 }
 
 func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) error {

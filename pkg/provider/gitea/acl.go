@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	giteaStruct "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/sdk/gitea"
-	"github.com/google/go-github/v45/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
@@ -15,7 +15,7 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, erro
 	// Do most of the checks first, if user is a owner or in a organisation
 	allowed, err := v.aclCheckAll(ctx, event)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("aclCheckAll: %w", err)
 	}
 	if allowed {
 		return true, nil
@@ -39,10 +39,10 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 	}
 
 	switch event := revent.Event.(type) {
-	case *github.IssueCommentEvent:
-		revent.URL = event.Issue.GetPullRequestLinks().GetHTMLURL()
-	case *github.PullRequestEvent:
-		revent.URL = event.GetPullRequest().GetHTMLURL()
+	case *giteaStruct.IssueCommentPayload:
+		revent.URL = event.Issue.URL
+	case *giteaStruct.PullRequestPayload:
+		revent.URL = event.PullRequest.HTMLURL
 	default:
 		return false, nil
 	}
