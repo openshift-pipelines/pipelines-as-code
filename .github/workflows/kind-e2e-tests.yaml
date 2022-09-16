@@ -114,7 +114,11 @@ jobs:
           export TEST_GITLAB_API_URL="https://gitlab.com"
           export TEST_GITLAB_PROJECT_ID="34405323"
           export TEST_GITLAB_TOKEN=${{ secrets.GITLAB_TOKEN }}
-
+          export TEST_GITEA_API_URL="http://localhost:3000"
+          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
+          export TEST_GITEA_PASSWORD=pac
+          export TEST_GITEA_USERNAME=pac
+          export TEST_GITEA_REPO_OWNER=pac/pac
           export GO_TEST_FLAGS="-v -race"
           make test-e2e
       # - name: Setup tmate session
