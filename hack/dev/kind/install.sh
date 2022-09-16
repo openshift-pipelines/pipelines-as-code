@@ -34,6 +34,9 @@ INSTALL_FROM_RELEASE=
 PAC_PASS_SECRET_FOLDER=${PAC_PASS_SECRET_FOLDER:-""}
 SUDO=sudo
 PAC_DIR=${PAC_DIR:-$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code}
+INSTALL_GITEA=yes
+GITEA_HOST=${GITEA_HOST:-"localhost:3000"}
+
 
 [[ -d ${PAC_DIR} ]] || {
         echo "I cannot find the PAC installation directory, set the variable \$PAC_DIR to define it.
@@ -114,15 +117,14 @@ function install_tekton() {
 	kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/latest/tekton-dashboard-release.yaml >/dev/null
 	i=0
     echo -n "Waiting for tekton pipeline to come up: "
-	for tt in pipelines ;do
-		while true;do
-			[[ ${i} == 120 ]] && exit 1
-			ep=$(kubectl get ep -n tekton-pipelines tekton-${tt}-webhook -o jsonpath='{.subsets[*].addresses[*].ip}')
-			[[ -n ${ep} ]] && break
-			sleep 2
-			i=$((i+1))
-		done
-	done
+    tt=pipelines
+    while true;do
+        [[ ${i} == 120 ]] && exit 1
+        ep=$(kubectl get ep -n tekton-pipelines tekton-${tt}-webhook -o jsonpath='{.subsets[*].addresses[*].ip}')
+        [[ -n ${ep} ]] && break
+        sleep 2
+        i=$((i+1))
+    done
     echo "done."
 }
 
@@ -137,6 +139,10 @@ function install_pac() {
         cd ${oldPwd}
     fi
     configure_pac
+    [[ -n ${INSTALL_GITEA} ]] && install_gitea
+    echo "And we are done :) URLS: "
+    echo "controller: http://controller.${DOMAIN_NAME}"
+    echo "dashboard: http://dashboard.${DOMAIN_NAME}"
 }
 
 function configure_pac() {
@@ -178,9 +184,12 @@ function configure_pac() {
     kubectl config set-context --current --namespace=pipelines-as-code >/dev/null
     type -p gosmee || echo "You may want to install psmee with: go install -v github.com/chmouel/gosmee@latest and run:
 gosmee --saveDir /tmp/replays https://smee.io/SMEEID http://controller.${DOMAIN_NAME}"
-    echo "And we are done :) URLS: "
-    echo "controller: http://controller.${DOMAIN_NAME}"
-    echo "dashboard: http://dashboard.${DOMAIN_NAME}"
+}
+
+function install_gitea ()
+{
+    env GITEA_URL="http://${GITEA_HOST}" GITEA_HOST=$GITEA_HOST GITEA_USER="pac" \
+        GITEA_PASSWORD="pac" GITEA_REPO_NAME="pac-e2e" ./gitea/deploy.py
 }
 
 main() {
@@ -191,7 +200,7 @@ main() {
 	install_pac
 }
 
-while getopts "pcrb" o; do
+while getopts "Gpcrb" o; do
     case "${o}" in
         b)
             start_registry
@@ -213,6 +222,11 @@ while getopts "pcrb" o; do
 	    r)
 		    INSTALL_FROM_RELEASE=yes
             ;;
+        G)
+            install_gitea
+            exit
+            ;;
+
         *)
             echo "Invalid option"; exit 1;
             ;;

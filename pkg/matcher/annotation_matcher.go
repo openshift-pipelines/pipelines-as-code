@@ -184,7 +184,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		return matchedPRs, nil
 	}
 
-	logger.Warn("could not find a match to a pipelinerun matching payload")
+	logger.Warn("could not find a match to a pipelinerun matching payload: hint: check your yaml files are correct")
 	logger.Warn("available configuration in pipelineRuns annotations")
 	for name, maps := range configurations {
 		logger.Infof("pipelineRun: %s, target-branch=%s, target-event=%s",

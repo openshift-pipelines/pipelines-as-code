@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-github/v45/github"
@@ -115,7 +116,12 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 	err = CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
 	assert.NilError(t, err)
 
-	entries, err := payload.GetEntries(yamlFiles, targetNS, options.MainBranch, options.PullRequestEvent)
+	yamlEntries := map[string]string{}
+	for _, v := range yamlFiles {
+		yamlEntries[filepath.Join(".tekton", filepath.Base(v))] = v
+	}
+
+	entries, err := payload.GetEntries(yamlEntries, targetNS, options.MainBranch, options.PullRequestEvent)
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",

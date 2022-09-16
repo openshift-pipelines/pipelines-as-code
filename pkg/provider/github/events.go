@@ -184,12 +184,11 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.Sender = gitEvent.GetSender().GetLogin()
 		processedEvent.BaseBranch = gitEvent.GetRef()
 		processedEvent.EventType = event.TriggerTarget
-
 		processedEvent.HeadBranch = processedEvent.BaseBranch // in push events Head Branch is the same as Basebranch
 	case *github.PullRequestEvent:
 		processedEvent = info.NewEvent()
-		processedEvent.Organization = gitEvent.GetRepo().Owner.GetLogin()
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
+		processedEvent.Organization = gitEvent.GetRepo().Owner.GetLogin()
 		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
 		processedEvent.SHA = gitEvent.GetPullRequest().Head.GetSHA()
 		processedEvent.URL = gitEvent.GetRepo().GetHTMLURL()

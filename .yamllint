@@ -1,6 +1,7 @@
 ignore: |
   /vendor
   .git
+  test/testdata/failures/pipeline_bad_format.yaml
 
 rules:
   braces: enable
@@ -25,11 +26,5 @@ rules:
   quoted-strings: disable
   trailing-spaces: enable
   truthy: disable
-
-  # accept both     key:
-  #                   - item
-  #
-  # and             key:
-  #                 - item
   indentation:
     indent-sequences: whatever

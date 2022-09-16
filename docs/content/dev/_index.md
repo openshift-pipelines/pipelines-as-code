@@ -63,7 +63,7 @@ override it you can set the `PAC_DIRS` environment variable.
 ## Gitea
 
 Gitea is "unofficially" supported. You just need to configure Gitea the same way
-you do for GitHub enteprise and Pipelines as Code will recognize it.
+you do for other webhook methods with a token.
 
 Here is an example of a Gitea NS/CRD/Secret (set to empty):
 
@@ -107,8 +107,19 @@ There is some gotchas with the webhook validation secret, Pipelines as Code
 detect a Gitea install and let the user set a empty webhook secret (by default
 it's enforced).
 
-Gitops comment like `/retest` or `/ok-to-test` is not working at the moment.
-Other than that YMMV, feel free to raise a bug if you find some.
+The `install.sh` script will by default spin up a new instance of GITEA to play
+with and run the Gitea E2E tests.
+
+You will need to create a Smee URL generated from <https://smee.io/new>
+into the environment variable `TEST_GITEA_SMEEURL`.
+
+The defaults are :
+
+- URL: <https://localhost:3000/>
+- Admin Username: pac
+- Admin Password: pac
+
+The E2E tests will automatically create repo using the admin username for each tests.
 
 ## Debugging controller
 

@@ -1,20 +1,38 @@
 package payload
 
 import (
+	"bytes"
 	"fmt"
-	"os"
 	"path/filepath"
+	"strings"
+	"text/template"
 )
 
-func GetEntries(yamlfile []string, targetNS, targetBranch, targetEvent string) (map[string]string, error) {
+func GetEntries(yamlfile map[string]string, targetNS, targetBranch, targetEvent string) (map[string]string, error) {
+	params := map[string]string{
+		"TargetNamespace": targetNS,
+		"TargetBranch":    targetBranch,
+		"TargetEvent":     targetEvent,
+	}
 	entries := map[string]string{}
-	for _, file := range yamlfile {
-		yamlprun, err := os.ReadFile(file)
+	for target, file := range yamlfile {
+		name := strings.TrimSuffix(filepath.Base(target), filepath.Ext(target))
+		params["PipelineName"] = name
+		output, err := ApplyTemplate(file, params)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read yaml file: %w", err)
 		}
-		entries[filepath.Join(".tekton", filepath.Base(file))] = fmt.Sprintf(string(yamlprun), targetNS, targetBranch,
-			targetEvent)
+		entries[target] = output
 	}
 	return entries, nil
+}
+
+func ApplyTemplate(templateFile string, params map[string]string) (string, error) {
+	// read templates from file and  apply variables
+	var buf bytes.Buffer
+	tmpl := template.Must(template.ParseFiles(templateFile))
+	if err := tmpl.Execute(&buf, params); err != nil {
+		return "", fmt.Errorf("failed to apply template: %w", err)
+	}
+	return buf.String(), nil
 }

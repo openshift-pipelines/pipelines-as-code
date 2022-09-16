@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	"go.uber.org/zap"
@@ -100,6 +101,8 @@ func (l *listener) processIncoming(targetRepo *v1alpha1.Repository) (provider.In
 		provider = &github.Provider{}
 	case "gitlab":
 		provider = &gitlab.Provider{}
+	case "gitea":
+		provider = &gitea.Provider{}
 	case "bitbucket-cloud":
 		provider = &bitbucketcloud.Provider{}
 	case "bitbucket-server":

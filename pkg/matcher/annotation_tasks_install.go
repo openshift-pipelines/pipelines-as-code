@@ -100,7 +100,7 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, logger *zap.Su
 		for _, v := range tasks {
 			task, err := rt.getTask(ctx, logger, providerintf, event, v)
 			if err != nil {
-				return ret, err
+				return ret, fmt.Errorf("error getting remote task %s: %w", v, err)
 			}
 			ret = append(ret, task)
 		}

@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -28,7 +29,7 @@ func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogg
 
 	var provider provider.Interface
 	switch gitProvider {
-	case "github", "github-enterprise", "gitea":
+	case "github", "github-enterprise":
 		gh := &github.Provider{}
 		if event.InstallationID != 0 {
 			if err := gh.InitAppClient(ctx, r.run.Clients.Kube, event); err != nil {
@@ -42,6 +43,8 @@ func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogg
 		provider = &bitbucketcloud.Provider{}
 	case "bitbucket-server":
 		provider = &bitbucketserver.Provider{}
+	case "gitea":
+		provider = &gitea.Provider{}
 	default:
 		return nil, nil, fmt.Errorf("failed to detect provider for pipelinerun: %s : unknown provider", pr.GetName())
 	}

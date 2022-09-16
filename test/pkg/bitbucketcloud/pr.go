@@ -19,8 +19,9 @@ func MakePR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Run,
 	commitAuthor := "OpenShift Pipelines E2E test"
 	commitEmail := "e2e-pipelines@redhat.com"
 
-	entries, err := payload.GetEntries([]string{"testdata/pipelinerun.yaml"}, targetNS, options.MainBranch,
-		options.PullRequestEvent)
+	entries, err := payload.GetEntries(
+		map[string]string{".tekton/pipelinerun.yaml": "testdata/pipelinerun.yaml"},
+		targetNS, options.MainBranch, options.PullRequestEvent)
 	assert.NilError(t, err)
 	tmpfile := fs.NewFile(t, "pipelinerun", fs.WithContent(entries[".tekton/pipelinerun.yaml"]))
 	defer tmpfile.Remove()

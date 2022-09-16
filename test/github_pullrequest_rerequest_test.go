@@ -33,7 +33,6 @@ func TestGithubPullRerequest(t *testing.T) {
 	}
 
 	runinfo := info.Event{
-		BaseBranch:    repoinfo.GetDefaultBranch(),
 		DefaultBranch: repoinfo.GetDefaultBranch(),
 		HeadBranch:    targetRefName,
 		Organization:  opts.Organization,

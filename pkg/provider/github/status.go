@@ -183,9 +183,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 	var err error
 	now := time.Now()
 	switch status.Conclusion {
-	case "skipped":
-		status.Conclusion = "success" // We don't have a choice than setting as success, no pending here.
-	case "neutral":
+	case "skipped", "neutral":
 		status.Conclusion = "success" // We don't have a choice than setting as success, no pending here.
 	}
 	if status.Status == "in_progress" {

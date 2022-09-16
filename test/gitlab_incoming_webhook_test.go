@@ -53,8 +53,8 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 	err = secret.Create(ctx, runcnx, map[string]string{"incoming": incomingSecreteValue}, randomedString, incomingSecretName)
 	assert.NilError(t, err)
 
-	entries, err := payload.GetEntries([]string{
-		"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml",
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pr.yaml": "testdata/pipelinerun.yaml", ".tekton/pr-clone.yaml": "testdata/pipelinerun-clone.yaml",
 	}, randomedString, randomedString, options.PushEvent)
 	assert.NilError(t, err)
 

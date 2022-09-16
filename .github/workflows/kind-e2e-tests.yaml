@@ -67,6 +67,7 @@ jobs:
       - name: Start installing cluster
         run: |
           export PAC_DIR=${PWD}
+          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
           bash -x ./hack/dev/kind/install.sh
 
       - name: Create PAC github-app-secret
@@ -102,6 +103,7 @@ jobs:
           export TEST_GITHUB_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
           export TEST_GITHUB_TOKEN="${{ secrets.GH_APPS_TOKEN }}"
           export TEST_EL_WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"
+          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
           export TEST_GITHUB_REPO_INSTALLATION_ID="${{ secrets.INSTALLATION_ID }}"
           export TEST_EL_URL="http://${CONTROLLER_DOMAIN_URL}"
           export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0

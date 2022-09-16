@@ -2,11 +2,11 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: pipeline-clone
+  name: {{.PipelineName}}
   annotations:
-    pipelinesascode.tekton.dev/target-namespace: "%s"
-    pipelinesascode.tekton.dev/on-target-branch: "[%s]"
-    pipelinesascode.tekton.dev/on-event: "[%s]"
+    pipelinesascode.tekton.dev/target-namespace: "{{.TargetNamespace}}"
+    pipelinesascode.tekton.dev/on-target-branch: "[{{.TargetBranch}}]"
+    pipelinesascode.tekton.dev/on-event: "[{{.TargetEvent}}]"
 spec:
   pipelineSpec:
     tasks:

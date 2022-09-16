@@ -42,7 +42,7 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
 	assert.NilError(t, err)
 
-	yamlFiles := []string{"testdata/pipelinerun_long_running.yaml", "testdata/pipelinerun_long_running_another.yaml"}
+	yamlFiles := map[string]string{".tekton/pr_longrunning.yaml": "testdata/pipelinerun_long_running.yaml", ".tekton/pr_longrunninganother": "testdata/pipelinerun_long_running_another.yaml"}
 	entries, err := payload.GetEntries(yamlFiles, targetNS, options.MainBranch, options.PullRequestEvent)
 	assert.NilError(t, err)
 
