@@ -11,7 +11,7 @@ require (
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20220418082332-711d7d5e805f
 	github.com/gobwas/glob v0.2.3
 	github.com/google/cel-go v0.11.3
-	github.com/google/go-cmp v0.5.8
+	github.com/google/go-cmp v0.5.9
 	github.com/google/go-github/scrape v0.0.0-20220716231147-3a432d62bf03
 	github.com/google/go-github/v45 v45.2.0
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
