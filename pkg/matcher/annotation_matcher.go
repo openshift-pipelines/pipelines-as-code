@@ -148,7 +148,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			prMatch.Config["target-namespace"] = targetNS
 			prMatch.Repo, _ = MatchEventURLRepo(ctx, cs, event, targetNS)
 			if prMatch.Repo == nil {
-				logger.Warnf("could not find Repository CRD in branch %s, the pipelineRun %s has a label that explictely targets it", targetNS, prun.GetGenerateName())
+				logger.Warnf("could not find Repository CRD in branch %s, the pipelineRun %s has a label that explicitly targets it", targetNS, prun.GetGenerateName())
 				continue
 			}
 		}
