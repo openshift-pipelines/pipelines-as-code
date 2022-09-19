@@ -52,7 +52,7 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 		Regexp:      successRegexp,
 		TargetEvent: options.PullRequestEvent,
 		YAMLFiles: map[string]string{
-			".tekton/pipeline.yaml": "testdata/pipelinerun_git_clone_private.yaml.specific.to.gitea",
+			".tekton/pipeline.yaml": "testdata/pipelinerun_git_clone_private-gitea.yaml",
 		},
 	}
 	tgitea.TestPR(t, topts)()

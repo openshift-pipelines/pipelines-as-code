@@ -45,7 +45,7 @@ linters:
       # - goconst
       # - gocyclo
     # - goerr113
-    - gofmt
+    # - gofmt
     - goheader
     - gomodguard
     - goprintffuncname

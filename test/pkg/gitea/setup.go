@@ -64,6 +64,7 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitea.Provider, error
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return nil, options.E2E{}, gitea.Provider{}, fmt.Errorf("cannot create new client: %w", err)
 	}
+	// Repo is actually not used
 	e2eoptions := options.E2E{Organization: splitted[0], Repo: splitted[1]}
 	gprovider, err := CreateProvider(ctx, giteaURL, splitted[0], giteaPassword)
 	if err != nil {
