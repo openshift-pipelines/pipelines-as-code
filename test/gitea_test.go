@@ -25,6 +25,7 @@ import (
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -44,7 +45,7 @@ func TestGiteaPullRequestAnnotations(t *testing.T) {
 			".tekton/pr.yaml":                              "testdata/pipelinerun_remote_annotations.yaml",
 		},
 	}
-	tgitea.TestPR(t, topts)()
+	defer tgitea.TestPR(t, topts)()
 }
 
 func TestGiteaPullRequestPrivateRepository(t *testing.T) {
@@ -55,7 +56,7 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 			".tekton/pipeline.yaml": "testdata/pipelinerun_git_clone_private-gitea.yaml",
 		},
 	}
-	tgitea.TestPR(t, topts)()
+	defer tgitea.TestPR(t, topts)()
 }
 
 func TestGiteaPullRequestAnnotationsFailure(t *testing.T) {
@@ -67,18 +68,23 @@ func TestGiteaPullRequestAnnotationsFailure(t *testing.T) {
 		},
 		CheckForStatus: "failure",
 	}
-	tgitea.TestPR(t, topts)()
+	defer tgitea.TestPR(t, topts)()
 }
 
+// TestGiteaBadYaml we can't check pr status but this shows up in the
+// controller, so let's dig oursef in there....  TargetNS is a random string, so
+// it can only succsss if it matches it
 func TestGiteaBadYaml(t *testing.T) {
-	t.Skip("Skipping this test for now: we need to figure out how to get controller logs properly")
 	topts := &tgitea.TestOpts{
-		Regexp:         regexp.MustCompile(`.*cannot find pipeline bad in input`),
-		TargetEvent:    options.PullRequestEvent,
-		YAMLFiles:      map[string]string{".tekton/pr-bad-format.yaml": "testdata/failures/pipeline_bad_format.yaml"},
-		CheckForStatus: "failure",
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles:   map[string]string{".tekton/pr-bad-format.yaml": "testdata/failures/pipeline_bad_format.yaml"},
 	}
 	defer tgitea.TestPR(t, topts)()
+	ctx := context.Background()
+
+	assert.NilError(t, wait.RegexpMatchingInPodLog(ctx, topts.Clients, "app.kubernetes.io/component=controller", "pac-controller", *regexp.MustCompile(
+		fmt.Sprintf("PipelineRun pr-bad-format-%s- has failed:.*validation failed", topts.TargetNS)),
+		10))
 }
 
 // don't test concurrency limit here, just parallel pipeline
