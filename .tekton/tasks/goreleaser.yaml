@@ -36,7 +36,7 @@ spec:
       default: bot-token
     - name: flags
       description: flags to pass to `goreleaser release`
-      default: --timeout=30m
+      default: --timeout=60m
   steps:
     - name: pull
       image: docker.io/goreleaser/goreleaser
