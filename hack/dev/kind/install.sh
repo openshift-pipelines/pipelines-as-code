@@ -38,11 +38,6 @@ INSTALL_GITEA=yes
 GITEA_HOST=${GITEA_HOST:-"localhost:3000"}
 
 
-[[ -d ${PAC_DIR} ]] || {
-        echo "I cannot find the PAC installation directory, set the variable \$PAC_DIR to define it.
-It default to \$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code."
-        exit 1
-}
 [[ $(uname -s) == "Darwin" ]] && {
     SUDO=
 }
@@ -132,6 +127,11 @@ function install_pac() {
 	if [[ -n ${INSTALL_FROM_RELEASE} ]];then
 		kubectl apply -f ${PAC_RELEASE:-https://github.com/openshift-pipelines/pipelines-as-code/raw/stable/release.k8s.yaml}
 	else
+        [[ -d ${PAC_DIR} ]] || {
+            echo "I cannot find the PAC installation directory, set the variable \$PAC_DIR to define it.
+        It default to \$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code."
+            exit 1
+        }
         oldPwd=${PWD}
         cd ${PAC_DIR}
         echo "Deploying PAC from ${PAC_DIR}"
