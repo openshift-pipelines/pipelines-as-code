@@ -15,7 +15,7 @@ package mapper
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"sync"
 	"time"
@@ -233,6 +233,10 @@ func (m *MetricMapper) InitFromYAMLString(fileContents string) error {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
+	if m.Logger == nil {
+		m.Logger = log.NewNopLogger()
+	}
+
 	m.Defaults = n.Defaults
 	m.Mappings = n.Mappings
 
@@ -259,15 +263,11 @@ func (m *MetricMapper) InitFromYAMLString(fileContents string) error {
 		m.MappingsCount.Set(float64(len(n.Mappings)))
 	}
 
-	if m.Logger == nil {
-		m.Logger = log.NewNopLogger()
-	}
-
 	return nil
 }
 
 func (m *MetricMapper) InitFromFile(fileName string) error {
-	mappingStr, err := ioutil.ReadFile(fileName)
+	mappingStr, err := os.ReadFile(fileName)
 	if err != nil {
 		return err
 	}
