@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset AS builder
+FROM mirror.gcr.io/library/golang:1.18 AS builder
 
 ARG BINARY_NAME=pipelines-as-code-controller
 COPY . /src

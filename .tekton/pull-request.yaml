@@ -86,7 +86,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: registry.redhat.io/rhel9/go-toolset:1.17.7
+            - image: mirror.gcr.io/library/golang:1.18
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -118,7 +118,7 @@ spec:
             - name: unittest
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
-              image: registry.redhat.io/rhel9/go-toolset:1.17.7
+              image: mirror.gcr.io/library/golang:1.18
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -202,7 +202,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: registry.redhat.io/rhel9/go-toolset:1.17.7
+              image: mirror.gcr.io/library/golang:1.18
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN
