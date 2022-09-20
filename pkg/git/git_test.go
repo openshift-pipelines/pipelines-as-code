@@ -1,6 +1,7 @@
 package git
 
 import (
+	"os/exec"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -8,6 +9,12 @@ import (
 )
 
 func TestGetGitInfo(t *testing.T) {
+	gitPath, _ := exec.LookPath("git")
+	if gitPath == "" {
+		t.Skip("could not find the git binary in path, skipping test")
+		return
+	}
+
 	tests := []struct {
 		name         string
 		want         Info
