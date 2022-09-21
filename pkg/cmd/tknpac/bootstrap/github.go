@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-github/scrape"
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v47/github"
 )
 
 // generateManifest generate manifest from the given options

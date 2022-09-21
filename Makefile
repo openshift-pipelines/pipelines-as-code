@@ -6,6 +6,7 @@ OUTPUT_DIR=bin
 GO           = go
 TIMEOUT_UNIT = 5m
 GO_TEST_FLAGS +=
+SHELL := /bin/bash
 
 
 PY_FILES := $(shell find . -type f -regex ".*py" -print)

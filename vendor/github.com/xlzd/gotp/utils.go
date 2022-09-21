@@ -1,9 +1,9 @@
 package gotp
 
 import (
-	"fmt"
 	"crypto/rand"
 	"encoding/base32"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -33,16 +33,16 @@ params:
 
 returns: provisioning uri
 */
-func BuildUri(otpType, secret, accountName, issuerName, algorithm string, initialCount, digits, period int) string {
+func BuildUri(otpType, secret, accountName, issuerName, algorithm string, initialCount, digits int, period int) string {
 	q := url.Values{}
 
 	if otpType != OtpTypeHotp && otpType != OtpTypeTotp {
 		panic("otp type error, got " + otpType)
 	}
-	label := url.QueryEscape(accountName)
+	label := url.PathEscape(accountName)
 	if issuerName != "" {
-		label = url.QueryEscape(issuerName) + ":" + label
-		q.Set("issuer", issuerName)
+		label = url.PathEscape(issuerName) + ":" + label
+		q.Set("issuer", url.QueryEscape(issuerName))
 	}
 	q.Set("secret", secret)
 	if algorithm != "" && algorithm != "sha1" {
@@ -57,22 +57,22 @@ func BuildUri(otpType, secret, accountName, issuerName, algorithm string, initia
 	if otpType == OtpTypeHotp {
 		q.Set("counter", fmt.Sprintf("%d", initialCount))
 	}
-	u := url.URL {
-		Scheme: "otpauth",
-		Host: otpType,
-		Path: label,
+	u := url.URL{
+		Scheme:   "otpauth",
+		Host:     otpType,
+		Path:     label,
 		RawQuery: q.Encode(),
 	}
 	return u.String()
 }
 
 // get current timestamp
-func currentTimestamp() int {
-	return int(time.Now().Unix())
+func currentTimestamp() int64 {
+	return time.Now().Unix()
 }
 
 // integer to byte array
-func Itob(integer int) []byte {
+func Itob(integer int64) []byte {
 	byteArr := make([]byte, 8)
 	for i := 7; i >= 0; i-- {
 		byteArr[i] = byte(integer & 0xff)
@@ -94,4 +94,14 @@ func RandomSecret(length int) string {
 	var encoder = base32.StdEncoding.WithPadding(base32.NoPadding)
 	result = encoder.EncodeToString(secret)
 	return result
+}
+
+// A non-panic way of seeing weather or not a given secret is valid
+func IsSecretValid(secret string) bool {
+	missingPadding := len(secret) % 8
+	if missingPadding != 0 {
+		secret = secret + strings.Repeat("=", 8-missingPadding)
+	}
+	_, err := base32.StdEncoding.DecodeString(secret)
+	return err == nil
 }

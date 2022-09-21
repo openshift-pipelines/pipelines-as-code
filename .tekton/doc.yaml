@@ -7,7 +7,7 @@ metadata:
     pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/on-cel-expression: |
-       event == "pull_request" && "docs/***".pathChanged()
+      event == "pull_request" && "docs/***".pathChanged()
 spec:
   params:
     - name: repo_url
@@ -50,7 +50,7 @@ spec:
                 echo "Preview URL: https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ pull_request_number }}"
             - name: upload-to-static-server
               # it has curl and we already pulled it
-              image: registry.redhat.io/rhel9/go-toolset:1.17.7
+              image: mirror.gcr.io/library/golang:1.18
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
