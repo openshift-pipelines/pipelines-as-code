@@ -30,7 +30,7 @@ func (gl *gitLabConfig) GetName() string {
 }
 
 func (gl *gitLabConfig) Run(_ context.Context, opts *Options) (*response, error) {
-	err := gl.askGLWebhookConfig(opts.ControllerURL, opts.ProviderAPIURL)
+	err := gl.askGLWebhookConfig(opts.RepositoryURL, opts.ControllerURL, opts.ProviderAPIURL)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,17 @@ func (gl *gitLabConfig) Run(_ context.Context, opts *Options) (*response, error)
 	}, gl.create()
 }
 
-func (gl *gitLabConfig) askGLWebhookConfig(controllerURL, apiURL string) error {
+func (gl *gitLabConfig) askGLWebhookConfig(repoURL, controllerURL, apiURL string) error {
+	if repoURL == "" {
+		msg := "Please enter the git repository url you want to be configured: "
+		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repoURL,
+			survey.WithValidator(survey.Required)); err != nil {
+			return err
+		}
+	} else {
+		fmt.Fprintf(gl.IOStream.Out, "✓ Setting up GitLab Webhook for Repository %s\n", repoURL)
+	}
+
 	msg := "Please enter the project ID for the repository you want to be configured, \n  project ID refers to an unique ID (e.g. 34405323) shown at the top of your GitLab project :"
 	if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &gl.projectID,
 		survey.WithValidator(survey.Required)); err != nil {

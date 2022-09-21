@@ -21,10 +21,12 @@ func TestAskGLWebhookConfig(t *testing.T) {
 		askStubs      func(*prompt.AskStubber)
 		providerURL   string
 		controllerURL string
+		repoURL       string
 	}{
 		{
 			name: "ask all details no defaults",
 			askStubs: func(as *prompt.AskStubber) {
+				as.StubOne("https://gitlab.com/pac/test")
 				as.StubOne("id")
 				as.StubOne("https://test")
 				as.StubOne("webhook-secret")
@@ -41,6 +43,7 @@ func TestAskGLWebhookConfig(t *testing.T) {
 				as.StubOne("webhook-secret")
 				as.StubOne("token")
 			},
+			repoURL:       "https://gitlab.com/pac/demo",
 			controllerURL: "https://test",
 			providerURL:   "https://gl.pac.test",
 			wantErrStr:    "",
@@ -55,7 +58,7 @@ func TestAskGLWebhookConfig(t *testing.T) {
 				tt.askStubs(as)
 			}
 			gl := gitLabConfig{IOStream: io}
-			err := gl.askGLWebhookConfig(tt.controllerURL, tt.providerURL)
+			err := gl.askGLWebhookConfig(tt.repoURL, tt.controllerURL, tt.providerURL)
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
 				return
