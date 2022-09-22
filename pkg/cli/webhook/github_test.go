@@ -50,6 +50,17 @@ func TestAskGHWebhookConfig(t *testing.T) {
 			controllerURL: "https://test",
 			wantErrStr:    "",
 		},
+		{
+			name: "with defaults and a slash",
+			askStubs: func(as *prompt.AskStubber) {
+				as.StubOne(true)
+				as.StubOne("webhook-secret")
+				as.StubOne("token")
+			},
+			repoURL:       "https://github.com/pac/demo/",
+			controllerURL: "https://test",
+			wantErrStr:    "",
+		},
 	}
 
 	for _, tt := range tests {
