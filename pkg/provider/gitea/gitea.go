@@ -92,6 +92,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			}
 			return setLoggerAndProceed(false, "", nil)
 		}
+		return setLoggerAndProceed(false, "not a issue comment we care about", nil)
 	case *giteastruct.PullRequestPayload:
 		if provider.Valid(string(gitEvent.Action), []string{"opened", "synchronize", "synchronized", "reopened"}) {
 			return setLoggerAndProceed(true, "", nil)
@@ -106,7 +107,6 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 	default:
 		return setLoggerAndProceed(false, "", fmt.Errorf("gitea: event \"%s\" is not supported", event))
 	}
-	return setLoggerAndProceed(false, "", fmt.Errorf("gitea: event \"%s\" is not supported", event))
 }
 
 func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,

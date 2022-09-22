@@ -138,7 +138,7 @@ func GetIssueTimeline(ctx context.Context, topts *TestOpts) (Timelines, error) {
 		topts.PullRequest.Base.Repository.FullName, topts.PullRequest.Index)
 	resp, err := MakeRequest(ctx, topts.Clients.Clients.HTTP, timelineURL, topts.Opts.Organization, topts.GiteaPassword)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error on URL %s: %w", timelineURL, err)
 	}
 	defer resp.Body.Close()
 	var tls Timelines
