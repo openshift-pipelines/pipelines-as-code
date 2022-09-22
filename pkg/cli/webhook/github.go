@@ -60,6 +60,7 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string
 		return err
 	}
 
+	defaultRepo = strings.TrimSuffix(defaultRepo, "/")
 	repoArr := strings.Split(defaultRepo, "/")
 	if len(repoArr) != 2 {
 		return fmt.Errorf("invalid repository, needs to be of format 'org-name/repo-name'")
