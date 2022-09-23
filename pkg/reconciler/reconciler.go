@@ -54,8 +54,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 
 	// if its a GitHub App pipelineRun PR then process only if check run id is added otherwise wait
 	if _, ok := pr.Annotations[filepath.Join(pipelinesascode.GroupName, "installation-id")]; ok {
-		if _, ok := pr.Labels[filepath.Join(pipelinesascode.GroupName, "check-run-id")]; !ok {
-			return nil
+		if state, ok := pr.Labels[filepath.Join(pipelinesascode.GroupName, "state")]; !ok {
+			if state == kubeinteraction.StateWait {
+				logger.Infof("wait to reconcile pipelinerun %v: not ready", pr.GetName())
+				return nil
+			}
 		}
 	}
 

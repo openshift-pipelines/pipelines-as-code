@@ -101,6 +101,11 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 		match.PipelineRun.Labels[filepath.Join(apipac.GroupName, "state")] = kubeinteraction.StateQueued
 	}
 
+	// if pipelineRun is being created for github app, then put in wait state
+	if _, ok := match.PipelineRun.Labels[filepath.Join(apipac.GroupName, "installation-id")]; ok {
+		match.PipelineRun.Labels[filepath.Join(apipac.GroupName, "state")] = kubeinteraction.StateWait
+	}
+
 	// Create the actual pipeline
 	pr, err := p.run.Clients.Tekton.TektonV1beta1().PipelineRuns(match.Repo.GetNamespace()).Create(ctx,
 		match.PipelineRun, metav1.CreateOptions{})

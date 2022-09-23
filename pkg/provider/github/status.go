@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/google/go-github/v47/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -87,27 +87,11 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton versioned.Interface, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
 	var err error
 	var checkRunID *int64
-	var found bool
 
-	// check if pipelineRun has the label with checkRun-id
-	if status.PipelineRun != nil {
-		var id string
-		id, found = status.PipelineRun.GetLabels()[filepath.Join(apipac.GroupName, checkRunIDKey)]
-		if found {
-			checkID, err := strconv.Atoi(id)
-			if err != nil {
-				return fmt.Errorf("api error: cannot convert checkrunid")
-			}
-			checkRunID = github.Int64(int64(checkID))
-		}
-	}
-
-	if !found {
-		if checkRunID, _ = v.getExistingCheckRunID(ctx, runevent, status); checkRunID == nil {
-			checkRunID, err = v.createCheckRunStatus(ctx, runevent, pacopts, status)
-			if err != nil {
-				return err
-			}
+	if checkRunID, _ = v.getExistingCheckRunID(ctx, runevent, status); checkRunID == nil {
+		checkRunID, err = v.createCheckRunStatus(ctx, runevent, pacopts, status)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -138,15 +122,13 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 		return err
 	}
 
-	if !found {
-		if err := v.updatePipelineRunWithCheckRunID(ctx, tekton, status.PipelineRun, checkRunID); err != nil {
-			return err
-		}
+	if err := v.updatePipelineRunState(ctx, tekton, status.PipelineRun); err != nil {
+		return err
 	}
 	return err
 }
 
-func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton versioned.Interface, pr *v1beta1.PipelineRun, checkRunID *int64) error {
+func (v *Provider) updatePipelineRunState(ctx context.Context, tekton versioned.Interface, pr *v1beta1.PipelineRun) error {
 	if pr == nil {
 		return nil
 	}
@@ -156,15 +138,13 @@ func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton v
 		if err != nil {
 			return err
 		}
-		// temp fix: wait for tekton.dev/pipeline label to avoid race condition
-		// https://github.com/openshift-pipelines/pipelines-as-code/issues/786
-		if _, ok := pr.Labels["tekton.dev/pipeline"]; !ok {
-			v.Logger.Infof("PipelineRun %v/%v don't have tekton label yet, waiting for it", pr.GetNamespace(), pr.GetName())
-			time.Sleep(2 * time.Second)
-			continue
-		}
+
 		pr = pr.DeepCopy()
-		pr.GetLabels()[filepath.Join(apipac.GroupName, checkRunIDKey)] = strconv.FormatInt(*checkRunID, 10)
+		if pr.Spec.Status == v1beta1.PipelineRunSpecStatusPending {
+			pr.Labels[filepath.Join(apipac.GroupName, "state")] = kubeinteraction.StateQueued
+		} else {
+			pr.Labels[filepath.Join(apipac.GroupName, "state")] = kubeinteraction.StateStarted
+		}
 
 		pr, err = tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Update(ctx, pr, v1.UpdateOptions{})
 		if err != nil {

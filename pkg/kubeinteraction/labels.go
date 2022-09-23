@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	StateWait      = "wait"
 	StateStarted   = "started"
 	StateQueued    = "queued"
 	StateCompleted = "completed"
