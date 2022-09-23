@@ -92,7 +92,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 	// check if pipelineRun has the label with checkRun-id
 	if status.PipelineRun != nil {
 		var id string
-		id, found = status.PipelineRun.GetLabels()[filepath.Join(apipac.GroupName, checkRunIDKey)]
+		id, found = status.PipelineRun.GetAnnotations()[filepath.Join(apipac.GroupName, checkRunIDKey)]
 		if found {
 			checkID, err := strconv.Atoi(id)
 			if err != nil {
@@ -164,7 +164,7 @@ func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton v
 			continue
 		}
 		pr = pr.DeepCopy()
-		pr.GetLabels()[filepath.Join(apipac.GroupName, checkRunIDKey)] = strconv.FormatInt(*checkRunID, 10)
+		pr.GetAnnotations()[filepath.Join(apipac.GroupName, checkRunIDKey)] = strconv.FormatInt(*checkRunID, 10)
 
 		pr, err = tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Update(ctx, pr, v1.UpdateOptions{})
 		if err != nil {
