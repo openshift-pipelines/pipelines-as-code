@@ -38,6 +38,7 @@ func GetRepoOwnerFromURL(ghURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	repo = strings.TrimSuffix(repo, "/")
 	return strings.ToLower(fmt.Sprintf("%s/%s", org, repo)), nil
 }
 
