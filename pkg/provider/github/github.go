@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/google/go-github/v47/github"
@@ -44,13 +43,6 @@ func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 func (v *Provider) Validate(ctx context.Context, cs *params.Run, event *info.Event) error {
 	signature := event.Request.Header.Get(github.SHA256SignatureHeader)
 
-	// detect if we run gitea and validate the signature
-	// there is currently an issue while validating the signature with gitea, so we are not enforcing the need webhook secret like we do for github.
-	if event.Request.Header.Get("X-Gitea-Event") != "" && event.Request.Header.Get("X-Gitea-Signature") == "" && event.Provider.WebhookSecret == "" {
-		v.Logger.Debug("no secret and signature found, skipping validation for gitea")
-		return nil
-	}
-
 	if signature == "" {
 		signature = event.Request.Header.Get(github.SHA1SignatureHeader)
 	}
@@ -67,34 +59,6 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 		APIURL:         apiPublicURL,
 		Name:           v.providerName,
 	}
-}
-
-func (v *Provider) getGiteaClient(apiURL string, tc *http.Client) (*github.Client, error) {
-	// add /api/v1 to the base url
-	baseEndpoint, err := url.Parse(apiURL)
-	if err != nil {
-		return nil, err
-	}
-	if !strings.HasSuffix(baseEndpoint.Path, "/") {
-		baseEndpoint.Path += "/"
-	}
-	if !strings.HasSuffix(baseEndpoint.Path, "/api/v1/") && !strings.HasPrefix(baseEndpoint.Host, "api.") && !strings.Contains(baseEndpoint.Host, ".api.") {
-		baseEndpoint.Path += "api/v1/"
-	}
-	uploadURL, err := url.Parse(apiURL)
-	if err != nil {
-		return nil, err
-	}
-	if !strings.HasSuffix(uploadURL.Path, "/") {
-		uploadURL.Path += "/"
-	}
-	if !strings.HasSuffix(uploadURL.Path, "/api/v1/") && !strings.HasPrefix(uploadURL.Host, "api.") && !strings.Contains(uploadURL.Host, ".api.") {
-		uploadURL.Path += "api/v1/"
-	}
-	client := github.NewClient(tc)
-	client.BaseURL = baseEndpoint
-	client.UploadURL = uploadURL
-	return client, nil
 }
 
 func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
@@ -117,16 +81,6 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	} else {
 		client = github.NewClient(tc)
 		apiURL = client.BaseURL.String()
-	}
-
-	// if we have gitea events then do our own client thing
-	if event.Request != nil && event.Request.Header.Get("X-Gitea-Event") != "" {
-		var err error
-		client, err = v.getGiteaClient(apiURL, tc)
-		if err != nil {
-			return fmt.Errorf("cannot make a gitea client: %w", err)
-		}
-		v.providerName = "gitea"
 	}
 
 	// Make sure Client is not already set, so we don't override our fakeclient
