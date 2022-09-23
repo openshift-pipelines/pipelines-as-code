@@ -35,6 +35,7 @@ class ProvisionGitea:
     gitea_host = GITEA_HOST
     gitea_url = GITEA_URL
     headers = {"Content-Type": "application/json"}
+    token_name = "token"
 
     def apply_deployment_template(self):
         tmpl = os.path.join(os.path.dirname(__file__), "gitea-deployment.yaml")
@@ -107,11 +108,15 @@ class ProvisionGitea:
         resp.raise_for_status()
 
     def create_token_for_user(self) -> str:
-        jeez = """{"name": "token"}"""
-        headers = {"Content-Type": "application/json"}
+        requests.delete(
+            url=f"{self.gitea_url}/api/v1/users/{GITEA_USER}/tokens/{self.token_name}",
+            headers=self.headers,
+            auth=(GITEA_USER, GITEA_PASSWORD),
+        )
+        jeez = """{"name": "%s"}""" % (self.token_name)
         resp = requests.post(
             url=f"{self.gitea_url}/api/v1/users/{GITEA_USER}/tokens",
-            headers=headers,
+            headers=self.headers,
             auth=(GITEA_USER, GITEA_PASSWORD),
             data=jeez,
         )
@@ -236,9 +241,7 @@ def main():
             m.create_repo_crd(config["name"], token)
     print(
         f"SUCCESS: gitea is available on {m.gitea_url}\n"
-        f"User: {GITEA_USER} Password: {GITEA_PASSWORD} Token: {token}\n"
-        f"E2E Repository: {m.gitea_url}/{GITEA_USER}/{GITEA_REPO_NAME_E2E}\n"
-        f"Play Repository: {m.gitea_url}/{GITEA_USER}/{GITEA_REPO_NAME_PERSO}"
+        f"User: {GITEA_USER} Password: {GITEA_PASSWORD} Token: {token}"
     )
 
 
