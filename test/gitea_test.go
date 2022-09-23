@@ -106,7 +106,7 @@ func TestGiteaMultiplesParallelPipelines(t *testing.T) {
 
 // multiple pipelineruns in the same .tekton directory and a concurrency of 1
 func TestGiteaConcurrencyExclusivenessMultiplePipelines(t *testing.T) {
-	numPipelines := 2
+	numPipelines := 10
 	yamlFiles := map[string]string{}
 	for i := 0; i < numPipelines; i++ {
 		yamlFiles[fmt.Sprintf(".tekton/pr%d.yaml", i)] = "testdata/pipelinerun.yaml"

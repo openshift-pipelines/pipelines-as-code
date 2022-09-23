@@ -20,6 +20,21 @@ type Opts struct {
 	TargetSHA       string
 }
 
+func UntilMinPRAppeared(ctx context.Context, clients clients.Clients, opts Opts, minNumber int) error {
+	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
+	defer cancel()
+	return kubeinteraction.PollImmediateWithContext(ctx, opts.PollTimeout, func() (bool, error) {
+		prs, err := clients.Tekton.TektonV1beta1().PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return false, err
+		}
+		if len(prs.Items) >= minNumber {
+			return true, nil
+		}
+		return false, nil
+	})
+}
+
 func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts Opts) error {
 	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
 	defer cancel()

@@ -21,7 +21,7 @@ import (
 func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (string, error) {
 	maintree, _, err := client.Git.GetTree(ctx, owner, repo, baseBranch, false)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error getting tree: %w", err)
 	}
 	mainSha := maintree.GetSHA()
 	entries := []*github.TreeEntry{}
@@ -34,7 +34,7 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 			Encoding: &encoding,
 		})
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("error creating blobs: %w", err)
 		}
 		sha := blob.GetSHA()
 
