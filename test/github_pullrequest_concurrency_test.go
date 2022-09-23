@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-github/v47/github"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
@@ -22,6 +23,8 @@ import (
 func TestGithubPullRequestConcurrency(t *testing.T) {
 	ctx := context.Background()
 	label := "Github PullRequest Concurrent"
+	numberOfPipelineRuns := 10
+	maxNumberOfConcurrentPipelineRuns := 3
 
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
@@ -37,15 +40,16 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	}
 
 	// set concurrency
-	opts.Concurrency = 1
+	opts.Concurrency = maxNumberOfConcurrentPipelineRuns
 
 	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
 	assert.NilError(t, err)
 
-	yamlFiles := map[string]string{
-		".tekton/prlongrunning.yaml":  "testdata/pipelinerun_long_running.yaml",
-		".tekton/prlongrunning2.yaml": "testdata/pipelinerun_long_running_another.yaml",
+	yamlFiles := map[string]string{}
+	for i := 1; i <= numberOfPipelineRuns; i++ {
+		yamlFiles[fmt.Sprintf(".tekton/prlongrunnning-%d.yaml", i)] = "testdata/pipelinerun_long_running.yaml"
 	}
+
 	entries, err := payload.GetEntries(yamlFiles, targetNS, options.MainBranch, options.PullRequestEvent)
 	assert.NilError(t, err)
 
@@ -60,13 +64,22 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	prNumber, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Organization,
 		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), logmsg)
 	assert.NilError(t, err)
+	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Info("waiting to let controller process the event")
 	time.Sleep(5 * time.Second)
 
+	waitOpts := wait.Opts{
+		RepoName:        targetNS,
+		Namespace:       targetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     wait.DefaultTimeout,
+		TargetSHA:       sha,
+	}
+	assert.NilError(t, wait.UntilMinPRAppeared(ctx, runcnx.Clients, waitOpts, numberOfPipelineRuns))
+
 	allPR, err := runcnx.Clients.Tekton.TektonV1beta1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
-	assert.Equal(t, len(allPR.Items), 2)
 
 	var pending, running bool
 	for _, pr := range allPR.Items {
@@ -83,15 +96,33 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	wait.Succeeded(ctx, t, runcnx, opts, options.PullRequestEvent, targetNS, len(yamlFiles), sha, logmsg)
 
 	runcnx.Clients.Log.Infof("Waiting for Repository to be updated for second pipelineRun")
-	waitOpts := wait.Opts{
-		RepoName:        targetNS,
-		Namespace:       targetNS,
-		MinNumberStatus: 1,
-		PollTimeout:     wait.DefaultTimeout,
-		TargetSHA:       sha,
-	}
 	err = wait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
-	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+	finished := 1
+	runningChecks := 0
+	for i := 0; i < 15; i++ {
+		checkruns, _, err := ghcnx.Client.Checks.ListCheckRunsForRef(ctx, opts.Organization, opts.Repo, targetRefName, &github.ListCheckRunsOptions{})
+		assert.NilError(t, err)
+		assert.Equal(t, *checkruns.Total, numberOfPipelineRuns)
+		for _, checkrun := range checkruns.CheckRuns {
+			switch {
+			case checkrun.GetStatus() != "completed" && checkrun.GetConclusion() != "success":
+				runcnx.Clients.Log.Infof("Waiting for CheckRun %s to be completed", checkrun.GetName())
+			case checkrun.GetStatus() == "running":
+				runningChecks++
+			default:
+				finished++
+			}
+		}
+		if finished != numberOfPipelineRuns {
+			if runningChecks > maxNumberOfConcurrentPipelineRuns {
+				runcnx.Clients.Log.Fatalf("Too many running checks %d our maxAmountOfConcurrentPRS == %d", runningChecks, numberOfPipelineRuns)
+			}
+			// it's high so we limit our ratelimitation
+			time.Sleep(30 * time.Second)
+		} else {
+			break
+		}
+	}
 }
