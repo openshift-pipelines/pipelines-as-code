@@ -202,7 +202,7 @@ For example if you have a pipelinerun in the `.tekton/pull-request.yaml` file
 you can run the command `tkn-pac resolve` to see it running:
 
 ```yaml
-tkn pac resolve -f .tekton/pull-request.yaml|kubectl apply -f -
+tkn pac resolve -f .tekton/pull-request.yaml|kubectl create -f -
 ```
 
 Combined with a kubernetes install running on your local machine (like[Code
@@ -226,7 +226,7 @@ You can specify multiple `-f` on the command line.
 
 You need to verify that `git-clone` task (if you use it) can access the
 repository to the SHA. Which mean if you test your current source code you need
-to push it first before using `tkn pac resolve|kubectl apply`.
+to push it first before using `tkn pac resolve|kubectl create -`.
 
 Compared with running directly on CI, you need to explicitly specify the list of
 filenames or directory where you have the templates.
