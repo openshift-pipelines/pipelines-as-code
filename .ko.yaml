@@ -1,1 +1,1 @@
-defaultBaseImage: registry.access.redhat.com/ubi9/ubi-minimal
+defaultBaseImage: gcr.io/distroless/base-debian11:nonroot
