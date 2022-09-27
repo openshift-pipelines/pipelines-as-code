@@ -1,6 +1,6 @@
 ---
 title: PipelineRuns Cleanup
-weight: 9
+weight: 8
 ---
 # PipelineRuns Cleanups
 
