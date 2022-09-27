@@ -2,7 +2,6 @@ package matcher
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -49,7 +48,7 @@ func getAnnotationValues(annotation string) ([]string, error) {
 	annotation = strings.TrimSpace(annotation)
 	match := re.Match([]byte(annotation))
 	if !match {
-		return nil, errors.New("annotations in pipeline are in wrong format")
+		return nil, fmt.Errorf("annotations in pipeline are in wrong format: %s", annotation)
 	}
 
 	// if it's not an array then it would be a single string
@@ -64,7 +63,7 @@ func getAnnotationValues(annotation string) ([]string, error) {
 	}
 
 	if splitted[0] == "" {
-		return nil, errors.New("annotations in pipeline are empty")
+		return nil, fmt.Errorf("annotation \"%s\" has empty values", annotation)
 	}
 
 	return splitted, nil
