@@ -21,18 +21,22 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func TestMain(m *testing.M) {
-	s := k8scheme.Scheme
-	if err := tektonv1beta1.AddToScheme(s); err != nil {
-		log.Fatalf("Unable to add route scheme: (%v)", err)
-	}
-	ret := m.Run()
-	os.Exit(ret)
-}
-
-func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
-	const testHubURL = "https://mybelovedhub"
-	const simpletask = `---
+const (
+	testHubURL     = "https://mybelovedhub"
+	simplePipeline = `---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: "pipeline"
+spec:
+  tasks:
+    - name: task
+      taskSpec:
+        steps:
+          - name: task
+            image: registry.access.redhat.com/ubi9/ubi-micro
+            command: ["/bin/echo", "HELLOMOTO"]`
+	simpleTask = `---
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
@@ -43,16 +47,27 @@ spec:
       image: image
       script: |
        echo hello`
+)
 
+func TestMain(m *testing.M) {
+	s := k8scheme.Scheme
+	if err := tektonv1beta1.AddToScheme(s); err != nil {
+		log.Fatalf("Unable to add route scheme: (%v)", err)
+	}
+	ret := m.Run()
+	os.Exit(ret)
+}
+
+func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 	tests := []struct {
-		name            string
-		runevent        info.Event
 		annotations     map[string]string
+		filesInsideRepo map[string]string
+		gotTaskName     string
+		name            string
+		remoteURLS      map[string]map[string]string
+		runevent        info.Event
 		wantErr         string
 		wantLog         string
-		gotTaskName     string
-		remoteURLS      map[string]map[string]string
-		filesInsideRepo map[string]string
 	}{
 		{
 			name: "test-annotations-error-remote-http-not-k8",
@@ -60,12 +75,12 @@ spec:
 				pipelinesascode.GroupName + "/task": "[http://remote.task]",
 			},
 			remoteURLS: map[string]map[string]string{
-				"https://remote.task": {
+				"http://remote.task": {
 					"body": "",
 					"code": "200",
 				},
 			},
-			wantErr: "not looking like a kubernetes resource",
+			wantErr: "returning empty",
 		},
 		{
 			name: "test-annotations-remote-http",
@@ -75,7 +90,7 @@ spec:
 			gotTaskName: "task",
 			remoteURLS: map[string]map[string]string{
 				"http://remote.task": {
-					"body": simpletask,
+					"body": simpleTask,
 					"code": "200",
 				},
 			},
@@ -88,7 +103,7 @@ spec:
 			gotTaskName: "task",
 			remoteURLS: map[string]map[string]string{
 				"https://remote.task": {
-					"body": simpletask,
+					"body": simpleTask,
 					"code": "200",
 				},
 			},
@@ -100,7 +115,7 @@ spec:
 			},
 			gotTaskName: "task",
 			filesInsideRepo: map[string]string{
-				"be/healthy": simpletask,
+				"be/healthy": simpleTask,
 			},
 			runevent: info.Event{
 				SHA: "007",
@@ -115,7 +130,7 @@ spec:
 			gotTaskName: "task",
 			remoteURLS: map[string]map[string]string{
 				"http://remote.task": {
-					"body": simpletask,
+					"body": simpleTask,
 					"code": "200",
 				},
 			},
@@ -142,7 +157,8 @@ spec:
 			annotations: map[string]string{
 				pipelinesascode.GroupName + "/task": "[not/here]",
 			},
-			wantLog: "could not find remote task not/here inside Repo",
+			wantLog: "could not find remote task not/here",
+			wantErr: "returning empty",
 		},
 		{
 			name:        "test-get-from-hub-latest",
@@ -156,7 +172,7 @@ spec:
 					"code": "200",
 				},
 				"http://simple.task": {
-					"body": simpletask,
+					"body": simpleTask,
 					"code": "200",
 				},
 			},
@@ -173,7 +189,7 @@ spec:
 					"code": "200",
 				},
 				"http://simple.task": {
-					"body": simpletask,
+					"body": simpleTask,
 					"code": "200",
 				},
 			},
@@ -197,24 +213,149 @@ spec:
 			}
 			ctx, _ := rtesting.SetupFakeContext(t)
 			rt := RemoteTasks{
-				Run: cs,
+				Run:    cs,
+				Logger: logger,
+				ProviderInterface: &provider.TestProviderImp{
+					FilesInsideRepo: tt.filesInsideRepo,
+				},
+				Event: &tt.runevent,
 			}
 
-			got, err := rt.GetTaskFromAnnotations(ctx, logger, &provider.TestProviderImp{
-				FilesInsideRepo: tt.filesInsideRepo,
-			}, &tt.runevent, tt.annotations)
+			got, err := rt.GetTaskFromAnnotations(ctx, tt.annotations)
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr, "We should have get an error with %v but we didn't", tt.wantErr)
 				return
 			}
 			if tt.wantLog != "" {
-				assert.Assert(t, len(fakelog.FilterMessage(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", fakelog)
+				assert.Assert(t, len(fakelog.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", fakelog)
 			}
 			assert.NilError(t, err, "GetTaskFromAnnotations() error = %v, wantErr %v", err, tt.wantErr)
 			assert.Assert(t, len(got) > 0, "GetTaskFromAnnotations() error no tasks has been processed")
 
 			if tt.gotTaskName != "" {
 				assert.Equal(t, tt.gotTaskName, got[0].GetName())
+			}
+		})
+	}
+}
+
+func TestGetPipelineFromAnnotations(t *testing.T) {
+	tests := []struct {
+		annotations     map[string]string
+		filesInsideRepo map[string]string
+		gotPipelineName string
+		name            string
+		remoteURLS      map[string]map[string]string
+		runevent        info.Event
+		wantErr         string
+		wantLog         string
+	}{
+		{
+			name:            "good/fetching from remote http",
+			gotPipelineName: "pipeline",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/pipeline": "[http://remote.pipeline]",
+			},
+			remoteURLS: map[string]map[string]string{
+				"http://remote.pipeline": {
+					"body": simplePipeline,
+					"code": "200",
+				},
+			},
+		},
+		{
+			name: "bad/error getting pipeline",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/pipeline": "[http://remote.pipeline]",
+			},
+			remoteURLS: map[string]map[string]string{
+				"http://remote.pipeline": {
+					"code": "501",
+				},
+			},
+			wantErr: "error getting remote pipeline",
+		},
+		{
+			name: "bad/not a pipeline",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/pipeline": "[http://remote.pipeline]",
+			},
+			remoteURLS: map[string]map[string]string{
+				"http://remote.pipeline": {
+					"body": simpleTask,
+					"code": "200",
+				},
+			},
+			wantErr: "this doesn't seem to be a proper pipeline",
+		},
+		{
+			name: "bad/could not get remote",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/pipeline": "[http://nowhere.pipeline]",
+			},
+			wantErr: "error getting remote pipeline",
+		},
+		{
+			name: "bad/returning empty",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/pipeline": "[http://remote.pipeline]",
+			},
+			remoteURLS: map[string]map[string]string{
+				"http://remote.pipeline": {
+					"body": "",
+					"code": "200",
+				},
+			},
+			wantErr: "returning empty",
+		},
+		{
+			name: "bad/more than one pipeline",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/pipeline": "[http://foo.bar, http://remote.pipeline]",
+			},
+			wantErr: "only one pipeline is allowed on remote",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.remoteURLS)
+			observer, fakelog := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+			cs := &params.Run{
+				Clients: clients.Clients{
+					HTTP: *httpTestClient,
+					Log:  logger,
+				},
+				Info: info.Info{
+					Pac: &info.PacOpts{
+						HubURL: testHubURL,
+					},
+				},
+			}
+			ctx, _ := rtesting.SetupFakeContext(t)
+			rt := RemoteTasks{
+				Run:    cs,
+				Logger: logger,
+				ProviderInterface: &provider.TestProviderImp{
+					FilesInsideRepo: tt.filesInsideRepo,
+				},
+				Event: &tt.runevent,
+			}
+
+			got, err := rt.GetPipelineFromAnnotations(ctx, tt.annotations)
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr, "We should have get an error with %v but we didn't", tt.wantErr)
+				return
+			}
+			if tt.wantLog != "" {
+				assert.Assert(t, len(fakelog.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", fakelog)
+			}
+			assert.NilError(t, err)
+			assert.Assert(t, len(got) > 0, "GetPipelineFromAnnotations() error no pipelines has been processed")
+
+			if tt.gotPipelineName != "" {
+				assert.Equal(t, tt.gotPipelineName, got[0].GetName())
 			}
 		})
 	}

@@ -22,15 +22,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubPullRequestRemoteAnnotations(t *testing.T) {
+func TestGithubPullRequestRemoteTaskAnnotations(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
-		".tekton/pr.yaml":                              "testdata/pipelinerun_remote_annotations.yaml",
-		".tekton/pipeline.yaml":                        "testdata/pipeline_remote_annotations.yaml",
+		".tekton/pr.yaml":                              "testdata/pipelinerun_remote_task_annotations.yaml",
+		".tekton/pipeline.yaml":                        "testdata/pipeline_in_tektondir.yaml",
 		".other-tasks/task-referenced-internally.yaml": "testdata/task_referenced_internally.yaml",
 	}, targetNS, options.MainBranch, options.PullRequestEvent)
 	assert.NilError(t, err)

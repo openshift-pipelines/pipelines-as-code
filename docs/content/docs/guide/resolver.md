@@ -5,47 +5,45 @@ weight: 2
 # Pipelines as Code resolver
 
 If `Pipelines as Code` sees a PipelineRun with a reference to a `Task` or a
-`Pipeline`, `Pipelines as Code` will try to *resolves* it (see below) as a
-single PipelineRun with an embedded `PipelineSpec` to a `PipelineRun`.
+`Pipeline` in any YAML file located in the `.tekton/` directory, `Pipelines as
+Code` will automatically try to *resolves* it (see below) as a single
+PipelineRun with an embedded `PipelineSpec` to a `PipelineRun`.
 
-It will transform the Pipeline `Name` field to a `generateName` based on the
-Pipeline name as well.
-
-This allows you to have multiple runs in the same namespace from the same
+The resolver will transform the Pipeline `Name` field to a `generateName` based on the
+Pipeline name as well. This allows you to have multiple runs in the same namespace from the same
 PipelineRun with no risk of conflicts.
 
-Everything that runs your pipelinerun and its references need to be inside the
-`.tekton/` directory and subdirectories as referenced with a remote task (see
+Every task or pipeline your PipelineRun references will need to be inside the
+`.tekton/` directory or subdirectories or referenced with a remote task (see
 below on how the remote tasks are referenced).
 
-If you have a taskRef to a task located in any directory or subdirectories of the
-`.tekton/` directory it will be automatically embedded even if it's not in the
-annotations.
-
-The resolver will skip resolving if he sees these type of tasks:
+The resolver will skip resolving if it sees these type of tasks:
 
 * a reference to a [`ClusterTask`](https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#task-vs-clustertask)
 * a `Task` or `Pipeline` [`Bundle`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#tekton-bundles)
-* or a [Custom Task](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#using-custom-tasks) with an apiVersion that doesn't have a `tekton.dev/` prefix.
+* a [Custom Task](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#using-custom-tasks) with an apiVersion that doesn't have a `tekton.dev/` prefix.
 
-It just use them "as is" and will not try to do anything with it.
+It just uses them "as is" and will not try to do anything with it.
 
-If pipelines as code cannot resolve the referenced tasks in the `Pipeline` or
+If Pipelines as Code cannot resolve the referenced tasks in the `Pipeline` or
 `PipelineSpec`, the run will fail before applying the pipelinerun onto the
-cluster. You should be able to the issue on your Git provider platform or
+cluster.
+
+You should be able to see the issue on your Git provider platform or
 through the log of the controller.
 
 If you need to test your `PipelineRun` locally before sending it in a PR, you
 can use the `resolve` command from the `tkn-pac` CLI See the `--help` of the
 command to learn about how to use it.
 
-## Remote Task support
+## Remote Task annotations
 
-`Pipelines as Code` support fetching remote tasks from remote location through
+`Pipelines as Code` support fetching remote tasks or pipeline from remote location through
 annotations on PipelineRun.
 
-If the resolver sees a PipelineRun referencing a remote task through its name in
-a Pipeline or a PipelineSpec it will automatically inlines it.
+If the resolver sees a PipelineRun referencing a remote task or a pipeline in
+the reference name of a Pipeline or a PipelineSpec it will automatically inlines
+it.
 
 An annotation to a remote task looks like this :
 
@@ -113,3 +111,21 @@ If there is any error fetching those resources, `Pipelines as Code` will error
 out and not process the pipeline.
 
 If the object fetched cannot be parsed as a Tekton `Task` it will error out.
+
+## Remote Pipeline annotations
+
+Remote Pipeline can be referenced by annotation, this allows you to share your Pipeline definition across.
+
+Only one Pipeline is allowed in annotation.
+
+An annotation to a remote pipeline looks like this :
+
+```yaml
+pipelinesascode.tekton.dev/task: "https://git.provider/raw/pipeline.yaml
+```
+
+It supports remote URL and files inside the same Git repository.
+
+{{< hint info >}}
+[Tekton Hub](https://hub.tekton.dev) doesn't currently have support for `Pipeline`.
+{{< /hint >}}

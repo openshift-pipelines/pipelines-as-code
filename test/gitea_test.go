@@ -37,14 +37,25 @@ var (
 	failureRegexp = regexp.MustCompile(`There was an issue validating the commit: "cannot find task task-non-existing in input"`)
 )
 
-func TestGiteaPullRequestAnnotations(t *testing.T) {
+func TestGiteaPullRequestTaskAnnotations(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,
 		TargetEvent: options.PullRequestEvent,
 		YAMLFiles: map[string]string{
-			".tekton/pipeline.yaml":                        "testdata/pipeline_remote_annotations.yaml",
+			".tekton/pipeline.yaml":                        "testdata/pipeline_in_tektondir.yaml",
 			".other-tasks/task-referenced-internally.yaml": "testdata/task_referenced_internally.yaml",
-			".tekton/pr.yaml":                              "testdata/pipelinerun_remote_annotations.yaml",
+			".tekton/pr.yaml":                              "testdata/pipelinerun_remote_task_annotations.yaml",
+		},
+	}
+	defer tgitea.TestPR(t, topts)()
+}
+
+func TestGiteaPullRequestPipelineAnnotations(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		Regexp:      successRegexp,
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun_remote_pipeline_annotations.yaml",
 		},
 	}
 	defer tgitea.TestPR(t, topts)()

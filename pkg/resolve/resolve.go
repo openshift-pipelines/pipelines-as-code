@@ -123,14 +123,23 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 	for _, pipelinerun := range types.PipelineRuns {
 		if ropt.RemoteTasks && pipelinerun.GetObjectMeta().GetAnnotations() != nil {
 			rt := matcher.RemoteTasks{
-				Run: cs,
+				Run:               cs,
+				Event:             event,
+				ProviderInterface: providerintf,
+				Logger:            logger,
 			}
-			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, logger, providerintf, event, pipelinerun.GetObjectMeta().GetAnnotations())
+			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, pipelinerun.GetObjectMeta().GetAnnotations())
 			if err != nil {
 				return []*tektonv1beta1.PipelineRun{}, err
 			}
 			// Merge remote tasks with local tasks
 			types.Tasks = append(types.Tasks, remoteTasks...)
+
+			remotePipelines, err := rt.GetPipelineFromAnnotations(ctx, pipelinerun.GetObjectMeta().GetAnnotations())
+			if err != nil {
+				return []*tektonv1beta1.PipelineRun{}, err
+			}
+			types.Pipelines = append(types.Pipelines, remotePipelines...)
 		}
 	}
 

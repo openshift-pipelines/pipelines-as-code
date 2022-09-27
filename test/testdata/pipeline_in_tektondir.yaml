@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: pipeline-remote-annotations
+  name: pipeline-in-tekton-dir
 spec:
   tasks:
     - name: task-spec
