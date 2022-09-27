@@ -1,6 +1,6 @@
 ---
 title: Custom certificates
-weight: 8
+weight: 4
 ---
 # Custom certificates
 
