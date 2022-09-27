@@ -21,23 +21,25 @@ components and workloads, including Pipelines-as-Code.
 ### Create a ConfigMap containing the certificate
 
 ```shell
-kubectl create configmap git-repo-cert --from-file=git.crt=<path to ca.crt>
+kubectl -n pipelines-as-code create configmap git-repo-cert --from-file=git.crt=<path to ca.crt>
 ```
 
 ### Mount the ConfigMap in the pods
 
 Follow [this guide](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#add-configmap-data-to-a-volume)
-to mount the ConfigMap in all Pipelines-as-Code Deployments in the cluster.
+to mount the ConfigMap in the `pipelines-as-code-controller` and
+`pipelines-as-code-watcher` Deployments in the cluster in the
+`pipelines-as-code` namespace.
 
 ### Include `mountPath` in `SSL_CERT_DIR`
 
 Say, you mounted the ConfigMap with the `mountPath` as `/pac-custom-certs`.
 To include this directory in the paths where the certificates are looked up,
-set the environment variable `SSL_CERT_DIR` in all Pipelines-as-Code
+set the environment variable `SSL_CERT_DIR` in the relevant Pipelines-as-Code
 Deployments.
 
 ```shell
-kubectl set env deployment --all -n pipelines-as-code SSL_CERT_DIR=/pac-custom-certs:/etc/ssl/certs:/etc/pki/tls/certs:/system/etc/security/cacerts
+kubectl set env deployment pipelines-as-code-controller pipelines-as-code-watcher -n pipelines-as-code SSL_CERT_DIR=/pac-custom-certs:/etc/ssl/certs:/etc/pki/tls/certs:/system/etc/security/cacerts
 ```
 
 Pipelines-as-Code should now be able to access the repository using the
