@@ -71,7 +71,7 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 			return "", err
 		}
 		if res.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("could not get remote resource \"%s\": %s", uri, res.Status)
+			return "", fmt.Errorf("cannot get remote resource: \"%s\": %s", uri, res.Status)
 		}
 		data, _ := io.ReadAll(res.Body)
 		defer res.Body.Close()
