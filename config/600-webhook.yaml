@@ -37,6 +37,10 @@ spec:
         app.kubernetes.io/part-of: pipelines-as-code
         app.kubernetes.io/version: "devel"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: pipelines-as-code-webhook
       containers:
         - name: pac-webhook
@@ -55,3 +59,8 @@ spec:
           ports:
             - name: https-webhook
               containerPort: 8443
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL

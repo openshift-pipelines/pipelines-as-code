@@ -38,6 +38,10 @@ spec:
         app.kubernetes.io/version: "devel"
         app: pipelines-as-code-watcher
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: pipelines-as-code-watcher
       containers:
         - name: pac-watcher
@@ -57,6 +61,11 @@ spec:
             containerPort: 8080
           - name: metrics
             containerPort: 9090
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           readinessProbe:
             httpGet:
               path: /live

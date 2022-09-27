@@ -37,6 +37,10 @@ spec:
         app.kubernetes.io/part-of: pipelines-as-code
         app.kubernetes.io/version: "devel"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: pipelines-as-code-controller
       containers:
         - name: pac-controller
@@ -45,6 +49,11 @@ spec:
           ports:
             - name: api
               containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           readinessProbe:
             failureThreshold: 3
             httpGet:
