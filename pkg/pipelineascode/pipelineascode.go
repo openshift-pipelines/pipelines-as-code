@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
-	apipacv1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -15,7 +15,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,16 +29,19 @@ const (
 )
 
 type PacRun struct {
-	event       *info.Event
-	vcx         provider.Interface
-	run         *params.Run
-	k8int       kubeinteraction.Interface
-	logger      *zap.SugaredLogger
-	repoMatched *apipacv1.Repository
+	event        *info.Event
+	vcx          provider.Interface
+	run          *params.Run
+	k8int        kubeinteraction.Interface
+	logger       *zap.SugaredLogger
+	eventEmitter *events.EventEmitter
 }
 
 func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, k8int kubeinteraction.Interface, logger *zap.SugaredLogger) PacRun {
-	return PacRun{event: event, run: run, vcx: vcx, k8int: k8int, logger: logger}
+	return PacRun{
+		event: event, run: run, vcx: vcx, k8int: k8int, logger: logger,
+		eventEmitter: events.NewEventEmitter(run.Clients.Kube, logger),
+	}
 }
 
 func (p *PacRun) Run(ctx context.Context) error {
@@ -52,7 +54,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 			DetailsURL: p.run.Clients.ConsoleUI.URL(),
 		})
 		if createStatusErr != nil {
-			p.emitMessage(fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr), "error")
+			p.eventEmitter.EmitMessage(nil, zap.ErrorLevel, fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
 		}
 	}
 
@@ -67,54 +69,13 @@ func (p *PacRun) Run(ctx context.Context) error {
 			defer wg.Done()
 			if err := p.startPR(ctx, match); err != nil {
 				errMsg := fmt.Sprintf("PipelineRun %s has failed: %s", match.PipelineRun.GetGenerateName(), err.Error())
-				p.emitMessage(errMsg, "error")
+				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, errMsg)
 			}
 		}(match)
 	}
 	wg.Wait()
 
 	return nil
-}
-
-// emitMessage create a kubernetes event on the target namespace with the given
-// message and log it according to the log level
-func (p *PacRun) emitMessage(message, loggerLevel string) {
-	var namespace, name string
-	if p.repoMatched == nil {
-		name = p.repoMatched.GetName()
-		namespace = p.repoMatched.GetNamespace()
-	}
-	// maybe output to pipeliens-as-code namespace in case we don't have repoMatched
-
-	if namespace != "" {
-		event := &v1.Event{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      name + " event",
-				Namespace: namespace,
-			},
-			Message: message,
-			Type:    "Warning",
-			InvolvedObject: v1.ObjectReference{
-				Kind:      "Repository",
-				Name:      name,
-				Namespace: namespace,
-			},
-		}
-		if _, err := p.run.Clients.Kube.CoreV1().Events(namespace).Create(context.TODO(), event, metav1.CreateOptions{}); err != nil {
-			p.logger.Infof("Cannot create event: %s", err.Error())
-		}
-	}
-
-	switch loggerLevel {
-	case "debug":
-		p.logger.Debug(message)
-	case "error":
-		p.logger.Error(message)
-	case "info":
-		p.logger.Info(message)
-	case "warn":
-		p.logger.Warn(message)
-	}
 }
 
 func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
