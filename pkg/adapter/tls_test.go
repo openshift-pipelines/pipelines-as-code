@@ -1,9 +1,10 @@
 package adapter
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
+
+	"gotest.tools/v3/env"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
@@ -19,10 +20,12 @@ func TestIsTlsEnabled(t *testing.T) {
 	tlsKey := "key"
 	tlsCert := "cert"
 
-	os.Setenv("SYSTEM_NAMESPACE", secret)
-	os.Setenv("TLS_SECRET_NAME", secret)
-	os.Setenv("TLS_KEY", tlsKey)
-	os.Setenv("TLS_CERT", tlsCert)
+	defer env.PatchAll(t, map[string]string{
+		"SYSTEM_NAMESPACE": secret,
+		"TLS_SECRET_NAME":  secret,
+		"TLS_KEY":          tlsKey,
+		"TLS_CERT":         tlsCert,
+	})()
 
 	tests := []struct {
 		name   string
