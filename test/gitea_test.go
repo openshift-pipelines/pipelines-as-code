@@ -26,6 +26,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"gopkg.in/yaml.v2"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -326,6 +328,32 @@ func TestGiteaPush(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), 1, "should have only one push pipelinerun")
+}
+
+func TestGiteaClusterTasks(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: "pull_request, push",
+		YAMLFiles: map[string]string{
+			".tekton/prcluster.yaml": "testdata/pipelinerunclustertasks.yaml",
+		},
+	}
+	defer tgitea.TestPR(t, topts)()
+	prname := fmt.Sprintf(".tekton/%s.yaml", topts.TargetNS)
+	newyamlFiles := map[string]string{prname: "testdata/clustertask.yaml"}
+	entries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent)
+	assert.NilError(t, err)
+
+	ct := v1beta1.ClusterTask{}
+	assert.NilError(t, yaml.Unmarshal([]byte(entries[prname]), &ct))
+	ct.ObjectMeta.Name = "clustertask-" + topts.TargetNS
+	_, err = topts.Clients.Clients.Tekton.TektonV1beta1().ClusterTasks().Create(context.TODO(), &ct, metav1.CreateOptions{})
+	topts.Clients.Clients.Log.Infof("%s has been created", ct.GetName())
+	defer (func() {
+		assert.NilError(t, topts.Clients.Clients.Tekton.TektonV1beta1().ClusterTasks().Delete(context.TODO(), ct.ObjectMeta.Name, metav1.DeleteOptions{}))
+	})()
+	assert.NilError(t, err)
+	topts.CheckForStatus = "success"
+	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
 }
 
 func TestGiteaWithCLI(t *testing.T) {
