@@ -104,7 +104,7 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	for i := 0; i < 15; i++ {
 		checkruns, _, err := ghcnx.Client.Checks.ListCheckRunsForRef(ctx, opts.Organization, opts.Repo, targetRefName, &github.ListCheckRunsOptions{})
 		assert.NilError(t, err)
-		assert.Equal(t, *checkruns.Total, numberOfPipelineRuns)
+		assert.Assert(t, *checkruns.Total >= numberOfPipelineRuns)
 		for _, checkrun := range checkruns.CheckRuns {
 			switch {
 			case checkrun.GetStatus() != "completed" && checkrun.GetConclusion() != "success":
