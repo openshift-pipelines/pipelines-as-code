@@ -50,7 +50,7 @@ spec:
                 echo "Preview URL: https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ pull_request_number }}"
             - name: upload-to-static-server
               # it has curl and we already pulled it
-              image: mirror.gcr.io/library/golang:1.18
+              image: mirror.gcr.io/curlimages/curl:7.85.0
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
@@ -65,8 +65,8 @@ spec:
                       key: "credentials"
               script: |
                 cd docs
-                [[ -d {{ pull_request_number }} ]]  || exit 0
-                tar czf - {{ pull_request_number }} | curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -F path=docs -F targz=true -X POST -F file=@- http://uploader:8080/upload
+                test -d "{{ pull_request_number }}" || exit 0
+                tar czf - "{{ pull_request_number }}" | curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -F path=docs -F targz=true -X POST -F file=@- http://uploader:8080/upload
                 # Post as status
                 set +x
                 curl -H "Authorization: Bearer ${HUB_TOKEN}" -H 'Accept: application/vnd.github.v3+json' -X POST https://api.github.com/repos/{{repo_owner}}/{{repo_name}}/statuses/{{revision}} -d '{"state": "success", "target_url": "https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ pull_request_number }}", "description": "Generated with brio.", "context": "Pipelines as Code Preview URL"}'
