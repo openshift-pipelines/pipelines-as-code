@@ -49,7 +49,9 @@ func (p *PacRun) Run(ctx context.Context) error {
 			DetailsURL: p.run.Clients.ConsoleUI.URL(),
 		})
 		if createStatusErr != nil {
-			p.logger.Errorf("Cannot create status: %s: %s", err, createStatusErr)
+			p.logger.Errorf("cannot create status: %s: %s", err.Error(), createStatusErr.Error())
+		} else {
+			p.logger.Infof("reported error on provider status: %s", err.Error())
 		}
 	}
 

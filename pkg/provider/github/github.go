@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/google/go-github/v47/github"
@@ -17,14 +18,48 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const apiPublicURL = "https://api.github.com/"
+const (
+	apiPublicURL     = "https://api.github.com/"
+	publicRawURLHost = "raw.githubusercontent.com"
+)
 
 type Provider struct {
-	Client        *github.Client
-	Logger        *zap.SugaredLogger
-	Token, APIURL *string
-	ApplicationID *int64
-	providerName  string
+	Client                 *github.Client
+	Logger                 *zap.SugaredLogger
+	Token, APIURL          *string
+	ApplicationID          *int64
+	providerName           string
+	GithubAppAppID         int64
+	GithubAppPrivateKey    []byte
+	GithubAppInstallations map[int64][]*github.Repository
+}
+
+func (v *Provider) splitGithubURL(uri string) (string, string, string, string, error) {
+	pURL, err := url.Parse(uri)
+	splitted := strings.Split(pURL.Path, "/")
+	if len(splitted) < 3 {
+		return "", "", "", "", fmt.Errorf("URL %s does not seem to be a proper provider url: %w", uri, err)
+	}
+	// TODO: raw URLS
+	spOrg := splitted[1]
+	spRepo := splitted[2]
+	spRef := splitted[4]
+	spPath := strings.Join(splitted[5:], "/")
+	return spOrg, spRepo, spPath, spRef, nil
+}
+
+func (v *Provider) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error) {
+	if v.GithubAppInstallations != nil {
+		for installationID, repos := range v.GithubAppInstallations {
+			for _, repo := range repos {
+				if strings.HasPrefix(uri, repo.GetHTMLURL()) {
+					v.Logger.Infof("Found a installID match (%d) on the github app install for %s", installationID, uri)
+					return v.matchTaskRepoInstallURL(ctx, installationID, uri)
+				}
+			}
+		}
+	}
+	return false, "", nil
 }
 
 func (v *Provider) InitAppClient(ctx context.Context, kube kubernetes.Interface, event *info.Event) error {
@@ -40,7 +75,7 @@ func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 	v.Logger = logger
 }
 
-func (v *Provider) Validate(ctx context.Context, cs *params.Run, event *info.Event) error {
+func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event) error {
 	signature := event.Request.Header.Get(github.SHA256SignatureHeader)
 
 	if signature == "" {
@@ -90,7 +125,9 @@ func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
 	}
 
 	v.APIURL = &apiURL
-
+	if string(v.GithubAppPrivateKey) != "" {
+		return v.getAllInstallationOfApp(ctx)
+	}
 	return nil
 }
 

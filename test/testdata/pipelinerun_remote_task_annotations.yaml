@@ -8,7 +8,7 @@ metadata:
     pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
     pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
     pipelinesascode.tekton.dev/task: "[.other-tasks/task-referenced-internally.yaml]"
-    pipelinesascode.tekton.dev/task-1: "[https://raw.githubusercontent.com/chmouel/scratchmyback/10c5ea559615c6783aa1a1aa9d93ea988b68dad7/.other-tasks/task-remote.yaml]"
+    pipelinesascode.tekton.dev/task-1: "https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests/blob/main/pipeline/task_from_remote.yaml"
     pipelinesascode.tekton.dev/task-2: "pylint"
 spec:
   pipelineRef:

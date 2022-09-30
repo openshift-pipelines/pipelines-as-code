@@ -42,7 +42,6 @@ func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, g
 	privateKey := secret.Data["github-private-key"]
 
 	tr := http.DefaultTransport
-
 	itr, err := ghinstallation.New(tr, applicationID, installationID, privateKey)
 	if err != nil {
 		return "", err
@@ -57,6 +56,9 @@ func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, g
 	} else {
 		v.Client = github.NewClient(&http.Client{Transport: itr})
 	}
+
+	v.GithubAppAppID = applicationID
+	v.GithubAppPrivateKey = privateKey
 
 	// This is a hack when we have auth and api disassociated
 	reqTokenURL := os.Getenv("PAC_GIT_PROVIDER_TOKEN_APIURL")

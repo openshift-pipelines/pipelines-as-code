@@ -63,7 +63,10 @@ func (rt RemoteTasks) convertTotask(data string) (*tektonv1beta1.Task, error) {
 }
 
 func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (string, error) {
+	fetchedFromTaskURI, task, err := rt.ProviderInterface.GetTaskURI(ctx, rt.Run, rt.Event, uri)
 	switch {
+	case fetchedFromTaskURI:
+		return task, err
 	case strings.HasPrefix(uri, "https://"), strings.HasPrefix(uri, "http://"):
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
 		res, err := rt.Run.Clients.HTTP.Do(req)

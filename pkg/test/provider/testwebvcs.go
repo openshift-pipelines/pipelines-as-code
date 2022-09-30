@@ -54,6 +54,10 @@ func (v *TestProviderImp) IsAllowed(ctx context.Context, event *info.Event) (boo
 	return false, nil
 }
 
+func (v *TestProviderImp) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, task string) (bool, string, error) {
+	return false, "", nil
+}
+
 func (v *TestProviderImp) CreateStatus(ctx context.Context, _ versioned.Interface, event *info.Event, opts *info.PacOpts, statusOpts provider.StatusOpts) error {
 	if v.CreateStatusErorring {
 		return fmt.Errorf("you want me to error I error for you")

@@ -46,6 +46,11 @@ type Provider struct {
 	Password string
 }
 
+func (v *Provider) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error) {
+	// TODO implement me
+	panic("implement me")
+}
+
 func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 	v.Logger = logger
 }
