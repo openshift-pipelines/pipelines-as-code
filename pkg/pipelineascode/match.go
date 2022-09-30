@@ -120,7 +120,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 
 	rawTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir)
 	if err != nil {
-		p.logger.Info("I could not get the tekton directory: %s", err.Error())
+		p.logger.Infof("could not get the tekton directory: %s", err.Error())
 		return nil, nil, nil
 	}
 
@@ -149,7 +149,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	// if /test command is used then filter out the pipelinerun
 	pipelineRuns = filterRunningPipelineRunOnTargetTest(p.event.TargetTestPipelineRun, pipelineRuns)
 	if pipelineRuns == nil {
-		p.logger.Info(fmt.Sprintf("cannot find pipelinerun %s in this repository", p.event.TargetTestPipelineRun))
+		p.logger.Infof("cannot find pipelinerun %s in this repository", p.event.TargetTestPipelineRun)
 		return nil, nil, nil
 	}
 
