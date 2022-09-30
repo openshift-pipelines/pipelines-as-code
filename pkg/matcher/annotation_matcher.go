@@ -155,7 +155,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[filepath.Join(pipelinesascode.GroupName, onCelExpression)]; ok {
 			out, err := celEvaluate(ctx, celExpr, event, vcx)
 			if err != nil {
-				logger.Error(fmt.Errorf("there was an error evaluating CEL expression, skipping: %w", err))
+				logger.Errorf("there was an error evaluating CEL expression, skipping: %w", err)
 				continue
 			}
 			if out != types.True {

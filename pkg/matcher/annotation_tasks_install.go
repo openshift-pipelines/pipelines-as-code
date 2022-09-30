@@ -71,11 +71,11 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 			return "", err
 		}
 		if res.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("could not get remote resource %s: %s", uri, res.Status)
+			return "", fmt.Errorf("could not get remote resource \"%s\": %s", uri, res.Status)
 		}
 		data, _ := io.ReadAll(res.Body)
 		defer res.Body.Close()
-		rt.Logger.Info("successfully fetched %s from remote https url", uri)
+		rt.Logger.Infof("successfully fetched \"%s\" from remote https url", uri)
 		return string(data), nil
 	case strings.Contains(uri, "/"):
 		var data string
@@ -95,14 +95,14 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 			}
 		}
 
-		rt.Logger.Info("successfully fetched %s inside repository", uri)
+		rt.Logger.Infof("successfully fetched \"%s\" inside repository", uri)
 		return data, nil
 	case fromHub:
 		data, err := hub.GetTask(ctx, rt.Run, uri)
 		if err != nil {
 			return "", err
 		}
-		rt.Logger.Info("successfully fetched %s from hub on %s", uri, rt.Run.Info.Pac.HubURL)
+		rt.Logger.Infof("successfully fetched \"%s\" from hub URL: %s", uri, rt.Run.Info.Pac.HubURL)
 		return data, nil
 	}
 	return "", fmt.Errorf(`cannot find "%s" anywhere`, uri)
