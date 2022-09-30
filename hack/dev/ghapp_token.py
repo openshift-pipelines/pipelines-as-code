@@ -33,13 +33,14 @@ class GitHub:
         self.app_id = app_id
         self.expiration_time = expiration_time
         self.github_api_url = github_api_url
+        self.jwt_token = self._get_jwt_token()
         self.token = self._get_token(installation_id)
 
     @classmethod
     def _load_private_key(cls, pem_key_bytes):
         return jwk.JWK.from_pem(pem_key_bytes)
 
-    def _app_token(self):
+    def _get_jwt_token(self):
         key = self._load_private_key(self._private_key)
         now = int(time.time())
 
@@ -55,15 +56,12 @@ class GitHub:
         token.make_signed_token(key)
         return token.serialize()
 
-    def _get_token(self, installation_id=None):
-        app_token = self._app_token()
-        if not installation_id:
-            return app_token
+    def _get_token(self, installation_id):
         req = self._request(
             "POST",
             f"/app/installations/{installation_id}/access_tokens",
             headers={
-                "Authorization": f"Bearer {app_token}",
+                "Authorization": f"Bearer {self.jwt_token}",
                 "Accept": "application/vnd.github.v3+json",
             },
         )
@@ -121,10 +119,15 @@ def main(args):
         github_api_url=args.api_url,
         installation_id=args.installation_id,
     )
-    print(github_app.token)
+    if args.jwt_token:
+        print(github_app.jwt_token)
+    else:
+        print(github_app.token)
     if args.cache_file:
         print(
-            pathlib.Path(args.cache_file).write_text(github_app.token, encoding="utf-8")
+            pathlib.Path(args.cache_file).write_text(
+                str(github_app.token), encoding="utf-8"
+            )
         )
 
 
@@ -145,6 +148,7 @@ def parse_args():
         help="Install Namespace",
         default=os.environ.get("PAC_NAMESPACE", NAMESPACE),
     )
+    parser.add_argument("-j", "--jwt-token", help="Get JWT Token", action="store_true")
     parser.add_argument(
         "-a",
         "--api-url",
