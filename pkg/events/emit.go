@@ -23,6 +23,10 @@ type EventEmitter struct {
 	logger *zap.SugaredLogger
 }
 
+func (e *EventEmitter) SetLogger(logger *zap.SugaredLogger) {
+	e.logger = logger
+}
+
 func (e *EventEmitter) EmitMessage(repo *v1alpha12.Repository, loggerLevel zapcore.Level, message string) {
 	if repo != nil {
 		event := makeEvent(repo, message)
