@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -36,6 +37,7 @@ type Reconciler struct {
 	kinteract         kubeinteraction.Interface
 	qm                *sync.QueueManager
 	metrics           *metrics.Recorder
+	eventEmitter      *events.EventEmitter
 }
 
 var (
@@ -63,19 +65,28 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 		return r.queuePipelineRun(ctx, logger, pr)
 	}
 
-	if pr.IsDone() {
-		logger = logger.With(
-			"pipeline-run", pr.GetName(),
-			"event-sha", pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "sha")],
-		)
-		logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
+	if !pr.IsDone() {
+		return nil
+	}
 
-		provider, event, err := r.detectProvider(ctx, logger, pr)
-		if err != nil {
-			return fmt.Errorf("detectProvider: %w", err)
-		}
+	logger = logger.With(
+		"pipeline-run", pr.GetName(),
+		"event-sha", pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "sha")],
+	)
+	logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
+	r.eventEmitter.SetLogger(logger)
 
-		return r.reportFinalStatus(ctx, logger, event, pr, provider)
+	detectedProvider, event, err := r.detectProvider(ctx, logger, pr)
+	if err != nil {
+		msg := fmt.Sprintf("detectProvider: %v", err)
+		r.eventEmitter.EmitMessage(nil, zap.ErrorLevel, msg)
+		return nil
+	}
+
+	if err := r.reportFinalStatus(ctx, logger, event, pr, detectedProvider); err != nil {
+		msg := fmt.Sprintf("report status: %v", err)
+		r.eventEmitter.EmitMessage(nil, zap.ErrorLevel, msg)
+		return err
 	}
 	return nil
 }
