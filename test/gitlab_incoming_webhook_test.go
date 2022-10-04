@@ -55,7 +55,7 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 
 	entries, err := payload.GetEntries(map[string]string{
 		".tekton/pr.yaml": "testdata/pipelinerun.yaml", ".tekton/pr-clone.yaml": "testdata/pipelinerun-clone.yaml",
-	}, randomedString, randomedString, options.PushEvent)
+	}, randomedString, randomedString, options.PushEvent, map[string]string{})
 	assert.NilError(t, err)
 
 	title := "TestIncomingWebhook - " + randomedString

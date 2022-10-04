@@ -45,6 +45,11 @@ func TestGiteaPullRequestTaskAnnotations(t *testing.T) {
 			".other-tasks/task-referenced-internally.yaml": "testdata/task_referenced_internally.yaml",
 			".tekton/pr.yaml":                              "testdata/pipelinerun_remote_task_annotations.yaml",
 		},
+		CheckForStatus: "success",
+		ExtraArgs: map[string]string{
+			"RemoteTaskURL":  options.RemoteTaskURL,
+			"RemoteTaskName": options.RemoteTaskName,
+		},
 	}
 	defer tgitea.TestPR(t, topts)()
 }
@@ -56,7 +61,12 @@ func TestGiteaPullRequestPipelineAnnotations(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun_remote_pipeline_annotations.yaml",
 		},
-		ExpectEvents: false,
+		ExpectEvents:   false,
+		CheckForStatus: "success",
+		ExtraArgs: map[string]string{
+			"RemoteTaskURL":  options.RemoteTaskURL,
+			"RemoteTaskName": options.RemoteTaskName,
+		},
 	}
 	defer tgitea.TestPR(t, topts)()
 }
@@ -68,7 +78,8 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pipeline.yaml": "testdata/pipelinerun_git_clone_private-gitea.yaml",
 		},
-		ExpectEvents: false,
+		ExpectEvents:   false,
+		CheckForStatus: "success",
 	}
 	defer tgitea.TestPR(t, topts)()
 }
@@ -201,7 +212,7 @@ func TestGiteaRetestAfterPush(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 
 	newyamlFiles := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"}
-	entries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent)
+	entries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
 	assert.NilError(t, err)
 	tgitea.PushFilesToRefGit(t, topts, entries, topts.TargetRefName)
 	topts.CheckForStatus = "success"
@@ -368,7 +379,7 @@ func TestGiteaClusterTasks(t *testing.T) {
 	// create first the cluster tasks
 	ctname := fmt.Sprintf(".tekton/%s.yaml", topts.TargetNS)
 	newyamlFiles := map[string]string{ctname: "testdata/clustertask.yaml"}
-	entries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, "main", "pull_request")
+	entries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, "main", "pull_request", map[string]string{})
 	assert.NilError(t, err)
 	ct := v1beta1.ClusterTask{}
 	assert.NilError(t, yaml.Unmarshal([]byte(entries[ctname]), &ct))

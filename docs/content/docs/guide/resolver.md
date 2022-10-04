@@ -56,6 +56,8 @@ or multiple tasks with an array :
 pipelinesascode.tekton.dev/task: "[git-clone, pylint]"
 ```
 
+### [Tekton Hub](https://hub.tekton.dev)
+
 The syntax above installs the
 [git-clone](https://github.com/tektoncd/catalog/tree/main/task/git-clone) task
 from the [tekton hub](https://hub.tekton.dev) repository querying for the latest
@@ -89,14 +91,41 @@ this example :
 pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # this will install git-clone 0.1 from tekton.hub
 ```
 
+### Remote HTTP URL
+
 If you have a string starting with http:// or https://, `Pipelines as Code`
 will fetch the task directly from that remote URL :
 
 ```yaml
-  pipelinesascode.tekton.dev/task: "[https://raw.githubusercontent.com/tektoncd/catalog/main/task/git-clone/0.3/git-clone.yaml]"
+  pipelinesascode.tekton.dev/task: "[https://remote.url/task.yaml]"
 ```
 
-Additionally, you can as well have a reference to a task from a YAML file inside your repo if you specify the relative path to it, for example :
+With the Github Provider; If the remote task URL uses the same host as where the repo
+CRD is, PAC will use the  Github token and fetch the URL using the Github API.
+
+For example if my repo URL is :
+
+<https://github.com/organization/repository>
+
+The recognized URLs are:
+
+<https://github.com/organization/repository/blob/mainbranch/path/file>
+
+or Github rawURL (only the public instance of Github at the moment):
+
+<https://raw.githubusercontent.com/organization/repository/mainbranch/path/file>
+
+With the Github app, if you have a private repository in the same
+organization as where the repo matches from, it will be able to fetch the files
+from that private repository with the github app token.
+
+If you are using the Github webhook method you are able to fetch any  private or
+public repositories on any organization where the personal token is allowed.
+
+### Same repository
+
+Additionally, you can as well have a reference to a task from a YAML file inside
+your repo if you specify the relative path to it, for example :
 
 ```yaml
 pipelinesascode.tekton.dev/task: "[share/tasks/git-clone.yaml]"
