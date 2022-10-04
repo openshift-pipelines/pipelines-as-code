@@ -14,9 +14,9 @@ spec:
               echo "Hello from taskSpec"
               exit 0
 
-    - name: task-from-remote
+    - name: \\ .RemoteTaskName //
       taskRef:
-        name: task-remote
+        name: \\ .RemoteTaskName //
 
     - name: task-referenced-internally
       taskRef:

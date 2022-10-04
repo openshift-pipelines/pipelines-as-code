@@ -138,10 +138,10 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, annotations ma
 	for _, v := range tasks {
 		data, err := rt.getRemote(ctx, v, true)
 		if err != nil {
-			return nil, fmt.Errorf("error getting remote task %s: %w", v, err)
+			return nil, fmt.Errorf("error getting remote task \"%s\": %w", v, err)
 		}
 		if data == "" {
-			return nil, fmt.Errorf("could not get task \"%s\": returning empty", v)
+			return nil, fmt.Errorf("error getting remote task \"%s\": returning empty", v)
 		}
 
 		task, err := rt.convertTotask(data)

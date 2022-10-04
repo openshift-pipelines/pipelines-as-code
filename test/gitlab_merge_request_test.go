@@ -36,7 +36,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 		".tekton/pipelinerun.yaml":       "testdata/pipelinerun.yaml",
 		".tekton/pipelinerun-clone.yaml": "testdata/pipelinerun-clone.yaml",
 	}, targetNS, projectinfo.DefaultBranch,
-		options.PullRequestEvent)
+		options.PullRequestEvent, map[string]string{})
 	assert.NilError(t, err)
 
 	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
