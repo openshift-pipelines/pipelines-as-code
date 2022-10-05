@@ -13,6 +13,7 @@ import (
 
 func TestGetTask(t *testing.T) {
 	const testHubURL = "https://myprecioushub"
+	const testCatalogHubName = "tekton"
 
 	tests := []struct {
 		name    string
@@ -27,7 +28,7 @@ func TestGetTask(t *testing.T) {
 			want:    "This is Task1",
 			wantErr: false,
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, tektonCatalogHubName): {
+				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
 					"body": `{"data":{"latestVersion": {"rawURL": "https://get.me/task1"}}}`,
 					"code": "200",
 				},
@@ -42,7 +43,7 @@ func TestGetTask(t *testing.T) {
 			task:    "task1",
 			wantErr: true,
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, tektonCatalogHubName): {
+				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
 					"code": "404",
 				},
 			},
@@ -52,7 +53,7 @@ func TestGetTask(t *testing.T) {
 			task:    "task1:1.1",
 			wantErr: true,
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task1/1.1", testHubURL, tektonCatalogHubName): {
+				fmt.Sprintf("%s/resource/%s/task/task1/1.1", testHubURL, testCatalogHubName): {
 					"code": "404",
 				},
 			},
@@ -63,7 +64,7 @@ func TestGetTask(t *testing.T) {
 			want:    "This is Task2",
 			wantErr: false,
 			config: map[string]map[string]string{
-				fmt.Sprintf("%s/resource/%s/task/task2/1.1", testHubURL, tektonCatalogHubName): {
+				fmt.Sprintf("%s/resource/%s/task/task2/1.1", testHubURL, testCatalogHubName): {
 					"body": `{"data":{"rawURL": "https://get.me/task2"}}`,
 					"code": "200",
 				},
@@ -82,7 +83,7 @@ func TestGetTask(t *testing.T) {
 				Clients: clients.Clients{
 					HTTP: *httpTestClient,
 				},
-				Info: info.Info{Pac: &info.PacOpts{HubURL: testHubURL}},
+				Info: info.Info{Pac: &info.PacOpts{HubURL: testHubURL, HubCatalogName: testCatalogHubName}},
 			}
 			got, err := GetTask(ctx, cs, tt.task)
 			if (err != nil) != tt.wantErr {

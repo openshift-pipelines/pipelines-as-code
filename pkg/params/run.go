@@ -107,6 +107,12 @@ func (r *Run) UpdatePACInfo(ctx context.Context) error {
 		r.Info.Pac.HubURL = info.HubURL
 	}
 
+	if hubCatalogName, ok := cfg.Data["hub-catalog-name"]; ok {
+		r.Info.Pac.HubCatalogName = hubCatalogName
+	} else {
+		r.Info.Pac.HubCatalogName = info.HubCatalogName
+	}
+
 	if remoteTask, ok := cfg.Data["remote-tasks"]; ok {
 		r.Info.Pac.RemoteTasks = StringToBool(remoteTask)
 	}
