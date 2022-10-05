@@ -73,7 +73,7 @@ rules:
     verbs: ["create", "get", "list", "update"]
   - apiGroups: ["tekton.dev"]
     resources: ["pipelineruns"]
-    verbs: ["get", "delete", "list", "create", "watch", "update"]
+    verbs: ["get", "delete", "list", "create", "watch", "update", "patch"]
   - apiGroups: ["route.openshift.io"]
     resources: ["routes"]
     verbs: ["get"]
