@@ -15,6 +15,7 @@ type PacOpts struct {
 	PayloadFile        string
 	TektonDashboardURL string
 	HubURL             string
+	HubCatalogName     string
 	RemoteTasks        bool
 
 	// bitbucket cloud specific fields

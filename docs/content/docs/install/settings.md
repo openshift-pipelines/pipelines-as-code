@@ -29,6 +29,10 @@ There is a few things you can configure through the configmap
   The base URL for the [tekton hub](https://github.com/tektoncd/hub/)
   API. default to the [public hub](https://hub.tekton.dev/): <https://api.hub.tekton.dev/v1>
 
+* `hub-catalog-name`
+
+  The [tekton hub](https://github.com/tektoncd/hub/) catalog name. default to tekton
+
 * `bitbucket-cloud-check-source-ip`
 
   Public bitbucket doesn't have the concept of Secret, we need to be

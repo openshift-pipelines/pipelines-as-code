@@ -23,6 +23,9 @@ data:
   # Tekton HUB API urls
   hub-url: "https://api.hub.tekton.dev/v1"
 
+  # Tekton HUB catalog name
+  hub-catalog-name: "tekton"
+
   # Whether to allow fetching remote tasks
   remote-tasks: "true"
 

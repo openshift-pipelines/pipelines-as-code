@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	testHubURL     = "https://mybelovedhub"
-	simplePipeline = `---
+	testHubURL         = "https://mybelovedhub"
+	testCatalogHubName = "tekton"
+	simplePipeline     = `---
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
@@ -167,7 +168,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				pipelinesascode.GroupName + "/task": "[chmouzie]",
 			},
 			remoteURLS: map[string]map[string]string{
-				testHubURL + "/resource/tekton/task/chmouzie": {
+				testHubURL + "/resource/" + testCatalogHubName + "/task/chmouzie": {
 					"body": `{"data": {"LatestVersion": {"RawURL": "http://simple.task"}}}`,
 					"code": "200",
 				},
@@ -184,7 +185,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				pipelinesascode.GroupName + "/task": "[chmouzie:0.2]",
 			},
 			remoteURLS: map[string]map[string]string{
-				testHubURL + "/resource/tekton/task/chmouzie/0.2": {
+				testHubURL + "/resource/" + testCatalogHubName + "/task/chmouzie/0.2": {
 					"body": `{"data": {"RawURL": "http://simple.task"}}`,
 					"code": "200",
 				},
@@ -207,7 +208,8 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						HubURL: testHubURL,
+						HubURL:         testHubURL,
+						HubCatalogName: testCatalogHubName,
 					},
 				},
 			}
@@ -328,7 +330,8 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						HubURL: testHubURL,
+						HubURL:         testHubURL,
+						HubCatalogName: testCatalogHubName,
 					},
 				},
 			}
