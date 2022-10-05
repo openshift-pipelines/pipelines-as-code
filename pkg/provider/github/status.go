@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 const taskStatusTemplate = `
@@ -146,22 +148,28 @@ func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton v
 	}
 	maxRun := 10
 	for i := 0; i < maxRun; i++ {
-		pr, err := tekton.TektonV1beta1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), v1.GetOptions{})
+		mergePatch := map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"labels": map[string]string{
+					filepath.Join(apipac.GroupName, checkRunIDKey): strconv.FormatInt(*checkRunID, 10),
+				},
+			},
+		}
+		patch, err := json.Marshal(mergePatch)
 		if err != nil {
 			return err
 		}
-		pr = pr.DeepCopy()
-		pr.GetLabels()[filepath.Join(apipac.GroupName, checkRunIDKey)] = strconv.FormatInt(*checkRunID, 10)
 
-		pr, err = tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Update(ctx, pr, v1.UpdateOptions{})
+		updatedPR, err := tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Patch(ctx, pr.GetName(), types.MergePatchType, patch, v1.PatchOptions{})
 		if err != nil {
-			v.Logger.Infof("Could not update Pipelinerun with checkRunID, retrying %v/%v: %v", pr.GetNamespace(), pr.GetName(), err)
+			v.Logger.Infof("Could not patch Pipelinerun with checkRunID, retrying %v/%v: %v", pr.GetNamespace(), pr.GetName(), err)
 			continue
 		}
-		v.Logger.Infof("PipelineRun %v/%v updated with checkRunID", pr.GetNamespace(), pr.GetName())
+
+		v.Logger.Infof("PipelineRun %v/%v patched with checkRunID : %v", pr.GetNamespace(), pr.GetName(), updatedPR.Labels[filepath.Join(apipac.GroupName, checkRunIDKey)])
 		return nil
 	}
-	return fmt.Errorf("cannot update pipelineRun %v/%v with checkRunID", pr.GetNamespace(), pr.GetName())
+	return fmt.Errorf("cannot patch pipelineRun %v/%v with checkRunID", pr.GetNamespace(), pr.GetName())
 }
 
 // createStatusCommit use the classic/old statuses API which is available when we
