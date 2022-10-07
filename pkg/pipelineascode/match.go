@@ -123,8 +123,12 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	}
 
 	rawTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir)
-	if err != nil {
-		p.logger.Infof("could not get the tekton directory: %s", err.Error())
+	if err != nil || rawTemplates == "" {
+		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
+		if err != nil {
+			msg += fmt.Sprintf(" err: %s", err.Error())
+		}
+		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, msg)
 		return nil, nil, nil
 	}
 
@@ -141,8 +145,8 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 		GenerateName: true,
 		RemoteTasks:  p.run.Info.Pac.RemoteTasks,
 	})
-	if err != nil && !strings.Contains(err.Error(), "404 Not Found") {
-		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, err.Error())
+	if err != nil {
+		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, fmt.Sprintf("failed to resolve pipelineRuns: %s", err.Error()))
 		return nil, nil, err
 	}
 	if pipelineRuns == nil {
