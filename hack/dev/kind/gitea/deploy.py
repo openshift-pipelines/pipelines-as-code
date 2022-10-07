@@ -18,6 +18,7 @@ GITEA_URL = os.environ.get("GITEA_URL", f"http://{GITEA_HOST}")
 GITEA_NS = os.environ.get("GITEA_NS", "gitea")
 GITEA_REPO_NAME_E2E = os.environ.get("GITEA_REPO_NAME", "pac-e2e")
 GITEA_REPO_NAME_PERSO = os.environ.get("GITEA_REPO_NAME_PERSO", "pac")
+OPENSHIFT_ROUTE_FORCE_HTTP = os.environ.get("OPENSHIFT_ROUTE_FORCE_HTTP", False)
 
 GITEA_SMEE_HOOK_URL = os.environ.get("TEST_GITEA_SMEEURL", "")  # will fail if not set
 if GITEA_SMEE_HOOK_URL == "":
@@ -59,7 +60,10 @@ class ProvisionGitea:
         )
         while i != 120:
             try:
-                r = requests.get(f"{self.gitea_url}/api/v1/version", verify=False)
+                r = requests.get(
+                    f"{self.gitea_url}/api/v1/version",
+                    verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
+                )
                 if r.status_code == 200:
                     # wait a bit more that it finishes
                     time.sleep(5)
@@ -91,7 +95,7 @@ class ProvisionGitea:
             url=f"{self.gitea_url}/user/sign_up",
             data=data_user,
             headers=self.headers,
-            verify=False,
+            verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
         )
         resp.raise_for_status()
 
@@ -101,6 +105,7 @@ class ProvisionGitea:
             url=f"{self.gitea_url}/api/v1/user/repos",
             headers=self.headers,
             auth=(GITEA_USER, GITEA_PASSWORD),
+            verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
             data=jeez,
             verify=False,
         )
@@ -114,6 +119,7 @@ class ProvisionGitea:
         resp = requests.post(
             url=f"{self.gitea_url}/api/v1/repos/{GITEA_USER}/{reponame}/hooks",
             headers=self.headers,
+            verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
             auth=(GITEA_USER, GITEA_PASSWORD),
             data=jeez,
             verify=False,
@@ -124,6 +130,7 @@ class ProvisionGitea:
         requests.delete(
             url=f"{self.gitea_url}/api/v1/users/{GITEA_USER}/tokens/{self.token_name}",
             headers=self.headers,
+            verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
             auth=(GITEA_USER, GITEA_PASSWORD),
             verify=False,
         )
@@ -132,6 +139,7 @@ class ProvisionGitea:
             url=f"{self.gitea_url}/api/v1/users/{GITEA_USER}/tokens",
             headers=self.headers,
             auth=(GITEA_USER, GITEA_PASSWORD),
+            verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
             data=jeez,
             verify=False,
         )
@@ -201,7 +209,14 @@ stringData:
             openshift = False
 
         if openshift:
-            template = """---
+            tls_mode = ""
+            if not OPENSHIFT_ROUTE_FORCE_HTTP:
+                tls_mode = """
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+            """
+            template = f"""---
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -215,9 +230,7 @@ metadata:
 spec:
   port:
     targetPort: http-listener
-  tls:
-    insecureEdgeTerminationPolicy: Redirect
-    termination: edge
+  { tls_mode }
   to:
     kind: Service
     name: gitea
@@ -225,10 +238,8 @@ spec:
   wildcardPolicy: None
 apiVersion: route.openshift.io/v1
 """
-            time.sleep(2)
             self.apply_kubectl(template)
-        if openshift:
-            time.sleep(2)
+            time.sleep(5)
             self.gitea_host = subprocess.run(
                 f"/bin/sh -c \"kubectl get routes.route.openshift.io -n {GITEA_NS} -o jsonpath='{{.items[0].spec.host}}'\"",
                 shell=True,
@@ -236,7 +247,8 @@ apiVersion: route.openshift.io/v1
                 capture_output=True,
                 text=True,
             ).stdout
-            self.gitea_url = f"https://{self.gitea_host}"
+            prefix = "http" if OPENSHIFT_ROUTE_FORCE_HTTP else "https"
+            self.gitea_url = f"{prefix}://{self.gitea_host}"
 
 
 def main():
