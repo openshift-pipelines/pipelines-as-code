@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
@@ -24,11 +25,13 @@ type Types struct {
 	Tasks        []*tektonv1beta1.Task
 }
 
+var yamlDocSeparatorRe = regexp.MustCompile(`(?m)^---\s*$`)
+
 func readTypes(log *zap.SugaredLogger, data string) Types {
 	types := Types{}
 	decoder := k8scheme.Codecs.UniversalDeserializer()
 
-	for _, doc := range strings.Split(strings.Trim(data, "-"), "---") {
+	for _, doc := range yamlDocSeparatorRe.Split(data, -1) {
 		if strings.TrimSpace(doc) == "" {
 			continue
 		}
