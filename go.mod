@@ -13,6 +13,7 @@ require (
 	github.com/google/cel-go v0.11.3
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-github/scrape v0.0.0-20220919195828-182338c7045a
+	github.com/google/go-github/v45 v45.2.0
 	github.com/google/go-github/v47 v47.1.0
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
 	github.com/jonboulle/clockwork v0.3.0
@@ -74,7 +75,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-containerregistry v0.11.0 // indirect
-	github.com/google/go-github/v45 v45.2.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
