@@ -88,7 +88,10 @@ class ProvisionGitea:
             "email": "pac@pac.com",
         }
         resp = requests.post(
-            url=f"{self.gitea_url}/user/sign_up", data=data_user, headers=self.headers
+            url=f"{self.gitea_url}/user/sign_up",
+            data=data_user,
+            headers=self.headers,
+            verify=False,
         )
         resp.raise_for_status()
 
@@ -99,6 +102,7 @@ class ProvisionGitea:
             headers=self.headers,
             auth=(GITEA_USER, GITEA_PASSWORD),
             data=jeez,
+            verify=False,
         )
         resp.raise_for_status()
 
@@ -112,6 +116,7 @@ class ProvisionGitea:
             headers=self.headers,
             auth=(GITEA_USER, GITEA_PASSWORD),
             data=jeez,
+            verify=False,
         )
         resp.raise_for_status()
 
@@ -120,6 +125,7 @@ class ProvisionGitea:
             url=f"{self.gitea_url}/api/v1/users/{GITEA_USER}/tokens/{self.token_name}",
             headers=self.headers,
             auth=(GITEA_USER, GITEA_PASSWORD),
+            verify=False,
         )
         jeez = """{"name": "%s"}""" % (self.token_name)
         resp = requests.post(
@@ -127,6 +133,7 @@ class ProvisionGitea:
             headers=self.headers,
             auth=(GITEA_USER, GITEA_PASSWORD),
             data=jeez,
+            verify=False,
         )
         resp.raise_for_status()
         token = resp.json()["sha1"]
