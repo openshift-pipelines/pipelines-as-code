@@ -67,6 +67,12 @@ func TestPipelineRunPipelineTask(t *testing.T) {
 	assert.Equal(t, resolved.Spec.Params[0].Value.StringVal, "{{value}}")
 }
 
+func TestPipelineRunPipelineMiddle(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-splitted-with-dashes-in-middle", false, true)
+	assert.NilError(t, err)
+	assert.Equal(t, len(resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Steps), 2, "we had the split bug on yaml multidocument ---")
+}
+
 func TestGenerateName(t *testing.T) {
 	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-task", true, true)
 	assert.NilError(t, err)
