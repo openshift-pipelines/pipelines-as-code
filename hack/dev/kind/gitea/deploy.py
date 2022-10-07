@@ -7,6 +7,7 @@ import os
 import time
 import subprocess
 import tempfile
+import pathlib
 import sys
 
 import requests
@@ -177,10 +178,10 @@ stringData:
         # write string to a temporary file
         args = f"-n {ns}" if ns else f"-n {GITEA_NS}"
 
-        tmp = tempfile.mktemp("secretpaaaaccc")
-        with open(tmp, "w", encoding="utf-8") as fp:
-            fp.write(template)
-            os.system(f"kubectl apply {args} -f {tmp}")
+        tmpfile = pathlib.Path(tempfile.mktemp("secretpaaaaccc"))
+        tmpfile.write_text(template, encoding="utf-8")
+        os.system(f"kubectl apply {args} -f {tmpfile}")
+        tmpfile.unlink()
 
     def create_ns(self):
         subprocess.run(
