@@ -32,10 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	successRegexp = regexp.MustCompile(`^Pipelines as Code CI.*has.*successfully`)
-	failureRegexp = regexp.MustCompile(`There was an issue validating the commit: "cannot find task task-non-existing in input"`)
-)
+var successRegexp = regexp.MustCompile(`^Pipelines as Code CI.*has.*successfully`)
 
 func TestGiteaPullRequestTaskAnnotations(t *testing.T) {
 	topts := &tgitea.TestOpts{
@@ -68,18 +65,6 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pipeline.yaml": "testdata/pipelinerun_git_clone_private-gitea.yaml",
 		},
-	}
-	defer tgitea.TestPR(t, topts)()
-}
-
-func TestGiteaPullRequestAnnotationsFailure(t *testing.T) {
-	topts := &tgitea.TestOpts{
-		Regexp:      failureRegexp,
-		TargetEvent: options.PullRequestEvent,
-		YAMLFiles: map[string]string{
-			".tekton/pr.yaml": "testdata/failures/pipeline_remote_annotations_nonexisting_taskref.yaml",
-		},
-		CheckForStatus: "failure",
 	}
 	defer tgitea.TestPR(t, topts)()
 }
