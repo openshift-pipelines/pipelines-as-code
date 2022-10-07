@@ -38,12 +38,11 @@ command to learn about how to use it.
 
 ## Remote Task annotations
 
-`Pipelines as Code` support fetching remote tasks or pipeline from remote location through
-annotations on PipelineRun.
+`Pipelines as Code` support fetching remote tasks or pipeline from a remote
+location with annotations on PipelineRun.
 
-If the resolver sees a PipelineRun referencing a remote task or a pipeline in
-the reference name of a Pipeline or a PipelineSpec it will automatically inlines
-it.
+If the resolver sees a PipelineRun referencing a remote task or a Pipeline in
+a PipelineRun or a PipelineSpec it will automatically inlines them.
 
 An annotation to a remote task looks like this :
 
@@ -54,7 +53,7 @@ pipelinesascode.tekton.dev/task: "git-clone"
 or multiple tasks with an array :
 
 ```yaml
-pipelinesascode.tekton.dev/task: ["git-clone", "pylint"]
+pipelinesascode.tekton.dev/task: "[git-clone, pylint]"
 ```
 
 The syntax above installs the
@@ -87,7 +86,7 @@ the string and a version number, like in
 this example :
 
 ```yaml
-pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # will install git-clone 0.1 from tekton.hub
+pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # this will install git-clone 0.1 from tekton.hub
 ```
 
 If you have a string starting with http:// or https://, `Pipelines as Code`
