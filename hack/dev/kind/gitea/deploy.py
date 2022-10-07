@@ -11,6 +11,7 @@ import sys
 
 import requests
 
+GITEA_IS_HTTPS = os.environ.get("GITEA_IS_HTTPS", "true")
 GITEA_USER = os.environ.get("GITEA_USER", "pac")
 GITEA_PASSWORD = os.environ.get("GITEA_PASSWORD", "pac")
 GITEA_HOST = os.environ.get("GITEA_HOST", "localhost:3000")
@@ -238,11 +239,65 @@ apiVersion: route.openshift.io/v1
             ).stdout
             self.gitea_url = f"https://{self.gitea_host}"
 
+    def create_ingress_or_route_for_http(self):
+        # detect if we are running on openshift
+        openshift = True
+        try:
+            subprocess.run(
+                '/bin/sh -c "kubectl get routes.route.openshift.io"',
+                shell=True,
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except subprocess.CalledProcessError:
+            openshift = False
+
+        if openshift:
+            template = """---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: gitea
+  labels:
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+    app.kubernetes.io/version: "devel"
+    pipelines-as-code/route: controller
+spec:
+  port:
+    targetPort: http-listener
+  tls:
+    insecureEdgeTerminationPolicy: Redirect
+    termination: edge
+  to:
+    kind: Service
+    name: gitea
+    weight: 100
+  wildcardPolicy: None
+apiVersion: route.openshift.io/v1
+"""
+            time.sleep(2)
+            self.apply_kubectl(template)
+        if openshift:
+            time.sleep(2)
+            self.gitea_host = subprocess.run(
+                f"/bin/sh -c \"kubectl get routes.route.openshift.io -n {GITEA_NS} -o jsonpath='{{.items[0].spec.host}}'\"",
+                shell=True,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+            self.gitea_url = f"https://{self.gitea_host}"
 
 def main():
     m = ProvisionGitea()
     m.create_ns()
-    m.create_ingress_or_route()
+    if GITEA_IS_HTTPS == "false":
+        m.create_ingress_or_route_for_http()
+    else:
+        m.create_ingress_or_route()
     m.apply_deployment_template()
     if not m.wait_for_gitea_to_be_up():
         raise Exception(f"Could not get gitea on {m.gitea_url}")
