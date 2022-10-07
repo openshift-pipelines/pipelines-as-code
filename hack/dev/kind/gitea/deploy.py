@@ -21,7 +21,9 @@ GITEA_REPO_NAME_PERSO = os.environ.get("GITEA_REPO_NAME_PERSO", "pac")
 
 GITEA_SMEE_HOOK_URL = os.environ.get("TEST_GITEA_SMEEURL", "")  # will fail if not set
 if GITEA_SMEE_HOOK_URL == "":
-    print("You need to setupo a SMEE URL in https://smee.io and set it up as environement variable in the `TEST_GITEA_SMEEURL` variable")
+    print(
+        "You need to setupo a SMEE URL in https://smee.io and set it up as environement variable in the `TEST_GITEA_SMEEURL` variable"
+    )
     sys.exit(1)
 
 GITEA_REPOS = {
@@ -40,7 +42,13 @@ class ProvisionGitea:
     def apply_deployment_template(self):
         tmpl = os.path.join(os.path.dirname(__file__), "gitea-deployment.yaml")
         fp = open(tmpl)
-        replaced = fp.read().replace("EMPTYBRACKET", "{}").replace("VAR_GITEA_HOST", self.gitea_host).replace("VAR_GITEA_URL", self.gitea_url).replace("VAR_GITEA_SMEE_HOOK_URL", GITEA_SMEE_HOOK_URL)
+        replaced = (
+            fp.read()
+            .replace("EMPTYBRACKET", "{}")
+            .replace("VAR_GITEA_HOST", self.gitea_host)
+            .replace("VAR_GITEA_URL", self.gitea_url)
+            .replace("VAR_GITEA_SMEE_HOOK_URL", GITEA_SMEE_HOOK_URL)
+        )
         self.apply_kubectl(replaced)
         fp.close()
 
@@ -51,7 +59,7 @@ class ProvisionGitea:
         )
         while i != 120:
             try:
-                r = requests.get(f"{self.gitea_url}/api/v1/version")
+                r = requests.get(f"{self.gitea_url}/api/v1/version", verify=False)
                 if r.status_code == 200:
                     # wait a bit more that it finishes
                     time.sleep(5)
