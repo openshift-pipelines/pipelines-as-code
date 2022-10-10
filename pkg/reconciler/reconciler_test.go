@@ -183,7 +183,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			}
 
 			event := buildEventFromPipelineRun(&pr)
-			err = r.reportFinalStatus(ctx, fakelogger, event, &pr, vcx)
+			_, err = r.reportFinalStatus(ctx, fakelogger, event, &pr, vcx)
 			assert.NilError(t, err)
 
 			got, err := stdata.Pipeline.TektonV1beta1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})

@@ -4,38 +4,43 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"testing"
 	"time"
 
 	"code.gitea.io/sdk/gitea"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type TestOpts struct {
-	NoCleanup            bool
-	TargetNS             string
-	TargetEvent          string
-	Regexp               *regexp.Regexp
-	YAMLFiles            map[string]string
-	CheckForStatus       string
-	TargetRefName        string
-	CheckForNumberStatus int
-	ConcurrencyLimit     *int
-	Clients              *params.Run
-	GiteaCNX             pgitea.Provider
-	Opts                 options.E2E
-	PullRequest          *gitea.PullRequest
-	DefaultBranch        string
-	GitCloneURL          string
-	GitHTMLURL           string
-	GiteaAPIURL          string
-	GiteaPassword        string
+	NoCleanup               bool
+	TargetNS                string
+	TargetEvent             string
+	Regexp                  *regexp.Regexp
+	YAMLFiles               map[string]string
+	CheckForStatus          string
+	TargetRefName           string
+	CheckForNumberStatus    int
+	ConcurrencyLimit        *int
+	Clients                 *params.Run
+	GiteaCNX                pgitea.Provider
+	Opts                    options.E2E
+	PullRequest             *gitea.PullRequest
+	DefaultBranch           string
+	GitCloneURL             string
+	GitHTMLURL              string
+	GiteaAPIURL             string
+	GiteaPassword           string
+	ExpectEvents            bool
+	WaitForResourceCreation bool
 }
 
 func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
@@ -82,7 +87,12 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	assert.NilError(t, err)
 	topts.GitCloneURL = url
 	PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
-
+	// in case of some test we create resources before creating pull req
+	// for eg. ClusterTask test, pipeline is getting executed before ClusterTask
+	// is getting created, this is to add some delay in case of that test
+	if topts.WaitForResourceCreation {
+		time.Sleep(time.Second * 5)
+	}
 	pr, _, err := giteacnx.Client.CreatePullRequest(opts.Organization, repoInfo.Name, gitea.CreatePullRequestOption{
 		Title: "Test Pull Request - " + topts.TargetRefName,
 		Head:  topts.TargetRefName,
@@ -102,6 +112,26 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 
 	if topts.Regexp != nil {
 		WaitForPullRequestCommentMatch(ctx, t, topts)
+	}
+
+	events, err := topts.Clients.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", filepath.Join(pipelinesascode.GroupName, "repository"), topts.TargetNS),
+	})
+	assert.NilError(t, err)
+	if topts.ExpectEvents {
+		// in some cases event is expected but it takes time
+		// to emit and before that this check gets executed
+		// so adds a sleep for that case eg. TestGiteaBadYaml
+		if len(events.Items) == 0 {
+			time.Sleep(time.Second * 5)
+			events, err = topts.Clients.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%s=%s", filepath.Join(pipelinesascode.GroupName, "repository"), topts.TargetNS),
+			})
+			assert.NilError(t, err)
+		}
+		assert.Assert(t, len(events.Items) != 0, "events expected in case of failure but got 0")
+	} else {
+		assert.Assert(t, len(events.Items) == 0, fmt.Sprintf("no events expected but got %v in %v ns", len(events.Items), topts.TargetNS))
 	}
 	return cleanup
 }
