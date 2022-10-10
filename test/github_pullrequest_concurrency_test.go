@@ -17,7 +17,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGithubPullRequestConcurrency(t *testing.T) {
@@ -77,27 +76,6 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 		TargetSHA:       sha,
 	}
 	assert.NilError(t, wait.UntilMinPRAppeared(ctx, runcnx.Clients, waitOpts, numberOfPipelineRuns))
-
-	allPR, err := runcnx.Clients.Tekton.TektonV1beta1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
-	assert.NilError(t, err)
-
-	var pending, running bool
-	for _, pr := range allPR.Items {
-		if pr.Spec.Status == "" {
-			running = true
-		} else {
-			pending = true
-		}
-	}
-	if !(pending && running) {
-		runcnx.Clients.Log.Fatal("one pipelineRun must be in running state and one in pending")
-	}
-
-	wait.Succeeded(ctx, t, runcnx, opts, options.PullRequestEvent, targetNS, len(yamlFiles), sha, logmsg)
-
-	runcnx.Clients.Log.Infof("Waiting for Repository to be updated for second pipelineRun")
-	err = wait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
-	assert.NilError(t, err)
 
 	finished := 1
 	runningChecks := 0
