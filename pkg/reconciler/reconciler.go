@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -36,6 +37,7 @@ type Reconciler struct {
 	kinteract         kubeinteraction.Interface
 	qm                *sync.QueueManager
 	metrics           *metrics.Recorder
+	eventEmitter      *events.EventEmitter
 }
 
 var (
@@ -63,19 +65,28 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 		return r.queuePipelineRun(ctx, logger, pr)
 	}
 
-	if pr.IsDone() {
-		logger = logger.With(
-			"pipeline-run", pr.GetName(),
-			"event-sha", pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "sha")],
-		)
-		logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
+	if !pr.IsDone() {
+		return nil
+	}
 
-		provider, event, err := r.detectProvider(ctx, logger, pr)
-		if err != nil {
-			return fmt.Errorf("detectProvider: %w", err)
-		}
+	logger = logger.With(
+		"pipeline-run", pr.GetName(),
+		"event-sha", pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "sha")],
+	)
+	logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
+	r.eventEmitter.SetLogger(logger)
 
-		return r.reportFinalStatus(ctx, logger, event, pr, provider)
+	detectedProvider, event, err := r.detectProvider(ctx, logger, pr)
+	if err != nil {
+		msg := fmt.Sprintf("detectProvider: %v", err)
+		r.eventEmitter.EmitMessage(nil, zap.ErrorLevel, msg)
+		return nil
+	}
+
+	if repo, err := r.reportFinalStatus(ctx, logger, event, pr, detectedProvider); err != nil {
+		msg := fmt.Sprintf("report status: %v", err)
+		r.eventEmitter.EmitMessage(repo, zap.ErrorLevel, msg)
+		return err
 	}
 	return nil
 }
@@ -118,17 +129,17 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 	return nil
 }
 
-func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *v1beta1.PipelineRun, provider provider.Interface) error {
+func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *v1beta1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
 	repoName := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "repository")]
 	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
 		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("reportFinalStatus: %w", err)
+		return nil, fmt.Errorf("reportFinalStatus: %w", err)
 	}
 
 	if repo.Spec.GitProvider != nil {
 		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, provider.GetConfig(), event, repo, logger); err != nil {
-			return fmt.Errorf("cannot get secret from repository: %w", err)
+			return repo, fmt.Errorf("cannot get secret from repository: %w", err)
 		}
 	} else {
 		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
@@ -136,30 +147,30 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 
 	err = provider.SetClient(ctx, event)
 	if err != nil {
-		return fmt.Errorf("cannot set client: %w", err)
+		return repo, fmt.Errorf("cannot set client: %w", err)
 	}
 
 	if err := r.cleanupPipelineRuns(ctx, logger, repo, pr); err != nil {
-		return fmt.Errorf("cannot clean prs: %w", err)
+		return repo, fmt.Errorf("cannot clean prs: %w", err)
 	}
 
 	if r.run.Info.Pac.SecretAutoCreation {
 		if err := r.cleanupSecrets(ctx, logger, repo, pr); err != nil {
-			return fmt.Errorf("cannot clean secret: %w", err)
+			return repo, fmt.Errorf("cannot clean secret: %w", err)
 		}
 	}
 
 	newPr, err := r.postFinalStatus(ctx, logger, provider, event, pr)
 	if err != nil {
-		return fmt.Errorf("cannot post final status: %w", err)
+		return repo, fmt.Errorf("cannot post final status: %w", err)
 	}
 
 	if err := r.updateRepoRunStatus(ctx, logger, newPr, repo, event); err != nil {
-		return fmt.Errorf("cannot update run status: %w", err)
+		return repo, fmt.Errorf("cannot update run status: %w", err)
 	}
 
 	if _, err := r.updatePipelineRunState(ctx, logger, pr, kubeinteraction.StateCompleted); err != nil {
-		return fmt.Errorf("cannot update state: %w", err)
+		return repo, fmt.Errorf("cannot update state: %w", err)
 	}
 
 	if err := r.emitMetrics(pr); err != nil {
@@ -172,15 +183,15 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		key := strings.Split(next, "/")
 		pr, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(key[0]).Get(ctx, key[1], metav1.GetOptions{})
 		if err != nil {
-			return fmt.Errorf("cannot get pipeline: %w", err)
+			return repo, fmt.Errorf("cannot get pipeline: %w", err)
 		}
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-			return fmt.Errorf("failed to update status: %w", err)
+			return repo, fmt.Errorf("failed to update status: %w", err)
 		}
-		return nil
+		return repo, nil
 	}
 
-	return nil
+	return repo, nil
 }
 
 func (r *Reconciler) emitMetrics(pr *v1beta1.PipelineRun) error {

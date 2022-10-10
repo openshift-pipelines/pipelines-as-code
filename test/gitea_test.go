@@ -54,6 +54,7 @@ func TestGiteaPullRequestPipelineAnnotations(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun_remote_pipeline_annotations.yaml",
 		},
+		ExpectEvents: false,
 	}
 	defer tgitea.TestPR(t, topts)()
 }
@@ -65,17 +66,19 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pipeline.yaml": "testdata/pipelinerun_git_clone_private-gitea.yaml",
 		},
+		ExpectEvents: false,
 	}
 	defer tgitea.TestPR(t, topts)()
 }
 
 // TestGiteaBadYaml we can't check pr status but this shows up in the
-// controller, so let's dig oursef in there....  TargetNS is a random string, so
-// it can only succsss if it matches it
+// controller, so let's dig ourself in there....  TargetNS is a random string, so
+// it can only success if it matches it
 func TestGiteaBadYaml(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		TargetEvent: options.PullRequestEvent,
-		YAMLFiles:   map[string]string{".tekton/pr-bad-format.yaml": "testdata/failures/pipeline_bad_format.yaml"},
+		TargetEvent:  options.PullRequestEvent,
+		YAMLFiles:    map[string]string{".tekton/pr-bad-format.yaml": "testdata/failures/pipeline_bad_format.yaml"},
+		ExpectEvents: true,
 	}
 	defer tgitea.TestPR(t, topts)()
 	ctx := context.Background()
@@ -98,6 +101,7 @@ func TestGiteaMultiplesParallelPipelines(t *testing.T) {
 		YAMLFiles:            yamlFiles,
 		CheckForStatus:       "success",
 		CheckForNumberStatus: maxParallel,
+		ExpectEvents:         false,
 	}
 	defer tgitea.TestPR(t, topts)()
 }
@@ -116,6 +120,7 @@ func TestGiteaConcurrencyExclusivenessMultiplePipelines(t *testing.T) {
 		CheckForStatus:       "success",
 		CheckForNumberStatus: numPipelines,
 		ConcurrencyLimit:     github.Int(1),
+		ExpectEvents:         false,
 	}
 	defer tgitea.TestPR(t, topts)()
 }
@@ -129,6 +134,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 		CheckForNumberStatus: numPipelines,
 		ConcurrencyLimit:     github.Int(1),
 		NoCleanup:            true,
+		ExpectEvents:         false,
 	}
 	defer tgitea.TestPR(t, topts)()
 	processed, err := payload.ApplyTemplate("testdata/pipelinerun-alt.yaml", map[string]string{
@@ -188,6 +194,7 @@ func TestGiteaRetestAfterPush(t *testing.T) {
 		},
 		NoCleanup:      true,
 		CheckForStatus: "failure",
+		ExpectEvents:   false,
 	}
 	defer tgitea.TestPR(t, topts)()
 
@@ -205,7 +212,8 @@ func TestGiteaACLOrgAllowed(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
-		NoCleanup: true,
+		NoCleanup:    true,
+		ExpectEvents: false,
 	}
 	defer tgitea.TestPR(t, topts)()
 	secondcnx, err := tgitea.CreateGiteaUser(topts.GiteaCNX.Client, topts.GiteaAPIURL, topts.TargetRefName, topts.GiteaPassword)
@@ -222,7 +230,8 @@ func TestGiteaACLOrgSkipped(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
-		NoCleanup: true,
+		NoCleanup:    true,
+		ExpectEvents: false,
 	}
 	defer tgitea.TestPR(t, topts)()
 	secondcnx, err := tgitea.CreateGiteaUser(topts.GiteaCNX.Client, topts.GiteaAPIURL, topts.TargetRefName, topts.GiteaPassword)
@@ -259,7 +268,8 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 				YAMLFiles: map[string]string{
 					".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 				},
-				NoCleanup: true,
+				NoCleanup:    true,
+				ExpectEvents: false,
 			}
 			defer tgitea.TestPR(t, topts)()
 			secondcnx, err := tgitea.CreateGiteaUser(topts.GiteaCNX.Client, topts.GiteaAPIURL, topts.TargetRefName, topts.GiteaPassword)
@@ -287,6 +297,7 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 		},
 		NoCleanup:      true,
 		CheckForStatus: "success",
+		ExpectEvents:   false,
 	}
 	defer tgitea.TestPR(t, topts)()
 	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
@@ -306,6 +317,7 @@ func TestGiteaPush(t *testing.T) {
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
 		CheckForStatus: "success",
+		ExpectEvents:   false,
 	}
 	defer tgitea.TestPR(t, topts)()
 	merged, resp, err := topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
@@ -332,6 +344,8 @@ func TestGiteaClusterTasks(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/prcluster.yaml": "testdata/pipelinerunclustertasks.yaml",
 		},
+		ExpectEvents:            false,
+		WaitForResourceCreation: true,
 	}
 	defer tgitea.TestPR(t, topts)()
 	prname := fmt.Sprintf(".tekton/%s.yaml", topts.TargetNS)
@@ -361,6 +375,7 @@ func TestGiteaWithCLI(t *testing.T) {
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
 		CheckForStatus: "success",
+		ExpectEvents:   false,
 	}
 	defer tgitea.TestPR(t, topts)()
 	output, err := tknpactest.ExecCommand(topts.Clients, tknpaclist.Root, "pipelinerun", "list", "-n", topts.TargetNS)
@@ -435,6 +450,7 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 					".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 				},
 				CheckForStatus: "success",
+				ExpectEvents:   false,
 			}
 			defer tgitea.TestPR(t, topts)()
 			tmpdir, dirCleanups := tgitea.InitGitRepo(t)

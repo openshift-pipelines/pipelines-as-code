@@ -14,6 +14,10 @@ with a short recap of how long each task of your pipeline took and the output of
 
 On webhook if it's a pull request
 
+## Failures
+
+If a namespace has been matched to a Repository, Pipelines As Code will emit its log messages in the kubernetes events inside the `Repository`'s namespace.
+
 ## CRD
 
 Status of your pipeline execution is stored inside the Repo CustomResource :

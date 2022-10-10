@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +34,7 @@ func TestPacRun_checkNeedUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPacs(nil, nil, nil, nil, nil)
+			p := NewPacs(nil, nil, &params.Run{Clients: clients.Clients{}}, nil, nil)
 			got, needupdate := p.checkNeedUpdate(tt.tmpl)
 			if tt.upgradeMessageSubstr != "" {
 				assert.Assert(t, strings.Contains(got, tt.upgradeMessageSubstr))

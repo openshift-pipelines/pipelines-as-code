@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -28,15 +29,19 @@ const (
 )
 
 type PacRun struct {
-	event  *info.Event
-	vcx    provider.Interface
-	run    *params.Run
-	k8int  kubeinteraction.Interface
-	logger *zap.SugaredLogger
+	event        *info.Event
+	vcx          provider.Interface
+	run          *params.Run
+	k8int        kubeinteraction.Interface
+	logger       *zap.SugaredLogger
+	eventEmitter *events.EventEmitter
 }
 
 func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, k8int kubeinteraction.Interface, logger *zap.SugaredLogger) PacRun {
-	return PacRun{event: event, run: run, vcx: vcx, k8int: k8int, logger: logger}
+	return PacRun{
+		event: event, run: run, vcx: vcx, k8int: k8int, logger: logger,
+		eventEmitter: events.NewEventEmitter(run.Clients.Kube, logger),
+	}
 }
 
 func (p *PacRun) Run(ctx context.Context) error {
@@ -49,7 +54,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 			DetailsURL: p.run.Clients.ConsoleUI.URL(),
 		})
 		if createStatusErr != nil {
-			p.logger.Errorf("Cannot create status: %s: %s", err, createStatusErr)
+			p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
 		}
 	}
 
@@ -63,7 +68,8 @@ func (p *PacRun) Run(ctx context.Context) error {
 		go func(match matcher.Match) {
 			defer wg.Done()
 			if err := p.startPR(ctx, match); err != nil {
-				p.logger.Errorf("PipelineRun %s has failed: %s", match.PipelineRun.GetGenerateName(), err.Error())
+				errMsg := fmt.Sprintf("PipelineRun %s has failed: %s", match.PipelineRun.GetGenerateName(), err.Error())
+				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, errMsg)
 			}
 		}(match)
 	}
