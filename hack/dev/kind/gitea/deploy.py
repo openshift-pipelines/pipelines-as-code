@@ -107,7 +107,6 @@ class ProvisionGitea:
             auth=(GITEA_USER, GITEA_PASSWORD),
             verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
             data=jeez,
-            verify=False,
         )
         resp.raise_for_status()
 
@@ -122,7 +121,6 @@ class ProvisionGitea:
             verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
             auth=(GITEA_USER, GITEA_PASSWORD),
             data=jeez,
-            verify=False,
         )
         resp.raise_for_status()
 
@@ -132,7 +130,6 @@ class ProvisionGitea:
             headers=self.headers,
             verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
             auth=(GITEA_USER, GITEA_PASSWORD),
-            verify=False,
         )
         jeez = """{"name": "%s"}""" % (self.token_name)
         resp = requests.post(
@@ -141,7 +138,6 @@ class ProvisionGitea:
             auth=(GITEA_USER, GITEA_PASSWORD),
             verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
             data=jeez,
-            verify=False,
         )
         resp.raise_for_status()
         token = resp.json()["sha1"]
