@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -58,6 +59,7 @@ func TestEventEmitter_EmitMessage(t *testing.T) {
 				events, err := stdata.Kube.CoreV1().Events(tt.repo.Namespace).List(context.Background(), metav1.ListOptions{})
 				assert.NilError(t, err)
 				assert.Equal(t, events.Items[0].Message, tt.message)
+				assert.Equal(t, events.Items[0].Type, v1.EventTypeNormal)
 			}
 		})
 	}

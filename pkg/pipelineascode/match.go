@@ -116,7 +116,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 				DetailsURL: "https://tenor.com/search/police-cat-gifs",
 			}
 			if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
-				return nil, nil, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
+				return nil, repo, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
 			}
 			return nil, nil, nil
 		}
@@ -142,6 +142,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 		RemoteTasks:  p.run.Info.Pac.RemoteTasks,
 	})
 	if err != nil && !strings.Contains(err.Error(), "404 Not Found") {
+		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, err.Error())
 		return nil, nil, err
 	}
 	if pipelineRuns == nil {
@@ -149,7 +150,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 		if err != nil {
 			msg += fmt.Sprintf(" err: %s", err.Error())
 		}
-		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, msg)
+		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, msg)
 		return nil, nil, nil
 	}
 
@@ -170,8 +171,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx)
 	if err != nil {
 		// Don't fail when you don't have a match between pipeline and annotations
-		msg := fmt.Sprintf("cannot find pipelinerun %s in this repository: %s", p.event.TargetTestPipelineRun, err.Error())
-		p.eventEmitter.EmitMessage(repo, zap.WarnLevel, msg)
+		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, err.Error())
 		return nil, nil, nil
 	}
 

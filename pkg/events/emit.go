@@ -2,8 +2,10 @@ package events
 
 import (
 	"context"
+	"path/filepath"
 
-	v1alpha12 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	v1 "k8s.io/api/core/v1"
@@ -27,9 +29,9 @@ func (e *EventEmitter) SetLogger(logger *zap.SugaredLogger) {
 	e.logger = logger
 }
 
-func (e *EventEmitter) EmitMessage(repo *v1alpha12.Repository, loggerLevel zapcore.Level, message string) {
+func (e *EventEmitter) EmitMessage(repo *v1alpha1.Repository, loggerLevel zapcore.Level, message string) {
 	if repo != nil {
-		event := makeEvent(repo, message)
+		event := makeEvent(repo, loggerLevel, message)
 		if _, err := e.client.CoreV1().Events(event.Namespace).Create(context.Background(), event, metav1.CreateOptions{}); err != nil {
 			e.logger.Infof("Cannot create event: %s", err.Error())
 		}
@@ -48,18 +50,25 @@ func (e *EventEmitter) EmitMessage(repo *v1alpha12.Repository, loggerLevel zapco
 	}
 }
 
-func makeEvent(repo *v1alpha12.Repository, message string) *v1.Event {
-	return &v1.Event{
+func makeEvent(repo *v1alpha1.Repository, loggerLevel zapcore.Level, message string) *v1.Event {
+	event := &v1.Event{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: repo.Name + "-",
 			Namespace:    repo.Namespace,
+			Labels: map[string]string{
+				filepath.Join(pipelinesascode.GroupName, "repository"): repo.Name,
+			},
 		},
 		Message: message,
-		Type:    "Warning",
+		Type:    v1.EventTypeWarning,
 		InvolvedObject: v1.ObjectReference{
 			Kind:      "Repository",
 			Name:      repo.Name,
 			Namespace: repo.Namespace,
 		},
 	}
+	if loggerLevel == zap.InfoLevel {
+		event.Type = v1.EventTypeNormal
+	}
+	return event
 }

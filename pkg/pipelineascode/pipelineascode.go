@@ -54,7 +54,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 			DetailsURL: p.run.Clients.ConsoleUI.URL(),
 		})
 		if createStatusErr != nil {
-			p.eventEmitter.EmitMessage(nil, zap.ErrorLevel, fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
+			p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
 		}
 	}
 
