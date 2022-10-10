@@ -54,9 +54,9 @@ linters:
     - nolintlint
     - prealloc
     - promlinter
-    - rowserrcheck
-    - sqlclosecheck
+    # - rowserrcheck
+    # - sqlclosecheck
     - tparallel
     #- unconvert
-    - wastedassign
+    # - wastedassign
     - whitespace
