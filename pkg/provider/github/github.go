@@ -29,11 +29,12 @@ const (
 )
 
 type Provider struct {
-	Client        *github.Client
-	Logger        *zap.SugaredLogger
-	Token, APIURL *string
-	ApplicationID *int64
-	providerName  string
+	Client                *github.Client
+	Logger                *zap.SugaredLogger
+	Token, APIURL         *string
+	ApplicationID         *int64
+	providerName          string
+	AutoConfigureNewRepos bool
 }
 
 // splitGithubURL Take a Github url and split it with org/repo path ref, supports rawURL

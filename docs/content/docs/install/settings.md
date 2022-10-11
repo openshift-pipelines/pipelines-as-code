@@ -60,9 +60,31 @@ There is a few things you can configure through the configmap
 
   This allows user to define a default limit for max-keep-run value. If defined then it's applied to all the pipelineRun
   which do not have `max-keep-runs` annotation.
+
+* `auto-configure-new-github-repo`
+
+  Let you autoconfigure newly created GitHub repositories. On creation of a new repository, Pipelines As Code will set up a namespace
+  for your repository and create a Repository CR.
+
+  This feature is disabled by default and is only supported with GitHub App.
   
+  ****NOTE****: If you have a GitHub App already setup then verify if `Repository` event is subscribed.
+
+* `auto-configure-repo-namespace-template`
+
+  If `auto-configure-new-github-repo` is enabled then you can provide a template for generating the namespace for your new repository.
+  By default, the namespace will be generated using this format `{{repo_name}}-pipelines`.
+  
+  You can override the default using the following variables
+  
+  * `{{repo_owner}}`: The repository owner.
+  * `{{repo_name}}`: The repository name.
+  
+  for example. if the template is defined as `{{repo_owner}}-{{repo_name}}-ci`, then the namespace generated for repository
+  `https://github.com/owner/repo` will be `owner-repo-ci`
+
 ## Pipelines-As-Code Info
-  
+
   There are a settings exposed through a configmap which any authenticated user can access to know about
   Pipeline as Code.
 
