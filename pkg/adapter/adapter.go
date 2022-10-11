@@ -106,8 +106,6 @@ func (l listener) handleEvent() http.HandlerFunc {
 			return
 		}
 
-		// read request Body
-
 		// event body
 		payload, err := io.ReadAll(request.Body)
 		if err != nil {
@@ -128,6 +126,25 @@ func (l listener) handleEvent() http.HandlerFunc {
 		var logger *zap.SugaredLogger
 
 		l.event = info.NewEvent()
+
+		// if repository auto configuration is enabled then check if its a valid event
+		if l.run.Info.Pac.AutoConfigureNewRepo {
+			detected, configuring, err := github.ConfigureRepository(ctx, l.run, request, string(payload), l.logger)
+			if detected {
+				if configuring && err == nil {
+					l.writeResponse(response, http.StatusCreated, "configured")
+					return
+				}
+				if configuring && err != nil {
+					l.logger.Errorf("repository auto-configure has failed, err: %v", err)
+					l.writeResponse(response, http.StatusOK, "failed to configure")
+					return
+				}
+				l.writeResponse(response, http.StatusOK, "skipped event")
+				return
+			}
+		}
+
 		isIncoming, targettedRepo, err := l.detectIncoming(ctx, request, payload)
 		if err != nil {
 			l.logger.Errorf("error processing incoming webhook: %v", err)

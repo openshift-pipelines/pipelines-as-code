@@ -50,6 +50,16 @@ data:
   # if defined then applies to all pipelineRun who doesn't have max-keep-runs annotation
   default-max-keep-runs: ""
 
+  # Whether to auto configure newly created repositories, this will create a new namespace
+  # and repository CR, supported only with GitHub App
+  auto-configure-new-github-repo: "false"
+
+  # add a template to generate name for namespace for your auto configured github repo
+  # supported fields are repo_owner, repo_name
+  # eg. if defined as `{{repo_owner}}-{{repo_name}}-ci`, then namespace generated for repository
+  # https://github.com/owner/repo will be `owner-repo-ci`
+  auto-configure-repo-namespace-template: ""
+
 kind: ConfigMap
 metadata:
   name: pipelines-as-code
