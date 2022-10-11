@@ -17,7 +17,7 @@ make allinone
 
 When it finished you will have the following installed in your kind cluster:
 
-- Kind Cluster Deployer
+- Kind Cluster deployment
 - Internal registry to push to from `ko`
 - A ingress controller with nginx for routing.
 - Tekton and Dashboard installed with a ingress route.
@@ -231,6 +231,8 @@ need to have on your system:
 
 - [golangci-lint](https://github.com/golangci/golangci-lint) - For golang lint
 - [yamllint](https://github.com/adrienverge/yamllint) - For YAML lint
+- [pylint](https://readthedocs.org/projects/pylint/) - Python linter
+- [black](https://github.com/psf/black) - Python code formatter check
 - [vale](https://github.com/errata-ai/vale) - For grammar check
 - [markdownlint](https://github.com/markdownlint/markdownlint) - For markdown lint
 - [hugo](https://gohugo.io) - For documentation

@@ -87,22 +87,15 @@ def make_or_update_ref(token, owner_repository, ref, sha: str) -> None:
             token,
             "POST",
             f"/repos/{owner_repository}/git/refs",
-            data={
-                "ref": ref,
-                "sha": sha
-            },
+            data={"ref": ref, "sha": sha},
         )
         print(f"{ref} has been created to {sha}")
     else:
-        resp, _ = github_request(
+        _, _ = github_request(
             token,
             "PATCH",
             f"/repos/{owner_repository}/git/{ref}",
-            data={
-                "ref": ref,
-                "sha": sha,
-                "force": True
-            },
+            data={"ref": ref, "sha": sha, "force": True},
         )
         print(f"{ref} has been updated to {sha}")
 
@@ -139,15 +132,13 @@ def upload_to_github(args):
         filename, dest = entry.split(":")
         print(f"Upload file {filename} to {dest} based on {last_commit_sha}")
 
+        # pylint: disable=consider-using-with
         base64content = base64.b64encode(open(filename, "rb").read())
         _, jeez = github_request(
             args.token,
             "POST",
             f"/repos/{args.owner_repository}/git/blobs",
-            data={
-                "content": base64content.decode(),
-                "encoding": "base64"
-            },
+            data={"content": base64content.decode(), "encoding": "base64"},
         )
         blob_content_sha = jeez["sha"]
 
@@ -156,19 +147,20 @@ def upload_to_github(args):
             "POST",
             f"/repos/{args.owner_repository}/git/trees",
             data={
-                "base_tree":
-                last_commit_sha,
-                "tree": [{
-                    "path": dest,
-                    "mode": "100644",
-                    "type": "blob",
-                    "sha": blob_content_sha,
-                }],
+                "base_tree": last_commit_sha,
+                "tree": [
+                    {
+                        "path": dest,
+                        "mode": "100644",
+                        "type": "blob",
+                        "sha": blob_content_sha,
+                    }
+                ],
             },
         )
         tree_sha = jeez["sha"]
 
-        resp, jeez = github_request(
+        _, jeez = github_request(
             args.token,
             "POST",
             f"/repos/{args.owner_repository}/git/commits",
@@ -184,7 +176,7 @@ def upload_to_github(args):
         )
         last_commit_sha = jeez["sha"]
 
-        resp, jeez = github_request(
+        _, jeez = github_request(
             args.token,
             "PATCH",
             f"/repos/{args.owner_repository}/git/{args.to_ref}",
@@ -195,7 +187,7 @@ def upload_to_github(args):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Upload a file to github ref")
-    parser.add_argument("--filename", "-f", required=True, action='append')
+    parser.add_argument("--filename", "-f", required=True, action="append")
     parser.add_argument("--message", "-m", required=True)
     parser.add_argument("--owner-repository", "-o", required=True)
     parser.add_argument("--token", "-t", required=True)
@@ -209,6 +201,7 @@ def main(args):
         create_from_refs(args)
     else:
         upload_to_github(args)
+
 
 if __name__ == "__main__":
     main(parse_args())

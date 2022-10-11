@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=no-self-use, disable=consider-using-f-string
+# pylint: disable=consider-using-f-string
 #
 # Provision gitea instance with a username password and Repository for Pipelines as Code
 
@@ -42,16 +42,15 @@ class ProvisionGitea:
 
     def apply_deployment_template(self):
         tmpl = os.path.join(os.path.dirname(__file__), "gitea-deployment.yaml")
-        fp = open(tmpl)
-        replaced = (
-            fp.read()
-            .replace("EMPTYBRACKET", "{}")
-            .replace("VAR_GITEA_HOST", self.gitea_host)
-            .replace("VAR_GITEA_URL", self.gitea_url)
-            .replace("VAR_GITEA_SMEE_HOOK_URL", GITEA_SMEE_HOOK_URL)
-        )
-        self.apply_kubectl(replaced)
-        fp.close()
+        with open(tmpl, encoding="utf-8") as fp:
+            replaced = (
+                fp.read()
+                .replace("EMPTYBRACKET", "{}")
+                .replace("VAR_GITEA_HOST", self.gitea_host)
+                .replace("VAR_GITEA_URL", self.gitea_url)
+                .replace("VAR_GITEA_SMEE_HOOK_URL", GITEA_SMEE_HOOK_URL)
+            )
+            self.apply_kubectl(replaced)
 
     def wait_for_gitea_to_be_up(self) -> bool:
         i = 0
@@ -179,9 +178,9 @@ stringData:
         args = f"-n {ns}" if ns else f"-n {GITEA_NS}"
 
         tmp = tempfile.mktemp("secretpaaaaccc")
-        open(tmp, "w", encoding="utf-8").write(template)
-        os.system(f"kubectl apply {args} -f {tmp}")
-        os.remove(tmp)
+        with open(tmp, "w", encoding="utf-8") as fp:
+            fp.write(template)
+            os.system(f"kubectl apply {args} -f {tmp}")
 
     def create_ns(self):
         subprocess.run(

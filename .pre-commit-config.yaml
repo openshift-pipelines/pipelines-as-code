@@ -15,6 +15,17 @@ repos:
     exclude: "pkg/provider/github/events_test.go"
 - repo: local
   hooks:
+  - id: black
+    types: [python]
+    language: system
+    entry: black
+    name: "Python check code Formatter"
+  - id: pylint
+    name: "Python linter"
+    entry: pylint
+    language: system
+    types: [python]
+    args: ["-rn", "-sn"]
   - id: lint-markdown
     name: "Lint Markdown"
     entry: make

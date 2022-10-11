@@ -47,6 +47,23 @@ spec:
           - name: source
             workspace: source
 
+
+      - name: pylint
+        runAfter:
+          - fetchit
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: pylint
+              image: registry.gitlab.com/pipeline-components/pylint:latest
+              workingDir: $(workspaces.source.path)
+              script: |
+                pylint -ry $(find . -type f -name '*.py') --output-format=parseable
+        workspaces:
+          - name: source
+            workspace: source
+
       - name: markdownlint
         runAfter:
           - fetchit

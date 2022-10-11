@@ -4,6 +4,7 @@ import base64
 import datetime
 import json
 import os
+import pathlib
 import subprocess
 import time
 
@@ -12,21 +13,20 @@ from jwcrypto import jwk, jwt
 
 SECRET_NAME = "pipelines-as-code-secret"
 NAMESPACE = "pipelines-as-code"
-EXPIRE_MINUTES_AS_SECONDS = int(
-    os.environ.get('GITHUBAPP_TOKEN_EXPIRATION_MINUTES', 10)) * 60
+EXPIRE_MINUTES_AS_SECONDS = (
+    int(os.environ.get("GITHUBAPP_TOKEN_EXPIRATION_MINUTES", 10)) * 60
+)
 # TODO support github enteprise
 GITHUB_API_URL = "https://api.github.com"
 
 
-class GitHub():
+# pylint: disable=too-few-public-methods
+class GitHub:
     token = None
 
-    def __init__(self,
-                 private_key,
-                 app_id,
-                 expiration_time,
-                 github_api_url,
-                 installation_id=None):
+    def __init__(
+        self, private_key, app_id, expiration_time, github_api_url, installation_id=None
+    ):
         if not isinstance(private_key, bytes):
             raise ValueError(f'"{private_key}" parameter must be byte-string')
         self._private_key = private_key
@@ -63,88 +63,104 @@ class GitHub():
             f"/app/installations/{installation_id}/access_tokens",
             headers={
                 "Authorization": f"Bearer {app_token}",
-                "Accept": "application/vnd.github.v3+json"
-            })
+                "Accept": "application/vnd.github.v3+json",
+            },
+        )
 
         if not req.text.strip():
-            raise Exception("Not getting a json: code: %s reason: %s" %
-                            (req.status_code, req.reason))
+            raise Exception(
+                f"Not getting a json: code: {req.status_code} reason: {req.reason}"
+            )
         ret = req.json()
-        if 'token' not in ret:
-            raise Exception("Authentication errors: %s" % (req.text))
+        if "token" not in ret:
+            raise Exception(f"Authentication errors: {req.text}")
+        return ret["token"]
 
-        return ret['token']
-
-    def _request(self, method, url, headers={}, data={}):
-        if self.token and 'Authorization' not in headers:
+    def _request(self, method, url, headers=None, data=None):
+        headers = headers or {}
+        data = data or {}
+        if self.token and "Authorization" not in headers:
             headers.update({"Authorization": "Bearer " + self.token})
         if not url.startswith("http"):
             url = f"{self.github_api_url}{url}"
-        return requests.request(method,
-                                url,
-                                headers=headers,
-                                data=json.dumps(data))
+        return requests.request(method, url, headers=headers, data=json.dumps(data))
 
 
 def get_private_key(ns):
-    secret = subprocess.run(f"kubectl get secret {SECRET_NAME} -n{ns} -o json",
-                            shell=True,
-                            check=True,
-                            capture_output=True)
+    secret = subprocess.run(
+        f"kubectl get secret {SECRET_NAME} -n{ns} -o json",
+        shell=True,
+        check=True,
+        capture_output=True,
+    )
     jeez = json.loads(secret.stdout)
-    return (base64.b64decode(jeez["data"]["github-application-id"]).decode(),
-            base64.b64decode(jeez["data"]["github-private-key"]))
+    return (
+        base64.b64decode(jeez["data"]["github-application-id"]).decode(),
+        base64.b64decode(jeez["data"]["github-private-key"]),
+    )
 
 
 def main(args):
     if args.cache_file and os.path.exists(args.cache_file):
         mtime = os.path.getmtime(args.cache_file)
-        if datetime.datetime.fromtimestamp(mtime) < datetime.datetime.now(
-        ) - datetime.timedelta(seconds=args.token_expiration_time):
+        if datetime.datetime.fromtimestamp(
+            mtime
+        ) < datetime.datetime.now() - datetime.timedelta(
+            seconds=args.token_expiration_time
+        ):
             os.remove(args.cache_file)
         else:
-            print(open(args.cache_file).read())
-            return
+            print(pathlib.Path(args.cache_file).read_text(encoding="utf-8"))
 
     application_id, private_key = get_private_key(args.install_namespace)
-    github_app = GitHub(private_key,
-                        application_id,
-                        expiration_time=args.token_expiration_time,
-                        github_api_url=args.api_url,
-                        installation_id=args.installation_id)
+    github_app = GitHub(
+        private_key,
+        application_id,
+        expiration_time=args.token_expiration_time,
+        github_api_url=args.api_url,
+        installation_id=args.installation_id,
+    )
     print(github_app.token)
     if args.cache_file:
-        open(args.cache_file, "w").write(github_app.token)
+        print(
+            pathlib.Path(args.cache_file).write_text(github_app.token, encoding="utf-8")
+        )
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Generate a user token')
-    parser.add_argument("--token-expiration-time",
-                        type=int,
-                        help="Token expiration time (seconds)",
-                        default=EXPIRE_MINUTES_AS_SECONDS)
-    parser.add_argument("--installation-id",
-                        "-i",
-                        type=int,
-                        help="Installation_ID",
-                        required=True)
-    parser.add_argument("-n",
-                        "--install-namespace",
-                        help="Install Namespace",
-                        default=os.environ.get("PAC_NAMESPACE", NAMESPACE))
-    parser.add_argument("-a",
-                        "--api-url",
-                        help="Github API URL",
-                        default=os.environ.get("GITHUB_API_URL",
-                                               GITHUB_API_URL))
+    parser = argparse.ArgumentParser(description="Generate a user token")
+    parser.add_argument(
+        "--token-expiration-time",
+        type=int,
+        help="Token expiration time (seconds)",
+        default=EXPIRE_MINUTES_AS_SECONDS,
+    )
+    parser.add_argument(
+        "--installation-id", "-i", type=int, help="Installation_ID", required=True
+    )
+    parser.add_argument(
+        "-n",
+        "--install-namespace",
+        help="Install Namespace",
+        default=os.environ.get("PAC_NAMESPACE", NAMESPACE),
+    )
+    parser.add_argument(
+        "-a",
+        "--api-url",
+        help="Github API URL",
+        default=os.environ.get("GITHUB_API_URL", GITHUB_API_URL),
+    )
     parser.add_argument(
         "-c",
         "--cache-file",
-        help=("Cache file will only regenerate after the expiration time,"
-              " default: %d minutes") % (EXPIRE_MINUTES_AS_SECONDS / 60),
-        default=os.environ.get("GITHUBAPP_RESULT_PATH"))
+        help=(
+            f"Cache file will only regenerate after the expiration time, "
+            f"default: {EXPIRE_MINUTES_AS_SECONDS / 60} minutes"
+        ),
+        default=os.environ.get("GITHUBAPP_RESULT_PATH"),
+    )
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(parse_args())
