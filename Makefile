@@ -61,7 +61,7 @@ test-e2e:  test-e2e-cleanup ## run e2e tests
 	@go test $(GO_TEST_FLAGS) -timeout $(TIMEOUT_E2E)  -failfast -count=1 -tags=e2e $(GO_TEST_FLAGS) ./test
 
 .PHONY: lint
-lint: lint-go lint-yaml lint-md ## run all linters
+lint: lint-go lint-yaml lint-md lint-py ## run all linters
 
 .PHONY: pre-commit
 pre-commit: ## Run pre-commit hooks script manually

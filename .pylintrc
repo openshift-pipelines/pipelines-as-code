@@ -1,0 +1,3 @@
+[MESSAGES CONTROL]
+enable=c-extension-no-member
+disable=C0301,R0914,W0511,too-many-branches,too-many-statements,too-many-branches,broad-except,too-many-arguments,unsubscriptable-object,missing-function-docstring,missing-class-docstring,invalid-name,missing-module-docstring,import-error
