@@ -50,3 +50,13 @@ There is a few things you can configure through the configmap
 
   This will provide us to give extra IPS (ie: 127.0.0.1) or networks (127.0.0.0/16)
   separated by commas.
+
+* `max-keep-run-upper-limit`
+
+  This let the user define a max limit for the max-keep-run value. When the user has defined a max-keep-run annotation
+  on a pipelineRun then its value should be less than or equal to the upper limit, otherwise upper limit will be used for cleanup.
+
+* `default-max-keep-runs`
+
+  This allows user to define a default limit for max-keep-run value. If defined then it's applied to all the pipelineRun
+  which do not have `max-keep-runs` annotation.

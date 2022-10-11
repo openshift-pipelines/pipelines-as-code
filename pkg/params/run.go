@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
@@ -123,6 +124,20 @@ func (r *Run) UpdatePACInfo(ctx context.Context) error {
 
 	if sourceIP, ok := cfg.Data["bitbucket-cloud-additional-source-ip"]; ok {
 		r.Info.Pac.BitbucketCloudAdditionalSourceIP = sourceIP
+	}
+
+	if runs, ok := cfg.Data["max-keep-run-upper-limit"]; ok && runs != "" {
+		r.Info.Pac.MaxKeepRunsUpperLimit, err = strconv.Atoi(runs)
+		if err != nil {
+			return fmt.Errorf("failed to convert max-keep-run-upper-limit value to int: %w", err)
+		}
+	}
+
+	if runs, ok := cfg.Data["default-max-keep-runs"]; ok && runs != "" {
+		r.Info.Pac.DefaultMaxKeepRuns, err = strconv.Atoi(runs)
+		if err != nil {
+			return fmt.Errorf("failed to convert default-max-keep-run value to int: %w", err)
+		}
 	}
 
 	return nil

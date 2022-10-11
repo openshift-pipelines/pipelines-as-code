@@ -42,6 +42,14 @@ data:
   # Add extra IPS (ie: 127.0.0.1) or networks (127.0.0.0/16) separated by commas.
   bitbucket-cloud-additional-source-ip: ""
 
+  # max-keep-run-upper-limit defines the upper limit for max-keep-run annotation value which a user can set on
+  # pipelineRun. the value set on annotation should be less than or equal to the upper limit otherwise
+  # the upper limit will be used while cleaning up
+  max-keep-run-upper-limit: ""
+
+  # if defined then applies to all pipelineRun who doesn't have max-keep-runs annotation
+  default-max-keep-runs: ""
+
 kind: ConfigMap
 metadata:
   name: pipelines-as-code

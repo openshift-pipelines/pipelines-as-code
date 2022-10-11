@@ -8,15 +8,17 @@ import (
 )
 
 type PacOpts struct {
-	LogURL             string
-	ApplicationName    string // the Application Name for example "Pipelines as Code"
-	SecretAutoCreation bool   // secret auto creation in target namespace
-	WebhookType        string
-	PayloadFile        string
-	TektonDashboardURL string
-	HubURL             string
-	HubCatalogName     string
-	RemoteTasks        bool
+	LogURL                string
+	ApplicationName       string // the Application Name for example "Pipelines as Code"
+	SecretAutoCreation    bool   // secret auto creation in target namespace
+	WebhookType           string
+	PayloadFile           string
+	TektonDashboardURL    string
+	HubURL                string
+	HubCatalogName        string
+	RemoteTasks           bool
+	MaxKeepRunsUpperLimit int
+	DefaultMaxKeepRuns    int
 
 	// bitbucket cloud specific fields
 	BitbucketCloudCheckSourceIP      bool
