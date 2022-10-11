@@ -74,6 +74,9 @@ rules:
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["create"]
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
