@@ -115,7 +115,7 @@ spec:
               "--saveDir",
               "/tmp/save",
               "VAR_GITEA_SMEE_HOOK_URL",
-              "http://pipelines-as-code-controller.pipelines-as-code:8080",
+              "VAR_URL",
             ]
 
 ---
