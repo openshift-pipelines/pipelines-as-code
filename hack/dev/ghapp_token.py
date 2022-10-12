@@ -35,7 +35,8 @@ class GitHub:
         self.github_api_url = github_api_url
         self.token = self._get_token(installation_id)
 
-    def _load_private_key(self, pem_key_bytes):
+    @classmethod
+    def _load_private_key(cls, pem_key_bytes):
         return jwk.JWK.from_pem(pem_key_bytes)
 
     def _app_token(self):
