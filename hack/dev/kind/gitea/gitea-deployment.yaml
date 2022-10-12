@@ -48,6 +48,9 @@ data:
     PROVIDER_CONFIG = /home/gitea/sessions
     PROVIDER        = file
 
+    [webhook]
+    ALLOWED_HOST_LIST = internal, external, *
+
     [picture]
     AVATAR_UPLOAD_PATH            = /home/gitea/avatars
     REPOSITORY_AVATAR_UPLOAD_PATH = /home/gitea/repo-avatars
