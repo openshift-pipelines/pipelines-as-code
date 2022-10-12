@@ -692,8 +692,8 @@ github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PK
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stvp/go-udp-testing v0.0.0-20201019212854-469649b16807/go.mod h1:7jxmlfBCDBXRzr0eAQJ48XC1hBu1np4CS5+cHEYfwpc=
 github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69rRypqCw=
-github.com/tektoncd/pipeline v0.40.0 h1:g1xbNA/IvLK2eH0AaAqX8InxbyF03y49pEKhVaqARR4=
-github.com/tektoncd/pipeline v0.40.0/go.mod h1:DqabXb6NBN/CMMZn20UXiGkdHEgMfRDvh2r6g/YEQ50=
+github.com/tektoncd/pipeline v0.40.2 h1:g6coLeFihS6LNhUzgk9P/1ED4oJZGU/Q2749xsHjKJs=
+github.com/tektoncd/pipeline v0.40.2/go.mod h1:DqabXb6NBN/CMMZn20UXiGkdHEgMfRDvh2r6g/YEQ50=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/urfave/cli/v2 v2.3.0/go.mod h1:LJmUH05zAU44vOAcrfzZQKsZbVcdbOG8rtL3/XcUArI=
