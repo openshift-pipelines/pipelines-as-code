@@ -25,7 +25,7 @@ import (
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gopkg.in/yaml.v2"
 	"gotest.tools/v3/assert"
@@ -83,7 +83,7 @@ func TestGiteaBadYaml(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 	ctx := context.Background()
 
-	assert.NilError(t, wait.RegexpMatchingInPodLog(ctx, topts.Clients, "app.kubernetes.io/component=controller", "pac-controller", *regexp.MustCompile(
+	assert.NilError(t, twait.RegexpMatchingInPodLog(ctx, topts.Clients, "app.kubernetes.io/component=controller", "pac-controller", *regexp.MustCompile(
 		fmt.Sprintf("PipelineRun pr-bad-format-%s- has failed:.*validation failed", topts.TargetNS)),
 		10))
 }
@@ -303,10 +303,20 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
 	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
 
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       topts.PullRequest.Head.Sha,
+	}
+	err := twait.UntilRepositoryUpdated(context.Background(), topts.Clients.Clients, waitOpts)
+	assert.NilError(t, err)
+
 	prs, err := topts.Clients.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 
-	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun")
+	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", prs.Items)
 }
 
 func TestGiteaPush(t *testing.T) {
