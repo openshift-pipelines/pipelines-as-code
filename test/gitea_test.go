@@ -315,6 +315,8 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 	err := twait.UntilRepositoryUpdated(context.Background(), topts.Clients.Clients, waitOpts)
 	assert.NilError(t, err)
 
+	time.Sleep(15 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+
 	prs, err := topts.Clients.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 
