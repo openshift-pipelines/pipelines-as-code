@@ -74,7 +74,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 
 	cleanup := func() {
 		if os.Getenv("TEST_NOCLEANUP") != "true" {
-			defer TearDown(ctx, t, topts.Clients, topts.TargetNS)
+			defer TearDown(ctx, t, topts)
 		}
 	}
 	err = CreateCRD(ctx, topts)
