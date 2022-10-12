@@ -21,26 +21,25 @@ import (
 )
 
 type TestOpts struct {
-	NoCleanup               bool
-	TargetNS                string
-	TargetEvent             string
-	Regexp                  *regexp.Regexp
-	YAMLFiles               map[string]string
-	CheckForStatus          string
-	TargetRefName           string
-	CheckForNumberStatus    int
-	ConcurrencyLimit        *int
-	Clients                 *params.Run
-	GiteaCNX                pgitea.Provider
-	Opts                    options.E2E
-	PullRequest             *gitea.PullRequest
-	DefaultBranch           string
-	GitCloneURL             string
-	GitHTMLURL              string
-	GiteaAPIURL             string
-	GiteaPassword           string
-	ExpectEvents            bool
-	WaitForResourceCreation bool
+	NoCleanup            bool
+	TargetNS             string
+	TargetEvent          string
+	Regexp               *regexp.Regexp
+	YAMLFiles            map[string]string
+	CheckForStatus       string
+	TargetRefName        string
+	CheckForNumberStatus int
+	ConcurrencyLimit     *int
+	Clients              *params.Run
+	GiteaCNX             pgitea.Provider
+	Opts                 options.E2E
+	PullRequest          *gitea.PullRequest
+	DefaultBranch        string
+	GitCloneURL          string
+	GitHTMLURL           string
+	GiteaAPIURL          string
+	GiteaPassword        string
+	ExpectEvents         bool
 }
 
 func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
@@ -61,7 +60,9 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
 	hookURL := os.Getenv("TEST_GITEA_SMEEURL")
 
-	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	if topts.TargetRefName == "" {
+		topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	}
 	if topts.TargetNS == "" {
 		topts.TargetNS = topts.TargetRefName
 	}
@@ -87,12 +88,6 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	assert.NilError(t, err)
 	topts.GitCloneURL = url
 	PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
-	// in case of some test we create resources before creating pull req
-	// for eg. ClusterTask test, pipeline is getting executed before ClusterTask
-	// is getting created, this is to add some delay in case of that test
-	if topts.WaitForResourceCreation {
-		time.Sleep(time.Second * 5)
-	}
 	pr, _, err := giteacnx.Client.CreatePullRequest(opts.Organization, repoInfo.Name, gitea.CreatePullRequestOption{
 		Title: "Test Pull Request - " + topts.TargetRefName,
 		Head:  topts.TargetRefName,
