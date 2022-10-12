@@ -316,7 +316,7 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 	prs, err := topts.Clients.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 
-	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", prs.Items)
+	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
 }
 
 func TestGiteaPush(t *testing.T) {

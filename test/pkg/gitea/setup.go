@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	"gotest.tools/v3/assert"
 )
 
 func CreateProvider(ctx context.Context, giteaURL, user, password string) (gitea.Provider, error) {
@@ -74,6 +75,8 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitea.Provider, error
 	return run, e2eoptions, gprovider, nil
 }
 
-func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, targetNS string) {
-	repository.NSTearDown(ctx, t, runcnx, targetNS)
+func TearDown(ctx context.Context, t *testing.T, topts *TestOpts) {
+	repository.NSTearDown(ctx, t, topts.Clients, topts.TargetNS)
+	_, err := topts.GiteaCNX.Client.DeleteRepo(topts.Opts.Organization, topts.TargetRefName)
+	assert.NilError(t, err)
 }
