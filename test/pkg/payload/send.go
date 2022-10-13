@@ -6,6 +6,7 @@ import (
 	"crypto/hmac"
 	"io"
 	"os"
+	"strings"
 
 	//nolint:gosec
 	"crypto/sha1"
@@ -42,12 +43,19 @@ func Send(ctx context.Context, cs *params.Run, elURL, elWebHookSecret, githubURL
 	req.Header.Set("X-Hub-Signature-256", fmt.Sprintf("sha256=%s", sha256secret))
 	req.Header.Set("X-GitHub-Hook-Installation-Target-Type", "integration")
 	req.Header.Set("X-GitHub-Hook-Installation-Target-ID", installationID)
-	cs.Clients.Log.Infof("Sending a payload directly to the EL on %s: %s headers: %+v", os.Getenv("TEST_EL_URL"), string(jeez), req.Header)
-	u, err := url.Parse(githubURL)
-	if err != nil {
-		return err
+	hostURL := githubURL
+	if strings.HasPrefix(hostURL, "http") {
+		parsed, err := url.Parse(githubURL)
+		if err != nil {
+			return err
+		}
+		hostURL = parsed.Host
 	}
-	req.Header.Set("X-GitHub-Enterprise-Host", u.Host)
+	if hostURL != "github.com" {
+		req.Header.Set("X-GitHub-Enterprise-Host", hostURL)
+	}
+
+	cs.Clients.Log.Infof("Sending a payload directly to the EL on %s: %s headers: %+v", os.Getenv("TEST_EL_URL"), string(jeez), req.Header)
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
