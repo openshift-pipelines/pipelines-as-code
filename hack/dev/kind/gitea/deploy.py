@@ -86,12 +86,12 @@ class ProvisionGitea:
 
     @classmethod
     def create_user_in_pod(cls):
-        subprocess.run(
-            f"/bin/sh -c \"kubectl -n {GITEA_NS} exec $(kubectl -n {GITEA_NS} get pod --field-selector=status.phase==Running  -l app=gitea -o name|sed 's,.*/,,') --  /bin/bash -c './gitea -c /home/gitea/conf/app.ini admin  user  list|grep -w pac || ./gitea -c /home/gitea/conf/app.ini admin user create --username pac --password pac --admin --access-token --email pac@pac.com'\"",
-            shell=True,
-            check=True,
-            stdout=subprocess.DEVNULL,
-        )
+        cmd = f"/bin/sh -c \"kubectl -n {GITEA_NS} exec $(kubectl -n {GITEA_NS} get pod --field-selector=status.phase==Running  -l app=gitea -o name|sed 's,.*/,,') --  /bin/bash -c './gitea -c /home/gitea/conf/app.ini admin  user  list|grep -w pac || ./gitea -c /home/gitea/conf/app.ini admin user create --username {GITEA_USER} --password {GITEA_PASSWORD} --admin --access-token --email pac@pac.com'\""
+        try:
+            subprocess.run(cmd, shell=True, check=True, stdout=subprocess.DEVNULL)
+        except subprocess.CalledProcessError:
+            print(f"cannot run cmd: {cmd}")
+            sys.exit(1)
 
     def create_user_in_gitea(self):
         data_user = {
