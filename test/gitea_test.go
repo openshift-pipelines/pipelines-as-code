@@ -430,16 +430,16 @@ func TestGiteaWithCLI(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 	output, err := tknpactest.ExecCommand(topts.Clients, tknpaclist.Root, "pipelinerun", "list", "-n", topts.TargetNS)
 	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "Succeeded   pac-e2e-test-"), "should have a successful pipelinerun in CLI listing")
+	assert.Assert(t, strings.Contains(output, "Succeeded   pac-e2e-test-"), "should have a successful pipelinerun in CLI listing: %s", output)
 
 	output, err = tknpactest.ExecCommand(topts.Clients, tknpacdesc.Root, "-n", topts.TargetNS)
 	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "Succeeded"), "should have a successful pipelinerun in CLI describe and auto select the first one")
+	assert.Assert(t, strings.Contains(output, "Succeeded"), "should have a Succeeded pipelinerun in CLI describe and auto select the first one: %s", output)
 
 	output, err = tknpactest.ExecCommand(topts.Clients, tknpacdelete.Root, "-n", topts.TargetNS, "repository", topts.TargetNS, "--cascade")
 	assert.NilError(t, err)
 	expectedOutput := fmt.Sprintf("secret gitea-secret has been deleted\nrepository %s has been deleted\n", topts.TargetNS)
-	assert.Assert(t, output == expectedOutput, topts.TargetRefName, "delete command should have output ", expectedOutput)
+	assert.Assert(t, output == expectedOutput, topts.TargetRefName, "delete command should have this output: %s received: %s", expectedOutput, output)
 }
 
 func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
