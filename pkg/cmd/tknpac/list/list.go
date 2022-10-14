@@ -2,18 +2,25 @@ package list
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"text/tabwriter"
+	"text/template"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/juju/ansiterm"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+//go:embed template/list.tmpl
+var lsTmpl string
 
 var (
 	header            = "STATUS\tNAME\tAGE\tURL"
@@ -80,7 +87,21 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, cw clockwork.Clock, selectors string, noheaders bool) error {
+func formatStatus(status *v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock, ns string, showNamespace bool) string {
+	if status == nil {
+		return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", cs.Dimmed("---"), cs.Dimmed("---"), cs.Dimmed("---"), cs.Dimmed("---"), cs.Dimmed("NORUN"))
+	}
+	s := fmt.Sprintf("%s\t%s\t%s",
+		cs.HyperLink(formatting.ShortSHA(*status.SHA), *status.SHAURL),
+		formatting.Age(status.StartTime, c),
+		formatting.Duration(status.StartTime, status.CompletionTime))
+	if showNamespace {
+		s = fmt.Sprintf("%s\t%s", s, ns)
+	}
+	return fmt.Sprintf("%s\t%s", s, cs.HyperLink(cs.ColorStatus(status.Status.Conditions[0].Reason), *status.LogURL))
+}
+
+func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, clock clockwork.Clock, selectors string, noheaders bool) error {
 	if opts.Namespace != "" {
 		cs.Info.Kube.Namespace = opts.Namespace
 	}
@@ -96,30 +117,45 @@ func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *
 		return err
 	}
 
+	type repoStatusInfo struct {
+		Status               *v1alpha1.RepositoryRunStatus
+		Name, Namespace, URL string
+	}
+	repoStatuses := []repoStatusInfo{}
+	for _, repo := range repositories.Items {
+		rs := repoStatusInfo{
+			Name:      repo.GetName(),
+			URL:       repo.Spec.URL,
+			Namespace: repo.GetNamespace(),
+		}
+		statuses := status.GetLivePRAndRepostatus(ctx, cs, &repo)
+		if statuses != nil && len(statuses) > 0 {
+			rs.Status = &statuses[0]
+		}
+		repoStatuses = append(repoStatuses, rs)
+	}
+
 	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
-
-	if !noheaders {
-		_, _ = fmt.Fprint(w, header)
-		if opts.AllNameSpaces {
-			fmt.Fprint(w, "\tNAMESPACE")
-		}
-		fmt.Fprint(w, "\n")
+	colorScheme := ioStreams.ColorScheme()
+	data := struct {
+		Statuses          []repoStatusInfo
+		ColorScheme       *cli.ColorScheme
+		Clock             clockwork.Clock
+		AllNamespacesFlag bool
+	}{
+		Statuses:          repoStatuses,
+		ColorScheme:       colorScheme,
+		Clock:             clock,
+		AllNamespacesFlag: opts.AllNameSpaces,
 	}
-	coscheme := ioStreams.ColorScheme()
-	for _, repository := range repositories.Items {
-		fmt.Fprintf(w, body,
-			formatting.ShowStatus(repository, coscheme),
-			coscheme.HyperLink(repository.GetName(), repository.Spec.URL),
-			formatting.ShowLastAge(repository, cw),
-			repository.Spec.URL)
-
-		if opts.AllNameSpaces {
-			fmt.Fprintf(w, "\t%s", repository.GetNamespace())
-		}
-
-		fmt.Fprint(w, "\n")
+	funcMap := template.FuncMap{
+		"formatStatus": formatStatus,
 	}
 
+	t := template.Must(template.New("LS Template").Funcs(funcMap).Parse(lsTmpl))
+	if err := t.Execute(w, data); err != nil {
+		return err
+	}
 	w.Flush()
 	return nil
 }

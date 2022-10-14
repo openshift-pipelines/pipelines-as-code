@@ -7,19 +7,17 @@ import (
 	"text/tabwriter"
 	"text/template"
 
-	"github.com/google/go-github/v47/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/juju/ansiterm"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	sortrepostatus "github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/spf13/cobra"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -165,7 +163,7 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		Clock       clockwork.Clock
 	}{
 		Repository:  repository,
-		Statuses:    getLivePRAndRepostatus(ctx, cs, repository),
+		Statuses:    status.GetLivePRAndRepostatus(ctx, cs, repository),
 		ColorScheme: colorScheme,
 		Clock:       clock,
 	}
@@ -178,40 +176,4 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 	}
 
 	return w.Flush()
-}
-
-func getLivePRAndRepostatus(ctx context.Context, cs *params.Run, repository *v1alpha1.Repository) []v1alpha1.RepositoryRunStatus {
-	repositorystatus := repository.Status
-	label := "pipelinesascode.tekton.dev/repository=" + repository.Name
-	prs, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repository.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: label,
-	})
-	if err != nil {
-		return sortrepostatus.RepositorySortRunStatus(repositorystatus)
-	}
-
-	for _, pr := range prs.Items {
-		logurl := cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName())
-		if pr.Status.Conditions == nil || len(pr.Status.Conditions) == 0 {
-			repositorystatus = convertPrStatusToRepositoryStatus(repositorystatus, pr, logurl)
-		} else if pr.Status.Conditions[0].Reason == tektonv1beta1.PipelineRunReasonRunning.String() {
-			repositorystatus = convertPrStatusToRepositoryStatus(repositorystatus, pr, logurl)
-		}
-	}
-
-	return sortrepostatus.RepositorySortRunStatus(repositorystatus)
-}
-
-func convertPrStatusToRepositoryStatus(repositorystatus []v1alpha1.RepositoryRunStatus, pr tektonv1beta1.PipelineRun, logurl string) []v1alpha1.RepositoryRunStatus {
-	return append(repositorystatus, v1alpha1.RepositoryRunStatus{
-		Status:          pr.Status.Status,
-		LogURL:          &logurl,
-		PipelineRunName: pr.GetName(),
-		StartTime:       pr.Status.StartTime,
-		SHA:             github.String(pr.GetLabels()["pipelinesascode.tekton.dev/sha"]),
-		SHAURL:          github.String(pr.GetAnnotations()["pipelinesascode.tekton.dev/sha-url"]),
-		Title:           github.String(pr.GetAnnotations()["pipelinesascode.tekton.dev/sha-title"]),
-		TargetBranch:    github.String(pr.GetLabels()["pipelinesascode.tekton.dev/branch"]),
-		EventType:       github.String(pr.GetLabels()["pipelinesascode.tekton.dev/event-type"]),
-	})
 }
