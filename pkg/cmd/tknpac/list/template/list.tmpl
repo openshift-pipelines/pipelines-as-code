@@ -1,0 +1,4 @@
+  {{ $.ColorScheme.Underline "NAME" }}	{{ $.ColorScheme.Underline "SHA" }}	{{ $.ColorScheme.Underline "STARTED" }}	{{ $.ColorScheme.Underline "DURATION" }}{{- if $.AllNamespacesFlag }}	{{$.ColorScheme.Underline "NAMESPACE"}}{{- end }} 	{{ $.ColorScheme.Underline "STATUS" }}
+{{- range $st:= .Statuses }}
+• {{ $.ColorScheme.HyperLink $st.Name $st.URL }} 	{{ formatStatus $st.Status $.ColorScheme $.Clock $st.Namespace $.AllNamespacesFlag }}
+{{- end }}
