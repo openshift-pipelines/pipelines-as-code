@@ -60,3 +60,23 @@ There is a few things you can configure through the configmap
 
   This allows user to define a default limit for max-keep-run value. If defined then it's applied to all the pipelineRun
   which do not have `max-keep-runs` annotation.
+  
+## Pipelines-As-Code Info
+  
+  There are a settings exposed through a configmap which any authenticated user can access to know about
+  Pipeline as Code.
+
+* `version`
+  
+  The version of Pipelines As Code installed.
+
+* `controller-url`
+
+  The controller URL as set by the `tkn pac bootstrap` command while setting up the GitHub App or if Pipelines as code is installed
+  using OpenShift Pipelines Operator then the operator sets the route created for the controller. This field is also used to detect the controller
+  URL in `setup webhook` commands.
+
+* `provider`
+
+  The provider is set to `GitHub App` by tkn pac bootstrap command and is used to detect if a GitHub App is already configured when a user runs the
+  bootstrap command a second time or the `setup github-webhook` command.
