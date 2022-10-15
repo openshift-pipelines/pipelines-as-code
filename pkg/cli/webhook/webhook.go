@@ -28,6 +28,7 @@ type Options struct {
 	RepositoryURL       string
 	ProviderAPIURL      string
 	ControllerURL       string
+	WebhookSecret       string
 	repositoryName      string
 	repositoryNamespace string
 }

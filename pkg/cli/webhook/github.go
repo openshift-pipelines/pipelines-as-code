@@ -2,8 +2,6 @@ package webhook
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 	"golang.org/x/oauth2"
 )
 
@@ -31,7 +30,7 @@ type gitHubConfig struct {
 }
 
 func (gh *gitHubConfig) Run(ctx context.Context, opts *Options) (*response, error) {
-	err := gh.askGHWebhookConfig(opts.RepositoryURL, opts.ControllerURL, opts.ProviderAPIURL)
+	err := gh.askGHWebhookConfig(opts.RepositoryURL, opts.ControllerURL, opts.ProviderAPIURL, opts.WebhookSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +43,7 @@ func (gh *gitHubConfig) Run(ctx context.Context, opts *Options) (*response, erro
 	}, gh.create(ctx)
 }
 
-func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string) error {
+func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL, webhookSecret string) error {
 	if repoURL == "" {
 		msg := "Please enter the git repository url you want to be configured: "
 		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repoURL,
@@ -96,15 +95,14 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL string
 		}
 	}
 
-	RandomCrypto, randErr := rand.Prime(rand.Reader, 16)
-	if randErr != nil {
-		return randErr
+	if webhookSecret == "" {
+		gh.webhookSecret, err = random.CryptoString(16)
+		if err != nil {
+			return err
+		}
+	} else {
+		gh.webhookSecret = webhookSecret
 	}
-	data, marshalErr := json.Marshal(RandomCrypto)
-	if marshalErr != nil {
-		return marshalErr
-	}
-	gh.webhookSecret = string(data)
 
 	fmt.Fprintln(gh.IOStream.Out, "ℹ ️You now need to create a GitHub personal access token, please checkout the docs at https://is.gd/KJ1dDH for the required scopes")
 	if err := prompt.SurveyAskOne(&survey.Password{

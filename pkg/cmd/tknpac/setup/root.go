@@ -12,6 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	webhookSecret string
+)
+
 func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "setup",
@@ -27,6 +31,7 @@ func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd.AddCommand(githubWebhookCommand(clients, ioStreams))
 	cmd.AddCommand(gitlabWebhookCommand(clients, ioStreams))
 	cmd.AddCommand(bitbucketCloudWebhookCommand(clients, ioStreams))
+
 	return cmd
 }
 
@@ -47,17 +52,13 @@ func buildProviderCommand(run *params.Run, ioStreams *cli.IOStreams, provider st
 			if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 				return err
 			}
-
-			if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
-				return err
-			}
-
 			config := &webhook.Options{
 				Run:            run,
 				PACNamespace:   pacNamespace,
 				RepositoryURL:  gitInfo.URL,
 				ProviderAPIURL: providerURL,
 				IOStreams:      ioStreams,
+				WebhookSecret:  webhookSecret,
 			}
 
 			return config.Install(ctx, provider)
@@ -66,6 +67,8 @@ func buildProviderCommand(run *params.Run, ioStreams *cli.IOStreams, provider st
 			"commandType": "main",
 		},
 	}
+
+	cmd.Flags().StringVarP(&webhookSecret, "webhook-secret", "", "", "Value to be used as webhook secret")
 	cmd.PersistentFlags().StringVarP(&pacNamespace, "pac-namespace", "", "", "The namespace where pac is installed")
 	cmd.PersistentFlags().StringVarP(&providerURL, fmt.Sprintf("%s-api-url", provider),
 		"", "", fmt.Sprintf("%s Enterprise API URL", strings.ToTitle(provider)))

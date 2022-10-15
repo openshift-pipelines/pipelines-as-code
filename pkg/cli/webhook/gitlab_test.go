@@ -58,7 +58,7 @@ func TestAskGLWebhookConfig(t *testing.T) {
 				tt.askStubs(as)
 			}
 			gl := gitLabConfig{IOStream: io}
-			err := gl.askGLWebhookConfig(tt.repoURL, tt.controllerURL, tt.providerURL)
+			err := gl.askGLWebhookConfig(tt.repoURL, tt.controllerURL, tt.providerURL, "")
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
 				return

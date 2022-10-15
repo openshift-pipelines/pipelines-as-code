@@ -2,6 +2,7 @@ package random
 
 import (
 	"crypto/rand"
+	"encoding/json"
 )
 
 const (
@@ -33,4 +34,17 @@ func secureRandomBytes(length int) []byte {
 	randomBytes := make([]byte, length)
 	_, _ = rand.Read(randomBytes)
 	return randomBytes
+}
+
+// CryptoString returns a random numeric string of the requested length
+func CryptoString(bits int) (string, error) {
+	RandomCrypto, randErr := rand.Prime(rand.Reader, bits)
+	if randErr != nil {
+		return "", randErr
+	}
+	data, marshalErr := json.Marshal(RandomCrypto)
+	if marshalErr != nil {
+		return "", marshalErr
+	}
+	return string(data), nil
 }
