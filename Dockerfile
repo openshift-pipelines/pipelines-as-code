@@ -1,10 +1,11 @@
-FROM mirror.gcr.io/library/golang:1.18 AS builder
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/library/golang:1.18 AS builder
 
 ARG BINARY_NAME=pipelines-as-code-controller
+ARG TARGETARCH
 COPY . /src
 WORKDIR /src
 RUN \
-    make /tmp/${BINARY_NAME} LDFLAGS="-s -w" OUTPUT_DIR=/tmp
+    make /tmp/${BINARY_NAME} TARGETARCH=${TARGETARCH} LDFLAGS="-s -w" OUTPUT_DIR=/tmp
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal
 

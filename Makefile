@@ -2,6 +2,7 @@ TARGET_NAMESPACE=pipelines-as-code
 GOLANGCI_LINT=golangci-lint
 GOFUMPT=gofumpt
 LDFLAGS=
+TARGETARCH ?= amd64
 OUTPUT_DIR=bin
 GO           = go
 TIMEOUT_UNIT = 5m
@@ -29,7 +30,7 @@ vendor:
 	@go mod tidy -compat=1.17 && go mod vendor
 
 $(OUTPUT_DIR)/%: cmd/% FORCE
-	go build -mod=vendor $(FLAGS)  -v -o $@ ./$<
+	GOARCH=$(TARGETARCH) go build -mod=vendor $(FLAGS)  -v -o $@ ./$<
 
 check: lint test
 
