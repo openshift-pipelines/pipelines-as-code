@@ -132,7 +132,7 @@ spec:
           name: send-slack-notification
         params:
           - name: log_url
-            value: "https://console-openshift-console.apps.paac.devcluster.openshift.com"
+            value: "https://console-openshift-console.apps.psipac.ospqa.com"
           - name: openshift
             value: "true"
   workspaces:
@@ -143,4 +143,4 @@ spec:
             - ReadWriteOnce
           resources:
             requests:
-              storage: 2Gi
+              storage: 5Gi

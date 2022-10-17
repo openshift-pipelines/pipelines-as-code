@@ -26,6 +26,7 @@ type TestOpts struct {
 	TargetEvent          string
 	Regexp               *regexp.Regexp
 	YAMLFiles            map[string]string
+	ExtraArgs            map[string]string
 	CheckForStatus       string
 	TargetRefName        string
 	CheckForNumberStatus int
@@ -59,7 +60,9 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	topts.Opts = opts
 	assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
 	hookURL := os.Getenv("TEST_GITEA_SMEEURL")
-
+	if topts.ExtraArgs == nil {
+		topts.ExtraArgs = map[string]string{}
+	}
 	if topts.TargetRefName == "" {
 		topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
 	}
@@ -81,7 +84,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	err = CreateCRD(ctx, topts)
 	assert.NilError(t, err)
 
-	entries, err := payload.GetEntries(topts.YAMLFiles, topts.TargetNS, repoInfo.DefaultBranch, topts.TargetEvent)
+	entries, err := payload.GetEntries(topts.YAMLFiles, topts.TargetNS, repoInfo.DefaultBranch, topts.TargetEvent, topts.ExtraArgs)
 	assert.NilError(t, err)
 
 	url, err := MakeGitCloneURL(repoInfo.CloneURL, os.Getenv("TEST_GITEA_USERNAME"), os.Getenv("TEST_GITEA_PASSWORD"))
