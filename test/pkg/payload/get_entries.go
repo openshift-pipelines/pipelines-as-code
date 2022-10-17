@@ -9,7 +9,14 @@ import (
 	"text/template"
 )
 
-func GetEntries(yamlfile map[string]string, targetNS, targetBranch, targetEvent string) (map[string]string, error) {
+func vinceMap(a map[string]string, b map[string]string) map[string]string {
+	for k, v := range b {
+		a[k] = v
+	}
+	return a
+}
+
+func GetEntries(yamlfile map[string]string, targetNS, targetBranch, targetEvent string, extraParams map[string]string) (map[string]string, error) {
 	params := map[string]string{
 		"TargetNamespace": targetNS,
 		"TargetBranch":    targetBranch,
@@ -18,8 +25,11 @@ func GetEntries(yamlfile map[string]string, targetNS, targetBranch, targetEvent 
 	entries := map[string]string{}
 	for target, file := range yamlfile {
 		name := strings.TrimSuffix(filepath.Base(target), filepath.Ext(target))
-		params["PipelineName"] = name
-		output, err := ApplyTemplate(file, params)
+		extraParams["PipelineName"] = name
+		// PipelineName can be overridden by extraParams
+		newParams := vinceMap(params, extraParams)
+
+		output, err := ApplyTemplate(file, newParams)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read yaml file: %w", err)
 		}
