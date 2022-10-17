@@ -10,7 +10,7 @@ on:
       - "go.sum"
       - "!docs/**"
     tags-ignore:
-      - '*.*'
+      - "*.*"
     branches:
       - main
   pull_request_target:
@@ -98,28 +98,35 @@ jobs:
 
       - name: Run E2E Tests
         run: |
+          export TEST_GITHUB_PRIVATE_TASK_URL="https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-webhook/blob/main/testdatas/remote_task.yaml"
+          export TEST_GITHUB_PRIVATE_TASK_NAME="task-remote""
+
+          export GO_TEST_FLAGS="-v -race -failfast"
+
+          export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0
+          export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=chmouelb/pac-e2e-test
+          export TEST_BITBUCKET_CLOUD_TOKEN=${{ secrets.BITBUCKET_CLOUD_TOKEN }}
+          export TEST_BITBUCKET_CLOUD_USER=chmouelb
+
+          export TEST_EL_URL="http://${CONTROLLER_DOMAIN_URL}"
+          export TEST_EL_WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"
+
+          export TEST_GITEA_API_URL="http://localhost:3000"
+          export TEST_GITEA_PASSWORD=pac
+          export TEST_GITEA_REPO_OWNER=pac/pac
+          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
+          export TEST_GITEA_USERNAME=pac
+
           export TEST_GITHUB_API_URL=api.github.com
+          export TEST_GITHUB_REPO_INSTALLATION_ID="${{ secrets.INSTALLATION_ID }}"
           export TEST_GITHUB_REPO_OWNER_GITHUBAPP=openshift-pipelines/pipelines-as-code-e2e-tests
           export TEST_GITHUB_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
           export TEST_GITHUB_TOKEN="${{ secrets.GH_APPS_TOKEN }}"
-          export TEST_EL_WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"
-          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
-          export TEST_GITHUB_REPO_INSTALLATION_ID="${{ secrets.INSTALLATION_ID }}"
-          export TEST_EL_URL="http://${CONTROLLER_DOMAIN_URL}"
-          export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0
-          export TEST_BITBUCKET_CLOUD_USER=chmouelb
-          export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=chmouelb/pac-e2e-test
-          export TEST_BITBUCKET_CLOUD_TOKEN=${{ secrets.BITBUCKET_CLOUD_TOKEN }}
-          # https://gitlab.com/gitlab-com/alliances/ibm-red-hat/sandbox/openshift-pipelines/pac-e2e-tests
+
           export TEST_GITLAB_API_URL="https://gitlab.com"
           export TEST_GITLAB_PROJECT_ID="34405323"
           export TEST_GITLAB_TOKEN=${{ secrets.GITLAB_TOKEN }}
-          export TEST_GITEA_API_URL="http://localhost:3000"
-          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
-          export TEST_GITEA_PASSWORD=pac
-          export TEST_GITEA_USERNAME=pac
-          export TEST_GITEA_REPO_OWNER=pac/pac
-          export GO_TEST_FLAGS="-v -race"
+          # https://gitlab.com/gitlab-com/alliances/ibm-red-hat/sandbox/openshift-pipelines/pac-e2e-tests
           make test-e2e
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
@@ -128,11 +135,12 @@ jobs:
         run: |
           mkdir -p /tmp/logs
           kind export logs /tmp/logs
-          cp -a /tmp/gosmee-replay /tmp/logs/
+          [[ -d /tmp/gosmee-replay ]] && cp -a /tmp/gosmee-replay /tmp/logs/
 
           kubectl get pipelineruns -A -o yaml > /tmp/logs/pac-pipelineruns.yaml
           kubectl get repositories.pipelinesascode.tekton.dev -A -o yaml > /tmp/logs/pac-repositories.yaml
           kubectl get configmap -n pipelines-as-code -o yaml > /tmp/logs/pac-configmap
+          kubectl get events -A > /tmp/logs/events
 
       - name: Upload artifacts
         if: ${{ always() }}

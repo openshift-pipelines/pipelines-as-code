@@ -12,12 +12,15 @@ import (
 	"go.uber.org/zap"
 )
 
+var _ provider.Interface = (*TestProviderImp)(nil)
+
 type TestProviderImp struct {
-	AllowIT              bool
-	Event                *info.Event
-	TektonDirTemplate    string
-	CreateStatusErorring bool
-	FilesInsideRepo      map[string]string
+	AllowIT                bool
+	Event                  *info.Event
+	TektonDirTemplate      string
+	CreateStatusErorring   bool
+	FilesInsideRepo        map[string]string
+	WantProviderRemoteTask bool
 }
 
 func (v *TestProviderImp) SetLogger(logger *zap.SugaredLogger) {
@@ -52,6 +55,10 @@ func (v *TestProviderImp) IsAllowed(ctx context.Context, event *info.Event) (boo
 		return true, nil
 	}
 	return false, nil
+}
+
+func (v *TestProviderImp) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, task string) (bool, string, error) {
+	return v.WantProviderRemoteTask, "", nil
 }
 
 func (v *TestProviderImp) CreateStatus(ctx context.Context, _ versioned.Interface, event *info.Event, opts *info.PacOpts, statusOpts provider.StatusOpts) error {

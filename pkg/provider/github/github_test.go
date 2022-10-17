@@ -33,6 +33,66 @@ func getLogger() *zap.SugaredLogger {
 	return logger
 }
 
+func TestGithubSplitURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		url      string
+		wantOrg  string
+		wantRepo string
+		wantRef  string
+		wantPath string
+		wantErr  bool
+	}{
+		{
+			name:     "Split URL",
+			url:      "https://github.com/openshift-pipelines/pipelines-as-code/blob/main/testdatas/remote_task.yaml",
+			wantOrg:  "openshift-pipelines",
+			wantRepo: "pipelines-as-code",
+			wantRef:  "main",
+			wantPath: "testdatas/remote_task.yaml",
+		},
+		{
+			name:     "Split raw URL",
+			url:      "https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/main/testdatas/remote_task.yaml",
+			wantOrg:  "openshift-pipelines",
+			wantRepo: "pipelines-as-code",
+			wantRef:  "main",
+			wantPath: "testdatas/remote_task.yaml",
+		},
+		{
+			name:     "Split raw URL2",
+			url:      "https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/main/remote_task.yaml",
+			wantOrg:  "openshift-pipelines",
+			wantRepo: "pipelines-as-code",
+			wantRef:  "main",
+			wantPath: "remote_task.yaml",
+		},
+		{
+			name:    "Too small URL",
+			url:     "https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code",
+			wantErr: true,
+		},
+		{
+			name:    "Invalid no path URL",
+			url:     "https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/main",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			org, repo, path, ref, err := splitGithubURL(tt.url)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SplitURL() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, tt.wantOrg, org)
+			assert.Equal(t, tt.wantRepo, repo)
+			assert.Equal(t, tt.wantRef, ref)
+			assert.Equal(t, tt.wantPath, path)
+		})
+	}
+}
+
 func TestGetTektonDir(t *testing.T) {
 	testGetTektonDir := []struct {
 		treepath       string

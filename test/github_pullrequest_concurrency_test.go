@@ -19,6 +19,15 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
 func TestGithubPullRequestConcurrency(t *testing.T) {
 	ctx := context.Background()
 	label := "Github PullRequest Concurrent"
@@ -49,7 +58,7 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 		yamlFiles[fmt.Sprintf(".tekton/prlongrunnning-%d.yaml", i)] = "testdata/pipelinerun_long_running.yaml"
 	}
 
-	entries, err := payload.GetEntries(yamlFiles, targetNS, options.MainBranch, options.PullRequestEvent)
+	entries, err := payload.GetEntries(yamlFiles, targetNS, options.MainBranch, options.PullRequestEvent, map[string]string{})
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",
@@ -77,30 +86,36 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	}
 	assert.NilError(t, wait.UntilMinPRAppeared(ctx, runcnx.Clients, waitOpts, numberOfPipelineRuns))
 
-	finished := 1
 	runningChecks := 0
+	finishedArray := []string{}
 	for i := 0; i < 15; i++ {
 		checkruns, _, err := ghcnx.Client.Checks.ListCheckRunsForRef(ctx, opts.Organization, opts.Repo, targetRefName, &github.ListCheckRunsOptions{})
 		assert.NilError(t, err)
 		assert.Assert(t, *checkruns.Total >= numberOfPipelineRuns)
 		for _, checkrun := range checkruns.CheckRuns {
+			cname := checkrun.GetName()
 			switch {
 			case checkrun.GetStatus() != "completed" && checkrun.GetConclusion() != "success":
-				runcnx.Clients.Log.Infof("Waiting for CheckRun %s to be completed", checkrun.GetName())
+				runcnx.Clients.Log.Infof("Waiting for CheckRun %s to be completed", cname)
 			case checkrun.GetStatus() == "running":
 				runningChecks++
 			default:
-				finished++
+				// check if cname is in finishedArray
+				if !contains(finishedArray, cname) {
+					runcnx.Clients.Log.Infof("PipelineRun %s has finished %d/%d",
+						cname, len(finishedArray), numberOfPipelineRuns)
+					finishedArray = append(finishedArray, cname)
+				}
 			}
 		}
-		if finished != numberOfPipelineRuns {
-			if runningChecks > maxNumberOfConcurrentPipelineRuns {
-				runcnx.Clients.Log.Fatalf("Too many running checks %d our maxAmountOfConcurrentPRS == %d", runningChecks, numberOfPipelineRuns)
-			}
-			// it's high so we limit our ratelimitation
-			time.Sleep(30 * time.Second)
-		} else {
+		if len(finishedArray) == numberOfPipelineRuns {
 			break
 		}
+		if runningChecks > maxNumberOfConcurrentPipelineRuns {
+			runcnx.Clients.Log.Fatalf("Too many running checks %d our maxAmountOfConcurrentPRS == %d",
+				runningChecks, numberOfPipelineRuns)
+		}
+		// it's high so we limit our ratelimitation
+		time.Sleep(10 * time.Second)
 	}
 }

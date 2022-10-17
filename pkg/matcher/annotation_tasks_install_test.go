@@ -61,14 +61,15 @@ func TestMain(m *testing.M) {
 
 func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 	tests := []struct {
-		annotations     map[string]string
-		filesInsideRepo map[string]string
-		gotTaskName     string
-		name            string
-		remoteURLS      map[string]map[string]string
-		runevent        info.Event
-		wantErr         string
-		wantLog         string
+		annotations            map[string]string
+		filesInsideRepo        map[string]string
+		gotTaskName            string
+		name                   string
+		remoteURLS             map[string]map[string]string
+		runevent               info.Event
+		wantErr                string
+		wantLog                string
+		wantProviderRemoteTask bool
 	}{
 		{
 			name: "test-annotations-error-remote-http-not-k8",
@@ -82,6 +83,22 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				},
 			},
 			wantErr: "returning empty",
+		},
+		{
+			name: "test-good-coming-from-provider",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/task": "http://provider/remote.task",
+			},
+			wantProviderRemoteTask: true,
+			wantErr:                "returning empty",
+		},
+		{
+			name: "test-bad-coming-from-provider",
+			annotations: map[string]string{
+				pipelinesascode.GroupName + "/task": "http://provider/remote.task",
+			},
+			wantProviderRemoteTask: false,
+			wantErr:                "error getting remote task",
 		},
 		{
 			name: "test-annotations-remote-http",
@@ -218,7 +235,8 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				Run:    cs,
 				Logger: logger,
 				ProviderInterface: &provider.TestProviderImp{
-					FilesInsideRepo: tt.filesInsideRepo,
+					FilesInsideRepo:        tt.filesInsideRepo,
+					WantProviderRemoteTask: tt.wantProviderRemoteTask,
 				},
 				Event: &tt.runevent,
 			}

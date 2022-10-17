@@ -36,6 +36,7 @@ type Interface interface {
 	GetCommitInfo(context.Context, *info.Event) error
 	GetConfig() *info.ProviderConfig
 	GetFiles(context.Context, *info.Event) ([]string, error)
+	GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error)
 }
 
 const DefaultProviderAPIUser = "git"
