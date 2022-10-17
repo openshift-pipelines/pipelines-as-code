@@ -183,3 +183,25 @@ func (qm *QueueManager) RemoveRepository(repo *v1alpha1.Repository) {
 	repoKey := repoKey(repo)
 	delete(qm.queueMap, repoKey)
 }
+
+func (qm *QueueManager) QueuedPipelineRuns(repo *v1alpha1.Repository) []string {
+	qm.lock.Lock()
+	defer qm.lock.Unlock()
+
+	repoKey := repoKey(repo)
+	if sema, ok := qm.queueMap[repoKey]; ok {
+		return sema.getCurrentPending()
+	}
+	return []string{}
+}
+
+func (qm *QueueManager) RunningPipelineRuns(repo *v1alpha1.Repository) []string {
+	qm.lock.Lock()
+	defer qm.lock.Unlock()
+
+	repoKey := repoKey(repo)
+	if sema, ok := qm.queueMap[repoKey]; ok {
+		return sema.getCurrentRunning()
+	}
+	return []string{}
+}

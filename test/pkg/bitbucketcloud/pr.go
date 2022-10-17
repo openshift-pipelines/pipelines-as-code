@@ -21,7 +21,7 @@ func MakePR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Run,
 
 	entries, err := payload.GetEntries(
 		map[string]string{".tekton/pipelinerun.yaml": "testdata/pipelinerun.yaml"},
-		targetNS, options.MainBranch, options.PullRequestEvent)
+		targetNS, options.MainBranch, options.PullRequestEvent, map[string]string{})
 	assert.NilError(t, err)
 	tmpfile := fs.NewFile(t, "pipelinerun", fs.WithContent(entries[".tekton/pipelinerun.yaml"]))
 	defer tmpfile.Remove()

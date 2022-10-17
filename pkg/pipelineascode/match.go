@@ -151,9 +151,6 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	}
 	if pipelineRuns == nil {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
-		if err != nil {
-			msg += fmt.Sprintf(" err: %s", err.Error())
-		}
 		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, msg)
 		return nil, nil, nil
 	}

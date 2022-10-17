@@ -10,7 +10,7 @@ on:
       - "go.sum"
       - "!docs/**"
     tags-ignore:
-      - '*.*'
+      - "*.*"
     branches:
       - main
   pull_request_target:
@@ -98,6 +98,9 @@ jobs:
 
       - name: Run E2E Tests
         run: |
+          export TEST_GITHUB_PRIVATE_TASK_URL="https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-webhook/blob/main/testdatas/remote_task.yaml"
+          export TEST_GITHUB_PRIVATE_TASK_NAME="task-remote"
+
           export GO_TEST_FLAGS="-v -race -failfast"
 
           export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0

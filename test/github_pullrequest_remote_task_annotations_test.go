@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -28,11 +29,23 @@ func TestGithubPullRequestRemoteTaskAnnotations(t *testing.T) {
 	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
 	assert.NilError(t, err)
 
+	remoteTaskURL := options.RemoteTaskURL
+	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL") != "" {
+		remoteTaskURL = os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL")
+	}
+	remoteTaskName := options.RemoteTaskName
+	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_NAME") != "" {
+		remoteTaskName = os.Getenv("TEST_GITHUB_PRIVATE_TASK_NAME")
+	}
+
 	entries, err := payload.GetEntries(map[string]string{
 		".tekton/pr.yaml":                              "testdata/pipelinerun_remote_task_annotations.yaml",
 		".tekton/pipeline.yaml":                        "testdata/pipeline_in_tektondir.yaml",
 		".other-tasks/task-referenced-internally.yaml": "testdata/task_referenced_internally.yaml",
-	}, targetNS, options.MainBranch, options.PullRequestEvent)
+	}, targetNS, options.MainBranch, options.PullRequestEvent, map[string]string{
+		"RemoteTaskURL":  remoteTaskURL,
+		"RemoteTaskName": remoteTaskName,
+	})
 	assert.NilError(t, err)
 
 	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)

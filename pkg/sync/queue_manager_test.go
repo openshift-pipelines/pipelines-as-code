@@ -145,4 +145,11 @@ func TestQueueManager_InitQueues(t *testing.T) {
 	qm.RemoveFromQueue(repo, firstPR)
 	assert.Equal(t, sema.getCurrentRunning()[0], getQueueKey(thirdPR))
 	assert.Equal(t, sema.getCurrentPending()[0], getQueueKey(secondPR))
+
+	// list current running pipelineRuns for repo
+	runs := qm.RunningPipelineRuns(repo)
+	assert.Equal(t, len(runs), 1)
+	// list current pending pipelineRuns for repo
+	runs = qm.QueuedPipelineRuns(repo)
+	assert.Equal(t, len(runs), 1)
 }
