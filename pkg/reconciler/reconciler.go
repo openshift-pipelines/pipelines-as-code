@@ -2,6 +2,7 @@ package reconciler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -22,6 +23,8 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 )
@@ -257,27 +260,40 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 }
 
 func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun, state string) (*v1beta1.PipelineRun, error) {
-	maxRun := 10
-	for i := 0; i < maxRun; i++ {
-		newPr, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("cannot get pipeline: %w", err)
+	var patchedPR *v1beta1.PipelineRun
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		// patch new state
+		mergePatch := map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"labels": map[string]string{
+					filepath.Join(pipelinesascode.GroupName, "state"): state,
+				},
+			},
 		}
-
-		newPr = newPr.DeepCopy()
-		newPr.Labels[filepath.Join(pipelinesascode.GroupName, "state")] = state
-
+		// if state is started then remove pipelineRun pending status
 		if state == kubeinteraction.StateStarted {
-			newPr.Spec.Status = ""
+			mergePatch["spec"] = map[string]interface{}{
+				"status": "",
+			}
 		}
 
-		updatedPR, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(newPr.Namespace).Update(ctx, newPr, metav1.UpdateOptions{})
+		patch, err := json.Marshal(mergePatch)
 		if err != nil {
-			logger.Infof("could not update Pipelinerun with State change, retrying %v/%v: %v", newPr.GetNamespace(), newPr.GetName(), err)
-			continue
+			return err
 		}
-		logger.Infof("updated pac state in pipelinerun: %v/%v", updatedPR.Namespace, updatedPR.Name)
-		return updatedPR, nil
+
+		patchedPR, err = r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(pr.GetNamespace()).Patch(ctx, pr.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
+		if err != nil {
+			logger.Infof("Could not patch Pipelinerun with updated state, retrying %v/%v: %v", pr.GetNamespace(), pr.GetName(), err)
+			return err
+		}
+		logger.Infof("patched pac state to %v in pipelinerun: %v/%v", state, patchedPR.Namespace, patchedPR.Name)
+		return nil
+	})
+	if err != nil {
+		logger.Errorf("Could not patch pipelinerun, returning %v/%v: %v", pr.GetNamespace(), pr.GetName(), err)
+		return nil, err
 	}
-	return nil, nil
+
+	return patchedPR, nil
 }
