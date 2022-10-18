@@ -23,14 +23,14 @@ import (
 var lsTmpl string
 
 var (
-	header            = "STATUS\tNAME\tAGE\tURL"
-	body              = "%s\t%s\t%s\t%s"
 	allNamespacesFlag = "all-namespaces"
 	namespaceFlag     = "namespace"
+	useRealTimeFlag   = "use-realtime"
+	noHeadersFlag     = "no-headers"
 )
 
 func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
-	var noheaders, allNamespaces bool
+	var noheaders, useRealTime, allNamespaces bool
 	var selectors string
 
 	cmd := &cobra.Command{
@@ -49,6 +49,17 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			opts.UseRealTime, err = cmd.Flags().GetBool(useRealTimeFlag)
+			if err != nil {
+				return err
+			}
+
+			opts.NoHeaders, err = cmd.Flags().GetBool(noHeadersFlag)
+			if err != nil {
+				return err
+			}
+
 			opts.Namespace, err = cmd.Flags().GetString(namespaceFlag)
 			if err != nil {
 				return err
@@ -59,13 +70,15 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 			cw := clockwork.NewRealClock()
-			return list(ctx, run, opts, ioStreams, cw, selectors, noheaders)
+			return list(ctx, run, opts, ioStreams, cw, selectors)
 		},
 	}
 
-	cmd.PersistentFlags().BoolVarP(&allNamespaces, allNamespacesFlag, "A", false, "If present, "+
-		"list the repository across all namespaces. Namespace in current context is ignored even if specified with"+
-		" --namespace.")
+	cmd.PersistentFlags().BoolVarP(&allNamespaces, allNamespacesFlag, "A", false,
+		"list the repositories across all namespaces.")
+
+	cmd.PersistentFlags().BoolVarP(&useRealTime, useRealTimeFlag, "", false,
+		"display the time as RFC3339 instead of a relative time")
 
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
@@ -77,7 +90,7 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	)
 
 	cmd.Flags().BoolVar(
-		&noheaders, "no-headers", false, "don't print headers.")
+		&noheaders, noHeadersFlag, false, "don't print headers.")
 
 	cmd.Flags().StringVarP(&selectors, "selectors", "l",
 		"", "Selector (label query) to filter on, "+
@@ -87,21 +100,38 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func formatStatus(status *v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock, ns string, showNamespace bool) string {
+func formatStatus(status *v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock, ns string, opts *cli.PacCliOpts) string {
+	// TODO: we could make a hyperlink to the console namespace list of repo if
+	// we wanted to go the extra step
 	if status == nil {
-		return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", cs.Dimmed("---"), cs.Dimmed("---"), cs.Dimmed("---"), cs.Dimmed("---"), cs.Dimmed("NORUN"))
+		var nsStr string
+		if opts.AllNameSpaces {
+			nsStr = ns
+		} else {
+			nsStr = "---"
+		}
+		return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", cs.Dimmed("---"), cs.Dimmed("---"), cs.Dimmed("---"), nsStr, cs.Dimmed("NORUN"))
+	}
+	starttime := formatting.Age(status.StartTime, c)
+	if opts.UseRealTime {
+		starttime = status.StartTime.Format("2006-01-02T15:04:05Z07:00") // RFC3339
 	}
 	s := fmt.Sprintf("%s\t%s\t%s",
 		cs.HyperLink(formatting.ShortSHA(*status.SHA), *status.SHAURL),
-		formatting.Age(status.StartTime, c),
-		formatting.Duration(status.StartTime, status.CompletionTime))
-	if showNamespace {
+		starttime,
+		formatting.PRDuration(*status))
+	if opts.AllNameSpaces {
 		s = fmt.Sprintf("%s\t%s", s, ns)
 	}
-	return fmt.Sprintf("%s\t%s", s, cs.HyperLink(cs.ColorStatus(status.Status.Conditions[0].Reason), *status.LogURL))
+
+	reason := "UNKNOWN"
+	if len(status.Status.Conditions) > 0 {
+		reason = status.Status.Conditions[0].Reason
+	}
+	return fmt.Sprintf("%s\t%s", s, cs.HyperLink(cs.ColorStatus(reason), *status.LogURL))
 }
 
-func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, clock clockwork.Clock, selectors string, noheaders bool) error {
+func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, clock clockwork.Clock, selectors string) error {
 	if opts.Namespace != "" {
 		cs.Info.Kube.Namespace = opts.Namespace
 	}
@@ -128,8 +158,8 @@ func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *
 			URL:       repo.Spec.URL,
 			Namespace: repo.GetNamespace(),
 		}
-		statuses := status.GetLivePRAndRepostatus(ctx, cs, &repo)
-		if statuses != nil && len(statuses) > 0 {
+		statuses := status.MixLivePRandRepoStatus(ctx, cs, repo)
+		if len(statuses) > 0 {
 			rs.Status = &statuses[0]
 		}
 		repoStatuses = append(repoStatuses, rs)
@@ -138,15 +168,15 @@ func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *
 	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
 	colorScheme := ioStreams.ColorScheme()
 	data := struct {
-		Statuses          []repoStatusInfo
-		ColorScheme       *cli.ColorScheme
-		Clock             clockwork.Clock
-		AllNamespacesFlag bool
+		Statuses    []repoStatusInfo
+		ColorScheme *cli.ColorScheme
+		Clock       clockwork.Clock
+		Opts        *cli.PacCliOpts
 	}{
-		Statuses:          repoStatuses,
-		ColorScheme:       colorScheme,
-		Clock:             clock,
-		AllNamespacesFlag: opts.AllNameSpaces,
+		Statuses:    repoStatuses,
+		ColorScheme: colorScheme,
+		Clock:       clock,
+		Opts:        opts,
 	}
 	funcMap := template.FuncMap{
 		"formatStatus": formatStatus,
