@@ -1,0 +1,16 @@
+Name:           test-run
+Namespace:      optnamespace
+URL:            https://anurl.com
+Status:         Success
+Log:            https://everywhere.anwywhere
+PipelineRun:    pipelinerun1
+Event:          <nil>
+Branch:         TargetBranch
+Commit URL:     https://anurl.com/commit/SHA
+Commit Title:   A title
+StartTime:      16 minutes ago
+Duration:       1 minute
+Failures:
+• task1:   Failed
+  Error error miss robinson
+

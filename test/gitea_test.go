@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -430,11 +429,15 @@ func TestGiteaWithCLI(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 	output, err := tknpactest.ExecCommand(topts.Clients, tknpaclist.Root, "pipelinerun", "list", "-n", topts.TargetNS)
 	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "Succeeded   pac-e2e-test-"), "should have a successful pipelinerun in CLI listing: %s", output)
+	match, err := regexp.MatchString(".*(Running|Succeeded)", output)
+	assert.NilError(t, err)
+	assert.Assert(t, match, "should have a Running or Succeeded pipelinerun in CLI listing: %s", output)
 
 	output, err = tknpactest.ExecCommand(topts.Clients, tknpacdesc.Root, "-n", topts.TargetNS)
 	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "Succeeded"), "should have a Succeeded pipelinerun in CLI describe and auto select the first one: %s", output)
+	match, err = regexp.MatchString(".*(Running|Succeeded)", output)
+	assert.NilError(t, err)
+	assert.Assert(t, match, "should have a Succeeded or Running pipelinerun in CLI describe and auto select the first one: %s", output)
 
 	output, err = tknpactest.ExecCommand(topts.Clients, tknpacdelete.Root, "-n", topts.TargetNS, "repository", topts.TargetNS, "--cascade")
 	assert.NilError(t, err)
