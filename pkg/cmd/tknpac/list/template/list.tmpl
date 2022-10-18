@@ -1,4 +1,4 @@
-  {{ $.ColorScheme.Underline "NAME" }}	{{ $.ColorScheme.Underline "SHA" }}	{{ $.ColorScheme.Underline "STARTED" }}	{{ $.ColorScheme.Underline "DURATION" }}{{- if $.AllNamespacesFlag }}	{{$.ColorScheme.Underline "NAMESPACE"}}{{- end }} 	{{ $.ColorScheme.Underline "STATUS" }}
+{{- if not $.Opts.NoHeaders }}  {{ $.ColorScheme.Underline "NAME" }}	{{ $.ColorScheme.Underline "SHA" }}	{{ $.ColorScheme.Underline "STARTED" }}	{{ $.ColorScheme.Underline "DURATION" }}{{- if $.Opts.AllNameSpaces }}	{{$.ColorScheme.Underline "NAMESPACE"}}{{- end }} 	{{ $.ColorScheme.Underline "STATUS" }} {{ end }}
 {{- range $st:= .Statuses }}
-• {{ $.ColorScheme.HyperLink $st.Name $st.URL }} 	{{ formatStatus $st.Status $.ColorScheme $.Clock $st.Namespace $.AllNamespacesFlag }}
+• {{ $.ColorScheme.HyperLink $st.Name $st.URL }} 	{{ formatStatus $st.Status $.ColorScheme $.Clock $st.Namespace $.Opts }}
 {{- end }}
