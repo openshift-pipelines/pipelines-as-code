@@ -6,6 +6,7 @@ import (
 
 	"github.com/hako/durafmt"
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,6 +26,19 @@ func Duration(t1, t2 *metav1.Time) string {
 
 	dur := t2.Time.Sub(t1.Time)
 	return durafmt.ParseShort(dur).String()
+}
+
+func PRDuration(pr v1alpha1.RepositoryRunStatus) string {
+	if pr.StartTime == nil {
+		return nonAttributedStr
+	}
+
+	lasttime := pr.CompletionTime
+	if lasttime == nil {
+		lasttime = &pr.Status.Conditions[0].LastTransitionTime.Inner
+	}
+
+	return Duration(pr.StartTime, lasttime)
 }
 
 func HumanDuration(d time.Duration) string {

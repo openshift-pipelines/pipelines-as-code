@@ -2,8 +2,10 @@ package describe
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
+	"regexp"
 	"text/tabwriter"
 	"text/template"
 
@@ -23,44 +25,15 @@ import (
 
 var namespaceFlag = "namespace"
 
-const (
-	describeTemplate = `{{ $.ColorScheme.Bold "Name" }}:	{{.Repository.Name}}
-{{ $.ColorScheme.Bold "Namespace" }}:	{{.Repository.Namespace}}
-{{ $.ColorScheme.Bold "URL" }}:	{{.Repository.Spec.URL}}
-{{- if eq (len .Statuses) 0 }}
+//go:embed templates/describe.tmpl
+var describeTemplate string
 
-{{ $.ColorScheme.Dimmed "No runs has started."}}
-{{- else }}
-{{- $status := (index .Statuses 0) }}
-
-{{- if (gt (len .Statuses) 1) }}
-
-{{ $.ColorScheme.Underline "Last Run:" }}
-{{ end }}
-{{ $.ColorScheme.Bold "Status:" }}	{{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
-{{ $.ColorScheme.Bold "Log:"  }}	{{ $status.LogURL}}
-{{ $.ColorScheme.Bold "PipelineRun:" }}	{{ $.ColorScheme.HyperLink $status.PipelineRunName $status.LogURL }}
-{{ $.ColorScheme.Bold "Event:" }}	{{ $status.EventType }}
-{{ $.ColorScheme.Bold "Branch:" }}	{{ sanitizeBranch $status.TargetBranch }}
-{{ $.ColorScheme.Bold "Commit URL:" }}	{{ $status.SHAURL }}
-{{ $.ColorScheme.Bold "Commit Title:" }}	{{ $status.Title }}
-{{ $.ColorScheme.Bold "StartTime:" }}	{{ formatTime $status.StartTime $.Clock }}
-{{- if $status.CompletionTime }}
-{{ $.ColorScheme.Bold "Duration:" }}	{{ formatDuration $status.StartTime $status.CompletionTime }}
-{{- end }}
-{{- if (gt (len .Statuses) 1) }}
-
-{{ $.ColorScheme.Underline "Other Runs:" }}
-
-STATUS	Event	Branch	 SHA	 STARTED TIME	DURATION	PIPELINERUN
-――――――	―――――	――――――	 ―――	 ――――――――――――	――――――――	―――――――――――
-{{- range $i, $st := (slice .Statuses 1 (len .Statuses)) }}
-{{ formatStatus $st $.ColorScheme $.Clock }}
-{{- end }}
-{{- end }}
-{{- end }}
-`
-)
+func formatError(cs *cli.ColorScheme, log string) string {
+	n := status.ErorrRE.ReplaceAllString(log, cs.RedBold("$0"))
+	// add two space to every characters at beginning of line in string
+	n = regexp.MustCompile(`(?m)^`).ReplaceAllString(n, "  ")
+	return n
+}
 
 func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock) string {
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
@@ -69,7 +42,7 @@ func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c cl
 		*status.TargetBranch,
 		cs.HyperLink(formatting.ShortSHA(*status.SHA), *status.SHAURL),
 		formatting.Age(status.StartTime, c),
-		formatting.Duration(status.StartTime, status.CompletionTime),
+		formatting.PRDuration(status),
 		cs.HyperLink(status.PipelineRunName, *status.LogURL))
 }
 
@@ -148,9 +121,10 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 	colorScheme := ioStreams.ColorScheme()
 
 	funcMap := template.FuncMap{
+		"formatError":     formatError,
 		"formatStatus":    formatStatus,
 		"formatEventType": formatting.CamelCasit,
-		"formatDuration":  formatting.Duration,
+		"formatDuration":  formatting.PRDuration,
 		"formatTime":      formatting.Age,
 		"sanitizeBranch":  formatting.SanitizeBranch,
 		"shortSHA":        formatting.ShortSHA,
@@ -163,11 +137,10 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		Clock       clockwork.Clock
 	}{
 		Repository:  repository,
-		Statuses:    status.GetLivePRAndRepostatus(ctx, cs, repository),
+		Statuses:    status.MixLivePRandRepoStatus(ctx, cs, *repository),
 		ColorScheme: colorScheme,
 		Clock:       clock,
 	}
-
 	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
 	t := template.Must(template.New("Describe Repository").Funcs(funcMap).Parse(describeTemplate))
 

@@ -55,6 +55,14 @@ type RepositoryRunStatus struct {
 	// EventType is the event type of that run
 	// +optional
 	EventType *string `json:"event_type,omitempty"`
+
+	// CollectedTaskInfos is the information about tasks
+	CollectedTaskInfos *map[string]TaskInfos `json:"failure_reason,omitempty"`
+}
+
+type TaskInfos struct {
+	Reason     string
+	LogSnippet string
 }
 
 // RepositorySpec is the spec of a repo

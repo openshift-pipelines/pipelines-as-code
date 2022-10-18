@@ -1,0 +1,3 @@
+  NAME     SHA     STARTED          DURATION   NAMESPACE    STATUS 
+• repo1    abcd2   16 minutes ago   1 minute   namespace1   Success
+• repo2    SHA     16 minutes ago   1 minute   namespace2   Success
