@@ -5,7 +5,7 @@ metadata:
   name: pipeline-as-code-doc-generation
   annotations:
     pipelinesascode.tekton.dev/task: "[git-clone]"
-    pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "pull_request" && "docs/***".pathChanged()
 spec:
