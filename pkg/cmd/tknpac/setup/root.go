@@ -12,9 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	webhookSecret string
-)
+var webhookSecret string
 
 func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{

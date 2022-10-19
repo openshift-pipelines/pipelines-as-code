@@ -239,6 +239,9 @@ filenames or directory where you have the templates.
 `tkn-pac setup github-webhook`: will let you set up a GitHub webhook to interact with Pipelines as Code
 
 It will let you provide an option to create a Repository and configure it with the required secrets.
+
+You can optionally provide the value of webhook secret using the flag `--webhook-secret`. This is
+particularly useful when you're not creating a Repository object.
 {{< /details >}}
 
 {{< details "tkn pac setup gitlab-webhook" >}}
@@ -248,6 +251,9 @@ It will let you provide an option to create a Repository and configure it with t
 `tkn-pac setup gitlab-webhook`: will let you set up a GitLab webhook to interact with Pipelines as Code.
 
 It will let you provide an option to create a Repository and configure it with the required secrets.
+
+You can optionally provide the value of webhook secret using the flag `--webhook-secret`. This is
+particularly useful when you're not creating a Repository object.
 {{< /details >}}
 
 ## Screenshot

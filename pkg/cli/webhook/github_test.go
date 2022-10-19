@@ -21,6 +21,7 @@ func TestAskGHWebhookConfig(t *testing.T) {
 		askStubs      func(*prompt.AskStubber)
 		repoURL       string
 		controllerURL string
+		webhookSecret string
 	}{
 		{
 			name: "invalid repo format",
@@ -61,6 +62,17 @@ func TestAskGHWebhookConfig(t *testing.T) {
 			controllerURL: "https://test",
 			wantErrStr:    "",
 		},
+		{
+			name: "with webhook secret",
+			askStubs: func(as *prompt.AskStubber) {
+				as.StubOne(true)
+				as.StubOne("token")
+			},
+			repoURL:       "https://github.com/pac/demo",
+			controllerURL: "https://test",
+			webhookSecret: "55367",
+			wantErrStr:    "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -71,9 +83,13 @@ func TestAskGHWebhookConfig(t *testing.T) {
 				tt.askStubs(as)
 			}
 			gh := gitHubConfig{IOStream: io}
-			err := gh.askGHWebhookConfig(tt.repoURL, tt.controllerURL, "", "")
+			err := gh.askGHWebhookConfig(tt.repoURL, tt.controllerURL, "", tt.webhookSecret)
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
+				return
+			}
+			if tt.webhookSecret != "" && tt.webhookSecret != gh.webhookSecret {
+				t.Error()
 				return
 			}
 			assert.NilError(t, err)

@@ -38,11 +38,11 @@ func secureRandomBytes(length int) []byte {
 
 // CryptoString returns a random numeric string of the requested length
 func CryptoString(bits int) (string, error) {
-	RandomCrypto, randErr := rand.Prime(rand.Reader, bits)
+	CryptoString, randErr := rand.Prime(rand.Reader, bits)
 	if randErr != nil {
 		return "", randErr
 	}
-	data, marshalErr := json.Marshal(RandomCrypto)
+	data, marshalErr := json.Marshal(CryptoString)
 	if marshalErr != nil {
 		return "", marshalErr
 	}

@@ -15,3 +15,19 @@ func TestRandomAlphaString(t *testing.T) {
 func TestRandomAlphaStringLength(t *testing.T) {
 	assert.Assert(t, len(AlphaString(10)) == 10)
 }
+
+func TestCryptoString(t *testing.T) {
+	// there are no prime numbers <= 2
+	_, err := CryptoString(1)
+	if err == nil {
+		t.Fail()
+	}
+}
+
+func TestCryptoStringLength(t *testing.T) {
+	randomCrypto, err := CryptoString(16)
+	if err != nil {
+		t.Fail()
+	}
+	assert.Assert(t, len(randomCrypto) == 5)
+}
