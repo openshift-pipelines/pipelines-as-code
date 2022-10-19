@@ -4,8 +4,6 @@ kind: PipelineRun
 metadata:
   name: pipelines-as-code-e2e-tests
   annotations:
-    pipelinesascode.tekton.dev/on-event: "[push]"
-    pipelinesascode.tekton.dev/on-target-branch: "[main]"
     pipelinesascode.tekton.dev/task: "[https://git.io/Jn9Ee]"
     pipelinesascode.tekton.dev/max-keep-runs: "5"
 spec:
