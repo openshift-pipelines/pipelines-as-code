@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v47/github"
 	corev1 "k8s.io/api/core/v1"
 )
 
