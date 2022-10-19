@@ -156,6 +156,38 @@ func TestDescribe(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "use real time",
+			args: args{
+				repoName:         "test-run",
+				currentNamespace: "namespace",
+				opts: &cli.PacCliOpts{
+					Namespace:   "optnamespace",
+					UseRealTime: true,
+				},
+				statuses: []v1alpha1.RepositoryRunStatus{
+					{
+						Status: v1beta1.Status{
+							Conditions: []knativeapis.Condition{
+								{
+									Reason: "Success",
+								},
+							},
+						},
+						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
+						PipelineRunName:    "pipelinerun1",
+						LogURL:             github.String("https://everywhere.anwywhere"),
+						StartTime:          &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
+						CompletionTime:     &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
+						SHA:                github.String("SHA"),
+						SHAURL:             github.String("https://anurl.com/commit/SHA"),
+						Title:              github.String("A title"),
+						TargetBranch:       github.String("TargetBranch"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "one repository status and optnamespace",
 			args: args{
 				repoName:         "test-run",

@@ -8,10 +8,5 @@ PipelineRun:    pipelinerun1
 Event:          <nil>
 Branch:         TargetBranch
 Commit Title:   A title
-StartTime:       16 minutes ago 
+StartTime:      1984-04-03T23:44:00Z  
 Duration:       1 minute
-
-Failures:
-• task1:   Failed
-  Error error miss robinson
-

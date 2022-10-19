@@ -150,6 +150,15 @@ func TestList(t *testing.T) {
 			},
 		},
 		{
+			name: "Test with real time",
+			args: args{
+				opts:             &cli.PacCliOpts{UseRealTime: true},
+				currentNamespace: namespace2.GetName(),
+				namespaces:       []*corev1.Namespace{namespace1, namespace2},
+				repositories:     []*pacv1alpha1.Repository{repoNamespace1, repoNamespace2},
+			},
+		},
+		{
 			name: "Test list repositories only live PR",
 			args: args{
 				opts:             &cli.PacCliOpts{},
