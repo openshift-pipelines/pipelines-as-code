@@ -104,13 +104,11 @@ func formatStatus(status *v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c c
 	// TODO: we could make a hyperlink to the console namespace list of repo if
 	// we wanted to go the extra step
 	if status == nil {
-		var nsStr string
+		s := fmt.Sprintf("%s\t%s\t%s\t", cs.Dimmed("---"), cs.Dimmed("---"), cs.Dimmed("---"))
 		if opts.AllNameSpaces {
-			nsStr = ns
-		} else {
-			nsStr = "---"
+			s += fmt.Sprintf("%s\t", ns)
 		}
-		return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", cs.Dimmed("---"), cs.Dimmed("---"), cs.Dimmed("---"), nsStr, cs.Dimmed("NORUN"))
+		return fmt.Sprintf("%s\t%s", s, cs.Dimmed("NORUN"))
 	}
 	starttime := formatting.Age(status.StartTime, c)
 	if opts.UseRealTime {
