@@ -5,4 +5,4 @@ weight: 1
 
 ## Diagram of a Pull/Merge Request Flow
 
-[![PAC Diagram](/diagram.svg)](/diagram.svg)
+[![PAC Diagram](/svg/diagram.svg)](/svg/diagram.svg)

@@ -3,6 +3,7 @@ package status
 import (
 	"context"
 	"regexp"
+	"strings"
 
 	"github.com/google/go-github/v45/github"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -37,7 +38,7 @@ func CollectTaskInfos(ctx context.Context, cs *params.Run, pr tektonv1beta1.Pipe
 					if step.Terminated != nil && step.Terminated.ExitCode != 0 {
 						log, _ := kinteract.GetPodLogs(ctx, pr.GetNamespace(), task.Status.PodName, step.ContainerName, numLinesOfLogsInContainersToGrabForErr)
 						// see if a pattern match from errRe
-						ti.LogSnippet = log
+						ti.LogSnippet = strings.TrimSpace(log)
 					}
 				}
 			}

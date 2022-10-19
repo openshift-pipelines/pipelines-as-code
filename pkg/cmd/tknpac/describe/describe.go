@@ -23,7 +23,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var namespaceFlag = "namespace"
+var (
+	namespaceFlag   = "namespace"
+	useRealTimeFlag = "use-realtime"
+)
 
 //go:embed templates/describe.tmpl
 var describeTemplate string
@@ -47,6 +50,7 @@ func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c cl
 }
 
 func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+	var useRealTime bool
 	cmd := &cobra.Command{
 		Use:     "describe",
 		Aliases: []string{"desc"},
@@ -59,6 +63,11 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			var err error
 			var repoName string
 			opts := cli.NewCliOptions(cmd)
+
+			opts.UseRealTime, err = cmd.Flags().GetBool(useRealTimeFlag)
+			if err != nil {
+				return err
+			}
 
 			opts.Namespace, err = cmd.Flags().GetString(namespaceFlag)
 			if err != nil {
@@ -89,6 +98,8 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
 
+	cmd.PersistentFlags().BoolVarP(&useRealTime, useRealTimeFlag, "", false,
+		"display the time as RFC3339 instead of a relative time")
 	_ = cmd.RegisterFlagCompletionFunc(namespaceFlag,
 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			return completion.BaseCompletion(namespaceFlag, args)
@@ -135,11 +146,13 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		Statuses    []v1alpha1.RepositoryRunStatus
 		ColorScheme *cli.ColorScheme
 		Clock       clockwork.Clock
+		Opts        *cli.PacCliOpts
 	}{
 		Repository:  repository,
 		Statuses:    status.MixLivePRandRepoStatus(ctx, cs, *repository),
 		ColorScheme: colorScheme,
 		Clock:       clock,
+		Opts:        opts,
 	}
 	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
 	t := template.Must(template.New("Describe Repository").Funcs(funcMap).Parse(describeTemplate))
