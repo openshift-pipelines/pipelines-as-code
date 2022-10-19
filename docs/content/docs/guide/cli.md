@@ -198,12 +198,15 @@ with it.
 
 `tkn pac logs` -- will show the logs attached to a Repository.
 
-If you don't specify a repository on the command line it will ask you to choose one or auto
-select it if there is only one.
+If you don't specify a repository on the command line it will ask you to choose
+one or auto select it if there is only one.
 
-IF you add the "-w" flag it will directly open the console URL to the log.
+If there is multiple PipelineRuns attached to the Repo it will ask you to choose
+one or auto select it if there is only one.
 
-[`tkn`](https://github.com/tektoncd/cli) binary needs to be installed to show
+If you add the `-w` flag it will open the console or the dashboard URL to the log.
+
+The [`tkn`](https://github.com/tektoncd/cli) binary needs to be installed to show
 the logs.
 
 ### Generate
