@@ -3,7 +3,7 @@ name: Build and publish Muilti-arch images to ghcr
 on:
   workflow_dispatch:
   schedule:
-    - cron: '10 * * * *'
+    - cron: '*/10 * * * *'
 
 env:
   REGISTRY: ghcr.io
