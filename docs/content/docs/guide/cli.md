@@ -181,8 +181,6 @@ with the `--use-realtime` flag.
 
 When the last PipelineRun has failure it will print the last 10 lines of every tasks associated with the PipelineRun thas has been failed highlightign the `ERROR` or `FAILURE` and other patterns.
 
-![tkn-pac-repo-describe](/images/tkn-pac-repo-describe.png)
-
 On modern terminal (ie: OSX Terminal, [iTerm2](https://iterm2.com/), [Windows
 Terminal](https://github.com/microsoft/terminal), GNOME-terminal, kitty and so
 on...) the links become clickable with control+click or ⌘+click (see the
@@ -192,7 +190,7 @@ with it.
 
 {{< /details >}}
 
-{{< details "tkn pac generate" >}}
+{{< details "tkn pac logs" >}}
 
 ### Logs
 
@@ -208,6 +206,9 @@ If you add the `-w` flag it will open the console or the dashboard URL to the lo
 
 The [`tkn`](https://github.com/tektoncd/cli) binary needs to be installed to show
 the logs.
+{{< /details >}}
+
+{{< details "tkn pac generate" >}}
 
 ### Generate
 

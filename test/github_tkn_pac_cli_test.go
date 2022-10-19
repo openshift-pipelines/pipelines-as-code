@@ -78,7 +78,7 @@ spec:
 
 	output, err = cli2.ExecCommand(runcnx, tknpaclist.Root, "-n", targetNS)
 	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "NoRun"))
+	assert.Assert(t, strings.Contains(output, "NoRun"), "we could not detect NoRun in output: %s", output)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
@@ -108,11 +108,11 @@ spec:
 
 	output, err = cli2.ExecCommand(runcnx, tknpaclist.Root, "-n", targetNS)
 	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "Succeeded"))
+	assert.Assert(t, strings.Contains(output, "Succeeded"), "we could not detect Succeeded in output: %s", output)
 
 	output, err = cli2.ExecCommand(runcnx, tknpacdesc.Root, "-n", targetNS, targetNS)
 	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "Succeeded"))
+	assert.Assert(t, strings.Contains(output, "Succeeded"), "we could not detect Succeeded in output: %s", output)
 }
 
 // Local Variables:
