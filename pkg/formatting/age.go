@@ -1,9 +1,6 @@
 package formatting
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/hako/durafmt"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -28,23 +25,21 @@ func Duration(t1, t2 *metav1.Time) string {
 	return durafmt.ParseShort(dur).String()
 }
 
-func PRDuration(pr v1alpha1.RepositoryRunStatus) string {
-	if pr.StartTime == nil {
+func PRDuration(runStatus v1alpha1.RepositoryRunStatus) string {
+	if runStatus.StartTime == nil {
 		return nonAttributedStr
 	}
 
-	lasttime := pr.CompletionTime
+	lasttime := runStatus.CompletionTime
 	if lasttime == nil {
-		lasttime = &pr.Status.Conditions[0].LastTransitionTime.Inner
+		if len(runStatus.Conditions) > 0 {
+			lasttime = &runStatus.Status.Conditions[0].LastTransitionTime.Inner
+		} else {
+			return nonAttributedStr
+		}
 	}
 
-	return Duration(pr.StartTime, lasttime)
-}
-
-func HumanDuration(d time.Duration) string {
-	d = d.Round(time.Minute)
-	m := d / time.Minute
-	return fmt.Sprintf("%02d", m)
+	return Duration(runStatus.StartTime, lasttime)
 }
 
 func Timeout(t *metav1.Duration) string {

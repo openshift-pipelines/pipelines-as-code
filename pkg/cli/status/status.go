@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/go-github/v45/github"
+	"github.com/google/go-github/v47/github"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
