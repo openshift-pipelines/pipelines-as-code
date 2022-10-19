@@ -108,7 +108,7 @@ func formatStatus(status *v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c c
 		if opts.AllNameSpaces {
 			s += fmt.Sprintf("%s\t", ns)
 		}
-		return fmt.Sprintf("%s\t%s", s, cs.Dimmed("NORUN"))
+		return fmt.Sprintf("%s%s", s, cs.Dimmed("NoRun"))
 	}
 	starttime := formatting.Age(status.StartTime, c)
 	if opts.UseRealTime {
