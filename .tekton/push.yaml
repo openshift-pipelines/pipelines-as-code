@@ -8,6 +8,7 @@ metadata:
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
     pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]"
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
 spec:
   params:
     - name: repo_url
