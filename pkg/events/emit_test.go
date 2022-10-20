@@ -22,6 +22,7 @@ func TestEventEmitter_EmitMessage(t *testing.T) {
 		name        string
 		repo        *v1alpha1.Repository
 		message     string
+		reason      string
 		logLevel    zapcore.Level
 		expectEvent bool
 	}{
@@ -39,6 +40,20 @@ func TestEventEmitter_EmitMessage(t *testing.T) {
 			expectEvent: true,
 		},
 		{
+			name: "event with a reason",
+			repo: &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-repo",
+					Namespace: "test-ns",
+				},
+				Spec: v1alpha1.RepositorySpec{},
+			},
+			message:     "info-message",
+			logLevel:    zap.InfoLevel,
+			expectEvent: true,
+			reason:      "aintnosunshine",
+		},
+		{
 			name:        "repo doesn't exists",
 			repo:        nil,
 			message:     "error-message",
@@ -53,13 +68,14 @@ func TestEventEmitter_EmitMessage(t *testing.T) {
 			stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
 
 			// emit event
-			NewEventEmitter(stdata.Kube, fakelogger).EmitMessage(tt.repo, tt.logLevel, tt.message)
+			NewEventEmitter(stdata.Kube, fakelogger).EmitMessage(tt.repo, tt.logLevel, tt.reason, tt.message)
 
 			if tt.expectEvent {
 				events, err := stdata.Kube.CoreV1().Events(tt.repo.Namespace).List(context.Background(), metav1.ListOptions{})
 				assert.NilError(t, err)
 				assert.Equal(t, events.Items[0].Message, tt.message)
 				assert.Equal(t, events.Items[0].Type, v1.EventTypeNormal)
+				assert.Equal(t, events.Items[0].Reason, tt.reason)
 			}
 		})
 	}

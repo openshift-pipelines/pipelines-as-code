@@ -18,7 +18,7 @@
 {{ $.ColorScheme.Bold "Event:" }}	{{ $status.EventType }}
 {{ $.ColorScheme.Bold "Branch:" }}	{{ sanitizeBranch $status.TargetBranch }}
 {{ $.ColorScheme.Bold "Commit Title:" }}	{{ $status.Title }}
-{{ $.ColorScheme.Bold "StartTime:" }}	{{ if $.Opts.UseRealTime }}{{ $status.StartTime.Format "2006-01-02T15:04:05Z07:00" }} {{ else }} {{ formatTime $status.StartTime $.Clock }}{{ end }} 
+{{ $.ColorScheme.Bold "StartTime:" }}	{{ if $.Opts.UseRealTime }}{{ $status.StartTime.Format "2006-01-02T15:04:05Z07:00" }}{{ else }}{{ formatTime $status.StartTime $.Clock }}{{ end }}
 {{ $.ColorScheme.Bold "Duration:" }}	{{ formatDuration $status }}
 {{- if (gt (len $status.CollectedTaskInfos) 0) }}
 
@@ -29,11 +29,20 @@
 {{ end }}
 {{- end }}
 {{- if (gt (len .Statuses) 1) }}
+
 {{ $.ColorScheme.Underline "Other Runs:" }}
 
 {{ $.ColorScheme.Bold "STATUS:" }}	{{ $.ColorScheme.Bold "Event" }}	{{ $.ColorScheme.Bold "Branch" }}	 {{ $.ColorScheme.Bold "SHA" }}	 {{ $.ColorScheme.Bold "STARTED TIME" }}	{{ $.ColorScheme.Bold "DURATION" }}		{{ $.ColorScheme.Bold "PIPELINERUN" }}
 {{- range $i, $st := (slice .Statuses 1 (len .Statuses)) }}
 {{ formatStatus $st $.ColorScheme $.Clock }}
 {{- end }}
+{{- end }}
+{{- end }}
+
+{{- if (gt (len .EventList) 0) }}
+
+{{ $.ColorScheme.Underline "Events:" }}
+{{ range $ev := .EventList }}
+{{ $.ColorScheme.Blue "•" }} {{ if $.Opts.UseRealTime }}{{ $.ColorScheme.Dimmed ($ev.CreationTimestamp.Format "2006-01-02T15:04:05Z07:00") }}{{ else }}{{ $.ColorScheme.Dimmed (formatTime $ev.CreationTimestamp $.Clock) }}{{ end }} - {{ $ev.Reason}} - {{ $ev.Message }}
 {{- end }}
 {{- end }}

@@ -29,9 +29,9 @@ func (e *EventEmitter) SetLogger(logger *zap.SugaredLogger) {
 	e.logger = logger
 }
 
-func (e *EventEmitter) EmitMessage(repo *v1alpha1.Repository, loggerLevel zapcore.Level, message string) {
+func (e *EventEmitter) EmitMessage(repo *v1alpha1.Repository, loggerLevel zapcore.Level, reason, message string) {
 	if repo != nil {
-		event := makeEvent(repo, loggerLevel, message)
+		event := makeEvent(repo, loggerLevel, reason, message)
 		if _, err := e.client.CoreV1().Events(event.Namespace).Create(context.Background(), event, metav1.CreateOptions{}); err != nil {
 			e.logger.Infof("Cannot create event: %s", err.Error())
 		}
@@ -50,7 +50,7 @@ func (e *EventEmitter) EmitMessage(repo *v1alpha1.Repository, loggerLevel zapcor
 	}
 }
 
-func makeEvent(repo *v1alpha1.Repository, loggerLevel zapcore.Level, message string) *v1.Event {
+func makeEvent(repo *v1alpha1.Repository, loggerLevel zapcore.Level, reason, message string) *v1.Event {
 	event := &v1.Event{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: repo.Name + "-",
@@ -60,6 +60,7 @@ func makeEvent(repo *v1alpha1.Repository, loggerLevel zapcore.Level, message str
 			},
 		},
 		Message: message,
+		Reason:  reason,
 		Type:    v1.EventTypeWarning,
 		InvolvedObject: v1.ObjectReference{
 			Kind:      "Repository",

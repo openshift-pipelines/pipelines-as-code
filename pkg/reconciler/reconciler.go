@@ -82,13 +82,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 	detectedProvider, event, err := r.detectProvider(ctx, logger, pr)
 	if err != nil {
 		msg := fmt.Sprintf("detectProvider: %v", err)
-		r.eventEmitter.EmitMessage(nil, zap.ErrorLevel, msg)
+		r.eventEmitter.EmitMessage(nil, zap.ErrorLevel, "RepositoryDetectProvider", msg)
 		return nil
 	}
 
 	if repo, err := r.reportFinalStatus(ctx, logger, event, pr, detectedProvider); err != nil {
 		msg := fmt.Sprintf("report status: %v", err)
-		r.eventEmitter.EmitMessage(repo, zap.ErrorLevel, msg)
+		r.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryReportFinalStatus", msg)
 		return err
 	}
 	return nil
