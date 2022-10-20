@@ -36,6 +36,7 @@ func TestDescribe(t *testing.T) {
 		statuses         []v1alpha1.RepositoryRunStatus
 		opts             *cli.PacCliOpts
 		pruns            []*tektonv1beta1.PipelineRun
+		events           []*corev1.Event
 	}
 	tests := []struct {
 		name    string
@@ -219,6 +220,52 @@ func TestDescribe(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "repository events",
+			args: args{
+				repoName:         "test-run",
+				currentNamespace: "namespace",
+				opts: &cli.PacCliOpts{
+					Namespace: "namespace",
+				},
+				events: []*corev1.Event{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							CreationTimestamp: metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
+							Namespace:         "namespace",
+							Name:              "test-run-abcd",
+						},
+						Message: "Eeny, meeny, miny, moe, Catch a tiger by the toe.",
+						Reason:  "ItchyBack",
+						Type:    corev1.EventTypeNormal,
+						InvolvedObject: corev1.ObjectReference{
+							Name: "test-run", Kind: "Repository", Namespace: "namespace",
+						},
+					},
+				},
+				statuses: []v1alpha1.RepositoryRunStatus{
+					{
+						Status: v1beta1.Status{
+							Conditions: []knativeapis.Condition{
+								{
+									Reason: "Success",
+								},
+							},
+						},
+						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
+						PipelineRunName:    "pipelinerun1",
+						LogURL:             github.String("https://everywhere.anwywhere"),
+						StartTime:          &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
+						CompletionTime:     &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
+						SHA:                github.String("SHA"),
+						SHAURL:             github.String("https://anurl.com/commit/SHA"),
+						Title:              github.String("A title"),
+						TargetBranch:       github.String("TargetBranch"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "multiple repo status",
 			args: args{
 				opts:             &cli.PacCliOpts{},
@@ -287,6 +334,7 @@ func TestDescribe(t *testing.T) {
 			}
 
 			tdata := testclient.Data{
+				Events: tt.args.events,
 				Namespaces: []*corev1.Namespace{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -304,14 +352,14 @@ func TestDescribe(t *testing.T) {
 					PipelineAsCode: stdata.PipelineAsCode,
 					Tekton:         stdata.Pipeline,
 					ConsoleUI:      consoleui.FallBackConsole{},
+					Kube:           stdata.Kube,
 				},
 				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.args.currentNamespace}},
 			}
 
 			io, out := tcli.NewIOStream()
 			if err := describe(
-				ctx, cs, cw, tt.args.opts, io,
-				tt.args.repoName); (err != nil) != tt.wantErr {
+				ctx, cs, cw, tt.args.opts, io, tt.args.repoName, len(tt.args.events) > 0); (err != nil) != tt.wantErr {
 				t.Errorf("describe() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				golden.Assert(t, out.String(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))

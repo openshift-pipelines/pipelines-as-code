@@ -10,8 +10,9 @@ PipelineRun:    running
 Event:          papayolo
 Branch:         tartanpion
 Commit Title:   
-StartTime:       -35 minutes ago 
+StartTime:      -35 minutes ago
 Duration:       ---
+
 Other Runs:
 
 STATUS:   Event               Branch          SHA    STARTED TIME    DURATION      PIPELINERUN

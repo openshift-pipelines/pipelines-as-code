@@ -54,7 +54,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 			DetailsURL: p.run.Clients.ConsoleUI.URL(),
 		})
 		if createStatusErr != nil {
-			p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
+			p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
 		}
 	}
 
@@ -69,7 +69,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 			defer wg.Done()
 			if err := p.startPR(ctx, match); err != nil {
 				errMsg := fmt.Sprintf("PipelineRun %s has failed: %s", match.PipelineRun.GetGenerateName(), err.Error())
-				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, errMsg)
+				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", errMsg)
 			}
 		}(match)
 	}
