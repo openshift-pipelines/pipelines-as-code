@@ -262,6 +262,25 @@ func TestDescribe(t *testing.T) {
 						TargetBranch:    github.String("TargetBranch"),
 						EventType:       github.String("pull_request"),
 					},
+					{
+						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
+						Status: v1beta1.Status{
+							Conditions: []knativeapis.Condition{
+								{
+									Reason: "Success",
+								},
+							},
+						},
+						PipelineRunName: "pipelinerun3",
+						LogURL:          github.String("https://everywhere.anwywhere"),
+						StartTime:       &metav1.Time{Time: cw.Now().Add(-20 * time.Minute)},
+						CompletionTime:  &metav1.Time{Time: cw.Now().Add(-19 * time.Minute)},
+						SHA:             github.String("SHA"),
+						SHAURL:          github.String("https://anurl.com/commit/SHA"),
+						Title:           github.String("Another title"),
+						TargetBranch:    github.String("refs/heads/PushBranch"),
+						EventType:       github.String("push"),
+					},
 				},
 			},
 			wantErr: false,
