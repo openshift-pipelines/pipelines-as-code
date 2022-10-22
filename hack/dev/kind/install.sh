@@ -34,7 +34,7 @@ INSTALL_FROM_RELEASE=
 PAC_PASS_SECRET_FOLDER=${PAC_PASS_SECRET_FOLDER:-""}
 SUDO=sudo
 PAC_DIR=${PAC_DIR:-$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code}
-INSTALL_GITEA=yes
+DISABLE_GITEA=${DISABLE_GITEA:-""}
 GITEA_HOST=${GITEA_HOST:-"localhost:3000"}
 
 
@@ -198,11 +198,11 @@ main() {
 	install_nginx
 	install_tekton
 	install_pac
-    install_gitea
+    [[ -z ${DISABLE_GITEA} ]] && install_gitea
     echo "And we are done :): "
 }
 
-while getopts "Gpcrb" o; do
+while getopts "Ggpcrb" o; do
     case "${o}" in
         b)
             start_registry
@@ -224,9 +224,12 @@ while getopts "Gpcrb" o; do
 	    r)
 		    INSTALL_FROM_RELEASE=yes
             ;;
-        G)
+        g)
             install_gitea
             exit
+            ;;
+        G)
+            DISABLE_GITEA=yes
             ;;
 
         *)
