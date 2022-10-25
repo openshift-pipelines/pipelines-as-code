@@ -9,8 +9,10 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/go-github/v47/github"
+	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -155,6 +157,21 @@ func makeClient(ctx context.Context, apiURL, token string) (*github.Client, stri
 	return client, providerName, github.String(apiURL)
 }
 
+func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.Clock) error {
+	rl, resp, err := v.Client.RateLimits(ctx)
+	// check if resp.TokenExpiration is after now
+	if resp.TokenExpiration.After(cw.Now()) {
+		return fmt.Errorf("token has expired at %s, err: %w", resp.TokenExpiration.Time.Format(time.RFC1123), err)
+	}
+	if err != nil {
+		return fmt.Errorf("error using token to access API: %w", err)
+	}
+	if rl.SCIM.Remaining == 0 {
+		return fmt.Errorf("token is ratelimited, it will be available again at %s", rl.SCIM.Reset.Time.Format(time.RFC1123))
+	}
+	return nil
+}
+
 func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event) error {
 	client, providerName, apiURL := makeClient(ctx, event.Provider.URL, event.Provider.Token)
 	v.providerName = providerName
@@ -167,6 +184,13 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	}
 
 	v.APIURL = apiURL
+
+	if event.Provider.WebhookSecretFromRepo {
+		// Make sure the webhook secret is still valid
+		if err := v.checkWebhookSecretValidity(ctx, clockwork.NewRealClock()); err != nil {
+			return fmt.Errorf("the webhook secret is not valid: %w", err)
+		}
+	}
 	return nil
 }
 
