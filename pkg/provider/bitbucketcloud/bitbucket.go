@@ -139,7 +139,7 @@ func (v *Provider) getDir(event *info.Event, path string) ([]bitbucket.Repositor
 	return repositoryFiles, nil
 }
 
-func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, path string, targetBranch string) (string, error) {
+func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, path, targetBranch string) (string, error) {
 	return v.getBlob(runevent, runevent.SHA, path)
 }
 

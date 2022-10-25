@@ -66,7 +66,7 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitlab.Provider, erro
 	return run, e2eoptions, glprovider, nil
 }
 
-func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, glprovider gitlab.Provider, mrNumber int, ref string, targetNS string, projectid int) {
+func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, glprovider gitlab.Provider, mrNumber int, ref, targetNS string, projectid int) {
 	runcnx.Clients.Log.Infof("Closing PR %d", mrNumber)
 	if mrNumber != -1 {
 		_, _, err := glprovider.Client.MergeRequests.UpdateMergeRequest(projectid, mrNumber,

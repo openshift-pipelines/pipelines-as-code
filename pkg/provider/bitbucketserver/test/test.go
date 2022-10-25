@@ -111,7 +111,7 @@ func MakeEvent(event *info.Event) *info.Event {
 	return rev
 }
 
-func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir string, targetDirName string) {
+func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir, targetDirName string) {
 	files, err := os.ReadDir(testDir)
 	if err != nil {
 		// no error just disapointed
@@ -159,7 +159,7 @@ func MuxDefaultBranch(t *testing.T, mux *http.ServeMux, event *info.Event, defau
 	})
 }
 
-func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, branch string, targetDirName string, filescontents map[string]string) {
+func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, branch, targetDirName string, filescontents map[string]string) {
 	for filename := range filescontents {
 		path := fmt.Sprintf("/projects/%s/repos/%s/raw/%s", event.Organization, event.Repository, filename)
 		mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {

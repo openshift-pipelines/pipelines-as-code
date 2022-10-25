@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func compareSecret(incomingSecret string, secretValue string) bool {
+func compareSecret(incomingSecret, secretValue string) bool {
 	return subtle.ConstantTimeCompare([]byte(incomingSecret), []byte(secretValue)) != 0
 }
 

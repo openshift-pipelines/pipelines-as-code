@@ -32,7 +32,7 @@ func setup() {
 }
 
 // Not sure how to get testParams fixtures working
-func readTDfile(t *testing.T, testname string, generateName bool, remoteTasking bool) (*tektonv1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
+func readTDfile(t *testing.T, testname string, generateName, remoteTasking bool) (*tektonv1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
 	t.Helper()
 	ctx, _ := rtesting.SetupFakeContext(t)
 	data, err := os.ReadFile("testdata/" + testname + ".yaml")

@@ -9,6 +9,8 @@ linters-settings:
       - unlambda
   errcheck:
     exclude: .errcheck.txt
+  gofumpt:
+    extra-rules: true
 linters:
   enable:
     - asciicheck

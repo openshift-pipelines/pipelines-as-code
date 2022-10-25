@@ -142,7 +142,7 @@ func (v *Provider) concatAllYamlFiles(objects []string, runevent *info.Event) (s
 	return allTemplates, nil
 }
 
-func (v *Provider) getRaw(runevent *info.Event, revision string, path string) (string, error) {
+func (v *Provider) getRaw(runevent *info.Event, revision, path string) (string, error) {
 	localVarOptionals := map[string]interface{}{
 		"at": revision,
 	}
@@ -177,7 +177,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path str
 	return v.concatAllYamlFiles(fpathTmpl, event)
 }
 
-func (v *Provider) GetFileInsideRepo(ctx context.Context, event *info.Event, path string, targetBranch string) (string, error) {
+func (v *Provider) GetFileInsideRepo(ctx context.Context, event *info.Event, path, targetBranch string) (string, error) {
 	branch := event.SHA
 	// TODO: this may be buggy? we need to figure out how to get the fromSource ref
 	if targetBranch == event.DefaultBranch {

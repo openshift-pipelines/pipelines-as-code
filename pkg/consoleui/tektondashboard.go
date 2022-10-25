@@ -11,11 +11,11 @@ type TektonDashboard struct {
 	BaseURL string
 }
 
-func (t *TektonDashboard) DetailURL(ns string, pr string) string {
+func (t *TektonDashboard) DetailURL(ns, pr string) string {
 	return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", t.BaseURL, ns, pr)
 }
 
-func (t *TektonDashboard) TaskLogURL(ns string, pr string, task string) string {
+func (t *TektonDashboard) TaskLogURL(ns, pr, task string) string {
 	return fmt.Sprintf("%s?pipelineTask=%s", t.DetailURL(ns, pr), task)
 }
 
