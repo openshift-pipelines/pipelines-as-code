@@ -178,7 +178,7 @@ spec:
     spec:
       containers:
         - name: gosmee-client
-          image: 'ghcr.io/chmouel/gosmee:latest'
+          image: 'ghcr.io/chmouel/gosmee:main'
           args:
             - '<replace Webhook Proxy URL>'
             - $(SVC)
