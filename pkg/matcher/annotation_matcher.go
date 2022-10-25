@@ -195,7 +195,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		event.EventType, event.BaseBranch)
 }
 
-func matchOnAnnotation(annotations string, eventType string, branchMatching bool) (bool, error) {
+func matchOnAnnotation(annotations, eventType string, branchMatching bool) (bool, error) {
 	targets, err := getAnnotationValues(annotations)
 	if err != nil {
 		return false, err

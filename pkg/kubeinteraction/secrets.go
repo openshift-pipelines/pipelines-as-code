@@ -41,7 +41,7 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 
 // CreateBasicAuthSecret Create a secret for git-clone basic-auth workspace
 func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event,
-	targetNamespace string, secretName string,
+	targetNamespace, secretName string,
 ) error {
 	// Bitbucket Server have a different Clone URL than it's Repo URL, so we
 	// have to separate them 👨‍🏭

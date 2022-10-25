@@ -41,7 +41,7 @@ func Setup(ctx context.Context, t *testing.T) (*gitlab.Client, *http.ServeMux, f
 	return client, mux, tearDown
 }
 
-func MuxNotePost(t *testing.T, mux *http.ServeMux, projectNumber int, mrID int, catchStr string) {
+func MuxNotePost(t *testing.T, mux *http.ServeMux, projectNumber, mrID int, catchStr string) {
 	path := fmt.Sprintf("/projects/%d/merge_requests/%d/notes", projectNumber, mrID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		bit, _ := io.ReadAll(r.Body)

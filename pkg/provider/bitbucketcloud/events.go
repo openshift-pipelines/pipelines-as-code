@@ -72,7 +72,7 @@ func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run,
 			sourceIP, bitbucketCloudIPrangesList)
 }
 
-func parsePayloadType(event string, rawPayload string) (interface{}, error) {
+func parsePayloadType(event, rawPayload string) (interface{}, error) {
 	var payload interface{}
 
 	var localEvent string

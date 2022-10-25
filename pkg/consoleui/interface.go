@@ -8,19 +8,19 @@ import (
 )
 
 type Interface interface {
-	DetailURL(ns string, pr string) string
-	TaskLogURL(ns string, pr string, task string) string
+	DetailURL(ns, pr string) string
+	TaskLogURL(ns, pr, task string) string
 	UI(ctx context.Context, kdyn dynamic.Interface) error
 	URL() string
 }
 
 type FallBackConsole struct{}
 
-func (f FallBackConsole) DetailURL(ns string, pr string) string {
+func (f FallBackConsole) DetailURL(ns, pr string) string {
 	return "https://giphy.com/search/random-dogs"
 }
 
-func (f FallBackConsole) TaskLogURL(ns string, pr string, task string) string {
+func (f FallBackConsole) TaskLogURL(ns, pr, task string) string {
 	return "https://giphy.com/search/random-cats"
 }
 

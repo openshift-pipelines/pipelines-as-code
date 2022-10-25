@@ -9,7 +9,7 @@ import (
 	"text/template"
 )
 
-func vinceMap(a map[string]string, b map[string]string) map[string]string {
+func vinceMap(a, b map[string]string) map[string]string {
 	for k, v := range b {
 		a[k] = v
 	}
