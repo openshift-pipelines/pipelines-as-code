@@ -115,12 +115,12 @@ spec:
           name: gosmee
           args:
             [
+              "client",
               "--saveDir",
               "/tmp/save",
               "VAR_GITEA_SMEE_HOOK_URL",
               "VAR_URL",
             ]
-
 ---
 apiVersion: apps/v1
 kind: Deployment
