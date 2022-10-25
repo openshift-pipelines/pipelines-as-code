@@ -124,8 +124,9 @@ The E2E tests will automatically create repo using the admin username for each t
 ## Debugging controller
 
 Create a [smee](https://smee.io) URL and point your app/webhook to it. Use
-[gosmee](https://github.com/chmouel/gosmee) to forward the requests from github to your locally
-installed controller (this can be either run on your debugger or inside kind).
+[gosmee](https://github.com/chmouel/gosmee) to forward the requests from github
+to your locally installed controller (this can be either run on your debugger or
+inside kind).
 
 An option of gosmee is to save the replay to a directory with `--saveDir
 /tmp/save`. If go to that directory a shell script will be created to replay
