@@ -3,7 +3,6 @@ package github
 import (
 	"context"
 	"crypto/hmac"
-	"strings"
 
 	//nolint: gosec
 	"crypto/sha1"
@@ -14,17 +13,19 @@ import (
 	"hash"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-github/v47/github"
+	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
-	rtesting "knative.dev/pkg/reconciler/testing"
-
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	"knative.dev/pkg/ptr"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func getLogger() *zap.SugaredLogger {
@@ -799,6 +800,63 @@ func TestGetFiles(t *testing.T) {
 				for i := range fileData {
 					assert.Equal(t, *tt.commit.Files[i].Filename, fileData[i])
 				}
+			}
+		})
+	}
+}
+
+func TestProvider_checkWebhookSecretValidity(t *testing.T) {
+	cw := clockwork.NewFakeClock()
+	tests := []struct {
+		name       string
+		wantSubErr string
+		remaining  int
+		expTime    time.Time
+	}{
+		{
+			name:      "remaining scim calls",
+			remaining: 1,
+		},
+		{
+			name:       "no remaining scim calls",
+			wantSubErr: "token is ratelimited",
+			remaining:  0,
+		},
+		{
+			name:       "expired",
+			wantSubErr: "token has expired",
+			expTime:    cw.Now().Add(1 * time.Minute),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+
+			mux.HandleFunc("/rate_limit", func(rw http.ResponseWriter, r *http.Request) {
+				s := &github.RateLimits{
+					SCIM: &github.Rate{
+						Remaining: tt.remaining,
+					},
+				}
+				st := new(struct {
+					Resources *github.RateLimits `json:"resources"`
+				})
+				st.Resources = s
+				b, _ := json.Marshal(st)
+				rw.Header().Set("Content-Type", "application/json")
+				rw.Header().Set("GitHub-Authentication-Token-Expiration", tt.expTime.Format("2006-01-02 03:04:05 MST"))
+				fmt.Fprint(rw, string(b))
+			})
+			defer teardown()
+			v := &Provider{
+				Client: fakeclient,
+			}
+			err := v.checkWebhookSecretValidity(ctx, cw)
+			if tt.wantSubErr != "" {
+				assert.ErrorContains(t, err, tt.wantSubErr)
+			} else {
+				assert.NilError(t, err)
 			}
 		})
 	}
