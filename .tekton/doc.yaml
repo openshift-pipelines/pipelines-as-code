@@ -5,7 +5,7 @@ metadata:
   name: pipeline-as-code-doc-generation
   annotations:
     pipelinesascode.tekton.dev/task: "[git-clone]"
-    pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "pull_request" && "docs/***".pathChanged()
 spec:
@@ -46,8 +46,9 @@ spec:
                 git config --global --add safe.directory $(workspaces.source.path)
                 cd docs
                 sed -i '1acanonifyURLs = true' config.toml
-                hugo --gc --minify -d {{ pull_request_number }} -b https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ pull_request_number }}
-                echo "Preview URL: https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ pull_request_number }}"
+                url="https://preview-pipelines-as-code-ci.apps.psipac.ospqa.com/docs/{{ pull_request_number }}"
+                hugo --gc --minify -d {{ pull_request_number }} -b ${url}
+                echo "Preview URL: ${url}"
             - name: upload-to-static-server
               # it has curl and we already pulled it
               image: mirror.gcr.io/curlimages/curl:7.85.0
@@ -69,7 +70,7 @@ spec:
                 tar czf - "{{ pull_request_number }}" | curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -F path=docs -F targz=true -X POST -F file=@- http://uploader:8080/upload
                 # Post as status
                 set +x
-                curl -H "Authorization: Bearer ${HUB_TOKEN}" -H 'Accept: application/vnd.github.v3+json' -X POST https://api.github.com/repos/{{repo_owner}}/{{repo_name}}/statuses/{{revision}} -d '{"state": "success", "target_url": "https://preview-pipelines-as-code-ci.apps.paac.devcluster.openshift.com/docs/{{ pull_request_number }}", "description": "Generated with brio.", "context": "Pipelines as Code Preview URL"}'
+                curl -H "Authorization: Bearer ${HUB_TOKEN}" -H 'Accept: application/vnd.github.v3+json' -X POST https://api.github.com/repos/{{repo_owner}}/{{repo_name}}/statuses/{{revision}} -d '{"state": "success", "target_url": "https://preview-pipelines-as-code-ci.apps.psipac.ospqa.com/docs/{{ pull_request_number }}", "description": "Generated with brio.", "context": "Pipelines as Code Preview URL"}'
 
         workspaces:
           - name: source

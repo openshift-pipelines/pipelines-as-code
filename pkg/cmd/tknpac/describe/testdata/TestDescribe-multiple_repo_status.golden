@@ -3,19 +3,16 @@ Namespace:   namespace
 URL:         https://anurl.com
 
 Last Run:
-
 Status:         Success
 Log:            https://everywhere.anwywhere
+Commit URL:     https://anurl.com/commit/SHA
 PipelineRun:    pipelinerun1
 Event:          pull_request
 Branch:         TargetBranch
-Commit URL:     https://anurl.com/commit/SHA
 Commit Title:   A title
-StartTime:      16 minutes ago
+StartTime:       16 minutes ago 
 Duration:       1 minute
-
 Other Runs:
 
-STATUS    Event          Branch          SHA    STARTED TIME    DURATION   PIPELINERUN
-――――――    ―――――          ――――――          ―――    ――――――――――――    ――――――――   ―――――――――――
+STATUS:   Event          Branch          SHA    STARTED TIME    DURATION      PIPELINERUN
 Success   pull_request   TargetBranch   SHA2   18 minutes ago   1 minute   pipelinerun2

@@ -63,6 +63,10 @@ func (rt RemoteTasks) convertTotask(data string) (*tektonv1beta1.Task, error) {
 }
 
 func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (string, error) {
+	if fetchedFromURIFromProvider, task, err := rt.ProviderInterface.GetTaskURI(ctx, rt.Run, rt.Event, uri); fetchedFromURIFromProvider {
+		return task, err
+	}
+
 	switch {
 	case strings.HasPrefix(uri, "https://"), strings.HasPrefix(uri, "http://"):
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
@@ -71,7 +75,7 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 			return "", err
 		}
 		if res.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("could not get remote resource \"%s\": %s", uri, res.Status)
+			return "", fmt.Errorf("cannot get remote resource: \"%s\": %s", uri, res.Status)
 		}
 		data, _ := io.ReadAll(res.Body)
 		defer res.Body.Close()
@@ -134,10 +138,10 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, annotations ma
 	for _, v := range tasks {
 		data, err := rt.getRemote(ctx, v, true)
 		if err != nil {
-			return nil, fmt.Errorf("error getting remote task %s: %w", v, err)
+			return nil, fmt.Errorf("error getting remote task \"%s\": %w", v, err)
 		}
 		if data == "" {
-			return nil, fmt.Errorf("could not get task \"%s\": returning empty", v)
+			return nil, fmt.Errorf("error getting remote task \"%s\": returning empty", v)
 		}
 
 		task, err := rt.convertTotask(data)

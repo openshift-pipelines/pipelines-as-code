@@ -9,20 +9,21 @@ import (
 )
 
 var (
-	magenta   = ansi.ColorFunc("magenta")
-	cyan      = ansi.ColorFunc("cyan")
-	red       = ansi.ColorFunc("red")
-	redBold   = ansi.ColorFunc("red+b")
-	yellow    = ansi.ColorFunc("yellow")
-	blue      = ansi.ColorFunc("blue")
-	blueBold  = ansi.ColorFunc("blue+b")
-	green     = ansi.ColorFunc("green")
-	greenBold = ansi.ColorFunc("green+b")
-	gray      = ansi.ColorFunc("black+i")
-	bold      = ansi.ColorFunc("default+b")
-	dimmed    = ansi.ColorFunc("default+d")
-	underline = ansi.ColorFunc("default+u")
-	cyanBold  = ansi.ColorFunc("cyan+b")
+	magenta    = ansi.ColorFunc("magenta")
+	cyan       = ansi.ColorFunc("cyan")
+	red        = ansi.ColorFunc("red")
+	redBold    = ansi.ColorFunc("red+b")
+	yellow     = ansi.ColorFunc("yellow")
+	blue       = ansi.ColorFunc("blue")
+	blueBold   = ansi.ColorFunc("blue+b")
+	green      = ansi.ColorFunc("green")
+	greenBold  = ansi.ColorFunc("green+b")
+	gray       = ansi.ColorFunc("black+i")
+	bold       = ansi.ColorFunc("default+b")
+	dimmed     = ansi.ColorFunc("246")
+	underline  = ansi.ColorFunc("default+u")
+	cyanBold   = ansi.ColorFunc("cyan+b")
+	orangeBold = ansi.ColorFunc("208")
 
 	gray256 = func(t string) string {
 		return fmt.Sprintf("\x1b[%d;5;%dm%s\x1b[m", 38, 242, t)
@@ -70,12 +71,21 @@ func (c *ColorScheme) ColorStatus(status string) string {
 		return c.Green(status)
 	case "failed":
 		return c.Red(status)
+	case "pipelineruntimeout":
+		return c.Yellow("Timeout")
 	case "norun":
 		return c.Dimmed(status)
 	case "running":
-		return c.Yellow(status)
+		return c.Blue(status)
 	}
 	return status
+}
+
+func (c *ColorScheme) Orange(t string) string {
+	if !c.enabled {
+		return t
+	}
+	return orangeBold(t)
 }
 
 func (c *ColorScheme) Bold(t string) string {

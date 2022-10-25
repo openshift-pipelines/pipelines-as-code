@@ -58,6 +58,7 @@ func TestDescribe(t *testing.T) {
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
+						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
 						Status: v1beta1.Status{
 							Conditions: []knativeapis.Condition{
 								{
@@ -119,7 +120,7 @@ func TestDescribe(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "one repository status and optnamespace",
+			name: "collect failures",
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: "namespace",
@@ -133,6 +134,12 @@ func TestDescribe(t *testing.T) {
 								{
 									Reason: "Success",
 								},
+							},
+						},
+						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{
+							"task1": {
+								Reason:     tektonv1beta1.PipelineRunReasonFailed.String(),
+								LogSnippet: "Error error miss robinson",
 							},
 						},
 						PipelineRunName: "pipelinerun1",
@@ -149,6 +156,69 @@ func TestDescribe(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "use real time",
+			args: args{
+				repoName:         "test-run",
+				currentNamespace: "namespace",
+				opts: &cli.PacCliOpts{
+					Namespace:   "optnamespace",
+					UseRealTime: true,
+				},
+				statuses: []v1alpha1.RepositoryRunStatus{
+					{
+						Status: v1beta1.Status{
+							Conditions: []knativeapis.Condition{
+								{
+									Reason: "Success",
+								},
+							},
+						},
+						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
+						PipelineRunName:    "pipelinerun1",
+						LogURL:             github.String("https://everywhere.anwywhere"),
+						StartTime:          &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
+						CompletionTime:     &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
+						SHA:                github.String("SHA"),
+						SHAURL:             github.String("https://anurl.com/commit/SHA"),
+						Title:              github.String("A title"),
+						TargetBranch:       github.String("TargetBranch"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "one repository status and optnamespace",
+			args: args{
+				repoName:         "test-run",
+				currentNamespace: "namespace",
+				opts: &cli.PacCliOpts{
+					Namespace: "optnamespace",
+				},
+				statuses: []v1alpha1.RepositoryRunStatus{
+					{
+						Status: v1beta1.Status{
+							Conditions: []knativeapis.Condition{
+								{
+									Reason: "Success",
+								},
+							},
+						},
+						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
+						PipelineRunName:    "pipelinerun1",
+						LogURL:             github.String("https://everywhere.anwywhere"),
+						StartTime:          &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
+						CompletionTime:     &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
+						SHA:                github.String("SHA"),
+						SHAURL:             github.String("https://anurl.com/commit/SHA"),
+						Title:              github.String("A title"),
+						TargetBranch:       github.String("TargetBranch"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "multiple repo status",
 			args: args{
 				opts:             &cli.PacCliOpts{},
@@ -156,6 +226,7 @@ func TestDescribe(t *testing.T) {
 				currentNamespace: "namespace",
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
+						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
 						Status: v1beta1.Status{
 							Conditions: []knativeapis.Condition{
 								{

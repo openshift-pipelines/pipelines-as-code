@@ -2,12 +2,16 @@ package list
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"text/tabwriter"
+	"text/template"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/juju/ansiterm"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -15,15 +19,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+//go:embed template/list.tmpl
+var lsTmpl string
+
 var (
-	header            = "STATUS\tNAME\tAGE\tURL"
-	body              = "%s\t%s\t%s\t%s"
 	allNamespacesFlag = "all-namespaces"
 	namespaceFlag     = "namespace"
+	useRealTimeFlag   = "use-realtime"
+	noHeadersFlag     = "no-headers"
 )
 
 func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
-	var noheaders, allNamespaces bool
+	var noheaders, useRealTime, allNamespaces bool
 	var selectors string
 
 	cmd := &cobra.Command{
@@ -42,6 +49,17 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			opts.UseRealTime, err = cmd.Flags().GetBool(useRealTimeFlag)
+			if err != nil {
+				return err
+			}
+
+			opts.NoHeaders, err = cmd.Flags().GetBool(noHeadersFlag)
+			if err != nil {
+				return err
+			}
+
 			opts.Namespace, err = cmd.Flags().GetString(namespaceFlag)
 			if err != nil {
 				return err
@@ -52,13 +70,15 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 			cw := clockwork.NewRealClock()
-			return list(ctx, run, opts, ioStreams, cw, selectors, noheaders)
+			return list(ctx, run, opts, ioStreams, cw, selectors)
 		},
 	}
 
-	cmd.PersistentFlags().BoolVarP(&allNamespaces, allNamespacesFlag, "A", false, "If present, "+
-		"list the repository across all namespaces. Namespace in current context is ignored even if specified with"+
-		" --namespace.")
+	cmd.PersistentFlags().BoolVarP(&allNamespaces, allNamespacesFlag, "A", false,
+		"list the repositories across all namespaces.")
+
+	cmd.PersistentFlags().BoolVarP(&useRealTime, useRealTimeFlag, "", false,
+		"display the time as RFC3339 instead of a relative time")
 
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
@@ -70,7 +90,7 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	)
 
 	cmd.Flags().BoolVar(
-		&noheaders, "no-headers", false, "don't print headers.")
+		&noheaders, noHeadersFlag, false, "don't print headers.")
 
 	cmd.Flags().StringVarP(&selectors, "selectors", "l",
 		"", "Selector (label query) to filter on, "+
@@ -80,7 +100,36 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, cw clockwork.Clock, selectors string, noheaders bool) error {
+func formatStatus(status *v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock, ns string, opts *cli.PacCliOpts) string {
+	// TODO: we could make a hyperlink to the console namespace list of repo if
+	// we wanted to go the extra step
+	if status == nil {
+		s := fmt.Sprintf("%s\t%s\t%s\t", cs.Dimmed("---"), cs.Dimmed("---"), cs.Dimmed("---"))
+		if opts.AllNameSpaces {
+			s += fmt.Sprintf("%s\t", ns)
+		}
+		return fmt.Sprintf("%s%s", s, cs.Dimmed("NoRun"))
+	}
+	starttime := formatting.Age(status.StartTime, c)
+	if opts.UseRealTime {
+		starttime = status.StartTime.Format("2006-01-02T15:04:05Z07:00") // RFC3339
+	}
+	s := fmt.Sprintf("%s\t%s\t%s",
+		cs.HyperLink(formatting.ShortSHA(*status.SHA), *status.SHAURL),
+		starttime,
+		formatting.PRDuration(*status))
+	if opts.AllNameSpaces {
+		s = fmt.Sprintf("%s\t%s", s, ns)
+	}
+
+	reason := "UNKNOWN"
+	if len(status.Status.Conditions) > 0 {
+		reason = status.Status.Conditions[0].Reason
+	}
+	return fmt.Sprintf("%s\t%s", s, cs.HyperLink(cs.ColorStatus(reason), *status.LogURL))
+}
+
+func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, clock clockwork.Clock, selectors string) error {
 	if opts.Namespace != "" {
 		cs.Info.Kube.Namespace = opts.Namespace
 	}
@@ -96,30 +145,45 @@ func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *
 		return err
 	}
 
+	type repoStatusInfo struct {
+		Status               *v1alpha1.RepositoryRunStatus
+		Name, Namespace, URL string
+	}
+	repoStatuses := []repoStatusInfo{}
+	for _, repo := range repositories.Items {
+		rs := repoStatusInfo{
+			Name:      repo.GetName(),
+			URL:       repo.Spec.URL,
+			Namespace: repo.GetNamespace(),
+		}
+		statuses := status.MixLivePRandRepoStatus(ctx, cs, repo)
+		if len(statuses) > 0 {
+			rs.Status = &statuses[0]
+		}
+		repoStatuses = append(repoStatuses, rs)
+	}
+
 	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
-
-	if !noheaders {
-		_, _ = fmt.Fprint(w, header)
-		if opts.AllNameSpaces {
-			fmt.Fprint(w, "\tNAMESPACE")
-		}
-		fmt.Fprint(w, "\n")
+	colorScheme := ioStreams.ColorScheme()
+	data := struct {
+		Statuses    []repoStatusInfo
+		ColorScheme *cli.ColorScheme
+		Clock       clockwork.Clock
+		Opts        *cli.PacCliOpts
+	}{
+		Statuses:    repoStatuses,
+		ColorScheme: colorScheme,
+		Clock:       clock,
+		Opts:        opts,
 	}
-	coscheme := ioStreams.ColorScheme()
-	for _, repository := range repositories.Items {
-		fmt.Fprintf(w, body,
-			formatting.ShowStatus(repository, coscheme),
-			coscheme.HyperLink(repository.GetName(), repository.Spec.URL),
-			formatting.ShowLastAge(repository, cw),
-			repository.Spec.URL)
-
-		if opts.AllNameSpaces {
-			fmt.Fprintf(w, "\t%s", repository.GetNamespace())
-		}
-
-		fmt.Fprint(w, "\n")
+	funcMap := template.FuncMap{
+		"formatStatus": formatStatus,
 	}
 
+	t := template.Must(template.New("LS Template").Funcs(funcMap).Parse(lsTmpl))
+	if err := t.Execute(w, data); err != nil {
+		return err
+	}
 	w.Flush()
 	return nil
 }

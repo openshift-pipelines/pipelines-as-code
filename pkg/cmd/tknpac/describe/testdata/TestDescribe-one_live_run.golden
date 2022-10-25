@@ -3,9 +3,10 @@ Namespace:      ns
 URL:            https://anurl.com
 Status:         Running
 Log:            https://giphy.com/search/random-dogs
+Commit URL:     
 PipelineRun:    running
 Event:          
 Branch:         tartanpion
-Commit URL:     
 Commit Title:   
-StartTime:      -35 minutes ago
+StartTime:       -35 minutes ago 
+Duration:       ---

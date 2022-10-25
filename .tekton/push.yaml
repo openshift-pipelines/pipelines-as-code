@@ -8,6 +8,7 @@ metadata:
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
     pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]"
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
 spec:
   params:
     - name: repo_url
@@ -132,7 +133,7 @@ spec:
           name: send-slack-notification
         params:
           - name: log_url
-            value: "https://console-openshift-console.apps.paac.devcluster.openshift.com"
+            value: "https://console-openshift-console.apps.psipac.ospqa.com"
           - name: openshift
             value: "true"
   workspaces:
@@ -143,4 +144,4 @@ spec:
             - ReadWriteOnce
           resources:
             requests:
-              storage: 2Gi
+              storage: 5Gi

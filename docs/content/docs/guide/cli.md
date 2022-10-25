@@ -149,7 +149,24 @@ You can specify the flag `--cascade` to optionally delete the attached secrets
 ### Repository Listing
 
 `tkn pac list` -- will list all the Pipelines as Code Repositories
-definition and display the last status of the runs associated with it.
+definition and display the last or the current status (if its running) of the
+PipelineRun associated with it.
+
+You can add the option `-A/--all-namespaces` to list all repositories across the
+cluster. (you need to have the right for it).
+
+You can select the repositories by labels with the `-l/--selectors` flag.
+
+You can choose to display the real time as RFC3339 rather than the relative time
+with the `--use-realtime` flag.
+
+On modern terminal (ie: OSX Terminal, [iTerm2](https://iterm2.com/), [Windows
+Terminal](https://github.com/microsoft/terminal), GNOME-terminal, kitty and so
+on...) the links become clickable with control+click or ⌘+click (see the
+documentation of your terminal for more details) and will open the browser
+to the console/dashboard URL to see the details of the Pipelinerun associated
+with it.
+
 {{< /details >}}
 
 {{< details "tkn pac describe" >}}
@@ -159,25 +176,39 @@ definition and display the last status of the runs associated with it.
 `tkn pac describe` -- will describe a Pipelines as Code Repository
 definition and the runs associated with it.
 
-On modern terminal (ie: [iTerm2](https://iterm2.com/), [Windows
-Terminal](https://github.com/microsoft/terminal), GNOME-terminal and so on...)
-the links are clickable with control+click or ⌘+click and will open the browser
-to the UI URL to see the Pipelinerun associated with it.
+You can choose to display the real time as RFC3339 rather than the relative time
+with the `--use-realtime` flag.
+
+When the last PipelineRun has failure it will print the last 10 lines of every tasks associated with the PipelineRun thas has been failed highlightign the `ERROR` or `FAILURE` and other patterns.
+
+On modern terminal (ie: OSX Terminal, [iTerm2](https://iterm2.com/), [Windows
+Terminal](https://github.com/microsoft/terminal), GNOME-terminal, kitty and so
+on...) the links become clickable with control+click or ⌘+click (see the
+documentation of your terminal for more details) and will open the browser
+to the console/dashboard URL to see the details of the Pipelinerun associated
+with it.
+
 {{< /details >}}
 
-{{< details "tkn pac generate" >}}
+{{< details "tkn pac logs" >}}
 
 ### Logs
 
 `tkn pac logs` -- will show the logs attached to a Repository.
 
-If you don't specify a repository on the command line it will ask you to choose one or auto
-select it if there is only one.
+If you don't specify a repository on the command line it will ask you to choose
+one or auto select it if there is only one.
 
-IF you add the "-w" flag it will directly open the console URL to the log.
+If there is multiple PipelineRuns attached to the Repo it will ask you to choose
+one or auto select it if there is only one.
 
-[`tkn`](https://github.com/tektoncd/cli) binary needs to be installed to show
+If you add the `-w` flag it will open the console or the dashboard URL to the log.
+
+The [`tkn`](https://github.com/tektoncd/cli) binary needs to be installed to show
 the logs.
+{{< /details >}}
+
+{{< details "tkn pac generate" >}}
 
 ### Generate
 

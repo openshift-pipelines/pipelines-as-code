@@ -139,8 +139,6 @@ function install_pac() {
         cd ${oldPwd}
     fi
     configure_pac
-    [[ -n ${INSTALL_GITEA} ]] && install_gitea
-    echo "And we are done :) URLS: "
     echo "controller: http://controller.${DOMAIN_NAME}"
     echo "dashboard: http://dashboard.${DOMAIN_NAME}"
 }
@@ -198,6 +196,8 @@ main() {
 	install_nginx
 	install_tekton
 	install_pac
+    install_gitea
+    echo "And we are done :): "
 }
 
 while getopts "Gpcrb" o; do

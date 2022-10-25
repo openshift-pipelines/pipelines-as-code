@@ -63,6 +63,11 @@ func TestGetRepoOwnerSplitted(t *testing.T) {
 			url:     "hello/repo",
 			wantErr: true,
 		},
+		{
+			name:    "bad/chars in url",
+			url:     "😃",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -2,67 +2,41 @@ package describe
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
+	"regexp"
 	"text/tabwriter"
 	"text/template"
 
-	"github.com/google/go-github/v47/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/juju/ansiterm"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	sortrepostatus "github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/spf13/cobra"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var namespaceFlag = "namespace"
-
-const (
-	describeTemplate = `{{ $.ColorScheme.Bold "Name" }}:	{{.Repository.Name}}
-{{ $.ColorScheme.Bold "Namespace" }}:	{{.Repository.Namespace}}
-{{ $.ColorScheme.Bold "URL" }}:	{{.Repository.Spec.URL}}
-{{- if eq (len .Statuses) 0 }}
-
-{{ $.ColorScheme.Dimmed "No runs has started."}}
-{{- else }}
-{{- $status := (index .Statuses 0) }}
-
-{{- if (gt (len .Statuses) 1) }}
-
-{{ $.ColorScheme.Underline "Last Run:" }}
-{{ end }}
-{{ $.ColorScheme.Bold "Status:" }}	{{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
-{{ $.ColorScheme.Bold "Log:"  }}	{{ $status.LogURL}}
-{{ $.ColorScheme.Bold "PipelineRun:" }}	{{ $.ColorScheme.HyperLink $status.PipelineRunName $status.LogURL }}
-{{ $.ColorScheme.Bold "Event:" }}	{{ $status.EventType }}
-{{ $.ColorScheme.Bold "Branch:" }}	{{ sanitizeBranch $status.TargetBranch }}
-{{ $.ColorScheme.Bold "Commit URL:" }}	{{ $status.SHAURL }}
-{{ $.ColorScheme.Bold "Commit Title:" }}	{{ $status.Title }}
-{{ $.ColorScheme.Bold "StartTime:" }}	{{ formatTime $status.StartTime $.Clock }}
-{{- if $status.CompletionTime }}
-{{ $.ColorScheme.Bold "Duration:" }}	{{ formatDuration $status.StartTime $status.CompletionTime }}
-{{- end }}
-{{- if (gt (len .Statuses) 1) }}
-
-{{ $.ColorScheme.Underline "Other Runs:" }}
-
-STATUS	Event	Branch	 SHA	 STARTED TIME	DURATION	PIPELINERUN
-――――――	―――――	――――――	 ―――	 ――――――――――――	――――――――	―――――――――――
-{{- range $i, $st := (slice .Statuses 1 (len .Statuses)) }}
-{{ formatStatus $st $.ColorScheme $.Clock }}
-{{- end }}
-{{- end }}
-{{- end }}
-`
+var (
+	namespaceFlag   = "namespace"
+	useRealTimeFlag = "use-realtime"
 )
+
+//go:embed templates/describe.tmpl
+var describeTemplate string
+
+func formatError(cs *cli.ColorScheme, log string) string {
+	n := status.ErorrRE.ReplaceAllString(log, cs.RedBold("$0"))
+	// add two space to every characters at beginning of line in string
+	n = regexp.MustCompile(`(?m)^`).ReplaceAllString(n, "  ")
+	return n
+}
 
 func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c clockwork.Clock) string {
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
@@ -71,11 +45,12 @@ func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c cl
 		*status.TargetBranch,
 		cs.HyperLink(formatting.ShortSHA(*status.SHA), *status.SHAURL),
 		formatting.Age(status.StartTime, c),
-		formatting.Duration(status.StartTime, status.CompletionTime),
+		formatting.PRDuration(status),
 		cs.HyperLink(status.PipelineRunName, *status.LogURL))
 }
 
 func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+	var useRealTime bool
 	cmd := &cobra.Command{
 		Use:     "describe",
 		Aliases: []string{"desc"},
@@ -88,6 +63,11 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			var err error
 			var repoName string
 			opts := cli.NewCliOptions(cmd)
+
+			opts.UseRealTime, err = cmd.Flags().GetBool(useRealTimeFlag)
+			if err != nil {
+				return err
+			}
 
 			opts.Namespace, err = cmd.Flags().GetString(namespaceFlag)
 			if err != nil {
@@ -118,6 +98,8 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
 
+	cmd.PersistentFlags().BoolVarP(&useRealTime, useRealTimeFlag, "", false,
+		"display the time as RFC3339 instead of a relative time")
 	_ = cmd.RegisterFlagCompletionFunc(namespaceFlag,
 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			return completion.BaseCompletion(namespaceFlag, args)
@@ -150,9 +132,10 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 	colorScheme := ioStreams.ColorScheme()
 
 	funcMap := template.FuncMap{
+		"formatError":     formatError,
 		"formatStatus":    formatStatus,
 		"formatEventType": formatting.CamelCasit,
-		"formatDuration":  formatting.Duration,
+		"formatDuration":  formatting.PRDuration,
 		"formatTime":      formatting.Age,
 		"sanitizeBranch":  formatting.SanitizeBranch,
 		"shortSHA":        formatting.ShortSHA,
@@ -163,13 +146,14 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		Statuses    []v1alpha1.RepositoryRunStatus
 		ColorScheme *cli.ColorScheme
 		Clock       clockwork.Clock
+		Opts        *cli.PacCliOpts
 	}{
 		Repository:  repository,
-		Statuses:    getLivePRAndRepostatus(ctx, cs, repository),
+		Statuses:    status.MixLivePRandRepoStatus(ctx, cs, *repository),
 		ColorScheme: colorScheme,
 		Clock:       clock,
+		Opts:        opts,
 	}
-
 	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
 	t := template.Must(template.New("Describe Repository").Funcs(funcMap).Parse(describeTemplate))
 
@@ -178,40 +162,4 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 	}
 
 	return w.Flush()
-}
-
-func getLivePRAndRepostatus(ctx context.Context, cs *params.Run, repository *v1alpha1.Repository) []v1alpha1.RepositoryRunStatus {
-	repositorystatus := repository.Status
-	label := "pipelinesascode.tekton.dev/repository=" + repository.Name
-	prs, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repository.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: label,
-	})
-	if err != nil {
-		return sortrepostatus.RepositorySortRunStatus(repositorystatus)
-	}
-
-	for _, pr := range prs.Items {
-		logurl := cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName())
-		if pr.Status.Conditions == nil || len(pr.Status.Conditions) == 0 {
-			repositorystatus = convertPrStatusToRepositoryStatus(repositorystatus, pr, logurl)
-		} else if pr.Status.Conditions[0].Reason == tektonv1beta1.PipelineRunReasonRunning.String() {
-			repositorystatus = convertPrStatusToRepositoryStatus(repositorystatus, pr, logurl)
-		}
-	}
-
-	return sortrepostatus.RepositorySortRunStatus(repositorystatus)
-}
-
-func convertPrStatusToRepositoryStatus(repositorystatus []v1alpha1.RepositoryRunStatus, pr tektonv1beta1.PipelineRun, logurl string) []v1alpha1.RepositoryRunStatus {
-	return append(repositorystatus, v1alpha1.RepositoryRunStatus{
-		Status:          pr.Status.Status,
-		LogURL:          &logurl,
-		PipelineRunName: pr.GetName(),
-		StartTime:       pr.Status.StartTime,
-		SHA:             github.String(pr.GetLabels()["pipelinesascode.tekton.dev/sha"]),
-		SHAURL:          github.String(pr.GetAnnotations()["pipelinesascode.tekton.dev/sha-url"]),
-		Title:           github.String(pr.GetAnnotations()["pipelinesascode.tekton.dev/sha-title"]),
-		TargetBranch:    github.String(pr.GetLabels()["pipelinesascode.tekton.dev/branch"]),
-		EventType:       github.String(pr.GetLabels()["pipelinesascode.tekton.dev/event-type"]),
-	})
 }

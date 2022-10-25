@@ -3,18 +3,16 @@ Namespace:   ns
 URL:         https://anurl.com
 
 Last Run:
-
 Status:         Running
 Log:            https://giphy.com/search/random-dogs
+Commit URL:     
 PipelineRun:    running
 Event:          papayolo
 Branch:         tartanpion
-Commit URL:     
 Commit Title:   
-StartTime:      -35 minutes ago
-
+StartTime:       -35 minutes ago 
+Duration:       ---
 Other Runs:
 
-STATUS    Event               Branch          SHA    STARTED TIME    DURATION   PIPELINERUN
-――――――    ―――――               ――――――          ―――    ――――――――――――    ――――――――   ―――――――――――
+STATUS:   Event               Branch          SHA    STARTED TIME    DURATION      PIPELINERUN
 Success   propseryouplaboun   TargetBranch   SHA    16 minutes ago   1 minute   pipelinerun1

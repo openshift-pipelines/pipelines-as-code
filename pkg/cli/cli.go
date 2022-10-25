@@ -12,7 +12,9 @@ type PacCliOpts struct {
 	NoColoring    bool
 	AllNameSpaces bool
 	Namespace     string
+	UseRealTime   bool
 	AskOpts       survey.AskOpt
+	NoHeaders     bool
 }
 
 func NewCliOptions(cmd *cobra.Command) *PacCliOpts {

@@ -1,0 +1,39 @@
+{{ $.ColorScheme.Bold "Name" }}:	{{.Repository.Name}}
+{{ $.ColorScheme.Bold "Namespace" }}:	{{.Repository.Namespace}}
+{{ $.ColorScheme.Bold "URL" }}:	{{.Repository.Spec.URL}}
+{{- if eq (len .Statuses) 0 }}
+
+{{ $.ColorScheme.Dimmed "No runs has started."}}
+{{- else }}
+{{- $status := (index .Statuses 0) }}
+
+{{- if (gt (len .Statuses) 1) }}
+
+{{ $.ColorScheme.Underline "Last Run:" }}
+{{- end }}
+{{ $.ColorScheme.Bold "Status:" }}	{{ $.ColorScheme.ColorStatus (index $status.Status.Conditions 0).Reason  }}
+{{ $.ColorScheme.Bold "Log:"  }}	{{ $status.LogURL}}
+{{ $.ColorScheme.Bold "Commit URL:" }}	{{ $status.SHAURL }}
+{{ $.ColorScheme.Bold "PipelineRun:" }}	{{ $.ColorScheme.HyperLink $status.PipelineRunName $status.LogURL }}
+{{ $.ColorScheme.Bold "Event:" }}	{{ $status.EventType }}
+{{ $.ColorScheme.Bold "Branch:" }}	{{ sanitizeBranch $status.TargetBranch }}
+{{ $.ColorScheme.Bold "Commit Title:" }}	{{ $status.Title }}
+{{ $.ColorScheme.Bold "StartTime:" }}	{{ if $.Opts.UseRealTime }}{{ $status.StartTime.Format "2006-01-02T15:04:05Z07:00" }} {{ else }} {{ formatTime $status.StartTime $.Clock }}{{ end }} 
+{{ $.ColorScheme.Bold "Duration:" }}	{{ formatDuration $status }}
+{{- if (gt (len $status.CollectedTaskInfos) 0) }}
+
+{{ $.ColorScheme.Underline "Failures:" }}
+{{ range $taskName, $task := $status.CollectedTaskInfos }}
+{{- $.ColorScheme.Red "•" }} {{ $taskName }}:	{{ $task.Reason }}
+{{ formatError $.ColorScheme $task.LogSnippet }}
+{{ end }}
+{{- end }}
+{{- if (gt (len .Statuses) 1) }}
+{{ $.ColorScheme.Underline "Other Runs:" }}
+
+{{ $.ColorScheme.Bold "STATUS:" }}	{{ $.ColorScheme.Bold "Event" }}	{{ $.ColorScheme.Bold "Branch" }}	 {{ $.ColorScheme.Bold "SHA" }}	 {{ $.ColorScheme.Bold "STARTED TIME" }}	{{ $.ColorScheme.Bold "DURATION" }}		{{ $.ColorScheme.Bold "PIPELINERUN" }}
+{{- range $i, $st := (slice .Statuses 1 (len .Statuses)) }}
+{{ formatStatus $st $.ColorScheme $.Clock }}
+{{- end }}
+{{- end }}
+{{- end }}

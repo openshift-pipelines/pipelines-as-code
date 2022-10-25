@@ -1,0 +1,185 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pipelines-as-code-e2e-tests
+  annotations:
+    pipelinesascode.tekton.dev/task: "[https://git.io/Jn9Ee]"
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
+spec:
+  taskRunSpecs:
+    - pipelineTaskName: e2e-tests
+      taskServiceAccountName: pipelines-e2e
+  params:
+    - name: repo_url
+      value: "{{ repo_url }}"
+    - name: revision
+      value: "{{ revision }}"
+  pipelineSpec:
+    params:
+      - name: repo_url
+      - name: revision
+    workspaces:
+      - name: source
+    tasks:
+      - name: fetch-repository
+        taskRef:
+          kind: ClusterTask
+          name: git-clone
+        workspaces:
+          - name: output
+            workspace: source
+        params:
+          - name: url
+            value: $(params.repo_url)
+          - name: revision
+            value: $(params.revision)
+      - name: e2e-tests
+        runAfter:
+          - fetch-repository
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - image: mirror.gcr.io/library/golang:1.18
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+                - name: GOLANGCILINT_CACHE
+                  value: $(workspaces.source.path)/go-build-cache/golangci-cache
+                - name: UPLOADER_UPLOAD_CREDENTIALS
+                  valueFrom:
+                    secretKeyRef:
+                      name: "uploader-upload-credentials"
+                      key: "credentials"
+              name: get-cache
+              workingDir: $(workspaces.source.path)
+              script: |
+                #!/usr/bin/env bash
+                set -eux
+                mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
+                cd $(dirname ${GOCACHE})
+
+                curl -fsI http://uploader:8080/golang-cache.tar.gz || {
+                    echo "no cache found"
+                    exit 0
+                }
+
+                echo "Getting cache"
+                curl -u ${UPLOADER_UPLOAD_CREDENTIALS} http://uploader:8080/golang-cache.tar.gz|tar -z -x -f- || \
+                   curl -X DELETE -F "file=golang-cache.tar.gz" http://uploader:8080/upload
+
+            - name: e2e-tests
+              image: mirror.gcr.io/library/golang:1.18
+              env:
+                - name: TEST_GITHUB_API_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: pipeline-e2e-tests-secret
+                      key: github_api_url
+                - name: SMEE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: pipeline-e2e-tests-secret
+                      key: smee_url
+                - name: TEST_GITHUB_REPO_OWNER_GITHUBAPP
+                  valueFrom:
+                    secretKeyRef:
+                      name: pipeline-e2e-tests-secret
+                      key: github_repo_owner_githubapp
+                - name: TEST_GITHUB_REPO_OWNER_WEBHOOK
+                  valueFrom:
+                    secretKeyRef:
+                      name: pipeline-e2e-tests-secret
+                      key: github_repo_owner_webhook
+                - name: TEST_GITHUB_REPO_INSTALLATION_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: pipeline-e2e-tests-secret
+                      key: github_repo_installation_id
+                - name: TEST_GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: pipeline-e2e-tests-secret
+                      key: github_token
+                - name: TEST_EL_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: pipeline-e2e-tests-secret
+                      key: el_url
+                - name: TEST_EL_WEBHOOK_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: "pipeline-e2e-tests-secret"
+                      key: el_webhook_secret
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+              workingDir: $(workspaces.source.path)
+              script: |
+                set -eux
+                go test -v -failfast -tags e2e -run TestGithub ./test
+        workspaces:
+          - name: source
+            workspace: source
+
+      - name: savecache
+        runAfter:
+          - e2e-tests
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: save-cache
+              # Has everything we need in there and we already fetched it!
+              image: registry.access.redhat.com/ubi9/python-39
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: UPLOADER_UPLOAD_CREDENTIALS
+                  valueFrom:
+                    secretKeyRef:
+                      name: "uploader-upload-credentials"
+                      key: "credentials"
+              script: |
+                #!/usr/bin/env bash
+                set -eux
+                curl -o/dev/null -u ${UPLOADER_UPLOAD_CREDENTIALS}  -s -f -X POST -F path=test -F file=@/etc/motd  http://uploader:8080/upload || {
+                    echo "No cache server found"
+                    exit 0
+                }
+
+                lm="$(curl -fsI http://uploader:8080/golang-cache.tar.gz|sed -En '/Last-Modified/ { s/Last-Modified:\s*//;p;}')"
+                if [[ -n ${lm} ]];then
+                    expired=$(python -c "import datetime, sys;print(datetime.datetime.now() > datetime.datetime.strptime(sys.argv[1].strip(), '%a, %d %b %Y %X %Z') + datetime.timedelta(days=1))" "${lm}")
+                    [[ ${expired} == "False" ]] && {
+                      echo "Cache is younger than a day"
+                      exit
+                    }
+                fi
+
+                cd $(workspaces.source.path)/go-build-cache
+                tar czf - . |curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -# -L -f -F path=golang-cache.tar.gz -X POST -F "file=@-" http://uploader:8080/upload
+    finally:
+      - name: finally
+        taskRef:
+          name: send-slack-notification
+        params:
+          - name: log_url
+            value: "https://console-openshift-console.apps.psipac.ospqa.com"
+          - name: openshift
+            value: "true"
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi

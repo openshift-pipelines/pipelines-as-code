@@ -23,6 +23,11 @@ type Provider struct {
 	Username      *string
 }
 
+// GetTaskURI TODO: Implement ME
+func (v *Provider) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error) {
+	return false, "", nil
+}
+
 const taskStatusTemplate = `| **Status** | **Duration** | **Name** |
 | --- | --- | --- |
 {{range $taskrun := .TaskRunList }}|{{ formatCondition $taskrun.Status.Conditions }}|{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}|{{ $taskrun.ConsoleLogURL }}|

@@ -48,7 +48,7 @@ func TestGithubPush(t *testing.T) {
 
 		entries, err := payload.GetEntries(
 			map[string]string{".tekton/pipelinerun-on-push.yaml": "testdata/pipelinerun-on-push.yaml"},
-			targetNS, targetBranch, targetEvent)
+			targetNS, targetBranch, targetEvent, map[string]string{})
 		assert.NilError(t, err)
 
 		title := "TestPush "

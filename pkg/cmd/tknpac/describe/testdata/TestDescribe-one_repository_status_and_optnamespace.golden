@@ -3,10 +3,10 @@ Namespace:      optnamespace
 URL:            https://anurl.com
 Status:         Success
 Log:            https://everywhere.anwywhere
+Commit URL:     https://anurl.com/commit/SHA
 PipelineRun:    pipelinerun1
 Event:          <nil>
 Branch:         TargetBranch
-Commit URL:     https://anurl.com/commit/SHA
 Commit Title:   A title
-StartTime:      16 minutes ago
+StartTime:       16 minutes ago 
 Duration:       1 minute
