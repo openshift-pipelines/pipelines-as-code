@@ -63,7 +63,7 @@ Namespace rather than trying to match it from all available repository on cluste
 
 ```yaml
 spec:
-  concurrency_limit: <number> 
+  concurrency_limit: <number>
 ```
 
 Example:
