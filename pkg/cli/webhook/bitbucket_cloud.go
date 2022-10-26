@@ -25,7 +25,7 @@ type bitbucketCloudConfig struct {
 }
 
 func (bb *bitbucketCloudConfig) Run(_ context.Context, opts *Options) (*response, error) {
-	err := bb.askBBWebhookConfig(opts.RepositoryURL, opts.ControllerURL, opts.ProviderAPIURL)
+	err := bb.askBBWebhookConfig(opts.RepositoryURL, opts.ControllerURL, opts.ProviderAPIURL, opts.PersonalAccessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (bb *bitbucketCloudConfig) Run(_ context.Context, opts *Options) (*response
 	}, bb.create()
 }
 
-func (bb *bitbucketCloudConfig) askBBWebhookConfig(repositoryURL, controllerURL, apiURL string) error {
+func (bb *bitbucketCloudConfig) askBBWebhookConfig(repositoryURL, controllerURL, apiURL, personalAccessToken string) error {
 	if repositoryURL == "" {
 		msg := "Please enter the git repository url you want to be configured: "
 		if err := prompt.SurveyAskOne(&survey.Input{Message: msg}, &repositoryURL,
@@ -68,11 +68,15 @@ func (bb *bitbucketCloudConfig) askBBWebhookConfig(repositoryURL, controllerURL,
 		return err
 	}
 
-	fmt.Fprintln(bb.IOStream.Out, "ℹ ️You now need to create a Bitbucket Cloud app password, please checkout the docs at https://is.gd/fqMHiJ for the required permissions")
-	if err := prompt.SurveyAskOne(&survey.Password{
-		Message: "Please enter the Bitbucket Cloud app password: ",
-	}, &bb.personalAccessToken, survey.WithValidator(survey.Required)); err != nil {
-		return err
+	if personalAccessToken == "" {
+		fmt.Fprintln(bb.IOStream.Out, "ℹ ️You now need to create a Bitbucket Cloud app password, please checkout the docs at https://is.gd/fqMHiJ for the required permissions")
+		if err := prompt.SurveyAskOne(&survey.Password{
+			Message: "Please enter the Bitbucket Cloud app password: ",
+		}, &bb.personalAccessToken, survey.WithValidator(survey.Required)); err != nil {
+			return err
+		}
+	} else {
+		bb.personalAccessToken = personalAccessToken
 	}
 
 	bb.controllerURL = controllerURL

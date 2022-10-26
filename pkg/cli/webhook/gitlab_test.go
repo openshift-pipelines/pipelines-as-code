@@ -16,12 +16,13 @@ func TestAskGLWebhookConfig(t *testing.T) {
 	//nolint
 	io, _, _, _ := cli.IOTest()
 	tests := []struct {
-		name          string
-		wantErrStr    string
-		askStubs      func(*prompt.AskStubber)
-		providerURL   string
-		controllerURL string
-		repoURL       string
+		name                string
+		wantErrStr          string
+		askStubs            func(*prompt.AskStubber)
+		providerURL         string
+		controllerURL       string
+		repoURL             string
+		personalaccesstoken string
 	}{
 		{
 			name: "ask all details no defaults",
@@ -48,6 +49,20 @@ func TestAskGLWebhookConfig(t *testing.T) {
 			providerURL:   "https://gl.pac.test",
 			wantErrStr:    "",
 		},
+		{
+			name: "with defaults and given personalaccesstoken",
+			askStubs: func(as *prompt.AskStubber) {
+				as.StubOne("id")
+				as.StubOne(true)
+				as.StubOne("webhook-secret")
+				as.StubOne("token")
+			},
+			repoURL:             "https://gitlab.com/pac/demo",
+			controllerURL:       "https://test",
+			providerURL:         "https://gl.pac.test",
+			personalaccesstoken: "Yzg5NzhlYmNkNTQwNzYzN2E2ZGExYzhkMTc4NjU0MjY3ZmQ2NmMeZg==",
+			wantErrStr:          "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -58,7 +73,7 @@ func TestAskGLWebhookConfig(t *testing.T) {
 				tt.askStubs(as)
 			}
 			gl := gitLabConfig{IOStream: io}
-			err := gl.askGLWebhookConfig(tt.repoURL, tt.controllerURL, tt.providerURL)
+			err := gl.askGLWebhookConfig(tt.repoURL, tt.controllerURL, tt.providerURL, tt.personalaccesstoken)
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
 				return

@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	defaultGitProviderSecretKey                  = "provider.token"
-	defaultGitProviderWebhookSecretKey           = "webhook.secret"
+	DefaultGitProviderSecretKey                  = "provider.token"
+	DefaultGitProviderWebhookSecretKey           = "webhook.secret"
 	defaultPipelinesAscodeSecretName             = "pipelines-as-code-secret"
 	defaultPipelinesAscodeSecretWebhookSecretKey = "webhook.secret"
 )
@@ -37,7 +37,7 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	}
 	gitProviderSecretKey := repo.Spec.GitProvider.Secret.Key
 	if gitProviderSecretKey == "" {
-		gitProviderSecretKey = defaultGitProviderSecretKey
+		gitProviderSecretKey = DefaultGitProviderSecretKey
 	}
 
 	if event.Provider.Token, err = k8int.GetSecret(ctx, kubeinteraction.GetSecretOpt{
@@ -63,7 +63,7 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 
 	gitProviderWebhookSecretKey := repo.Spec.GitProvider.WebhookSecret.Key
 	if gitProviderWebhookSecretKey == "" {
-		gitProviderWebhookSecretKey = defaultGitProviderWebhookSecretKey
+		gitProviderWebhookSecretKey = DefaultGitProviderWebhookSecretKey
 	}
 	logmsg := fmt.Sprintf("Using git provider %s: apiurl=%s user=%s token-secret=%s token-key=%s",
 		cs.Info.Pac.WebhookType,

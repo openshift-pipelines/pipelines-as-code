@@ -42,6 +42,7 @@ type Data struct {
 	Namespaces   []*corev1.Namespace
 	Secret       []*corev1.Secret
 	Events       []*corev1.Event
+	ConfigMap    []*corev1.ConfigMap
 }
 
 // SeedTestData returns Clients and Informers populated with the
@@ -91,6 +92,12 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 
 	for _, n := range d.Events {
 		if _, err := c.Kube.CoreV1().Events(n.Namespace).Create(ctx, n, metav1.CreateOptions{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, cm := range d.ConfigMap {
+		if _, err := c.Kube.CoreV1().ConfigMaps(cm.Namespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
 	}

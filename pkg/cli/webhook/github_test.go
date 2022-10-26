@@ -16,11 +16,12 @@ func TestAskGHWebhookConfig(t *testing.T) {
 	//nolint
 	io, _, _, _ := cli.IOTest()
 	tests := []struct {
-		name          string
-		wantErrStr    string
-		askStubs      func(*prompt.AskStubber)
-		repoURL       string
-		controllerURL string
+		name                string
+		wantErrStr          string
+		askStubs            func(*prompt.AskStubber)
+		repoURL             string
+		controllerURL       string
+		personalaccesstoken string
 	}{
 		{
 			name: "invalid repo format",
@@ -61,6 +62,18 @@ func TestAskGHWebhookConfig(t *testing.T) {
 			controllerURL: "https://test",
 			wantErrStr:    "",
 		},
+		{
+			name: "with personalaccesstoken",
+			askStubs: func(as *prompt.AskStubber) {
+				as.StubOne(true)
+				as.StubOne("webhook-secret")
+				as.StubOne("token")
+			},
+			repoURL:             "https://github.com/pac/demo/",
+			controllerURL:       "https://test",
+			personalaccesstoken: "Yzg5NzhlYmNkNTQwNzYzN2E2ZGExYzhkMTc4NjU0MjY3ZmQ2NmMeZg==",
+			wantErrStr:          "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -71,7 +84,7 @@ func TestAskGHWebhookConfig(t *testing.T) {
 				tt.askStubs(as)
 			}
 			gh := gitHubConfig{IOStream: io}
-			err := gh.askGHWebhookConfig(tt.repoURL, tt.controllerURL, "")
+			err := gh.askGHWebhookConfig(tt.repoURL, tt.controllerURL, "", tt.personalaccesstoken)
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
 				return
