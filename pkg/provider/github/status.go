@@ -199,7 +199,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 				return err
 			}
 		}
-		if err := v.updatePipelineRunWithCheckRunID(ctx, tekton, statusOpts.PipelineRun, checkRunID); err != nil {
+		if err := v.patchPipelinerunWithMetadata(ctx, tekton, statusOpts.PipelineRun, checkRunID, pacopts.LogURL); err != nil {
 			return err
 		}
 	}
@@ -240,7 +240,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 	return err
 }
 
-func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton versioned.Interface, pr *tektonv1beta1.PipelineRun, checkRunID *int64) error {
+func (v *Provider) patchPipelinerunWithMetadata(ctx context.Context, tekton versioned.Interface, pr *tektonv1beta1.PipelineRun, checkRunID *int64, logURL string) error {
 	if pr == nil {
 		return nil
 	}
@@ -251,6 +251,9 @@ func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton v
 				"labels": map[string]string{
 					keys.CheckRunID: strconv.FormatInt(*checkRunID, 10),
 				},
+				"annotations": map[string]string{
+					keys.LogURL: logURL,
+				},
 			},
 		}
 		patch, err := json.Marshal(mergePatch)
@@ -258,16 +261,16 @@ func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton v
 			return err
 		}
 
-		updatedPR, err := tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Patch(ctx, pr.GetName(), types.MergePatchType, patch, v1.PatchOptions{})
+		_, err = tekton.TektonV1beta1().PipelineRuns(pr.Namespace).Patch(ctx, pr.GetName(), types.MergePatchType, patch, v1.PatchOptions{})
 		if err != nil {
-			v.Logger.Infof("Could not patch Pipelinerun with checkRunID, retrying %v/%v: %v", pr.GetNamespace(), pr.GetName(), err)
+			v.Logger.Infof("Could not patch Pipelinerun, retrying %v/%v: %v", pr.GetNamespace(), pr.GetName(), err)
 			continue
 		}
 
-		v.Logger.Infof("PipelineRun %v/%v patched with checkRunID : %v", pr.GetNamespace(), pr.GetName(), updatedPR.Labels[keys.CheckRunID])
+		v.Logger.Infof("PipelineRun %v/%v patched with checkRunID & logURL", pr.GetNamespace(), pr.GetName())
 		return nil
 	}
-	return fmt.Errorf("cannot patch pipelineRun %v/%v with checkRunID", pr.GetNamespace(), pr.GetName())
+	return fmt.Errorf("cannot patch pipelineRun %v/%v with checkRunID & logURL", pr.GetNamespace(), pr.GetName())
 }
 
 // createStatusCommit use the classic/old statuses API which is available when we

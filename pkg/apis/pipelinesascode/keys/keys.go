@@ -46,4 +46,5 @@ const (
 	OnCelExpression = pipelinesascode.GroupName + "/on-cel-expression"
 	TargetNamespace = pipelinesascode.GroupName + "/target-namespace"
 	MaxKeepRuns     = pipelinesascode.GroupName + "/max-keep-runs"
+	LogURL          = pipelinesascode.GroupName + "/log-url"
 )
