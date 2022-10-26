@@ -128,7 +128,7 @@ func (l listener) handleEvent() http.HandlerFunc {
 		l.event = info.NewEvent()
 
 		// if repository auto configuration is enabled then check if its a valid event
-		if l.run.Info.Pac.AutoConfigureNewRepo {
+		if l.run.Info.Pac.AutoConfigureNewGitHubRepo {
 			detected, configuring, err := github.ConfigureRepository(ctx, l.run, request, string(payload), l.logger)
 			if detected {
 				if configuring && err == nil {

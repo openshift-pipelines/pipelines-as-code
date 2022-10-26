@@ -7,6 +7,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -83,7 +84,7 @@ func TestGetTask(t *testing.T) {
 				Clients: clients.Clients{
 					HTTP: *httpTestClient,
 				},
-				Info: info.Info{Pac: &info.PacOpts{HubURL: testHubURL, HubCatalogName: testCatalogHubName}},
+				Info: info.Info{Pac: &info.PacOpts{Settings: &settings.Settings{HubURL: testHubURL, HubCatalogName: testCatalogHubName}}},
 			}
 			got, err := GetTask(ctx, cs, tt.task)
 			if (err != nil) != tt.wantErr {

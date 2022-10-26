@@ -8,6 +8,7 @@ import (
 
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
@@ -278,7 +279,9 @@ func TestCreateStatus(t *testing.T) {
 			bbcloudtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr)
 
 			err := v.CreateStatus(ctx, nil, event, &info.PacOpts{
-				ApplicationName: "HELLO APP",
+				Settings: &settings.Settings{
+					ApplicationName: "HELLO APP",
+				},
 			}, tt.status)
 			assert.NilError(t, err)
 		})
