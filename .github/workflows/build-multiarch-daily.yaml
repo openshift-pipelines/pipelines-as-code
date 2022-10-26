@@ -50,7 +50,7 @@ jobs:
             BINARY_NAME=pipelines-as-code-controller
           platforms: linux/amd64,linux/ppc64le,linux/s390x
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: multi-arch-nightly-image
           labels: ${{ steps.meta.outputs.labels }}
 
       - name: Extract metadata (tags, labels) for Docker (Watcher)
@@ -67,7 +67,7 @@ jobs:
             BINARY_NAME=pipelines-as-code-watcher
           platforms: linux/amd64,linux/ppc64le,linux/s390x
           push: true
-          tags: ${{ steps.meta-watcher.outputs.tags }}
+          tags: multi-arch-nightly-image
           labels: ${{ steps.meta-watcher.outputs.labels }}
 
       - name: Extract metadata (tags, labels) for Docker (Webhook)
@@ -84,7 +84,7 @@ jobs:
             BINARY_NAME=pipelines-as-code-webhook
           platforms: linux/amd64,linux/ppc64le,linux/s390x
           push: true
-          tags: ${{ steps.meta-webhook.outputs.tags }}
+          tags: multi-arch-nightly-image
           labels: ${{ steps.meta-webhook.outputs.labels }}
 
       - name: Extract metadata (tags, labels) for tkn-pac
@@ -101,5 +101,5 @@ jobs:
             BINARY_NAME=tkn-pac
           platforms: linux/amd64,linux/ppc64le,linux/s390x
           push: true
-          tags: ${{ steps.meta-cli.outputs.tags }}
+          tags: multi-arch-nightly-image
           labels: ${{ steps.meta-cli.outputs.labels }}
