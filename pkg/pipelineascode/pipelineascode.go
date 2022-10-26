@@ -2,19 +2,23 @@ package pipelineascode
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 )
 
 const (
@@ -82,10 +86,10 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 
 	// Automatically create a secret with the token to be reused by git-clone task
 	if p.run.Info.Pac.SecretAutoCreation {
-		if annotation, ok := match.PipelineRun.GetAnnotations()[apipac.GitAuthSecret]; ok {
+		if annotation, ok := match.PipelineRun.GetAnnotations()[keys.GitAuthSecret]; ok {
 			gitAuthSecretName = annotation
 		} else {
-			return fmt.Errorf("cannot get annotation %s as set on PR", apipac.GitAuthSecret)
+			return fmt.Errorf("cannot get annotation %s as set on PR", keys.GitAuthSecret)
 		}
 
 		var err error
@@ -103,7 +107,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 		// pending status
 		match.PipelineRun.Spec.Status = v1beta1.PipelineRunSpecStatusPending
 		// pac state as queued
-		match.PipelineRun.Labels[apipac.State] = kubeinteraction.StateQueued
+		match.PipelineRun.Labels[keys.State] = kubeinteraction.StateQueued
 	}
 
 	// Create the actual pipeline
@@ -128,7 +132,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 		DetailsURL:              consoleURL,
 		PipelineRunName:         pr.GetName(),
 		PipelineRun:             pr,
-		OriginalPipelineRunName: pr.GetLabels()[apipac.OriginalPRName],
+		OriginalPipelineRunName: pr.GetLabels()[keys.OriginalPRName],
 	}
 
 	// if pipelineRun is in pending state then report status as queued
@@ -139,6 +143,38 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 
 	if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
 		return fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
+	}
+
+	// Patch pipelineRun with logURL annotation, skips for GitHub App as we patch logURL while patching checkrunID
+	if _, ok := pr.Annotations[keys.InstallationID]; !ok {
+		return patchPipelineRunWithLogURL(ctx, p.logger, p.run.Clients, pr)
+	}
+	return nil
+}
+
+func patchPipelineRunWithLogURL(ctx context.Context, logger *zap.SugaredLogger, clients clients.Clients, pr *v1beta1.PipelineRun) error {
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		mergePatch := map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"annotations": map[string]string{
+					keys.LogURL: clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
+				},
+			},
+		}
+		patch, err := json.Marshal(mergePatch)
+		if err != nil {
+			return err
+		}
+		patchedPR, err := clients.Tekton.TektonV1beta1().PipelineRuns(pr.GetNamespace()).Patch(ctx, pr.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
+		if err != nil {
+			logger.Infof("could not patch Pipelinerun with log URL, retrying %v/%v: %v", pr.GetNamespace(), pr.GetName(), err)
+			return err
+		}
+		logger.Infof("patched log URL to pipelinerun: %v/%v", patchedPR.Namespace, patchedPR.Name)
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to patch log url to pipelinerun %v/%v: %w", pr.Namespace, pr.Name, err)
 	}
 	return nil
 }
