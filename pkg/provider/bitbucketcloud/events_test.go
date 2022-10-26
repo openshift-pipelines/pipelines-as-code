@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
 	"gotest.tools/v3/assert"
@@ -160,8 +161,10 @@ func TestParsePayload(t *testing.T) {
 			run := &params.Run{
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						BitbucketCloudCheckSourceIP:      false,
-						BitbucketCloudAdditionalSourceIP: "",
+						Settings: &settings.Settings{
+							BitbucketCloudCheckSourceIP:      false,
+							BitbucketCloudAdditionalSourceIP: "",
+						},
 					},
 				},
 			}

@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -35,7 +36,11 @@ func TestHandleEvent(t *testing.T) {
 				PipelineAsCode: cs.PipelineAsCode,
 			},
 			Info: info.Info{
-				Pac: &info.PacOpts{AutoConfigureNewRepo: false},
+				Pac: &info.PacOpts{
+					Settings: &settings.Settings{
+						AutoConfigureNewGitHubRepo: false,
+					},
+				},
 			},
 		},
 		logger: getLogger(),

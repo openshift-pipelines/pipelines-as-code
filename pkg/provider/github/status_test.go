@@ -14,6 +14,7 @@ import (
 	"github.com/google/go-github/v47/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -43,7 +44,7 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 		SHA:          "createCheckRunSHA",
 	}
 
-	err := cnx.getOrUpdateCheckRunStatus(ctx, nil, event, &info.PacOpts{LogURL: "http://nowhere"}, provider.StatusOpts{
+	err := cnx.getOrUpdateCheckRunStatus(ctx, nil, event, &info.PacOpts{LogURL: "http://nowhere", Settings: &settings.Settings{}}, provider.StatusOpts{
 		PipelineRunName: "pr1",
 		Status:          "hello moto",
 	})
@@ -251,7 +252,8 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				DetailsURL:      tt.args.detailsURL,
 			}
 			pacopts := &info.PacOpts{
-				LogURL: "https://log",
+				LogURL:   "https://log",
+				Settings: &settings.Settings{},
 			}
 			if tt.notoken {
 				tt.args.runevent = info.NewEvent()
@@ -350,7 +352,7 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 				Client: fakeclient,
 			}
 
-			if err := provider.createStatusCommit(ctx, tt.event, &info.PacOpts{}, tt.status); (err != nil) != tt.wantErr {
+			if err := provider.createStatusCommit(ctx, tt.event, &info.PacOpts{Settings: &settings.Settings{}}, tt.status); (err != nil) != tt.wantErr {
 				t.Errorf("GetCommitInfo() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -373,7 +375,7 @@ func TestGetCheckName(t *testing.T) {
 				status: provider.StatusOpts{
 					OriginalPipelineRunName: "HELLO",
 				},
-				pacopts: &info.PacOpts{ApplicationName: ""},
+				pacopts: &info.PacOpts{Settings: &settings.Settings{ApplicationName: ""}},
 			},
 			want: "HELLO",
 		},
@@ -383,7 +385,7 @@ func TestGetCheckName(t *testing.T) {
 				status: provider.StatusOpts{
 					OriginalPipelineRunName: "MOTO",
 				},
-				pacopts: &info.PacOpts{ApplicationName: "HELLO"},
+				pacopts: &info.PacOpts{Settings: &settings.Settings{ApplicationName: "HELLO"}},
 			},
 			want: "HELLO / MOTO",
 		},
@@ -393,7 +395,7 @@ func TestGetCheckName(t *testing.T) {
 				status: provider.StatusOpts{
 					OriginalPipelineRunName: "",
 				},
-				pacopts: &info.PacOpts{ApplicationName: "PAC"},
+				pacopts: &info.PacOpts{Settings: &settings.Settings{ApplicationName: "PAC"}},
 			},
 			want: "PAC",
 		},

@@ -4,29 +4,16 @@ import (
 	"os"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/spf13/cobra"
 )
 
 type PacOpts struct {
-	LogURL                string
-	ApplicationName       string // the Application Name for example "Pipelines as Code"
-	SecretAutoCreation    bool   // secret auto creation in target namespace
-	WebhookType           string
-	PayloadFile           string
-	TektonDashboardURL    string
-	HubURL                string
-	HubCatalogName        string
-	RemoteTasks           bool
-	MaxKeepRunsUpperLimit int
-	DefaultMaxKeepRuns    int
-
-	// bitbucket cloud specific fields
-	BitbucketCloudCheckSourceIP      bool
-	BitbucketCloudAdditionalSourceIP string
-
-	// GitHub App specific
-	AutoConfigureNewRepo               bool
-	AutoConfigureRepoNamespaceTemplate string
+	*settings.Settings
+	LogURL             string
+	WebhookType        string
+	PayloadFile        string
+	TektonDashboardURL string
 }
 
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
@@ -51,7 +38,7 @@ func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
 	cmd.Flags().BoolVar(&p.SecretAutoCreation,
 		"secret-auto-creation",
 		secretAutoCreation,
-		"Wether to create automatically secrets.")
+		"Whether to create automatically secrets.")
 
 	return nil
 }

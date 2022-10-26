@@ -19,6 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
@@ -166,7 +167,9 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 					},
 					Info: info.Info{
 						Pac: &info.PacOpts{
-							SecretAutoCreation: true,
+							Settings: &settings.Settings{
+								SecretAutoCreation: true,
+							},
 						},
 					},
 				},
