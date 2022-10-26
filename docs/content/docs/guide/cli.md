@@ -31,6 +31,10 @@ Available operating systems are :
 * Linux - ARM 64bits - RPM, Debian packages and tarballs.
 * Windows - Arm 64 Bits and x86 architecture.
 
+{{< hint info >}}
+On windows tkn-pac will look for the kubernetes config in `%USERPROFILE%\.kube\config` on Linux and MacOS it will use the standard $HOME/.kube/config.
+{{< /hint >}}
+
 {{< /tab >}}
 
 {{< tab "Homebrew" >}}

@@ -3,6 +3,7 @@ package info
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
@@ -13,10 +14,21 @@ type KubeOpts struct {
 	Namespace  string
 }
 
+func userHomeDir() string {
+	if runtime.GOOS == "windows" {
+		home := os.Getenv("HOMEDRIVE") + os.Getenv("HOMEPATH")
+		if home == "" {
+			home = os.Getenv("USERPROFILE")
+		}
+		return home
+	}
+	return os.Getenv("HOME")
+}
+
 func (k *KubeOpts) AddFlags(cmd *cobra.Command) {
 	envkconfig := os.Getenv("KUBECONFIG")
 	if envkconfig == "" {
-		envkconfig = "$HOME/.kube/config"
+		envkconfig = fmt.Sprintf("%s/.kube/config", userHomeDir())
 	}
 	cmd.PersistentFlags().StringVarP(
 		&k.ConfigPath,
