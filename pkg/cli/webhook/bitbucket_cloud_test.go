@@ -15,11 +15,12 @@ func TestAskBBWebhookConfig(t *testing.T) {
 	//nolint
 	io, _, _, _ := cli.IOTest()
 	tests := []struct {
-		name          string
-		wantErrStr    string
-		askStubs      func(*prompt.AskStubber)
-		repoURL       string
-		controllerURL string
+		name                string
+		wantErrStr          string
+		askStubs            func(*prompt.AskStubber)
+		repoURL             string
+		controllerURL       string
+		personalaccesstoken string
 	}{
 		{
 			name: "invalid repo format",
@@ -51,6 +52,20 @@ func TestAskBBWebhookConfig(t *testing.T) {
 			controllerURL: "https://test",
 			wantErrStr:    "",
 		},
+		{
+			name: "with personalaccesstoken",
+			askStubs: func(as *prompt.AskStubber) {
+				as.StubOne(true)
+				as.StubOne("webhook-secret")
+				as.StubOne("user")
+				as.StubOne("token")
+				as.StubOne("")
+			},
+			repoURL:             "https://bitbucket.org/pac/demo",
+			controllerURL:       "https://test",
+			personalaccesstoken: "Yzg5NzhlYmNkNTQwNzYzN2E2ZGExYzhkMTc4NjU0MjY3ZmQ2NmMeZg==",
+			wantErrStr:          "",
+		},
 	}
 
 	for _, tt := range tests {
@@ -61,7 +76,7 @@ func TestAskBBWebhookConfig(t *testing.T) {
 				tt.askStubs(as)
 			}
 			bb := bitbucketCloudConfig{IOStream: io}
-			err := bb.askBBWebhookConfig(tt.repoURL, tt.controllerURL, "")
+			err := bb.askBBWebhookConfig(tt.repoURL, tt.controllerURL, "", tt.personalaccesstoken)
 			if tt.wantErrStr != "" {
 				assert.Equal(t, err.Error(), tt.wantErrStr)
 				return

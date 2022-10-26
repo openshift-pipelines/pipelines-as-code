@@ -5,36 +5,48 @@ import (
 	"fmt"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	providerTokenKey = "provider.token"
-	webhookSecretKey = "webhook.secret"
-)
-
 func (w *Options) createWebhookSecret(ctx context.Context, response *response) error {
-	_, err := w.Run.Clients.Kube.CoreV1().Secrets(w.repositoryNamespace).Create(ctx, &corev1.Secret{
+	_, err := w.Run.Clients.Kube.CoreV1().Secrets(w.RepositoryNamespace).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: w.repositoryName,
+			Name: w.RepositoryName,
 		},
 		Data: map[string][]byte{
-			providerTokenKey: []byte(response.PersonalAccessToken),
-			webhookSecretKey: []byte(response.WebhookSecret),
+			pipelineascode.DefaultGitProviderSecretKey:        []byte(response.PersonalAccessToken),
+			pipelineascode.DefaultGitProviderWebhookSecretKey: []byte(response.WebhookSecret),
 		},
 	}, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
-	fmt.Fprintf(w.IOStreams.Out, "🔑 Webhook Secret %s has been created in the %s namespace.\n", w.repositoryName, w.repositoryNamespace)
+	fmt.Fprintf(w.IOStreams.Out, "🔑 Webhook Secret %s has been created in the %s namespace.\n", w.RepositoryName, w.RepositoryNamespace)
+	return nil
+}
+
+func (w *Options) updateWebhookSecret(ctx context.Context, response *response) error {
+	secretInfo, err := w.Run.Clients.Kube.CoreV1().Secrets(w.RepositoryNamespace).Get(ctx, w.SecretName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	secretInfo.Data[pipelineascode.DefaultGitProviderWebhookSecretKey] = []byte(response.WebhookSecret)
+
+	_, err = w.Run.Clients.Kube.CoreV1().Secrets(w.RepositoryNamespace).Update(ctx, secretInfo, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(w.IOStreams.Out, "🔑 Secret %s has been updated with webhook secert in the %s namespace.\n", w.SecretName, w.RepositoryNamespace)
 	return nil
 }
 
 func (w *Options) updateRepositoryCR(ctx context.Context, res *response) error {
-	repo, err := w.Run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(w.repositoryNamespace).
-		Get(ctx, w.repositoryName, metav1.GetOptions{})
+	repo, err := w.Run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(w.RepositoryNamespace).
+		Get(ctx, w.RepositoryName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -44,12 +56,12 @@ func (w *Options) updateRepositoryCR(ctx context.Context, res *response) error {
 	}
 
 	repo.Spec.GitProvider.Secret = &v1alpha1.Secret{
-		Name: w.repositoryName,
-		Key:  providerTokenKey,
+		Name: w.RepositoryName,
+		Key:  pipelineascode.DefaultGitProviderSecretKey,
 	}
 	repo.Spec.GitProvider.WebhookSecret = &v1alpha1.Secret{
-		Name: w.repositoryName,
-		Key:  webhookSecretKey,
+		Name: w.RepositoryName,
+		Key:  pipelineascode.DefaultGitProviderWebhookSecretKey,
 	}
 
 	if res.UserName != "" {
@@ -60,12 +72,12 @@ func (w *Options) updateRepositoryCR(ctx context.Context, res *response) error {
 		repo.Spec.GitProvider.URL = res.APIURL
 	}
 
-	_, err = w.Run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(w.repositoryNamespace).
+	_, err = w.Run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(w.RepositoryNamespace).
 		Update(ctx, repo, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
 
-	fmt.Fprintf(w.IOStreams.Out, "🔑 Repository CR %s has been updated with webhook secret in the %s namespace\n", w.repositoryName, w.repositoryNamespace)
+	fmt.Fprintf(w.IOStreams.Out, "🔑 Repository CR %s has been updated with webhook secret in the %s namespace\n", w.RepositoryName, w.RepositoryNamespace)
 	return nil
 }

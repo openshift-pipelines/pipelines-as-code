@@ -5,31 +5,32 @@ import (
 	"fmt"
 
 	"github.com/AlecAivazis/survey/v2"
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/bootstrap"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/create"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	pacinfo "github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Interface interface {
 	Run(context.Context, *Options) (*response, error)
 }
 
+var ProviderTypes = map[string]string{"github": "github", "gitlab": "gitlab", "bitbucket-cloud": "bitbucket-cloud"}
+
 type Options struct {
-	Run                 *params.Run
-	IOStreams           *cli.IOStreams
-	PACNamespace        string
-	RepositoryURL       string
-	ProviderAPIURL      string
-	ControllerURL       string
-	repositoryName      string
-	repositoryNamespace string
+	Run                      *params.Run
+	IOStreams                *cli.IOStreams
+	PACNamespace             string
+	RepositoryURL            string
+	RepositoryName           string
+	RepositoryNamespace      string
+	ProviderAPIURL           string
+	ControllerURL            string
+	PersonalAccessToken      string
+	RepositoryCreateORUpdate bool
+	SecretName               string
+	ProviderSecretKey        string
 }
 
 type response struct {
@@ -64,7 +65,7 @@ func (w *Options) Install(ctx context.Context, providerType string) error {
 	}
 
 	if w.RepositoryURL == "" {
-		q := "Please enter the Git repository url containing the pipelines: "
+		q := "Please enter the Git repository url: "
 		if err := prompt.SurveyAskOne(&survey.Input{Message: q}, &w.RepositoryURL,
 			survey.WithValidator(survey.Required)); err != nil {
 			return err
@@ -88,32 +89,9 @@ func (w *Options) Install(ctx context.Context, providerType string) error {
 		return err
 	}
 
-	msg := "Would you like me to create the Repository CR for your git repository?"
-	var createRepo bool
-	if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &createRepo); err != nil {
-		return err
-	}
-	if !createRepo {
-		fmt.Fprintln(w.IOStreams.Out, "✓ Skipping Repository creation")
-		fmt.Fprintln(w.IOStreams.Out, "💡 Don't forget to create a secret with webhook secret and provider token & attaching in Repository.")
-		return nil
-	}
-
-	repo := create.RepoOptions{
-		Run: w.Run,
-		Event: &pacinfo.Event{
-			URL: w.RepositoryURL,
-		},
-		GitInfo: &git.Info{URL: w.RepositoryURL},
-		Repository: &apipac.Repository{
-			ObjectMeta: v1.ObjectMeta{},
-		},
-		IoStreams: w.IOStreams,
-	}
-
-	w.repositoryName, w.repositoryNamespace, err = repo.Create(ctx)
-	if err != nil {
-		return err
+	// RepositoryCreateORUpdate is false for tkn-pac webhook add command
+	if !w.RepositoryCreateORUpdate {
+		return w.updateWebhookSecret(ctx, response)
 	}
 
 	// create webhook secret in namespace where repository CR is created

@@ -251,3 +251,23 @@ func TestCleanUpURL(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateTemplate(t *testing.T) {
+	askStubs := func(as *prompt.AskStubber) {
+		as.StubOne("Yes")
+	}
+	//nolint
+	io, _, _, _ := cli.IOTest()
+	createOpts := &RepoOptions{
+		GitInfo: &git.Info{
+			URL: "https://url/tartanpion",
+		},
+		IoStreams: io,
+		cliOpts:   &cli.PacCliOpts{},
+	}
+	as, teardown := prompt.InitAskStubber()
+	defer teardown()
+	askStubs(as)
+	err := createOpts.generateTemplate()
+	assert.NilError(t, err)
+}

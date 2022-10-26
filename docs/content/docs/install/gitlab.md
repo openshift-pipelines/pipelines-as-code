@@ -5,14 +5,13 @@ weight: 13
 
 # Use Pipelines-as-Code with Gitlab Webhook
 
-Pipelines-As-Code supports [Gitlab](https://www.gitlab.com) through a webhook.
+Pipelines-As-Code supports on [Gitlab](https://www.gitlab.com) through a webhook.
 
-Follow the pipelines-as-code [installation](/docs/install/installation) according to your kubernetes cluster.
+Follow the pipelines-as-code [installation](/docs/install/installation) according to your Kubernetes cluster.
 
 ## Create GitLab Personal Access Token
 
-* You will have to generate a personal token as the manager of the Org or the Project,
-  follow the steps here :
+* Follow this guide to generate a personal token as the manager of the Org or the Project:
 
   <https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html>
 
@@ -22,73 +21,84 @@ Follow the pipelines-as-code [installation](/docs/install/installation) accordin
   to fallback nicely by showing the status of the pipeline directly as comment
   of the Merge Request.
 
-## Setup Git Repository
+## Create a `Repository` and configure webhook
 
-There are 2 ways to set up the repository and configure the webhook:
+There are two ways to create the `Repository` and configure the webhook:
 
-### Setup Git Repository using tkn pac cli
+### Create a `Repository` and configure webhook using the `tkn pac` tool
 
-* Use [`tkn pac setup gitlab-webhook`](/docs/guide/cli) command which
-  will create repository CR and configure webhook.
+* Use the [`tkn pac create repo`](/docs/guide/cli) command to
+configure a webhook and create the `Repository` CR.
 
-  You need to have a personal access token created with `admin:repo_hook` scope. tkn-pac will use this token to configure the
-  webhook and add it in a secret on cluster which will be used by pipelines-as-code controller for accessing the repository.
+  You need to have a personal access token created with `admin:repo_hook` scope. `tkn pac` will use this token to configure the webhook, and add it in a secret
+in the cluster which will be used by Pipelines-As-Code controller for accessing the `Repository`.
 
-Below is the sample format for `tkn pac setup gitlab-webhook`
+Below is the sample format for `tkn pac create repo`
 
 ```shell script
-$ tkn pac setup gitlab-webhook
+$ tkn pac create repo
 
-? Please enter the project ID for the repository you want to be configured,
-  project ID refers to an unique ID shown at the top of your GitLab project : 17103
-? Please enter your controller public route URL:  <Pipeline As Code controller public URL>
-ℹ ️You now need to create a GitLab personal access token with `api` scope
-ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation
-? Please enter the GitLab access token:  **************************
-? Please enter your GitLab API URL::  https://gitlab.com/
-✓ Webhook has been created on your repository
-? Would you like me to create the Repository CR for your git repository? Yes
-? Please enter the namespace where the pipeline should run (default: project-pipelines):
+? Enter the Git repository url (default: https://gitlab.com/repositories/project):  
+? Please enter the namespace where the pipeline should run (default: project-pipelines): 
 ! Namespace project-pipelines is not found
 ? Would you like me to create the namespace project-pipelines? Yes
-✓ Repository group-project has been created in project-pipelines namespace
-🔑 Webhook Secret group-project has been created in the project-pipelines namespace.
-🔑 Repository CR group-project has been updated with webhook secret in the project-pipelines namespace
+✓ Repository repositories-project has been created in project-pipelines namespace
+? Please enter the provider name to setup the webhook: gitlab
+✓ Setting up GitLab Webhook for Repository https://gitlab.com/repositories/project
+? Please enter the project ID for the repository you want to be configured, 
+  project ID refers to an unique ID (e.g. 34405323) shown at the top of your GitLab project : 17103
+👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
+? Do you want me to use it? Yes
+? Please enter the secret to configure the webhook for payload validation (default: 61169):  61169
+ℹ ️You now need to create a GitLab personal access token with `api` scope
+ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation 
+? Please enter the GitLab access token:  **************************
+? Please enter your GitLab API URL::  https://gitlab.com
+✓ Webhook has been created on your repository
+🔑 Webhook Secret repositories-project has been created in the project-pipelines namespace.
+🔑 Repository CR repositories-project has been updated with webhook secret in the project-pipelines namespace
+ℹ Directory .tekton has been created.
+✓ A basic template has been created in /home/Go/src/gitlab.com/repositories/project/.tekton/pipelinerun.yaml, feel free to customize it.
+ℹ You can test your pipeline manually with: tkn-pac resolve -f .tekton/pipelinerun.yaml | kubectl create -f-
 ```
 
-Alternatively, you could follow the [Setup Git Repository manually](#setup-git-repository-manually) guide to do it manually
+### Create a `Repository` and configure webhook manually
 
-### Setup Git Repository manually
+* From the left navigation pane of your Gitlab repository, go to **settings** -->
+  **Webhooks** tab.
 
 * Go to your project and click on *Settings* and *"Webhooks"* from the sidebar on the left.
 
-* Set the *URL* to Pipeline as Code controller public URL. On OpenShift, you can get the public URL of the
+  * Set the **URL** to Pipeline as Code controller public URL. On OpenShift, you can get the public URL of the
   Pipelines-as-Code controller like this :
 
-  ```shell
-  echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
-  ```
+    ```shell
+    echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
+    ```
 
-* Add a secret or generate a random one with this command  :
+  * Add a secret or generate a random one with this command  :
 
-  ```shell
-  openssl rand -hex 20
-  ```
+    ```shell
+    openssl rand -hex 20
+    ```
 
-* [Refer to this screenshot](/images/gitlab-add-webhook.png) on how to configure the Webhook.
+  * [Refer to this screenshot](/images/gitlab-add-webhook.png) on how to configure the Webhook.
 
-  The individual  events to select are :
+    The individual  events to select are :
 
-  * Merge request Events
-  * Push Events
-  * Comments
+    * Merge request Events
+    * Push Events
+    * Comments
 
-* Click on *Add webhook*
+  * Click on **Add webhook**
 
-* You are now able to create a Repository CRD. The repository CRD will reference a Kubernetes Secret containing the Personal token
-and another reference to a Kubernetes secret to validate the Webhook payload as set previously in your Webhook configuration.
+* You can now create a [`Repository CRD`](/docs/guide/repositorycrd).
+  It will have:
 
-* First create the secret with the personal token and webhook secret in the `target-namespace` (where you are planning to run your pipeline CI) :
+  * A reference to a Kubernetes **Secret** containing the Personal token and
+  another reference to a Kubernetes secret to validate the Webhook payload as set previously in your Webhook configuration.
+
+* Create the secret with the personal token and webhook secret in the `target-namespace` (where you are planning to run your pipeline CI):
 
   ```shell
   kubectl -n target-namespace create secret generic gitlab-webhook-config \
@@ -96,9 +106,7 @@ and another reference to a Kubernetes secret to validate the Webhook payload as 
     --from-literal webhook.secret="SECRET_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
 
-* And now create Repository CRD with the secret field referencing it.
-
-Here is an example of a Repository CRD :
+* Create the `Repository` CRD with the secret field referencing it. For example:
 
   ```yaml
   ---
@@ -126,16 +134,65 @@ Here is an example of a Repository CRD :
 
 * If you want to override the API URL then you can simply add it to the spec`.git_provider.url` field.
 
-* `git_provider.secret` cannot reference a secret in another namespace,
-  Pipelines as code always assumes it will be the same namespace as where the
-  repository has been created.
+* The `git_provider.secret` key cannot reference to a secret in another namespace.
+  Pipelines as code always assumes that it will be in the same namespace where the
+  `Repository` has been created.
 
-## Update Token
+## Add webhook secret
 
-When you have regenerated a new token you will need to  update it on cluster.
-For example through the command line, you will want to replace `$NEW_TOKEN` and `$target_namespace` by their respective values:
+* For an existing `Repository`, if webhook secret has been deleted (or you want to add a new webhook to project settings) for Bitbucket Cloud,
+  use `tkn pac webhook add` command to add a webhook to project repository settings, as well as update the `webhook.secret`
+  key in the existing `Secret` object without updating `Repository`.
 
-You can find the secret name in Repository CR created.
+Below is the sample format for `tkn pac webhook add`
+
+```shell script
+$ tkn pac webhook add -n project-pipelines
+
+? Please enter the provider name to setup the webhook: gitlab
+✓ Setting up GitLab Webhook for Repository https://gitlab.com/repositories/project
+? Please enter the project ID for the repository you want to be configured, 
+  project ID refers to an unique ID (e.g. 34405323) shown at the top of your GitLab project : 17103
+👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
+? Do you want me to use it? Yes
+? Please enter the secret to configure the webhook for payload validation (default: 60443):  60443
+✓ Webhook has been created on your repository
+🔑 Secret repositories-project has been updated with webhook secert in the project-pipelines namespace.
+
+```
+
+**Note:** If `Repository` exist in a namespace other than the `default` namespace, use `tkn pac webhook add [-n namespace]`.
+  In the above example, `Repository` exist in the `project-pipelines` namespace rather than the `default` namespace; therefore
+  the webhook was added in the `project-pipelines` namespace.
+
+## Update token
+
+There are two ways to update the provider token for the existing `Repository`:
+
+### Update using tkn pac cli
+
+* Use the [`tkn pac webhook update-token`](/docs/guide/cli) command which
+  will update provider token for the existing Repository CR.
+
+Below is the sample format for `tkn pac webhook update-token`
+
+```shell script
+$ tkn pac webhook update-token -n repo-pipelines
+
+? Please enter your personal access token:  **************************
+🔑 Secret repositories-project has been updated with new personal access token in the project-pipelines namespace.
+```
+
+**Note:** If `Repository` exist in a namespace other than the `default` namespace, use `tkn pac webhook add [-n namespace]`.
+  In the above example, `Repository` exist in the `project-pipelines` namespace rather than the `default` namespace; therefore
+  the webhook was added in the `project-pipelines` namespace.
+
+### Update by changing `Repository` YAML or using `kubectl patch` command
+
+When you have regenerated a new token, you must update it in the cluster.
+For example, you can replace `$NEW_TOKEN` and `$target_namespace` with their respective values:
+
+You can find the secret name in the `Repository` CR.
 
   ```yaml
   spec:

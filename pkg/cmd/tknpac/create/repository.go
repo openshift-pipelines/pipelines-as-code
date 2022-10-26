@@ -11,12 +11,16 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	pacInfo "github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/webhook"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/bootstrap"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +36,7 @@ type RepoOptions struct {
 	Run          *params.Run
 	GitInfo      *git.Info
 	pacNamespace string
+	Provider     string
 
 	IoStreams *cli.IOStreams
 	cliOpts   *cli.PacCliOpts
@@ -48,7 +53,6 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 		Aliases: []string{"repo"},
 		Short:   "Create a repository",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var err error
 			ctx := context.Background()
 			createOpts.IoStreams = ioStreams
 			createOpts.cliOpts = cli.NewCliOptions(cmd)
@@ -67,24 +71,67 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 				return err
 			}
 
-			if _, _, err := createOpts.Create(ctx); err != nil {
+			repoName, repoNamespace, err := createOpts.Create(ctx)
+			if err != nil {
 				return err
 			}
 
-			gopt := generate.MakeOpts()
-			gopt.GitInfo = createOpts.GitInfo
-			gopt.IOStreams = createOpts.IoStreams
-			gopt.CLIOpts = createOpts.cliOpts
-
-			// defaulting the values for repo create command
-			gopt.Event.EventType = "pull_request, push"
-			gopt.Event.BaseBranch = "main"
-
-			if err := generate.Generate(gopt, false); err != nil {
+			var providerName string
+			_, installationNS, err := bootstrap.DetectPacInstallation(ctx, createOpts.pacNamespace, run)
+			if err != nil {
+				return err
+			}
+			pacCMInfo, err := pacInfo.GetPACInfo(ctx, run, installationNS)
+			if err != nil {
 				return err
 			}
 
-			fmt.Fprintln(ioStreams.Out, "🚀 You can use the command \"tkn pac setup\" to setup a repository with webhook")
+			if pacCMInfo.Provider == provider.ProviderGitHubApp {
+				msg := "👌 A GitHub App is configured for your cluster, Would you like to setup webhook for your repository?"
+				var setupWebhook bool
+				if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: false}, &setupWebhook); err != nil {
+					return err
+				}
+				if !setupWebhook {
+					fmt.Fprintln(ioStreams.Out, "✓ Skipped webhook setup")
+					if err := createOpts.generateTemplate(); err != nil {
+						return err
+					}
+					return nil
+				}
+			}
+
+			msg := "Please enter the provider name to setup the webhook:"
+			providerLabels := make([]string, 0, len(webhook.ProviderTypes))
+			for _, label := range webhook.ProviderTypes {
+				providerLabels = append(providerLabels, label)
+			}
+			if err := prompt.SurveyAskOne(
+				&survey.Select{
+					Message: msg,
+					Options: providerLabels,
+					Default: 0,
+				}, &providerName); err != nil {
+				return err
+			}
+
+			createOpts.Provider = providerName
+			config := &webhook.Options{
+				Run:                      run,
+				PACNamespace:             createOpts.pacNamespace,
+				RepositoryURL:            createOpts.Event.URL,
+				IOStreams:                ioStreams,
+				RepositoryName:           repoName,
+				RepositoryNamespace:      repoNamespace,
+				RepositoryCreateORUpdate: true,
+			}
+
+			if err := config.Install(ctx, createOpts.Provider); err != nil {
+				return err
+			}
+			if err := createOpts.generateTemplate(); err != nil {
+				return err
+			}
 			return nil
 		},
 		Annotations: map[string]string{
@@ -100,6 +147,19 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 	cmd.PersistentFlags().StringVarP(&createOpts.pacNamespace, "pac-namespace",
 		"", "", "The namespace where pac is installed")
 	return cmd
+}
+
+func (r *RepoOptions) generateTemplate() error {
+	gopt := generate.MakeOpts()
+	gopt.GitInfo = r.GitInfo
+	gopt.IOStreams = r.IoStreams
+	gopt.CLIOpts = r.cliOpts
+
+	// defaulting the values for repo create command
+	gopt.Event.EventType = "pull_request, push"
+	gopt.Event.BaseBranch = "main"
+
+	return generate.Generate(gopt, false)
 }
 
 func (r *RepoOptions) Create(ctx context.Context) (string, string, error) {
@@ -177,7 +237,7 @@ func getRepoURL(opts *RepoOptions) error {
 		return nil
 	}
 
-	q := "Enter the Git repository url containing the pipelines "
+	q := "Enter the Git repository url "
 	var err error
 	if opts.GitInfo.URL != "" {
 		opts.GitInfo.URL, err = cleanupGitURL(opts.GitInfo.URL)

@@ -126,8 +126,8 @@ GitHub application and the secret with all the information needed in the
 
 ### Repository Creation
 
-`tkn pac create repo` -- will create a new Pipelines as Code Repository
-definition, a namespace where the pipelineruns command and configure webhook. It
+`tkn pac create repo` -- Creates a new Pipelines as Code `Repository` custom resource definition,
+With a Git repository to execute pipelineruns based on Git events. It
 will also generate a sample file with a [PipelineRun](/docs/guide/authoringprs)
 in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch
 and the `pull_request` and `push` events. You can customize this by editing the
@@ -276,22 +276,20 @@ Compared with running directly on CI, you need to explicitly specify the list of
 filenames or directory where you have the templates.
 {{< /details >}}
 
-{{< details "tkn pac setup github-webhook" >}}
+{{< details "tkn pac webhook add" >}}
 
-### Setup GitHub Webhook
+### Configure and create webhook secret for Github, Gitlab and Bitbucket Cloud provider
 
-`tkn-pac setup github-webhook`: will let you set up a GitHub webhook to interact with Pipelines as Code
+`tkn-pac webhook add [-n namespace]`: Allows you to add new webhook secret for a given provider and update the value of the new webhook secret in the existing `Secret` object used to interact with Pipelines as Code
 
-It will let you provide an option to create a Repository and configure it with the required secrets.
 {{< /details >}}
 
-{{< details "tkn pac setup gitlab-webhook" >}}
+{{< details "tkn pac webhook update-token" >}}
 
-### Setup GitLab Webhook
+### Update provider token for existing webhook
 
-`tkn-pac setup gitlab-webhook`: will let you set up a GitLab webhook to interact with Pipelines as Code.
+`tkn pac webhook update-token [-n namespace]`: Allows you to update provider token for an existing `Secret` object to interact with Pipelines as Code.
 
-It will let you provide an option to create a Repository and configure it with the required secrets.
 {{< /details >}}
 
 ## Screenshot

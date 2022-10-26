@@ -49,7 +49,7 @@ func TestSecretFromRepository(t *testing.T) {
 			logmatch: []*regexp.Regexp{
 				regexp.MustCompile(fmt.Sprintf(
 					"^Using git provider lalala: apiurl=https://apiurl.default user= token-secret=repo-secret token-key=%s",
-					defaultGitProviderSecretKey)),
+					DefaultGitProviderSecretKey)),
 			},
 		},
 		{
