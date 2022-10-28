@@ -5,7 +5,7 @@ metadata:
   name: pipelines-as-code-e2e-tests
   annotations:
     pipelinesascode.tekton.dev/task: "[https://git.io/Jn9Ee]"
-    pipelinesascode.tekton.dev/max-keep-runs: "5"
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
 spec:
   taskRunSpecs:
     - pipelineTaskName: e2e-tests

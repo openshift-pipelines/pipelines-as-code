@@ -45,7 +45,7 @@ func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c cl
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s",
 		cs.ColorStatus(status.Status.Conditions[0].Reason),
 		*status.EventType,
-		*status.TargetBranch,
+		formatting.SanitizeBranch(*status.TargetBranch),
 		cs.HyperLink(formatting.ShortSHA(*status.SHA), *status.SHAURL),
 		formatting.Age(status.StartTime, c),
 		formatting.PRDuration(status),
