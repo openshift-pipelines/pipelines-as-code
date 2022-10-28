@@ -6,7 +6,6 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/on-event: "[push]"
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
-    pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
 spec:
@@ -27,6 +26,7 @@ spec:
           - name: revision
             value: $(params.revision)
         taskRef:
+          kind: ClusterTask
           name: git-clone
         workspaces:
           - name: output

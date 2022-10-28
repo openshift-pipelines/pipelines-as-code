@@ -4,7 +4,6 @@ kind: PipelineRun
 metadata:
   name: pipeline-as-code-doc-generation
   annotations:
-    pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "pull_request" && "docs/***".pathChanged()
@@ -29,6 +28,7 @@ spec:
             value: "1000000"
         taskRef:
           name: git-clone
+          kind: ClusterTask
         workspaces:
           - name: output
             workspace: source
