@@ -104,9 +104,9 @@ jobs:
           export GO_TEST_FLAGS="-v -race -failfast"
 
           export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0
-          export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=chmouelb/pac-e2e-test
+          export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=cboudjna/pac-e2e-tests
           export TEST_BITBUCKET_CLOUD_TOKEN=${{ secrets.BITBUCKET_CLOUD_TOKEN }}
-          export TEST_BITBUCKET_CLOUD_USER=chmouelb
+          export TEST_BITBUCKET_CLOUD_USER=cboudjna
 
           export TEST_EL_URL="http://${CONTROLLER_DOMAIN_URL}"
           export TEST_EL_WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"
