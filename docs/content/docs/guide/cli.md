@@ -183,7 +183,16 @@ definition and the runs associated with it.
 You can choose to display the real time as RFC3339 rather than the relative time
 with the `--use-realtime` flag.
 
-When the last PipelineRun has failure it will print the last 10 lines of every tasks associated with the PipelineRun thas has been failed highlightign the `ERROR` or `FAILURE` and other patterns.
+When the last PipelineRun has failure it will print the last 10 lines of every
+tasks associated with the PipelineRun thas has been failed highlightign the
+`ERROR` or `FAILURE` and other patterns.
+
+If you  want to show the failures of another PipelineRun rather than the last
+one you can use the `--target-pipelinerun` or `-t` flag for that.
+
+{{< /details >}}
+
+{{< details "tkn pac logs" >}}
 
 On modern terminal (ie: OSX Terminal, [iTerm2](https://iterm2.com/), [Windows
 Terminal](https://github.com/microsoft/terminal), GNOME-terminal, kitty and so
