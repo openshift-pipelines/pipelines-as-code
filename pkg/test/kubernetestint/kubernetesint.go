@@ -20,7 +20,7 @@ type KinterfaceTest struct {
 
 var _ kubeinteraction.Interface = (*KinterfaceTest)(nil)
 
-func (k *KinterfaceTest) GetConsoleUI(_ context.Context, _ string, _ string) (string, error) {
+func (k *KinterfaceTest) GetConsoleUI(_ context.Context, _, _ string) (string, error) {
 	if k.ConsoleURLErorring {
 		return "", fmt.Errorf("i want you to errit")
 	}

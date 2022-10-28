@@ -72,7 +72,7 @@ func (v *TestProviderImp) GetTektonDir(ctx context.Context, event *info.Event, s
 	return v.TektonDirTemplate, nil
 }
 
-func (v *TestProviderImp) GetFileInsideRepo(ctx context.Context, event *info.Event, file string, targetBranch string) (string, error) {
+func (v *TestProviderImp) GetFileInsideRepo(ctx context.Context, event *info.Event, file, targetBranch string) (string, error) {
 	if val, ok := v.FilesInsideRepo[file]; ok {
 		return val, nil
 	}

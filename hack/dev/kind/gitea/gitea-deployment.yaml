@@ -110,17 +110,17 @@ spec:
         app: gosmee
     spec:
       containers:
-        - image: ghcr.io/chmouel/gosmee:latest
+        - image: ghcr.io/chmouel/gosmee:main
           imagePullPolicy: IfNotPresent
           name: gosmee
           args:
             [
+              "client",
               "--saveDir",
               "/tmp/save",
               "VAR_GITEA_SMEE_HOOK_URL",
               "VAR_URL",
             ]
-
 ---
 apiVersion: apps/v1
 kind: Deployment

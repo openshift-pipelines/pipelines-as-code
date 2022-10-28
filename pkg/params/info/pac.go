@@ -23,6 +23,10 @@ type PacOpts struct {
 	// bitbucket cloud specific fields
 	BitbucketCloudCheckSourceIP      bool
 	BitbucketCloudAdditionalSourceIP string
+
+	// GitHub App specific
+	AutoConfigureNewRepo               bool
+	AutoConfigureRepoNamespaceTemplate string
 }
 
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {

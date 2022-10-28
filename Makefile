@@ -125,7 +125,7 @@ fmt:
 
 .PHONY: fumpt ## formats the GO code with gofumpt(excludes vendors dir)
 fumpt:
-	@find test pkg -name '*.go'|xargs -P4 $(GOFUMPT) -w
+	@find test pkg -name '*.go'|xargs -P4 $(GOFUMPT) -w -extra
 
 .PHONY: help
 help: ## print this help

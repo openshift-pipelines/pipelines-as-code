@@ -59,7 +59,7 @@ jobs:
       - name: Install and run gosmee
         run: |
           go install -v github.com/chmouel/gosmee@latest
-          nohup gosmee --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} http://${CONTROLLER_DOMAIN_URL} &
+          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} http://${CONTROLLER_DOMAIN_URL} &
 
       - name: Install ko
         run: curl -sfL https://github.com/google/ko/releases/download/v0.12.0/ko_0.12.0_Linux_x86_64.tar.gz -o-|tar xvzf - -C /usr/local/bin ko
@@ -104,9 +104,9 @@ jobs:
           export GO_TEST_FLAGS="-v -race -failfast"
 
           export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0
-          export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=chmouelb/pac-e2e-test
+          export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=cboudjna/pac-e2e-tests
           export TEST_BITBUCKET_CLOUD_TOKEN=${{ secrets.BITBUCKET_CLOUD_TOKEN }}
-          export TEST_BITBUCKET_CLOUD_USER=chmouelb
+          export TEST_BITBUCKET_CLOUD_USER=cboudjna
 
           export TEST_EL_URL="http://${CONTROLLER_DOMAIN_URL}"
           export TEST_EL_WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"

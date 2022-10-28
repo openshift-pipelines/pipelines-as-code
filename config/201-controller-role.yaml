@@ -63,11 +63,14 @@ metadata:
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
   - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["create"]
+  - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "create"]
   - apiGroups: ["pipelinesascode.tekton.dev"]
     resources: ["repositories"]
-    verbs: ["list"]
+    verbs: ["create", "list"]
   - apiGroups: ["tekton.dev"]
     resources: ["pipelineruns"]
     verbs: ["get", "create", "patch"]

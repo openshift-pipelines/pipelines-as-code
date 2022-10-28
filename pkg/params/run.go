@@ -140,6 +140,14 @@ func (r *Run) UpdatePACInfo(ctx context.Context) error {
 		}
 	}
 
+	if autoConfigure, ok := cfg.Data["auto-configure-new-github-repo"]; ok {
+		r.Info.Pac.AutoConfigureNewRepo = StringToBool(autoConfigure)
+	}
+
+	if nsTemplate, ok := cfg.Data["auto-configure-repo-namespace-template"]; ok {
+		r.Info.Pac.AutoConfigureRepoNamespaceTemplate = nsTemplate
+	}
+
 	return nil
 }
 

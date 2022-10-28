@@ -66,7 +66,7 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 	return run, e2eoptions, gprovider, nil
 }
 
-func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovider github.Provider, prNumber int, ref string, targetNS string, opts options.E2E) {
+func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovider github.Provider, prNumber int, ref, targetNS string, opts options.E2E) {
 	runcnx.Clients.Log.Infof("Closing PR %d", prNumber)
 	if prNumber != -1 {
 		state := "closed"
