@@ -27,6 +27,7 @@ import (
 
 var (
 	namespaceFlag   = "namespace"
+	targetPRFlag    = "target-pipelinerun"
 	useRealTimeFlag = "use-realtime"
 	showEventflag   = "show-events"
 )
@@ -52,6 +53,18 @@ func formatStatus(status v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c cl
 		cs.HyperLink(status.PipelineRunName, *status.LogURL))
 }
 
+type describeOpts struct {
+	cli.PacCliOpts
+	TargetPipelineRun string
+	ShowEvents        bool
+}
+
+func newDescribeOptions(cmd *cobra.Command) *describeOpts {
+	return &describeOpts{
+		PacCliOpts: *cli.NewCliOptions(cmd),
+	}
+}
+
 func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	var useRealTime bool
 	cmd := &cobra.Command{
@@ -65,7 +78,7 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			var repoName string
-			opts := cli.NewCliOptions(cmd)
+			opts := newDescribeOptions(cmd)
 
 			opts.UseRealTime, err = cmd.Flags().GetBool(useRealTimeFlag)
 			if err != nil {
@@ -77,7 +90,12 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			showEvents, err := cmd.Flags().GetBool(showEventflag)
+			opts.ShowEvents, err = cmd.Flags().GetBool(showEventflag)
+			if err != nil {
+				return err
+			}
+
+			opts.TargetPipelineRun, err = cmd.Flags().GetString(targetPRFlag)
 			if err != nil {
 				return err
 			}
@@ -99,9 +117,17 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				run.Clients.ConsoleUI = &consoleui.TektonDashboard{BaseURL: os.Getenv("TEKTON_DASHBOARD_URL")}
 			}
 
-			return describe(ctx, run, clock, opts, ioStreams, repoName, showEvents)
+			return describe(ctx, run, clock, opts, ioStreams, repoName)
 		},
 	}
+
+	cmd.Flags().StringP(
+		targetPRFlag, "t", "", "Show this PipelineRun information")
+	_ = cmd.RegisterFlagCompletionFunc(targetPRFlag,
+		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			return completion.BaseCompletion("pipelinerun", args)
+		},
+	)
 
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
@@ -113,13 +139,23 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 	cmd.Flags().BoolP(
 		showEventflag, "", false, "show kubernetes events associated with this repository, useful if you have an error that cannot be reported on the git provider interface")
-
 	cmd.PersistentFlags().BoolVarP(&useRealTime, useRealTimeFlag, "", false,
 		"display the time as RFC3339 instead of a relative time")
 	return cmd
 }
 
-func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, repoName string, showEvents bool) error {
+func filterOnlyToPipelineRun(opts *describeOpts, statuses []v1alpha1.RepositoryRunStatus) []v1alpha1.RepositoryRunStatus {
+	ret := []v1alpha1.RepositoryRunStatus{}
+
+	for _, rrs := range statuses {
+		if rrs.PipelineRunName == opts.TargetPipelineRun {
+			ret = append(ret, rrs)
+		}
+	}
+	return ret
+}
+
+func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *describeOpts, ioStreams *cli.IOStreams, repoName string) error {
 	var repository *v1alpha1.Repository
 	var err error
 
@@ -139,9 +175,8 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 			return err
 		}
 	}
-	mixedstatuses := status.MixLivePRandRepoStatus(ctx, cs, *repository)
 	eventList := []corev1.Event{}
-	if showEvents {
+	if opts.ShowEvents {
 		kinteract, err := kubeinteraction.NewKubernetesInteraction(cs)
 		if err != nil {
 			return err
@@ -167,7 +202,6 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 	}
 
 	colorScheme := ioStreams.ColorScheme()
-
 	funcMap := template.FuncMap{
 		"formatError":     formatError,
 		"formatStatus":    formatStatus,
@@ -177,20 +211,30 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		"sanitizeBranch":  formatting.SanitizeBranch,
 		"shortSHA":        formatting.ShortSHA,
 	}
+
+	statuses := status.MixLivePRandRepoStatus(ctx, cs, *repository)
+
+	if opts.TargetPipelineRun != "" {
+		statuses = filterOnlyToPipelineRun(opts, statuses)
+		if len(statuses) == 0 {
+			return fmt.Errorf("cannot find target pipelinerun %s", opts.TargetPipelineRun)
+		}
+	}
+
 	data := struct {
 		Repository  *v1alpha1.Repository
 		Statuses    []v1alpha1.RepositoryRunStatus
 		ColorScheme *cli.ColorScheme
 		Clock       clockwork.Clock
-		Opts        *cli.PacCliOpts
+		Opts        *describeOpts
 		EventList   []corev1.Event
 	}{
 		Repository:  repository,
-		Statuses:    mixedstatuses,
+		Statuses:    statuses,
 		ColorScheme: colorScheme,
 		Clock:       clock,
-		Opts:        opts,
 		EventList:   eventList,
+		Opts:        opts,
 	}
 	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
 	t := template.Must(template.New("Describe Repository").Funcs(funcMap).Parse(describeTemplate))

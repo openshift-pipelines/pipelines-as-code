@@ -34,7 +34,7 @@ func TestDescribe(t *testing.T) {
 		currentNamespace string
 		repoName         string
 		statuses         []v1alpha1.RepositoryRunStatus
-		opts             *cli.PacCliOpts
+		opts             *describeOpts
 		pruns            []*tektonv1beta1.PipelineRun
 		events           []*corev1.Event
 	}
@@ -48,7 +48,7 @@ func TestDescribe(t *testing.T) {
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: ns,
-				opts:             &cli.PacCliOpts{},
+				opts:             &describeOpts{},
 				pruns: []*tektonv1beta1.PipelineRun{
 					tektontest.MakePRCompletion(cw, "running", ns, running,
 						map[string]string{
@@ -86,7 +86,7 @@ func TestDescribe(t *testing.T) {
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: ns,
-				opts:             &cli.PacCliOpts{},
+				opts:             &describeOpts{},
 				pruns: []*tektonv1beta1.PipelineRun{
 					tektontest.MakePRCompletion(cw, "running", ns, running,
 						map[string]string{
@@ -99,11 +99,33 @@ func TestDescribe(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "target a pipelinerun",
+			args: args{
+				repoName:         "test-run",
+				currentNamespace: ns,
+				opts:             &describeOpts{TargetPipelineRun: "running2"},
+				pruns: []*tektonv1beta1.PipelineRun{
+					tektontest.MakePRCompletion(cw, "running", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "tartanpion",
+						}, 30),
+					tektontest.MakePRCompletion(cw, "running2", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "vavaroom",
+						}, 30),
+				},
+				statuses: []v1alpha1.RepositoryRunStatus{},
+			},
+			wantErr: false,
+		},
+		{
 			name: "multiple live runs",
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: ns,
-				opts:             &cli.PacCliOpts{},
+				opts:             &describeOpts{},
 				pruns: []*tektonv1beta1.PipelineRun{
 					tektontest.MakePRCompletion(cw, "running", ns, running,
 						map[string]string{
@@ -125,8 +147,10 @@ func TestDescribe(t *testing.T) {
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: "namespace",
-				opts: &cli.PacCliOpts{
-					Namespace: "optnamespace",
+				opts: &describeOpts{
+					PacCliOpts: cli.PacCliOpts{
+						Namespace: "optnamespace",
+					},
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
@@ -161,9 +185,11 @@ func TestDescribe(t *testing.T) {
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: "namespace",
-				opts: &cli.PacCliOpts{
-					Namespace:   "optnamespace",
-					UseRealTime: true,
+				opts: &describeOpts{
+					PacCliOpts: cli.PacCliOpts{
+						Namespace:   "optnamespace",
+						UseRealTime: true,
+					},
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
@@ -193,8 +219,10 @@ func TestDescribe(t *testing.T) {
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: "namespace",
-				opts: &cli.PacCliOpts{
-					Namespace: "optnamespace",
+				opts: &describeOpts{
+					PacCliOpts: cli.PacCliOpts{
+						Namespace: "optnamespace",
+					},
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
@@ -224,8 +252,11 @@ func TestDescribe(t *testing.T) {
 			args: args{
 				repoName:         "test-run",
 				currentNamespace: "namespace",
-				opts: &cli.PacCliOpts{
-					Namespace: "namespace",
+				opts: &describeOpts{
+					PacCliOpts: cli.PacCliOpts{
+						Namespace: "namespace",
+					},
+					ShowEvents: true,
 				},
 				events: []*corev1.Event{
 					{
@@ -268,7 +299,7 @@ func TestDescribe(t *testing.T) {
 		{
 			name: "multiple repo status",
 			args: args{
-				opts:             &cli.PacCliOpts{},
+				opts:             &describeOpts{},
 				repoName:         "test-run",
 				currentNamespace: "namespace",
 				statuses: []v1alpha1.RepositoryRunStatus{
@@ -378,7 +409,7 @@ func TestDescribe(t *testing.T) {
 
 			io, out := tcli.NewIOStream()
 			if err := describe(
-				ctx, cs, cw, tt.args.opts, io, tt.args.repoName, len(tt.args.events) > 0); (err != nil) != tt.wantErr {
+				ctx, cs, cw, tt.args.opts, io, tt.args.repoName); (err != nil) != tt.wantErr {
 				t.Errorf("describe() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				golden.Assert(t, out.String(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
