@@ -41,7 +41,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: mirror.gcr.io/library/golang:1.18
+            - image: public.ecr.aws/docker/library/golang:1.18
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -72,7 +72,7 @@ spec:
                    curl -X DELETE -F "file=golang-cache.tar.gz" http://uploader:8080/upload
 
             - name: e2e-tests
-              image: mirror.gcr.io/library/golang:1.18
+              image: public.ecr.aws/docker/library/golang:1.18
               env:
                 - name: TEST_GITHUB_API_URL
                   valueFrom:
