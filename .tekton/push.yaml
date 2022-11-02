@@ -41,7 +41,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: mirror.gcr.io/library/golang:1.18
+            - image: public.ecr.aws/docker/library/golang:1.18
               name: get-cache
               workingDir: $(workspaces.source.path)
               env:
@@ -64,7 +64,7 @@ spec:
                 curl http://uploader:8080/golang-cache.tar.gz|tar -z -x -f- || \
                    curl -X DELETE -F "file=golang-cache.tar.gz" http://uploader:8080/upload
             - name: unittest
-              image: mirror.gcr.io/library/golang:1.18
+              image: public.ecr.aws/docker/library/golang:1.18
               workingDir: $(workspaces.source.path)
               env:
                 - name: GOCACHE
@@ -87,7 +87,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: mirror.gcr.io/library/golang:1.18
+              image: public.ecr.aws/docker/library/golang:1.18
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN
