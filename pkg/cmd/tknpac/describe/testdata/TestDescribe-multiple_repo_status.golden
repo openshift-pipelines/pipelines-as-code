@@ -10,8 +10,9 @@ PipelineRun:    pipelinerun1
 Event:          pull_request
 Branch:         TargetBranch
 Commit Title:   A title
-StartTime:       16 minutes ago 
+StartTime:      16 minutes ago
 Duration:       1 minute
+
 Other Runs:
 
 STATUS:   Event          Branch          SHA    STARTED TIME    DURATION      PIPELINERUN

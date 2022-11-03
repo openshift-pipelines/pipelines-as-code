@@ -18,14 +18,17 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
 	namespaceFlag   = "namespace"
 	useRealTimeFlag = "use-realtime"
+	showEventflag   = "show-events"
 )
 
 //go:embed templates/describe.tmpl
@@ -74,6 +77,11 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
+			showEvents, err := cmd.Flags().GetBool(showEventflag)
+			if err != nil {
+				return err
+			}
+
 			if len(args) > 0 {
 				repoName = args[0]
 			}
@@ -91,24 +99,27 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				run.Clients.ConsoleUI = &consoleui.TektonDashboard{BaseURL: os.Getenv("TEKTON_DASHBOARD_URL")}
 			}
 
-			return describe(ctx, run, clock, opts, ioStreams, repoName)
+			return describe(ctx, run, clock, opts, ioStreams, repoName, showEvents)
 		},
 	}
 
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
-
-	cmd.PersistentFlags().BoolVarP(&useRealTime, useRealTimeFlag, "", false,
-		"display the time as RFC3339 instead of a relative time")
 	_ = cmd.RegisterFlagCompletionFunc(namespaceFlag,
 		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 			return completion.BaseCompletion(namespaceFlag, args)
 		},
 	)
+
+	cmd.Flags().BoolP(
+		showEventflag, "", false, "show kubernetes events associated with this repository, useful if you have an error that cannot be reported on the git provider interface")
+
+	cmd.PersistentFlags().BoolVarP(&useRealTime, useRealTimeFlag, "", false,
+		"display the time as RFC3339 instead of a relative time")
 	return cmd
 }
 
-func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, repoName string) error {
+func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *cli.PacCliOpts, ioStreams *cli.IOStreams, repoName string, showEvents bool) error {
 	var repository *v1alpha1.Repository
 	var err error
 
@@ -128,6 +139,32 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 			return err
 		}
 	}
+	mixedstatuses := status.MixLivePRandRepoStatus(ctx, cs, *repository)
+	eventList := []corev1.Event{}
+	if showEvents {
+		kinteract, err := kubeinteraction.NewKubernetesInteraction(cs)
+		if err != nil {
+			return err
+		}
+		events, _ := kinteract.GetEvents(ctx, repository.GetNamespace(), "Repository", repository.GetName())
+		eventList = events.Items
+
+		// we do twice the prun list, but since it's behind a flag and not the default behavior, it's ok (i guess)
+		label := "pipelinesascode.tekton.dev/repository=" + repository.Name
+		prs, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repository.Namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: label,
+		})
+		if err != nil {
+			return err
+		}
+		for _, pr := range prs.Items {
+			pevents, err := kinteract.GetEvents(ctx, repository.GetNamespace(), "PipelineRun", pr.GetName())
+			if err != nil {
+				continue
+			}
+			eventList = append(eventList, pevents.Items...)
+		}
+	}
 
 	colorScheme := ioStreams.ColorScheme()
 
@@ -140,24 +177,29 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		"sanitizeBranch":  formatting.SanitizeBranch,
 		"shortSHA":        formatting.ShortSHA,
 	}
-
 	data := struct {
 		Repository  *v1alpha1.Repository
 		Statuses    []v1alpha1.RepositoryRunStatus
 		ColorScheme *cli.ColorScheme
 		Clock       clockwork.Clock
 		Opts        *cli.PacCliOpts
+		EventList   []corev1.Event
 	}{
 		Repository:  repository,
-		Statuses:    status.MixLivePRandRepoStatus(ctx, cs, *repository),
+		Statuses:    mixedstatuses,
 		ColorScheme: colorScheme,
 		Clock:       clock,
 		Opts:        opts,
+		EventList:   eventList,
 	}
 	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
 	t := template.Must(template.New("Describe Repository").Funcs(funcMap).Parse(describeTemplate))
 
 	if err := t.Execute(w, data); err != nil {
+		return err
+	}
+
+	if err != nil {
 		return err
 	}
 
