@@ -1,4 +1,4 @@
-FROM mirror.gcr.io/library/golang:1.18 AS builder
+FROM public.ecr.aws/docker/library/golang:1.18 AS builder
 
 ARG BINARY_NAME=pipelines-as-code-controller
 COPY . /src
