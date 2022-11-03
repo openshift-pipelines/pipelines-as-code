@@ -4,7 +4,7 @@ GOFUMPT=gofumpt
 LDFLAGS=
 OUTPUT_DIR=bin
 GO           = go
-TIMEOUT_UNIT = 5m
+TIMEOUT_UNIT = 20m
 TIMEOUT_E2E  = 20m
 GO_TEST_FLAGS +=
 SHELL := /bin/bash
@@ -73,7 +73,7 @@ lint-go: ## runs go linter on all go files
 	@$(GOLANGCI_LINT) run ./... --modules-download-mode=vendor \
 							--max-issues-per-linter=0 \
 							--max-same-issues=0 \
-							--deadline 5m
+							--deadline $(TIMEOUT_UNIT)
 
 .PHONY: lint-yaml
 lint-yaml: ${YAML_FILES} ## runs yamllint on all yaml files
