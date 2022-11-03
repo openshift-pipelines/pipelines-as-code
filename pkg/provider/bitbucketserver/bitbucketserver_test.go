@@ -18,6 +18,7 @@ import (
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
@@ -76,7 +77,9 @@ func TestGetTektonDir(t *testing.T) {
 
 func TestCreateStatus(t *testing.T) {
 	pacopts := info.PacOpts{
-		ApplicationName: "HELLO APP",
+		Settings: &settings.Settings{
+			ApplicationName: "HELLO APP",
+		},
 	}
 	pullRequestNumber := 10
 

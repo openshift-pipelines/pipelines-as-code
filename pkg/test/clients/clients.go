@@ -41,6 +41,7 @@ type Data struct {
 	Repositories []*v1alpha1.Repository
 	Namespaces   []*corev1.Namespace
 	Secret       []*corev1.Secret
+	Events       []*corev1.Event
 }
 
 // SeedTestData returns Clients and Informers populated with the
@@ -84,6 +85,12 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 
 	for _, n := range d.Secret {
 		if _, err := c.Kube.CoreV1().Secrets(n.Namespace).Create(ctx, n, metav1.CreateOptions{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, n := range d.Events {
+		if _, err := c.Kube.CoreV1().Events(n.Namespace).Create(ctx, n, metav1.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
 	}

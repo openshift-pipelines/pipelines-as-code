@@ -1,5 +1,5 @@
 Name:           test-run
-Namespace:      optnamespace
+Namespace:      namespace
 URL:            https://anurl.com
 Status:         Success
 Log:            https://everywhere.anwywhere
@@ -11,7 +11,6 @@ Commit Title:   A title
 StartTime:      16 minutes ago 
 Duration:       1 minute
 
-Failures:
-• task1:   Failed
-  Error error miss robinson
+Events:
 
+• 16 minutes ago - ItchyBack - Eeny, meeny, miny, moe, Catch a tiger by the toe.

@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -54,7 +55,7 @@ func TestCommandFilenameSetProperly(t *testing.T) {
 			Kube:              stdata.Kube,
 			ClientInitialized: true,
 		},
-		Info: info.Info{Pac: &info.PacOpts{}},
+		Info: info.Info{Pac: &info.PacOpts{Settings: &settings.Settings{}}},
 	}
 	cmd := Command(cs, io)
 	e := bytes.NewBufferString("")

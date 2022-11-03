@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -148,8 +149,10 @@ func TestCleanupPipelineRuns(t *testing.T) {
 				run: &params.Run{
 					Info: info.Info{
 						Pac: &info.PacOpts{
-							MaxKeepRunsUpperLimit: tt.maxkeepruns,
-							DefaultMaxKeepRuns:    tt.defaultmaxkeepruns,
+							Settings: &settings.Settings{
+								MaxKeepRunsUpperLimit: tt.maxkeepruns,
+								DefaultMaxKeepRuns:    tt.defaultmaxkeepruns,
+							},
 						},
 					},
 				},

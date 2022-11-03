@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testDynamic "github.com/openshift-pipelines/pipelines-as-code/pkg/test/dynamic"
@@ -426,7 +427,9 @@ func TestRun(t *testing.T) {
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						SecretAutoCreation: true,
+						Settings: &settings.Settings{
+							SecretAutoCreation: true,
+						},
 					},
 				},
 			}

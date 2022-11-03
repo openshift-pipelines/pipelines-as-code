@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -225,8 +226,10 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						HubURL:         testHubURL,
-						HubCatalogName: testCatalogHubName,
+						Settings: &settings.Settings{
+							HubURL:         testHubURL,
+							HubCatalogName: testCatalogHubName,
+						},
 					},
 				},
 			}
@@ -348,8 +351,10 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						HubURL:         testHubURL,
-						HubCatalogName: testCatalogHubName,
+						Settings: &settings.Settings{
+							HubURL:         testHubURL,
+							HubCatalogName: testCatalogHubName,
+						},
 					},
 				},
 			}
