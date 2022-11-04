@@ -80,7 +80,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 			gopt.Event.EventType = "pull_request, push"
 			gopt.Event.BaseBranch = "main"
 
-			if err := generate.Generate(gopt); err != nil {
+			if err := generate.Generate(gopt, false); err != nil {
 				return err
 			}
 
