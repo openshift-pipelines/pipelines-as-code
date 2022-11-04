@@ -29,6 +29,7 @@ func TestGenerateTemplate(t *testing.T) {
 		checkGeneratedFile      string
 		checkRegInGeneratedFile []*regexp.Regexp
 		addExtraFilesInRepo     map[string]string
+		regenerateTemplate      bool
 	}{
 		{
 			name: "pull request default",
@@ -45,6 +46,7 @@ func TestGenerateTemplate(t *testing.T) {
 			gitinfo: git.Info{
 				URL: "https://hello/moto",
 			},
+			regenerateTemplate: true,
 		},
 		{
 			name: "pull request already exist don't overwrite",
@@ -63,6 +65,7 @@ func TestGenerateTemplate(t *testing.T) {
 			gitinfo: git.Info{
 				URL: "https://hello/moto",
 			},
+			regenerateTemplate: true,
 		},
 		{
 			name: "pull request golang",
@@ -83,6 +86,7 @@ func TestGenerateTemplate(t *testing.T) {
 			gitinfo: git.Info{
 				URL: "https://hello/golang",
 			},
+			regenerateTemplate: true,
 		},
 		{
 			name: "pull request python",
@@ -104,6 +108,25 @@ func TestGenerateTemplate(t *testing.T) {
 			gitinfo: git.Info{
 				URL: "https://hello/pythonrulez",
 			},
+			regenerateTemplate: true,
+		},
+		{
+			name: "pull request already exist don't regenerate sample template",
+			askStubs: func(as *prompt.AskStubber) {
+				as.StubOneDefault() // pull_request
+				as.StubOne("")      // default as main
+			},
+			addExtraFilesInRepo: map[string]string{
+				".tekton/pull-request.yaml": "hello moto",
+			},
+			checkGeneratedFile: ".tekton/pull-request.yaml",
+			checkRegInGeneratedFile: []*regexp.Regexp{
+				regexp.MustCompile("hello moto"),
+			},
+			gitinfo: git.Info{
+				URL: "https://hello/moto",
+			},
+			regenerateTemplate: false,
 		},
 	}
 	for _, tt := range tests {
@@ -133,7 +156,7 @@ func TestGenerateTemplate(t *testing.T) {
 				GitInfo:   &tt.gitinfo,
 				IOStreams: io,
 				CLIOpts:   &cli.PacCliOpts{},
-			})
+			}, tt.regenerateTemplate)
 			assert.NilError(t, err)
 
 			// check if file has been generated

@@ -78,7 +78,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 			gopt.GitInfo = git.GetGitInfo(cwd)
-			return Generate(gopt)
+			return Generate(gopt, true)
 		},
 		Annotations: map[string]string{
 			"commandType": "main",
@@ -101,7 +101,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	return cmd
 }
 
-func Generate(o *Opts) error {
+func Generate(o *Opts, recreateTemplate bool) error {
 	if err := o.targetEvent(); err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func Generate(o *Opts) error {
 		return err
 	}
 
-	if err := o.samplePipeline(); err != nil {
+	if err := o.samplePipeline(recreateTemplate); err != nil {
 		return err
 	}
 	return nil
@@ -191,7 +191,7 @@ func generatefileName(eventType string) string {
 
 // samplePipeline will try to create a basic pipeline in tekton
 // directory.
-func (o *Opts) samplePipeline() error {
+func (o *Opts) samplePipeline(recreateTemplate bool) error {
 	cs := o.IOStreams.ColorScheme()
 	var relpath, fpath string
 
@@ -214,16 +214,20 @@ func (o *Opts) samplePipeline() error {
 	}
 
 	if _, err := os.Stat(fpath); !os.IsNotExist(err) && !o.overwrite {
-		var overwrite bool
-		msg := fmt.Sprintf("There is already a file named: %s would you like me to override it?", relpath)
-		if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: false}, &overwrite); err != nil {
-			return err
+		if recreateTemplate {
+			var overwrite bool
+			msg := fmt.Sprintf("There is already a file named: %s would you like me to override it?", relpath)
+			if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: false}, &overwrite); err != nil {
+				return err
+			}
+			if !overwrite {
+				fmt.Fprintf(o.IOStreams.ErrOut, "%s Not overwriting file, exiting...\n", cs.WarningIcon())
+				fmt.Fprintf(o.IOStreams.ErrOut, "%s Feel free to use the -f flag if you want to target another file name\n...", cs.InfoIcon())
+			}
+		} else {
+			fmt.Fprintf(o.IOStreams.Out, "%s There is already a file named: %s, skipping template generation, feel free to use \"tkn pac generate\" command to generate sample template.\n", cs.InfoIcon(), relpath)
 		}
-		if !overwrite {
-			fmt.Fprintf(o.IOStreams.ErrOut, "%s Not overwriting file, exiting...\n", cs.WarningIcon())
-			fmt.Fprintf(o.IOStreams.ErrOut, "%s Feel free to use the -f flag if you want to target another file name\n...", cs.InfoIcon())
-			return nil
-		}
+		return nil
 	}
 
 	tmpl, err := o.genTmpl()
