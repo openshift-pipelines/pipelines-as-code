@@ -28,7 +28,7 @@ const (
 	PACApplicationNameDefaultValue          = "Pipelines as Code CI"
 	HubURLDefaultValue                      = "https://api.hub.tekton.dev/v1"
 	hubCatalogNameDefaultValue              = "tekton"
-	AutoConfigureNewGitHubRepoDefaultValue  = "true"
+	AutoConfigureNewGitHubRepoDefaultValue  = "false"
 )
 
 type Settings struct {
