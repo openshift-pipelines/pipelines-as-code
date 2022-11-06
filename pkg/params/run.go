@@ -89,7 +89,7 @@ func (r *Run) UpdatePACInfo(ctx context.Context) error {
 		return err
 	}
 
-	if r.Info.Pac.Settings.TektonDashboardURL != r.Clients.ConsoleUI.URL() {
+	if r.Info.Pac.Settings.TektonDashboardURL != "" && r.Info.Pac.Settings.TektonDashboardURL != r.Clients.ConsoleUI.URL() {
 		r.Clients.Log.Infof("updating console url to: %s", r.Info.Pac.Settings.TektonDashboardURL)
 		r.Clients.ConsoleUI = &consoleui.TektonDashboard{BaseURL: r.Info.Pac.Settings.TektonDashboardURL}
 	}

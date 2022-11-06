@@ -2,6 +2,7 @@ package settings
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 )
 
@@ -41,6 +42,13 @@ func Validate(config map[string]string) error {
 	if check, ok := config[AutoConfigureNewGitHubRepoKey]; ok {
 		if !isValidBool(check) {
 			return fmt.Errorf("invalid value for key %v, acceptable values: true or false", AutoConfigureNewGitHubRepoKey)
+		}
+	}
+
+	if dashboardURL, ok := config[TektonDashboardURLKey]; ok {
+		_, err := url.ParseRequestURI(dashboardURL)
+		if err != nil {
+			return fmt.Errorf("invalid value for key %v, invalid url: %v", TektonDashboardURLKey, err)
 		}
 	}
 	return nil

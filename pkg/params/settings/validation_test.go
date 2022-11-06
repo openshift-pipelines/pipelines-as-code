@@ -51,6 +51,13 @@ func TestValidate(t *testing.T) {
 			},
 			wantErr: "invalid value for key bitbucket-cloud-check-source-ip, acceptable values: true or false",
 		},
+		{
+			name: "invalid url value",
+			config: map[string]string{
+				TektonDashboardURLKey: "abc.xyz",
+			},
+			wantErr: "invalid value for key tekton-dashboard-url, invalid url: parse \"abc.xyz\": invalid URI for request",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
