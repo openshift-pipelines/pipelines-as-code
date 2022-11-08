@@ -243,9 +243,5 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		return err
 	}
 
-	if err != nil {
-		return err
-	}
-
 	return w.Flush()
 }
