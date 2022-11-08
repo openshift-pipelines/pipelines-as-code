@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"go.uber.org/zap"
@@ -45,6 +46,7 @@ func TestEventEmitter_EmitMessage(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-repo",
 					Namespace: "test-ns",
+					UID:       "uid",
 				},
 				Spec: v1alpha1.RepositorySpec{},
 			},
@@ -76,6 +78,12 @@ func TestEventEmitter_EmitMessage(t *testing.T) {
 				assert.Equal(t, events.Items[0].Message, tt.message)
 				assert.Equal(t, events.Items[0].Type, v1.EventTypeNormal)
 				assert.Equal(t, events.Items[0].Reason, tt.reason)
+				assert.Equal(t, events.Items[0].InvolvedObject.Name, tt.repo.Name)
+				assert.Equal(t, events.Items[0].InvolvedObject.Namespace, tt.repo.Namespace)
+				assert.Equal(t, events.Items[0].InvolvedObject.UID, tt.repo.UID)
+				assert.Equal(t, events.Items[0].InvolvedObject.Kind, pipelinesascode.RepositoryKind)
+				assert.Equal(t, events.Items[0].InvolvedObject.APIVersion, pipelinesascode.V1alpha1Version)
+				assert.Assert(t, events.Items[0].Source.Component != "")
 			}
 		})
 	}

@@ -63,9 +63,15 @@ func makeEvent(repo *v1alpha1.Repository, loggerLevel zapcore.Level, reason, mes
 		Reason:  reason,
 		Type:    v1.EventTypeWarning,
 		InvolvedObject: v1.ObjectReference{
-			Kind:      "Repository",
-			Name:      repo.Name,
-			Namespace: repo.Namespace,
+			APIVersion:      pipelinesascode.V1alpha1Version,
+			Kind:            pipelinesascode.RepositoryKind,
+			Namespace:       repo.Namespace,
+			Name:            repo.Name,
+			UID:             repo.UID,
+			ResourceVersion: repo.ResourceVersion,
+		},
+		Source: v1.EventSource{
+			Component: "Pipelines As Code",
 		},
 	}
 	if loggerLevel == zap.InfoLevel {
