@@ -90,7 +90,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		"The event type of the repository event to handle (eg: pull_request, push)")
 	cmd.PersistentFlags().StringVar(&gopt.pipelineRunName, "pipeline-name", "",
 		"The pipeline name")
-	cmd.PersistentFlags().StringVar(&gopt.fileName, "file-name", "f",
+	cmd.PersistentFlags().StringVarP(&gopt.fileName, "file-name", "f", "",
 		"The file name location")
 	cmd.PersistentFlags().BoolVar(&gopt.overwrite, "overwrite", false,
 		"Wether to overwrite the file if it exist")
