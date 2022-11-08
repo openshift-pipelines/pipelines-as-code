@@ -33,6 +33,11 @@ There is a few things you can configure through the configmap
 
   The [tekton hub](https://github.com/tektoncd/hub/) catalog name. default to tekton
 
+* `tekton-dashboard-url`
+
+  Using the URL of the Tekton dashboard, Pipelines-as-Code generates a URL to the PipelineRun on the Tekton dashboard.
+  If you are an OpenShift user, then OpenShift console URL is auto-detected.
+
 * `bitbucket-cloud-check-source-ip`
 
   Public bitbucket doesn't have the concept of Secret, we need to be
