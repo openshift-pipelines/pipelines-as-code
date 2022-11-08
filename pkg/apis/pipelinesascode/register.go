@@ -18,5 +18,7 @@ package pipelinesascode
 
 // GroupName is the group name used in this package
 const (
-	GroupName = "pipelinesascode.tekton.dev"
+	GroupName       = "pipelinesascode.tekton.dev"
+	RepositoryKind  = "Repository"
+	V1alpha1Version = "v1alpha1"
 )
