@@ -48,7 +48,7 @@ func Validate(config map[string]string) error {
 	if dashboardURL, ok := config[TektonDashboardURLKey]; ok {
 		_, err := url.ParseRequestURI(dashboardURL)
 		if err != nil {
-			return fmt.Errorf("invalid value for key %v, invalid url: %v", TektonDashboardURLKey, err)
+			return fmt.Errorf("invalid value for key %v, invalid url: %w", TektonDashboardURLKey, err)
 		}
 	}
 	return nil
