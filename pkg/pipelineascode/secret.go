@@ -23,12 +23,18 @@ const (
 // SecretFromRepository grab the secret from the repository CRD
 func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.ProviderConfig, event *info.Event, repo *apipac.Repository, logger *zap.SugaredLogger) error {
 	var err error
+	if repo.Spec.GitProvider == nil {
+		return fmt.Errorf("failed to find git_provider details in repository spec: %v/%v", repo.Namespace, repo.Name)
+	}
 	if repo.Spec.GitProvider.URL == "" {
 		repo.Spec.GitProvider.URL = config.APIURL
 	} else {
 		event.Provider.URL = repo.Spec.GitProvider.URL
 	}
 
+	if repo.Spec.GitProvider.Secret == nil {
+		return fmt.Errorf("failed to find secret in git_provider section in repository spec: %v/%v", repo.Namespace, repo.Name)
+	}
 	gitProviderSecretKey := repo.Spec.GitProvider.Secret.Key
 	if gitProviderSecretKey == "" {
 		gitProviderSecretKey = defaultGitProviderSecretKey
