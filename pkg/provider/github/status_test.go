@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
@@ -90,6 +91,45 @@ func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 	assert.Equal(t, *id, chosenID)
 }
 
+func TestGetExistingSkippedCheckRunID(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	client, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+
+	cnx := New()
+	cnx.Client = client
+
+	event := &info.Event{
+		Organization: "owner",
+		Repository:   "repository",
+		SHA:          "sha",
+	}
+
+	chosenOne := "chosenOne"
+	chosenID := int64(55555)
+	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA), func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintf(w, `{
+			"total_count": 1,
+			"check_runs": [
+				{
+					"id": %v,
+					"external_id": "%s",
+					"output": {
+						"title": "Skipped",
+						"summary": "My CI is skipping this commit"
+					}
+				}
+			]
+		}`, chosenID, chosenOne)
+	})
+
+	id, err := cnx.getExistingCheckRunID(ctx, event, provider.StatusOpts{
+		PipelineRunName: chosenOne,
+	})
+	assert.NilError(t, err)
+	assert.Equal(t, *id, chosenID)
+}
+
 func TestGithubProviderCreateStatus(t *testing.T) {
 	checkrunid := int64(2026)
 	resultid := int64(666)
@@ -117,11 +157,13 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 		githubApps         bool
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    *github.CheckRun
-		wantErr bool
-		notoken bool
+		name                 string
+		args                 args
+		pr                   *v1beta1.PipelineRun
+		want                 *github.CheckRun
+		wantErr              bool
+		notoken              bool
+		addExistingCheckruns bool
 	}{
 		{
 			name: "success",
@@ -136,6 +178,26 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			},
 			want:    &github.CheckRun{ID: &resultid},
 			wantErr: false,
+		},
+		{
+			name: "success with using existing skipped run checkrun",
+			args: args{
+				runevent:    runEvent,
+				status:      "completed",
+				conclusion:  "success",
+				text:        "Yay",
+				detailsURL:  "https://cireport.com",
+				titleSubstr: "Success",
+				githubApps:  true,
+			},
+			pr: &v1beta1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: prname,
+				},
+			},
+			addExistingCheckruns: true,
+			want:                 &github.CheckRun{ID: &resultid},
+			wantErr:              false,
 		},
 		{
 			name: "success coming from webhook",
@@ -219,9 +281,10 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			defer teardown()
 
 			ctx, _ := rtesting.SetupFakeContext(t)
-			gcvs := Provider{
-				Client: fakeclient,
-			}
+			gcvs := New()
+			gcvs.Client = fakeclient
+			gcvs.Logger = getLogger()
+
 			mux.HandleFunc("/repos/check/run/statuses/sha", func(rw http.ResponseWriter, r *http.Request) {})
 			mux.HandleFunc(fmt.Sprintf("/repos/check/run/check-runs/%d", checkrunid), func(rw http.ResponseWriter, r *http.Request) {
 				bit, _ := io.ReadAll(r.Body)
@@ -242,6 +305,24 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				_, err = fmt.Fprintf(rw, `{"id": %d}`, resultid)
 				assert.NilError(t, err)
 			})
+			if tt.addExistingCheckruns {
+				tt.args.runevent.SHA = "sha"
+				mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", tt.args.runevent.Organization, tt.args.runevent.Repository, tt.args.runevent.SHA), func(w http.ResponseWriter, r *http.Request) {
+					_, _ = fmt.Fprintf(w, `{
+						"total_count": 1,
+						"check_runs": [
+							{
+								"id": %v,
+								"external_id": "%v",
+								"output": {
+									"title": "Skipped",
+									"summary": "My CI is skipping this commit"
+								}
+							}
+						]
+					}`, checkrunid, resultid)
+				})
+			}
 
 			status := provider.StatusOpts{
 				PipelineRunName: prname,
@@ -250,6 +331,9 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				Conclusion:      tt.args.conclusion,
 				Text:            tt.args.text,
 				DetailsURL:      tt.args.detailsURL,
+			}
+			if tt.pr != nil {
+				status.PipelineRun = tt.pr
 			}
 			pacopts := &info.PacOpts{
 				LogURL:   "https://log",
@@ -268,7 +352,15 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 					tt.args.runevent.SHA = "sha"
 				}
 			}
-			err := gcvs.CreateStatus(ctx, nil, tt.args.runevent, pacopts, status)
+
+			testData := testclient.Data{}
+			if tt.pr != nil {
+				testData = testclient.Data{
+					PipelineRuns: []*v1beta1.PipelineRun{tt.pr},
+				}
+			}
+			stdata, _ := testclient.SeedTestData(t, ctx, testData)
+			err := gcvs.CreateStatus(ctx, stdata.Pipeline, tt.args.runevent, pacopts, status)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GithubProvider.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/v47/github"
@@ -58,12 +59,41 @@ func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Eve
 	}
 
 	for _, checkrun := range res.CheckRuns {
+		// if it is a skipped checkrun then overwrite it
+		if isSkippedCheckrun(checkrun) {
+			if v.canIUseCheckrunID(checkrun.ID) {
+				return checkrun.ID, nil
+			}
+		}
 		if *checkrun.ExternalID == status.PipelineRunName {
 			return checkrun.ID, nil
 		}
 	}
 
 	return nil, nil
+}
+
+func isSkippedCheckrun(run *github.CheckRun) bool {
+	if run == nil || run.Output == nil {
+		return false
+	}
+	if run.Output.Title != nil && *run.Output.Title == "Skipped" &&
+		run.Output.Summary != nil &&
+		strings.Contains(*run.Output.Summary, "is skipping this commit") {
+		return true
+	}
+	return false
+}
+
+func (v *Provider) canIUseCheckrunID(checkrunid *int64) bool {
+	v.skippedRun.mutex.Lock()
+	defer v.skippedRun.mutex.Unlock()
+
+	if v.skippedRun.checkRunID == 0 {
+		v.skippedRun.checkRunID = *checkrunid
+		return true
+	}
+	return false
 }
 
 func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) (*int64, error) {
@@ -103,7 +133,6 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 			checkRunID = github.Int64(int64(checkID))
 		}
 	}
-
 	if !found {
 		if checkRunID, _ = v.getExistingCheckRunID(ctx, runevent, status); checkRunID == nil {
 			checkRunID, err = v.createCheckRunStatus(ctx, runevent, pacopts, status)
@@ -121,11 +150,16 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 		Summary: &status.Summary,
 		Text:    &status.Text,
 	}
-
 	opts := github.UpdateCheckRunOptions{
 		Name:   getCheckName(status, pacopts),
-		Status: &status.Status,
+		Status: github.String(status.Status),
 		Output: checkRunOutput,
+	}
+	if status.PipelineRunName != "" {
+		opts.ExternalID = github.String(status.PipelineRunName)
+	}
+	if pacopts.LogURL != "" {
+		opts.DetailsURL = github.String(pacopts.LogURL)
 	}
 
 	if status.DetailsURL != "" {

@@ -212,7 +212,7 @@ func (l listener) detectProvider(req *http.Request, reqBody string) (provider.In
 		return nil, &log, fmt.Errorf("invalid event body format: %w", err)
 	}
 
-	gitHub := &github.Provider{}
+	gitHub := github.New()
 	isGH, processReq, logger, reason, err := gitHub.Detect(req, reqBody, &log)
 	if isGH {
 		return l.processRes(processReq, gitHub, logger, reason, err)

@@ -85,7 +85,7 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 	return commit.GetSHA(), nil
 }
 
-func PRCreate(ctx context.Context, cs *params.Run, ghcnx ghprovider.Provider, owner, repo, targetRef, defaultBranch, title string) (int, error) {
+func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, owner, repo, targetRef, defaultBranch, title string) (int, error) {
 	pr, _, err := ghcnx.Client.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
 		Title: &title,
 		Head:  &targetRef,
@@ -99,7 +99,7 @@ func PRCreate(ctx context.Context, cs *params.Run, ghcnx ghprovider.Provider, ow
 	return pr.GetNumber(), nil
 }
 
-func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles []string, webhook bool) (*params.Run, ghprovider.Provider, options.E2E, string, string, int, string) {
+func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles []string, webhook bool) (*params.Run, *ghprovider.Provider, options.E2E, string, string, int, string) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	runcnx, opts, ghcnx, err := Setup(ctx, webhook)
 	assert.NilError(t, err)
