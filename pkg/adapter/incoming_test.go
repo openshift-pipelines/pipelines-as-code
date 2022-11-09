@@ -429,7 +429,7 @@ func Test_listener_processIncoming(t *testing.T) {
 	}{
 		{
 			name:     "process/github",
-			want:     &github.Provider{},
+			want:     github.New(),
 			wantOrg:  "owner",
 			wantRepo: "repo",
 			targetRepo: &v1alpha1.Repository{

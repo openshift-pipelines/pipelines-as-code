@@ -98,7 +98,7 @@ func (l *listener) processIncoming(targetRepo *v1alpha1.Repository) (provider.In
 	var provider provider.Interface
 	switch targetRepo.Spec.GitProvider.Type {
 	case "github":
-		provider = &github.Provider{}
+		provider = github.New()
 	case "gitlab":
 		provider = &gitlab.Provider{}
 	case "gitea":

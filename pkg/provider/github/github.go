@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 
 	"github.com/google/go-github/v47/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -29,12 +30,25 @@ const (
 )
 
 type Provider struct {
-	Client                *github.Client
-	Logger                *zap.SugaredLogger
-	Token, APIURL         *string
-	ApplicationID         *int64
-	providerName          string
-	AutoConfigureNewRepos bool
+	Client        *github.Client
+	Logger        *zap.SugaredLogger
+	Token, APIURL *string
+	ApplicationID *int64
+	providerName  string
+	skippedRun
+}
+
+type skippedRun struct {
+	mutex      *sync.Mutex
+	checkRunID int64
+}
+
+func New() *Provider {
+	return &Provider{
+		skippedRun: skippedRun{
+			mutex: &sync.Mutex{},
+		},
+	}
 }
 
 // splitGithubURL Take a Github url and split it with org/repo path ref, supports rawURL

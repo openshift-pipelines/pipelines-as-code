@@ -16,7 +16,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E, github.Provider, error) {
+func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E, *github.Provider, error) {
 	githubURL := os.Getenv("TEST_GITHUB_API_URL")
 	githubToken := os.Getenv("TEST_GITHUB_TOKEN")
 	githubRepoOwnerGithubApp := os.Getenv("TEST_GITHUB_REPO_OWNER_GITHUBAPP")
@@ -30,43 +30,43 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 		"EL_WEBHOOK_SECRET",
 	} {
 		if env := os.Getenv("TEST_" + value); env == "" {
-			return nil, options.E2E{}, github.Provider{}, fmt.Errorf("\"TEST_%s\" env variable is required, cannot continue", value)
+			return nil, options.E2E{}, github.New(), fmt.Errorf("\"TEST_%s\" env variable is required, cannot continue", value)
 		}
 	}
 
 	var splitted []string
 	if !viaDirectWebhook {
 		if githubURL == "" || githubToken == "" || githubRepoOwnerGithubApp == "" {
-			return nil, options.E2E{}, github.Provider{}, fmt.Errorf("TEST_GITHUB_API_URL TEST_GITHUB_TOKEN TEST_GITHUB_REPO_OWNER_GITHUBAPP need to be set")
+			return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_GITHUB_API_URL TEST_GITHUB_TOKEN TEST_GITHUB_REPO_OWNER_GITHUBAPP need to be set")
 		}
 		splitted = strings.Split(githubRepoOwnerGithubApp, "/")
 	}
 	if viaDirectWebhook {
 		if githubURL == "" || githubToken == "" || githubRepoOwnerDirectWebhook == "" {
-			return nil, options.E2E{}, github.Provider{}, fmt.Errorf("TEST_GITHUB_API_URL TEST_GITHUB_TOKEN TEST_GITHUB_REPO_OWNER_WEBHOOK need to be set")
+			return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_GITHUB_API_URL TEST_GITHUB_TOKEN TEST_GITHUB_REPO_OWNER_WEBHOOK need to be set")
 		}
 		splitted = strings.Split(githubRepoOwnerDirectWebhook, "/")
 	}
 
 	run := &params.Run{}
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
-		return nil, options.E2E{}, github.Provider{}, err
+		return nil, options.E2E{}, github.New(), err
 	}
 	e2eoptions := options.E2E{Organization: splitted[0], Repo: splitted[1], DirectWebhook: viaDirectWebhook}
-	gprovider := github.Provider{}
+	gprovider := github.New()
 	event := info.NewEvent()
 	event.Provider = &info.Provider{
 		Token: githubToken,
 		URL:   githubURL,
 	}
 	if err := gprovider.SetClient(ctx, event); err != nil {
-		return nil, options.E2E{}, github.Provider{}, err
+		return nil, options.E2E{}, github.New(), err
 	}
 
 	return run, e2eoptions, gprovider, nil
 }
 
-func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovider github.Provider, prNumber int, ref, targetNS string, opts options.E2E) {
+func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovider *github.Provider, prNumber int, ref, targetNS string, opts options.E2E) {
 	runcnx.Clients.Log.Infof("Closing PR %d", prNumber)
 	if prNumber != -1 {
 		state := "closed"
