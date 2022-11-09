@@ -24,7 +24,7 @@ const (
 	// TODO: makes this configurable for GHE in the ConfigMap.
 	// on our GHE instance, it looks like this :
 	// https://raw.ghe.openshiftpipelines.com/pac/chmouel-test/main/README.md
-	// we can perhaps do some autodetction with event.Provider.GHEURL and adding
+	// we can perhaps do some autodetection with event.Provider.GHEURL and adding
 	// a raw into it
 	publicRawURLHost = "raw.githubusercontent.com"
 )
@@ -36,6 +36,7 @@ type Provider struct {
 	ApplicationID *int64
 	providerName  string
 	skippedRun
+	Run *params.Run
 }
 
 type skippedRun struct {
@@ -76,7 +77,7 @@ func splitGithubURL(uri string) (string, string, string, string, error) {
 	return spOrg, spRepo, spPath, spRef, nil
 }
 
-func (v *Provider) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error) {
+func (v *Provider) GetTaskURI(ctx context.Context, _ *params.Run, event *info.Event, uri string) (bool, string, error) {
 	if ret := provider.CompareHostOfURLS(uri, event.URL); !ret {
 		return false, "", nil
 	}
@@ -154,9 +155,10 @@ func makeClient(ctx context.Context, apiURL, token string) (*github.Client, stri
 	return client, providerName, github.String(apiURL)
 }
 
-func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
+func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event) error {
 	client, providerName, apiURL := makeClient(ctx, event.Provider.URL, event.Provider.Token)
 	v.providerName = providerName
+	v.Run = run
 
 	// Make sure Client is not already set, so we don't override our fakeclient
 	// from unittesting.
@@ -235,7 +237,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 }
 
 // GetFileInsideRepo Get a file via Github API using the runinfo information, we
-// branch is true, the user the branch as ref isntead of the SHA
+// branch is true, the user the branch as ref instead of the SHA
 // TODO: merge GetFileInsideRepo amd GetTektonDir
 func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, target string) (string, error) {
 	ref := runevent.SHA

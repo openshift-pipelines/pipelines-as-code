@@ -332,12 +332,12 @@ func TestGetConfig(t *testing.T) {
 func TestSetClient(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	v := &Provider{}
-	assert.Assert(t, v.SetClient(ctx, info.NewEvent()) != nil)
+	assert.Assert(t, v.SetClient(ctx, nil, info.NewEvent()) != nil)
 
 	client, _, tearDown := thelp.Setup(ctx, t)
 	defer tearDown()
 	vv := &Provider{Client: client}
-	err := vv.SetClient(ctx, &info.Event{
+	err := vv.SetClient(ctx, nil, &info.Event{
 		Provider: &info.Provider{
 			Token: "hello",
 		},
@@ -672,11 +672,13 @@ func TestGetFiles(t *testing.T) {
 				Repository:    "pushrequestrepository",
 				SHA:           "shacommitinfo",
 			},
-			pushChanges: []*gitlab.Diff{{
-				NewPath: "first.txt",
-			}, {
-				NewPath: "second.yaml",
-			}},
+			pushChanges: []*gitlab.Diff{
+				{
+					NewPath: "first.txt",
+				}, {
+					NewPath: "second.yaml",
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -705,11 +707,13 @@ func TestGetFiles(t *testing.T) {
 					_, _ = rw.Write(jeez)
 				})
 			}
-			pushFileChanges := []*gitlab.Diff{{
-				NewPath: "first.txt",
-			}, {
-				NewPath: "second.yaml",
-			}}
+			pushFileChanges := []*gitlab.Diff{
+				{
+					NewPath: "first.txt",
+				}, {
+					NewPath: "second.yaml",
+				},
+			}
 			if tt.event.TriggerTarget == "push" {
 				mux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff",
 					tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {

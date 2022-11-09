@@ -143,7 +143,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, pa
 	return v.getBlob(runevent, runevent.SHA, path)
 }
 
-func (v *Provider) SetClient(_ context.Context, event *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Event) error {
 	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}

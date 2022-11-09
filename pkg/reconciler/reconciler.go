@@ -148,7 +148,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
 	}
 
-	err = provider.SetClient(ctx, event)
+	err = provider.SetClient(ctx, r.run, event)
 	if err != nil {
 		return repo, fmt.Errorf("cannot set client: %w", err)
 	}
@@ -232,7 +232,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
 	}
 
-	err = p.SetClient(ctx, event)
+	err = p.SetClient(ctx, nil, event)
 	if err != nil {
 		return fmt.Errorf("cannot set client: %w", err)
 	}

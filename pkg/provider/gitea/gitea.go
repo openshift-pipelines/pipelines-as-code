@@ -214,7 +214,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(_ context.Context, runevent *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.Event) error {
 	var err error
 	apiURL := runevent.Provider.URL
 	// password is not exposed to CRD, it's only used from the e2e tests

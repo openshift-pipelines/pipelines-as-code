@@ -154,6 +154,7 @@ function configure_pac() {
     sed -e "s,%DOMAIN_NAME%,${DOMAIN_NAME}," -e "s,%SERVICE_NAME%,${service_name}," ingress.yaml |kubectl apply -f-
 
     kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"bitbucket-cloud-check-source-ip\": \"false\"}}"  pipelines-as-code && \
+    kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"error-detection-from-container-logs\": \"true\"}}"  pipelines-as-code && \
     kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"tekton-dashboard-url\": \"http://dashboard.${DOMAIN_NAME}\"}}" --type merge pipelines-as-code
 
     set +x

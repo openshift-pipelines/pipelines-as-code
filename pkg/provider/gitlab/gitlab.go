@@ -241,7 +241,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(_ context.Context, runevent *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.Event) error {
 	var err error
 	if runevent.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
