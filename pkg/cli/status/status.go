@@ -19,12 +19,13 @@ var reasonMessageReplacementRegexp = regexp.MustCompile(`\(image: .*`)
 // snatched from prow
 // https://github.com/kubernetes/test-infra/blob/3c8cbed65c421670a7d37239b8ffceb91e0eb16b/prow/spyglass/lenses/buildlog/lens.go#L95
 var (
-	ErorrRE                                = regexp.MustCompile(`timed out|ERROR:|(FAIL|Failure \[)\b|panic\b|^E\d{4} \d\d:\d\d:\d\d\.\d\d\d]`)
-	numLinesOfLogsInContainersToGrabForErr = int64(10)
+	ErorrRE                                       = regexp.MustCompile(`timed out|ERROR:|(FAIL|Failure \[)\b|panic\b|^E\d{4} \d\d:\d\d:\d\d\.\d\d\d]`)
+	defaultNumLinesOfLogsInContainersToGrabForErr = int64(10)
 )
 
 // CollectTaskInfos collects all tasks information we are interested in.
-func CollectTaskInfos(ctx context.Context, cs *params.Run, pr tektonv1beta1.PipelineRun) map[string]pacv1alpha1.TaskInfos {
+// TODO: move to a better package than cli since used by watcher too
+func CollectTaskInfos(ctx context.Context, cs *params.Run, pr tektonv1beta1.PipelineRun, numLines int64) map[string]pacv1alpha1.TaskInfos {
 	failureReasons := map[string]pacv1alpha1.TaskInfos{}
 	kinteract, _ := kubeinteraction.NewKubernetesInteraction(cs)
 	for _, task := range pr.Status.TaskRuns {
@@ -36,7 +37,11 @@ func CollectTaskInfos(ctx context.Context, cs *params.Run, pr tektonv1beta1.Pipe
 			if kinteract != nil {
 				for _, step := range task.Status.Steps {
 					if step.Terminated != nil && step.Terminated.ExitCode != 0 {
-						log, _ := kinteract.GetPodLogs(ctx, pr.GetNamespace(), task.Status.PodName, step.ContainerName, numLinesOfLogsInContainersToGrabForErr)
+						log, err := kinteract.GetPodLogs(ctx, pr.GetNamespace(), task.Status.PodName, step.ContainerName, numLines)
+						if err != nil {
+							cs.Clients.Log.Errorf("cannot get pod logs: %w", err)
+							continue
+						}
 						// see if a pattern match from errRe
 						ti.LogSnippet = strings.TrimSpace(log)
 					}
@@ -63,7 +68,7 @@ func RepositoryRunStatusRemoveSameSHA(rs []pacv1alpha1.RepositoryRunStatus, live
 }
 
 func convertPrStatusToRepositoryStatus(ctx context.Context, cs *params.Run, pr tektonv1beta1.PipelineRun, logurl string) pacv1alpha1.RepositoryRunStatus {
-	failurereasons := CollectTaskInfos(ctx, cs, pr)
+	failurereasons := CollectTaskInfos(ctx, cs, pr, defaultNumLinesOfLogsInContainersToGrabForErr)
 	prSHA := pr.GetLabels()["pipelinesascode.tekton.dev/sha"]
 	return pacv1alpha1.RepositoryRunStatus{
 		Status:             pr.Status.Status,

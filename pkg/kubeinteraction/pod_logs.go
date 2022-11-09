@@ -8,13 +8,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (k Interaction) GetPodLogs(ctx context.Context, ns, podName, containerName string, maxNumberLines int64) (string, error) {
+// GetPodLogs of a ns on a podname and container, tailLines is the number of
+// line to tail -1 mean unlimited
+func (k Interaction) GetPodLogs(ctx context.Context, ns, podName, containerName string, tailLines int64) (string, error) {
 	kclient := k.Run.Clients.Kube.CoreV1()
-	// maybe one day there is going to be multiple controller containers and then we would need to handle it here
-	ios, err := kclient.Pods(ns).GetLogs(podName, &corev1.PodLogOptions{
+	pdOpts := &corev1.PodLogOptions{
 		Container: containerName,
-		TailLines: github.Int64(maxNumberLines),
-	}).Stream(ctx)
+	}
+	if tailLines > 0 {
+		pdOpts.TailLines = github.Int64(tailLines)
+	}
+	ios, err := kclient.Pods(ns).GetLogs(podName, pdOpts).Stream(ctx)
 	if err != nil {
 		return "", err
 	}

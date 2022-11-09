@@ -188,7 +188,7 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, event *info.Event, pat
 	return ret, err
 }
 
-func (v *Provider) SetClient(ctx context.Context, event *info.Event) error {
+func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event) error {
 	if event.Provider.User == "" {
 		return fmt.Errorf("no provider.user has been set in the repo crd")
 	}

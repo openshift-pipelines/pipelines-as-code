@@ -46,7 +46,7 @@ func (v *TestProviderImp) GetCommitInfo(ctx context.Context, runevent *info.Even
 	return nil
 }
 
-func (v *TestProviderImp) SetClient(ctx context.Context, event *info.Event) error {
+func (v *TestProviderImp) SetClient(ctx context.Context, run *params.Run, event *info.Event) error {
 	return nil
 }
 

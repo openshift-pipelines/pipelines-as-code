@@ -26,12 +26,36 @@ data:
   # Tekton HUB catalog name
   hub-catalog-name: "tekton"
 
-  # Whether to allow fetching remote tasks
+  # Allow fetching remote tasks
   remote-tasks: "true"
 
   # Using the URL of the Tekton dashboard, Pipelines-as-Code generates a URL to the
   # PipelineRun on the Tekton dashboard
   tekton-dashboard-url: ""
+
+  # Enable or disable the inspection of container logs to detect error message
+  # and expose them as annotations on Pull Request. Only Github apps is supported
+  #
+  # This feature is currently alpha, use it at your own risk
+  error-detection-from-container-logs: "false"
+
+  # How many lines to grab from the container when inspecting the
+  # logs. Increasing this value may increase the watcher memory usage.
+  # Use -1 for unlimited lines.
+  error-detection-max-number-of-lines: "50"
+
+  # The label or annotations of the tasks to detect simple errors
+  # simple errors are of the makefile/grep format for example :
+  #
+  # filename:line:column: error message
+  #
+  # most linter with the "Code Quality" label in the tekton hub will output
+  # in that simple format.
+  error-detection-simple-filter-to-task-labels: "Code Quality"
+
+  # The default regexp used when we use the simple error detection
+  error-detection-simple-regexp: |
+    ^([^:]*):(\d+):(\d+):\s*(.*)
 
   # Since public bitbucket doesn't have the concept of Secret, we need to be
   # able to secure the request by querying https://ip-ranges.atlassian.com/,

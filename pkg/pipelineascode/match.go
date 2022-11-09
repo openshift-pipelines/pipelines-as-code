@@ -85,7 +85,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 
 	// Set the client, we should error out if there is a problem with
 	// token or secret or we won't be able to do much.
-	err = p.vcx.SetClient(ctx, p.event)
+	err = p.vcx.SetClient(ctx, p.run, p.event)
 	if err != nil {
 		return nil, nil, err
 	}

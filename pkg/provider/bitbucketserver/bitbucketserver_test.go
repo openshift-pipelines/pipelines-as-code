@@ -282,7 +282,7 @@ func TestSetClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			v := &Provider{}
-			err := v.SetClient(ctx, tt.opts)
+			err := v.SetClient(ctx, nil, tt.opts)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return

@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-github/v47/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -284,6 +285,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			gcvs := New()
 			gcvs.Client = fakeclient
 			gcvs.Logger = getLogger()
+			gcvs.Run = params.New()
 
 			mux.HandleFunc("/repos/check/run/statuses/sha", func(rw http.ResponseWriter, r *http.Request) {})
 			mux.HandleFunc(fmt.Sprintf("/repos/check/run/check-runs/%d", checkrunid), func(rw http.ResponseWriter, r *http.Request) {

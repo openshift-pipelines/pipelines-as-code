@@ -4,21 +4,48 @@ weight: 6
 ---
 # Status
 
-## GitHub
+## GitHub apps
 
 When the pipeline finishes, the status will be added in the GitHub Check tabs
 with a short recap of how long each task of your pipeline took and the output of
 `tkn pr describe`.
 
+### Annotations (alpha feature)
+
+If you set `error-detection-from-container-logs` to `true` in the
+`pipeline-as-code` [configmap](/docs/install/settings.md), pipelines-as-code
+will try to detect the errors from the container logs and add them as
+annotations on the Pull Request where the error occured.
+
+We currently support only the simple case  where the error looks like `makefile` or `grep` output of this format:
+
+```console
+filename:line:column: error message
+```
+
+tools like `golangci-lint`, `pylint`, `yamllint` and many others are able to output errors in this format.
+
+You can customize the regexp used to detect the errors with the `error-detection-simple-regexp` setting.
+
+By default pipelines as code will look for the last 50 lines of the container
+logs. You can increase this value in the `error-detection-max-number-of-lines`
+setting or set `-1` for unlimited number of lines. This may increase the memory
+usage of the watcher.
+
+![annotations](/images/github-annotation-error-failure-detection.png)
+
 ## Webhook
 
-On webhook if it's a pull request
+On webhook when the event is a pull request it will be added as a comment of the
+pull or merge request.
+
+For push event there is other method to get the status of the pipeline.
 
 ## Failures
 
 If a namespace has been matched to a Repository, Pipelines As Code will emit its log messages in the kubernetes events inside the `Repository`'s namespace.
 
-## CRD
+## Repository CRD
 
 Status of your pipeline execution is stored inside the Repo CustomResource :
 
