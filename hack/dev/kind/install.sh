@@ -159,6 +159,7 @@ function configure_pac() {
     set +x
     if [[ -n ${PAC_PASS_SECRET_FOLDER} ]];then
         echo "Installing PAC secrets"
+        kubectl delete secret pipelines-as-code-secret -n pipelines-as-code 2>/dev/null || true
         kubectl create secret generic pipelines-as-code-secret -n pipelines-as-code
         for passk in github-application-id github-private-key webhook.secret;do
             if [[ ${passk} == *-key ]];then
