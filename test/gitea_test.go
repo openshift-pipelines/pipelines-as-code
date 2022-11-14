@@ -14,7 +14,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-github/v47/github"
-	pacapi "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	pacapi "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	tknpacdelete "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/deleterepo"
 	tknpacdesc "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/describe"
 	tknpacgenerate "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
@@ -356,7 +356,7 @@ func TestGiteaPush(t *testing.T) {
 	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
 	time.Sleep(5 * time.Second)
 	prs, err := topts.Clients.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
-		LabelSelector: filepath.Join(pacapi.GroupName, "event-type") + "=push",
+		LabelSelector: pacapi.EventType + "=push",
 	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), 1, "should have only one push pipelinerun")
@@ -551,7 +551,7 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 			tgitea.WaitForStatus(t, topts, topts.TargetRefName)
 
 			prs, err := topts.Clients.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
-				LabelSelector: filepath.Join(pacapi.GroupName, "event-type") + "=pull_request",
+				LabelSelector: pacapi.EventType + "=pull_request",
 			})
 			assert.NilError(t, err)
 			assert.Assert(t, len(prs.Items) >= 2, "should have at least 2 pipelineruns")

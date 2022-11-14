@@ -1,10 +1,9 @@
 package reconciler
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -43,8 +42,8 @@ func getTestPR(name, state string) *v1beta1.PipelineRun {
 			Name:      name,
 			Namespace: finalizeTestRepo.Namespace,
 			Labels: map[string]string{
-				filepath.Join(pipelinesascode.GroupName, "state"):      state,
-				filepath.Join(pipelinesascode.GroupName, "repository"): finalizeTestRepo.Name,
+				keys.State:      state,
+				keys.Repository: finalizeTestRepo.Name,
 			},
 		},
 		Spec: v1beta1.PipelineRunSpec{
@@ -68,7 +67,7 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 			pipelinerun: &v1beta1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						filepath.Join(pipelinesascode.GroupName, "state"): kubeinteraction.StateCompleted,
+						keys.State: kubeinteraction.StateCompleted,
 					},
 				},
 			},

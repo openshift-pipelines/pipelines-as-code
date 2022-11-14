@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strings"
 
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -207,7 +206,7 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 		if pipelinerun.ObjectMeta.Labels == nil {
 			pipelinerun.ObjectMeta.Labels = map[string]string{}
 		}
-		pipelinerun.ObjectMeta.Labels[filepath.Join(apipac.GroupName, "original-prname")] = originPipelinerunName
+		pipelinerun.ObjectMeta.Labels[apipac.OriginalPRName] = originPipelinerunName
 	}
 	return types.PipelineRuns, nil
 }

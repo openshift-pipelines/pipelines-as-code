@@ -1,10 +1,9 @@
 package kubeinteraction
 
 import (
-	"path/filepath"
 	"testing"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -52,10 +51,9 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			AddLabelsAndAnnotations(tt.args.event, tt.args.pipelineRun, tt.args.repo, &info.ProviderConfig{})
-			assert.Assert(t, tt.args.pipelineRun.Labels[filepath.Join(pipelinesascode.GroupName, "url-org")] == tt.args.event.Organization, "'%s' != %s",
-				tt.args.pipelineRun.Labels[filepath.Join(pipelinesascode.GroupName, "url-org")], tt.args.event.Organization)
-			assert.Assert(t, tt.args.pipelineRun.Annotations[filepath.Join(pipelinesascode.GroupName,
-				"sha-url")] == tt.args.event.SHAURL)
+			assert.Assert(t, tt.args.pipelineRun.Labels[keys.URLOrg] == tt.args.event.Organization, "'%s' != %s",
+				tt.args.pipelineRun.Labels[keys.URLOrg], tt.args.event.Organization)
+			assert.Assert(t, tt.args.pipelineRun.Annotations[keys.ShaURL] == tt.args.event.SHAURL)
 		})
 	}
 }

@@ -3,10 +3,9 @@ package reconciler
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/google/go-github/v47/github"
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1a1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -87,7 +86,7 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		Text:                    taskStatus,
 		PipelineRunName:         pr.Name,
 		DetailsURL:              r.run.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
-		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")],
+		OriginalPipelineRunName: pr.GetLabels()[apipac.OriginalPRName],
 	}
 
 	err = vcx.CreateStatus(ctx, r.run.Clients.Tekton, event, r.run.Info.Pac, status)

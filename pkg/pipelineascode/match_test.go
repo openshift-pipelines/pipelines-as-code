@@ -1,11 +1,10 @@
 package pipelineascode
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -55,7 +54,7 @@ func TestChangeSecret(t *testing.T) {
 	err := changeSecret(prs)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.HasPrefix(prs[0].GetName(), "pac-gitauth"), prs[0].GetName(), "has no pac-gitauth prefix")
-	assert.Assert(t, prs[0].GetAnnotations()[gitAuthSecretAnnotation] != "")
+	assert.Assert(t, prs[0].GetAnnotations()[apipac.GitAuthSecret] != "")
 }
 
 func TestFilterRunningPipelineRunOnTargetTest(t *testing.T) {
@@ -65,7 +64,7 @@ func TestFilterRunningPipelineRunOnTargetTest(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pipelinerun-" + testPipeline,
 				Labels: map[string]string{
-					filepath.Join(apipac.GroupName, "original-prname"): testPipeline,
+					apipac.OriginalPRName: testPipeline,
 				},
 			},
 		},

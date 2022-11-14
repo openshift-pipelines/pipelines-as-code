@@ -4,10 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -52,14 +51,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 	logger := logging.FromContext(ctx)
 
 	// if pipelineRun is in completed state then return
-	state, exist := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "state")]
+	state, exist := pr.GetLabels()[keys.State]
 	if exist && state == kubeinteraction.StateCompleted {
 		return nil
 	}
 
 	// if its a GitHub App pipelineRun PR then process only if check run id is added otherwise wait
-	if _, ok := pr.Annotations[filepath.Join(pipelinesascode.GroupName, "installation-id")]; ok {
-		if _, ok := pr.Labels[filepath.Join(pipelinesascode.GroupName, "check-run-id")]; !ok {
+	if _, ok := pr.Annotations[keys.InstallationID]; ok {
+		if _, ok := pr.Labels[keys.CheckRunID]; !ok {
 			return nil
 		}
 	}
@@ -74,7 +73,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 
 	logger = logger.With(
 		"pipeline-run", pr.GetName(),
-		"event-sha", pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "sha")],
+		"event-sha", pr.GetLabels()[keys.SHA],
 	)
 	logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
 	r.eventEmitter.SetLogger(logger)
@@ -95,7 +94,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 }
 
 func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
-	repoName := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "repository")]
+	repoName := pr.GetLabels()[keys.Repository]
 	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
 		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
 	if err != nil {
@@ -133,7 +132,7 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 }
 
 func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *v1beta1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
-	repoName := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "repository")]
+	repoName := pr.GetLabels()[keys.Repository]
 	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
 		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
 	if err != nil {
@@ -198,11 +197,11 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 }
 
 func (r *Reconciler) emitMetrics(pr *v1beta1.PipelineRun) error {
-	gitProvider := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "git-provider")]
-	eventType := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "event-type")]
+	gitProvider := pr.GetLabels()[keys.GitProvider]
+	eventType := pr.GetLabels()[keys.EventType]
 
 	if strings.HasPrefix(gitProvider, "github") {
-		if _, ok := pr.GetAnnotations()[filepath.Join(pipelinesascode.GroupName, "installation-id")]; ok {
+		if _, ok := pr.GetAnnotations()[keys.InstallationID]; ok {
 			gitProvider += "-app"
 		} else {
 			gitProvider += "-webhook"
@@ -248,7 +247,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		DetailsURL:              consoleURL,
 		PipelineRunName:         pr.GetName(),
 		PipelineRun:             pr,
-		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "original-prname")],
+		OriginalPipelineRunName: pr.GetLabels()[keys.OriginalPRName],
 	}
 
 	if err := p.CreateStatus(ctx, r.run.Clients.Tekton, event, r.run.Info.Pac, status); err != nil {
@@ -266,7 +265,7 @@ func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.Sug
 		mergePatch := map[string]interface{}{
 			"metadata": map[string]interface{}{
 				"labels": map[string]string{
-					filepath.Join(pipelinesascode.GroupName, "state"): state,
+					keys.State: state,
 				},
 			},
 		}

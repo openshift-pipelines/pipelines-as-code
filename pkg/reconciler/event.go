@@ -3,10 +3,9 @@ package reconciler
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"strconv"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -20,7 +19,7 @@ import (
 )
 
 func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) (provider.Interface, *info.Event, error) {
-	gitProvider, ok := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "git-provider")]
+	gitProvider, ok := pr.GetLabels()[keys.GitProvider]
 	if !ok {
 		return nil, nil, fmt.Errorf("failed to detect git provider for pipleinerun %s : git-provider label not found", pr.GetName())
 	}
@@ -58,38 +57,38 @@ func buildEventFromPipelineRun(pr *v1beta1.PipelineRun) *info.Event {
 	prLabels := pr.GetLabels()
 	prAnno := pr.GetAnnotations()
 
-	event.URL = prAnno[filepath.Join(pipelinesascode.GroupName, "repo-url")]
+	event.URL = prAnno[keys.RepoURL]
 	// it's safer to get repo, org from repo.url since we have to remove the / and other chars in labels which drops
 	// the SubPath that gitlab is using.
 	repo, org, _ := formatting.GetRepoOwnerSplitted(event.URL)
 	event.Organization = repo
 	event.Repository = org
-	event.EventType = prLabels[filepath.Join(pipelinesascode.GroupName, "event-type")]
-	event.BaseBranch = prLabels[filepath.Join(pipelinesascode.GroupName, "branch")]
-	event.SHA = prLabels[filepath.Join(pipelinesascode.GroupName, "sha")]
+	event.EventType = prLabels[keys.EventType]
+	event.BaseBranch = prLabels[keys.Branch]
+	event.SHA = prLabels[keys.SHA]
 
-	event.SHATitle = prAnno[filepath.Join(pipelinesascode.GroupName, "sha-title")]
-	event.SHAURL = prAnno[filepath.Join(pipelinesascode.GroupName, "sha-url")]
+	event.SHATitle = prAnno[keys.ShaTitle]
+	event.SHAURL = prAnno[keys.ShaURL]
 
-	prNumber := prAnno[filepath.Join(pipelinesascode.GroupName, "pull-request")]
+	prNumber := prAnno[keys.PullRequest]
 	if prNumber != "" {
 		event.PullRequestNumber, _ = strconv.Atoi(prNumber)
 	}
 
 	// GitHub
-	if installationID, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "installation-id")]; ok {
+	if installationID, ok := prAnno[keys.InstallationID]; ok {
 		id, _ := strconv.Atoi(installationID)
 		event.InstallationID = int64(id)
 	}
-	if gheURL, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "ghe-url")]; ok {
+	if gheURL, ok := prAnno[keys.GHEURL]; ok {
 		event.GHEURL = gheURL
 	}
 
 	// Gitlab
-	if projectID, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "source-project-id")]; ok {
+	if projectID, ok := prAnno[keys.SourceProjectID]; ok {
 		event.SourceProjectID, _ = strconv.Atoi(projectID)
 	}
-	if projectID, ok := prAnno[filepath.Join(pipelinesascode.GroupName, "target-project-id")]; ok {
+	if projectID, ok := prAnno[keys.TargetProjectID]; ok {
 		event.TargetProjectID, _ = strconv.Atoi(projectID)
 	}
 	return event

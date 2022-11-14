@@ -1,12 +1,11 @@
 package logs
 
 import (
-	"fmt"
 	"os/exec"
 	"testing"
 
 	"github.com/jonboulle/clockwork"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
@@ -45,7 +44,7 @@ func TestLogs(t *testing.T) {
 			shift:            0,
 			pruns: []*tektonv1beta1.PipelineRun{
 				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
-					fmt.Sprintf("%s/repository", pipelinesascode.GroupName): "test",
+					keys.Repository: "test",
 				}, 30),
 			},
 		},
@@ -57,7 +56,7 @@ func TestLogs(t *testing.T) {
 			shift:            2,
 			pruns: []*tektonv1beta1.PipelineRun{
 				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
-					fmt.Sprintf("%s/repository", pipelinesascode.GroupName): "test",
+					keys.Repository: "test",
 				}, 30),
 			},
 		},

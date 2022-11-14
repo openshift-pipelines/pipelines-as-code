@@ -2,9 +2,9 @@ package events
 
 import (
 	"context"
-	"path/filepath"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -56,7 +56,7 @@ func makeEvent(repo *v1alpha1.Repository, loggerLevel zapcore.Level, reason, mes
 			GenerateName: repo.Name + "-",
 			Namespace:    repo.Namespace,
 			Labels: map[string]string{
-				filepath.Join(pipelinesascode.GroupName, "repository"): repo.Name,
+				keys.Repository: repo.Name,
 			},
 		},
 		Message: message,

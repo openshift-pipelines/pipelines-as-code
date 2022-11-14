@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -137,7 +137,7 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 		// add all pipelineRuns in queued state to pending queue
 		prs, err := tekton.TektonV1beta1().PipelineRuns(repo.Namespace).
 			List(ctx, v1.ListOptions{
-				LabelSelector: fmt.Sprintf("%s/%s=%s", pipelinesascode.GroupName, "state", kubeinteraction.StateQueued),
+				LabelSelector: fmt.Sprintf("%s=%s", keys.State, kubeinteraction.StateQueued),
 			})
 		if err != nil {
 			return err
@@ -157,7 +157,7 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 		// now fetch all started pipelineRun and update the running queue
 		prs, err = tekton.TektonV1beta1().PipelineRuns(repo.Namespace).
 			List(ctx, v1.ListOptions{
-				LabelSelector: fmt.Sprintf("%s/%s=%s", pipelinesascode.GroupName, "state", kubeinteraction.StateStarted),
+				LabelSelector: fmt.Sprintf("%s=%s", keys.State, kubeinteraction.StateStarted),
 			})
 		if err != nil {
 			return err

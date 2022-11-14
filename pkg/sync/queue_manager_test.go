@@ -1,12 +1,11 @@
 package sync
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/jonboulle/clockwork"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
@@ -112,10 +111,10 @@ func TestQueueManager_InitQueues(t *testing.T) {
 	cw := clockwork.NewFakeClock()
 
 	startedLabel := map[string]string{
-		fmt.Sprintf("%s/%s", pipelinesascode.GroupName, "state"): kubeinteraction.StateStarted,
+		keys.State: kubeinteraction.StateStarted,
 	}
 	queuedLabel := map[string]string{
-		fmt.Sprintf("%s/%s", pipelinesascode.GroupName, "state"): kubeinteraction.StateQueued,
+		keys.State: kubeinteraction.StateQueued,
 	}
 
 	repo := newTestRepo("test", 1)

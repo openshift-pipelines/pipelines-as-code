@@ -3,10 +3,9 @@ package pipelineascode
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"sync"
 
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
@@ -83,10 +82,10 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 
 	// Automatically create a secret with the token to be reused by git-clone task
 	if p.run.Info.Pac.SecretAutoCreation {
-		if annotation, ok := match.PipelineRun.GetAnnotations()[gitAuthSecretAnnotation]; ok {
+		if annotation, ok := match.PipelineRun.GetAnnotations()[apipac.GitAuthSecret]; ok {
 			gitAuthSecretName = annotation
 		} else {
-			return fmt.Errorf("cannot get annotation %s as set on PR", gitAuthSecretAnnotation)
+			return fmt.Errorf("cannot get annotation %s as set on PR", apipac.GitAuthSecret)
 		}
 
 		var err error
@@ -104,7 +103,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 		// pending status
 		match.PipelineRun.Spec.Status = v1beta1.PipelineRunSpecStatusPending
 		// pac state as queued
-		match.PipelineRun.Labels[filepath.Join(apipac.GroupName, "state")] = kubeinteraction.StateQueued
+		match.PipelineRun.Labels[apipac.State] = kubeinteraction.StateQueued
 	}
 
 	// Create the actual pipeline
@@ -129,7 +128,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 		DetailsURL:              consoleURL,
 		PipelineRunName:         pr.GetName(),
 		PipelineRun:             pr,
-		OriginalPipelineRunName: pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")],
+		OriginalPipelineRunName: pr.GetLabels()[apipac.OriginalPRName],
 	}
 
 	// if pipelineRun is in pending state then report status as queued

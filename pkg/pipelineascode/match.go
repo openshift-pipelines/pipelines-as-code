@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strings"
 
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
@@ -18,8 +17,6 @@ import (
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 )
-
-var gitAuthSecretAnnotation = filepath.Join(apipac.GroupName, "git-auth-secret")
 
 // matchRepoPR matches the repo and the PRs from the event
 func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Repository, error) {
@@ -184,7 +181,7 @@ func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1be
 		return prs
 	}
 	for _, pr := range prs {
-		if prName, ok := pr.GetLabels()[filepath.Join(apipac.GroupName, "original-prname")]; ok {
+		if prName, ok := pr.GetLabels()[apipac.OriginalPRName]; ok {
 			if prName == testPipeline {
 				return []*tektonv1beta1.PipelineRun{pr}
 			}
@@ -217,7 +214,7 @@ func changeSecret(prs []*tektonv1beta1.PipelineRun) error {
 		if np.Annotations == nil {
 			np.Annotations = map[string]string{}
 		}
-		np.Annotations[gitAuthSecretAnnotation] = name
+		np.Annotations[apipac.GitAuthSecret] = name
 		prs[k] = np
 	}
 	return nil

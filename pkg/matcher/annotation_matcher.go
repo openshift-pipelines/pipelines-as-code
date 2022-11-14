@@ -9,7 +9,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/google/cel-go/common/types"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -19,12 +19,6 @@ import (
 )
 
 const (
-	onEventAnnotation        = "on-event"
-	onTargetBranchAnnotation = "on-target-branch"
-	onCelExpression          = "on-cel-expression"
-	onTargetNamespace        = "target-namespace"
-	maxKeepRuns              = "max-keep-runs"
-
 	// regex allows array of string or a single string
 	// eg. ["foo", "bar"], ["foo"] or "foo"
 	reValidateTag = `^\[(.*)\]$|^[^[\]\s]*$`
@@ -80,8 +74,7 @@ func getAnnotationValues(annotation string) ([]string, error) {
 
 func getTargetBranch(prun *v1beta1.PipelineRun, logger *zap.SugaredLogger, event *info.Event) (bool, string, string, error) {
 	var targetEvent, targetBranch string
-	if key, ok := prun.GetObjectMeta().GetAnnotations()[filepath.Join(
-		pipelinesascode.GroupName, onEventAnnotation)]; ok {
+	if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnEvent]; ok {
 		targetEvent = event.TriggerTarget
 		if event.EventType == "incoming" {
 			targetEvent = "incoming"
@@ -95,8 +88,7 @@ func getTargetBranch(prun *v1beta1.PipelineRun, logger *zap.SugaredLogger, event
 			return false, "", "", nil
 		}
 	}
-	if key, ok := prun.GetObjectMeta().GetAnnotations()[filepath.Join(
-		pipelinesascode.GroupName, onTargetBranchAnnotation)]; ok {
+	if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnTargetBranch]; ok {
 		matched, err := matchOnAnnotation(key, event.BaseBranch, true)
 		targetBranch = key
 		if err != nil {
@@ -146,13 +138,11 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			continue
 		}
 
-		if maxPrNumber, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
-			GroupName+"/"+maxKeepRuns]; ok {
+		if maxPrNumber, ok := prun.GetObjectMeta().GetAnnotations()[keys.MaxKeepRuns]; ok {
 			prMatch.Config["max-keep-runs"] = maxPrNumber
 		}
 
-		if targetNS, ok := prun.GetObjectMeta().GetAnnotations()[pipelinesascode.
-			GroupName+"/"+onTargetNamespace]; ok {
+		if targetNS, ok := prun.GetObjectMeta().GetAnnotations()[keys.TargetNamespace]; ok {
 			prMatch.Config["target-namespace"] = targetNS
 			prMatch.Repo, _ = MatchEventURLRepo(ctx, cs, event, targetNS)
 			if prMatch.Repo == nil {
@@ -161,7 +151,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			}
 		}
 
-		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[filepath.Join(pipelinesascode.GroupName, onCelExpression)]; ok {
+		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnCelExpression]; ok {
 			out, err := celEvaluate(ctx, celExpr, event, vcx)
 			if err != nil {
 				logger.Errorf("there was an error evaluating CEL expression, skipping: %w", err)
