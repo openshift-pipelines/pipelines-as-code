@@ -297,6 +297,81 @@ func TestDescribe(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "repository multiple events",
+			args: args{
+				repoName:         "test-run",
+				currentNamespace: "namespace",
+				opts: &describeOpts{
+					PacCliOpts: cli.PacCliOpts{
+						Namespace: "namespace",
+					},
+					ShowEvents: true,
+				},
+				events: []*corev1.Event{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							CreationTimestamp: metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
+							Namespace:         "namespace",
+							Name:              "test-run-a",
+						},
+						Message: "Eeny, meeny, miny, moe, Catch a tiger by the toe.",
+						Reason:  "ItchyBack",
+						Type:    corev1.EventTypeNormal,
+						InvolvedObject: corev1.ObjectReference{
+							Name: "test-run", Kind: "Repository", Namespace: "namespace",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							CreationTimestamp: metav1.Time{Time: cw.Now().Add(-10 * time.Minute)},
+							Namespace:         "namespace",
+							Name:              "test-run-b",
+						},
+						Message: "Eeny, meeny, miny, moe, Catch a tiger by the toe.",
+						Reason:  "ItchyBack",
+						Type:    corev1.EventTypeNormal,
+						InvolvedObject: corev1.ObjectReference{
+							Name: "test-run", Kind: "Repository", Namespace: "namespace",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							CreationTimestamp: metav1.Time{Time: cw.Now().Add(-20 * time.Minute)},
+							Namespace:         "namespace",
+							Name:              "test-run-c",
+						},
+						Message: "Eeny, meeny, miny, moe, Catch a tiger by the toe.",
+						Reason:  "ItchyBack",
+						Type:    corev1.EventTypeNormal,
+						InvolvedObject: corev1.ObjectReference{
+							Name: "test-run", Kind: "Repository", Namespace: "namespace",
+						},
+					},
+				},
+				statuses: []v1alpha1.RepositoryRunStatus{
+					{
+						Status: v1beta1.Status{
+							Conditions: []knativeapis.Condition{
+								{
+									Reason: "Success",
+								},
+							},
+						},
+						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
+						PipelineRunName:    "pipelinerun1",
+						LogURL:             github.String("https://everywhere.anwywhere"),
+						StartTime:          &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
+						CompletionTime:     &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
+						SHA:                github.String("SHA"),
+						SHAURL:             github.String("https://anurl.com/commit/SHA"),
+						Title:              github.String("A title"),
+						TargetBranch:       github.String("TargetBranch"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "multiple repo status",
 			args: args{
 				opts:             &describeOpts{},

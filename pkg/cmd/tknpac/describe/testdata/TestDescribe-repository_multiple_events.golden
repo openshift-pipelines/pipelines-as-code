@@ -1,0 +1,18 @@
+Name:           test-run
+Namespace:      namespace
+URL:            https://anurl.com
+Status:         Success
+Log:            https://everywhere.anwywhere
+Commit URL:     https://anurl.com/commit/SHA
+PipelineRun:    pipelinerun1
+Event:          <nil>
+Branch:         TargetBranch
+Commit Title:   A title
+StartTime:      16 minutes ago 
+Duration:       1 minute
+
+Events:
+
+• 10 minutes ago - ItchyBack - Eeny, meeny, miny, moe, Catch a tiger by the toe.
+• 16 minutes ago - ItchyBack - Eeny, meeny, miny, moe, Catch a tiger by the toe.
+• 20 minutes ago - ItchyBack - Eeny, meeny, miny, moe, Catch a tiger by the toe.
