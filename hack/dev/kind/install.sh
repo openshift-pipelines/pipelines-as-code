@@ -107,7 +107,7 @@ function install_nginx() {
 
 function install_tekton() {
     echo "Installing Tekton Pipeline"
-	kubectl apply --filename https://storage.googleapis.com/tekton-releases-nightly/pipeline/latest/release.yaml >/dev/null
+	kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml >/dev/null
     echo "Installing Tekton Dashboard"
 	kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/latest/tekton-dashboard-release.yaml >/dev/null
 	i=0
