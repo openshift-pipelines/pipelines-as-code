@@ -6,12 +6,11 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/google/go-github/v47/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -135,7 +134,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 				t.Fatalf("yaml.Unmarshal() = %v", err)
 			}
 
-			secretName := pr.Annotations[filepath.Join(pipelinesascode.GroupName, "git-auth-secret")]
+			secretName := pr.Annotations[keys.GitAuthSecret]
 
 			testData := testclient.Data{
 				Repositories: []*v1alpha1.Repository{testRepo},
@@ -197,7 +196,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			assert.Error(t, err, fmt.Sprintf("secrets \"%s\" not found", secretName))
 
 			// state must be updated to completed
-			assert.Equal(t, got.Labels[filepath.Join(pipelinesascode.GroupName, "state")], kubeinteraction.StateCompleted)
+			assert.Equal(t, got.Labels[keys.State], kubeinteraction.StateCompleted)
 		})
 	}
 }
@@ -233,7 +232,7 @@ func TestUpdatePipelineRunState(t *testing.T) {
 					Namespace: "test",
 					Name:      "test",
 					Labels: map[string]string{
-						filepath.Join(pipelinesascode.GroupName, "state"): kubeinteraction.StateQueued,
+						keys.State: kubeinteraction.StateQueued,
 					},
 				},
 				Spec: v1beta1.PipelineRunSpec{
@@ -250,7 +249,7 @@ func TestUpdatePipelineRunState(t *testing.T) {
 					Namespace: "test",
 					Name:      "test",
 					Labels: map[string]string{
-						filepath.Join(pipelinesascode.GroupName, "state"): kubeinteraction.StateStarted,
+						keys.State: kubeinteraction.StateStarted,
 					},
 				},
 				Spec:   v1beta1.PipelineRunSpec{},
@@ -277,7 +276,7 @@ func TestUpdatePipelineRunState(t *testing.T) {
 			updatedPR, err := r.updatePipelineRunState(ctx, fakelogger, tt.pipelineRun, tt.state)
 			assert.NilError(t, err)
 
-			assert.Equal(t, updatedPR.Labels[filepath.Join(pipelinesascode.GroupName, "state")], tt.state)
+			assert.Equal(t, updatedPR.Labels[keys.State], tt.state)
 			assert.Equal(t, updatedPR.Spec.Status, v1beta1.PipelineRunSpecStatus(""))
 		})
 	}

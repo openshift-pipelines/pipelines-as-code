@@ -2,10 +2,9 @@ package reconciler
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -41,25 +40,25 @@ func TestBuildEventFromPipelineRun(t *testing.T) {
 			pipelineRun: &tektonv1beta1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						filepath.Join(pipelinesascode.GroupName, "url-org"):        "url-org",
-						filepath.Join(pipelinesascode.GroupName, "url-repository"): "repo",
-						filepath.Join(pipelinesascode.GroupName, "sha"):            "sha",
-						filepath.Join(pipelinesascode.GroupName, "event-type"):     "push",
-						filepath.Join(pipelinesascode.GroupName, "branch"):         "branch",
-						filepath.Join(pipelinesascode.GroupName, "state"):          kubeinteraction.StateStarted,
+						keys.URLOrg:        "url-org",
+						keys.URLRepository: "repo",
+						keys.SHA:           "sha",
+						keys.EventType:     "push",
+						keys.Branch:        "branch",
+						keys.State:         kubeinteraction.StateStarted,
 					},
 					Annotations: map[string]string{
-						filepath.Join(pipelinesascode.GroupName, "sha-title"):    "sha-title",
-						filepath.Join(pipelinesascode.GroupName, "sha-url"):      "sha-url",
-						filepath.Join(pipelinesascode.GroupName, "pull-request"): "1234",
+						keys.ShaTitle:    "sha-title",
+						keys.ShaURL:      "sha-url",
+						keys.PullRequest: "1234",
 
 						// github
-						filepath.Join(pipelinesascode.GroupName, "installation-id"): "12345678",
-						filepath.Join(pipelinesascode.GroupName, "ghe-url"):         "http://ghe",
+						keys.InstallationID: "12345678",
+						keys.GHEURL:         "http://ghe",
 
 						// gitlab
-						filepath.Join(pipelinesascode.GroupName, "source-project-id"): "1234",
-						filepath.Join(pipelinesascode.GroupName, "target-project-id"): "2345",
+						keys.SourceProjectID: "1234",
+						keys.TargetProjectID: "2345",
 					},
 				},
 			},
@@ -115,7 +114,7 @@ func TestDetectProvider(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test",
 						Labels: map[string]string{
-							filepath.Join(pipelinesascode.GroupName, "git-provider"): tt.label,
+							keys.GitProvider: tt.label,
 						},
 					},
 				}

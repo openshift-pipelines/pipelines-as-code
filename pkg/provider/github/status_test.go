@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/google/go-github/v47/github"
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
@@ -140,7 +139,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: prname,
 			Labels: map[string]string{
-				filepath.Join(apipac.GroupName, checkRunIDKey): strconv.Itoa(int(checkrunid)),
+				keys.CheckRunID: strconv.Itoa(int(checkrunid)),
 			},
 		},
 	}

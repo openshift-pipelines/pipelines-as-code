@@ -11,7 +11,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/jonboulle/clockwork"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/browser"
@@ -147,8 +147,8 @@ func getTknPath() (string, error) {
 // getPipelineRunsToRepo returns all pipelinesruns running in a namespace
 func getPipelineRunsToRepo(ctx context.Context, lopt *logOption, repoName string) ([]string, error) {
 	opts := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s/repository=%s",
-			pipelinesascode.GroupName, repoName),
+		LabelSelector: fmt.Sprintf("%s=%s",
+			keys.Repository, repoName),
 	}
 	runs, err := lopt.cs.Clients.Tekton.TektonV1beta1().PipelineRuns(lopt.opts.Namespace).List(ctx, opts)
 	if err != nil {

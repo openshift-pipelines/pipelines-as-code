@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/go-github/v47/github"
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -35,8 +34,6 @@ const taskStatusTemplate = `
 </td></tr>
 {{- end }}
 </table>`
-
-const checkRunIDKey = "check-run-id"
 
 func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 	if pacopts.ApplicationName != "" {
@@ -186,7 +183,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 	// check if pipelineRun has the label with checkRun-id
 	if statusOpts.PipelineRun != nil {
 		var id string
-		id, found = statusOpts.PipelineRun.GetLabels()[filepath.Join(apipac.GroupName, checkRunIDKey)]
+		id, found = statusOpts.PipelineRun.GetLabels()[keys.CheckRunID]
 		if found {
 			checkID, err := strconv.Atoi(id)
 			if err != nil {
@@ -252,7 +249,7 @@ func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton v
 		mergePatch := map[string]interface{}{
 			"metadata": map[string]interface{}{
 				"labels": map[string]string{
-					filepath.Join(apipac.GroupName, checkRunIDKey): strconv.FormatInt(*checkRunID, 10),
+					keys.CheckRunID: strconv.FormatInt(*checkRunID, 10),
 				},
 			},
 		}
@@ -267,7 +264,7 @@ func (v *Provider) updatePipelineRunWithCheckRunID(ctx context.Context, tekton v
 			continue
 		}
 
-		v.Logger.Infof("PipelineRun %v/%v patched with checkRunID : %v", pr.GetNamespace(), pr.GetName(), updatedPR.Labels[filepath.Join(apipac.GroupName, checkRunIDKey)])
+		v.Logger.Infof("PipelineRun %v/%v patched with checkRunID : %v", pr.GetNamespace(), pr.GetName(), updatedPR.Labels[keys.CheckRunID])
 		return nil
 	}
 	return fmt.Errorf("cannot patch pipelineRun %v/%v with checkRunID", pr.GetNamespace(), pr.GetName())

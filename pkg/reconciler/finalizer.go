@@ -2,10 +2,9 @@ package reconciler
 
 import (
 	"context"
-	"path/filepath"
 	"strings"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -17,13 +16,13 @@ import (
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, pr *v1beta1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
-	state, exist := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "state")]
+	state, exist := pr.GetLabels()[keys.State]
 	if !exist || state == kubeinteraction.StateCompleted {
 		return nil
 	}
 
 	if state == kubeinteraction.StateQueued || state == kubeinteraction.StateStarted {
-		repoName, ok := pr.GetLabels()[filepath.Join(pipelinesascode.GroupName, "repository")]
+		repoName, ok := pr.GetLabels()[keys.Repository]
 		if !ok {
 			return nil
 		}

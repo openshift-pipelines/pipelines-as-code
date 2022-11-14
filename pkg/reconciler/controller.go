@@ -3,9 +3,9 @@ package reconciler
 import (
 	"context"
 	"log"
-	"path/filepath"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
@@ -74,7 +74,7 @@ func checkStateAndEnqueue(impl *controller.Impl) func(obj interface{}) {
 	return func(obj interface{}) {
 		object, err := kmeta.DeletionHandlingAccessor(obj)
 		if err == nil {
-			_, exist := object.GetLabels()[filepath.Join(pipelinesascode.GroupName, "state")]
+			_, exist := object.GetLabels()[keys.State]
 			if exist {
 				impl.EnqueueKey(types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()})
 			}
@@ -87,7 +87,7 @@ func ctrlOpts() func(impl *controller.Impl) controller.Options {
 		return controller.Options{
 			FinalizerName: pipelinesascode.GroupName,
 			PromoteFilterFunc: func(obj interface{}) bool {
-				_, exist := obj.(*v1beta1.PipelineRun).GetLabels()[filepath.Join(pipelinesascode.GroupName, "state")]
+				_, exist := obj.(*v1beta1.PipelineRun).GetLabels()[keys.State]
 				return exist
 			},
 		}

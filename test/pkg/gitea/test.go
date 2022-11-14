@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"testing"
 	"time"
 
 	"code.gitea.io/sdk/gitea"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -113,7 +112,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	}
 
 	events, err := topts.Clients.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", filepath.Join(pipelinesascode.GroupName, "repository"), topts.TargetNS),
+		LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, topts.TargetNS),
 	})
 	assert.NilError(t, err)
 	if topts.ExpectEvents {
@@ -123,7 +122,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 		if len(events.Items) == 0 {
 			time.Sleep(time.Second * 5)
 			events, err = topts.Clients.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("%s=%s", filepath.Join(pipelinesascode.GroupName, "repository"), topts.TargetNS),
+				LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, topts.TargetNS),
 			})
 			assert.NilError(t, err)
 		}

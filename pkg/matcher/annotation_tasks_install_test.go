@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -75,7 +76,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 		{
 			name: "test-annotations-error-remote-http-not-k8",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "[http://remote.task]",
+				keys.Task: "[http://remote.task]",
 			},
 			remoteURLS: map[string]map[string]string{
 				"http://remote.task": {
@@ -88,7 +89,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 		{
 			name: "test-good-coming-from-provider",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "http://provider/remote.task",
+				keys.Task: "http://provider/remote.task",
 			},
 			wantProviderRemoteTask: true,
 			wantErr:                "returning empty",
@@ -96,7 +97,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 		{
 			name: "test-bad-coming-from-provider",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "http://provider/remote.task",
+				keys.Task: "http://provider/remote.task",
 			},
 			wantProviderRemoteTask: false,
 			wantErr:                "error getting remote task",
@@ -104,7 +105,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 		{
 			name: "test-annotations-remote-http",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "[http://remote.task]",
+				keys.Task: "[http://remote.task]",
 			},
 			gotTaskName: "task",
 			remoteURLS: map[string]map[string]string{
@@ -117,7 +118,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 		{
 			name: "test-annotations-remote-https",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "[https://remote.task]",
+				keys.Task: "[https://remote.task]",
 			},
 			gotTaskName: "task",
 			remoteURLS: map[string]map[string]string{
@@ -130,7 +131,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 		{
 			name: "test-annotations-inside-repo",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "[be/healthy]",
+				keys.Task: "[be/healthy]",
 			},
 			gotTaskName: "task",
 			filesInsideRepo: map[string]string{
@@ -143,7 +144,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 		{
 			name: "test-annotations-remote-http-skipping-notmatching",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task":  "[http://remote.task]",
+				keys.Task:                            "[http://remote.task]",
 				pipelinesascode.GroupName + "/taskA": "[http://other.task]", // That's wrong this would be skipped
 			},
 			gotTaskName: "task",
@@ -157,14 +158,14 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 		{
 			name: "test-annotations-remote-http-bad-annotation",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "[http://remote.task",
+				keys.Task: "[http://remote.task",
 			},
 			wantErr: "annotations in pipeline are in wrong format",
 		},
 		{
 			name: "test-annotations-remote-inside-file-not-found",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "[pas/la]",
+				keys.Task: "[pas/la]",
 			},
 			wantErr: "could not find",
 			runevent: info.Event{
@@ -174,7 +175,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 		{
 			name: "test-annotations-remote-no-event-not-found-no-error",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "[not/here]",
+				keys.Task: "[not/here]",
 			},
 			wantLog: "could not find remote task not/here",
 			wantErr: "returning empty",
@@ -183,7 +184,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			name:        "test-get-from-hub-latest",
 			gotTaskName: "task",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "[chmouzie]",
+				keys.Task: "[chmouzie]",
 			},
 			remoteURLS: map[string]map[string]string{
 				testHubURL + "/resource/" + testCatalogHubName + "/task/chmouzie": {
@@ -200,7 +201,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			name:        "test-get-from-hub-specific-version",
 			gotTaskName: "task",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/task": "[chmouzie:0.2]",
+				keys.Task: "[chmouzie:0.2]",
 			},
 			remoteURLS: map[string]map[string]string{
 				testHubURL + "/resource/" + testCatalogHubName + "/task/chmouzie/0.2": {
@@ -277,7 +278,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 			name:            "good/fetching from remote http",
 			gotPipelineName: "pipeline",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/pipeline": "[http://remote.pipeline]",
+				keys.Pipeline: "[http://remote.pipeline]",
 			},
 			remoteURLS: map[string]map[string]string{
 				"http://remote.pipeline": {
@@ -289,7 +290,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 		{
 			name: "bad/error getting pipeline",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/pipeline": "[http://remote.pipeline]",
+				keys.Pipeline: "[http://remote.pipeline]",
 			},
 			remoteURLS: map[string]map[string]string{
 				"http://remote.pipeline": {
@@ -301,7 +302,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 		{
 			name: "bad/not a pipeline",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/pipeline": "[http://remote.pipeline]",
+				keys.Pipeline: "[http://remote.pipeline]",
 			},
 			remoteURLS: map[string]map[string]string{
 				"http://remote.pipeline": {
@@ -314,14 +315,14 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 		{
 			name: "bad/could not get remote",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/pipeline": "[http://nowhere.pipeline]",
+				keys.Pipeline: "[http://nowhere.pipeline]",
 			},
 			wantErr: "error getting remote pipeline",
 		},
 		{
 			name: "bad/returning empty",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/pipeline": "[http://remote.pipeline]",
+				keys.Pipeline: "[http://remote.pipeline]",
 			},
 			remoteURLS: map[string]map[string]string{
 				"http://remote.pipeline": {
@@ -334,7 +335,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 		{
 			name: "bad/more than one pipeline",
 			annotations: map[string]string{
-				pipelinesascode.GroupName + "/pipeline": "[http://foo.bar, http://remote.pipeline]",
+				keys.Pipeline: "[http://foo.bar, http://remote.pipeline]",
 			},
 			wantErr: "only one pipeline is allowed on remote",
 		},
