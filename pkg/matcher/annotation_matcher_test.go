@@ -693,6 +693,26 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		},
 	}
 
+	pipelineRefAll := &tektonv1beta1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pipeline-other",
+			Annotations: map[string]string{
+				filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "[pull_request,push]",
+				filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "[refs/heads/*]",
+			},
+		},
+	}
+
+	pipelineRefRegex := &tektonv1beta1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pipeline-regex",
+			Annotations: map[string]string{
+				filepath.Join(pipelinesascode.GroupName, onEventAnnotation):        "[pull_request]",
+				filepath.Join(pipelinesascode.GroupName, onTargetBranchAnnotation): "[refs/heads/release-*]",
+			},
+		},
+	}
+
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 
@@ -865,6 +885,32 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "ref-heads-*--allow-any-branch",
+			args: args{
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineRefAll},
+				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "main"},
+			},
+			wantErr:    false,
+			wantPrName: "pipeline-other",
+		},
+		{
+			name: "ref-heads-regex-allow",
+			args: args{
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineRefRegex},
+				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "release-0.1"},
+			},
+			wantErr:    false,
+			wantPrName: "pipeline-regex",
+		},
+		{
+			name: "ref-heads-regex-not-match",
+			args: args{
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineRefRegex},
+				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "main"},
+			},
+			wantErr: true,
 		},
 	}
 

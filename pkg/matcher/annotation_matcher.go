@@ -37,6 +37,15 @@ func branchMatch(prunBranch, baseBranch string) bool {
 		return true
 	}
 
+	// if target is refs/heads/.. and base is without ref (for pullRequest)
+	if strings.HasPrefix(prunBranch, "refs/heads") && !strings.Contains(baseBranch, "/") {
+		ref := "refs/heads/" + baseBranch
+		g := glob.MustCompile(prunBranch)
+		if g.Match(ref) {
+			return true
+		}
+	}
+
 	// match globs like refs/tags/0.*
 	g := glob.MustCompile(prunBranch)
 	return g.Match(baseBranch)
