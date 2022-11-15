@@ -25,7 +25,11 @@ filename:line:column: error message
 
 tools like `golangci-lint`, `pylint`, `yamllint` and many others are able to output errors in this format.
 
-You can customize the regexp used to detect the errors with the `error-detection-simple-regexp` setting.
+You can customize the regexp used to detect the errors with the
+`error-detection-simple-regexp` setting. The regexp used [named
+groups](https://www.regular-expressions.info/named.html) to give flexibility on
+how to specify the matching. The groups needed to match is `filename`, `line` and `error`
+(`column` is not used) see the default regexp in the configmap.
 
 By default pipelines as code will look for the last 50 lines of the container
 logs. You can increase this value in the `error-detection-max-number-of-lines`

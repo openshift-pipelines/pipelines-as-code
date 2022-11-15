@@ -35,7 +35,7 @@ const (
 	ErrorDetectionSimpleRegexpKey     = "error-detection-simple-regexp"
 	errorDetectionValue               = "false"
 	errorDetectionNumberOfLinesValue  = 50
-	errorDetectionSimpleRegexpValue   = `^([^:]*):(\d+):(\d+):\s*(.*)`
+	errorDetectionSimpleRegexpValue   = `^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+):[ ]*(?P<error>.*)`
 )
 
 type Settings struct {
@@ -128,16 +128,15 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 	}
 
 	errorDetectNumberOfLines, _ := strconv.Atoi(config[ErrorDetectionNumberOfLinesKey])
-	if setting.ErrorDetectionNumberOfLines != errorDetectNumberOfLines {
+	if setting.ErrorDetection && setting.ErrorDetectionNumberOfLines != errorDetectNumberOfLines {
 		logger.Infof("CONFIG: setting error detection limit of container log to %v", errorDetectNumberOfLines)
 		setting.ErrorDetectionNumberOfLines = errorDetectNumberOfLines
 	}
 
-	if setting.ErrorDetectionSimpleRegexp != config[ErrorDetectionSimpleRegexpKey] {
+	if setting.ErrorDetection && setting.ErrorDetectionSimpleRegexp != config[ErrorDetectionSimpleRegexpKey] {
 		// replace double backslash with single backslash because kube configmap is giving us things double backslashes
-		fixedRegexpBackslash := strings.ReplaceAll(config[ErrorDetectionSimpleRegexpKey], `\\`, `\`)
 		logger.Infof("CONFIG: setting error detection regexp to %v", config[ErrorDetectionSimpleRegexpKey])
-		setting.ErrorDetectionSimpleRegexp = fixedRegexpBackslash
+		setting.ErrorDetectionSimpleRegexp = strings.TrimSpace(config[ErrorDetectionSimpleRegexpKey])
 	}
 
 	return nil
