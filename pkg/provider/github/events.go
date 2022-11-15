@@ -149,7 +149,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 	switch gitEvent := eventInt.(type) {
 	case *github.CheckRunEvent:
 		if v.Client == nil {
-			return nil, fmt.Errorf("reqrequest is only supported with github apps integration")
+			return nil, fmt.Errorf("check run rerequest is only supported with github apps integration")
 		}
 
 		if *gitEvent.Action != "rerequested" {

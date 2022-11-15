@@ -119,6 +119,9 @@ func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event)
 		// if no signature is present then don't validate, because user hasn't set one
 		return fmt.Errorf("no signature has been detected, for security reason we are not allowing webhooks that has no secret")
 	}
+	if event.Provider.WebhookSecret == "" {
+		return fmt.Errorf("no webhook secret has been set, in repository CR or secret")
+	}
 	return github.ValidateSignature(signature, event.Request.Payload, []byte(event.Provider.WebhookSecret))
 }
 
