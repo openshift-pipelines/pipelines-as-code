@@ -94,7 +94,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 				}
 				if !setupWebhook {
 					fmt.Fprintln(ioStreams.Out, "✓ Skipped webhook setup")
-					if err := createOpts.generateTemplate(); err != nil {
+					if err := createOpts.generateTemplate(nil); err != nil {
 						return err
 					}
 					return nil
@@ -129,7 +129,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 			if err := config.Install(ctx, createOpts.Provider); err != nil {
 				return err
 			}
-			if err := createOpts.generateTemplate(); err != nil {
+			if err := createOpts.generateTemplate(nil); err != nil {
 				return err
 			}
 			return nil
@@ -149,8 +149,10 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 	return cmd
 }
 
-func (r *RepoOptions) generateTemplate() error {
-	gopt := generate.MakeOpts()
+func (r *RepoOptions) generateTemplate(gopt *generate.Opts) error {
+	if gopt == nil {
+		gopt = generate.MakeOpts()
+	}
 	gopt.GitInfo = r.GitInfo
 	gopt.IOStreams = r.IoStreams
 	gopt.CLIOpts = r.cliOpts

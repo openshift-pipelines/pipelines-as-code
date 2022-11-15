@@ -2,18 +2,22 @@ package create
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"gotest.tools/v3/assert"
+	testfs "gotest.tools/v3/fs"
+	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
@@ -268,6 +272,14 @@ func TestGenerateTemplate(t *testing.T) {
 	as, teardown := prompt.InitAskStubber()
 	defer teardown()
 	askStubs(as)
-	err := createOpts.generateTemplate()
+	gopt := generate.MakeOpts()
+	tmpfile := testfs.NewFile(t, t.Name())
+	defer tmpfile.Remove()
+	assert.NilError(t, os.Remove(tmpfile.Path()))
+	gopt.FileName = tmpfile.Path()
+	err := createOpts.generateTemplate(gopt)
 	assert.NilError(t, err)
+	content, err := os.ReadFile(tmpfile.Path())
+	assert.NilError(t, err)
+	golden.Assert(t, string(content), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
 }
