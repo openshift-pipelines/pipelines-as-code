@@ -61,7 +61,7 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	} else {
 		err := SecretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo, p.logger)
 		if err != nil {
-			return nil, nil, err
+			return nil, repo, err
 		}
 	}
 
@@ -76,7 +76,7 @@ it seems that we have detected a \n or a space at the end of your webhook secret
 is that what you want? make sure you use -n when generating the secret, eg: echo -n secret|base64`
 				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositorySecretValidation", msg)
 			}
-			return nil, nil, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
+			return nil, repo, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
 		}
 	}
 
@@ -84,20 +84,20 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	// token or secret or we won't be able to do much.
 	err = p.vcx.SetClient(ctx, p.run, p.event)
 	if err != nil {
-		return nil, nil, err
+		return nil, repo, err
 	}
 
 	// Get the SHA commit info, we want to get the URL and commit title
 	err = p.vcx.GetCommitInfo(ctx, p.event)
 	if err != nil {
-		return nil, nil, err
+		return nil, repo, err
 	}
 
 	// Check if the submitter is allowed to run this.
 	if p.event.TriggerTarget != "push" {
 		allowed, err := p.vcx.IsAllowed(ctx, p.event)
 		if err != nil {
-			return nil, nil, err
+			return nil, repo, err
 		}
 		if !allowed {
 			msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", p.event.Sender)
@@ -115,7 +115,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 			if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
 				return nil, repo, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
 			}
-			return nil, nil, nil
+			return nil, repo, nil
 		}
 	}
 
@@ -126,14 +126,14 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 			msg += fmt.Sprintf(" err: %s", err.Error())
 		}
 		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryPipelineRunNotFound", msg)
-		return nil, nil, nil
+		return nil, repo, nil
 	}
 
 	// check for condition if need update the pipelinerun with regexp from the
 	// "raw" pipelinerun string
 	if msg, needUpdate := p.checkNeedUpdate(rawTemplates); needUpdate {
 		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryNeedUpdate", msg)
-		return nil, nil, fmt.Errorf(msg)
+		return nil, repo, fmt.Errorf(msg)
 	}
 
 	// Replace those {{var}} placeholders user has in her template to the run.Info variable
@@ -144,12 +144,12 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	})
 	if err != nil {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryFailedToResolve", fmt.Sprintf("failed to resolve pipelineRuns: %s", err.Error()))
-		return nil, nil, err
+		return nil, repo, err
 	}
 	if pipelineRuns == nil {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
 		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryCannotLocatePipelineRun", msg)
-		return nil, nil, nil
+		return nil, repo, nil
 	}
 
 	// if /test command is used then filter out the pipelinerun
@@ -157,12 +157,12 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	if pipelineRuns == nil {
 		msg := fmt.Sprintf("cannot find pipelinerun %s in this repository", p.event.TargetTestPipelineRun)
 		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryCannotLocatePipelineRun", msg)
-		return nil, nil, nil
+		return nil, repo, nil
 	}
 
 	err = changeSecret(pipelineRuns)
 	if err != nil {
-		return nil, nil, err
+		return nil, repo, err
 	}
 
 	// Match the PipelineRun with annotation
@@ -170,7 +170,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	if err != nil {
 		// Don't fail when you don't have a match between pipeline and annotations
 		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
-		return nil, nil, nil
+		return nil, repo, nil
 	}
 
 	return matchedPRs, repo, nil
