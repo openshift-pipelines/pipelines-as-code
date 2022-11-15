@@ -83,6 +83,8 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 		logmsg += fmt.Sprintf(" webhook-secret=%s webhook-key=%s",
 			repo.Spec.GitProvider.WebhookSecret.Name,
 			gitProviderWebhookSecretKey)
+	} else {
+		logmsg += " webhook-secret=NOTFOUND"
 	}
 	logger.Infof(logmsg)
 	return nil
