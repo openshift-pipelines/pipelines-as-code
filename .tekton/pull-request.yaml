@@ -42,7 +42,7 @@ spec:
               image: quay.io/mhutter/yamllint
               workingDir: $(workspaces.source.path)
               script: |
-                yamllint -c .yamllint $(find . -type f -regex ".*y[a]ml" -print)
+                yamllint -f parsable -c .yamllint $(find . -type f -regex ".*y[a]ml" -print)
         workspaces:
           - name: source
             workspace: source
