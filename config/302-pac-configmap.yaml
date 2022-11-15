@@ -44,18 +44,9 @@ data:
   # Use -1 for unlimited lines.
   error-detection-max-number-of-lines: "50"
 
-  # The label or annotations of the tasks to detect simple errors
-  # simple errors are of the makefile/grep format for example :
-  #
-  # filename:line:column: error message
-  #
-  # most linter with the "Code Quality" label in the tekton hub will output
-  # in that simple format.
-  error-detection-simple-filter-to-task-labels: "Code Quality"
-
   # The default regexp used when we use the simple error detection
   error-detection-simple-regexp: |
-    ^([^:]*):(\d+):(\d+):\s*(.*)
+    ^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+):[ ]*(?P<error>.*)
 
   # Since public bitbucket doesn't have the concept of Secret, we need to be
   # able to secure the request by querying https://ip-ranges.atlassian.com/,

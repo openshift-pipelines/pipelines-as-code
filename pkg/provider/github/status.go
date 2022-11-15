@@ -126,20 +126,48 @@ func (v *Provider) getFailuresMessageAsAnnotations(ctx context.Context, pr tekto
 	taskinfos := status.CollectTaskInfos(ctx, v.Run, pr, int64(v.Run.Info.Pac.ErrorDetectionNumberOfLines))
 	for _, taskinfo := range taskinfos {
 		for _, errline := range strings.Split(taskinfo.LogSnippet, "\n") {
-			substr := r.FindSubmatch([]byte(errline))
-			if len(substr) != 5 {
+			results := map[string]string{}
+			matches := r.FindStringSubmatch(errline)
+			if len(matches) != 5 {
 				continue
 			}
-			_, filename, line, _, errmsg := string(substr[0]), string(substr[1]), string(substr[2]), string(substr[3]), string(substr[4])
-			iline, err := strconv.Atoi(line)
+			for i, name := range r.SubexpNames() {
+				if i != 0 && name != "" {
+					results[name] = matches[i]
+				}
+			}
+
+			// check if we  have file in results
+			var linenumber, errmsg, filename string
+			var ok bool
+
+			if filename, ok = results["filename"]; !ok {
+				v.Run.Clients.Log.Errorf("regexp for filtering failure messages does not contain a filename regexp group: %v", v.Run.Info.Pac.ErrorDetectionSimpleRegexp)
+				continue
+			}
+			// remove ./ cause it would bug github otherwise
+			filename = strings.TrimPrefix(filename, "./")
+
+			if linenumber, ok = results["line"]; !ok {
+				v.Run.Clients.Log.Errorf("regexp for filtering failure messages does not contain a line regexp group: %v", v.Run.Info.Pac.ErrorDetectionSimpleRegexp)
+				continue
+			}
+
+			if errmsg, ok = results["error"]; !ok {
+				v.Run.Clients.Log.Errorf("regexp for filtering failure messages does not contain a error regexp group: %v", v.Run.Info.Pac.ErrorDetectionSimpleRegexp)
+				continue
+			}
+
+			ilinenumber, err := strconv.Atoi(linenumber)
 			if err != nil {
 				// can't do much regexp has probably failed to detect
+				v.Run.Clients.Log.Errorf("cannot convert %s as integer: %v", linenumber, err)
 				continue
 			}
 			annotations = append(annotations, &github.CheckRunAnnotation{
 				Path:            github.String(filename),
-				StartLine:       github.Int(iline),
-				EndLine:         github.Int(iline),
+				StartLine:       github.Int(ilinenumber),
+				EndLine:         github.Int(ilinenumber),
 				AnnotationLevel: github.String("failure"),
 				Message:         github.String(errmsg),
 			})
