@@ -33,6 +33,7 @@ var (
 	useRealTimeFlag   = "use-realtime"
 	showEventflag     = "show-events"
 	creationTimestamp = "{.metadata.creationTimestamp}"
+	maxEventLimit     = 50
 )
 
 //go:embed templates/describe.tmpl
@@ -215,6 +216,11 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		for i := len(runTimeObj) - 1; i >= 0; i-- {
 			event, _ := runTimeObj[i].(*corev1.Event)
 			eventList = append(eventList, *event)
+		}
+		// if there are more events than the max limit, take only the latest
+		// equal to max limit
+		if len(eventList) > maxEventLimit {
+			eventList = eventList[:maxEventLimit-1]
 		}
 	}
 
