@@ -18,7 +18,7 @@ There are 2 ways to set up GitHub App:
 ## Setup using tkn pac cli
 
 You could use [`tkn pac bootstrap`](/docs/guide/cli) command which will a create GitHub App, provides
-steps to configure it with your git repository and also creates required secrets.
+steps to configure it with your Git repository and also creates required secrets.
 
 Alternatively, you could set up manually by following the steps [here](#setup-manually)
 
