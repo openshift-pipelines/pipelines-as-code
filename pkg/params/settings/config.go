@@ -35,7 +35,7 @@ const (
 	ErrorDetectionSimpleRegexpKey     = "error-detection-simple-regexp"
 	errorDetectionValue               = "false"
 	errorDetectionNumberOfLinesValue  = 50
-	errorDetectionSimpleRegexpValue   = `^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+):[ ]*(?P<error>.*)`
+	errorDetectionSimpleRegexpValue   = `^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+):([ ]*)?(?P<error>.*)`
 )
 
 type Settings struct {

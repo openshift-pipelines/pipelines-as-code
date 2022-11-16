@@ -124,10 +124,10 @@ func (v *Provider) getFailuresMessageAsAnnotations(ctx context.Context, pr tekto
 	for _, taskinfo := range taskinfos {
 		for _, errline := range strings.Split(taskinfo.LogSnippet, "\n") {
 			results := map[string]string{}
-			matches := r.FindStringSubmatch(errline)
-			if len(matches) != 5 {
+			if !r.MatchString(errline) {
 				continue
 			}
+			matches := r.FindStringSubmatch(errline)
 			for i, name := range r.SubexpNames() {
 				if i != 0 && name != "" {
 					results[name] = matches[i]
