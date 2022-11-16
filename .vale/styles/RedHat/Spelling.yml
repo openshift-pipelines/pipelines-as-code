@@ -1,17 +1,19 @@
 ---
 extends: spelling
 level: warning
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/spelling/
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/spelling/
 message: "Use correct American English spelling. Did you really mean '%s'?"
-source: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/spelling/
+source: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/spelling/
 # A "filter" is a case-sensitive regular expression specifying words to ignore during spell checking.
 # Spelling rule applies to individual words
 filters:
   - '\.NET'
   - 'I/O'
   - 'Node\.js'
+  - "[aA]llowlist"
   - "[aA]utostart"
   - "[bB]ackfilling"
+  - "[bB]acktrace"
   - "[bB]indable"
   - "[bB]oolean"
   - "[bB]reakpoint"
@@ -19,7 +21,7 @@ filters:
   - "[cC]he"
   - "[cC]lassloading"
   - "[cC]olocate"
-  - "[cC]onfig" # to enable "config map"
+  - "[cC]onfig"
   - "[dD]ev[wW]orkspace"
   - "[dD]evfile"
   - "[dD]evfiles"
@@ -38,11 +40,14 @@ filters:
   - "[hH]yperconverged"
   - "[iI]node"
   - "[iI]tem"
+  - "[jJ]et[bB]rains"
   - "[jJ]ournald"
   - "[jJ]ournaling"
   - "[kK]eycloak"
+  - "[kK]eylime"
   - "[kK]eyring"
   - "[kK]eyrings"
+  - "[lL]ibvirt"
   - "[lL]icensor"
   - "[lL]iveness"
   - "[lL]oopback"
@@ -55,6 +60,7 @@ filters:
   - "[mM]ulticluster"
   - "[mM]ultihost"
   - "[mM]ultinode"
+  - "[mM]ultithread"
   - "[mM]ultitenant"
   - "[mM]ultiuser"
   - "[mM]ultizone"
@@ -63,7 +69,10 @@ filters:
   - "[oO]nboarding"
   - "[oO]perator"
   - "[pP]reconfigured"
+  - "[pP]regenerated"
   - "[pP]ulldown"
+  - "[pP]roductize"
+  - "[pP]roductized"
   - "[rR]eadonly"
   - "[rR]ebalance"
   - "[rR]ebalances"
@@ -80,6 +89,7 @@ filters:
   - "[rR]ollouts"
   - "[rR]oundtable"
   - "[rR]oundtables"
+  - "[rR]uleset"
   - "[rR]unlevel"
   - "[rR]unlevels"
   - "[rR]untime"
@@ -110,6 +120,7 @@ filters:
   - "[sS]ystemd"
   - "[tT]heia"
   - "[tT]olerations"
+  - "[tT]raceback"
   - "[tT]ruststore"
   - "[uU]ncomment"
   - "[uU]ndercloud"
@@ -127,7 +138,6 @@ filters:
   - Ansible
   - Antora
   - API
-  - AsciiDoc
   - aws
   - AWS
   - Azure
@@ -144,6 +154,8 @@ filters:
   - Che-Theia
   - Ciphertext
   - Civetweb
+  - classloader
+  - classpath
   - Cloudbursting
   - Cloudwashing
   - CodeReady
@@ -156,6 +168,7 @@ filters:
   - CRD
   - CRDs
   - CRs
+  - CSVs
   - Ctrl
   - Cygmon
   - DaemonSet
@@ -182,6 +195,8 @@ filters:
   - Gluster
   - Gradle
   - Grayscale
+  - GraalVM
+  - GraphQL
   - GUI
   - Hashicorp
   - Helgrind
@@ -194,19 +209,26 @@ filters:
   - HTTPS
   - IDE
   - IDEs
+  - Infinispan
   - Intelephense
   - IntelliJ
   - Itanium
   - Jakarta
   - Java
   - Jave
-  - Jetbrains
+  - JBoss
+  - Jira
   - Jolokia
   - Joyent
+  - JUnit
   - jvm
   - JVM
+  - Kafka
   - kbd
   - Kibana
+  - Knative
+  - knowledgebase
+  - Kogito
   - Kompose
   - Kubespray
   - Kylin
@@ -215,15 +237,18 @@ filters:
   - Makefile
   - Mattermost
   - Maven
+  - MicroProfile
   - Microsoft
   - Middleware
   - Minikube
   - Minishift
   - Mirantis
+  - MongoDB
   - MySQL
   - Nagios
   - Neoverse
   - NetcoredebugOutput
+  - Netty
   - Newdoc
   - Nginx
   - npm
@@ -231,6 +256,7 @@ filters:
   - OAuth
   - ocp
   - OmniSharp
+  - OpenID
   - OpenShift
   - OpenTracing
   - osd
@@ -240,18 +266,27 @@ filters:
   - preconfigured
   - prepended
   - Prometheus
+  - proxied
   - Pytorch
   - qeth
   - Quarkus
+  - Quiltflower
   - Redistributions
   - Restic
+  - RESTEasy
   - Rolfe
   - Sakila
+  - sbt
   - SCM
+  - SELinux
   - Semeru
+  - SLAs
   - Shadowman
+  - SmallRye
+  - Spotify
   - startx
   - Suchow
+  - Symfony
   - SVG
   - Tekton
   - Telekom
@@ -268,7 +303,9 @@ filters:
   - Vale
   - Valgrind
   - Velero
+  - Vert.x
   - vsix
+  - WebAuthn
   - Webview
   - Webviews
   - Wildfly

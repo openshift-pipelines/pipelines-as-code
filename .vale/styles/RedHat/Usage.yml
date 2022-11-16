@@ -2,7 +2,7 @@
 extends: existence
 ignorecase: true
 level: suggestion
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/usage/
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/usage/
 message: "Verify your use of '%s' with the word usage guidelines."
 source: "https://redhat-documentation.github.io/supplementary-style-guide/glossary-terms-conventions; IBM - Appendix C. Word usage, p. 300"
 tokens:
@@ -46,7 +46,6 @@ tokens:
   - consumability
   - consume
   - could
-  - CPU
   - customers
   - daughterboard
   - decompress
@@ -96,7 +95,7 @@ tokens:
   - localize
   - look and feel
   - look-and-feel
-  - machine
+  - "(?<!virtual )machine(?! learning)"
   - master and slave
   - migrate
   - native

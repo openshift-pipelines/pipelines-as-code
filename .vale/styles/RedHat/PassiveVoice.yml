@@ -2,7 +2,7 @@
 extends: existence
 ignorecase: true
 level: suggestion
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/passivevoice/
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/passivevoice/
 message: "'%s' is passive voice. Consider rewording in active voice. You can use the passive voice in prerequisites"
 source: "https://redhat-documentation.github.io/supplementary-style-guide/#prerequisites; IBM - Voice, p.35"
 raw:

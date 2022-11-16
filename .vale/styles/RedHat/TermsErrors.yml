@@ -2,7 +2,7 @@
 extends: substitution
 ignorecase: true
 level: error
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/termserrors/
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/termserrors/
 message: "Use '%s' rather than '%s'."
 source: "https://redhat-documentation.github.io/supplementary-style-guide/glossary-terms-conventions; IBM - Appendix C. Word usage, p. 300"
 action:
@@ -86,7 +86,6 @@ swap:
   containerised: containerized
   context menu: menu|pop-up menu
   contextual help: help|context-sensitive help
-  crash: fail|lock up|stop|stop responding
   cross site scripting: cross-site scripting
   crossplatform|cross platform: cross-platform
   CRUD: create retrieve update and delete
@@ -101,7 +100,7 @@ swap:
   deinstall: uninstall
   deinstallation: uninstallation
   demilitarized zone: DMZ
-  demo: demonstration
+  demon: daemon
   depress: press|type
   deregister: unregister
   desire: want|required
@@ -124,7 +123,6 @@ swap:
   emphasise: emphasize
   end user: user
   end-user interface: graphical interface|interface
-  entitlement: subscription
   env: environment
   etc: and so on
   EUI: graphical user interface|interface
@@ -169,14 +167,12 @@ swap:
   inactivate: deactivate
   information on: information about
   information technology: IT
-  instead of: rather than
   insure: ensure
   Internet address: IP address|URL|Internet email address|web address
   irrecoverable: unrecoverable
   jar: compress|archive
   keep in mind: remember
   kernelspace: kernel-space
-  knowledgebase: knowledge base
   labour: labor
   laptop: notebook
   large page|super page: huge page
@@ -205,14 +201,12 @@ swap:
   nonrecoverable: unrecoverable
   nonsecure|non-secure: insecure
   notion: concept
-  off-premise: on-premises|off-premises|onsite|offsite
   offline storage: auxiliary storage
   OK button: OK
   okay: OK
   on ramp: access method
   on the fly: dynamically|as needed|in real time|immediately
   on the other hand: however|alternatively|conversely
-  on-premise: on-premises|off-premises|onsite|offsite
   on-ramp: access method
   op-code: opcode
   open-source|OpenSource|opensource: open source
@@ -225,7 +219,7 @@ swap:
   perfcounter: performance counter
   perimeter network: DMZ
   plaintext|plain-text|cleartext|clear text: plain text
-  plugin|plugins|plug in|plug ins: plug-in # https://www.merriam-webster.com/dictionary/plug-in
+  plug in|plug ins: plugin
   power down: turn off
   power off: turn off
   power on: turn on
@@ -284,7 +278,6 @@ swap:
   tier-one|tier 1: tier-1
   timeframe|time-frame: time frame
   toggle off: toggle
-  tooling: tools
   touchscreen: touch-sensitive screen
   typo: typing error|typographical error
   uncheck: clear
@@ -302,9 +295,7 @@ swap:
   upward compatible: compatible with later versions
   utilize: use
   versus: compared to
-  via: through
   video-mode|videomode: video mode
-  virtualized: virtual
   vs: compared to
   warning notice: attention notice
   web-enable: enable for the web
