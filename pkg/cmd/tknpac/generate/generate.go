@@ -33,7 +33,7 @@ type Opts struct {
 	CLIOpts   *cli.PacCliOpts
 
 	pipelineRunName         string
-	fileName                string
+	FileName                string
 	overwrite               bool
 	language                string
 	generateWithClusterTask bool
@@ -90,7 +90,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		"The event type of the repository event to handle (eg: pull_request, push)")
 	cmd.PersistentFlags().StringVar(&gopt.pipelineRunName, "pipeline-name", "",
 		"The pipeline name")
-	cmd.PersistentFlags().StringVarP(&gopt.fileName, "file-name", "f", "",
+	cmd.PersistentFlags().StringVarP(&gopt.FileName, "file-name", "f", "",
 		"The file name location")
 	cmd.PersistentFlags().BoolVar(&gopt.overwrite, "overwrite", false,
 		"Wether to overwrite the file if it exist")
@@ -195,8 +195,8 @@ func (o *Opts) samplePipeline(recreateTemplate bool) error {
 	cs := o.IOStreams.ColorScheme()
 	var relpath, fpath string
 
-	if o.fileName != "" {
-		fpath = o.fileName
+	if o.FileName != "" {
+		fpath = o.FileName
 		relpath = fpath
 	} else {
 		fname := generatefileName(o.Event.EventType)
@@ -229,7 +229,6 @@ func (o *Opts) samplePipeline(recreateTemplate bool) error {
 		}
 		return nil
 	}
-
 	tmpl, err := o.genTmpl()
 	if err != nil {
 		return err
