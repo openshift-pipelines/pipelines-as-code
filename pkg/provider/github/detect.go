@@ -57,6 +57,9 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			if provider.IsOkToTestComment(gitEvent.GetComment().GetBody()) {
 				return setLoggerAndProceed(true, "", nil)
 			}
+			if provider.IsCancelComment(gitEvent.GetComment().GetBody()) {
+				return setLoggerAndProceed(true, "", nil)
+			}
 			return setLoggerAndProceed(false, "", nil)
 		}
 		return setLoggerAndProceed(false, "issue: not a gitops pull request comment", nil)

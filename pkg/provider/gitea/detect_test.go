@@ -162,6 +162,32 @@ func TestProviderDetect(t *testing.T) {
 			},
 			wantErrSubstr: "unexpected event type",
 		},
+		{
+			name: "good/cancel comment",
+			args: args{
+				req: &http.Request{
+					Header: http.Header{
+						"X-Gitea-Event-Type": []string{"issue_comment"},
+					},
+				},
+				payload: `{"action": "created", "comment":{"body": "/cancel"}, "issue":{"pull_request": {"merged": false}, "state": "open"}}`,
+			},
+			isGitea:      true,
+			processEvent: true,
+		},
+		{
+			name: "good/cancel comment single pr",
+			args: args{
+				req: &http.Request{
+					Header: http.Header{
+						"X-Gitea-Event-Type": []string{"issue_comment"},
+					},
+				},
+				payload: `{"action": "created", "comment":{"body": "/cancel pr"}, "issue":{"pull_request": {"merged": false}, "state": "open"}}`,
+			},
+			isGitea:      true,
+			processEvent: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

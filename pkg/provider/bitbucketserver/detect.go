@@ -48,6 +48,9 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			if provider.IsOkToTestComment(e.Comment.Text) {
 				return setLoggerAndProceed(true, "", nil)
 			}
+			if provider.IsCancelComment(e.Comment.Text) {
+				return setLoggerAndProceed(true, "", nil)
+			}
 		}
 		return setLoggerAndProceed(false, fmt.Sprintf("not a recognized bitbucket event: \"%s\"", event), nil)
 
