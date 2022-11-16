@@ -57,5 +57,5 @@ In this example `webhook.host.tld` is the hostname for your pipeline's controlle
 ## Tekton Dashboard integration
 
 If you have [Tekton Dashboard](https://github.com/tektoncd/dashboard). You can
-just add the key `tekton-dashboard-url` in the `pipelines-as-code` configmap set
+just add the key `tekton-dashboard-url` in the `pipelines-as-code` config map set
 to the full URL of the `Ingress` host to get tekton dashboard logs URL.

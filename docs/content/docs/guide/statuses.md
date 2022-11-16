@@ -13,7 +13,7 @@ with a short recap of how long each task of your pipeline took and the output of
 ### Annotations (alpha feature)
 
 If you set `error-detection-from-container-logs` to `true` in the
-`pipeline-as-code` [configmap](/docs/install/settings.md), pipelines-as-code
+`pipeline-as-code` [config map](/docs/install/settings.md), pipelines-as-code
 will try to detect the errors from the container logs and add them as
 annotations on the Pull Request where the error occured.
 
@@ -29,7 +29,7 @@ You can customize the regexp used to detect the errors with the
 `error-detection-simple-regexp` setting. The regexp used [named
 groups](https://www.regular-expressions.info/named.html) to give flexibility on
 how to specify the matching. The groups needed to match is `filename`, `line` and `error`
-(`column` is not used) see the default regexp in the configmap.
+(`column` is not used) see the default regexp in the config map.
 
 By default pipelines as code will look for the last 50 lines of the container
 logs. You can increase this value in the `error-detection-max-number-of-lines`

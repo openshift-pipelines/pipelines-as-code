@@ -5,7 +5,7 @@ weight: 3
 
 ## Pipelines-As-Code configuration settings
 
-There is a few things you can configure through the configmap
+There is a few things you can configure through the config map
 `pipelines-as-code` in the `pipelines-as-code` namespace.
 
 * `application-name`
@@ -90,7 +90,7 @@ There is a few things you can configure through the configmap
 
 ## Pipelines-As-Code Info
 
-  There are a settings exposed through a configmap which any authenticated user can access to know about
+  There are a settings exposed through a config map which any authenticated user can access to know about
   Pipeline as Code.
 
 * `version`
