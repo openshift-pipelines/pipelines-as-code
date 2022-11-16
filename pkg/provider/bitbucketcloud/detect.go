@@ -47,6 +47,9 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			if provider.IsOkToTestComment(e.Comment.Content.Raw) {
 				return setLoggerAndProceed(true, "", nil)
 			}
+			if provider.IsCancelComment(e.Comment.Content.Raw) {
+				return setLoggerAndProceed(true, "", nil)
+			}
 		}
 		return setLoggerAndProceed(false, fmt.Sprintf("not a valid gitops comment: \"%s\"", event), nil)
 

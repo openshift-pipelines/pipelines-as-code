@@ -92,6 +92,24 @@ func TestProvider_Detect(t *testing.T) {
 			isBS:       true,
 			processReq: true,
 		},
+		{
+			name: "cancel comment",
+			event: types.PullRequestEvent{
+				Comment: bbv1.Comment{Text: "/cancel"},
+			},
+			eventType:  "pr:comment:added",
+			isBS:       true,
+			processReq: true,
+		},
+		{
+			name: "cancel a pipelinerun comment",
+			event: types.PullRequestEvent{
+				Comment: bbv1.Comment{Text: "/cancel dummy"},
+			},
+			eventType:  "pr:comment:added",
+			isBS:       true,
+			processReq: true,
+		},
 	}
 
 	for _, tt := range tests {

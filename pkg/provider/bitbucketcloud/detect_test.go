@@ -101,6 +101,32 @@ func TestProvider_Detect(t *testing.T) {
 			isBC:       true,
 			processReq: true,
 		},
+		{
+			name: "cancel comment",
+			event: types.PullRequestEvent{
+				Comment: types.Comment{
+					Content: types.Content{
+						Raw: "/cancel",
+					},
+				},
+			},
+			eventType:  "pullrequest:comment_created",
+			isBC:       true,
+			processReq: true,
+		},
+		{
+			name: "cancel a pr",
+			event: types.PullRequestEvent{
+				Comment: types.Comment{
+					Content: types.Content{
+						Raw: "/cancel dummy",
+					},
+				},
+			},
+			eventType:  "pullrequest:comment_created",
+			isBC:       true,
+			processReq: true,
+		},
 	}
 
 	for _, tt := range tests {

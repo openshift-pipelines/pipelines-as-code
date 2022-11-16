@@ -44,6 +44,9 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			if provider.IsOkToTestComment(gitEvent.Comment.Body) {
 				return setLoggerAndProceed(true, "", nil)
 			}
+			if provider.IsCancelComment(gitEvent.Comment.Body) {
+				return setLoggerAndProceed(true, "", nil)
+			}
 			return setLoggerAndProceed(false, "", nil)
 		}
 		return setLoggerAndProceed(false, "not a issue comment we care about", nil)

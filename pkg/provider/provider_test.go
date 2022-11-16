@@ -52,6 +52,57 @@ func TestIsOkToTestComment(t *testing.T) {
 	}
 }
 
+func TestCancelComment(t *testing.T) {
+	tests := []struct {
+		name    string
+		comment string
+		want    bool
+	}{
+		{
+			name:    "valid",
+			comment: "/cancel",
+			want:    true,
+		},
+		{
+			name:    "valid with some string before",
+			comment: "/lgtm \n/cancel",
+			want:    true,
+		},
+		{
+			name:    "valid with some string before and after",
+			comment: "hi, trigger the ci \n/cancel \n then report the status back",
+			want:    true,
+		},
+		{
+			name:    "valid comments",
+			comment: "/lgtm \n/cancel \n/approve",
+			want:    true,
+		},
+		{
+			name:    "invalid",
+			comment: "/ok",
+			want:    false,
+		},
+		{
+			name:    "invalid comment",
+			comment: "/ok-to-test abc",
+			want:    false,
+		},
+		{
+			name:    "cancel single pr",
+			comment: "/cancel abc",
+			want:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsCancelComment(tt.comment)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func TestIsTestRetestComment(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -183,7 +234,48 @@ func TestGetPipelineRunFromComment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GetPipelineRunFromComment(tt.comment)
+			got := GetPipelineRunFromTestComment(tt.comment)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetPipelineRunFromCancelComment(t *testing.T) {
+	tests := []struct {
+		name    string
+		comment string
+		want    string
+	}{
+		{
+			name:    "cancel all",
+			comment: "/cancel",
+			want:    "",
+		},
+		{
+			name:    "cancel a pipeline",
+			comment: "/cancel abc-01-pr",
+			want:    "abc-01-pr",
+		},
+		{
+			name:    "string before cancel command",
+			comment: "abc \n /cancel abc-01-pr",
+			want:    "abc-01-pr",
+		},
+		{
+			name:    "string after cancel command",
+			comment: "/cancel abc-01-pr \n abc",
+			want:    "abc-01-pr",
+		},
+		{
+			name:    "string before and after cancel command",
+			comment: "before \n /cancel abc-01-pr \n after",
+			want:    "abc-01-pr",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := GetPipelineRunFromCancelComment(tt.comment)
 			assert.Equal(t, tt.want, got)
 		})
 	}

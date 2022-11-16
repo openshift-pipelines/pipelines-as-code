@@ -251,7 +251,7 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 
 	// if it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
 	if provider.IsTestRetestComment(event.GetComment().GetBody()) {
-		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(event.GetComment().GetBody())
+		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(event.GetComment().GetBody())
 	}
 
 	// We are getting the full URL so we have to get the last part to get the PR number,

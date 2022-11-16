@@ -138,7 +138,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 				} else {
 					processedEvent.EventType = "retest-comment"
 				}
-				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(e.Comment.Content.Raw)
+				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(e.Comment.Content.Raw)
 			case provider.IsOkToTestComment(e.Comment.Content.Raw):
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "ok-to-test-comment"

@@ -195,6 +195,44 @@ func TestProvider_Detect(t *testing.T) {
 			isGH:       true,
 			processReq: false,
 		},
+		{
+			name: "issue comment event with cancel comment",
+			event: github.IssueCommentEvent{
+				Action: github.String("created"),
+				Issue: &github.Issue{
+					PullRequestLinks: &github.PullRequestLinks{
+						URL: github.String("url"),
+					},
+					State: github.String("open"),
+				},
+				Installation: &github.Installation{
+					ID: github.Int64(123),
+				},
+				Comment: &github.IssueComment{Body: github.String("/cancel")},
+			},
+			eventType:  "issue_comment",
+			isGH:       true,
+			processReq: true,
+		},
+		{
+			name: "issue comment Event with retest",
+			event: github.IssueCommentEvent{
+				Action: github.String("created"),
+				Issue: &github.Issue{
+					PullRequestLinks: &github.PullRequestLinks{
+						URL: github.String("url"),
+					},
+					State: github.String("open"),
+				},
+				Installation: &github.Installation{
+					ID: github.Int64(123),
+				},
+				Comment: &github.IssueComment{Body: github.String("/cancel dummy")},
+			},
+			eventType:  "issue_comment",
+			isGH:       true,
+			processReq: true,
+		},
 	}
 
 	for _, tt := range tests {

@@ -10,12 +10,18 @@ var (
 	testRetestAllRegex    = regexp.MustCompile(`(?m)^(/retest|/test)\s*$`)
 	testRetestSingleRegex = regexp.MustCompile(`(?m)^(/test|/retest)[ \t]+\S+`)
 	oktotestRegex         = regexp.MustCompile(`(?m)^/ok-to-test\s*$`)
+	cancelAllRegex        = regexp.MustCompile(`(?m)^(/cancel)\s*$`)
+	cancelSingleRegex     = regexp.MustCompile(`(?m)^(/cancel)[ \t]+\S+`)
 )
 
 const (
-	ProviderGitHubApp     = "GitHubApp"
-	ProviderGitHubWebhook = "GitHubWebhook"
-	ProviderGitLabWebhook = "GitLabWebhook"
+	testComment   = "/test"
+	retestComment = "/retest"
+	cancelComment = "/cancel"
+)
+
+const (
+	ProviderGitHubApp = "GitHubApp"
 )
 
 func Valid(value string, validValues []string) bool {
@@ -35,13 +41,23 @@ func IsOkToTestComment(comment string) bool {
 	return oktotestRegex.MatchString(comment)
 }
 
-func GetPipelineRunFromComment(comment string) string {
-	var splitTest []string
-	if strings.Contains(comment, "/test") {
-		splitTest = strings.Split(comment, "/test")
-	} else {
-		splitTest = strings.Split(comment, "/retest")
+func IsCancelComment(comment string) bool {
+	return cancelAllRegex.MatchString(comment) || cancelSingleRegex.MatchString(comment)
+}
+
+func GetPipelineRunFromTestComment(comment string) string {
+	if strings.Contains(comment, testComment) {
+		return getNameFromComment(testComment, comment)
 	}
+	return getNameFromComment(retestComment, comment)
+}
+
+func GetPipelineRunFromCancelComment(comment string) string {
+	return getNameFromComment(cancelComment, comment)
+}
+
+func getNameFromComment(typeOfComment, comment string) string {
+	splitTest := strings.Split(comment, typeOfComment)
 	// now get the first line
 	getFirstLine := strings.Split(splitTest[1], "\n")
 	// trim spaces
