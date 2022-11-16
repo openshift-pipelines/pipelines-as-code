@@ -1,2 +1,0 @@
-= A valid heading
-== GitLab Code Quality

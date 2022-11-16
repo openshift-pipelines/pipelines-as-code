@@ -2,7 +2,7 @@
 extends: substitution
 ignorecase: true
 level: suggestion
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/simplewords/
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/simplewords/
 message: "Use simple language. Consider using '%s' rather than '%s'."
 source: "IBM - Conversational style; http://www.plainlanguage.gov/howto/wordsuggestions/simplewords.cfm"
 swap:
@@ -20,7 +20,7 @@ swap:
   accurate: right|exact
   acquiesce: agree
   acquire: get|buy
-  address: discuss
+  "(?<!an |the |IP |IPv[46] |MAC )address": discuss
   addressees: you
   adjacent to: next to
   adjustment: change

@@ -2,7 +2,7 @@
 extends: readability
 grade: 21
 level: suggestion
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/readabilitygrade/
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/readabilitygrade/
 message: "Grade level (%s) too high."
 metrics:
   - Automated Readability

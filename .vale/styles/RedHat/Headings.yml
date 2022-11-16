@@ -1,7 +1,7 @@
 ---
 extends: capitalization
 level: suggestion
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/headings/
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/headings/
 match: $sentence
 message: "Use sentence-style capitalization in '%s'."
 scope: heading
@@ -14,6 +14,7 @@ exceptions:
   - Antora
   - API
   - AsciiDoc
+  - Asciidoctor
   - AWS
   - Azure
   - Bierner
@@ -21,6 +22,7 @@ exceptions:
   - Bonjour
   - Btrfs
   - Bugzilla
+  - Camel
   - CapEx
   - CDs
   - CentOS
@@ -29,6 +31,8 @@ exceptions:
   - Che-Theia
   - Ciphertext
   - Civetweb
+  - ClassLoader
+  - Classloader
   - Cloudbursting
   - Cloudwashing
   - CodeReady
@@ -55,6 +59,7 @@ exceptions:
   - Dockerfile
   - Dockerfiles
   - Dotnet
+  - Eclipse
   - Dyninst
   - Endevor
   - Endian
@@ -69,20 +74,25 @@ exceptions:
   - GitHub Action
   - GitLab
   - Gluster
+  - GraalVM
   - Gradle
+  - GraphQL
   - Grayscale
   - GTKplus
   - GUI
   - Hashicorp
   - Helgrind
   - Helm
+  - Hibernate
   - Homebrew
   - HTTP
   - HTTPS
   - IBM
+  - IBM Cloud
   - IDE
   - IDEs
   - InfiniBand
+  - Infinispan
   - Intelephense
   - IntelliJ
   - IPSec
@@ -91,54 +101,72 @@ exceptions:
   - Jakarta
   - Java
   - Jave
-  - Jetbrains
+  - JetBrains
+  - Jira
   - Jolokia
   - Joyent
+  - JUnit
   - JVM
   - Kibana
+  - Knative
+  - Kogito
   - Kompose
   - Kubespray
   - Kylin
   - Laravel
   - Lombok
   - Makefile
+  - Mandrel
   - Mattermost
   - Maven
+  - MicroProfile
   - Microsoft
   - Middleware
   - Minikube
   - Minishift
   - Mirantis
+  - MongoDB
+  - mutual TLS
   - MySQL
   - Nagios
   - Neoverse
   - NetcoredebugOutput
+  - Netty
   - Newdoc
   - Nginx
   - NuGet
   - OAuth
   - OmniSharp
+  - OpenID Connect
   - OpenShift
   - OpenTracing
   - OpEx
+  - ORM
   - PHP
   - Podman
   - PostgreSQL
   - PostScript
   - PowerPC
+  - Productize
+  - Productized
+  - Proof Key for Code Exchange
   - Prometheus
   - Pytorch
   - qeth
   - Quarkus
+  - Quiltflower
   - Red Hat
   - RedBoot
   - Redistributions
+  - RESTEasy
   - Rolfe
   - Sakila
   - SCM
   - SELinux
   - Semeru
+  - SmallRye
   - Shadowman
+  - Spotify
   - StarOffice
   - startx
   - Suchow
@@ -160,8 +188,10 @@ exceptions:
   - Vale
   - Valgrind
   - Velero
+  - Vert.x
   - vNIC
   - vNUMA
+  - WebAuthn
   - Webview
   - Webviews
   - Wildfly

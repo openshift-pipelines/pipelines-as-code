@@ -1,5 +1,0 @@
-SSL/TLS
-upstream/downstream
-I/O
-z/OS
-z/OSMF

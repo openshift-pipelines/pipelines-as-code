@@ -2,7 +2,7 @@
 extends: conditional
 ignorecase: false
 level: suggestion
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/definitions/
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/definitions/
 message: "Define acronyms and abbreviations (such as '%s') on first occurrence if they're likely to be unfamiliar."
 source: "IBM - Abbreviations, p. 1"
 # Ensures that the existence of 'first' implies the existence of 'second'.
@@ -10,31 +10,52 @@ first: '\b([A-Z]{3,5}s?)\b'
 second: '\(([A-Z]{3,5}s?)\)'
 # ... with the exception of these:
 exceptions:
+  - 'CPUs?'
+  - 'CVEs?'
+  - 'DVDs?'
+  - 'NULL'
+  - 'GIDs?'
+  - 'PIDs?'
+  - 'ROMs?'
+  - 'RPMs?'
+  - 'UIDs?'
+  - 'URIs?'
+  - 'URLs?'
+  - ACPI
+  - AIX
   - API
+  - ARM
+  - ASCII
   - ASP
   - BIND
+  - BIOS
   - CD
   - CLI
-  - CPU
   - CSS
   - CSV
+  - CUPS
   - DEBUG
+  - DHCP
+  - DNF
   - DNS
   - DOM
+  - DOS
   - DPI
   - DRL
   - DSL
   - EIP
+  - ERROR
   - FAQ
   - FQDN
+  - FTP
   - GAS
   - GB
   - GCC
   - GCJ
   - GDB
   - GET
-  - GID
   - GIMP
+  - GNOME
   - GNU
   - GNUPro
   - GPL
@@ -61,15 +82,24 @@ exceptions:
   - KIE
   - KVM
   - LAN
+  - LDAP
   - LESS
   - LLDB
   - LPAR
+  - LUKS
+  - LVM
+  - MAC
   - MB
   - MBR
   - MDS
+  - mTLS
+  - NAT
   - NET
+  - NFS
+  - NGINX
   - NIC
   - NOTE
+  - NTP
   - NVDA
   - OEM
   - OSS
@@ -78,30 +108,36 @@ exceptions:
   - POSIX
   - PDF
   - PHP
-  - PID
+  - PIN
   - PPP
   - POST
   - PROM
   - PXE
   - QCOW2
+  - QEMU
   - RADOS
+  - RAID
   - RAM
   - RBD
   - REPL
   - REST
+  - RFC
   - RGW
   - RHEL
-  - ROM
   - RSA
+  - SAP
   - SCM
+  - SCSI
   - SCSS
   - SDK
   - SFTP
   - SHA
   - SOCKS
+  - SPEC
   - SQL
   - SSH
   - SSL
+  - SSSD
   - SVG
   - SWAT
   - TBD
@@ -109,17 +145,24 @@ exceptions:
   - TLS
   - TODO
   - TTL
-  - UID
-  - URI
-  - URL
+  - UDP
+  - UEFI
+  - UNIX
   - USB
+  - UTC
   - UTF
+  - UUID
   - VAR
+  - VDO
   - VDSM
+  - VGA
+  - VNC
   - VPN
   - WAN
   - WCA
+  - XFS
   - XML
   - XSS
   - YAML
+  - YUM
   - ZIP
