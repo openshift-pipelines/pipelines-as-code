@@ -12,7 +12,7 @@ repos:
   - id: check-json
   - id: check-vcs-permalinks
   - id: detect-private-key
-    exclude: "pkg/provider/github/events_test.go"
+    exclude: ".*_test.go"
 - repo: local
   hooks:
   - id: black
