@@ -109,6 +109,20 @@ func TestParsePayload(t *testing.T) {
 				Repository:    "project",
 			},
 		},
+		{
+			name: "note event test",
+			args: args{
+				event:   gitlab.EventTypeNote,
+				payload: sample.NoteEventAsJSON("/test dummy"),
+			},
+			want: &info.Event{
+				EventType:     "Note",
+				TriggerTarget: "pull_request",
+				Organization:  "hello-this-is-me-ze",
+				Repository:    "project",
+				State:         info.State{TargetTestPipelineRun: "dummy"},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -141,6 +155,9 @@ func TestParsePayload(t *testing.T) {
 				assert.Equal(t, tt.want.EventType, got.EventType)
 				assert.Equal(t, tt.want.Organization, got.Organization)
 				assert.Equal(t, tt.want.Repository, got.Repository)
+				if tt.want.TargetTestPipelineRun != "" {
+					assert.Equal(t, tt.want.TargetTestPipelineRun, got.TargetTestPipelineRun)
+				}
 			}
 		})
 	}

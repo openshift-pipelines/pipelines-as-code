@@ -88,6 +88,7 @@ func TestParsePayLoad(t *testing.T) {
 		githubClient       *github.Client
 		muxReplies         map[string]interface{}
 		shaRet             string
+		targetPipelinerun  string
 	}{
 		{
 			name:          "bad/unknow event",
@@ -237,6 +238,26 @@ func TestParsePayLoad(t *testing.T) {
 			},
 			shaRet: "SHAPush",
 		},
+		{
+			name:          "good/issue comment for retest",
+			eventType:     "issue_comment",
+			triggerTarget: "pull_request",
+			githubClient:  fakeclient,
+			payloadEventStruct: github.IssueCommentEvent{
+				Issue: &github.Issue{
+					PullRequestLinks: &github.PullRequestLinks{
+						HTMLURL: github.String("/777"),
+					},
+				},
+				Repo: sampleRepo,
+				Comment: &github.IssueComment{
+					Body: github.String("/retest dummy"),
+				},
+			},
+			muxReplies:        map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePR},
+			shaRet:            "samplePRsha",
+			targetPipelinerun: "dummy",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -272,6 +293,9 @@ func TestParsePayLoad(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Assert(t, ret != nil)
 			assert.Equal(t, tt.shaRet, ret.SHA)
+			if tt.targetPipelinerun != "" {
+				assert.Equal(t, tt.targetPipelinerun, ret.TargetTestPipelineRun)
+			}
 		})
 	}
 }
