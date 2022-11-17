@@ -3,14 +3,11 @@ package gitea
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"path"
 	"strconv"
 	"strings"
 
-	giteastruct "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/sdk/gitea"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -59,142 +56,6 @@ func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event)
 	// TODO: figure out why gitea doesn't work with mac validation as github which seems to be the same
 	v.Logger.Debug("no secret and signature found, skipping validation for gitea")
 	return nil
-}
-
-// Detect processes event and detect if it is a gitea event, whether to process or reject it
-// returns (if is a Gitea event, whether to process or reject, logger with event metadata,, error if any occurred)
-func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
-	isGitea := false
-	event := req.Header.Get("X-Gitea-Event-Type")
-	if event == "" {
-		return false, false, logger, "no gitea event", nil
-	}
-
-	isGitea = true
-	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger,
-		string, error,
-	) {
-		logger = logger.With("provider", "gitea", "event-id", req.Header.Get("X-Request-Id"))
-		return isGitea, processEvent, logger, reason, err
-	}
-
-	eventInt, err := parseWebhook(whEventType(event), []byte(payload))
-	if err != nil {
-		return setLoggerAndProceed(false, "", err)
-	}
-	_ = json.Unmarshal([]byte(payload), &eventInt)
-
-	switch gitEvent := eventInt.(type) {
-	case *giteastruct.IssueCommentPayload:
-		if gitEvent.Action == "created" &&
-			gitEvent.Issue.PullRequest != nil &&
-			gitEvent.Issue.State == "open" {
-			if provider.IsTestRetestComment(gitEvent.Comment.Body) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if provider.IsOkToTestComment(gitEvent.Comment.Body) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			return setLoggerAndProceed(false, "", nil)
-		}
-		return setLoggerAndProceed(false, "not a issue comment we care about", nil)
-	case *giteastruct.PullRequestPayload:
-		if provider.Valid(string(gitEvent.Action), []string{"opened", "synchronize", "synchronized", "reopened"}) {
-			return setLoggerAndProceed(true, "", nil)
-		}
-		return setLoggerAndProceed(false, fmt.Sprintf("not a merge event we care about: \"%s\"",
-			string(gitEvent.Action)), nil)
-	case *giteastruct.PushPayload:
-		if gitEvent.Pusher != nil {
-			return setLoggerAndProceed(true, "", nil)
-		}
-		return setLoggerAndProceed(false, "push: no pusher in event", nil)
-	default:
-		return setLoggerAndProceed(false, "", fmt.Errorf("gitea: event \"%s\" is not supported", event))
-	}
-}
-
-func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
-	payload string,
-) (*info.Event, error) {
-	// TODO: parse request to figure out which event
-	var processedEvent *info.Event
-
-	eventType := request.Header.Get("X-Gitea-Event-Type")
-	if eventType == "" {
-		return nil, fmt.Errorf("failed to find event type in request header")
-	}
-
-	payloadB := []byte(payload)
-	eventInt, err := parseWebhook(whEventType(eventType), payloadB)
-	if err != nil {
-		return nil, err
-	}
-	_ = json.Unmarshal(payloadB, &eventInt)
-
-	switch gitEvent := eventInt.(type) {
-	case *giteastruct.PullRequestPayload:
-		processedEvent = info.NewEvent()
-		// // Organization:  event.GetRepo().GetOwner().GetLogin(),
-		processedEvent.Sender = gitEvent.Sender.UserName
-		processedEvent.DefaultBranch = gitEvent.Repository.DefaultBranch
-		processedEvent.URL = gitEvent.Repository.HTMLURL
-		processedEvent.SHA = gitEvent.PullRequest.Head.Sha
-		processedEvent.SHAURL = fmt.Sprintf("%s/commit/%s", gitEvent.PullRequest.HTMLURL, processedEvent.SHA)
-		processedEvent.HeadBranch = gitEvent.PullRequest.Head.Ref
-		processedEvent.BaseBranch = gitEvent.PullRequest.Base.Ref
-		processedEvent.PullRequestNumber = int(gitEvent.Index)
-		processedEvent.PullRequestTitle = gitEvent.PullRequest.Title
-		processedEvent.Organization = gitEvent.Repository.Owner.UserName
-		processedEvent.Repository = gitEvent.Repository.Name
-		processedEvent.TriggerTarget = "pull_request"
-		processedEvent.EventType = "pull_request"
-	case *giteastruct.PushPayload:
-		if len(gitEvent.Commits) == 0 {
-			return nil, fmt.Errorf("no commits attached to this push event")
-		}
-		processedEvent = info.NewEvent()
-		processedEvent.Organization = gitEvent.Repo.Owner.UserName
-		processedEvent.Repository = gitEvent.Repo.Name
-		processedEvent.DefaultBranch = gitEvent.Repo.DefaultBranch
-		processedEvent.URL = gitEvent.Repo.HTMLURL
-		processedEvent.SHA = gitEvent.HeadCommit.ID
-		if processedEvent.SHA == "" {
-			processedEvent.SHA = gitEvent.Before
-		}
-		processedEvent.Sender = gitEvent.Sender.UserName
-		processedEvent.SHAURL = gitEvent.HeadCommit.URL
-		processedEvent.SHATitle = gitEvent.HeadCommit.Message
-		processedEvent.BaseBranch = gitEvent.Ref
-		processedEvent.EventType = eventType
-		processedEvent.HeadBranch = processedEvent.BaseBranch // in push events Head Branch is the same as Basebranch
-		processedEvent.TriggerTarget = "push"
-	case *giteastruct.IssueCommentPayload:
-		if gitEvent.Issue.PullRequest == nil {
-			return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
-		}
-		processedEvent = info.NewEvent()
-		processedEvent.Organization = gitEvent.Repository.Owner.UserName
-		processedEvent.Repository = gitEvent.Repository.Name
-		processedEvent.Sender = gitEvent.Sender.UserName
-		processedEvent.TriggerTarget = "pull_request"
-		processedEvent.EventType = "pull_request"
-
-		if provider.IsTestRetestComment(gitEvent.Comment.Body) {
-			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(gitEvent.Comment.Body)
-		}
-		processedEvent.PullRequestNumber, err = convertPullRequestURLtoNumber(gitEvent.Issue.URL)
-		if err != nil {
-			return nil, err
-		}
-		processedEvent.URL = gitEvent.Repository.HTMLURL
-		processedEvent.DefaultBranch = gitEvent.Repository.DefaultBranch
-	default:
-		return nil, fmt.Errorf("event %s is not supported", eventType)
-	}
-
-	processedEvent.Event = eventInt
-	return processedEvent, nil
 }
 
 func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
