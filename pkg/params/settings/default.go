@@ -31,6 +31,10 @@ func SetDefaults(config map[string]string) {
 		config[AutoConfigureNewGitHubRepoKey] = AutoConfigureNewGitHubRepoDefaultValue
 	}
 
+	if errorLogSnippet, ok := config[ErrorLogSnippetKey]; !ok || errorLogSnippet == "" {
+		config[ErrorLogSnippetKey] = errorLogSnippetValue
+	}
+
 	if errorDetection, ok := config[ErrorDetectionKey]; !ok || errorDetection == "" {
 		config[ErrorDetectionKey] = errorDetectionValue
 	}

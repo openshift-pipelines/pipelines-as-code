@@ -12,6 +12,10 @@ StartTime:      16 minutes ago
 Duration:       1 minute
 
 Failures:
-• task1:   Failed
+
+• task1:
   Error error miss robinson
+
+• task2: PipelineRunTimeout
+  I was sleeping and I forgot to wake up
 

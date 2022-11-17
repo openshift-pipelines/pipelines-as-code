@@ -16,6 +16,7 @@ type KinterfaceTest struct {
 	ConsoleURLErorring       bool
 	ExpectedNumberofCleanups int
 	GetSecretResult          map[string]string
+	GetPodLogsOutput         map[string]string
 }
 
 var _ kubeinteraction.Interface = (*KinterfaceTest)(nil)
@@ -25,6 +26,13 @@ func (k *KinterfaceTest) GetConsoleUI(_ context.Context, _, _ string) (string, e
 		return "", fmt.Errorf("i want you to errit")
 	}
 	return k.ConsoleURL, nil
+}
+
+func (k *KinterfaceTest) GetPodLogs(_ context.Context, ns, pod, cont string, _ int64) (string, error) {
+	if ok := k.GetPodLogsOutput[pod]; ok != "" {
+		return k.GetPodLogsOutput[pod], nil
+	}
+	return "", nil
 }
 
 func (k *KinterfaceTest) CreateBasicAuthSecret(context.Context, *zap.SugaredLogger, *info.Event, string, string) error {

@@ -61,8 +61,11 @@ type RepositoryRunStatus struct {
 }
 
 type TaskInfos struct {
-	Reason     string
-	LogSnippet string
+	Name           string
+	Message        string
+	LogSnippet     string
+	Reason         string
+	CompletionTime *metav1.Time
 }
 
 // RepositorySpec is the spec of a repo

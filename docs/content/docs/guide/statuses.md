@@ -10,6 +10,15 @@ When the pipeline finishes, the status will be added in the GitHub Check tabs
 with a short recap of how long each task of your pipeline took and the output of
 `tkn pr describe`.
 
+## Log error snippet
+
+When we detect an error  in one of the task of the Pipeline we will show a small
+snippet of the last 3 lines in the task breakdown.
+
+This will only show the output of the first task that failed (due of the limitation of the API not allowing to have many characters).
+
+![log snippet](/images/snippet-failure-message.png)
+
 ### Annotations (alpha feature)
 
 If you set `error-detection-from-container-logs` to `true` in the
