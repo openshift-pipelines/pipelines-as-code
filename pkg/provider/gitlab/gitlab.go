@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -43,6 +44,7 @@ type Provider struct {
 	userID            int
 	pathWithNamespace string
 	repoURL           string
+	apiURL            string
 }
 
 // GetTaskURI TODO: Implement me
@@ -96,12 +98,23 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 
 	// Try to detect automatically the API url if url is not coming from public
 	// gitlab. Unless user has set a spec.provider.url in its repo crd
-	apiURL := apiPublicURL
-	if runevent.Provider.URL != "" {
+	apiURL := ""
+	switch {
+	case runevent.Provider.URL != "":
 		apiURL = runevent.Provider.URL
-	} else if !strings.HasPrefix(v.repoURL, apiPublicURL) {
+	case v.repoURL != "" && !strings.HasPrefix(v.repoURL, apiPublicURL):
 		apiURL = strings.ReplaceAll(v.repoURL, v.pathWithNamespace, "")
+	case runevent.URL != "":
+		burl, err := url.Parse(runevent.URL)
+		if err != nil {
+			return err
+		}
+		apiURL = fmt.Sprintf("%s://%s", burl.Scheme, burl.Host)
+	default:
+		// this really should not happen but let's just hope this is it
+		apiURL = apiPublicURL
 	}
+	v.apiURL = apiURL
 
 	v.Client, err = gitlab.NewClient(runevent.Provider.Token, gitlab.WithBaseURL(apiURL))
 	if err != nil {
@@ -181,7 +194,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 	_, _, _ = v.Client.Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
 
 	// only add a note when we are on a MR
-	if event.EventType == "pull_request" {
+	if event.EventType == "pull_request" || event.EventType == "Merge_Request" {
 		mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.String(body)}
 		_, _, err := v.Client.Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
 		return err

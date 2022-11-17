@@ -211,6 +211,34 @@ func TestSetClient(t *testing.T) {
 	assert.Assert(t, *vv.Token != "")
 }
 
+func TestSetClientDetectAPIURL(t *testing.T) {
+	fakehost := "https://fakehost.com"
+	ctx, _ := rtesting.SetupFakeContext(t)
+	client, _, tearDown := thelp.Setup(ctx, t)
+	defer tearDown()
+	v := &Provider{Client: client}
+	event := info.NewEvent()
+	err := v.SetClient(ctx, nil, event)
+	assert.ErrorContains(t, err, "no git_provider.secret has been set")
+
+	event.Provider.Token = "hello"
+
+	v.repoURL, event.URL, event.Provider.URL = "", "", ""
+	event.URL = fmt.Sprintf("%s/hello-this-is-me-ze/project", fakehost)
+	err = v.SetClient(ctx, nil, event)
+	assert.NilError(t, err)
+	assert.Equal(t, fakehost, v.apiURL)
+
+	v.repoURL, event.URL, event.Provider.URL = "", "", ""
+	event.Provider.URL = fmt.Sprintf("%s/hello-this-is-me-ze/anotherproject", fakehost)
+	assert.Equal(t, fakehost, v.apiURL)
+
+	v.repoURL = fmt.Sprintf("%s/hello-this-is-me-ze/anotherproject", fakehost)
+	v.pathWithNamespace = "hello-this-is-me-ze/anotherproject"
+	event.URL, event.Provider.URL = "", ""
+	assert.Equal(t, fakehost, v.apiURL)
+}
+
 func TestGetTektonDir(t *testing.T) {
 	samplePR, err := os.ReadFile("../../resolve/testdata/pipeline-finally.yaml")
 	assert.NilError(t, err)
