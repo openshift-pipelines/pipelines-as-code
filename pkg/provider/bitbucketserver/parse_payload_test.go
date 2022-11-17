@@ -23,15 +23,15 @@ func TestParsePayload(t *testing.T) {
 		SHA:          "abcd",
 		CloneURL:     "http://clone/PROJ/repo",
 	}
-	pr1 := bbv1test.MakePREvent(ev1)
 
 	tests := []struct {
-		name          string
-		payloadEvent  interface{}
-		expEvent      *info.Event
-		eventType     string
-		wantErrSubstr string
-		rawStr        string
+		name              string
+		payloadEvent      interface{}
+		expEvent          *info.Event
+		eventType         string
+		wantErrSubstr     string
+		rawStr            string
+		targetPipelinerun string
 	}{
 		{
 			name:          "bad/invalid event type",
@@ -58,17 +58,40 @@ func TestParsePayload(t *testing.T) {
 					//nolint: stylecheck
 					URL: "💢",
 					SHA: "abcd",
-				},
-			),
+				}, ""),
 			wantErrSubstr: "invalid control character",
 		},
 		{
 			name:         "good/pull_request",
 			eventType:    "pr:opened",
-			payloadEvent: pr1,
+			payloadEvent: bbv1test.MakePREvent(ev1, ""),
 			expEvent:     ev1,
 		},
-		// TODO: push test
+		{
+			name:         "good/push",
+			eventType:    "repo:refs_changed",
+			payloadEvent: bbv1test.MakePushEvent(ev1),
+			expEvent:     ev1,
+		},
+		{
+			name:         "good/comment ok-to-test",
+			eventType:    "pr:comment:added",
+			payloadEvent: bbv1test.MakePREvent(ev1, "/ok-to-test"),
+			expEvent:     ev1,
+		},
+		{
+			name:         "good/comment test",
+			eventType:    "pr:comment:added",
+			payloadEvent: bbv1test.MakePREvent(ev1, "/test"),
+			expEvent:     ev1,
+		},
+		{
+			name:              "good/comment retest a pr",
+			eventType:         "pr:comment:added",
+			payloadEvent:      bbv1test.MakePREvent(ev1, "/retest dummy"),
+			expEvent:          ev1,
+			targetPipelinerun: "dummy",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -101,6 +124,10 @@ func TestParsePayload(t *testing.T) {
 			assert.Equal(t, got.URL+"/browse", tt.expEvent.URL)
 
 			assert.Equal(t, got.CloneURL, tt.expEvent.CloneURL)
+
+			if tt.targetPipelinerun != "" {
+				assert.Equal(t, got.TargetTestPipelineRun, tt.targetPipelinerun)
+			}
 		})
 	}
 }

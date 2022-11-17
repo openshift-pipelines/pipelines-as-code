@@ -265,10 +265,10 @@ func MuxPullRequestActivities(t *testing.T, mux *http.ServeMux, event *info.Even
 	})
 }
 
-func MakePREvent(event *info.Event) *types.PullRequestEvent {
+func MakePREvent(event *info.Event, comment string) *types.PullRequestEvent {
 	iii, _ := strconv.Atoi(event.AccountID)
 
-	return &types.PullRequestEvent{
+	pr := &types.PullRequestEvent{
 		Actor: types.EventActor{ID: iii, Name: event.Sender},
 		PulRequest: bbv1.PullRequest{
 			ToRef: bbv1.PullRequestRef{
@@ -304,6 +304,48 @@ func MakePREvent(event *info.Event) *types.PullRequestEvent {
 						},
 					},
 				},
+			},
+		},
+	}
+	if comment != "" {
+		pr.Comment = bbv1.Comment{
+			Text: comment,
+		}
+	}
+	return pr
+}
+
+func MakePushEvent(event *info.Event) *types.PushRequestEvent {
+	iii, _ := strconv.Atoi(event.AccountID)
+
+	return &types.PushRequestEvent{
+		Actor: types.EventActor{ID: iii, Name: event.Sender},
+		Repository: bbv1.Repository{
+			Project: &bbv1.Project{
+				Key: event.Organization,
+			},
+			Slug: event.Repository,
+			Links: &struct {
+				Clone []bbv1.CloneLink "json:\"clone,omitempty\""
+				Self  []bbv1.SelfLink  "json:\"self,omitempty\""
+			}{
+				Clone: []bbv1.CloneLink{
+					{
+						Name: "http",
+						Href: event.CloneURL,
+					},
+				},
+				Self: []bbv1.SelfLink{
+					{
+						Href: event.URL,
+					},
+				},
+			},
+		},
+		Changes: []types.PushRequestEventChange{
+			{
+				ToHash: event.SHA,
+				RefID:  "base",
 			},
 		},
 	}

@@ -217,7 +217,7 @@ func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testdir 
 	MuxFiles(t, mux, event, filecontents)
 }
 
-func MakePREvent(accountid, nickname, sha string) types.PullRequestEvent {
+func MakePREvent(accountid, nickname, sha, comment string) types.PullRequestEvent {
 	if accountid == "" {
 		accountid = "prid"
 	}
@@ -227,7 +227,7 @@ func MakePREvent(accountid, nickname, sha string) types.PullRequestEvent {
 	if sha == "" {
 		sha = "prchat"
 	}
-	return types.PullRequestEvent{
+	pr := types.PullRequestEvent{
 		Repository: types.Repository{
 			Workspace: types.Workspace{
 				Slug: "organization",
@@ -260,6 +260,16 @@ func MakePREvent(accountid, nickname, sha string) types.PullRequestEvent {
 			},
 		},
 	}
+
+	if comment != "" {
+		pr.Comment = types.Comment{
+			Content: types.Content{
+				Raw: comment,
+			},
+			User: types.User{},
+		}
+	}
+	return pr
 }
 
 func MakePushEvent(accountid, nickname, sha string) types.PushRequestEvent {
