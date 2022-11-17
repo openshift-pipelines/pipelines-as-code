@@ -63,6 +63,11 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 			case provider.IsOkToTestComment(e.Comment.Text):
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "ok-to-test-comment"
+			case provider.IsCancelComment(e.Comment.Text):
+				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.EventType = "cancel-comment"
+				processedEvent.CancelPipelineRuns = true
+				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromCancelComment(e.Comment.Text)
 			}
 		}
 		// TODO: It's Really not an OWNER but a PROJECT

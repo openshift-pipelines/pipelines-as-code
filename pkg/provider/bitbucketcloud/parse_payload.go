@@ -142,6 +142,11 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 			case provider.IsOkToTestComment(e.Comment.Content.Raw):
 				processedEvent.TriggerTarget = "pull_request"
 				processedEvent.EventType = "ok-to-test-comment"
+			case provider.IsCancelComment(e.Comment.Content.Raw):
+				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.EventType = "cancel-comment"
+				processedEvent.CancelPipelineRuns = true
+				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromCancelComment(e.Comment.Content.Raw)
 			}
 		}
 		processedEvent.Organization = e.Repository.Workspace.Slug

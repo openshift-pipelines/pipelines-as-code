@@ -123,6 +123,33 @@ func TestParsePayload(t *testing.T) {
 				State:         info.State{TargetTestPipelineRun: "dummy"},
 			},
 		},
+		{
+			name: "note event cancel all",
+			args: args{
+				event:   gitlab.EventTypeNote,
+				payload: sample.NoteEventAsJSON("/cancel"),
+			},
+			want: &info.Event{
+				EventType:     "Note",
+				TriggerTarget: "pull_request",
+				Organization:  "hello-this-is-me-ze",
+				Repository:    "project",
+			},
+		},
+		{
+			name: "note event cancel a pr",
+			args: args{
+				event:   gitlab.EventTypeNote,
+				payload: sample.NoteEventAsJSON("/cancel dummy"),
+			},
+			want: &info.Event{
+				EventType:     "Note",
+				TriggerTarget: "pull_request",
+				Organization:  "hello-this-is-me-ze",
+				Repository:    "project",
+				State:         info.State{TargetTestPipelineRun: "dummy"},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

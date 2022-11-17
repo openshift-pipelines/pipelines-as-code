@@ -253,7 +253,10 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 	if provider.IsTestRetestComment(event.GetComment().GetBody()) {
 		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(event.GetComment().GetBody())
 	}
-
+	if provider.IsCancelComment(event.GetComment().GetBody()) {
+		runevent.CancelPipelineRuns = true
+		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromCancelComment(event.GetComment().GetBody())
+	}
 	// We are getting the full URL so we have to get the last part to get the PR number,
 	// we don't have to care about URL query string/hash and other stuff because
 	// that comes up from the API.

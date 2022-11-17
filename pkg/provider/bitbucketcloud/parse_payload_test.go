@@ -174,6 +174,23 @@ func TestParsePayload(t *testing.T) {
 			expectedSender:    "sender",
 			expectedSHA:       "sha",
 		},
+		{
+			name:              "cancel comment with a pipelinerun",
+			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", "/cancel dummy"),
+			eventType:         "pullrequest:comment_created",
+			expectedAccountID: "account",
+			expectedSender:    "sender",
+			expectedSHA:       "sha",
+			targetPipelinerun: "dummy",
+		},
+		{
+			name:              "cancel all comment",
+			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", "/cancel"),
+			eventType:         "pullrequest:comment_created",
+			expectedAccountID: "account",
+			expectedSender:    "sender",
+			expectedSHA:       "sha",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

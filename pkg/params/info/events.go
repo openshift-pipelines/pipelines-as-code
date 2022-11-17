@@ -57,7 +57,8 @@ type Event struct {
 }
 
 type State struct {
-	TargetTestPipelineRun string // PipelineRun name to run
+	TargetTestPipelineRun string
+	CancelPipelineRuns    bool
 }
 
 type Provider struct {
