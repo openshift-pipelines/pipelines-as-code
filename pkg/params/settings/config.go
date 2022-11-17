@@ -29,6 +29,9 @@ const (
 	hubCatalogNameDefaultValue              = "tekton"
 	AutoConfigureNewGitHubRepoDefaultValue  = "false"
 
+	ErrorLogSnippetKey   = "error-log-snippet"
+	errorLogSnippetValue = "false"
+
 	ErrorDetectionKey                 = "error-detection-from-container-logs"
 	ErrorDetectionNumberOfLinesKey    = "error-detection-max-number-of-lines"
 	ErrorDetectionSimpleFilterTaskKey = "error-detection-simple-filter-to-task-labels"
@@ -52,6 +55,7 @@ type Settings struct {
 	AutoConfigureNewGitHubRepo         bool
 	AutoConfigureRepoNamespaceTemplate string
 
+	ErrorLogSnippet             bool
 	ErrorDetection              bool
 	ErrorDetectionNumberOfLines int
 	ErrorDetectionSimpleRegexp  string
@@ -121,10 +125,16 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 		setting.AutoConfigureRepoNamespaceTemplate = config[AutoConfigureRepoNamespaceTemplateKey]
 	}
 
-	errorDection := StringToBool(config[ErrorDetectionKey])
-	if setting.ErrorDetection != errorDection {
-		logger.Infof("CONFIG: setting error detection to %v", errorDection)
-		setting.ErrorDetection = errorDection
+	errorLogSnippet := StringToBool(config[ErrorLogSnippetKey])
+	if setting.ErrorLogSnippet != errorLogSnippet {
+		logger.Infof("CONFIG: setting log snippet on error to %v", errorLogSnippet)
+		setting.ErrorLogSnippet = errorLogSnippet
+	}
+
+	errorDetection := StringToBool(config[ErrorDetectionKey])
+	if setting.ErrorDetection != errorDetection {
+		logger.Infof("CONFIG: setting error detection to %v", errorDetection)
+		setting.ErrorDetection = errorDetection
 	}
 
 	errorDetectNumberOfLines, _ := strconv.Atoi(config[ErrorDetectionNumberOfLinesKey])

@@ -3,11 +3,14 @@ package reconciler
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/go-github/v47/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1a1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	kstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
@@ -18,6 +21,8 @@ import (
 
 const (
 	maxPipelineRunStatusRun = 5
+	logSnippetNumLines      = 3
+	failureReasonText       = "%s<br><h4>Failure reason</h4><br>%s"
 )
 
 func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1beta1.PipelineRun, repo *pacv1a1.Repository, event *info.Event) error {
@@ -35,7 +40,7 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 		TargetBranch:    &refsanitized,
 	}
 
-	// Get repo again in case it was updated while we were running the CI
+	// Get repository again in case it was updated while we were running the CI
 	// we try multiple time until we get right in case of conflicts.
 	// that's what the error message tell us anyway, so i guess we listen.
 	maxRun := 10
@@ -46,7 +51,7 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 			return err
 		}
 
-		// Append pipelinerun status files to the repo status
+		// Append PipelineRun status files to the repo status
 		if len(lastrepo.Status) >= maxPipelineRunStatusRun {
 			copy(lastrepo.Status, lastrepo.Status[len(lastrepo.Status)-maxPipelineRunStatusRun+1:])
 			lastrepo.Status = lastrepo.Status[:maxPipelineRunStatusRun-1]
@@ -66,6 +71,23 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 	return fmt.Errorf("cannot update %s", repo.Name)
 }
 
+func (r *Reconciler) getFailureSnippet(ctx context.Context, pr *tektonv1beta1.PipelineRun) string {
+	intf, err := kubeinteraction.NewKubernetesInteraction(r.run)
+	if err != nil {
+		return ""
+	}
+	taskinfos := kstatus.CollectFailedTasksLogSnippet(ctx, r.run, intf, pr, logSnippetNumLines)
+	if len(taskinfos) == 0 {
+		return ""
+	}
+	sortedTaskInfos := sort.TaskInfos(taskinfos)
+	text := strings.TrimSpace(sortedTaskInfos[0].LogSnippet)
+	if text == "" {
+		text = sortedTaskInfos[0].Message
+	}
+	return fmt.Sprintf("task <b>%s</b> has the status <b>\"%s\"</b>:\n<pre>%s</pre>", sortedTaskInfos[0].Name, sortedTaskInfos[0].Reason, text)
+}
+
 func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLogger, vcx provider.Interface, event *info.Event, createdPR *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
 	pr, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(createdPR.GetNamespace()).Get(
 		ctx, createdPR.GetName(), metav1.GetOptions{},
@@ -74,16 +96,23 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		return pr, err
 	}
 
-	taskStatus, err := sort.TaskStatusTmpl(pr, r.run.Clients.ConsoleUI, vcx.GetConfig())
+	taskStatusText, err := sort.TaskStatusTmpl(pr, r.run.Clients.ConsoleUI, vcx.GetConfig())
 	if err != nil {
 		return pr, err
+	}
+
+	if r.run.Info.Pac.ErrorLogSnippet {
+		failures := r.getFailureSnippet(ctx, pr)
+		if failures != "" {
+			taskStatusText = fmt.Sprintf(failureReasonText, taskStatusText, failures)
+		}
 	}
 
 	status := provider.StatusOpts{
 		Status:                  "completed",
 		PipelineRun:             pr,
 		Conclusion:              formatting.PipelineRunStatus(pr),
-		Text:                    taskStatus,
+		Text:                    taskStatusText,
 		PipelineRunName:         pr.Name,
 		DetailsURL:              r.run.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
 		OriginalPipelineRunName: pr.GetLabels()[apipac.OriginalPRName],

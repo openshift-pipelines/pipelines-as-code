@@ -166,6 +166,11 @@ func TestDescribe(t *testing.T) {
 								Reason:     tektonv1beta1.PipelineRunReasonFailed.String(),
 								LogSnippet: "Error error miss robinson",
 							},
+
+							"task2": {
+								Message: "I was sleeping and I forgot to wake up",
+								Reason:  tektonv1beta1.PipelineRunReasonTimedOut.String(),
+							},
 						},
 						PipelineRunName: "pipelinerun1",
 						LogURL:          github.String("https://everywhere.anwywhere"),

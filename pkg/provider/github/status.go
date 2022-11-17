@@ -11,7 +11,8 @@ import (
 
 	"github.com/google/go-github/v47/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/status"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	kstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -113,14 +114,19 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 	return checkRun.ID, nil
 }
 
-func (v *Provider) getFailuresMessageAsAnnotations(ctx context.Context, pr tektonv1beta1.PipelineRun) []*github.CheckRunAnnotation {
+func (v *Provider) getFailuresMessageAsAnnotations(ctx context.Context, pr *tektonv1beta1.PipelineRun) []*github.CheckRunAnnotation {
 	annotations := []*github.CheckRunAnnotation{}
 	r, err := regexp.Compile(v.Run.Info.Pac.ErrorDetectionSimpleRegexp)
 	if err != nil {
 		v.Run.Clients.Log.Errorf("invalid regexp for filtering failure messages: %v", v.Run.Info.Pac.ErrorDetectionSimpleRegexp)
 		return annotations
 	}
-	taskinfos := status.CollectTaskInfos(ctx, v.Run, pr, int64(v.Run.Info.Pac.ErrorDetectionNumberOfLines))
+	intf, err := kubeinteraction.NewKubernetesInteraction(v.Run)
+	if err != nil {
+		v.Run.Clients.Log.Errorf("failed to create kubeinteraction: %v", err)
+		return annotations
+	}
+	taskinfos := kstatus.CollectFailedTasksLogSnippet(ctx, v.Run, intf, pr, int64(v.Run.Info.Pac.ErrorDetectionNumberOfLines))
 	for _, taskinfo := range taskinfos {
 		for _, errline := range strings.Split(taskinfo.LogSnippet, "\n") {
 			results := map[string]string{}
@@ -204,15 +210,19 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 		}
 	}
 
+	text := statusOpts.Text
 	checkRunOutput := &github.CheckRunOutput{
 		Title:   &statusOpts.Title,
 		Summary: &statusOpts.Summary,
-		Text:    &statusOpts.Text,
 	}
 
-	if statusOpts.PipelineRun != nil && v.Run.Info.Pac.ErrorDetection {
-		checkRunOutput.Annotations = v.getFailuresMessageAsAnnotations(ctx, *statusOpts.PipelineRun)
+	if statusOpts.PipelineRun != nil {
+		if v.Run.Info.Pac.ErrorDetection {
+			checkRunOutput.Annotations = v.getFailuresMessageAsAnnotations(ctx, statusOpts.PipelineRun)
+		}
 	}
+
+	checkRunOutput.Text = github.String(text)
 
 	opts := github.UpdateCheckRunOptions{
 		Name:   getCheckName(statusOpts, pacopts),

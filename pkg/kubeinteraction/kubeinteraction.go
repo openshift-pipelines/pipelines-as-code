@@ -21,6 +21,7 @@ type Interface interface {
 	CreateBasicAuthSecret(context.Context, *zap.SugaredLogger, *info.Event, string, string) error
 	DeleteBasicAuthSecret(context.Context, *zap.SugaredLogger, string, string) error
 	GetSecret(context.Context, GetSecretOpt) (string, error)
+	GetPodLogs(context.Context, string, string, string, int64) (string, error)
 }
 
 type Interaction struct {

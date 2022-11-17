@@ -72,21 +72,31 @@ There is a few things you can configure through the config map
   for your repository and create a Repository CR.
 
   This feature is disabled by default and is only supported with GitHub App.
-  
+
   ****NOTE****: If you have a GitHub App already setup then verify if `Repository` event is subscribed.
 
 * `auto-configure-repo-namespace-template`
 
   If `auto-configure-new-github-repo` is enabled then you can provide a template for generating the namespace for your new repository.
   By default, the namespace will be generated using this format `{{repo_name}}-pipelines`.
-  
+
   You can override the default using the following variables
-  
+
   * `{{repo_owner}}`: The repository owner.
   * `{{repo_name}}`: The repository name.
-  
+
   for example. if the template is defined as `{{repo_owner}}-{{repo_name}}-ci`, then the namespace generated for repository
   `https://github.com/owner/repo` will be `owner-repo-ci`
+
+* `error-log-snippet`
+
+  Enable or disable the feature to show a log snippet of the failed task when there is
+  an error in a Pipeline
+
+  It will show the last 3 lines of the first container of the first task
+  that has error in the pipeline.
+
+  ***NOTE***: You may want to disable this if you think your pipeline may leak some value
 
 ## Pipelines-As-Code Info
 
@@ -94,7 +104,7 @@ There is a few things you can configure through the config map
   Pipeline as Code.
 
 * `version`
-  
+
   The version of Pipelines As Code installed.
 
 * `controller-url`

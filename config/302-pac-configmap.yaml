@@ -33,6 +33,17 @@ data:
   # PipelineRun on the Tekton dashboard
   tekton-dashboard-url: ""
 
+  # Enable or disable the feature to show a log snippet of the failed task when there is
+  # an error in a Pipeline
+  #
+  # It will show the last 3 lines of the first container of the first task
+  # that has error in the pipeline.
+  #
+  # you may want to disable this if you think your pipeline may leak some value
+  error-log-snippet: "true"
+
+  # alpha feature: disabled by default
+  #
   # Enable or disable the inspection of container logs to detect error message
   # and expose them as annotations on Pull Request. Only Github apps is supported
   #
