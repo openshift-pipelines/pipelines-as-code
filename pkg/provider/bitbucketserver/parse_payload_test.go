@@ -92,6 +92,19 @@ func TestParsePayload(t *testing.T) {
 			expEvent:          ev1,
 			targetPipelinerun: "dummy",
 		},
+		{
+			name:              "good/comment cancel a pr",
+			eventType:         "pr:comment:added",
+			payloadEvent:      bbv1test.MakePREvent(ev1, "/cancel dummy"),
+			expEvent:          ev1,
+			targetPipelinerun: "dummy",
+		},
+		{
+			name:         "good/comment cancel all",
+			eventType:    "pr:comment:added",
+			payloadEvent: bbv1test.MakePREvent(ev1, "/cancel"),
+			expEvent:     ev1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

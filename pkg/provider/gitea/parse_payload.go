@@ -79,7 +79,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.EventType = "pull_request"
 
 		if provider.IsTestRetestComment(gitEvent.Comment.Body) {
-			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(gitEvent.Comment.Body)
+			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(gitEvent.Comment.Body)
 		}
 		processedEvent.PullRequestNumber, err = convertPullRequestURLtoNumber(gitEvent.Issue.URL)
 		if err != nil {
