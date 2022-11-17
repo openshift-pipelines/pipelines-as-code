@@ -202,7 +202,7 @@ main() {
     echo "And we are done :): "
 }
 
-while getopts "Ggpcrb" o; do
+while getopts "RGgpcrb" o; do
     case "${o}" in
         b)
             start_registry
@@ -217,9 +217,12 @@ while getopts "Ggpcrb" o; do
             ;;
         p)
             install_pac
-            echo "Restarting controller POD: "
-            kubectl delete pod -l app.kubernetes.io/part-of=pipelines-as-code -n pipelines-as-code || true
             exit
+            ;;
+        R)
+
+            echo "Restarting pac pods"
+            kubectl delete pod -l app.kubernetes.io/part-of=pipelines-as-code -n pipelines-as-code || true
             ;;
 	    r)
 		    INSTALL_FROM_RELEASE=yes
