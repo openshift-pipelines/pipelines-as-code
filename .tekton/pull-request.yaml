@@ -119,7 +119,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: public.ecr.aws/docker/library/golang:1.18
+            - image: registry.access.redhat.com/ubi9/go-toolset@sha256:9e60bacd07dc4b5f3f559167e6e9a1acd8235d043f0ffc591a2ecc3805446c74
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -151,7 +151,7 @@ spec:
             - name: unittest
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
-              image: public.ecr.aws/docker/library/golang:1.18
+              image: registry.access.redhat.com/ubi9/go-toolset@sha256:9e60bacd07dc4b5f3f559167e6e9a1acd8235d043f0ffc591a2ecc3805446c74
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -235,7 +235,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: public.ecr.aws/docker/library/golang:1.18
+              image: registry.access.redhat.com/ubi9/go-toolset@sha256:9e60bacd07dc4b5f3f559167e6e9a1acd8235d043f0ffc591a2ecc3805446c74
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN
