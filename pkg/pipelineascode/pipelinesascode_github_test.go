@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v47/github"
+	"github.com/google/go-github/v48/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
@@ -22,7 +22,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
-	testDynamic "github.com/openshift-pipelines/pipelines-as-code/pkg/test/dynamic"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
@@ -416,15 +415,12 @@ func TestRun(t *testing.T) {
 			}
 
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
-			tdc := testDynamic.Options{}
-			dc, _ := tdc.Client()
 			cs := &params.Run{
 				Clients: clients.Clients{
 					PipelineAsCode: stdata.PipelineAsCode,
 					Log:            logger,
 					Kube:           stdata.Kube,
 					Tekton:         stdata.Pipeline,
-					Dynamic:        dc,
 					ConsoleUI:      consoleui.FallBackConsole{},
 				},
 				Info: info.Info{
