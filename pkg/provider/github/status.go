@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v47/github"
+	"github.com/google/go-github/v48/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"

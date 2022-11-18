@@ -70,6 +70,7 @@ type celPac struct {
 
 func (t celPac) ProgramOptions() []cel.ProgramOption {
 	return []cel.ProgramOption{
+		//nolint: staticcheck
 		cel.Functions(
 			&functions.Overload{
 				Operator: "pathChanged",
