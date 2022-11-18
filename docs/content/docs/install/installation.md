@@ -140,19 +140,13 @@ You can use following command to update the envs on the controller
 
 ## Proxy service for PAC controller
 
-### What
+Pipelines as Code requires an externally accessible URL to receive events from Git providers.
+If you're developing locally (such as on kind or Minikube) or don't want to set up an ingress on your cluster,
+you can also use a proxy service to expose the `pipelines-as-code-controller` service and allow it to receive events.
 
-proxy service is used to forward request coming to `pipelines-as-code-controller` service
+### Proxying with smee.io
 
-### Why
-
-PAC requires externally accessible URL to configure for GitHub, GitLab, BitBucket and there are few clusters which doesn't expose services to external world ex: Minikube, Kind and so on.
-
-### Proposed solution
-
-To handle such scenario for minikube/kind cluster lets use [smee.io](https://smee.io/)
-
-### Steps to configure smee.io
+To handle such scenario for minikube/kind cluster let's use [smee.io](https://smee.io/)
 
 - Generate your own URL by going to [smee.io/new](https://smee.io/new)
 - Copy `Webhook Proxy URL`

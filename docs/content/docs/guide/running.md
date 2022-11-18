@@ -4,23 +4,24 @@ weight: 4
 ---
 # Running the PipelineRun
 
-The user flow looks like this :
+Pipelines as Code will run any PipelineRuns committed to the default branch of the repo
+when the specified events occur on the repo.
+For example, if a PipelineRun on the default branch has the annotation
+`pipelinesascode.tekton.dev/on-event: "[pull_request]"`, it will run whenever a pull request event occurs.
 
-- A user create a `Pull Request` (or `Merge Request` in Gitlab).
+Pipelines as Code will also run any PipelineRuns from a branch in a pull request (or merge request in Gitlab).
+For example, if you're testing out a new PipelineRun, you can create a pull request
+with that PipelineRun, and it will run if the following conditions are met:
 
-- Pipelines as Code picks the event and matches to a Repo CRD installed on the
-  cluster.
+- The pull request author's PipelineRun will be run if:
 
-- The user is allowed to run the CI if :
-
-  - The user is the owner of the repository.
-  - The user is a collaborator on the repository.
-  - The user is a public member on the organization of the repository.
-
-- If the user is sending the Pull Request is inside an OWNER file located in the
+  - The author is the owner of the repository.
+  - The author is a collaborator on the repository.
+  - The author is a public member on the organization of the repository.
+  - The pull request author is inside an OWNER file located in the
   repository root on the main branch (the main branch as defined in the GitHub
   configuration for the repo) and added to either `approvers` or `reviewers`
-  sections like this :
+  sections. For example, if the approvers section looks like this:
 
 ```yaml
 approvers:
@@ -29,13 +30,16 @@ approvers:
 
 then the user `approved` will be allowed.
 
-- If the sender of a PR is not allowed to run CI but one of allowed user issue a
-  `/ok-to-test` in any line of a comment the PR will be allowed to run CI.
+If the pull request author does not meet these requirements,
+another user that does meet these requirements can comment `/ok-to-test` on the pull request
+to run the PipelineRun.
 
-- If the user is allowed, `Pipelines as Code` will start creating the
-`PipelineRun` in the target user namespace.
+## PipelineRun Execution
 
-- The user can follow the execution of your pipeline with the
+The PipelineRun will always run in the namespace of the Repository CRD associated with the repo
+that generated the event.
+
+You can follow the execution of your pipeline with the
 [tkn](https://github.com/tektoncd/cli) cli :
 
 ```console
@@ -55,7 +59,7 @@ your branch or pull_request.
 
 On GitHub if you are using the Github apps, you can go to the Checks tab and
 click on the upper left button called "Re-Run" and Pipelines as Code will react
-to the event and restart testing the PipelineRun
+to the event and restart testing the PipelineRun.
 
 ### Gitops command on pull or merge request
 
