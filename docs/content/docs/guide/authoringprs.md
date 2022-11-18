@@ -8,6 +8,12 @@ weight: 3
   possible. Usually you will write your template and save them with a `.yaml`
   extension and Pipelines as Code will run them.
 
+* The `.tekton` directory must be at the top level of the repo.
+  You can reference YAML files in other repos using remote URLs
+  (see [Remote HTTP URLs](./resolver.md#remote-http-url) for more information),
+  but PipelineRuns will only be triggered by events in the repository containing
+  the `.tekton` directory.
+
 * Using its [resolver](./resolver) Pipelines as Code will try to bundle the
   PipelineRun with all its Task as a single PipelineRun with no external
   dependencies.

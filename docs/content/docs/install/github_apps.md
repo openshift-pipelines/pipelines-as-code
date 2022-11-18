@@ -19,8 +19,9 @@ There are 2 ways to set up GitHub App:
 
 You could use [`tkn pac bootstrap`](/docs/guide/cli) command which will a create GitHub App, provides
 steps to configure it with your Git repository and also creates required secrets.
+After creating the Github App, you must install it on the repositories you want to use for Pipelines as Code.
 
-Alternatively, you could set up manually by following the steps [here](#setup-manually)
+Alternatively, you could set up manually by following the steps [here](#setup-manually).
 
 ## Setup Manually
 
@@ -61,7 +62,7 @@ Alternatively, you could set up manually by following the steps [here](#setup-ma
   download automatically. Store the private key in a safe place as you need it in the next section and in future when
   reconfiguring this app to use a different cluster.
 
-## Configure Pipelines-as-Code on your cluster to access the GitHub App
+### Configure Pipelines-as-Code on your cluster to access the GitHub App
 
 In order for Pipelines-as-Code to be able to authenticate to the GitHub App and have the GitHub App securely trigger the
 Pipelines-as-Code webhook, you need to create a Kubernetes secret containing the private key of the GitHub App and the
@@ -85,6 +86,8 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
         --from-literal github-application-id="APP_ID" \
         --from-literal webhook.secret="WEBHOOK_SECRET"
 ```
+
+Lastly, install the App on any repos you'd like to use with Pipelines as Code.
 
 ## GitHub Enterprise
 
