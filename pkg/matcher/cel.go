@@ -5,15 +5,12 @@ import (
 	"fmt"
 
 	"github.com/gobwas/glob"
-	"github.com/google/cel-go/common/types"
-	"github.com/google/cel-go/interpreter/functions"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
-
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/checker/decls"
+	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
 
 func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface) (ref.Val, error) {
@@ -69,14 +66,7 @@ type celPac struct {
 }
 
 func (t celPac) ProgramOptions() []cel.ProgramOption {
-	return []cel.ProgramOption{
-		cel.Functions(
-			&functions.Overload{
-				Operator: "pathChanged",
-				Unary:    t.pathChanged,
-			},
-		),
-	}
+	return []cel.ProgramOption{}
 }
 
 func (t celPac) pathChanged(vals ref.Val) ref.Val {
@@ -98,12 +88,10 @@ func (t celPac) pathChanged(vals ref.Val) ref.Val {
 	return match
 }
 
-func (celPac) CompileOptions() []cel.EnvOption {
+func (t celPac) CompileOptions() []cel.EnvOption {
 	return []cel.EnvOption{
-		cel.Declarations(
-			decls.NewFunction("pathChanged",
-				decls.NewInstanceOverload("pathChanged",
-					[]*exprpb.Type{decls.String}, decls.Bool)),
-		),
+		cel.Function("pathChanged",
+			cel.MemberOverload("pathChanged", []*cel.Type{cel.StringType}, cel.BoolType,
+				cel.UnaryBinding(t.pathChanged))),
 	}
 }
