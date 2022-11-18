@@ -11,7 +11,7 @@ require (
 	github.com/fvbommel/sortorder v1.0.1
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20220418082332-711d7d5e805f
 	github.com/gobwas/glob v0.2.3
-	github.com/google/cel-go v0.11.3
+	github.com/google/cel-go v0.12.5
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-github/scrape v0.0.0-20220919195828-182338c7045a
 	github.com/google/go-github/v47 v47.1.0
