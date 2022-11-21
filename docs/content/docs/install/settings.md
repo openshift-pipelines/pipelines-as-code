@@ -111,9 +111,9 @@ There is a few things you can configure through the config map
 
   The controller URL as set by the `tkn pac bootstrap` command while setting up the GitHub App or if Pipelines as code is installed
   using OpenShift Pipelines Operator then the operator sets the route created for the controller. This field is also used to detect the controller
-  URL in `setup webhook` commands.
+  URL in `webhook add` commands.
 
 * `provider`
 
   The provider is set to `GitHub App` by tkn pac bootstrap command and is used to detect if a GitHub App is already configured when a user runs the
-  bootstrap command a second time or the `setup github-webhook` command.
+  bootstrap command a second time or the `webhook add` command.
