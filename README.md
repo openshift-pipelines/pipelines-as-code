@@ -105,7 +105,7 @@ supports other methods :
 - Bitbucket Cloud
 - Bitbucket Server
 
-You can use the command `tkn pac setup` to help you setup webhooks on your repository. See the [INSTALL guide](https://pipelinesascode.com/docs/install/) for more details on each install method.
+You can use the command `tkn pac webhook` to help you update webhooks on your repository. See the [INSTALL guide](https://pipelinesascode.com/docs/install/) for more details on each install method.
 
 ## Usage Guide
 

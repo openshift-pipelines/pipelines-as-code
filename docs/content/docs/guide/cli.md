@@ -14,7 +14,7 @@ Pipelines as Code provide a powerful CLI designed to work with tkn plug-in.  `tk
 * `logs`: show the logs of a PipelineRun form a Repository CRD.
 * `describe`: describe a Pipelines as Code Repository and the runs associated with it.
 * `resolve`: Resolve a pipelinerun as if it were executed by pipelines as code on service.
-* `setup`: Setup a Git provider app or webhook with pipelines as code service.
+* `webhook`: Updates webhook secret.
 
 ## Install
 
