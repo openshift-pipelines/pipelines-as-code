@@ -16,5 +16,6 @@ LABEL com.redhat.component=${BINARY_NAME} \
 
 COPY --from=builder /tmp/${BINARY_NAME} /usr/bin/${BINARY_NAME}
 
+USER 1001
 ENV RUN_BINARY_NAME=$BINARY_NAME
 CMD /usr/bin/${RUN_BINARY_NAME}
