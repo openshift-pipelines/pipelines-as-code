@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -11,7 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/spf13/cobra"
-	errors2 "k8s.io/apimachinery/pkg/api/errors"
+	kapierror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -22,20 +21,24 @@ const (
 	openShiftRouteResource = "routes"
 	secretName             = "pipelines-as-code-secret"
 	defaultProviderType    = "github-app"
+	// https://webhook.chmouel.com/ is a good value too :p
+	defaultWebForwarderURL = "https://smee.io"
 )
 
 var providerTargets = []string{"github-app", "github-enterprise-app"}
 
 type bootstrapOpts struct {
-	providerType    string
-	installNightly  bool
-	skipInstall     bool
-	skipGithubAPP   bool
-	forceInstall    bool
-	webserverPort   int
-	cliOpts         *cli.PacCliOpts
-	ioStreams       *cli.IOStreams
-	targetNamespace string
+	providerType      string
+	installNightly    bool
+	skipInstall       bool
+	skipGithubAPP     bool
+	forceInstall      bool
+	webserverPort     int
+	cliOpts           *cli.PacCliOpts
+	ioStreams         *cli.IOStreams
+	targetNamespace   string
+	autoDetectedRoute bool
+	forwarderURL      string
 
 	RouteName              string
 	GithubAPIURL           string
@@ -71,7 +74,7 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 		return err
 	}
 	if !tektonInstalled {
-		return errors.New("tekton API not found on the cluster. Please install Tekton first")
+		return fmt.Errorf("a Tekton installation has not been found on this cluster, install Tekton first before launching this command")
 	}
 
 	// if we gt a ns back it means it has been detected in here so keep it as is.
@@ -101,6 +104,9 @@ func createSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) err
 
 	if opts.RouteName == "" {
 		opts.RouteName, _ = DetectOpenShiftRoute(ctx, run, opts.targetNamespace)
+		if opts.RouteName != "" {
+			opts.autoDetectedRoute = true
+		}
 	}
 	if err := askQuestions(opts); err != nil {
 		return err
@@ -240,7 +246,7 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 func DetectPacInstallation(ctx context.Context, wantedNS string, run *params.Run) (bool, string, error) {
 	var installed bool
 	_, err := run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(ctx, metav1.ListOptions{})
-	if err != nil && errors2.IsNotFound(err) {
+	if err != nil && kapierror.IsNotFound(err) {
 		return false, "", nil
 	}
 
@@ -272,6 +278,7 @@ func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "GitHub Application URL")
 	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enterprise API URL")
 	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "The public URL for the pipelines-as-code controller")
+	cmd.PersistentFlags().StringVar(&opts.forwarderURL, "web-forwarder-url", defaultWebForwarderURL, "the web forwarder url")
 	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Whether to install the nightly Pipelines as Code")
 	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "Webserver port")
 	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,

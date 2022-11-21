@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gosmee
+  namespace: pipelines-as-code
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gosmee
+  template:
+    metadata:
+      labels:
+        app: gosmee
+    spec:
+      containers:
+        - image: ghcr.io/chmouel/gosmee:main
+          name: gosmee
+          args:
+            [
+              "client",
+              "--saveDir",
+              "/tmp/save",
+              "FORWARD_URL",
+              "http://pipelines-as-code-controller.pipelines-as-code:8080",
+            ]
+
+# vim: ft=yaml
