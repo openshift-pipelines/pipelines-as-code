@@ -60,7 +60,7 @@ func askQuestions(opts *bootstrapOpts) error {
 		opts.GithubAPIURL = "https://" + strings.Trim(opts.GithubAPIURL, "/")
 	}
 
-	if opts.RouteName != "" {
+	if opts.autoDetectedRoute && opts.RouteName != "" {
 		answer, err := askYN(true,
 			fmt.Sprintf("👀 I have detected an OpenShift Route on: %s", opts.RouteName),
 			"Do you want me to use it?", opts.ioStreams.Out)
