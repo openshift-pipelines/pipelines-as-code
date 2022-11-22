@@ -29,6 +29,9 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 		Short:   "Delete a Pipelines as Code Repository or multiple of them",
 		Long:    longHelp,
 		Aliases: []string{"repo"},
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			return completion.BaseCompletion("repositories", args)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			opts := cli.NewCliOptions(cmd)

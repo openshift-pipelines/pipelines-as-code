@@ -78,7 +78,9 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		Annotations: map[string]string{
 			"commandType": "main",
 		},
-		ValidArgsFunction: completion.ParentCompletion,
+		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			return completion.BaseCompletion("repositories", args)
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
 			var repoName string
