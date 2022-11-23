@@ -43,7 +43,7 @@ You can follow the execution of your pipeline with the
 [tkn](https://github.com/tektoncd/cli) cli :
 
 ```console
-tkn pr logs -n my-pipeline-ci -Lf
+tkn pac logs -n my-pipeline-ci -L
 ```
 
 Or with the OpenShift console inside your namespace you can follow the
