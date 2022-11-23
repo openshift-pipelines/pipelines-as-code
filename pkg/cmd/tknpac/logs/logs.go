@@ -35,11 +35,12 @@ tkn pac logs will get the logs of a PipelineRun belonging to a Repository.
 the PipelineRun needs to exist on the kubernetes cluster to be able to display the logs.`
 
 const (
-	namespaceFlag      = "namespace"
-	limitFlag          = "limit"
-	tknPathFlag        = "tkn-path"
-	defaultLimit       = -1
-	openWebBrowserFlag = "web"
+	namespaceFlag          = "namespace"
+	limitFlag              = "limit"
+	tknPathFlag            = "tkn-path"
+	defaultLimit           = -1
+	openWebBrowserFlag     = "web"
+	useLastPipelineRunFlag = "last"
 )
 
 type logOption struct {
@@ -51,6 +52,7 @@ type logOption struct {
 	tknPath    string
 	limit      int
 	webBrowser bool
+	useLastPR  bool
 }
 
 func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
@@ -92,6 +94,11 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
+			useLastPR, err := cmd.Flags().GetBool(useLastPipelineRunFlag)
+			if err != nil {
+				return err
+			}
+
 			tknPath, err := cmd.Flags().GetString(tknPathFlag)
 			if err != nil {
 				return err
@@ -115,6 +122,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				limit:      limit,
 				webBrowser: webBrowser,
 				tknPath:    tknPath,
+				useLastPR:  useLastPR,
 			}
 			return log(ctx, lopts)
 		},
@@ -133,6 +141,9 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 	cmd.Flags().BoolP(
 		openWebBrowserFlag, "w", false, "Open Web browser to detected console instead of using tkn")
+
+	cmd.Flags().BoolP(
+		useLastPipelineRunFlag, "L", false, "show logs of the last PipelineRun")
 
 	cmd.Flags().IntP(
 		limitFlag, "", defaultLimit, "Limit the number of PipelineRun to show (-1 is unlimited)")
@@ -213,7 +224,7 @@ func log(ctx context.Context, lo *logOption) error {
 		return fmt.Errorf("cannot detect pipelineruns belonging to repository: %s", repository.GetName())
 	}
 	var replyString string
-	if len(allprs) == 1 {
+	if lo.useLastPR || len(allprs) == 1 {
 		replyString = allprs[0]
 	} else {
 		if err := prompt.SurveyAskOne(&survey.Select{

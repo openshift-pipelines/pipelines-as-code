@@ -35,6 +35,7 @@ func TestLogs(t *testing.T) {
 		currentNamespace string
 		shift            int
 		pruns            []*tektonv1beta1.PipelineRun
+		useLastPR        bool
 	}{
 		{
 			name:             "good/show logs",
@@ -44,6 +45,21 @@ func TestLogs(t *testing.T) {
 			shift:            0,
 			pruns: []*tektonv1beta1.PipelineRun{
 				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
+					keys.Repository: "test",
+				}, 30),
+			},
+		},
+		{
+			name:             "good/show logs",
+			wantErr:          false,
+			repoName:         "test",
+			currentNamespace: ns,
+			useLastPR:        true,
+			pruns: []*tektonv1beta1.PipelineRun{
+				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
+					keys.Repository: "test",
+				}, 30),
+				tektontest.MakePRCompletion(cw, "test-pipeline2", ns, completed, map[string]string{
 					keys.Repository: "test",
 				}, 30),
 			},
@@ -116,6 +132,7 @@ func TestLogs(t *testing.T) {
 				limit:     1,
 				tknPath:   tknPath,
 				ioStreams: io,
+				useLastPR: tt.useLastPR,
 			}
 
 			err = log(ctx, lopts)

@@ -26,7 +26,7 @@ const (
 	startingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
   <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
   the command line with :
-	<br><code>tkn pr logs -f -n %s %s</code>`
+	<br><code>tkn pac logs -L -n %s %s</code>`
 	queuingPipelineRunText = `PipelineRun <b>%s</b> has been queued Queuing in namespace
   <b>%s</b><br><br>`
 )
