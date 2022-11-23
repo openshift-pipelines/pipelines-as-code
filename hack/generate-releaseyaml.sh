@@ -36,7 +36,7 @@ fi
 
 
 for file in ${files};do
-    head -1 ${file} | grep -q -- "---" || echo -e "\n---\n"
+    sed -e '/^$/d' -e '/^#/d' ${file} | head -1 | grep -q -- "---" || echo -e "---\n"
     sed -r -e "s,(.*image:.*)ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-controller.*,\1${TARGET_REPO_CONTROLLER}:${TARGET_BRANCH}\"," \
         -r -e "s,(.*image:.*)ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-watcher.*,\1${TARGET_REPO_WATCHER}:${TARGET_BRANCH}\"," \
         -r -e "s,(.*image:.*)ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-webhook.*,\1${TARGET_REPO_WEBHOOK}:${TARGET_BRANCH}\"," \
@@ -52,5 +52,7 @@ for file in ${files};do
         sed -ir '/^[ ]*- apiGroups:.*route.openshift.io/,/verbs.*/d' ${TMP}
     }
 
+    echo "" >> ${TMP}
+    tail -1 ${TMP} |grep -q "^$" && sed -i '$d' ${TMP} >> /tmp/aaaa
     cat ${TMP}
 done
