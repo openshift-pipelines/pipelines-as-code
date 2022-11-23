@@ -66,7 +66,7 @@ $ tkn pac create repo
 ✓ Setting up GitHub Webhook for Repository https://github.com/owner/repo
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes
-? Please enter the secret to configure the webhook for payload validation (default: 52289):  52289
+? Please enter the secret to configure the webhook for payload validation (default: sJNwdmTifHTs):  sJNwdmTifHTs
 ℹ ️You now need to create a GitHub personal access token, please checkout the docs at https://is.gd/KJ1dDH for the required scopes
 ? Please enter the GitHub access token:  ****************************************
 ✓ Webhook has been created on repository owner/repo
@@ -163,7 +163,7 @@ $ tkn pac webhook add -n repo-pipelines
 ✓ Setting up GitHub Webhook for Repository https://github.com/owner/repo
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes
-? Please enter the secret to configure the webhook for payload validation (default: 53507):  53507
+? Please enter the secret to configure the webhook for payload validation (default: AeHdHTJVfAeH):  AeHdHTJVfAeH
 ✓ Webhook has been created on repository owner/repo
 🔑 Secret owner-repo has been updated with webhook secert in the repo-pipelines namespace.
 

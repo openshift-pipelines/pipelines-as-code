@@ -49,7 +49,7 @@ $ tkn pac create repo
   project ID refers to an unique ID (e.g. 34405323) shown at the top of your GitLab project : 17103
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes
-? Please enter the secret to configure the webhook for payload validation (default: 61169):  61169
+? Please enter the secret to configure the webhook for payload validation (default: ISpmebVvMMIS):  ISpmebVvMMIS
 ℹ ️You now need to create a GitLab personal access token with `api` scope
 ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation 
 ? Please enter the GitLab access token:  **************************
@@ -155,7 +155,7 @@ $ tkn pac webhook add -n project-pipelines
   project ID refers to an unique ID (e.g. 34405323) shown at the top of your GitLab project : 17103
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes
-? Please enter the secret to configure the webhook for payload validation (default: 60443):  60443
+? Please enter the secret to configure the webhook for payload validation (default: TXArbGNDHTXU):  TXArbGNDHTXU
 ✓ Webhook has been created on your repository
 🔑 Secret repositories-project has been updated with webhook secert in the project-pipelines namespace.
 
