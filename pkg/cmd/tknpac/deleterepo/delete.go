@@ -59,6 +59,11 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
+	_ = cmd.RegisterFlagCompletionFunc(namespaceFlag,
+		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+			return completion.BaseCompletion(namespaceFlag, args)
+		},
+	)
 
 	cmd.Flags().BoolVarP(
 		&cascade, "cascade", "c", false, "Delete the repository and its secrets attached to it")
