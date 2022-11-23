@@ -2,8 +2,6 @@ package webhook
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 	"golang.org/x/oauth2"
 )
 
@@ -96,18 +95,10 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL, perso
 		}
 	}
 
-	RandomCrypto, randErr := rand.Prime(rand.Reader, 16)
-	if randErr != nil {
-		return randErr
-	}
-	data, marshalErr := json.Marshal(RandomCrypto)
-	if marshalErr != nil {
-		return marshalErr
-	}
-
-	msg := fmt.Sprintf("Please enter the secret to configure the webhook for payload validation (default: %s): ", string(data))
+	data := random.AlphaString(12)
+	msg := fmt.Sprintf("Please enter the secret to configure the webhook for payload validation (default: %s): ", data)
 	var webhookSecret string
-	if err := prompt.SurveyAskOne(&survey.Input{Message: msg, Default: string(data)}, &webhookSecret); err != nil {
+	if err := prompt.SurveyAskOne(&survey.Input{Message: msg, Default: data}, &webhookSecret); err != nil {
 		return err
 	}
 
