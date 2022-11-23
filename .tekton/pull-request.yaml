@@ -31,9 +31,27 @@ spec:
           - name: output
             workspace: source
 
-      - name: yamllint
+      - name: generate-release-yaml
         runAfter:
           - fetchit
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: gen-yaml
+              image: registry.access.redhat.com/ubi9/python-39
+              workingDir: $(workspaces.source.path)
+              script: |
+                set -x
+                mkdir -p bin/ # ignored in .gitignore
+                ./hack/generate-releaseyaml.sh  > bin/release.yaml
+        workspaces:
+          - name: source
+            workspace: source
+
+      - name: yamllint
+        runAfter:
+          - generate-release-yaml
         taskSpec:
           workspaces:
             - name: source
@@ -42,6 +60,7 @@ spec:
               image: quay.io/mhutter/yamllint
               workingDir: $(workspaces.source.path)
               script: |
+                set -x
                 yamllint -f parsable -c .yamllint $(find . -type f -regex ".*y[a]ml" -print)
         workspaces:
           - name: source
