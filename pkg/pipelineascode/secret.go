@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
 	"go.uber.org/zap"
 )
 
@@ -40,7 +41,7 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 		gitProviderSecretKey = DefaultGitProviderSecretKey
 	}
 
-	if event.Provider.Token, err = k8int.GetSecret(ctx, kubeinteraction.GetSecretOpt{
+	if event.Provider.Token, err = k8int.GetSecret(ctx, ktypes.GetSecretOpt{
 		Namespace: repo.GetNamespace(),
 		Name:      repo.Spec.GitProvider.Secret.Name,
 		Key:       gitProviderSecretKey,
@@ -71,7 +72,7 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 		repo.Spec.GitProvider.User,
 		repo.Spec.GitProvider.Secret.Name,
 		gitProviderSecretKey)
-	if event.Provider.WebhookSecret, err = k8int.GetSecret(ctx, kubeinteraction.GetSecretOpt{
+	if event.Provider.WebhookSecret, err = k8int.GetSecret(ctx, ktypes.GetSecretOpt{
 		Namespace: repo.GetNamespace(),
 		Name:      repo.Spec.GitProvider.WebhookSecret.Name,
 		Key:       gitProviderWebhookSecretKey,
@@ -92,7 +93,7 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 
 // GetCurrentNSWebhookSecret get secret from current namespace if it exists
 func GetCurrentNSWebhookSecret(ctx context.Context, k8int kubeinteraction.Interface) (string, error) {
-	s, err := k8int.GetSecret(ctx, kubeinteraction.GetSecretOpt{
+	s, err := k8int.GetSecret(ctx, ktypes.GetSecretOpt{
 		Namespace: os.Getenv("SYSTEM_NAMESPACE"),
 		Name:      defaultPipelinesAscodeSecretName,
 		Key:       defaultPipelinesAscodeSecretWebhookSecretKey,

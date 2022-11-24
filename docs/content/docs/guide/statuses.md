@@ -15,7 +15,18 @@ with a short recap of how long each task of your pipeline took and the output of
 When we detect an error  in one of the task of the Pipeline we will show a small
 snippet of the last 3 lines in the task breakdown.
 
-This will only show the output of the first task that failed (due of the limitation of the API not allowing to have many characters).
+This will only show the output of the first failed task (due of the
+limitation of the API not allowing to have many characters).
+
+Pipelines as Code try to avoid leaking secrets by looking into the PipelineRun
+and replace the secrets values by hidden characters.
+We fetch every secrets on environment variable attached to any tasks and steps,
+check if there is any match of those values in the snippet and *blindly* replace them
+with a `*****` placeholder.
+
+This doesn't support hiding secrets coming from workspaces and
+[envFrom](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#envfromsource-v1-core)
+source.
 
 ![log snippet](/images/snippet-failure-message.png)
 
@@ -24,7 +35,7 @@ This will only show the output of the first task that failed (due of the limitat
 If you set `error-detection-from-container-logs` to `true` in the
 `pipeline-as-code` [config map](/docs/install/settings.md), pipelines-as-code
 will try to detect the errors from the container logs and add them as
-annotations on the Pull Request where the error occured.
+annotations on the Pull Request where the error occurred.
 
 We currently support only the simple case  where the error looks like `makefile` or `grep` output of this format:
 
