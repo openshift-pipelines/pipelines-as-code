@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
+	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -43,7 +44,7 @@ func (k Interaction) createSecret(ctx context.Context, secretData map[string]str
 func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.SugaredLogger, runevent *info.Event,
 	targetNamespace, secretName string,
 ) error {
-	// Bitbucket Server have a different Clone URL than it's Repo URL, so we
+	// Bitbucket Server have a different Clone URL than it's Repository URL, so we
 	// have to separate them 👨‍🏭
 	cloneURL := runevent.URL
 	if runevent.CloneURL != "" {
@@ -60,11 +61,11 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.Suga
 		gitUser = runevent.Provider.User
 	}
 
-	// Bitbucket server token have / into it, so unless we do urlquote them it's
+	// Bitbucket server token have / into it, so unless we quote the URL them it's
 	// impossible to use it🤡
 	//
-	// It supposed not working on github according to
-	// https://stackoverflow.com/a/24719496 but arguably github have a better
+	// It supposed not working on GitHub according to
+	// https://stackoverflow.com/a/24719496 but arguably GitHub have a better
 	// product and would not do such things.
 	//
 	// maybe we could patch the git-clone task too but that probably be a pain
@@ -91,7 +92,7 @@ func (k Interaction) CreateBasicAuthSecret(ctx context.Context, logger *zap.Suga
 	return nil
 }
 
-func (k Interaction) GetSecret(ctx context.Context, secretopt GetSecretOpt) (string, error) {
+func (k Interaction) GetSecret(ctx context.Context, secretopt ktypes.GetSecretOpt) (string, error) {
 	secret, err := k.Run.Clients.Kube.CoreV1().Secrets(secretopt.Namespace).Get(
 		ctx, secretopt.Name, metav1.GetOptions{})
 	if err != nil {
@@ -115,3 +116,5 @@ func (k Interaction) DeleteBasicAuthSecret(ctx context.Context, logger *zap.Suga
 	logger.Infof("Secret %s has been deleted in namespace %s", secretName, targetNamespace)
 	return nil
 }
+
+// TODO: support envSource

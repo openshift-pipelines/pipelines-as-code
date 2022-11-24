@@ -13,6 +13,7 @@ import (
 	kstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
@@ -104,6 +105,8 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 	if r.run.Info.Pac.ErrorLogSnippet {
 		failures := r.getFailureSnippet(ctx, pr)
 		if failures != "" {
+			secretValues := secrets.GetSecretsAttachedToPipelineRun(ctx, r.kinteract, pr)
+			failures = secrets.ReplaceSecretsInText(failures, secretValues)
 			taskStatusText = fmt.Sprintf(failureReasonText, taskStatusText, failures)
 		}
 	}
