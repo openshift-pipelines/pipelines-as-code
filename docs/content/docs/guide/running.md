@@ -46,9 +46,17 @@ You can follow the execution of your pipeline with the
 tkn pac logs -n my-pipeline-ci -L
 ```
 
-Or with the OpenShift console inside your namespace you can follow the
-pipelinerun execution with the URL provided on the "Checks" tab if you run with
-GitHub App.
+If you need to show another pipelinerun than the last one you
+can use the `tkn pac` logs command :
+
+```console
+tkn pac logs -n my-pipeline-ci
+```
+
+If you have connected Pipelines as Code to the tekton dashboard or the
+OpenShift console. Pipelines as Code will post a URL in the Checks tab for
+GitHub apps to let you click on it and follow the pipeline execution directly
+there.
 
 ## Restarting the PipelineRun
 
@@ -57,7 +65,7 @@ your branch or pull_request.
 
 ### GitHub APPS
 
-On GitHub if you are using the Github apps, you can go to the Checks tab and
+On GitHub if you are using the GitHub apps, you can go to the Checks tab and
 click on the upper left button called "Re-Run" and Pipelines as Code will react
 to the event and restart testing the PipelineRun.
 
