@@ -26,7 +26,7 @@ spec:
       # not great but can't do otherwise due of networking and how we run self contained tests
       # under gitea. Since we are working on convention here this will break
       # easily on refactoring so something to watch out.
-      value: "http://gitea.gitea:3000/pac/\\ .TargetNamespace //"
+      value: "\\ .ProviderURL ///pac/\\ .TargetNamespace //"
     - name: revision
       value: "{{ revision }}"
     - name: sslVerify

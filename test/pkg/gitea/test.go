@@ -40,6 +40,7 @@ type TestOpts struct {
 	GiteaAPIURL          string
 	GiteaPassword        string
 	ExpectEvents         bool
+	InternalGiteaURL     string
 }
 
 func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
@@ -59,9 +60,14 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	topts.Opts = opts
 	assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
 	hookURL := os.Getenv("TEST_GITEA_SMEEURL")
+	topts.InternalGiteaURL = os.Getenv("TEST_GITEA_INTERNAL_URL")
+	if topts.InternalGiteaURL == "" {
+		topts.InternalGiteaURL = "http://gitea.gitea:3000"
+	}
 	if topts.ExtraArgs == nil {
 		topts.ExtraArgs = map[string]string{}
 	}
+	topts.ExtraArgs["ProviderURL"] = topts.InternalGiteaURL
 	if topts.TargetRefName == "" {
 		topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
 	}
@@ -83,7 +89,11 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	err = CreateCRD(ctx, topts)
 	assert.NilError(t, err)
 
-	entries, err := payload.GetEntries(topts.YAMLFiles, topts.TargetNS, repoInfo.DefaultBranch, topts.TargetEvent, topts.ExtraArgs)
+	entries, err := payload.GetEntries(topts.YAMLFiles,
+		topts.TargetNS,
+		repoInfo.DefaultBranch,
+		topts.TargetEvent,
+		topts.ExtraArgs)
 	assert.NilError(t, err)
 
 	url, err := MakeGitCloneURL(repoInfo.CloneURL, os.Getenv("TEST_GITEA_USERNAME"), os.Getenv("TEST_GITEA_PASSWORD"))
@@ -120,15 +130,21 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 		// to emit and before that this check gets executed
 		// so adds a sleep for that case eg. TestGiteaBadYaml
 		if len(events.Items) == 0 {
-			time.Sleep(time.Second * 5)
-			events, err = topts.Clients.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, topts.TargetNS),
-			})
-			assert.NilError(t, err)
+			// loop 30 times over a 5 second period and try to get any events
+			for i := 0; i < 30; i++ {
+				events, err = topts.Clients.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, topts.TargetNS),
+				})
+				assert.NilError(t, err)
+				if len(events.Items) > 0 {
+					break
+				}
+				time.Sleep(2 * time.Second)
+			}
 		}
 		assert.Assert(t, len(events.Items) != 0, "events expected in case of failure but got 0")
 	} else {
-		assert.Assert(t, len(events.Items) == 0, fmt.Sprintf("no events expected but got %v in %v ns", len(events.Items), topts.TargetNS))
+		assert.Assert(t, len(events.Items) == 0, fmt.Sprintf("no events expected but got %v in %v ns, items: %+v", len(events.Items), topts.TargetNS, events.Items))
 	}
 	return cleanup
 }
