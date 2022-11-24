@@ -150,9 +150,12 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 	}
 
 	if status.Text != "" && event.EventType == "pull_request" {
+		// insane? yes, but gitea has some issues and need some random number
+		// to update the comment or we get a 422, may need to be removed
+		status.Text = fmt.Sprintf(status.Text, "\n", " \n ")
 		_, _, err := v.Client.CreateIssueComment(event.Organization, event.Repository,
 			int64(event.PullRequestNumber), gitea.CreateIssueCommentOption{
-				Body: fmt.Sprintf("%s<br>%s", status.Summary, status.Text),
+				Body: fmt.Sprintf("%s\n%s", status.Summary, status.Text),
 			},
 		)
 		if err != nil {

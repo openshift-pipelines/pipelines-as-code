@@ -2,7 +2,6 @@ package gitea
 
 import (
 	"context"
-	"os"
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -20,10 +19,6 @@ func createToken(topts *TestOpts) (string, error) {
 }
 
 func CreateCRD(ctx context.Context, topts *TestOpts) error {
-	internalGitea, _ := os.LookupEnv("TEST_GITEA_INTERNAL_URL")
-	if internalGitea == "" {
-		internalGitea = "http://gitea.gitea:3000"
-	}
 	if err := pacrepo.CreateNS(ctx, topts.TargetNS, topts.Clients); err != nil {
 		return err
 	}
@@ -45,7 +40,7 @@ func CreateCRD(ctx context.Context, topts *TestOpts) error {
 				Type: "gitea",
 				// caveat this assume gitea running on the same cluster, which
 				// we do and need for e2e tests but that may be changed somehow
-				URL:    internalGitea,
+				URL:    topts.InternalGiteaURL,
 				Secret: &v1alpha1.Secret{Name: "gitea-secret", Key: "token"},
 			},
 			ConcurrencyLimit: topts.ConcurrencyLimit,
