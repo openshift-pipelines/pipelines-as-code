@@ -87,17 +87,19 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 			}
 
 			if pacCMInfo.Provider == provider.ProviderGitHubApp {
-				msg := "👌 A GitHub App is configured for your cluster, Would you like to setup webhook for your repository?"
-				var setupWebhook bool
-				if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: false}, &setupWebhook); err != nil {
-					return err
-				}
-				if !setupWebhook {
-					fmt.Fprintln(ioStreams.Out, "✓ Skipped webhook setup")
-					if err := createOpts.generateTemplate(nil); err != nil {
+				if strings.Contains(createOpts.Event.URL, "github") {
+					msg := "👌 A GitHub App is configured for your cluster, Would you like to setup webhook for your repository?"
+					var setupWebhook bool
+					if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: false}, &setupWebhook); err != nil {
 						return err
 					}
-					return nil
+					if !setupWebhook {
+						fmt.Fprintln(ioStreams.Out, "✓ Skipped webhook setup")
+						if err := createOpts.generateTemplate(nil); err != nil {
+							return err
+						}
+						return nil
+					}
 				}
 			}
 
