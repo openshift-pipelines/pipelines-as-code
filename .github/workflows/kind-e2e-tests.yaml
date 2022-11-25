@@ -112,11 +112,14 @@ jobs:
           export TEST_EL_URL="http://${CONTROLLER_DOMAIN_URL}"
           export TEST_EL_WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"
 
-          export TEST_GITEA_API_URL="http://localhost:3000"
+          export TEST_GITEA_API_URL="https://gitea-gitea.apps.paac.openshift-pipelines.devcluster.openshift.com"
+          ## This is the URL used to forward requests from the webhook to the paac controller
+          ## badly named!
+          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
+          export TEST_GITEA_INTERNAL_URL="${TEST_GITEA_API_URL}"
+          export TEST_GITEA_USERNAME=pac
           export TEST_GITEA_PASSWORD=pac
           export TEST_GITEA_REPO_OWNER=pac/pac
-          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
-          export TEST_GITEA_USERNAME=pac
 
           export TEST_GITHUB_API_URL=api.github.com
           export TEST_GITHUB_REPO_INSTALLATION_ID="${{ secrets.INSTALLATION_ID }}"
