@@ -96,7 +96,7 @@ There is a few things you can configure through the config map
   It will show the last 3 lines of the first container of the first task
   that has error in the pipeline.
 
-  ***NOTE***: You may want to disable this if you think your pipeline may leak some value
+  If it find any strings matching the values of secrets attached to the PipelineRun it will replace it with the placeholder `******`
 
 ## Pipelines-As-Code Info
 

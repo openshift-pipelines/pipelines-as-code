@@ -8,7 +8,6 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
@@ -16,6 +15,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
+	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
 	"go.uber.org/zap"
 )
 
@@ -53,7 +53,7 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 		return false, nil, fmt.Errorf("branch '%s' has not matched any rules in repo incoming webhooks spec: %+v", branch, *repo.Spec.Incomings)
 	}
 
-	secretOpts := kubeinteraction.GetSecretOpt{
+	secretOpts := ktypes.GetSecretOpt{
 		Namespace: repo.Namespace,
 		Name:      hook.Secret.Name,
 		Key:       hook.Secret.Key,
