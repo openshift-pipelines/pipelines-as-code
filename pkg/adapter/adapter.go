@@ -119,6 +119,7 @@ func (l listener) handleEvent() http.HandlerFunc {
 			if err := json.Unmarshal(payload, &event); err != nil {
 				l.logger.Errorf("Invalid event body format format: %s", err)
 				response.WriteHeader(http.StatusBadRequest)
+				return
 			}
 		}
 
