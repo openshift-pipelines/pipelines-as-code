@@ -62,7 +62,6 @@ $ tkn pac create repo
 ! Namespace repo-pipelines is not found
 ? Would you like me to create the namespace repo-pipelines? Yes
 ✓ Repository owner-repo has been created in repo-pipelines namespace
-? Please enter the provider name to setup the webhook: github
 ✓ Setting up GitHub Webhook for Repository https://github.com/owner/repo
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes
@@ -76,6 +75,7 @@ $ tkn pac create repo
 ✓ We have detected your repository using the programming language Go.
 ✓ A basic template has been created in /home/Go/src/github.com/owner/repo/.tekton/pipelinerun.yaml, feel free to customize it.
 ℹ You can test your pipeline manually with: tkn-pac resolve -f .tekton/pipelinerun.yaml | kubectl create -f-
+ℹ You can test your pipeline by pushing generated template to your git repository
 
 ```
 
@@ -159,7 +159,6 @@ Below is the sample format for `tkn pac webhook add`
 ```shell script
 $ tkn pac webhook add -n repo-pipelines
 
-? Please enter the provider name to setup the webhook: github
 ✓ Setting up GitHub Webhook for Repository https://github.com/owner/repo
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes

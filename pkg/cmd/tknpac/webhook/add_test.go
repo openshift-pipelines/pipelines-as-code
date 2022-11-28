@@ -42,6 +42,7 @@ func TestWebhookAdd(t *testing.T) {
 		},
 		Spec: v1alpha1.RepositorySpec{
 			GitProvider: nil,
+			URL:         "https://anurl.com/owner/repo",
 		},
 	}
 
@@ -76,7 +77,7 @@ func TestWebhookAdd(t *testing.T) {
 					Key:  "webhook.secret",
 				},
 			},
-			URL: "https://anurl.com/owner/repo",
+			URL: "https://github.com/owner/repo",
 		},
 	}
 
@@ -87,7 +88,7 @@ func TestWebhookAdd(t *testing.T) {
 		},
 		Spec: v1alpha1.RepositorySpec{
 			GitProvider: &v1alpha1.GitProvider{},
-			URL:         "https://anurl.com/owner/repo1",
+			URL:         "https://github.com/owner/repo",
 		},
 	}
 
@@ -117,15 +118,23 @@ func TestWebhookAdd(t *testing.T) {
 		wantErr      bool
 		wantMsg      string
 	}{{
-		name:         "Don't use webhook add command when GithubApp is configured",
+		name: "Use webhook add command to add Github webhook when GithubApp is configured",
+		askStubs: func(as *prompt.AskStubber) {
+			as.StubOne("github")
+			as.StubOne("true")
+			as.StubOne("yes")
+			as.StubOne("c8978ebcd5407637a6da1c8d178654267fd66a3b")
+			as.StubOne("https://api.github.com")
+		},
 		namespaces:   []*corev1.Namespace{namespace1},
 		repositories: []*v1alpha1.Repository{repo1},
 		repoName:     "repo1",
 		opts: &cli.PacCliOpts{
 			Namespace: namespace1.GetName(),
 		},
-		wantErr: false,
-		wantMsg: "ℹ Webhook is not configured for the repository repo1 ",
+		configMaps: []*corev1.ConfigMap{configMap},
+		wantErr:    true, // returning error while creating webhook because it requires actual personal access token in order to connect github
+		wantMsg:    "✓ Setting up GitHub Webhook for Repository https://anurl.com/owner/repo\n👀 I have detected a controller url: https://smee.io/WKR2cP3ug5K6A92T\nℹ ️You now need to create a GitHub personal access token, please checkout the docs at https://is.gd/KJ1dDH for the required scopes\n",
 	}, {
 		name:         "failed to configure webhook when git_provider secret is empty",
 		namespaces:   []*corev1.Namespace{namespace2},
@@ -137,15 +146,20 @@ func TestWebhookAdd(t *testing.T) {
 		wantErr: false,
 		wantMsg: "! Can not configure webhook as git_provider secret is empty",
 	}, {
-		name:         "list all repositories when GithubApp is configured",
-		namespaces:   []*corev1.Namespace{namespace1},
-		repositories: []*v1alpha1.Repository{repo1},
-		repoName:     "",
-		opts: &cli.PacCliOpts{
-			Namespace: namespace1.GetName(),
+		name:         "list all repositories",
+		namespaces:   []*corev1.Namespace{namespace2},
+		repositories: []*v1alpha1.Repository{repo2},
+		secrets:      []*corev1.Secret{secret2},
+		configMaps:   []*corev1.ConfigMap{configMap},
+		askStubs: func(as *prompt.AskStubber) {
+			as.StubOne("true")
+			as.StubOne("yes")
 		},
-		wantErr: false,
-		wantMsg: "ℹ Webhook is not configured for the repository  ",
+		repoName: "",
+		opts: &cli.PacCliOpts{
+			Namespace: "test",
+		},
+		wantErr: true, // error out here saying no repo found because no repo created in test ns
 	}, {
 		name:         "list all repository in a namespace where none repo exist",
 		namespaces:   []*corev1.Namespace{namespace1},
@@ -181,7 +195,7 @@ func TestWebhookAdd(t *testing.T) {
 		opts: &cli.PacCliOpts{
 			Namespace: namespace2.GetName(),
 		},
-		wantMsg: "✓ Setting up GitHub Webhook for Repository https://anurl.com/owner/repo\n👀 I have detected a controller url: https://smee.io/WKR2cP3ug5K6A92T\n",
+		wantMsg: "✓ Setting up GitHub Webhook for Repository https://github.com/owner/repo\n👀 I have detected a controller url: https://smee.io/WKR2cP3ug5K6A92T\n",
 		wantErr: true, // error out because creating webhook in a repository requires valid provider token
 
 	}}
