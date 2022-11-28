@@ -22,13 +22,7 @@ import (
 )
 
 const (
-	tektonDir               = ".tekton"
-	startingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
-  <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
-  the command line with :
-	<br><code>tkn pac logs -L -n %s %s</code>`
-	queuingPipelineRunText = `PipelineRun <b>%s</b> has been queued Queuing in namespace
-  <b>%s</b><br><br>`
+	tektonDir = ".tekton"
 )
 
 type PacRun struct {
@@ -123,7 +117,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 		pr.GetName(), match.Repo.GetNamespace(), p.event.SHA, p.event.BaseBranch)
 	consoleURL := p.run.Clients.ConsoleUI.DetailURL(match.Repo.GetNamespace(), pr.GetName())
 	// Create status with the log url
-	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), match.Repo.GetNamespace(), consoleURL,
+	msg := fmt.Sprintf(params.StartingPipelineRunText, pr.GetName(), match.Repo.GetNamespace(), consoleURL,
 		match.Repo.GetNamespace(), pr.GetName())
 	status := provider.StatusOpts{
 		Status:                  "in_progress",
@@ -138,7 +132,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 	// if pipelineRun is in pending state then report status as queued
 	if pr.Spec.Status == v1beta1.PipelineRunSpecStatusPending {
 		status.Status = "queued"
-		status.Text = fmt.Sprintf(queuingPipelineRunText, pr.GetName(), match.Repo.GetNamespace())
+		status.Text = fmt.Sprintf(params.QueuingPipelineRunText, pr.GetName(), match.Repo.GetNamespace())
 	}
 
 	if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
