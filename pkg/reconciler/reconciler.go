@@ -28,11 +28,6 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 )
 
-const startingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
-  <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
-  the command line with :
-	<br><code>tkn pac logs -L -n %s %s</code>`
-
 type Reconciler struct {
 	run               *params.Run
 	pipelineRunLister v1beta12.PipelineRunLister
@@ -238,7 +233,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 
 	consoleURL := r.run.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
 	// Create status with the log url
-	msg := fmt.Sprintf(startingPipelineRunText, pr.GetName(), repo.GetNamespace(), consoleURL,
+	msg := fmt.Sprintf(params.StartingPipelineRunText, pr.GetName(), repo.GetNamespace(), consoleURL,
 		repo.GetNamespace(), pr.GetName())
 	status := provider.StatusOpts{
 		Status:                  "in_progress",
