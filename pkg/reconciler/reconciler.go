@@ -231,7 +231,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
 	}
 
-	err = p.SetClient(ctx, nil, event)
+	err = p.SetClient(ctx, r.run, event)
 	if err != nil {
 		return fmt.Errorf("cannot set client: %w", err)
 	}
