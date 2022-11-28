@@ -23,7 +23,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger,
 		string, error,
 	) {
-		logger = logger.With("provider", "gitea", "event-id", req.Header.Get("X-Request-Id"))
+		logger = logger.With("provider", "gitea", "event-id", req.Header.Get("X-Gitea-Delivery"))
 		return isGitea, processEvent, logger, reason, err
 	}
 

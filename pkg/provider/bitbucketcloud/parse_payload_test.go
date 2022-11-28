@@ -27,6 +27,7 @@ func TestParsePayload(t *testing.T) {
 		allowedConfig             map[string]map[string]string
 		additionalAllowedsourceIP string
 		targetPipelinerun         string
+		cancelPipelinerun         string
 	}{
 		{
 			name:              "parse push request",
@@ -181,7 +182,7 @@ func TestParsePayload(t *testing.T) {
 			expectedAccountID: "account",
 			expectedSender:    "sender",
 			expectedSHA:       "sha",
-			targetPipelinerun: "dummy",
+			cancelPipelinerun: "dummy",
 		},
 		{
 			name:              "cancel all comment",
@@ -234,6 +235,9 @@ func TestParsePayload(t *testing.T) {
 			assert.Equal(t, tt.expectedSHA, got.SHA, "%s != %s", tt.expectedSHA, got.SHA)
 			if tt.targetPipelinerun != "" {
 				assert.Equal(t, tt.targetPipelinerun, got.TargetTestPipelineRun, tt.targetPipelinerun, got.TargetTestPipelineRun)
+			}
+			if tt.cancelPipelinerun != "" {
+				assert.Equal(t, tt.cancelPipelinerun, got.TargetCancelPipelineRun, tt.cancelPipelinerun, got.TargetCancelPipelineRun)
 			}
 		})
 	}

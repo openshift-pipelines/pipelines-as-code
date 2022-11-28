@@ -147,7 +147,7 @@ func TestParsePayload(t *testing.T) {
 				TriggerTarget: "pull_request",
 				Organization:  "hello-this-is-me-ze",
 				Repository:    "project",
-				State:         info.State{TargetTestPipelineRun: "dummy"},
+				State:         info.State{TargetCancelPipelineRun: "dummy"},
 			},
 		},
 	}
@@ -184,6 +184,9 @@ func TestParsePayload(t *testing.T) {
 				assert.Equal(t, tt.want.Repository, got.Repository)
 				if tt.want.TargetTestPipelineRun != "" {
 					assert.Equal(t, tt.want.TargetTestPipelineRun, got.TargetTestPipelineRun)
+				}
+				if tt.want.TargetCancelPipelineRun != "" {
+					assert.Equal(t, tt.want.TargetCancelPipelineRun, got.TargetCancelPipelineRun)
 				}
 			}
 		})

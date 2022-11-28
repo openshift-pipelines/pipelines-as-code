@@ -25,13 +25,14 @@ func TestParsePayload(t *testing.T) {
 	}
 
 	tests := []struct {
-		name              string
-		payloadEvent      interface{}
-		expEvent          *info.Event
-		eventType         string
-		wantErrSubstr     string
-		rawStr            string
-		targetPipelinerun string
+		name                    string
+		payloadEvent            interface{}
+		expEvent                *info.Event
+		eventType               string
+		wantErrSubstr           string
+		rawStr                  string
+		targetPipelinerun       string
+		canceltargetPipelinerun string
 	}{
 		{
 			name:          "bad/invalid event type",
@@ -93,11 +94,11 @@ func TestParsePayload(t *testing.T) {
 			targetPipelinerun: "dummy",
 		},
 		{
-			name:              "good/comment cancel a pr",
-			eventType:         "pr:comment:added",
-			payloadEvent:      bbv1test.MakePREvent(ev1, "/cancel dummy"),
-			expEvent:          ev1,
-			targetPipelinerun: "dummy",
+			name:                    "good/comment cancel a pr",
+			eventType:               "pr:comment:added",
+			payloadEvent:            bbv1test.MakePREvent(ev1, "/cancel dummy"),
+			expEvent:                ev1,
+			canceltargetPipelinerun: "dummy",
 		},
 		{
 			name:         "good/comment cancel all",
@@ -140,6 +141,9 @@ func TestParsePayload(t *testing.T) {
 
 			if tt.targetPipelinerun != "" {
 				assert.Equal(t, got.TargetTestPipelineRun, tt.targetPipelinerun)
+			}
+			if tt.canceltargetPipelinerun != "" {
+				assert.Equal(t, got.TargetCancelPipelineRun, tt.canceltargetPipelinerun)
 			}
 		})
 	}

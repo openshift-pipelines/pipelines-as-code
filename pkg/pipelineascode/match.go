@@ -27,6 +27,10 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 		return nil, nil, nil
 	}
 
+	if p.event.CancelPipelineRuns {
+		return nil, repo, p.cancelPipelineRuns(ctx, repo)
+	}
+
 	matchedPRs, err := p.getPipelineRunsFromRepo(ctx, repo)
 	if err != nil {
 		return nil, repo, err

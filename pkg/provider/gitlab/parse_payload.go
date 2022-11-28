@@ -91,7 +91,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(gitEvent.ObjectAttributes.Note)
 		}
 		if provider.IsCancelComment(gitEvent.ObjectAttributes.Note) {
-			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromCancelComment(gitEvent.ObjectAttributes.Note)
+			processedEvent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(gitEvent.ObjectAttributes.Note)
 		}
 
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
