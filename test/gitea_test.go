@@ -577,6 +577,34 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 	}
 }
 
+func TestGiteaCancelRun(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun_long_running.yaml",
+		},
+		NoCleanup:    true,
+		ExpectEvents: false,
+	}
+	defer tgitea.TestPR(t, topts)()
+
+	// let pipelineRun start and then cancel it
+	time.Sleep(time.Second * 5)
+	tgitea.PostCommentOnPullRequest(t, topts, "/cancel")
+
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       topts.PullRequest.Head.Sha,
+	}
+	err := twait.UntilRepositoryUpdated(context.Background(), topts.Clients.Clients, waitOpts)
+	assert.Error(t, err, "pipelinerun has failed")
+
+	tgitea.CheckIfPipelineRunsCancelled(t, topts)
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -run TestGiteaPush ."
 // End:

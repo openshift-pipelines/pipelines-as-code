@@ -70,7 +70,7 @@ func buildEventFromPipelineRun(pr *v1beta1.PipelineRun) *info.Event {
 	event.SHATitle = prAnno[keys.ShaTitle]
 	event.SHAURL = prAnno[keys.ShaURL]
 
-	prNumber := prAnno[keys.PullRequest]
+	prNumber := prLabels[keys.PullRequest]
 	if prNumber != "" {
 		event.PullRequestNumber, _ = strconv.Atoi(prNumber)
 	}

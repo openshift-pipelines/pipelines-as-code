@@ -79,16 +79,17 @@ func TestParsePayLoad(t *testing.T) {
 	defer teardown()
 
 	tests := []struct {
-		name               string
-		wantErrString      string
-		eventType          string
-		payloadEventStruct interface{}
-		jeez               string
-		triggerTarget      string
-		githubClient       *github.Client
-		muxReplies         map[string]interface{}
-		shaRet             string
-		targetPipelinerun  string
+		name                    string
+		wantErrString           string
+		eventType               string
+		payloadEventStruct      interface{}
+		jeez                    string
+		triggerTarget           string
+		githubClient            *github.Client
+		muxReplies              map[string]interface{}
+		shaRet                  string
+		targetPipelinerun       string
+		targetCancelPipelinerun string
 	}{
 		{
 			name:          "bad/unknow event",
@@ -293,9 +294,9 @@ func TestParsePayLoad(t *testing.T) {
 					Body: github.String("/cancel dummy"),
 				},
 			},
-			muxReplies:        map[string]interface{}{"/repos/owner/reponame/pulls/888": samplePR},
-			shaRet:            "samplePRsha",
-			targetPipelinerun: "dummy",
+			muxReplies:              map[string]interface{}{"/repos/owner/reponame/pulls/888": samplePR},
+			shaRet:                  "samplePRsha",
+			targetCancelPipelinerun: "dummy",
 		},
 	}
 	for _, tt := range tests {
@@ -334,6 +335,9 @@ func TestParsePayLoad(t *testing.T) {
 			assert.Equal(t, tt.shaRet, ret.SHA)
 			if tt.targetPipelinerun != "" {
 				assert.Equal(t, tt.targetPipelinerun, ret.TargetTestPipelineRun)
+			}
+			if tt.targetCancelPipelinerun != "" {
+				assert.Equal(t, tt.targetCancelPipelinerun, ret.TargetCancelPipelineRun)
 			}
 		})
 	}

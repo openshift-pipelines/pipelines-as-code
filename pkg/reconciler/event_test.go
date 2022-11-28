@@ -46,11 +46,11 @@ func TestBuildEventFromPipelineRun(t *testing.T) {
 						keys.EventType:     "push",
 						keys.Branch:        "branch",
 						keys.State:         kubeinteraction.StateStarted,
+						keys.PullRequest:   "1234",
 					},
 					Annotations: map[string]string{
-						keys.ShaTitle:    "sha-title",
-						keys.ShaURL:      "sha-url",
-						keys.PullRequest: "1234",
+						keys.ShaTitle: "sha-title",
+						keys.ShaURL:   "sha-url",
 
 						// github
 						keys.InstallationID: "12345678",
