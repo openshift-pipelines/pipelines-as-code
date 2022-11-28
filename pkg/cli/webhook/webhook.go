@@ -3,6 +3,7 @@ package webhook
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -15,8 +16,6 @@ import (
 type Interface interface {
 	Run(context.Context, *Options) (*response, error)
 }
-
-var ProviderTypes = map[string]string{"github": "github", "gitlab": "gitlab", "bitbucket-cloud": "bitbucket-cloud"}
 
 type Options struct {
 	Run                      *params.Run
@@ -101,4 +100,30 @@ func (w *Options) Install(ctx context.Context, providerType string) error {
 
 	// update repo cr with webhook secret
 	return w.updateRepositoryCR(ctx, response)
+}
+
+func GetProviderName(url string) (string, error) {
+	var (
+		err          error
+		providerName string
+	)
+	switch {
+	case strings.Contains(url, "github"):
+		providerName = "github"
+	case strings.Contains(url, "gitlab"):
+		providerName = "gitlab"
+	case strings.Contains(url, "bitbucket-cloud"):
+		providerName = "bitbucket-cloud"
+	default:
+		msg := "Please select the type of the git platform to setup webhook:"
+		if err = prompt.SurveyAskOne(
+			&survey.Select{
+				Message: msg,
+				Options: []string{"github", "gitlab", "bitbucket-cloud"},
+				Default: 0,
+			}, &providerName); err != nil {
+			return "", err
+		}
+	}
+	return providerName, nil
 }

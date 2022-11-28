@@ -38,20 +38,19 @@ Below is the sample format for `tkn pac create repo`
 ```shell script
 $ tkn pac create repo
 
-? Enter the Git repository url (default: https://gitlab.com/repositories/project):  
-? Please enter the namespace where the pipeline should run (default: project-pipelines): 
+? Enter the Git repository url (default: https://gitlab.com/repositories/project):
+? Please enter the namespace where the pipeline should run (default: project-pipelines):
 ! Namespace project-pipelines is not found
 ? Would you like me to create the namespace project-pipelines? Yes
 ✓ Repository repositories-project has been created in project-pipelines namespace
-? Please enter the provider name to setup the webhook: gitlab
 ✓ Setting up GitLab Webhook for Repository https://gitlab.com/repositories/project
-? Please enter the project ID for the repository you want to be configured, 
+? Please enter the project ID for the repository you want to be configured,
   project ID refers to an unique ID (e.g. 34405323) shown at the top of your GitLab project : 17103
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes
-? Please enter the secret to configure the webhook for payload validation (default: ISpmebVvMMIS):  ISpmebVvMMIS
+? Please enter the secret to configure the webhook for payload validation (default: lFjHIEcaGFlF):  lFjHIEcaGFlF
 ℹ ️You now need to create a GitLab personal access token with `api` scope
-ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation 
+ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation
 ? Please enter the GitLab access token:  **************************
 ? Please enter your GitLab API URL::  https://gitlab.com
 ✓ Webhook has been created on your repository
@@ -60,6 +59,7 @@ $ tkn pac create repo
 ℹ Directory .tekton has been created.
 ✓ A basic template has been created in /home/Go/src/gitlab.com/repositories/project/.tekton/pipelinerun.yaml, feel free to customize it.
 ℹ You can test your pipeline manually with: tkn-pac resolve -f .tekton/pipelinerun.yaml | kubectl create -f-
+ℹ You can test your pipeline by pushing generated template to your git repository
 ```
 
 ### Create a `Repository` and configure webhook manually
@@ -149,7 +149,6 @@ Below is the sample format for `tkn pac webhook add`
 ```shell script
 $ tkn pac webhook add -n project-pipelines
 
-? Please enter the provider name to setup the webhook: gitlab
 ✓ Setting up GitLab Webhook for Repository https://gitlab.com/repositories/project
 ? Please enter the project ID for the repository you want to be configured, 
   project ID refers to an unique ID (e.g. 34405323) shown at the top of your GitLab project : 17103

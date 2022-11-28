@@ -54,7 +54,6 @@ $ tkn pac create repo
 ! Namespace repo-pipelines is not found
 ? Would you like me to create the namespace repo-pipelines? Yes
 ✓ Repository workspace-repo has been created in repo-pipelines namespace
-? Please enter the provider name to setup the webhook: bitbucket-cloud
 ✓ Setting up Bitbucket Webhook for Repository https://bitbucket.org/workspace/repo
 ? Please enter your bitbucket cloud username:  <username>
 ℹ ️You now need to create a Bitbucket Cloud app password, please checkout the docs at https://is.gd/fqMHiJ for the required permissions
@@ -67,6 +66,7 @@ $ tkn pac create repo
 ℹ Directory .tekton has been created.
 ✓ A basic template has been created in /home/Go/src/bitbucket/repo/.tekton/pipelinerun.yaml, feel free to customize it.
 ℹ You can test your pipeline manually with: tkn-pac resolve -f .tekton/pipelinerun.yaml | kubectl create -f-
+ℹ You can test your pipeline by pushing generated template to your git repository
 
 ```
 
@@ -170,7 +170,6 @@ Below is the sample format for `tkn pac webhook add`
 ```shell script
 $ tkn pac webhook add -n repo-pipelines
 
-? Please enter the provider name to setup the webhook: bitbucket-cloud
 ✓ Setting up Bitbucket Webhook for Repository https://bitbucket.org/workspace/repo
 ? Please enter your bitbucket cloud username:  <username>
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com

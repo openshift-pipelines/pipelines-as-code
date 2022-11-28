@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
@@ -86,12 +85,21 @@ func add(ctx context.Context, opts *cli.PacCliOpts, run *params.Run, ioStreams *
 		}
 	}
 
-	// Should not proceed when GithubApp is configured or GitProvider is nil
+	if providerName, err = webhook.GetProviderName(repo.Spec.URL); err != nil {
+		return err
+	}
+
 	if repo.Spec.GitProvider == nil {
-		fmt.Fprintf(ioStreams.Out, "%s Webhook is not configured for the repository %s ",
-			ioStreams.ColorScheme().InfoIcon(),
-			repoName)
-		return nil
+		config := &webhook.Options{
+			Run:                      run,
+			RepositoryName:           repo.Name,
+			RepositoryNamespace:      repo.Namespace,
+			PACNamespace:             pacNamespace,
+			RepositoryURL:            repo.Spec.URL,
+			IOStreams:                ioStreams,
+			RepositoryCreateORUpdate: true,
+		}
+		return config.Install(ctx, providerName)
 	}
 
 	if repo.Spec.GitProvider.Secret == nil {
@@ -115,20 +123,6 @@ func add(ctx context.Context, opts *cli.PacCliOpts, run *params.Run, ioStreams *
 	if !ok {
 		fmt.Fprintf(ioStreams.Out, "Token is empty, You can use the command \"tkn pac webhook update-token\" to update the provider token in %s secret", repoName)
 		return nil
-	}
-
-	msg := "Please enter the provider name to setup the webhook:"
-	providerLabels := make([]string, 0, len(webhook.ProviderTypes))
-	for _, label := range webhook.ProviderTypes {
-		providerLabels = append(providerLabels, label)
-	}
-	if err := prompt.SurveyAskOne(
-		&survey.Select{
-			Message: msg,
-			Options: providerLabels,
-			Default: 0,
-		}, &providerName); err != nil {
-		return err
 	}
 
 	config := &webhook.Options{
