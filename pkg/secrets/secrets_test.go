@@ -27,6 +27,12 @@ func TestGetSecretsAttachedToPipelineRun(t *testing.T) {
 							},
 						},
 					},
+					{
+						TaskRef: &tektonv1beta1.TaskRef{
+							Name: "git-clone",
+							Kind: "ClusterTask",
+						},
+					},
 				},
 			},
 		},

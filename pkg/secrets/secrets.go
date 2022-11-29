@@ -21,6 +21,9 @@ func GetSecretsAttachedToPipelineRun(ctx context.Context, k kubeinteraction.Inte
 	}
 
 	for _, pt := range append(pr.Spec.PipelineSpec.Finally, pr.Spec.PipelineSpec.Tasks...) {
+		if pt.TaskSpec == nil || pt.TaskSpec.Steps == nil {
+			continue
+		}
 		for _, step := range pt.TaskSpec.Steps {
 			for _, ev := range step.Env {
 				if ev.ValueFrom == nil {
