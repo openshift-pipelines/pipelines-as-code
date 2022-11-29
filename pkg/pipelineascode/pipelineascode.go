@@ -118,7 +118,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 	consoleURL := p.run.Clients.ConsoleUI.DetailURL(match.Repo.GetNamespace(), pr.GetName())
 	// Create status with the log url
 	msg := fmt.Sprintf(params.StartingPipelineRunText, pr.GetName(), match.Repo.GetNamespace(), consoleURL,
-		match.Repo.GetNamespace(), pr.GetName())
+		match.Repo.GetNamespace(), match.Repo.GetName())
 	status := provider.StatusOpts{
 		Status:                  "in_progress",
 		Conclusion:              "pending",
