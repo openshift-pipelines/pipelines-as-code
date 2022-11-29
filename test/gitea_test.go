@@ -139,7 +139,6 @@ func TestGiteaConcurrencyExclusivenessMultiplePipelines(t *testing.T) {
 
 // multiple push to the same  repo, concurrency should q them
 func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
-	t.SkipNow()
 	numPipelines := 1
 	topts := &tgitea.TestOpts{
 		TargetEvent:          options.PullRequestEvent,
@@ -242,7 +241,6 @@ func TestGiteaACLOrgAllowed(t *testing.T) {
 }
 
 func TestGiteaACLOrgSkipped(t *testing.T) {
-	t.SkipNow()
 	topts := &tgitea.TestOpts{
 		TargetEvent: options.PullRequestEvent,
 		YAMLFiles: map[string]string{
@@ -258,12 +256,11 @@ func TestGiteaACLOrgSkipped(t *testing.T) {
 	topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
 	topts.CheckForStatus = "success"
 	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
-	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*is not allowed.*`)
+	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
 	tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
 }
 
 func TestGiteaACLCommentsAllowing(t *testing.T) {
-	t.SkipNow()
 	tests := []struct {
 		name, comment string
 	}{
@@ -297,7 +294,7 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 			topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
 			topts.CheckForStatus = "success"
 			tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
-			topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*is not allowed.*`)
+			topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
 			tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
 
 			tgitea.PostCommentOnPullRequest(t, topts, tt.comment)
@@ -370,8 +367,8 @@ func TestGiteaPush(t *testing.T) {
 }
 
 func TestGiteaClusterTasks(t *testing.T) {
-	// we need to make sure to create clustertask before pushing the files
-	// so we have to create a new client and do a lot of manual things we get for free in TestPR
+	// we need to verify sure to create clustertask before pushing the files
+	// so we have to create a new client and do more manual things we get for free in TestPR
 	topts := &tgitea.TestOpts{
 		TargetEvent: "pull_request, push",
 		YAMLFiles: map[string]string{
@@ -409,7 +406,7 @@ func TestGiteaClusterTasks(t *testing.T) {
 		RepoName:  topts.TargetNS,
 		Namespace: topts.TargetNS,
 		// 0 means 1 🙃 (we test for >, while we actually should do >=, but i
-		// need to go all over the code to make sure it's not going to break
+		// need to go all over the code to verify it's not going to break
 		// anything else)
 		MinNumberStatus: 0,
 		PollTimeout:     twait.DefaultTimeout,
