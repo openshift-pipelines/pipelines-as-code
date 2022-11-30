@@ -13,23 +13,56 @@ API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api)
 therefore the status of
 the tasks will be added as a Comment on the PullRequest and not through the **Checks** Tab.
 
-After you have finished the [installation](/docs/install/installation), you need to create
-a GitHub personal access token for Pipelines-as-Code GitHub API operations.
+gitops comment (ie: /retest /ok-to-test) with GitHub webhook is
+not supported. If you need to restart the CI you will need to generate a new
+commit. You can make it quick with this command line snippet (adjust branchname to the name of
+the branch) :
+
+```console
+git amend -a --no-edit && git push --force-with-lease origin branchname
+```
 
 ## Create GitHub Personal Access Token
+
+After Pipelines as Code [installation](/docs/install/installation), you will
+need to create a GitHub personal access token for Pipelines-as-Code GitHub API
+operations.
 
 Follow this guide to create a personal token:
 
 <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token>
 
-Depending on the Repository access scope, the token will need different permissions.
-For public repositories the scope are:
+### [Fine grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-fine-grained-personal-access-token)
+
+If you want to generate a fine grained token (which is more secure), you can
+scope your token to the repository you want tested.
+
+The permissions needed are :
+
+| Name            | Access         |
+|:---------------:|:--------------:|
+| Administration  | Read Only      |
+| Metadata        | Read Only      |
+| Content         | Read Only      |
+| Commit statuses | Read and Write |
+| Pull request    | Read and Write |
+| Webhooks        | Read and Write |
+
+### ### [Classic Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-personal-access-token-classic)
+
+Depending on the Repository access scope, the token will need different
+permissions. For public repositories the scope are:
 
 * `public_repo` scope
 
 For private repositories the scope are:
 
 * The whole `repo` scope
+
+{{< hint info >}}
+You can click directly on this link to prefill the permissions needed
+<https://github.com/settings/tokens/new?description=pipelines-as-code-token&scopes=repo>
+{{< /hint  >}}
 
 You will have to note the generated token somewhere, or otherwise you will have to recreate it.
 
@@ -57,8 +90,8 @@ Below is the sample format for `tkn pac create repo`
 ```shell script
 $ tkn pac create repo
 
-? Enter the Git repository url (default: https://github.com/owner/repo):  
-? Please enter the namespace where the pipeline should run (default: repo-pipelines): 
+? Enter the Git repository url (default: https://github.com/owner/repo):
+? Please enter the namespace where the pipeline should run (default: repo-pipelines):
 ! Namespace repo-pipelines is not found
 ? Would you like me to create the namespace repo-pipelines? Yes
 ✓ Repository owner-repo has been created in repo-pipelines namespace
