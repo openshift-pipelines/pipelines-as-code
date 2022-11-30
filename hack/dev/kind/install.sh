@@ -121,6 +121,9 @@ function install_tekton() {
         i=$((i+1))
     done
     echo "done."
+
+    echo "Installaing Dashboard Ingress"
+    sed -e "s,%DOMAIN_NAME%,${DOMAIN_NAME}," ingress-dashboard.yaml |kubectl apply -f-
 }
 
 function install_pac() {
@@ -151,7 +154,7 @@ function configure_pac() {
         grep -q el-pipelines-as-code-interceptor && \
         service_name=el-pipelines-as-code-interceptor
 
-    sed -e "s,%DOMAIN_NAME%,${DOMAIN_NAME}," -e "s,%SERVICE_NAME%,${service_name}," ingress.yaml |kubectl apply -f-
+    sed -e "s,%DOMAIN_NAME%,${DOMAIN_NAME}," -e "s,%SERVICE_NAME%,${service_name}," ingress-pac.yaml |kubectl apply -f-
 
     kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"bitbucket-cloud-check-source-ip\": \"false\"}}"  pipelines-as-code && \
     kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"error-detection-from-container-logs\": \"true\"}}"  pipelines-as-code && \
