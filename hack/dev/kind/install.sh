@@ -33,7 +33,7 @@ REG_NAME='kind-registry'
 INSTALL_FROM_RELEASE=
 PAC_PASS_SECRET_FOLDER=${PAC_PASS_SECRET_FOLDER:-""}
 SUDO=sudo
-PAC_DIR=${PAC_DIR:-$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code}
+PAC_DIR=${PAC_DIR:-""}
 DISABLE_GITEA=${DISABLE_GITEA:-""}
 GITEA_HOST=${GITEA_HOST:-"localhost:3000"}
 
@@ -127,12 +127,17 @@ function install_tekton() {
 }
 
 function install_pac() {
+    [[ -z ${PAC_DIR} && $(git rev-parse --show-toplevel 2>/dev/null >/dev/null) != "" ]] && \
+        PAC_DIR=$(git rev-parse --show-toplevel)
+
+    [[ -z ${PAC_DIR} && $(git rev-parse --show-toplevel 2>/dev/null >/dev/null) == "" ]] &&  \
+        PAC_DIR=$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code
+
 	if [[ -n ${INSTALL_FROM_RELEASE} ]];then
 		kubectl apply -f ${PAC_RELEASE:-https://github.com/openshift-pipelines/pipelines-as-code/raw/stable/release.k8s.yaml}
 	else
         [[ -d ${PAC_DIR} ]] || {
-            echo "I cannot find the PAC installation directory, set the variable \$PAC_DIR to define it.
-        It default to \$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code."
+            echo "I cannot find the PAC installation directory, set the variable \$PAC_DIR to define it. or launch this script from inside where the pac code is checkout"
             exit 1
         }
         oldPwd=${PWD}
