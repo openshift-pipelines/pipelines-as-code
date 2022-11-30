@@ -19,8 +19,11 @@ import (
 	tknpacdesc "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/describe"
 	tknpacgenerate "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	tknpaclist "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/list"
+	tknpacresolve "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	tknpactest "github.com/openshift-pipelines/pipelines-as-code/test/pkg/cli"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -531,6 +534,10 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 				"--branch", topts.DefaultBranch, "--file-name", ".tekton/pr.yaml", "--overwrite")
 			assert.NilError(t, err)
 			assert.Assert(t, regexp.MustCompile(tt.generateOutputRegexp).MatchString(output))
+			topts.Clients.Info.Pac = &info.PacOpts{}
+			topts.Clients.Info.Pac.Settings = &settings.Settings{}
+			_, err = tknpactest.ExecCommand(topts.Clients, tknpacresolve.Command, "-f", ".tekton/pr.yaml", "-p", "revision=main")
+			assert.NilError(t, err)
 
 			// edit .tekton/pr.yaml file
 			pryaml, err := os.ReadFile(filepath.Join(tmpdir, ".tekton/pr.yaml"))

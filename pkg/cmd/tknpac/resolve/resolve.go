@@ -13,10 +13,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 )
 
@@ -63,21 +65,36 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 		Short: "Embed PipelineRun references as a single resource.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
-			err := run.Clients.NewClients(ctx, &run.Info)
+
+			errc := run.Clients.NewClients(ctx, &run.Info)
+
+			// only report error here on CLI
+			zaplog, err := zap.NewProduction(
+				zap.IncreaseLevel(zap.FatalLevel),
+			)
 			if err != nil {
+				return err
+			}
+			run.Clients.Log = zaplog.Sugar()
+
+			if errc != nil {
 				// this check allows resolve to be run without
 				// a kubeconfig so users can verify the tkn version
-				noConfigErr := strings.Contains(err.Error(), "Couldn't get kubeConfiguration namespace")
+				noConfigErr := strings.Contains(errc.Error(), "Couldn't get kubeConfiguration namespace")
 				if !noConfigErr {
-					return err
+					return errc
 				}
 			} else {
-				// it's okay if pac is not installed, ignore the error
+				// it's OK  if pac is not installed, ignore the error
 				_ = run.UpdatePACInfo(ctx)
 			}
 
 			if len(filenames) == 0 {
 				return fmt.Errorf("you need to at least specify a file with -f")
+			}
+
+			if err := settings.ConfigToSettings(run.Clients.Log, run.Info.Pac.Settings, map[string]string{}); err != nil {
+				return err
 			}
 
 			mapped := splitArgsInMap(parameters)
@@ -100,6 +117,7 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 				mapped["repo_owner"] = strings.Split(repoOwner, "/")[0]
 				mapped["repo_name"] = strings.Split(repoOwner, "/")[1]
 			}
+
 			s, err := resolveFilenames(run, filenames, mapped)
 			fmt.Fprintln(streams.Out, s)
 			return err

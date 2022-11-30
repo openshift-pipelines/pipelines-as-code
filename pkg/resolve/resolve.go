@@ -198,7 +198,7 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 			originPipelinerunName = pipelinerun.ObjectMeta.GenerateName
 		}
 
-		// make sure we keep the originalPipelineRun in a label
+		// keep the originalPipelineRun in a label
 		// because we would need it later on when grouping by cleanups and we
 		// can attach that pr file from .tekton directory.
 
