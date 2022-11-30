@@ -162,8 +162,13 @@ func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.
 	rl, resp, err := v.Client.RateLimits(ctx)
 	// check if resp.TokenExpiration is after now
 	if resp.TokenExpiration.After(cw.Now()) {
-		return fmt.Errorf("token has expired at %s, err: %w", resp.TokenExpiration.Time.Format(time.RFC1123), err)
+		errm := fmt.Sprintf("token has expired at %s", resp.TokenExpiration.Time.Format(time.RFC1123))
+		if err != nil {
+			errm += fmt.Sprintf(" err: %s", err.Error())
+		}
+		return fmt.Errorf(errm)
 	}
+
 	if err != nil {
 		return fmt.Errorf("error using token to access API: %w", err)
 	}
