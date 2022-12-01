@@ -53,7 +53,7 @@ linters:
     - goprintffuncname
     - nilerr
     - noctx
-    - nolintlint
+      # - nolintlint (gofumpt conflict with it, create space all the time so :shrug:)
     - prealloc
     - promlinter
     # - rowserrcheck

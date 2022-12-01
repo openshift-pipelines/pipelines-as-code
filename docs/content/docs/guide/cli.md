@@ -256,17 +256,20 @@ or [Kubernetes Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) ) you can
 see your run in action without having to generate a new commit.
 
 If you run the command from your source code repository it will try to detect
-the current Git information and resolve the parameters like current revision or
-branch. You can override those params with the `-p` option. For example if you
-want to use a Git branch as revision and another repo name than the current repo
-name you can just use :
+the parameters (like the revision or branch_name) using the information from the
+Git repository.
+
+You can override the parameters with the `-p` flag.
+
+For example if you want to use a Git branch as revision and another repo name
+than the current repo name you can just use :
 
 `tkn pac resolve -f .tekton/pr.yaml -p revision=main -p repo_name=othername`
 
 `-f` can as well accept a directory path rather than just a filename and grab
-every `yaml`/`yml` from the directory.
+every `yaml` or `yml` files from that directory.
 
-You can specify multiple `-f` on the command line.
+Multiple `-f` arguments are accepted to provide multiple files on the command line.
 
 You need to verify that `git-clone` task (if you use it) can access the
 repository to the SHA. Which mean if you test your current source code you need
@@ -274,6 +277,15 @@ to push it first before using `tkn pac resolve|kubectl create -`.
 
 Compared with running directly on CI, you need to explicitly specify the list of
 filenames or directory where you have the templates.
+
+When you run `tkn pac resolve` it will try to detect if you have a `{{ git_auth_secret }}` inside your template and if you have it will ask  and will ask you to provide a Git provider token.
+
+You can explicitely provide on the command line with the `-t` or `--token` flag,
+or you can set the environment variable `PAC_PROVIDER_TOKEN` and it will use it
+instead of asking you.
+
+There is no clean-up of the secret after the run.
+
 {{< /details >}}
 
 {{< details "tkn pac webhook add" >}}
