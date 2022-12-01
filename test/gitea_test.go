@@ -571,7 +571,7 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 				LabelSelector: pacapi.EventType + "=pull_request",
 			})
 			assert.NilError(t, err)
-			assert.Assert(t, len(prs.Items) >= 2, "should have at least 2 pipelineruns")
+			assert.Assert(t, len(prs.Items) >= 1, "should have at least 1 pipelineruns")
 		})
 	}
 }
