@@ -4,18 +4,20 @@ weight: 2
 ---
 # Pipelines as Code resolver
 
-If `Pipelines as Code` sees a PipelineRun with a reference to a `Task` or a
-`Pipeline` in any YAML file located in the `.tekton/` directory, `Pipelines as
-Code` will automatically try to *resolves* it (see below) as a single
-PipelineRun with an embedded `PipelineSpec` to a `PipelineRun`.
+Pipelines as Code resolver ensures the PipelineRun you are running does not
+conflicts with others.
 
-The resolver will transform the Pipeline `Name` field to a `generateName` based on the
-Pipeline name as well. This allows you to have multiple runs in the same namespace from the same
-PipelineRun with no risk of conflicts.
+If `Pipelines as Code` sees a PipelineRun with a reference to a `Task` or to a
+`Pipeline` in any YAML file located in the `.tekton/` directory it will
+automatically try to *resolves* it (see below) as a single PipelineRun with an
+embedded `PipelineSpec` to a `PipelineRun`.
 
-Every task or pipeline your PipelineRun references will need to be inside the
-`.tekton/` directory or subdirectories or referenced with a remote task (see
-below on how the remote tasks are referenced).
+The resolver will then transform the Pipeline `Name` field to a `GenerateName`
+based on the Pipeline name as well.
+
+If you want to split your Pipeline and PipelineRun, you can store  the files in the
+`.tekton/` directory or its subdirectories. `Pipeline` and `Task` can as well be
+referenced remotely (see below on how the remote tasks are referenced).
 
 The resolver will skip resolving if it sees these type of tasks:
 
@@ -29,12 +31,13 @@ If Pipelines as Code cannot resolve the referenced tasks in the `Pipeline` or
 `PipelineSpec`, the run will fail before applying the pipelinerun onto the
 cluster.
 
-You should be able to see the issue on your Git provider platform or
-through the log of the controller.
+You should be able to see the issue on your Git provider platform interface and
+inside the events of the target namespace where the `Repository` CR  is
+located.
 
 If you need to test your `PipelineRun` locally before sending it in a PR, you
-can use the `resolve` command from the `tkn-pac` CLI See the `--help` of the
-command to learn about how to use it.
+can use the `resolve` command from the `tkn-pac` CLI See  [CLI](./cli/#resolve)
+command to learn on how to use it.
 
 ## Remote Task annotations
 
@@ -58,10 +61,14 @@ pipelinesascode.tekton.dev/task: "[git-clone, pylint]"
 
 ### [Tekton Hub](https://hub.tekton.dev)
 
+```yaml
+pipelinesascode.tekton.dev/task: "git-clone"
+```
+
 The syntax above installs the
 [git-clone](https://github.com/tektoncd/catalog/tree/main/task/git-clone) task
 from the [tekton hub](https://hub.tekton.dev) repository querying for the latest
-one with the tekton hub API.
+version with the tekton hub API.
 
 You can have multiple tasks in there if you separate them by a comma `,` around
 an array syntax with bracket:
@@ -100,26 +107,28 @@ will fetch the task directly from that remote URL :
   pipelinesascode.tekton.dev/task: "[https://remote.url/task.yaml]"
 ```
 
-With the Github Provider; If the remote task URL uses the same host as where the repo
-CRD is, PAC will use the  Github token and fetch the URL using the Github API.
+If you are using `GitHub` and If the remote task URL uses the same host as where
+the repo CRD is, PAC will use the  GitHub token and fetch the URL using the
+Github API.
 
-For example if my repo URL is :
+For example if you have a repo URL looking like this :
 
 <https://github.com/organization/repository>
 
-The recognized URLs are:
+and the remote HTTP URLs is a referenced GitHub "blob" URL:
 
 <https://github.com/organization/repository/blob/mainbranch/path/file>
 
-or Github rawURL (only the public instance of Github at the moment):
+or a Github rawURL (rawurl reference is only working on public GitHub):
 
 <https://raw.githubusercontent.com/organization/repository/mainbranch/path/file>
 
-With the Github app, if you have a private repository in the same
-organization as where the repo matches from, it will be able to fetch the files
-from that private repository with the github app token.
+It will be able to fetch the files from that private repository with the GitHub app token.
 
-If you are using the Github webhook method you are able to fetch any  private or
+This allows you to reference a task or a pipeline from a private repository easily.
+
+Github app token are scoped to the owner or organization where the repository is located.
+If you are using the GitHub webhook method you are able to fetch any private or
 public repositories on any organization where the personal token is allowed.
 
 ### Same repository
