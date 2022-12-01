@@ -19,7 +19,7 @@ func (r *Reconciler) cleanupSecrets(ctx context.Context, logger *zap.SugaredLogg
 		return fmt.Errorf("cannot get annotation %s as set on PR", keys.GitAuthSecret)
 	}
 
-	err := r.kinteract.DeleteBasicAuthSecret(ctx, logger, repo.GetNamespace(), gitAuthSecretName)
+	err := r.kinteract.DeleteSecret(ctx, logger, repo.GetNamespace(), gitAuthSecretName)
 	if err != nil {
 		return fmt.Errorf("deleting basic auth secret has failed: %w ", err)
 	}
