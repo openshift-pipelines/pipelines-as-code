@@ -1,0 +1,12 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pac-me-up-before-you-go-go
+spec:
+  pipelineRef:
+    name: foobar
+  workspaces:
+    - name: basic-auth
+      secret:
+        secretName: "{{ git_auth_secret }}"

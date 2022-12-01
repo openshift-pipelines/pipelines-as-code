@@ -33,6 +33,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gopkg.in/yaml.v2"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/env"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -534,6 +535,9 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 				"--branch", topts.DefaultBranch, "--file-name", ".tekton/pr.yaml", "--overwrite")
 			assert.NilError(t, err)
 			assert.Assert(t, regexp.MustCompile(tt.generateOutputRegexp).MatchString(output))
+
+			envRemove := env.PatchAll(t, map[string]string{"PAC_PROVIDER_TOKEN": "NOWORRIESBEHAPPY"})
+			defer envRemove()
 			topts.Clients.Info.Pac = &info.PacOpts{}
 			topts.Clients.Info.Pac.Settings = &settings.Settings{}
 			_, err = tknpactest.ExecCommand(topts.Clients, tknpacresolve.Command, "-f", ".tekton/pr.yaml", "-p", "revision=main")

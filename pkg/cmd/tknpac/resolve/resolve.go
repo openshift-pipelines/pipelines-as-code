@@ -28,41 +28,49 @@ var (
 	skipInlining   []string
 	noGenerateName bool
 	remoteTask     bool
+	providerToken  string
+	output         string
 )
 
-const longhelp = `
+const (
+	longhelp = `
 
-tknresolve - resolve a PipelineRun and all its referenced Pipeline/Tasks embedded.
+resolve - resolve a PipelineRun and all its referenced Pipeline/Tasks embedded.
 
 Resolve the .tekton/pull-request as a single pipelinerun, fetching the remote
 tasks according to the annotations in the pipelineRun, apply the parameters
-substitutions with -p flags. Output on the standard output the full PipelineRun
-resolved.
+substitutions with -p flags. Output on the standard output or to a file with the
+-o flag with the complete PipelineRun resolved.
 
 A simple example that would parse the .tekton/pull-request.yaml with all the
 remote task embedded into it applying the parameters substitutions:
 
-pipelines-as-code resolve \
+tkn pac resolve \
 		-f .tekton/pull-request.yaml \
 		-p revision=main \
 		-p repo_url=https://github.com/openshift-pipelines/pipelines-as-code
 
 You can specify multiple template files to combine :
 
-pipelines-as-code resolve -f .tekton/pull-request.yaml -f task/referenced.yaml
+tkn pac resolve -f .tekton/pull-request.yaml -f task/referenced.yaml
 
 or a directory where it will get all the files ending by .yaml  :
 
-pipelines-as-code resolve -f .tekton/
+tkn pac resolve -f .tekton/
+
+If it detect a {{ git_auth_secret }} in the template it will ask you if you want
+to provide a token. You can set the environment variable PAC_PROVIDER_TOKEN to
+not have to ask about it.
 
 *It does not support task from local directory referenced in annotations at the
  moment*.`
+)
 
 func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "resolve",
 		Long:  longhelp,
-		Short: "Embed PipelineRun references as a single resource.",
+		Short: "Resolve PipelineRun the same way its run on CI",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 
@@ -119,8 +127,17 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 			}
 
 			s, err := resolveFilenames(run, filenames, mapped)
+			if err != nil {
+				return err
+			}
+
+			if output != "" {
+				fmt.Fprintf(streams.Out, "PipelineRun has been written to %s\n", output)
+				return os.WriteFile(output, []byte(s), 0o600)
+			}
+
 			fmt.Fprintln(streams.Out, s)
-			return err
+			return nil
 		},
 		Annotations: map[string]string{
 			"commandType": "main",
@@ -128,14 +145,23 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 	}
 	cmd.Flags().StringSliceVarP(&parameters, "params", "p", filenames,
 		"Params to resolve (ie: revision, repo_url)")
+
+	cmd.Flags().StringVarP(&output, "output", "o", "",
+		"Params to resolve (ie: revision, repo_url)")
+
 	cmd.Flags().StringSliceVarP(&filenames, "filename", "f", filenames,
 		"Filename, directory, or URL to files to use to create the resource")
+
 	cmd.Flags().StringSliceVarP(&skipInlining, "skip", "s", filenames,
-		"Which task to skip inlining")
+		"skip inlining")
+
 	cmd.Flags().BoolVar(&noGenerateName, "no-generate-name", false,
-		"Don't automatically generate a GenerateName for pipelinerun uniqueness")
+		"don't automatically generate a GenerateName for pipelinerun uniqueness")
+
 	cmd.Flags().BoolVar(&remoteTask, "remoteTask", true,
-		"Wether parse annotation to fetch remote task")
+		"set this to false to avoid fetching and embed remote tasks")
+
+	cmd.Flags().StringVarP(&providerToken, "providerToken", "t", "", "use this token to generate the git-auth secret,\n you can set the environment PAC_PROVIDER_TOKEN to have this set automatically")
 	err := run.Info.Pac.AddFlags(cmd)
 	if err != nil {
 		log.Fatal(err)
@@ -156,15 +182,24 @@ func splitArgsInMap(args []string) map[string]string {
 func resolveFilenames(cs *params.Run, filenames []string, params map[string]string) (string, error) {
 	var ret string
 
+	ropt := &resolve.Opts{
+		GenerateName:  !noGenerateName,
+		RemoteTasks:   remoteTask,
+		SkipInlining:  skipInlining,
+		ProviderToken: providerToken,
+	}
 	allTemplates := enumerateFiles(filenames)
+	ret, secretName, err := makeGitAuthSecret(filenames, ropt.ProviderToken, params)
+	if err != nil {
+		return "", err
+	}
+	if secretName != "" {
+		params["git_auth_secret"] = secretName
+	}
+
 	// TODO: flags
 	allTemplates = templates.ReplacePlaceHoldersVariables(allTemplates, params)
 	ctx := context.Background()
-	ropt := &resolve.Opts{
-		GenerateName: !noGenerateName,
-		RemoteTasks:  remoteTask,
-		SkipInlining: skipInlining,
-	}
 	// We use github here but since we don't do remotetask we would not care
 	providerintf := github.New()
 	event := info.NewEvent()
