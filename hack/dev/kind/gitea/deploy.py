@@ -71,6 +71,7 @@ class ProvisionGitea:
                 r = requests.get(
                     f"{self.gitea_url}/api/v1/version",
                     verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
+                    timeout=300,
                 )
                 if r.status_code == 200:
                     # wait a bit more that it finishes
@@ -105,6 +106,7 @@ class ProvisionGitea:
             data=data_user,
             headers=self.headers,
             verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
+            timeout=300,
         )
         resp.raise_for_status()
 
@@ -113,6 +115,7 @@ class ProvisionGitea:
         resp = requests.post(
             url=f"{self.gitea_url}/api/v1/user/repos",
             headers=self.headers,
+            timeout=300,
             auth=(GITEA_USER, GITEA_PASSWORD),
             verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
             data=jeez,
@@ -129,6 +132,7 @@ class ProvisionGitea:
             headers=self.headers,
             verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
             auth=(GITEA_USER, GITEA_PASSWORD),
+            timeout=300,
             data=jeez,
         )
         resp.raise_for_status()
@@ -138,6 +142,7 @@ class ProvisionGitea:
             url=f"{self.gitea_url}/api/v1/users/{GITEA_USER}/tokens/{self.token_name}",
             headers=self.headers,
             verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
+            timeout=300,
             auth=(GITEA_USER, GITEA_PASSWORD),
         )
         jeez = """{"name": "%s"}""" % (self.token_name)
@@ -146,6 +151,7 @@ class ProvisionGitea:
             headers=self.headers,
             auth=(GITEA_USER, GITEA_PASSWORD),
             verify=not OPENSHIFT_ROUTE_FORCE_HTTP,
+            timeout=300,
             data=jeez,
         )
         resp.raise_for_status()

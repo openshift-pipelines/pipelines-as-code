@@ -82,7 +82,9 @@ class GitHub:
             headers.update({"Authorization": "Bearer " + self.token})
         if not url.startswith("http"):
             url = f"{self.github_api_url}{url}"
-        return requests.request(method, url, headers=headers, data=json.dumps(data))
+        return requests.request(
+            method, url, timeout=300, headers=headers, data=json.dumps(data)
+        )
 
 
 def get_private_key(ns):
