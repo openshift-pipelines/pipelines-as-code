@@ -85,12 +85,11 @@ $ tkn pac create repository
 ? Enter the Git repository url containing the pipelines (default: https://github.com/youruser/pac-demo):
 ? Please enter the namespace where the pipeline should run (default: pac-demo):
 ! Namespace pac-demo is not found
-? Would you like me to create the namespace pac-demo? (Y/n)
 ? Would you like me to create the namespace pac-demo? Yes
 ✓ Repository youruser-pac-demo has been created in pac-demo namespace
+ℹ Directory .tekton has been created.
 ✓ A basic template has been created in .tekton/pipelinerun.yaml, feel free to customize it.
-ℹ You can test your pipeline manually with: tkn-pac resolve -f .tekton/pipelinerun.yaml | kubectl create -f-
-🚀 You can use the command "tkn pac setup" to setup a repository with webhook
+ℹ You can test your pipeline by pushing generated template to your git repository
 ```
 
 The above command would create a `Repository` CRD in your `demo` namespace which is used to determine where the

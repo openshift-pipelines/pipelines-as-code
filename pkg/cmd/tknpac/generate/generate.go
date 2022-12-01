@@ -244,8 +244,6 @@ func (o *Opts) samplePipeline(recreateTemplate bool) error {
 		cs.SuccessIcon(),
 		cs.Bold(fpath),
 	)
-	fmt.Fprintf(o.IOStreams.Out, "%s You can test your pipeline manually with: ", cs.InfoIcon())
-	fmt.Fprintf(o.IOStreams.Out, "tkn-pac resolve -f %s | kubectl create -f-\n", relpath)
 	fmt.Fprintf(o.IOStreams.Out, "%s You can test your pipeline by pushing generated template to your git repository\n", cs.InfoIcon())
 
 	return nil

@@ -65,7 +65,6 @@ $ tkn pac create repo
 🔑 Repository CR workspace-repo has been updated with webhook secret in the repo-pipelines namespace
 ℹ Directory .tekton has been created.
 ✓ A basic template has been created in /home/Go/src/bitbucket/repo/.tekton/pipelinerun.yaml, feel free to customize it.
-ℹ You can test your pipeline manually with: tkn-pac resolve -f .tekton/pipelinerun.yaml | kubectl create -f-
 ℹ You can test your pipeline by pushing generated template to your git repository
 
 ```
