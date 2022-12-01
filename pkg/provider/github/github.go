@@ -158,10 +158,14 @@ func makeClient(ctx context.Context, apiURL, token string) (*github.Client, stri
 	return client, providerName, github.String(apiURL)
 }
 
+// checkWebhookSecretValidity check the webhook secret is valid and not
+// ratelimited. we try to check first the header is set (unlimited life token  would
+// not have an expiration) we would anyway get a 401 error when trying to use it
+// but this gives a nice hint to the user into their namespace event of where
+// the issue was
 func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.Clock) error {
 	rl, resp, err := v.Client.RateLimits(ctx)
-	// check if resp.TokenExpiration is after now
-	if resp.TokenExpiration.After(cw.Now()) {
+	if resp.Header.Get("GitHub-Authentication-Token-Expiration") != "" && cw.Now().After(resp.TokenExpiration.Time) {
 		errm := fmt.Sprintf("token has expired at %s", resp.TokenExpiration.Time.Format(time.RFC1123))
 		if err != nil {
 			errm += fmt.Sprintf(" err: %s", err.Error())
@@ -169,9 +173,11 @@ func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.
 		return fmt.Errorf(errm)
 	}
 
+	// some other error happened that is not rate limited related
 	if err != nil {
 		return fmt.Errorf("error using token to access API: %w", err)
 	}
+
 	if rl.SCIM.Remaining == 0 {
 		return fmt.Errorf("token is ratelimited, it will be available again at %s", rl.SCIM.Reset.Time.Format(time.RFC1123))
 	}
@@ -183,7 +189,7 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	v.providerName = providerName
 	v.Run = run
 
-	// Make sure Client is not already set, so we don't override our fakeclient
+	// check that the Client is not already set, so we don't override our fakeclient
 	// from unittesting.
 	if v.Client == nil {
 		v.Client = client
@@ -192,7 +198,7 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	v.APIURL = apiURL
 
 	if event.Provider.WebhookSecretFromRepo {
-		// Make sure the webhook secret is still valid
+		// check the webhook secret is valid and not ratelimited
 		if err := v.checkWebhookSecretValidity(ctx, clockwork.NewRealClock()); err != nil {
 			return fmt.Errorf("the webhook secret is not valid: %w", err)
 		}

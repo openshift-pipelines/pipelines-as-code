@@ -591,24 +591,39 @@ func TestGetFiles(t *testing.T) {
 func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 	cw := clockwork.NewFakeClock()
 	tests := []struct {
-		name       string
-		wantSubErr string
-		remaining  int
-		expTime    time.Time
+		name         string
+		wantSubErr   string
+		remaining    int
+		expTime      time.Time
+		expHeaderSet bool
 	}{
 		{
-			name:      "remaining scim calls",
-			remaining: 1,
+			name:         "remaining scim calls",
+			remaining:    1,
+			expHeaderSet: true,
+			expTime:      cw.Now().Add(1 * time.Minute),
 		},
 		{
-			name:       "no remaining scim calls",
-			wantSubErr: "token is ratelimited",
+			name:         "no remaining scim calls",
+			wantSubErr:   "token is ratelimited",
+			remaining:    0,
+			expHeaderSet: true,
+			expTime:      cw.Now().Add(1 * time.Minute),
+		},
+		{
+			name:         "expired",
+			wantSubErr:   "token has expired",
+			expTime:      cw.Now().Add(-1 * time.Minute),
+			expHeaderSet: true,
+		},
+		{
+			name:      "no header mean unlimited",
+			remaining: 5,
+		},
+		{
+			name:       "no header but no remaining scim calls",
 			remaining:  0,
-		},
-		{
-			name:       "expired",
-			wantSubErr: "token has expired",
-			expTime:    cw.Now().Add(1 * time.Minute),
+			wantSubErr: "token is ratelimited",
 		},
 	}
 	for _, tt := range tests {
@@ -628,7 +643,9 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 				st.Resources = s
 				b, _ := json.Marshal(st)
 				rw.Header().Set("Content-Type", "application/json")
-				rw.Header().Set("GitHub-Authentication-Token-Expiration", tt.expTime.Format("2006-01-02 03:04:05 MST"))
+				if tt.expHeaderSet {
+					rw.Header().Set("GitHub-Authentication-Token-Expiration", tt.expTime.Format("2006-01-02 03:04:05 MST"))
+				}
 				fmt.Fprint(rw, string(b))
 			})
 			defer teardown()
