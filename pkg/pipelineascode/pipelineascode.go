@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -86,8 +87,12 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 			return fmt.Errorf("cannot get annotation %s as set on PR", keys.GitAuthSecret)
 		}
 
-		var err error
-		if err = p.k8int.CreateBasicAuthSecret(ctx, p.logger, p.event, match.Repo.GetNamespace(), gitAuthSecretName); err != nil {
+		authSecret, err := secrets.MakeBasicAuthSecret(p.event, gitAuthSecretName)
+		if err != nil {
+			return err
+		}
+
+		if err = p.k8int.CreateSecret(ctx, match.Repo.GetNamespace(), authSecret); err != nil {
 			return fmt.Errorf("creating basic auth secret: %s has failed: %w ", gitAuthSecretName, err)
 		}
 	}

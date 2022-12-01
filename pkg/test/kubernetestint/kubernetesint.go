@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type KinterfaceTest struct {
@@ -18,6 +19,8 @@ type KinterfaceTest struct {
 	GetSecretResult          map[string]string
 	GetPodLogsOutput         map[string]string
 }
+
+var _ kubeinteraction.Interface = (*KinterfaceTest)(nil)
 
 func (k *KinterfaceTest) GetConsoleUI(_ context.Context, _, _ string) (string, error) {
 	if k.ConsoleURLErorring {
@@ -31,14 +34,6 @@ func (k *KinterfaceTest) GetPodLogs(_ context.Context, ns, pod, cont string, _ i
 		return k.GetPodLogsOutput[pod], nil
 	}
 	return "", nil
-}
-
-func (k *KinterfaceTest) CreateBasicAuthSecret(context.Context, *zap.SugaredLogger, *info.Event, string, string) error {
-	return nil
-}
-
-func (k *KinterfaceTest) DeleteBasicAuthSecret(_ context.Context, _ *zap.SugaredLogger, _, _ string) error {
-	return nil
 }
 
 func (k *KinterfaceTest) GetSecret(ctx context.Context, secret ktypes.GetSecretOpt) (string, error) {
@@ -55,5 +50,13 @@ func (k *KinterfaceTest) CleanupPipelines(_ context.Context, _ *zap.SugaredLogge
 	if k.ExpectedNumberofCleanups != limitnumber {
 		return fmt.Errorf("we wanted %d and we got %d", k.ExpectedNumberofCleanups, limitnumber)
 	}
+	return nil
+}
+
+func (k *KinterfaceTest) CreateSecret(_ context.Context, _ string, _ *corev1.Secret) error {
+	return nil
+}
+
+func (k *KinterfaceTest) DeleteSecret(_ context.Context, _ *zap.SugaredLogger, _, _ string) error {
 	return nil
 }

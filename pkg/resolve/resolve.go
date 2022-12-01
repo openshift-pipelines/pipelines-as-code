@@ -106,9 +106,10 @@ func inlineTasks(tasks []tektonv1beta1.PipelineTask, ropt *Opts, types Types) ([
 }
 
 type Opts struct {
-	GenerateName bool     // whether to GenerateName
-	RemoteTasks  bool     // whether to parse annotation to fetch tasks from remote
-	SkipInlining []string // task to skip inlining
+	GenerateName  bool     // whether to GenerateName
+	RemoteTasks   bool     // whether to parse annotation to fetch tasks from remote
+	SkipInlining  []string // task to skip inlining
+	ProviderToken string
 }
 
 // Resolve gets a large string which is a yaml multi documents containing
