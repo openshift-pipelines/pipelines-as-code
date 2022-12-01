@@ -48,7 +48,7 @@ The permissions needed are :
 | Pull request    | Read and Write |
 | Webhooks        | Read and Write |
 
-### ### [Classic Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-personal-access-token-classic)
+### [Classic Tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-personal-access-token-classic)
 
 Depending on the Repository access scope, the token will need different
 permissions. For public repositories the scope are:
