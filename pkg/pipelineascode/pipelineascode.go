@@ -146,7 +146,14 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 
 	// Patch pipelineRun with logURL annotation, skips for GitHub App as we patch logURL while patching checkrunID
 	if _, ok := pr.Annotations[keys.InstallationID]; !ok {
-		return patchPipelineRunWithLogURL(ctx, p.logger, p.run.Clients, pr)
+		if err := patchPipelineRunWithLogURL(ctx, p.logger, p.run.Clients, pr); err != nil {
+			return err
+		}
+	}
+
+	// update ownerRef of secret with pipelineRun, so that it gets cleanedUp with pipelineRun
+	if p.run.Info.Pac.SecretAutoCreation {
+		return p.k8int.UpdateSecretWithOwnerRef(ctx, p.logger, pr.Namespace, gitAuthSecretName, pr)
 	}
 	return nil
 }

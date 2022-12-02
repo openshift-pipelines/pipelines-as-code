@@ -15,7 +15,7 @@ import (
 type Interface interface {
 	CleanupPipelines(context.Context, *zap.SugaredLogger, *v1alpha1.Repository, *v1beta1.PipelineRun, int) error
 	CreateSecret(ctx context.Context, ns string, secret *corev1.Secret) error
-	DeleteSecret(context.Context, *zap.SugaredLogger, string, string) error
+	UpdateSecretWithOwnerRef(context.Context, *zap.SugaredLogger, string, string, *v1beta1.PipelineRun) error
 	GetSecret(context.Context, ktypes.GetSecretOpt) (string, error)
 	GetPodLogs(context.Context, string, string, string, int64) (string, error)
 }

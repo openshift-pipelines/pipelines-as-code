@@ -36,6 +36,10 @@ func (k *KinterfaceTest) GetPodLogs(_ context.Context, ns, pod, cont string, _ i
 	return "", nil
 }
 
+func (k *KinterfaceTest) UpdateSecretWithOwnerRef(_ context.Context, _ *zap.SugaredLogger, _, _ string, _ *v1beta1.PipelineRun) error {
+	return nil
+}
+
 func (k *KinterfaceTest) GetSecret(ctx context.Context, secret ktypes.GetSecretOpt) (string, error) {
 	// check if secret exist in k.GetSecretResult
 	if k.GetSecretResult[secret.Name] == "" {
