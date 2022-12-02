@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
@@ -55,10 +56,20 @@ func MakeBasicAuthSecret(runevent *info.Event, secretName string) (*corev1.Secre
 	secretData := map[string]string{
 		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, cloneURL),
 		".git-credentials": urlWithToken,
+		// that token is going to be very short lived on github app due of the
+		// way it works with ghappinstallation library, we need another way to
+		// do this and expose a token with a longer ttl
+		"git-provider-token": token,
 	}
 	annotations := map[string]string{
 		"pipelinesascode.tekton.dev/url": cloneURL,
 		"pipelinesascode.tekton.dev/sha": runevent.SHA,
+	}
+
+	labels := map[string]string{
+		"app.kubernetes.io/managed-by": "pipelines-as-code",
+		keys.URLOrg:                    runevent.Organization,
+		keys.URLRepository:             runevent.Repository,
 	}
 
 	return &corev1.Secret{
@@ -68,7 +79,7 @@ func MakeBasicAuthSecret(runevent *info.Event, secretName string) (*corev1.Secre
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        secretName,
-			Labels:      map[string]string{"app.kubernetes.io/managed-by": "pipelines-as-code"},
+			Labels:      labels,
 			Annotations: annotations,
 		},
 		StringData: secretData,

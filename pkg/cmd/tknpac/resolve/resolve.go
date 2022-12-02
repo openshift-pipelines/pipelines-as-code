@@ -28,6 +28,7 @@ var (
 	skipInlining   []string
 	noGenerateName bool
 	remoteTask     bool
+	noSecret       bool
 	providerToken  string
 	output         string
 )
@@ -126,7 +127,7 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 				mapped["repo_name"] = strings.Split(repoOwner, "/")[1]
 			}
 
-			s, err := resolveFilenames(run, filenames, mapped)
+			s, err := resolveFilenames(ctx, run, filenames, mapped)
 			if err != nil {
 				return err
 			}
@@ -155,6 +156,9 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 	cmd.Flags().StringSliceVarP(&skipInlining, "skip", "s", filenames,
 		"skip inlining")
 
+	cmd.Flags().BoolVar(&noSecret, "no-secret", false,
+		"skip generating or asking for secrets")
+
 	cmd.Flags().BoolVar(&noGenerateName, "no-generate-name", false,
 		"don't automatically generate a GenerateName for pipelinerun uniqueness")
 
@@ -179,7 +183,7 @@ func splitArgsInMap(args []string) map[string]string {
 	return m
 }
 
-func resolveFilenames(cs *params.Run, filenames []string, params map[string]string) (string, error) {
+func resolveFilenames(ctx context.Context, cs *params.Run, filenames []string, params map[string]string) (string, error) {
 	var ret string
 
 	ropt := &resolve.Opts{
@@ -189,17 +193,19 @@ func resolveFilenames(cs *params.Run, filenames []string, params map[string]stri
 		ProviderToken: providerToken,
 	}
 	allTemplates := enumerateFiles(filenames)
-	ret, secretName, err := makeGitAuthSecret(filenames, ropt.ProviderToken, params)
-	if err != nil {
-		return "", err
-	}
-	if secretName != "" {
-		params["git_auth_secret"] = secretName
+	if !noSecret {
+		outSecret, secretName, err := makeGitAuthSecret(ctx, cs, filenames, ropt.ProviderToken, params)
+		if err != nil {
+			return "", err
+		}
+		if secretName != "" {
+			params["git_auth_secret"] = secretName
+		}
+		ret += outSecret
 	}
 
 	// TODO: flags
 	allTemplates = templates.ReplacePlaceHoldersVariables(allTemplates, params)
-	ctx := context.Background()
 	// We use github here but since we don't do remotetask we would not care
 	providerintf := github.New()
 	event := info.NewEvent()
