@@ -191,10 +191,6 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			got, err := stdata.Pipeline.TektonV1beta1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
 			assert.NilError(t, err)
 
-			// make sure secret is deleted
-			_, err = stdata.Kube.CoreV1().Secrets(testRepo.Namespace).Get(ctx, secretName, metav1.GetOptions{})
-			assert.Error(t, err, fmt.Sprintf("secrets \"%s\" not found", secretName))
-
 			// state must be updated to completed
 			assert.Equal(t, got.Labels[keys.State], kubeinteraction.StateCompleted)
 		})

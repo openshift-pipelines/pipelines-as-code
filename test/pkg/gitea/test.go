@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"code.gitea.io/sdk/gitea"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
@@ -169,6 +170,42 @@ func WaitForStatus(t *testing.T, topts *TestOpts, ref string) {
 		time.Sleep(5 * time.Second)
 		i++
 	}
+}
+
+func WaitForSecretDeletion(t *testing.T, topts *TestOpts, ref string) {
+	i := 0
+	for {
+		// make sure pipelineRuns are deleted, before checking secrets
+		list, err := topts.Clients.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).
+			List(context.Background(), metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app.kubernetes.io/managed-by=%v", pipelinesascode.GroupName),
+			})
+		assert.NilError(t, err)
+
+		if i > 5 {
+			t.Fatalf("pipelineruns are not removed from the target namespace, something is fishy")
+		}
+		if len(list.Items) == 0 {
+			break
+		}
+		topts.Clients.Clients.Log.Infof("deleting pipelineRuns in %v namespace", topts.TargetNS)
+		err = topts.Clients.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).
+			DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app.kubernetes.io/managed-by=%v", pipelinesascode.GroupName),
+			})
+		assert.NilError(t, err)
+
+		time.Sleep(5 * time.Second)
+		i++
+	}
+
+	topts.Clients.Clients.Log.Infof("checking secrets in %v namespace", topts.TargetNS)
+	list, err := topts.Clients.Clients.Kube.CoreV1().Secrets(topts.TargetNS).
+		List(context.Background(), metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("app.kubernetes.io/managed-by=%v", pipelinesascode.GroupName),
+		})
+	assert.NilError(t, err)
+	assert.Assert(t, len(list.Items) == 0, "pac secrets are not deleted", list.Items)
 }
 
 func WaitForPullRequestCommentMatch(ctx context.Context, t *testing.T, topts *TestOpts) {

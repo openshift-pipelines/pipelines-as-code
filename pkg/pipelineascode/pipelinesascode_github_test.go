@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/go-github/v48/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -496,6 +497,13 @@ func TestRun(t *testing.T) {
 						logger.Fatalf("failed to find log-url label on pipelinerun: %v/%v", pr.GetNamespace(), pr.GetName())
 					}
 					assert.Equal(t, logURL, cs.Clients.ConsoleUI.DetailURL(pr.Namespace, pr.Name))
+
+					if cs.Info.Pac.SecretAutoCreation {
+						secretName := pr.GetAnnotations()[keys.GitAuthSecret]
+						secret, err := cs.Clients.Kube.CoreV1().Secrets(pr.Namespace).Get(ctx, secretName, metav1.GetOptions{})
+						assert.NilError(t, err)
+						assert.Assert(t, len(secret.OwnerReferences) != 0)
+					}
 				}
 			}
 		})

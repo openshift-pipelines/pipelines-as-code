@@ -2,12 +2,15 @@ package kubeinteraction
 
 import (
 	"context"
+	"fmt"
 
 	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 )
 
 func (k Interaction) GetSecret(ctx context.Context, secretopt ktypes.GetSecretOpt) (string, error) {
@@ -25,8 +28,38 @@ func (k Interaction) DeleteSecret(ctx context.Context, logger *zap.SugaredLogger
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
+	return nil
+}
 
-	logger.Infof("Secret %s has been deleted in namespace %s", secretName, targetNamespace)
+// UpdateSecretWithOwnerRef updates the secret with ownerReference
+func (k Interaction) UpdateSecretWithOwnerRef(ctx context.Context, logger *zap.SugaredLogger, targetNamespace, secretName string, pr *v1beta1.PipelineRun) error {
+	controllerOwned := false
+	ownerRef := &metav1.OwnerReference{
+		APIVersion:         pr.GetGroupVersionKind().GroupVersion().String(),
+		Kind:               pr.GetGroupVersionKind().Kind,
+		Name:               pr.GetName(),
+		UID:                pr.GetUID(),
+		BlockOwnerDeletion: &controllerOwned,
+		Controller:         &controllerOwned,
+	}
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		secret, err := k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Get(ctx, secretName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		secret.OwnerReferences = []metav1.OwnerReference{*ownerRef}
+
+		_, err = k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Update(ctx, secret, metav1.UpdateOptions{})
+		if err != nil {
+			logger.Infof("failed to update secret, retrying  %v/%v: %v", targetNamespace, secretName, err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update secret with ownerRef %v/%v: %w", targetNamespace, secretName, err)
+	}
 	return nil
 }
 

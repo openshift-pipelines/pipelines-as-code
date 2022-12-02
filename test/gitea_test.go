@@ -85,6 +85,8 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 		CheckForStatus: "success",
 	}
 	defer tgitea.TestPR(t, topts)()
+
+	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
 }
 
 // TestGiteaBadYaml we can't check pr status but this shows up in the
@@ -526,7 +528,6 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 				assert.NilError(t, err)
 				_, err = newFile.WriteString(v)
 				assert.NilError(t, err)
-				defer newFile.Close()
 				_, err = git.RunGit(tmpdir, "add", k)
 				assert.NilError(t, err)
 			}

@@ -151,12 +151,6 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		return repo, fmt.Errorf("cannot clean prs: %w", err)
 	}
 
-	if r.run.Info.Pac.SecretAutoCreation {
-		if err := r.cleanupSecrets(ctx, logger, repo, pr); err != nil {
-			return repo, fmt.Errorf("cannot clean secret: %w", err)
-		}
-	}
-
 	newPr, err := r.postFinalStatus(ctx, logger, provider, event, pr)
 	if err != nil {
 		return repo, fmt.Errorf("cannot post final status: %w", err)
