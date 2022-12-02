@@ -278,11 +278,18 @@ to push it first before using `tkn pac resolve|kubectl create -`.
 Compared with running directly on CI, you need to explicitly specify the list of
 filenames or directory where you have the templates.
 
-When you run `tkn pac resolve` it will try to detect if you have a `{{ git_auth_secret }}` inside your template and if you have it will ask  and will ask you to provide a Git provider token.
+When you run the resolver it will try to detect if you have a `{{
+git_auth_secret }}` string inside your template and if there is a match it will
+ask you to provide a Git provider token.
 
-You can explicitely provide on the command line with the `-t` or `--token` flag,
-or you can set the environment variable `PAC_PROVIDER_TOKEN` and it will use it
-instead of asking you.
+If you already have an existing secret created in your namespace matching your
+repository URL it will use it.
+
+You can explicitely provide a token on the command line with the `-t` or
+`--providerToken` flag, or you can set the environment variable
+`PAC_PROVIDER_TOKEN` and it will use it instead of asking you.
+
+With the `--no-secret` flag you can completely skip any secret generation.
 
 There is no clean-up of the secret after the run.
 
