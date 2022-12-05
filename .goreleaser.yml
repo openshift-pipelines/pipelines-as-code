@@ -42,7 +42,7 @@ release:
     - glob: ./release.k8s.yaml
   prerelease: true
   header: |
-    # OpenShift Pipelines version {{.Tag}}
+    # Pipelines as Code version {{.Tag}}
 
     OpenShift Pipelines as Code patch version {{.Tag }} has been released 🥳
 
