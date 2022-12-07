@@ -42,14 +42,14 @@ var (
 <td>✅ Succeeded</td>
 <td>42 seconds</td><td>
 
-[fetch-repository](https://giphy.com/search/random-cats)
+[fetch-repository](https://dashboard.is.not.configured)
 
 </td></tr>
 <tr>
 <td>✅ Succeeded</td>
 <td>18 seconds</td><td>
 
-[noop-task](https://giphy.com/search/random-cats)
+[noop-task](https://dashboard.is.not.configured)
 
 </td></tr>
 </table>`
@@ -62,14 +62,14 @@ var (
 <td>✅ Succeeded</td>
 <td>42 seconds</td><td>
 
-[fetch-repository](https://giphy.com/search/random-cats)
+[fetch-repository](https://dashboard.is.not.configured)
 
 </td></tr>
 <tr>
 <td>❌ Failed</td>
 <td>19 seconds</td><td>
 
-[noop-task](https://giphy.com/search/random-cats)
+[noop-task](https://dashboard.is.not.configured)
 
 </td></tr>
 </table>`

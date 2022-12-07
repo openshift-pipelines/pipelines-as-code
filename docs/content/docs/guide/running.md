@@ -40,23 +40,24 @@ The PipelineRun will always run in the namespace of the Repository CRD associate
 that generated the event.
 
 You can follow the execution of your pipeline with the
-[tkn](https://github.com/tektoncd/cli) cli :
+[tkn pac](../cli/#install) cli :
 
 ```console
 tkn pac logs -n my-pipeline-ci -L
 ```
 
 If you need to show another pipelinerun than the last one you
-can use the `tkn pac` logs command :
+can use the `tkn pac` logs command and it will ask you to select a PipelineRun
+attached to the repository :
 
 ```console
 tkn pac logs -n my-pipeline-ci
 ```
 
-If you have connected Pipelines as Code to the tekton dashboard or the
-OpenShift console. Pipelines as Code will post a URL in the Checks tab for
-GitHub apps to let you click on it and follow the pipeline execution directly
-there.
+If you have set-up Pipelines as Code with the [Tekton Dashboard](https://github.com/tektoncd/dashboard/)
+or on OpenShift using the Openshift Console.
+Pipelines as Code will post a URL in the Checks tab for GitHub apps to let you
+click on it and follow the pipeline execution directly there.
 
 ## Restarting the PipelineRun
 

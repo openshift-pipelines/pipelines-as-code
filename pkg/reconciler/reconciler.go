@@ -226,8 +226,8 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	}
 
 	consoleURL := r.run.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
-	// Create status with the log url
-	msg := fmt.Sprintf(params.StartingPipelineRunText, pr.GetName(), repo.GetNamespace(), consoleURL,
+	// Create a status with the log url
+	msg := fmt.Sprintf(params.StartingPipelineRunText, pr.GetName(), repo.GetNamespace(), r.run.Clients.ConsoleUI.GetName(), consoleURL,
 		repo.GetNamespace(), repo.GetName())
 	status := provider.StatusOpts{
 		Status:                  "in_progress",

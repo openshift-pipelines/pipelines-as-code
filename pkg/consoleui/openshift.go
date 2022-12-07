@@ -17,10 +17,15 @@ const (
 	openShiftRouteGroup            = "route.openshift.io"
 	openShiftRouteVersion          = "v1"
 	openShiftRouteResource         = "routes"
+	openshiftConsoleName           = "OpenShift console"
 )
 
 type OpenshiftConsole struct {
 	host string
+}
+
+func (o *OpenshiftConsole) GetName() string {
+	return openshiftConsoleName
 }
 
 func (o *OpenshiftConsole) URL() string {

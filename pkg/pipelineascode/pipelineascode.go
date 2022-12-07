@@ -122,7 +122,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) error {
 		pr.GetName(), match.Repo.GetNamespace(), p.event.SHA, p.event.BaseBranch)
 	consoleURL := p.run.Clients.ConsoleUI.DetailURL(match.Repo.GetNamespace(), pr.GetName())
 	// Create status with the log url
-	msg := fmt.Sprintf(params.StartingPipelineRunText, pr.GetName(), match.Repo.GetNamespace(), consoleURL,
+	msg := fmt.Sprintf(params.StartingPipelineRunText, pr.GetName(), match.Repo.GetNamespace(), p.run.Clients.ConsoleUI.GetName(), consoleURL,
 		match.Repo.GetNamespace(), match.Repo.GetName())
 	status := provider.StatusOpts{
 		Status:                  "in_progress",

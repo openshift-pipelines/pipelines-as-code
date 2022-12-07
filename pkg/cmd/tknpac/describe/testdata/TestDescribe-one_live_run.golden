@@ -2,7 +2,7 @@ Name:           test-run
 Namespace:      ns
 URL:            https://anurl.com
 Status:         Running
-Log:            https://giphy.com/search/random-dogs
+Log:            https://dashboard.is.not.configured
 Commit URL:     
 PipelineRun:    running
 Event:          

@@ -7,21 +7,28 @@ import (
 	"k8s.io/client-go/dynamic"
 )
 
+const consoleIsnotConfiguredURL = "https://dashboard.is.not.configured"
+
 type Interface interface {
 	DetailURL(ns, pr string) string
 	TaskLogURL(ns, pr, task string) string
 	UI(ctx context.Context, kdyn dynamic.Interface) error
 	URL() string
+	GetName() string
 }
 
 type FallBackConsole struct{}
 
+func (f FallBackConsole) GetName() string {
+	return "Not configured"
+}
+
 func (f FallBackConsole) DetailURL(ns, pr string) string {
-	return "https://giphy.com/search/random-dogs"
+	return consoleIsnotConfiguredURL
 }
 
 func (f FallBackConsole) TaskLogURL(ns, pr, task string) string {
-	return "https://giphy.com/search/random-cats"
+	return consoleIsnotConfiguredURL
 }
 
 func (f FallBackConsole) UI(ctx context.Context, kdyn dynamic.Interface) error {
@@ -29,14 +36,15 @@ func (f FallBackConsole) UI(ctx context.Context, kdyn dynamic.Interface) error {
 }
 
 func (f FallBackConsole) URL() string {
-	return "https://giphy.com/explore/random"
+	return consoleIsnotConfiguredURL
 }
 
-func New(ctx context.Context, kdyn dynamic.Interface, runinfo *info.Info) Interface {
+func New(ctx context.Context, kdyn dynamic.Interface, _ *info.Info) Interface {
 	oc := &OpenshiftConsole{}
 	if err := oc.UI(ctx, kdyn); err == nil {
 		return oc
 	}
 
+	// TODO: Try to detect TektonDashboard somehow by ingress?
 	return FallBackConsole{}
 }
