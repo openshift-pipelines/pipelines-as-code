@@ -29,7 +29,7 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker (Controller)
         id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea
         with:
           images: ${{ env.REGISTRY }}/${{ env.CONTROLLER_IMAGE_NAME }}
 
@@ -45,7 +45,7 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker (Watcher)
         id: meta-watcher
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea
         with:
           images: ${{ env.REGISTRY }}/${{ env.WATCHER_IMAGE_NAME }}
 
@@ -61,7 +61,7 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker (Webhook)
         id: meta-webhook
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea
         with:
           images: ${{ env.REGISTRY }}/${{ env.WEBHOOK_IMAGE_NAME }}
 
@@ -77,7 +77,7 @@ jobs:
 
       - name: Extract metadata (tags, labels) for tkn-pac
         id: meta-cli
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@57396166ad8aefe6098280995947635806a0e6ea
         with:
           images: ${{ env.REGISTRY }}/${{ env.TKN_PAC_IMAGE_NAME }}
 
