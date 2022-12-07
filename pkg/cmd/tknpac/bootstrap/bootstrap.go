@@ -39,6 +39,7 @@ type bootstrapOpts struct {
 	targetNamespace   string
 	autoDetectedRoute bool
 	forwarderURL      string
+	dashboardURL      string
 
 	RouteName              string
 	GithubAPIURL           string
@@ -240,9 +241,6 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	return cmd
 }
 
-// installed?
-// where?
-
 func DetectPacInstallation(ctx context.Context, wantedNS string, run *params.Run) (bool, string, error) {
 	var installed bool
 	_, err := run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(ctx, metav1.ListOptions{})
@@ -279,6 +277,7 @@ func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enterprise API URL")
 	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "The public URL for the pipelines-as-code controller")
 	cmd.PersistentFlags().StringVar(&opts.forwarderURL, "web-forwarder-url", defaultWebForwarderURL, "the web forwarder url")
+	cmd.PersistentFlags().StringVar(&opts.dashboardURL, "dashboard-url", "", "the full URL to the tekton dashboard ")
 	cmd.PersistentFlags().BoolVar(&opts.installNightly, "nightly", false, "Whether to install the nightly Pipelines as Code")
 	cmd.PersistentFlags().IntVar(&opts.webserverPort, "webserver-port", 8080, "Webserver port")
 	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,
