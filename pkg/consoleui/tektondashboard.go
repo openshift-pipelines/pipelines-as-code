@@ -11,6 +11,12 @@ type TektonDashboard struct {
 	BaseURL string
 }
 
+const tektonDashboardName = "Tekton Dashboard"
+
+func (t *TektonDashboard) GetName() string {
+	return tektonDashboardName
+}
+
 func (t *TektonDashboard) DetailURL(ns, pr string) string {
 	return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", t.BaseURL, ns, pr)
 }

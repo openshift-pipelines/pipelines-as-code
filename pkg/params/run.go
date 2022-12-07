@@ -17,7 +17,7 @@ import (
 const (
 	PACConfigmapName        = "pipelines-as-code"
 	StartingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
-  <b>%s</b><br><br>You can follow the execution on the [OpenShift console](%s) pipelinerun viewer or via
+  <b>%s</b><br><br>You can follow the execution on the [%s](%s) PipelineRun viewer or via
   the command line with :
 	<br><code>tkn pac logs -L -n %s %s</code>`
 	QueuingPipelineRunText = `PipelineRun <b>%s</b> has been queued Queuing in namespace
