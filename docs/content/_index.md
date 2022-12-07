@@ -65,7 +65,7 @@ If you are in a source code project, it will immediately ask you if you want to 
 
 This 10-minute video will guide you through the `tkn-pac bootstrap` flow :
 
-{{< youtube ytm3brml8is >}}
+{{< youtube sIA4jjKQE9I >}}
 
 ## Documentation
 

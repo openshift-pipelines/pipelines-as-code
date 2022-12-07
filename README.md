@@ -54,9 +54,9 @@ and follow the questions and installation methods which will install Pipelines a
 
 feel free to look over the `--help` to see the different options on how to install for example on GitHub Enterprise.
 
-This 10 minutes video will guide you thought the `tkn-pac bootstrap` flow :
+This getting started video will guide you thought the `tkn-pac bootstrap` flow using [Kind](https://kind.sigs.k8s.io/) :
 
-[![Getting started to Pipelines as Code](https://img.youtube.com/vi/ytm3brml8is/0.jpg)](https://www.youtube.com/watch?v=ytm3brml8is)
+[![Getting started to Pipelines as Code](https://img.youtube.com/vi/sIA4jjKQE9I/0.jpg)](https://www.youtube.com/watch?v=sIA4jjKQE9I)
 
 For more details on the different installation method please follow [this document](docs/install.md) for installing Pipelines as Code on OpenShift.
 
@@ -109,9 +109,8 @@ You can use the command `tkn pac webhook` to help you update webhooks on your re
 
 ## Usage Guide
 
-The usage guide available [here](https://pipelinesascode.com/docs/guide/) offer a comprehensive documentation on how to use and configure Pipeline As Code.
-
-A walkthrough video is available [here](https://www.youtube.com/watch?v=Uh1YhOGPOes).
+The usage guide available [here](https://pipelinesascode.com/docs/guide/) offer
+a comprehensive documentation on how to use and configure Pipeline As Code.
 
 ## Developer Guide
 
