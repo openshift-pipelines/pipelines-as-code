@@ -7,23 +7,27 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/google/go-github/v48/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 
 	_ "embed"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //go:embed templates/gosmee.yaml
 var gosmeeYaml string
 
 const (
-	pacGHRepoOwner = "openshift-pipelines"
-	pacGHRepoName  = "pipelines-as-code"
-	rawGHURL       = "https://raw.githubusercontent.com"
-
-	openshiftReleaseYaml = "release.yaml"
-	k8ReleaseYaml        = "release.k8s.yaml"
+	pacGHRepoOwner             = "openshift-pipelines"
+	pacGHRepoName              = "pipelines-as-code"
+	rawGHURL                   = "https://raw.githubusercontent.com"
+	openshiftReleaseYaml       = "release.yaml"
+	k8ReleaseYaml              = "release.k8s.yaml"
+	tektonDashboardServiceName = "tekton-dashboard"
 
 	gosmeeInstallHelpText = `Pipelines as Code does not install a Ingress object to make the controller accessing from the internet
 we can install a webhook forwarder called gosmee (https://github.com/chmouel/gosmee) using a %s URL
@@ -58,6 +62,51 @@ func kubectlApply(uri string) error {
 	return nil
 }
 
+// getdashboardURL try to detect dashboardURL in all ingresses, if we can't
+// detect it then just ask the user for the URL.
+func getDashboardURL(ctx context.Context, opts *bootstrapOpts, run *params.Run) error {
+	ingresses, err := run.Clients.Kube.NetworkingV1().Ingresses("").List(ctx, metav1.ListOptions{})
+	if err == nil {
+		for _, ingress := range ingresses.Items {
+			for _, rule := range ingress.Spec.Rules {
+				if rule.HTTP != nil {
+					for _, path := range rule.HTTP.Paths {
+						if path.Backend.Service != nil {
+							if path.Backend.Service.Name == tektonDashboardServiceName {
+								protocol := "http"
+								if ingress.Spec.TLS != nil {
+									protocol = "https"
+								}
+								useDetectedDashboard, err := askYN(true,
+									fmt.Sprintf("👀 We have detected a tekton dashboard install on %s://%s", protocol, rule.Host),
+									"Do you want me to use it?", opts.ioStreams.Out)
+								if err != nil {
+									return err
+								}
+								if useDetectedDashboard {
+									opts.dashboardURL = fmt.Sprintf("%s://%s", protocol, rule.Host)
+									return nil
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	var ans string
+	qs := &survey.Input{
+		Message: "Enter your Tekton Dashboard URL: ",
+	}
+	if err := prompt.SurveyAskOne(qs, &ans); err != nil {
+		return err
+	}
+	opts.dashboardURL = ans
+	return nil
+}
+
+// installGosmeeForwarder Install a gosmee forwarded to smee.io
 func installGosmeeForwarder(opts *bootstrapOpts) error {
 	gosmeInstall, err := askYN(true, fmt.Sprintf(gosmeeInstallHelpText, opts.forwarderURL), "Do you want me to install the gosmee forwarder?", opts.ioStreams.Out)
 	if err != nil {
@@ -68,7 +117,7 @@ func installGosmeeForwarder(opts *bootstrapOpts) error {
 	}
 
 	// maybe we can use https://webhook.chmouel.com too
-	opts.RouteName = fmt.Sprintf("https://smee.io/%s", random.AlphaString(minNumOfCharForRandomForwarderID))
+	opts.RouteName = fmt.Sprintf("%s/%s", opts.forwarderURL, random.AlphaString(minNumOfCharForRandomForwarderID))
 	tmpl := strings.ReplaceAll(gosmeeYaml, "FORWARD_URL", opts.RouteName)
 	f, err := os.CreateTemp("", "pac-gosmee")
 	if err != nil {
@@ -81,7 +130,7 @@ func installGosmeeForwarder(opts *bootstrapOpts) error {
 	if err := kubectlApply(f.Name()); err != nil {
 		return err
 	}
-	fmt.Fprintf(opts.ioStreams.Out, "💡 Your gosmee forward URL is %s\n", opts.RouteName)
+	fmt.Fprintf(opts.ioStreams.Out, "💡 Your gosmee forward URL has been generated: %s\n", opts.RouteName)
 	return nil
 }
 
@@ -128,7 +177,35 @@ func installPac(ctx context.Context, run *params.Run, opts *bootstrapOpts) error
 	fmt.Fprintf(opts.ioStreams.Out, "✓ Pipelines-as-Code %s has been installed\n", latestVersion)
 
 	if !isOpenShift && opts.RouteName == "" {
-		return installGosmeeForwarder(opts)
+		if err := installGosmeeForwarder(opts); err != nil {
+			return err
+		}
 	}
+
+	if !isOpenShift && opts.dashboardURL == "" {
+		if err := getDashboardURL(ctx, opts, run); err != nil {
+			return err
+		}
+		// only updating for now here since we don't have any other stuff to udpate yet in there
+		// maybe we will have to move this to a different function in the future
+		return updatePACConfigMap(ctx, run, opts)
+	}
+	return nil
+}
+
+func updatePACConfigMap(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
+	cm, err := run.Clients.Kube.CoreV1().ConfigMaps(opts.targetNamespace).Get(ctx, "pipelines-as-code", metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	if opts.dashboardURL != "" {
+		cm.Data["tekton-dashboard-url"] = opts.dashboardURL
+	}
+
+	if _, err = run.Clients.Kube.CoreV1().ConfigMaps(opts.targetNamespace).Update(ctx, cm, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+
 	return nil
 }
