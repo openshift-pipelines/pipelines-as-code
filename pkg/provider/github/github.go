@@ -52,8 +52,18 @@ func New() *Provider {
 	}
 }
 
+// detectGHERawURL Detect if we have a raw URL in GHE
+func detectGHERawURL(event *info.Event, taskHost string) bool {
+	gheURL, err := url.Parse(event.GHEURL)
+	if err != nil {
+		// should not happen but may as well make sure
+		return false
+	}
+	return taskHost == fmt.Sprintf("raw.%s", gheURL.Host)
+}
+
 // splitGithubURL Take a Github url and split it with org/repo path ref, supports rawURL
-func splitGithubURL(uri string) (string, string, string, string, error) {
+func splitGithubURL(event *info.Event, uri string) (string, string, string, string, error) {
 	pURL, err := url.Parse(uri)
 	splitted := strings.Split(pURL.Path, "/")
 	if len(splitted) <= 3 {
@@ -61,7 +71,7 @@ func splitGithubURL(uri string) (string, string, string, string, error) {
 	}
 	var spOrg, spRepo, spRef, spPath string
 	switch {
-	case pURL.Host == publicRawURLHost && len(splitted) >= 5:
+	case (pURL.Host == publicRawURLHost || detectGHERawURL(event, pURL.Host)) && len(splitted) >= 5:
 		spOrg = splitted[1]
 		spRepo = splitted[2]
 		spRef = splitted[3]
@@ -82,7 +92,7 @@ func (v *Provider) GetTaskURI(ctx context.Context, _ *params.Run, event *info.Ev
 		return false, "", nil
 	}
 
-	spOrg, spRepo, spPath, spRef, err := splitGithubURL(uri)
+	spOrg, spRepo, spPath, spRef, err := splitGithubURL(event, uri)
 	if err != nil {
 		return false, "", err
 	}
