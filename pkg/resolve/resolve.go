@@ -2,7 +2,6 @@ package resolve
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -119,7 +118,7 @@ type Opts struct {
 func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, providerintf provider.Interface, event *info.Event, data string, ropt *Opts) ([]*tektonv1beta1.PipelineRun, error) {
 	types := readTypes(logger, data)
 	if len(types.PipelineRuns) == 0 {
-		return []*tektonv1beta1.PipelineRun{}, errors.New("we need at least one pipelinerun to start with")
+		return []*tektonv1beta1.PipelineRun{}, fmt.Errorf("could not find any PipelineRun in your .tekton/ directory")
 	}
 
 	// First resolve Annotations Tasks

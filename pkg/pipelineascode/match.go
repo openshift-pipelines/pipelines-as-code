@@ -143,7 +143,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 		RemoteTasks:  p.run.Info.Pac.RemoteTasks,
 	})
 	if err != nil {
-		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryFailedToResolve", fmt.Sprintf("failed to resolve pipelineRuns: %s", err.Error()))
+		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryFailedToMatch", fmt.Sprintf("failed to match pipelineRuns: %s", err.Error()))
 		return nil, repo, err
 	}
 	if pipelineRuns == nil {
