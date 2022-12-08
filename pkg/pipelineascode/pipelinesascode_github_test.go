@@ -43,6 +43,7 @@ func replyString(mux *http.ServeMux, url, body string) {
 }
 
 func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, finalStatus, finalStatusText string, noReplyOrgPublicMembers bool) {
+	t.Helper()
 	// Take a directory and generate replies as Github for it
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/contents/internal/task", runevent.Organization, runevent.Repository),
