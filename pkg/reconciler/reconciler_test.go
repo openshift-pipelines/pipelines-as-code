@@ -198,6 +198,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 }
 
 func testSetupGHReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, checkrunID, finalStatus, finalStatusText string) {
+	t.Helper()
 	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/%s", runevent.Organization, runevent.Repository, checkrunID),
 		func(w http.ResponseWriter, r *http.Request) {
 			body, _ := io.ReadAll(r.Body)
