@@ -192,7 +192,7 @@ func TestInRepoShouldNotEmbedIfNoAnnotations(t *testing.T) {
 
 func TestNoPipelineRuns(t *testing.T) {
 	_, _, err := readTDfile(t, "no-pipelinerun", false, true)
-	assert.Error(t, err, "we need at least one pipelinerun to start with")
+	assert.Error(t, err, "could not find any PipelineRun in your .tekton/ directory")
 }
 
 func TestReferencedTaskNotInRepo(t *testing.T) {
