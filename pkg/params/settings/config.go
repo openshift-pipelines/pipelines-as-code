@@ -9,19 +9,22 @@ import (
 )
 
 const (
-	ApplicationNameKey                      = "application-name"
-	SecretAutoCreateKey                     = "secret-auto-create"
-	HubURLKey                               = "hub-url"
-	HubCatalogNameKey                       = "hub-catalog-name"
-	MaxKeepRunUpperLimitKey                 = "max-keep-run-upper-limit"
-	DefaultMaxKeepRunsKey                   = "default-max-keep-runs"
-	RemoteTasksKey                          = "remote-tasks"
-	BitbucketCloudCheckSourceIPKey          = "bitbucket-cloud-check-source-ip"
-	BitbucketCloudAdditionalSourceIPKey     = "bitbucket-cloud-additional-source-ip"
-	TektonDashboardURLKey                   = "tekton-dashboard-url"
-	AutoConfigureNewGitHubRepoKey           = "auto-configure-new-github-repo"
-	AutoConfigureRepoNamespaceTemplateKey   = "auto-configure-repo-namespace-template"
-	secretAutoCreateDefaultValue            = "true"
+	ApplicationNameKey                    = "application-name"
+	SecretAutoCreateKey                   = "secret-auto-create"
+	HubURLKey                             = "hub-url"
+	HubCatalogNameKey                     = "hub-catalog-name"
+	MaxKeepRunUpperLimitKey               = "max-keep-run-upper-limit"
+	DefaultMaxKeepRunsKey                 = "default-max-keep-runs"
+	RemoteTasksKey                        = "remote-tasks"
+	BitbucketCloudCheckSourceIPKey        = "bitbucket-cloud-check-source-ip"
+	BitbucketCloudAdditionalSourceIPKey   = "bitbucket-cloud-additional-source-ip"
+	TektonDashboardURLKey                 = "tekton-dashboard-url"
+	AutoConfigureNewGitHubRepoKey         = "auto-configure-new-github-repo"
+	AutoConfigureRepoNamespaceTemplateKey = "auto-configure-repo-namespace-template"
+	secretAutoCreateDefaultValue          = "true"
+	//nolint: gosec
+	SecretGhAppTokenRepoScoppedKey          = "secret-github-apps-token-scopped"
+	secretGhAppTokenRepoScoppedDefaultValue = "true"
 	remoteTasksDefaultValue                 = "true"
 	bitbucketCloudCheckSourceIPDefaultValue = "true"
 	PACApplicationNameDefaultValue          = "Pipelines as Code CI"
@@ -54,6 +57,7 @@ type Settings struct {
 	TektonDashboardURL                 string
 	AutoConfigureNewGitHubRepo         bool
 	AutoConfigureRepoNamespaceTemplate string
+	SecretGHAppRepoScoped              bool
 
 	ErrorLogSnippet             bool
 	ErrorDetection              bool
@@ -78,6 +82,12 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 	if setting.SecretAutoCreation != secretAutoCreate {
 		logger.Infof("CONFIG: secret auto create set to %v", secretAutoCreate)
 		setting.SecretAutoCreation = secretAutoCreate
+	}
+
+	secretGHAppRepoScoped := StringToBool(config[SecretGhAppTokenRepoScoppedKey])
+	if setting.SecretGHAppRepoScoped != secretGHAppRepoScoped {
+		logger.Infof("CONFIG: not scopping the token generated from gh %v", secretGHAppRepoScoped)
+		setting.SecretGHAppRepoScoped = secretGHAppRepoScoped
 	}
 	if setting.HubURL != config[HubURLKey] {
 		logger.Infof("CONFIG: hub URL set to %v", config[HubURLKey])

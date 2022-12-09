@@ -19,6 +19,20 @@ There is a few things you can configure through the config map
   application to be used with private repositories. This feature is enabled by
   default.
 
+* `secret-github-apps-token-scopped`
+
+  When using a Github app, we generate a temporary installation token, we scope it
+  to the repository from where the payload comes. We do this when the Github app
+  is configured globally on a Github organization.
+
+  If the organization has a mix of public and private repositories and not every
+  user in the organization is trusted to have access to every repository, then the
+  scoped token would not allow them to access those.
+
+  If you trust every user on your organization to access any repository or you are
+  not planning to install your Github app globally on a Github organization, then
+  you can safely set this option to false.
+
 * `remote-tasks`
 
   Let allows remote tasks from pipelinerun annotations. This feature is enabled by
@@ -68,12 +82,14 @@ There is a few things you can configure through the config map
 
 * `auto-configure-new-github-repo`
 
-  Let you autoconfigure newly created GitHub repositories. On creation of a new repository, Pipelines As Code will set up a namespace
+  This setting let you autoconfigure newly created GitHub repositories. On creation of a new repository, Pipelines As Code will set up a namespace
   for your repository and create a Repository CR.
 
   This feature is disabled by default and is only supported with GitHub App.
 
-  ****NOTE****: If you have a GitHub App already setup then verify if `Repository` event is subscribed.
+{< hint info >}
+ If you have a GitHub App already setup then verify if `Repository` event is subscribed.
+{< /hint >}
 
 * `auto-configure-repo-namespace-template`
 

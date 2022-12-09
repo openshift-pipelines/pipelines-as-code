@@ -20,6 +20,18 @@ data:
   # Whether to automatically create a secret with the token to be use by git-clone
   secret-auto-create: "true"
 
+  # By default we only generate token scopped to the repository from where the
+  # payload come from.
+  # We do this because if the github apps is installed on an github organisation
+  #
+  # and there is a mix of public and private repositories in there
+  # where some users on that org does not have access.
+  #
+  # If you trust every users on your orgnisations to access any repos there or
+  # not planning to install your github application globally on a Github Organisation
+  # then you can safely set this option to false.
+  secret-github-apps-token-scopped: "true"
+
   # Tekton HUB API urls
   hub-url: "https://api.hub.tekton.dev/v1"
 

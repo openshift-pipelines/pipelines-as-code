@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"gotest.tools/v3/assert"
@@ -280,7 +281,11 @@ func TestParsePayLoad(t *testing.T) {
 			request.Header.Set("X-GitHub-Event", tt.eventType)
 
 			run := &params.Run{
-				Info: info.Info{},
+				Info: info.Info{
+					Pac: &info.PacOpts{
+						Settings: &settings.Settings{},
+					},
+				},
 			}
 			bjeez, _ := json.Marshal(tt.payloadEventStruct)
 			jeez := string(bjeez)
@@ -462,7 +467,9 @@ func TestAppTokenGeneration(t *testing.T) {
 					Kube: tt.seedData.Kube,
 				},
 				Info: info.Info{
-					Pac: &info.PacOpts{},
+					Pac: &info.PacOpts{
+						Settings: &settings.Settings{},
+					},
 				},
 			}
 
