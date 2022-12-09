@@ -192,7 +192,7 @@ tasks:
         name: github-add-comment
       params:
         - name: REQUEST_URL
-          value: "https://github.com/{{ repo_owner }}/{{ repo_url }}/pull/{{ pull_request_number }}"
+          value: "{{ repo_url }}/pull/{{ pull_request_number }}"
         - name: COMMENT_OR_FILE
           value: "Pipelines as Code IS GREAT!"
         - name: GITHUB_TOKEN_SECRET_NAME
