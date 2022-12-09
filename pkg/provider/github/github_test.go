@@ -42,6 +42,7 @@ func TestGithubSplitURL(t *testing.T) {
 		wantRepo string
 		wantRef  string
 		wantPath string
+		gheURL   string
 		wantErr  bool
 	}{
 		{
@@ -78,10 +79,48 @@ func TestGithubSplitURL(t *testing.T) {
 			url:     "https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/main",
 			wantErr: true,
 		},
+		{
+			name:     "raw GHE URL",
+			url:      "https://raw.ghe.domain.com/owner/repo/branch/file?token=TOKEN",
+			gheURL:   "https://ghe.domain.com",
+			wantOrg:  "owner",
+			wantRepo: "repo",
+			wantRef:  "branch",
+			wantPath: "file",
+		},
+		{
+			name:     "not matching ghe but allowed from public gh",
+			url:      fmt.Sprintf("https://%s/owner/repo/branch/file?token=TOKEN", publicRawURLHost),
+			gheURL:   "https://foo.com",
+			wantOrg:  "owner",
+			wantRepo: "repo",
+			wantRef:  "branch",
+			wantPath: "file",
+		},
+		{
+			name:    "not matching raw",
+			url:     "https://bar.com/owner/repo/branch/file?token=TOKEN",
+			gheURL:  "https://foo.com",
+			wantErr: true,
+		},
+		{
+			name:    "not a full direct url",
+			url:     "https://raw.ghe/owner/repo/branch?token=TOKEN",
+			gheURL:  "https://raw.ghe",
+			wantErr: true,
+		},
+		{
+			name:    "bad formatted ghe url",
+			url:     "https://raw.ghe/owner/repo/branch?token=TOKEN",
+			gheURL:  "https:raw.ghe",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			org, repo, path, ref, err := splitGithubURL(tt.url)
+			event := info.NewEvent()
+			event.GHEURL = tt.gheURL
+			org, repo, path, ref, err := splitGithubURL(event, tt.url)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SplitURL() error = %v, wantErr %v", err, tt.wantErr)
 				return

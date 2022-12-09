@@ -636,6 +636,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 }
 
 func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.Interface, cs testclient.Clients) {
+	t.Helper()
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	vcx.SetLogger(logger)
