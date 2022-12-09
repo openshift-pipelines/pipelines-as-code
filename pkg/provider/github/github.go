@@ -35,8 +35,10 @@ type Provider struct {
 	Token, APIURL *string
 	ApplicationID *int64
 	providerName  string
+	Run           *params.Run
+	repositoryIDs []int64
+
 	skippedRun
-	Run *params.Run
 }
 
 type skippedRun struct {
@@ -112,6 +114,7 @@ func (v *Provider) InitAppClient(ctx context.Context, kube kubernetes.Interface,
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -213,6 +216,7 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 			return fmt.Errorf("the webhook secret is not valid: %w", err)
 		}
 	}
+
 	return nil
 }
 
@@ -348,6 +352,11 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 	runevent.HeadBranch = pr.GetHead().GetRef()
 	runevent.BaseBranch = pr.GetBase().GetRef()
 	runevent.EventType = "pull_request"
+
+	v.repositoryIDs = []int64{
+		pr.GetBase().GetRepo().GetID(),
+		pr.GetHead().GetRepo().GetID(),
+	}
 	return runevent, nil
 }
 

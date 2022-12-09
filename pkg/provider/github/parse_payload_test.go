@@ -146,11 +146,13 @@ func TestParsePayLoad(t *testing.T) {
 			eventType:     "issue_comment",
 			triggerTarget: "pull_request",
 			githubClient:  fakeclient,
-			payloadEventStruct: github.IssueCommentEvent{Issue: &github.Issue{
-				PullRequestLinks: &github.PullRequestLinks{
-					HTMLURL: github.String("/bad"),
+			payloadEventStruct: github.IssueCommentEvent{
+				Issue: &github.Issue{
+					PullRequestLinks: &github.PullRequestLinks{
+						HTMLURL: github.String("/bad"),
+					},
 				},
-			}},
+			},
 			wantErrString: "bad pull request number",
 		},
 		{
@@ -399,13 +401,14 @@ func TestAppTokenGeneration(t *testing.T) {
 
 	fakeGithubAuthURL := "https://fake.gitub.auth/api/v3/"
 	tests := []struct {
-		ctx           context.Context
-		name          string
-		wantErr       bool
-		nilClient     bool
-		seedData      testclient.Clients
-		envs          map[string]string
-		resultBaseURL string
+		ctx             context.Context
+		name            string
+		wantErr         bool
+		nilClient       bool
+		seedData        testclient.Clients
+		envs            map[string]string
+		resultBaseURL   string
+		checkInstallIDs []int64
 	}{
 		{
 			name: "secret not found",
@@ -427,6 +430,17 @@ func TestAppTokenGeneration(t *testing.T) {
 			nilClient:     false,
 		},
 		{
+			ctx:  ctx,
+			name: "check installation ids are set",
+			envs: map[string]string{
+				"SYSTEM_NAMESPACE": testNamespace,
+			},
+			seedData:        vaildSecret,
+			resultBaseURL:   "https://fake.gitub.auth/api/v3/",
+			nilClient:       false,
+			checkInstallIDs: []int64{123, 456},
+		},
+		{
 			ctx:  ctxInvalidAppID,
 			name: "invalid app id in secret",
 			envs: map[string]string{
@@ -437,7 +451,7 @@ func TestAppTokenGeneration(t *testing.T) {
 		},
 		{
 			ctx:  ctxInvalidPrivateKey,
-			name: "invalid app id in secret",
+			name: "invalid private key in secret",
 			envs: map[string]string{
 				"SYSTEM_NAMESPACE": testNamespace,
 			},
@@ -461,6 +475,22 @@ func TestAppTokenGeneration(t *testing.T) {
 			// adding installation id to event to enforce client creation
 			samplePRevent.Installation = &github.Installation{
 				ID: &testInstallationID,
+			}
+
+			if len(tt.checkInstallIDs) > 0 {
+				samplePRevent.PullRequest = &github.PullRequest{
+					// order is important here for the check later
+					Base: &github.PullRequestBranch{
+						Repo: &github.Repository{
+							ID: github.Int64(tt.checkInstallIDs[0]),
+						},
+					},
+					Head: &github.PullRequestBranch{
+						Repo: &github.Repository{
+							ID: github.Int64(tt.checkInstallIDs[1]),
+						},
+					},
+				}
 			}
 
 			jeez, _ := json.Marshal(samplePRevent)
@@ -489,6 +519,13 @@ func TestAppTokenGeneration(t *testing.T) {
 				assert.Assert(t, gprovider.Client == nil)
 				return
 			}
+
+			for k, id := range tt.checkInstallIDs {
+				if gprovider.repositoryIDs[k] != id {
+					t.Errorf("got %d, want %d", gprovider.repositoryIDs[k], id)
+				}
+			}
+
 			assert.Assert(t, gprovider.Client != nil)
 			assert.Equal(t, gprovider.Client.BaseURL.String(), tt.resultBaseURL)
 		})
