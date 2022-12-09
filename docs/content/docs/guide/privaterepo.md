@@ -18,10 +18,6 @@ The secret contains a `.gitconfig` and Git credentials `.git-credentials` with
 the https URL using the token it discovered from the GitHub application or
 attached to the secret.
 
-The secret has as well the key `git-provider-token` which is the plain
-token, it can be reused directly but note that on the github apps provider the
-token has a very short  lifetime and is not refreshed.
-
 As documented :
 
 <https://github.com/tektoncd/catalog/blob/main/task/git-clone/0.4/README.md>
