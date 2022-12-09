@@ -65,7 +65,7 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 
 	// TODO: move to somewhere common to share between gitlab and here
 	if !compareSecret(querySecret, secretValue) {
-		return false, nil, fmt.Errorf("secret passed to the webhook does not match incoming webhook secret in %s", hook.Secret.Name)
+		return false, nil, fmt.Errorf("secret passed to the webhook is %s which does not match with the incoming webhook secret %s in %s", secretValue, querySecret, hook.Secret.Name)
 	}
 
 	if repo.Spec.GitProvider.Type == "" {
