@@ -45,7 +45,7 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 		SHA:          "createCheckRunSHA",
 	}
 
-	err := cnx.getOrUpdateCheckRunStatus(ctx, nil, event, &info.PacOpts{LogURL: "http://nowhere", Settings: &settings.Settings{}}, provider.StatusOpts{
+	err := cnx.getOrUpdateCheckRunStatus(ctx, nil, event, &info.PacOpts{Settings: &settings.Settings{}}, provider.StatusOpts{
 		PipelineRunName: "pr1",
 		Status:          "hello moto",
 	})
@@ -337,7 +337,6 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				status.PipelineRun = tt.pr
 			}
 			pacopts := &info.PacOpts{
-				LogURL:   "https://log",
 				Settings: &settings.Settings{},
 			}
 			if tt.notoken {

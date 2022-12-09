@@ -10,7 +10,6 @@ import (
 
 type PacOpts struct {
 	*settings.Settings
-	LogURL             string
 	WebhookType        string
 	PayloadFile        string
 	TektonDashboardURL string

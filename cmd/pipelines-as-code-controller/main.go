@@ -34,7 +34,5 @@ func main() {
 		}
 	}()
 
-	run.Info.Pac.LogURL = run.Clients.ConsoleUI.URL()
-
 	evadapter.MainWithContext(ctx, PACControllerLogKey, adapter.NewEnvConfig, adapter.New(run, kinteract))
 }

@@ -102,7 +102,7 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 		Name:       getCheckName(status, pacopts),
 		HeadSHA:    runevent.SHA,
 		Status:     github.String("in_progress"),
-		DetailsURL: github.String(pacopts.LogURL),
+		DetailsURL: github.String(status.DetailsURL),
 		ExternalID: github.String(status.PipelineRunName),
 		StartedAt:  &now,
 	}
@@ -205,7 +205,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 				return err
 			}
 		}
-		if err := v.patchPipelinerunWithMetadata(ctx, tekton, statusOpts.PipelineRun, checkRunID, pacopts.LogURL); err != nil {
+		if err := v.patchPipelinerunWithMetadata(ctx, tekton, statusOpts.PipelineRun, checkRunID, statusOpts.DetailsURL); err != nil {
 			return err
 		}
 	}
@@ -232,10 +232,6 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 	if statusOpts.PipelineRunName != "" {
 		opts.ExternalID = github.String(statusOpts.PipelineRunName)
 	}
-	if pacopts.LogURL != "" {
-		opts.DetailsURL = github.String(pacopts.LogURL)
-	}
-
 	if statusOpts.DetailsURL != "" {
 		opts.DetailsURL = &statusOpts.DetailsURL
 	}

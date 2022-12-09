@@ -39,8 +39,6 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			}
 		}()
 
-		run.Info.Pac.LogURL = run.Clients.ConsoleUI.URL()
-
 		pipelineRunInformer := pipelineruninformer.Get(ctx)
 
 		metrics, err := metrics.NewRecorder()
