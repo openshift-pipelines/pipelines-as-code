@@ -126,7 +126,7 @@ func getInstallationIDFromPayload(payload string) int64 {
 // Another thing: The payload is protected by the webhook signature so it cannot be tempered but even tho if it's
 // tempered with and somehow a malicious user found the token and set their own github endpoint to hijack and
 // exfiltrate the token, it would fail since the jwt token generation will fail, so we are safe here.
-// a bit too far fetched but i don't see any way this can be exploited.
+// a bit too far fetched but i don't see any way we can exploit this.
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
 	event := info.NewEvent()
 
@@ -156,7 +156,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	}
 
 	// regenerate token scoped to the repo IDs
-	if installationIDFrompayload != -1 && len(v.repositoryIDs) > 0 {
+	if run.Info.Pac.Settings.SecretGHAppRepoScoped && installationIDFrompayload != -1 && len(v.repositoryIDs) > 0 {
 		var err error
 		if processedEvent.Provider.Token, err = v.getAppToken(ctx, run.Clients.Kube, event.Provider.URL,
 			installationIDFrompayload); err != nil {
