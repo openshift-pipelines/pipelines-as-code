@@ -59,7 +59,7 @@ jobs:
 
       - name: Install and run gosmee
         run: |
-          go install -v github.com/chmouel/gosmee@latest
+          go install -v github.com/chmouel/gosmee@main
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} http://${CONTROLLER_DOMAIN_URL} &
 
       - name: Install ko
