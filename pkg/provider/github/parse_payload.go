@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
+	ogh "github.com/google/go-github/v45/github"
 	"github.com/google/go-github/v48/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -46,6 +47,9 @@ func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, g
 	itr, err := ghinstallation.New(tr, applicationID, installationID, privateKey)
 	if err != nil {
 		return "", err
+	}
+	itr.InstallationTokenOptions = &ogh.InstallationTokenOptions{
+		RepositoryIDs: v.repositoryIDs,
 	}
 
 	if gheURL != "" {
@@ -105,6 +109,24 @@ func getInstallationIDFromPayload(payload string) int64 {
 	return -1
 }
 
+// ParsePayload will parse the payload and return the event
+// it generate the github app token targeting the installation id
+// this pieces of code is a bit messy because we need first getting a token to
+// before parsing the payload.
+//
+// We need to get the token at first because in some case when coming from pull request
+// comment (or recheck from the UI) we will use that token to get
+// information about the PR that is not part of the payload.
+//
+// We then regenerate a second time the token scoped to the repo where the
+// payload come from so we can avoid the scenario where an admin install the
+// app on a github org which has a mixed of private and public repos and some of
+// the public users should not have access to the private repos.
+//
+// Another thing: The payload is protected by the webhook signature so it cannot be tempered but even tho if it's
+// tempered with and somehow a malicious user found the token and set their own github endpoint to hijack and
+// exfiltrate the token, it would fail since the jwt token generation will fail, so we are safe here.
+// a bit too far fetched but i don't see any way this can be exploited.
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
 	event := info.NewEvent()
 
@@ -112,13 +134,10 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return nil, err
 	}
 
-	id := getInstallationIDFromPayload(payload)
-
-	if id != -1 {
-		// get the app token if it exist first
+	installationIDFrompayload := getInstallationIDFromPayload(payload)
+	if installationIDFrompayload != -1 {
 		var err error
-		event.Provider.Token, err = v.getAppToken(ctx, run.Clients.Kube, event.Provider.URL, id)
-		if err != nil {
+		if event.Provider.Token, err = v.getAppToken(ctx, run.Clients.Kube, event.Provider.URL, installationIDFrompayload); err != nil {
 			return nil, err
 		}
 	}
@@ -136,7 +155,16 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return nil, err
 	}
 
-	processedEvent.InstallationID = id
+	// regenerate token scoped to the repo IDs
+	if installationIDFrompayload != -1 && len(v.repositoryIDs) > 0 {
+		var err error
+		if processedEvent.Provider.Token, err = v.getAppToken(ctx, run.Clients.Kube, event.Provider.URL,
+			installationIDFrompayload); err != nil {
+			return nil, err
+		}
+	}
+
+	processedEvent.InstallationID = installationIDFrompayload
 	processedEvent.GHEURL = event.Provider.URL
 
 	return processedEvent, nil
@@ -174,6 +202,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
 		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
 		processedEvent.URL = gitEvent.GetRepo().GetHTMLURL()
+		v.repositoryIDs = []int64{gitEvent.GetRepo().GetID()}
 		processedEvent.SHA = gitEvent.GetHeadCommit().GetID()
 		// on push event we may not get a head commit but only
 		if processedEvent.SHA == "" {
@@ -197,6 +226,12 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.Sender = gitEvent.GetPullRequest().GetUser().GetLogin()
 		processedEvent.EventType = event.EventType
 		processedEvent.PullRequestNumber = gitEvent.GetPullRequest().GetNumber()
+		// getting the repository ids of the base and head of the pull request
+		// to scope the token to
+		v.repositoryIDs = []int64{
+			gitEvent.GetPullRequest().GetBase().GetRepo().GetID(),
+			gitEvent.GetPullRequest().GetHead().GetRepo().GetID(),
+		}
 	default:
 		return nil, errors.New("this event is not supported")
 	}
