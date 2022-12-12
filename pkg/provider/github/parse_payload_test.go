@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v48/github"
@@ -363,14 +364,15 @@ func TestAppTokenGeneration(t *testing.T) {
 
 	fakeGithubAuthURL := "https://fake.gitub.auth/api/v3/"
 	tests := []struct {
-		ctx             context.Context
-		name            string
-		wantErr         bool
-		nilClient       bool
-		seedData        testclient.Clients
-		envs            map[string]string
-		resultBaseURL   string
-		checkInstallIDs []int64
+		ctx                 context.Context
+		name                string
+		wantErr             bool
+		nilClient           bool
+		seedData            testclient.Clients
+		envs                map[string]string
+		resultBaseURL       string
+		checkInstallIDs     []int64
+		extraRepoInstallIds map[string]string
 	}{
 		{
 			name: "secret not found",
@@ -403,6 +405,17 @@ func TestAppTokenGeneration(t *testing.T) {
 			checkInstallIDs: []int64{123, 456},
 		},
 		{
+			ctx:  ctx,
+			name: "check extras installations ids set",
+			envs: map[string]string{
+				"SYSTEM_NAMESPACE": testNamespace,
+			},
+			seedData:            vaildSecret,
+			nilClient:           false,
+			checkInstallIDs:     []int64{123, 456},
+			extraRepoInstallIds: map[string]string{"another/one": "789", "andanother/two": "10112"},
+		},
+		{
 			ctx:  ctxInvalidAppID,
 			name: "invalid app id in secret",
 			envs: map[string]string{
@@ -423,14 +436,12 @@ func TestAppTokenGeneration(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, mux, url, teardown := ghtesthelper.SetupGH()
+			fakeghclient, mux, serverURL, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-			testInstallID := strconv.FormatInt(testInstallationID, 10)
-			mux.HandleFunc(fmt.Sprintf("/app/installations/%s/access_tokens", string(testInstallID)), func(w http.ResponseWriter, r *http.Request) {
-				_, _ = fmt.Fprint(w, `{"commit": {"message": "HELLO"}}`)
+			mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", testInstallationID), func(w http.ResponseWriter, r *http.Request) {
+				_, _ = fmt.Fprint(w, "{}")
 			})
-			tt.envs["PAC_GIT_PROVIDER_TOKEN_APIURL"] = url + "/api/v3"
-
+			tt.envs["PAC_GIT_PROVIDER_TOKEN_APIURL"] = serverURL + "/api/v3"
 			envRemove := env.PatchAll(t, tt.envs)
 			defer envRemove()
 
@@ -457,20 +468,51 @@ func TestAppTokenGeneration(t *testing.T) {
 
 			jeez, _ := json.Marshal(samplePRevent)
 			logger := getLogger()
-			gprovider := Provider{Logger: logger}
+			gprovider := Provider{
+				Logger: logger,
+				Client: fakeghclient,
+			}
 			request := &http.Request{Header: map[string][]string{}}
 			request.Header.Set("X-GitHub-Event", "pull_request")
-			request.Header.Set("X-GitHub-Enterprise-Host", fakeGithubAuthURL)
+			// a bit of a pain but works
+			if tt.resultBaseURL != "" {
+				request.Header.Set("X-GitHub-Enterprise-Host", fakeGithubAuthURL)
+			} else {
+				request.Header.Set("X-GitHub-Enterprise-Host", serverURL)
+			}
 
 			run := &params.Run{
 				Clients: clients.Clients{
+					Log:  logger,
 					Kube: tt.seedData.Kube,
 				},
+
 				Info: info.Info{
 					Pac: &info.PacOpts{
 						Settings: &settings.Settings{},
 					},
 				},
+			}
+
+			if len(tt.checkInstallIDs) > 0 {
+				run.Info.Pac.SecretGHAppRepoScoped = true
+			}
+			if len(tt.extraRepoInstallIds) > 0 {
+				extras := ""
+				for name := range tt.extraRepoInstallIds {
+					split := strings.Split(name, "/")
+					// fmt.Printf("%+v %v\n", name, iid)
+					mux.HandleFunc(fmt.Sprintf("/repos/%s/%s", split[0], split[1]), func(w http.ResponseWriter, r *http.Request) {
+						// i can't do a for name, iid and use iid, cause golang shadows the variable out of the for loop
+						// a bit stupid
+						sid := tt.extraRepoInstallIds[fmt.Sprintf("%s/%s", split[0], split[1])]
+						_, _ = fmt.Fprintf(w, `{"id": %s}`, sid)
+					})
+					extras += fmt.Sprintf("%s, ", name)
+				}
+
+				run.Info.Pac.SecretGHAppRepoScoped = true
+				run.Info.Pac.SecretGhAppTokenScoppedExtraRepos = extras
 			}
 
 			_, err := gprovider.ParsePayload(tt.ctx, run, request, string(jeez))
@@ -490,8 +532,22 @@ func TestAppTokenGeneration(t *testing.T) {
 				}
 			}
 
+			for _, extraid := range tt.extraRepoInstallIds {
+				// checkInstallIDs and extraRepoInstallIds are merged and extraRepoInstallIds is after
+				found := false
+				extraIDInt, _ := strconv.ParseInt(extraid, 10, 64)
+				for _, rid := range gprovider.repositoryIDs {
+					if extraIDInt == rid {
+						found = true
+					}
+				}
+				assert.Assert(t, found, "Could not find %s in %s", extraIDInt, tt.extraRepoInstallIds)
+			}
+
 			assert.Assert(t, gprovider.Client != nil)
-			assert.Equal(t, gprovider.Client.BaseURL.String(), tt.resultBaseURL)
+			if tt.resultBaseURL != "" {
+				assert.Equal(t, gprovider.Client.BaseURL.String(), tt.resultBaseURL)
+			}
 		})
 	}
 }
