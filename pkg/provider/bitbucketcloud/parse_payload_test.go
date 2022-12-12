@@ -27,6 +27,7 @@ func TestParsePayload(t *testing.T) {
 		allowedConfig             map[string]map[string]string
 		additionalAllowedsourceIP string
 		targetPipelinerun         string
+		cancelPipelinerun         string
 	}{
 		{
 			name:              "parse push request",
@@ -174,6 +175,23 @@ func TestParsePayload(t *testing.T) {
 			expectedSender:    "sender",
 			expectedSHA:       "sha",
 		},
+		{
+			name:              "cancel comment with a pipelinerun",
+			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", "/cancel dummy"),
+			eventType:         "pullrequest:comment_created",
+			expectedAccountID: "account",
+			expectedSender:    "sender",
+			expectedSHA:       "sha",
+			cancelPipelinerun: "dummy",
+		},
+		{
+			name:              "cancel all comment",
+			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", "/cancel"),
+			eventType:         "pullrequest:comment_created",
+			expectedAccountID: "account",
+			expectedSender:    "sender",
+			expectedSHA:       "sha",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -217,6 +235,9 @@ func TestParsePayload(t *testing.T) {
 			assert.Equal(t, tt.expectedSHA, got.SHA, "%s != %s", tt.expectedSHA, got.SHA)
 			if tt.targetPipelinerun != "" {
 				assert.Equal(t, tt.targetPipelinerun, got.TargetTestPipelineRun, tt.targetPipelinerun, got.TargetTestPipelineRun)
+			}
+			if tt.cancelPipelinerun != "" {
+				assert.Equal(t, tt.cancelPipelinerun, got.TargetCancelPipelineRun, tt.cancelPipelinerun, got.TargetCancelPipelineRun)
 			}
 		})
 	}

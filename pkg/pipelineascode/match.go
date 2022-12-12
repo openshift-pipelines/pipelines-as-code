@@ -18,19 +18,40 @@ import (
 	"go.uber.org/zap"
 )
 
-// matchRepoPR matches the repo and the PRs from the event
 func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Repository, error) {
+	repo, err := p.verifyRepoAndUser(ctx)
+	if err != nil {
+		return nil, repo, err
+	}
+	if repo == nil {
+		return nil, nil, nil
+	}
+
+	if p.event.CancelPipelineRuns {
+		return nil, repo, p.cancelPipelineRuns(ctx, repo)
+	}
+
+	matchedPRs, err := p.getPipelineRunsFromRepo(ctx, repo)
+	if err != nil {
+		return nil, repo, err
+	}
+	return matchedPRs, repo, nil
+}
+
+// verifyRepoAndUser verifies if the Repo CR exists for the Git Repository,
+// if the user has permission to run CI  and also initialise provider client
+func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, error) {
 	// Match the Event URL to a Repository URL,
 	repo, err := matcher.MatchEventURLRepo(ctx, p.run, p.event, "")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if repo == nil {
 		if p.event.Provider.Token == "" {
 			msg := fmt.Sprintf("cannot set status since no repository has been matched on %s", p.event.URL)
 			p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositorySetStatus", msg)
-			return nil, nil, nil
+			return nil, nil
 		}
 		msg := fmt.Sprintf("cannot find a namespace match for %s", p.event.URL)
 		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNamespaceMatch", msg)
@@ -42,9 +63,9 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
 		}
 		if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
-			return nil, nil, fmt.Errorf("failed to run create status on repo not found: %w", err)
+			return nil, fmt.Errorf("failed to run create status on repo not found: %w", err)
 		}
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	// If we have a git_provider field in repository spec, then get all the
@@ -61,7 +82,7 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	} else {
 		err := SecretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo, p.logger)
 		if err != nil {
-			return nil, repo, err
+			return repo, err
 		}
 	}
 
@@ -76,7 +97,7 @@ it seems that we have detected a \n or a space at the end of your webhook secret
 is that what you want? make sure you use -n when generating the secret, eg: echo -n secret|base64`
 				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositorySecretValidation", msg)
 			}
-			return nil, repo, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
+			return repo, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
 		}
 	}
 
@@ -84,20 +105,20 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	// token or secret or we won't be able to do much.
 	err = p.vcx.SetClient(ctx, p.run, p.event)
 	if err != nil {
-		return nil, repo, err
+		return repo, err
 	}
 
 	// Get the SHA commit info, we want to get the URL and commit title
 	err = p.vcx.GetCommitInfo(ctx, p.event)
 	if err != nil {
-		return nil, repo, err
+		return repo, err
 	}
 
 	// Check if the submitter is allowed to run this.
 	if p.event.TriggerTarget != "push" {
 		allowed, err := p.vcx.IsAllowed(ctx, p.event)
 		if err != nil {
-			return nil, repo, err
+			return repo, err
 		}
 		if !allowed {
 			msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", p.event.Sender)
@@ -113,12 +134,16 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 				DetailsURL: "https://tenor.com/search/police-cat-gifs",
 			}
 			if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
-				return nil, repo, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
+				return repo, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
 			}
-			return nil, repo, nil
+			return repo, nil
 		}
 	}
+	return repo, nil
+}
 
+// getPipelineRunsFromRepo fetches pipelineruns from git repository and prepare them for creation
+func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Repository) ([]matcher.Match, error) {
 	rawTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir)
 	if err != nil || rawTemplates == "" {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
@@ -126,14 +151,14 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 			msg += fmt.Sprintf(" err: %s", err.Error())
 		}
 		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryPipelineRunNotFound", msg)
-		return nil, repo, nil
+		return nil, nil
 	}
 
 	// check for condition if need update the pipelinerun with regexp from the
 	// "raw" pipelinerun string
 	if msg, needUpdate := p.checkNeedUpdate(rawTemplates); needUpdate {
 		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryNeedUpdate", msg)
-		return nil, repo, fmt.Errorf(msg)
+		return nil, fmt.Errorf(msg)
 	}
 
 	// Replace those {{var}} placeholders user has in her template to the run.Info variable
@@ -144,12 +169,12 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	})
 	if err != nil {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryFailedToMatch", fmt.Sprintf("failed to match pipelineRuns: %s", err.Error()))
-		return nil, repo, err
+		return nil, err
 	}
 	if pipelineRuns == nil {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
 		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryCannotLocatePipelineRun", msg)
-		return nil, repo, nil
+		return nil, nil
 	}
 
 	// if /test command is used then filter out the pipelinerun
@@ -157,12 +182,12 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	if pipelineRuns == nil {
 		msg := fmt.Sprintf("cannot find pipelinerun %s in this repository", p.event.TargetTestPipelineRun)
 		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryCannotLocatePipelineRun", msg)
-		return nil, repo, nil
+		return nil, nil
 	}
 
 	err = changeSecret(pipelineRuns)
 	if err != nil {
-		return nil, repo, err
+		return nil, err
 	}
 
 	// Match the PipelineRun with annotation
@@ -170,10 +195,10 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	if err != nil {
 		// Don't fail when you don't have a match between pipeline and annotations
 		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
-		return nil, repo, nil
+		return nil, nil
 	}
 
-	return matchedPRs, repo, nil
+	return matchedPRs, nil
 }
 
 func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1beta1.PipelineRun) []*tektonv1beta1.PipelineRun {

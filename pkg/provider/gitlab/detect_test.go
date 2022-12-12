@@ -84,6 +84,20 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: true,
 		},
 		{
+			name:       "issue comment Event with cancel",
+			event:      sample.NoteEventAsJSON("/cancel"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: true,
+		},
+		{
+			name:       "issue comment Event with cancel a pr",
+			event:      sample.NoteEventAsJSON("/cancel dummy"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: true,
+		},
+		{
 			name:       "push event",
 			event:      sample.PushEventAsJSON(true),
 			eventType:  gitlab.EventTypePush,

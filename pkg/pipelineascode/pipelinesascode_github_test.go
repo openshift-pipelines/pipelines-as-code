@@ -510,32 +510,3 @@ func TestRun(t *testing.T) {
 		})
 	}
 }
-
-func TestPatchPipelineRunWithLogURL(t *testing.T) {
-	ctx, _ := rtesting.SetupFakeContext(t)
-	observer, _ := zapobserver.New(zap.InfoLevel)
-	logger := zap.New(observer).Sugar()
-
-	testPR := tektontest.MakePR("namespace", "force-me", map[string]*pipelinev1beta1.PipelineRunTaskRunStatus{
-		"first":  tektontest.MakePrTrStatus("first", 5),
-		"last":   tektontest.MakePrTrStatus("last", 15),
-		"middle": tektontest.MakePrTrStatus("middle", 10),
-	}, nil)
-
-	tdata := testclient.Data{
-		PipelineRuns: []*pipelinev1beta1.PipelineRun{testPR},
-	}
-
-	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
-	fakeClients := clients.Clients{
-		Tekton:    stdata.Pipeline,
-		ConsoleUI: &consoleui.TektonDashboard{BaseURL: "https://localhost.console"},
-	}
-
-	err := patchPipelineRunWithLogURL(ctx, logger, fakeClients, testPR)
-	assert.NilError(t, err)
-
-	pr, err := fakeClients.Tekton.TektonV1beta1().PipelineRuns("namespace").Get(ctx, "force-me", metav1.GetOptions{})
-	assert.NilError(t, err)
-	assert.Equal(t, pr.Annotations[filepath.Join(apipac.GroupName, "log-url")], "https://localhost.console/#/namespaces/namespace/pipelineruns/force-me")
-}

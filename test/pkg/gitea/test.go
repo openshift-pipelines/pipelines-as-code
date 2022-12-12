@@ -15,6 +15,7 @@ import (
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -222,6 +223,32 @@ func WaitForPullRequestCommentMatch(ctx context.Context, t *testing.T, topts *Te
 		}
 		if i > 60 {
 			t.Fatalf("gitea driver has not been posted any comment")
+		}
+		time.Sleep(5 * time.Second)
+		i++
+	}
+}
+
+func CheckIfPipelineRunsCancelled(t *testing.T, topts *TestOpts) {
+	i := 0
+	for {
+		list, err := topts.Clients.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).
+			List(context.Background(), metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("%v=%v", keys.Repository, topts.TargetNS),
+			})
+		assert.NilError(t, err)
+
+		if len(list.Items) == 0 {
+			t.Fatalf("pipelineruns not found, where are they???")
+		}
+
+		if list.Items[0].Spec.Status == v1.PipelineRunSpecStatusCancelledRunFinally {
+			topts.Clients.Clients.Log.Info("PipelineRun is cancelled, yay!")
+			break
+		}
+
+		if i > 5 {
+			t.Fatalf("pipelineruns are not cancelled, something is fishy")
 		}
 		time.Sleep(5 * time.Second)
 		i++

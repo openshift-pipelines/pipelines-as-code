@@ -79,16 +79,17 @@ func TestParsePayLoad(t *testing.T) {
 	defer teardown()
 
 	tests := []struct {
-		name               string
-		wantErrString      string
-		eventType          string
-		payloadEventStruct interface{}
-		jeez               string
-		triggerTarget      string
-		githubClient       *github.Client
-		muxReplies         map[string]interface{}
-		shaRet             string
-		targetPipelinerun  string
+		name                    string
+		wantErrString           string
+		eventType               string
+		payloadEventStruct      interface{}
+		jeez                    string
+		triggerTarget           string
+		githubClient            *github.Client
+		muxReplies              map[string]interface{}
+		shaRet                  string
+		targetPipelinerun       string
+		targetCancelPipelinerun string
 	}{
 		{
 			name:          "bad/unknow event",
@@ -258,6 +259,45 @@ func TestParsePayLoad(t *testing.T) {
 			shaRet:            "samplePRsha",
 			targetPipelinerun: "dummy",
 		},
+		{
+			name:          "good/issue comment for cancel all",
+			eventType:     "issue_comment",
+			triggerTarget: "pull_request",
+			githubClient:  fakeclient,
+			payloadEventStruct: github.IssueCommentEvent{
+				Issue: &github.Issue{
+					PullRequestLinks: &github.PullRequestLinks{
+						HTMLURL: github.String("/999"),
+					},
+				},
+				Repo: sampleRepo,
+				Comment: &github.IssueComment{
+					Body: github.String("/cancel"),
+				},
+			},
+			muxReplies: map[string]interface{}{"/repos/owner/reponame/pulls/999": samplePR},
+			shaRet:     "samplePRsha",
+		},
+		{
+			name:          "good/issue comment for cancel a pr",
+			eventType:     "issue_comment",
+			triggerTarget: "pull_request",
+			githubClient:  fakeclient,
+			payloadEventStruct: github.IssueCommentEvent{
+				Issue: &github.Issue{
+					PullRequestLinks: &github.PullRequestLinks{
+						HTMLURL: github.String("/888"),
+					},
+				},
+				Repo: sampleRepo,
+				Comment: &github.IssueComment{
+					Body: github.String("/cancel dummy"),
+				},
+			},
+			muxReplies:              map[string]interface{}{"/repos/owner/reponame/pulls/888": samplePR},
+			shaRet:                  "samplePRsha",
+			targetCancelPipelinerun: "dummy",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -295,6 +335,9 @@ func TestParsePayLoad(t *testing.T) {
 			assert.Equal(t, tt.shaRet, ret.SHA)
 			if tt.targetPipelinerun != "" {
 				assert.Equal(t, tt.targetPipelinerun, ret.TargetTestPipelineRun)
+			}
+			if tt.targetCancelPipelinerun != "" {
+				assert.Equal(t, tt.targetCancelPipelinerun, ret.TargetCancelPipelineRun)
 			}
 		})
 	}

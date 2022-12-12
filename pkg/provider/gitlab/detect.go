@@ -52,6 +52,9 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			if provider.IsOkToTestComment(gitEvent.ObjectAttributes.Note) {
 				return setLoggerAndProceed(true, "", nil)
 			}
+			if provider.IsCancelComment(gitEvent.ObjectAttributes.Note) {
+				return setLoggerAndProceed(true, "", nil)
+			}
 		}
 		return setLoggerAndProceed(false, "not a gitops style merge comment event", nil)
 	default:

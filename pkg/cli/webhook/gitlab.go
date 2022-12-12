@@ -9,7 +9,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 	"github.com/xanzy/go-gitlab"
 )
@@ -22,10 +21,6 @@ type gitLabConfig struct {
 	webhookSecret       string
 	personalAccessToken string
 	APIURL              string
-}
-
-func (gl *gitLabConfig) GetName() string {
-	return provider.ProviderGitLabWebhook
 }
 
 func (gl *gitLabConfig) Run(_ context.Context, opts *Options) (*response, error) {

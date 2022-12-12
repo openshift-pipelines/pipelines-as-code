@@ -239,6 +239,7 @@ func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
 }
 
 func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.IssueCommentEvent) (*info.Event, error) {
+	action := "recheck"
 	runevent := info.NewEvent()
 	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
 	runevent.Repository = event.GetRepo().GetName()
@@ -251,9 +252,13 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 
 	// if it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
 	if provider.IsTestRetestComment(event.GetComment().GetBody()) {
-		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(event.GetComment().GetBody())
+		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(event.GetComment().GetBody())
 	}
-
+	if provider.IsCancelComment(event.GetComment().GetBody()) {
+		action = "cancellation"
+		runevent.CancelPipelineRuns = true
+		runevent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(event.GetComment().GetBody())
+	}
 	// We are getting the full URL so we have to get the last part to get the PR number,
 	// we don't have to care about URL query string/hash and other stuff because
 	// that comes up from the API.
@@ -263,6 +268,6 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 		return info.NewEvent(), err
 	}
 
-	v.Logger.Infof("PR recheck from issue commment on %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	v.Logger.Infof("issue_comment: pipelinerun %s on %s/%s#%d has been requested", action, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	return v.getPullRequest(ctx, runevent)
 }

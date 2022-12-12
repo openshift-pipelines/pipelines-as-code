@@ -88,7 +88,10 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.HeadBranch = gitEvent.MergeRequest.SourceBranch
 		// if it is a /test or /retest comment with pipelinerun name figure out the pipelineRun name
 		if provider.IsTestRetestComment(gitEvent.ObjectAttributes.Note) {
-			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromComment(gitEvent.ObjectAttributes.Note)
+			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(gitEvent.ObjectAttributes.Note)
+		}
+		if provider.IsCancelComment(gitEvent.ObjectAttributes.Note) {
+			processedEvent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(gitEvent.ObjectAttributes.Note)
 		}
 
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace

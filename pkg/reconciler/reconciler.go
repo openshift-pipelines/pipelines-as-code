@@ -58,7 +58,9 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 		}
 	}
 
-	if state == kubeinteraction.StateQueued {
+	// queue pipelines which are in queued state and pending status
+	// if status is not pending, it could be canceled so let it be reported, even if state is queued
+	if state == kubeinteraction.StateQueued && pr.Spec.Status == v1beta1.PipelineRunSpecStatusPending {
 		return r.queuePipelineRun(ctx, logger, pr)
 	}
 
