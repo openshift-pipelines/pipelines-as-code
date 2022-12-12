@@ -156,7 +156,25 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	}
 
 	// regenerate token scoped to the repo IDs
-	if run.Info.Pac.Settings.SecretGHAppRepoScoped && installationIDFrompayload != -1 && len(v.repositoryIDs) > 0 {
+	if run.Info.Pac.SecretGHAppRepoScoped && installationIDFrompayload != -1 && len(v.repositoryIDs) > 0 {
+		if run.Info.Pac.SecretGhAppTokenScoppedExtraRepos != "" {
+			// this is going to show up a lot in the logs but i guess that
+			// would make people fix the value instead of being lost into
+			// the top of the logs at controller start.
+			for _, configValue := range strings.Split(run.Info.Pac.SecretGhAppTokenScoppedExtraRepos, ",") {
+				configValueS := strings.TrimSpace(configValue)
+				if configValueS == "" {
+					continue
+				}
+				split := strings.Split(configValueS, "/")
+				info, _, err := v.Client.Repositories.Get(ctx, split[0], split[1])
+				if err != nil {
+					v.Logger.Warn("we have an invalid repository: `%s` in configmap key or no access to it: %v", configValueS, err)
+					continue
+				}
+				v.repositoryIDs = append(v.repositoryIDs, info.GetID())
+			}
+		}
 		var err error
 		if processedEvent.Provider.Token, err = v.getAppToken(ctx, run.Clients.Kube, event.Provider.URL,
 			installationIDFrompayload); err != nil {

@@ -19,7 +19,7 @@ There is a few things you can configure through the config map
   application to be used with private repositories. This feature is enabled by
   default.
 
-* `secret-github-apps-token-scopped`
+* `secret-github-app-token-scopped`
 
   When using a Github app, we generate a temporary installation token, we scope it
   to the repository from where the payload comes. We do this when the Github app
@@ -32,6 +32,22 @@ There is a few things you can configure through the config map
   If you trust every user on your organization to access any repository or you are
   not planning to install your Github app globally on a Github organization, then
   you can safely set this option to false.
+
+* `secret-github-app-scope-extra-repos`
+
+  If you don't want to completely disable the scopping of the token, but still
+  wants some other repos available, then you can add an extra owner/repo here.
+
+  This let you able fetch remote url on github from extra private repositories
+  in an organisation if you need it.
+
+  This only works when all the repos are added from the same installation IDs.
+  
+  You can have multiple owner/repository separated by commas:
+  
+  ```yaml
+  secret-github-app-token-scopped: "owner/private-repo1, org/repo2"
+  ```
 
 * `remote-tasks`
 
