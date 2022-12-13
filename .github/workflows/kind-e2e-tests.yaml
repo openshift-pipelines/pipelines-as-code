@@ -85,7 +85,7 @@ jobs:
           # Add an extra Repository ID to the token scope to fetch private url
           # This goes with the variable TEST_GITHUB_PRIVATE_TASK_NAME and tested with
           # the TestGithubPullRequestRemoteTaskAnnotations test
-          kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"secret-github-app-scope-extra-repos\": \"openshift-pipelines/pipelines-as-code-e2e-tests-webhook\"}}" \
+          kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"secret-github-app-scope-extra-repos\": \"openshift-pipelines/pipelines-as-code-e2e-tests-private\"}}" \
           --type merge pipelines-as-code
 
           # restart controller
@@ -106,7 +106,7 @@ jobs:
       - name: Run E2E Tests
         run: |
           # Nothing specific to webhook here it  just that repo is private in that org and that's what we want to test
-          export TEST_GITHUB_PRIVATE_TASK_URL="https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-webhook/blob/main/testdatas/remote_task.yaml"
+          export TEST_GITHUB_PRIVATE_TASK_URL="https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml"
           export TEST_GITHUB_PRIVATE_TASK_NAME="task-remote"
 
           export GO_TEST_FLAGS="-v -race -failfast"

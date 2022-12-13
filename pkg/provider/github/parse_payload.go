@@ -248,7 +248,6 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		// to scope the token to
 		v.repositoryIDs = []int64{
 			gitEvent.GetPullRequest().GetBase().GetRepo().GetID(),
-			gitEvent.GetPullRequest().GetHead().GetRepo().GetID(),
 		}
 	default:
 		return nil, errors.New("this event is not supported")
