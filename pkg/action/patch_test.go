@@ -39,7 +39,7 @@ func TestPatchPipelineRun(t *testing.T) {
 		ConsoleUI: &consoleui.TektonDashboard{BaseURL: "https://localhost.console"},
 	}
 
-	err := PatchPipelineRun(ctx, logger, fakeClients.Tekton, testPR, getLogURLMergePatch(fakeClients, testPR))
+	err := PatchPipelineRun(ctx, logger, "log URL", fakeClients.Tekton, testPR, getLogURLMergePatch(fakeClients, testPR))
 	assert.NilError(t, err)
 
 	pr, err := fakeClients.Tekton.TektonV1beta1().PipelineRuns("namespace").Get(ctx, "force-me", metav1.GetOptions{})

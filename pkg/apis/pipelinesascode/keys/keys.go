@@ -47,4 +47,5 @@ const (
 	TargetNamespace = pipelinesascode.GroupName + "/target-namespace"
 	MaxKeepRuns     = pipelinesascode.GroupName + "/max-keep-runs"
 	LogURL          = pipelinesascode.GroupName + "/log-url"
+	ExecutionOrder  = pipelinesascode.GroupName + "/execution-order"
 )

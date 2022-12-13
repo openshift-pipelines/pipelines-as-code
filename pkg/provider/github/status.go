@@ -204,8 +204,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 			}
 		}
 		if statusOpts.PipelineRun != nil {
-			v.Logger.Infof("patching pipelinerun %v/%v with checkRunID and logURL", statusOpts.PipelineRun.Namespace, statusOpts.PipelineRun.Name)
-			if err := action.PatchPipelineRun(ctx, v.Logger, tekton, statusOpts.PipelineRun, metadataPatch(checkRunID, statusOpts.DetailsURL)); err != nil {
+			if err := action.PatchPipelineRun(ctx, v.Logger, "checkRunID and logURL", tekton, statusOpts.PipelineRun, metadataPatch(checkRunID, statusOpts.DetailsURL)); err != nil {
 				return err
 			}
 		}
