@@ -116,14 +116,18 @@ func (s *prioritySemaphore) release(key string) bool {
 	return true
 }
 
-func (s *prioritySemaphore) addToQueue(key string, creationTime time.Time) {
+func (s *prioritySemaphore) addToQueue(key string, creationTime time.Time) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	if _, ok := s.running[key]; ok {
-		return
+		return false
 	}
-	s.pending.add(key, creationTime.Unix())
+	if s.pending.isPending(key) {
+		return false
+	}
+	s.pending.add(key, creationTime.UnixNano())
+	return true
 }
 
 func (s *prioritySemaphore) tryAcquire(key string) (bool, string) {

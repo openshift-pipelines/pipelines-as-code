@@ -18,9 +18,9 @@ func TestNewSemaphore(t *testing.T) {
 	// add elements
 	// randomly adding elements, the element with the less priority
 	// must execute first
-	repo.addToQueue("C", cw.Now().Add(5*time.Second))
-	repo.addToQueue("A", cw.Now())
-	repo.addToQueue("B", cw.Now().Add(1*time.Second))
+	assert.Equal(t, repo.addToQueue("C", cw.Now().Add(5*time.Second)), true)
+	assert.Equal(t, repo.addToQueue("A", cw.Now()), true)
+	assert.Equal(t, repo.addToQueue("B", cw.Now().Add(1*time.Second)), true)
 
 	// start the topmost, which would be A
 	acquired, msg := repo.tryAcquire("A")
@@ -44,7 +44,7 @@ func TestNewSemaphore(t *testing.T) {
 
 	// adding element to Queue which is running
 	// nothing should happen
-	repo.addToQueue("A", cw.Now().Add(5*time.Second))
+	assert.Equal(t, repo.addToQueue("A", cw.Now().Add(5*time.Second)), false)
 
 	// A is done
 	repo.release("A")
@@ -67,9 +67,9 @@ func TestNewSemaphore(t *testing.T) {
 	repo.resize(2)
 
 	// now add new elements
-	repo.addToQueue("D", cw.Now().Add(8*time.Second))
-	repo.addToQueue("E", cw.Now().Add(6*time.Second))
-	repo.addToQueue("F", cw.Now().Add(7*time.Second))
+	assert.Equal(t, repo.addToQueue("D", cw.Now().Add(8*time.Second)), true)
+	assert.Equal(t, repo.addToQueue("E", cw.Now().Add(6*time.Second)), true)
+	assert.Equal(t, repo.addToQueue("F", cw.Now().Add(7*time.Second)), true)
 
 	// queue already have C in it
 	// now the queue must have C > E > F > D

@@ -10,7 +10,7 @@ type Semaphore interface {
 	tryAcquire(string) (bool, string)
 	release(string) bool
 	resize(int) bool
-	addToQueue(string, time.Time)
+	addToQueue(string, time.Time) bool
 	removeFromQueue(string)
 	getName() string
 	getLimit() int
