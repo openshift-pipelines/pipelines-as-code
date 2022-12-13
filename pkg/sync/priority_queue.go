@@ -19,15 +19,18 @@ type priorityQueue struct {
 	itemByKey map[string]*item
 }
 
-func (pq *priorityQueue) add(key key, priority int64) {
-	if res, ok := pq.itemByKey[key]; ok {
-		if res.priority != priority {
-			res.priority = priority
-			heap.Fix(pq, res.index)
-		}
-	} else {
-		heap.Push(pq, &item{key: key, priority: priority})
+func (pq *priorityQueue) isPending(key key) bool {
+	if _, ok := pq.itemByKey[key]; ok {
+		return true
 	}
+	return false
+}
+
+func (pq *priorityQueue) add(key key, priority int64) {
+	if _, ok := pq.itemByKey[key]; ok {
+		return
+	}
+	heap.Push(pq, &item{key: key, priority: priority})
 }
 
 func (pq *priorityQueue) remove(key key) {

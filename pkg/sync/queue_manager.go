@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -64,28 +65,35 @@ func (qm *QueueManager) checkAndUpdateSemaphoreSize(repo *v1alpha1.Repository, s
 	return nil
 }
 
-// AddToQueue adds the pipelineRun to the waiting queue of the repository
+// AddListToQueue adds the pipelineRun to the waiting queue of the repository
 // and if it is at the top and ready to run which means currently running pipelineRun < limit
 // then move it to running queue
-func (qm *QueueManager) AddToQueue(repo *v1alpha1.Repository, run *v1beta1.PipelineRun) (bool, string, error) {
+// This adds the pipelineRuns in the same order as in the list
+func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string) ([]string, error) {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
 	sema, err := qm.getSemaphore(repo)
 	if err != nil {
-		return false, "", err
+		return []string{}, err
 	}
 
-	qKey := getQueueKey(run)
-	sema.addToQueue(qKey, run.CreationTimestamp.Time)
-
-	qm.logger.Infof("added pipelineRun (%s) to queue for repository (%s)", qKey, repoKey(repo))
-
-	acquired, msg := sema.tryAcquire(qKey)
-	if acquired {
-		qm.logger.Infof("moved (%s) to running for repository (%s)", qKey, repoKey(repo))
+	for _, pr := range list {
+		if sema.addToQueue(pr, time.Now()) {
+			qm.logger.Infof("added pipelineRun (%s) to queue for repository (%s)", pr, repoKey(repo))
+		}
 	}
-	return acquired, msg, nil
+
+	acquiredList := []string{}
+	for i := 0; i < *repo.Spec.ConcurrencyLimit; i++ {
+		acquired := sema.acquireLatest()
+		if acquired != "" {
+			qm.logger.Infof("moved (%s) to running for repository (%s)", acquired, repoKey(repo))
+			acquiredList = append(acquiredList, acquired)
+		}
+	}
+
+	return acquiredList, nil
 }
 
 // RemoveFromQueue removes the pipelineRun from the queues of the repository
@@ -107,7 +115,7 @@ func (qm *QueueManager) RemoveFromQueue(repo *v1alpha1.Repository, run *v1beta1.
 	qm.logger.Infof("removed (%s) for repository (%s)", qKey, repoKey)
 
 	if next := sema.acquireLatest(); next != "" {
-		qm.logger.Infof("moved (%s) to running for repository (%s)", qKey, repoKey)
+		qm.logger.Infof("moved (%s) to running for repository (%s)", next, repoKey)
 		return next
 	}
 	return ""
@@ -151,7 +159,7 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 			}
 
 			qKey := getQueueKey(&pr)
-			sema.addToQueue(qKey, pr.CreationTimestamp.Time)
+			_ = sema.addToQueue(qKey, pr.CreationTimestamp.Time)
 		}
 
 		// now fetch all started pipelineRun and update the running queue

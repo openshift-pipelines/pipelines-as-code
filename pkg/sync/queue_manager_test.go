@@ -17,10 +17,9 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func TestNewQueueManager(t *testing.T) {
+func TestNewQueueManagerForList(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
-	cw := clockwork.NewFakeClock()
 
 	qm := NewQueueManager(logger)
 
@@ -28,52 +27,99 @@ func TestNewQueueManager(t *testing.T) {
 	repo := newTestRepo("test", 1)
 
 	// first pipelineRun
-	prFirst := newTestPR("first", cw.Now(), nil)
+	prFirst := newTestPR("first", time.Now(), nil)
 
 	// added to queue, as there is only one should start
-	started, _, err := qm.AddToQueue(repo, prFirst)
+	started, err := qm.AddListToQueue(repo, []string{getQueueKey(prFirst)})
 	assert.NilError(t, err)
-	assert.Equal(t, started, true)
+	assert.Equal(t, len(started), 1)
 
-	// adding another pipelineRun, limit is 1 so this will be added to pending queue
-	prSecond := newTestPR("second", cw.Now().Add(1*time.Second), nil)
+	// removing the running from queue
+	assert.Equal(t, qm.RemoveFromQueue(repo, prFirst), "")
 
-	started, msg, err := qm.AddToQueue(repo, prSecond)
+	// adding another 2 pipelineRun, limit is 1 so this will be added to pending queue and
+	// then one will be started
+	prSecond := newTestPR("second", time.Now().Add(1*time.Second), nil)
+	prThird := newTestPR("third", time.Now().Add(7*time.Second), nil)
+
+	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prSecond), getQueueKey(prThird)})
 	assert.NilError(t, err)
-	assert.Equal(t, started, false)
-	assert.Equal(t, msg, "Waiting for test-ns/test lock. Available queue status: 0/1")
+	assert.Equal(t, len(started), 1)
+	// as per the list, 2nd must be started
+	assert.Equal(t, started[0], getQueueKey(prSecond))
 
-	// removing first pr from running
-	qm.RemoveFromQueue(repo, prFirst)
+	// adding 2 more, will be going to pending queue
+	prFourth := newTestPR("fourth", time.Now().Add(5*time.Second), nil)
+	prFifth := newTestPR("fifth", time.Now().Add(4*time.Second), nil)
 
-	// first is removed so the pending should be moved to running
-	sema := qm.queueMap[repoKey(repo)]
-	assert.Equal(t, sema.getCurrentRunning()[0], getQueueKey(prSecond))
+	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prFourth), getQueueKey(prFifth)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 0)
 
-	// updating concurrency to 2
+	// removing 2nd from queue, which means it should start 3rd
+	assert.Equal(t, qm.RemoveFromQueue(repo, prSecond), getQueueKey(prThird))
+
+	// changing the concurrency limit to 2
 	repo.Spec.ConcurrencyLimit = intPtr(2)
 
-	prThird := newTestPR("third", cw.Now().Add(7*time.Second), nil)
-	prFourth := newTestPR("fourth", cw.Now().Add(5*time.Second), nil)
-	prFifth := newTestPR("fifth", cw.Now().Add(4*time.Second), nil)
+	prSixth := newTestPR("sixth", time.Now().Add(7*time.Second), nil)
+	prSeventh := newTestPR("seventh", time.Now().Add(5*time.Second), nil)
+	prEight := newTestPR("eight", time.Now().Add(4*time.Second), nil)
 
-	// Second is still running now, when third is added it should get started
-	started, _, err = qm.AddToQueue(repo, prThird)
+	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prSixth), getQueueKey(prSeventh), getQueueKey(prEight)})
 	assert.NilError(t, err)
-	assert.Equal(t, started, true)
+	// third is running, but limit is changed now, so one more should be moved to running
+	assert.Equal(t, len(started), 1)
+	assert.Equal(t, started[0], getQueueKey(prFourth))
+}
 
-	started, _, err = qm.AddToQueue(repo, prFourth)
+func TestNewQueueManagerReListing(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewQueueManager(logger)
+
+	// repository for which pipelineRun are created
+	repo := newTestRepo("test", 2)
+
+	prFirst := newTestPR("first", time.Now(), nil)
+	prSecond := newTestPR("second", time.Now().Add(1*time.Second), nil)
+	prThird := newTestPR("third", time.Now().Add(7*time.Second), nil)
+
+	// added to queue, as there is only one should start
+	started, err := qm.AddListToQueue(repo, []string{getQueueKey(prFirst), getQueueKey(prSecond), getQueueKey(prThird)})
 	assert.NilError(t, err)
-	assert.Equal(t, started, false)
+	assert.Equal(t, len(started), 2)
 
-	started, _, err = qm.AddToQueue(repo, prFifth)
+	// if first is running and other pipelineRuns are reconciling
+	// then adding again shouldn't have any effect
+	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prFirst), getQueueKey(prSecond), getQueueKey(prThird)})
 	assert.NilError(t, err)
-	assert.Equal(t, started, false)
+	assert.Equal(t, len(started), 0)
 
-	// now if second is finished then next fifth should be started
-	// as its priority i.e creation time is before fourth
-	next := qm.RemoveFromQueue(repo, prSecond)
-	assert.Equal(t, next, getQueueKey(prFifth))
+	// again
+	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prFirst), getQueueKey(prSecond), getQueueKey(prThird)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 0)
+
+	// still there should only one running and 2 in pending
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 2)
+	assert.Assert(t, qm.RunningPipelineRuns(repo)[0] == "test-ns/first" || qm.RunningPipelineRuns(repo)[0] == "test-ns/second")
+	assert.Assert(t, qm.RunningPipelineRuns(repo)[1] == "test-ns/first" || qm.RunningPipelineRuns(repo)[1] == "test-ns/second")
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 1)
+	assert.Equal(t, qm.QueuedPipelineRuns(repo)[0], "test-ns/third")
+
+	// a new request comes
+	prFourth := newTestPR("fourth", time.Now(), nil)
+	prFifth := newTestPR("fifth", time.Now().Add(1*time.Second), nil)
+	prSixths := newTestPR("sixth", time.Now().Add(7*time.Second), nil)
+
+	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prFourth), getQueueKey(prFifth), getQueueKey(prSixths)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 0)
+
+	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 2)
+	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 4)
 }
 
 func newTestRepo(name string, limit int) *v1alpha1.Repository {

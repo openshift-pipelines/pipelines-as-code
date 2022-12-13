@@ -49,5 +49,5 @@ func TestPriorityQueue(t *testing.T) {
 	pq.add("item-a", 1)
 
 	// check the top most
-	assert.Equal(t, pq.peek().key, "item-a")
+	assert.Equal(t, pq.peek().key, "item-c")
 }
