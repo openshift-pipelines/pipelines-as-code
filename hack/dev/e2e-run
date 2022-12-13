@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+#
+# This let you run pac e2e tests in a more interactive way
+#
+# The idea is that you have different kubeconfig in ~/.config/kube/config.<name> and different "profile"
+# using pass in pac/vars/<name> and you can run the tests using the profile
+#
+# a var profile is those variables you set for e2e tests for examples for my github test i have:
+#
+# $ pass show pac/vars/scratchtest
+# export TEST_GITHUB_API_URL=api.github.com
+# export TEST_GITHUB_REPO_OWNER_GITHUBAPP=chmouel/pac-e2e-tests
+# export TEST_GITHUB_REPO_OWNER_WEBHOOK=chmouel/pac-e2e-tests-webhooks
+# export TEST_GITHUB_REPO_INSTALLATION_ID="20722724"
+# export TEST_GITHUB_TOKEN="$(pass show github/chmouel-token)"
+# export TEST_EL_WEBHOOK_SECRET="chmouel"
+#
+# I then run them using, to for example run all Gitea tests:
+#   ./hack/dev/e2e-run -k scratchtest -p scratchtest TestGitea
+#
+# or to select a gitea test using fzf
+#    ./hack/dev/e2e-run -f -k scratchtest -p scratchtest TestGitea
+#
+# It has a few other features, let you use fzf to select the tests to run, and
+# it will remember the last run to restart easily.
+#
+# I have included a zsh completion to make it very easy to use and complete the test automtically.
+# see a demo here.
+# https://user-images.githubusercontent.com/98980/207322663-5278c29e-547f-4b1b-b14e-1af79abc35e0.mov
+#
+# Installing the zsh completion is an excercise left to the reader ;)
+set -eufo pipefail
+fzf=
+debug=
+nosnazy=
+cachedir=$HOME/.cache/e2e-run
+envfile=/tmp/env
+noclean=
+
+function help() {
+    cat <<EOF
+Usage: $0 [options] [testcase]
+
+-h: this help
+-n: do not cleanup
+-S: do not use snazy
+-l: run last tests
+-f: use fzf to select tests
+-k: the kubeconfig profile to use as located in ~/.kube/config.<name>
+-p: the pass profile to use as located in pac/vars/<name>
+-E: export the profile to /tmp/env (for use with vscode debugger)
+-d: debug mode
+EOF
+}
+
+while getopts "nE:fSldnk:ph:" o; do
+    case "${o}" in
+    n)
+        noclean=true
+        ;;
+    E)
+        [[ -z ${KUBECONFIG:-""} ]] && {
+            echo "need -k set first"
+            exit 1
+        }
+        passprofile=${OPTARG}
+        vars=$(pass ls pac/vars/${passprofile})
+        [[ -n ${vars} ]] || { echo "could not detect vars in pac/vars/${passprofile}"; }
+        pass show pac/vars/${passprofile} | sed -e '/#/d' -e '/^$/d' -e 's/export //' -e '/^KUBECONFIG=/d' >${envfile}
+        echo KUBECONFIG=$KUBECONFIG >>/tmp/env
+        echo "/tmp/env has been generated"
+        exit 0
+        ;;
+    d)
+        debug=yes
+        ;;
+    S)
+        nosnazy=yes
+        ;;
+    l)
+        [[ -e ${cachedir}/last ]] || {
+            echo "no last tests to run"
+            exit 1
+        }
+        testcases=$(cat ${cachedir}/last)
+        ;;
+    k)
+        export KUBECONFIG=$HOME/.kube/config.${OPTARG}
+        ;;
+    p)
+        passprofile=${OPTARG}
+        vars=$(pass show pac/vars/${passprofile})
+        if [[ -n ${vars} ]]; then
+            eval ${vars}
+        else
+            echo "could not detect vars in pac/vars/${passprofile}"
+        fi
+        ;;
+    f)
+        fzf="yes"
+        ;;
+    h)
+        help
+        exit 0
+        ;;
+    *)
+        echo "Invalid option"
+        exit 1
+        ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+[[ -n ${debug} ]] && {
+    env | grep "^TEST_"
+}
+
+initial_query=
+[[ -n $* ]] && initial_query=(-q "$@")
+cd $(git rev-parse --show-toplevel)/test || exit
+if [[ -n ${testcases:-""} ]]; then
+    echo "Reusing last run runs: ${testcases}"
+elif [[ -z ${fzf} ]]; then
+    testcases=$*
+else
+    testcases=$(rg --no-line-number --no-filename --no-heading '^func (Test[^(]+)' -o | sed 's/^func //' |
+        sort | env fzf -m -1 -0 ${initial_query[@]})
+    [[ -z ${testcases} ]] && exit 0
+    newt=
+    for t in ${testcases}; do
+        newt="${newt} ^${t}$"
+    done
+    testcases=${newt}
+fi
+
+[[ -d ${cachedir} ]] || mkdir -p ${cachedir}
+echo ${testcases} >${cachedir}/last
+
+if [[ -z ${noclean} ]]; then
+    e2e-cleanups || true
+else
+    export TEST_NOCLEANUP=true
+fi
+
+[[ -z ${nosnazy} ]] && { type -p snazy >/dev/null 2>/dev/null || nosnazy=yes; }
+
+for testcase in ${testcases}; do
+    echo "Running ${testcase}"
+    make -f ../Makefile test-clean
+    cmd=(go test -v -tags e2e -count=1 -failfast -run "${testcase}")
+    if [[ -z ${nosnazy} ]]; then
+        "${cmd[@]}" | snazy
+    else
+        "${cmd[@]}"
+    fi
+done
