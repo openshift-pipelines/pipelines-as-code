@@ -445,7 +445,7 @@ func TestAppTokenGeneration(t *testing.T) {
 			seedData:        vaildSecret,
 			resultBaseURL:   "https://fake.gitub.auth/api/v3/",
 			nilClient:       false,
-			checkInstallIDs: []int64{123, 456},
+			checkInstallIDs: []int64{123},
 		},
 		{
 			ctx:  ctx,
@@ -455,7 +455,7 @@ func TestAppTokenGeneration(t *testing.T) {
 			},
 			seedData:            vaildSecret,
 			nilClient:           false,
-			checkInstallIDs:     []int64{123, 456},
+			checkInstallIDs:     []int64{123},
 			extraRepoInstallIds: map[string]string{"another/one": "789", "andanother/two": "10112"},
 		},
 		{
@@ -499,11 +499,6 @@ func TestAppTokenGeneration(t *testing.T) {
 					Base: &github.PullRequestBranch{
 						Repo: &github.Repository{
 							ID: github.Int64(tt.checkInstallIDs[0]),
-						},
-					},
-					Head: &github.PullRequestBranch{
-						Repo: &github.Repository{
-							ID: github.Int64(tt.checkInstallIDs[1]),
 						},
 					},
 				}
