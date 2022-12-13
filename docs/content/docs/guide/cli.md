@@ -4,7 +4,9 @@ weight: 10
 ---
 # Pipelines as Code CLI
 
-Pipelines as Code provide a powerful CLI designed to work with tkn plug-in.  `tkn pac` allows you to :
+Pipelines as Code provide a powerful CLI designed to work as a plug-in to the [Tekton CLI (tkn)](https://github.com/tektoncd/cli).
+
+`tkn pac` allows you to :
 
 * `bootstrap`: quickly bootstrap a Pipelines as Code installation.
 * `create`: create a new Pipelines as Code Repository definition.
@@ -104,10 +106,18 @@ release. If you add the flag `--nightly` it will install the latest code ci
 release.
 
 Bootstrap detect the OpenShift Route automatically associated to the Pipelines
-as code controller service.
-If you don't have an OpenShift install it will ask you for your public URL (ie:
-an ingress spec URL)
-You can override the URL with the flag `--route-url`.
+as code controller service and uses this as endpoint for the created Github
+application.
+
+On Kubernetes, tkn-pac will attempt to detect the tekton-dashboard Ingress URL.
+
+It will also ask you if you want to install a webhook forwarder called
+[gosmee](https://github.com/chmouel/gosmee) on <https://smee.io>.
+This allows you to connect the Pipelines as Code controller to GitHub even if
+it's is not directly accessible from the internet.
+
+You can override the URL with the flag `--route-url`
+
 {{< /details >}}
 
 {{< details "tkn pac bootstrap github-app" >}}
