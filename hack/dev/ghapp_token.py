@@ -28,7 +28,7 @@ class GitHub:
         self, private_key, app_id, expiration_time, github_api_url, installation_id=None
     ):
         if not isinstance(private_key, bytes):
-            raise ValueError(f'"{private_key}" parameter must be byte-string')
+            private_key = private_key.encode()
         self._private_key = private_key
         self.app_id = app_id
         self.expiration_time = expiration_time
@@ -87,6 +87,26 @@ class GitHub:
         )
 
 
+def get_from_pass(passkey: str):
+    _application_id = subprocess.run(
+        f"pass show {passkey}/github-application-id",
+        shell=True,
+        check=True,
+        capture_output=True,
+    )
+
+    _private_key = subprocess.run(
+        f"pass show {passkey}/github-private-key",
+        shell=True,
+        check=True,
+        capture_output=True,
+    )
+    return (
+        _application_id.stdout.decode().strip(),
+        _private_key.stdout.decode().strip(),
+    )
+
+
 def get_private_key(ns):
     secret = subprocess.run(
         f"kubectl get secret {SECRET_NAME} -n{ns} -o json",
@@ -113,7 +133,10 @@ def main(args):
         else:
             print(pathlib.Path(args.cache_file).read_text(encoding="utf-8"))
 
-    application_id, private_key = get_private_key(args.install_namespace)
+    if args.pass_profile:
+        application_id, private_key = get_from_pass(args.pass_profile)
+    else:
+        application_id, private_key = get_private_key(args.install_namespace)
     github_app = GitHub(
         private_key,
         application_id,
@@ -143,6 +166,12 @@ def parse_args():
     )
     parser.add_argument(
         "--installation-id", "-i", type=int, help="Installation_ID", required=True
+    )
+
+    parser.add_argument(
+        "--pass-profile",
+        "-P",
+        help="Use pass to get the keys instead of detecting secret from kube, it's a folder container github-private-key and github-application-id",
     )
     parser.add_argument(
         "-n",
