@@ -1,0 +1,38 @@
+#compdef e2e-run
+
+local ret=1
+local -a state state_descr args
+
+args=(
+    '-h[display help information]'
+    '-f[enter shell repl]'
+    '-k[select a kubeconfig]: :->kubeprofile'
+    '-n[no cleanup]'
+    '-d[set debug]'
+    '-S[no snazy post processing]'
+    '-l[rerun last run]'
+    '-f[use fzf]'
+    '-p[pass environment]: :->passvars'
+    '-E[dump pass environment as /tmp/env]: :->passvars'
+    '*:test case:->testcase'
+)
+
+_arguments : $args && ret=0
+
+case $state in
+    testcase)
+        [[ -d test/ ]] && : ${(A)_cache_e2e_testcases:=${${(f)"$(rg --color=never --no-line-number --no-filename --no-heading '^func (Test[^(]+)' -o test/)"}:s/func //}}
+        [[ -n ${_cache_e2e_testcases} ]] && _values "test case" ${_cache_e2e_testcases[@]} && ret=0
+        ;;
+    kubeprofile)
+        local profiles=(~/.kube/config.*(:t:s/config./))
+        [[ -n ${profiles} ]] && { _values 'kubernetes profiles' ${profiles[@]} && ret=0 ;} || \
+            _message 'no kube profile'
+        ;;
+    passvars)
+        local passvars=(~/.password-store/pac/vars/*(:t:s/.gpg//))
+        [[ -n ${passvars} ]] && { _values 'pass environment' ${passvars[@]} && ret=0 ;} || \
+            _message 'no pass vars'
+esac
+
+return ret
