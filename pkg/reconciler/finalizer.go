@@ -26,9 +26,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, pr *v1beta1.PipelineRun) 
 		if !ok {
 			return nil
 		}
-		repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
-			Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
-
+		repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
 		// if repository is not found then remove the queue for that repository if exist
 		if errors.IsNotFound(err) {
 			r.qm.RemoveRepository(&v1alpha1.Repository{
