@@ -355,7 +355,6 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 
 	v.repositoryIDs = []int64{
 		pr.GetBase().GetRepo().GetID(),
-		pr.GetHead().GetRepo().GetID(),
 	}
 	return runevent, nil
 }
