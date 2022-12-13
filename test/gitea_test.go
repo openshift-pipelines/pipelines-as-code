@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -603,6 +604,30 @@ func TestGiteaCancelRun(t *testing.T) {
 	assert.Error(t, err, "pipelinerun has failed")
 
 	tgitea.CheckIfPipelineRunsCancelled(t, topts)
+}
+
+func TestGiteaConcurrencyOrderedExecution(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		Regexp:      successRegexp,
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelineruns-ordered-execution.yaml",
+		},
+		CheckForStatus:       "success",
+		CheckForNumberStatus: 3,
+		ConcurrencyLimit:     github.Int(1),
+		ExpectEvents:         false,
+	}
+	defer tgitea.TestPR(t, topts)()
+
+	repo, err := topts.Clients.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
+	assert.NilError(t, err)
+	// check the last 3 update in RepositoryRunStatus are in order
+	statusLen := len(repo.Status)
+	assert.Assert(t, strings.HasPrefix(repo.Status[statusLen-3].PipelineRunName, "abc"))
+	assert.Assert(t, strings.HasPrefix(repo.Status[statusLen-2].PipelineRunName, "pqr"))
+	assert.Assert(t, strings.HasPrefix(repo.Status[statusLen-1].PipelineRunName, "xyz"))
+	time.Sleep(time.Second * 10)
 }
 
 // Local Variables:

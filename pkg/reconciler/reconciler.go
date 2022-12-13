@@ -21,7 +21,6 @@ import (
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
 	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
@@ -92,43 +91,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 	return nil
 }
 
-func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
-	repoName := pr.GetLabels()[keys.Repository]
-	repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
-	if err != nil {
-		// if repository is not found, then skip processing the pipelineRun and return nil
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		return fmt.Errorf("updateError: %w", err)
-	}
-
-	// if concurrency was set and later removed or changed to zero
-	// then remove pipelineRun from Queue and update pending state to running
-	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit == 0 {
-		_ = r.qm.RemoveFromQueue(repo, pr)
-		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-			return fmt.Errorf("failed to update PipelineRun to in_progress: %w", err)
-		}
-		return nil
-	}
-
-	started, msg, err := r.qm.AddToQueue(repo, pr)
-	if err != nil {
-		return fmt.Errorf("failed to add to queue: %s: %w", pr.GetName(), err)
-	}
-
-	if started {
-		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-			return fmt.Errorf("failed to update pipelineRun to in_progress: %w", err)
-		}
-		return nil
-	}
-
-	logger.Infof("pipelineRun %s yet to start, %s", pr.Name, msg)
-	return nil
-}
-
 func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *v1beta1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
 	repoName := pr.GetLabels()[keys.Repository]
 	repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
@@ -185,21 +147,6 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	}
 
 	return repo, nil
-}
-
-func (r *Reconciler) emitMetrics(pr *v1beta1.PipelineRun) error {
-	gitProvider := pr.GetLabels()[keys.GitProvider]
-	eventType := pr.GetLabels()[keys.EventType]
-
-	if strings.HasPrefix(gitProvider, "github") {
-		if _, ok := pr.GetAnnotations()[keys.InstallationID]; ok {
-			gitProvider += "-app"
-		} else {
-			gitProvider += "-webhook"
-		}
-	}
-
-	return r.metrics.Count(gitProvider, eventType)
 }
 
 func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
