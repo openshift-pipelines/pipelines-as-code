@@ -101,7 +101,7 @@ roses are red, violets are blue. pipeline are bound to flake by design.
 
 You can cancel a running PipelineRun by commenting on the PullRequest.
 
-For example. you want to cancel all your pipeline you can add a comment starting
+For example if you want to cancel all your PipelinerRuns you can add a comment starting
 with `/cancel` and all PipelineRun attached to that pull or merge request will be cancelled.
 
 Example :
@@ -122,3 +122,7 @@ roses are red, violets are blue. why to run the pipeline when the infra is down.
 
 /cancel <pipelinerun-name>
 ```
+
+On Github App the status of the Pipeline will be set to `cancelled`.
+
+![pipelinerun canceled](/images/pr-cancel.png)
