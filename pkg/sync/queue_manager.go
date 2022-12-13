@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -10,10 +11,16 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	versioned2 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+)
+
+const (
+	creationTimestamp = "{.metadata.creationTimestamp}"
 )
 
 type QueueManager struct {
@@ -142,28 +149,8 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 			continue
 		}
 
-		// add all pipelineRuns in queued state to pending queue
+		// add all pipelineRuns in started state to pending queue
 		prs, err := tekton.TektonV1beta1().PipelineRuns(repo.Namespace).
-			List(ctx, v1.ListOptions{
-				LabelSelector: fmt.Sprintf("%s=%s", keys.State, kubeinteraction.StateQueued),
-			})
-		if err != nil {
-			return err
-		}
-
-		for _, pr := range prs.Items {
-			pr := pr
-			sema, err := qm.getSemaphore(&repo)
-			if err != nil {
-				return err
-			}
-
-			qKey := getQueueKey(&pr)
-			_ = sema.addToQueue(qKey, pr.CreationTimestamp.Time)
-		}
-
-		// now fetch all started pipelineRun and update the running queue
-		prs, err = tekton.TektonV1beta1().PipelineRuns(repo.Namespace).
 			List(ctx, v1.ListOptions{
 				LabelSelector: fmt.Sprintf("%s=%s", keys.State, kubeinteraction.StateStarted),
 			})
@@ -171,13 +158,48 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 			return err
 		}
 
-		for _, pr := range prs.Items {
+		// sort the pipelinerun by creation time before adding to queue
+		sortedPRs := sortPipelineRunsByCreationTimestamp(prs.Items)
+
+		for _, pr := range sortedPRs {
 			pr := pr
-			sema, err := qm.getSemaphore(&repo)
-			if err != nil {
-				return err
+			order, exist := pr.GetAnnotations()[keys.ExecutionOrder]
+			if !exist {
+				// if the pipelineRun doesn't have order label then wait
+				return nil
 			}
-			sema.acquire(getQueueKey(&pr))
+			orderedList := strings.Split(order, ",")
+			_, err = qm.AddListToQueue(&repo, orderedList)
+			if err != nil {
+				qm.logger.Error("failed to init queue for repo: ", repo.GetName())
+			}
+		}
+
+		// now fetch all queued pipelineRun
+		prs, err = tekton.TektonV1beta1().PipelineRuns(repo.Namespace).
+			List(ctx, v1.ListOptions{
+				LabelSelector: fmt.Sprintf("%s=%s", keys.State, kubeinteraction.StateQueued),
+			})
+		if err != nil {
+			return err
+		}
+
+		// sort the pipelinerun by creation time before adding to queue
+		sortedPRs = sortPipelineRunsByCreationTimestamp(prs.Items)
+
+		for _, pr := range sortedPRs {
+			pr := pr
+			order, exist := pr.GetAnnotations()[keys.ExecutionOrder]
+			if !exist {
+				// if the pipelineRun doesn't have order label then wait
+				return nil
+			}
+			orderedList := strings.Split(order, ",")
+
+			_, err = qm.AddListToQueue(&repo, orderedList)
+			if err != nil {
+				qm.logger.Error("failed to init queue for repo: ", repo.GetName())
+			}
 		}
 	}
 
@@ -212,4 +234,18 @@ func (qm *QueueManager) RunningPipelineRuns(repo *v1alpha1.Repository) []string 
 		return sema.getCurrentRunning()
 	}
 	return []string{}
+}
+
+func sortPipelineRunsByCreationTimestamp(prs []v1beta1.PipelineRun) []*v1beta1.PipelineRun {
+	runTimeObj := []runtime.Object{}
+	for i := range prs {
+		runTimeObj = append(runTimeObj, &prs[i])
+	}
+	sort.ByField(creationTimestamp, runTimeObj)
+	sortedPRs := []*v1beta1.PipelineRun{}
+	for _, run := range runTimeObj {
+		pr, _ := run.(*v1beta1.PipelineRun)
+		sortedPRs = append(sortedPRs, pr)
+	}
+	return sortedPRs
 }

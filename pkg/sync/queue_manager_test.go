@@ -27,7 +27,7 @@ func TestNewQueueManagerForList(t *testing.T) {
 	repo := newTestRepo("test", 1)
 
 	// first pipelineRun
-	prFirst := newTestPR("first", time.Now(), nil)
+	prFirst := newTestPR("first", time.Now(), nil, nil)
 
 	// added to queue, as there is only one should start
 	started, err := qm.AddListToQueue(repo, []string{getQueueKey(prFirst)})
@@ -39,8 +39,8 @@ func TestNewQueueManagerForList(t *testing.T) {
 
 	// adding another 2 pipelineRun, limit is 1 so this will be added to pending queue and
 	// then one will be started
-	prSecond := newTestPR("second", time.Now().Add(1*time.Second), nil)
-	prThird := newTestPR("third", time.Now().Add(7*time.Second), nil)
+	prSecond := newTestPR("second", time.Now().Add(1*time.Second), nil, nil)
+	prThird := newTestPR("third", time.Now().Add(7*time.Second), nil, nil)
 
 	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prSecond), getQueueKey(prThird)})
 	assert.NilError(t, err)
@@ -49,8 +49,8 @@ func TestNewQueueManagerForList(t *testing.T) {
 	assert.Equal(t, started[0], getQueueKey(prSecond))
 
 	// adding 2 more, will be going to pending queue
-	prFourth := newTestPR("fourth", time.Now().Add(5*time.Second), nil)
-	prFifth := newTestPR("fifth", time.Now().Add(4*time.Second), nil)
+	prFourth := newTestPR("fourth", time.Now().Add(5*time.Second), nil, nil)
+	prFifth := newTestPR("fifth", time.Now().Add(4*time.Second), nil, nil)
 
 	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prFourth), getQueueKey(prFifth)})
 	assert.NilError(t, err)
@@ -62,9 +62,9 @@ func TestNewQueueManagerForList(t *testing.T) {
 	// changing the concurrency limit to 2
 	repo.Spec.ConcurrencyLimit = intPtr(2)
 
-	prSixth := newTestPR("sixth", time.Now().Add(7*time.Second), nil)
-	prSeventh := newTestPR("seventh", time.Now().Add(5*time.Second), nil)
-	prEight := newTestPR("eight", time.Now().Add(4*time.Second), nil)
+	prSixth := newTestPR("sixth", time.Now().Add(7*time.Second), nil, nil)
+	prSeventh := newTestPR("seventh", time.Now().Add(5*time.Second), nil, nil)
+	prEight := newTestPR("eight", time.Now().Add(4*time.Second), nil, nil)
 
 	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prSixth), getQueueKey(prSeventh), getQueueKey(prEight)})
 	assert.NilError(t, err)
@@ -82,9 +82,9 @@ func TestNewQueueManagerReListing(t *testing.T) {
 	// repository for which pipelineRun are created
 	repo := newTestRepo("test", 2)
 
-	prFirst := newTestPR("first", time.Now(), nil)
-	prSecond := newTestPR("second", time.Now().Add(1*time.Second), nil)
-	prThird := newTestPR("third", time.Now().Add(7*time.Second), nil)
+	prFirst := newTestPR("first", time.Now(), nil, nil)
+	prSecond := newTestPR("second", time.Now().Add(1*time.Second), nil, nil)
+	prThird := newTestPR("third", time.Now().Add(7*time.Second), nil, nil)
 
 	// added to queue, as there is only one should start
 	started, err := qm.AddListToQueue(repo, []string{getQueueKey(prFirst), getQueueKey(prSecond), getQueueKey(prThird)})
@@ -104,15 +104,13 @@ func TestNewQueueManagerReListing(t *testing.T) {
 
 	// still there should only one running and 2 in pending
 	assert.Equal(t, len(qm.RunningPipelineRuns(repo)), 2)
-	assert.Assert(t, qm.RunningPipelineRuns(repo)[0] == "test-ns/first" || qm.RunningPipelineRuns(repo)[0] == "test-ns/second")
-	assert.Assert(t, qm.RunningPipelineRuns(repo)[1] == "test-ns/first" || qm.RunningPipelineRuns(repo)[1] == "test-ns/second")
 	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 1)
 	assert.Equal(t, qm.QueuedPipelineRuns(repo)[0], "test-ns/third")
 
 	// a new request comes
-	prFourth := newTestPR("fourth", time.Now(), nil)
-	prFifth := newTestPR("fifth", time.Now().Add(1*time.Second), nil)
-	prSixths := newTestPR("sixth", time.Now().Add(7*time.Second), nil)
+	prFourth := newTestPR("fourth", time.Now(), nil, nil)
+	prFifth := newTestPR("fifth", time.Now().Add(1*time.Second), nil, nil)
+	prSixths := newTestPR("sixth", time.Now().Add(7*time.Second), nil, nil)
 
 	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prFourth), getQueueKey(prFifth), getQueueKey(prSixths)})
 	assert.NilError(t, err)
@@ -136,7 +134,7 @@ func newTestRepo(name string, limit int) *v1alpha1.Repository {
 
 var intPtr = func(val int) *int { return &val }
 
-func newTestPR(name string, time time.Time, labels map[string]string) *v1beta1.PipelineRun {
+func newTestPR(name string, time time.Time, labels, annotations map[string]string) *v1beta1.PipelineRun {
 	return &v1beta1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -144,6 +142,7 @@ func newTestPR(name string, time time.Time, labels map[string]string) *v1beta1.P
 			Namespace:         "test-ns",
 			CreationTimestamp: metav1.Time{Time: time},
 			Labels:            labels,
+			Annotations:       annotations,
 		},
 		Spec:   v1beta1.PipelineRunSpec{},
 		Status: v1beta1.PipelineRunStatus{},
@@ -165,9 +164,12 @@ func TestQueueManager_InitQueues(t *testing.T) {
 
 	repo := newTestRepo("test", 1)
 
-	firstPR := newTestPR("first", cw.Now(), startedLabel)
-	secondPR := newTestPR("second", cw.Now().Add(5*time.Second), queuedLabel)
-	thirdPR := newTestPR("third", cw.Now().Add(3*time.Second), queuedLabel)
+	annotations := map[string]string{
+		keys.ExecutionOrder: "test-ns/first,test-ns/second,test-ns/third",
+	}
+	firstPR := newTestPR("first", cw.Now(), startedLabel, annotations)
+	secondPR := newTestPR("second", cw.Now().Add(5*time.Second), queuedLabel, annotations)
+	thirdPR := newTestPR("third", cw.Now().Add(3*time.Second), queuedLabel, annotations)
 
 	tdata := testclient.Data{
 		Repositories: []*v1alpha1.Repository{repo},
@@ -186,10 +188,10 @@ func TestQueueManager_InitQueues(t *testing.T) {
 	assert.Equal(t, len(sema.getCurrentRunning()), 1)
 
 	// now if first is completed and removed from running queue
-	// then third must start as it was created before second
+	// then second must start as per execution order
 	qm.RemoveFromQueue(repo, firstPR)
-	assert.Equal(t, sema.getCurrentRunning()[0], getQueueKey(thirdPR))
-	assert.Equal(t, sema.getCurrentPending()[0], getQueueKey(secondPR))
+	assert.Equal(t, sema.getCurrentRunning()[0], getQueueKey(secondPR))
+	assert.Equal(t, sema.getCurrentPending()[0], getQueueKey(thirdPR))
 
 	// list current running pipelineRuns for repo
 	runs := qm.RunningPipelineRuns(repo)
