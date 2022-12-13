@@ -148,7 +148,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 					},
 				},
 			}
-			stdata, _ := testclient.SeedTestData(t, ctx, testData)
+			stdata, informers := testclient.SeedTestData(t, ctx, testData)
 
 			testSetupGHReplies(t, mux, runEvent, tt.checkRunID, tt.finalStatus, tt.finalStatusText)
 
@@ -156,7 +156,8 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			assert.NilError(t, err)
 
 			r := Reconciler{
-				qm: sync.NewQueueManager(fakelogger),
+				repoLister: informers.Repository.Lister(),
+				qm:         sync.NewQueueManager(fakelogger),
 				run: &params.Run{
 					Clients: clients.Clients{
 						PipelineAsCode: stdata.PipelineAsCode,

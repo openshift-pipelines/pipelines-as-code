@@ -7,6 +7,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/informers/pipelinesascode/v1alpha1/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -50,6 +51,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			run:               run,
 			kinteract:         kinteract,
 			pipelineRunLister: pipelineRunInformer.Lister(),
+			repoLister:        repository.Get(ctx).Lister(),
 			qm:                sync.NewQueueManager(run.Clients.Log),
 			metrics:           metrics,
 			eventEmitter:      events.NewEventEmitter(run.Clients.Kube, run.Clients.Log),

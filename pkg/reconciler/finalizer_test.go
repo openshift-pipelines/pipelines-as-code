@@ -102,9 +102,10 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 			if tt.skipAddingRepo {
 				testData.Repositories = []*v1alpha1.Repository{}
 			}
-			stdata, _ := testclient.SeedTestData(t, ctx, testData)
+			stdata, informers := testclient.SeedTestData(t, ctx, testData)
 			r := Reconciler{
-				qm: sync.NewQueueManager(fakelogger),
+				repoLister: informers.Repository.Lister(),
+				qm:         sync.NewQueueManager(fakelogger),
 				run: &params.Run{
 					Clients: clients.Clients{
 						PipelineAsCode: stdata.PipelineAsCode,

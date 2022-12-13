@@ -70,7 +70,7 @@ rules:
     verbs: ["get", "delete"]
   - apiGroups: ["pipelinesascode.tekton.dev"]
     resources: ["repositories"]
-    verbs: ["get", "list", "update"]
+    verbs: ["get", "list", "update", "watch"]
   - apiGroups: ["tekton.dev"]
     resources: ["pipelineruns"]
     verbs: ["get", "delete", "list", "watch", "update", "patch"]

@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	pipelinesascode "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -30,6 +31,7 @@ import (
 
 type Reconciler struct {
 	run               *params.Run
+	repoLister        pipelinesascode.RepositoryLister
 	pipelineRunLister v1beta12.PipelineRunLister
 	kinteract         kubeinteraction.Interface
 	qm                *sync.QueueManager
@@ -92,8 +94,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 
 func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
 	repoName := pr.GetLabels()[keys.Repository]
-	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
-		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
+	repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
 	if err != nil {
 		// if repository is not found, then skip processing the pipelineRun and return nil
 		if errors.IsNotFound(err) {
@@ -130,8 +131,7 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 
 func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *v1beta1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
 	repoName := pr.GetLabels()[keys.Repository]
-	repo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().
-		Repositories(pr.Namespace).Get(ctx, repoName, metav1.GetOptions{})
+	repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
 	if err != nil {
 		return nil, fmt.Errorf("reportFinalStatus: %w", err)
 	}
