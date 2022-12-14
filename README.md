@@ -56,7 +56,7 @@ feel free to look over the `--help` to see the different options on how to insta
 
 This getting started video will guide you thought the `tkn-pac bootstrap` flow using [Kind](https://kind.sigs.k8s.io/) :
 
-[![Getting started to Pipelines as Code](https://img.youtube.com/vi/sIA4jjKQE9I/0.jpg)](https://www.youtube.com/watch?v=sIA4jjKQE9I)
+[![Getting started to Pipelines as Code](https://img.youtube.com/vi/cNOqPgpRXQY/0.jpg)](https://www.youtube.com/watch?v=cNOqPgpRXQY)
 
 For more details on the different installation method please follow [this document](docs/install.md) for installing Pipelines as Code on OpenShift.
 
