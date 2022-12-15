@@ -204,7 +204,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 			}
 		}
 		if statusOpts.PipelineRun != nil {
-			if err := action.PatchPipelineRun(ctx, v.Logger, "checkRunID and logURL", tekton, statusOpts.PipelineRun, metadataPatch(checkRunID, statusOpts.DetailsURL)); err != nil {
+			if _, err := action.PatchPipelineRun(ctx, v.Logger, "checkRunID and logURL", tekton, statusOpts.PipelineRun, metadataPatch(checkRunID, statusOpts.DetailsURL)); err != nil {
 				return err
 			}
 		}

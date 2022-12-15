@@ -13,16 +13,17 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
-func PatchPipelineRun(ctx context.Context, logger *zap.SugaredLogger, whatPatching string, tekton versioned.Interface, pr *v1beta1.PipelineRun, mergePatch map[string]interface{}) error {
+func PatchPipelineRun(ctx context.Context, logger *zap.SugaredLogger, whatPatching string, tekton versioned.Interface, pr *v1beta1.PipelineRun, mergePatch map[string]interface{}) (*v1beta1.PipelineRun, error) {
 	if pr == nil {
-		return nil
+		return nil, nil
 	}
+	var patchedPR *v1beta1.PipelineRun
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		patch, err := json.Marshal(mergePatch)
 		if err != nil {
 			return err
 		}
-		patchedPR, err := tekton.TektonV1beta1().PipelineRuns(pr.GetNamespace()).Patch(ctx, pr.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
+		patchedPR, err = tekton.TektonV1beta1().PipelineRuns(pr.GetNamespace()).Patch(ctx, pr.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
 		if err != nil {
 			logger.Infof("could not patch Pipelinerun with %v, retrying %v/%v: %v", whatPatching, pr.GetNamespace(), pr.GetName(), err)
 			return err
@@ -31,7 +32,7 @@ func PatchPipelineRun(ctx context.Context, logger *zap.SugaredLogger, whatPatchi
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("failed to patch pipelinerun %v/%v with %v: %w", pr.Namespace, whatPatching, pr.Name, err)
+		return nil, fmt.Errorf("failed to patch pipelinerun %v/%v with %v: %w", pr.Namespace, whatPatching, pr.Name, err)
 	}
-	return nil
+	return patchedPR, nil
 }
