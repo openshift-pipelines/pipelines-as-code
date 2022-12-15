@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -39,12 +38,9 @@ func TestPatchPipelineRun(t *testing.T) {
 		ConsoleUI: &consoleui.TektonDashboard{BaseURL: "https://localhost.console"},
 	}
 
-	err := PatchPipelineRun(ctx, logger, "log URL", fakeClients.Tekton, testPR, getLogURLMergePatch(fakeClients, testPR))
+	patchedPR, err := PatchPipelineRun(ctx, logger, "log URL", fakeClients.Tekton, testPR, getLogURLMergePatch(fakeClients, testPR))
 	assert.NilError(t, err)
-
-	pr, err := fakeClients.Tekton.TektonV1beta1().PipelineRuns("namespace").Get(ctx, "force-me", metav1.GetOptions{})
-	assert.NilError(t, err)
-	assert.Equal(t, pr.Annotations[filepath.Join(apipac.GroupName, "log-url")], "https://localhost.console/#/namespaces/namespace/pipelineruns/force-me")
+	assert.Equal(t, patchedPR.Annotations[filepath.Join(apipac.GroupName, "log-url")], "https://localhost.console/#/namespaces/namespace/pipelineruns/force-me")
 }
 
 func getLogURLMergePatch(clients clients.Clients, pr *pipelinev1beta1.PipelineRun) map[string]interface{} {

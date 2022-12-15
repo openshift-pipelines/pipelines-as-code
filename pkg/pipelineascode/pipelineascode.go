@@ -89,7 +89,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 
 			go func(order string, pr v1beta1.PipelineRun) {
 				defer wg.Done()
-				if err := action.PatchPipelineRun(ctx, p.logger, "execution order", p.run.Clients.Tekton, &pr, getExecutionOrderPatch(order)); err != nil {
+				if _, err := action.PatchPipelineRun(ctx, p.logger, "execution order", p.run.Clients.Tekton, &pr, getExecutionOrderPatch(order)); err != nil {
 					errMsg := fmt.Sprintf("Failed to patch pipelineruns %s execution order: %s", pr.GetGenerateName(), err.Error())
 					p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", errMsg)
 					return
@@ -171,7 +171,8 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*v1beta1.Pip
 
 	// Patch pipelineRun with logURL annotation, skips for GitHub App as we patch logURL while patching checkrunID
 	if _, ok := pr.Annotations[keys.InstallationID]; !ok {
-		if err := action.PatchPipelineRun(ctx, p.logger, "logURL", p.run.Clients.Tekton, pr, getLogURLMergePatch(p.run.Clients, pr)); err != nil {
+		pr, err = action.PatchPipelineRun(ctx, p.logger, "logURL", p.run.Clients.Tekton, pr, getLogURLMergePatch(p.run.Clients, pr))
+		if err != nil {
 			return pr, err
 		}
 	}
