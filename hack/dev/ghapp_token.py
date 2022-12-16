@@ -6,6 +6,7 @@ import json
 import os
 import pathlib
 import subprocess
+import sys
 import time
 
 import requests
@@ -13,20 +14,38 @@ from jwcrypto import jwk, jwt
 
 SECRET_NAME = "pipelines-as-code-secret"
 NAMESPACE = "pipelines-as-code"
-EXPIRE_MINUTES_AS_SECONDS = (
-    int(os.environ.get("GITHUBAPP_TOKEN_EXPIRATION_MINUTES", 10)) * 60
-)
+JWT_EXPIRE_MINUTES_AS_SECONDS = 10 * 60
+
 # TODO support github enteprise
 GITHUB_API_URL = "https://api.github.com"
+
+HELP_TEXT = """
+ghapp_token.py let you generate a token for a github app out of an application
+id and a private key
+
+The way it works is that first we generate a jwt token out of the private key
+then use it to get a installation token. (see documentation here:
+https://is.gd/DsPw4z)
+
+It will automatically detect the secret from the cluster in the
+pipelines-as-code namespace (unless you specify the -n flag for another
+namespace) and get the value from there.
+
+If you are generating a token on GHE you probably want to pass the flag -a for
+another api endpoint.
+
+Alternatively you can use a pass (https://passwordstore.org) profile to get
+the keys with the -P flag.
+
+You can use a cache file to avoid generating a new token each time and reuse
+"""
 
 
 # pylint: disable=too-few-public-methods
 class GitHub:
     token = None
 
-    def __init__(
-        self, private_key, app_id, expiration_time, github_api_url, installation_id=None
-    ):
+    def __init__(self, private_key, app_id, expiration_time, github_api_url):
         if not isinstance(private_key, bytes):
             private_key = private_key.encode()
         self._private_key = private_key
@@ -34,7 +53,6 @@ class GitHub:
         self.expiration_time = expiration_time
         self.github_api_url = github_api_url
         self.jwt_token = self._get_jwt_token()
-        self.token = self._get_token(installation_id)
 
     @classmethod
     def _load_private_key(cls, pem_key_bytes):
@@ -56,7 +74,7 @@ class GitHub:
         token.make_signed_token(key)
         return token.serialize()
 
-    def _get_token(self, installation_id):
+    def get_token(self, installation_id):
         req = self._request(
             "POST",
             f"/app/installations/{installation_id}/access_tokens",
@@ -127,7 +145,7 @@ def main(args):
         if datetime.datetime.fromtimestamp(
             mtime
         ) < datetime.datetime.now() - datetime.timedelta(
-            seconds=args.token_expiration_time
+            seconds=args.jwt_token_expiration_time
         ):
             os.remove(args.cache_file)
         else:
@@ -140,14 +158,23 @@ def main(args):
     github_app = GitHub(
         private_key,
         application_id,
-        expiration_time=args.token_expiration_time,
+        expiration_time=args.jwt_token_expiration_time,
         github_api_url=args.api_url,
-        installation_id=args.installation_id,
     )
+
     if args.jwt_token:
         print(github_app.jwt_token)
-    else:
-        print(github_app.token)
+        sys.exit(0)
+
+    if not args.installation_id:
+        print(
+            "You need to provide an installation id or have the -j flag to only generate jwt token"
+        )
+        sys.exit(1)
+
+    github_app.token = github_app.get_token(args.installation_id)
+    print(github_app.token)
+
     if args.cache_file:
         print(
             pathlib.Path(args.cache_file).write_text(
@@ -157,15 +184,20 @@ def main(args):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Generate a user token")
-    parser.add_argument(
-        "--token-expiration-time",
-        type=int,
-        help="Token expiration time (seconds)",
-        default=EXPIRE_MINUTES_AS_SECONDS,
+    parser = argparse.ArgumentParser(
+        description="Generate a installation token from github application pac secret"
     )
     parser.add_argument(
-        "--installation-id", "-i", type=int, help="Installation_ID", required=True
+        "--jwt-token-expiration-time",
+        type=int,
+        help="Token expiration time (seconds)",
+        default=JWT_EXPIRE_MINUTES_AS_SECONDS,
+    )
+    parser.add_argument(
+        "--installation-id",
+        "-i",
+        type=int,
+        help="Installation_ID",
     )
 
     parser.add_argument(
@@ -191,11 +223,18 @@ def parse_args():
         "--cache-file",
         help=(
             f"Cache file will only regenerate after the expiration time, "
-            f"default: {EXPIRE_MINUTES_AS_SECONDS / 60} minutes"
+            f"default: {JWT_EXPIRE_MINUTES_AS_SECONDS / 60} minutes"
         ),
         default=os.environ.get("GITHUBAPP_RESULT_PATH"),
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if not args.installation_id or not args.jwt_token:
+        parser.print_help()
+        print("Description:", end="")
+        print("\n".join([f"  {x}" for x in HELP_TEXT.splitlines()]))
+        sys.exit(1)
+
+    return args
 
 
 if __name__ == "__main__":
