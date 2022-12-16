@@ -25,7 +25,7 @@ const (
 	secretName = "pipelines-as-code-secret"
 )
 
-func (v *Provider) getAppToken(ctx context.Context, kube kubernetes.Interface, gheURL string, installationID int64) (string, error) {
+func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, gheURL string, installationID int64) (string, error) {
 	// TODO: move this out of here
 	ns := os.Getenv("SYSTEM_NAMESPACE")
 	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
@@ -137,7 +137,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	installationIDFrompayload := getInstallationIDFromPayload(payload)
 	if installationIDFrompayload != -1 {
 		var err error
-		if event.Provider.Token, err = v.getAppToken(ctx, run.Clients.Kube, event.Provider.URL, installationIDFrompayload); err != nil {
+		if event.Provider.Token, err = v.GetAppToken(ctx, run.Clients.Kube, event.Provider.URL, installationIDFrompayload); err != nil {
 			return nil, err
 		}
 	}
@@ -176,7 +176,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 			}
 		}
 		var err error
-		if processedEvent.Provider.Token, err = v.getAppToken(ctx, run.Clients.Kube, event.Provider.URL,
+		if processedEvent.Provider.Token, err = v.GetAppToken(ctx, run.Clients.Kube, event.Provider.URL,
 			installationIDFrompayload); err != nil {
 			return nil, err
 		}

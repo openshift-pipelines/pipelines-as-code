@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -17,8 +18,8 @@ import (
 )
 
 func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E, *github.Provider, error) {
+	githubToken := ""
 	githubURL := os.Getenv("TEST_GITHUB_API_URL")
-	githubToken := os.Getenv("TEST_GITHUB_TOKEN")
 	githubRepoOwnerGithubApp := os.Getenv("TEST_GITHUB_REPO_OWNER_GITHUBAPP")
 	githubRepoOwnerDirectWebhook := os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK")
 
@@ -36,12 +37,13 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 
 	var splitted []string
 	if !viaDirectWebhook {
-		if githubURL == "" || githubToken == "" || githubRepoOwnerGithubApp == "" {
-			return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_GITHUB_API_URL TEST_GITHUB_TOKEN TEST_GITHUB_REPO_OWNER_GITHUBAPP need to be set")
+		if githubURL == "" || githubRepoOwnerGithubApp == "" {
+			return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_GITHUB_API_URL TEST_GITHUB_REPO_OWNER_GITHUBAPP need to be set")
 		}
 		splitted = strings.Split(githubRepoOwnerGithubApp, "/")
 	}
 	if viaDirectWebhook {
+		githubToken = os.Getenv("TEST_GITHUB_TOKEN")
 		if githubURL == "" || githubToken == "" || githubRepoOwnerDirectWebhook == "" {
 			return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_GITHUB_API_URL TEST_GITHUB_TOKEN TEST_GITHUB_REPO_OWNER_WEBHOOK need to be set")
 		}
@@ -52,9 +54,35 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return nil, options.E2E{}, github.New(), err
 	}
+
 	e2eoptions := options.E2E{Organization: splitted[0], Repo: splitted[1], DirectWebhook: viaDirectWebhook}
 	gprovider := github.New()
 	event := info.NewEvent()
+
+	if githubToken == "" && !viaDirectWebhook {
+		var err error
+		// check if SYSTEM_NAMESPACE is set otherwise set it
+		if os.Getenv("SYSTEM_NAMESPACE") == "" {
+			if err := os.Setenv("SYSTEM_NAMESPACE", "pipelines-as-code"); err != nil {
+				return &params.Run{}, options.E2E{}, &github.Provider{}, err
+			}
+		}
+
+		envGithubRepoInstallationID := os.Getenv("TEST_GITHUB_REPO_INSTALLATION_ID")
+		if envGithubRepoInstallationID == "" {
+			return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_GITHUB_REPO_INSTALLATION_ID need to be set")
+		}
+		// convert to int64 githubRepoInstallationID
+		githubRepoInstallationID, err := strconv.ParseInt(envGithubRepoInstallationID, 10, 64)
+		if err != nil {
+			return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_GITHUB_REPO_INSTALLATION_ID need to be set")
+		}
+		githubToken, err = gprovider.GetAppToken(ctx, run.Clients.Kube, githubURL, githubRepoInstallationID)
+		if err != nil {
+			return nil, options.E2E{}, github.New(), err
+		}
+	}
+
 	event.Provider = &info.Provider{
 		Token: githubToken,
 		URL:   githubURL,
