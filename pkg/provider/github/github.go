@@ -110,7 +110,7 @@ func (v *Provider) GetTaskURI(ctx context.Context, _ *params.Run, event *info.Ev
 
 func (v *Provider) InitAppClient(ctx context.Context, kube kubernetes.Interface, event *info.Event) error {
 	var err error
-	event.Provider.Token, err = v.getAppToken(ctx, kube, event.GHEURL, event.InstallationID)
+	event.Provider.Token, err = v.GetAppToken(ctx, kube, event.GHEURL, event.InstallationID)
 	if err != nil {
 		return err
 	}
