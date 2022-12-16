@@ -21,7 +21,12 @@ func TestK8LabelsCleanup(t *testing.T) {
 		{
 			name: "github bot name",
 			str:  "github-actions[bot]",
-			want: "github-actions__bot__",
+			want: "github-actions__bot",
+		},
+		{
+			name: "trailing dash name removed",
+			str:  "MBAPPEvsMESSI--",
+			want: "MBAPPEvsMESSI",
 		},
 	}
 	for _, tt := range tests {
