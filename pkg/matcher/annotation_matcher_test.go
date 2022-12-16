@@ -911,6 +911,14 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "ref-heads-main-push-rerequested-case",
+			args: args{
+				pruns:    []*tektonv1beta1.PipelineRun{pipelineGood},
+				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "refs/heads/main"},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
