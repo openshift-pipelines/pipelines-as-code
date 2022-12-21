@@ -25,23 +25,30 @@ const (
 	secretName = "pipelines-as-code-secret"
 )
 
-func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, gheURL string, installationID int64) (string, error) {
+func GetAppIDAndPrivateKey(ctx context.Context, kube kubernetes.Interface) (int64, []byte, error) {
 	// TODO: move this out of here
 	ns := os.Getenv("SYSTEM_NAMESPACE")
 	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
 	if err != nil {
-		return "", err
+		return 0, []byte{}, err
 	}
 
 	appID := secret.Data["github-application-id"]
 	applicationID, err := strconv.ParseInt(strings.TrimSpace(string(appID)), 10, 64)
 	if err != nil {
-		return "", fmt.Errorf("could not parse the github application_id number from secret: %w", err)
+		return 0, []byte{}, fmt.Errorf("could not parse the github application_id number from secret: %w", err)
 	}
-	v.ApplicationID = &applicationID
 
 	privateKey := secret.Data["github-private-key"]
+	return applicationID, privateKey, nil
+}
 
+func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, gheURL string, installationID int64) (string, error) {
+	applicationID, privateKey, err := GetAppIDAndPrivateKey(ctx, kube)
+	if err != nil {
+		return "", err
+	}
+	v.ApplicationID = &applicationID
 	tr := http.DefaultTransport
 
 	itr, err := ghinstallation.New(tr, applicationID, installationID, privateKey)

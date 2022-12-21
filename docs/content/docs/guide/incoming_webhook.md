@@ -14,10 +14,7 @@ specify a reference Secret which will be used as a shared secret and the
 branches targetted by the incoming webhook.
 
 {{< hint danger >}}
-you will need to have a git_provider spec to specify a token when using the
-github-apps method the same way we are doing for github-webhook method. Refer to
-the [github webhook documentation](/docs/install/github_webhook) for how to set
-this up.
+If you are not using the github app provider (ie: webhook based provider) you will need to have a `git_provider` spec to specify a token.
 
 Additionally since we are not able to detect automatically the type of provider
 on URL. You will need to add it to the `git_provider.type` spec. Supported
@@ -27,7 +24,11 @@ values are:
 - gitlab
 - bitbucket-cloud
 
+Whereas for `github-apps` this doesn't need to be added.
+
 {{< /hint >}}
+
+### Webhook
 
 Here is an example of a Repository CRD matching the target branch main:
 
@@ -52,7 +53,28 @@ spec:
       type: webhook-url
 ```
 
-a secret named `repo-incoming-secret` will have this value:
+### GithubApp
+
+Here is an example of a Repository CRD matching the target branch main:
+
+```yaml
+---
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: repo
+  namespace: ns
+spec:
+  url: "https://github.com/owner/repo"
+  incoming:
+    - targets:
+      - main
+      secret:
+        name: repo-incoming-secret
+      type: webhook-url
+```
+
+a secret named `repo-incoming-secret` for both webhook and github-apps will have this value:
 
 ```yaml
 apiVersion: v1
@@ -66,7 +88,7 @@ stringData:
 ```
 
 after setting this up, you will be able to trigger a PipelineRun called
-`pipelienrun1` which will be located in the `.tekton` directory of the Git repo
+`pipelinerun1` which will be located in the `.tekton` directory of the Git repo
 `https://github.com/owner/repo`. As an example here is the full curl snippet:
 
 ```shell

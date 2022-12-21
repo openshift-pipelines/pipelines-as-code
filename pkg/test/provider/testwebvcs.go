@@ -82,3 +82,7 @@ func (v *TestProviderImp) GetFileInsideRepo(ctx context.Context, event *info.Eve
 func (v *TestProviderImp) GetFiles(ctx context.Context, event *info.Event) ([]string, error) {
 	return []string{}, nil
 }
+
+func (v *TestProviderImp) ListRepos(ctx context.Context) ([]string, error) {
+	return []string{}, nil
+}

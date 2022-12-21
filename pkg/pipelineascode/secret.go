@@ -17,7 +17,7 @@ import (
 const (
 	DefaultGitProviderSecretKey                  = "provider.token"
 	DefaultGitProviderWebhookSecretKey           = "webhook.secret"
-	defaultPipelinesAscodeSecretName             = "pipelines-as-code-secret"
+	DefaultPipelinesAscodeSecretName             = "pipelines-as-code-secret"
 	defaultPipelinesAscodeSecretWebhookSecretKey = "webhook.secret"
 )
 
@@ -95,7 +95,7 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 func GetCurrentNSWebhookSecret(ctx context.Context, k8int kubeinteraction.Interface) (string, error) {
 	s, err := k8int.GetSecret(ctx, ktypes.GetSecretOpt{
 		Namespace: os.Getenv("SYSTEM_NAMESPACE"),
-		Name:      defaultPipelinesAscodeSecretName,
+		Name:      DefaultPipelinesAscodeSecretName,
 		Key:       defaultPipelinesAscodeSecretWebhookSecretKey,
 	})
 	// a lot of people have problem with this secret, when encoding it to base64 which add a \n when we do :
