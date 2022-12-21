@@ -382,10 +382,10 @@ func TestRun(t *testing.T) {
 			if tt.ProviderInfoFromRepo {
 				secrets[repoToken] = "token"
 				repo.SecretName = repoToken
-				repo.WebhookSecretName = defaultPipelinesAscodeSecretName
-				secrets[defaultPipelinesAscodeSecretName] = webhookSecret
+				repo.WebhookSecretName = DefaultPipelinesAscodeSecretName
+				secrets[DefaultPipelinesAscodeSecretName] = webhookSecret
 			} else {
-				secrets[defaultPipelinesAscodeSecretName] = webhookSecret
+				secrets[DefaultPipelinesAscodeSecretName] = webhookSecret
 			}
 
 			if tt.repositories == nil {

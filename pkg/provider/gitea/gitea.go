@@ -291,3 +291,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string
 	// TODO: figure out a way
 	return []string{}, fmt.Errorf("GetFiles is not supported on Gitea")
 }
+
+func (v *Provider) ListRepos(ctx context.Context) ([]string, error) {
+	return []string{}, nil
+}

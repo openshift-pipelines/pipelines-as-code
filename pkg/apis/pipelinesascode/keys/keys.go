@@ -48,4 +48,8 @@ const (
 	MaxKeepRuns     = pipelinesascode.GroupName + "/max-keep-runs"
 	LogURL          = pipelinesascode.GroupName + "/log-url"
 	ExecutionOrder  = pipelinesascode.GroupName + "/execution-order"
+	// default is "https://api.github.com" but it can be overridden by X-GitHub-Enterprise-Host header
+	APIURL = "https://api.github.com"
+	// installationURL give us the Installation ID
+	InstallationURL = "/app/installations"
 )

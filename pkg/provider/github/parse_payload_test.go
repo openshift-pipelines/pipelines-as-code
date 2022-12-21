@@ -540,7 +540,6 @@ func TestAppTokenGeneration(t *testing.T) {
 				extras := ""
 				for name := range tt.extraRepoInstallIds {
 					split := strings.Split(name, "/")
-					// fmt.Printf("%+v %v\n", name, iid)
 					mux.HandleFunc(fmt.Sprintf("/repos/%s/%s", split[0], split[1]), func(w http.ResponseWriter, r *http.Request) {
 						// i can't do a for name, iid and use iid, cause golang shadows the variable out of the for loop
 						// a bit stupid

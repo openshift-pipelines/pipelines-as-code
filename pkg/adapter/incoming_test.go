@@ -3,6 +3,7 @@ package adapter
 import (
 	"fmt"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
@@ -21,9 +23,26 @@ import (
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+const fakePrivateKey = `-----BEGIN RSA PRIVATE KEY-----
+MIICXAIBAAKBgQC6GorZBeri0eVERMZQDFh5E1RMPjFk9AevaWr27yJse6eiUlos
+gY2L2vcZKLOrdvVR+TLLapIMFfg1E1qVr1iTHP3IiSCs1uW6NKDmxEQc9Uf/fG9c
+i56tGmTVxLkC94AvlVFmgxtWfHdP3lF2O0EcfRyIi6EIbGkWDqWQVEQG2wIDAQAB
+AoGAaKOd6FK0dB5Si6Uj4ERgxosAvfHGMh4n6BAc7YUd1ONeKR2myBl77eQLRaEm
+DMXRP+sfDVL5lUQRED62ky1JXlDc0TmdLiO+2YVyXI5Tbej0Q6wGVC25/HedguUX
+fw+MdKe8jsOOXVRLrJ2GfpKZ2CmOKGTm/hyrFa10TmeoTxkCQQDa4fvqZYD4vOwZ
+CplONnVk+PyQETj+mAyUiBnHEeLpztMImNLVwZbrmMHnBtCNx5We10oCLW+Qndfw
+Xi4LgliVAkEA2amSV+TZiUVQmm5j9yzon0rt1FK+cmVWfRS/JAUXyvl+Xh/J+7Gu
+QzoEGJNAnzkUIZuwhTfNRWlzURWYA8BVrwJAZFQhfJd6PomaTwAktU0REm9ulTrP
+vSNE4PBhoHX6ZOGAqfgi7AgIfYVPm+3rupE5a82TBtx8vvUa/fqtcGkW4QJAaL9t
+WPUeJyx/XMJxQzuOe1JA4CQt2LmiBLHeRoRY7ephgQSFXKYmed3KqNT8jWOXp5DY
+Q1QWaigUQdpFfNCrqwJBANLgWaJV722PhQXOCmR+INvZ7ksIhJVcq/x1l2BYOLw2
+QsncVExbMiPa9Oclo5qLuTosS8qwHm1MJEytp3/SkB8=
+-----END RSA PRIVATE KEY-----`
 
 func Test_compareSecret(t *testing.T) {
 	type args struct {
@@ -63,6 +82,13 @@ func Test_compareSecret(t *testing.T) {
 
 func Test_listener_detectIncoming(t *testing.T) {
 	const goodURL = "https://matched/by/incoming"
+	t.Setenv("SYSTEM_NAMESPACE", "pipelinesascode")
+	testNamespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: os.Getenv("SYSTEM_NAMESPACE"),
+		},
+	}
+
 	type args struct {
 		data             testclient.Data
 		method           string
@@ -276,6 +302,16 @@ func Test_listener_detectIncoming(t *testing.T) {
 							},
 						},
 					},
+					Secret: []*corev1.Secret{{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+							Namespace: testNamespace.Name,
+						},
+						Data: map[string][]byte{
+							"github-application-id": []byte("274799"),
+							"github-private-key":    []byte(fakePrivateKey),
+						},
+					}},
 				},
 			},
 			wantErr: true,
@@ -351,7 +387,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "bad/no git provider type",
+			name: "no git provider",
 			args: args{
 				queryURL:         "/incoming",
 				queryRepository:  "repo",
@@ -377,6 +413,16 @@ func Test_listener_detectIncoming(t *testing.T) {
 							},
 						},
 					},
+					Secret: []*corev1.Secret{{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+							Namespace: testNamespace.Name,
+						},
+						Data: map[string][]byte{
+							"github-application-id": []byte("274799"),
+							"github-private-key":    []byte(fakePrivateKey),
+						},
+					}},
 				},
 			},
 			wantErr: true,
@@ -387,8 +433,11 @@ func Test_listener_detectIncoming(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			cs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
 			client := &params.Run{
-				Clients: clients.Clients{PipelineAsCode: cs.PipelineAsCode},
-				Info:    info.Info{},
+				Clients: clients.Clients{
+					PipelineAsCode: cs.PipelineAsCode,
+					Kube:           cs.Kube,
+				},
+				Info: info.Info{},
 			}
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
@@ -513,6 +562,30 @@ func Test_listener_processIncoming(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:     "No GitProvider is provided",
+			want:     github.New(),
+			wantOrg:  "owner",
+			wantRepo: "repo",
+			targetRepo: &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{
+					URL:         "https://forge/owner/repo",
+					GitProvider: nil,
+				},
+			},
+		},
+		{
+			name:     "No GitProvider type is provided",
+			want:     github.New(),
+			wantOrg:  "owner",
+			wantRepo: "repo",
+			targetRepo: &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{
+					URL:         "https://forge/owner/repo",
+					GitProvider: &v1alpha1.GitProvider{},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -535,4 +608,174 @@ func Test_listener_processIncoming(t *testing.T) {
 			assert.Assert(t, l.event.Repository == tt.wantRepo)
 		})
 	}
+}
+
+func Test_GenerateJWT(t *testing.T) {
+	t.Setenv("SYSTEM_NAMESPACE", "foo")
+	namespaceWhereSecretNotInstalled := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: os.Getenv("SYSTEM_NAMESPACE"),
+		},
+	}
+
+	t.Setenv("SYSTEM_NAMESPACE", "pipelinesascode")
+	testNamespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: os.Getenv("SYSTEM_NAMESPACE"),
+		},
+	}
+
+	validSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+			Namespace: testNamespace.Name,
+		},
+		Data: map[string][]byte{
+			"github-application-id": []byte("12345"),
+			"github-private-key":    []byte(fakePrivateKey),
+		},
+	}
+
+	secretWithInavlidAppID := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+			Namespace: testNamespace.Name,
+		},
+		Data: map[string][]byte{
+			"github-application-id": []byte("abcdf"),
+			"github-private-key":    []byte(fakePrivateKey),
+		},
+	}
+	secretWithInvalidPrivateKey := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+			Namespace: testNamespace.Name,
+		},
+		Data: map[string][]byte{
+			"github-application-id": []byte("12345"),
+			"github-private-key":    []byte("invalidprivatekey"),
+		},
+	}
+
+	tests := []struct {
+		name      string
+		wantErr   bool
+		secrets   []*corev1.Secret
+		namespace []*corev1.Namespace
+	}{{
+		name:      "secret not found",
+		namespace: []*corev1.Namespace{namespaceWhereSecretNotInstalled},
+		secrets:   []*corev1.Secret{},
+		wantErr:   true,
+	}, {
+		name:      "invalid github-application-id",
+		namespace: []*corev1.Namespace{testNamespace},
+		secrets:   []*corev1.Secret{secretWithInavlidAppID},
+		wantErr:   true,
+	}, {
+		name:      "invalid private key",
+		namespace: []*corev1.Namespace{testNamespace},
+		secrets:   []*corev1.Secret{secretWithInvalidPrivateKey},
+		wantErr:   true,
+	}, {
+		name:      "valid secret found",
+		namespace: []*corev1.Namespace{testNamespace},
+		secrets:   []*corev1.Secret{validSecret},
+		wantErr:   false,
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger := getLogger()
+			tdata := testclient.Data{
+				Namespaces: tt.namespace,
+				Secret:     tt.secrets,
+			}
+			ctxNoSecret, _ := rtesting.SetupFakeContext(t)
+			stdata, _ := testclient.SeedTestData(t, ctxNoSecret, tdata)
+			run := &params.Run{
+				Clients: clients.Clients{
+					Log:            logger,
+					PipelineAsCode: stdata.PipelineAsCode,
+					Kube:           stdata.Kube,
+				},
+			}
+
+			token, err := GenerateJWT(ctxNoSecret, run)
+			if tt.wantErr {
+				assert.Assert(t, err != nil)
+				return
+			}
+			assert.NilError(t, err)
+
+			if token == "" {
+				t.Errorf("there should be a generated token")
+			}
+		})
+	}
+}
+
+func Test_GetAndUpdateInstallationID(t *testing.T) {
+	t.Setenv("SYSTEM_NAMESPACE", "pipelinesascode")
+	testNamespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: os.Getenv("SYSTEM_NAMESPACE"),
+		},
+	}
+
+	validSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+			Namespace: testNamespace.Name,
+		},
+		Data: map[string][]byte{
+			"github-application-id": []byte("274799"),
+			"github-private-key":    []byte(fakePrivateKey),
+		},
+	}
+	logger := getLogger()
+	tdata := testclient.Data{
+		Namespaces: []*corev1.Namespace{testNamespace},
+		Secret:     []*corev1.Secret{validSecret},
+	}
+	ctx, _ := rtesting.SetupFakeContext(t)
+	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
+	run := &params.Run{
+		Clients: clients.Clients{
+			Log:            logger,
+			PipelineAsCode: stdata.PipelineAsCode,
+			Kube:           stdata.Kube,
+		},
+		Info: info.Info{},
+	}
+
+	l := &listener{
+		run:    run,
+		logger: logger,
+		event:  info.NewEvent(),
+	}
+	req := httptest.NewRequest("GET", "http://localhost", strings.NewReader(""))
+
+	req.Header.Add("X-GitHub-Enterprise-Host", "https://api.github.com")
+
+	repo := &v1alpha1.Repository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "repo",
+		},
+		Spec: v1alpha1.RepositorySpec{
+			URL: "https://matched/by/incoming",
+			Incomings: &[]v1alpha1.Incoming{
+				{
+					Targets: []string{"main"},
+					Secret: v1alpha1.Secret{
+						Name: "secret",
+					},
+				},
+			},
+		},
+	}
+
+	err := l.getAndUpdateInstallationID(ctx, req, run, repo)
+	// It always returns error because we don't have valid Private Key to connect with GithubAPP
+	assert.Assert(t, err != nil)
 }

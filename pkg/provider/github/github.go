@@ -429,3 +429,20 @@ func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Eve
 	}
 	return decoded, err
 }
+
+func (v *Provider) ListRepos(ctx context.Context) ([]string, error) {
+	if v.Client == nil {
+		return []string{}, fmt.Errorf("no github client has been initiliazed, " +
+			"exiting... (hint: did you forget setting a secret on your repo?)")
+	}
+
+	repoURLs := []string{}
+	repoList, _, err := v.Client.Apps.ListRepos(ctx, &github.ListOptions{})
+	if err != nil {
+		return []string{}, err
+	}
+	for i := range repoList.Repositories {
+		repoURLs = append(repoURLs, *repoList.Repositories[i].HTMLURL)
+	}
+	return repoURLs, nil
+}
