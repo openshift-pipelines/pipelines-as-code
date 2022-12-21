@@ -550,7 +550,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				}
 
 				run.Info.Pac.SecretGHAppRepoScoped = true
-				run.Info.Pac.SecretGhAppTokenScoppedExtraRepos = extras
+				run.Info.Pac.SecretGhAppTokenScopedExtraRepos = extras
 			}
 
 			_, err := gprovider.ParsePayload(tt.ctx, run, request, string(jeez))

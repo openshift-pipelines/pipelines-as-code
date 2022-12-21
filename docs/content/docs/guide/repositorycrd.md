@@ -66,7 +66,13 @@ spec:
   concurrency_limit: <number>
 ```
 
+If there is multiple PipelineRuns matching the event, the PipelineRuns
+that match the event will always be started in alphabetical order.
+
 Example:
-Lets say you have 3 pipelines in `.tekton` directory, and you create a pull request with `concurrency_limit` defined as 1 in
-Repository CR. Then all the pipelineruns will run one after the another, at any time only one pipelinerun would be in running
-state and rest of them will be queued.
+
+If you have three pipelineruns in a .tekton directory, and you create a pull
+request with a `concurrency_limit` of 1 in the repository configuration, then all
+of the pipelineruns will be executed in alphabetical order, one after the
+other. At any given time, only one pipeline run will be in the running state,
+while the rest will be queued.

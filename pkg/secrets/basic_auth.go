@@ -56,8 +56,9 @@ func MakeBasicAuthSecret(runevent *info.Event, secretName string) (*corev1.Secre
 	secretData := map[string]string{
 		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, cloneURL),
 		".git-credentials": urlWithToken,
-		// On GitHub APP the token is available for 8h if you have the user to server token expiration.
-		// the token is scopped to the installation ID
+		// With the GitHub APP method the token is available for 8h if you have
+		// the user to server token expiration.  the token is scoped to the
+		// installation ID
 		"git-provider-token": token,
 	}
 	annotations := map[string]string{

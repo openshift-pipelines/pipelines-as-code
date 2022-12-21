@@ -207,8 +207,9 @@ PullRequest from any repositories.
 {{< hint info >}}
 
 * On GitHub apps the generated installation token [will be available for 8 hours](https://docs.github.com/en/developers/apps/building-github-apps/refreshing-user-to-server-access-tokens)
-* The token is scopped to the repository it target. On PullRequest it has the
-  scope of the forked and target repository.
+* On GitHub apps the token is scoped to the repository the event (payload) come
+  from unless [configured](/docs/install/settings#pipelines-as-code-configuration-settings) it differently on cluster.
+
 {{< /hint >}}
 
 ## Example

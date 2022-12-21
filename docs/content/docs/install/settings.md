@@ -19,54 +19,62 @@ There is a few things you can configure through the config map
   application to be used with private repositories. This feature is enabled by
   default.
 
-* `secret-github-app-token-scopped`
+* `secret-github-app-token-scoped`
 
-  When using a Github app, we generate a temporary installation token, we scope it
-  to the repository from where the payload comes. We do this when the Github app
-  is configured globally on a Github organization.
+  When using a Github app, `Pipelines as Code` will generate a temporary
+  installation token for every allowed event coming through the controller.
 
-  If the organization has a mix of public and private repositories and not every
-  user in the organization is trusted to have access to every repository, then the
-  scoped token would not allow them to access those.
+  The generated token will be scoped to the repository from the repository where
+  the payload come from and not to every repositories the app installation has
+  access to.
 
-  If you trust every user on your organization to access any repository or you are
-  not planning to install your Github app globally on a Github organization, then
-  you can safely set this option to false.
+  Having access to every repositories the app has access to is a problem when
+  you install the `Pipelines as Code` application into an organization that has
+  a mixed between public and private repositories where every users in the
+  organization is not trusted to have access to the private repositores. Since
+  the scoping of the token only allow the user do operations and access on the
+  repository where the payload come from, it will not be able to access the private repos.
+
+  However, if you trust every users of your organization to access any repositories or
+  you are not planning to install your GitHub app globally on a GitHub
+  organization, then you can safely set this option to false.
 
 * `secret-github-app-scope-extra-repos`
 
-  If you don't want to completely disable the scopping of the token, but still
-  wants some other repos available, then you can add an extra owner/repo here.
+  If you don't want to completely disable the scoping of the token, but still
+  wants some other repos available (as long you have installed the github app on
+  it), then you can add an extra owner/repo here.
 
   This let you able fetch remote url on github from extra private repositories
   in an organisation if you need it.
 
   This only works when all the repos are added from the same installation IDs.
-  
+
   You can have multiple owner/repository separated by commas:
-  
+
   ```yaml
-  secret-github-app-token-scopped: "owner/private-repo1, org/repo2"
+  secret-github-app-token-scoped: "owner/private-repo1, org/repo2"
   ```
 
 * `remote-tasks`
 
-  Let allows remote tasks from pipelinerun annotations. This feature is enabled by
-  default.
+  This allows fetching remote tasks on pipelinerun annotations. This feature is
+  enabled by default.
 
 * `hub-url`
 
   The base URL for the [tekton hub](https://github.com/tektoncd/hub/)
-  API. default to the [public hub](https://hub.tekton.dev/): <https://api.hub.tekton.dev/v1>
+  API. This default to the [public hub](https://hub.tekton.dev/): <https://api.hub.tekton.dev/v1>
 
 * `hub-catalog-name`
 
-  The [tekton hub](https://github.com/tektoncd/hub/) catalog name. default to tekton
+  The [tekton hub](https://github.com/tektoncd/hub/) catalog name. default to `tekton`
 
 * `tekton-dashboard-url`
 
-  Using the URL of the Tekton dashboard, Pipelines-as-Code generates a URL to the PipelineRun on the Tekton dashboard.
-  If you are an OpenShift user, then OpenShift console URL is auto-detected.
+   When you are not running on Openshift using the [tekton
+   dashboard](https://github.com/tektoncd/dashboard/) you will need to specify a
+   dashboard url to have the logs tnd the pipelinerun details linked.
 
 * `bitbucket-cloud-check-source-ip`
 
@@ -83,69 +91,127 @@ There is a few things you can configure through the config map
 
 * `bitbucket-cloud-additional-source-ip`
 
-  This will provide us to give extra IPS (ie: 127.0.0.1) or networks (127.0.0.0/16)
+  Let you add extra IPS to allow bitbucket clouds, you can do a specific IP:
+  `127.0.0.1` or a networks `127.0.0.0/16`. Multile of them can be specified
   separated by commas.
 
 * `max-keep-run-upper-limit`
 
-  This let the user define a max limit for the max-keep-run value. When the user has defined a max-keep-run annotation
-  on a pipelineRun then its value should be less than or equal to the upper limit, otherwise upper limit will be used for cleanup.
+  This let the user define a max limit for the max-keep-run value. When the user
+  has defined a max-keep-run annotation on a pipelineRun then its value should
+  be less than or equal to the upper limit, otherwise upper limit will be used
+  for cleanup.
 
 * `default-max-keep-runs`
 
-  This allows user to define a default limit for max-keep-run value. If defined then it's applied to all the pipelineRun
-  which do not have `max-keep-runs` annotation.
+  This let the user define a default limit for the `max-keep-run` value.
+  When defined it will applied to all the pipelineRun without a `max-keep-runs`
+  annotation.
 
 * `auto-configure-new-github-repo`
 
-  This setting let you autoconfigure newly created GitHub repositories. On creation of a new repository, Pipelines As Code will set up a namespace
-  for your repository and create a Repository CR.
+  This setting let you autoconfigure newly created GitHub repositories. When
+  Pipelines as Code sees a new repository URL from a payload, It Code will set
+  up a namespace for your repository and create a Repository CR.
 
   This feature is disabled by default and is only supported with GitHub App.
 
-{< hint info >}
- If you have a GitHub App already setup then verify if `Repository` event is subscribed.
-{< /hint >}
+{{< hint info >}}
+ If you have a GitHub App already setup then verify if the `repository` event is
+ subscribed into your Github App setting.
+{{< /hint >}}
 
 * `auto-configure-repo-namespace-template`
 
-  If `auto-configure-new-github-repo` is enabled then you can provide a template for generating the namespace for your new repository.
-  By default, the namespace will be generated using this format `{{repo_name}}-pipelines`.
+  If `auto-configure-new-github-repo` is enabled then you can provide a template
+  for generating the namespace for your new repository. By default, the
+  namespace will be generated using this format `{{repo_name}}-pipelines`.
 
   You can override the default using the following variables
 
   * `{{repo_owner}}`: The repository owner.
   * `{{repo_name}}`: The repository name.
 
-  for example. if the template is defined as `{{repo_owner}}-{{repo_name}}-ci`, then the namespace generated for repository
+  For example. if the template is defined as `{{repo_owner}}-{{repo_name}}-ci`,
+  then the namespace generated for repository
+
   `https://github.com/owner/repo` will be `owner-repo-ci`
 
 * `error-log-snippet`
 
-  Enable or disable the feature to show a log snippet of the failed task when there is
-  an error in a Pipeline
+  Enable or disable the feature to show a log snippet of the failed task when
+  there is an error in a PipelineRun.
 
-  It will show the last 3 lines of the first container of the first task
-  that has error in the pipeline.
+  Due of the constraint of the different GIT provider API, It will show the last
+  3 lines of the first container from the first task that has exited with an
+  error in the PipelineRun.
 
-  If it find any strings matching the values of secrets attached to the PipelineRun it will replace it with the placeholder `******`
+  If it find any strings matching the values of secrets attached to the
+  PipelineRun it will replace it with the placeholder `******`
+
+* `error-log-snippet`
+
+{{ hint danger }}
+  alpha feature: may change at any time
+{{ /hint danger }}
+
+  Enable or disable the inspection of container logs to detect error message
+  and expose them as annotations on Pull Request. Only Github apps is supported.
+
+* `error-detection-max-number-of-lines`
+
+{{ hint danger }}
+  alpha feature: may change at any time
+{{ /hint danger }}
+
+  How many lines to grab from the container when inspecting the
+  logs for error detection when using `error-log-snippet`. Increasing this value
+  may increase the watcher memory usage. The default is 50, increase this value
+  or use -1 for unlimited.
+
+* `error-detection-simple-regexp`
+
+{{ hint danger }}
+  alpha feature: may change at any time
+{{ /hint danger }}
+
+   By default error detection only support the simple outputs, the way GCC or
+   make will output which is supported by most linters and command line tools.
+
+   An example is :
+
+   ```console
+   test.js:100:10: an error occurred
+   ```
+
+   Pipelines as Code will see this line and show it as an annotation on the pull
+   request where the error occurred.
+
+   You can configure the default regexp used for detection. You will need to
+   keep the regexp groups: `<filename>`, `<line>`, `<error>` to make it works.
 
 ## Pipelines-As-Code Info
 
-  There are a settings exposed through a config map which any authenticated user can access to know about
-  Pipeline as Code.
+  There are a settings exposed through a config map for which any authenticated
+  user can access to know about the Pipeline as Code status.
 
 * `version`
 
-  The version of Pipelines As Code installed.
+  The version of Pipelines As Code currently installed.
 
 * `controller-url`
 
-  The controller URL as set by the `tkn pac bootstrap` command while setting up the GitHub App or if Pipelines as code is installed
-  using OpenShift Pipelines Operator then the operator sets the route created for the controller. This field is also used to detect the controller
-  URL in `webhook add` commands.
+  The controller URL as set by the `tkn pac bootstrap` command while setting up
+  the GitHub App or if Pipelines as code is installed
+
+  When using OpenShift Pipelines Operator then the operator sets the route created
+  for the controller.
+
+  This field is also used to detect the controller URL when using the `webhook add`
+  commands.
 
 * `provider`
 
-  The provider is set to `GitHub App` by tkn pac bootstrap command and is used to detect if a GitHub App is already configured when a user runs the
-  bootstrap command a second time or the `webhook add` command.
+  The provider set to `GitHub App` by tkn pac bootstrap, used to detect if a
+  GitHub App is already configured when a user runs the bootstrap command a
+  second time or the `webhook add` command.
