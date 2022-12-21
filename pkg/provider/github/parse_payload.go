@@ -157,11 +157,11 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 
 	// regenerate token scoped to the repo IDs
 	if run.Info.Pac.SecretGHAppRepoScoped && installationIDFrompayload != -1 && len(v.repositoryIDs) > 0 {
-		if run.Info.Pac.SecretGhAppTokenScoppedExtraRepos != "" {
+		if run.Info.Pac.SecretGhAppTokenScopedExtraRepos != "" {
 			// this is going to show up a lot in the logs but i guess that
 			// would make people fix the value instead of being lost into
 			// the top of the logs at controller start.
-			for _, configValue := range strings.Split(run.Info.Pac.SecretGhAppTokenScoppedExtraRepos, ",") {
+			for _, configValue := range strings.Split(run.Info.Pac.SecretGhAppTokenScopedExtraRepos, ",") {
 				configValueS := strings.TrimSpace(configValue)
 				if configValueS == "" {
 					continue
