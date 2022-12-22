@@ -53,7 +53,7 @@ Usage: $0 [options] [testcase]
 EOF
 }
 
-while getopts "nE:fSldnk:ph:" o; do
+while getopts "nE:fSldnk:p:h:" o; do
     case "${o}" in
     n)
         noclean=true
