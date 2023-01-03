@@ -63,7 +63,7 @@ func (v *TestProviderImp) GetTaskURI(ctx context.Context, params *params.Run, ev
 
 func (v *TestProviderImp) CreateStatus(ctx context.Context, _ versioned.Interface, event *info.Event, opts *info.PacOpts, statusOpts provider.StatusOpts) error {
 	if v.CreateStatusErorring {
-		return fmt.Errorf("you want me to error I error for you")
+		return fmt.Errorf("some provider error occurred while reporting status")
 	}
 	return nil
 }

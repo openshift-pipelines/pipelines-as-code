@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v48/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -16,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,6 +27,12 @@ const (
 	logSnippetNumLines      = 3
 	failureReasonText       = "%s<br><h4>Failure reason</h4><br>%s"
 )
+
+var backoffSchedule = []time.Duration{
+	1 * time.Second,
+	3 * time.Second,
+	5 * time.Second,
+}
 
 func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1beta1.PipelineRun, repo *pacv1a1.Repository, event *info.Event) error {
 	refsanitized := formatting.SanitizeBranch(event.BaseBranch)
@@ -121,7 +129,21 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		OriginalPipelineRunName: pr.GetLabels()[apipac.OriginalPRName],
 	}
 
-	err = vcx.CreateStatus(ctx, r.run.Clients.Tekton, event, r.run.Info.Pac, status)
+	err = createStatusWithRetry(ctx, logger, r.run.Clients.Tekton, vcx, event, r.run.Info.Pac, status)
 	logger.Infof("pipelinerun %s has a status of '%s'", pr.Name, status.Conclusion)
 	return pr, err
+}
+
+func createStatusWithRetry(ctx context.Context, logger *zap.SugaredLogger, tekton versioned.Interface, vcx provider.Interface, event *info.Event, opts *info.PacOpts, status provider.StatusOpts) error {
+	var finalError error
+	for _, backoff := range backoffSchedule {
+		err := vcx.CreateStatus(ctx, tekton, event, opts, status)
+		if err == nil {
+			return nil
+		}
+		logger.Infof("failed to create status, error: %v, retrying in %v", err, backoff)
+		time.Sleep(backoff)
+		finalError = err
+	}
+	return fmt.Errorf("failed to report status: %w", finalError)
 }

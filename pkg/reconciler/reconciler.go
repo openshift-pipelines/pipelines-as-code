@@ -44,9 +44,9 @@ var (
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
 
-	// if pipelineRun is in completed state then return
+	// if pipelineRun is in completed or failed state then return
 	state, exist := pr.GetLabels()[keys.State]
-	if exist && state == kubeinteraction.StateCompleted {
+	if exist && (state == kubeinteraction.StateCompleted || state == kubeinteraction.StateFailed) {
 		return nil
 	}
 
@@ -113,16 +113,18 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		return repo, fmt.Errorf("cannot clean prs: %w", err)
 	}
 
+	finalState := kubeinteraction.StateCompleted
 	newPr, err := r.postFinalStatus(ctx, logger, provider, event, pr)
 	if err != nil {
-		return repo, fmt.Errorf("cannot post final status: %w", err)
+		logger.Errorf("failed to post final status, moving on: %v", err)
+		finalState = kubeinteraction.StateFailed
 	}
 
 	if err := r.updateRepoRunStatus(ctx, logger, newPr, repo, event); err != nil {
 		return repo, fmt.Errorf("cannot update run status: %w", err)
 	}
 
-	if _, err := r.updatePipelineRunState(ctx, logger, pr, kubeinteraction.StateCompleted); err != nil {
+	if _, err := r.updatePipelineRunState(ctx, logger, pr, finalState); err != nil {
 		return repo, fmt.Errorf("cannot update state: %w", err)
 	}
 
@@ -186,8 +188,11 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		OriginalPipelineRunName: pr.GetLabels()[keys.OriginalPRName],
 	}
 
-	if err := p.CreateStatus(ctx, r.run.Clients.Tekton, event, r.run.Info.Pac, status); err != nil {
-		return fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
+	if err := createStatusWithRetry(ctx, logger, r.run.Clients.Tekton, p, event, r.run.Info.Pac, status); err != nil {
+		// if failed to report status for running state, let the pipelineRun continue,
+		// pipelineRun is already started so we will try again once it completes
+		logger.Errorf("failed to report status to running on provider continuing! error: %v", err)
+		return nil
 	}
 
 	logger.Info("updated in_progress status on provider platform for pipelineRun ", pr.GetName())

@@ -16,6 +16,7 @@ const (
 	StateStarted   = "started"
 	StateQueued    = "queued"
 	StateCompleted = "completed"
+	StateFailed    = "failed"
 )
 
 func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1beta1.PipelineRun, repo *apipac.Repository, providerinfo *info.ProviderConfig) {
