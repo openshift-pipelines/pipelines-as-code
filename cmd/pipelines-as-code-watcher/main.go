@@ -25,7 +25,10 @@ func main() {
 		w.WriteHeader(200)
 		_, _ = fmt.Fprint(w, "ok")
 	})
+
+	c := make(chan struct{})
 	go func() {
+		c <- struct{}{}
 		// start the web server on port and accept requests
 		log.Printf("Readiness and health check server listening on port %s", probesPort)
 		// timeout values same as default one from triggers eventlistener
@@ -38,6 +41,7 @@ func main() {
 		}
 		log.Fatal(srv.ListenAndServe())
 	}()
+	<-c
 
 	sharedmain.Main("pac-watcher", reconciler.NewController())
 }
