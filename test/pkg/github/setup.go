@@ -55,7 +55,12 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 		return nil, options.E2E{}, github.New(), err
 	}
 
-	e2eoptions := options.E2E{Organization: splitted[0], Repo: splitted[1], DirectWebhook: viaDirectWebhook}
+	controllerURL := os.Getenv("TEST_EL_URL")
+	if controllerURL == "" {
+		return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_EL_URL variable is required, cannot continue")
+	}
+
+	e2eoptions := options.E2E{Organization: splitted[0], Repo: splitted[1], DirectWebhook: viaDirectWebhook, ControllerURL: controllerURL}
 	gprovider := github.New()
 	event := info.NewEvent()
 

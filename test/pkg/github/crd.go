@@ -63,3 +63,25 @@ func CreateCRD(ctx context.Context, t *testing.T, repoinfo *ghlib.Repository, ru
 }
 
 var intPtr = func(val int) *int { return &val }
+
+func CreateCRDIncoming(ctx context.Context, t *testing.T, repoinfo *ghlib.Repository, run *params.Run, incomings *[]v1alpha1.Incoming, opts options.E2E, targetNS string) error {
+	repo := &v1alpha1.Repository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: targetNS,
+		},
+		Spec: v1alpha1.RepositorySpec{
+			URL:       repoinfo.GetHTMLURL(),
+			Incomings: incomings,
+		},
+	}
+
+	if opts.Concurrency != 0 {
+		repo.Spec.ConcurrencyLimit = intPtr(opts.Concurrency)
+	}
+
+	err := repository.CreateNS(ctx, targetNS, run)
+	assert.NilError(t, err)
+	err = repository.CreateRepo(ctx, targetNS, run, repo)
+	assert.NilError(t, err)
+	return err
+}
