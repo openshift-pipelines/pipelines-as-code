@@ -96,12 +96,12 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		return nil, fmt.Errorf("reportFinalStatus: %w", err)
 	}
 
-	if repo.Spec.GitProvider != nil {
+	if event.InstallationID > 0 {
+		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
+	} else {
 		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, provider.GetConfig(), event, repo, logger); err != nil {
 			return repo, fmt.Errorf("cannot get secret from repository: %w", err)
 		}
-	} else {
-		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
 	}
 
 	err = provider.SetClient(ctx, r.run, event)
@@ -161,12 +161,12 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		return nil
 	}
 
-	if repo.Spec.GitProvider != nil {
+	if event.InstallationID > 0 {
+		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
+	} else {
 		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, p.GetConfig(), event, repo, logger); err != nil {
 			return fmt.Errorf("cannot get secret from repo: %w", err)
 		}
-	} else {
-		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
 	}
 
 	err = p.SetClient(ctx, r.run, event)
