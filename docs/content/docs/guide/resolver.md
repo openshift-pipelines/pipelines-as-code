@@ -100,7 +100,7 @@ pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # this will install git-clone
 
 ### Remote HTTP URL
 
-If you have a string starting with http:// or https://, `Pipelines as Code`
+If you have a string starting with `http://` or `https://`, `Pipelines as Code`
 will fetch the task directly from that remote URL :
 
 ```yaml
