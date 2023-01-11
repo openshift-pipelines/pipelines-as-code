@@ -34,11 +34,14 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			log.Fatal("failed to init kinit client : ", err)
 		}
 
+		c := make(chan struct{})
 		go func() {
+			c <- struct{}{}
 			if err := run.WatchConfigMapChanges(ctx, run); err != nil {
 				log.Fatal(err)
 			}
 		}()
+		<-c
 
 		pipelineRunInformer := pipelineruninformer.Get(ctx)
 
@@ -47,7 +50,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			log.Fatalf("Failed to create pipeline as code metrics recorder %v", err)
 		}
 
-		c := &Reconciler{
+		r := &Reconciler{
 			run:               run,
 			kinteract:         kinteract,
 			pipelineRunLister: pipelineRunInformer.Lister(),
@@ -56,9 +59,9 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			metrics:           metrics,
 			eventEmitter:      events.NewEventEmitter(run.Clients.Kube, run.Clients.Log),
 		}
-		impl := pipelinerunreconciler.NewImpl(ctx, c, ctrlOpts())
+		impl := pipelinerunreconciler.NewImpl(ctx, r, ctrlOpts())
 
-		if err := c.qm.InitQueues(ctx, run.Clients.Tekton, run.Clients.PipelineAsCode); err != nil {
+		if err := r.qm.InitQueues(ctx, run.Clients.Tekton, run.Clients.PipelineAsCode); err != nil {
 			log.Fatal("failed to init queues", err)
 		}
 
