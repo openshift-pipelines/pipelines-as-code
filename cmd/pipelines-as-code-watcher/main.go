@@ -28,6 +28,7 @@ func main() {
 
 	c := make(chan struct{})
 	go func() {
+		log.Println("started goroutine for watcher")
 		c <- struct{}{}
 		// start the web server on port and accept requests
 		log.Printf("Readiness and health check server listening on port %s", probesPort)
