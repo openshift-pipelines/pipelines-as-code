@@ -78,7 +78,7 @@ func TestGithubAppIncoming(t *testing.T) {
 	assert.NilError(t, err)
 	defer httpResp.Body.Close()
 	runcnx.Clients.Log.Infof("Kicked off on incoming URL: %s", url)
-	assert.Assert(t, httpResp.StatusCode > 200 && httpResp.StatusCode < 300)
+	assert.Assert(t, httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
 	defer tgithub.TearDown(ctx, t, runcnx, ghprovider, -1, targetRefName, randomedString, opts)
 
 	wait.Succeeded(ctx, t, runcnx, opts, "Pull_Request", randomedString, 3, "", title)
