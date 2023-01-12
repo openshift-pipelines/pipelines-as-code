@@ -32,7 +32,7 @@ func main() {
 	go func() {
 		log.Println("started goroutine to watch configmap changes for controller")
 		c <- struct{}{}
-		if err := run.WatchConfigMapChanges(ctx, run); err != nil {
+		if err := run.WatchConfigMapChanges(ctx); err != nil {
 			log.Fatal("error from WatchConfigMapChanges for controller : ", err)
 		}
 	}()
