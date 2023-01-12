@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -686,7 +687,7 @@ func Test_GenerateJWT(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := getLogger()
+			logger, _ := logger.GetLogger()
 			tdata := testclient.Data{
 				Namespaces: tt.namespace,
 				Secret:     tt.secrets,
@@ -733,7 +734,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 			"github-private-key":    []byte(fakePrivateKey),
 		},
 	}
-	logger := getLogger()
+	logger, _ := logger.GetLogger()
 	tdata := testclient.Data{
 		Namespaces: []*corev1.Namespace{testNamespace},
 		Secret:     []*corev1.Secret{validSecret},
