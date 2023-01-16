@@ -101,6 +101,7 @@ func (v *Provider) GetTaskURI(ctx context.Context, _ *params.Run, event *info.Ev
 	nEvent := info.NewEvent()
 	nEvent.Organization = spOrg
 	nEvent.Repository = spRepo
+	nEvent.BaseBranch = spRef
 	ret, err := v.GetFileInsideRepo(ctx, nEvent, spPath, spRef)
 	if err != nil {
 		return false, "", err
