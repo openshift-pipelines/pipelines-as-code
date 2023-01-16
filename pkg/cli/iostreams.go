@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 
 	surveyCore "github.com/AlecAivazis/survey/v2/core"
 	"github.com/mattn/go-colorable"
@@ -73,6 +74,11 @@ func NewIOStreams() *IOStreams {
 		ErrOut:       colorable.NewColorable(os.Stderr),
 		colorEnabled: EnvColorForced() || (!EnvColorDisabled() && stdoutIsTTY),
 		is256enabled: Is256ColorSupported(),
+	}
+
+	// the colours are not working on windows, let's disable it
+	if runtime.GOOS == "windows" {
+		ios.colorEnabled = false
 	}
 
 	if stdoutIsTTY && stderrIsTTY {
