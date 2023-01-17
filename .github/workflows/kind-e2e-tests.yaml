@@ -26,9 +26,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - uses: actions/setup-go@v3
         with:
           go-version-file: 'go.mod'
@@ -125,6 +122,38 @@ jobs:
           export TEST_GITLAB_TOKEN=${{ secrets.GITLAB_TOKEN }}
           # https://gitlab.com/gitlab-com/alliances/ibm-red-hat/sandbox/openshift-pipelines/pac-e2e-tests
           make test-e2e
+
+      - name: Install wine
+        run: |
+          sudo dpkg --add-architecture i386
+          wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
+          sudo apt-add-repository 'deb https://dl.winehq.org/wine-builds/ubuntu/ jammy main'
+          sudo apt-get update
+          sudo apt install --install-recommends winehq-stable
+
+      - name: Compile tkn-pac for windows
+        run: |
+          mkdir -p bin/
+          make bin/tkn-pac.exe bin/tkn-pac
+
+      - name: Run a simple tkn-pac on wine test
+        run: |
+          set -e
+          wine ./bin/tkn-pac.exe ls -A
+
+      - name: Compile tkn-pac for linux
+        run: |
+          mkdir -p bin/
+          make bin/tkn-pac
+
+      - name: Run a simple tkn-pac test
+        run: |
+          set -e
+          ./bin/tkn-pac ls -A
+
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
       - name: Collect logs
         if: ${{ always() }}
         run: |
