@@ -256,7 +256,7 @@ For example if you have a pipelinerun in the `.tekton/pull-request.yaml` file
 you can run the command `tkn-pac resolve` to see it running:
 
 ```yaml
-tkn pac resolve -f .tekton/pull-request.yaml|kubectl create -f -
+tkn pac resolve -f .tekton/pull-request.yaml -o /tmp/pull-request-resolved.yaml && kubectl create -f /tmp/pull-request-resolved.yaml
 ```
 
 Combined with a kubernetes install running on your local machine (like[Code
