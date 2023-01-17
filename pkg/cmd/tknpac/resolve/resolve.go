@@ -47,9 +47,8 @@ A simple example that would parse the .tekton/pull-request.yaml with all the
 remote task embedded into it applying the parameters substitutions:
 
 tkn pac resolve \
-		-f .tekton/pull-request.yaml \
-		-p revision=main \
-		-p repo_url=https://github.com/openshift-pipelines/pipelines-as-code
+		-f .tekton/pull-request.yaml -o output-file.yaml \
+		-p revision=main -p repo_url=https://repo_url/
 
 You can specify multiple template files to combine :
 
