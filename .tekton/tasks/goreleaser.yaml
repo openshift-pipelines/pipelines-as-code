@@ -51,6 +51,8 @@ spec:
         git config --global --add safe.directory $(workspaces.source.path)
         goreleaser release $(params.flags)
       env:
+        - name: CI
+          value: ""
         - name: GOPATH
           value: /workspace
         - name: AUR_PRIVATE_KEY
