@@ -21,18 +21,11 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
-	"go.uber.org/zap"
-	zapobserver "go.uber.org/zap/zaptest/observer"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
 	"knative.dev/pkg/ptr"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
-
-func getLogger() *zap.SugaredLogger {
-	observer, _ := zapobserver.New(zap.InfoLevel)
-	logger := zap.New(observer).Sugar()
-	return logger
-}
 
 func TestGithubSplitURL(t *testing.T) {
 	tests := []struct {
@@ -512,7 +505,7 @@ func TestValidate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := getLogger()
+			logger, _ := logger.GetLogger()
 			v := &Provider{Logger: logger}
 
 			hm := hmac.New(tt.hashFunc, []byte(tt.secret))

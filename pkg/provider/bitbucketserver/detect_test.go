@@ -8,6 +8,7 @@ import (
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
 )
 
@@ -115,7 +116,7 @@ func TestProvider_Detect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			bprovider := Provider{}
-			logger := getLogger()
+			logger, _ := logger.GetLogger()
 
 			jeez, err := json.Marshal(tt.event)
 			if err != nil {

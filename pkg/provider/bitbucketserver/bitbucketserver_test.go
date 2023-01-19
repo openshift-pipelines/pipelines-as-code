@@ -20,8 +20,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/test"
-	"go.uber.org/zap"
-	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -336,12 +334,6 @@ func TestGetConfig(t *testing.T) {
 	v := &Provider{}
 	config := v.GetConfig()
 	assert.Equal(t, config.TaskStatusTMPL, taskStatusTemplate)
-}
-
-func getLogger() *zap.SugaredLogger {
-	observer, _ := zapobserver.New(zap.InfoLevel)
-	logger := zap.New(observer).Sugar()
-	return logger
 }
 
 func TestValidate(t *testing.T) {
