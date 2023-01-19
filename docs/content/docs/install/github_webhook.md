@@ -19,7 +19,7 @@ commit. You can make it quick with this command line snippet (adjust branchname 
 the branch) :
 
 ```console
-git amend -a --no-edit && git push --force-with-lease origin branchname
+git commit --amend -a --no-edit && git push --force-with-lease origin branchname
 ```
 
 ## Create GitHub Personal Access Token
