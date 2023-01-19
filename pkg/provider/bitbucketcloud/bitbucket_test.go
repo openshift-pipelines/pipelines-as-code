@@ -10,8 +10,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
-	"go.uber.org/zap"
-	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -284,10 +282,4 @@ func TestCreateStatus(t *testing.T) {
 			assert.NilError(t, err)
 		})
 	}
-}
-
-func getLogger() *zap.SugaredLogger {
-	observer, _ := zapobserver.New(zap.InfoLevel)
-	logger := zap.New(observer).Sugar()
-	return logger
 }

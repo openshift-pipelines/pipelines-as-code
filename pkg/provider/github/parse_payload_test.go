@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
 	corev1 "k8s.io/api/core/v1"
@@ -313,7 +314,7 @@ func TestParsePayLoad(t *testing.T) {
 					fmt.Fprint(rw, string(bjeez))
 				})
 			}
-			logger := getLogger()
+			logger, _ := logger.GetLogger()
 			gprovider := Provider{
 				Client: tt.githubClient,
 				Logger: logger,
@@ -505,7 +506,7 @@ func TestAppTokenGeneration(t *testing.T) {
 			}
 
 			jeez, _ := json.Marshal(samplePRevent)
-			logger := getLogger()
+			logger, _ := logger.GetLogger()
 			gprovider := Provider{
 				Logger: logger,
 				Client: fakeghclient,
