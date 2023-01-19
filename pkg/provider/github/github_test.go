@@ -623,11 +623,13 @@ func TestGetFiles(t *testing.T) {
 func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 	cw := clockwork.NewFakeClock()
 	tests := []struct {
-		name         string
-		wantSubErr   string
-		remaining    int
-		expTime      time.Time
-		expHeaderSet bool
+		name           string
+		wantSubErr     string
+		remaining      int
+		expTime        time.Time
+		expHeaderSet   bool
+		apiNotEnabled  bool
+		wantLogSnippet string
 	}{
 		{
 			name:         "remaining scim calls",
@@ -657,38 +659,51 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 			remaining:  0,
 			wantSubErr: "token is ratelimited",
 		},
+		{
+			name:           "not enabled",
+			apiNotEnabled:  true,
+			wantLogSnippet: "skipping checking",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			logger, observer := logger.GetLogger()
 
-			mux.HandleFunc("/rate_limit", func(rw http.ResponseWriter, r *http.Request) {
-				s := &github.RateLimits{
-					SCIM: &github.Rate{
-						Remaining: tt.remaining,
-					},
-				}
-				st := new(struct {
-					Resources *github.RateLimits `json:"resources"`
+			if !tt.apiNotEnabled {
+				mux.HandleFunc("/rate_limit", func(rw http.ResponseWriter, r *http.Request) {
+					s := &github.RateLimits{
+						SCIM: &github.Rate{
+							Remaining: tt.remaining,
+						},
+					}
+					st := new(struct {
+						Resources *github.RateLimits `json:"resources"`
+					})
+					st.Resources = s
+					b, _ := json.Marshal(st)
+					rw.Header().Set("Content-Type", "application/json")
+					if tt.expHeaderSet {
+						rw.Header().Set("GitHub-Authentication-Token-Expiration", tt.expTime.Format("2006-01-02 03:04:05 MST"))
+					}
+					fmt.Fprint(rw, string(b))
 				})
-				st.Resources = s
-				b, _ := json.Marshal(st)
-				rw.Header().Set("Content-Type", "application/json")
-				if tt.expHeaderSet {
-					rw.Header().Set("GitHub-Authentication-Token-Expiration", tt.expTime.Format("2006-01-02 03:04:05 MST"))
-				}
-				fmt.Fprint(rw, string(b))
-			})
+			}
 			defer teardown()
 			v := &Provider{
 				Client: fakeclient,
+				Logger: logger,
 			}
 			err := v.checkWebhookSecretValidity(ctx, cw)
 			if tt.wantSubErr != "" {
 				assert.ErrorContains(t, err, tt.wantSubErr)
 			} else {
 				assert.NilError(t, err)
+			}
+
+			if tt.wantLogSnippet != "" {
+				assert.Assert(t, observer.FilterMessageSnippet(tt.wantLogSnippet).Len() > 0)
 			}
 		})
 	}
