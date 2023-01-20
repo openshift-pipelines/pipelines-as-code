@@ -150,9 +150,7 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 	}
 
 	if status.Text != "" && event.EventType == "pull_request" {
-		// insanity!! I am not even sure how to explain it but try to remove
-		// this and you get a failure when posting the text.
-		status.Text = strings.ReplaceAll(status.Text, "\n", "<br>")
+		status.Text = strings.TrimSpace(status.Text)
 		_, _, err := v.Client.CreateIssueComment(event.Organization, event.Repository,
 			int64(event.PullRequestNumber), gitea.CreateIssueCommentOption{
 				Body: fmt.Sprintf("%s\n%s", status.Summary, status.Text),
