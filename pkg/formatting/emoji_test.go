@@ -6,18 +6,18 @@ import (
 
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	kv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestConditionEmoji(t *testing.T) {
 	tests := []struct {
 		name      string
-		condition duckv1beta1.Conditions
+		condition kv1.Conditions
 		substr    string
 	}{
 		{
 			name: "failed",
-			condition: duckv1beta1.Conditions{
+			condition: kv1.Conditions{
 				{
 					Status: corev1.ConditionFalse,
 				},
@@ -26,7 +26,7 @@ func TestConditionEmoji(t *testing.T) {
 		},
 		{
 			name: "success",
-			condition: duckv1beta1.Conditions{
+			condition: kv1.Conditions{
 				{
 					Status: corev1.ConditionTrue,
 				},
@@ -35,7 +35,7 @@ func TestConditionEmoji(t *testing.T) {
 		},
 		{
 			name: "Running",
-			condition: duckv1beta1.Conditions{
+			condition: kv1.Conditions{
 				{
 					Status: corev1.ConditionUnknown,
 				},
@@ -44,7 +44,7 @@ func TestConditionEmoji(t *testing.T) {
 		},
 		{
 			name:      "None",
-			condition: duckv1beta1.Conditions{},
+			condition: kv1.Conditions{},
 			substr:    nonAttributedStr,
 		},
 	}
@@ -58,6 +58,6 @@ func TestConditionEmoji(t *testing.T) {
 
 func TestSkipEmoji(t *testing.T) {
 	got := ConditionSad(
-		duckv1beta1.Conditions{{Status: corev1.ConditionTrue}})
+		kv1.Conditions{{Status: corev1.ConditionTrue}})
 	assert.Assert(t, !strings.Contains(got, "✅"))
 }

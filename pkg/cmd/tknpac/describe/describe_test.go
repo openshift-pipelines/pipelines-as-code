@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v48/github"
+	"github.com/google/go-github/v49/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -22,7 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	knativeapis "knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck/v1beta1"
+	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -60,7 +60,7 @@ func TestDescribe(t *testing.T) {
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
 						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
-						Status: v1beta1.Status{
+						Status: knativeduckv1.Status{
 							Conditions: []knativeapis.Condition{
 								{
 									Reason: "Success",
@@ -154,7 +154,7 @@ func TestDescribe(t *testing.T) {
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
-						Status: v1beta1.Status{
+						Status: knativeduckv1.Status{
 							Conditions: []knativeapis.Condition{
 								{
 									Reason: "Success",
@@ -198,7 +198,7 @@ func TestDescribe(t *testing.T) {
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
-						Status: v1beta1.Status{
+						Status: knativeduckv1.Status{
 							Conditions: []knativeapis.Condition{
 								{
 									Reason: "Success",
@@ -231,7 +231,7 @@ func TestDescribe(t *testing.T) {
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
-						Status: v1beta1.Status{
+						Status: knativeduckv1.Status{
 							Conditions: []knativeapis.Condition{
 								{
 									Reason: "Success",
@@ -280,7 +280,7 @@ func TestDescribe(t *testing.T) {
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
-						Status: v1beta1.Status{
+						Status: knativeduckv1.Status{
 							Conditions: []knativeapis.Condition{
 								{
 									Reason: "Success",
@@ -355,7 +355,7 @@ func TestDescribe(t *testing.T) {
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
-						Status: v1beta1.Status{
+						Status: knativeduckv1.Status{
 							Conditions: []knativeapis.Condition{
 								{
 									Reason: "Success",
@@ -385,7 +385,7 @@ func TestDescribe(t *testing.T) {
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
 						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
-						Status: v1beta1.Status{
+						Status: knativeduckv1.Status{
 							Conditions: []knativeapis.Condition{
 								{
 									Reason: "Success",
@@ -403,7 +403,7 @@ func TestDescribe(t *testing.T) {
 						EventType:       github.String("pull_request"),
 					},
 					{
-						Status: v1beta1.Status{
+						Status: knativeduckv1.Status{
 							Conditions: []knativeapis.Condition{
 								{
 									Reason: "Success",
@@ -422,7 +422,7 @@ func TestDescribe(t *testing.T) {
 					},
 					{
 						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{},
-						Status: v1beta1.Status{
+						Status: knativeduckv1.Status{
 							Conditions: []knativeapis.Condition{
 								{
 									Reason: "Success",

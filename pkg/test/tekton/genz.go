@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	knativeapi "knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func MakePrTrStatus(ptaskname string, completionmn int) *tektonv1beta1.PipelineRunTaskRunStatus {
@@ -21,8 +21,8 @@ func MakePrTrStatus(ptaskname string, completionmn int) *tektonv1beta1.PipelineR
 		completionTime = &metav1.Time{Time: clock.Now().Add(time.Duration(completionmn+20) * time.Minute)}
 	}
 
-	conditionTrue := duckv1beta1.Status{
-		Conditions: duckv1beta1.Conditions{
+	conditionTrue := knativeduckv1.Status{
+		Conditions: knativeduckv1.Conditions{
 			{
 				Status: corev1.ConditionTrue,
 			},
@@ -41,12 +41,12 @@ func MakePrTrStatus(ptaskname string, completionmn int) *tektonv1beta1.PipelineR
 	}
 }
 
-func MakePR(namespace, name string, trstatus map[string]*tektonv1beta1.PipelineRunTaskRunStatus, status *duckv1beta1.Status) *tektonv1beta1.PipelineRun {
+func MakePR(namespace, name string, trstatus map[string]*tektonv1beta1.PipelineRunTaskRunStatus, status *knativeduckv1.Status) *tektonv1beta1.PipelineRun {
 	if trstatus == nil {
 		trstatus = map[string]*tektonv1beta1.PipelineRunTaskRunStatus{}
 	}
 	if status == nil {
-		status = &duckv1beta1.Status{}
+		status = &knativeduckv1.Status{}
 	}
 	return &tektonv1beta1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
@@ -75,8 +75,8 @@ func MakePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus stri
 			Labels:    labels,
 		},
 		Status: tektonv1beta1.PipelineRunStatus{
-			Status: duckv1beta1.Status{
-				Conditions: duckv1beta1.Conditions{
+			Status: knativeduckv1.Status{
+				Conditions: knativeduckv1.Conditions{
 					{
 						Type:   knativeapi.ConditionSucceeded,
 						Status: corev1.ConditionTrue,
