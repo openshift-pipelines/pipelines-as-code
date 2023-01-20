@@ -13,7 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	knativeapi "knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -68,8 +68,8 @@ func TestCollectFailedTasksLogSnippet(t *testing.T) {
 								},
 							},
 						},
-						Status: duckv1beta1.Status{
-							Conditions: duckv1beta1.Conditions{
+						Status: knativeduckv1.Status{
+							Conditions: knativeduckv1.Conditions{
 								{
 									Type:    knativeapi.ConditionSucceeded,
 									Status:  corev1.ConditionTrue,

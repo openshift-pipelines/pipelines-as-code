@@ -23,7 +23,7 @@ import (
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	knativeapi "knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestTimeout(t *testing.T) {
@@ -96,8 +96,8 @@ func TestPRDuration(t *testing.T) {
 					StartTime: &metav1.Time{
 						Time: clock.Now(),
 					},
-					Status: duckv1beta1.Status{
-						Conditions: duckv1beta1.Conditions{
+					Status: knativeduckv1.Status{
+						Conditions: knativeduckv1.Conditions{
 							{
 								LastTransitionTime: knativeapi.VolatileTime{
 									Inner: metav1.Time{Time: infiveminutes},
@@ -116,7 +116,7 @@ func TestPRDuration(t *testing.T) {
 					StartTime: &metav1.Time{
 						Time: clock.Now(),
 					},
-					Status: duckv1beta1.Status{},
+					Status: knativeduckv1.Status{},
 				},
 			},
 			want: nonAttributedStr,
