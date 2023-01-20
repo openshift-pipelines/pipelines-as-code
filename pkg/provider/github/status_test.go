@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -283,7 +284,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gcvs := New()
 			gcvs.Client = fakeclient
-			gcvs.Logger = getLogger()
+			gcvs.Logger, _ = logger.GetLogger()
 			gcvs.Run = params.New()
 
 			mux.HandleFunc("/repos/check/run/statuses/sha", func(rw http.ResponseWriter, r *http.Request) {})

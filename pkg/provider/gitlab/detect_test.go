@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"github.com/xanzy/go-gitlab"
 	"gotest.tools/v3/assert"
 )
@@ -109,7 +110,7 @@ func TestProvider_Detect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gprovider := Provider{}
-			logger := getLogger()
+			logger, _ := logger.GetLogger()
 
 			header := http.Header{}
 			header.Set("X-Gitlab-Event", string(tt.eventType))

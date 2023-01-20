@@ -14,8 +14,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	"github.com/xanzy/go-gitlab"
-	"go.uber.org/zap"
-	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -359,12 +357,6 @@ func TestGetFileInsideRepo(t *testing.T) {
 
 	_, err = v.GetFileInsideRepo(ctx, event, "notfound", "")
 	assert.Assert(t, err != nil)
-}
-
-func getLogger() *zap.SugaredLogger {
-	observer, _ := zapobserver.New(zap.InfoLevel)
-	logger := zap.New(observer).Sugar()
-	return logger
 }
 
 func TestValidate(t *testing.T) {
