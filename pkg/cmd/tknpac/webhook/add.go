@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/webhook"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -121,7 +122,7 @@ func add(ctx context.Context, opts *cli.PacCliOpts, run *params.Run, ioStreams *
 
 	tokenData, ok := secretData.Data[gitProviderSecretKey]
 	if !ok {
-		fmt.Fprintf(ioStreams.Out, "Token is empty, You can use the command \"tkn pac webhook update-token\" to update the provider token in %s secret", repoName)
+		fmt.Fprintf(ioStreams.Out, "Token is empty, You can use the command \"%s pac webhook update-token\" to update the provider token in %s secret", settings.TknBinaryName, repoName)
 		return nil
 	}
 
