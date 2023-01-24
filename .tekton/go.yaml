@@ -1,0 +1,199 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: go-ninja-go
+  annotations:
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      event == "pull_request" && "***/*.go".pathChanged()
+spec:
+  params:
+    - name: repo_url
+      value: "{{repo_url}}"
+    - name: revision
+      value: "{{revision}}"
+  pipelineSpec:
+    params:
+      - name: repo_url
+      - name: revision
+    tasks:
+      - name: fetchit
+        params:
+          - name: url
+            value: $(params.repo_url)
+          - name: revision
+            value: $(params.revision)
+        taskRef:
+          kind: ClusterTask
+          name: git-clone
+        workspaces:
+          - name: output
+            workspace: source
+
+      - name: go-ninja-go
+        runAfter:
+          - fetchit
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - image: registry.access.redhat.com/ubi9/go-toolset@sha256:9e60bacd07dc4b5f3f559167e6e9a1acd8235d043f0ffc591a2ecc3805446c74
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+                - name: GOLANGCILINT_CACHE
+                  value: $(workspaces.source.path)/go-build-cache/golangci-cache
+                - name: UPLOADER_UPLOAD_CREDENTIALS
+                  valueFrom:
+                    secretKeyRef:
+                      name: "uploader-upload-credentials"
+                      key: "credentials"
+              name: get-cache
+              workingDir: $(workspaces.source.path)
+              script: |
+                #!/usr/bin/env bash
+                set -eux
+                mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
+                cd $(dirname ${GOCACHE})
+
+                curl -fsI http://uploader:8080/golang-cache.tar.gz || {
+                    echo "no cache found"
+                    exit 0
+                }
+
+                echo "Getting cache"
+                curl -u ${UPLOADER_UPLOAD_CREDENTIALS} http://uploader:8080/golang-cache.tar.gz|tar -z -x -f- || \
+                   curl -X DELETE -F "file=golang-cache.tar.gz" http://uploader:8080/upload
+
+            - name: generae-vendor
+              # golangci-lint has not tagged their image for 1.40.0 yet so using latest for now until we can pin it
+              image: mirror.gcr.io/golangci/golangci-lint:latest
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+                - name: GOLANGCILINT_CACHE
+                  value: $(workspaces.source.path)/go-build-cache/golangci-cache
+              script: |
+                #!/usr/bin/env bash
+                set -ex
+                make vendor
+                [[ -n $(git status --porcelain vendor) ]] && {
+                  echo "Vendor has been modified, please run make vendor and commit new files"
+                  git status --porcelain vendor
+                  exit 1
+                }
+            - name: unittest
+              # we get bumped out when usingh the official image with docker.io
+              # ratelimit so workaround this.
+              image: registry.access.redhat.com/ubi9/go-toolset@sha256:9e60bacd07dc4b5f3f559167e6e9a1acd8235d043f0ffc591a2ecc3805446c74
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+              workingDir: $(workspaces.source.path)
+              script: |
+                #!/usr/bin/env bash
+                set -eux
+                export GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
+                make test
+
+            - name: lint
+              # golangci-lint has not tagged their image for 1.40.0 yet so using latest for now until we can pin it
+              image: mirror.gcr.io/golangci/golangci-lint:latest
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: GOCACHE
+                  value: $(workspaces.source.path)/go-build-cache/cache
+                - name: GOMODCACHE
+                  value: $(workspaces.source.path)/go-build-cache/mod
+                - name: GOLANGCILINT_CACHE
+                  value: $(workspaces.source.path)/go-build-cache/golangci-cache
+              script: |
+                #!/usr/bin/env bash
+                set -eux
+                make lint-go
+        workspaces:
+          - name: source
+            workspace: source
+
+      - name: savecache
+        runAfter:
+          - go-ninja-go
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: save-cache
+              # Has everything we need in there and we already fetched it!
+              image: registry.access.redhat.com/ubi9/python-39
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: UPLOADER_UPLOAD_CREDENTIALS
+                  valueFrom:
+                    secretKeyRef:
+                      name: "uploader-upload-credentials"
+                      key: "credentials"
+              script: |
+                #!/usr/bin/env bash
+                set -eux
+                curl -o/dev/null -u ${UPLOADER_UPLOAD_CREDENTIALS}  -s -f -X POST -F path=test -F file=@/etc/motd  http://uploader:8080/upload || {
+                    echo "No cache server found"
+                    exit 0
+                }
+
+                lm="$(curl -fsI http://uploader:8080/golang-cache.tar.gz|sed -En '/Last-Modified/ { s/Last-Modified:\s*//;p;}')"
+                if [[ -n ${lm} ]];then
+                    expired=$(python -c "import datetime, sys;print(datetime.datetime.now() > datetime.datetime.strptime(sys.argv[1].strip(), '%a, %d %b %Y %X %Z') + datetime.timedelta(days=1))" "${lm}")
+                    [[ ${expired} == "False" ]] && {
+                      echo "Cache is younger than a day"
+                      exit
+                    }
+                fi
+
+                cd $(workspaces.source.path)/go-build-cache
+                tar czf - . |curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -# -L -f -F path=golang-cache.tar.gz -X POST -F "file=@-" http://uploader:8080/upload
+
+      - name: codecov
+        runAfter:
+          - go-ninja-go
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: codecov-run
+              # Has everything we need in there and we already fetched it!
+              image: registry.access.redhat.com/ubi9/go-toolset@sha256:9e60bacd07dc4b5f3f559167e6e9a1acd8235d043f0ffc591a2ecc3805446c74
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: CODECOV_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: pipelines-as-code-codecov-token
+                      key: token
+              script: |
+                #!/usr/bin/env bash
+                bash <(curl https://codecov.io/bash)
+    workspaces:
+      - name: source
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 5Gi
