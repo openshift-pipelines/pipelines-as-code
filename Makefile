@@ -1,6 +1,7 @@
 TARGET_NAMESPACE=pipelines-as-code
 GOLANGCI_LINT=golangci-lint
 GOFUMPT=gofumpt
+TKN_BINARY_NAME := tkn
 LDFLAGS=
 OUTPUT_DIR=bin
 GO           = go
@@ -17,7 +18,8 @@ MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./vendor/.*'  -n
 ifeq ($(PAC_VERSION),)
 	PAC_VERSION="$(shell git describe --tags --exact-match 2>/dev/null || echo nightly-`date +'%Y%m%d'`-`git rev-parse --short HEAD`)"
 endif
-FLAGS += -ldflags "-X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version=$(PAC_VERSION) $(LDFLAGS)"
+FLAGS += -ldflags "-X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version=$(PAC_VERSION) $(LDFLAGS) -X github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings.TknBinaryName=$(TKN_BINARY_NAME)"
+
 
 all: $(OUTPUT_DIR)/pipelines-as-code-controller $(OUTPUT_DIR)/tkn-pac test
 

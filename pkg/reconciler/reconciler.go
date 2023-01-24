@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
@@ -176,8 +177,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 
 	consoleURL := r.run.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
 	// Create a status with the log url
-	msg := fmt.Sprintf(params.StartingPipelineRunText, pr.GetName(), repo.GetNamespace(), r.run.Clients.ConsoleUI.GetName(), consoleURL,
-		repo.GetNamespace(), repo.GetName())
+	msg := fmt.Sprintf(params.StartingPipelineRunText, settings.TknBinaryName, pr.GetName(), repo.GetNamespace(), r.run.Clients.ConsoleUI.GetName(), consoleURL, repo.GetNamespace(), repo.GetName())
 	status := provider.StatusOpts{
 		Status:                  "in_progress",
 		Conclusion:              "pending",

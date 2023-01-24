@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/spf13/cobra"
 
@@ -129,7 +130,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	}
 
 	cmd.Flags().StringP(
-		tknPathFlag, "", "", "Path to the tkn binary (default to search for it in you $PATH)")
+		tknPathFlag, "", "", fmt.Sprintf("Path to the %s binary (default to search for it in you $PATH)", settings.TknBinaryName))
 
 	cmd.Flags().StringP(
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
@@ -152,7 +153,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 }
 
 func getTknPath() (string, error) {
-	fname, err := exec.LookPath("tkn")
+	fname, err := exec.LookPath(settings.TknBinaryName)
 	if err != nil {
 		return "", err
 	}

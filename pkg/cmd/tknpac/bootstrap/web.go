@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/browser"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
 
@@ -74,7 +75,7 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 	}
 
 	fmt.Fprintf(opts.ioStreams.Out, "🚀 You can now add your newly created application on your repository by going to this URL:\n\n%s\n\n", *manifest.HTMLURL)
-	fmt.Fprintln(opts.ioStreams.Out, "💡 Don't forget to run the \"tkn pac create repo\" to create a new Repository CRD on your cluster.")
+	fmt.Fprintf(opts.ioStreams.Out, "💡 Don't forget to run the \"%s pac create repo\" to create a new Repository CRD on your cluster.\n", settings.TknBinaryName)
 
 	detectString := detectSelfSignedCertificate(ctx, opts.RouteName)
 	if detectString != "" {
