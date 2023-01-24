@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/spf13/cobra"
 	kapierror "k8s.io/apimachinery/pkg/api/errors"
@@ -62,9 +63,9 @@ const indexTmpl = `
 </html>
 `
 
-const successTmpl = `
-<html><body>You have <span style=\"color: green\">successfully</span> created a new GitHub application, go back to the tkn pac cli to finish the installation.</body></html>
-`
+var successTmpl = fmt.Sprintf(`
+<html><body>You have <span style=\"color: green\">successfully</span> created a new GitHub application, go back to the %s pac cli to finish the installation.</body></html>
+`, settings.TknBinaryName)
 
 func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	if !opts.forceInstall {

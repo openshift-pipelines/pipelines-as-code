@@ -33,8 +33,7 @@ var (
 	output         string
 )
 
-const (
-	longhelp = `
+var longhelp = fmt.Sprintf(`
 
 resolve - resolve a PipelineRun and all its referenced Pipeline/Tasks embedded.
 
@@ -46,25 +45,24 @@ substitutions with -p flags. Output on the standard output or to a file with the
 A simple example that would parse the .tekton/pull-request.yaml with all the
 remote task embedded into it applying the parameters substitutions:
 
-tkn pac resolve \
+%s pac resolve \
 		-f .tekton/pull-request.yaml -o output-file.yaml \
 		-p revision=main -p repo_url=https://repo_url/
 
 You can specify multiple template files to combine :
 
-tkn pac resolve -f .tekton/pull-request.yaml -f task/referenced.yaml
+%s pac resolve -f .tekton/pull-request.yaml -f task/referenced.yaml
 
 or a directory where it will get all the files ending by .yaml  :
 
-tkn pac resolve -f .tekton/
+%s pac resolve -f .tekton/
 
 If it detect a {{ git_auth_secret }} in the template it will ask you if you want
 to provide a token. You can set the environment variable PAC_PROVIDER_TOKEN to
 not have to ask about it.
 
 *It does not support task from local directory referenced in annotations at the
- moment*.`
-)
+ moment*.`, settings.TknBinaryName, settings.TknBinaryName, settings.TknBinaryName)
 
 func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{

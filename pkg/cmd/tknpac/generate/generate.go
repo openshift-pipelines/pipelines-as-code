@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -225,7 +226,8 @@ func (o *Opts) samplePipeline(recreateTemplate bool) error {
 				fmt.Fprintf(o.IOStreams.ErrOut, "%s Feel free to use the -f flag if you want to target another file name\n...", cs.InfoIcon())
 			}
 		} else {
-			fmt.Fprintf(o.IOStreams.Out, "%s There is already a file named: %s, skipping template generation, feel free to use \"tkn pac generate\" command to generate sample template.\n", cs.InfoIcon(), relpath)
+			fmt.Fprintf(o.IOStreams.Out, "%s There is already a file named: %s, skipping template generation, feel free to use \"%s pac generate\" command to generate sample template.\n", cs.InfoIcon(), relpath,
+				settings.TknBinaryName)
 		}
 		return nil
 	}
