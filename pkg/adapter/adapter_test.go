@@ -8,27 +8,21 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/google/go-github/v48/github"
+	"github.com/google/go-github/v49/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
-	"go.uber.org/zap"
-	zapobserver "go.uber.org/zap/zaptest/observer"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-func getLogger() *zap.SugaredLogger {
-	observer, _ := zapobserver.New(zap.InfoLevel)
-	logger := zap.New(observer).Sugar()
-	return logger
-}
-
 func TestHandleEvent(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	cs, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
+	logger, _ := logger.GetLogger()
 
 	l := listener{
 		run: &params.Run{
@@ -43,7 +37,7 @@ func TestHandleEvent(t *testing.T) {
 				},
 			},
 		},
-		logger: getLogger(),
+		logger: logger,
 	}
 
 	ts := httptest.NewServer(l.handleEvent())
@@ -128,8 +122,9 @@ func TestHandleEvent(t *testing.T) {
 }
 
 func TestWhichProvider(t *testing.T) {
+	logger, _ := logger.GetLogger()
 	l := listener{
-		logger: getLogger(),
+		logger: logger,
 	}
 	tests := []struct {
 		name          string

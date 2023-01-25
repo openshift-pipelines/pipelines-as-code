@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"code.gitea.io/sdk/gitea"
-	"github.com/google/go-github/v48/github"
+	"github.com/google/go-github/v49/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"

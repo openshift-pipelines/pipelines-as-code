@@ -53,6 +53,7 @@ function start_registry() {
         docker rm -f kind-registry || true
         docker run \
                -d --restart=always -p "127.0.0.1:${REG_PORT}:5000" \
+               -e REGISTRY_HTTP_SECRET=secret \
                --name "${REG_NAME}" \
                registry:2
     fi
@@ -143,7 +144,7 @@ function install_pac() {
         oldPwd=${PWD}
         cd ${PAC_DIR}
         echo "Deploying PAC from ${PAC_DIR}"
-        env KO_DOCKER_REPO=localhost:5000 ko apply -f config --sbom=none -B >/dev/null
+        [[ -n ${PAC_DEPLOY_SCRIPT:-""} ]] && ${PAC_DEPLOY_SCRIPT} || env KO_DOCKER_REPO=localhost:5000 ko apply -f config --sbom=none -B >/dev/null
         cd ${oldPwd}
     fi
     configure_pac

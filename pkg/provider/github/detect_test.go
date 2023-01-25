@@ -6,7 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v48/github"
+	"github.com/google/go-github/v49/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
 )
 
@@ -238,8 +239,7 @@ func TestProvider_Detect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gprovider := Provider{}
-			logger := getLogger()
-
+			logger, _ := logger.GetLogger()
 			jeez, err := json.Marshal(tt.event)
 			if err != nil {
 				assert.NilError(t, err)
