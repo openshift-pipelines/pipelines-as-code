@@ -2,7 +2,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // +genclient
@@ -18,7 +18,7 @@ type Repository struct {
 }
 
 type RepositoryRunStatus struct {
-	duckv1beta1.Status `json:",inline"`
+	duckv1.Status `json:",inline"`
 
 	// PipelineRunName is the name of the PipelineRun
 	// +optional

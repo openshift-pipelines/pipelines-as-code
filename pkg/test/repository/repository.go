@@ -6,7 +6,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis/duck/v1beta1"
+	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 type RepoTestcreationOpts struct {
@@ -26,31 +26,31 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 	if opts.RepoStatus == nil {
 		opts.RepoStatus = []v1alpha1.RepositoryRunStatus{
 			{
-				Status:          v1beta1.Status{},
+				Status:          knativeduckv1.Status{},
 				PipelineRunName: "pipelinerun5",
 				StartTime:       &metav1.Time{Time: cw.Now().Add(-56 * time.Minute)},
 				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-55 * time.Minute)},
 			},
 			{
-				Status:          v1beta1.Status{},
+				Status:          knativeduckv1.Status{},
 				PipelineRunName: "pipelinerun4",
 				StartTime:       &metav1.Time{Time: cw.Now().Add(-46 * time.Minute)},
 				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-45 * time.Minute)},
 			},
 			{
-				Status:          v1beta1.Status{},
+				Status:          knativeduckv1.Status{},
 				PipelineRunName: "pipelinerun3",
 				StartTime:       &metav1.Time{Time: cw.Now().Add(-36 * time.Minute)},
 				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-35 * time.Minute)},
 			},
 			{
-				Status:          v1beta1.Status{},
+				Status:          knativeduckv1.Status{},
 				PipelineRunName: "pipelinerun2",
 				StartTime:       &metav1.Time{Time: cw.Now().Add(-26 * time.Minute)},
 				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-25 * time.Minute)},
 			},
 			{
-				Status:          v1beta1.Status{},
+				Status:          knativeduckv1.Status{},
 				PipelineRunName: "pipelinerun1",
 				StartTime:       &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
 				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},

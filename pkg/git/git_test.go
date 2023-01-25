@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/env"
 	"gotest.tools/v3/fs"
 )
 
@@ -65,14 +66,26 @@ func TestGetGitInfo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// create temporary file
+			tmpFile := fs.NewFile(t, "gitconfig-")
+			defer tmpFile.Remove()
+			defer env.PatchAll(t, map[string]string{
+				"HOME":  tmpFile.Path(),
+				"PATH":  "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+				"EMAIL": "foo@foo.com",
+			})()
+
 			nd := fs.NewDir(t, "TestGetGitInfo")
 			defer nd.Remove()
 			gitDir := nd.Path()
-			_, _ = RunGit(gitDir, "init")
-			_, _ = RunGit(gitDir, "remote", "add", tt.remoteTarget, tt.gitURL)
-			_, _ = RunGit(gitDir, "config", "user.email", "foo@foo.com")
-			_, _ = RunGit(gitDir, "config", "user.name", "Foo Bar")
-			_, _ = RunGit(gitDir, "commit", "--allow-empty", "-m", "Empty Commmit")
+			var err error
+
+			_, err = RunGit(gitDir, "init")
+			assert.NilError(t, err)
+			_, err = RunGit(gitDir, "remote", "add", tt.remoteTarget, tt.gitURL)
+			assert.NilError(t, err)
+			_, err = RunGit(gitDir, "commit", "--allow-empty", "-m", "Empty Commmit")
+			assert.NilError(t, err)
 			if tt.want.Branch != "" {
 				_, _ = RunGit(gitDir, "checkout", "-b", tt.want.Branch)
 			}
