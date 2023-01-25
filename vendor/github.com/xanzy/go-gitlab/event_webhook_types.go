@@ -344,17 +344,20 @@ type JobEvent struct {
 	BuildName          string     `json:"build_name"`
 	BuildStage         string     `json:"build_stage"`
 	BuildStatus        string     `json:"build_status"`
+	BuildCreatedAt     string     `json:"build_created_at"`
 	BuildStartedAt     string     `json:"build_started_at"`
 	BuildFinishedAt    string     `json:"build_finished_at"`
 	BuildDuration      float64    `json:"build_duration"`
 	BuildAllowFailure  bool       `json:"build_allow_failure"`
 	BuildFailureReason string     `json:"build_failure_reason"`
+	RetriesCount       int        `json:"retries_count"`
 	PipelineID         int        `json:"pipeline_id"`
 	ProjectID          int        `json:"project_id"`
 	ProjectName        string     `json:"project_name"`
 	User               *EventUser `json:"user"`
 	Commit             struct {
 		ID          int    `json:"id"`
+		Name        string `json:"name"`
 		SHA         string `json:"sha"`
 		Message     string `json:"message"`
 		AuthorName  string `json:"author_name"`
@@ -743,6 +746,7 @@ type PipelineEvent struct {
 	Commit struct {
 		ID        string     `json:"id"`
 		Message   string     `json:"message"`
+		Title     string     `json:"title"`
 		Timestamp *time.Time `json:"timestamp"`
 		URL       string     `json:"url"`
 		Author    struct {
