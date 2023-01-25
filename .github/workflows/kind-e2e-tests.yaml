@@ -20,6 +20,7 @@ jobs:
       TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
       # TEST_GITHUB_REPO_OWNER_WEBHOOK: pac/pac-test-webhooks
       KUBECONFIG: /home/runner/.kube/config.kind
+      TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
 
     steps:
       - uses: actions/checkout@v2
@@ -51,7 +52,6 @@ jobs:
       - name: Start installing cluster
         run: |
           export PAC_DIR=${PWD}
-          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
           bash -x ./hack/dev/kind/install.sh
 
       - name: Create PAC github-app-secret
