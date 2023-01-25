@@ -37,6 +37,7 @@ type RegistryRepository struct {
 	ID                     int                      `json:"id"`
 	Name                   string                   `json:"name"`
 	Path                   string                   `json:"path"`
+	ProjectID              int                      `json:"project_id"`
 	Location               string                   `json:"location"`
 	CreatedAt              *time.Time               `json:"created_at"`
 	CleanupPolicyStartedAt *time.Time               `json:"cleanup_policy_started_at"`
@@ -73,6 +74,8 @@ func (s RegistryRepositoryTag) String() string {
 // https://docs.gitlab.com/ee/api/container_registry.html#list-registry-repositories
 type ListRegistryRepositoriesOptions struct {
 	ListOptions
+
+	// Deprecated: These options are deprecated for ListGroupRegistryRepositories calls. (Removed in GitLab 15.0)
 	Tags      *bool `url:"tags,omitempty" json:"tags,omitempty"`
 	TagsCount *bool `url:"tags_count,omitempty" json:"tags_count,omitempty"`
 }

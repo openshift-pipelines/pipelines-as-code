@@ -87,8 +87,6 @@ github.com/evanphx/json-patch
 # github.com/evanphx/json-patch/v5 v5.6.0
 ## explicit; go 1.12
 github.com/evanphx/json-patch/v5
-# github.com/fatih/color v1.13.0
-## explicit; go 1.13
 # github.com/fvbommel/sortorder v1.0.2
 ## explicit; go 1.13
 github.com/fvbommel/sortorder
@@ -177,10 +175,10 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.12.1
-## explicit; go 1.17
+# github.com/google/go-containerregistry v0.13.0
+## explicit; go 1.18
 github.com/google/go-containerregistry/pkg/name
-# github.com/google/go-github/scrape v0.0.0-20230118183226-ab8b241add17
+# github.com/google/go-github/scrape v0.0.0-20230123191529-2561c07393f1
 ## explicit; go 1.13
 github.com/google/go-github/scrape
 # github.com/google/go-github/v48 v48.2.0
@@ -213,8 +211,6 @@ github.com/hashicorp/errwrap
 # github.com/hashicorp/go-cleanhttp v0.5.2
 ## explicit; go 1.13
 github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-hclog v1.0.0
-## explicit; go 1.13
 # github.com/hashicorp/go-multierror v1.1.1
 ## explicit; go 1.13
 github.com/hashicorp/go-multierror
@@ -340,7 +336,7 @@ github.com/spf13/pflag
 # github.com/stoewer/go-strcase v1.2.1
 ## explicit; go 1.11
 github.com/stoewer/go-strcase
-# github.com/tektoncd/pipeline v0.43.2
+# github.com/tektoncd/pipeline v0.44.0
 ## explicit; go 1.18
 github.com/tektoncd/pipeline/pkg/apis/config
 github.com/tektoncd/pipeline/pkg/apis/pipeline
@@ -382,7 +378,7 @@ github.com/tektoncd/pipeline/pkg/list
 github.com/tektoncd/pipeline/pkg/names
 github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag
 github.com/tektoncd/pipeline/pkg/substitution
-# github.com/xanzy/go-gitlab v0.78.0
+# github.com/xanzy/go-gitlab v0.79.0
 ## explicit; go 1.18
 github.com/xanzy/go-gitlab
 # github.com/xlzd/gotp v0.1.0
@@ -505,20 +501,20 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20230119192704-9d59e20e5cd1
+# google.golang.org/genproto v0.0.0-20230124163310-31e0e69b6fc2
 ## explicit; go 1.19
 google.golang.org/genproto/googleapis/api/expr/v1alpha1
 google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/rpc/status
 google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/grpc v1.52.0
+# google.golang.org/grpc v1.52.1
 ## explicit; go 1.17
 google.golang.org/grpc
 google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/base
-google.golang.org/grpc/balancer/grpclb/grpclbstate
+google.golang.org/grpc/balancer/grpclb/state
 google.golang.org/grpc/balancer/roundrobin
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/channelz
@@ -622,7 +618,7 @@ gotest.tools/v3/internal/cleanup
 gotest.tools/v3/internal/difflib
 gotest.tools/v3/internal/format
 gotest.tools/v3/internal/source
-# k8s.io/api v0.25.4
+# k8s.io/api v0.26.1
 ## explicit; go 1.19
 k8s.io/api/admission/v1
 k8s.io/api/admissionregistration/v1
@@ -671,11 +667,11 @@ k8s.io/api/scheduling/v1beta1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.25.4
+# k8s.io/apiextensions-apiserver v0.26.1
 ## explicit; go 1.19
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
-# k8s.io/apimachinery v0.25.4
+# k8s.io/apimachinery v0.26.1
 ## explicit; go 1.19
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -724,7 +720,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/client-go v0.25.4
+# k8s.io/client-go v0.26.1 => k8s.io/client-go v0.25.4
 ## explicit; go 1.19
 k8s.io/client-go/applyconfigurations/admissionregistration/v1
 k8s.io/client-go/applyconfigurations/admissionregistration/v1beta1
@@ -1007,7 +1003,7 @@ k8s.io/client-go/util/jsonpath
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/klog/v2 v2.80.2-0.20221028030830-9ae4992afb54
+# k8s.io/klog/v2 v2.90.0
 ## explicit; go 1.13
 k8s.io/klog/v2
 k8s.io/klog/v2/internal/buffer
@@ -1015,7 +1011,7 @@ k8s.io/klog/v2/internal/clock
 k8s.io/klog/v2/internal/dbg
 k8s.io/klog/v2/internal/serialize
 k8s.io/klog/v2/internal/severity
-# k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280
+# k8s.io/kube-openapi v0.0.0-20230123231816-1cb3ae25d79a
 ## explicit; go 1.18
 k8s.io/kube-openapi/pkg/builder3/util
 k8s.io/kube-openapi/pkg/common
@@ -1051,7 +1047,7 @@ knative.dev/eventing/pkg/metrics
 knative.dev/eventing/pkg/metrics/source
 knative.dev/eventing/pkg/observability
 knative.dev/eventing/pkg/observability/client
-# knative.dev/pkg v0.0.0-20221123011842-b78020c16606
+# knative.dev/pkg v0.0.0-20230125083639-408ad0773f47
 ## explicit; go 1.18
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1113,3 +1109,4 @@ sigs.k8s.io/structured-merge-diff/v4/value
 # sigs.k8s.io/yaml v1.3.0
 ## explicit; go 1.12
 sigs.k8s.io/yaml
+# k8s.io/client-go => k8s.io/client-go v0.25.4
