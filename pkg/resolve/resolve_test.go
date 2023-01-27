@@ -96,6 +96,19 @@ func TestTaskBundlesSkipped(t *testing.T) {
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Bundle, "reg.io/ruben/barichello@sha256:1234")
 }
 
+func TestTaskResolverSkipped(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-task-resolver", false, true)
+	assert.NilError(t, err)
+	assert.Assert(t, resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Resolver == "resolver")
+}
+
+func TestPipelineResolverSkipped(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-pipelinerun-resolver", false, true)
+	assert.NilError(t, err)
+	assert.Equal(t, string(resolved.Spec.PipelineRef.Resolver), "resolver")
+	assert.Equal(t, resolved.Spec.PipelineRef.Params[0].Value.StringVal, "task")
+}
+
 func TestClusterTasksSkipped(t *testing.T) {
 	resolved, _, err := readTDfile(t, "pipelinerun-with-a-clustertasks", false, true)
 	assert.NilError(t, err)
