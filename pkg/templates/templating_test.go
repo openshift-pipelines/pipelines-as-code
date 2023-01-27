@@ -4,8 +4,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestReplacePlaceHoldersVariables(t *testing.T) {
@@ -37,10 +39,11 @@ func TestReplacePlaceHoldersVariables(t *testing.T) {
 
 func TestProcessTemplates(t *testing.T) {
 	tests := []struct {
-		name     string
-		event    *info.Event
-		template string
-		expected string
+		name       string
+		event      *info.Event
+		template   string
+		expected   string
+		repository *v1alpha1.Repository
 	}{
 		{
 			name: "test process templates",
@@ -98,10 +101,28 @@ func TestProcessTemplates(t *testing.T) {
 			template: `{{ repo_url }}`,
 			expected: "https://cloneurl",
 		},
+		{
+			name: "replace target_namespace",
+			event: &info.Event{
+				CloneURL: "https://cloneurl",
+				URL:      "http://chmouel.com",
+			},
+			template: `Install in {{ target_namespace }}`,
+			expected: "Install in the_namespace",
+			repository: &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "the_namespace",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processed := Process(tt.event, tt.template)
+			repo := tt.repository
+			if repo == nil {
+				repo = &v1alpha1.Repository{}
+			}
+			processed := Process(tt.event, repo, tt.template)
 			assert.Equal(t, tt.expected, processed)
 		})
 	}
