@@ -134,7 +134,7 @@ jobs:
       - name: Compile tkn-pac for windows
         run: |
           mkdir -p bin/
-          make bin/tkn-pac.exe bin/tkn-pac
+          make windows
 
       - name: Run a simple tkn-pac on wine test
         run: |

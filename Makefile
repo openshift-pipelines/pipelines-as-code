@@ -34,7 +34,7 @@ $(OUTPUT_DIR)/%: cmd/% FORCE
 	go build -mod=vendor $(FLAGS)  -v -o $@ ./$<
 
 
-$(OUTPUT_DIR)/%.exe: cmd/% FORCE
+windows: cmd/% FORCE
 	env GOOS=windows GOARCH=amd64 go build -mod=vendor $(FLAGS)  -v -o $@ ./$<
 
 check: lint test
