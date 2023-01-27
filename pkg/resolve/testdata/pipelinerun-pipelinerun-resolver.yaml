@@ -1,0 +1,13 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pr-bundle
+spec:
+  pipelineRef:
+    resolver: resolver
+    params:
+      - name: kind
+        value: task
+      - name: name
+        value: task
