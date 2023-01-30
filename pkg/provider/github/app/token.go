@@ -1,0 +1,131 @@
+package app
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+	gt "github.com/google/go-github/v48/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+)
+
+func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *params.Run, repo *v1alpha1.Repository, gh *github.Provider) (string, string, int64, error) {
+	var (
+		enterpriseURL, token string
+		installationID       int64
+	)
+
+	jwtToken, err := generateJWT(ctx, run)
+	if err != nil {
+		return "", "", 0, err
+	}
+
+	installationURL := keys.APIURL + keys.InstallationURL
+	enterpriseURL = req.Header.Get("X-GitHub-Enterprise-Host")
+	if enterpriseURL != "" {
+		installationURL = enterpriseURL + keys.InstallationURL
+	}
+
+	res, err := getResponse(ctx, http.MethodGet, installationURL, jwtToken, run)
+	if err != nil {
+		return "", "", 0, err
+	}
+
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", "", 0, err
+	}
+
+	installationData := []gt.Installation{}
+	if err = json.Unmarshal(data, &installationData); err != nil {
+		return "", "", 0, err
+	}
+
+	/* each installationID can have list of repository
+	ref: https://docs.github.com/en/developers/apps/building-github-apps/authenticating-with-github-apps#authenticating-as-an-installation ,
+	     https://docs.github.com/en/rest/apps/installations?apiVersion=2022-11-28#list-repositories-accessible-to-the-app-installation */
+	for i := range installationData {
+		if installationData[i].ID == nil {
+			return "", "", 0, fmt.Errorf("installation ID is nil")
+		}
+		if *installationData[i].ID != 0 {
+			token, err = gh.GetAppToken(ctx, run.Clients.Kube, enterpriseURL, *installationData[i].ID)
+			if err != nil {
+				return "", "", 0, err
+			}
+		}
+		gh.Token = &token
+		repoList, err := github.ListRepos(ctx, gh)
+		if err != nil {
+			return "", "", 0, err
+		}
+		for i := range repoList {
+			// If URL matches with repo spec url then we can break for loop
+			if repoList[i] == repo.Spec.URL {
+				installationID = *installationData[i].ID
+				break
+			}
+		}
+	}
+	return enterpriseURL, token, installationID, nil
+}
+
+type JWTClaim struct {
+	Issuer int64 `json:"iss"`
+	jwt.RegisteredClaims
+}
+
+func generateJWT(ctx context.Context, run *params.Run) (string, error) {
+	applicationID, privateKey, err := github.GetAppIDAndPrivateKey(ctx, run.Clients.Kube)
+	if err != nil {
+		return "", err
+	}
+
+	expirationTime := time.Now().Add(5 * time.Minute)
+	claims := &JWTClaim{
+		Issuer: applicationID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+
+	parsedPK, err := jwt.ParseRSAPrivateKeyFromPEM(privateKey)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse private key: %w", err)
+	}
+
+	tokenString, err := token.SignedString(parsedPK)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign private key: %w", err)
+	}
+	return tokenString, nil
+}
+
+func getResponse(ctx context.Context, method, urlData, jwtToken string, run *params.Run) (*http.Response, error) {
+	rawurl, err := url.Parse(urlData)
+	if err != nil {
+		return nil, err
+	}
+
+	newreq, err := http.NewRequestWithContext(ctx, method, rawurl.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	newreq.Header = map[string][]string{
+		"Accept":        {"application/vnd.github+json"},
+		"Authorization": {fmt.Sprintf("Bearer %s", jwtToken)},
+	}
+	res, err := run.Clients.HTTP.Do(newreq)
+	return res, err
+}

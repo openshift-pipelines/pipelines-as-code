@@ -430,7 +430,8 @@ func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Eve
 	return decoded, err
 }
 
-func (v *Provider) ListRepos(ctx context.Context) ([]string, error) {
+// ListRepos lists all the repos for a particular token
+func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 	if v.Client == nil {
 		return []string{}, fmt.Errorf("no github client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
