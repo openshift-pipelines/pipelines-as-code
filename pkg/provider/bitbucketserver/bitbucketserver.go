@@ -256,7 +256,3 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
 	return []string{}, nil
 }
-
-func (v *Provider) ListRepos(ctx context.Context) ([]string, error) {
-	return []string{}, nil
-}

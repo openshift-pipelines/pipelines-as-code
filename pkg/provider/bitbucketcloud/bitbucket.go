@@ -252,7 +252,3 @@ func (v *Provider) getBlob(runevent *info.Event, ref, path string) (string, erro
 func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
 	return []string{}, nil
 }
-
-func (v *Provider) ListRepos(ctx context.Context) ([]string, error) {
-	return []string{}, nil
-}

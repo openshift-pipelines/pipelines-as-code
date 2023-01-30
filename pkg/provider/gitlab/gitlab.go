@@ -320,7 +320,3 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string
 	}
 	return []string{}, nil
 }
-
-func (v *Provider) ListRepos(ctx context.Context) ([]string, error) {
-	return []string{}, nil
-}
