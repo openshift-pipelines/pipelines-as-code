@@ -173,6 +173,29 @@ func makeClient(ctx context.Context, apiURL, token string) (*github.Client, stri
 	return client, providerName, github.String(apiURL)
 }
 
+func parseTS(headerTS string) (time.Time, error) {
+	ts := time.Time{}
+	// Github go-github library as defined there
+	if t, err := time.Parse("2006-01-02 03:04:05 MST", headerTS); err == nil {
+		ts = t
+	}
+
+	// Normal UTC: 2023-01-31 23:00:00 UTC
+	if t, err := time.Parse("2006-01-02 15:04:05 MST", headerTS); err == nil {
+		ts = t
+	}
+
+	// With TZ(???), ie: a token from Christoph 2023-04-26 23:23:26 +2000
+	if t, err := time.Parse("2006-01-02 15:04:05 -0700", headerTS); err == nil {
+		ts = t
+	}
+	if ts.Year() == 1 {
+		return ts, fmt.Errorf("cannot parse token expiration date: %s", headerTS)
+	}
+
+	return ts, nil
+}
+
 // checkWebhookSecretValidity check the webhook secret is valid and not
 // ratelimited. we try to check first the header is set (unlimited life token  would
 // not have an expiration) we would anyway get a 401 error when trying to use it
@@ -180,12 +203,16 @@ func makeClient(ctx context.Context, apiURL, token string) (*github.Client, stri
 // the issue was
 func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.Clock) error {
 	rl, resp, err := v.Client.RateLimits(ctx)
-	if resp.Header.Get("GitHub-Authentication-Token-Expiration") != "" && cw.Now().After(resp.TokenExpiration.Time) {
-		errm := fmt.Sprintf("token has expired at %s", resp.TokenExpiration.Format(time.RFC1123))
+	if resp.Header.Get("GitHub-Authentication-Token-Expiration") != "" {
+		ts, err := parseTS(resp.Header.Get("GitHub-Authentication-Token-Expiration"))
 		if err != nil {
-			errm += fmt.Sprintf(" err: %s", err.Error())
+			return fmt.Errorf("error parsing token expiration date: %w", err)
 		}
-		return fmt.Errorf(errm)
+
+		if cw.Now().After(ts) {
+			errm := fmt.Sprintf("token has expired at %s", resp.TokenExpiration.Format(time.RFC1123))
+			return fmt.Errorf(errm)
+		}
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
