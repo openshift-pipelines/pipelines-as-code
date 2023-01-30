@@ -88,7 +88,9 @@ func isTektonAPIVersion(apiVersion string) bool {
 func inlineTasks(tasks []tektonv1beta1.PipelineTask, ropt *Opts, types Types) ([]tektonv1beta1.PipelineTask, error) {
 	pipelineTasks := []tektonv1beta1.PipelineTask{}
 	for _, task := range tasks {
-		if task.TaskRef != nil && task.TaskRef.Bundle == "" &&
+		if task.TaskRef != nil &&
+			task.TaskRef.Bundle == "" &&
+			task.TaskRef.Resolver == "" &&
 			isTektonAPIVersion(task.TaskRef.APIVersion) &&
 			string(task.TaskRef.Kind) != "ClusterTask" &&
 			!skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
@@ -177,7 +179,7 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 		}
 
 		// Resolve PipelineRef inside PipelineRef
-		if pipelinerun.Spec.PipelineRef != nil && pipelinerun.Spec.PipelineRef.Bundle == "" {
+		if pipelinerun.Spec.PipelineRef != nil && pipelinerun.Spec.PipelineRef.Bundle == "" && pipelinerun.Spec.PipelineRef.Resolver == "" {
 			pipelineResolved, err := getPipelineByName(pipelinerun.Spec.PipelineRef.Name, types.Pipelines)
 			if err != nil {
 				return []*tektonv1beta1.PipelineRun{}, err
