@@ -31,6 +31,7 @@ weight: 3
   * `{{repo_owner}}`: The repository owner.
   * `{{repo_name}}`: The repository name.
   * `{{repo_url}}`: The repository full URL.
+  * `{{target_namespace}}`: The target namespace where the Repository has matched and the PipelineRun will be created.
   * `{{revision}}`: The commit full sha revision.
   * `{{sender}}`: The sender username (or accountid on some providers) of the commit.
   * `{{source_branch}}`: The branch name where the event come from.

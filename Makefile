@@ -33,14 +33,10 @@ vendor:
 $(OUTPUT_DIR)/%: cmd/% FORCE
 	go build -mod=vendor $(FLAGS)  -v -o $@ ./$<
 
-
-windows: cmd/% FORCE
-	env GOOS=windows GOARCH=amd64 go build -mod=vendor $(FLAGS)  -v -o $@ ./$<
+windows:
+	env GOOS=windows GOARCH=amd64 go build -mod=vendor $(FLAGS)  -v -o ./bin/tkn-pac.exe ./cmd/tkn-pac/main.go
 
 check: lint test
-
-allinone: ## Run kind all in one install
-	@cd ./hack/dev/kind/;./install.sh
 
 ## Tests
 TEST_UNIT_TARGETS := test-unit-verbose test-unit-race test-unit-failfast
