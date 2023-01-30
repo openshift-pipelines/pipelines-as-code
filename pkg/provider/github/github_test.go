@@ -708,3 +708,41 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 		})
 	}
 }
+
+func TestParseTS(t *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr bool
+		expTS   string
+	}{
+		{
+			name:  "valid as defined by go-github",
+			expTS: "2023-01-31 03:30:00 UTC",
+		},
+		{
+			name:  "valid with UTC and eu time",
+			expTS: "2023-01-31 15:30:00 UTC",
+		},
+		{
+			name:  "valid with timezone inside",
+			expTS: "2023-04-26 23:23:26 +2000",
+		},
+
+		{
+			name:    "invalid",
+			expTS:   "Mon 2023-04-26 23:23:26 +2000",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseTS(tt.expTS)
+			if tt.wantErr {
+				assert.Assert(t, err != nil)
+			} else {
+				assert.NilError(t, err)
+				assert.Assert(t, got.Year() != 0o1)
+			}
+		})
+	}
+}
