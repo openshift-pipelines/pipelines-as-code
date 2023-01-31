@@ -24,10 +24,13 @@ func TestHandleEvent(t *testing.T) {
 	cs, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
 	logger, _ := logger.GetLogger()
 
+	t.Setenv("SYSTEM_NAMESPACE", "test")
 	l := listener{
 		run: &params.Run{
 			Clients: clients.Clients{
 				PipelineAsCode: cs.PipelineAsCode,
+				Log:            logger,
+				Kube:           cs.Kube,
 			},
 			Info: info.Info{
 				Pac: &info.PacOpts{
@@ -40,7 +43,7 @@ func TestHandleEvent(t *testing.T) {
 		logger: logger,
 	}
 
-	ts := httptest.NewServer(l.handleEvent())
+	ts := httptest.NewServer(l.handleEvent(ctx))
 	defer ts.Close()
 
 	// valid push event

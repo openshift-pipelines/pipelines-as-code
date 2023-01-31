@@ -28,16 +28,5 @@ func main() {
 		log.Fatal("failed to init kinit client : ", err)
 	}
 
-	c := make(chan struct{})
-	go func() {
-		log.Println("started goroutine to watch configmap changes for controller")
-		c <- struct{}{}
-		if err := run.WatchConfigMapChanges(ctx); err != nil {
-			log.Fatal("error from WatchConfigMapChanges for controller : ", err)
-		}
-	}()
-	// Force WatchConfigMapChanges go routines to actually start
-	<-c
-
 	evadapter.MainWithContext(ctx, PACControllerLogKey, adapter.NewEnvConfig, adapter.New(run, kinteract))
 }
