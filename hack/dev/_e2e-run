@@ -21,7 +21,7 @@ _arguments : $args && ret=0
 
 case $state in
     testcase)
-        [[ -d test/ ]] && : ${(A)_cache_e2e_testcases:=${${(f)"$(rg --color=never --no-line-number --no-filename --no-heading '^func (Test[^(]+)' -o test/)"}:s/func //}}
+        [[ -d test/ ]] && : ${(A)_cache_e2e_testcases:=${${(f)"$(rg --color=never --no-line-number --no-filename --no-heading '^func (Test[^(]+)' -o test/  $(git rev-parse --show-toplevel))"}:s/func //}}
         [[ -n ${_cache_e2e_testcases} ]] && _values "test case" ${_cache_e2e_testcases[@]} && ret=0
         ;;
     kubeprofile)
