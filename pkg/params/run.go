@@ -39,7 +39,6 @@ func StringToBool(s string) bool {
 
 // WatchConfigMapChanges watches for provide configmap
 func (r *Run) WatchConfigMapChanges(ctx context.Context) error {
-	r.Clients.Log.Info("Inside WatchConfigMapChanges function")
 	ns := os.Getenv("SYSTEM_NAMESPACE")
 	if ns == "" {
 		return fmt.Errorf("failed to find pipelines-as-code installation namespace")
