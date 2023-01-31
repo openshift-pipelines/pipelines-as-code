@@ -65,7 +65,7 @@ func PushFilesToRefGit(t *testing.T, topts *TestOpts, entries map[string]string,
 	_, err = git.RunGit(path, "add", ".")
 	assert.NilError(t, err)
 
-	_, err = git.RunGit(path, "commit", "-m", "Committing files from test on "+topts.TargetRefName)
+	_, err = git.RunGit(path, "-c", "commit.gpgsign=false", "commit", "-m", "Committing files from test on "+topts.TargetRefName)
 	assert.NilError(t, err)
 
 	_, err = git.RunGit(path, "push", "origin", topts.TargetRefName)
