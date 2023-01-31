@@ -175,11 +175,6 @@ func makeClient(ctx context.Context, apiURL, token string) (*github.Client, stri
 
 func parseTS(headerTS string) (time.Time, error) {
 	ts := time.Time{}
-	// Github go-github library as defined there
-	if t, err := time.Parse("2006-01-02 03:04:05 MST", headerTS); err == nil {
-		ts = t
-	}
-
 	// Normal UTC: 2023-01-31 23:00:00 UTC
 	if t, err := time.Parse("2006-01-02 15:04:05 MST", headerTS); err == nil {
 		ts = t
