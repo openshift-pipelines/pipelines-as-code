@@ -8,6 +8,7 @@ import (
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
@@ -20,7 +21,9 @@ func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract
 	if pr == nil {
 		return failureReasons
 	}
-	for _, task := range pr.Status.TaskRuns {
+
+	trStatus := sort.GetStatusFromTaskStatusOrFromAsking(ctx, pr, cs)
+	for _, task := range trStatus {
 		if task.Status == nil {
 			continue
 		}

@@ -24,8 +24,8 @@ const (
 
 {{- range $taskrun := .TaskRunList }}
 <tr>
-<td>{{ formatCondition $taskrun.Status.Conditions }}</td>
-<td>{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}</td><td>
+<td>{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}</td>
+<td>{{ formatDuration $taskrun.PipelineRunTaskRunStatus.Status.StartTime $taskrun.Status.CompletionTime }}</td><td>
 
 {{ $taskrun.ConsoleLogURL }}
 

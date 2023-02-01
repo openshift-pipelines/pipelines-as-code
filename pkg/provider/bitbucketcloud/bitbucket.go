@@ -30,7 +30,7 @@ func (v *Provider) GetTaskURI(ctx context.Context, params *params.Run, event *in
 
 const taskStatusTemplate = `| **Status** | **Duration** | **Name** |
 | --- | --- | --- |
-{{range $taskrun := .TaskRunList }}|{{ formatCondition $taskrun.Status.Conditions }}|{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}|{{ $taskrun.ConsoleLogURL }}|
+{{range $taskrun := .TaskRunList }}|{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}|{{ formatDuration $taskrun.PipelineRunTaskRunStatus.Status.StartTime $taskrun.PipelineRunTaskRunStatus.Status.CompletionTime }}|{{ $taskrun.ConsoleLogURL }}|
 {{ end }}`
 
 func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
