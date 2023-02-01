@@ -36,10 +36,9 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 
 		c := make(chan struct{})
 		go func() {
-			log.Println("started goroutine to watch configmap changes inside controller reconciler")
 			c <- struct{}{}
 			if err := run.WatchConfigMapChanges(ctx); err != nil {
-				log.Fatal("error from WatchConfigMapChanges from controller reconciler : ", err)
+				log.Fatal("error from WatchConfigMapChanges from watcher reconciler : ", err)
 			}
 		}()
 		<-c
