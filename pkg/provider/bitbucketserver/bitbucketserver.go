@@ -17,7 +17,7 @@ import (
 )
 
 const taskStatusTemplate = `
-{{range $taskrun := .TaskRunList }}* **{{ formatCondition $taskrun.Status.Conditions }}**  {{ $taskrun.ConsoleLogURL }} *{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}*
+{{range $taskrun := .TaskRunList }}* **{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}**  {{ $taskrun.ConsoleLogURL }} *{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}*
 {{ end }}`
 
 type Provider struct {
