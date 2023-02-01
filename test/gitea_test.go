@@ -630,6 +630,21 @@ func TestGiteaConcurrencyOrderedExecution(t *testing.T) {
 	time.Sleep(time.Second * 10)
 }
 
+func TestGiteaErrorSnippet(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-error-snippet.yaml",
+		},
+		CheckForStatus: "failure",
+		ExpectEvents:   false,
+	}
+	defer tgitea.TestPR(t, topts)()
+
+	topts.Regexp = regexp.MustCompile(`Hey man i just wanna to say i am not such a failure, i am useful in my failure`)
+	tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -run TestGiteaPush ."
 // End:
