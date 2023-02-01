@@ -1,0 +1,25 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
+    pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: task
+        taskSpec:
+          steps:
+            - name: task-fail
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                echo "Hey man i just wanna to say i am not such a failure, i am useful in my failure"
+                exit 1
+            - name: task-good
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                echo "I am a such a good booooy"
+                exit 0
