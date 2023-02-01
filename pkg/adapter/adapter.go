@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -59,7 +60,7 @@ func New(run *params.Run, k *kubeinteraction.Interaction) adapter.AdapterConstru
 	}
 }
 
-func (l *listener) Start(_ context.Context) error {
+func (l *listener) Start(ctx context.Context) error {
 	adapterPort := globalAdapterPort
 	envAdapterPort := os.Getenv("PAC_CONTROLLER_PORT")
 	if envAdapterPort != "" {
@@ -75,7 +76,7 @@ func (l *listener) Start(_ context.Context) error {
 		_, _ = fmt.Fprint(w, "ok")
 	})
 
-	mux.HandleFunc("/", l.handleEvent())
+	mux.HandleFunc("/", l.handleEvent(ctx))
 
 	//nolint: gosec
 	srv := &http.Server{
@@ -97,9 +98,17 @@ func (l *listener) Start(_ context.Context) error {
 	return nil
 }
 
-func (l listener) handleEvent() http.HandlerFunc {
+func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
-		ctx := context.Background()
+		c := make(chan struct{})
+		go func() {
+			c <- struct{}{}
+			if err := l.run.WatchConfigMapChanges(ctx); err != nil {
+				log.Fatal("error from WatchConfigMapChanges for controller : ", err)
+			}
+		}()
+		// Force WatchConfigMapChanges go routines to actually start
+		<-c
 
 		if request.Method != http.MethodPost {
 			l.writeResponse(response, http.StatusOK, "ok")
