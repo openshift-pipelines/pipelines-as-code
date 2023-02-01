@@ -48,8 +48,12 @@ func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract
 						cs.Clients.Log.Errorf("cannot get pod logs: %w", err)
 						continue
 					}
+					trimmed := strings.TrimSpace(log)
+					if strings.HasSuffix(trimmed, " Skipping step because a previous step failed") {
+						continue
+					}
 					// see if a pattern match from errRe
-					ti.LogSnippet = strings.TrimSpace(log)
+					ti.LogSnippet = strings.TrimSpace(trimmed)
 				}
 			}
 		}
