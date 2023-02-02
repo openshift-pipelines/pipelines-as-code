@@ -15,4 +15,5 @@ spec:
           steps:
             - name: task
               image: registry.access.redhat.com/ubi9/ubi-micro
-              command: ["exit", "1"]
+              script: |
+                exit 1
