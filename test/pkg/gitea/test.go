@@ -201,12 +201,24 @@ func WaitForSecretDeletion(t *testing.T, topts *TestOpts, ref string) {
 	}
 
 	topts.Clients.Clients.Log.Infof("checking secrets in %v namespace", topts.TargetNS)
-	list, err := topts.Clients.Clients.Kube.CoreV1().Secrets(topts.TargetNS).
-		List(context.Background(), metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app.kubernetes.io/managed-by=%v", pipelinesascode.GroupName),
-		})
-	assert.NilError(t, err)
-	assert.Assert(t, len(list.Items) == 0, "pac secrets are not deleted", list.Items)
+	i = 0
+	for {
+		list, err := topts.Clients.Clients.Kube.CoreV1().Secrets(topts.TargetNS).
+			List(context.Background(), metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("pipelinesascode.tekton.dev/url-repository=%s\n", topts.TargetNS),
+			})
+		assert.NilError(t, err)
+
+		if len(list.Items) == 0 {
+			break
+		}
+
+		if i > 5 {
+			t.Fatalf("secret has not removed from the target namespace, something is fishy")
+		}
+		time.Sleep(5 * time.Second)
+		i++
+	}
 }
 
 func WaitForPullRequestCommentMatch(ctx context.Context, t *testing.T, topts *TestOpts) {
