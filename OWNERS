@@ -1,0 +1,4 @@
+approvers:
+    - dependabot[bot]
+
+# vim: ft=yaml
