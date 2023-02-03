@@ -210,7 +210,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 
 func TestGiteaRetestAfterPush(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		Regexp:      regexp.MustCompile(`.*pr has.*failed`),
+		Regexp:      regexp.MustCompile(`.*has <b>failed</b>`),
 		TargetEvent: options.PullRequestEvent,
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/failures/pipelinerun-exit-1.yaml",
