@@ -63,20 +63,29 @@ func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *par
 				return "", "", 0, err
 			}
 		}
-		gh.Token = &token
-		repoList, err := github.ListRepos(ctx, gh)
+		exist, err := listRepos(ctx, repo, gh)
 		if err != nil {
 			return "", "", 0, err
 		}
-		for i := range repoList {
-			// If URL matches with repo spec url then we can break for loop
-			if repoList[i] == repo.Spec.URL {
-				installationID = *installationData[i].ID
-				break
-			}
+		if exist {
+			installationID = *installationData[i].ID
 		}
 	}
 	return enterpriseURL, token, installationID, nil
+}
+
+func listRepos(ctx context.Context, repo *v1alpha1.Repository, gh *github.Provider) (bool, error) {
+	repoList, err := github.ListRepos(ctx, gh)
+	if err != nil {
+		return false, err
+	}
+	for i := range repoList {
+		// If URL matches with repo spec url then we can break for loop
+		if repoList[i] == repo.Spec.URL {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 type JWTClaim struct {
@@ -90,6 +99,9 @@ func generateJWT(ctx context.Context, run *params.Run) (string, error) {
 		return "", err
 	}
 
+	// The expirationTime claim identifies the expiration time on or after which the JWT MUST NOT be accepted for processing.
+	// Value cannot be longer duration.
+	// See https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.4
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims := &JWTClaim{
 		Issuer: applicationID,

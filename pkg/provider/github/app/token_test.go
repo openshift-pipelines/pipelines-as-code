@@ -20,7 +20,6 @@ import (
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
-	"gotest.tools/v3/env"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
@@ -60,16 +59,14 @@ var validSecret = &corev1.Secret{
 }
 
 func Test_GenerateJWT(t *testing.T) {
-	envRemove := env.PatchAll(t, map[string]string{"SYSTEM_NAMESPACE": "foo"})
-	defer envRemove()
+	t.Setenv("SYSTEM_NAMESPACE", "foo")
 	namespaceWhereSecretNotInstalled := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: os.Getenv("SYSTEM_NAMESPACE"),
 		},
 	}
 
-	envRemove = env.PatchAll(t, map[string]string{"SYSTEM_NAMESPACE": "pipelinesascode"})
-	defer envRemove()
+	t.Setenv("SYSTEM_NAMESPACE", "pipelinesascode")
 	testNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: os.Getenv("SYSTEM_NAMESPACE"),
@@ -156,8 +153,7 @@ func Test_GenerateJWT(t *testing.T) {
 }
 
 func Test_GetAndUpdateInstallationID(t *testing.T) {
-	envRemove := env.PatchAll(t, map[string]string{"SYSTEM_NAMESPACE": "pipelinesascode"})
-	defer envRemove()
+	t.Setenv("SYSTEM_NAMESPACE", "pipelinesascode")
 	testNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipelinesascode",
@@ -195,6 +191,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 	}
 
 	jwtToken, err := generateJWT(ctx, run)
+	assert.NilError(t, err)
 	req := httptest.NewRequest("GET", "http://localhost", strings.NewReader(""))
 
 	req.Header.Add("X-GitHub-Enterprise-Host", "https://api.github.com")
@@ -218,6 +215,9 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 
 	fakeghclient, mux, serverURL, teardown := ghtesthelper.SetupGH()
 	defer teardown()
+
+	gprovider := &github.Provider{Client: fakeghclient}
+
 	mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", 120), func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
 		w.Header().Set("Authorization", "Bearer "+jwtToken)
@@ -225,26 +225,22 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 		_, _ = fmt.Fprint(w, `{"token": "12345"}`)
 	})
 
-	envRemove = env.PatchAll(t, map[string]string{"SYSTEM_NAMESPACE": "pipelinesascode", "PAC_GIT_PROVIDER_TOKEN_APIURL": serverURL + "/api/v3"})
-	defer envRemove()
+	t.Setenv("PAC_GIT_PROVIDER_TOKEN_APIURL", serverURL+"/api/v3")
 
-	gprovider := &github.Provider{
-		Logger: logger,
-		Client: fakeghclient,
-	}
-
-	mux.HandleFunc(fmt.Sprintf("/installation/repositories"), func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Authorization", "Bearer 12345")
-		w.Header().Set("Accept", "application/vnd.github+json")
-		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"owner":{"html_url": "https://matched/by/incoming"}]}`)
-
+	mux.HandleFunc("user/installations/120/repositories/2", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(rw)
 	})
 
-	_, _, _, err = GetAndUpdateInstallationID(ctx, req, run, repo, gprovider)
-	if strings.Contains(err.Error(), "https://api.github.com/installation/repositories: 401 Bad credentials") {
+	mux.HandleFunc("/installation/repositories", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Authorization", "Bearer 12345")
+		w.Header().Set("Accept", "application/vnd.github+json")
+		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"}]}`)
+	})
+	_, _, installationID, err := GetAndUpdateInstallationID(ctx, req, run, repo, gprovider)
+	if strings.Contains(err.Error(), "https://api.github.com/installation/repositories: 401 Bad credentials") && installationID == 0 {
 		assert.Assert(t, err != nil)
 	} else {
-		assert.Assert(t, err == nil)
+		assert.Equal(t, err, nil)
 	}
 }
 
@@ -253,4 +249,42 @@ func testMethod(t *testing.T, r *http.Request, want string) {
 	if got := r.Method; got != want {
 		t.Errorf("Request method: %v, want %v", got, want)
 	}
+}
+
+func Test_ListRepos(t *testing.T) {
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+
+	mux.HandleFunc("user/installations/1/repositories/2", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(rw)
+	})
+
+	mux.HandleFunc("/installation/repositories", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Authorization", "Bearer 12345")
+		w.Header().Set("Accept", "application/vnd.github+json")
+		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"}]}`)
+	})
+
+	repo := &v1alpha1.Repository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "repo",
+		},
+		Spec: v1alpha1.RepositorySpec{
+			URL: "https://matched/by/incoming",
+			Incomings: &[]v1alpha1.Incoming{
+				{
+					Targets: []string{"main"},
+					Secret: v1alpha1.Secret{
+						Name: "secret",
+					},
+				},
+			},
+		},
+	}
+
+	ctx, _ := rtesting.SetupFakeContext(t)
+	gprovider := &github.Provider{Client: fakeclient}
+	exist, err := listRepos(ctx, repo, gprovider)
+	assert.NilError(t, err)
+	assert.Equal(t, exist, true)
 }
