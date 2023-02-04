@@ -746,3 +746,24 @@ func TestParseTS(t *testing.T) {
 		})
 	}
 }
+
+func TestListRepos(t *testing.T) {
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+
+	mux.HandleFunc("user/installations/1/repositories/2", func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(rw)
+	})
+
+	mux.HandleFunc("/installation/repositories", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Authorization", "Bearer 12345")
+		w.Header().Set("Accept", "application/vnd.github+json")
+		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"}]}`)
+	})
+
+	ctx, _ := rtesting.SetupFakeContext(t)
+	provider := &Provider{Client: fakeclient}
+	data, err := ListRepos(ctx, provider)
+	assert.NilError(t, err)
+	assert.Equal(t, data[0], "https://matched/by/incoming")
+}
