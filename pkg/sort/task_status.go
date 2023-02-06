@@ -2,7 +2,6 @@ package sort
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"sort"
 	"text/template"
@@ -11,7 +10,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	tektonstatus "github.com/tektoncd/pipeline/pkg/status"
 )
 
 type tkr struct {
@@ -37,31 +35,6 @@ func (trs taskrunList) Less(i, j int) bool {
 	}
 
 	return trs[j].Status.StartTime.Before(trs[i].Status.StartTime)
-}
-
-// GetStatusFromTaskStatusOrFromAsking will return the status of the taskruns,
-// it would use the embedded one if it's available (pre tekton 0.44.0) or try
-// to get it from the child references
-func GetStatusFromTaskStatusOrFromAsking(ctx context.Context, pr *tektonv1beta1.PipelineRun, run *params.Run) map[string]*tektonv1beta1.PipelineRunTaskRunStatus {
-	trStatus := map[string]*tektonv1beta1.PipelineRunTaskRunStatus{}
-	if len(pr.Status.TaskRuns) > 0 {
-		// Deprecated since pipeline 0.44.0
-		return pr.Status.TaskRuns
-	}
-	for _, cr := range pr.Status.ChildReferences {
-		ts, err := tektonstatus.GetTaskRunStatusForPipelineTask(
-			ctx, run.Clients.Tekton, pr.GetNamespace(), cr,
-		)
-		if err != nil {
-			run.Clients.Log.Warnf("cannot get taskrun status pr %s ns: %s err: %w", pr.GetName(), pr.GetNamespace(), err)
-			continue
-		}
-		trStatus[cr.Name] = &tektonv1beta1.PipelineRunTaskRunStatus{
-			PipelineTaskName: cr.PipelineTaskName,
-			Status:           ts,
-		}
-	}
-	return trStatus
 }
 
 // TaskStatusTmpl generate a template of all status of a taskruns sorted to a statusTemplate as defined by the git provider

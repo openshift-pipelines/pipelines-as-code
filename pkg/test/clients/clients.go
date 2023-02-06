@@ -33,10 +33,12 @@ type Clients struct {
 // Informers holds references to informers which are useful for reconciler tests.
 type Informers struct {
 	PipelineRun v1beta1.PipelineRunInformer
+	TaskRun     v1beta1.TaskRunInformer
 	Repository  informersv1alpha1.RepositoryInformer
 }
 
 type Data struct {
+	TaskRuns     []*pipelinev1beta1.TaskRun
 	PipelineRuns []*pipelinev1beta1.PipelineRun
 	Repositories []*v1alpha1.Repository
 	Namespaces   []*corev1.Namespace
@@ -65,6 +67,12 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 			t.Fatal(err)
 		}
 		if _, err := c.Pipeline.TektonV1beta1().PipelineRuns(pr.Namespace).Create(ctx, pr, metav1.CreateOptions{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, tr := range d.TaskRuns {
+		if _, err := c.Pipeline.TektonV1beta1().TaskRuns(tr.Namespace).Create(ctx, tr, metav1.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
 	}

@@ -8,11 +8,36 @@ import (
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonstatus "github.com/tektoncd/pipeline/pkg/status"
 )
 
 var reasonMessageReplacementRegexp = regexp.MustCompile(`\(image: .*`)
+
+// GetStatusFromTaskStatusOrFromAsking will return the status of the taskruns,
+// it would use the embedded one if it's available (pre tekton 0.44.0) or try
+// to get it from the child references
+func GetStatusFromTaskStatusOrFromAsking(ctx context.Context, pr *tektonv1beta1.PipelineRun, run *params.Run) map[string]*tektonv1beta1.PipelineRunTaskRunStatus {
+	trStatus := map[string]*tektonv1beta1.PipelineRunTaskRunStatus{}
+	if len(pr.Status.TaskRuns) > 0 {
+		// Deprecated since pipeline 0.44.0
+		return pr.Status.TaskRuns
+	}
+	for _, cr := range pr.Status.ChildReferences {
+		ts, err := tektonstatus.GetTaskRunStatusForPipelineTask(
+			ctx, run.Clients.Tekton, pr.GetNamespace(), cr,
+		)
+		if err != nil {
+			run.Clients.Log.Warnf("cannot get taskrun status pr %s ns: %s err: %w", pr.GetName(), pr.GetNamespace(), err)
+			continue
+		}
+		trStatus[cr.Name] = &tektonv1beta1.PipelineRunTaskRunStatus{
+			PipelineTaskName: cr.PipelineTaskName,
+			Status:           ts,
+		}
+	}
+	return trStatus
+}
 
 // CollectFailedTasksLogSnippet collects all tasks information we are interested in.
 // should really be in a tektoninteractions package but i lack imagination at the moment
@@ -22,7 +47,7 @@ func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract
 		return failureReasons
 	}
 
-	trStatus := sort.GetStatusFromTaskStatusOrFromAsking(ctx, pr, cs)
+	trStatus := GetStatusFromTaskStatusOrFromAsking(ctx, pr, cs)
 	for _, task := range trStatus {
 		if task.Status == nil {
 			continue
