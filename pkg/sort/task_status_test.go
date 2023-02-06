@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -59,11 +60,12 @@ func TestStatusTmpl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			console := consoleui.FallBackConsole{}
 			config := &info.ProviderConfig{
 				TaskStatusTMPL: tt.tmpl,
 			}
-			output, err := TaskStatusTmpl(tt.pr, console, config)
+			runs := params.New()
+			runs.Clients.ConsoleUI = consoleui.FallBackConsole{}
+			output, err := TaskStatusTmpl(tt.pr, tt.pr.Status.TaskRuns, runs, config)
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 				return

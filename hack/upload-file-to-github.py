@@ -32,6 +32,10 @@ GIT_NAME = "Openshift Pipeline Release Team"
 GIT_EMAIL = "pipelines@redhat.com"
 
 
+class UploadFileToGithubException(Exception):
+    pass
+
+
 def github_request(
     token: str,
     method: str,
@@ -67,7 +71,7 @@ def github_request(
         if return_status_on_error:
             return (response, {})
 
-        raise Exception(
+        raise UploadFileToGithubException(
             f"Error: {response.status} - {json.loads(response.read())} - {method} - {url} - {data} - {headers}"
         )
 
@@ -118,9 +122,9 @@ def create_from_refs(args):
 def upload_to_github(args):
     last_commit_sha = None
     if not args.to_ref:
-        raise Exception("Need a to-ref args")
+        raise UploadFileToGithubException("Need a to-ref args")
     if not args.filename:
-        raise Exception("Need at least one filename")
+        raise UploadFileToGithubException("Need at least one filename")
 
     # Get last commit SHA of a branch
     _, jeez = github_request(

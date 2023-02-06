@@ -149,8 +149,12 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*v1beta1.Pip
 		pr.GetName(), match.Repo.GetNamespace(), p.event.SHA, p.event.BaseBranch)
 	consoleURL := p.run.Clients.ConsoleUI.DetailURL(match.Repo.GetNamespace(), pr.GetName())
 	// Create status with the log url
-	msg := fmt.Sprintf(params.StartingPipelineRunText, settings.TknBinaryName, pr.GetName(), match.Repo.GetNamespace(), p.run.Clients.ConsoleUI.GetName(), consoleURL,
-		match.Repo.GetNamespace(), match.Repo.GetName())
+	msg := fmt.Sprintf(params.StartingPipelineRunText,
+		pr.GetName(), match.Repo.GetNamespace(),
+		p.run.Clients.ConsoleUI.GetName(), consoleURL,
+		settings.TknBinaryName,
+		pr.GetNamespace(),
+		pr.GetName())
 	status := provider.StatusOpts{
 		Status:                  "in_progress",
 		Conclusion:              "pending",

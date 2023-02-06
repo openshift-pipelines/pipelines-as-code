@@ -377,6 +377,7 @@ github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1
 github.com/tektoncd/pipeline/pkg/list
 github.com/tektoncd/pipeline/pkg/names
 github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag
+github.com/tektoncd/pipeline/pkg/status
 github.com/tektoncd/pipeline/pkg/substitution
 # github.com/xanzy/go-gitlab v0.79.0
 ## explicit; go 1.18

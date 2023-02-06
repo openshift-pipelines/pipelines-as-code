@@ -24,8 +24,8 @@ const (
 
 {{- range $taskrun := .TaskRunList }}
 <tr>
-<td>{{ formatCondition $taskrun.Status.Conditions }}</td>
-<td>{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}</td><td>
+<td>{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}</td>
+<td>{{ formatDuration $taskrun.PipelineRunTaskRunStatus.Status.StartTime $taskrun.Status.CompletionTime }}</td><td>
 
 {{ $taskrun.ConsoleLogURL }}
 
@@ -117,13 +117,14 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 
 	if statusOpts.Status == "in_progress" {
 		statusOpts.Title = "CI has Started"
-		statusOpts.Summary = "is running."
+		statusOpts.Summary = "is running.\n"
 	}
 
 	onPr := ""
-	if statusOpts.OriginalPipelineRunName != "" {
-		onPr = "/" + statusOpts.OriginalPipelineRunName
+	if statusOpts.PipelineRunName != "" {
+		onPr = fmt.Sprintf("/%s", statusOpts.PipelineRunName)
 	}
+	// gitea show weirdly the <br>
 	statusOpts.Summary = fmt.Sprintf("%s%s %s", pacOpts.ApplicationName, onPr, statusOpts.Summary)
 
 	return v.createStatusCommit(event, pacOpts, statusOpts)
@@ -150,7 +151,7 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 	}
 
 	if status.Text != "" && event.EventType == "pull_request" {
-		status.Text = strings.TrimSpace(status.Text)
+		status.Text = strings.ReplaceAll(strings.TrimSpace(status.Text), "<br>", "\n")
 		_, _, err := v.Client.CreateIssueComment(event.Organization, event.Repository,
 			int64(event.PullRequestNumber), gitea.CreateIssueCommentOption{
 				Body: fmt.Sprintf("%s\n%s", status.Summary, status.Text),

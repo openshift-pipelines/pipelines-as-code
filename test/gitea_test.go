@@ -210,7 +210,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 
 func TestGiteaRetestAfterPush(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		Regexp:      regexp.MustCompile(`.*pr has.*failed`),
+		Regexp:      regexp.MustCompile(`.*has <b>failed</b>`),
 		TargetEvent: options.PullRequestEvent,
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/failures/pipelinerun-exit-1.yaml",
@@ -628,6 +628,21 @@ func TestGiteaConcurrencyOrderedExecution(t *testing.T) {
 	assert.Assert(t, strings.HasPrefix(repo.Status[statusLen-2].PipelineRunName, "pqr"))
 	assert.Assert(t, strings.HasPrefix(repo.Status[statusLen-1].PipelineRunName, "xyz"))
 	time.Sleep(time.Second * 10)
+}
+
+func TestGiteaErrorSnippet(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-error-snippet.yaml",
+		},
+		CheckForStatus: "failure",
+		ExpectEvents:   false,
+	}
+	defer tgitea.TestPR(t, topts)()
+
+	topts.Regexp = regexp.MustCompile(`Hey man i just wanna to say i am not such a failure, i am useful in my failure`)
+	tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
 }
 
 // Local Variables:
