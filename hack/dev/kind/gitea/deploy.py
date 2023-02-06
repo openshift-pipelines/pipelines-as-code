@@ -3,13 +3,15 @@
 #
 # Provision gitea instance with a username password and Repository for Pipelines as Code
 import os
+import pathlib
 import subprocess
 import sys
 import tempfile
-import pathlib
 import time
 
+
 import requests
+
 
 GITEA_USER = os.environ.get("GITEA_USER", "pac")
 GITEA_PASSWORD = os.environ.get("GITEA_PASSWORD", "pac")
@@ -35,6 +37,10 @@ GITEA_REPOS = {
     # "GITEA_REPO_NAME_E2E": {"name": GITEA_REPO_NAME_E2E, "create_crd": False},
     # "GITEA_REPO_NAME": {"name": GITEA_REPO_NAME_PERSO, "create_crd": True},
 }
+
+
+class GiteaDeployException(Exception):
+    pass
 
 
 class ProvisionGitea:
@@ -270,7 +276,7 @@ def main():
     m.create_ingress_or_route()
     m.apply_deployment_template()
     if not m.wait_for_gitea_to_be_up():
-        raise Exception(f"Could not get gitea on {m.gitea_url}")
+        raise GiteaDeployException(f"Could not get gitea on {m.gitea_url}")
     m.create_user_in_pod()
     m.create_user_in_gitea()
     token = m.create_token_for_user()

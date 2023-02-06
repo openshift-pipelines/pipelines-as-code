@@ -16,6 +16,11 @@ SECRET_NAME = "pipelines-as-code-secret"
 NAMESPACE = "pipelines-as-code"
 JWT_EXPIRE_MINUTES_AS_SECONDS = 10 * 60
 
+
+class GHAppTokenException(Exception):
+    pass
+
+
 # TODO support github enteprise
 GITHUB_API_URL = "https://api.github.com"
 
@@ -85,12 +90,12 @@ class GitHub:
         )
 
         if not req.text.strip():
-            raise Exception(
+            raise GHAppTokenException(
                 f"Not getting a json: code: {req.status_code} reason: {req.reason}"
             )
         ret = req.json()
         if "token" not in ret:
-            raise Exception(f"Authentication errors: {req.text}")
+            raise GHAppTokenException(f"Authentication errors: {req.text}")
         return ret["token"]
 
     def _request(self, method, url, headers=None, data=None):
