@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v49/github"
+	"github.com/google/go-github/v50/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -276,7 +276,7 @@ func metadataPatch(checkRunID *int64, logURL string) map[string]interface{} {
 // don't have a github app token
 func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
 	var err error
-	now := time.Now()
+	now := github.Timestamp{Time: time.Now()}
 	switch status.Conclusion {
 	case "skipped", "neutral":
 		status.Conclusion = "success" // We don't have a choice than setting as success, no pending here.
