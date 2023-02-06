@@ -27,6 +27,8 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
+const defaultGithubTokenExpirationTimeFormat = "2006-01-02 03:04:05 MST"
+
 func TestGithubSplitURL(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -630,6 +632,7 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 		expHeaderSet   bool
 		apiNotEnabled  bool
 		wantLogSnippet string
+		timeFormat     string
 	}{
 		{
 			name:         "remaining scim calls",
@@ -646,9 +649,22 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 		},
 		{
 			name:         "expired",
-			wantSubErr:   "token has expired",
+			wantSubErr:   "token has expired at",
 			expTime:      cw.Now().Add(-1 * time.Minute),
 			expHeaderSet: true,
+		},
+		{
+			name:         "token with timezone format",
+			expTime:      cw.Now().Add(-1 * time.Minute),
+			expHeaderSet: true,
+			timeFormat:   "2006-01-02 15:04:05 -0700",
+		},
+		{
+			name:           "could not detect that timeformat",
+			expTime:        cw.Now().Add(-1 * time.Minute),
+			timeFormat:     "2006-01-02",
+			expHeaderSet:   true,
+			wantLogSnippet: "skipping checking if token has expired",
 		},
 		{
 			name:      "no header mean unlimited",
@@ -685,7 +701,11 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 					b, _ := json.Marshal(st)
 					rw.Header().Set("Content-Type", "application/json")
 					if tt.expHeaderSet {
-						rw.Header().Set("GitHub-Authentication-Token-Expiration", tt.expTime.Format("2006-01-02 03:04:05 MST"))
+						timeFormat := defaultGithubTokenExpirationTimeFormat
+						if tt.timeFormat != "" {
+							timeFormat = tt.timeFormat
+						}
+						rw.Header().Set("GitHub-Authentication-Token-Expiration", tt.expTime.Format(timeFormat))
 					}
 					fmt.Fprint(rw, string(b))
 				})
@@ -704,44 +724,6 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 
 			if tt.wantLogSnippet != "" {
 				assert.Assert(t, observer.FilterMessageSnippet(tt.wantLogSnippet).Len() > 0)
-			}
-		})
-	}
-}
-
-func TestParseTS(t *testing.T) {
-	tests := []struct {
-		name    string
-		wantErr bool
-		expTS   string
-	}{
-		{
-			name:  "valid as defined by go-github",
-			expTS: "2023-01-31 03:30:00 UTC",
-		},
-		{
-			name:  "valid with UTC and eu time",
-			expTS: "2023-01-31 15:30:00 UTC",
-		},
-		{
-			name:  "valid with timezone inside",
-			expTS: "2023-04-26 23:23:26 +2000",
-		},
-
-		{
-			name:    "invalid",
-			expTS:   "Mon 2023-04-26 23:23:26 +2000",
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseTS(tt.expTS)
-			if tt.wantErr {
-				assert.Assert(t, err != nil)
-			} else {
-				assert.NilError(t, err)
-				assert.Assert(t, got.Year() != 0o1)
 			}
 		})
 	}
