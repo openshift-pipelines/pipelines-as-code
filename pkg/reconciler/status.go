@@ -105,7 +105,7 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		return pr, err
 	}
 
-	trStatus := sort.GetStatusFromTaskStatusOrFromAsking(ctx, pr, r.run)
+	trStatus := kstatus.GetStatusFromTaskStatusOrFromAsking(ctx, pr, r.run)
 	taskStatusText, err := sort.TaskStatusTmpl(pr, trStatus, r.run, vcx.GetConfig())
 	if err != nil {
 		return pr, err
