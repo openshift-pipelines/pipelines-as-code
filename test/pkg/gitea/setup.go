@@ -76,7 +76,7 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitea.Provider, error
 }
 
 func TearDown(ctx context.Context, t *testing.T, topts *TestOpts) {
-	repository.NSTearDown(ctx, t, topts.Clients, topts.TargetNS)
+	repository.NSTearDown(ctx, t, topts.Params, topts.TargetNS)
 	_, err := topts.GiteaCNX.Client.DeleteRepo(topts.Opts.Organization, topts.TargetRefName)
 	assert.NilError(t, err)
 }

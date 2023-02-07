@@ -19,15 +19,12 @@ func createToken(topts *TestOpts) (string, error) {
 }
 
 func CreateCRD(ctx context.Context, topts *TestOpts) error {
-	if err := pacrepo.CreateNS(ctx, topts.TargetNS, topts.Clients); err != nil {
-		return err
-	}
 	token, err := createToken(topts)
 	if err != nil {
 		return err
 	}
 
-	if err := secret.Create(ctx, topts.Clients, map[string]string{"token": token}, topts.TargetNS, "gitea-secret"); err != nil {
+	if err := secret.Create(ctx, topts.Params, map[string]string{"token": token}, topts.TargetNS, "gitea-secret"); err != nil {
 		return err
 	}
 	repository := &v1alpha1.Repository{
@@ -47,5 +44,5 @@ func CreateCRD(ctx context.Context, topts *TestOpts) error {
 		},
 	}
 
-	return pacrepo.CreateRepo(ctx, topts.TargetNS, topts.Clients, repository)
+	return pacrepo.CreateRepo(ctx, topts.TargetNS, topts.Params, repository)
 }
