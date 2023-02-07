@@ -52,6 +52,25 @@ func Test_getRepoByCR(t *testing.T) {
 			wantErr:      false,
 		},
 		{
+			name: "test-match-url-slash-at-the-end",
+			args: args{
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              "https//nowhere.togo/",
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
+			},
+			wantTargetNS: targetNamespace,
+			wantErr:      false,
+		},
+		{
 			name: "test-nomatch-url",
 			args: args{
 				data: testclient.Data{
