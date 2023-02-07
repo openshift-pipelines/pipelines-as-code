@@ -128,10 +128,10 @@ function install_tekton() {
 }
 
 function install_pac() {
-    [[ -z ${PAC_DIR} && $(git rev-parse --show-toplevel 2>/dev/null >/dev/null) != "" ]] && \
+    [[ -z ${PAC_DIR} && $(git rev-parse --show-toplevel 2>/dev/null) != "" ]] && \
         PAC_DIR=$(git rev-parse --show-toplevel)
 
-    [[ -z ${PAC_DIR} && $(git rev-parse --show-toplevel 2>/dev/null >/dev/null) == "" ]] &&  \
+    [[ -z ${PAC_DIR} && $(git rev-parse --show-toplevel 2>/dev/null) == "" ]] &&  \
         PAC_DIR=$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code
 
 	if [[ -n ${INSTALL_FROM_RELEASE} ]];then
