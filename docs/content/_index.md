@@ -8,12 +8,16 @@ An opinionated CI based on OpenShift Pipelines / Tekton.
 
 ## Introduction
 
-Pipelines as code refers to the practice of defining, versioning, and managing
-the entire workflow of a software project, including the build, test, and
-deployment processes, using [Tekton](https://tekton.dev) PipelineRuns and
-Tasks from a web-based Git repository managers that provide source code
-management  like [Github](https://github.com), [Gitlab](https://gitlab.com) and
-others..
+Pipelines as code is a project allowing you to define your CI/CD using
+[Tekton](https://tekton.dev) PipelineRuns and Tasks in a file located in your
+source control management (SCM) system, such as GitHub or Gitlab. This file is
+then used to automatically create a pipeline for a Pull Request or a Push to a
+branch.
+
+By storing the pipeline definition in code, it becomes easier to version,
+review, and collaborate on pipeline changes with code changes. Additionally, it
+allows you to view the pipeline status and control its execution directly from
+your SCM, rather than having to switch between multiple systems.
 
 This approach enables automation, repeatability, collaboration, and change
 tracking using a Git workflow.
