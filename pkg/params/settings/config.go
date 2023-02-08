@@ -169,9 +169,9 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 		setting.ErrorDetectionNumberOfLines = errorDetectNumberOfLines
 	}
 
-	if setting.ErrorDetection && setting.ErrorDetectionSimpleRegexp != config[ErrorDetectionSimpleRegexpKey] {
+	if setting.ErrorDetection && setting.ErrorDetectionSimpleRegexp != strings.TrimSpace(config[ErrorDetectionSimpleRegexpKey]) {
 		// replace double backslash with single backslash because kube configmap is giving us things double backslashes
-		logger.Infof("CONFIG: setting error detection regexp to %v", config[ErrorDetectionSimpleRegexpKey])
+		logger.Infof("CONFIG: setting error detection regexp to %v", strings.TrimSpace(config[ErrorDetectionSimpleRegexpKey]))
 		setting.ErrorDetectionSimpleRegexp = strings.TrimSpace(config[ErrorDetectionSimpleRegexpKey])
 	}
 
