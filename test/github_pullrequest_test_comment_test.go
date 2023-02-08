@@ -5,6 +5,7 @@ package test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/google/go-github/v49/github"
@@ -16,6 +17,9 @@ import (
 )
 
 func TestGithubPullRequestTest(t *testing.T) {
+	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+		t.Skip("Skipping test since only enabled for nightly")
+	}
 	ctx := context.TODO()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, "Github test comment",
 		[]string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"}, false)
