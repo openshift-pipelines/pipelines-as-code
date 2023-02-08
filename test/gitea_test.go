@@ -396,7 +396,7 @@ func TestGiteaClusterTasks(t *testing.T) {
 	assert.NilError(t, err)
 	ct := v1beta1.ClusterTask{}
 	assert.NilError(t, yaml.Unmarshal([]byte(entries[ctname]), &ct))
-	ct.ObjectMeta.Name = "clustertask-" + topts.TargetNS
+	ct.Name = "clustertask-" + topts.TargetNS
 
 	run := &params.Run{}
 	ctx := context.Background()
@@ -406,7 +406,7 @@ func TestGiteaClusterTasks(t *testing.T) {
 	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, run))
 	run.Clients.Log.Infof("%s has been created", ct.GetName())
 	defer (func() {
-		assert.NilError(t, topts.Params.Clients.Tekton.TektonV1beta1().ClusterTasks().Delete(context.TODO(), ct.ObjectMeta.Name, metav1.DeleteOptions{}))
+		assert.NilError(t, topts.Params.Clients.Tekton.TektonV1beta1().ClusterTasks().Delete(context.TODO(), ct.Name, metav1.DeleteOptions{}))
 		run.Clients.Log.Infof("%s is deleted", ct.GetName())
 	})()
 
@@ -530,12 +530,12 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 			assert.NilError(t, err)
 
 			for k, v := range tt.fileToAdd {
-				newFile, err := os.Create(filepath.Join(tmpdir, k))
-				assert.NilError(t, err)
-				_, err = newFile.WriteString(v)
-				assert.NilError(t, err)
-				_, err = git.RunGit(tmpdir, "add", k)
-				assert.NilError(t, err)
+				newFile, err2 := os.Create(filepath.Join(tmpdir, k))
+				assert.NilError(t, err2)
+				_, err2 = newFile.WriteString(v)
+				assert.NilError(t, err2)
+				_, err2 = git.RunGit(tmpdir, "add", k)
+				assert.NilError(t, err2)
 			}
 
 			output, err := tknpactest.ExecCommand(topts.Params, tknpacgenerate.Command, "--event-type", topts.TargetEvent,

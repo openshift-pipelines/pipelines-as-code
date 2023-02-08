@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -24,6 +25,9 @@ import (
 )
 
 func TestGithubPacCli(t *testing.T) {
+	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+		t.Skip("Skipping test since only enabled for nightly")
+	}
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false)
@@ -53,7 +57,7 @@ spec:
 
 	repoinfo, resp, err := ghprovider.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
-	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 

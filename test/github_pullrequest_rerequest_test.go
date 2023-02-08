@@ -21,6 +21,9 @@ import (
 )
 
 func TestGithubPullRerequest(t *testing.T) {
+	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+		t.Skip("Skipping test since only enabled for nightly")
+	}
 	ctx := context.TODO()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, "Github Rerequest",
 		[]string{"testdata/pipelinerun.yaml"}, false)
@@ -28,7 +31,7 @@ func TestGithubPullRerequest(t *testing.T) {
 
 	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
-	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 

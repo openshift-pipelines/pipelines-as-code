@@ -1,26 +1,19 @@
-name: E2E Tests on Kind
+name: Nightly E2E Tests on Kind
 
 on:
-  workflow_dispatch: # yamllint disable-line
-  push: # yamllint disable-line
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: "0 5 * * *"
 jobs:
   e2e-tests:
     name: e2e tests
     runs-on: ubuntu-latest
     env:
-      # https://github.com/google/go-containerregistry/pull/125 allows insecure registry for
-      # '*.local' hostnames. This works both for `ko` and our own tag-to-digest resolution logic,
-      # thus allowing us to test without bypassing tag-to-digest resolution.
       REGISTRY_NAME: registry.local
       REGISTRY_PORT: 5000
       KO_DOCKER_REPO: registry.local:5000/ko
       CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
       TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
-      # TEST_GITHUB_REPO_OWNER_WEBHOOK: pac/pac-test-webhooks
       KUBECONFIG: /home/runner/.kube/config.kind
-
     steps:
       - uses: actions/checkout@v3
         with:
@@ -92,8 +85,6 @@ jobs:
           export TEST_GITHUB_PRIVATE_TASK_URL="https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml"
           export TEST_GITHUB_PRIVATE_TASK_NAME="task-remote"
 
-          export GO_TEST_FLAGS="-v -race -failfast"
-
           export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0
           export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=cboudjna/pac-e2e-tests
           export TEST_BITBUCKET_CLOUD_TOKEN=${{ secrets.BITBUCKET_CLOUD_TOKEN }}
@@ -121,8 +112,37 @@ jobs:
           export TEST_GITLAB_PROJECT_ID="34405323"
           export TEST_GITLAB_TOKEN=${{ secrets.GITLAB_TOKEN }}
           # https://gitlab.com/gitlab-com/alliances/ibm-red-hat/sandbox/openshift-pipelines/pac-e2e-tests
-          make test-e2e
+          export GO_TEST_FLAGS="-v -race -failfast"
+          export NIGHTLY_E2E_TEST="true"
+          make test-e2e-nightly
 
+      - name: Install wine
+        run: |
+          sudo dpkg --add-architecture i386
+          wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
+          sudo apt-add-repository 'deb https://dl.winehq.org/wine-builds/ubuntu/ jammy main'
+          sudo apt-get update
+          sudo apt install --install-recommends winehq-stable
+
+      - name: Compile tkn-pac for windows
+        run: |
+          mkdir -p bin/
+          make windows
+
+      - name: Run a simple tkn-pac on wine test
+        run: |
+          set -e
+          wine ./bin/tkn-pac.exe ls -A
+
+      - name: Compile tkn-pac for linux
+        run: |
+          mkdir -p bin/
+          make bin/tkn-pac
+
+      - name: Run a simple tkn-pac test
+        run: |
+          set -e
+          ./bin/tkn-pac ls -A
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
       - name: Collect logs
@@ -143,3 +163,12 @@ jobs:
         with:
           name: logs
           path: /tmp/logs
+
+      - name: Report Status
+        if: ${{ always() }}
+        uses: ravsamhq/notify-slack-action@v1
+        with:
+          status: ${{ job.status }}
+          notify_when: 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

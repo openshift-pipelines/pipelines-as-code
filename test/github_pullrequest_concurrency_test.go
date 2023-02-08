@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -29,6 +30,10 @@ func contains(s []string, e string) bool {
 }
 
 func TestGithubPullRequestConcurrency(t *testing.T) {
+	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+		t.Skip("Skipping test since only enabled for nightly")
+	}
+
 	ctx := context.Background()
 	label := "Github PullRequest Concurrent"
 	numberOfPipelineRuns := 10
@@ -43,7 +48,7 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 
 	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
-	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 

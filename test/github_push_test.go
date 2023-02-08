@@ -20,6 +20,9 @@ import (
 )
 
 func TestGithubPush(t *testing.T) {
+	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+		t.Skip("Skipping test since only enabled for nightly")
+	}
 	for _, onWebhook := range []bool{false, true} {
 		targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-push")
 		targetBranch := targetNS
@@ -40,7 +43,7 @@ func TestGithubPush(t *testing.T) {
 		}
 		repoinfo, resp, err := gprovider.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 		assert.NilError(t, err)
-		if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 		}
 		err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)

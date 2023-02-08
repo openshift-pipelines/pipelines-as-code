@@ -70,3 +70,25 @@ You can specify only a subsets of test to run with :
 ```
 
 same goes for `TestGitlab` or other methods.
+
+## Running nightly tests
+
+Some tests are set as nightly which mean not run on every PR, because exposing rate limitation often.
+We run those as nightly via github action on kind.
+
+You can use `make test-e2e-nightly` if you want to run those manually as long
+as you have all the env variables set.
+
+If you are writing a test targetting a nightly test you need to check for the env variable:
+
+```go
+    if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+        t.Skip("Skipping test since only enabled for nightly")
+    }
+```
+
+and maybe add to the test-e2e-nightly Makefile target to the -run argument :
+
+```bash
+-run '(TestGithub|TestOtherPrefixOfTest)'
+```

@@ -19,6 +19,9 @@ func TestGithubPullRequest(t *testing.T) {
 }
 
 func TestGithubPullRequestMultiples(t *testing.T) {
+	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+		t.Skip("Skipping test since only enabled for nightly")
+	}
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
 		[]string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"}, false)
@@ -26,6 +29,9 @@ func TestGithubPullRequestMultiples(t *testing.T) {
 }
 
 func TestGithubPullRequestMatchOnCEL(t *testing.T) {
+	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+		t.Skip("Skipping test since only enabled for nightly")
+	}
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
 		[]string{"testdata/pipelinerun-cel-annotation.yaml"}, false)
@@ -33,6 +39,9 @@ func TestGithubPullRequestMatchOnCEL(t *testing.T) {
 }
 
 func TestGithubPullRequestWebhook(t *testing.T) {
+	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+		t.Skip("Skipping test since only enabled for nightly")
+	}
 	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
 		t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
 		return
