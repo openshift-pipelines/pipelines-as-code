@@ -183,7 +183,7 @@ func WaitForSecretDeletion(t *testing.T, topts *TestOpts, ref string) {
 	i := 0
 	for {
 		// make sure pipelineRuns are deleted, before checking secrets
-		list, err := topts.Params.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).
+		list, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).
 			List(context.Background(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app.kubernetes.io/managed-by=%v", pipelinesascode.GroupName),
 			})
@@ -196,7 +196,7 @@ func WaitForSecretDeletion(t *testing.T, topts *TestOpts, ref string) {
 			break
 		}
 		topts.Params.Clients.Log.Infof("deleting pipelineRuns in %v namespace", topts.TargetNS)
-		err = topts.Params.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).
+		err = topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).
 			DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app.kubernetes.io/managed-by=%v", pipelinesascode.GroupName),
 			})
@@ -250,7 +250,7 @@ func WaitForPullRequestCommentMatch(ctx context.Context, t *testing.T, topts *Te
 func CheckIfPipelineRunsCancelled(t *testing.T, topts *TestOpts) {
 	i := 0
 	for {
-		list, err := topts.Params.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).
+		list, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).
 			List(context.Background(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("%v=%v", keys.Repository, topts.TargetNS),
 			})

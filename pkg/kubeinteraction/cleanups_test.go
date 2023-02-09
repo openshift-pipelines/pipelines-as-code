@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -33,8 +33,8 @@ func TestCleanupPipelines(t *testing.T) {
 		namespace        string
 		repositoryName   string
 		maxKeep          int
-		pruns            []*v1beta1.PipelineRun
-		prunCurrent      *v1beta1.PipelineRun
+		pruns            []*tektonv1.PipelineRun
+		prunCurrent      *tektonv1.PipelineRun
 		kept             int
 		prunLatestInList string
 	}
@@ -51,14 +51,11 @@ func TestCleanupPipelines(t *testing.T) {
 				repositoryName: cleanupRepoName,
 				maxKeep:        1,
 				kept:           1,
-				prunCurrent:    &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
-				pruns: []*v1beta1.PipelineRun{
-					tektontest.MakePRCompletion(clock, "pipeline-newest", ns,
-						v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-					tektontest.MakePRCompletion(clock, "pipeline-middest", ns,
-						v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-					tektontest.MakePRCompletion(clock, "pipeline-oldest", ns,
-						v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
+				pruns: []*tektonv1.PipelineRun{
+					tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
+					tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
+					tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
 				},
 				prunLatestInList: "pipeline-newest",
 			},
@@ -70,14 +67,11 @@ func TestCleanupPipelines(t *testing.T) {
 				repositoryName: cleanupRepoName,
 				maxKeep:        1,
 				kept:           1, // see my comment in code why only 1 is kept.
-				prunCurrent:    &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
-				pruns: []*v1beta1.PipelineRun{
-					tektontest.MakePRCompletion(clock, "pipeline-running", ns,
-						v1beta1.PipelineRunReasonRunning.String(), cleanupLabels, 10),
-					tektontest.MakePRCompletion(clock, "pipeline-toclean", ns,
-						v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
-					tektontest.MakePRCompletion(clock, "pipeline-tokeep", ns,
-						v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
+				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
+				pruns: []*tektonv1.PipelineRun{
+					tektontest.MakePRCompletion(clock, "pipeline-running", ns, tektonv1.PipelineRunReasonRunning.String(), cleanupLabels, 10),
+					tektontest.MakePRCompletion(clock, "pipeline-toclean", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+					tektontest.MakePRCompletion(clock, "pipeline-tokeep", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
 				},
 				prunLatestInList: "pipeline-running",
 			},
@@ -120,7 +114,7 @@ func TestCleanupPipelines(t *testing.T) {
 				assert.Assert(t, err != nil)
 			}
 
-			plist, err := kint.Run.Clients.Tekton.TektonV1beta1().PipelineRuns(tt.args.namespace).List(
+			plist, err := kint.Run.Clients.Tekton.TektonV1().PipelineRuns(tt.args.namespace).List(
 				ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
 			assert.Equal(t, tt.args.kept, len(plist.Items), "we have %d pruns kept when we wanted only %d", len(plist.Items), tt.args.kept)
