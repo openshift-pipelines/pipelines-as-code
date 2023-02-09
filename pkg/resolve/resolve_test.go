@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -26,18 +26,18 @@ func TestMain(m *testing.M) {
 
 func setup() {
 	s := k8scheme.Scheme
-	if err := tektonv1beta1.AddToScheme(s); err != nil {
+	if err := tektonv1.AddToScheme(s); err != nil {
 		log.Fatalf("Unable to add route scheme: (%v)", err)
 	}
 }
 
 // Not sure how to get testParams fixtures working
-func readTDfile(t *testing.T, testname string, generateName, remoteTasking bool) (*tektonv1beta1.PipelineRun, *zapobserver.ObservedLogs, error) {
+func readTDfile(t *testing.T, testname string, generateName, remoteTasking bool) (*tektonv1.PipelineRun, *zapobserver.ObservedLogs, error) {
 	t.Helper()
 	ctx, _ := rtesting.SetupFakeContext(t)
 	data, err := os.ReadFile("testdata/" + testname + ".yaml")
 	if err != nil {
-		return &tektonv1beta1.PipelineRun{}, nil, err
+		return &tektonv1.PipelineRun{}, nil, err
 	}
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
@@ -53,7 +53,7 @@ func readTDfile(t *testing.T, testname string, generateName, remoteTasking bool)
 	tprovider := &testprovider.TestProviderImp{}
 	resolved, err := Resolve(ctx, cs, logger, tprovider, event, string(data), ropt)
 	if err != nil {
-		return &tektonv1beta1.PipelineRun{}, nil, err
+		return &tektonv1.PipelineRun{}, nil, err
 	}
 	return resolved[0], log, nil
 }
@@ -83,17 +83,19 @@ func TestGenerateName(t *testing.T) {
 	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
 }
 
+// TestPipelineBundlesSkipped effectively test conversion from beta1 to v1
 func TestPipelineBundlesSkipped(t *testing.T) {
 	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-bundle", false, true)
 	assert.NilError(t, err)
-	assert.Assert(t, resolved.Spec.PipelineRef.Bundle != "")
+	assert.Equal(t, string(resolved.Spec.PipelineRef.ResolverRef.Params[0].Name), "bundle")
 }
 
+// TestPipelineBundlesSkipped effectively test conversion from beta1 to v1
 func TestTaskBundlesSkipped(t *testing.T) {
 	resolved, _, err := readTDfile(t, "pipelinerun-task-bundle", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].Name, "bundled")
-	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Bundle, "reg.io/ruben/barichello@sha256:1234")
+	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Params[0].Name, "bundle")
 }
 
 func TestTaskResolverSkipped(t *testing.T) {
@@ -221,4 +223,25 @@ func TestReferencedPipelineNotInRepo(t *testing.T) {
 func TestIgnoreDocSpace(t *testing.T) {
 	_, _, err := readTDfile(t, "empty-spaces", false, true)
 	assert.NilError(t, err)
+}
+
+func TestPipelineV1StayV1(t *testing.T) {
+	got, _, err := readTDfile(t, "pipelinev1asv1", false, true)
+	assert.NilError(t, err)
+	assert.Equal(t, got.APIVersion, "tekton.dev/v1")
+}
+
+func TestPipelineRunv1Beta1InvalidConversion(t *testing.T) {
+	_, _, err := readTDfile(t, "pipelinerun-invalid-conversion", false, true)
+	assert.ErrorContains(t, err, "cannot be validated")
+}
+
+func TestTaskv1Beta1InvalidConversion(t *testing.T) {
+	_, _, err := readTDfile(t, "task-invalid-conversion", false, true)
+	assert.ErrorContains(t, err, "cannot be validated")
+}
+
+func TestPipelinev1Beta1InvalidConversion(t *testing.T) {
+	_, _, err := readTDfile(t, "pipeline-invalid-conversion", false, true)
+	assert.ErrorContains(t, err, "cannot be validated")
 }

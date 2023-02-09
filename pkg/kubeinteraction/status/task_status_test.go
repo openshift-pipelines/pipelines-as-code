@@ -2,7 +2,6 @@ package status
 
 import (
 	"testing"
-	"time"
 
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -10,7 +9,7 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -52,47 +51,54 @@ func TestCollectFailedTasksLogSnippet(t *testing.T) {
 				exitcode = 1
 			}
 
-			pr := tektontest.MakePRCompletion(clock, "pipeline-newest", "ns",
-				tektonv1beta1.PipelineRunReasonSuccessful.String(), make(map[string]string), 10)
-			pr.Status.TaskRuns = map[string]*tektonv1beta1.PipelineRunTaskRunStatus{
-				"task1": {
+			pr := tektontest.MakePRCompletion(clock, "pipeline-newest", "ns", tektonv1.PipelineRunReasonSuccessful.String(), make(map[string]string), 10)
+			pr.Status.ChildReferences = []tektonv1.ChildStatusReference{
+				{
+					TypeMeta: runtime.TypeMeta{
+						Kind: "TaskRun",
+					},
+					Name:             "task1",
 					PipelineTaskName: "task1",
-					Status: &tektonv1beta1.TaskRunStatus{
-						TaskRunStatusFields: tektonv1beta1.TaskRunStatusFields{
-							PodName:        "pod1",
-							StartTime:      &metav1.Time{Time: clock.Now().Add(1 * time.Minute)},
-							CompletionTime: &metav1.Time{Time: clock.Now().Add(2 * time.Minute)},
-							Steps: []tektonv1beta1.StepState{
-								{
-									Name: "step1",
-									ContainerState: corev1.ContainerState{
-										Terminated: &corev1.ContainerStateTerminated{
-											ExitCode: exitcode,
-										},
-									},
-								},
-							},
-						},
-						Status: knativeduckv1.Status{
-							Conditions: knativeduckv1.Conditions{
-								{
-									Type:    knativeapi.ConditionSucceeded,
-									Status:  corev1.ConditionTrue,
-									Reason:  tt.status,
-									Message: tt.message,
-								},
+				},
+			}
+
+			taskStatus := tektonv1.TaskRunStatusFields{
+				PodName: "task1",
+				Steps: []tektonv1.StepState{
+					{
+						Name: "step1",
+						ContainerState: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{
+								ExitCode: exitcode,
 							},
 						},
 					},
 				},
 			}
 
+			tdata := testclient.Data{
+				TaskRuns: []*tektonv1.TaskRun{
+					tektontest.MakeTaskRunCompletion(clock, "task1", "ns", "pipeline-newest",
+						map[string]string{}, taskStatus, knativeduckv1.Conditions{
+							{
+								Type:    knativeapi.ConditionSucceeded,
+								Status:  corev1.ConditionTrue,
+								Reason:  tt.status,
+								Message: tt.message,
+							},
+						},
+						10),
+				},
+			}
 			ctx, _ := rtesting.SetupFakeContext(t)
-			cs := &params.Run{}
+			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
+			cs := &params.Run{Clients: paramclients.Clients{
+				Tekton: stdata.Pipeline,
+			}}
 			intf := &kubernetestint.KinterfaceTest{}
 			if tt.podOutput != "" {
 				intf.GetPodLogsOutput = map[string]string{
-					"pod1": tt.podOutput,
+					"task1": tt.podOutput,
 				}
 			}
 			got := CollectFailedTasksLogSnippet(ctx, cs, intf, pr, 1)
@@ -108,35 +114,21 @@ func TestGetStatusFromTaskStatusOrFromAsking(t *testing.T) {
 	testNS := "test"
 	tests := []struct {
 		name               string
-		pr                 *tektonv1beta1.PipelineRun
+		pr                 *tektonv1.PipelineRun
 		numStatus          int
 		expectedLogSnippet string
-		taskRuns           []*tektonv1beta1.TaskRun
+		taskRuns           []*tektonv1.TaskRun
 	}{
-		{
-			name:      "get status from PR pre 0.44 tektoncd/pipelines",
-			numStatus: 2,
-			pr: &tektonv1beta1.PipelineRun{
-				Status: tektonv1beta1.PipelineRunStatus{
-					PipelineRunStatusFields: tektonv1beta1.PipelineRunStatusFields{
-						TaskRuns: map[string]*tektonv1beta1.PipelineRunTaskRunStatus{
-							"status1": nil,
-							"status2": nil,
-						},
-					},
-				},
-			},
-		},
 		{
 			name:      "get status from child references post tektoncd/pipelines 0.44",
 			numStatus: 2,
-			pr: &tektonv1beta1.PipelineRun{
+			pr: &tektonv1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testNS,
 				},
-				Status: tektonv1beta1.PipelineRunStatus{
-					PipelineRunStatusFields: tektonv1beta1.PipelineRunStatusFields{
-						ChildReferences: []tektonv1beta1.ChildStatusReference{
+				Status: tektonv1.PipelineRunStatus{
+					PipelineRunStatusFields: tektonv1.PipelineRunStatusFields{
+						ChildReferences: []tektonv1.ChildStatusReference{
 							{
 								TypeMeta: runtime.TypeMeta{
 									Kind: "TaskRun",
@@ -153,32 +145,32 @@ func TestGetStatusFromTaskStatusOrFromAsking(t *testing.T) {
 					},
 				},
 			},
-			taskRuns: []*tektonv1beta1.TaskRun{
+			taskRuns: []*tektonv1.TaskRun{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "hello",
 						Namespace: testNS,
 					},
-					Status: tektonv1beta1.TaskRunStatus{},
+					Status: tektonv1.TaskRunStatus{},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "yolo",
 						Namespace: testNS,
 					},
-					Status: tektonv1beta1.TaskRunStatus{},
+					Status: tektonv1.TaskRunStatus{},
 				},
 			},
 		},
 		{
 			name: "error get status from child references post tektoncd/pipelines 0.44",
-			pr: &tektonv1beta1.PipelineRun{
+			pr: &tektonv1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: testNS,
 				},
-				Status: tektonv1beta1.PipelineRunStatus{
-					PipelineRunStatusFields: tektonv1beta1.PipelineRunStatusFields{
-						ChildReferences: []tektonv1beta1.ChildStatusReference{
+				Status: tektonv1.PipelineRunStatus{
+					PipelineRunStatusFields: tektonv1.PipelineRunStatusFields{
+						ChildReferences: []tektonv1.ChildStatusReference{
 							{
 								Name: "hello",
 							},

@@ -15,7 +15,7 @@ import (
 	tcli "github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +26,7 @@ func TestLogs(t *testing.T) {
 	cw := clockwork.NewFakeClock()
 	ns := "ns"
 
-	completed := tektonv1beta1.PipelineRunReasonCompleted.String()
+	completed := tektonv1.PipelineRunReasonCompleted.String()
 
 	tests := []struct {
 		name             string
@@ -34,7 +34,7 @@ func TestLogs(t *testing.T) {
 		repoName         string
 		currentNamespace string
 		shift            int
-		pruns            []*tektonv1beta1.PipelineRun
+		pruns            []*tektonv1.PipelineRun
 		useLastPR        bool
 	}{
 		{
@@ -43,7 +43,7 @@ func TestLogs(t *testing.T) {
 			repoName:         "test",
 			currentNamespace: ns,
 			shift:            0,
-			pruns: []*tektonv1beta1.PipelineRun{
+			pruns: []*tektonv1.PipelineRun{
 				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
 					keys.Repository: "test",
 				}, 30),
@@ -55,7 +55,7 @@ func TestLogs(t *testing.T) {
 			repoName:         "test",
 			currentNamespace: ns,
 			useLastPR:        true,
-			pruns: []*tektonv1beta1.PipelineRun{
+			pruns: []*tektonv1.PipelineRun{
 				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
 					keys.Repository: "test",
 				}, 30),
@@ -70,7 +70,7 @@ func TestLogs(t *testing.T) {
 			repoName:         "test",
 			currentNamespace: ns,
 			shift:            2,
-			pruns: []*tektonv1beta1.PipelineRun{
+			pruns: []*tektonv1.PipelineRun{
 				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
 					keys.Repository: "test",
 				}, 30),

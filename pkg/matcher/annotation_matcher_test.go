@@ -24,7 +24,7 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -35,7 +35,7 @@ import (
 
 type annotationTestArgs struct {
 	fileChanged []string
-	pruns       []*tektonv1beta1.PipelineRun
+	pruns       []*tektonv1.PipelineRun
 	runevent    info.Event
 	data        testclient.Data
 }
@@ -49,7 +49,7 @@ type annotationTest struct {
 func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 	cw := clockwork.NewFakeClock()
 	pipelineTargetNSName := "pipeline-target-ns"
-	pipelineTargetNS := &tektonv1beta1.PipelineRun{
+	pipelineTargetNS := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pipelineTargetNSName,
 			Annotations: map[string]string{
@@ -66,7 +66,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:       "match a repository with target NS",
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{pipelineTargetNS},
+				pruns: []*tektonv1.PipelineRun{pipelineTargetNS},
 				runevent: info.Event{
 					URL: targetURL, TriggerTarget: "pull_request", EventType: "pull_request",
 					BaseBranch: mainBranch,
@@ -88,7 +88,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:       "cel/match source/target",
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: pipelineTargetNSName,
@@ -124,7 +124,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
 				fileChanged: []string{".tekton/pull_request.yaml"},
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: pipelineTargetNSName,
@@ -162,7 +162,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:       "cel/match path title pr",
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: pipelineTargetNSName,
@@ -201,7 +201,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:       "cel/match path title push",
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: pipelineTargetNSName,
@@ -239,7 +239,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:    "cel/no match path title pr",
 			wantErr: true,
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: pipelineTargetNSName,
@@ -280,7 +280,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				fileChanged: []string{
 					".tekton/foo.json",
 				},
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: pipelineTargetNSName,
@@ -322,7 +322,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				fileChanged: []string{
 					".tekton/pull_request.yaml",
 				},
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: pipelineTargetNSName,
@@ -361,7 +361,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:    "match TargetPipelineRun",
 			wantErr: false,
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							GenerateName: fmt.Sprintf("%s-", pipelineTargetNSName),
@@ -389,7 +389,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:    "cel/bad expression",
 			wantErr: true,
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: pipelineTargetNSName,
@@ -424,7 +424,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			wantPRName:   pipelineTargetNSName,
 			wantRepoName: "test-oldest",
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{pipelineTargetNS},
+				pruns: []*tektonv1.PipelineRun{pipelineTargetNS},
 				runevent: info.Event{
 					URL: targetURL, TriggerTarget: "pull_request", EventType: "pull_request",
 					BaseBranch: mainBranch,
@@ -455,7 +455,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:    "error on only when on annotation",
 			wantErr: true,
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace: targetNamespace,
@@ -485,7 +485,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:    "error when no pac annotation has been set",
 			wantErr: true,
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace: targetNamespace,
@@ -515,7 +515,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:    "error when pac annotation has been set but empty",
 			wantErr: true,
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Namespace: targetNamespace,
@@ -547,7 +547,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			wantErr: true,
 			wantLog: "matching pipelineruns to event: URL",
 			args: annotationTestArgs{
-				pruns: []*tektonv1beta1.PipelineRun{pipelineTargetNS},
+				pruns: []*tektonv1.PipelineRun{pipelineTargetNS},
 				runevent: info.Event{
 					URL: targetURL, TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: mainBranch,
 				},
@@ -672,7 +672,7 @@ func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.
 }
 
 func TestMatchPipelinerunByAnnotation(t *testing.T) {
-	pipelineGood := &tektonv1beta1.PipelineRun{
+	pipelineGood := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-good",
 			Annotations: map[string]string{
@@ -682,7 +682,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		},
 	}
 
-	pipelineOther := &tektonv1beta1.PipelineRun{
+	pipelineOther := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-other",
 			Annotations: map[string]string{
@@ -692,7 +692,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		},
 	}
 
-	pipelineRefAll := &tektonv1beta1.PipelineRun{
+	pipelineRefAll := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-other",
 			Annotations: map[string]string{
@@ -702,7 +702,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		},
 	}
 
-	pipelineRefRegex := &tektonv1beta1.PipelineRun{
+	pipelineRefRegex := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-regex",
 			Annotations: map[string]string{
@@ -716,7 +716,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 	logger := zap.New(observer).Sugar()
 
 	type args struct {
-		pruns    []*tektonv1beta1.PipelineRun
+		pruns    []*tektonv1.PipelineRun
 		runevent info.Event
 	}
 	tests := []struct {
@@ -729,7 +729,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "good-match-with-only-one",
 			args: args{
-				pruns:    []*tektonv1beta1.PipelineRun{pipelineGood},
+				pruns:    []*tektonv1.PipelineRun{pipelineGood},
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "main"},
 			},
 			wantErr:    false,
@@ -738,7 +738,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "first-one-match-with-two-good-ones",
 			args: args{
-				pruns:    []*tektonv1beta1.PipelineRun{pipelineGood, pipelineOther},
+				pruns:    []*tektonv1.PipelineRun{pipelineGood, pipelineOther},
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "main"},
 			},
 			wantErr:    false,
@@ -747,7 +747,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "no-match-on-event",
 			args: args{
-				pruns:    []*tektonv1beta1.PipelineRun{pipelineGood, pipelineOther},
+				pruns:    []*tektonv1.PipelineRun{pipelineGood, pipelineOther},
 				runevent: info.Event{TriggerTarget: "push", EventType: "push", BaseBranch: "main"},
 			},
 			wantErr: true,
@@ -755,7 +755,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "no-match-on-target-branch",
 			args: args{
-				pruns:    []*tektonv1beta1.PipelineRun{pipelineGood, pipelineOther},
+				pruns:    []*tektonv1.PipelineRun{pipelineGood, pipelineOther},
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "other"},
 			},
 			wantErr: true,
@@ -763,7 +763,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "no-annotation",
 			args: args{
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "pipeline-other",
@@ -778,7 +778,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			name: "single-event-annotation",
 			args: args{
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "main"},
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "single-event-annotation",
@@ -796,7 +796,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			name: "single-target-branch-annotation",
 			args: args{
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "main"},
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "single-target-branch-annotation",
@@ -814,7 +814,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			name: "empty-annotation",
 			args: args{
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "main"},
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "bad-target-branch-annotation",
@@ -832,7 +832,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			name: "match-branch-matching",
 			args: args{
 				runevent: info.Event{TriggerTarget: "push", EventType: "push", BaseBranch: "refs/heads/main"},
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "branch-matching",
@@ -853,7 +853,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 					TriggerTarget: "push", EventType: "push",
 					BaseBranch: "refs/heads/main/foobar",
 				},
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "branch-base-matching-not-compare",
@@ -871,7 +871,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			name: "branch-glob-matching",
 			args: args{
 				runevent: info.Event{TriggerTarget: "push", EventType: "push", BaseBranch: "refs/heads/main"},
-				pruns: []*tektonv1beta1.PipelineRun{
+				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "branch-base-matching-not-compare",
@@ -888,7 +888,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "ref-heads-*--allow-any-branch",
 			args: args{
-				pruns:    []*tektonv1beta1.PipelineRun{pipelineRefAll},
+				pruns:    []*tektonv1.PipelineRun{pipelineRefAll},
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "main"},
 			},
 			wantErr:    false,
@@ -897,7 +897,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "ref-heads-regex-allow",
 			args: args{
-				pruns:    []*tektonv1beta1.PipelineRun{pipelineRefRegex},
+				pruns:    []*tektonv1.PipelineRun{pipelineRefRegex},
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "release-0.1"},
 			},
 			wantErr:    false,
@@ -906,7 +906,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "ref-heads-regex-not-match",
 			args: args{
-				pruns:    []*tektonv1beta1.PipelineRun{pipelineRefRegex},
+				pruns:    []*tektonv1.PipelineRun{pipelineRefRegex},
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "main"},
 			},
 			wantErr: true,
@@ -914,7 +914,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		{
 			name: "ref-heads-main-push-rerequested-case",
 			args: args{
-				pruns:    []*tektonv1beta1.PipelineRun{pipelineGood},
+				pruns:    []*tektonv1.PipelineRun{pipelineGood},
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "refs/heads/main"},
 			},
 			wantErr: false,

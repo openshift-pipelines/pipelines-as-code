@@ -1,0 +1,13 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: dont-cry-me-a-river
+spec:
+  pipelineSpec:
+    tasks:
+      - name: hello1
+        taskSpec:
+          steps:
+            - name: hello-moto
+              image: scratch

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -13,18 +13,18 @@ const namePath = "{.metadata.name}"
 
 type ConcurrencyManager struct {
 	enabled      bool
-	pipelineRuns []*v1beta1.PipelineRun
+	pipelineRuns []*v1.PipelineRun
 	mutex        *sync.Mutex
 }
 
 func NewConcurrencyManager() *ConcurrencyManager {
 	return &ConcurrencyManager{
-		pipelineRuns: []*v1beta1.PipelineRun{},
+		pipelineRuns: []*v1.PipelineRun{},
 		mutex:        &sync.Mutex{},
 	}
 }
 
-func (c *ConcurrencyManager) AddPipelineRun(pr *v1beta1.PipelineRun) {
+func (c *ConcurrencyManager) AddPipelineRun(pr *v1.PipelineRun) {
 	if !c.enabled {
 		return
 	}
@@ -38,7 +38,7 @@ func (c *ConcurrencyManager) Enable() {
 	c.enabled = true
 }
 
-func (c *ConcurrencyManager) GetExecutionOrder() (string, []*v1beta1.PipelineRun) {
+func (c *ConcurrencyManager) GetExecutionOrder() (string, []*v1.PipelineRun) {
 	if !c.enabled {
 		return "", nil
 	}
@@ -51,9 +51,9 @@ func (c *ConcurrencyManager) GetExecutionOrder() (string, []*v1beta1.PipelineRun
 	// sort runs by name
 	sort.ByField(namePath, runtimeObjs)
 
-	sortedPipelineRuns := []*v1beta1.PipelineRun{}
+	sortedPipelineRuns := []*v1.PipelineRun{}
 	for _, run := range runtimeObjs {
-		pr, _ := run.(*v1beta1.PipelineRun)
+		pr, _ := run.(*v1.PipelineRun)
 		sortedPipelineRuns = append(sortedPipelineRuns, pr)
 	}
 	c.pipelineRuns = sortedPipelineRuns
@@ -61,7 +61,7 @@ func (c *ConcurrencyManager) GetExecutionOrder() (string, []*v1beta1.PipelineRun
 	return getOrderByName(c.pipelineRuns), c.pipelineRuns
 }
 
-func getOrderByName(runs []*v1beta1.PipelineRun) string {
+func getOrderByName(runs []*v1.PipelineRun) string {
 	var order string
 	for _, run := range runs {
 		if order == "" {

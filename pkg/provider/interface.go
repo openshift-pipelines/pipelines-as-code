@@ -6,13 +6,13 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 )
 
 type StatusOpts struct {
-	PipelineRun             *v1beta1.PipelineRun
+	PipelineRun             *v1.PipelineRun
 	PipelineRunName         string
 	OriginalPipelineRunName string
 	Status                  string

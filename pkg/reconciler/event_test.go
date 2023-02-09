@@ -7,7 +7,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -31,13 +31,13 @@ func TestBuildEventFromPipelineRun(t *testing.T) {
 	}
 	tests := []struct {
 		name        string
-		pipelineRun *tektonv1beta1.PipelineRun
+		pipelineRun *tektonv1.PipelineRun
 		event       *info.Event
 	}{
 		{
 			name:  "build event from pr",
 			event: event,
-			pipelineRun: &tektonv1beta1.PipelineRun{
+			pipelineRun: &tektonv1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						keys.URLOrg:        "url-org",
@@ -105,12 +105,12 @@ func TestDetectProvider(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pr := &tektonv1beta1.PipelineRun{
+			pr := &tektonv1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{Name: "test", Labels: map[string]string{}},
 			}
 
 			if !tt.missTheLabel {
-				pr = &tektonv1beta1.PipelineRun{
+				pr = &tektonv1.PipelineRun{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test",
 						Labels: map[string]string{

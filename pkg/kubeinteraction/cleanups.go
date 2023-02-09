@@ -7,13 +7,13 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	psort "github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
 
-func (k Interaction) CleanupPipelines(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun, maxKeep int) error {
+func (k Interaction) CleanupPipelines(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *tektonv1.PipelineRun, maxKeep int) error {
 	if _, ok := pr.GetLabels()[keys.OriginalPRName]; !ok {
 		return fmt.Errorf("generate pipelienrun should have had the %s label for selection set but we could not find"+
 			" it",
@@ -25,7 +25,7 @@ func (k Interaction) CleanupPipelines(ctx context.Context, logger *zap.SugaredLo
 		keys.Repository, repo.GetName(), keys.OriginalPRName, pr.GetLabels()[keys.OriginalPRName])
 	logger.Infof("selecting pipelineruns by labels \"%s\" for deletion", labelSelector)
 
-	pruns, err := k.Run.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).List(ctx,
+	pruns, err := k.Run.Clients.Tekton.TektonV1().PipelineRuns(repo.GetNamespace()).List(ctx,
 		metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (k Interaction) CleanupPipelines(ctx context.Context, logger *zap.SugaredLo
 
 		if c >= maxKeep {
 			logger.Infof("cleaning old PipelineRun: %s", prun.GetName())
-			err := k.Run.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.GetNamespace()).Delete(
+			err := k.Run.Clients.Tekton.TektonV1().PipelineRuns(repo.GetNamespace()).Delete(
 				ctx, prun.GetName(), metav1.DeleteOptions{})
 			if err != nil {
 				return err

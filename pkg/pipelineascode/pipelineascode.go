@@ -16,7 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -89,7 +89,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 		for _, pr := range prs {
 			wg.Add(1)
 
-			go func(order string, pr v1beta1.PipelineRun) {
+			go func(order string, pr tektonv1.PipelineRun) {
 				defer wg.Done()
 				if _, err := action.PatchPipelineRun(ctx, p.logger, "execution order", p.run.Clients.Tekton, &pr, getExecutionOrderPatch(order)); err != nil {
 					errMsg := fmt.Sprintf("Failed to patch pipelineruns %s execution order: %s", pr.GetGenerateName(), err.Error())
@@ -103,7 +103,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 	return nil
 }
 
-func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*v1beta1.PipelineRun, error) {
+func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.PipelineRun, error) {
 	var gitAuthSecretName string
 
 	// Automatically create a secret with the token to be reused by git-clone task
@@ -131,13 +131,13 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*v1beta1.Pip
 	// state as queued
 	if match.Repo.Spec.ConcurrencyLimit != nil && *match.Repo.Spec.ConcurrencyLimit != 0 {
 		// pending status
-		match.PipelineRun.Spec.Status = v1beta1.PipelineRunSpecStatusPending
+		match.PipelineRun.Spec.Status = tektonv1.PipelineRunSpecStatusPending
 		// pac state as queued
 		match.PipelineRun.Labels[keys.State] = kubeinteraction.StateQueued
 	}
 
 	// Create the actual pipeline
-	pr, err := p.run.Clients.Tekton.TektonV1beta1().PipelineRuns(match.Repo.GetNamespace()).Create(ctx,
+	pr, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(match.Repo.GetNamespace()).Create(ctx,
 		match.PipelineRun, metav1.CreateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", match.PipelineRun.GetGenerateName(),
@@ -166,7 +166,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*v1beta1.Pip
 	}
 
 	// if pipelineRun is in pending state then report status as queued
-	if pr.Spec.Status == v1beta1.PipelineRunSpecStatusPending {
+	if pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
 		status.Status = "queued"
 		status.Text = fmt.Sprintf(params.QueuingPipelineRunText, pr.GetName(), match.Repo.GetNamespace())
 	}
@@ -190,7 +190,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*v1beta1.Pip
 	return pr, nil
 }
 
-func getLogURLMergePatch(clients clients.Clients, pr *v1beta1.PipelineRun) map[string]interface{} {
+func getLogURLMergePatch(clients clients.Clients, pr *tektonv1.PipelineRun) map[string]interface{} {
 	return map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"annotations": map[string]string{
