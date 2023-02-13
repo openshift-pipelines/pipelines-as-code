@@ -1,0 +1,105 @@
+name: Create and publish a Docker multi-arch image to ghcr
+
+on:
+  push:
+    tags:
+      - v*
+
+env:
+  REGISTRY: ghcr.io
+  CONTROLLER_IMAGE_NAME: ${{ github.repository }}-controller
+  WATCHER_IMAGE_NAME: ${{ github.repository }}-watcher
+  WEBHOOK_IMAGE_NAME: ${{ github.repository }}-webhook
+  TKN_PAC_IMAGE_NAME: ${{ github.repository }}-tkn-pac
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Extract metadata (tags, labels) for Docker (Controller)
+        id: meta
+        uses: docker/metadata-action@507c2f2dc502c992ad446e3d7a5dfbe311567a96
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.CONTROLLER_IMAGE_NAME }}
+
+      - name: Build and push controller docker image
+        uses: docker/build-push-action@37abcedcc1da61a57767b7588cb9d03eb57e28b3
+        with:
+          context: .
+          build-args: |
+            BINARY_NAME=pipelines-as-code-controller
+          platforms: linux/amd64,linux/ppc64le
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Extract metadata (tags, labels) for Docker (Watcher)
+        id: meta-watcher
+        uses: docker/metadata-action@507c2f2dc502c992ad446e3d7a5dfbe311567a96
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.WATCHER_IMAGE_NAME }}
+
+      - name: Build and push watcher docker image
+        uses: docker/build-push-action@37abcedcc1da61a57767b7588cb9d03eb57e28b3
+        with:
+          context: .
+          build-args: |
+            BINARY_NAME=pipelines-as-code-watcher
+          platforms: linux/amd64,linux/ppc64le
+          push: true
+          tags: ${{ steps.meta-watcher.outputs.tags }}
+          labels: ${{ steps.meta-watcher.outputs.labels }}
+
+      - name: Extract metadata (tags, labels) for Docker (Webhook)
+        id: meta-webhook
+        uses: docker/metadata-action@507c2f2dc502c992ad446e3d7a5dfbe311567a96
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.WEBHOOK_IMAGE_NAME }}
+
+      - name: Build and push webhook docker image
+        uses: docker/build-push-action@37abcedcc1da61a57767b7588cb9d03eb57e28b3
+        with:
+          context: .
+          build-args: |
+            BINARY_NAME=pipelines-as-code-webhook
+          platforms: linux/amd64,linux/ppc64le
+          push: true
+          tags: ${{ steps.meta-webhook.outputs.tags }}
+          labels: ${{ steps.meta-webhook.outputs.labels }}
+
+      - name: Extract metadata (tags, labels) for tkn-pac
+        id: meta-cli
+        uses: docker/metadata-action@507c2f2dc502c992ad446e3d7a5dfbe311567a96
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.TKN_PAC_IMAGE_NAME }}
+
+      - name: Build and push cli docker image
+        uses: docker/build-push-action@37abcedcc1da61a57767b7588cb9d03eb57e28b3
+        with:
+          context: .
+          build-args: |
+            BINARY_NAME=tkn-pac
+          platforms: linux/amd64,linux/ppc64le
+          push: true
+          tags: ${{ steps.meta-cli.outputs.tags }}
+          labels: ${{ steps.meta-cli.outputs.labels }}
