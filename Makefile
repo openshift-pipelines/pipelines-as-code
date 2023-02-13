@@ -62,12 +62,6 @@ test-e2e-cleanup: ## cleanup test e2e namespace/pr left open
 test-e2e:  test-e2e-cleanup ## run e2e tests
 	@go test $(GO_TEST_FLAGS) -timeout $(TIMEOUT_E2E)  -failfast -count=1 -tags=e2e $(GO_TEST_FLAGS) ./test
 
-.PHONY: test-e2e-nightly
-test-e2e-nightly: test-e2e-cleanup ## run e2e tests
-	@env NIGHTLY_E2E_TEST="true" \
-		go test $(GO_TEST_FLAGS) -timeout $(TIMEOUT_E2E) -failfast -count=1 -tags=e2e \
-		-run "TestGithub" $(GO_TEST_FLAGS) ./test # Add more to -run if we have more e2e to run
-
 .PHONY: lint
 lint: lint-go lint-yaml lint-md lint-py ## run all linters
 

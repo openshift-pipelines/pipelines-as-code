@@ -114,7 +114,7 @@ jobs:
           # https://gitlab.com/gitlab-com/alliances/ibm-red-hat/sandbox/openshift-pipelines/pac-e2e-tests
           export GO_TEST_FLAGS="-v -race -failfast"
           export NIGHTLY_E2E_TEST="true"
-          make test-e2e-nightly
+          make test-e2e
 
       - name: Install wine
         run: |

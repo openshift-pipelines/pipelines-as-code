@@ -2,7 +2,6 @@ name: E2E Tests on Kind
 
 on:
   workflow_dispatch: # yamllint disable-line
-  push: # yamllint disable-line
   pull_request_target:
     types: [opened, synchronize, reopened]
 jobs:
