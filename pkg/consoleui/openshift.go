@@ -10,14 +10,15 @@ import (
 )
 
 const (
-	openShiftConsoleNS             = "openshift-console"
-	openShiftConsoleRouteName      = "console"
-	openShiftPipelineDetailViewURL = "https://%s/k8s/ns/%s/tekton.dev~v1beta1~PipelineRun/%s"
-	openShiftPipelineTaskLogURL    = "%s/logs/%s"
-	openShiftRouteGroup            = "route.openshift.io"
-	openShiftRouteVersion          = "v1"
-	openShiftRouteResource         = "routes"
-	openshiftConsoleName           = "OpenShift console"
+	openShiftConsoleNS              = "openshift-console"
+	openShiftConsoleRouteName       = "console"
+	openShiftConsoleCustomRouteName = "console-custom"
+	openShiftPipelineDetailViewURL  = "https://%s/k8s/ns/%s/tekton.dev~v1beta1~PipelineRun/%s"
+	openShiftPipelineTaskLogURL     = "%s/logs/%s"
+	openShiftRouteGroup             = "route.openshift.io"
+	openShiftRouteVersion           = "v1"
+	openShiftRouteResource          = "routes"
+	openshiftConsoleName            = "OpenShift console"
 )
 
 type OpenshiftConsole struct {
@@ -47,10 +48,14 @@ func (o *OpenshiftConsole) UI(ctx context.Context, kdyn dynamic.Interface) error
 		Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource,
 	}
 
-	route, err := kdyn.Resource(gvr).Namespace(openShiftConsoleNS).Get(ctx, openShiftConsoleRouteName,
+	route, err := kdyn.Resource(gvr).Namespace(openShiftConsoleNS).Get(ctx, openShiftConsoleCustomRouteName,
 		metav1.GetOptions{})
 	if err != nil {
-		return err
+		route, err = kdyn.Resource(gvr).Namespace(openShiftConsoleNS).Get(ctx, openShiftConsoleRouteName,
+			metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
 	}
 
 	spec, ok := route.Object["spec"].(map[string]interface{})
