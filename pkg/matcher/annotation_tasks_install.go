@@ -34,11 +34,11 @@ type RemoteTasks struct {
 }
 
 // nolint: dupl
-func (rt RemoteTasks) convertToPipeline(ctx context.Context, data string) (*tektonv1.Pipeline, error) {
+func (rt RemoteTasks) convertToPipeline(ctx context.Context, uri, data string) (*tektonv1.Pipeline, error) {
 	decoder := k8scheme.Codecs.UniversalDeserializer()
 	obj, _, err := decoder.Decode([]byte(data), nil, nil)
 	if err != nil {
-		return nil, fmt.Errorf("we have a pipeline that is not looking like a kubernetes resource: pipeline: %s resource: %w", data, err)
+		return nil, fmt.Errorf("remote pipeline from uri: %s cannot be parsed as a kubernetes resource: %w", uri, err)
 	}
 
 	var pipeline *tektonv1.Pipeline
@@ -56,11 +56,11 @@ func (rt RemoteTasks) convertToPipeline(ctx context.Context, data string) (*tekt
 		// 	return nil, fmt.Errorf("remote pipeline %s cannot be validated properly: err: %w", o.GetName(), err)
 		// }
 		if err := o.ConvertTo(ctx, c); err != nil {
-			return nil, fmt.Errorf("remote pipeline v1beta1 %s cannot be converted as v1: err: %w", o.GetName(), err)
+			return nil, fmt.Errorf("remote pipeline from uri: %s with name %s cannot be converted to v1beta1: %w", uri, o.GetName(), err)
 		}
 		pipeline = c
 	default:
-		return nil, fmt.Errorf("this doesn't seem to be a proper pipeline: %v", o)
+		return nil, fmt.Errorf("remote pipeline from uri: %s has not been recognized as a tekton pipeline: %v", uri, o)
 	}
 
 	return pipeline, nil
@@ -69,11 +69,11 @@ func (rt RemoteTasks) convertToPipeline(ctx context.Context, data string) (*tekt
 // nolint: dupl
 // golint has decided that it is a duplication with convertToPipeline but i swear it isnt does two are different function
 // and not even sure this is possible to do this with generic crazyness
-func (rt RemoteTasks) convertTotask(ctx context.Context, data string) (*tektonv1.Task, error) {
+func (rt RemoteTasks) convertTotask(ctx context.Context, uri, data string) (*tektonv1.Task, error) {
 	decoder := k8scheme.Codecs.UniversalDeserializer()
 	obj, _, err := decoder.Decode([]byte(data), nil, nil)
 	if err != nil {
-		return nil, fmt.Errorf("we have a task that is not looking like a kubernetes resource: task: %s resource: %w", data, err)
+		return nil, fmt.Errorf("remote task from uri: %s cannot be parsed as a kubernetes resource: %w", uri, err)
 	}
 
 	var task *tektonv1.Task
@@ -87,11 +87,11 @@ func (rt RemoteTasks) convertTotask(ctx context.Context, data string) (*tektonv1
 		// 	return nil, fmt.Errorf("remote task %s cannot be validated properly: err: %w", o.GetName(), err)
 		// }
 		if err := o.ConvertTo(ctx, c); err != nil {
-			return nil, fmt.Errorf("remote task v1beta1 %s cannot be converted as v1: err: %w", o.GetName(), err)
+			return nil, fmt.Errorf("remote task from uri: %s with name %s cannot be converted to v1beta1: %w", uri, o.GetName(), err)
 		}
 		task = c
 	default:
-		return nil, fmt.Errorf("this doesn't seem to be a proper task: %v", o)
+		return nil, fmt.Errorf("remote task from uri: %s has not been recognized as a tekton task: %v", uri, o)
 	}
 
 	return task, nil
@@ -179,7 +179,7 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, annotations ma
 			return nil, fmt.Errorf("error getting remote task \"%s\": returning empty", v)
 		}
 
-		task, err := rt.convertTotask(ctx, data)
+		task, err := rt.convertTotask(ctx, v, data)
 		if err != nil {
 			return nil, err
 		}
@@ -207,7 +207,7 @@ func (rt RemoteTasks) GetPipelineFromAnnotations(ctx context.Context, annotation
 		if data == "" {
 			return nil, fmt.Errorf("could not get pipeline \"%s\": returning empty", v)
 		}
-		pipeline, err := rt.convertToPipeline(ctx, data)
+		pipeline, err := rt.convertToPipeline(ctx, v, data)
 		if err != nil {
 			return nil, err
 		}

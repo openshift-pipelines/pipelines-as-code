@@ -297,6 +297,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 				},
 			},
 		},
+<<<<<<< HEAD
 		// TODO: to uncomment in the future when fixing the Valdiate bug issue
 		// {
 		// 	name: "invalid-pipeline-validaton-failed",
@@ -324,6 +325,34 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 		// 	},
 		// 	wantErr: "cannot be validated properly",
 		// },
+=======
+		{
+			name: "invalid-pipeline-validaton-failed",
+			annotations: map[string]string{
+				keys.Pipeline: "[http://remote.pipeline]",
+			},
+			remoteURLS: map[string]map[string]string{
+				"http://remote.pipeline": {
+					"body": readTDfile(t, "pipeline-invalid-bundle"),
+					"code": "200",
+				},
+			},
+			wantErr: "remote pipeline from uri: http://remote.pipeline with name pipeline-test1 cannot be validated:",
+		},
+		{
+			name: "invalid-remote-pipeline",
+			annotations: map[string]string{
+				keys.Pipeline: "[http://remote.pipeline]",
+			},
+			remoteURLS: map[string]map[string]string{
+				"http://remote.pipeline": {
+					"body": readTDfile(t, "pipeline-invalid"),
+					"code": "200",
+				},
+			},
+			wantErr: "emote pipeline from uri: http://remote.pipeline with name pipeline cannot be validated: expected at least one, got none:",
+		},
+>>>>>>> 2ad64cab (more helpful error about which remote ressource has failed to be parsed)
 		{
 			name: "bad/error getting pipeline",
 			annotations: map[string]string{
@@ -347,7 +376,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 					"code": "200",
 				},
 			},
-			wantErr: "this doesn't seem to be a proper pipeline",
+			wantErr: "remote pipeline from uri: http://remote.pipeline has not been recognized as a tekton pipeline",
 		},
 		{
 			name: "bad/could not get remote",
