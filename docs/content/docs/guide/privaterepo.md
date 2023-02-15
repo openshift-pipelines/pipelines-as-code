@@ -68,3 +68,7 @@ You can see as well a full example [here](https://github.com/openshift-pipelines
 
 This behavior can be disabled by configuration, setting the `secret-auto-create` to false or true
 inside the [Pipelines-as-Code Configmap](/docs/install/settings#pipelines-as-code-configuration-settings).
+
+## Fetching remote tasks from private repositories
+
+See the [resolver documentation](../resolver/#remote-http-url-from-a-private-github-repository) for more details.

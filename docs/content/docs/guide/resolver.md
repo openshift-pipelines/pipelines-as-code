@@ -23,7 +23,7 @@ The resolver will skip resolving if it sees these type of tasks:
 
 * a reference to a [`ClusterTask`](https://github.com/tektoncd/pipeline/blob/main/docs/tasks.md#task-vs-clustertask)
 * a `Task` or `Pipeline` [`Bundle`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#tekton-bundles)
-* a reference to a [`Resolver`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#tekton-bundles)
+* a reference to a Tekton [`Resolver`](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#tekton-bundles)
 * a [Custom Task](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#using-custom-tasks) with an apiVersion that doesn't have a `tekton.dev/` prefix.
 
 It just uses them "as is" and will not try to do anything with it.
@@ -108,6 +108,8 @@ will fetch the task directly from that remote URL :
   pipelinesascode.tekton.dev/task: "[https://remote.url/task.yaml]"
 ```
 
+### Remote HTTP URL from a private Github repository
+
 If you are using `GitHub` and If the remote task URL uses the same host as where
 the repo CRD is, PAC will use the  GitHub token and fetch the URL using the
 Github API.
@@ -132,9 +134,13 @@ Github app token are scoped to the owner or organization where the repository is
 If you are using the GitHub webhook method you are able to fetch any private or
 public repositories on any organization where the personal token is allowed.
 
-### Same repository
+There is settings you can set in the pac `Configmap` to control that behavior, see the
+`secret-github-app-token-scoped` and `secret-github-app-scope-extra-repos` settings in the
+[settings documentation](/docs/install/settings).
 
-Additionally, you can as well have a reference to a task from a YAML file inside
+### Tasks or Pipelines inside the repository
+
+Additionally, you can as well have a reference to a task or pipeline from a YAML file inside
 your repo if you specify the relative path to it, for example :
 
 ```yaml
