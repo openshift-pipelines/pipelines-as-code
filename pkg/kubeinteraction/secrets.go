@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -32,7 +32,7 @@ func (k Interaction) DeleteSecret(ctx context.Context, logger *zap.SugaredLogger
 }
 
 // UpdateSecretWithOwnerRef updates the secret with ownerReference
-func (k Interaction) UpdateSecretWithOwnerRef(ctx context.Context, logger *zap.SugaredLogger, targetNamespace, secretName string, pr *v1beta1.PipelineRun) error {
+func (k Interaction) UpdateSecretWithOwnerRef(ctx context.Context, logger *zap.SugaredLogger, targetNamespace, secretName string, pr *pipelinev1.PipelineRun) error {
 	controllerOwned := false
 	ownerRef := &metav1.OwnerReference{
 		APIVersion:         pr.GetGroupVersionKind().GroupVersion().String(),

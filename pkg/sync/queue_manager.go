@@ -12,7 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	versioned2 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,7 +106,7 @@ func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string)
 // RemoveFromQueue removes the pipelineRun from the queues of the repository
 // It also start the next one which is on top of the waiting queue and return its name
 // if started or returns ""
-func (qm *QueueManager) RemoveFromQueue(repo *v1alpha1.Repository, run *v1beta1.PipelineRun) string {
+func (qm *QueueManager) RemoveFromQueue(repo *v1alpha1.Repository, run *tektonv1.PipelineRun) string {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
@@ -128,7 +128,7 @@ func (qm *QueueManager) RemoveFromQueue(repo *v1alpha1.Repository, run *v1beta1.
 	return ""
 }
 
-func getQueueKey(run *v1beta1.PipelineRun) string {
+func getQueueKey(run *tektonv1.PipelineRun) string {
 	return fmt.Sprintf("%s/%s", run.Namespace, run.Name)
 }
 
@@ -150,7 +150,7 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 		}
 
 		// add all pipelineRuns in started state to pending queue
-		prs, err := tekton.TektonV1beta1().PipelineRuns(repo.Namespace).
+		prs, err := tekton.TektonV1().PipelineRuns(repo.Namespace).
 			List(ctx, v1.ListOptions{
 				LabelSelector: fmt.Sprintf("%s=%s", keys.State, kubeinteraction.StateStarted),
 			})
@@ -176,7 +176,7 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 		}
 
 		// now fetch all queued pipelineRun
-		prs, err = tekton.TektonV1beta1().PipelineRuns(repo.Namespace).
+		prs, err = tekton.TektonV1().PipelineRuns(repo.Namespace).
 			List(ctx, v1.ListOptions{
 				LabelSelector: fmt.Sprintf("%s=%s", keys.State, kubeinteraction.StateQueued),
 			})
@@ -236,15 +236,15 @@ func (qm *QueueManager) RunningPipelineRuns(repo *v1alpha1.Repository) []string 
 	return []string{}
 }
 
-func sortPipelineRunsByCreationTimestamp(prs []v1beta1.PipelineRun) []*v1beta1.PipelineRun {
+func sortPipelineRunsByCreationTimestamp(prs []tektonv1.PipelineRun) []*tektonv1.PipelineRun {
 	runTimeObj := []runtime.Object{}
 	for i := range prs {
 		runTimeObj = append(runTimeObj, &prs[i])
 	}
 	sort.ByField(creationTimestamp, runTimeObj)
-	sortedPRs := []*v1beta1.PipelineRun{}
+	sortedPRs := []*tektonv1.PipelineRun{}
 	for _, run := range runTimeObj {
-		pr, _ := run.(*v1beta1.PipelineRun)
+		pr, _ := run.(*tektonv1.PipelineRun)
 		sortedPRs = append(sortedPRs, pr)
 	}
 	return sortedPRs

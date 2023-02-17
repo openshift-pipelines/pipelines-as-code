@@ -16,7 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +34,7 @@ var backoffSchedule = []time.Duration{
 	5 * time.Second,
 }
 
-func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1beta1.PipelineRun, repo *pacv1a1.Repository, event *info.Event) error {
+func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1.PipelineRun, repo *pacv1a1.Repository, event *info.Event) error {
 	refsanitized := formatting.SanitizeBranch(event.BaseBranch)
 	repoStatus := pacv1a1.RepositoryRunStatus{
 		Status:          pr.Status.Status,
@@ -80,7 +80,7 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 	return fmt.Errorf("cannot update %s", repo.Name)
 }
 
-func (r *Reconciler) getFailureSnippet(ctx context.Context, pr *tektonv1beta1.PipelineRun) string {
+func (r *Reconciler) getFailureSnippet(ctx context.Context, pr *tektonv1.PipelineRun) string {
 	intf, err := kubeinteraction.NewKubernetesInteraction(r.run)
 	if err != nil {
 		return ""
@@ -97,8 +97,8 @@ func (r *Reconciler) getFailureSnippet(ctx context.Context, pr *tektonv1beta1.Pi
 	return fmt.Sprintf("task <b>%s</b> has the status <b>\"%s\"</b>:\n<pre>%s</pre>", sortedTaskInfos[0].Name, sortedTaskInfos[0].Reason, text)
 }
 
-func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLogger, vcx provider.Interface, event *info.Event, createdPR *tektonv1beta1.PipelineRun) (*tektonv1beta1.PipelineRun, error) {
-	pr, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(createdPR.GetNamespace()).Get(
+func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLogger, vcx provider.Interface, event *info.Event, createdPR *tektonv1.PipelineRun) (*tektonv1.PipelineRun, error) {
+	pr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(createdPR.GetNamespace()).Get(
 		ctx, createdPR.GetName(), metav1.GetOptions{},
 	)
 	if err != nil {

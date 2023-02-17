@@ -6,7 +6,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -23,7 +23,7 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 
 	type args struct {
 		event       *info.Event
-		pipelineRun *tektonv1beta1.PipelineRun
+		pipelineRun *tektonv1.PipelineRun
 		repo        *apipac.Repository
 	}
 	tests := []struct {
@@ -34,7 +34,7 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 			name: "test label and annotation added to pr",
 			args: args{
 				event: event,
-				pipelineRun: &tektonv1beta1.PipelineRun{
+				pipelineRun: &tektonv1.PipelineRun{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels:      map[string]string{},
 						Annotations: map[string]string{},

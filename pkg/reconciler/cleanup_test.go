@@ -13,7 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -40,8 +40,8 @@ func TestCleanupPipelineRuns(t *testing.T) {
 	clock := clockwork.NewFakeClock()
 	tests := []struct {
 		name               string
-		pruns              []*v1beta1.PipelineRun
-		currentpr          *v1beta1.PipelineRun
+		pruns              []*tektonv1.PipelineRun
+		currentpr          *tektonv1.PipelineRun
 		maxkeepruns        int
 		defaultmaxkeepruns int
 		repoNs             string
@@ -50,64 +50,64 @@ func TestCleanupPipelineRuns(t *testing.T) {
 	}{
 		{
 			name: "using from annotation",
-			pruns: []*v1beta1.PipelineRun{
-				tektontest.MakePRCompletion(clock, "pipeline-newest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-				tektontest.MakePRCompletion(clock, "pipeline-middest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+			pruns: []*tektonv1.PipelineRun{
+				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
+				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
+				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
 			},
-			repoNs:       ns,
-			repoName:     cleanupRepoName,
-			currentpr:    &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: maxRunsAnno(2)}},
+			repoNs:   ns,
+			repoName: cleanupRepoName,
+			currentpr: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: cleanupLabels, Annotations: maxRunsAnno(2),
+				},
+			},
 			afterCleanup: 2,
 		},
 		{
 			name: "using from config, as annotation value is more than config",
-			pruns: []*v1beta1.PipelineRun{
-				tektontest.MakePRCompletion(clock, "pipeline-newest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-				tektontest.MakePRCompletion(clock, "pipeline-middest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+			pruns: []*tektonv1.PipelineRun{
+				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
+				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
+				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
 			},
-			repoNs:       ns,
-			repoName:     cleanupRepoName,
-			currentpr:    &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: maxRunsAnno(2)}},
+			repoNs:   ns,
+			repoName: cleanupRepoName,
+			currentpr: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: cleanupLabels, Annotations: maxRunsAnno(2),
+				},
+			},
 			afterCleanup: 1,
 			maxkeepruns:  1,
 		},
 		{
 			name: "using from annotation, as annotation value is less than config",
-			pruns: []*v1beta1.PipelineRun{
-				tektontest.MakePRCompletion(clock, "pipeline-newest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-				tektontest.MakePRCompletion(clock, "pipeline-middest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+			pruns: []*tektonv1.PipelineRun{
+				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
+				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
+				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
 			},
-			repoNs:       ns,
-			repoName:     cleanupRepoName,
-			currentpr:    &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: maxRunsAnno(2)}},
+			repoNs:   ns,
+			repoName: cleanupRepoName,
+			currentpr: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: cleanupLabels, Annotations: maxRunsAnno(2),
+				},
+			},
 			afterCleanup: 2,
 			maxkeepruns:  3,
 		},
 		{
 			name: "no annotation, using default from config",
-			pruns: []*v1beta1.PipelineRun{
-				tektontest.MakePRCompletion(clock, "pipeline-newest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-				tektontest.MakePRCompletion(clock, "pipeline-middest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns,
-					v1beta1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+			pruns: []*tektonv1.PipelineRun{
+				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
+				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
+				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
 			},
 			repoNs:             ns,
 			repoName:           cleanupRepoName,
-			currentpr:          &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
+			currentpr:          &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
 			afterCleanup:       2,
 			defaultmaxkeepruns: 2,
 		},
@@ -162,7 +162,7 @@ func TestCleanupPipelineRuns(t *testing.T) {
 			err := r.cleanupPipelineRuns(ctx, fakelogger, repo, tt.currentpr)
 			assert.NilError(t, err)
 
-			plist, err := kint.Run.Clients.Tekton.TektonV1beta1().PipelineRuns(tt.repoNs).List(
+			plist, err := kint.Run.Clients.Tekton.TektonV1().PipelineRuns(tt.repoNs).List(
 				ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
 			assert.Equal(t, tt.afterCleanup, len(plist.Items))

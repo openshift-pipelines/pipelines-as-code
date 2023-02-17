@@ -6,7 +6,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -15,14 +15,14 @@ func TestPipelineRunSortByCompletionTime(t *testing.T) {
 	clock := clockwork.NewFakeClock()
 	ns := "namespace"
 	labels := map[string]string{}
-	success := v1beta1.PipelineRunReasonSuccessful.String()
+	success := tektonv1.PipelineRunReasonSuccessful.String()
 	tests := []struct {
 		name     string
-		pruns    []v1beta1.PipelineRun
+		pruns    []tektonv1.PipelineRun
 		wantName []string
 	}{
 		{
-			pruns: []v1beta1.PipelineRun{
+			pruns: []tektonv1.PipelineRun{
 				*(tektontest.MakePRCompletion(clock, "troisieme", ns, success, labels, 30)),
 				*(tektontest.MakePRCompletion(clock, "premier", ns, success, labels, 10)),
 				*(tektontest.MakePRCompletion(clock, "second", ns, success, labels, 20)),
@@ -44,7 +44,7 @@ func TestPipelineRunSortByStartTime(t *testing.T) {
 	clock := clockwork.NewFakeClock()
 	ns := "namespace"
 	labels := map[string]string{}
-	success := v1beta1.PipelineRunReasonSuccessful.String()
+	success := tektonv1.PipelineRunReasonSuccessful.String()
 	startedEarlierPR := tektontest.MakePRCompletion(clock, "earlier", ns, success, labels, 5)
 	startedEarlierPR.Status.StartTime = &metav1.Time{Time: clock.Now().Add(100 * time.Minute)}
 
@@ -58,12 +58,12 @@ func TestPipelineRunSortByStartTime(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		pruns    []v1beta1.PipelineRun
+		pruns    []tektonv1.PipelineRun
 		wantName []string
 	}{
 		{
 			name: "finished last started first",
-			pruns: []v1beta1.PipelineRun{
+			pruns: []tektonv1.PipelineRun{
 				*(tektontest.MakePRCompletion(clock, "otherFirst", ns, success, labels, 30)),
 				*(tektontest.MakePRCompletion(clock, "otherSecond", ns, success, labels, 10)),
 				*startedEarlierPR,
@@ -72,7 +72,7 @@ func TestPipelineRunSortByStartTime(t *testing.T) {
 		},
 		{
 			name: "no completion but started first",
-			pruns: []v1beta1.PipelineRun{
+			pruns: []tektonv1.PipelineRun{
 				*noCompletionPR,
 				*(tektontest.MakePRCompletion(clock, "otherFirst", ns, success, labels, 30)),
 				*(tektontest.MakePRCompletion(clock, "otherSecond", ns, success, labels, 10)),
@@ -82,7 +82,7 @@ func TestPipelineRunSortByStartTime(t *testing.T) {
 
 		{
 			name: "not started yet",
-			pruns: []v1beta1.PipelineRun{
+			pruns: []tektonv1.PipelineRun{
 				*notStartedYet,
 				*(tektontest.MakePRCompletion(clock, "otherFirst", ns, success, labels, 30)),
 				*(tektontest.MakePRCompletion(clock, "otherSecond", ns, success, labels, 10)),

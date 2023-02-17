@@ -14,7 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 )
 
@@ -201,14 +201,14 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	return matchedPRs, nil
 }
 
-func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1beta1.PipelineRun) []*tektonv1beta1.PipelineRun {
+func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1.PipelineRun) []*tektonv1.PipelineRun {
 	if testPipeline == "" {
 		return prs
 	}
 	for _, pr := range prs {
 		if prName, ok := pr.GetLabels()[apipac.OriginalPRName]; ok {
 			if prName == testPipeline {
-				return []*tektonv1beta1.PipelineRun{pr}
+				return []*tektonv1.PipelineRun{pr}
 			}
 		}
 	}
@@ -218,7 +218,7 @@ func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1be
 // changeSecret we need to go in each pipelinerun,
 // change the secret template variable with a random one as generated from GetBasicAuthSecretName and store in in the
 // annotations so we can create one delete after.
-func changeSecret(prs []*tektonv1beta1.PipelineRun) error {
+func changeSecret(prs []*tektonv1.PipelineRun) error {
 	for k, p := range prs {
 		b, err := json.Marshal(p)
 		if err != nil {
@@ -230,7 +230,7 @@ func changeSecret(prs []*tektonv1beta1.PipelineRun) error {
 			"git_auth_secret": name,
 		})
 
-		var np *tektonv1beta1.PipelineRun
+		var np *tektonv1.PipelineRun
 		err = json.Unmarshal([]byte(processed), &np)
 		if err != nil {
 			return err
