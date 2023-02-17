@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/features"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/hub"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -48,11 +47,14 @@ func (rt RemoteTasks) convertToPipeline(ctx context.Context, data string) (*tekt
 		pipeline = o
 	case *tektonv1beta1.Pipeline:
 		c := &tektonv1.Pipeline{}
-		o.SetDefaults(ctx)
-		ctx2 := features.SetFeatureFlag(context.Background())
-		if err := o.Validate(ctx2); err != nil {
-			return nil, fmt.Errorf("remote pipeline %s cannot be validated properly: err: %w", o.GetName(), err)
-		}
+		// TODO: figure ou the issue we have with setdefault setting defaults SA
+		// and then don't let pipeline do its job to automatically set a
+		// pipeline on configuration
+		// o.SetDefaults(ctx)
+		// ctx2 := features.SetFeatureFlag(context.Background())
+		// if err := o.Validate(ctx2); err != nil {
+		// 	return nil, fmt.Errorf("remote pipeline %s cannot be validated properly: err: %w", o.GetName(), err)
+		// }
 		if err := o.ConvertTo(ctx, c); err != nil {
 			return nil, fmt.Errorf("remote pipeline v1beta1 %s cannot be converted as v1: err: %w", o.GetName(), err)
 		}
@@ -80,10 +82,10 @@ func (rt RemoteTasks) convertTotask(ctx context.Context, data string) (*tektonv1
 		task = o
 	case *tektonv1beta1.Task:
 		c := &tektonv1.Task{}
-		o.SetDefaults(ctx)
-		if err := o.Validate(ctx); err != nil {
-			return nil, fmt.Errorf("remote task %s cannot be validated properly: err: %w", o.GetName(), err)
-		}
+		// o.SetDefaults(ctx)
+		// if err := o.Validate(ctx); err != nil {
+		// 	return nil, fmt.Errorf("remote task %s cannot be validated properly: err: %w", o.GetName(), err)
+		// }
 		if err := o.ConvertTo(ctx, c); err != nil {
 			return nil, fmt.Errorf("remote task v1beta1 %s cannot be converted as v1: err: %w", o.GetName(), err)
 		}

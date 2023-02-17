@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/features"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -44,44 +43,44 @@ func readTypes(ctx context.Context, log *zap.SugaredLogger, data string) (Types,
 		switch o := obj.(type) {
 		case *tektonv1beta1.Pipeline:
 			c := &tektonv1.Pipeline{}
-			o.SetDefaults(ctx)
+			// o.SetDefaults(ctx)
 			// this would fail on Validate otherwise
-			if o.GetName() == "" {
-				o.SetName(o.GetGenerateName())
-			}
-			ctx2 := features.SetFeatureFlag(context.Background())
-			if err := o.Validate(ctx2); err != nil {
-				return types, fmt.Errorf("pipeline %s cannot be validated properly: err: %w", o.GetName(), err)
-			}
+			// if o.GetName() == "" {
+			// 	o.SetName(o.GetGenerateName())
+			// }
+			// ctx2 := features.SetFeatureFlag(context.Background())
+			// if err := o.Validate(ctx2); err != nil {
+			// 	return types, fmt.Errorf("pipeline %s cannot be validated properly: err: %w", o.GetName(), err)
+			// }
 			if err := o.ConvertTo(ctx, c); err != nil {
 				return types, fmt.Errorf("pipeline v1beta1 %s cannot be converted as v1: err: %w", o.GetName(), err)
 			}
 			types.Pipelines = append(types.Pipelines, c)
 		case *tektonv1beta1.PipelineRun:
 			c := &tektonv1.PipelineRun{}
-			o.SetDefaults(ctx)
+			// o.SetDefaults(ctx)
 			// this would fail on Validate otherwise
-			if o.GetName() == "" {
-				o.SetName(o.GetGenerateName())
-			}
-			ctx2 := features.SetFeatureFlag(context.Background())
-			if err := o.Validate(ctx2); err != nil {
-				return types, fmt.Errorf("pipelinerun %s cannot be validated properly: err: %w", o.GetName(), err)
-			}
+			// if o.GetName() == "" {
+			// 	o.SetName(o.GetGenerateName())
+			// }
+			// ctx2 := features.SetFeatureFlag(context.Background())
+			// if err := o.Validate(ctx2); err != nil {
+			// 	return types, fmt.Errorf("pipelinerun %s cannot be validated properly: err: %w", o.GetName(), err)
+			// }
 			if err := o.ConvertTo(ctx, c); err != nil {
 				return types, fmt.Errorf("pipelinerun v1beta1 %s cannot be converted as v1: err: %w", o.GetName(), err)
 			}
 			types.PipelineRuns = append(types.PipelineRuns, c)
 		case *tektonv1beta1.Task:
 			c := &tektonv1.Task{}
-			o.SetDefaults(ctx)
-			// this would fail on Validate otherwise
-			if o.GetName() == "" {
-				o.SetName(o.GetGenerateName())
-			}
-			if err := o.Validate(ctx); err != nil {
-				return types, fmt.Errorf("task %s cannot be validated properly: err: %w", o.GetName(), err)
-			}
+			// o.SetDefaults(ctx)
+			// // this would fail on Validate otherwise
+			// if o.GetName() == "" {
+			// 	o.SetName(o.GetGenerateName())
+			// }
+			// if err := o.Validate(ctx); err != nil {
+			// 	return types, fmt.Errorf("task %s cannot be validated properly: err: %w", o.GetName(), err)
+			// }
 			if err := o.ConvertTo(ctx, c); err != nil {
 				return types, fmt.Errorf("task v1beta1 %s cannot be converted as v1: err: %w", o.GetName(), err)
 			}
