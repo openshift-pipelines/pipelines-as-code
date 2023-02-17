@@ -167,7 +167,7 @@ func getPipelineRunsToRepo(ctx context.Context, lopt *logOption, repoName string
 		LabelSelector: fmt.Sprintf("%s=%s",
 			keys.Repository, repoName),
 	}
-	runs, err := lopt.cs.Clients.Tekton.TektonV1().PipelineRuns(lopt.opts.Namespace).List(ctx, opts)
+	runs, err := lopt.cs.Clients.Tekton.TektonV1beta1().PipelineRuns(lopt.opts.Namespace).List(ctx, opts)
 	if err != nil {
 		return []string{}, err
 	}

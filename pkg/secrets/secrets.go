@@ -7,13 +7,13 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
 const leakedReplacement = "*****"
 
 // GetSecretsAttachedToPipelineRun get all secrets attached to a PipelineRun and grab their values
-func GetSecretsAttachedToPipelineRun(ctx context.Context, k kubeinteraction.Interface, pr *tektonv1.PipelineRun) []ktypes.SecretValue {
+func GetSecretsAttachedToPipelineRun(ctx context.Context, k kubeinteraction.Interface, pr *tektonv1beta1.PipelineRun) []ktypes.SecretValue {
 	ret := []ktypes.SecretValue{}
 	// check if pipelineRef is defined or exist
 	if pr.Spec.PipelineSpec == nil {

@@ -6,11 +6,11 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 )
 
-func (r *Reconciler) cleanupPipelineRuns(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *tektonv1.PipelineRun) error {
+func (r *Reconciler) cleanupPipelineRuns(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
 	keepMaxPipeline, ok := pr.Annotations[keys.MaxKeepRuns]
 	if ok {
 		max, err := strconv.Atoi(keepMaxPipeline)

@@ -12,8 +12,6 @@ You will need to pre-install the
 [pipeline](https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml)
 `release.yaml` file on your kubernetes cluster.
 
-You will need at least a kubernetes version greater than 1.23
-
 ## Install
 
 The release YAML to install pipelines are for the released version :

@@ -10,7 +10,7 @@ import (
 	kstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	sortrepostatus "github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,7 +35,7 @@ func RepositoryRunStatusRemoveSameSHA(rs []pacv1alpha1.RepositoryRunStatus, live
 	return newRepositoryStatus
 }
 
-func convertPrStatusToRepositoryStatus(ctx context.Context, cs *params.Run, pr tektonv1.PipelineRun, logurl string) pacv1alpha1.RepositoryRunStatus {
+func convertPrStatusToRepositoryStatus(ctx context.Context, cs *params.Run, pr tektonv1beta1.PipelineRun, logurl string) pacv1alpha1.RepositoryRunStatus {
 	kinteract, _ := kubeinteraction.NewKubernetesInteraction(cs)
 	failurereasons := kstatus.CollectFailedTasksLogSnippet(ctx, cs, kinteract, &pr, defaultNumLinesOfLogsInContainersToGrabForErr)
 	prSHA := pr.GetLabels()["pipelinesascode.tekton.dev/sha"]
@@ -56,7 +56,7 @@ func convertPrStatusToRepositoryStatus(ctx context.Context, cs *params.Run, pr t
 func MixLivePRandRepoStatus(ctx context.Context, cs *params.Run, repository pacv1alpha1.Repository) []pacv1alpha1.RepositoryRunStatus {
 	repositorystatus := repository.Status
 	label := "pipelinesascode.tekton.dev/repository=" + repository.Name
-	prs, err := cs.Clients.Tekton.TektonV1().PipelineRuns(repository.Namespace).List(ctx, metav1.ListOptions{
+	prs, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns(repository.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: label,
 	})
 	if err != nil {

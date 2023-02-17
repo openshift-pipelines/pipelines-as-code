@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v49/github"
-	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
@@ -19,34 +20,36 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
-	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	knativeapi "knative.dev/pkg/apis"
-	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
+	"sigs.k8s.io/yaml"
 )
 
 var (
-	randomURL          = "https://github.com/random/app"
 	finalSuccessStatus = "success"
 	finalSuccessText   = `
 <table>
   <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
 <tr>
 <td>✅ Succeeded</td>
-<td>-25 minutes</td><td>
+<td>42 seconds</td><td>
 
-[task1](https://dashboard.is.not.configured)
+[fetch-repository](https://dashboard.is.not.configured)
+
+</td></tr>
+<tr>
+<td>✅ Succeeded</td>
+<td>18 seconds</td><td>
+
+[noop-task](https://dashboard.is.not.configured)
 
 </td></tr>
 </table>`
@@ -56,30 +59,31 @@ var (
 <table>
   <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
 <tr>
-<td>❌ Failed</td>
-<td>-25 minutes</td><td>
+<td>✅ Succeeded</td>
+<td>42 seconds</td><td>
 
-[task1](https://dashboard.is.not.configured)
+[fetch-repository](https://dashboard.is.not.configured)
+
+</td></tr>
+<tr>
+<td>❌ Failed</td>
+<td>19 seconds</td><td>
+
+[noop-task](https://dashboard.is.not.configured)
 
 </td></tr>
 </table>`
-)
 
-func testSetupGHReplies(t *testing.T, mux *http.ServeMux, runevent *info.Event, checkrunID, finalStatus, finalStatusText string) {
-	t.Helper()
-	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/%s", runevent.Organization, runevent.Repository, checkrunID),
-		func(w http.ResponseWriter, r *http.Request) {
-			body, _ := io.ReadAll(r.Body)
-			created := github.CreateCheckRunOptions{}
-			err := json.Unmarshal(body, &created)
-			assert.NilError(t, err)
-			if created.GetStatus() == "completed" {
-				assert.Equal(t, created.GetConclusion(), finalStatus, "we got the status `%s` but we should have get the status `%s`", created.GetConclusion(), finalStatus)
-				assert.Equal(t, created.GetOutput().GetText(), finalStatusText,
-					"GetStatus/CheckRun %s != %s", created.GetOutput().GetText(), finalStatusText)
-			}
-		})
-}
+	testRepo = &v1alpha1.Repository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "sm43-pac-app",
+			Namespace: "pac-app-pipelines",
+		},
+		Spec: v1alpha1.RepositorySpec{
+			URL: "https://github.com/sm43/pac-app",
+		},
+	}
+)
 
 func TestReconciler_ReconcileKind(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
@@ -92,105 +96,49 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 		Token:  github.String("None"),
 	}
 
+	runEvent := info.Event{
+		Organization: "sm43",
+		Repository:   "pac-app",
+	}
+
 	tests := []struct {
 		name            string
+		pipelineRunfile string
 		finalStatus     string
 		finalStatusText string
 		checkRunID      string
-		exitCode        int32
-		taskCondition   knativeduckv1.Conditions
 	}{
 		{
 			name:            "success pipelinerun",
+			pipelineRunfile: "test-succeeded-pipelinerun",
 			checkRunID:      "6566930541",
 			finalStatus:     finalSuccessStatus,
 			finalStatusText: finalSuccessText,
-			exitCode:        0,
-			taskCondition: knativeduckv1.Conditions{
-				{
-					Type:   knativeapi.ConditionSucceeded,
-					Status: corev1.ConditionTrue,
-					Reason: "Succeeded",
-				},
-			},
 		},
 		{
 			name:            "failed pipelinerun",
+			pipelineRunfile: "test-failed-pipelinerun",
 			finalStatus:     finalFailureStatus,
 			finalStatusText: finalFailureText,
-			exitCode:        1,
-			checkRunID:      "6566930542",
-			taskCondition: knativeduckv1.Conditions{
-				{
-					Type:   knativeapi.ConditionSucceeded,
-					Status: corev1.ConditionFalse,
-					Reason: "Error",
-				},
-			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			clock := clockwork.NewFakeClock()
-			statusPR := tektonv1.PipelineRunReasonSuccessful
-			if tt.finalStatus == finalFailureStatus {
-				statusPR = tektonv1.PipelineRunReasonFailed
+			b, err := os.ReadFile(fmt.Sprintf("testdata/%s.yaml", tt.pipelineRunfile))
+			if err != nil {
+				t.Fatalf("ReadFile() = %v", err)
 			}
-			pr := tektontest.MakePRCompletion(clock, "pipeline-newest", "ns", string(statusPR), make(map[string]string), 10)
-			pr.Status.ChildReferences = []tektonv1.ChildStatusReference{
-				{
-					TypeMeta: runtime.TypeMeta{
-						Kind: "TaskRun",
-					},
-					Name:             "task1",
-					PipelineTaskName: "task1",
-				},
+			pr := v1beta1.PipelineRun{}
+			if err := yaml.Unmarshal(b, &pr); err != nil {
+				t.Fatalf("yaml.Unmarshal() = %v", err)
 			}
 
-			secretName := secrets.GenerateBasicAuthSecretName()
-			pr.Annotations = map[string]string{
-				keys.GitAuthSecret:  secretName,
-				keys.State:          kubeinteraction.StateCompleted,
-				keys.InstallationID: "1234",
-				keys.RepoURL:        randomURL,
-			}
-			pr.Labels = map[string]string{
-				keys.Repository:     pr.GetName(),
-				keys.CheckRunID:     tt.checkRunID,
-				keys.OriginalPRName: pr.GetName(),
-			}
+			secretName := pr.Annotations[keys.GitAuthSecret]
 
-			testRepo := &v1alpha1.Repository{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      pr.GetName(),
-					Namespace: pr.GetNamespace(),
-				},
-				Spec: v1alpha1.RepositorySpec{
-					URL: randomURL,
-				},
-			}
-
-			taskStatus := tektonv1.TaskRunStatusFields{
-				PodName: "task1",
-				Steps: []tektonv1.StepState{
-					{
-						Name: "step1",
-						ContainerState: corev1.ContainerState{
-							Terminated: &corev1.ContainerStateTerminated{
-								ExitCode: tt.exitCode,
-							},
-						},
-					},
-				},
-			}
 			testData := testclient.Data{
 				Repositories: []*v1alpha1.Repository{testRepo},
-				PipelineRuns: []*tektonv1.PipelineRun{pr},
-				TaskRuns: []*tektonv1.TaskRun{
-					tektontest.MakeTaskRunCompletion(clock, "task1", "ns", "pipeline-newest",
-						map[string]string{}, taskStatus, tt.taskCondition, 10),
-				},
+				PipelineRuns: []*v1beta1.PipelineRun{&pr},
 				Secret: []*corev1.Secret{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -201,6 +149,8 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 				},
 			}
 			stdata, informers := testclient.SeedTestData(t, ctx, testData)
+
+			testSetupGHReplies(t, mux, runEvent, tt.checkRunID, tt.finalStatus, tt.finalStatusText)
 
 			metrics, err := metrics.NewRecorder()
 			assert.NilError(t, err)
@@ -235,13 +185,11 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 				metrics: metrics,
 			}
 
-			event := buildEventFromPipelineRun(pr)
-			testSetupGHReplies(t, mux, event, tt.checkRunID, tt.finalStatus, tt.finalStatusText)
-
-			_, err = r.reportFinalStatus(ctx, fakelogger, event, pr, vcx)
+			event := buildEventFromPipelineRun(&pr)
+			_, err = r.reportFinalStatus(ctx, fakelogger, event, &pr, vcx)
 			assert.NilError(t, err)
 
-			got, err := stdata.Pipeline.TektonV1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
+			got, err := stdata.Pipeline.TektonV1beta1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})
 			assert.NilError(t, err)
 
 			// state must be updated to completed
@@ -250,18 +198,34 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 	}
 }
 
+func testSetupGHReplies(t *testing.T, mux *http.ServeMux, runevent info.Event, checkrunID, finalStatus, finalStatusText string) {
+	t.Helper()
+	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/%s", runevent.Organization, runevent.Repository, checkrunID),
+		func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			created := github.CreateCheckRunOptions{}
+			err := json.Unmarshal(body, &created)
+			assert.NilError(t, err)
+			if created.GetStatus() == "completed" {
+				assert.Equal(t, created.GetConclusion(), finalStatus, "we got the status `%s` but we should have get the status `%s`", created.GetConclusion(), finalStatus)
+				assert.Assert(t, strings.Contains(created.GetOutput().GetText(), finalStatusText),
+					"GetStatus/CheckRun %s != %s", created.GetOutput().GetText(), finalStatusText)
+			}
+		})
+}
+
 func TestUpdatePipelineRunState(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	fakelogger := zap.New(observer).Sugar()
 
 	tests := []struct {
 		name        string
-		pipelineRun *tektonv1.PipelineRun
+		pipelineRun *v1beta1.PipelineRun
 		state       string
 	}{
 		{
 			name: "queued to started",
-			pipelineRun: &tektonv1.PipelineRun{
+			pipelineRun: &v1beta1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test",
 					Name:      "test",
@@ -269,16 +233,16 @@ func TestUpdatePipelineRunState(t *testing.T) {
 						keys.State: kubeinteraction.StateQueued,
 					},
 				},
-				Spec: tektonv1.PipelineRunSpec{
-					Status: tektonv1.PipelineRunSpecStatusPending,
+				Spec: v1beta1.PipelineRunSpec{
+					Status: v1beta1.PipelineRunSpecStatusPending,
 				},
-				Status: tektonv1.PipelineRunStatus{},
+				Status: v1beta1.PipelineRunStatus{},
 			},
 			state: kubeinteraction.StateStarted,
 		},
 		{
 			name: "started to completed",
-			pipelineRun: &tektonv1.PipelineRun{
+			pipelineRun: &v1beta1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test",
 					Name:      "test",
@@ -286,8 +250,8 @@ func TestUpdatePipelineRunState(t *testing.T) {
 						keys.State: kubeinteraction.StateStarted,
 					},
 				},
-				Spec:   tektonv1.PipelineRunSpec{},
-				Status: tektonv1.PipelineRunStatus{},
+				Spec:   v1beta1.PipelineRunSpec{},
+				Status: v1beta1.PipelineRunStatus{},
 			},
 			state: kubeinteraction.StateCompleted,
 		},
@@ -296,7 +260,7 @@ func TestUpdatePipelineRunState(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			testData := testclient.Data{
-				PipelineRuns: []*tektonv1.PipelineRun{tt.pipelineRun},
+				PipelineRuns: []*v1beta1.PipelineRun{tt.pipelineRun},
 			}
 			stdata, _ := testclient.SeedTestData(t, ctx, testData)
 			r := &Reconciler{
@@ -311,7 +275,7 @@ func TestUpdatePipelineRunState(t *testing.T) {
 			assert.NilError(t, err)
 
 			assert.Equal(t, updatedPR.Labels[keys.State], tt.state)
-			assert.Equal(t, updatedPR.Spec.Status, tektonv1.PipelineRunSpecStatus(""))
+			assert.Equal(t, updatedPR.Spec.Status, v1beta1.PipelineRunSpecStatus(""))
 		})
 	}
 }

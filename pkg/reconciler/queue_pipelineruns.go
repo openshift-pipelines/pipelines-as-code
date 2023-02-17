@@ -7,13 +7,13 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1.PipelineRun) error {
+func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun) error {
 	order, exist := pr.GetAnnotations()[keys.ExecutionOrder]
 	if !exist {
 		// if the pipelineRun doesn't have order label then wait
@@ -52,7 +52,7 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 
 	for _, prKeys := range acquired {
 		nsName := strings.Split(prKeys, "/")
-		pr, err = r.run.Clients.Tekton.TektonV1().PipelineRuns(nsName[0]).Get(ctx, nsName[1], metav1.GetOptions{})
+		pr, err = r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(nsName[0]).Get(ctx, nsName[1], metav1.GetOptions{})
 		if err != nil {
 			logger.Info("failed to get pr with namespace and name: ", nsName[0], nsName[1])
 			return err

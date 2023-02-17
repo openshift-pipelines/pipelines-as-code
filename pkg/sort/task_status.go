@@ -9,12 +9,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
 type tkr struct {
 	taskLogURL string
-	*tektonv1.PipelineRunTaskRunStatus
+	*tektonv1beta1.PipelineRunTaskRunStatus
 }
 
 func (t tkr) ConsoleLogURL() string {
@@ -38,7 +38,7 @@ func (trs taskrunList) Less(i, j int) bool {
 }
 
 // TaskStatusTmpl generate a template of all status of a taskruns sorted to a statusTemplate as defined by the git provider
-func TaskStatusTmpl(pr *tektonv1.PipelineRun, trStatus map[string]*tektonv1.PipelineRunTaskRunStatus, runs *params.Run, config *info.ProviderConfig) (string, error) {
+func TaskStatusTmpl(pr *tektonv1beta1.PipelineRun, trStatus map[string]*tektonv1beta1.PipelineRunTaskRunStatus, runs *params.Run, config *info.ProviderConfig) (string, error) {
 	trl := taskrunList{}
 	outputBuffer := bytes.Buffer{}
 

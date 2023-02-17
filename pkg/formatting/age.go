@@ -21,7 +21,7 @@ func Duration(t1, t2 *metav1.Time) string {
 		return nonAttributedStr
 	}
 
-	dur := t2.Sub(t1.Time)
+	dur := t2.Time.Sub(t1.Time)
 	return durafmt.ParseShort(dur).String()
 }
 
@@ -33,7 +33,7 @@ func PRDuration(runStatus v1alpha1.RepositoryRunStatus) string {
 	lasttime := runStatus.CompletionTime
 	if lasttime == nil {
 		if len(runStatus.Conditions) > 0 {
-			lasttime = &runStatus.Conditions[0].LastTransitionTime.Inner
+			lasttime = &runStatus.Status.Conditions[0].LastTransitionTime.Inner
 		} else {
 			return nonAttributedStr
 		}

@@ -10,16 +10,16 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 )
 
 var cancelMergePatch = map[string]interface{}{
 	"spec": map[string]interface{}{
-		"status": tektonv1.PipelineRunSpecStatusCancelledRunFinally,
+		"status": v1beta1.PipelineRunSpecStatusCancelledRunFinally,
 	},
 }
 
@@ -30,7 +30,7 @@ func (p *PacRun) cancelPipelineRuns(ctx context.Context, repo *v1alpha1.Reposito
 		return nil
 	}
 
-	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(repo.Namespace).List(ctx, metav1.ListOptions{
+	prs, err := p.run.Clients.Tekton.TektonV1beta1().PipelineRuns(repo.Namespace).List(ctx, v1.ListOptions{
 		LabelSelector: getLabelSelector(map[string]string{
 			keys.URLRepository: formatting.K8LabelsCleanup(p.event.Repository),
 			keys.SHA:           formatting.K8LabelsCleanup(p.event.SHA),
@@ -65,7 +65,7 @@ func (p *PacRun) cancelPipelineRuns(ctx context.Context, repo *v1alpha1.Reposito
 		}
 
 		wg.Add(1)
-		go func(ctx context.Context, pr tektonv1.PipelineRun) {
+		go func(ctx context.Context, pr v1beta1.PipelineRun) {
 			defer wg.Done()
 			if _, err := action.PatchPipelineRun(ctx, p.logger, "cancel patch", p.run.Clients.Tekton, &pr, cancelMergePatch); err != nil {
 				errMsg := fmt.Sprintf("failed to cancel pipelineRun %s/%s: %s", pr.GetNamespace(), pr.GetName(), err.Error())

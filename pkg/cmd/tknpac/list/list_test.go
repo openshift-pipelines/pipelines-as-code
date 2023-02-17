@@ -18,7 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +39,7 @@ func newIOStream() (*cli.IOStreams, *bytes.Buffer) {
 }
 
 func TestList(t *testing.T) {
-	running := tektonv1.PipelineRunReasonRunning.String()
+	running := tektonv1beta1.PipelineRunReasonRunning.String()
 	cw := clockwork.NewFakeClock()
 	namespace1 := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -110,7 +110,7 @@ func TestList(t *testing.T) {
 	type args struct {
 		namespaces       []*corev1.Namespace
 		repositories     []*pacv1alpha1.Repository
-		pipelineruns     []*tektonv1.PipelineRun
+		pipelineruns     []*tektonv1beta1.PipelineRun
 		currentNamespace string
 		opts             *cli.PacCliOpts
 		selectors        string
@@ -167,11 +167,12 @@ func TestList(t *testing.T) {
 					namespace1,
 				},
 				repositories: []*pacv1alpha1.Repository{repoNamespace1},
-				pipelineruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", namespace1.GetName(), running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": repoNamespace1.GetName(),
-						"pipelinesascode.tekton.dev/sha":        repoNamespace1SHA,
-					}, 30),
+				pipelineruns: []*tektonv1beta1.PipelineRun{
+					tektontest.MakePRCompletion(cw, "running", namespace1.GetName(), running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": repoNamespace1.GetName(),
+							"pipelinesascode.tekton.dev/sha":        repoNamespace1SHA,
+						}, 30),
 				},
 			},
 		},

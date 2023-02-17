@@ -41,7 +41,7 @@ func Succeeded(ctx context.Context, t *testing.T, runcnx *params.Run, opts optio
 		assert.Equal(t, title, *laststatus.Title)
 		assert.Assert(t, *laststatus.LogURL != "")
 
-		pr, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).Get(ctx, laststatus.PipelineRunName, v1.GetOptions{})
+		pr, err := runcnx.Clients.Tekton.TektonV1beta1().PipelineRuns(targetNS).Get(ctx, laststatus.PipelineRunName, v1.GetOptions{})
 		assert.NilError(t, err)
 
 		assert.Equal(t, onEvent, pr.Labels["pipelinesascode.tekton.dev/event-type"])
