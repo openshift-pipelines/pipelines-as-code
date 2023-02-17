@@ -1,0 +1,17 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-test1
+spec:
+  params:
+    - name: repo_url
+    - name: revision
+  tasks:
+    - name: bundled
+      taskRef:
+        name: foo
+        bundle: reg.io/ruben/barichello@sha256:invalidsha
+  steps:
+    - name: first-step
+      image: image

@@ -14,7 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 )
 
@@ -81,7 +81,7 @@ func getAnnotationValues(annotation string) ([]string, error) {
 	return splitted, nil
 }
 
-func getTargetBranch(prun *v1beta1.PipelineRun, logger *zap.SugaredLogger, event *info.Event) (bool, string, string, error) {
+func getTargetBranch(prun *tektonv1.PipelineRun, logger *zap.SugaredLogger, event *info.Event) (bool, string, string, error) {
 	var targetEvent, targetBranch string
 	if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnEvent]; ok {
 		targetEvent = event.TriggerTarget
@@ -116,12 +116,12 @@ func getTargetBranch(prun *v1beta1.PipelineRun, logger *zap.SugaredLogger, event
 }
 
 type Match struct {
-	PipelineRun *v1beta1.PipelineRun
+	PipelineRun *tektonv1.PipelineRun
 	Repo        *apipac.Repository
 	Config      map[string]string
 }
 
-func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger, pruns []*v1beta1.PipelineRun, cs *params.Run, event *info.Event, vcx provider.Interface) ([]Match, error) {
+func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger, pruns []*tektonv1.PipelineRun, cs *params.Run, event *info.Event, vcx provider.Interface) ([]Match, error) {
 	matchedPRs := []Match{}
 	configurations := map[string]map[string]string{}
 	logger.Infof("matching pipelineruns to event: URL=%s, target-branch=%s, source-branch=%s, target-event=%s",

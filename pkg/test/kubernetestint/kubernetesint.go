@@ -7,7 +7,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -36,7 +36,7 @@ func (k *KinterfaceTest) GetPodLogs(_ context.Context, ns, pod, cont string, _ i
 	return "", nil
 }
 
-func (k *KinterfaceTest) UpdateSecretWithOwnerRef(_ context.Context, _ *zap.SugaredLogger, _, _ string, _ *v1beta1.PipelineRun) error {
+func (k *KinterfaceTest) UpdateSecretWithOwnerRef(_ context.Context, _ *zap.SugaredLogger, _, _ string, _ *tektonv1.PipelineRun) error {
 	return nil
 }
 
@@ -49,7 +49,7 @@ func (k *KinterfaceTest) GetSecret(ctx context.Context, secret ktypes.GetSecretO
 }
 
 func (k *KinterfaceTest) CleanupPipelines(_ context.Context, _ *zap.SugaredLogger, _ *v1alpha1.Repository,
-	pr *v1beta1.PipelineRun, limitnumber int,
+	pr *tektonv1.PipelineRun, limitnumber int,
 ) error {
 	if k.ExpectedNumberofCleanups != limitnumber {
 		return fmt.Errorf("we wanted %d and we got %d", k.ExpectedNumberofCleanups, limitnumber)

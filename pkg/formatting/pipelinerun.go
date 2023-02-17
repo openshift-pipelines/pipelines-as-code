@@ -1,12 +1,12 @@
 package formatting
 
 import (
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 // PipelineRunStatus return status of PR  success failed or skipped
-func PipelineRunStatus(pr *tektonv1beta1.PipelineRun) string {
+func PipelineRunStatus(pr *tektonv1.PipelineRun) string {
 	if len(pr.Status.Conditions) == 0 {
 		return "neutral"
 	}

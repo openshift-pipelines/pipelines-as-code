@@ -106,7 +106,7 @@ func TestGithubPullRequestRemoteTaskAnnotations(t *testing.T) {
 	assert.Equal(t, title, *laststatus.Title)
 	assert.Assert(t, *laststatus.LogURL != "")
 
-	pr, err := runcnx.Clients.Tekton.TektonV1beta1().PipelineRuns(targetNS).Get(ctx, laststatus.PipelineRunName, metav1.GetOptions{})
+	pr, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).Get(ctx, laststatus.PipelineRunName, metav1.GetOptions{})
 	assert.NilError(t, err)
 
 	assert.Equal(t, options.PullRequestEvent, pr.Labels["pipelinesascode.tekton.dev/event-type"])
