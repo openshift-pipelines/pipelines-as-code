@@ -24,7 +24,7 @@ func UntilMinPRAppeared(ctx context.Context, clients clients.Clients, opts Opts,
 	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
 	defer cancel()
 	return kubeinteraction.PollImmediateWithContext(ctx, opts.PollTimeout, func() (bool, error) {
-		prs, err := clients.Tekton.TektonV1().PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{})
+		prs, err := clients.Tekton.TektonV1beta1().PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -46,7 +46,7 @@ func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts O
 			return true, err
 		}
 
-		prs, err := clients.Tekton.TektonV1().PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{
+		prs, err := clients.Tekton.TektonV1beta1().PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("pipelinesascode.tekton.dev/sha=%s", opts.TargetSHA),
 		})
 		if err != nil {

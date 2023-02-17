@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
-func (r *Reconciler) emitMetrics(pr *tektonv1.PipelineRun) error {
+func (r *Reconciler) emitMetrics(pr *v1beta1.PipelineRun) error {
 	gitProvider := pr.GetLabels()[keys.GitProvider]
 	eventType := pr.GetLabels()[keys.EventType]
 

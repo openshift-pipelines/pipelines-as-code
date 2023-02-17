@@ -6,16 +6,16 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	fakepacclientset "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned/fake"
-	pacinformeralpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/informers/externalversions/pipelinesascode/v1alpha1"
+	informersv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/informers/externalversions/pipelinesascode/v1alpha1"
 	fakepacclient "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/client/fake"
 	fakerepositoryinformers "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/informers/pipelinesascode/v1alpha1/repository/fake"
-	fakepaclister "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	v1alpha12 "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	fakepipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/fake"
-	pipelineinformerv1 "github.com/tektoncd/pipeline/pkg/client/informers/externalversions/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/client/informers/externalversions/pipeline/v1beta1"
 	fakepipelineclient "github.com/tektoncd/pipeline/pkg/client/injection/client/fake"
-	fakepipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1/pipelinerun/fake"
-	pipelinelisterv1 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
+	fakepipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun/fake"
+	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
@@ -26,20 +26,20 @@ type Clients struct {
 	Pipeline         *fakepipelineclientset.Clientset
 	PipelineAsCode   *fakepacclientset.Clientset
 	Kube             *fakekubeclientset.Clientset
-	PipelineLister   pipelinelisterv1.PipelineRunLister
-	RepositoryLister fakepaclister.RepositoryLister
+	PipelineLister   v1beta12.PipelineRunLister
+	RepositoryLister v1alpha12.RepositoryLister
 }
 
 // Informers holds references to informers which are useful for reconciler tests.
 type Informers struct {
-	PipelineRun pipelineinformerv1.PipelineRunInformer
-	TaskRun     pipelineinformerv1.TaskRunInformer
-	Repository  pacinformeralpha1.RepositoryInformer
+	PipelineRun v1beta1.PipelineRunInformer
+	TaskRun     v1beta1.TaskRunInformer
+	Repository  informersv1alpha1.RepositoryInformer
 }
 
 type Data struct {
-	TaskRuns     []*pipelinev1.TaskRun
-	PipelineRuns []*pipelinev1.PipelineRun
+	TaskRuns     []*pipelinev1beta1.TaskRun
+	PipelineRuns []*pipelinev1beta1.PipelineRun
 	Repositories []*v1alpha1.Repository
 	Namespaces   []*corev1.Namespace
 	Secret       []*corev1.Secret
@@ -55,7 +55,6 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 		Kube:           fakekubeclient.Get(ctx),
 		Pipeline:       fakepipelineclient.Get(ctx),
 	}
-
 	i := Informers{
 		Repository:  fakerepositoryinformers.Get(ctx),
 		PipelineRun: fakepipelineruninformer.Get(ctx),
@@ -67,14 +66,13 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 		if err := i.PipelineRun.Informer().GetIndexer().Add(pr); err != nil {
 			t.Fatal(err)
 		}
-
-		if _, err := c.Pipeline.TektonV1().PipelineRuns(pr.Namespace).Create(ctx, pr, metav1.CreateOptions{}); err != nil {
+		if _, err := c.Pipeline.TektonV1beta1().PipelineRuns(pr.Namespace).Create(ctx, pr, metav1.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	for _, tr := range d.TaskRuns {
-		if _, err := c.Pipeline.TektonV1().TaskRuns(tr.Namespace).Create(ctx, tr, metav1.CreateOptions{}); err != nil {
+		if _, err := c.Pipeline.TektonV1beta1().TaskRuns(tr.Namespace).Create(ctx, tr, metav1.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
 	}

@@ -5,21 +5,21 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestGetSecretsAttachedToPipelineRun(t *testing.T) {
-	samplePr := tektonv1.PipelineRun{
-		Spec: tektonv1.PipelineRunSpec{
-			PipelineSpec: &tektonv1.PipelineSpec{
-				Tasks: []tektonv1.PipelineTask{
+	samplePr := tektonv1beta1.PipelineRun{
+		Spec: tektonv1beta1.PipelineRunSpec{
+			PipelineSpec: &tektonv1beta1.PipelineSpec{
+				Tasks: []tektonv1beta1.PipelineTask{
 					{
-						TaskSpec: &tektonv1.EmbeddedTask{
-							TaskSpec: tektonv1.TaskSpec{
-								Steps: []tektonv1.Step{
+						TaskSpec: &tektonv1beta1.EmbeddedTask{
+							TaskSpec: tektonv1beta1.TaskSpec{
+								Steps: []tektonv1beta1.Step{
 									{
 										Env: []corev1.EnvVar{},
 									},
@@ -28,7 +28,7 @@ func TestGetSecretsAttachedToPipelineRun(t *testing.T) {
 						},
 					},
 					{
-						TaskRef: &tektonv1.TaskRef{
+						TaskRef: &tektonv1beta1.TaskRef{
 							Name: "git-clone",
 							Kind: "ClusterTask",
 						},
@@ -39,7 +39,7 @@ func TestGetSecretsAttachedToPipelineRun(t *testing.T) {
 	}
 	tests := []struct {
 		name           string
-		pr             tektonv1.PipelineRun
+		pr             tektonv1beta1.PipelineRun
 		envs           []corev1.EnvVar
 		secretsFake    map[string]string
 		results        []types.SecretValue

@@ -19,7 +19,7 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
@@ -136,7 +136,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 	resultid := int64(666)
 	runEvent := info.NewEvent()
 	prname := "pr1"
-	pr := &tektonv1.PipelineRun{
+	pr := &v1beta1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: prname,
 			Labels: map[string]string{
@@ -160,7 +160,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 	tests := []struct {
 		name                 string
 		args                 args
-		pr                   *tektonv1.PipelineRun
+		pr                   *v1beta1.PipelineRun
 		want                 *github.CheckRun
 		wantErr              bool
 		notoken              bool
@@ -191,7 +191,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				titleSubstr: "Success",
 				githubApps:  true,
 			},
-			pr: &tektonv1.PipelineRun{
+			pr: &v1beta1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: prname,
 				},
@@ -357,7 +357,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			testData := testclient.Data{}
 			if tt.pr != nil {
 				testData = testclient.Data{
-					PipelineRuns: []*tektonv1.PipelineRun{tt.pr},
+					PipelineRuns: []*v1beta1.PipelineRun{tt.pr},
 				}
 			}
 			stdata, _ := testclient.SeedTestData(t, ctx, testData)

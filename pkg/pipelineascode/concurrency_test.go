@@ -3,7 +3,7 @@ package pipelineascode
 import (
 	"testing"
 
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -12,10 +12,10 @@ func TestExecutionOrder(t *testing.T) {
 	cm := NewConcurrencyManager()
 
 	testNs := "test"
-	abcPR := &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "abc", Namespace: testNs}}
-	defPR := &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "def", Namespace: testNs}}
-	mnoPR := &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "mno", Namespace: testNs}}
-	pqrPR := &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "pqr", Namespace: testNs}}
+	abcPR := &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "abc", Namespace: testNs}}
+	defPR := &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "def", Namespace: testNs}}
+	mnoPR := &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "mno", Namespace: testNs}}
+	pqrPR := &v1beta1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "pqr", Namespace: testNs}}
 
 	cm.Enable()
 

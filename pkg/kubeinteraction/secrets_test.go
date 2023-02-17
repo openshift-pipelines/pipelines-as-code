@@ -6,7 +6,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -92,7 +92,7 @@ func TestUpdateSecretWithOwnerRef(t *testing.T) {
 			},
 		},
 	}
-	pr := &tektonv1.PipelineRun{
+	pr := &v1beta1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
 			UID:  "uid",

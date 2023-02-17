@@ -17,7 +17,7 @@ import (
 	tcli "github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,13 +29,13 @@ import (
 func TestDescribe(t *testing.T) {
 	cw := clockwork.NewFakeClock()
 	ns := "ns"
-	running := tektonv1.PipelineRunReasonRunning.String()
+	running := tektonv1beta1.PipelineRunReasonRunning.String()
 	type args struct {
 		currentNamespace string
 		repoName         string
 		statuses         []v1alpha1.RepositoryRunStatus
 		opts             *describeOpts
-		pruns            []*tektonv1.PipelineRun
+		pruns            []*tektonv1beta1.PipelineRun
 		events           []*corev1.Event
 	}
 	tests := []struct {
@@ -49,12 +49,13 @@ func TestDescribe(t *testing.T) {
 				repoName:         "test-run",
 				currentNamespace: ns,
 				opts:             &describeOpts{},
-				pruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "tartanpion",
-						"pipelinesascode.tekton.dev/event-type": "papayolo",
-					}, 30),
+				pruns: []*tektonv1beta1.PipelineRun{
+					tektontest.MakePRCompletion(cw, "running", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "tartanpion",
+							"pipelinesascode.tekton.dev/event-type": "papayolo",
+						}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
 					{
@@ -86,11 +87,12 @@ func TestDescribe(t *testing.T) {
 				repoName:         "test-run",
 				currentNamespace: ns,
 				opts:             &describeOpts{},
-				pruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "tartanpion",
-					}, 30),
+				pruns: []*tektonv1beta1.PipelineRun{
+					tektontest.MakePRCompletion(cw, "running", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "tartanpion",
+						}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{},
 			},
@@ -102,15 +104,17 @@ func TestDescribe(t *testing.T) {
 				repoName:         "test-run",
 				currentNamespace: ns,
 				opts:             &describeOpts{TargetPipelineRun: "running2"},
-				pruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "tartanpion",
-					}, 30),
-					tektontest.MakePRCompletion(cw, "running2", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "vavaroom",
-					}, 30),
+				pruns: []*tektonv1beta1.PipelineRun{
+					tektontest.MakePRCompletion(cw, "running", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "tartanpion",
+						}, 30),
+					tektontest.MakePRCompletion(cw, "running2", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "vavaroom",
+						}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{},
 			},
@@ -122,15 +126,17 @@ func TestDescribe(t *testing.T) {
 				repoName:         "test-run",
 				currentNamespace: ns,
 				opts:             &describeOpts{},
-				pruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "tartanpion",
-					}, 30),
-					tektontest.MakePRCompletion(cw, "running2", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "vavaroom",
-					}, 30),
+				pruns: []*tektonv1beta1.PipelineRun{
+					tektontest.MakePRCompletion(cw, "running", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "tartanpion",
+						}, 30),
+					tektontest.MakePRCompletion(cw, "running2", ns, running,
+						map[string]string{
+							"pipelinesascode.tekton.dev/repository": "test-run",
+							"pipelinesascode.tekton.dev/branch":     "vavaroom",
+						}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{},
 			},
@@ -157,13 +163,13 @@ func TestDescribe(t *testing.T) {
 						},
 						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{
 							"task1": {
-								Reason:     tektonv1.PipelineRunReasonFailed.String(),
+								Reason:     tektonv1beta1.PipelineRunReasonFailed.String(),
 								LogSnippet: "Error error miss robinson",
 							},
 
 							"task2": {
 								Message: "I was sleeping and I forgot to wake up",
-								Reason:  tektonv1.PipelineRunReasonTimedOut.String(),
+								Reason:  tektonv1beta1.PipelineRunReasonTimedOut.String(),
 							},
 						},
 						PipelineRunName: "pipelinerun1",

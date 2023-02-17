@@ -7,7 +7,7 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -44,7 +44,7 @@ func TestPacRun_checkNeedUpdate(t *testing.T) {
 }
 
 func TestChangeSecret(t *testing.T) {
-	prs := []*tektonv1.PipelineRun{
+	prs := []*tektonv1beta1.PipelineRun{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "{{git_auth_secret}}",
@@ -59,7 +59,7 @@ func TestChangeSecret(t *testing.T) {
 
 func TestFilterRunningPipelineRunOnTargetTest(t *testing.T) {
 	testPipeline := "test"
-	prs := []*tektonv1.PipelineRun{
+	prs := []*tektonv1beta1.PipelineRun{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pipelinerun-" + testPipeline,
@@ -73,7 +73,7 @@ func TestFilterRunningPipelineRunOnTargetTest(t *testing.T) {
 	assert.Equal(t, prs[0].GetName(), ret[0].GetName())
 	ret = filterRunningPipelineRunOnTargetTest(testPipeline, prs)
 	assert.Equal(t, prs[0].GetName(), ret[0].GetName())
-	prs = []*tektonv1.PipelineRun{}
+	prs = []*tektonv1beta1.PipelineRun{}
 	ret = filterRunningPipelineRunOnTargetTest(testPipeline, prs)
 	assert.Assert(t, ret == nil)
 }

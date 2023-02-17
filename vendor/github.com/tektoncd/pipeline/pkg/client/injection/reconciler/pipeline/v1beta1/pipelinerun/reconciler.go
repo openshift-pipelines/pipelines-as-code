@@ -23,11 +23,11 @@ import (
 	json "encoding/json"
 	fmt "fmt"
 
-	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	v1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	versioned "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
+	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
 	zap "go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	equality "k8s.io/apimachinery/pkg/api/equality"
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,40 +42,40 @@ import (
 )
 
 // Interface defines the strongly typed interfaces to be implemented by a
-// controller reconciling v1.PipelineRun.
+// controller reconciling v1beta1.PipelineRun.
 type Interface interface {
-	// ReconcileKind implements custom logic to reconcile v1.PipelineRun. Any changes
+	// ReconcileKind implements custom logic to reconcile v1beta1.PipelineRun. Any changes
 	// to the objects .Status or .Finalizers will be propagated to the stored
 	// object. It is recommended that implementors do not call any update calls
 	// for the Kind inside of ReconcileKind, it is the responsibility of the calling
 	// controller to propagate those properties. The resource passed to ReconcileKind
 	// will always have an empty deletion timestamp.
-	ReconcileKind(ctx context.Context, o *v1.PipelineRun) reconciler.Event
+	ReconcileKind(ctx context.Context, o *v1beta1.PipelineRun) reconciler.Event
 }
 
 // Finalizer defines the strongly typed interfaces to be implemented by a
-// controller finalizing v1.PipelineRun.
+// controller finalizing v1beta1.PipelineRun.
 type Finalizer interface {
-	// FinalizeKind implements custom logic to finalize v1.PipelineRun. Any changes
+	// FinalizeKind implements custom logic to finalize v1beta1.PipelineRun. Any changes
 	// to the objects .Status or .Finalizers will be ignored. Returning a nil or
 	// Normal type reconciler.Event will allow the finalizer to be deleted on
 	// the resource. The resource passed to FinalizeKind will always have a set
 	// deletion timestamp.
-	FinalizeKind(ctx context.Context, o *v1.PipelineRun) reconciler.Event
+	FinalizeKind(ctx context.Context, o *v1beta1.PipelineRun) reconciler.Event
 }
 
 // ReadOnlyInterface defines the strongly typed interfaces to be implemented by a
-// controller reconciling v1.PipelineRun if they want to process resources for which
+// controller reconciling v1beta1.PipelineRun if they want to process resources for which
 // they are not the leader.
 type ReadOnlyInterface interface {
-	// ObserveKind implements logic to observe v1.PipelineRun.
+	// ObserveKind implements logic to observe v1beta1.PipelineRun.
 	// This method should not write to the API.
-	ObserveKind(ctx context.Context, o *v1.PipelineRun) reconciler.Event
+	ObserveKind(ctx context.Context, o *v1beta1.PipelineRun) reconciler.Event
 }
 
-type doReconcile func(ctx context.Context, o *v1.PipelineRun) reconciler.Event
+type doReconcile func(ctx context.Context, o *v1beta1.PipelineRun) reconciler.Event
 
-// reconcilerImpl implements controller.Reconciler for v1.PipelineRun resources.
+// reconcilerImpl implements controller.Reconciler for v1beta1.PipelineRun resources.
 type reconcilerImpl struct {
 	// LeaderAwareFuncs is inlined to help us implement reconciler.LeaderAware.
 	reconciler.LeaderAwareFuncs
@@ -84,7 +84,7 @@ type reconcilerImpl struct {
 	Client versioned.Interface
 
 	// Listers index properties about resources.
-	Lister pipelinev1.PipelineRunLister
+	Lister pipelinev1beta1.PipelineRunLister
 
 	// Recorder is an event recorder for recording Event resources to the
 	// Kubernetes API.
@@ -111,7 +111,7 @@ var _ controller.Reconciler = (*reconcilerImpl)(nil)
 // Check that our generated Reconciler is always LeaderAware.
 var _ reconciler.LeaderAware = (*reconcilerImpl)(nil)
 
-func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client versioned.Interface, lister pipelinev1.PipelineRunLister, recorder record.EventRecorder, r Interface, options ...controller.Options) controller.Reconciler {
+func NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client versioned.Interface, lister pipelinev1beta1.PipelineRunLister, recorder record.EventRecorder, r Interface, options ...controller.Options) controller.Reconciler {
 	// Check the options function input. It should be 0 or 1.
 	if len(options) > 1 {
 		logger.Fatal("Up to one options struct is supported, found: ", len(options))
@@ -266,7 +266,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	default:
 		if err = r.updateStatus(ctx, original, resource); err != nil {
 			logger.Warnw("Failed to update resource status", zap.Error(err))
-			r.Recorder.Eventf(resource, corev1.EventTypeWarning, "UpdateFailed",
+			r.Recorder.Eventf(resource, v1.EventTypeWarning, "UpdateFailed",
 				"Failed to update status for %q: %v", resource.Name, err)
 			return err
 		}
@@ -292,7 +292,7 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 			// This is a wrapped error, don't emit an event.
 		} else {
 			logger.Errorw("Returned an error", zap.Error(reconcileEvent))
-			r.Recorder.Event(resource, corev1.EventTypeWarning, "InternalError", reconcileEvent.Error())
+			r.Recorder.Event(resource, v1.EventTypeWarning, "InternalError", reconcileEvent.Error())
 		}
 		return reconcileEvent
 	}
@@ -300,13 +300,13 @@ func (r *reconcilerImpl) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (r *reconcilerImpl) updateStatus(ctx context.Context, existing *v1.PipelineRun, desired *v1.PipelineRun) error {
+func (r *reconcilerImpl) updateStatus(ctx context.Context, existing *v1beta1.PipelineRun, desired *v1beta1.PipelineRun) error {
 	existing = existing.DeepCopy()
 	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the injectionInformer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
 
-			getter := r.Client.TektonV1().PipelineRuns(desired.Namespace)
+			getter := r.Client.TektonV1beta1().PipelineRuns(desired.Namespace)
 
 			existing, err = getter.Get(ctx, desired.Name, metav1.GetOptions{})
 			if err != nil {
@@ -325,7 +325,7 @@ func (r *reconcilerImpl) updateStatus(ctx context.Context, existing *v1.Pipeline
 
 		existing.Status = desired.Status
 
-		updater := r.Client.TektonV1().PipelineRuns(existing.Namespace)
+		updater := r.Client.TektonV1beta1().PipelineRuns(existing.Namespace)
 
 		_, err = updater.UpdateStatus(ctx, existing, metav1.UpdateOptions{})
 		return err
@@ -335,7 +335,7 @@ func (r *reconcilerImpl) updateStatus(ctx context.Context, existing *v1.Pipeline
 // updateFinalizersFiltered will update the Finalizers of the resource.
 // TODO: this method could be generic and sync all finalizers. For now it only
 // updates defaultFinalizerName or its override.
-func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource *v1.PipelineRun, desiredFinalizers sets.String) (*v1.PipelineRun, error) {
+func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource *v1beta1.PipelineRun, desiredFinalizers sets.String) (*v1beta1.PipelineRun, error) {
 	// Don't modify the informers copy.
 	existing := resource.DeepCopy()
 
@@ -373,21 +373,21 @@ func (r *reconcilerImpl) updateFinalizersFiltered(ctx context.Context, resource 
 		return resource, err
 	}
 
-	patcher := r.Client.TektonV1().PipelineRuns(resource.Namespace)
+	patcher := r.Client.TektonV1beta1().PipelineRuns(resource.Namespace)
 
 	resourceName := resource.Name
 	updated, err := patcher.Patch(ctx, resourceName, types.MergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {
-		r.Recorder.Eventf(existing, corev1.EventTypeWarning, "FinalizerUpdateFailed",
+		r.Recorder.Eventf(existing, v1.EventTypeWarning, "FinalizerUpdateFailed",
 			"Failed to update finalizers for %q: %v", resourceName, err)
 	} else {
-		r.Recorder.Eventf(updated, corev1.EventTypeNormal, "FinalizerUpdate",
+		r.Recorder.Eventf(updated, v1.EventTypeNormal, "FinalizerUpdate",
 			"Updated %q finalizers", resource.GetName())
 	}
 	return updated, err
 }
 
-func (r *reconcilerImpl) setFinalizerIfFinalizer(ctx context.Context, resource *v1.PipelineRun) (*v1.PipelineRun, error) {
+func (r *reconcilerImpl) setFinalizerIfFinalizer(ctx context.Context, resource *v1beta1.PipelineRun) (*v1beta1.PipelineRun, error) {
 	if _, ok := r.reconciler.(Finalizer); !ok {
 		return resource, nil
 	}
@@ -403,7 +403,7 @@ func (r *reconcilerImpl) setFinalizerIfFinalizer(ctx context.Context, resource *
 	return r.updateFinalizersFiltered(ctx, resource, finalizers)
 }
 
-func (r *reconcilerImpl) clearFinalizer(ctx context.Context, resource *v1.PipelineRun, reconcileEvent reconciler.Event) (*v1.PipelineRun, error) {
+func (r *reconcilerImpl) clearFinalizer(ctx context.Context, resource *v1beta1.PipelineRun, reconcileEvent reconciler.Event) (*v1beta1.PipelineRun, error) {
 	if _, ok := r.reconciler.(Finalizer); !ok {
 		return resource, nil
 	}
@@ -416,7 +416,7 @@ func (r *reconcilerImpl) clearFinalizer(ctx context.Context, resource *v1.Pipeli
 	if reconcileEvent != nil {
 		var event *reconciler.ReconcilerEvent
 		if reconciler.EventAs(reconcileEvent, &event) {
-			if event.EventType == corev1.EventTypeNormal {
+			if event.EventType == v1.EventTypeNormal {
 				finalizers.Delete(r.finalizerName)
 			}
 		}

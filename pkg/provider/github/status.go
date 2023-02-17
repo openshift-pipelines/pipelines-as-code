@@ -15,7 +15,7 @@ import (
 	kstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 )
 
@@ -84,11 +84,11 @@ func isSkippedCheckrun(run *github.CheckRun) bool {
 }
 
 func (v *Provider) canIUseCheckrunID(checkrunid *int64) bool {
-	v.mutex.Lock()
-	defer v.mutex.Unlock()
+	v.skippedRun.mutex.Lock()
+	defer v.skippedRun.mutex.Unlock()
 
-	if v.checkRunID == 0 {
-		v.checkRunID = *checkrunid
+	if v.skippedRun.checkRunID == 0 {
+		v.skippedRun.checkRunID = *checkrunid
 		return true
 	}
 	return false
@@ -112,7 +112,7 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 	return checkRun.ID, nil
 }
 
-func (v *Provider) getFailuresMessageAsAnnotations(ctx context.Context, pr *tektonv1.PipelineRun, pacopts *info.PacOpts) []*github.CheckRunAnnotation {
+func (v *Provider) getFailuresMessageAsAnnotations(ctx context.Context, pr *tektonv1beta1.PipelineRun, pacopts *info.PacOpts) []*github.CheckRunAnnotation {
 	annotations := []*github.CheckRunAnnotation{}
 	r, err := regexp.Compile(pacopts.ErrorDetectionSimpleRegexp)
 	if err != nil {
@@ -249,7 +249,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 	return err
 }
 
-func isPipelineRunCancelledOrStopped(run *tektonv1.PipelineRun) bool {
+func isPipelineRunCancelledOrStopped(run *tektonv1beta1.PipelineRun) bool {
 	if run == nil {
 		return false
 	}

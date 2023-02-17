@@ -67,8 +67,6 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 					// if we don't have access to the cluster we can't do much about it
 					gopt.generateWithClusterTask = false
 				} else {
-					// NOTE(chmou): This is for v1beta1, we need to figure out how to do this for v1.
-					// Trying to find resolver with that same name?
 					_, err := run.Clients.Tekton.TektonV1beta1().ClusterTasks().Get(ctx, gitCloneClusterTaskName,
 						metav1.GetOptions{})
 					if err == nil {

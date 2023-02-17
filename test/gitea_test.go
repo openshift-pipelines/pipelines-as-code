@@ -106,7 +106,8 @@ func TestGiteaBadYaml(t *testing.T) {
 	ctx := context.Background()
 
 	assert.NilError(t, twait.RegexpMatchingInPodLog(ctx, topts.Params, "app.kubernetes.io/component=controller", "pac-controller", *regexp.MustCompile(
-		"pipelinerun .* cannot be validated properly: err: expected exactly one, got neither:"), 10))
+		fmt.Sprintf("PipelineRun pr-bad-format-%s- has failed:.*validation failed", topts.TargetNS)),
+		10))
 }
 
 // don't test concurrency limit here, just parallel pipeline
@@ -183,7 +184,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	gotPipelineRunPending := false
 	// loop until we get the status
 	for i := 0; i < 30; i++ {
-		prs, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+		prs, err := topts.Params.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 		assert.NilError(t, err)
 
 		// range over prs
@@ -340,7 +341,7 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 
 	time.Sleep(15 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
 
-	prs, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+	prs, err := topts.Params.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
@@ -368,7 +369,7 @@ func TestGiteaPush(t *testing.T) {
 	assert.Assert(t, merged)
 	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
 	time.Sleep(5 * time.Second)
-	prs, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
+	prs, err := topts.Params.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
 		LabelSelector: pacapi.EventType + "=push",
 	})
 	assert.NilError(t, err)
@@ -400,7 +401,6 @@ func TestGiteaClusterTasks(t *testing.T) {
 	run := &params.Run{}
 	ctx := context.Background()
 	assert.NilError(t, run.Clients.NewClients(ctx, &run.Info))
-	// TODO(chmou): this is for v1beta1, we need to figure out a way how to do that on v1
 	_, err = run.Clients.Tekton.TektonV1beta1().ClusterTasks().Create(context.TODO(), &ct, metav1.CreateOptions{})
 	assert.NilError(t, err)
 	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, run))
@@ -574,7 +574,7 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 
 			tgitea.WaitForStatus(t, topts, topts.TargetRefName)
 
-			prs, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
+			prs, err := topts.Params.Clients.Tekton.TektonV1beta1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
 				LabelSelector: pacapi.EventType + "=pull_request",
 			})
 			assert.NilError(t, err)

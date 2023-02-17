@@ -9,7 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -134,8 +134,8 @@ func newTestRepo(name string, limit int) *v1alpha1.Repository {
 
 var intPtr = func(val int) *int { return &val }
 
-func newTestPR(name string, time time.Time, labels, annotations map[string]string) *tektonv1.PipelineRun {
-	return &tektonv1.PipelineRun{
+func newTestPR(name string, time time.Time, labels, annotations map[string]string) *v1beta1.PipelineRun {
+	return &v1beta1.PipelineRun{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              name,
@@ -144,8 +144,8 @@ func newTestPR(name string, time time.Time, labels, annotations map[string]strin
 			Labels:            labels,
 			Annotations:       annotations,
 		},
-		Spec:   tektonv1.PipelineRunSpec{},
-		Status: tektonv1.PipelineRunStatus{},
+		Spec:   v1beta1.PipelineRunSpec{},
+		Status: v1beta1.PipelineRunStatus{},
 	}
 }
 
@@ -173,7 +173,7 @@ func TestQueueManager_InitQueues(t *testing.T) {
 
 	tdata := testclient.Data{
 		Repositories: []*v1alpha1.Repository{repo},
-		PipelineRuns: []*tektonv1.PipelineRun{firstPR, secondPR, thirdPR},
+		PipelineRuns: []*v1beta1.PipelineRun{firstPR, secondPR, thirdPR},
 	}
 	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 

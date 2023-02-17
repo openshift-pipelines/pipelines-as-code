@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -32,12 +32,12 @@ var (
 	}
 )
 
-func getTestPR(name, state string) *tektonv1.PipelineRun {
-	var status tektonv1.PipelineRunSpecStatus
+func getTestPR(name, state string) *v1beta1.PipelineRun {
+	var status v1beta1.PipelineRunSpecStatus
 	if state == kubeinteraction.StateQueued {
-		status = tektonv1.PipelineRunSpecStatusPending
+		status = v1beta1.PipelineRunSpecStatusPending
 	}
-	return &tektonv1.PipelineRun{
+	return &v1beta1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: finalizeTestRepo.Namespace,
@@ -46,7 +46,7 @@ func getTestPR(name, state string) *tektonv1.PipelineRun {
 				keys.Repository: finalizeTestRepo.Name,
 			},
 		},
-		Spec: tektonv1.PipelineRunSpec{
+		Spec: v1beta1.PipelineRunSpec{
 			Status: status,
 		},
 	}
@@ -58,13 +58,13 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		pipelinerun    *tektonv1.PipelineRun
-		addToQueue     []*tektonv1.PipelineRun
+		pipelinerun    *v1beta1.PipelineRun
+		addToQueue     []*v1beta1.PipelineRun
 		skipAddingRepo bool
 	}{
 		{
 			name: "completed pipelinerun",
-			pipelinerun: &tektonv1.PipelineRun{
+			pipelinerun: &v1beta1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						keys.State: kubeinteraction.StateCompleted,
@@ -75,7 +75,7 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 		{
 			name:        "queued pipelinerun",
 			pipelinerun: getTestPR("pr3", kubeinteraction.StateQueued),
-			addToQueue: []*tektonv1.PipelineRun{
+			addToQueue: []*v1beta1.PipelineRun{
 				getTestPR("pr1", kubeinteraction.StateQueued),
 				getTestPR("pr2", kubeinteraction.StateQueued),
 				getTestPR("pr3", kubeinteraction.StateQueued),
@@ -84,7 +84,7 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 		{
 			name:        "repo was deleted",
 			pipelinerun: getTestPR("pr3", kubeinteraction.StateQueued),
-			addToQueue: []*tektonv1.PipelineRun{
+			addToQueue: []*v1beta1.PipelineRun{
 				getTestPR("pr1", kubeinteraction.StateStarted),
 				getTestPR("pr2", kubeinteraction.StateQueued),
 				getTestPR("pr3", kubeinteraction.StateQueued),
