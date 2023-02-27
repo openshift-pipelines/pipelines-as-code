@@ -6,6 +6,7 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/task: "[https://git.io/Jn9Ee]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/task-1: "[git-clone]"
 spec:
   taskRunSpecs:
     - pipelineTaskName: e2e-tests
@@ -24,7 +25,6 @@ spec:
     tasks:
       - name: fetch-repository
         taskRef:
-          kind: ClusterTask
           name: git-clone
         workspaces:
           - name: output
