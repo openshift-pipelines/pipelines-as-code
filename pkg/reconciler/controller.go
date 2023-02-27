@@ -12,9 +12,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	pipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun"
-	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonPipelineRunInformerv1 "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1/pipelinerun"
+	tektonPipelineRunReconcilerv1 "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1/pipelinerun"
 	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -43,7 +43,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 		}()
 		<-c
 
-		pipelineRunInformer := pipelineruninformer.Get(ctx)
+		pipelineRunInformer := tektonPipelineRunInformerv1.Get(ctx)
 
 		metrics, err := metrics.NewRecorder()
 		if err != nil {
@@ -59,7 +59,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			metrics:           metrics,
 			eventEmitter:      events.NewEventEmitter(run.Clients.Kube, run.Clients.Log),
 		}
-		impl := pipelinerunreconciler.NewImpl(ctx, r, ctrlOpts())
+		impl := tektonPipelineRunReconcilerv1.NewImpl(ctx, r, ctrlOpts())
 
 		if err := r.qm.InitQueues(ctx, run.Clients.Tekton, run.Clients.PipelineAsCode); err != nil {
 			log.Fatal("failed to init queues", err)
@@ -90,7 +90,7 @@ func ctrlOpts() func(impl *controller.Impl) controller.Options {
 		return controller.Options{
 			FinalizerName: pipelinesascode.GroupName,
 			PromoteFilterFunc: func(obj interface{}) bool {
-				_, exist := obj.(*v1beta1.PipelineRun).GetLabels()[keys.State]
+				_, exist := obj.(*tektonv1.PipelineRun).GetLabels()[keys.State]
 				return exist
 			},
 		}

@@ -4,6 +4,7 @@ kind: PipelineRun
 metadata:
   name: go-testing
   annotations:
+    pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "pull_request" && "***/*.go".pathChanged()
@@ -25,7 +26,6 @@ spec:
           - name: revision
             value: $(params.revision)
         taskRef:
-          kind: ClusterTask
           name: git-clone
         workspaces:
           - name: output

@@ -26,30 +26,6 @@ import (
 const (
 	testHubURL         = "https://mybelovedhub"
 	testCatalogHubName = "tekton"
-	simplePipeline     = `---
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
-metadata:
-  name: "pipeline"
-spec:
-  tasks:
-    - name: task
-      taskSpec:
-        steps:
-          - name: task
-            image: registry.access.redhat.com/ubi9/ubi-micro
-            command: ["/bin/echo", "HELLOMOTO"]`
-	simpleTask = `---
-apiVersion: tekton.dev/v1beta1
-kind: Task
-metadata:
-  name: task
-spec:
-  steps:
-    - name: task-step
-      image: image
-      script: |
-       echo hello`
 )
 
 func TestMain(m *testing.M) {
@@ -59,6 +35,13 @@ func TestMain(m *testing.M) {
 	}
 	ret := m.Run()
 	os.Exit(ret)
+}
+
+func readTDfile(t *testing.T, testname string) string {
+	t.Helper()
+	data, err := os.ReadFile("testdata/" + testname + ".yaml")
+	assert.NilError(t, err)
+	return string(data)
 }
 
 func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
@@ -107,14 +90,28 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			annotations: map[string]string{
 				keys.Task: "[http://remote.task]",
 			},
-			gotTaskName: "task",
 			remoteURLS: map[string]map[string]string{
 				"http://remote.task": {
-					"body": simpleTask,
+					"body": readTDfile(t, "task-good"),
 					"code": "200",
 				},
 			},
 		},
+		// TODO: to uncomment in the future when fixing the Valdiate bug issue
+		// {
+		// 	name: "invalid-remote-task",
+		// 	annotations: map[string]string{
+		// 		keys.Task: "[http://remote.task]",
+		// 	},
+		// 	gotTaskName: "task",
+		// 	remoteURLS: map[string]map[string]string{
+		// 		"http://remote.task": {
+		// 			"body": readTDfile(t, "task-invalid"),
+		// 			"code": "200",
+		// 		},
+		// 	},
+		// 	wantErr: "cannot be validated properly",
+		// },
 		{
 			name: "test-annotations-remote-https",
 			annotations: map[string]string{
@@ -123,7 +120,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			gotTaskName: "task",
 			remoteURLS: map[string]map[string]string{
 				"https://remote.task": {
-					"body": simpleTask,
+					"body": readTDfile(t, "task-good"),
 					"code": "200",
 				},
 			},
@@ -135,7 +132,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			},
 			gotTaskName: "task",
 			filesInsideRepo: map[string]string{
-				"be/healthy": simpleTask,
+				"be/healthy": readTDfile(t, "task-good"),
 			},
 			runevent: info.Event{
 				SHA: "007",
@@ -150,7 +147,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			gotTaskName: "task",
 			remoteURLS: map[string]map[string]string{
 				"http://remote.task": {
-					"body": simpleTask,
+					"body": readTDfile(t, "task-good"),
 					"code": "200",
 				},
 			},
@@ -192,7 +189,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 					"code": "200",
 				},
 				"http://simple.task": {
-					"body": simpleTask,
+					"body": readTDfile(t, "task-good"),
 					"code": "200",
 				},
 			},
@@ -209,7 +206,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 					"code": "200",
 				},
 				"http://simple.task": {
-					"body": simpleTask,
+					"body": readTDfile(t, "task-good"),
 					"code": "200",
 				},
 			},
@@ -282,11 +279,51 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 			},
 			remoteURLS: map[string]map[string]string{
 				"http://remote.pipeline": {
-					"body": simplePipeline,
+					"body": readTDfile(t, "pipeline-good"),
 					"code": "200",
 				},
 			},
 		},
+		{
+			name:            "good/fetching with bundle",
+			gotPipelineName: "pipeline",
+			annotations: map[string]string{
+				keys.Pipeline: "[http://remote.pipeline]",
+			},
+			remoteURLS: map[string]map[string]string{
+				"http://remote.pipeline": {
+					"body": readTDfile(t, "pipeline-good-bundle"),
+					"code": "200",
+				},
+			},
+		},
+		// TODO: to uncomment in the future when fixing the Valdiate bug issue
+		// {
+		// 	name: "invalid-pipeline-validaton-failed",
+		// 	annotations: map[string]string{
+		// 		keys.Pipeline: "[http://remote.pipeline]",
+		// 	},
+		// 	remoteURLS: map[string]map[string]string{
+		// 		"http://remote.pipeline": {
+		// 			"body": readTDfile(t, "pipeline-invalid-bundle"),
+		// 			"code": "200",
+		// 		},
+		// 	},
+		// 	wantErr: "remote pipeline from uri: http://remote.pipeline with name pipeline-test1 cannot be validated:",
+		// },
+		// {
+		// 	name: "invalid-remote-pipeline",
+		// 	annotations: map[string]string{
+		// 		keys.Pipeline: "[http://remote.pipeline]",
+		// 	},
+		// 	remoteURLS: map[string]map[string]string{
+		// 		"http://remote.pipeline": {
+		// 			"body": readTDfile(t, "pipeline-invalid"),
+		// 			"code": "200",
+		// 		},
+		// 	},
+		// 	wantErr: "emote pipeline from uri: http://remote.pipeline with name pipeline cannot be validated: expected at least one, got none:",
+		// },
 		{
 			name: "bad/error getting pipeline",
 			annotations: map[string]string{
@@ -306,11 +343,11 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 			},
 			remoteURLS: map[string]map[string]string{
 				"http://remote.pipeline": {
-					"body": simpleTask,
+					"body": readTDfile(t, "task-good"),
 					"code": "200",
 				},
 			},
-			wantErr: "this doesn't seem to be a proper pipeline",
+			wantErr: "remote pipeline from uri: http://remote.pipeline has not been recognized as a tekton pipeline",
 		},
 		{
 			name: "bad/could not get remote",

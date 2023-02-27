@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/jonboulle/clockwork"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 
 	// "gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -13,7 +13,7 @@ import (
 	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-func MakePrTrStatus(ptaskname string, completionmn int) *tektonv1beta1.PipelineRunTaskRunStatus {
+func MakePrTrStatus(ptaskname string, completionmn int) *tektonv1.PipelineRunTaskRunStatus {
 	clock := clockwork.NewFakeClock()
 
 	completionTime := &metav1.Time{}
@@ -28,66 +28,108 @@ func MakePrTrStatus(ptaskname string, completionmn int) *tektonv1beta1.PipelineR
 			},
 		},
 	}
-	return &tektonv1beta1.PipelineRunTaskRunStatus{
+	return &tektonv1.PipelineRunTaskRunStatus{
 		PipelineTaskName: ptaskname,
-		Status: &tektonv1beta1.TaskRunStatus{
-			TaskRunStatusFields: tektonv1beta1.TaskRunStatusFields{
+		Status: &tektonv1.TaskRunStatus{
+			TaskRunStatusFields: tektonv1.TaskRunStatusFields{
 				StartTime:      &metav1.Time{Time: clock.Now().Add(time.Duration(completionmn+10) * time.Minute)},
 				CompletionTime: completionTime,
 			},
 			Status: conditionTrue,
 		},
-		WhenExpressions: []tektonv1beta1.WhenExpression{},
+		WhenExpressions: []tektonv1.WhenExpression{},
 	}
 }
 
-func MakePR(namespace, name string, trstatus map[string]*tektonv1beta1.PipelineRunTaskRunStatus, status *knativeduckv1.Status) *tektonv1beta1.PipelineRun {
-	if trstatus == nil {
-		trstatus = map[string]*tektonv1beta1.PipelineRunTaskRunStatus{}
+func MakeChildStatusReference(name string) tektonv1.ChildStatusReference {
+	return tektonv1.ChildStatusReference{
+		Name: name,
 	}
+}
+
+func MakePR(namespace, name string, childStatus []tektonv1.ChildStatusReference, status *knativeduckv1.Status) *tektonv1.PipelineRun {
 	if status == nil {
 		status = &knativeduckv1.Status{}
 	}
-	return &tektonv1beta1.PipelineRun{
+	return &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
 		},
-		Status: tektonv1beta1.PipelineRunStatus{
+		Status: tektonv1.PipelineRunStatus{
 			Status: *status,
-			PipelineRunStatusFields: tektonv1beta1.PipelineRunStatusFields{
-				TaskRuns: trstatus,
+			PipelineRunStatusFields: tektonv1.PipelineRunStatusFields{
+				ChildReferences: childStatus,
 			},
 		},
 	}
 }
 
-func MakePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus string, labels map[string]string, timeshift int) *tektonv1beta1.PipelineRun {
+func MakePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus string, labels map[string]string, timeshift int) *tektonv1.PipelineRun {
 	// fakeing time logic give me headache
 	// this will make the pr finish 5mn ago, starting 5-5mn ago
 	starttime := time.Duration((timeshift - 5*-1) * int(time.Minute))
 	endtime := time.Duration((timeshift * -1) * int(time.Minute))
 
-	return &tektonv1beta1.PipelineRun{
+	statuscondition := corev1.ConditionTrue
+	if runstatus == "" {
+		runstatus = tektonv1.PipelineRunReasonSuccessful.String()
+	} else if runstatus == string(tektonv1.PipelineRunReasonFailed) {
+		runstatus = "Failed"
+		statuscondition = corev1.ConditionFalse
+	}
+
+	return &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 			Labels:    labels,
 		},
-		Status: tektonv1beta1.PipelineRunStatus{
+		Status: tektonv1.PipelineRunStatus{
 			Status: knativeduckv1.Status{
 				Conditions: knativeduckv1.Conditions{
 					{
 						Type:   knativeapi.ConditionSucceeded,
-						Status: corev1.ConditionTrue,
+						Status: statuscondition,
 						Reason: runstatus,
 					},
 				},
 			},
-			PipelineRunStatusFields: tektonv1beta1.PipelineRunStatusFields{
+			PipelineRunStatusFields: tektonv1.PipelineRunStatusFields{
 				StartTime:      &metav1.Time{Time: clock.Now().Add(starttime)},
 				CompletionTime: &metav1.Time{Time: clock.Now().Add(endtime)},
 			},
+		},
+	}
+}
+
+func MakeTaskRunCompletion(clock clockwork.FakeClock, name, namespace, runstatus string, labels map[string]string, taskStatus tektonv1.TaskRunStatusFields, conditions knativeduckv1.Conditions, timeshift int) *tektonv1.TaskRun {
+	starttime := time.Duration((timeshift - 5*-1) * int(time.Minute))
+	endtime := time.Duration((timeshift * -1) * int(time.Minute))
+
+	if len(conditions) == 0 {
+		conditions = knativeduckv1.Conditions{
+			{
+				Type:   knativeapi.ConditionSucceeded,
+				Status: corev1.ConditionTrue,
+				Reason: runstatus,
+			},
+		}
+	}
+	taskStatus.StartTime = &metav1.Time{Time: clock.Now().Add(starttime)}
+	taskStatus.CompletionTime = &metav1.Time{Time: clock.Now().Add(endtime)}
+
+	return &tektonv1.TaskRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Status: tektonv1.TaskRunStatus{
+			Status: knativeduckv1.Status{
+				Conditions: conditions,
+			},
+			TaskRunStatusFields: taskStatus,
 		},
 	}
 }

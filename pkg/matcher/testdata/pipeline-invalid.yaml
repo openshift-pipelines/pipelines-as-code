@@ -1,0 +1,7 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: "pipeline"
+spec:
+  foo: bar

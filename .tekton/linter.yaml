@@ -4,9 +4,10 @@ kind: PipelineRun
 metadata:
   name: linters
   annotations:
-    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+    pipelinesascode.tekton.dev/on-event: "[push, pull_request]"
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/task: "[git-clone]"
 spec:
   params:
     - name: repo_url
@@ -25,7 +26,6 @@ spec:
           - name: revision
             value: $(params.revision)
         taskRef:
-          kind: ClusterTask
           name: git-clone
         workspaces:
           - name: output

@@ -18,19 +18,20 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
-	v1beta12 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1/pipelinerun"
+	tektonv1lister "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 )
 
+// Reconciler implements controller.Reconciler for PipelineRun resources.
 type Reconciler struct {
 	run               *params.Run
 	repoLister        pipelinesascode.RepositoryLister
-	pipelineRunLister v1beta12.PipelineRunLister
+	pipelineRunLister tektonv1lister.PipelineRunLister
 	kinteract         kubeinteraction.Interface
 	qm                *sync.QueueManager
 	metrics           *metrics.Recorder
@@ -42,7 +43,8 @@ var (
 	_ pipelinerunreconciler.Finalizer = (*Reconciler)(nil)
 )
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun) pkgreconciler.Event {
+// ReconCileKind is the main entry point for reconciling PipelineRun resources.
+func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
 
 	// if pipelineRun is in completed or failed state then return
@@ -60,7 +62,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 
 	// queue pipelines which are in queued state and pending status
 	// if status is not pending, it could be canceled so let it be reported, even if state is queued
-	if state == kubeinteraction.StateQueued && pr.Spec.Status == v1beta1.PipelineRunSpecStatusPending {
+	if state == kubeinteraction.StateQueued && pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
 		return r.queuePipelineRun(ctx, logger, pr)
 	}
 
@@ -90,7 +92,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *v1beta1.PipelineRun)
 	return nil
 }
 
-func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *v1beta1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
+func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *tektonv1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
 	repoName := pr.GetLabels()[keys.Repository]
 	repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
 	if err != nil {
@@ -137,7 +139,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	next := r.qm.RemoveFromQueue(repo, pr)
 	if next != "" {
 		key := strings.Split(next, "/")
-		pr, err := r.run.Clients.Tekton.TektonV1beta1().PipelineRuns(key[0]).Get(ctx, key[1], metav1.GetOptions{})
+		pr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(key[0]).Get(ctx, key[1], metav1.GetOptions{})
 		if err != nil {
 			return repo, fmt.Errorf("cannot get pipeline: %w", err)
 		}
@@ -150,7 +152,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	return repo, nil
 }
 
-func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *v1beta1.PipelineRun) error {
+func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *tektonv1.PipelineRun) error {
 	pr, err := r.updatePipelineRunState(ctx, logger, pr, kubeinteraction.StateStarted)
 	if err != nil {
 		return fmt.Errorf("cannot update state: %w", err)
@@ -203,7 +205,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	return nil
 }
 
-func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.SugaredLogger, pr *v1beta1.PipelineRun, state string) (*v1beta1.PipelineRun, error) {
+func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1.PipelineRun, state string) (*tektonv1.PipelineRun, error) {
 	mergePatch := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"labels": map[string]string{

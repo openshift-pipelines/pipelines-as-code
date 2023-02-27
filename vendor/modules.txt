@@ -368,16 +368,15 @@ github.com/tektoncd/pipeline/pkg/client/injection/client
 github.com/tektoncd/pipeline/pkg/client/injection/client/fake
 github.com/tektoncd/pipeline/pkg/client/injection/informers/factory
 github.com/tektoncd/pipeline/pkg/client/injection/informers/factory/fake
-github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun
-github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun/fake
-github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun
+github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1/pipelinerun
+github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1/pipelinerun/fake
+github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1/pipelinerun
 github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1
 github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1alpha1
 github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1beta1
 github.com/tektoncd/pipeline/pkg/list
 github.com/tektoncd/pipeline/pkg/names
 github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag
-github.com/tektoncd/pipeline/pkg/status
 github.com/tektoncd/pipeline/pkg/substitution
 # github.com/xanzy/go-gitlab v0.79.0
 ## explicit; go 1.18
@@ -438,7 +437,7 @@ golang.org/x/crypto/openpgp/elgamal
 golang.org/x/crypto/openpgp/errors
 golang.org/x/crypto/openpgp/packet
 golang.org/x/crypto/openpgp/s2k
-# golang.org/x/net v0.5.0
+# golang.org/x/net v0.7.0
 ## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
@@ -462,16 +461,16 @@ golang.org/x/oauth2/internal
 ## explicit
 golang.org/x/sync/errgroup
 golang.org/x/sync/semaphore
-# golang.org/x/sys v0.4.0
+# golang.org/x/sys v0.5.0
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.4.0
+# golang.org/x/term v0.5.0
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.6.0
+# golang.org/x/text v0.7.0
 ## explicit; go 1.17
 golang.org/x/text/cases
 golang.org/x/text/internal

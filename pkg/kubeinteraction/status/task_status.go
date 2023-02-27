@@ -2,36 +2,53 @@ package status
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	tektonstatus "github.com/tektoncd/pipeline/pkg/status"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var reasonMessageReplacementRegexp = regexp.MustCompile(`\(image: .*`)
 
+// GetTaskRunStatusForPipelineTask takes a minimal embedded status child reference and returns the actual TaskRunStatus
+// for the PipelineTask. It returns an error if the child reference's kind isn't TaskRun.
+func GetTaskRunStatusForPipelineTask(ctx context.Context, client versioned.Interface, ns string, childRef tektonv1.ChildStatusReference) (*tektonv1.TaskRunStatus, error) {
+	if childRef.Kind != "TaskRun" {
+		return nil, fmt.Errorf("could not fetch status for PipelineTask %s: should have kind TaskRun, but is %s", childRef.PipelineTaskName, childRef.Kind)
+	}
+
+	tr, err := client.TektonV1().TaskRuns(ns).Get(ctx, childRef.Name, metav1.GetOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, err
+	}
+	if tr == nil {
+		return nil, nil
+	}
+
+	return &tr.Status, nil
+}
+
 // GetStatusFromTaskStatusOrFromAsking will return the status of the taskruns,
 // it would use the embedded one if it's available (pre tekton 0.44.0) or try
 // to get it from the child references
-func GetStatusFromTaskStatusOrFromAsking(ctx context.Context, pr *tektonv1beta1.PipelineRun, run *params.Run) map[string]*tektonv1beta1.PipelineRunTaskRunStatus {
-	trStatus := map[string]*tektonv1beta1.PipelineRunTaskRunStatus{}
-	if len(pr.Status.TaskRuns) > 0 {
-		// Deprecated since pipeline 0.44.0
-		return pr.Status.TaskRuns
-	}
+func GetStatusFromTaskStatusOrFromAsking(ctx context.Context, pr *tektonv1.PipelineRun, run *params.Run) map[string]*tektonv1.PipelineRunTaskRunStatus {
+	trStatus := map[string]*tektonv1.PipelineRunTaskRunStatus{}
 	for _, cr := range pr.Status.ChildReferences {
-		ts, err := tektonstatus.GetTaskRunStatusForPipelineTask(
+		ts, err := GetTaskRunStatusForPipelineTask(
 			ctx, run.Clients.Tekton, pr.GetNamespace(), cr,
 		)
 		if err != nil {
 			run.Clients.Log.Warnf("cannot get taskrun status pr %s ns: %s err: %w", pr.GetName(), pr.GetNamespace(), err)
 			continue
 		}
-		trStatus[cr.Name] = &tektonv1beta1.PipelineRunTaskRunStatus{
+		trStatus[cr.Name] = &tektonv1.PipelineRunTaskRunStatus{
 			PipelineTaskName: cr.PipelineTaskName,
 			Status:           ts,
 		}
@@ -41,7 +58,7 @@ func GetStatusFromTaskStatusOrFromAsking(ctx context.Context, pr *tektonv1beta1.
 
 // CollectFailedTasksLogSnippet collects all tasks information we are interested in.
 // should really be in a tektoninteractions package but i lack imagination at the moment
-func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract kubeinteraction.Interface, pr *tektonv1beta1.PipelineRun, numLines int64) map[string]pacv1alpha1.TaskInfos {
+func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract kubeinteraction.Interface, pr *tektonv1.PipelineRun, numLines int64) map[string]pacv1alpha1.TaskInfos {
 	failureReasons := map[string]pacv1alpha1.TaskInfos{}
 	if pr == nil {
 		return failureReasons
@@ -61,17 +78,17 @@ func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract
 			CompletionTime: task.Status.CompletionTime,
 			Reason:         task.Status.Conditions[0].Reason,
 		}
-		if ti.Reason == "TaskRunValidationFailed" || ti.Reason == tektonv1beta1.TaskRunReasonCancelled.String() || ti.Reason == tektonv1beta1.TaskRunReasonTimedOut.String() || ti.Reason == tektonv1beta1.TaskRunReasonImagePullFailed.String() {
+		if ti.Reason == "TaskRunValidationFailed" || ti.Reason == tektonv1.TaskRunReasonCancelled.String() || ti.Reason == tektonv1.TaskRunReasonTimedOut.String() || ti.Reason == tektonv1.TaskRunReasonImagePullFailed.String() {
 			failureReasons[task.PipelineTaskName] = ti
 			continue
-		} else if ti.Reason != tektonv1beta1.PipelineRunReasonFailed.String() {
+		} else if ti.Reason != tektonv1.PipelineRunReasonFailed.String() {
 			continue
 		}
 
 		if kinteract != nil {
 			for _, step := range task.Status.Steps {
 				if step.Terminated != nil && step.Terminated.ExitCode != 0 {
-					log, err := kinteract.GetPodLogs(ctx, pr.GetNamespace(), task.Status.PodName, step.ContainerName, numLines)
+					log, err := kinteract.GetPodLogs(ctx, pr.GetNamespace(), task.Status.PodName, step.Container, numLines)
 					if err != nil {
 						cs.Clients.Log.Errorf("cannot get pod logs: %w", err)
 						continue

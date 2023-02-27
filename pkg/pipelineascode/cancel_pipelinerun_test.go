@@ -11,7 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -52,7 +52,7 @@ func TestCancelPipelinerun(t *testing.T) {
 		name                  string
 		event                 *info.Event
 		repo                  *v1alpha1.Repository
-		pipelineRuns          []*pipelinev1beta1.PipelineRun
+		pipelineRuns          []*pipelinev1.PipelineRun
 		cancelledPipelineRuns map[string]bool
 	}{
 		{
@@ -72,14 +72,14 @@ func TestCancelPipelinerun(t *testing.T) {
 					CancelPipelineRuns: true,
 				},
 			},
-			pipelineRuns: []*pipelinev1beta1.PipelineRun{
+			pipelineRuns: []*pipelinev1.PipelineRun{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pr-foo",
 						Namespace: "foo",
 						Labels:    fooRepoLabels,
 					},
-					Spec: pipelinev1beta1.PipelineRunSpec{},
+					Spec: pipelinev1.PipelineRunSpec{},
 				},
 			},
 			repo: fooRepo,
@@ -98,7 +98,7 @@ func TestCancelPipelinerun(t *testing.T) {
 					CancelPipelineRuns: true,
 				},
 			},
-			pipelineRuns:          []*pipelinev1beta1.PipelineRun{},
+			pipelineRuns:          []*pipelinev1.PipelineRun{},
 			repo:                  fooRepo,
 			cancelledPipelineRuns: map[string]bool{},
 		},
@@ -114,14 +114,14 @@ func TestCancelPipelinerun(t *testing.T) {
 					TargetCancelPipelineRun: "pr-foo-abc",
 				},
 			},
-			pipelineRuns: []*pipelinev1beta1.PipelineRun{
+			pipelineRuns: []*pipelinev1.PipelineRun{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pr-foo",
 						Namespace: "foo",
 						Labels:    fooRepoLabels,
 					},
-					Spec: pipelinev1beta1.PipelineRunSpec{},
+					Spec: pipelinev1.PipelineRunSpec{},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -129,7 +129,7 @@ func TestCancelPipelinerun(t *testing.T) {
 						Namespace: "foo",
 						Labels:    fooRepoLabelsPrFooAbc,
 					},
-					Spec: pipelinev1beta1.PipelineRunSpec{},
+					Spec: pipelinev1.PipelineRunSpec{},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -137,7 +137,7 @@ func TestCancelPipelinerun(t *testing.T) {
 						Namespace: "foo",
 						Labels:    fooRepoLabels,
 					},
-					Spec: pipelinev1beta1.PipelineRunSpec{},
+					Spec: pipelinev1.PipelineRunSpec{},
 				},
 			},
 			repo: fooRepo,
@@ -156,15 +156,15 @@ func TestCancelPipelinerun(t *testing.T) {
 					CancelPipelineRuns: true,
 				},
 			},
-			pipelineRuns: []*pipelinev1beta1.PipelineRun{
+			pipelineRuns: []*pipelinev1.PipelineRun{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pr-foo",
 						Namespace: "foo",
 						Labels:    fooRepoLabels,
 					},
-					Spec: pipelinev1beta1.PipelineRunSpec{},
-					Status: pipelinev1beta1.PipelineRunStatus{
+					Spec: pipelinev1.PipelineRunSpec{},
+					Status: pipelinev1.PipelineRunStatus{
 						Status: knativeduckv1.Status{
 							Conditions: knativeduckv1.Conditions{
 								apis.Condition{
@@ -181,8 +181,8 @@ func TestCancelPipelinerun(t *testing.T) {
 						Namespace: "foo",
 						Labels:    fooRepoLabels,
 					},
-					Spec: pipelinev1beta1.PipelineRunSpec{
-						Status: pipelinev1beta1.PipelineRunSpecStatusStoppedRunFinally,
+					Spec: pipelinev1.PipelineRunSpec{
+						Status: pipelinev1.PipelineRunSpecStatusStoppedRunFinally,
 					},
 				},
 			},
@@ -210,16 +210,16 @@ func TestCancelPipelinerun(t *testing.T) {
 			err := pac.cancelPipelineRuns(ctx, tt.repo)
 			assert.NilError(t, err)
 
-			got, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns("foo").List(ctx, metav1.ListOptions{})
+			got, err := cs.Clients.Tekton.TektonV1().PipelineRuns("foo").List(ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
 
 			for _, pr := range got.Items {
 				// from the list only the ones which are in cancelled map should have cancel status
 				if _, ok := tt.cancelledPipelineRuns[pr.Name]; ok {
-					assert.Equal(t, string(pr.Spec.Status), pipelinev1beta1.PipelineRunSpecStatusCancelledRunFinally)
+					assert.Equal(t, string(pr.Spec.Status), pipelinev1.PipelineRunSpecStatusCancelledRunFinally)
 					continue
 				}
-				assert.Assert(t, string(pr.Spec.Status) != pipelinev1beta1.PipelineRunSpecStatusCancelledRunFinally)
+				assert.Assert(t, string(pr.Spec.Status) != pipelinev1.PipelineRunSpecStatusCancelledRunFinally)
 			}
 		})
 	}

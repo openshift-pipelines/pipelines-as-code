@@ -27,7 +27,7 @@ import (
 	kitesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -402,11 +402,11 @@ func TestRun(t *testing.T) {
 					},
 				},
 				Repositories: tt.repositories,
-				PipelineRuns: []*pipelinev1beta1.PipelineRun{
-					tektontest.MakePR("namespace", "force-me", map[string]*pipelinev1beta1.PipelineRunTaskRunStatus{
-						"first":  tektontest.MakePrTrStatus("first", 5),
-						"last":   tektontest.MakePrTrStatus("last", 15),
-						"middle": tektontest.MakePrTrStatus("middle", 10),
+				PipelineRuns: []*pipelinev1.PipelineRun{
+					tektontest.MakePR("namespace", "force-me", []pipelinev1.ChildStatusReference{
+						tektontest.MakeChildStatusReference("first"),
+						tektontest.MakeChildStatusReference("last"),
+						tektontest.MakeChildStatusReference("middle"),
 					}, nil),
 				},
 			}
@@ -482,7 +482,7 @@ func TestRun(t *testing.T) {
 			}
 
 			if tt.finalStatus != "skipped" {
-				prs, err := cs.Clients.Tekton.TektonV1beta1().PipelineRuns("").List(ctx, metav1.ListOptions{})
+				prs, err := cs.Clients.Tekton.TektonV1().PipelineRuns("").List(ctx, metav1.ListOptions{})
 				assert.NilError(t, err)
 				if len(prs.Items) == 0 {
 					t.Error("failed to create pipelineRun for case: ", tt.name)
