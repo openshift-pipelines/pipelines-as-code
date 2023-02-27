@@ -47,7 +47,7 @@ func getLogURLMergePatch(clients clients.Clients, pr *pipelinev1.PipelineRun) ma
 	return map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"annotations": map[string]string{
-				keys.LogURL: clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
+				keys.LogURL: clients.ConsoleUI.DetailURL(pr),
 			},
 		},
 	}

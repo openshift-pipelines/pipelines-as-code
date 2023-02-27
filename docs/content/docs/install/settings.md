@@ -70,12 +70,6 @@ There is a few things you can configure through the config map
 
   The [tekton hub](https://github.com/tektoncd/hub/) catalog name. default to `tekton`
 
-* `tekton-dashboard-url`
-
-   When you are not running on Openshift using the [tekton
-   dashboard](https://github.com/tektoncd/dashboard/) you will need to specify a
-   dashboard url to have the logs tnd the pipelinerun details linked.
-
 * `bitbucket-cloud-check-source-ip`
 
   Public bitbucket doesn't have the concept of Secret, we need to be
@@ -137,6 +131,11 @@ There is a few things you can configure through the config map
 
   `https://github.com/owner/repo` will be `owner-repo-ci`
 
+### Error Detection
+
+Pipelines as Code can show a snippet and optionally detect the error in the
+pipelinerun logs, you can configure the behaviour with these settings:
+
 * `error-log-snippet`
 
   Enable or disable the feature to show a log snippet of the failed task when
@@ -190,6 +189,51 @@ There is a few things you can configure through the config map
    You can configure the default regexp used for detection. You will need to
    keep the regexp groups: `<filename>`, `<line>`, `<error>` to make it works.
 
+### Reporting logs URL to Tekton Dashboard or custom Console
+
+Pipelines as Code have the ability to automatically detect the OpenShift Console and link the logs of the tasks to the
+public URL of the OpenShift Console. If you are using the Tekton Dashboard, you can configure this feature using the
+`tekton-dashboard-url` setting. Simply set this to your dashboard URL, and the pipelinerun status and tasklog will be
+displayed there.
+
+Alternatively, you can also configure a custom console with the following settings:
+
+* `custom-console-name`
+
+ Set this to the name of your custom console. example: `MyCorp Console`
+
+* `custom-console-url`
+
+ Set this to the root URL of your custom console. example: `https://mycorp.com`
+
+* `custom-console-url-pr-details`
+
+ Set this to the URL where to view the details of the `PipelineRun`. This is
+ shown when the PipelineRun is started so the user can follow execution on your
+ console or when to see more details about the pipelinerun ion result.
+
+ The URL suports templating for these value:
+
+* `{{ namespace }}`: The target namespace where the pipelinerun is executed
+* `{{ pr }}`: The PipelineRun name.
+
+ example: `https://mycorp.com/ns/{{ namespace }}/pipelienrun/{{ pr }}`
+
+* `custom-console-url-pr-tasklog`
+
+ Set this to the URL where to view the log of the taskrun of the `PipelineRun`. This is
+ shown when we post a result of the task breakdown to link to the logs of the taskrun.
+
+ The URL suports templating for these value:
+
+* `{{ namespace }}`: The target namespace where the pipelinerun is executed
+* `{{ pr }}`: The PipelineRun name.
+* `{{ task }}`: The Task name in the PR
+* `{{ pod }}`: The Pod name of the TaskRun
+* `{{ firstFailedStep }}`: The name of the first failed step in the TaskRun
+
+ example: `https://mycorp.com/ns/{{ namespace }}/pipelinerun/{{ pr }}/logs/{{ task }}#{{ pod }}-{{ firstFailedStep }}`
+
 ## Pipelines-As-Code Info
 
   There are a settings exposed through a config map for which any authenticated
@@ -204,10 +248,10 @@ There is a few things you can configure through the config map
   The controller URL as set by the `tkn pac bootstrap` command while setting up
   the GitHub App or if Pipelines as code is installed
 
-  When using OpenShift Pipelines Operator then the operator sets the route created
+  The OpenShift Pipelines Operator will automatically set the the route created
   for the controller.
 
-  This field is also used to detect the controller URL when using the `webhook add`
+  This field is also used to detect the controller URL when using the `tkn pac webhook add`
   commands.
 
 * `provider`

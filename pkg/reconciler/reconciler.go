@@ -43,7 +43,7 @@ var (
 	_ pipelinerunreconciler.Finalizer = (*Reconciler)(nil)
 )
 
-// ReconCileKind is the main entry point for reconciling PipelineRun resources.
+// ReconcileKind is the main entry point for reconciling PipelineRun resources.
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
 
@@ -177,7 +177,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		return fmt.Errorf("cannot set client: %w", err)
 	}
 
-	consoleURL := r.run.Clients.ConsoleUI.DetailURL(repo.GetNamespace(), pr.GetName())
+	consoleURL := r.run.Clients.ConsoleUI.DetailURL(pr)
 	msg := fmt.Sprintf(params.StartingPipelineRunText,
 		pr.GetName(), repo.GetNamespace(),
 		r.run.Clients.ConsoleUI.GetName(), consoleURL,

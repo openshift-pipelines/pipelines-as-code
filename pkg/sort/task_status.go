@@ -37,7 +37,7 @@ func (trs taskrunList) Less(i, j int) bool {
 	return trs[j].Status.StartTime.Before(trs[i].Status.StartTime)
 }
 
-// TaskStatusTmpl generate a template of all status of a taskruns sorted to a statusTemplate as defined by the git provider
+// TaskStatusTmpl generate a template of all status of a TaskRuns sorted to a statusTemplate as defined by the git provider
 func TaskStatusTmpl(pr *tektonv1.PipelineRun, trStatus map[string]*tektonv1.PipelineRunTaskRunStatus, runs *params.Run, config *info.ProviderConfig) (string, error) {
 	trl := taskrunList{}
 	outputBuffer := bytes.Buffer{}
@@ -48,11 +48,7 @@ func TaskStatusTmpl(pr *tektonv1.PipelineRun, trStatus map[string]*tektonv1.Pipe
 
 	for _, taskrunStatus := range trStatus {
 		trl = append(trl, tkr{
-			taskLogURL: runs.Clients.ConsoleUI.TaskLogURL(
-				pr.GetNamespace(),
-				pr.GetName(),
-				taskrunStatus.PipelineTaskName,
-			),
+			taskLogURL:               runs.Clients.ConsoleUI.TaskLogURL(pr, taskrunStatus),
 			PipelineRunTaskRunStatus: taskrunStatus,
 		})
 	}
@@ -70,7 +66,7 @@ func TaskStatusTmpl(pr *tektonv1.PipelineRun, trStatus map[string]*tektonv1.Pipe
 	data := struct{ TaskRunList taskrunList }{TaskRunList: trl}
 	t := template.Must(template.New("Task Status").Funcs(funcMap).Parse(config.TaskStatusTMPL))
 	if err := t.Execute(&outputBuffer, data); err != nil {
-		fmt.Fprintf(&outputBuffer, "failed to execute template: ")
+		_, _ = fmt.Fprintf(&outputBuffer, "failed to execute template: ")
 		return "", err
 	}
 

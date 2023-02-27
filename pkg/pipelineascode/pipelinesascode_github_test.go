@@ -38,7 +38,7 @@ import (
 
 func replyString(mux *http.ServeMux, url, body string) {
 	mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, body)
+		_, _ = fmt.Fprint(w, body)
 	})
 }
 
@@ -67,7 +67,7 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 
 	if !noReplyOrgPublicMembers {
 		mux.HandleFunc("/orgs/"+runevent.Organization+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(rw, `[{"login": "%s"}]`, runevent.Sender)
+			_, _ = fmt.Fprintf(rw, `[{"login": "%s"}]`, runevent.Sender)
 		})
 	}
 
@@ -488,7 +488,8 @@ func TestRun(t *testing.T) {
 					t.Error("failed to create pipelineRun for case: ", tt.name)
 				}
 				// validate logURL label
-				for _, pr := range prs.Items {
+				for i := range prs.Items {
+					pr := prs.Items[i]
 					// skip existing seed pipelineRuns
 					if pr.GetName() == "force-me" {
 						continue
@@ -497,7 +498,7 @@ func TestRun(t *testing.T) {
 					if !ok {
 						logger.Fatalf("failed to find log-url label on pipelinerun: %v/%v", pr.GetNamespace(), pr.GetName())
 					}
-					assert.Equal(t, logURL, cs.Clients.ConsoleUI.DetailURL(pr.Namespace, pr.Name))
+					assert.Equal(t, logURL, cs.Clients.ConsoleUI.DetailURL(&pr))
 
 					if cs.Info.Pac.SecretAutoCreation {
 						secretName := pr.GetAnnotations()[keys.GitAuthSecret]

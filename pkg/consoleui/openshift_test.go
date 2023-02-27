@@ -3,7 +3,9 @@ package consoleui
 import (
 	"testing"
 
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	dynamicfake "k8s.io/client-go/dynamic/fake"
@@ -99,8 +101,17 @@ func TestOpenshiftConsoleUI(t *testing.T) {
 }
 
 func TestOpenshiftConsoleURLs(t *testing.T) {
+	pr := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns",
+			Name:      "pr",
+		},
+	}
+	trStatus := &tektonv1.PipelineRunTaskRunStatus{
+		PipelineTaskName: "task",
+	}
 	o := OpenshiftConsole{host: "http://fakeconsole"}
 	assert.Assert(t, o.URL() != "")
-	assert.Assert(t, o.DetailURL("ns", "pr") != "")
-	assert.Assert(t, o.TaskLogURL("ns", "pr", "task") != "")
+	assert.Assert(t, o.DetailURL(pr) != "")
+	assert.Assert(t, o.TaskLogURL(pr, trStatus) != "")
 }

@@ -44,7 +44,7 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 		SHA:             &event.SHA,
 		SHAURL:          &event.SHAURL,
 		Title:           &event.SHATitle,
-		LogURL:          github.String(r.run.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName())),
+		LogURL:          github.String(r.run.Clients.ConsoleUI.DetailURL(pr)),
 		EventType:       &event.EventType,
 		TargetBranch:    &refsanitized,
 	}
@@ -126,7 +126,7 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		Conclusion:              formatting.PipelineRunStatus(pr),
 		Text:                    taskStatusText,
 		PipelineRunName:         pr.Name,
-		DetailsURL:              r.run.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
+		DetailsURL:              r.run.Clients.ConsoleUI.DetailURL(pr),
 		OriginalPipelineRunName: pr.GetLabels()[apipac.OriginalPRName],
 	}
 
