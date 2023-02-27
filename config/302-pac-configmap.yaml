@@ -110,6 +110,13 @@ data:
   # https://github.com/owner/repo will be `owner-repo-ci`
   auto-configure-repo-namespace-template: ""
 
+  # Configure a custom console here
+  #
+  # custom-console-name: Console Name
+  # custom-console-url: https://url
+  # custom-console-url-pr-details: https://url/ns/{{ namespace }}/{{ pr }}
+  # custom-console-url-pr-tasklog: https://url/ns/{{ namespace }}/{{ pr }}/logs/{{ task }}
+
 kind: ConfigMap
 metadata:
   name: pipelines-as-code

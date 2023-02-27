@@ -147,7 +147,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	// Create status with the log url
 	p.logger.Infof("pipelinerun %s has been created in namespace %s for SHA: %s Target Branch: %s",
 		pr.GetName(), match.Repo.GetNamespace(), p.event.SHA, p.event.BaseBranch)
-	consoleURL := p.run.Clients.ConsoleUI.DetailURL(match.Repo.GetNamespace(), pr.GetName())
+	consoleURL := p.run.Clients.ConsoleUI.DetailURL(pr)
 	// Create status with the log url
 	msg := fmt.Sprintf(params.StartingPipelineRunText,
 		pr.GetName(), match.Repo.GetNamespace(),
@@ -175,7 +175,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		return nil, fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
 	}
 
-	// Patch pipelineRun with logURL annotation, skips for GitHub App as we patch logURL while patching checkrunID
+	// Patch pipelineRun with logURL annotation, skips for GitHub App as we patch logURL while patching CheckrunID
 	if _, ok := pr.Annotations[keys.InstallationID]; !ok {
 		pr, err = action.PatchPipelineRun(ctx, p.logger, "logURL", p.run.Clients.Tekton, pr, getLogURLMergePatch(p.run.Clients, pr))
 		if err != nil {
@@ -194,7 +194,7 @@ func getLogURLMergePatch(clients clients.Clients, pr *tektonv1.PipelineRun) map[
 	return map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"annotations": map[string]string{
-				keys.LogURL: clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName()),
+				keys.LogURL: clients.ConsoleUI.DetailURL(pr),
 			},
 		},
 	}

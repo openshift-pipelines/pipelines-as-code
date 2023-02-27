@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -32,12 +33,12 @@ func (o *OpenshiftConsole) URL() string {
 	return "https://" + o.host
 }
 
-func (o *OpenshiftConsole) DetailURL(ns, pr string) string {
-	return fmt.Sprintf(openShiftPipelineDetailViewURL, o.host, ns, pr)
+func (o *OpenshiftConsole) DetailURL(pr *tektonv1.PipelineRun) string {
+	return fmt.Sprintf(openShiftPipelineDetailViewURL, o.host, pr.GetNamespace(), pr.GetName())
 }
 
-func (o *OpenshiftConsole) TaskLogURL(ns, pr, task string) string {
-	return fmt.Sprintf(openShiftPipelineTaskLogURL, o.DetailURL(ns, pr), task)
+func (o *OpenshiftConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tektonv1.PipelineRunTaskRunStatus) string {
+	return fmt.Sprintf(openShiftPipelineTaskLogURL, o.DetailURL(pr), taskRunStatus.PipelineTaskName)
 }
 
 // UI use dynamic client to get the route of the openshift

@@ -63,9 +63,10 @@ func MixLivePRandRepoStatus(ctx context.Context, cs *params.Run, repository pacv
 		return sortrepostatus.RepositorySortRunStatus(repositorystatus)
 	}
 
-	for _, pr := range prs.Items {
+	for i := range prs.Items {
+		pr := prs.Items[i]
 		repositorystatus = RepositoryRunStatusRemoveSameSHA(repositorystatus, pr.GetLabels()["pipelinesascode.tekton.dev/sha"])
-		logurl := cs.Clients.ConsoleUI.DetailURL(pr.GetNamespace(), pr.GetName())
+		logurl := cs.Clients.ConsoleUI.DetailURL(&pr)
 		repositorystatus = append(repositorystatus, convertPrStatusToRepositoryStatus(ctx, cs, pr, logurl))
 	}
 	return sortrepostatus.RepositorySortRunStatus(repositorystatus)
