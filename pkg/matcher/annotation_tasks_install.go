@@ -53,7 +53,7 @@ func (rt RemoteTasks) convertToPipeline(ctx context.Context, uri, data string) (
 		// o.SetDefaults(ctx)
 		// ctx2 := features.SetFeatureFlag(context.Background())
 		// if err := o.Validate(ctx2); err != nil {
-		// 	return nil, fmt.Errorf("remote pipeline %s cannot be validated properly: err: %w", o.GetName(), err)
+		// return nil, fmt.Errorf("remote pipeline from uri: %s with name %s cannot be validated: %w", uri, o.GetName(), err)
 		// }
 		if err := o.ConvertTo(ctx, c); err != nil {
 			return nil, fmt.Errorf("remote pipeline from uri: %s with name %s cannot be converted to v1beta1: %w", uri, o.GetName(), err)
@@ -85,6 +85,7 @@ func (rt RemoteTasks) convertTotask(ctx context.Context, uri, data string) (*tek
 		// o.SetDefaults(ctx)
 		// if err := o.Validate(ctx); err != nil {
 		// 	return nil, fmt.Errorf("remote task %s cannot be validated properly: err: %w", o.GetName(), err)
+		// return nil, fmt.Errorf("remote task from uri: %s with name %s cannot be validated: %w", uri, o.GetName(), err)
 		// }
 		if err := o.ConvertTo(ctx, c); err != nil {
 			return nil, fmt.Errorf("remote task from uri: %s with name %s cannot be converted to v1beta1: %w", uri, o.GetName(), err)

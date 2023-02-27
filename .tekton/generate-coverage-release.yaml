@@ -4,7 +4,7 @@ kind: PipelineRun
 metadata:
   name: push-generate-coverage-releaseyaml
   annotations:
-    pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]" # send slack notification on failure
+    pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]"  # send slack message on failure
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "push" && ("***/*.go".pathChanged() || "config/".pathChanged())
