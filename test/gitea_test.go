@@ -106,7 +106,7 @@ func TestGiteaBadYaml(t *testing.T) {
 	ctx := context.Background()
 
 	assert.NilError(t, twait.RegexpMatchingInPodLog(ctx, topts.Params, "app.kubernetes.io/component=controller", "pac-controller", *regexp.MustCompile(
-		"pipelinerun .* cannot be validated properly: err: expected exactly one, got neither:"), 10))
+		"pipelinerun.*has failed.*expected exactly one, got neither: spec.pipelineRef, spec.pipelineSpec"), 10))
 }
 
 // don't test concurrency limit here, just parallel pipeline
