@@ -60,8 +60,6 @@ func (o *CustomConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tekt
 	})
 }
 
-// UI use dynamic client to get the route of the openshift
-// console where we can point to.
 func (o *CustomConsole) UI(_ context.Context, _ dynamic.Interface) error {
 	return nil
 }
