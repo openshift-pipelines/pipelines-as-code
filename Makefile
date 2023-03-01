@@ -8,7 +8,7 @@ GO           = go
 TIMEOUT_UNIT = 20m
 TIMEOUT_E2E  = 20m
 GO_TEST_FLAGS +=
-SHELL := /bin/bash
+SHELL := bash
 
 
 PY_FILES := $(shell find . -type f -regex ".*py" -print)
