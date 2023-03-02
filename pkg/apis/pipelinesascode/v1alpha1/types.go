@@ -74,6 +74,14 @@ type RepositorySpec struct {
 	URL              string       `json:"url"`
 	GitProvider      *GitProvider `json:"git_provider,omitempty"`
 	Incomings        *[]Incoming  `json:"incoming,omitempty"`
+	Params           *[]Params    `json:"params,omitempty"`
+}
+
+type Params struct {
+	Name      string  `json:"name"`
+	Value     string  `json:"value,omitempty"`
+	SecretRef *Secret `json:"secret_ref,omitempty"`
+	Filter    string  `json:"filter,omitempty"`
 }
 
 type Incoming struct {

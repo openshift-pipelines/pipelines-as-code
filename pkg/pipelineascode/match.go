@@ -153,7 +153,7 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	}
 
 	// Replace those {{var}} placeholders user has in her template to the run.Info variable
-	allTemplates := templates.Process(p.event, repo, rawTemplates)
+	allTemplates := p.makeTemplate(ctx, repo, rawTemplates)
 	pipelineRuns, err := resolve.Resolve(ctx, p.run, p.logger, p.vcx, p.event, allTemplates, &resolve.Opts{
 		GenerateName: true,
 		RemoteTasks:  p.run.Info.Pac.RemoteTasks,

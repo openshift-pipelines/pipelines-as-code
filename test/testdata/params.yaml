@@ -1,0 +1,23 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
+    pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: params
+        taskSpec:
+          steps:
+            - name: test-params-value
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                echo "{{ event_type_match }}"
+                echo "{{ secret value }}"
+                echo "{{ no_filter }}"
+                echo "{{ no_match }}"
+                echo "{{ filter_on_body }}"

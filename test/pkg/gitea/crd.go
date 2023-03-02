@@ -27,7 +27,7 @@ func CreateCRD(ctx context.Context, topts *TestOpts) error {
 		return err
 	}
 
-	if err := secret.Create(ctx, topts.Params, map[string]string{"token": token}, topts.TargetNS, "gitea-secret"); err != nil {
+	if err := secret.Create(ctx, topts.ParamsRun, map[string]string{"token": token}, topts.TargetNS, "gitea-secret"); err != nil {
 		return err
 	}
 	repository := &v1alpha1.Repository{
@@ -44,8 +44,9 @@ func CreateCRD(ctx context.Context, topts *TestOpts) error {
 				Secret: &v1alpha1.Secret{Name: "gitea-secret", Key: "token"},
 			},
 			ConcurrencyLimit: topts.ConcurrencyLimit,
+			Params:           topts.RepoCRParams,
 		},
 	}
 
-	return pacrepo.CreateRepo(ctx, topts.TargetNS, topts.Params, repository)
+	return pacrepo.CreateRepo(ctx, topts.TargetNS, topts.ParamsRun, repository)
 }

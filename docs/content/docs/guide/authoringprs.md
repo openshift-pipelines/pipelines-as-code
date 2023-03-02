@@ -14,7 +14,7 @@ weight: 3
   but PipelineRuns will only be triggered by events in the repository containing
   the `.tekton` directory.
 
-* Using its [resolver](./resolver) Pipelines as Code will try to bundle the
+* Using its [resolver](../resolver/) Pipelines as Code will try to bundle the
   PipelineRun with all its Task as a single PipelineRun with no external
   dependencies.
 
@@ -29,6 +29,7 @@ weight: 3
   like this `{{ var }}` and those are the one you can use:
 
   * `{{repo_owner}}`: The repository owner.
+  * `{{event_type}}`: The event type (eg: `pull_request` or `push`)
   * `{{repo_name}}`: The repository name.
   * `{{repo_url}}`: The repository full URL.
   * `{{target_namespace}}`: The target namespace where the Repository has matched and the PipelineRun will be created.
