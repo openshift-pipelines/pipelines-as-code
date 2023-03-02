@@ -10,9 +10,9 @@ import (
 	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/logs"
 )
 
-func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, labelselector, containerName string, reg regexp.Regexp, maxNumberOfLoop int) error {
+func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, labelselector, containerName string, reg regexp.Regexp, maxNumberOfLoop int) error {
 	for i := 0; i <= maxNumberOfLoop; i++ {
-		output, err := tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), labelselector, containerName)
+		output, err := tlogs.GetControllerLog(ctx, clients.Clients.Kube.CoreV1(), labelselector, containerName)
 		if err != nil {
 			return err
 		}
@@ -24,4 +24,24 @@ func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, labelselec
 		time.Sleep(5 * time.Second)
 	}
 	return fmt.Errorf("could not find a match in %s:%s labelSelector/pod for regexp: %s", labelselector, containerName, reg.String())
+}
+
+func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labelselector, containerName string, reg regexp.Regexp, maxNumberOfLoop int) error {
+	var err error
+	output := ""
+	for i := 0; i <= maxNumberOfLoop; i++ {
+		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName)
+		if err != nil {
+			return err
+		}
+
+		if reg.MatchString(output) {
+			clients.Clients.Log.Infof("matched regexp in labelSelector/container %s:%s",
+				labelselector, containerName)
+			return nil
+		}
+		time.Sleep(5 * time.Second)
+	}
+	return fmt.Errorf("could not find a match in %s:%s labelSelector/pod for regexp:\n%s\noutput:\n%s",
+		labelselector, containerName, reg.String(), output)
 }
