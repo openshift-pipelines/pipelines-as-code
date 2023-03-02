@@ -71,7 +71,7 @@ func PushFilesToRefGit(t *testing.T, topts *TestOpts, entries map[string]string,
 	_, err = git.RunGit(path, "push", "origin", topts.TargetRefName)
 	assert.NilError(t, err)
 	// parse url topts.GitURL
-	topts.Params.Clients.Log.Infof("Pushed files to repo %s branch %s", topts.GitHTMLURL, topts.TargetRefName)
+	topts.ParamsRun.Clients.Log.Infof("Pushed files to repo %s branch %s", topts.GitHTMLURL, topts.TargetRefName)
 }
 
 // Make a clone url with username and password
@@ -136,7 +136,7 @@ type Timelines []struct {
 func GetIssueTimeline(ctx context.Context, topts *TestOpts) (Timelines, error) {
 	timelineURL := fmt.Sprintf("%s/api/v1/repos/%s/issues/%d/timeline", topts.GiteaAPIURL,
 		topts.PullRequest.Base.Repository.FullName, topts.PullRequest.Index)
-	resp, err := MakeRequest(ctx, topts.Params.Clients.HTTP, timelineURL, topts.Opts.Organization, topts.GiteaPassword)
+	resp, err := MakeRequest(ctx, topts.ParamsRun.Clients.HTTP, timelineURL, topts.Opts.Organization, topts.GiteaPassword)
 	if err != nil {
 		return nil, fmt.Errorf("error on URL %s: %w", timelineURL, err)
 	}
@@ -207,7 +207,7 @@ func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provi
 	cloneURL, err := MakeGitCloneURL(forkrepo.CloneURL, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 	newopts := &TestOpts{
-		GitCloneURL: cloneURL, TargetRefName: topts.TargetRefName, Params: topts.Params,
+		GitCloneURL: cloneURL, TargetRefName: topts.TargetRefName, ParamsRun: topts.ParamsRun,
 	}
 	processed, err := payload.ApplyTemplate("testdata/pipelinerun-alt.yaml", map[string]string{
 		"TargetNamespace": topts.TargetNS,
@@ -231,7 +231,7 @@ func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provi
 			Title: fmt.Sprintf("New PR from %s", topts.TargetRefName),
 		})
 	assert.NilError(t, err)
-	topts.Params.Clients.Log.Infof("Created pr %s", pr.HTMLURL)
+	topts.ParamsRun.Clients.Log.Infof("Created pr %s", pr.HTMLURL)
 	return pr
 }
 

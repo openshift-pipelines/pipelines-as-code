@@ -81,6 +81,36 @@ spec:
                     - bitbucket
                     - gitlab
                     - bitbucket-enteprise
+                params:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                    properties:
+                      name:
+                        description: The name of the params for the pipelinerun variable
+                        type: string
+                      value:
+                        description: The value of the params as injected into pipelinerun
+                        type: string
+                      filter:
+                        description: A CEL filter to set condition on param
+                        type: string
+                      secret_ref:
+                        description: The value as coming from secret
+                        type: object
+                        required:
+                          - name
+                          - key
+                        properties:
+                          key:
+                            description: Key of the secret
+                            type: string
+                            default: "secret"
+                          name:
+                            description: Name of the secret
+                            type: string
                 incoming:
                   type: array
                   items:

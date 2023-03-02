@@ -11,6 +11,7 @@ import (
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -23,17 +24,19 @@ import (
 )
 
 type TestOpts struct {
+	SkipEventsCheck      bool
 	NoCleanup            bool
 	TargetNS             string
 	TargetEvent          string
 	Regexp               *regexp.Regexp
 	YAMLFiles            map[string]string
 	ExtraArgs            map[string]string
+	RepoCRParams         *[]v1alpha1.Params
 	CheckForStatus       string
 	TargetRefName        string
 	CheckForNumberStatus int
 	ConcurrencyLimit     *int
-	Params               *params.Run
+	ParamsRun            *params.Run
 	GiteaCNX             pgitea.Provider
 	Opts                 options.E2E
 	PullRequest          *gitea.PullRequest
@@ -50,17 +53,17 @@ func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
 	_, _, err := topt.GiteaCNX.Client.CreateIssueComment(topt.Opts.Organization,
 		topt.Opts.Repo, topt.PullRequest.Index,
 		gitea.CreateIssueCommentOption{Body: body})
-	topt.Params.Clients.Log.Infof("Posted comment \"%s\" in %s", body, topt.PullRequest.HTMLURL)
+	topt.ParamsRun.Clients.Log.Infof("Posted comment \"%s\" in %s", body, topt.PullRequest.HTMLURL)
 	assert.NilError(t, err)
 }
 
 // TestPR will test the pull request event and grab comments from the PR
 func TestPR(t *testing.T, topts *TestOpts) func() {
 	ctx := context.Background()
-	if topts.Params == nil {
+	if topts.ParamsRun == nil {
 		runcnx, opts, giteacnx, err := Setup(ctx)
 		topts.GiteaCNX = giteacnx
-		topts.Params = runcnx
+		topts.ParamsRun = runcnx
 		topts.Opts = opts
 		assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
 	}
@@ -79,7 +82,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	if topts.TargetRefName == "" {
 		topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
 		topts.TargetNS = topts.TargetRefName
-		assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.Params))
+		assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
 	}
 
 	repoInfo, err := CreateGiteaRepo(topts.GiteaCNX.Client, topts.Opts.Organization, topts.TargetRefName, hookURL)
@@ -115,7 +118,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	})
 	assert.NilError(t, err)
 	topts.PullRequest = pr
-	topts.Params.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
+	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
 	giteaURL := os.Getenv("TEST_GITEA_API_URL")
 	giteaPassword := os.Getenv("TEST_GITEA_PASSWORD")
 	topts.GiteaAPIURL = giteaURL
@@ -129,7 +132,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 		WaitForPullRequestCommentMatch(ctx, t, topts)
 	}
 
-	events, err := topts.Params.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
+	events, err := topts.ParamsRun.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, topts.TargetNS),
 	})
 	assert.NilError(t, err)
@@ -140,7 +143,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 		if len(events.Items) == 0 {
 			// loop 30 times over a 5 second period and try to get any events
 			for i := 0; i < 30; i++ {
-				events, err = topts.Params.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
+				events, err = topts.ParamsRun.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
 					LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, topts.TargetNS),
 				})
 				assert.NilError(t, err)
@@ -151,7 +154,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 			}
 		}
 		assert.Assert(t, len(events.Items) != 0, "events expected in case of failure but got 0")
-	} else {
+	} else if !topts.SkipEventsCheck {
 		assert.Assert(t, len(events.Items) == 0, fmt.Sprintf("no events expected but got %v in %v ns, items: %+v", len(events.Items), topts.TargetNS, events.Items))
 	}
 	return cleanup
@@ -164,7 +167,7 @@ func WaitForStatus(t *testing.T, topts *TestOpts, ref string) {
 		assert.NilError(t, err)
 		if cs.State != "" && cs.State != "pending" {
 			assert.Equal(t, string(cs.State), topts.CheckForStatus)
-			topts.Params.Clients.Log.Infof("Status is %s", cs.State)
+			topts.ParamsRun.Clients.Log.Infof("Status is %s", cs.State)
 
 			if topts.CheckForNumberStatus != 0 {
 				assert.Equal(t, len(cs.Statuses), topts.CheckForNumberStatus)
@@ -183,7 +186,7 @@ func WaitForSecretDeletion(t *testing.T, topts *TestOpts, _ string) {
 	i := 0
 	for {
 		// make sure pipelineRuns are deleted, before checking secrets
-		list, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).
+		list, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).
 			List(context.Background(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app.kubernetes.io/managed-by=%v", pipelinesascode.GroupName),
 			})
@@ -195,8 +198,8 @@ func WaitForSecretDeletion(t *testing.T, topts *TestOpts, _ string) {
 		if len(list.Items) == 0 {
 			break
 		}
-		topts.Params.Clients.Log.Infof("deleting pipelineRuns in %v namespace", topts.TargetNS)
-		err = topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).
+		topts.ParamsRun.Clients.Log.Infof("deleting pipelineRuns in %v namespace", topts.TargetNS)
+		err = topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).
 			DeleteCollection(context.Background(), metav1.DeleteOptions{}, metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app.kubernetes.io/managed-by=%v", pipelinesascode.GroupName),
 			})
@@ -206,10 +209,10 @@ func WaitForSecretDeletion(t *testing.T, topts *TestOpts, _ string) {
 		i++
 	}
 
-	topts.Params.Clients.Log.Infof("checking secrets in %v namespace", topts.TargetNS)
+	topts.ParamsRun.Clients.Log.Infof("checking secrets in %v namespace", topts.TargetNS)
 	i = 0
 	for {
-		list, err := topts.Params.Clients.Kube.CoreV1().Secrets(topts.TargetNS).
+		list, err := topts.ParamsRun.Clients.Kube.CoreV1().Secrets(topts.TargetNS).
 			List(context.Background(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("pipelinesascode.tekton.dev/url-repository=%s\n", topts.TargetNS),
 			})
@@ -235,7 +238,7 @@ func WaitForPullRequestCommentMatch(ctx context.Context, t *testing.T, topts *Te
 		for _, v := range tls {
 			// look for the regexp "Pipelines as Code CI.*has.*successfully" in v.body
 			if topts.Regexp.MatchString(v.Body) {
-				topts.Params.Clients.Log.Infof("Found regexp \"%s\" in PR comments", topts.Regexp.String())
+				topts.ParamsRun.Clients.Log.Infof("Found regexp \"%s\" in PR comments", topts.Regexp.String())
 				return
 			}
 		}
@@ -250,7 +253,7 @@ func WaitForPullRequestCommentMatch(ctx context.Context, t *testing.T, topts *Te
 func CheckIfPipelineRunsCancelled(t *testing.T, topts *TestOpts) {
 	i := 0
 	for {
-		list, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).
+		list, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).
 			List(context.Background(), metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("%v=%v", keys.Repository, topts.TargetNS),
 			})
@@ -261,7 +264,7 @@ func CheckIfPipelineRunsCancelled(t *testing.T, topts *TestOpts) {
 		}
 
 		if list.Items[0].Spec.Status == v1.PipelineRunSpecStatusCancelledRunFinally {
-			topts.Params.Clients.Log.Info("PipelineRun is cancelled, yay!")
+			topts.ParamsRun.Clients.Log.Info("PipelineRun is cancelled, yay!")
 			break
 		}
 

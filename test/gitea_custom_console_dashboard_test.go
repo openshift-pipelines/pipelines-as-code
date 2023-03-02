@@ -54,24 +54,24 @@ func TestGiteaCustomConsoleDashboard(t *testing.T) {
 	}
 	defer tgitea.TestPR(t, topts)()
 
-	prs, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(ctx, metav1.ListOptions{})
+	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(ctx, metav1.ListOptions{})
 
 	assert.NilError(t, err)
 	// asserting with non empty because we are not sure the URL for K8S and Openshift
 	assert.Assert(t, prs.Items[0].Annotations["pipelinesascode.tekton.dev/log-url"] != "")
 
 	// update config map with console dashboard information
-	cmList, er := topts.Params.Clients.Kube.CoreV1().ConfigMaps("").List(ctx, metav1.ListOptions{})
+	cmList, er := topts.ParamsRun.Clients.Kube.CoreV1().ConfigMaps("").List(ctx, metav1.ListOptions{})
 	assert.NilError(t, er)
 	for _, v := range cmList.Items {
 		if v.Name == "pipelines-as-code" {
-			cmData, err := topts.Params.Clients.Kube.CoreV1().ConfigMaps(v.Namespace).Get(ctx, v.Name, metav1.GetOptions{})
+			cmData, err := topts.ParamsRun.Clients.Kube.CoreV1().ConfigMaps(v.Namespace).Get(ctx, v.Name, metav1.GetOptions{})
 			assert.NilError(t, err)
 			cmData.Data[customConsoleDashboardName] = "My custom console"
 			cmData.Data[customConsoleDashboardURL] = "https://custom-console.ospqa.com"
 			cmData.Data[customConsoleDashboardPRDetailURL] = "https://custom-console.ospqa.com/foo-pr"
 			cmData.Data[customConsoleDashboardPRTaskLog] = "https://custom-console.ospqa.com/foo-pr/logs/task"
-			_, err = topts.Params.Clients.Kube.CoreV1().ConfigMaps(v.Namespace).Update(ctx, cmData, metav1.UpdateOptions{})
+			_, err = topts.ParamsRun.Clients.Kube.CoreV1().ConfigMaps(v.Namespace).Update(ctx, cmData, metav1.UpdateOptions{})
 			assert.NilError(t, err)
 		}
 	}
@@ -86,17 +86,17 @@ func TestGiteaCustomConsoleDashboard(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	err = twait.UntilRepositoryUpdated(ctx, topts.Params.Clients, waitOpts)
+	err = twait.UntilRepositoryUpdated(ctx, topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	time.Sleep(15 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
 
-	prs, err = topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(ctx, metav1.ListOptions{})
+	prs, err = topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
 
-	prs, err = topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(ctx, metav1.ListOptions{})
+	prs, err = topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 
 	logURL := map[string]string{}
@@ -107,7 +107,7 @@ func TestGiteaCustomConsoleDashboard(t *testing.T) {
 	assert.Assert(t, logURL["https://custom-console.ospqa.com/foo-pr"] == "https://custom-console.ospqa.com/foo-pr")
 
 	// Resetting back by removing console dashboard information
-	defer revertCM(ctx, t, topts.Params)
+	defer revertCM(ctx, t, topts.ParamsRun)
 }
 
 // Local Variables:

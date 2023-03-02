@@ -16,6 +16,7 @@ import (
 	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-github/v50/github"
 	pacapi "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tknpacdelete "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/deleterepo"
 	tknpacdesc "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/describe"
 	tknpacgenerate "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
@@ -105,7 +106,7 @@ func TestGiteaBadYaml(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 	ctx := context.Background()
 
-	assert.NilError(t, twait.RegexpMatchingInPodLog(ctx, topts.Params, "app.kubernetes.io/component=controller", "pac-controller", *regexp.MustCompile(
+	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, "app.kubernetes.io/component=controller", "pac-controller", *regexp.MustCompile(
 		"pipelinerun.*has failed.*expected exactly one, got neither: spec.pipelineRef, spec.pipelineSpec"), 10))
 }
 
@@ -183,7 +184,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	gotPipelineRunPending := false
 	// loop until we get the status
 	for i := 0; i < 30; i++ {
-		prs, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+		prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 		assert.NilError(t, err)
 
 		// range over prs
@@ -195,7 +196,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 			}
 		}
 		if gotPipelineRunPending {
-			topts.Params.Clients.Log.Info("Found PipelineRunPending in PipelineRuns")
+			topts.ParamsRun.Clients.Log.Info("Found PipelineRunPending in PipelineRuns")
 		}
 		time.Sleep(5 * time.Second)
 	}
@@ -335,12 +336,12 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	err := twait.UntilRepositoryUpdated(context.Background(), topts.Params.Clients, waitOpts)
+	err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	time.Sleep(15 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
 
-	prs, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
@@ -368,7 +369,7 @@ func TestGiteaPush(t *testing.T) {
 	assert.Assert(t, merged)
 	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
 	time.Sleep(5 * time.Second)
-	prs, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
+	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
 		LabelSelector: pacapi.EventType + "=push",
 	})
 	assert.NilError(t, err)
@@ -407,7 +408,7 @@ func TestGiteaClusterTasks(t *testing.T) {
 	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, run))
 	run.Clients.Log.Infof("%s has been created", ct.GetName())
 	defer (func() {
-		assert.NilError(t, topts.Params.Clients.Tekton.TektonV1beta1().ClusterTasks().Delete(context.TODO(), ct.Name, metav1.DeleteOptions{}))
+		assert.NilError(t, topts.ParamsRun.Clients.Tekton.TektonV1beta1().ClusterTasks().Delete(context.TODO(), ct.Name, metav1.DeleteOptions{}))
 		run.Clients.Log.Infof("%s is deleted", ct.GetName())
 	})()
 
@@ -425,7 +426,7 @@ func TestGiteaClusterTasks(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	err = twait.UntilRepositoryUpdated(context.Background(), topts.Params.Clients, waitOpts)
+	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	topts.CheckForStatus = "success"
@@ -444,19 +445,19 @@ func TestGiteaWithCLI(t *testing.T) {
 		ExpectEvents:   false,
 	}
 	defer tgitea.TestPR(t, topts)()
-	output, err := tknpactest.ExecCommand(topts.Params, tknpaclist.Root, "pipelinerun", "list", "-n", topts.TargetNS)
+	output, err := tknpactest.ExecCommand(topts.ParamsRun, tknpaclist.Root, "pipelinerun", "list", "-n", topts.TargetNS)
 	assert.NilError(t, err)
 	match, err := regexp.MatchString(".*(Running|Succeeded)", output)
 	assert.NilError(t, err)
 	assert.Assert(t, match, "should have a Running or Succeeded pipelinerun in CLI listing: %s", output)
 
-	output, err = tknpactest.ExecCommand(topts.Params, tknpacdesc.Root, "-n", topts.TargetNS)
+	output, err = tknpactest.ExecCommand(topts.ParamsRun, tknpacdesc.Root, "-n", topts.TargetNS)
 	assert.NilError(t, err)
 	match, err = regexp.MatchString(".*(Running|Succeeded)", output)
 	assert.NilError(t, err)
 	assert.Assert(t, match, "should have a Succeeded or Running pipelinerun in CLI describe and auto select the first one: %s", output)
 
-	output, err = tknpactest.ExecCommand(topts.Params, tknpacdelete.Root, "-n", topts.TargetNS, "repository", topts.TargetNS, "--cascade")
+	output, err = tknpactest.ExecCommand(topts.ParamsRun, tknpacdelete.Root, "-n", topts.TargetNS, "repository", topts.TargetNS, "--cascade")
 	assert.NilError(t, err)
 	expectedOutput := fmt.Sprintf("secret gitea-secret has been deleted\nrepository %s has been deleted\n", topts.TargetNS)
 	assert.Assert(t, output == expectedOutput, topts.TargetRefName, "delete command should have this output: %s received: %s", expectedOutput, output)
@@ -539,16 +540,16 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 				assert.NilError(t, err2)
 			}
 
-			output, err := tknpactest.ExecCommand(topts.Params, tknpacgenerate.Command, "--event-type", topts.TargetEvent,
+			output, err := tknpactest.ExecCommand(topts.ParamsRun, tknpacgenerate.Command, "--event-type", topts.TargetEvent,
 				"--branch", topts.DefaultBranch, "--file-name", ".tekton/pr.yaml", "--overwrite")
 			assert.NilError(t, err)
 			assert.Assert(t, regexp.MustCompile(tt.generateOutputRegexp).MatchString(output))
 
 			envRemove := env.PatchAll(t, map[string]string{"PAC_PROVIDER_TOKEN": "NOWORRIESBEHAPPY"})
 			defer envRemove()
-			topts.Params.Info.Pac = &info.PacOpts{}
-			topts.Params.Info.Pac.Settings = &settings.Settings{}
-			_, err = tknpactest.ExecCommand(topts.Params, tknpacresolve.Command, "-f", ".tekton/pr.yaml", "-p", "revision=main")
+			topts.ParamsRun.Info.Pac = &info.PacOpts{}
+			topts.ParamsRun.Info.Pac.Settings = &settings.Settings{}
+			_, err = tknpactest.ExecCommand(topts.ParamsRun, tknpacresolve.Command, "-f", ".tekton/pr.yaml", "-p", "revision=main")
 			assert.NilError(t, err)
 
 			// edit .tekton/pr.yaml file
@@ -575,7 +576,7 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 
 			tgitea.WaitForStatus(t, topts, topts.TargetRefName)
 
-			prs, err := topts.Params.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
+			prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
 				LabelSelector: pacapi.EventType + "=pull_request",
 			})
 			assert.NilError(t, err)
@@ -590,13 +591,12 @@ func TestGiteaCancelRun(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun_long_running.yaml",
 		},
-		NoCleanup:    true,
 		ExpectEvents: false,
 	}
 	defer tgitea.TestPR(t, topts)()
 
 	// let pipelineRun start and then cancel it
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 2)
 	tgitea.PostCommentOnPullRequest(t, topts, "/cancel")
 
 	waitOpts := twait.Opts{
@@ -606,7 +606,7 @@ func TestGiteaCancelRun(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	err := twait.UntilRepositoryUpdated(context.Background(), topts.Params.Clients, waitOpts)
+	err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.Error(t, err, "pipelinerun has failed")
 
 	tgitea.CheckIfPipelineRunsCancelled(t, topts)
@@ -626,7 +626,7 @@ func TestGiteaConcurrencyOrderedExecution(t *testing.T) {
 	}
 	defer tgitea.TestPR(t, topts)()
 
-	repo, err := topts.Params.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
+	repo, err := topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
 	// check the last 3 update in RepositoryRunStatus are in order
 	statusLen := len(repo.Status)
@@ -658,10 +658,10 @@ func TestGiteaErrorSnippetWithSecret(t *testing.T) {
 		TargetRefName: names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"),
 	}
 	topts.TargetNS = topts.TargetRefName
-	topts.Params, topts.Opts, topts.GiteaCNX, err = tgitea.Setup(ctx)
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, err = tgitea.Setup(ctx)
 	assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
-	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.Params))
-	assert.NilError(t, secret.Create(ctx, topts.Params, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS, "pac-secret"))
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	assert.NilError(t, secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS, "pac-secret"))
 	topts.TargetEvent = options.PullRequestEvent
 	topts.YAMLFiles = map[string]string{
 		".tekton/pr.yaml": "testdata/pipelinerun-error-snippet-with-secret.yaml",
@@ -687,6 +687,76 @@ func TestGiteaNotExistingClusterTask(t *testing.T) {
 		ExpectEvents:   false,
 	}
 	defer tgitea.TestPR(t, topts)()
+}
+
+// TestGiteaParamsOnRepoCR test gitea params on CR and its filters
+func TestGiteaParamsOnRepoCR(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		CheckForStatus:  "success",
+		SkipEventsCheck: true,
+		TargetEvent:     options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/params.yaml",
+		},
+		RepoCRParams: &[]v1alpha1.Params{
+			{
+				Name:  "no_filter",
+				Value: "Follow me on my ig #nofilter",
+			},
+			{
+				Name:   "event_type_match",
+				Value:  "I am the most Kawaī params",
+				Filter: `pac.event_type == "pull_request"`,
+			},
+			{
+				Name:   "event_type_match",
+				Value:  "Nobody should see me, i am superseded by the previous params with same name 😠",
+				Filter: `pac.event_type == "pull_request"`,
+			},
+			{
+				Name:   "no_match",
+				Value:  "Am I being ignored?",
+				Filter: `pac.event_type == "xxxxxxx"`,
+			},
+			{
+				Name:   "filter_on_body",
+				Value:  "Hey I show up from a payload match",
+				Filter: `body.action == "opened"`,
+			},
+			{
+				Name: "secret value",
+				SecretRef: &v1alpha1.Secret{
+					Name: "param-secret",
+					Key:  "secret",
+				},
+			},
+		},
+	}
+	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	topts.TargetNS = topts.TargetRefName
+
+	ctx := context.Background()
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
+	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	assert.NilError(t, secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS,
+		"param-secret"))
+
+	defer tgitea.TestPR(t, topts)()
+
+	repo, err := topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
+	assert.NilError(t, err)
+
+	assert.NilError(t,
+		twait.RegexpMatchingInPodLog(context.Background(),
+			topts.ParamsRun,
+			topts.TargetNS,
+			fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=params",
+				repo.Status[0].PipelineRunName),
+			"step-test-params-value", *regexp.MustCompile(
+				"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from" +
+					" a" +
+					" payload match"), 2))
 }
 
 // Local Variables:
