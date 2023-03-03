@@ -117,7 +117,7 @@ func (gh *gitHubConfig) askGHWebhookConfig(repoURL, controllerURL, apiURL, perso
 
 	if apiURL == "" && !strings.HasPrefix(repoURL, "https://github.com") {
 		if err := prompt.SurveyAskOne(&survey.Input{
-			Message: "Please enter your GitHub enterprise API URL:: ",
+			Message: "Please enter your GitHub enterprise API URL: ",
 		}, &gh.APIURL, survey.WithValidator(survey.Required)); err != nil {
 			return err
 		}
