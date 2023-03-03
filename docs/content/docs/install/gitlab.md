@@ -52,7 +52,7 @@ $ tkn pac create repo
 ℹ ️You now need to create a GitLab personal access token with `api` scope
 ℹ ️Go to this URL to generate one https://gitlab.com/-/profile/personal_access_tokens, see https://is.gd/rOEo9B for documentation
 ? Please enter the GitLab access token:  **************************
-? Please enter your GitLab API URL::  https://gitlab.com
+? Please enter your GitLab API URL:  https://gitlab.com
 ✓ Webhook has been created on your repository
 🔑 Webhook Secret repositories-project has been created in the project-pipelines namespace.
 🔑 Repository CR repositories-project has been updated with webhook secret in the project-pipelines namespace

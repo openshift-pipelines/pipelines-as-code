@@ -104,7 +104,7 @@ func (gl *gitLabConfig) askGLWebhookConfig(repoURL, controllerURL, apiURL, perso
 
 	if apiURL == "" {
 		if err := prompt.SurveyAskOne(&survey.Input{
-			Message: "Please enter your GitLab API URL:: ",
+			Message: "Please enter your GitLab API URL: ",
 		}, &gl.APIURL, survey.WithValidator(survey.Required)); err != nil {
 			return err
 		}

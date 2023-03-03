@@ -78,7 +78,7 @@ recreate it.
         name: "bitbucket-server-webhook-config"
         # Set this if you have a different key in your secret
         # key: "provider.token"
-      webhook_secret::
+      webhook_secret:
         name: "bitbucket-server-webhook-config"
         # Set this if you have a different key for your secret
         # key: "webhook.secret"
