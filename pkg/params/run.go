@@ -64,7 +64,6 @@ func (r *Run) getConfigFromConfigMapWatcher(ctx context.Context, eventChannel <-
 		if open {
 			switch event.Type {
 			case watch.Added, watch.Modified:
-				r.Clients.Log.Info("added or modifies events are coming")
 				if err := r.UpdatePACInfo(ctx); err != nil {
 					r.Clients.Log.Info("failed to update PAC info", err)
 					return err
