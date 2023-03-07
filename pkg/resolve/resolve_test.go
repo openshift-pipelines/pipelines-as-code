@@ -212,12 +212,12 @@ func TestNoPipelineRuns(t *testing.T) {
 
 func TestReferencedTaskNotInRepo(t *testing.T) {
 	_, _, err := readTDfile(t, "referenced-task-not-in-repo", false, true)
-	assert.Error(t, err, "cannot find task nothere in input")
+	assert.Error(t, err, "cannot find referenced task nothere. if it's a remote task make sure to add it in the annotations")
 }
 
 func TestReferencedPipelineNotInRepo(t *testing.T) {
 	_, _, err := readTDfile(t, "referenced-pipeline-not-in-repo", false, true)
-	assert.Error(t, err, "cannot find pipeline pipeline-test1 in input")
+	assert.Error(t, err, "cannot find referenced pipeline pipeline-test1. for a remote pipeline make sure to add it in the annotation")
 }
 
 func TestIgnoreDocSpace(t *testing.T) {
