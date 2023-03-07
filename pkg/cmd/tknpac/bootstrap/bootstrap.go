@@ -9,7 +9,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/spf13/cobra"
 	kapierror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -150,13 +149,8 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				}
 			}
 
-			pacInfo, err := info.GetPACInfo(ctx, run, opts.targetNamespace)
-			if err != nil {
-				return err
-			}
-
 			if !opts.forceGitHubApp {
-				if pacInfo.Provider == provider.ProviderGitHubApp {
+				if info.IsGithubAppInstalled(ctx, run, opts.targetNamespace) {
 					fmt.Fprintln(opts.ioStreams.Out, "👌 Skips bootstrapping GitHub App, as one is already configured. Please pass --force-configure to override existing")
 					return nil
 				}
@@ -213,13 +207,8 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 
-			pacInfo, err := info.GetPACInfo(ctx, run, opts.targetNamespace)
-			if err != nil {
-				return err
-			}
-
 			if !opts.forceGitHubApp {
-				if pacInfo.Provider == provider.ProviderGitHubApp {
+				if info.IsGithubAppInstalled(ctx, run, opts.targetNamespace) {
 					fmt.Fprintln(opts.ioStreams.Out, "👌 Skips bootstrapping GitHub App, as one is already configured. Please pass --force-configure to override existing")
 					return nil
 				}

@@ -20,7 +20,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -81,12 +80,8 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 			if err != nil {
 				return err
 			}
-			pacCMInfo, err := pacInfo.GetPACInfo(ctx, run, installationNS)
-			if err != nil {
-				return err
-			}
 
-			if pacCMInfo.Provider == provider.ProviderGitHubApp {
+			if pacInfo.IsGithubAppInstalled(ctx, run, installationNS) {
 				if strings.Contains(createOpts.Event.URL, "github") {
 					if err := createOpts.generateTemplate(nil); err != nil {
 						return err
