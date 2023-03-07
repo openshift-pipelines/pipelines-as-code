@@ -105,7 +105,7 @@ func getTaskByName(name string, tasks []*tektonv1.Task) (*tektonv1.Task, error) 
 			return value, nil
 		}
 	}
-	return &tektonv1.Task{}, fmt.Errorf("cannot find task %s in input", name)
+	return &tektonv1.Task{}, fmt.Errorf("cannot find referenced task %s. if it's a remote task make sure to add it in the annotations", name)
 }
 
 func getPipelineByName(name string, tasks []*tektonv1.Pipeline) (*tektonv1.Pipeline, error) {
@@ -114,7 +114,7 @@ func getPipelineByName(name string, tasks []*tektonv1.Pipeline) (*tektonv1.Pipel
 			return value, nil
 		}
 	}
-	return &tektonv1.Pipeline{}, fmt.Errorf("cannot find pipeline %s in input", name)
+	return &tektonv1.Pipeline{}, fmt.Errorf("cannot find referenced pipeline %s. for a remote pipeline make sure to add it in the annotation", name)
 }
 
 func skippingTask(taskName string, skippedTasks []string) bool {
