@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
 	"github.com/spf13/cobra"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 )
@@ -212,6 +213,8 @@ func resolveFilenames(ctx context.Context, cs *params.Run, filenames []string, p
 	}
 
 	for _, run := range prun {
+		run.APIVersion = tektonv1.SchemeGroupVersion.String()
+		run.Kind = "PipelineRun"
 		d, err := yaml.Marshal(run)
 		if err != nil {
 			return "", err
