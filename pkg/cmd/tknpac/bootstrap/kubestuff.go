@@ -22,6 +22,9 @@ func createPacSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts, 
 	_, err := run.Clients.Kube.CoreV1().Secrets(opts.targetNamespace).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: secretName,
+			Labels: map[string]string{
+				"app.kubernetes.io/part-of": "pipelines-as-code",
+			},
 		},
 		Data: map[string][]byte{
 			"github-application-id": []byte(fmt.Sprintf("%d", manifest.GetID())),
