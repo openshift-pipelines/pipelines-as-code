@@ -1,0 +1,20 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: test-
+  labels:
+    pipelinesascode.tekton.dev/original-prname: test
+spec:
+  pipelineSpec:
+    tasks:
+    - name: bar
+      taskSpec:
+        spec: null
+        steps:
+        - computeResources: {}
+          image: alpine:3.7
+          name: hello-moto
+          script: echo hello moto
+status: {}
+
