@@ -28,7 +28,7 @@ func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *par
 		return "", "", 0, err
 	}
 
-	installationURL := keys.APIURL + keys.InstallationURL
+	installationURL := keys.PublicGithubAPIURL + keys.InstallationURL
 	enterpriseURL = req.Header.Get("X-GitHub-Enterprise-Host")
 	if enterpriseURL != "" {
 		installationURL = enterpriseURL + keys.InstallationURL

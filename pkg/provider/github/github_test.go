@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-github/v49/github"
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
@@ -445,7 +446,7 @@ func TestGithubSetClient(t *testing.T) {
 		},
 		{
 			name:        "default to public github",
-			expectedURL: "https://api.github.com/",
+			expectedURL: fmt.Sprintf("%s/", keys.PublicGithubAPIURL),
 			event:       info.NewEvent(),
 		},
 	}
