@@ -16,6 +16,7 @@ import (
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	assertfs "gotest.tools/v3/fs"
+	"gotest.tools/v3/golden"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -32,8 +33,7 @@ spec:
 		  steps:
 			- name: hello-moto
 			  image: alpine:3.7
-			  script: "echo hello moto"
-`
+			  script: "echo hello moto"`
 
 func TestSplitArgsInMap(t *testing.T) {
 	args := []string{"ride=bike", "be=free", "of=car"}
@@ -106,6 +106,7 @@ func TestResolveFilenames(t *testing.T) {
 				t.Errorf("resolveFilenames() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			} else if !tt.wantErr {
+				golden.Assert(t, string(got), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
 				assert.Assert(t, got != "")
 			}
 		})
