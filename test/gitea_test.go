@@ -672,6 +672,22 @@ func TestGiteaErrorSnippetWithSecret(t *testing.T) {
 	tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
 }
 
+// TestGiteaNotExistingClusterTask checks that the pipeline run fails if the clustertask does not exist
+// This willl test properly if we error the reason in UI see bug #1160
+func TestGiteaNotExistingClusterTask(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		Regexp:      regexp.MustCompile(`.*clustertasks.tekton.dev "foo-bar" not found`),
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/failures/not-existing-clustertask.yaml",
+		},
+		NoCleanup:      true,
+		CheckForStatus: "failure",
+		ExpectEvents:   false,
+	}
+	defer tgitea.TestPR(t, topts)()
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -run TestGiteaPush ."
 // End:
