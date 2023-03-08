@@ -20,6 +20,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 const (
@@ -106,9 +107,15 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 	}
 
 	trStatus := kstatus.GetStatusFromTaskStatusOrFromAsking(ctx, pr, r.run)
-	taskStatusText, err := sort.TaskStatusTmpl(pr, trStatus, r.run, vcx.GetConfig())
-	if err != nil {
-		return pr, err
+	var taskStatusText string
+	if len(trStatus) > 0 {
+		var err error
+		taskStatusText, err = sort.TaskStatusTmpl(pr, trStatus, r.run, vcx.GetConfig())
+		if err != nil {
+			return pr, err
+		}
+	} else {
+		taskStatusText = pr.Status.GetCondition(apis.ConditionSucceeded).Message
 	}
 
 	if r.run.Info.Pac.ErrorLogSnippet {
