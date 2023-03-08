@@ -9,14 +9,13 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/google/go-github/v49/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 	"golang.org/x/oauth2"
 )
-
-const apiPublicURL = "https://api.github.com/"
 
 type gitHubConfig struct {
 	Client              *github.Client
@@ -155,14 +154,14 @@ func (gh *gitHubConfig) create(ctx context.Context) error {
 		return err
 	}
 
-	if res.Response.StatusCode != http.StatusCreated {
+	if res.StatusCode != http.StatusCreated {
 		payload, err := io.ReadAll(res.Body)
 		if err != nil {
 			return fmt.Errorf("failed to read response body: %w", err)
 		}
 
 		return fmt.Errorf("failed to create webhook on repository %v/%v, status code: %v, error : %v",
-			gh.repoOwner, gh.repoName, res.Response.StatusCode, payload)
+			gh.repoOwner, gh.repoName, res.StatusCode, payload)
 	}
 
 	fmt.Fprintf(gh.IOStream.Out, "✓ Webhook has been created on repository %v/%v\n", gh.repoOwner, gh.repoName)
@@ -177,7 +176,7 @@ func (gh *gitHubConfig) newGHClientByToken(ctx context.Context) (*github.Client,
 		&oauth2.Token{AccessToken: gh.personalAccessToken},
 	)
 
-	if gh.APIURL == "" || gh.APIURL == apiPublicURL {
+	if gh.APIURL == "" || gh.APIURL == keys.PublicGithubAPIURL {
 		return github.NewClient(oauth2.NewClient(ctx, ts)), nil
 	}
 

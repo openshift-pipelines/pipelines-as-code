@@ -135,13 +135,13 @@ func (gl *gitLabConfig) create() error {
 		return err
 	}
 
-	if resp.Response.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusCreated {
 		payload, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("failed to read response body: %w", err)
 		}
 		return fmt.Errorf("failed to create webhook, status code: %v, error : %v",
-			resp.Response.StatusCode, payload)
+			resp.StatusCode, payload)
 	}
 
 	fmt.Fprintln(gl.IOStream.Out, "✓ Webhook has been created on your repository")

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
@@ -124,7 +125,7 @@ func TestWebhookAdd(t *testing.T) {
 			as.StubOne("true")
 			as.StubOne("yes")
 			as.StubOne("c8978ebcd5407637a6da1c8d178654267fd66a3b")
-			as.StubOne("https://api.github.com")
+			as.StubOne(keys.PublicGithubAPIURL)
 		},
 		namespaces:   []*corev1.Namespace{namespace1},
 		repositories: []*v1alpha1.Repository{repo1},
