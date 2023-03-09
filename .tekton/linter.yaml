@@ -125,6 +125,7 @@ spec:
               image: quay.io/eclipse/che-docs
               workingDir: $(workspaces.source.path)
               script: |
+                export NO_COLOR=1
                 vale docs/content --minAlertLevel=error --output=line
         workspaces:
           - name: source
