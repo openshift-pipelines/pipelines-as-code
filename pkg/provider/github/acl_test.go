@@ -177,8 +177,8 @@ func TestAclCheckAll(t *testing.T) {
 		fmt.Fprintf(rw, `{"content": "%s"}`, base64.RawStdEncoding.EncodeToString([]byte("approvers:\n  - approved\n")))
 	})
 
-	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/collaborators", collabOwner, collabRepo), func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(rw, `[{"login": "%s"}]`, collaborator)
+	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/collaborators/%v", collabOwner, collabRepo, collaborator), func(rw http.ResponseWriter, r *http.Request) {
+		rw.WriteHeader(204)
 	})
 
 	ctx, _ := rtesting.SetupFakeContext(t)
