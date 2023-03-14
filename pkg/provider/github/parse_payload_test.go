@@ -78,9 +78,6 @@ var samplePR = github.PullRequest{
 }
 
 func TestParsePayLoad(t *testing.T) {
-	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
-	defer teardown()
-
 	tests := []struct {
 		name                    string
 		wantErrString           string
@@ -88,7 +85,7 @@ func TestParsePayLoad(t *testing.T) {
 		payloadEventStruct      interface{}
 		jeez                    string
 		triggerTarget           string
-		githubClient            *github.Client
+		githubClient            bool
 		muxReplies              map[string]interface{}
 		shaRet                  string
 		targetPipelinerun       string
@@ -120,7 +117,7 @@ func TestParsePayLoad(t *testing.T) {
 			eventType:          "check_run",
 			triggerTarget:      "nonopetitrobot",
 			payloadEventStruct: github.CheckRunEvent{Action: github.String("created")},
-			githubClient:       fakeclient,
+			githubClient:       true,
 		},
 		{
 			name:               "bad/check run only with github apps",
@@ -140,7 +137,7 @@ func TestParsePayLoad(t *testing.T) {
 			name:               "bad/issue comment not coming from pull request",
 			eventType:          "issue_comment",
 			triggerTarget:      "pull_request",
-			githubClient:       fakeclient,
+			githubClient:       true,
 			payloadEventStruct: github.IssueCommentEvent{Issue: &github.Issue{}},
 			wantErrString:      "issue comment is not coming from a pull_request",
 		},
@@ -148,7 +145,7 @@ func TestParsePayLoad(t *testing.T) {
 			name:          "bad/issue comment invalid pullrequest",
 			eventType:     "issue_comment",
 			triggerTarget: "pull_request",
-			githubClient:  fakeclient,
+			githubClient:  true,
 			payloadEventStruct: github.IssueCommentEvent{
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
@@ -160,7 +157,7 @@ func TestParsePayLoad(t *testing.T) {
 		},
 		{
 			name:          "bad/rerequest error fetching PR",
-			githubClient:  fakeclient,
+			githubClient:  true,
 			eventType:     "check_run",
 			triggerTarget: "pull_request",
 			wantErrString: "404",
@@ -176,9 +173,10 @@ func TestParsePayLoad(t *testing.T) {
 			shaRet: "samplePRsha",
 		},
 		{
-			name:          "good/rerequest on pull request",
+			// specific run from a check_suite
+			name:          "good/rerequest check_run on pull request",
 			eventType:     "check_run",
-			githubClient:  fakeclient,
+			githubClient:  true,
 			triggerTarget: "issue-recheck",
 			payloadEventStruct: github.CheckRunEvent{
 				Action: github.String("rerequested"),
@@ -192,10 +190,26 @@ func TestParsePayLoad(t *testing.T) {
 			muxReplies: map[string]interface{}{"/repos/owner/reponame/pulls/54321": samplePR},
 			shaRet:     "samplePRsha",
 		},
+		// all checks in a check_suite
+		{
+			name:          "good/rerequest check_suite on pull request",
+			eventType:     "check_suite",
+			githubClient:  true,
+			triggerTarget: "issue-recheck",
+			payloadEventStruct: github.CheckSuiteEvent{
+				Action: github.String("rerequested"),
+				Repo:   sampleRepo,
+				CheckSuite: &github.CheckSuite{
+					PullRequests: []*github.PullRequest{&samplePR},
+				},
+			},
+			muxReplies: map[string]interface{}{"/repos/owner/reponame/pulls/54321": samplePR},
+			shaRet:     "samplePRsha",
+		},
 		{
 			name:          "good/rerequest on push",
 			eventType:     "check_run",
-			githubClient:  fakeclient,
+			githubClient:  true,
 			triggerTarget: "issue-recheck",
 			payloadEventStruct: github.CheckRunEvent{
 				Action: github.String("rerequested"),
@@ -212,7 +226,7 @@ func TestParsePayLoad(t *testing.T) {
 			name:          "good/issue comment",
 			eventType:     "issue_comment",
 			triggerTarget: "pull_request",
-			githubClient:  fakeclient,
+			githubClient:  true,
 			payloadEventStruct: github.IssueCommentEvent{
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
@@ -248,7 +262,7 @@ func TestParsePayLoad(t *testing.T) {
 			name:          "good/issue comment for retest",
 			eventType:     "issue_comment",
 			triggerTarget: "pull_request",
-			githubClient:  fakeclient,
+			githubClient:  true,
 			payloadEventStruct: github.IssueCommentEvent{
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
@@ -268,7 +282,7 @@ func TestParsePayLoad(t *testing.T) {
 			name:          "good/issue comment for cancel all",
 			eventType:     "issue_comment",
 			triggerTarget: "pull_request",
-			githubClient:  fakeclient,
+			githubClient:  true,
 			payloadEventStruct: github.IssueCommentEvent{
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
@@ -287,7 +301,7 @@ func TestParsePayLoad(t *testing.T) {
 			name:          "good/issue comment for cancel a pr",
 			eventType:     "issue_comment",
 			triggerTarget: "pull_request",
-			githubClient:  fakeclient,
+			githubClient:  true,
 			payloadEventStruct: github.IssueCommentEvent{
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
@@ -307,6 +321,11 @@ func TestParsePayLoad(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			ghClient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			if !tt.githubClient {
+				ghClient = nil
+			}
 
 			for key, value := range tt.muxReplies {
 				mux.HandleFunc(key, func(rw http.ResponseWriter, r *http.Request) {
@@ -316,7 +335,7 @@ func TestParsePayLoad(t *testing.T) {
 			}
 			logger, _ := logger.GetLogger()
 			gprovider := Provider{
-				Client: tt.githubClient,
+				Client: ghClient,
 				Logger: logger,
 			}
 			request := &http.Request{Header: map[string][]string{}}

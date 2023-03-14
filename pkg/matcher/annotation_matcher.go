@@ -195,7 +195,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 	}
 
 	logger.Warn("cannot match pipeline from payload to a pipelinerun in .tekton/ dir")
-	logger.Warnf("payload target event is %s and target branch %s", event.EventType, event.BaseBranch)
+	logger.Warnf("payload target event is %s with source branch %s and target branch %s", event.EventType, event.HeadBranch, event.BaseBranch)
 	logger.Warn("available configuration of the PipelineRuns annotations in .tekton/ dir")
 	for name, maps := range configurations {
 		logger.Infof("PipelineRun: %s, target-branch=%s, target-event=%s",

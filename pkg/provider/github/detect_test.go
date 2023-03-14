@@ -35,6 +35,18 @@ func TestProvider_Detect(t *testing.T) {
 			processReq:    false,
 		},
 		{
+			name: "valid check suite Event",
+			event: github.CheckSuiteEvent{
+				Action: github.String("rerequested"),
+				CheckSuite: &github.CheckSuite{
+					ID: github.Int64(123),
+				},
+			},
+			eventType:  "check_suite",
+			isGH:       true,
+			processReq: true,
+		},
+		{
 			name: "valid check run Event",
 			event: github.CheckRunEvent{
 				Action: github.String("rerequested"),

@@ -19,6 +19,7 @@ func generateManifest(opts *bootstrapOpts) ([]byte, error) {
 		Public:         github.Bool(true),
 		DefaultEvents: []string{
 			"check_run",
+			"check_suite",
 			"issue_comment",
 			"pull_request",
 			"push",
