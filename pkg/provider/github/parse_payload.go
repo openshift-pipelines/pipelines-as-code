@@ -198,6 +198,9 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 	var processedEvent *info.Event
 	var err error
 
+	processedEvent = info.NewEvent()
+	processedEvent.Event = eventInt
+
 	switch gitEvent := eventInt.(type) {
 	case *github.CheckRunEvent:
 		if v.Client == nil {
@@ -207,10 +210,16 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		if *gitEvent.Action != "rerequested" {
 			return nil, fmt.Errorf("only issue recheck is supported in checkrunevent")
 		}
-		processedEvent, err = v.handleReRequestEvent(ctx, gitEvent)
-		if err != nil {
-			return nil, err
+		return v.handleReRequestEvent(ctx, gitEvent)
+	case *github.CheckSuiteEvent:
+		if v.Client == nil {
+			return nil, fmt.Errorf("check suite rerequest is only supported with github apps integration")
 		}
+
+		if *gitEvent.Action != "rerequested" {
+			return nil, fmt.Errorf("only issue recheck is supported in checkrunevent")
+		}
+		return v.handleCheckSuites(ctx, gitEvent)
 	case *github.IssueCommentEvent:
 		if v.Client == nil {
 			return nil, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
@@ -219,9 +228,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		if err != nil {
 			return nil, err
 		}
-
 	case *github.PushEvent:
-		processedEvent = info.NewEvent()
 		processedEvent.Organization = gitEvent.GetRepo().GetOwner().GetLogin()
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
 		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
@@ -259,7 +266,6 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		return nil, errors.New("this event is not supported")
 	}
 
-	processedEvent.Event = eventInt
 	processedEvent.TriggerTarget = event.TriggerTarget
 	processedEvent.Provider.Token = event.Provider.Token
 
@@ -284,7 +290,34 @@ func (v *Provider) handleReRequestEvent(ctx context.Context, event *github.Check
 		return runevent, nil
 	}
 	runevent.PullRequestNumber = event.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
+	runevent.TriggerTarget = "pull_request"
 	v.Logger.Infof("Recheck of PR %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	return v.getPullRequest(ctx, runevent)
+}
+
+func (v *Provider) handleCheckSuites(ctx context.Context, event *github.CheckSuiteEvent) (*info.Event, error) {
+	runevent := info.NewEvent()
+	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
+	runevent.Repository = event.GetRepo().GetName()
+	runevent.URL = event.GetRepo().GetHTMLURL()
+	runevent.DefaultBranch = event.GetRepo().GetDefaultBranch()
+	runevent.SHA = event.GetCheckSuite().GetHeadSHA()
+	runevent.HeadBranch = event.GetCheckSuite().GetHeadBranch()
+	// If we don't have a pull_request in this it probably mean a push
+	// we are not able to know which
+	if len(event.GetCheckSuite().PullRequests) == 0 {
+		runevent.BaseBranch = runevent.HeadBranch
+		runevent.EventType = "push"
+		runevent.TriggerTarget = "push"
+		// we allow the rerequest user here, not the push user, i guess it's
+		// fine because you can't do a rereq without being a github owner?
+		runevent.Sender = event.GetSender().GetLogin()
+		return runevent, nil
+		// return nil, fmt.Errorf("check suite event is not supported for push events")
+	}
+	runevent.PullRequestNumber = event.GetCheckSuite().PullRequests[0].GetNumber()
+	runevent.TriggerTarget = "pull_request"
+	v.Logger.Infof("Rerun of all check on PR %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	return v.getPullRequest(ctx, runevent)
 }
 

@@ -67,9 +67,15 @@ your branch or pull_request.
 
 ### GitHub APPS
 
-On GitHub if you are using the GitHub apps, you can go to the Checks tab and
-click on the upper left button called "Re-Run" and Pipelines as Code will react
-to the event and restart testing the PipelineRun.
+If you are using the GitHub apps method, you have the option to access the "Checks"
+tab where you can find an upper right button labeled "Re-Run". By clicking on
+this button, you can trigger Pipelines as Code to respond and recommence
+testing the PipelineRun.
+
+This feature enables you to either rerun a particular pipeline or execute the
+entire suite of checks once again.
+
+![github apps rerun check](/images/github-apps-rerun-checks.png)
 
 ### Gitops command on pull or merge request
 

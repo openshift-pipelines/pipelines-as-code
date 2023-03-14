@@ -41,6 +41,11 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 	_ = json.Unmarshal([]byte(payload), &eventInt)
 
 	switch gitEvent := eventInt.(type) {
+	case *github.CheckSuiteEvent:
+		if gitEvent.GetAction() == "rerequested" && gitEvent.GetCheckSuite() != nil {
+			return setLoggerAndProceed(true, "", nil)
+		}
+		return setLoggerAndProceed(false, fmt.Sprintf("check_suite: unsupported action \"%s\"", gitEvent.GetAction()), nil)
 	case *github.CheckRunEvent:
 		if gitEvent.GetAction() == "rerequested" && gitEvent.GetCheckRun() != nil {
 			return setLoggerAndProceed(true, "", nil)

@@ -46,6 +46,7 @@ Alternatively, you could set up manually by following the steps [here](#setup-ma
 
 * Subscribe to following events:
   * Check run
+  * Check suite
   * Issue comment
   * Pull request
   * Push

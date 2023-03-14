@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// TestGithubPullRerequest is a test that will create a pull request and check
+// if we can rerequest a specific check or the full check suite
 func TestGithubPullRerequest(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
@@ -99,4 +101,49 @@ func TestGithubPullRerequest(t *testing.T) {
 	repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
+	csEvent := github.CheckSuiteEvent{
+		Action: github.String("rerequested"),
+		Installation: &github.Installation{
+			ID: &installID,
+		},
+		CheckSuite: &github.CheckSuite{
+			HeadBranch: &runinfo.HeadBranch,
+			HeadSHA:    &runinfo.SHA,
+			PullRequests: []*github.PullRequest{
+				{
+					Number: github.Int(prNumber),
+				},
+			},
+		},
+		Repo: &github.Repository{
+			DefaultBranch: &runinfo.DefaultBranch,
+			HTMLURL:       &runinfo.URL,
+			Name:          &runinfo.Repository,
+			Owner:         &github.User{Login: &runinfo.Organization},
+		},
+		Sender: &github.User{
+			Login: &runinfo.Sender,
+		},
+	}
+
+	err = payload.Send(ctx,
+		runcnx,
+		os.Getenv("TEST_EL_URL"),
+		os.Getenv("TEST_EL_WEBHOOK_SECRET"),
+		os.Getenv("TEST_GITHUB_API_URL"),
+		os.Getenv("TEST_GITHUB_REPO_INSTALLATION_ID"),
+		csEvent,
+		"check_suite",
+	)
+	assert.NilError(t, err)
+
+	runcnx.Clients.Log.Infof("Wait for the second repository update to be updated")
+	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, twait.Opts{
+		RepoName:        targetNS,
+		Namespace:       targetNS,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       sha,
+	})
+	assert.NilError(t, err)
 }
