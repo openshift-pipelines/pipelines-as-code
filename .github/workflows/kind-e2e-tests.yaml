@@ -4,6 +4,8 @@ on:
   workflow_dispatch: # yamllint disable-line
   pull_request_target:
     types: [opened, synchronize, reopened]
+    paths:
+      - '**.go'
 jobs:
   e2e-tests:
     name: e2e tests
