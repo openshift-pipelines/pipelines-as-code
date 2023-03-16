@@ -36,6 +36,7 @@ type Reconciler struct {
 	qm                *sync.QueueManager
 	metrics           *metrics.Recorder
 	eventEmitter      *events.EventEmitter
+	copilot           *ChatGPT
 }
 
 var (

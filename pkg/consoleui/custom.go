@@ -26,6 +26,7 @@ func (o *CustomConsole) URL() string {
 	if o.info.Pac.CustomConsoleURL == "" {
 		return fmt.Sprintf("https://setting.%s.is.not.configured", settings.CustomConsoleURLKey)
 	}
+
 	return o.info.Pac.CustomConsoleURL
 }
 

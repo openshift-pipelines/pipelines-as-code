@@ -24,6 +24,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
+	github.com/sashabaranov/go-openai v1.5.1
 	github.com/spf13/cobra v1.6.1
 	github.com/tektoncd/pipeline v0.44.0
 	github.com/xanzy/go-gitlab v0.79.0
@@ -41,6 +42,11 @@ require (
 	knative.dev/eventing v0.35.5
 	knative.dev/pkg v0.0.0-20230125083639-408ad0773f47
 	sigs.k8s.io/yaml v1.3.0
+)
+
+require (
+	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/rivo/uniseg v0.2.0 // indirect
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.25.4
@@ -88,6 +94,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect

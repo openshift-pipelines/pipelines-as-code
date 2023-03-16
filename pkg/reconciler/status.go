@@ -25,7 +25,7 @@ import (
 
 const (
 	maxPipelineRunStatusRun = 5
-	logSnippetNumLines      = 3
+	logSnippetNumLines      = 10
 	failureReasonText       = "%s<br><h4>Failure reason</h4><br>%s"
 )
 
@@ -95,6 +95,15 @@ func (r *Reconciler) getFailureSnippet(ctx context.Context, pr *tektonv1.Pipelin
 	if text == "" {
 		text = sortedTaskInfos[0].Message
 	}
+
+	if r.copilot != nil {
+		cpt, err := r.copilot.GetResponse(ctx, fmt.Sprintf("analyze this CI Error: %s", text))
+		if err != nil {
+			r.run.Clients.Log.Errorw("Error while getting copilot response", zap.Error(err))
+		}
+		return fmt.Sprintf("task <b>%s</b> has the status <b>\"%s\"</b>:\n<pre>%s</pre>ChatGPT explains this error like this\n<pre>%s</pre>", sortedTaskInfos[0].Name, sortedTaskInfos[0].Reason, text, cpt)
+	}
+
 	return fmt.Sprintf("task <b>%s</b> has the status <b>\"%s\"</b>:\n<pre>%s</pre>", sortedTaskInfos[0].Name, sortedTaskInfos[0].Reason, text)
 }
 

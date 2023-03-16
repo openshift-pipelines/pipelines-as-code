@@ -58,6 +58,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			qm:                sync.NewQueueManager(run.Clients.Log),
 			metrics:           metrics,
 			eventEmitter:      events.NewEventEmitter(run.Clients.Kube, run.Clients.Log),
+			copilot:           NewCopilot(run.Clients.Log),
 		}
 		impl := tektonPipelineRunReconcilerv1.NewImpl(ctx, r, ctrlOpts())
 
