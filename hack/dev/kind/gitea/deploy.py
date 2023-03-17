@@ -28,7 +28,7 @@ PAC_CONTROLLER_NAMESPACE = os.environ.get(
 GITEA_SMEE_HOOK_URL = os.environ.get("TEST_GITEA_SMEEURL", "")  # will fail if not set
 if GITEA_SMEE_HOOK_URL == "":
     print(
-        "You need to setupo a SMEE URL in https://smee.io and set it up as environement variable in the `TEST_GITEA_SMEEURL` variable"
+        "You need to setupo a Hook URL in https://hook.pipelinesascode.com and set it up as environement variable in the `TEST_GITEA_SMEEURL` variable"
     )
     sys.exit(1)
 

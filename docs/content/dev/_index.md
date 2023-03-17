@@ -110,7 +110,7 @@ it's enforced).
 The `install.sh` script will by default spin up a new instance of GITEA to play
 with and run the Gitea E2E tests.
 
-You will need to create a Smee URL generated from <https://smee.io/new>
+You will need to create a Hook URL generated from <https://hook.pipelinesascode.com/new>
 into the environment variable `TEST_GITEA_SMEEURL`.
 
 The defaults are :
@@ -123,7 +123,7 @@ The E2E tests will automatically create repo using the admin username for each t
 
 ## Debugging controller
 
-Create a [smee](https://smee.io) URL and point your app/webhook to it. Use
+Create a [hook](https://hook.pipelinesascode.com) URL and point your app/webhook to it. Use
 [gosmee](https://github.com/chmouel/gosmee) to forward the requests from github
 to your locally installed controller (this can be either run on your debugger or
 inside kind).

@@ -103,7 +103,7 @@ func TestWebhookAdd(t *testing.T) {
 		},
 		Data: map[string]string{
 			"version":        "devel",
-			"controller-url": "https://smee.io/WKR2cP3ug5K6A92T",
+			"controller-url": "https://hook.pipelinesascode.com/WKR2cP3ug5K6A92T",
 		},
 	}
 
@@ -135,7 +135,7 @@ func TestWebhookAdd(t *testing.T) {
 		},
 		configMaps: []*corev1.ConfigMap{configMap},
 		wantErr:    true, // returning error while creating webhook because it requires actual personal access token in order to connect github
-		wantMsg:    "✓ Setting up GitHub Webhook for Repository https://anurl.com/owner/repo\n👀 I have detected a controller url: https://smee.io/WKR2cP3ug5K6A92T\nℹ ️You now need to create a GitHub personal access token, please checkout the docs at https://is.gd/KJ1dDH for the required scopes\n",
+		wantMsg:    "✓ Setting up GitHub Webhook for Repository https://anurl.com/owner/repo\n👀 I have detected a controller url: https://hook.pipelinesascode.com/WKR2cP3ug5K6A92T\nℹ ️You now need to create a GitHub personal access token, please checkout the docs at https://is.gd/KJ1dDH for the required scopes\n",
 	}, {
 		name:         "failed to configure webhook when git_provider secret is empty",
 		namespaces:   []*corev1.Namespace{namespace2},
@@ -184,7 +184,7 @@ func TestWebhookAdd(t *testing.T) {
 		askStubs: func(as *prompt.AskStubber) {
 			as.StubOne("github")
 			as.StubOne("Yes")
-			as.StubOne("https://smee.io/WKR2cP3ug5K6A92T")
+			as.StubOne("https://hook.pipelinesascode.com/WKR2cP3ug5K6A92T")
 			as.StubOne("53353")
 			as.StubOne("https://github.com")
 		},
@@ -196,7 +196,7 @@ func TestWebhookAdd(t *testing.T) {
 		opts: &cli.PacCliOpts{
 			Namespace: namespace2.GetName(),
 		},
-		wantMsg: "✓ Setting up GitHub Webhook for Repository https://github.com/owner/repo\n👀 I have detected a controller url: https://smee.io/WKR2cP3ug5K6A92T\n",
+		wantMsg: "✓ Setting up GitHub Webhook for Repository https://github.com/owner/repo\n👀 I have detected a controller url: https://hook.pipelinesascode.com/WKR2cP3ug5K6A92T\n",
 		wantErr: true, // error out because creating webhook in a repository requires valid provider token
 
 	}}

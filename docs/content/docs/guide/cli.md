@@ -112,7 +112,7 @@ application.
 On Kubernetes, tkn-pac will attempt to detect the tekton-dashboard Ingress URL.
 
 It will also ask you if you want to install a webhook forwarder called
-[gosmee](https://github.com/chmouel/gosmee) on <https://smee.io>.
+[gosmee](https://github.com/chmouel/gosmee) on <https://hook.pipelinesascode.com>.
 This allows you to connect the Pipelines as Code controller to GitHub even if
 it's is not directly accessible from the internet.
 

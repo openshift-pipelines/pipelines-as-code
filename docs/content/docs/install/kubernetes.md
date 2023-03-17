@@ -60,7 +60,7 @@ your Git provider. You can find the ingress's address via
 If you are quickly trying pipelines-as-code and do not want to setup the Ingress
 access, the `tkn pac bootstrap` [cli](../../guide/cli) command will let you
 set-up a [gosmee](https://github.com/chmouel/gosmee) deployment using the
-webhook URL remote forwarder `https://smee.io`.
+webhook URL remote forwarder `https://hook.pipelinesascode.com`.
 
 ### [GKE](https://cloud.google.com/kubernetes-engine)
 
