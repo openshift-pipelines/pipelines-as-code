@@ -146,15 +146,15 @@ Pipelines as Code requires an externally accessible URL to receive events from G
 If you're developing locally (such as on kind or Minikube) or don't want to set up an ingress on your cluster,
 you can also use a proxy service to expose the `pipelines-as-code-controller` service and allow it to receive events.
 
-### Proxying with smee.io
+### Proxying with hook.pipelinesascode.com
 
-To handle such scenario for minikube/kind cluster let's use [smee.io](https://smee.io/)
+To handle such scenario for minikube/kind cluster let's use [hook.pipelinesascode.com](https://hook.pipelinesascode.com/)
 
-- Generate your own URL by going to [smee.io/new](https://smee.io/new)
+- Generate your own URL by going to [hook.pipelinesascode.com/new](https://hook.pipelinesascode.com/new)
 - Copy `Webhook Proxy URL`
 - Add `Webhook Proxy URL` URL in container args of `deployment.yaml`.
 
-Ex: `'<replace Webhook Proxy URL>'` -> `'https://smee.io/oLHu7IjUV4wGm2tJ'`
+ex: `'<replace Webhook Proxy URL>'` -> `'https://hook.pipelinesascode.com/oLHu7IjUV4wGm2tJ'`
 
 ```yaml
 kind: Deployment

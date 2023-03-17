@@ -2,10 +2,10 @@
 # This should create a dashboard and a PAAC URL at the end on http
 #
 # You should forward the URL via smee,
-# - create a URL in there by going to https://smee.io
+# - create a URL in there by going to https://hook.pipelinesascode.com
 # - install gosmee: go install -v github.com/chmouel/gosmee@latest
 # - run somewhere in a terminal :
-#    gosmee client https://smee.io/aBcDeF http://controller.paac-127-0-0-1.nip.io
+#    gosmee client https://hook.pipelinesascode.com/aBcDeF http://controller.paac-127-0-0-1.nip.io
 #
 # You probably need to install passwordstore https://www.passwordstore.org/ and
 # add your github secrets : github-application-id github-private-key
@@ -192,7 +192,7 @@ function configure_pac() {
     echo "Set Active Namespace to pipelines-as-code"
     kubectl config set-context --current --namespace=pipelines-as-code >/dev/null
     type -p gosmee || echo "You may want to install psmee with: go install -v github.com/chmouel/gosmee@latest and run:
-gosmee client --saveDir /tmp/replays https://smee.io/SMEEID http://controller.${DOMAIN_NAME}"
+gosmee client --saveDir /tmp/replays https://hook.pipelinesascode.com/SMEEID http://controller.${DOMAIN_NAME}"
 }
 
 function install_gitea ()

@@ -22,8 +22,7 @@ const (
 	openShiftRouteResource = "routes"
 	secretName             = "pipelines-as-code-secret"
 	defaultProviderType    = "github-app"
-	// https://webhook.chmouel.com/ is a good value too :p
-	defaultWebForwarderURL = "https://smee.io"
+	defaultWebForwarderURL = "https://hook.pipelinesascode.com"
 )
 
 var providerTargets = []string{"github-app", "github-enterprise-app"}

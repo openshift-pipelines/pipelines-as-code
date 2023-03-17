@@ -32,7 +32,7 @@ const (
 	gosmeeInstallHelpText = `Pipelines as Code does not install a Ingress object to make the controller accessing from the internet
 we can install a webhook forwarder called gosmee (https://github.com/chmouel/gosmee) using a %s URL
 this will let your git platform provider (ie: Github) to reach the controller without having to be having public access`
-	minNumOfCharForRandomForwarderID = 16
+	minNumOfCharForRandomForwarderID = 12
 )
 
 func getLatestRelease(ctx context.Context, k8release string) (string, string, error) {
@@ -106,7 +106,7 @@ func getDashboardURL(ctx context.Context, opts *bootstrapOpts, run *params.Run) 
 	return nil
 }
 
-// installGosmeeForwarder Install a gosmee forwarded to smee.io
+// installGosmeeForwarder Install a gosmee forwarded to hook.pipelinesascode.com
 func installGosmeeForwarder(opts *bootstrapOpts) error {
 	gosmeInstall, err := askYN(true, fmt.Sprintf(gosmeeInstallHelpText, opts.forwarderURL), "Do you want me to install the gosmee forwarder?", opts.ioStreams.Out)
 	if err != nil {
