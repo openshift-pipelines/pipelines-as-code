@@ -172,7 +172,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 			"code": "200",
 		},
 	}
-	httpTestClient := httptesthelper.MakeHTTPTestClient(t, config)
+	httpTestClient := httptesthelper.MakeHTTPTestClient(config)
 	ctx, _ := rtesting.SetupFakeContext(t)
 	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 	logger, _ := logger.GetLogger()

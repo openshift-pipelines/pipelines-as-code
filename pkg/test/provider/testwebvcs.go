@@ -23,18 +23,18 @@ type TestProviderImp struct {
 	WantProviderRemoteTask bool
 }
 
-func (v *TestProviderImp) SetLogger(logger *zap.SugaredLogger) {
+func (v *TestProviderImp) SetLogger(_ *zap.SugaredLogger) {
 }
 
-func (v *TestProviderImp) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
+func (v *TestProviderImp) Validate(_ context.Context, _ *params.Run, _ *info.Event) error {
 	return nil
 }
 
-func (v *TestProviderImp) Detect(request *http.Request, body string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
+func (v *TestProviderImp) Detect(_ *http.Request, _ string, _ *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	return true, true, nil, "", nil
 }
 
-func (v *TestProviderImp) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
+func (v *TestProviderImp) ParsePayload(_ context.Context, _ *params.Run, _ *http.Request, _ string) (*info.Event, error) {
 	return v.Event, nil
 }
 
@@ -42,43 +42,43 @@ func (v *TestProviderImp) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{}
 }
 
-func (v *TestProviderImp) GetCommitInfo(ctx context.Context, runevent *info.Event) error {
+func (v *TestProviderImp) GetCommitInfo(_ context.Context, _ *info.Event) error {
 	return nil
 }
 
-func (v *TestProviderImp) SetClient(ctx context.Context, run *params.Run, event *info.Event) error {
+func (v *TestProviderImp) SetClient(_ context.Context, _ *params.Run, _ *info.Event) error {
 	return nil
 }
 
-func (v *TestProviderImp) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
+func (v *TestProviderImp) IsAllowed(_ context.Context, _ *info.Event) (bool, error) {
 	if v.AllowIT {
 		return true, nil
 	}
 	return false, nil
 }
 
-func (v *TestProviderImp) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, task string) (bool, string, error) {
+func (v *TestProviderImp) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
 	return v.WantProviderRemoteTask, "", nil
 }
 
-func (v *TestProviderImp) CreateStatus(ctx context.Context, _ versioned.Interface, event *info.Event, opts *info.PacOpts, statusOpts provider.StatusOpts) error {
+func (v *TestProviderImp) CreateStatus(_ context.Context, _ versioned.Interface, _ *info.Event, _ *info.PacOpts, _ provider.StatusOpts) error {
 	if v.CreateStatusErorring {
 		return fmt.Errorf("some provider error occurred while reporting status")
 	}
 	return nil
 }
 
-func (v *TestProviderImp) GetTektonDir(ctx context.Context, event *info.Event, s string) (string, error) {
+func (v *TestProviderImp) GetTektonDir(_ context.Context, _ *info.Event, _ string) (string, error) {
 	return v.TektonDirTemplate, nil
 }
 
-func (v *TestProviderImp) GetFileInsideRepo(ctx context.Context, event *info.Event, file, targetBranch string) (string, error) {
+func (v *TestProviderImp) GetFileInsideRepo(_ context.Context, _ *info.Event, file, _ string) (string, error) {
 	if val, ok := v.FilesInsideRepo[file]; ok {
 		return val, nil
 	}
 	return "", fmt.Errorf("could not find %s in tests", file)
 }
 
-func (v *TestProviderImp) GetFiles(ctx context.Context, event *info.Event) ([]string, error) {
+func (v *TestProviderImp) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
 	return []string{}, nil
 }

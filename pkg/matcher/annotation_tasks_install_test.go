@@ -214,7 +214,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.remoteURLS)
+			httpTestClient := httptesthelper.MakeHTTPTestClient(tt.remoteURLS)
 			observer, fakelog := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 			cs := &params.Run{
@@ -379,7 +379,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.remoteURLS)
+			httpTestClient := httptesthelper.MakeHTTPTestClient(tt.remoteURLS)
 			observer, fakelog := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 			cs := &params.Run{

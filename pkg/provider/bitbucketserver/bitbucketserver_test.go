@@ -52,7 +52,7 @@ func TestGetTektonDir(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			client, mux, tearDown := bbtest.SetupBBServerClient(ctx, t)
+			client, mux, tearDown := bbtest.SetupBBServerClient(ctx)
 			defer tearDown()
 			v := &Provider{Client: client, projectKey: tt.event.Organization}
 			bbtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path)
@@ -165,7 +165,7 @@ func TestCreateStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			client, mux, tearDown := bbtest.SetupBBServerClient(ctx, t)
+			client, mux, tearDown := bbtest.SetupBBServerClient(ctx)
 			defer tearDown()
 			if tt.nilClient {
 				client = nil
@@ -220,7 +220,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			client, mux, tearDown := bbtest.SetupBBServerClient(ctx, t)
+			client, mux, tearDown := bbtest.SetupBBServerClient(ctx)
 			defer tearDown()
 			v := &Provider{Client: client, defaultBranchLatestCommit: "1234", projectKey: tt.event.Organization}
 			bbtest.MuxFiles(t, mux, tt.event, tt.targetbranch, filepath.Dir(tt.path), tt.filescontents)
@@ -316,7 +316,7 @@ func TestGetCommitInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, mux, tearDown := bbtest.SetupBBServerClient(ctx, t)
+			bbclient, mux, tearDown := bbtest.SetupBBServerClient(ctx)
 			bbtest.MuxCommitInfo(t, mux, tt.event, tt.commit)
 			bbtest.MuxDefaultBranch(t, mux, tt.event, tt.defaultBranch, tt.latestCommit)
 			defer tearDown()
