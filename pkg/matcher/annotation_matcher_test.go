@@ -597,7 +597,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			ghCs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
 			runTest(ctx, t, tt, vcx, ghCs)
 
-			glFakeClient, glMux, glTeardown := gltesthelper.Setup(ctx, t)
+			glFakeClient, glMux, glTeardown := gltesthelper.Setup(t)
 			defer glTeardown()
 			glVcx := &glprovider.Provider{
 				Client: glFakeClient,

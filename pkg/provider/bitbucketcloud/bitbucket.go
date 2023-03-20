@@ -24,7 +24,7 @@ type Provider struct {
 }
 
 // GetTaskURI TODO: Implement ME
-func (v *Provider) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error) {
+func (v *Provider) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }
 
@@ -33,7 +33,7 @@ const taskStatusTemplate = `| **Status** | **Duration** | **Name** |
 {{range $taskrun := .TaskRunList }}|{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}|{{ formatDuration $taskrun.PipelineRunTaskRunStatus.Status.StartTime $taskrun.PipelineRunTaskRunStatus.Status.CompletionTime }}|{{ $taskrun.ConsoleLogURL }}|
 {{ end }}`
 
-func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
+func (v *Provider) Validate(_ context.Context, _ *params.Run, _ *info.Event) error {
 	return nil
 }
 
@@ -139,11 +139,11 @@ func (v *Provider) getDir(event *info.Event, path string) ([]bitbucket.Repositor
 	return repositoryFiles, nil
 }
 
-func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, path, targetBranch string) (string, error) {
+func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, path, _ string) (string, error) {
 	return v.getBlob(runevent, runevent.SHA, path)
 }
 
-func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, _ *params.Run, event *info.Event) error {
 	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
@@ -249,6 +249,6 @@ func (v *Provider) getBlob(runevent *info.Event, ref, path string) (string, erro
 	return blob.String(), nil
 }
 
-func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
+func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
 	return []string{}, nil
 }

@@ -161,7 +161,7 @@ func TestParsePayload(t *testing.T) {
 				userID:          tt.fields.userID,
 			}
 			if tt.wantClient {
-				client, _, tearDown := thelp.Setup(ctx, t)
+				client, _, tearDown := thelp.Setup(t)
 				v.Client = client
 				defer tearDown()
 			}

@@ -50,7 +50,7 @@ var (
 )
 
 // Reconcile implements controller.Reconciler
-func (ac *reconciler) Reconcile(ctx context.Context, key string) error {
+func (ac *reconciler) Reconcile(ctx context.Context, _ string) error {
 	logger := logging.FromContext(ctx)
 
 	if !ac.IsLeaderFor(ac.key) {

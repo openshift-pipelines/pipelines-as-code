@@ -54,7 +54,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 			createOpts.IoStreams = ioStreams
-			createOpts.cliOpts = cli.NewCliOptions(cmd)
+			createOpts.cliOpts = cli.NewCliOptions()
 			createOpts.IoStreams.SetColorEnabled(!createOpts.cliOpts.NoColoring)
 
 			cwd, err := os.Getwd()
@@ -83,10 +83,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 
 			if pacInfo.IsGithubAppInstalled(ctx, run, installationNS) {
 				if strings.Contains(createOpts.Event.URL, "github") {
-					if err := createOpts.generateTemplate(nil); err != nil {
-						return err
-					}
-					return nil
+					return createOpts.generateTemplate(nil)
 				}
 			}
 
@@ -108,10 +105,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 			if err := config.Install(ctx, createOpts.Provider); err != nil {
 				return err
 			}
-			if err := createOpts.generateTemplate(nil); err != nil {
-				return err
-			}
-			return nil
+			return createOpts.generateTemplate(nil)
 		},
 		Annotations: map[string]string{
 			"commandType": "main",

@@ -179,7 +179,7 @@ func WaitForStatus(t *testing.T, topts *TestOpts, ref string) {
 	}
 }
 
-func WaitForSecretDeletion(t *testing.T, topts *TestOpts, ref string) {
+func WaitForSecretDeletion(t *testing.T, topts *TestOpts, _ string) {
 	i := 0
 	for {
 		// make sure pipelineRuns are deleted, before checking secrets

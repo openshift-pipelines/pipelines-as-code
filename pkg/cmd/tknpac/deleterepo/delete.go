@@ -34,7 +34,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-			opts := cli.NewCliOptions(cmd)
+			opts := cli.NewCliOptions()
 			opts.Namespace, err = cmd.Flags().GetString(namespaceFlag)
 			if err != nil {
 				return err

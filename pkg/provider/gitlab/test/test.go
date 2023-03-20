@@ -1,7 +1,6 @@
 package test
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +15,7 @@ import (
 
 var defaultAPIURL = "/api/v4"
 
-func Setup(ctx context.Context, t *testing.T) (*gitlab.Client, *http.ServeMux, func()) {
+func Setup(t *testing.T) (*gitlab.Client, *http.ServeMux, func()) {
 	mux := http.NewServeMux()
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(defaultAPIURL+"/", http.StripPrefix(defaultAPIURL, mux))
@@ -53,14 +52,14 @@ func MuxNotePost(t *testing.T, mux *http.ServeMux, projectNumber, mrID int, catc
 	})
 }
 
-func MuxAllowUserID(t *testing.T, mux *http.ServeMux, projectID, userID int) {
+func MuxAllowUserID(mux *http.ServeMux, projectID, userID int) {
 	path := fmt.Sprintf("/projects/%d/members/all/%d", projectID, userID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(rw, `{"id": %d}`, userID)
 	})
 }
 
-func MuxListTektonDir(t *testing.T, mux *http.ServeMux, pid int, ref, prs string) {
+func MuxListTektonDir(_ *testing.T, mux *http.ServeMux, pid int, ref, prs string) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/tree", pid), func(rw http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("ref") == ref {
 			fmt.Fprintf(rw, `[
@@ -70,11 +69,11 @@ func MuxListTektonDir(t *testing.T, mux *http.ServeMux, pid int, ref, prs string
 		}
 	})
 
-	MuxGetFile(t, mux, pid, ".tekton/subtree/pr.yaml", prs)
-	MuxGetFile(t, mux, pid, ".tekton/random.yaml", `foo:bar`)
+	MuxGetFile(mux, pid, ".tekton/subtree/pr.yaml", prs)
+	MuxGetFile(mux, pid, ".tekton/random.yaml", `foo:bar`)
 }
 
-func MuxDiscussionsNote(t *testing.T, mux *http.ServeMux, pid, mrID int, author string, authorID int, notecontent string) {
+func MuxDiscussionsNote(mux *http.ServeMux, pid, mrID int, author string, authorID int, notecontent string) {
 	path := fmt.Sprintf("/projects/%d/merge_requests/%d/discussions", pid, mrID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		page, ok := r.URL.Query()["page"]
@@ -96,7 +95,7 @@ func MuxDiscussionsNote(t *testing.T, mux *http.ServeMux, pid, mrID int, author 
 	})
 }
 
-func MuxGetFile(t *testing.T, mux *http.ServeMux, pid int, fname, content string) {
+func MuxGetFile(mux *http.ServeMux, pid int, fname, content string) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/files/%s/raw", pid, fname), func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(rw, content)
 	})

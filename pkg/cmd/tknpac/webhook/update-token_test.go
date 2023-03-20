@@ -186,9 +186,7 @@ func TestWebhookUpdateToken(t *testing.T) {
 			}
 			secretData, err := cs.Clients.Kube.CoreV1().Secrets(tt.opts.Namespace).Get(ctx, tt.secretName, metav1.GetOptions{})
 			if err != nil {
-				if apiErrors.IsNotFound(err) {
-					// ignore
-				} else {
+				if !apiErrors.IsNotFound(err) {
 					t.Error(err)
 				}
 			} else {

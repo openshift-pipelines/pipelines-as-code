@@ -44,7 +44,7 @@ type Provider struct {
 }
 
 // GetTaskURI TODO: Implement ME
-func (v *Provider) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error) {
+func (v *Provider) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }
 
@@ -52,7 +52,7 @@ func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 	v.Logger = logger
 }
 
-func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event) error {
+func (v *Provider) Validate(_ context.Context, _ *params.Run, _ *info.Event) error {
 	// TODO: figure out why gitea doesn't work with mac validation as github which seems to be the same
 	v.Logger.Debug("no secret and signature found, skipping validation for gitea")
 	return nil
@@ -75,7 +75,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Event) error {
 	var err error
 	apiURL := runevent.Provider.URL
 	// password is not exposed to CRD, it's only used from the e2e tests
@@ -254,7 +254,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, pa
 	return string(decoded), nil
 }
 
-func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) error {
+func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error {
 	if v.Client == nil {
 		return fmt.Errorf("no gitea client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
@@ -287,7 +287,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 	return nil
 }
 
-func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string, error) {
+func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
 	// TODO: figure out a way
 	return []string{}, fmt.Errorf("GetFiles is not supported on Gitea")
 }
