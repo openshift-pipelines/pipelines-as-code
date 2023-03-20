@@ -112,11 +112,23 @@ You can use the command `tkn pac webhook` to help you update webhooks on your re
 The usage guide available [here](https://pipelinesascode.com/docs/guide/) offer
 a comprehensive documentation on how to use and configure Pipeline As Code.
 
-## Developer Guide
+## Contributing
+
+We ❤️ our contributors! 
 
 If you want to help and contribute to the `pipelines-as-code` project, you can
 see the documentation here to get started: <https://pipelinesascode.com/dev/>
 (and thank you).
+
+## Getting in touch
+
+There are several ways to communicate with us:
+
+- Subscribe to the [community calendar](https://calendar.google.com/calendar/embed?src=53eb8e69e3a902ea3a31fe6795f69df165d9bb22a8ab11ed5c9cbd27ee654742%40group.calendar.google.com) for community meetings and events
+- Slack Channel - [#pipelinesascode channel](https://tektoncd.slack.com/archives/C04URDDJ9MZ) on the [TektonCD community Slack](https://github.com/tektoncd/community/blob/main/contact.md#slack)
+
+## Developer Guide
+
 
 ## Videos/Blog Posts
 
