@@ -44,7 +44,7 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-			opts := cli.NewCliOptions(cmd)
+			opts := cli.NewCliOptions()
 			opts.AllNameSpaces, err = cmd.Flags().GetBool(allNamespacesFlag)
 			if err != nil {
 				return err

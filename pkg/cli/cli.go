@@ -5,7 +5,6 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
-	"github.com/spf13/cobra"
 )
 
 type PacCliOpts struct {
@@ -26,7 +25,7 @@ func NewAskopts(opt *survey.AskOptions) error {
 	return nil
 }
 
-func NewCliOptions(cmd *cobra.Command) *PacCliOpts {
+func NewCliOptions() *PacCliOpts {
 	return &PacCliOpts{
 		AskOpts: NewAskopts,
 	}
