@@ -24,6 +24,7 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
@@ -32,6 +33,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+const pipelineTargetNSName = "pipeline-target-ns"
 
 type annotationTestArgs struct {
 	fileChanged []string
@@ -46,27 +49,33 @@ type annotationTest struct {
 	wantErr                                 bool
 }
 
-func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
-	cw := clockwork.NewFakeClock()
-	pipelineTargetNSName := "pipeline-target-ns"
-	pipelineTargetNS := &tektonv1.PipelineRun{
+func makePipelineRunTargetNS(event, targetNS string) *tektonv1.PipelineRun {
+	a := map[string]string{
+		keys.OnEvent:        fmt.Sprintf("[%s]", event),
+		keys.OnTargetBranch: fmt.Sprintf("[%s]", mainBranch),
+		keys.MaxKeepRuns:    "2",
+	}
+	if targetNS != "" {
+		a[keys.TargetNamespace] = targetNS
+	}
+	return &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: pipelineTargetNSName,
-			Annotations: map[string]string{
-				keys.TargetNamespace: targetNamespace,
-				keys.OnEvent:         "[pull_request]",
-				keys.OnTargetBranch:  fmt.Sprintf("[%s]", mainBranch),
-				keys.MaxKeepRuns:     "2",
-			},
+			Name:        pipelineTargetNSName,
+			Annotations: a,
 		},
 	}
+}
 
+func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
+	cw := clockwork.NewFakeClock()
 	tests := []annotationTest{
 		{
 			name:       "match a repository with target NS",
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
-				pruns: []*tektonv1.PipelineRun{pipelineTargetNS},
+				pruns: []*tektonv1.PipelineRun{
+					makePipelineRunTargetNS("pull_request", targetNamespace),
+				},
 				runevent: info.Event{
 					URL: targetURL, TriggerTarget: "pull_request", EventType: "pull_request",
 					BaseBranch: mainBranch,
@@ -358,8 +367,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		},
 
 		{
-			name:    "match TargetPipelineRun",
-			wantErr: false,
+			name: "match TargetPipelineRun",
 			args: annotationTestArgs{
 				pruns: []*tektonv1.PipelineRun{
 					{
@@ -420,11 +428,64 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			},
 		},
 		{
+			name: "matching incoming webhook event on push target",
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					makePipelineRunTargetNS(options.PushEvent, ""),
+				},
+				runevent: info.Event{
+					URL:        targetURL,
+					EventType:  options.IncomingEvent,
+					BaseBranch: mainBranch,
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: pipelineTargetNSName,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name: "matching incoming webhook event on incoming target",
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					makePipelineRunTargetNS(options.IncomingEvent, ""),
+				},
+				runevent: info.Event{
+					URL:        targetURL,
+					EventType:  options.IncomingEvent,
+					BaseBranch: mainBranch,
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: pipelineTargetNSName,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			// this unit test seems wrong, you don't get a repo match from annotations but early one
+			// the targetNamespace will always explicitly target the oldest one
+			// we keep as is but something to improve later on
 			name:         "match same webhook on multiple repos takes the oldest one",
 			wantPRName:   pipelineTargetNSName,
 			wantRepoName: "test-oldest",
 			args: annotationTestArgs{
-				pruns: []*tektonv1.PipelineRun{pipelineTargetNS},
+				pruns: []*tektonv1.PipelineRun{
+					makePipelineRunTargetNS("pull_request", targetNamespace),
+				},
 				runevent: info.Event{
 					URL: targetURL, TriggerTarget: "pull_request", EventType: "pull_request",
 					BaseBranch: mainBranch,
@@ -547,7 +608,9 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			wantErr: true,
 			wantLog: "matching pipelineruns to event: URL",
 			args: annotationTestArgs{
-				pruns: []*tektonv1.PipelineRun{pipelineTargetNS},
+				pruns: []*tektonv1.PipelineRun{
+					makePipelineRunTargetNS("pull_request", targetNamespace),
+				},
 				runevent: info.Event{
 					URL: targetURL, TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: mainBranch,
 				},
@@ -659,6 +722,8 @@ func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.
 	}
 
 	if tt.wantRepoName != "" {
+		assert.Assert(t, len(matches) > 0, "We should have get matches")
+		assert.Assert(t, matches[0].Repo != nil, "We should have get a repo matching")
 		assert.Assert(t, tt.wantRepoName == matches[0].Repo.GetName())
 	}
 	if tt.wantPRName != "" {
