@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v48/github"
+	"github.com/google/go-github/v50/github"
 )
 
 const (
@@ -136,12 +137,20 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
+func (at *accessToken) getRefreshTime() time.Time {
+	return at.ExpiresAt.Add(-time.Minute)
+}
+
+func (at *accessToken) isExpired() bool {
+	return at == nil || at.getRefreshTime().Before(time.Now())
+}
+
 // Token checks the active token expiration and renews if necessary. Token returns
 // a valid access token. If renewal fails an error is returned.
 func (t *Transport) Token(ctx context.Context) (string, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if t.token == nil || t.token.ExpiresAt.Add(-time.Minute).Before(time.Now()) {
+	if t.token.isExpired() {
 		// Token is not set or expired/nearly expired, so refresh
 		if err := t.refreshToken(ctx); err != nil {
 			return "", fmt.Errorf("could not refresh installation id %v's token: %w", t.installationID, err)
@@ -165,6 +174,16 @@ func (t *Transport) Repositories() ([]github.Repository, error) {
 		return nil, fmt.Errorf("Repositories() = nil, err: nil token")
 	}
 	return t.token.Repositories, nil
+}
+
+// Expiry returns a transport token's expiration time and refresh time. There is a small grace period
+// built in where a token will be refreshed before it expires. expiresAt is the actual token expiry,
+// and refreshAt is when a call to Token() will cause it to be refreshed.
+func (t *Transport) Expiry() (expiresAt time.Time, refreshAt time.Time, err error) {
+	if t.token == nil {
+		return time.Time{}, time.Time{}, errors.New("Expiry() = unknown, err: nil token")
+	}
+	return t.token.ExpiresAt, t.token.getRefreshTime(), nil
 }
 
 func (t *Transport) refreshToken(ctx context.Context) error {

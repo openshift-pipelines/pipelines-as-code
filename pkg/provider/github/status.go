@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v49/github"
+	"github.com/google/go-github/v50/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -290,7 +290,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		TargetURL:   github.String(status.DetailsURL),
 		Description: github.String(status.Title),
 		Context:     github.String(getCheckName(status, pacopts)),
-		CreatedAt:   &now,
+		CreatedAt:   &github.Timestamp{Time: now},
 	}
 
 	if _, _, err := v.Client.Repositories.CreateStatus(ctx,
