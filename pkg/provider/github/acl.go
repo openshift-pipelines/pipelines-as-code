@@ -71,6 +71,20 @@ func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, erro
 		return true, nil
 	}
 
+	// If the user who has submitted the PR is not a owner or public member or Collaborator or not there in OWNERS file
+	// but has permission to push to branches then allow the CI to be run.
+	// This can only happen with GithubApp and Bots.
+	// Ex: dependabot, bots
+	if rev.PullRequestNumber != 0 {
+		isSameCloneURL, err := v.checkPullRequestForSameURL(ctx, rev)
+		if err != nil {
+			return false, err
+		}
+		if isSameCloneURL {
+			return true, nil
+		}
+	}
+
 	// If the user who has submitted the pr is a owner on the repo then allows
 	// the CI to be run.
 	isUserMemberRepo, err := v.checkSenderOrgMembership(ctx, rev)
@@ -101,6 +115,26 @@ func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, erro
 	}
 
 	return acl.UserInOwnerFile(ownerContent, rev.Sender)
+}
+
+// checkPullRequestForSameURL checks If PullRequests are for same clone URL and different branches
+// means if the user has access to create a branch in the repository without forking or having any permissions then PAC should allow to run CI.
+//
+//	ex: dependabot, *[bot] etc...
+func (v *Provider) checkPullRequestForSameURL(ctx context.Context, runevent *info.Event) (bool, error) {
+	pr, resp, err := v.Client.PullRequests.Get(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	if err != nil {
+		return false, err
+	}
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
+
+	if pr.GetHead().GetRepo().GetCloneURL() == pr.GetBase().GetRepo().GetCloneURL() && pr.GetHead().GetRef() != pr.GetBase().GetRef() {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // checkSenderOrgMembership Get sender user's organization. We can
