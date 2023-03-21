@@ -2,6 +2,7 @@ package github
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
@@ -257,6 +258,126 @@ func TestAclCheckAll(t *testing.T) {
 			}
 			if got != tt.allowed {
 				t.Errorf("aclCheckAll() = %v, want %v", got, tt.allowed)
+			}
+		})
+	}
+}
+
+func TestIfPullRequestIsForSameRepoWithoutFork(t *testing.T) {
+	tests := []struct {
+		name              string
+		event             *info.Event
+		commitFiles       []*github.CommitFile
+		pullRequest       *github.PullRequest
+		pullRequestNumber int
+		allowed           bool
+		wantError         bool
+	}{
+		{
+			name: "when pull request raised by non owner to the repository where non owner did not fork but have permission to create branch",
+			event: &info.Event{
+				Organization:      "owner",
+				Sender:            "nonowner",
+				Repository:        "repo",
+				PullRequestNumber: 1,
+			},
+			pullRequest: &github.PullRequest{
+				ID:     github.Int64(1234),
+				Number: github.Int(1),
+				Head: &github.PullRequestBranch{
+					Ref: github.String("main"),
+					Repo: &github.Repository{
+						CloneURL: github.String("http://org.com/owner/repo"),
+					},
+				},
+				Base: &github.PullRequestBranch{
+					Ref: github.String("dependabot"),
+					Repo: &github.Repository{
+						CloneURL: github.String("http://org.com/owner/repo"),
+					},
+				},
+			},
+			pullRequestNumber: 1,
+			allowed:           true,
+			wantError:         false,
+		}, {
+			name: "failed to get Pull Request",
+			event: &info.Event{
+				Organization:      "owner",
+				Sender:            "nonowner",
+				Repository:        "repo",
+				PullRequestNumber: 2,
+			},
+			pullRequest: &github.PullRequest{
+				ID:     github.Int64(1234),
+				Number: github.Int(1),
+				Head: &github.PullRequestBranch{
+					Ref: github.String("main"),
+					Repo: &github.Repository{
+						CloneURL: github.String("http://org.com/owner/repo"),
+					},
+				},
+				Base: &github.PullRequestBranch{
+					Ref: github.String("dependabot"),
+					Repo: &github.Repository{
+						CloneURL: github.String("http://org.com/owner/repo"),
+					},
+				},
+			},
+			pullRequestNumber: 1,
+			allowed:           false,
+			wantError:         true,
+		}, {
+			name: "when pull request raised by non owner to the repository where non owner don't have any permissions",
+			event: &info.Event{
+				Organization:      "owner",
+				Sender:            "nonowner",
+				Repository:        "repo",
+				PullRequestNumber: 1,
+			},
+			pullRequest: &github.PullRequest{
+				ID:     github.Int64(1234),
+				Number: github.Int(1),
+				Head: &github.PullRequestBranch{
+					Ref: github.String("main"),
+					Repo: &github.Repository{
+						CloneURL: github.String("http://org.com/owner/repo"),
+					},
+				},
+				Base: &github.PullRequestBranch{
+					Ref: github.String("dependabot"),
+					Repo: &github.Repository{
+						CloneURL: github.String("http://org.com/owner/repo1"),
+					},
+				},
+			},
+			pullRequestNumber: 1,
+			allowed:           false,
+			wantError:         false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			ctx, _ := rtesting.SetupFakeContext(t)
+			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/pulls/%d",
+				tt.event.Organization, tt.event.Repository, tt.pullRequestNumber), func(rw http.ResponseWriter, r *http.Request) {
+				b, _ := json.Marshal(tt.pullRequest)
+				fmt.Fprint(rw, string(b))
+			})
+
+			gprovider := Provider{
+				Client: fakeclient,
+			}
+
+			got, err := gprovider.aclCheckAll(ctx, tt.event)
+			if (err != nil) != tt.wantError {
+				t.Errorf("aclCheck() error = %v, wantErr %v", err, tt.wantError)
+				return
+			}
+			if got != tt.allowed {
+				t.Errorf("aclCheck() = %v, want %v", got, tt.allowed)
 			}
 		})
 	}
