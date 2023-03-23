@@ -33,13 +33,13 @@ var (
 		},
 	}
 	fooRepoLabels = map[string]string{
-		keys.URLRepository: formatting.K8LabelsCleanup("foo"),
-		keys.SHA:           formatting.K8LabelsCleanup("foosha"),
+		keys.URLRepository: formatting.CleanValueKubernetes("foo"),
+		keys.SHA:           formatting.CleanValueKubernetes("foosha"),
 		keys.PullRequest:   strconv.Itoa(11),
 	}
 	fooRepoLabelsPrFooAbc = map[string]string{
-		keys.URLRepository:  formatting.K8LabelsCleanup("foo"),
-		keys.SHA:            formatting.K8LabelsCleanup("foosha"),
+		keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+		keys.SHA:            formatting.CleanValueKubernetes("foosha"),
 		keys.PullRequest:    strconv.Itoa(11),
 		keys.OriginalPRName: "pr-foo-abc",
 	}

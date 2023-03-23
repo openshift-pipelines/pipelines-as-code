@@ -29,7 +29,7 @@ func (k *KinterfaceTest) GetConsoleUI(_ context.Context, _, _ string) (string, e
 	return k.ConsoleURL, nil
 }
 
-func (k *KinterfaceTest) GetPodLogs(_ context.Context, ns, pod, cont string, _ int64) (string, error) {
+func (k *KinterfaceTest) GetPodLogs(_ context.Context, _, pod, _ string, _ int64) (string, error) {
 	if ok := k.GetPodLogsOutput[pod]; ok != "" {
 		return k.GetPodLogsOutput[pod], nil
 	}
@@ -40,7 +40,7 @@ func (k *KinterfaceTest) UpdateSecretWithOwnerRef(_ context.Context, _ *zap.Suga
 	return nil
 }
 
-func (k *KinterfaceTest) GetSecret(ctx context.Context, secret ktypes.GetSecretOpt) (string, error) {
+func (k *KinterfaceTest) GetSecret(_ context.Context, secret ktypes.GetSecretOpt) (string, error) {
 	// check if secret exist in k.GetSecretResult
 	if k.GetSecretResult[secret.Name] == "" {
 		return "", fmt.Errorf("secret %s does not exist", secret.Name)
@@ -49,7 +49,7 @@ func (k *KinterfaceTest) GetSecret(ctx context.Context, secret ktypes.GetSecretO
 }
 
 func (k *KinterfaceTest) CleanupPipelines(_ context.Context, _ *zap.SugaredLogger, _ *v1alpha1.Repository,
-	pr *tektonv1.PipelineRun, limitnumber int,
+	_ *tektonv1.PipelineRun, limitnumber int,
 ) error {
 	if k.ExpectedNumberofCleanups != limitnumber {
 		return fmt.Errorf("we wanted %d and we got %d", k.ExpectedNumberofCleanups, limitnumber)

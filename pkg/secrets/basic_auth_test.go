@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"gotest.tools/v3/assert"
 )
@@ -26,6 +27,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 		expectedGitCredentials  string
 		expectedStartSecretName string
 		expectedError           bool
+		expectedLabels          map[string]string
 	}{
 		{
 			name:                    "Target secret not there",
@@ -33,6 +35,27 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 			event:                   event,
 			expectedGitCredentials:  "https://git:verysecrete@forge/owner/repo",
 			expectedStartSecretName: "pac-gitauth-owner-repo",
+			expectedLabels: map[string]string{
+				"app.kubernetes.io/managed-by":              "pipelinesascode.tekton.dev",
+				"pipelinesascode.tekton.dev/url-org":        "owner",
+				"pipelinesascode.tekton.dev/url-repository": "repo",
+			},
+		},
+		{
+			name:     "Cleaned up gitlab style long repo and organisation name",
+			targetNS: nsthere,
+			event: info.Event{
+				Organization: "owner/foo/bar/linux/kernel",
+				Repository:   "yoyo",
+				URL:          "https://forge/owner/yoyo/foo/bar/linux/kernel",
+			},
+			expectedGitCredentials:  "https://git:verysecrete@forge/owner/yoyo/foo/bar/linux/kernel",
+			expectedStartSecretName: "pac-gitauth-owner-repo",
+			expectedLabels: map[string]string{
+				"app.kubernetes.io/managed-by":              "pipelinesascode.tekton.dev",
+				"pipelinesascode.tekton.dev/url-org":        "owner-foo-bar-linux-kernel",
+				"pipelinesascode.tekton.dev/url-repository": "yoyo",
+			},
 		},
 		{
 			name:                    "Use clone URL",
@@ -96,7 +119,11 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 			}
 			secret, err := MakeBasicAuthSecret(&tt.event, tt.expectedStartSecretName)
 			assert.NilError(t, err)
-
+			if len(tt.expectedLabels) > 0 {
+				if d := cmp.Diff(secret.GetLabels(), tt.expectedLabels); d != "" {
+					t.Fatalf("-got, +want: %v", d)
+				}
+			}
 			assert.Assert(t, strings.HasPrefix(secret.GetName(), tt.expectedStartSecretName))
 			assert.Equal(t, secret.StringData[".git-credentials"], tt.expectedGitCredentials)
 		})

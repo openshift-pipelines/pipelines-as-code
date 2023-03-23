@@ -32,8 +32,8 @@ func (p *PacRun) cancelPipelineRuns(ctx context.Context, repo *v1alpha1.Reposito
 
 	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(repo.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: getLabelSelector(map[string]string{
-			keys.URLRepository: formatting.K8LabelsCleanup(p.event.Repository),
-			keys.SHA:           formatting.K8LabelsCleanup(p.event.SHA),
+			keys.URLRepository: formatting.CleanValueKubernetes(p.event.Repository),
+			keys.SHA:           formatting.CleanValueKubernetes(p.event.SHA),
 			keys.PullRequest:   strconv.Itoa(p.event.PullRequestNumber),
 		}),
 	})

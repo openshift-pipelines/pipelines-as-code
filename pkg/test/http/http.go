@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"testing"
 )
 
 // NewTestClient returns *http.Client with Transport replaced to avoid making real calls
@@ -15,7 +14,7 @@ func newHTTPTestClient(fn roundTripFunc) *http.Client {
 	}
 }
 
-func MakeHTTPTestClient(t *testing.T, config map[string]map[string]string) *http.Client {
+func MakeHTTPTestClient(config map[string]map[string]string) *http.Client {
 	return newHTTPTestClient(func(req *http.Request) *http.Response {
 		resp := &http.Response{}
 		for k, v := range config {

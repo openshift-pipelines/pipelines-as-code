@@ -25,7 +25,7 @@ var (
 	buildAPIURL   = "/build-status/1.0"
 )
 
-func SetupBBServerClient(ctx context.Context, t *testing.T) (*bbv1.APIClient, *http.ServeMux, func()) {
+func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *http.ServeMux, func()) {
 	mux := http.NewServeMux()
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(defaultAPIURL+"/", http.StripPrefix(defaultAPIURL, mux))
@@ -159,7 +159,7 @@ func MuxDefaultBranch(t *testing.T, mux *http.ServeMux, event *info.Event, defau
 	})
 }
 
-func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, branch, targetDirName string, filescontents map[string]string) {
+func MuxFiles(_ *testing.T, mux *http.ServeMux, event *info.Event, _, targetDirName string, filescontents map[string]string) {
 	for filename := range filescontents {
 		path := fmt.Sprintf("/projects/%s/repos/%s/raw/%s", event.Organization, event.Repository, filename)
 		mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {

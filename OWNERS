@@ -1,4 +1,5 @@
 approvers:
     - dependabot[bot]
+    - sm43
 
 # vim: ft=yaml

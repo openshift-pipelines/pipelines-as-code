@@ -4,29 +4,46 @@ weight: 7
 ---
 # Private repositories
 
-Pipelines as Code support private repositories by creating or updating a secret
-in the target namespace with the user token for the
-[git-clone](https://github.com/tektoncd/catalog/blob/main/task/git-clone) task
-to use and be able to clone private repositories.
+Pipelines as Code enables the use of private repositories by creating or
+updating a secret in the target namespace that contains the user token for the
+`git-clone` task to clone private repositories.
 
-Whenever Pipelines as Code create a new PipelineRun in the target namespace it
-will create or update a secret called:
+This is done whenever Pipelines as Code creates a new PipelineRun in the target
+namespace, which will result in the creation with a secret named like this:
 
 `pac-gitauth-REPOSITORY_OWNER-REPOSITORY_NAME-RANDOM_STRING`
 
-The secret contains a `.gitconfig` and Git credentials `.git-credentials` with
-the https URL using the token it discovered from the GitHub application or
-attached to the secret.
+This secret contains a [Git Config](https://git-scm.com/docs/git-config) file:
+.gitconfig and a [Git credentials](https://git-scm.com/docs/gitcredentials)
+file: .git-credentials, which includes the https URL using the token obtained
+from the GitHub application or secret attached to the repo CR.
 
-As documented :
+The secret includes a key referencing the token as a key to let you easily use it in your task for
+other provider operations. See the documentation with example on how to use it
+[here](../authoringprs/#using-the-temporary-github-app-token-for-github-api-operations)
 
-<https://github.com/tektoncd/catalog/blob/main/task/git-clone/0.4/README.md>
+The secret has a
+[ownerRef](https://kubernetes.io/docs/concepts/overview/working-with-objects/owners-dependents/)
+field to the created PipelineRun. This means the secret will be auto deleted
+when you delete the `PipelineRun` it references to.
 
-The secret needs to be referenced inside your PipelineRun and Pipeline as a
-workspace called basic-auth to be passed to the `git-clone` task.
+{{< hint info >}}
+To disable this behavior, you can configure the `secret-auto-create` setting in
+the Pipelines-as-Code Configmap. You can set it to either false or true
+depending on your requirements.
+{{< /hint >}}
 
-For example in your PipelineRun you will add the workspace referencing the
-Secret :
+## Using the generated token in your PipelineRun
+
+The git-clone task documentation, which is available at
+<https://github.com/tektoncd/catalog/blob/main/task/git-clone/0.4/README.md>,
+states that the secret needs to be referred to as a workspace named
+"basic-auth" inside your PipelineRun so that it can be passed to
+the `git-clone` task.
+
+To achieve this, you can add the workspace referencing the secret in your
+PipelineRun. For instance, you can include the following code in your
+PipelineRun to reference the Secret:
 
 ```yaml
   workspace:
@@ -35,7 +52,13 @@ Secret :
       secretName: "{{ git_auth_secret }}"
 ```
 
-And inside your pipeline, you are referencing them for the `git-clone` to reuse:
+Once you have added the workspace referencing the secret in your PipelineRun as
+described earlier, you can then pass the git-clone task to reuse it inside your
+Pipeline or embedded PipelineRun. This is typically achieved by including the
+git-clone task as a step in your Pipeline or embedded PipelineRun, and
+specifying the workspace name as "basic-auth" in the task definition. Here's an
+example of how you could pass the git-clone task to reuse the secret in your
+Pipeline:
 
 ```yaml
 […]
@@ -61,13 +84,8 @@ tasks:
           value: $(params.revision)
 ```
 
-The `git-clone` task will pick up the basic-auth (optional) workspace and
-automatically use it to be able to clone the private repository.
-
-You can see as well a full example [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/testdata/pipelinerun_git_clone_private.yaml)
-
-This behavior can be disabled by configuration, setting the `secret-auto-create` to false or true
-inside the [Pipelines-as-Code Configmap](/docs/install/settings#pipelines-as-code-configuration-settings).
+- A full example is available
+  [here](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/testdata/pipelinerun_git_clone_private.yaml)
 
 ## Fetching remote tasks from private repositories
 

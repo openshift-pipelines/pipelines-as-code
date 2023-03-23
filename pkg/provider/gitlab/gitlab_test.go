@@ -160,7 +160,7 @@ func TestCreateStatus(t *testing.T) {
 			tt.args.event.PullRequestNumber = 666
 
 			if tt.wantClient {
-				client, mux, tearDown := thelp.Setup(ctx, t)
+				client, mux, tearDown := thelp.Setup(t)
 				v.Client = client
 				defer tearDown()
 				thelp.MuxNotePost(t, mux, v.targetProjectID, tt.args.event.PullRequestNumber, tt.args.postStr)
@@ -176,7 +176,7 @@ func TestCreateStatus(t *testing.T) {
 
 func TestGetCommitInfo(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	client, _, tearDown := thelp.Setup(ctx, t)
+	client, _, tearDown := thelp.Setup(t)
 	v := &Provider{Client: client}
 
 	defer tearDown()
@@ -197,7 +197,7 @@ func TestSetClient(t *testing.T) {
 	v := &Provider{}
 	assert.Assert(t, v.SetClient(ctx, nil, info.NewEvent()) != nil)
 
-	client, _, tearDown := thelp.Setup(ctx, t)
+	client, _, tearDown := thelp.Setup(t)
 	defer tearDown()
 	vv := &Provider{Client: client}
 	err := vv.SetClient(ctx, nil, &info.Event{
@@ -212,7 +212,7 @@ func TestSetClient(t *testing.T) {
 func TestSetClientDetectAPIURL(t *testing.T) {
 	fakehost := "https://fakehost.com"
 	ctx, _ := rtesting.SetupFakeContext(t)
-	client, _, tearDown := thelp.Setup(ctx, t)
+	client, _, tearDown := thelp.Setup(t)
 	defer tearDown()
 	v := &Provider{Client: client}
 	event := info.NewEvent()
@@ -317,7 +317,7 @@ func TestGetTektonDir(t *testing.T) {
 				userID:          tt.fields.userID,
 			}
 			if tt.wantClient {
-				client, mux, tearDown := thelp.Setup(ctx, t)
+				client, mux, tearDown := thelp.Setup(t)
 				v.Client = client
 				if tt.args.path != "" && tt.prcontent != "" {
 					thelp.MuxListTektonDir(t, mux, tt.fields.sourceProjectID, tt.args.event.HeadBranch, tt.prcontent)
@@ -340,7 +340,7 @@ func TestGetTektonDir(t *testing.T) {
 func TestGetFileInsideRepo(t *testing.T) {
 	content := "hello moto"
 	ctx, _ := rtesting.SetupFakeContext(t)
-	client, mux, tearDown := thelp.Setup(ctx, t)
+	client, mux, tearDown := thelp.Setup(t)
 	defer tearDown()
 
 	event := &info.Event{
@@ -463,7 +463,7 @@ func TestGetFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			fakeclient, mux, teardown := thelp.Setup(ctx, t)
+			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
 			mergeFileChanges := &gitlab.MergeRequest{
 				Changes: append(commitFiles.Changes,

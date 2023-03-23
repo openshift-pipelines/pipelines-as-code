@@ -5,7 +5,6 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
-	"github.com/spf13/cobra"
 )
 
 type PacCliOpts struct {
@@ -15,7 +14,7 @@ type PacCliOpts struct {
 	AskOpts       survey.AskOpt
 }
 
-func NewCliOptions(cmd *cobra.Command) *PacCliOpts {
+func NewCliOptions() *PacCliOpts {
 	return &PacCliOpts{
 		AskOpts: func(opt *survey.AskOptions) error {
 			opt.Stdio = terminal.Stdio{

@@ -63,7 +63,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event, pag
 	return false, nil
 }
 
-func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
+func (v *Provider) IsAllowed(_ context.Context, event *info.Event) (bool, error) {
 	if v.Client == nil {
 		return false, fmt.Errorf("no github client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")

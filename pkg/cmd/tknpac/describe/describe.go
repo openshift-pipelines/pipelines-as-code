@@ -63,9 +63,9 @@ type describeOpts struct {
 	ShowEvents        bool
 }
 
-func newDescribeOptions(cmd *cobra.Command) *describeOpts {
+func newDescribeOptions(_ *cobra.Command) *describeOpts {
 	return &describeOpts{
-		PacCliOpts: *cli.NewCliOptions(cmd),
+		PacCliOpts: *cli.NewCliOptions(),
 	}
 }
 
