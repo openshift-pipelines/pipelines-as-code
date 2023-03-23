@@ -59,7 +59,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		Short:   "Generate PipelineRun",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
-			gopt.CLIOpts = cli.NewCliOptions(cmd)
+			gopt.CLIOpts = cli.NewCliOptions()
 			gopt.IOStreams.SetColorEnabled(!gopt.CLIOpts.NoColoring)
 
 			if !gopt.generateWithClusterTask {
@@ -113,10 +113,7 @@ func Generate(o *Opts, recreateTemplate bool) error {
 		return err
 	}
 
-	if err := o.samplePipeline(recreateTemplate); err != nil {
-		return err
-	}
-	return nil
+	return o.samplePipeline(recreateTemplate)
 }
 
 func (o *Opts) targetEvent() error {

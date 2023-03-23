@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
-	"github.com/google/go-github/v49/github"
+	"github.com/google/go-github/v50/github"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -31,7 +31,7 @@ type Provider struct {
 }
 
 // GetTaskURI TODO: Implement ME
-func (v *Provider) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error) {
+func (v *Provider) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }
 
@@ -39,7 +39,7 @@ func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 	v.Logger = logger
 }
 
-func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
+func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event) error {
 	signature := event.Request.Header.Get("X-Hub-Signature")
 	if event.Provider.WebhookSecret == "" && signature != "" {
 		return fmt.Errorf("bitbucket-server failed validaton: failed to find webhook secret")
@@ -52,7 +52,7 @@ func sanitizeTitle(s string) string {
 	return strings.Split(s, "\n")[0]
 }
 
-func (v *Provider) CreateStatus(ctx context.Context, _ versioned.Interface, event *info.Event, pacOpts *info.PacOpts, statusOpts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event *info.Event, pacOpts *info.PacOpts, statusOpts provider.StatusOpts) error {
 	detailsURL := event.Provider.URL
 	switch statusOpts.Conclusion {
 	case "skipped":
@@ -153,7 +153,7 @@ func (v *Provider) getRaw(runevent *info.Event, revision, path string) (string, 
 	return string(resp.Payload), nil
 }
 
-func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path string) (string, error) {
+func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path string) (string, error) {
 	allValues, err := paginate(func(nextPage int) (*bbv1.APIResponse, error) {
 		localVarOptionals := map[string]interface{}{"at": event.SHA}
 		if nextPage != 0 {
@@ -177,7 +177,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path str
 	return v.concatAllYamlFiles(fpathTmpl, event)
 }
 
-func (v *Provider) GetFileInsideRepo(ctx context.Context, event *info.Event, path, targetBranch string) (string, error) {
+func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path, targetBranch string) (string, error) {
 	branch := event.SHA
 	// TODO: this may be buggy? we need to figure out how to get the fromSource ref
 	if targetBranch == event.DefaultBranch {
@@ -188,7 +188,7 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, event *info.Event, pat
 	return ret, err
 }
 
-func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event) error {
+func (v *Provider) SetClient(ctx context.Context, _ *params.Run, event *info.Event) error {
 	if event.Provider.User == "" {
 		return fmt.Errorf("no provider.user has been set in the repo crd")
 	}
@@ -217,7 +217,7 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	return nil
 }
 
-func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
+func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	localVarOptionals := map[string]interface{}{}
 	resp, err := v.Client.DefaultApi.GetCommit(v.projectKey, event.Repository, event.SHA, localVarOptionals)
 	if err != nil {
@@ -253,6 +253,6 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
+func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
 	return []string{}, nil
 }

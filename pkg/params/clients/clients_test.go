@@ -40,7 +40,7 @@ func TestClients_GetURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.remoteURLS)
+			httpTestClient := httptesthelper.MakeHTTPTestClient(tt.remoteURLS)
 			c := &Clients{
 				HTTP: *httpTestClient,
 			}

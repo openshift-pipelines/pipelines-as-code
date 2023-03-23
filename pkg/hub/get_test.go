@@ -78,7 +78,7 @@ func TestGetTask(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.config)
+			httpTestClient := httptesthelper.MakeHTTPTestClient(tt.config)
 			ctx, _ := rtesting.SetupFakeContext(t)
 			cs := &params.Run{
 				Clients: clients.Clients{

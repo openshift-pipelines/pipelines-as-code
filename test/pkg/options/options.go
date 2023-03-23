@@ -12,6 +12,7 @@ var (
 	MainBranch       = "main"
 	PullRequestEvent = "pull_request"
 	PushEvent        = "push"
+	IncomingEvent    = "incoming"
 	RemoteTaskURL    = "https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/main/pkg/pipelineascode/testdata/pull_request/.tekton/task.yaml"
 	RemoteTaskName   = "task-from-tektondir"
 )

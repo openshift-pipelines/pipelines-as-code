@@ -31,7 +31,7 @@ func TestK8LabelsCleanup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := K8LabelsCleanup(tt.str); got != tt.want {
+			if got := CleanValueKubernetes(tt.str); got != tt.want {
 				t.Errorf("K8LabelsCleanup() = %v, want %v", got, tt.want)
 			}
 		})

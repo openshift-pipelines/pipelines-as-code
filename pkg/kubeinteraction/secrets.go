@@ -23,7 +23,7 @@ func (k Interaction) GetSecret(ctx context.Context, secretopt ktypes.GetSecretOp
 }
 
 // DeleteSecret deletes the secret created for git-clone basic-auth
-func (k Interaction) DeleteSecret(ctx context.Context, logger *zap.SugaredLogger, targetNamespace, secretName string) error {
+func (k Interaction) DeleteSecret(ctx context.Context, _ *zap.SugaredLogger, targetNamespace, secretName string) error {
 	err := k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return err

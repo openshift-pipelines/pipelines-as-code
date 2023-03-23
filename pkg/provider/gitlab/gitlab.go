@@ -48,7 +48,7 @@ type Provider struct {
 }
 
 // GetTaskURI TODO: Implement me
-func (v *Provider) GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error) {
+func (v *Provider) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }
 
@@ -90,7 +90,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Event) error {
 	var err error
 	if runevent.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
@@ -289,7 +289,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 	return nil
 }
 
-func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string, error) {
+func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
 	if v.Client == nil {
 		return []string{}, fmt.Errorf("no gitlab client has been initiliazed, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
