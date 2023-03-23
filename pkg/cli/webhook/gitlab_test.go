@@ -84,8 +84,8 @@ func TestAskGLWebhookConfig(t *testing.T) {
 }
 
 func TestGLCreate(t *testing.T) {
-	ctx, _ := rtesting.SetupFakeContext(t)
-	fakeclient, mux, teardown := thelp.Setup(ctx, t)
+	_, _ = rtesting.SetupFakeContext(t)
+	fakeclient, mux, teardown := thelp.Setup(t)
 	defer teardown()
 	//nolint
 	io, _, _, _ := cli.IOTest()

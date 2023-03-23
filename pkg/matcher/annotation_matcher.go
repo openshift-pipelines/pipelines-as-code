@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 )
@@ -84,11 +85,12 @@ func getAnnotationValues(annotation string) ([]string, error) {
 func getTargetBranch(prun *tektonv1.PipelineRun, logger *zap.SugaredLogger, event *info.Event) (bool, string, string, error) {
 	var targetEvent, targetBranch string
 	if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnEvent]; ok {
-		targetEvent = event.TriggerTarget
-		if event.EventType == "incoming" {
-			targetEvent = "incoming"
+		targetEvents := []string{event.TriggerTarget}
+		if event.EventType == options.IncomingEvent {
+			// if we have a incoming event, we want to match pipelineruns on both incoming and push
+			targetEvents = []string{options.IncomingEvent, options.PushEvent}
 		}
-		matched, err := matchOnAnnotation(key, targetEvent, false)
+		matched, err := matchOnAnnotation(key, targetEvents, false)
 		targetEvent = key
 		if err != nil {
 			return false, "", "", err
@@ -98,7 +100,8 @@ func getTargetBranch(prun *tektonv1.PipelineRun, logger *zap.SugaredLogger, even
 		}
 	}
 	if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnTargetBranch]; ok {
-		matched, err := matchOnAnnotation(key, event.BaseBranch, true)
+		targetEvents := []string{event.BaseBranch}
+		matched, err := matchOnAnnotation(key, targetEvents, true)
 		targetBranch = key
 		if err != nil {
 			return false, "", "", err
@@ -163,7 +166,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnCelExpression]; ok {
 			out, err := celEvaluate(ctx, celExpr, event, vcx)
 			if err != nil {
-				logger.Errorf("there was an error evaluating CEL expression, skipping: %w", err)
+				logger.Errorf("there was an error evaluating the CEL expression, skipping: %v", err)
 				continue
 			}
 			if out != types.True {
@@ -191,19 +194,20 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		return matchedPRs, nil
 	}
 
-	logger.Warn("could not find a match to a pipelinerun matching payload: hint: check your yaml files are correct")
-	logger.Warn("available configuration in pipelineRuns annotations")
+	logger.Warn("cannot match pipeline from payload to a pipelinerun in .tekton/ dir")
+	logger.Warnf("payload target event is %s and target branch %s", event.EventType, event.BaseBranch)
+	logger.Warn("available configuration of the PipelineRuns annotations in .tekton/ dir")
 	for name, maps := range configurations {
-		logger.Infof("pipelineRun: %s, target-branch=%s, target-event=%s",
+		logger.Infof("PipelineRun: %s, target-branch=%s, target-event=%s",
 			name, maps["target-branch"], maps["target-event"])
 	}
 
 	// TODO: more descriptive error message
-	return nil, fmt.Errorf("cannot match pipeline from webhook to pipelineruns on event=%s, branch=%s",
+	return nil, fmt.Errorf("cannot match pipeline from payload to a pipelinerun in .tekton/ dir, event=%s, branch=%s",
 		event.EventType, event.BaseBranch)
 }
 
-func matchOnAnnotation(annotations, eventType string, branchMatching bool) (bool, error) {
+func matchOnAnnotation(annotations string, eventType []string, branchMatching bool) (bool, error) {
 	targets, err := getAnnotationValues(annotations)
 	if err != nil {
 		return false, err
@@ -211,11 +215,13 @@ func matchOnAnnotation(annotations, eventType string, branchMatching bool) (bool
 
 	var gotit string
 	for _, v := range targets {
-		if v == eventType {
-			gotit = v
-		}
-		if branchMatching && branchMatch(v, eventType) {
-			gotit = v
+		for _, e := range eventType {
+			if v == e {
+				gotit = v
+			}
+			if branchMatching && branchMatch(v, e) {
+				gotit = v
+			}
 		}
 	}
 	if gotit == "" {

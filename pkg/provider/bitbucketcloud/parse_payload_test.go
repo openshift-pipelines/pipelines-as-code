@@ -217,7 +217,7 @@ func TestParsePayload(t *testing.T) {
 				run.Info.Pac.BitbucketCloudCheckSourceIP = true
 				run.Info.Pac.BitbucketCloudAdditionalSourceIP = tt.additionalAllowedsourceIP
 
-				httpTestClient := httptesthelper.MakeHTTPTestClient(t, tt.allowedConfig)
+				httpTestClient := httptesthelper.MakeHTTPTestClient(tt.allowedConfig)
 				run.Clients.HTTP = *httpTestClient
 			}
 

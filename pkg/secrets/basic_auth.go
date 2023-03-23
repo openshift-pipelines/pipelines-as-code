@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
@@ -26,7 +27,7 @@ const (
 // MakeBasicAuthSecret Make a secret for git-clone basic-auth workspace
 func MakeBasicAuthSecret(runevent *info.Event, secretName string) (*corev1.Secret, error) {
 	// Bitbucket Server have a different Clone URL than it's Repository URL, so we
-	// have to separate them 👨‍🏭
+	// have to separate them
 	cloneURL := runevent.URL
 	if runevent.CloneURL != "" {
 		cloneURL = runevent.CloneURL
@@ -69,8 +70,8 @@ func MakeBasicAuthSecret(runevent *info.Event, secretName string) (*corev1.Secre
 
 	labels := map[string]string{
 		"app.kubernetes.io/managed-by": pipelinesascode.GroupName,
-		keys.URLOrg:                    runevent.Organization,
-		keys.URLRepository:             runevent.Repository,
+		keys.URLOrg:                    formatting.CleanValueKubernetes(runevent.Organization),
+		keys.URLRepository:             formatting.CleanValueKubernetes(runevent.Repository),
 	}
 
 	return &corev1.Secret{

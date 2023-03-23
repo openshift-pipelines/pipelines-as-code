@@ -112,7 +112,7 @@ func (v *Provider) getFileFromDefaultBranch(ctx context.Context, path string, ru
 
 // GetStringPullRequestComment return the comment if we find a regexp in one of
 // the comments text of a pull request
-func (v *Provider) GetStringPullRequestComment(ctx context.Context, runevent *info.Event, reg string) ([]*gitea.Comment, error) {
+func (v *Provider) GetStringPullRequestComment(_ context.Context, runevent *info.Event, reg string) ([]*gitea.Comment, error) {
 	var ret []*gitea.Comment
 	prNumber, err := convertPullRequestURLtoNumber(runevent.URL)
 	if err != nil {

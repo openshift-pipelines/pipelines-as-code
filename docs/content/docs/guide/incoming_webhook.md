@@ -3,18 +3,22 @@ title: Incoming Webhook
 ---
 # Incoming webhook
 
-Pipelines as Code support the concept of incoming webhook URL. Which let you
-start a PipelineRun in a Repository by a URL and a shared secret rather than
-having to generate a new code iteration.
+Pipelines as Code support the concept of incoming webhook URL. It let you
+trigger PipelineRun in a Repository using a shared secret and URL,
+instead of creating a new code iteration.
 
 ## Incoming Webhook URL
 
-You need to set your incoming match your Repository CRD, in your match you
-specify a reference Secret which will be used as a shared secret and the
-branches targetted by the incoming webhook.
+To use incoming webhooks in Pipelines as Code, you must configure the
+incoming field in your Repository CRD. This field references a `Secret`, which
+serves as the shared secret, as well as the branches targeted by the incoming
+webhook. Once configured, Pipelines as Code will match `PipelineRuns` located in
+your `.tekton` directory if the `on-event` annotation of the targetted pipelinerun is
+targettting a push or incoming event.
 
-{{< hint danger >}}
-If you are not using the github app provider (ie: webhook based provider) you will need to have a `git_provider` spec to specify a token.
+{{< hint info >}}
+If you are not using the github app provider (ie: webhook based provider) you
+will need to have a `git_provider` spec to specify a token.
 
 Additionally since we are not able to detect automatically the type of provider
 on URL. You will need to add it to the `git_provider.type` spec. Supported
@@ -25,10 +29,82 @@ values are:
 - bitbucket-cloud
 
 Whereas for `github-apps` this doesn't need to be added.
-
 {{< /hint >}}
 
-### Webhook
+### GithubApp
+
+The example below illustrates the use of GithubApp to trigger a PipelineRun
+based on an incoming webhook URL.
+
+The Repository Custom Resource (CR) specifies the target branch as
+main and includes an incoming webhook URL with a shared password stored in a
+Secret called `repo-incoming-secret`:
+
+```yaml
+---
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: repo
+  namespace: ns
+spec:
+  url: "https://github.com/owner/repo"
+  incoming:
+    - targets:
+      - main
+      secret:
+        name: repo-incoming-secret
+      type: webhook-url
+```
+
+A PipelineRun is then annotated to target the incoming event and the main branch:
+
+```yaml
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: target_pipelinerun
+  annotations:
+    pipelinesascode.tekton.dev/on-event: "[incoming]"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+```
+
+A secret called repo-incoming-secret is utilized as a shared password to ensure
+that only authorized users can initiate the `PipelineRun`:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: repo-incoming-secret
+  namespace: ns
+type: Opaque
+stringData:
+  secret: very-secure-shared-secret
+```
+
+After setting this up, you will be able to start the PipelineRun with a POST
+request sent to the controller URL appended with /incoming. The request
+includes the very-secure-shared-secret, the repository name (repo), the target
+branch (main), and the PipelineRun name (target_pipelinerun).
+
+As an example here is a curl snippet starting the PipelineRun:
+
+```shell
+curl -X POST 'https://control.pac.url/incoming?secret=very-secure-shared-secret&repository=repo&branch=main&pipelinerun=target_pipelinerun'
+```
+
+in this snippet, note two things the `"/incoming"` path to the controller URL
+and the `"POST"` method to the URL rather than a simple `"GET"`.
+
+It is important to note that when the PipelineRun is triggered, Pipelines as
+Code will treat it as a push event and will have the capabilty to report the
+status of the PipelineRuns. To obtain a report or a notification, a finally
+task can be added directly to the Pipeline, or the Repo CRD can be inspected
+using the tkn pac CLI. The [statuses](/docs/guide/statuses) documentation
+provides guidance on how to achieve this.
+
+### Webhook methods (Github Webhook, Gitlab, Bitbucket etc..)
 
 Here is an example of a Repository CRD matching the target branch main:
 
@@ -53,55 +129,5 @@ spec:
       type: webhook-url
 ```
 
-### GithubApp
-
-Here is an example of a Repository CRD matching the target branch main:
-
-```yaml
----
-apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
-kind: Repository
-metadata:
-  name: repo
-  namespace: ns
-spec:
-  url: "https://github.com/owner/repo"
-  incoming:
-    - targets:
-      - main
-      secret:
-        name: repo-incoming-secret
-      type: webhook-url
-```
-
-a secret named `repo-incoming-secret` for both webhook and github-apps will have this value:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: repo-incoming-secret
-  namespace: ns
-type: Opaque
-stringData:
-  secret: very-secure-shared-secret
-```
-
-after setting this up, you will be able to trigger a PipelineRun called
-`pipelinerun1` which will be located in the `.tekton` directory of the Git repo
-`https://github.com/owner/repo`. As an example here is the full curl snippet:
-
-```shell
-curl -X POST 'https://control.pac.url/incoming?secret=very-secure-shared-secret&repository=repo&branch=main&pipelinerun=target_pipelinerun'
-```
-
-note two things the `"/incoming"` path to the controller URL and the `"POST"`
-method to the URL rather than a simple `"GET"`.
-
-Pipelines as Code when matched with act as this was a `"push"`, we will not have
-anywhere to report the status of the PipelineRuns
-
-In this case the best way to get a report or a notification is to add it directly
-with a finally task to your Pipeline or by inspecting the Repo CRD with the `tkn
-pac` CLI. See the [statuses documentation](/docs/guide/statuses) which has a few
-tips on how to do that.
+As noted in the section above, you need to specify a incoming secret  inside
+the `repo-incoming-secret` Secret.

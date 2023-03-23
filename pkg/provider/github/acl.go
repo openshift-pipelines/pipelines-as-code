@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/go-github/v49/github"
+	"github.com/google/go-github/v50/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
@@ -129,21 +129,12 @@ func (v *Provider) checkSenderOrgMembership(ctx context.Context, runevent *info.
 
 // checkSenderRepoMembership check if user is allowed to run CI
 func (v *Provider) checkSenderRepoMembership(ctx context.Context, runevent *info.Event) (bool, error) {
-	users, _, err := v.Client.Repositories.ListCollaborators(ctx,
+	isCollab, _, err := v.Client.Repositories.IsCollaborator(ctx,
 		runevent.Organization,
 		runevent.Repository,
-		&github.ListCollaboratorsOptions{})
-	if err != nil {
-		return false, err
-	}
+		runevent.Sender)
 
-	for _, v := range users {
-		if v.GetLogin() == runevent.Sender {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return isCollab, err
 }
 
 // getFileFromDefaultBranch will get a file directly from the Default BaseBranch as

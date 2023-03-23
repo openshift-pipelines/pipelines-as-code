@@ -25,7 +25,7 @@ func webhookUpdateToken(run *params.Run, ioStreams *cli.IOStreams) *cobra.Comman
 				err      error
 				repoName string
 			)
-			opts := cli.NewCliOptions(cmd)
+			opts := cli.NewCliOptions()
 
 			opts.Namespace, err = cmd.Flags().GetString(namespaceFlag)
 			if err != nil {
