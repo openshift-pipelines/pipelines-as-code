@@ -2,6 +2,7 @@ ignore: |
   /vendor
   .git
   test/testdata/failures/pipeline_bad_format.yaml
+  .github/workflows/*
 
 rules:
   braces: enable

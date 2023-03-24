@@ -1,0 +1,99 @@
+name: Coverage report
+concurrency:
+  cancel-in-progress: true
+  group: cover-${{ github.ref }}
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  main:
+    name: Coverage
+    if: github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v3
+      - name: Checkout pull request base
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+      - name: Setup Golang with cache
+        uses: flipgroup/action-golang-with-cache@main
+        with:
+          version-file: go.mod
+      - name: Generate Golang source hash base
+        id: hash-base
+        run: echo "value=${{ hashFiles('**/*.go','!vendor/**') }}" >>"$GITHUB_OUTPUT"
+      - name: Cache base cover profile
+        id: cache-base
+        uses: actions/cache@v3
+        with:
+          path: cover-${{ steps.hash-base.outputs.value }}.profile
+          key: golang-cover-profile-${{ steps.hash-base.outputs.value }}
+      - name: Generate base cover profile
+        if: steps.cache-base.outputs.cache-hit != 'true'
+        env:
+          GOFLAGS: -coverprofile=cover-${{ steps.hash-base.outputs.value }}.profile
+        run: make test
+
+      - name: Checkout source
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v3
+        with:
+          clean: false
+      - name: Generate Golang source hash head
+        if: github.event_name == 'pull_request'
+        id: hash-head
+        run: echo "value=${{ hashFiles('**/*.go','!vendor/**') }}" >>"$GITHUB_OUTPUT"
+      - name: Cache head cover profile
+        if: |
+          github.event_name == 'pull_request' &&
+          steps.hash-base.outputs.value != steps.hash-head.outputs.value
+        id: cache-head
+        uses: actions/cache@v3
+        with:
+          path: cover-${{ steps.hash-head.outputs.value }}.profile
+          key: golang-cover-profile-${{ steps.hash-head.outputs.value }}
+      - name: Generate head cover profile
+        if: |
+          github.event_name == 'pull_request' &&
+          steps.hash-base.outputs.value != steps.hash-head.outputs.value &&
+          steps.cache-head.outputs.cache-hit != 'true'
+        env:
+          GOFLAGS: -coverprofile=cover-${{ steps.hash-head.outputs.value }}.profile
+        run: make test
+
+      - name: Fetch golang-cover-diff @main SHA-1
+        id: golang-cover-diff-main
+        run: |
+          sha1=$(curl \
+            --header "Accept: application/vnd.github+json" \
+            --silent \
+              https://api.github.com/repos/flipgroup/golang-cover-diff/branches/main | \
+                jq --raw-output ".commit.sha")
+          echo "sha1=$sha1" >>"$GITHUB_OUTPUT"
+      - name: Cache golang-cover-diff
+        id: cache-golang-cover-diff
+        uses: actions/cache@v3
+        with:
+          path: ~/go/bin/golang-cover-diff
+          key: ${{ runner.os }}-golang-cover-diff-sha1-${{ steps.golang-cover-diff-main.outputs.sha1 }}
+      - name: Install golang-cover-diff
+        if: steps.cache-golang-cover-diff.outputs.cache-hit != 'true'
+        run: go install github.com/flipgroup/golang-cover-diff@main
+      - name: Run golang-cover-diff
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_PULL_REQUEST_ID: ${{ github.event.number }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          golang-cover-diff \
+            cover-${{ steps.hash-base.outputs.value }}.profile \
+            cover-${{ steps.hash-head.outputs.value }}.profile
+
