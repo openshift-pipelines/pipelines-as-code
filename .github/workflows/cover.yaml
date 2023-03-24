@@ -57,7 +57,7 @@ jobs:
         run: echo "value=${{ hashFiles('**/*.go','!vendor/**') }}" >>"$GITHUB_OUTPUT"
       - name: Cache head cover profile
         if: |
-          github.event_name == 'pull_request_target &&
+          github.event_name == 'pull_request_target' &&
           steps.hash-base.outputs.value != steps.hash-head.outputs.value
         id: cache-head
         uses: actions/cache@v3
