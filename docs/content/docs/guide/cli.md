@@ -200,10 +200,6 @@ tasks associated with the PipelineRun thas has been failed highlightign the
 If you  want to show the failures of another PipelineRun rather than the last
 one you can use the `--target-pipelinerun` or `-t` flag for that.
 
-{{< /details >}}
-
-{{< details "tkn pac logs" >}}
-
 On modern terminal (ie: OSX Terminal, [iTerm2](https://iterm2.com/), [Windows
 Terminal](https://github.com/microsoft/terminal), GNOME-terminal, kitty and so
 on...) the links become clickable with control+click or ⌘+click (see the
