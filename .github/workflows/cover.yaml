@@ -93,7 +93,7 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           GITHUB_PULL_REQUEST_ID: ${{ github.event.number }}
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
         run: |
           golang-cover-diff \
             cover-${{ steps.hash-base.outputs.value }}.profile \
