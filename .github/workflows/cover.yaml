@@ -19,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request_target'
         uses: actions/checkout@v3
       - name: Checkout pull request base
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.base.ref }}
@@ -47,17 +47,17 @@ jobs:
         run: make test
 
       - name: Checkout source
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         uses: actions/checkout@v3
         with:
           clean: false
       - name: Generate Golang source hash head
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         id: hash-head
         run: echo "value=${{ hashFiles('**/*.go','!vendor/**') }}" >>"$GITHUB_OUTPUT"
       - name: Cache head cover profile
         if: |
-          github.event_name == 'pull_request' &&
+          github.event_name == 'pull_request_target &&
           steps.hash-base.outputs.value != steps.hash-head.outputs.value
         id: cache-head
         uses: actions/cache@v3
@@ -66,7 +66,7 @@ jobs:
           key: golang-cover-profile-${{ steps.hash-head.outputs.value }}
       - name: Generate head cover profile
         if: |
-          github.event_name == 'pull_request' &&
+          github.event_name == 'pull_request_target' &&
           steps.hash-base.outputs.value != steps.hash-head.outputs.value &&
           steps.cache-head.outputs.cache-hit != 'true'
         env:
@@ -93,7 +93,7 @@ jobs:
         if: steps.cache-golang-cover-diff.outputs.cache-hit != 'true'
         run: go install github.com/flipgroup/golang-cover-diff@main
       - name: Run golang-cover-diff
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request_target'
         env:
           GITHUB_PULL_REQUEST_ID: ${{ github.event.number }}
           GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
