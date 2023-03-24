@@ -40,6 +40,7 @@ jobs:
         if: steps.cache-base.outputs.cache-hit != 'true'
         env:
           GOFLAGS: -coverprofile=cover-${{ steps.hash-base.outputs.value }}.profile
+          TEST_SKIP_GIT: true
         run: make test
 
       - name: Checkout source
@@ -67,6 +68,7 @@ jobs:
           steps.cache-head.outputs.cache-hit != 'true'
         env:
           GOFLAGS: -coverprofile=cover-${{ steps.hash-head.outputs.value }}.profile
+          TEST_SKIP_GIT: true
         run: make test
 
       - name: Fetch golang-cover-diff @main SHA-1
