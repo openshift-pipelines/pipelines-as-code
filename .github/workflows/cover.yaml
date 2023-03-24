@@ -4,7 +4,10 @@ concurrency:
   group: cover-${{ github.ref }}
 
 on:
-  pull_request:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**.go'
   push:
     branches:
       - main
@@ -95,7 +98,6 @@ jobs:
           GITHUB_PULL_REQUEST_ID: ${{ github.event.number }}
           GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
         run: |
-          export GITHUB_TOKEN="${{ secrets.GH_TOKEN }}"
           golang-cover-diff \
             cover-${{ steps.hash-base.outputs.value }}.profile \
             cover-${{ steps.hash-head.outputs.value }}.profile
