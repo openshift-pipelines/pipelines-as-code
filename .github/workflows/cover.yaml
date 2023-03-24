@@ -95,6 +95,7 @@ jobs:
           GITHUB_PULL_REQUEST_ID: ${{ github.event.number }}
           GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
         run: |
+          export GITHUB_TOKEN="${{ secrets.GH_TOKEN }}"
           golang-cover-diff \
             cover-${{ steps.hash-base.outputs.value }}.profile \
             cover-${{ steps.hash-head.outputs.value }}.profile
