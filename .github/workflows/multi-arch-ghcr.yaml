@@ -48,7 +48,7 @@ jobs:
           context: .
           build-args: |
             BINARY_NAME=pipelines-as-code-controller
-          platforms: linux/amd64,linux/ppc64le
+          platforms: linux/amd64,linux/ppc64le,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -65,7 +65,7 @@ jobs:
           context: .
           build-args: |
             BINARY_NAME=pipelines-as-code-watcher
-          platforms: linux/amd64,linux/ppc64le
+          platforms: linux/amd64,linux/ppc64le,linux/arm64
           push: true
           tags: ${{ steps.meta-watcher.outputs.tags }}
           labels: ${{ steps.meta-watcher.outputs.labels }}
@@ -82,7 +82,7 @@ jobs:
           context: .
           build-args: |
             BINARY_NAME=pipelines-as-code-webhook
-          platforms: linux/amd64,linux/ppc64le
+          platforms: linux/amd64,linux/ppc64le,linux/arm64
           push: true
           tags: ${{ steps.meta-webhook.outputs.tags }}
           labels: ${{ steps.meta-webhook.outputs.labels }}
@@ -99,7 +99,7 @@ jobs:
           context: .
           build-args: |
             BINARY_NAME=tkn-pac
-          platforms: linux/amd64,linux/ppc64le
+          platforms: linux/amd64,linux/ppc64le,linux/arm64
           push: true
           tags: ${{ steps.meta-cli.outputs.tags }}
           labels: ${{ steps.meta-cli.outputs.labels }}
