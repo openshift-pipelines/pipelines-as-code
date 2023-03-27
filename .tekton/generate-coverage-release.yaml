@@ -4,7 +4,7 @@ kind: PipelineRun
 metadata:
   name: push-generate-coverage-releaseyaml
   annotations:
-    pipelinesascode.tekton.dev/task-1: "[https://git.io/Jn9Ee]"  # send slack message on failure
+    pipelinesascode.tekton.dev/task-1: "https://raw.githubusercontent.com/chmouel/tekton-slack-task-status/main/tekton-slack-task-status.yaml"  # send slack message on failure
     pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/on-cel-expression: |
