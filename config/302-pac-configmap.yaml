@@ -62,13 +62,9 @@ data:
   # you may want to disable this if you think your pipeline may leak some value
   error-log-snippet: "true"
 
-  # alpha feature: disabled by default
-  #
   # Enable or disable the inspection of container logs to detect error message
   # and expose them as annotations on Pull Request. Only Github apps is supported
-  #
-  # This feature is currently alpha, use it at your own risk
-  error-detection-from-container-logs: "false"
+  error-detection-from-container-logs: "true"
 
   # How many lines to grab from the container when inspecting the
   # logs for error-detection. Increasing this value may increase the watcher
