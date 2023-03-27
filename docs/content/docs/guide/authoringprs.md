@@ -205,6 +205,19 @@ tasks:
 Since we are using the dynamic variables we are able to reuse this on any
 PullRequest from any repositories.
 
+and for completeness, here is another example how to set the GITHUB_TOKEN
+environment variable on a task step:
+
+```yaml
+env:
+  - name: GITHUB_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: "{{ git_auth_secret }}"
+        key: "git-provider-token"
+
+```
+
 {{< hint info >}}
 
 * On GitHub apps the generated installation token [will be available for 8 hours](https://docs.github.com/en/developers/apps/building-github-apps/refreshing-user-to-server-access-tokens)
