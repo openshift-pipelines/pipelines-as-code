@@ -133,8 +133,13 @@ There is a few things you can configure through the config map
 
 ### Error Detection
 
-Pipelines as Code can show a snippet and optionally detect the error in the
-pipelinerun logs, you can configure the behaviour with these settings:
+Pipelines as Code detect if the PipelineRun has failed and show a snippet of
+the last few lines of the error.
+
+On Github Aopps, It also try to detect and match the error messages in the container logs and expose them as annotations on Pull
+Request.
+
+A few settings are available to configure this feature:
 
 * `error-log-snippet`
 
@@ -148,48 +153,40 @@ pipelinerun logs, you can configure the behaviour with these settings:
   If it find any strings matching the values of secrets attached to the
   PipelineRun it will replace it with the placeholder `******`
 
-* `error-log-snippet`
+* `error-detection-from-container-logs`
 
-{{ hint danger }}
-  alpha feature: may change at any time
-{{ /hint danger }}
+  Enable or disable the inspection of the container logs to detect error message
+  and expose them as annotations on Pull Request.
 
-  Enable or disable the inspection of container logs to detect error message
-  and expose them as annotations on Pull Request. Only Github apps is supported.
+  Only Github apps is supported.
 
 * `error-detection-max-number-of-lines`
 
-{{ hint danger }}
-  alpha feature: may change at any time
-{{ /hint danger }}
-
   How many lines to grab from the container when inspecting the
   logs for error detection when using `error-log-snippet`. Increasing this value
-  may increase the watcher memory usage. The default is 50, increase this value
-  or use -1 for unlimited.
+  may increase the watcher memory usage. Use `-1` for unlimited line to look error for.
 
 * `error-detection-simple-regexp`
 
-{{ hint danger }}
-  alpha feature: may change at any time
-{{ /hint danger }}
+   By default the error detection only support a simple output, the way GCC or
+   Make will output error, which is supported by most linters and command line tools.
 
-   By default error detection only support the simple outputs, the way GCC or
-   make will output which is supported by most linters and command line tools.
-
-   An example is :
+   An example of an error that is supported is :
 
    ```console
    test.js:100:10: an error occurred
    ```
 
    Pipelines as Code will see this line and show it as an annotation on the pull
-   request where the error occurred.
+   request where the error occurred, in the `test.js` file at line 100.
 
    You can configure the default regexp used for detection. You will need to
-   keep the regexp groups: `<filename>`, `<line>`, `<error>` to make it works.
+   use regexp groups to pass the information of where the error occur, the regexp groups
+   are:
 
-### Reporting logs URL to Tekton Dashboard or custom Console
+   `<filename>`, `<line>`, `<error>`
+
+### Reporting logs URL to Tekton Dashboard or a custom Dashboard or Console
 
 Pipelines as Code have the ability to automatically detect the OpenShift Console and link the logs of the tasks to the
 public URL of the OpenShift Console. If you are using the Tekton Dashboard, you can configure this feature using the
