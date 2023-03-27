@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -247,4 +248,55 @@ func TestPipelinev1Beta1InvalidConversion(t *testing.T) {
 	t.Skip("Figure out the issue where setdefault sets the SA and fail when applying on osp")
 	_, _, err := readTDfile(t, "pipeline-invalid-conversion", false, true)
 	assert.ErrorContains(t, err, "cannot be validated")
+}
+
+func TestPipelineRunsWithSameName(t *testing.T) {
+	tests := []struct {
+		name string
+		prs  []*tektonv1.PipelineRun
+		err  string
+	}{
+		{
+			name: "same name pipelineruns exists",
+			prs: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pipelinerun-abc",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pipelinerun-abc",
+					},
+				},
+			},
+			err: "found multiple pipelinerun in .tekton with same name: pipelinerun-abc, please update",
+		},
+		{
+			name: "doesn't exists",
+			prs: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pipelinerun-abc",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pipelinerun-bcd",
+					},
+				},
+			},
+			err: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := pipelineRunsWithSameName(tt.prs)
+			if tt.err == "" {
+				assert.NilError(t, err)
+				return
+			}
+			assert.Equal(t, err.Error(), tt.err)
+		})
+	}
 }
