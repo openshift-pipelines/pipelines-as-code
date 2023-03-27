@@ -170,6 +170,10 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 		return []*tektonv1.PipelineRun{}, fmt.Errorf("could not find any PipelineRun in your .tekton/ directory")
 	}
 
+	if err := pipelineRunsWithSameName(types.PipelineRuns); err != nil {
+		return []*tektonv1.PipelineRun{}, err
+	}
+
 	// First resolve Annotations Tasks
 	for _, pipelinerun := range types.PipelineRuns {
 		if ropt.RemoteTasks && pipelinerun.GetObjectMeta().GetAnnotations() != nil {
@@ -261,6 +265,18 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 		pipelinerun.Labels[apipac.OriginalPRName] = originPipelinerunName
 	}
 	return types.PipelineRuns, nil
+}
+
+func pipelineRunsWithSameName(prs []*tektonv1.PipelineRun) error {
+	prNames := map[string]bool{}
+	for _, pr := range prs {
+		_, exist := prNames[pr.GetName()]
+		if exist {
+			return fmt.Errorf("found multiple pipelinerun in .tekton with same name: %v, please update", pr.GetName())
+		}
+		prNames[pr.GetName()] = true
+	}
+	return nil
 }
 
 //nolint:gochecknoinits
