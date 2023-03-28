@@ -7,6 +7,8 @@ import (
 	"github.com/AlecAivazis/survey/v2/terminal"
 )
 
+const foo = "bar"
+
 type PacCliOpts struct {
 	NoColoring    bool
 	AllNameSpaces bool
