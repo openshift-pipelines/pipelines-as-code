@@ -19,7 +19,7 @@ func TestCustomGood(t *testing.T) {
 	consolePRtasklog := "https://mycorp.console/{{ namespace }}/{{ pr }}/{{ task }}/{{ pod }}/{{ firstFailedStep }}"
 
 	c := CustomConsole{
-		info: &info.Info{
+		Info: &info.Info{
 			Pac: &info.PacOpts{
 				Settings: &settings.Settings{
 					CustomConsoleName:      consoleName,
@@ -70,7 +70,7 @@ func TestCustomGood(t *testing.T) {
 
 func TestCustomBad(t *testing.T) {
 	c := CustomConsole{
-		info: &info.Info{
+		Info: &info.Info{
 			Pac: &info.PacOpts{
 				Settings: &settings.Settings{},
 			},

@@ -27,7 +27,7 @@ data:
   # and there is a mix of public and private repositories in there
   # where some users on that org does not have access.
   #
-  # If you trust every users on your orgnisations to access any repos there or
+  # If you trust every users on your organisations to access any repos there or
   # not planning to install your github application globally on a Github Organisation
   # then you can safely set this option to false.
   secret-github-app-token-scoped: "true"
