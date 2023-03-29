@@ -34,21 +34,28 @@ If the pull request author does not meet these requirements,
 another user that does meet these requirements can comment `/ok-to-test` on the pull request
 to run the PipelineRun.
 
+{{< hint info >}}
+If you are using the Github Apps and have installed it on an Organization,
+Pipelines as Code will only be initiated when a Repo CR matching one of the
+repositories in a URL is detected on a repository belonging to the organization
+where the Github App has been installed.
+Otherwise, Pipelines as Code will not be triggered.
+{{< /hint >}}
+
 ## PipelineRun Execution
 
 The PipelineRun will always run in the namespace of the Repository CRD associated with the repo
 that generated the event.
 
-You can follow the execution of your pipeline with the
-[tkn pac](../cli/#install) cli :
+You can follow the execution of your PipelineRun with the [tkn pac](../cli/#install) cli :
 
 ```console
 tkn pac logs -n my-pipeline-ci -L
 ```
 
-If you need to show another pipelinerun than the last one you
-can use the `tkn pac` logs command and it will ask you to select a PipelineRun
-attached to the repository :
+If you need to show another pipelinerun than the last one you can use the `tkn
+pac` logs command and it will ask you to select a PipelineRun attached to the
+repository :
 
 ```console
 tkn pac logs -n my-pipeline-ci
