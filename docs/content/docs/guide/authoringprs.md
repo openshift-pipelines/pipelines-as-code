@@ -39,9 +39,12 @@ weight: 3
   * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
   * `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
 
-* You need at least one `PipelineRun` with a `PipelineSpec` or a separated
-  `Pipeline` object. You can have embedded `TaskSpec` inside
-  `Pipeline` or you can have them defined separately as `Task`.
+* For Pipelines as Code to process your `PipelineRun`, you must have either an
+  embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML
+  file in the `.tekton` directory. The Pipeline object can include `TaskSpecs`,
+  which may be defined separately as Tasks in another YAML file in the same
+  directory. It's important to give each `PipelineRun` a unique name to avoid
+  conflicts. **Duplicate names are not permitted**.
 
 ## Matching an event to a PipelineRun
 
