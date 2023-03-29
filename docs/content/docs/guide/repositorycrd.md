@@ -41,6 +41,8 @@ If there is multiples CRD matching the same event, only the oldest one will
 match. If you need to match a specific namespace you would need to use the
 target-namespace feature in the pipeline annotation (see below).
 
+## Explicitely targetting a Target Namespace from a PipelineRun
+
 There is another optional layer of security where PipelineRun can have an
 annotation to explicitly target a specific
 namespace. It would still need to have a Repository CRD created in that
