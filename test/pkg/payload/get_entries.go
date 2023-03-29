@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 )
 
 func vinceMap(a, b map[string]string) map[string]string {
@@ -25,7 +27,8 @@ func GetEntries(yamlfile map[string]string, targetNS, targetBranch, targetEvent 
 	entries := map[string]string{}
 	for target, file := range yamlfile {
 		name := strings.TrimSuffix(filepath.Base(target), filepath.Ext(target))
-		extraParams["PipelineName"] = name
+		// add some random character to name so that each PR has different name
+		extraParams["PipelineName"] = name + "-" + strings.ToLower(random.AlphaString(4))
 		// PipelineName can be overridden by extraParams
 		newParams := vinceMap(params, extraParams)
 
