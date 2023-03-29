@@ -12,36 +12,36 @@ import (
 )
 
 type CustomConsole struct {
-	info *info.Info
+	Info *info.Info
 }
 
 func (o *CustomConsole) GetName() string {
-	if o.info.Pac.CustomConsoleName == "" {
+	if o.Info.Pac.CustomConsoleName == "" {
 		return "Not configured"
 	}
-	return o.info.Pac.CustomConsoleName
+	return o.Info.Pac.CustomConsoleName
 }
 
 func (o *CustomConsole) URL() string {
-	if o.info.Pac.CustomConsoleURL == "" {
-		return fmt.Sprintf("https://setting.%s.is.not.configured", settings.CustomConsoleURLKey)
+	if o.Info.Pac.CustomConsoleURL == "" {
+		return fmt.Sprintf("https://url.setting.%s.is.not.configured", settings.CustomConsoleURLKey)
 	}
-	return o.info.Pac.CustomConsoleURL
+	return o.Info.Pac.CustomConsoleURL
 }
 
 func (o *CustomConsole) DetailURL(pr *tektonv1.PipelineRun) string {
-	if o.info.Pac.CustomConsolePRdetail == "" {
-		return fmt.Sprintf("https://setting.%s.is.not.configured", settings.CustomConsolePRDetailKey)
+	if o.Info.Pac.CustomConsolePRdetail == "" {
+		return fmt.Sprintf("https://detailurl.setting.%s.is.not.configured", settings.CustomConsolePRDetailKey)
 	}
-	return templates.ReplacePlaceHoldersVariables(o.info.Pac.CustomConsolePRdetail, map[string]string{
+	return templates.ReplacePlaceHoldersVariables(o.Info.Pac.CustomConsolePRdetail, map[string]string{
 		"namespace": pr.GetNamespace(),
 		"pr":        pr.GetName(),
 	})
 }
 
 func (o *CustomConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tektonv1.PipelineRunTaskRunStatus) string {
-	if o.info.Pac.CustomConsolePRTaskLog == "" {
-		return fmt.Sprintf("https://setting.%s.is.not.configured", settings.CustomConsolePRTaskLogKey)
+	if o.Info.Pac.CustomConsolePRTaskLog == "" {
+		return fmt.Sprintf("https://tasklogurl.setting.%s.is.not.configured", settings.CustomConsolePRTaskLogKey)
 	}
 	firstFailedStep := ""
 	// search for the first failed steps in taskrunstatus
@@ -51,7 +51,7 @@ func (o *CustomConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tekt
 			break
 		}
 	}
-	return templates.ReplacePlaceHoldersVariables(o.info.Pac.CustomConsolePRTaskLog, map[string]string{
+	return templates.ReplacePlaceHoldersVariables(o.Info.Pac.CustomConsolePRTaskLog, map[string]string{
 		"namespace":       pr.GetNamespace(),
 		"pr":              pr.GetName(),
 		"task":            taskRunStatus.PipelineTaskName,

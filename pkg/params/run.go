@@ -104,6 +104,18 @@ func (r *Run) UpdatePACInfo(ctx context.Context) error {
 		r.Clients.Log.Infof("using tekton dashboard url on: %s", os.Getenv("PAC_TEKTON_DASHBOARD_URL"))
 		r.Clients.ConsoleUI = &consoleui.TektonDashboard{BaseURL: os.Getenv("PAC_TEKTON_DASHBOARD_URL")}
 	}
+	if r.Info.Pac.Settings.CustomConsoleURL != "" {
+		r.Clients.Log.Infof("updating console url to: %s", r.Info.Pac.Settings.CustomConsoleURL)
+		r.Clients.ConsoleUI = &consoleui.CustomConsole{Info: &r.Info}
+	}
+
+	// This is the case when reverted settings for CustomConsole and TektonDashboard then URL should point to OpenshiftConsole for Openshift platform
+	if r.Info.Pac.Settings.CustomConsoleURL == "" &&
+		(r.Info.Pac.Settings.TektonDashboardURL == "" && os.Getenv("PAC_TEKTON_DASHBOARD_URL") == "") {
+		r.Clients.ConsoleUI = &consoleui.OpenshiftConsole{}
+		_ = r.Clients.ConsoleUI.UI(ctx, r.Clients.Dynamic)
+	}
+
 	return nil
 }
 
