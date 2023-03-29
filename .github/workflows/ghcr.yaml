@@ -40,6 +40,8 @@ jobs:
           build-args: |
             BINARY_NAME=pipelines-as-code-controller
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -56,6 +58,8 @@ jobs:
           build-args: |
             BINARY_NAME=pipelines-as-code-watcher
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: ${{ steps.meta-watcher.outputs.tags }}
           labels: ${{ steps.meta-watcher.outputs.labels }}
 
@@ -72,6 +76,8 @@ jobs:
           build-args: |
             BINARY_NAME=pipelines-as-code-webhook
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: ${{ steps.meta-webhook.outputs.tags }}
           labels: ${{ steps.meta-webhook.outputs.labels }}
 
@@ -88,5 +94,7 @@ jobs:
           build-args: |
             BINARY_NAME=tkn-pac
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: ${{ steps.meta-cli.outputs.tags }}
           labels: ${{ steps.meta-cli.outputs.labels }}
