@@ -56,15 +56,6 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		msg := fmt.Sprintf("cannot find a namespace match for %s", p.event.URL)
 		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNamespaceMatch", msg)
 
-		status := provider.StatusOpts{
-			Status:     "completed",
-			Conclusion: "skipped",
-			Text:       msg,
-			DetailsURL: "https://tenor.com/search/sad-cat-gifs",
-		}
-		if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
-			return nil, fmt.Errorf("failed to run create status on repo not found: %w", err)
-		}
 		return nil, nil
 	}
 
