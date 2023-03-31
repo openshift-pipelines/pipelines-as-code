@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -262,7 +263,7 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 		if pipelinerun.Labels == nil {
 			pipelinerun.Labels = map[string]string{}
 		}
-		pipelinerun.Labels[apipac.OriginalPRName] = originPipelinerunName
+		pipelinerun.Labels[apipac.OriginalPRName] = formatting.CleanValueKubernetes(originPipelinerunName)
 	}
 	return types.PipelineRuns, nil
 }
