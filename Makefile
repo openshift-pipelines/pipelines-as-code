@@ -90,6 +90,12 @@ lint-md: ${MD_FILES} ## runs markdownlint and vale on all markdown files
 	@echo "Grammar check with vale of documentation..."
 	@vale docs/content --minAlertLevel=error --output=line
 
+.PHONY: fix-markdownlint
+fix-markdownlint: ${MD_FILES} ## run markdownlint and fix on all markdown file
+	@echo "Fixing markdown files..."
+	@markdownlint --fix $(MD_FILES)
+	@[[ -n `git status --porcelain $(MD_FILES)` ]] && { echo "Markdowns has been cleaned 🧹. Cleaned Files: ";git status --porcelain $(MD_FILES) ;} || echo "Markdown is clean ✨"
+
 .PHONY: lint-py
 lint-py: ${PY_FILES} ## runs pylint on all python files
 	@echo "Linting python files..."
