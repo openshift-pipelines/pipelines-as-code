@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -101,6 +102,9 @@ func getDashboardURL(ctx context.Context, opts *bootstrapOpts, run *params.Run) 
 	}
 	if err := prompt.SurveyAskOne(qs, &ans); err != nil {
 		return err
+	}
+	if _, err := url.ParseRequestURI(ans); err != nil {
+		return fmt.Errorf("invalid url: %w", err)
 	}
 	opts.dashboardURL = ans
 	return nil
