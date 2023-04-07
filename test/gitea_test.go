@@ -106,7 +106,7 @@ func TestGiteaBadYaml(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 	ctx := context.Background()
 
-	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, "app.kubernetes.io/component=controller", "pac-controller", *regexp.MustCompile(
+	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *regexp.MustCompile(
 		"pipelinerun.*has failed.*expected exactly one, got neither: spec.pipelineRef, spec.pipelineSpec"), 10))
 }
 
@@ -687,6 +687,25 @@ func TestGiteaNotExistingClusterTask(t *testing.T) {
 		ExpectEvents:   false,
 	}
 	defer tgitea.TestPR(t, topts)()
+}
+
+// TestGiteaBadLinkOfTask checks that we fail properly with the error from the
+// tekton pipelines controlller. We check on the UI interface that we display
+// and inside the pac controller.
+func TestGiteaBadLinkOfTask(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/failures/bad-runafter-task.yaml",
+		},
+		NoCleanup:      true,
+		CheckForStatus: "failure",
+		ExpectEvents:   true,
+		Regexp:         regexp.MustCompile(".*There was an error creating the PipelineRun*"),
+	}
+	defer tgitea.TestPR(t, topts)()
+	errre := regexp.MustCompile("There was an error starting the PipelineRun")
+	assert.NilError(t, twait.RegexpMatchingInControllerLog(context.Background(), topts.ParamsRun, *errre, 10))
 }
 
 // TestGiteaParamsOnRepoCR test gitea params on CR and its filters
