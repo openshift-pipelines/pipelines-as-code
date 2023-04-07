@@ -11,12 +11,23 @@ tabs, along with a concise overview of the duration of each task in the
 pipeline. If any step fails, a small portion of the log from that step will
 also be included in the output.
 
+In case an error is encountered while creating the `PipelineRun` on the cluster,
+the error message reported by the Pipeline Controller will be conveyed to the
+GitHub user interface. This facilitates the user to swiftly identify and
+troubleshoot the issue, without having to navigate to the underlying
+infrastructure.
+
+Any other error that may arise during the execution of the pipeline will also
+be reported to the GitHub user interface. However, if there was no match for the
+namespace, the error will be logged in the Pipeline as Code Controller's logs.
+
 ## Statuses for other providers (Webhook based)
 
-When the webhook event is a pull request, the event will be added as a comment
-to the pull or merge request. However, for push events, it is not possible to
-display the status of the PipelineRun since there is no specific location to
-show it. In such cases, you can use other methods as listed below.
+If the webhook event pertains to a pull request, it will be included as a
+comment to the corresponding pull or merge request. However, when it comes to
+push events, it is not feasible to exhibit the status of the PipelineRun as
+there is no dedicated space to showcase it. In such scenarios, you can employ
+alternate methods as enumerated below.
 
 ## Log Snippet when reporting error
 

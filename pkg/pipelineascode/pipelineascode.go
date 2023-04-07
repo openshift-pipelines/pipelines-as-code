@@ -75,9 +75,18 @@ func (p *PacRun) Run(ctx context.Context) error {
 			defer wg.Done()
 			pr, err := p.startPR(ctx, match)
 			if err != nil {
-				errMsg := fmt.Sprintf("PipelineRun %s has failed: %s", match.PipelineRun.GetGenerateName(), err.Error())
+				errMsg := fmt.Sprintf("There was an error starting the PipelineRun %s, %s", match.PipelineRun.GetGenerateName(), err.Error())
+				errMsgM := fmt.Sprintf("There was an error creating the PipelineRun: <b>%s</b>\n\n%s", match.PipelineRun.GetGenerateName(), err.Error())
 				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", errMsg)
-				return
+				createStatusErr := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, provider.StatusOpts{
+					Status:     "completed",
+					Conclusion: "failure",
+					Text:       errMsgM,
+					DetailsURL: p.run.Clients.ConsoleUI.URL(),
+				})
+				if createStatusErr != nil {
+					p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
+				}
 			}
 			p.manager.AddPipelineRun(pr)
 		}(match)
@@ -116,11 +125,11 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 
 		authSecret, err := secrets.MakeBasicAuthSecret(p.event, gitAuthSecretName)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("making basic auth secret: %s has failed: %w ", gitAuthSecretName, err)
 		}
 
 		if err = p.k8int.CreateSecret(ctx, match.Repo.GetNamespace(), authSecret); err != nil {
-			return nil, fmt.Errorf("creating basic auth secret: %s has failed: %w ", gitAuthSecretName, err)
+			return nil, fmt.Errorf("creating basic auth secret: %s has failed: %w ", authSecret, err)
 		}
 	}
 
@@ -140,8 +149,9 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	pr, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(match.Repo.GetNamespace()).Create(ctx,
 		match.PipelineRun, metav1.CreateOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("creating pipelinerun %s in %s has failed: %w ", match.PipelineRun.GetGenerateName(),
-			match.Repo.GetNamespace(), err)
+		// we need to make difference between markdown error and normal error that goes to namespace/controller stream
+		return nil, fmt.Errorf("creating pipelinerun %s in namespace %s has failed.\n\nTekton Controller has reported this error: ```%s``` ", match.PipelineRun.GetGenerateName(),
+			match.Repo.GetNamespace(), err.Error())
 	}
 
 	// Create status with the log url
@@ -172,20 +182,23 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	}
 
 	if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
-		return nil, fmt.Errorf("cannot create a in_progress status on the provider platform: %w", err)
+		return nil, fmt.Errorf("cannot use the API on the provider platform to create a in_progress status: %w", err)
 	}
 
 	// Patch pipelineRun with logURL annotation, skips for GitHub App as we patch logURL while patching CheckrunID
 	if _, ok := pr.Annotations[keys.InstallationID]; !ok {
 		pr, err = action.PatchPipelineRun(ctx, p.logger, "logURL", p.run.Clients.Tekton, pr, getLogURLMergePatch(p.run.Clients, pr))
 		if err != nil {
-			return pr, err
+			return pr, fmt.Errorf("cannot patch pipelinerun %s: %w", pr.GetGenerateName(), err)
 		}
 	}
 
 	// update ownerRef of secret with pipelineRun, so that it gets cleanedUp with pipelineRun
 	if p.run.Info.Pac.SecretAutoCreation {
-		return pr, p.k8int.UpdateSecretWithOwnerRef(ctx, p.logger, pr.Namespace, gitAuthSecretName, pr)
+		err := p.k8int.UpdateSecretWithOwnerRef(ctx, p.logger, pr.Namespace, gitAuthSecretName, pr)
+		if err != nil {
+			return nil, fmt.Errorf("cannot update pipelinerun %s with ownerRef: %w", pr.GetGenerateName(), err)
+		}
 	}
 	return pr, nil
 }

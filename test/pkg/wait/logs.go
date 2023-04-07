@@ -10,7 +10,9 @@ import (
 	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/logs"
 )
 
-func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, labelselector, containerName string, reg regexp.Regexp, maxNumberOfLoop int) error {
+func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg regexp.Regexp, maxNumberOfLoop int) error {
+	labelselector := "app.kubernetes.io/component=controller"
+	containerName := "pac-controller"
 	for i := 0; i <= maxNumberOfLoop; i++ {
 		output, err := tlogs.GetControllerLog(ctx, clients.Clients.Kube.CoreV1(), labelselector, containerName)
 		if err != nil {
