@@ -12,6 +12,7 @@ import (
 
 	"github.com/google/go-github/v50/github"
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -37,7 +38,7 @@ type Provider struct {
 	ApplicationID *int64
 	providerName  string
 	Run           *params.Run
-	repositoryIDs []int64
+	RepositoryIDs []int64
 
 	skippedRun
 }
@@ -382,7 +383,7 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 	runevent.BaseBranch = pr.GetBase().GetRef()
 	runevent.EventType = "pull_request"
 
-	v.repositoryIDs = []int64{
+	v.RepositoryIDs = []int64{
 		pr.GetBase().GetRepo().GetID(),
 	}
 	return runevent, nil
@@ -418,6 +419,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string
 
 // getObject Get an object from a repository
 func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Event) ([]byte, error) {
+
 	blob, _, err := v.Client.Git.GetBlob(ctx, runevent.Organization, runevent.Repository, sha)
 	if err != nil {
 		return nil, err
@@ -446,4 +448,23 @@ func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 		repoURLs = append(repoURLs, *repoList.Repositories[i].HTMLURL)
 	}
 	return repoURLs, nil
+}
+
+func (v *Provider) ListRepository(ctx context.Context, repository []v1alpha1.Repository, run *params.Run, event *info.Event) (string, error) {
+	for _, r := range repository {
+		urlData := r.Spec.URL
+		split := strings.Split(urlData, "/")
+		infoData, _, err := v.Client.Repositories.Get(ctx, split[3], split[4])
+		if err != nil {
+			v.Logger.Warn("we have an invalid repository: `%s` or no access to it: %v", urlData, err)
+			continue
+		}
+		v.RepositoryIDs = append(v.RepositoryIDs, infoData.GetID())
+	}
+
+	token, err := v.GetAppToken(ctx, run.Clients.Kube, event.Provider.URL, event.InstallationID)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }

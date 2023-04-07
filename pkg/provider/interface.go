@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -37,6 +38,7 @@ type Interface interface {
 	GetConfig() *info.ProviderConfig
 	GetFiles(context.Context, *info.Event) ([]string, error)
 	GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error)
+	ListRepository(context.Context, []v1alpha1.Repository, *params.Run, *info.Event) (string, error)
 }
 
 const DefaultProviderAPIUser = "git"

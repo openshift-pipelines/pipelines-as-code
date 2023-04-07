@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Repository, error) {
@@ -57,6 +58,18 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNamespaceMatch", msg)
 
 		return nil, nil
+	}
+
+	if p.event.InstallationID > 0 && repo.Spec.ScopeTokenToNamespace == "true" {
+		ns := repo.Namespace
+		repoListInPerticularNamespace, err := p.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(ns).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+		p.event.Provider.Token, err = p.vcx.ListRepository(ctx, repoListInPerticularNamespace.Items, p.run, p.event)
+		if err != nil {
+			return repo, fmt.Errorf("failed to scope token to repositories in namespace %s with error : %w", ns, err)
+		}
 	}
 
 	// If we have a git_provider field in repository spec, then get all the

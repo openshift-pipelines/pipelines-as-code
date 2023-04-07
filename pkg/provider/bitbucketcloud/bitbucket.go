@@ -8,6 +8,7 @@ import (
 
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/mitchellh/mapstructure"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -251,4 +252,8 @@ func (v *Provider) getBlob(runevent *info.Event, ref, path string) (string, erro
 
 func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
 	return []string{}, nil
+}
+
+func (v *Provider) ListRepository(_ context.Context, _ []v1alpha1.Repository, _ *params.Run, _ *info.Event) (string, error) {
+	return "", nil
 }

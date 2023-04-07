@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -80,5 +81,9 @@ func (v *TestProviderImp) GetFileInsideRepo(_ context.Context, _ *info.Event, fi
 }
 
 func (v *TestProviderImp) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
+	return []string{}, nil
+}
+
+func (v *TestProviderImp) ListRepository(_ context.Context, _ []v1alpha1.Repository, _ *info.Event) ([]string, error) {
 	return []string{}, nil
 }

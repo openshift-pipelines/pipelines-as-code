@@ -10,6 +10,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -290,4 +291,8 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
 	// TODO: figure out a way
 	return []string{}, fmt.Errorf("GetFiles is not supported on Gitea")
+}
+
+func (v *Provider) ListRepository(_ context.Context, _ []v1alpha1.Repository, _ *params.Run, _ *info.Event) (string, error) {
+	return "", nil
 }

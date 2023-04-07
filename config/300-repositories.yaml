@@ -170,6 +170,9 @@ spec:
                         name:
                           type: string
                           description: "The secret name"
+                scope_token_to_namespace:
+                  description: scope token to a namespace
+                  type: string
 
               type: object
           type: object

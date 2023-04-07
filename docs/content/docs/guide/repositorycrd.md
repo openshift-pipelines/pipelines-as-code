@@ -205,3 +205,18 @@ and a pull request event.
 - [Github Documentation for webhook events](https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads?actionType=auto_merge_disabled#pull_request)
 - [Gitlab Documentation for webhook events](https://docs.gitlab.com/ee/user/project/integrations/webhook_events.html)
 {{< /hint >}}
+
+## ScopeTokenToNamespace
+
+`scope_token_to_namespace` allows you to scope GithubApp token to a particular namespace when GithubApp is configured across Organization.
+
+When Repository custom resource created in a namespace with below info
+
+```yaml
+spec:
+  scope_token_to_namespace: "true"
+```
+
+Then token will be scoped to all the Repository CR's present in that particular namespace.
+
+The default value of `scope_token_to_namespace` is `false`.

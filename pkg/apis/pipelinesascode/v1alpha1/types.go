@@ -75,6 +75,7 @@ type RepositorySpec struct {
 	GitProvider      *GitProvider `json:"git_provider,omitempty"`
 	Incomings        *[]Incoming  `json:"incoming,omitempty"`
 	Params           *[]Params    `json:"params,omitempty"`
+        ScopeTokenToNamespace string       `json:"scope_token_to_namespace,omitempty"`
 }
 
 type Params struct {

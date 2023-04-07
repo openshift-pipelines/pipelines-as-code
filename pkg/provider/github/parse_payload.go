@@ -55,7 +55,7 @@ func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, g
 		return "", err
 	}
 	itr.InstallationTokenOptions = &github.InstallationTokenOptions{
-		RepositoryIDs: v.repositoryIDs,
+		RepositoryIDs: v.RepositoryIDs,
 	}
 
 	if gheURL != "" {
@@ -162,7 +162,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	}
 
 	// regenerate token scoped to the repo IDs
-	if run.Info.Pac.SecretGHAppRepoScoped && installationIDFrompayload != -1 && len(v.repositoryIDs) > 0 {
+	if run.Info.Pac.SecretGHAppRepoScoped && installationIDFrompayload != -1 && len(v.RepositoryIDs) > 0 {
 		if run.Info.Pac.SecretGhAppTokenScopedExtraRepos != "" {
 			// this is going to show up a lot in the logs but i guess that
 			// would make people fix the value instead of being lost into
@@ -178,7 +178,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 					v.Logger.Warn("we have an invalid repository: `%s` in configmap key or no access to it: %v", configValueS, err)
 					continue
 				}
-				v.repositoryIDs = append(v.repositoryIDs, info.GetID())
+				v.RepositoryIDs = append(v.RepositoryIDs, info.GetID())
 			}
 		}
 		var err error
@@ -233,7 +233,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
 		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
 		processedEvent.URL = gitEvent.GetRepo().GetHTMLURL()
-		v.repositoryIDs = []int64{gitEvent.GetRepo().GetID()}
+		v.RepositoryIDs = []int64{gitEvent.GetRepo().GetID()}
 		processedEvent.SHA = gitEvent.GetHeadCommit().GetID()
 		// on push event we may not get a head commit but only
 		if processedEvent.SHA == "" {
@@ -259,7 +259,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.PullRequestNumber = gitEvent.GetPullRequest().GetNumber()
 		// getting the repository ids of the base and head of the pull request
 		// to scope the token to
-		v.repositoryIDs = []int64{
+		v.RepositoryIDs = []int64{
 			gitEvent.GetPullRequest().GetBase().GetRepo().GetID(),
 		}
 	default:
