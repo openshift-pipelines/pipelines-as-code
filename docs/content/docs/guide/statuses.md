@@ -10,10 +10,23 @@ When the pipeline finishes, the status will be added in the GitHub Check tabs
 with a short recap of how long each task of your pipeline took and the output of
 `tkn pr describe`.
 
-## Log error snippet
+In case an error is encountered while creating the `PipelineRun` on the cluster,
+the error message reported by the Pipeline Controller will be conveyed to the
+GitHub user interface. This facilitates the user to swiftly identify and
+troubleshoot the issue, without having to navigate to the underlying
+infrastructure.
 
-When we detect an error in one of the task of the Pipeline we will show a small
-snippet of the last 3 lines in the task breakdown.
+Any other error that may arise during the execution of the pipeline will also
+be reported to the GitHub user interface. However, if there was no match for the
+namespace, the error will be logged in the Pipeline as Code Controller's logs.
+
+## Statuses for other providers (Webhook based)
+
+If the webhook event pertains to a pull request, it will be included as a
+comment to the corresponding pull or merge request. However, when it comes to
+push events, it is not feasible to exhibit the status of the PipelineRun as
+there is no dedicated space to showcase it. In such scenarios, you can employ
+alternate methods as enumerated below.
 
 This will only show the output of the first failed task (due of the
 limitation of the API not allowing to have many characters).
