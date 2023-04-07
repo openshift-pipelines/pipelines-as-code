@@ -7,7 +7,7 @@ metadata:
     pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
     pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
     pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
-    pipelinesascode.tekton.dev/pipeline: "[https://raw.githubusercontent.com/chmouel/scratchmyback/main/pipelinerun-http.yaml]"
+    pipelinesascode.tekton.dev/pipeline: "[https://raw.githubusercontent.com/chmouel/scratchmyback/b33592ca2572b8f32be19576b2b3f31244c0479a/pipelinerun-http.yaml]"
 spec:
   pipelineRef:
     name: pipeline-from-remote
