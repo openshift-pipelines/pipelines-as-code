@@ -19,7 +19,7 @@ import (
 )
 
 func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1.PipelineRun) (provider.Interface, *info.Event, error) {
-	gitProvider, ok := pr.GetLabels()[keys.GitProvider]
+	gitProvider, ok := pr.GetAnnotations()[keys.GitProvider]
 	if !ok {
 		return nil, nil, fmt.Errorf("failed to detect git provider for pipleinerun %s : git-provider label not found", pr.GetName())
 	}
@@ -54,7 +54,6 @@ func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogg
 func buildEventFromPipelineRun(pr *tektonv1.PipelineRun) *info.Event {
 	event := info.NewEvent()
 
-	prLabels := pr.GetLabels()
 	prAnno := pr.GetAnnotations()
 
 	event.URL = prAnno[keys.RepoURL]
@@ -63,14 +62,14 @@ func buildEventFromPipelineRun(pr *tektonv1.PipelineRun) *info.Event {
 	repo, org, _ := formatting.GetRepoOwnerSplitted(event.URL)
 	event.Organization = repo
 	event.Repository = org
-	event.EventType = prLabels[keys.EventType]
-	event.BaseBranch = prLabels[keys.Branch]
-	event.SHA = prLabels[keys.SHA]
+	event.EventType = prAnno[keys.EventType]
+	event.BaseBranch = prAnno[keys.Branch]
+	event.SHA = prAnno[keys.SHA]
 
 	event.SHATitle = prAnno[keys.ShaTitle]
 	event.SHAURL = prAnno[keys.ShaURL]
 
-	prNumber := prLabels[keys.PullRequest]
+	prNumber := prAnno[keys.PullRequest]
 	if prNumber != "" {
 		event.PullRequestNumber, _ = strconv.Atoi(prNumber)
 	}

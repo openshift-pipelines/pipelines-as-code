@@ -143,6 +143,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		match.PipelineRun.Spec.Status = tektonv1.PipelineRunSpecStatusPending
 		// pac state as queued
 		match.PipelineRun.Labels[keys.State] = kubeinteraction.StateQueued
+		match.PipelineRun.Annotations[keys.State] = kubeinteraction.StateQueued
 	}
 
 	// Create the actual pipeline
@@ -172,7 +173,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		DetailsURL:              consoleURL,
 		PipelineRunName:         pr.GetName(),
 		PipelineRun:             pr,
-		OriginalPipelineRunName: pr.GetLabels()[keys.OriginalPRName],
+		OriginalPipelineRunName: pr.GetAnnotations()[keys.OriginalPRName],
 	}
 
 	// if pipelineRun is in pending state then report status as queued

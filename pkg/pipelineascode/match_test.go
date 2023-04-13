@@ -63,7 +63,7 @@ func TestFilterRunningPipelineRunOnTargetTest(t *testing.T) {
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "pipelinerun-" + testPipeline,
-				Labels: map[string]string{
+				Annotations: map[string]string{
 					apipac.OriginalPRName: testPipeline,
 				},
 			},

@@ -6,6 +6,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	v1 "k8s.io/api/core/v1"
@@ -56,6 +57,9 @@ func makeEvent(repo *v1alpha1.Repository, loggerLevel zapcore.Level, reason, mes
 			GenerateName: repo.Name + "-",
 			Namespace:    repo.Namespace,
 			Labels: map[string]string{
+				keys.Repository: formatting.CleanValueKubernetes(repo.Name),
+			},
+			Annotations: map[string]string{
 				keys.Repository: repo.Name,
 			},
 		},

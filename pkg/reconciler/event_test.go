@@ -59,6 +59,13 @@ func TestBuildEventFromPipelineRun(t *testing.T) {
 						// gitlab
 						keys.SourceProjectID: "1234",
 						keys.TargetProjectID: "2345",
+						keys.URLOrg:          "url-org",
+						keys.URLRepository:   "repo",
+						keys.SHA:             "sha",
+						keys.EventType:       "push",
+						keys.Branch:          "branch",
+						keys.State:           kubeinteraction.StateStarted,
+						keys.PullRequest:     "1234",
 					},
 				},
 			},
@@ -84,18 +91,18 @@ func TestDetectProvider(t *testing.T) {
 	tests := []struct {
 		name         string
 		missTheLabel bool
-		label        string
+		annotation   string
 		errStr       string
 	}{
 		{
-			name:   "known provider",
-			label:  "gitlab",
-			errStr: "",
+			name:       "known provider",
+			annotation: "gitlab",
+			errStr:     "",
 		},
 		{
-			name:   "unknown provider",
-			label:  "batman",
-			errStr: "failed to detect provider for pipelinerun: test : unknown provider",
+			name:       "unknown provider",
+			annotation: "batman",
+			errStr:     "failed to detect provider for pipelinerun: test : unknown provider",
 		},
 		{
 			name:         "no label",
@@ -113,8 +120,8 @@ func TestDetectProvider(t *testing.T) {
 				pr = &tektonv1.PipelineRun{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test",
-						Labels: map[string]string{
-							keys.GitProvider: tt.label,
+						Annotations: map[string]string{
+							keys.GitProvider: tt.annotation,
 						},
 					},
 				}

@@ -263,7 +263,12 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 		if pipelinerun.Labels == nil {
 			pipelinerun.Labels = map[string]string{}
 		}
+		// Don't overwrite the annotation if there is some who already exist set by the user in repo
+		if pipelinerun.Annotations == nil {
+			pipelinerun.Annotations = map[string]string{}
+		}
 		pipelinerun.Labels[apipac.OriginalPRName] = formatting.CleanValueKubernetes(originPipelinerunName)
+		pipelinerun.Annotations[apipac.OriginalPRName] = originPipelinerunName
 	}
 	return types.PipelineRuns, nil
 }

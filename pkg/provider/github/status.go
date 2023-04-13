@@ -187,7 +187,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 	// check if pipelineRun has the label with checkRun-id
 	if statusOpts.PipelineRun != nil {
 		var id string
-		id, found = statusOpts.PipelineRun.GetLabels()[keys.CheckRunID]
+		id, found = statusOpts.PipelineRun.GetAnnotations()[keys.CheckRunID]
 		if found {
 			checkID, err := strconv.Atoi(id)
 			if err != nil {
@@ -266,7 +266,8 @@ func metadataPatch(checkRunID *int64, logURL string) map[string]interface{} {
 				keys.CheckRunID: strconv.FormatInt(*checkRunID, 10),
 			},
 			"annotations": map[string]string{
-				keys.LogURL: logURL,
+				keys.LogURL:     logURL,
+				keys.CheckRunID: strconv.FormatInt(*checkRunID, 10),
 			},
 		},
 	}

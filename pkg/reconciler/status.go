@@ -134,7 +134,7 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		Text:                    taskStatusText,
 		PipelineRunName:         pr.Name,
 		DetailsURL:              r.run.Clients.ConsoleUI.DetailURL(pr),
-		OriginalPipelineRunName: pr.GetLabels()[apipac.OriginalPRName],
+		OriginalPipelineRunName: pr.GetAnnotations()[apipac.OriginalPRName],
 	}
 
 	err = createStatusWithRetry(ctx, logger, r.run.Clients.Tekton, vcx, event, r.run.Info.Pac, status)

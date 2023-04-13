@@ -23,27 +23,42 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1.PipelineRu
 	// Add labels on the soon to be created pipelinerun so UI/CLI can easily
 	// query them.
 	labels := map[string]string{
+		// These keys are used in LabelSelector query so we are keeping in Labels as it is.
+		// But adding same keys to Annotations so UI/CLI can fetch the actual value instead of modified value
 		"app.kubernetes.io/managed-by": pipelinesascode.GroupName,
 		"app.kubernetes.io/version":    version.Version,
 		keys.URLOrg:                    formatting.CleanValueKubernetes(event.Organization),
 		keys.URLRepository:             formatting.CleanValueKubernetes(event.Repository),
 		keys.SHA:                       formatting.CleanValueKubernetes(event.SHA),
-		keys.Sender:                    formatting.CleanValueKubernetes(event.Sender),
-		keys.EventType:                 formatting.CleanValueKubernetes(event.EventType),
-		keys.Branch:                    formatting.CleanValueKubernetes(event.BaseBranch),
 		keys.Repository:                formatting.CleanValueKubernetes(repo.GetName()),
-		keys.GitProvider:               providerinfo.Name,
 		keys.State:                     StateStarted,
+		keys.EventType:                 formatting.CleanValueKubernetes(event.EventType),
+
+		// We are deprecating these below keys from labels and adding it to Annotations
+		// In PAC v0.20.x releases we will remove these keys from Labels
+		keys.Sender:      formatting.CleanValueKubernetes(event.Sender),
+		keys.Branch:      formatting.CleanValueKubernetes(event.BaseBranch),
+		keys.GitProvider: providerinfo.Name,
 	}
 
 	annotations := map[string]string{
-		keys.ShaTitle: event.SHATitle,
-		keys.ShaURL:   event.SHAURL,
-		keys.RepoURL:  event.URL,
+		keys.ShaTitle:      event.SHATitle,
+		keys.ShaURL:        event.SHAURL,
+		keys.RepoURL:       event.URL,
+		keys.URLOrg:        event.Organization,
+		keys.URLRepository: event.Repository,
+		keys.SHA:           event.SHA,
+		keys.Sender:        event.Sender,
+		keys.EventType:     event.EventType,
+		keys.Branch:        event.BaseBranch,
+		keys.Repository:    repo.GetName(),
+		keys.GitProvider:   providerinfo.Name,
+		keys.State:         StateStarted,
 	}
 
 	if event.PullRequestNumber != 0 {
 		labels[keys.PullRequest] = strconv.Itoa(event.PullRequestNumber)
+		annotations[keys.PullRequest] = strconv.Itoa(event.PullRequestNumber)
 	}
 
 	// TODO: move to provider specific function

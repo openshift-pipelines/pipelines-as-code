@@ -77,7 +77,7 @@ func checkStateAndEnqueue(impl *controller.Impl) func(obj interface{}) {
 	return func(obj interface{}) {
 		object, err := kmeta.DeletionHandlingAccessor(obj)
 		if err == nil {
-			_, exist := object.GetLabels()[keys.State]
+			_, exist := object.GetAnnotations()[keys.State]
 			if exist {
 				impl.EnqueueKey(types.NamespacedName{Namespace: object.GetNamespace(), Name: object.GetName()})
 			}
@@ -90,7 +90,7 @@ func ctrlOpts() func(impl *controller.Impl) controller.Options {
 		return controller.Options{
 			FinalizerName: pipelinesascode.GroupName,
 			PromoteFilterFunc: func(obj interface{}) bool {
-				_, exist := obj.(*tektonv1.PipelineRun).GetLabels()[keys.State]
+				_, exist := obj.(*tektonv1.PipelineRun).GetAnnotations()[keys.State]
 				return exist
 			},
 		}

@@ -10,6 +10,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
@@ -53,7 +54,8 @@ func makeGitAuthSecret(ctx context.Context, cs *params.Run, filenames []string, 
 
 	if cs.Clients.Kube != nil {
 		list, _ := cs.Clients.Kube.CoreV1().Secrets(cs.Info.Kube.Namespace).List(ctx, metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", keys.URLOrg, params["repo_owner"], keys.URLRepository, params["repo_name"]),
+			LabelSelector: fmt.Sprintf("%s=%s,%s=%s", keys.URLOrg, formatting.CleanValueKubernetes(params["repo_owner"]),
+				keys.URLRepository, formatting.CleanValueKubernetes(params["repo_name"])),
 		})
 
 		if len(list.Items) > 0 {

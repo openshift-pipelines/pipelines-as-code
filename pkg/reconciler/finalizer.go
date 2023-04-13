@@ -16,13 +16,13 @@ import (
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, pr *tektonv1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx)
-	state, exist := pr.GetLabels()[keys.State]
+	state, exist := pr.GetAnnotations()[keys.State]
 	if !exist || state == kubeinteraction.StateCompleted {
 		return nil
 	}
 
 	if state == kubeinteraction.StateQueued || state == kubeinteraction.StateStarted {
-		repoName, ok := pr.GetLabels()[keys.Repository]
+		repoName, ok := pr.GetAnnotations()[keys.Repository]
 		if !ok {
 			return nil
 		}

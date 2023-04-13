@@ -8,8 +8,8 @@ import (
 )
 
 func (r *Reconciler) emitMetrics(pr *tektonv1.PipelineRun) error {
-	gitProvider := pr.GetLabels()[keys.GitProvider]
-	eventType := pr.GetLabels()[keys.EventType]
+	gitProvider := pr.GetAnnotations()[keys.GitProvider]
+	eventType := pr.GetAnnotations()[keys.EventType]
 
 	if strings.HasPrefix(gitProvider, "github") {
 		if _, ok := pr.GetAnnotations()[keys.InstallationID]; ok {

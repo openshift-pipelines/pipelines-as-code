@@ -48,14 +48,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	logger := logging.FromContext(ctx)
 
 	// if pipelineRun is in completed or failed state then return
-	state, exist := pr.GetLabels()[keys.State]
+	state, exist := pr.GetAnnotations()[keys.State]
 	if exist && (state == kubeinteraction.StateCompleted || state == kubeinteraction.StateFailed) {
 		return nil
 	}
 
 	// if its a GitHub App pipelineRun PR then process only if check run id is added otherwise wait
 	if _, ok := pr.Annotations[keys.InstallationID]; ok {
-		if _, ok := pr.Labels[keys.CheckRunID]; !ok {
+		if _, ok := pr.Annotations[keys.CheckRunID]; !ok {
 			return nil
 		}
 	}
@@ -72,7 +72,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 
 	logger = logger.With(
 		"pipeline-run", pr.GetName(),
-		"event-sha", pr.GetLabels()[keys.SHA],
+		"event-sha", pr.GetAnnotations()[keys.SHA],
 	)
 	logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
 	r.eventEmitter.SetLogger(logger)
@@ -93,7 +93,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 }
 
 func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *tektonv1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
-	repoName := pr.GetLabels()[keys.Repository]
+	repoName := pr.GetAnnotations()[keys.Repository]
 	repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
 	if err != nil {
 		return nil, fmt.Errorf("reportFinalStatus: %w", err)
@@ -191,7 +191,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		DetailsURL:              consoleURL,
 		PipelineRunName:         pr.GetName(),
 		PipelineRun:             pr,
-		OriginalPipelineRunName: pr.GetLabels()[keys.OriginalPRName],
+		OriginalPipelineRunName: pr.GetAnnotations()[keys.OriginalPRName],
 	}
 
 	if err := createStatusWithRetry(ctx, logger, r.run.Clients.Tekton, p, event, r.run.Info.Pac, status); err != nil {
@@ -209,6 +209,9 @@ func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.Sug
 	mergePatch := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"labels": map[string]string{
+				keys.State: state,
+			},
+			"annotations": map[string]string{
 				keys.State: state,
 			},
 		},

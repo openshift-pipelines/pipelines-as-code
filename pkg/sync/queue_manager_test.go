@@ -164,12 +164,17 @@ func TestQueueManager_InitQueues(t *testing.T) {
 
 	repo := newTestRepo("test", 1)
 
-	annotations := map[string]string{
+	queuedAnnotations := map[string]string{
 		keys.ExecutionOrder: "test-ns/first,test-ns/second,test-ns/third",
+		keys.State:          kubeinteraction.StateQueued,
 	}
-	firstPR := newTestPR("first", cw.Now(), startedLabel, annotations)
-	secondPR := newTestPR("second", cw.Now().Add(5*time.Second), queuedLabel, annotations)
-	thirdPR := newTestPR("third", cw.Now().Add(3*time.Second), queuedLabel, annotations)
+	startedAnnotations := map[string]string{
+		keys.ExecutionOrder: "test-ns/first,test-ns/second,test-ns/third",
+		keys.State:          kubeinteraction.StateStarted,
+	}
+	firstPR := newTestPR("first", cw.Now(), startedLabel, startedAnnotations)
+	secondPR := newTestPR("second", cw.Now().Add(5*time.Second), queuedLabel, queuedAnnotations)
+	thirdPR := newTestPR("third", cw.Now().Add(3*time.Second), queuedLabel, queuedAnnotations)
 
 	tdata := testclient.Data{
 		Repositories: []*v1alpha1.Repository{repo},

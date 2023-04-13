@@ -154,11 +154,12 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 				keys.State:          kubeinteraction.StateCompleted,
 				keys.InstallationID: "1234",
 				keys.RepoURL:        randomURL,
+				keys.Repository:     pr.GetName(),
+				keys.OriginalPRName: pr.GetName(),
+				keys.CheckRunID:     tt.checkRunID,
 			}
 			pr.Labels = map[string]string{
-				keys.Repository:     pr.GetName(),
-				keys.CheckRunID:     tt.checkRunID,
-				keys.OriginalPRName: pr.GetName(),
+				keys.Repository: pr.GetName(),
 			}
 
 			testRepo := &v1alpha1.Repository{
@@ -245,7 +246,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			assert.NilError(t, err)
 
 			// state must be updated to completed
-			assert.Equal(t, got.Labels[keys.State], kubeinteraction.StateCompleted)
+			assert.Equal(t, got.Annotations[keys.State], kubeinteraction.StateCompleted)
 		})
 	}
 }
@@ -265,7 +266,7 @@ func TestUpdatePipelineRunState(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test",
 					Name:      "test",
-					Labels: map[string]string{
+					Annotations: map[string]string{
 						keys.State: kubeinteraction.StateQueued,
 					},
 				},
@@ -282,7 +283,7 @@ func TestUpdatePipelineRunState(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "test",
 					Name:      "test",
-					Labels: map[string]string{
+					Annotations: map[string]string{
 						keys.State: kubeinteraction.StateStarted,
 					},
 				},
@@ -310,7 +311,7 @@ func TestUpdatePipelineRunState(t *testing.T) {
 			updatedPR, err := r.updatePipelineRunState(ctx, fakelogger, tt.pipelineRun, tt.state)
 			assert.NilError(t, err)
 
-			assert.Equal(t, updatedPR.Labels[keys.State], tt.state)
+			assert.Equal(t, updatedPR.Annotations[keys.State], tt.state)
 			assert.Equal(t, updatedPR.Spec.Status, tektonv1.PipelineRunSpecStatus(""))
 		})
 	}

@@ -51,7 +51,7 @@ func (p *PacRun) cancelPipelineRuns(ctx context.Context, repo *v1alpha1.Reposito
 	var wg sync.WaitGroup
 	for _, pr := range prs.Items {
 		if p.event.TargetCancelPipelineRun != "" {
-			if prName, ok := pr.GetLabels()[keys.OriginalPRName]; !ok || prName != p.event.TargetCancelPipelineRun {
+			if prName, ok := pr.GetAnnotations()[keys.OriginalPRName]; !ok || prName != p.event.TargetCancelPipelineRun {
 				continue
 			}
 		}

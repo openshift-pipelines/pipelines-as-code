@@ -41,7 +41,7 @@ func getTestPR(name, state string) *tektonv1.PipelineRun {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: finalizeTestRepo.Namespace,
-			Labels: map[string]string{
+			Annotations: map[string]string{
 				keys.State:      state,
 				keys.Repository: finalizeTestRepo.Name,
 			},
@@ -66,7 +66,7 @@ func TestReconciler_FinalizeKind(t *testing.T) {
 			name: "completed pipelinerun",
 			pipelinerun: &tektonv1.PipelineRun{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
+					Annotations: map[string]string{
 						keys.State: kubeinteraction.StateCompleted,
 					},
 				},

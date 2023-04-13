@@ -20,7 +20,7 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 		return nil
 	}
 
-	repoName := pr.GetLabels()[keys.Repository]
+	repoName := pr.GetAnnotations()[keys.Repository]
 	repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
 	if err != nil {
 		// if repository is not found, then skip processing the pipelineRun and return nil
