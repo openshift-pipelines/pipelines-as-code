@@ -31,9 +31,16 @@ func TestCleanupPipelineRuns(t *testing.T) {
 		"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
 	}
 
+	cleanupAnnotation := map[string]string{
+		"pipelinesascode.tekton.dev/original-prname": cleanupPRName,
+		"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
+	}
+
 	maxRunsAnno := func(run int) map[string]string {
 		return map[string]string{
-			"pipelinesascode.tekton.dev/max-keep-runs": strconv.Itoa(run),
+			"pipelinesascode.tekton.dev/max-keep-runs":   strconv.Itoa(run),
+			"pipelinesascode.tekton.dev/original-prname": cleanupPRName,
+			"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
 		}
 	}
 
@@ -99,7 +106,7 @@ func TestCleanupPipelineRuns(t *testing.T) {
 			maxkeepruns:  3,
 		},
 		{
-			name: "no annotation, using default from config",
+			name: "no max-keep-runs annotation, using default from config",
 			pruns: []*tektonv1.PipelineRun{
 				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
 				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
@@ -107,7 +114,7 @@ func TestCleanupPipelineRuns(t *testing.T) {
 			},
 			repoNs:             ns,
 			repoName:           cleanupRepoName,
-			currentpr:          &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
+			currentpr:          &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: cleanupAnnotation}},
 			afterCleanup:       2,
 			defaultmaxkeepruns: 2,
 		},

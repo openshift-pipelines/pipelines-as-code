@@ -37,9 +37,20 @@ var (
 		keys.SHA:           formatting.CleanValueKubernetes("foosha"),
 		keys.PullRequest:   strconv.Itoa(11),
 	}
+	fooRepoAnnotations = map[string]string{
+		keys.URLRepository: "foo",
+		keys.SHA:           "foosha",
+		keys.PullRequest:   strconv.Itoa(11),
+	}
 	fooRepoLabelsPrFooAbc = map[string]string{
 		keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
 		keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+		keys.PullRequest:    strconv.Itoa(11),
+		keys.OriginalPRName: "pr-foo-abc",
+	}
+	fooRepoAnnotationsPrFooAbc = map[string]string{
+		keys.URLRepository:  "foo",
+		keys.SHA:            "foosha",
 		keys.PullRequest:    strconv.Itoa(11),
 		keys.OriginalPRName: "pr-foo-abc",
 	}
@@ -117,25 +128,28 @@ func TestCancelPipelinerun(t *testing.T) {
 			pipelineRuns: []*pipelinev1.PipelineRun{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pr-foo",
-						Namespace: "foo",
-						Labels:    fooRepoLabels,
+						Name:        "pr-foo",
+						Namespace:   "foo",
+						Labels:      fooRepoLabels,
+						Annotations: fooRepoAnnotations,
 					},
 					Spec: pipelinev1.PipelineRunSpec{},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pr-foo-abc-123",
-						Namespace: "foo",
-						Labels:    fooRepoLabelsPrFooAbc,
+						Name:        "pr-foo-abc-123",
+						Namespace:   "foo",
+						Labels:      fooRepoLabelsPrFooAbc,
+						Annotations: fooRepoAnnotationsPrFooAbc,
 					},
 					Spec: pipelinev1.PipelineRunSpec{},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pr-foo-pqr",
-						Namespace: "foo",
-						Labels:    fooRepoLabels,
+						Name:        "pr-foo-pqr",
+						Namespace:   "foo",
+						Labels:      fooRepoLabels,
+						Annotations: fooRepoAnnotations,
 					},
 					Spec: pipelinev1.PipelineRunSpec{},
 				},

@@ -66,6 +66,8 @@ func MakeBasicAuthSecret(runevent *info.Event, secretName string) (*corev1.Secre
 	annotations := map[string]string{
 		"pipelinesascode.tekton.dev/url": cloneURL,
 		"pipelinesascode.tekton.dev/sha": runevent.SHA,
+		keys.URLOrg:                      runevent.Organization,
+		keys.URLRepository:               runevent.Repository,
 	}
 
 	labels := map[string]string{

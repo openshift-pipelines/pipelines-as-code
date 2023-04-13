@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -133,7 +134,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	}
 
 	events, err := topts.ParamsRun.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, topts.TargetNS),
+		LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, formatting.CleanValueKubernetes(topts.TargetNS)),
 	})
 	assert.NilError(t, err)
 	if topts.ExpectEvents {
@@ -144,7 +145,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 			// loop 30 times over a 5 second period and try to get any events
 			for i := 0; i < 30; i++ {
 				events, err = topts.ParamsRun.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
-					LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, topts.TargetNS),
+					LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, formatting.CleanValueKubernetes(topts.TargetNS)),
 				})
 				assert.NilError(t, err)
 				if len(events.Items) > 0 {
@@ -255,7 +256,7 @@ func CheckIfPipelineRunsCancelled(t *testing.T, topts *TestOpts) {
 	for {
 		list, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).
 			List(context.Background(), metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("%v=%v", keys.Repository, topts.TargetNS),
+				LabelSelector: fmt.Sprintf("%v=%v", keys.Repository, formatting.CleanValueKubernetes((topts.TargetNS))),
 			})
 		assert.NilError(t, err)
 

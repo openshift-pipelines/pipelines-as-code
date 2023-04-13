@@ -81,9 +81,10 @@ func MakePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus stri
 
 	return &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels:    labels,
+			Name:        name,
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: labels,
 		},
 		Status: tektonv1.PipelineRunStatus{
 			Status: knativeduckv1.Status{
@@ -103,7 +104,7 @@ func MakePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus stri
 	}
 }
 
-func MakeTaskRunCompletion(clock clockwork.FakeClock, name, namespace, runstatus string, labels map[string]string, taskStatus tektonv1.TaskRunStatusFields, conditions knativeduckv1.Conditions, timeshift int) *tektonv1.TaskRun {
+func MakeTaskRunCompletion(clock clockwork.FakeClock, name, namespace, runstatus string, annotation map[string]string, taskStatus tektonv1.TaskRunStatusFields, conditions knativeduckv1.Conditions, timeshift int) *tektonv1.TaskRun {
 	starttime := time.Duration((timeshift - 5*-1) * int(time.Minute))
 	endtime := time.Duration((timeshift * -1) * int(time.Minute))
 
@@ -121,9 +122,9 @@ func MakeTaskRunCompletion(clock clockwork.FakeClock, name, namespace, runstatus
 
 	return &tektonv1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels:    labels,
+			Name:        name,
+			Namespace:   namespace,
+			Annotations: annotation,
 		},
 		Status: tektonv1.TaskRunStatus{
 			Status: knativeduckv1.Status{

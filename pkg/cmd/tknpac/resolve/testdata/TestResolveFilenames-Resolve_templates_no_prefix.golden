@@ -2,6 +2,8 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
+  annotations:
+    pipelinesascode.tekton.dev/original-prname: test
   generateName: test-
   labels:
     pipelinesascode.tekton.dev/original-prname: test

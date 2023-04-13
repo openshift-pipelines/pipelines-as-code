@@ -26,6 +26,10 @@ func TestCleanupPipelines(t *testing.T) {
 		"pipelinesascode.tekton.dev/original-prname": cleanupPRName,
 		"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
 	}
+	cleanupAnnotation := map[string]string{
+		"pipelinesascode.tekton.dev/original-prname": cleanupPRName,
+		"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
+	}
 
 	clock := clockwork.NewFakeClock()
 
@@ -51,7 +55,7 @@ func TestCleanupPipelines(t *testing.T) {
 				repositoryName: cleanupRepoName,
 				maxKeep:        1,
 				kept:           1,
-				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
+				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: cleanupAnnotation}},
 				pruns: []*tektonv1.PipelineRun{
 					tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
 					tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
@@ -67,7 +71,7 @@ func TestCleanupPipelines(t *testing.T) {
 				repositoryName: cleanupRepoName,
 				maxKeep:        1,
 				kept:           1, // see my comment in code why only 1 is kept.
-				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels}},
+				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: cleanupAnnotation}},
 				pruns: []*tektonv1.PipelineRun{
 					tektontest.MakePRCompletion(clock, "pipeline-running", ns, tektonv1.PipelineRunReasonRunning.String(), cleanupLabels, 10),
 					tektontest.MakePRCompletion(clock, "pipeline-toclean", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),

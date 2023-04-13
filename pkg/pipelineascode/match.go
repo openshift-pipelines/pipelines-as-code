@@ -197,7 +197,7 @@ func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1.P
 		return prs
 	}
 	for _, pr := range prs {
-		if prName, ok := pr.GetLabels()[apipac.OriginalPRName]; ok {
+		if prName, ok := pr.GetAnnotations()[apipac.OriginalPRName]; ok {
 			if prName == testPipeline {
 				return []*tektonv1.PipelineRun{pr}
 			}

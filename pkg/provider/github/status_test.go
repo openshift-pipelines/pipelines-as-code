@@ -139,7 +139,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 	pr := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: prname,
-			Labels: map[string]string{
+			Annotations: map[string]string{
 				keys.CheckRunID: strconv.Itoa(int(checkrunid)),
 			},
 		},

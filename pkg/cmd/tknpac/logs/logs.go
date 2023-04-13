@@ -166,7 +166,7 @@ func getTknPath() (string, error) {
 func getPipelineRunsToRepo(ctx context.Context, lopt *logOption, repoName string) ([]string, error) {
 	opts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s",
-			keys.Repository, repoName),
+			keys.Repository, formatting.CleanValueKubernetes(repoName)),
 	}
 	runs, err := lopt.cs.Clients.Tekton.TektonV1().PipelineRuns(lopt.opts.Namespace).List(ctx, opts)
 	if err != nil {
