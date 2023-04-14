@@ -627,6 +627,45 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "cel/match path by glob along with push event and target_branch info",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				fileChanged: []string{".tekton/push.yaml"},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: fmt.Sprintf(`event == "push" && target_branch == "%s" && ".tekton/*yaml".pathChanged()`, mainBranch),
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					EventType:     "push",
+					BaseBranch:    "refs/heads/" + mainBranch,
+					HeadBranch:    mainBranch,
+					Organization:  "mylittle",
+					Repository:    "pony",
+					SHATitle:      "verifying push event",
+					SHA:           "shacommitinfo",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -643,13 +682,27 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				for _, v := range tt.args.fileChanged {
 					commitFiles = append(commitFiles, &github.CommitFile{Filename: github.String(v)})
 				}
-				url := fmt.Sprintf("/repos/%s/%s/pulls/%d/files", tt.args.runevent.Organization,
-					tt.args.runevent.Repository, tt.args.runevent.PullRequestNumber)
-				mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
-					jeez, err := json.Marshal(commitFiles)
-					assert.NilError(t, err)
-					_, _ = w.Write(jeez)
-				})
+				if tt.args.runevent.TriggerTarget == "push" {
+					mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/commits/%s",
+						tt.args.runevent.Organization, tt.args.runevent.Repository, tt.args.runevent.SHA), func(w http.ResponseWriter, r *http.Request) {
+						c := &github.RepositoryCommit{
+							Files: commitFiles,
+						}
+						jeez, err := json.Marshal(c)
+						assert.NilError(t, err)
+						_, _ = w.Write(jeez)
+					})
+				}
+
+				if tt.args.runevent.TriggerTarget == "pull_request" {
+					url := fmt.Sprintf("/repos/%s/%s/pulls/%d/files", tt.args.runevent.Organization,
+						tt.args.runevent.Repository, tt.args.runevent.PullRequestNumber)
+					mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+						jeez, err := json.Marshal(commitFiles)
+						assert.NilError(t, err)
+						_, _ = w.Write(jeez)
+					})
+				}
 			}
 
 			tt.args.runevent.Provider = &info.Provider{
@@ -664,29 +717,42 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			defer glTeardown()
 			glVcx := &glprovider.Provider{
 				Client: glFakeClient,
-				Token:  github.String("None"),
+				Token:  gitlab.String("None"),
 			}
 			if len(tt.args.fileChanged) > 0 {
 				commitFiles := &gitlab.MergeRequest{}
-				for _, v := range tt.args.fileChanged {
-					commitFiles.Changes = append(commitFiles.Changes,
-						struct {
-							OldPath     string `json:"old_path"`
-							NewPath     string `json:"new_path"`
-							AMode       string `json:"a_mode"`
-							BMode       string `json:"b_mode"`
-							Diff        string `json:"diff"`
-							NewFile     bool   `json:"new_file"`
-							RenamedFile bool   `json:"renamed_file"`
-							DeletedFile bool   `json:"deleted_file"`
-						}{NewPath: v})
+				pushFileChanges := []*gitlab.Diff{}
+				if tt.args.runevent.TriggerTarget == "push" {
+					for _, v := range tt.args.fileChanged {
+						pushFileChanges = append(pushFileChanges, &gitlab.Diff{NewPath: v})
+					}
+					glMux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff",
+						tt.args.runevent.SHA), func(rw http.ResponseWriter, r *http.Request) {
+						jeez, err := json.Marshal(pushFileChanges)
+						assert.NilError(t, err)
+						_, _ = rw.Write(jeez)
+					})
+				} else {
+					for _, v := range tt.args.fileChanged {
+						commitFiles.Changes = append(commitFiles.Changes,
+							struct {
+								OldPath     string `json:"old_path"`
+								NewPath     string `json:"new_path"`
+								AMode       string `json:"a_mode"`
+								BMode       string `json:"b_mode"`
+								Diff        string `json:"diff"`
+								NewFile     bool   `json:"new_file"`
+								RenamedFile bool   `json:"renamed_file"`
+								DeletedFile bool   `json:"deleted_file"`
+							}{NewPath: v})
+					}
+					url := fmt.Sprintf("/projects/0/merge_requests/%d/changes", tt.args.runevent.PullRequestNumber)
+					glMux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+						jeez, err := json.Marshal(commitFiles)
+						assert.NilError(t, err)
+						_, _ = w.Write(jeez)
+					})
 				}
-				url := fmt.Sprintf("/projects/0/merge_requests/%d/changes", tt.args.runevent.PullRequestNumber)
-				glMux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
-					jeez, err := json.Marshal(commitFiles)
-					assert.NilError(t, err)
-					_, _ = w.Write(jeez)
-				})
 			}
 
 			tt.args.runevent.Provider = &info.Provider{
