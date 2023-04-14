@@ -3,6 +3,7 @@ package matcher
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/gobwas/glob"
 	"github.com/google/cel-go/cel"
@@ -17,6 +18,24 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 	eventTitle := event.PullRequestTitle
 	if event.TriggerTarget == "push" {
 		eventTitle = event.SHATitle
+		// For push event the target_branch & source_branch info coming from payload have refs/heads/
+		// but user may or mayn't provide refs/heads/ info while giving target_branch or source_branch in CEL expression
+		// ex:  pipelinesascode.tekton.dev/on-cel-expression: |
+		//        event == "push" && target_branch == "main" && "frontend/***".pathChanged()
+		// This logic will handle such case.
+		splittedValue := strings.Split(expr, "&&")
+		for i := range splittedValue {
+			if strings.Contains(splittedValue[i], "target_branch") {
+				if !strings.Contains(splittedValue[i], "refs/heads/") {
+					event.BaseBranch = strings.TrimPrefix(event.BaseBranch, "refs/heads/")
+				}
+			}
+			if strings.Contains(splittedValue[i], "source_branch") {
+				if !strings.Contains(splittedValue[i], "refs/heads/") {
+					event.HeadBranch = strings.TrimPrefix(event.HeadBranch, "refs/heads/")
+				}
+			}
+		}
 	}
 
 	data := map[string]interface{}{
