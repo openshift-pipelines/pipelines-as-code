@@ -17,13 +17,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 )
 
-func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *params.Run, repo *v1alpha1.Repository, gh *github.Provider) (string, string, int64, error) {
+func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *params.Run, repo *v1alpha1.Repository, gh *github.Provider, ns string) (string, string, int64, error) {
 	var (
 		enterpriseURL, token string
 		installationID       int64
 	)
-
-	jwtToken, err := generateJWT(ctx, run)
+	jwtToken, err := GenerateJWT(ctx, ns, run)
 	if err != nil {
 		return "", "", 0, err
 	}
@@ -34,7 +33,7 @@ func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *par
 		installationURL = enterpriseURL + keys.InstallationURL
 	}
 
-	res, err := getResponse(ctx, http.MethodGet, installationURL, jwtToken, run)
+	res, err := GetReponse(ctx, http.MethodGet, installationURL, jwtToken, run)
 	if err != nil {
 		return "", "", 0, err
 	}
@@ -58,7 +57,7 @@ func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *par
 			return "", "", 0, fmt.Errorf("installation ID is nil")
 		}
 		if *installationData[i].ID != 0 {
-			token, err = gh.GetAppToken(ctx, run.Clients.Kube, enterpriseURL, *installationData[i].ID)
+			token, err = gh.GetAppToken(ctx, run.Clients.Kube, enterpriseURL, *installationData[i].ID, ns)
 			if err != nil {
 				return "", "", 0, err
 			}
@@ -93,8 +92,9 @@ type JWTClaim struct {
 	jwt.RegisteredClaims
 }
 
-func generateJWT(ctx context.Context, run *params.Run) (string, error) {
-	applicationID, privateKey, err := github.GetAppIDAndPrivateKey(ctx, run.Clients.Kube)
+func GenerateJWT(ctx context.Context, ns string, run *params.Run) (string, error) {
+	// TODO: move this out of here
+	applicationID, privateKey, err := github.GetAppIDAndPrivateKey(ctx, ns, run.Clients.Kube)
 	if err != nil {
 		return "", err
 	}
@@ -124,7 +124,7 @@ func generateJWT(ctx context.Context, run *params.Run) (string, error) {
 	return tokenString, nil
 }
 
-func getResponse(ctx context.Context, method, urlData, jwtToken string, run *params.Run) (*http.Response, error) {
+func GetReponse(ctx context.Context, method, urlData, jwtToken string, run *params.Run) (*http.Response, error) {
 	rawurl, err := url.Parse(urlData)
 	if err != nil {
 		return nil, err

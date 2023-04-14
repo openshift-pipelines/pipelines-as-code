@@ -112,8 +112,7 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 
 			ctx := context.Background()
 			clock := clockwork.NewRealClock()
-			err = run.Clients.NewClients(ctx, &run.Info)
-			if err != nil {
+			if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 				return err
 			}
 

@@ -13,6 +13,7 @@ import (
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v50/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -24,26 +25,24 @@ const (
 	secretName = "pipelines-as-code-secret"
 )
 
-func GetAppIDAndPrivateKey(ctx context.Context, kube kubernetes.Interface) (int64, []byte, error) {
-	// TODO: move this out of here
-	ns := os.Getenv("SYSTEM_NAMESPACE")
+func GetAppIDAndPrivateKey(ctx context.Context, ns string, kube kubernetes.Interface) (int64, []byte, error) {
 	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
 	if err != nil {
 		return 0, []byte{}, err
 	}
 
-	appID := secret.Data["github-application-id"]
+	appID := secret.Data[keys.GithubApplicationID]
 	applicationID, err := strconv.ParseInt(strings.TrimSpace(string(appID)), 10, 64)
 	if err != nil {
 		return 0, []byte{}, fmt.Errorf("could not parse the github application_id number from secret: %w", err)
 	}
 
-	privateKey := secret.Data["github-private-key"]
+	privateKey := secret.Data[keys.GithubPrivateKey]
 	return applicationID, privateKey, nil
 }
 
-func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, gheURL string, installationID int64) (string, error) {
-	applicationID, privateKey, err := GetAppIDAndPrivateKey(ctx, kube)
+func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, gheURL string, installationID int64, ns string) (string, error) {
+	applicationID, privateKey, err := GetAppIDAndPrivateKey(ctx, ns, kube)
 	if err != nil {
 		return "", err
 	}
@@ -135,7 +134,8 @@ func getInstallationIDFromPayload(payload string) int64 {
 // a bit too far fetched but i don't see any way we can exploit this.
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
 	event := info.NewEvent()
-
+	// TODO: we should not have getenv in code only in main
+	systemNS := os.Getenv("SYSTEM_NAMESPACE")
 	if err := v.parseEventType(request, event); err != nil {
 		return nil, err
 	}
@@ -143,7 +143,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	installationIDFrompayload := getInstallationIDFromPayload(payload)
 	if installationIDFrompayload != -1 {
 		var err error
-		if event.Provider.Token, err = v.GetAppToken(ctx, run.Clients.Kube, event.Provider.URL, installationIDFrompayload); err != nil {
+		// TODO: move this out of here when we move al config inside context
+		if event.Provider.Token, err = v.GetAppToken(ctx, run.Clients.Kube, event.Provider.URL, installationIDFrompayload, systemNS); err != nil {
 			return nil, err
 		}
 	}
@@ -182,8 +183,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 			}
 		}
 		var err error
-		if processedEvent.Provider.Token, err = v.GetAppToken(ctx, run.Clients.Kube, event.Provider.URL,
-			installationIDFrompayload); err != nil {
+		if processedEvent.Provider.Token, err = v.GetAppToken(ctx, run.Clients.Kube, event.Provider.URL, installationIDFrompayload, systemNS); err != nil {
 			return nil, err
 		}
 	}

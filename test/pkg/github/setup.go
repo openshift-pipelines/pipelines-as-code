@@ -82,7 +82,7 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 		if err != nil {
 			return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_GITHUB_REPO_INSTALLATION_ID need to be set")
 		}
-		githubToken, err = gprovider.GetAppToken(ctx, run.Clients.Kube, githubURL, githubRepoInstallationID)
+		githubToken, err = gprovider.GetAppToken(ctx, run.Clients.Kube, githubURL, githubRepoInstallationID, os.Getenv("SYSTEM_NAMESPACE"))
 		if err != nil {
 			return nil, options.E2E{}, github.New(), err
 		}

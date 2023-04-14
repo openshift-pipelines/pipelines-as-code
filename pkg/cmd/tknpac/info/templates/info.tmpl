@@ -1,0 +1,24 @@
+{{.CS.Underline "Pipelines as Code"}}:
+ Version: {{ .Version }}
+ Install Namespace: {{ .InstallNamespace }}
+{{- if .Gapp }}
+
+{{.CS.Underline "Github Application"}}:
+ Name: {{ .Gapp.Name }}
+ URL: {{ .Gapp.HTMLURL }}
+ HomePage: {{ .Gapp.ExternalURL }}
+ Description: {{ .Gapp.Description }}
+ Created: {{ .Gapp.CreatedAt.Format "2006-01-02" }}
+ Installations Count: {{ .Gapp.InstallationsCount }}
+{{- end }}
+{{- if (gt (len .Repos) 1) }}
+
+{{ $.CS.Underline "Repositories CR" }}: {{ len .Repos  }}
+    Namespace	URL
+{{- range $repo := .Repos }}
+  - {{ $repo.GetNamespace }}	{{ $repo.Spec.URL }}
+{{- end  }}
+{{- else  }}
+
+{{.CS.Bold "No repos CR installed on Cluster" }}
+{{- end  }}

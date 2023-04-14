@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
@@ -71,7 +72,10 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 
 	if repo.Spec.GitProvider == nil || repo.Spec.GitProvider.Type == "" {
 		gh := github.New()
-		enterpriseURL, token, installationID, err := app.GetAndUpdateInstallationID(ctx, req, l.run, repo, gh)
+
+		// TODO: move this out of here
+		ns := os.Getenv("SYSTEM_NAMESPACE")
+		enterpriseURL, token, installationID, err := app.GetAndUpdateInstallationID(ctx, req, l.run, repo, gh, ns)
 		if err != nil {
 			return false, nil, err
 		}
