@@ -4,17 +4,18 @@ ignorecase: false
 level: suggestion
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/definitions/
 message: "Define acronyms and abbreviations (such as '%s') on first occurrence if they're likely to be unfamiliar."
-source: "IBM - Abbreviations, p. 1"
+# source: "IBM - Abbreviations, p. 1"
 # Ensures that the existence of 'first' implies the existence of 'second'.
 first: '\b([A-Z]{3,5}s?)\b'
 second: '\(([A-Z]{3,5}s?)\)'
 # ... with the exception of these:
 exceptions:
+  - 'APIs?'
   - 'CPUs?'
   - 'CVEs?'
   - 'DVDs?'
-  - 'NULL'
   - 'GIDs?'
+  - 'NULL'
   - 'PIDs?'
   - 'ROMs?'
   - 'RPMs?'
@@ -23,14 +24,17 @@ exceptions:
   - 'URLs?'
   - ACPI
   - AIX
-  - API
   - ARM
   - ASCII
   - ASP
+  - AWS
   - BIND
   - BIOS
+  - BMC
   - CD
+  - CIDR
   - CLI
+  - CNAME
   - CSS
   - CSV
   - CUPS
@@ -54,6 +58,7 @@ exceptions:
   - GCJ
   - GDB
   - GET
+  - GIF
   - GIMP
   - GNOME
   - GNU
@@ -63,10 +68,12 @@ exceptions:
   - GRUB
   - GTK+
   - GUI
+  - GUID
   - HP
   - HTML
   - HTTP
   - HTTPS
+  - IAM
   - IBM
   - IDE
   - IOPS
@@ -75,6 +82,7 @@ exceptions:
   - ISO
   - IT
   - JAR
+  - JPEG
   - JSON
   - JSX
   - JVM
@@ -105,12 +113,13 @@ exceptions:
   - OSS
   - PATH
   - PC
-  - POSIX
   - PDF
   - PHP
   - PIN
-  - PPP
+  - PNG
+  - POSIX
   - POST
+  - PPP
   - PROM
   - PXE
   - QCOW2
@@ -118,6 +127,7 @@ exceptions:
   - RADOS
   - RAID
   - RAM
+  - RBAC
   - RBD
   - REPL
   - REST
@@ -125,6 +135,7 @@ exceptions:
   - RGW
   - RHEL
   - RSA
+  - SAML
   - SAP
   - SCM
   - SCSI
@@ -135,10 +146,12 @@ exceptions:
   - SOCKS
   - SPEC
   - SQL
+  - SSD
   - SSH
   - SSL
   - SSSD
   - SVG
+  - SVN
   - SWAT
   - TBD
   - TCP
@@ -156,6 +169,7 @@ exceptions:
   - VDO
   - VDSM
   - VGA
+  - VLAN
   - VNC
   - VPN
   - WAN
@@ -166,3 +180,4 @@ exceptions:
   - YAML
   - YUM
   - ZIP
+  - ZTP
