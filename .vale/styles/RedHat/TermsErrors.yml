@@ -4,27 +4,27 @@ ignorecase: true
 level: error
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/termserrors/
 message: "Use '%s' rather than '%s'."
-source: "https://redhat-documentation.github.io/supplementary-style-guide/glossary-terms-conventions; IBM - Appendix C. Word usage, p. 300"
+# source: "https://redhat-documentation.github.io/supplementary-style-guide/#glossary-terms-conventions; IBM - Appendix C. Word usage, p. 300"
 action:
   name: replace
 # swap maps tokens in form of bad: good
 swap:
-  '\b(?:eg|e\.g\.)[\s,]': for example
-  '\b(?:ie|i\.e\.)[\s,]': that is
   "(?:Ctrl|control)-click": press Ctrl and click
-  "(?<!IBM )S 390": "IBM S 390"
   "(?<!kernel )oops": kernel oops
   "(?<!make the )transition": "make the transition|move|migrate|change"
   "(?<!mobile |cell )phone": "telephone|cell phone|mobile phone"
   "(?<!Mozilla )Firefox": Mozilla Firefox
   "(?<!Mozilla )Thunderbird": Mozilla Thunderbird
+  "[bB]asic [aA]uth": Basic HTTP authentication (first instance)|Basic authentication
   "a lot(?: of)?": many|much
+  "AI": Assisted Installer
   "backward(?:-)?compatible": compatible with earlier versions
   "bottle neck|bottle-neck": bottleneck
   "bottom(?:-)?left": lower left|lower-left
   "bottom(?:-)?right": lower right|lower-right
   "broad cast|broad-cast": broadcast
   "down(?:-)?level": earlier|previous|not at the latest level
+  "IPI": installer-provisioned infrastructure
   "mash(?: )?up": create
   "non-English(?!-language?)": in languages other than English|non-English-language
   "pop-up (?:blocker|killer)": software to block pop-up ad windows
@@ -32,7 +32,19 @@ swap:
   "sort(?:-|/)?merge": sort|merge
   "top(?:-)?left": upper left|upper right|upper-left|upper-right
   "top(?:-)?right": upper left|upper right|upper-left|upper-right
+  "UPI": user-provisioned infrastructure
   # "app(?:.)": app
+  '(?<!\/)etc(?!\/)': and so on
+  '(?<!IBM\s)S\/390|S90|S\s390': IBM S/390
+  '(?<!self-)hosted engine(?! host)|hosted-engine(?! host)': self-hosted engine
+  '(?<!virtual )floppy disk': diskette|diskette drive
+  '(?<!virtual )floppy drive': diskette|diskette drive
+  '(?<!virtual )floppy(?!\sdisk|\sdrive)': diskette|diskette drive
+  '(?<!virtual )hard drive': hard disk|hard disk drive
+  '\b(?:eg|e\.g\.)[\s,]': for example
+  '\b(?:ie|i\.e\.)[\s,]': that is
+  'fixed\sdisk\sdrive': hard disk drive
+  'virtual\shard\sdisk': virtual hard drive
   a number of: several
   abort: cancel|stop
   administrate: administer
@@ -56,6 +68,7 @@ swap:
   breadcrumbing: breadcrumb trail
   bugfix: bug fix
   builtin|built in: built-in
+  byte code: bytecode
   canned: preplanned|preconfigured|predefined
   case insensitive: not case-sensitive
   catastrophic error: unrecoverable error
@@ -75,12 +88,11 @@ swap:
   comma delimited|commadelimited: comma-delimited
   comma-delimited values|comma delimited values|comma separated values: comma-separated values
   command driven|commanddriven: command-driven
-  command prompt: shell prompt
   command-language: command language
   componentization: component-based development|component model|component architecture|shared components
   componentize: develop components
   comprised of: consist of
-  computer farm|computer ranch: server farm
+  computer farm|computer ranch: server cluster|server farm
   connect with: connect to
   container based: container-based
   containerised: containerized
@@ -88,7 +100,6 @@ swap:
   contextual help: help|context-sensitive help
   cross site scripting: cross-site scripting
   crossplatform|cross platform: cross-platform
-  CRUD: create retrieve update and delete
   daisy-chain|daisychain: daisy chain
   datacenter|data-center|data centre|datacentre: data center
   datamirroring|data-mirroring: data mirroring
@@ -101,15 +112,18 @@ swap:
   deinstallation: uninstallation
   demilitarized zone: DMZ
   demon: daemon
+  deployment configuration: deployment
   depress: press|type
   deregister: unregister
   desire: want|required
   desire|wish: need
   desk top|desk-top: desktop
   destroy: delete from the database
+  details pane: details view
   different than|different to: different from
   disklabel|disk-label: disk label
   dismount: demount|unmount|remove
+  domain mode: managed domain
   domainname|domain-name: domain name
   down-load|down load: download
   down-stream|down stream: downstream
@@ -123,32 +137,27 @@ swap:
   emphasise: emphasize
   end user: user
   end-user interface: graphical interface|interface
+  enum: data enumeration
   env: environment
-  etc: and so on
   EUI: graphical user interface|interface
   fill in: complete|enter|specify
   finalise: finalize
   firm ware|firm-ware: firmware
-  fixed disk drive: hard disk drive
   flavor: version|method
   floating-point: floating point
-  floppy disk: diskette|diskette drive
-  floppy drive: diskette|diskette drive
-  floppy: diskette|diskette drive
   focussed: focused
   fore-ground|forground: foreground
   forward compatible: compatible with later versions
   gray-scale|gray scale: grayscale
   gzip: compress
   gzipped: archive|compressed file
-  Hammer|x86_64|x86-64|x64|64-bit x86: AMD64
-  hard drive: hard disk|hard disk drive
   hard file: hard disk|hard disk drive
   hardcode: hard code
   hardcoded: hard-coded
   healthcheck|health-check: health check
   helpdesk|help-desk: help desk
   hence: therefore
+  hosted engine host|hosted-engine host|self-hosted engine host|(?<!self-)hosted engine node|hosted-engine node: self-hosted engine node
   hostgroup: host group
   hot-line: hotline
   hotadd|hot-add: hot add
@@ -165,12 +174,10 @@ swap:
   in spite of: regardless of|despite
   in the event: in case|if|when
   inactivate: deactivate
-  information on: information about
   information technology: IT
   insure: ensure
   Internet address: IP address|URL|Internet email address|web address
   irrecoverable: unrecoverable
-  jar: compress|archive
   keep in mind: remember
   kernelspace: kernel-space
   labour: labor
@@ -183,6 +190,9 @@ swap:
   leverage: use
   line cord: power cable|power cord
   Linux specific|chip specific: specific
+  live broker: master broker
+  live only: live-only
+  load-balance|load-balancing: load balance
   look at: examine
   lots of|bunches of: many
   main directory: root directory
@@ -195,6 +205,7 @@ swap:
   motherboard: system board
   mouse over: point to|move the mouse pointer over
   mouse-button|mousebutton: mouse button
+  multi site|multi-site: multisite
   multi-processing: multiprocessing
   multi-tenant: multitenant
   network-centric computing: network computing
@@ -209,6 +220,7 @@ swap:
   on the other hand: however|alternatively|conversely
   on-ramp: access method
   op-code: opcode
+  openshit: OpenShift
   open-source|OpenSource|opensource: open source
   organise: organize
   organised: organized
@@ -216,10 +228,12 @@ swap:
   over-ride|over ride: override
   pain point: challenge|concern|difficulty|issue
   parent task: parent process
+  passive broker: slave broker
   perfcounter: performance counter
   perimeter network: DMZ
   plaintext|plain-text|cleartext|clear text: plain text
   plug in|plug ins: plugin
+  pojo: data model
   power down: turn off
   power off: turn off
   power on: turn on
@@ -230,6 +244,7 @@ swap:
   pseudo ops|pseudoops: pseudo-ops
   pull-down: pulldown
   recognise: recognize
+  regex: regular expression
   remote-access server: remote access server
   remote-access: remote access
   right double-click: double right-click
@@ -238,7 +253,8 @@ swap:
   round table: roundtable
   rule of thumb: rule
   run level|run-level: runlevel
-  sanity check: test|evaluate
+  sanity check: test|evaluate|validate|verify
+  sanity test: test|evaluate|validate|verify
   screensaver: screen saver
   scroll bar|scroll-bar: scrollbar
   secondary storage: auxiliary storage
@@ -252,12 +268,15 @@ swap:
   single quote mark: single quotation mark
   single quote: single quotation mark
   SME routine: session management exit routine
+  snapset|snapsets: snapshot set
   soundcard|sound-card: sound card
   specfile: spec file
   spelt: spelled
   stand-alone: standalone
+  standalone mode: standalone server
   start up: start
   straight forward|straight-forward: straightforward
+  sub version|(?<!Apache )Subversion: sub-version
   sub-command: subcommand
   sub-directory: subdirectory
   sub-menu: submenu
@@ -267,23 +286,25 @@ swap:
   swapspace: swap space
   switch off: turn off
   switch on: turn on
+  sysprep tool|sysprep process|sysprep function: sysprep
   tarball: tar file
   terminate: end|stop
   text based: text-based
   textmode|text-mode: text mode
   the installer: installation program
   thin provisioned|thinly provisioned|thinly-provisioned: thin-provisioned
+  thru: through|throughput
   thumbstick: USB flash drive
   thus: therefore
   tier-one|tier 1: tier-1
   timeframe|time-frame: time frame
   toggle off: toggle
   touchscreen: touch-sensitive screen
+  trust store: truststore
   typo: typing error|typographical error
   uncheck: clear
   uncompress: decompress
   undeploy: remove|withdraw
-  unjar: extract
   unselect: clear|deselect
   untar: extract
   unzip: extract|decompress
@@ -296,9 +317,13 @@ swap:
   utilize: use
   versus: compared to
   video-mode|videomode: video mode
+  virtual diskette drive: virtual floppy drive
+  virtual diskette: virtual floppy disk
   vs: compared to
   warning notice: attention notice
   web-enable: enable for the web
   wish: want
   wish|would like: want
+  xsite: cross-site replication
   zero out: zero
+  zonegroup|zone-group: zone group
