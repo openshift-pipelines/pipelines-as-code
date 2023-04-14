@@ -4,7 +4,7 @@ ignorecase: true
 level: suggestion
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/usage/
 message: "Verify your use of '%s' with the word usage guidelines."
-source: "https://redhat-documentation.github.io/supplementary-style-guide/glossary-terms-conventions; IBM - Appendix C. Word usage, p. 300"
+# source: "https://redhat-documentation.github.io/supplementary-style-guide/#glossary-terms-conventions; IBM - Appendix C. Word usage, p. 300"
 tokens:
   - "pop-up (?:help|menu)"
   - "redbook(:s)?"
@@ -30,7 +30,6 @@ tokens:
   - bring up
   - business partner
   - cache
-  - camel case
   - carry out
   - catch
   - central processing unit
@@ -55,7 +54,6 @@ tokens:
   - display
   - domestic
   - done
-  - due to
   - either
   - EPUB
   - execute
@@ -95,7 +93,7 @@ tokens:
   - localize
   - look and feel
   - look-and-feel
-  - "(?<!virtual )machine(?! learning)"
+  - "(?<!virtual |Podman )machine(?! learning)"
   - master and slave
   - migrate
   - native
@@ -117,6 +115,7 @@ tokens:
   - reside
   - respective
   - respectively
+  - sanity
   - select
   - selected
   - should

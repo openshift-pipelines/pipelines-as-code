@@ -1,18 +1,21 @@
+#file: noinspection IncorrectFormatting
 ---
 extends: spelling
 level: warning
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/spelling/
 message: "Use correct American English spelling. Did you really mean '%s'?"
-source: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/spelling/
+# source: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/spelling/
 # A "filter" is a case-sensitive regular expression specifying words to ignore during spell checking.
 # Spelling rule applies to individual words
 filters:
   - '\.NET'
   - 'I/O'
   - 'Node\.js'
+  - "[aA]ccessor"
   - "[aA]llowlist"
   - "[aA]utostart"
   - "[bB]ackfilling"
+  - "[bB]ackported"
   - "[bB]acktrace"
   - "[bB]indable"
   - "[bB]oolean"
@@ -22,6 +25,11 @@ filters:
   - "[cC]lassloading"
   - "[cC]olocate"
   - "[cC]onfig"
+  - "[dD]eclaratively"
+  - "[dD]ecompiler"
+  - "[dD]eserialization"
+  - "[dD]esynchronize"
+  - "[dD]esynchronized"
   - "[dD]ev[wW]orkspace"
   - "[dD]evfile"
   - "[dD]evfiles"
@@ -35,6 +43,7 @@ filters:
   - "[gG]bps"
   - "[gG]it"
   - "[gG]rafana"
+  - "[hH]ardcoding"
   - "[hH]eatmap"
   - "[hH]ostname"
   - "[hH]yperconverged"
@@ -53,6 +62,7 @@ filters:
   - "[lL]oopback"
   - "[mM]atrixes"
   - "[mM]ebibytes"
+  - "[mM]iddleware"
   - "[mM]illicores"
   - "[mM]ixin"
   - "[mM]ixins"
@@ -68,9 +78,12 @@ filters:
   - "[nN]amespaces"
   - "[oO]nboarding"
   - "[oO]perator"
+  - "[oO]verridable"
   - "[pP]reconfigured"
   - "[pP]regenerated"
   - "[pP]ulldown"
+  - "[pP]repend"
+  - "[pP]repended"
   - "[pP]roductize"
   - "[pP]roductized"
   - "[rR]eadonly"
@@ -96,8 +109,12 @@ filters:
   - "[rR]untimes"
   - "[sS]crollbar"
   - "[sS]erializer"
+  - "[sS]erialization"
+  - "[sS]erializable"
   - "[sS]erverless"
+  - "[sS]ervlet"
   - "[sS]harding"
+  - "[sS]ysctl"
   - "[Ss]u"
   - "[sS]ubcommand"
   - "[sS]ubcommands"
@@ -118,6 +135,7 @@ filters:
   - "[sS]ubvolume"
   - "[sS]ubvolumes"
   - "[sS]ystemd"
+  - "[tT]emplated"
   - "[tT]heia"
   - "[tT]olerations"
   - "[tT]raceback"
@@ -132,21 +150,31 @@ filters:
   - "[uU]ntrusted"
   - "[uU]psell"
   - "[uU]pselling"
-  - "Let\'s Encrypt"
+  - "[vV]alidator"
+  - "Let\\'s Encrypt"
   - adoc
+  - AGPLv
+  - Agroal
   - Annobin
   - Ansible
   - Antora
   - API
+  - Applixware
+  - Asciidoctor
+  - AssertJ
+  - autolink
   - aws
   - AWS
   - Azure
   - Bierner
   - Bitbucket
+  - BOM
   - Bonjour
+  - Bouncy Castle
   - btn
   - Btrfs
   - Bugzilla
+  - camelCase
   - CentOS
   - Ceph
   - cephfs
@@ -159,17 +187,20 @@ filters:
   - Cloudbursting
   - Cloudwashing
   - CodeReady
-  - ConfigMap
-  - ConfigMaps
+  - ConfigMaps?
   - Containerfile
   - Containerfiles
   - Cookiecutter
+  - CPUs
   - CR
   - CRD
   - CRDs
   - CRs
+  - CSIDriver
+  - CSINode
   - CSVs
   - Ctrl
+  - CVEs
   - Cygmon
   - DaemonSet
   - Datadog
@@ -185,18 +216,33 @@ filters:
   - Endevor
   - Endian
   - endif
+  - eServer
   - Esprima
+  - etcd
   - Exif
+  - extranet
   - Fabrice
+  - Facter
+  - Failsafe
+  - FDs
+  - Fernflower
+  - firewalld
+  - Flathub
+  - Flatpak
   - Fortran
+  - Funqy
   - GCC
+  - GIDs
   - GitHub
   - GitLab
   - Gluster
-  - Gradle
-  - Grayscale
+  - GNUPro
   - GraalVM
+  - Gradle
   - GraphQL
+  - greenboot
+  - Grayscale
+  - GTIDs?
   - GUI
   - Hashicorp
   - Helgrind
@@ -209,13 +255,22 @@ filters:
   - HTTPS
   - IDE
   - IDEs
+  - IKEv
   - Infinispan
   - Intelephense
   - IntelliJ
+  - IPsec
+  - ISeries
+  - IPPool
+  - IPsec
+  - IPv
+  - ISVs
   - Itanium
   - Jakarta
+  - Jandex
   - Java
   - Jave
+  - JBang
   - JBoss
   - Jira
   - Jolokia
@@ -225,69 +280,101 @@ filters:
   - JVM
   - Kafka
   - kbd
+  - keystore
   - Kibana
   - Knative
-  - knowledgebase
+  - Knowledgebase
   - Kogito
   - Kompose
+  - kubelet
   - Kubespray
   - Kylin
   - Laravel
+  - LGPLv
+  - librados
+  - librbd
+  - libOSMesa
   - Lombok
   - Makefile
   - Mattermost
   - Maven
   - MicroProfile
   - Microsoft
-  - Middleware
   - Minikube
   - Minishift
   - Mirantis
+  - Mockito
   - MongoDB
+  - Multipath
   - MySQL
   - Nagios
+  - Narayana
   - Neoverse
   - NetcoredebugOutput
   - Netty
   - Newdoc
+  - NFSv
   - Nginx
   - npm
   - NuGet
+  - NVidia
+  - NVMe
   - OAuth
+  - objectClass
   - ocp
   - OmniSharp
   - OpenID
+  - OpenJDK
+  - OpenRewrite
   - OpenShift
   - OpenTracing
+  - OSBuild
   - osd
+  - OSs
+  - PCIe
+  - PDFs?
   - PHP
+  - PIDs
   - Podman
   - PostgreSQL
-  - preconfigured
-  - prepended
+  - PowerShell
   - Prometheus
   - proxied
   - Pytorch
+  - qdmanage
+  - qdstat
   - qeth
+  - QLogic
+  - Quarkiverse
   - Quarkus
   - Quiltflower
+  - Qute
+  - Realtime
+  - Redis
   - Redistributions
-  - Restic
+  - relaxngDatatype
   - RESTEasy
+  - Restic
   - Rolfe
+  - Rollup
+  - ROMs
+  - rootful
+  - rootless
+  - RPMs
   - Sakila
   - sbt
   - SCM
   - SELinux
   - Semeru
-  - SLAs
   - Shadowman
+  - SLAs
   - SmallRye
   - Spotify
   - startx
+  - STMicroelectronics
   - Suchow
-  - Symfony
   - SVG
+  - Symfony
   - Tekton
   - Telekom
   - Tensorflow
@@ -295,22 +382,29 @@ filters:
   - Toolset
   - Traefik
   - Uber
-  - URI
-  - URIs
+  - UIDs
+  - URIs?
   - url
-  - URL
-  - URLs
+  - URLs?
+  - USBGuard
   - Vale
   - Valgrind
+  - vDisk
   - Velero
   - Vert.x
+  - vHost
+  - VMs
   - vsix
+  - vSphere
   - WebAuthn
-  - Webview
-  - Webviews
+  - Webpack
+  - WebSocket
   - Wildfly
   - Woopra
   - Wordpress
+  - XString
+  - XWayland
   - Yana
   - Yeoman
+  - ZCentral
   - Zowe
