@@ -19,7 +19,7 @@ const (
 	StartingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
   <b>%s</b><br><br>You can follow the execution on the [%s](%s) PipelineRun viewer or via
   the command line with :
-	<br><code>%s pr logs -n %s %s</code> -f`
+	<br><code>%s pr logs -n %s %s -f</code>`
 	QueuingPipelineRunText = `PipelineRun <b>%s</b> has been queued Queuing in namespace
   <b>%s</b><br><br>`
 )
