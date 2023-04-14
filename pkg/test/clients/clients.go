@@ -16,6 +16,7 @@ import (
 	fakepipelineclient "github.com/tektoncd/pipeline/pkg/client/injection/client/fake"
 	fakepipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1/pipelinerun/fake"
 	pipelinelisterv1 "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
@@ -45,6 +46,7 @@ type Data struct {
 	Secret       []*corev1.Secret
 	Events       []*corev1.Event
 	ConfigMap    []*corev1.ConfigMap
+	Deployments  []*appsv1.Deployment
 }
 
 // SeedTestData returns Clients and Informers populated with the
@@ -108,6 +110,12 @@ func SeedTestData(t *testing.T, ctx context.Context, d Data) (Clients, Informers
 
 	for _, cm := range d.ConfigMap {
 		if _, err := c.Kube.CoreV1().ConfigMaps(cm.Namespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, cm := range d.Deployments {
+		if _, err := c.Kube.AppsV1().Deployments(cm.Namespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
 	}

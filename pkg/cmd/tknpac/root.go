@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/deleterepo"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/describe"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/list"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/logs"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
@@ -32,6 +33,7 @@ func Root(clients *params.Run) *cobra.Command {
 	ioStreams := cli.NewIOStreams()
 
 	cmd.AddCommand(version.Command(ioStreams))
+	cmd.AddCommand(info.Root(clients, ioStreams))
 	cmd.AddCommand(create.Root(clients, ioStreams))
 	cmd.AddCommand(list.Root(clients, ioStreams))
 	cmd.AddCommand(deleterepo.Root(clients, ioStreams))

@@ -17,6 +17,7 @@ Pipelines as Code provide a powerful CLI designed to work as a plug-in to the [T
 * `describe`: describe a Pipelines as Code Repository and the runs associated with it.
 * `resolve`: Resolve a pipelinerun as if it were executed by pipelines as code on service.
 * `webhook`: Updates webhook secret.
+* `info`: Show informations (currently only about your installation with `info install`).
 
 ## Install
 
@@ -314,6 +315,26 @@ There is no clean-up of the secret after the run.
 ### Update provider token for existing webhook
 
 `tkn pac webhook update-token [-n namespace]`: Allows you to update provider token for an existing `Secret` object to interact with Pipelines as Code.
+
+{{< /details >}}
+
+{{< details "tkn pac info install" >}}
+
+### Installation Info
+
+The command tkn pac info provides information about your Pipelines as Code
+installation, including the location and version. You can also view an overview
+of all Repositories CR created on the cluster and their associated URLs.
+
+If your have your installation set-up with a [GitHub App](../../install/github_apps),
+you will be able to the see details of the installed application along with
+other relevant information. By default, this will display information from the
+public Github API, but you can specify a custom Github API URL using the
+`--github-api-url` argument.
+
+It's important to note that only administrators with permission to read the
+`pipelines-as-code-secret` secret and list all Repository CR on the cluster are
+authorized to access this command.
 
 {{< /details >}}
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -50,7 +49,7 @@ var testNamespace = &corev1.Namespace{
 var validSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
-		Namespace: testNamespace.Name,
+		Namespace: testNamespace.GetName(),
 	},
 	Data: map[string][]byte{
 		"github-application-id": []byte("274799"),
@@ -59,17 +58,15 @@ var validSecret = &corev1.Secret{
 }
 
 func Test_GenerateJWT(t *testing.T) {
-	t.Setenv("SYSTEM_NAMESPACE", "foo")
 	namespaceWhereSecretNotInstalled := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: os.Getenv("SYSTEM_NAMESPACE"),
+			Name: "foo",
 		},
 	}
 
-	t.Setenv("SYSTEM_NAMESPACE", "pipelinesascode")
 	testNamespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: os.Getenv("SYSTEM_NAMESPACE"),
+			Name: "pipelinesascode",
 		},
 	}
 
@@ -97,27 +94,27 @@ func Test_GenerateJWT(t *testing.T) {
 	tests := []struct {
 		name      string
 		wantErr   bool
-		secrets   []*corev1.Secret
-		namespace []*corev1.Namespace
+		secret    *corev1.Secret
+		namespace *corev1.Namespace
 	}{{
 		name:      "secret not found",
-		namespace: []*corev1.Namespace{namespaceWhereSecretNotInstalled},
-		secrets:   []*corev1.Secret{},
+		namespace: namespaceWhereSecretNotInstalled,
+		secret:    &corev1.Secret{},
 		wantErr:   true,
 	}, {
 		name:      "invalid github-application-id",
-		namespace: []*corev1.Namespace{testNamespace},
-		secrets:   []*corev1.Secret{secretWithInavlidAppID},
+		namespace: testNamespace,
+		secret:    secretWithInavlidAppID,
 		wantErr:   true,
 	}, {
 		name:      "invalid private key",
-		namespace: []*corev1.Namespace{testNamespace},
-		secrets:   []*corev1.Secret{secretWithInvalidPrivateKey},
+		namespace: testNamespace,
+		secret:    secretWithInvalidPrivateKey,
 		wantErr:   true,
 	}, {
 		name:      "valid secret found",
-		namespace: []*corev1.Namespace{testNamespace},
-		secrets:   []*corev1.Secret{validSecret},
+		namespace: testNamespace,
+		secret:    validSecret,
 		wantErr:   false,
 	}}
 
@@ -125,8 +122,8 @@ func Test_GenerateJWT(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logger, _ := logger.GetLogger()
 			tdata := testclient.Data{
-				Namespaces: tt.namespace,
-				Secret:     tt.secrets,
+				Namespaces: []*corev1.Namespace{tt.namespace},
+				Secret:     []*corev1.Secret{tt.secret},
 			}
 			ctxNoSecret, _ := rtesting.SetupFakeContext(t)
 			stdata, _ := testclient.SeedTestData(t, ctxNoSecret, tdata)
@@ -138,7 +135,7 @@ func Test_GenerateJWT(t *testing.T) {
 				},
 			}
 
-			token, err := generateJWT(ctxNoSecret, run)
+			token, err := GenerateJWT(ctxNoSecret, tt.namespace.GetName(), run)
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 				return
@@ -153,13 +150,6 @@ func Test_GenerateJWT(t *testing.T) {
 }
 
 func Test_GetAndUpdateInstallationID(t *testing.T) {
-	t.Setenv("SYSTEM_NAMESPACE", "pipelinesascode")
-	testNamespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "pipelinesascode",
-		},
-	}
-
 	tdata := testclient.Data{
 		Namespaces: []*corev1.Namespace{testNamespace},
 		Secret:     []*corev1.Secret{validSecret},
@@ -190,7 +180,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 		},
 	}
 
-	jwtToken, err := generateJWT(ctx, run)
+	jwtToken, err := GenerateJWT(ctx, testNamespace.GetName(), run)
 	assert.NilError(t, err)
 	req := httptest.NewRequest("GET", "http://localhost", strings.NewReader(""))
 
@@ -236,7 +226,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 		w.Header().Set("Accept", "application/vnd.github+json")
 		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"}]}`)
 	})
-	_, _, installationID, err := GetAndUpdateInstallationID(ctx, req, run, repo, gprovider)
+	_, _, installationID, err := GetAndUpdateInstallationID(ctx, req, run, repo, gprovider, testNamespace.GetName())
 	if strings.Contains(err.Error(), "https://api.github.com/installation/repositories: 401 Bad credentials") && installationID == 0 {
 		assert.Assert(t, err != nil)
 	} else {

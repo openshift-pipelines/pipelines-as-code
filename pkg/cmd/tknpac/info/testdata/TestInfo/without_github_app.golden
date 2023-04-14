@@ -1,0 +1,8 @@
+Pipelines as Code:
+ Version: testing
+ Install Namespace: pipelines-as-code
+
+Repositories CR: 2
+    Namespace   URL
+  - ns1         https://anurl.com
+  - ns2         https://somewhere.com

@@ -51,5 +51,7 @@ const (
 	// default is "https://api.github.com" but it can be overridden by X-GitHub-Enterprise-Host header
 	PublicGithubAPIURL = "https://api.github.com"
 	// installationURL give us the Installation ID
-	InstallationURL = "/app/installations"
+	InstallationURL     = "/app/installations"
+	GithubApplicationID = "github-application-id"
+	GithubPrivateKey    = "github-private-key"
 )
