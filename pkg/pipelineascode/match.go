@@ -122,7 +122,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 				Status:     "completed",
 				Conclusion: "skipped",
 				Text:       msg,
-				DetailsURL: "https://tenor.com/search/police-cat-gifs",
+				DetailsURL: p.event.URL,
 			}
 			if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
 				return repo, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
