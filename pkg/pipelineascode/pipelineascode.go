@@ -129,7 +129,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		}
 
 		if err = p.k8int.CreateSecret(ctx, match.Repo.GetNamespace(), authSecret); err != nil {
-			return nil, fmt.Errorf("creating basic auth secret: %s has failed: %w ", authSecret, err)
+			return nil, fmt.Errorf("creating basic auth secret: %s has failed: %w ", authSecret.GetName(), err)
 		}
 	}
 
