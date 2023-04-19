@@ -1,22 +1,25 @@
 {{.CS.Underline "Pipelines as Code"}}:
- Version: {{ .Version }}
+ Install Version: {{ .Version }}
  Install Namespace: {{ .InstallNamespace }}
-{{- if .Gapp }}
+{{- if .Info.App }}
 
 {{.CS.Underline "Github Application"}}:
- Name: {{ .Gapp.Name }}
- URL: {{ .Gapp.HTMLURL }}
- HomePage: {{ .Gapp.ExternalURL }}
- Description: {{ .Gapp.Description }}
- Created: {{ .Gapp.CreatedAt.Format "2006-01-02" }}
- Installations Count: {{ .Gapp.InstallationsCount }}
+ Name: {{ .Info.App.Name }}
+ URL: {{ .Info.App.HTMLURL }}
+ HomePage: {{ .Info.App.ExternalURL }}
+ Description: {{ .Info.App.Description }}
+ Created: {{ .Info.App.CreatedAt.Format "Mon, 02 Jan 2006" }}
+ Installations Count: {{ .Info.App.InstallationsCount }}
+{{- if .Info.HookConfig }}
+ Webhook URL: {{ .Info.HookConfig.URL }}
+{{- end }}
 {{- end }}
 {{- if (gt (len .Repos) 1) }}
 
 {{ $.CS.Underline "Repositories CR" }}: {{ len .Repos  }}
-    Namespace	URL
+   Namespace	URL
 {{- range $repo := .Repos }}
-  - {{ $repo.GetNamespace }}	{{ $repo.Spec.URL }}
+ - {{ $repo.GetNamespace }}	{{ $repo.Spec.URL }}
 {{- end  }}
 {{- else  }}
 

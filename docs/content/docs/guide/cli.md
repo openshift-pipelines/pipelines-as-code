@@ -328,9 +328,9 @@ of all Repositories CR created on the cluster and their associated URLs.
 
 If your have your installation set-up with a [GitHub App](../../install/github_apps),
 you will be able to the see details of the installed application along with
-other relevant information. By default, this will display information from the
-public Github API, but you can specify a custom Github API URL using the
-`--github-api-url` argument.
+other relevant information like the URL endpoint configured for your Github APP.
+By default, this will display information from the public Github API, but you
+can specify a custom Github API URL using the `--github-api-url` argument.
 
 It's important to note that only administrators with permission to read the
 `pipelines-as-code-secret` secret and list all Repository CR on the cluster are
