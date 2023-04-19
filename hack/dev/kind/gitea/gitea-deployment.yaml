@@ -145,7 +145,7 @@ spec:
               - key: app.ini
                 path: app.ini
       containers:
-        - image: quay.io/gpte-devops-automation/gitea
+        - image: quay.io/gpte-devops-automation/gitea:1.17
           imagePullPolicy: IfNotPresent
           name: gitea
           env:
