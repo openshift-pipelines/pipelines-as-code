@@ -23,13 +23,49 @@ import (
 var targetNamespaces = []string{"openshift-pipelines", "pipelines-as-code"}
 
 // google/go-github is missing the count from their struct
-type GithubApp struct {
+type MyGapp struct {
 	*github.App
 	InstallationsCount int `json:"installations_count,omitempty"`
 }
 
+type InstallInfo struct {
+	App        *MyGapp
+	run        *params.Run
+	jwtToken   string
+	apiURL     string
+	HookConfig *github.HookConfig
+}
+
 //go:embed templates/info.tmpl
 var infoTemplate string
+
+func (g *InstallInfo) hookConfig(ctx context.Context) error {
+	resp, err := app.GetReponse(ctx, "GET", fmt.Sprintf("%s/app/hook/config", g.apiURL), g.jwtToken, g.run)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	// parse json response
+	return json.Unmarshal(data, &g.HookConfig)
+}
+
+func (g *InstallInfo) get(ctx context.Context) error {
+	resp, err := app.GetReponse(ctx, "GET", fmt.Sprintf("%s/app", g.apiURL), g.jwtToken, g.run)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	// parse json response
+	return json.Unmarshal(data, &g.App)
+}
 
 func getPacLocation(ctx context.Context, run *params.Run) (string, string, error) {
 	for _, ns := range targetNamespaces {
@@ -51,20 +87,13 @@ func install(ctx context.Context, run *params.Run, ios *cli.IOStreams, apiURL st
 	if err != nil {
 		return err
 	}
-	var gapp *GithubApp
-	jwtToken, err := app.GenerateJWT(ctx, targetNs, run)
-	if err == nil {
-		resp, err := app.GetReponse(ctx, "GET", fmt.Sprintf("%s/app", apiURL), jwtToken, run)
-		if err != nil {
+	info := &InstallInfo{run: run, apiURL: apiURL}
+	if jwtToken, err := app.GenerateJWT(ctx, targetNs, info.run); err == nil {
+		info.jwtToken = jwtToken
+		if err := info.get(ctx); err != nil {
 			return err
 		}
-		defer resp.Body.Close()
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		// parse json response
-		if err := json.Unmarshal(data, &gapp); err != nil {
+		if err := info.hookConfig(ctx); err != nil {
 			return err
 		}
 	}
@@ -74,13 +103,13 @@ func install(ctx context.Context, run *params.Run, ios *cli.IOStreams, apiURL st
 	}
 	reposItems := &repos.Items
 	args := struct {
-		Gapp             *GithubApp
+		Info             *InstallInfo
 		InstallNamespace string
 		Version          string
 		Repos            *[]v1alpha1.Repository
 		CS               *cli.ColorScheme
 	}{
-		Gapp:             gapp,
+		Info:             info,
 		InstallNamespace: targetNs,
 		Version:          version,
 		Repos:            reposItems,

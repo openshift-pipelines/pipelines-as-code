@@ -137,9 +137,16 @@ func TestInfo(t *testing.T) {
 				"created_at": "2023-03-22T12:29:10Z",
 				"name": "myapp"
 			}`
+			ghAppConfigJSON := `{
+				"url": "https://anhook.url"
+			}`
 			httpTestClient := httptesting.MakeHTTPTestClient(map[string]map[string]string{
 				apiURL + "/app": {
 					"body": ghAppJSON,
+					"code": "200",
+				},
+				apiURL + "/app/hook/config": {
+					"body": ghAppConfigJSON,
 					"code": "200",
 				},
 			})

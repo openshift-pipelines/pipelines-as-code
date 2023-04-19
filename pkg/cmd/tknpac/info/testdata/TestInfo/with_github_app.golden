@@ -1,5 +1,5 @@
 Pipelines as Code:
- Version: testing
+ Install Version: testing
  Install Namespace: pipelines-as-code
 
 Github Application:
@@ -7,10 +7,11 @@ Github Application:
  URL: http://github.url/app/myapp
  HomePage: http://myapp.url
  Description: my beautiful app
- Created: 2023-03-22
+ Created: Wed, 22 Mar 2023
  Installations Count: 5
+ Webhook URL: https://anhook.url
 
 Repositories CR: 2
-    Namespace   URL
-  - ns1         https://anurl.com
-  - ns2         https://somewhere.com
+   Namespace   URL
+ - ns1         https://anurl.com
+ - ns2         https://somewhere.com
