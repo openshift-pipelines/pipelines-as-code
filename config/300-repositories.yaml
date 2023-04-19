@@ -170,7 +170,11 @@ spec:
                         name:
                           type: string
                           description: "The secret name"
-
+                github_app_token_scope_repos:
+                  type: array
+                  items:
+                    description: list of repoitories where Github token can be scoped
+                    type: string
               type: object
           type: object
   scope: Namespaced

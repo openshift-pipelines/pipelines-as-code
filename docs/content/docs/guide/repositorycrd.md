@@ -205,3 +205,121 @@ and a pull request event.
 - [Github Documentation for webhook events](https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads?actionType=auto_merge_disabled#pull_request)
 - [Gitlab Documentation for webhook events](https://docs.gitlab.com/ee/user/project/integrations/webhook_events.html)
 {{< /hint >}}
+
+## Scope GitHub token to a list of private and public repositories within and outside namespaces
+
+The proposal helps user to scope GitHub token to a list of provided repositories which exist in same namespace(By providing configuration at Repository level)
+as well as different namespaces(Global Configuration).
+
+It is useful in a scenario where CI Repos Differ from CD Repos, and
+the teams would like the generated GitHub Token from Pipelines As Code to allow control over these secondary repos,
+even if they were not the one triggering the pipeline.
+
+Ex:
+
+Assuming CD repos are private and CI repo is the one which triggers the event, payload coming from CI repos fetches some tasks from CD Repos which are private.
+
+There are two ways to scope GitHub token to a list of provided Repos
+
+1. Scoping GH token to a list of Repos provided by global configuration
+2. Scoping GH token to a list of Repos provided by Repository level configuration
+
+### Prerequisite
+
+Disable `secret-github-app-token-scoped` to `false` from `pipelines-as-code` configmap in order to scope
+GitHub token to private and public repos listed under Global and Repo level configuration.
+
+### Scoping GH token to a list of repos provided by global configuration
+
+- When list of Repos provided by global configuration then scope all those repos by a Github token
+irrespective of the namespaces.
+
+- The configuration exists in `pipelines-as-code` configmap.
+
+- The key which used to have list of Repos is `secret-github-app-scope-extra-repos`
+
+  Ex:
+
+  ```yaml
+  apiVersion: v1
+  data:
+    secret-github-app-scope-extra-repos: "owner2/project2, owner3/project3"
+  kind: ConfigMap
+  metadata:
+    name: pipelines-as-code
+    namespace: pipelines-as-code
+  ```
+
+### Scoping GitHub token to a list of repos provided by Repository level configuration
+
+- Scope token to a list of repos provided by `repo_list_to_scope_token` spec configuration within
+the Repository custom resource
+
+- Repos can be private or public
+
+  ```yaml
+  apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+  kind: Repository
+  metadata:
+    name: test
+    namespace: test-repo
+  spec:
+    url: "https://github.com/linda/project"
+    repo_list_to_scope_token: 
+    - "owner/project"
+    - "owner1/project1"
+  ```
+
+  Now PAC will read `test` Repository custom resource and scope token to `owner/project`, `owner1/project1` and `linda/project` as well
+
+  **Note:**
+
+  1. Both `owner/project` and `owner1/project1` Repository should be in the same namespace where `test` Repository exists which is `test-repo` ns.
+
+  2. If any one of the `owner/project` or `owner1/project1` doesn't exist then scoping token will fail
+
+     Ex:
+
+     If `owner1/project1` does not exist in the namespace
+
+     Then below error will be displayed
+
+     ```yaml
+     repo owner1/project1 does not exist in namespace test-repo
+     ```
+
+#### Scenarios when both global and Repo level configurations provided
+
+- When repos are provided by both `secret-github-app-scope-extra-repos` and `repo_list_to_scope_token`
+then token will be scoped to all the repos from both configuration
+
+    Ex:
+
+  - List of Repos provided by `secret-github-app-scope-extra-repos` in cm
+
+    ```yaml
+    apiVersion: v1
+    data:
+      secret-github-app-scope-extra-repos: "owner2/project2, owner3/project3"
+    kind: ConfigMap
+    metadata:
+      name: pipelines-as-code
+      namespace: pipelines-as-code
+    ```
+
+  - List of Repos provided by `repo_list_to_scope_token` in Repository spec
+
+    ```yaml
+     apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+     kind: Repository
+     metadata:
+       name: test
+       namespace: test-repo
+     spec:
+       url: "https://github.com/linda/project"
+       repo_list_to_scope_token: 
+       - "owner/project"
+       - "owner1/project1"
+    ```
+
+    Now the GitHub token will be scoped to `owner/project`, `owner1/project1`, `owner2/project2`, `owner3/project3`, `linda/project`

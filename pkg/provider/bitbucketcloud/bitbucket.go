@@ -252,3 +252,7 @@ func (v *Provider) getBlob(runevent *info.Event, ref, path string) (string, erro
 func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
 	return []string{}, nil
 }
+
+func (v *Provider) ListRepository(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
+	return "", nil
+}

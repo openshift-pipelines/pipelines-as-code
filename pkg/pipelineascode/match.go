@@ -3,6 +3,7 @@ package pipelineascode
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Repository, error) {
@@ -57,6 +59,14 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNamespaceMatch", msg)
 
 		return nil, nil
+	}
+
+	if p.event.InstallationID > 0 {
+		token, err := p.scopeTokenToListOfRipos(ctx, repo)
+		if err != nil {
+			return nil, err
+		}
+		p.event.Provider.Token = token
 	}
 
 	// If we have a git_provider field in repository spec, then get all the
@@ -247,4 +257,57 @@ func (p *PacRun) checkNeedUpdate(tmpl string) (string, bool) {
 		return `!Update needed! you have a old basic auth secret name, you need to modify your pipelinerun and change the string "secret: pac-git-basic-auth-{{repo_owner}}-{{repo_name}}" to "secret: {{ git_auth_secret }}"`, true
 	}
 	return "", false
+}
+
+func (p *PacRun) scopeTokenToListOfRipos(ctx context.Context, repo *v1alpha1.Repository) (string, error) {
+	var (
+		listRepos bool
+		token     string
+		err       error
+	)
+	listURLs := map[string]string{}
+	repoListToScopeToken := []string{}
+
+	// This is a Global config to provide list of repos to scope token
+	if p.run.Info.Pac.SecretGhAppTokenScopedExtraRepos != "" {
+		for _, configValue := range strings.Split(p.run.Info.Pac.SecretGhAppTokenScopedExtraRepos, ",") {
+			configValueS := strings.TrimSpace(configValue)
+			if configValueS == "" {
+				continue
+			}
+			repoListToScopeToken = append(repoListToScopeToken, configValueS)
+		}
+		listRepos = true
+	}
+	if len(repo.Spec.GithubAppTokenScopeRepos) != 0 {
+		ns := repo.Namespace
+		repoListInPerticularNamespace, err := p.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(ns).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return "", err
+		}
+		for i := range repoListInPerticularNamespace.Items {
+			splitData := strings.Split(repoListInPerticularNamespace.Items[i].Spec.URL, "/")
+			listURLs[splitData[3]+"/"+splitData[4]] = splitData[3] + "/" + splitData[4]
+		}
+		for i := range repo.Spec.GithubAppTokenScopeRepos {
+			_, ok := listURLs[repo.Spec.GithubAppTokenScopeRepos[i]]
+			if !ok {
+				msg := fmt.Sprintf("repo %s does not exist in namespace %s", repo.Spec.GithubAppTokenScopeRepos[i], ns)
+				p.eventEmitter.EmitMessage(nil, zap.ErrorLevel, "RepoDoesnotExistInNamespace", msg)
+				return "", errors.New(msg)
+			}
+			repoListToScopeToken = append(repoListToScopeToken, repo.Spec.GithubAppTokenScopeRepos[i])
+		}
+		listRepos = true
+	}
+	if listRepos {
+		repoInfoFromWhichEventCame := strings.Split(repo.Spec.URL, "/")
+		// adding the repo info from which event came so that repositoryID will be added while scoping the token
+		repoListToScopeToken = append(repoListToScopeToken, repoInfoFromWhichEventCame[3]+"/"+repoInfoFromWhichEventCame[4])
+		token, err = p.vcx.ListRepository(ctx, repoListToScopeToken, p.run, p.event)
+		if err != nil {
+			return "", fmt.Errorf("failed to scope token to repositories with error : %w", err)
+		}
+	}
+	return token, nil
 }

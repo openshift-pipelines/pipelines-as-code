@@ -584,8 +584,8 @@ func TestAppTokenGeneration(t *testing.T) {
 			}
 
 			for k, id := range tt.checkInstallIDs {
-				if gprovider.repositoryIDs[k] != id {
-					t.Errorf("got %d, want %d", gprovider.repositoryIDs[k], id)
+				if gprovider.RepositoryIDs[k] != id {
+					t.Errorf("got %d, want %d", gprovider.RepositoryIDs[k], id)
 				}
 			}
 
@@ -593,7 +593,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				// checkInstallIDs and extraRepoInstallIds are merged and extraRepoInstallIds is after
 				found := false
 				extraIDInt, _ := strconv.ParseInt(extraid, 10, 64)
-				for _, rid := range gprovider.repositoryIDs {
+				for _, rid := range gprovider.RepositoryIDs {
 					if extraIDInt == rid {
 						found = true
 					}
