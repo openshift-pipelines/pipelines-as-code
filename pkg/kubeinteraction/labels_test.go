@@ -50,7 +50,8 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			AddLabelsAndAnnotations(tt.args.event, tt.args.pipelineRun, tt.args.repo, &info.ProviderConfig{})
+			err := AddLabelsAndAnnotations(tt.args.event, tt.args.pipelineRun, tt.args.repo, &info.ProviderConfig{})
+			assert.NilError(t, err)
 			assert.Assert(t, tt.args.pipelineRun.Labels[keys.URLOrg] == tt.args.event.Organization, "'%s' != %s",
 				tt.args.pipelineRun.Labels[keys.URLOrg], tt.args.event.Organization)
 			assert.Assert(t, tt.args.pipelineRun.Annotations[keys.URLOrg] == tt.args.event.Organization, "'%s' != %s",
