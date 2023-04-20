@@ -162,8 +162,8 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		match.PipelineRun, metav1.CreateOptions{})
 	if err != nil {
 		// we need to make difference between markdown error and normal error that goes to namespace/controller stream
-		return nil, fmt.Errorf("creating pipelinerun %s in namespace %s has failed.\n\nTekton Controller has reported this error: ```%s``` ", match.PipelineRun.GetGenerateName(),
-			match.Repo.GetNamespace(), err.Error())
+		return nil, fmt.Errorf("creating pipelinerun %s in namespace %s has failed.\n\nTekton Controller has reported this error: ```%w``` ", match.PipelineRun.GetGenerateName(),
+			match.Repo.GetNamespace(), err)
 	}
 
 	// Create status with the log url
