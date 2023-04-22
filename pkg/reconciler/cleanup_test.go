@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -27,20 +28,20 @@ func TestCleanupPipelineRuns(t *testing.T) {
 	cleanupRepoName := "clean-me-up-before-you-go-go-go-go"
 	cleanupPRName := "clean-me-pleaze"
 	cleanupLabels := map[string]string{
-		"pipelinesascode.tekton.dev/original-prname": cleanupPRName,
-		"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
+		keys.OriginalPRName: cleanupPRName,
+		keys.Repository:     cleanupRepoName,
 	}
 
 	cleanupAnnotation := map[string]string{
-		"pipelinesascode.tekton.dev/original-prname": cleanupPRName,
-		"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
+		keys.OriginalPRName: cleanupPRName,
+		keys.Repository:     cleanupRepoName,
 	}
 
 	maxRunsAnno := func(run int) map[string]string {
 		return map[string]string{
-			"pipelinesascode.tekton.dev/max-keep-runs":   strconv.Itoa(run),
-			"pipelinesascode.tekton.dev/original-prname": cleanupPRName,
-			"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
+			keys.MaxKeepRuns:    strconv.Itoa(run),
+			keys.OriginalPRName: cleanupPRName,
+			keys.Repository:     cleanupRepoName,
 		}
 	}
 

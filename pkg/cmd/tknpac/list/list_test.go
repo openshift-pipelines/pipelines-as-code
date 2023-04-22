@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-github/v50/github"
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
@@ -169,8 +170,8 @@ func TestList(t *testing.T) {
 				repositories: []*pacv1alpha1.Repository{repoNamespace1},
 				pipelineruns: []*tektonv1.PipelineRun{
 					tektontest.MakePRCompletion(cw, "running", namespace1.GetName(), running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": repoNamespace1.GetName(),
-						"pipelinesascode.tekton.dev/sha":        repoNamespace1SHA,
+						keys.Repository: repoNamespace1.GetName(),
+						keys.SHA:        repoNamespace1SHA,
 					}, 30),
 				},
 			},

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"gotest.tools/v3/assert"
@@ -44,20 +45,20 @@ func Succeeded(ctx context.Context, t *testing.T, runcnx *params.Run, opts optio
 		pr, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).Get(ctx, laststatus.PipelineRunName, v1.GetOptions{})
 		assert.NilError(t, err)
 
-		assert.Equal(t, onEvent, pr.Labels["pipelinesascode.tekton.dev/event-type"])
-		assert.Equal(t, repo.GetName(), pr.Labels["pipelinesascode.tekton.dev/repository"])
+		assert.Equal(t, onEvent, pr.Annotations[keys.EventType])
+		assert.Equal(t, repo.GetName(), pr.Annotations[keys.Repository])
 		// assert.Equal(t, opts.Owner, pr.Labels["pipelinesascode.tekton.dev/sender"]) bitbucket is too weird for that
 
 		if opts.Organization != "" {
-			assert.Equal(t, opts.Organization, pr.Labels["pipelinesascode.tekton.dev/url-org"])
+			assert.Equal(t, opts.Organization, pr.Annotations[keys.URLOrg])
 		}
 		if opts.Repo != "" {
-			assert.Equal(t, opts.Repo, pr.Labels["pipelinesascode.tekton.dev/url-repository"])
+			assert.Equal(t, opts.Repo, pr.Annotations[keys.URLRepository])
 		}
 		if sha != "" {
-			assert.Equal(t, sha, pr.Labels["pipelinesascode.tekton.dev/sha"])
-			assert.Equal(t, sha, filepath.Base(pr.Annotations["pipelinesascode.tekton.dev/sha-url"]))
+			assert.Equal(t, sha, pr.Annotations[keys.SHA])
+			assert.Equal(t, sha, filepath.Base(pr.Annotations[keys.ShaURL]))
 		}
-		assert.Equal(t, title, pr.Annotations["pipelinesascode.tekton.dev/sha-title"])
+		assert.Equal(t, title, pr.Annotations[keys.ShaTitle])
 	}
 }

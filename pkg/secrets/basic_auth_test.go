@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"gotest.tools/v3/assert"
 )
@@ -36,9 +37,9 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 			expectedGitCredentials:  "https://git:verysecrete@forge/owner/repo",
 			expectedStartSecretName: "pac-gitauth-owner-repo",
 			expectedLabels: map[string]string{
-				"app.kubernetes.io/managed-by":              "pipelinesascode.tekton.dev",
-				"pipelinesascode.tekton.dev/url-org":        "owner",
-				"pipelinesascode.tekton.dev/url-repository": "repo",
+				"app.kubernetes.io/managed-by": "pipelinesascode.tekton.dev",
+				keys.URLOrg:                    "owner",
+				keys.URLRepository:             "repo",
 			},
 		},
 		{
@@ -52,9 +53,9 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 			expectedGitCredentials:  "https://git:verysecrete@forge/owner/yoyo/foo/bar/linux/kernel",
 			expectedStartSecretName: "pac-gitauth-owner-repo",
 			expectedLabels: map[string]string{
-				"app.kubernetes.io/managed-by":              "pipelinesascode.tekton.dev",
-				"pipelinesascode.tekton.dev/url-org":        "owner-foo-bar-linux-kernel",
-				"pipelinesascode.tekton.dev/url-repository": "yoyo",
+				"app.kubernetes.io/managed-by": "pipelinesascode.tekton.dev",
+				keys.URLOrg:                    "owner-foo-bar-linux-kernel",
+				keys.URLRepository:             "yoyo",
 			},
 		},
 		{

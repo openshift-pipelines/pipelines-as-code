@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	corev1 "k8s.io/api/core/v1"
@@ -47,7 +48,7 @@ func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts O
 		}
 
 		prs, err := clients.Tekton.TektonV1().PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("pipelinesascode.tekton.dev/sha=%s", opts.TargetSHA),
+			LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, opts.TargetSHA),
 		})
 		if err != nil {
 			return true, err

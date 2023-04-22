@@ -11,6 +11,7 @@ import (
 
 	"github.com/jonboulle/clockwork"
 	"github.com/juju/ansiterm"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
@@ -195,7 +196,7 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 		}
 
 		// we do twice the prun list, but since it's behind a flag and not the default behavior, it's ok (i guess)
-		label := "pipelinesascode.tekton.dev/repository=" + repository.Name
+		label := keys.Repository + "=" + repository.Name
 		prs, err := cs.Clients.Tekton.TektonV1().PipelineRuns(repository.Namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: label,
 		})

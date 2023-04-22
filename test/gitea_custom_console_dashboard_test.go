@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -58,7 +59,7 @@ func TestGiteaCustomConsoleDashboard(t *testing.T) {
 
 	assert.NilError(t, err)
 	// asserting with non empty because we are not sure the URL for K8S and Openshift
-	assert.Assert(t, prs.Items[0].Annotations["pipelinesascode.tekton.dev/log-url"] != "")
+	assert.Assert(t, prs.Items[0].Annotations[keys.LogURL] != "")
 
 	// update config map with console dashboard information
 	cmList, er := topts.ParamsRun.Clients.Kube.CoreV1().ConfigMaps("").List(ctx, metav1.ListOptions{})
@@ -101,7 +102,7 @@ func TestGiteaCustomConsoleDashboard(t *testing.T) {
 
 	logURL := map[string]string{}
 	for _, v := range prs.Items {
-		logURL[v.Annotations["pipelinesascode.tekton.dev/log-url"]] = v.Annotations["pipelinesascode.tekton.dev/log-url"]
+		logURL[v.Annotations[keys.LogURL]] = v.Annotations[keys.LogURL]
 	}
 	// Check that latest create Pipeline Run will have the console dashboard URL
 	assert.Assert(t, logURL["https://custom-console.ospqa.com/foo-pr"] == "https://custom-console.ospqa.com/foo-pr")
