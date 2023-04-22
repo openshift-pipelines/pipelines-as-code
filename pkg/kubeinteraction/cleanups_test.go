@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
@@ -23,12 +24,12 @@ func TestCleanupPipelines(t *testing.T) {
 	cleanupRepoName := "clean-me-up-before-you-go-go-go-go"
 	cleanupPRName := "clean-me-pleaze"
 	cleanupLabels := map[string]string{
-		"pipelinesascode.tekton.dev/original-prname": cleanupPRName,
-		"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
+		keys.OriginalPRName: cleanupPRName,
+		keys.Repository:     cleanupRepoName,
 	}
 	cleanupAnnotation := map[string]string{
-		"pipelinesascode.tekton.dev/original-prname": cleanupPRName,
-		"pipelinesascode.tekton.dev/repository":      cleanupRepoName,
+		keys.OriginalPRName: cleanupPRName,
+		keys.Repository:     cleanupRepoName,
 	}
 
 	clock := clockwork.NewFakeClock()

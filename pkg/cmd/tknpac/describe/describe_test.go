@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/go-github/v50/github"
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
@@ -51,9 +52,9 @@ func TestDescribe(t *testing.T) {
 				opts:             &describeOpts{},
 				pruns: []*tektonv1.PipelineRun{
 					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "tartanpion",
-						"pipelinesascode.tekton.dev/event-type": "papayolo",
+						keys.Repository: "test-run",
+						keys.Branch:     "tartanpion",
+						keys.EventType:  "papayolo",
 					}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
@@ -88,8 +89,8 @@ func TestDescribe(t *testing.T) {
 				opts:             &describeOpts{},
 				pruns: []*tektonv1.PipelineRun{
 					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "tartanpion",
+						keys.Repository: "test-run",
+						keys.Branch:     "tartanpion",
 					}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{},
@@ -104,12 +105,12 @@ func TestDescribe(t *testing.T) {
 				opts:             &describeOpts{TargetPipelineRun: "running2"},
 				pruns: []*tektonv1.PipelineRun{
 					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "tartanpion",
+						keys.Repository: "test-run",
+						keys.Branch:     "tartanpion",
 					}, 30),
 					tektontest.MakePRCompletion(cw, "running2", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "vavaroom",
+						keys.Repository: "test-run",
+						keys.Branch:     "vavaroom",
 					}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{},
@@ -124,12 +125,12 @@ func TestDescribe(t *testing.T) {
 				opts:             &describeOpts{},
 				pruns: []*tektonv1.PipelineRun{
 					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "tartanpion",
+						keys.Repository: "test-run",
+						keys.Branch:     "tartanpion",
 					}, 30),
 					tektontest.MakePRCompletion(cw, "running2", ns, running, map[string]string{
-						"pipelinesascode.tekton.dev/repository": "test-run",
-						"pipelinesascode.tekton.dev/branch":     "vavaroom",
+						keys.Repository: "test-run",
+						keys.Branch:     "vavaroom",
 					}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{},

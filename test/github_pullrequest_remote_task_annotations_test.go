@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -109,14 +110,14 @@ func TestGithubPullRequestRemoteTaskAnnotations(t *testing.T) {
 	pr, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).Get(ctx, laststatus.PipelineRunName, metav1.GetOptions{})
 	assert.NilError(t, err)
 
-	assert.Equal(t, options.PullRequestEvent, pr.Labels["pipelinesascode.tekton.dev/event-type"])
-	assert.Equal(t, repo.GetName(), pr.Labels["pipelinesascode.tekton.dev/repository"])
-	assert.Equal(t, sha, pr.Labels["pipelinesascode.tekton.dev/sha"])
-	assert.Equal(t, opts.Organization, pr.Labels["pipelinesascode.tekton.dev/url-org"])
-	assert.Equal(t, opts.Repo, pr.Labels["pipelinesascode.tekton.dev/url-repository"])
+	assert.Equal(t, options.PullRequestEvent, pr.Annotations[keys.EventType])
+	assert.Equal(t, repo.GetName(), pr.Annotations[keys.Repository])
+	assert.Equal(t, sha, pr.Annotations[keys.SHA])
+	assert.Equal(t, opts.Organization, pr.Annotations[keys.URLOrg])
+	assert.Equal(t, opts.Repo, pr.Annotations[keys.URLRepository])
 
-	assert.Equal(t, sha, filepath.Base(pr.Annotations["pipelinesascode.tekton.dev/sha-url"]))
-	assert.Equal(t, title, pr.Annotations["pipelinesascode.tekton.dev/sha-title"])
+	assert.Equal(t, sha, filepath.Base(pr.Annotations[keys.ShaURL]))
+	assert.Equal(t, title, pr.Annotations[keys.ShaTitle])
 }
 
 // Local Variables:

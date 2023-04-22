@@ -215,7 +215,7 @@ func WaitForSecretDeletion(t *testing.T, topts *TestOpts, _ string) {
 	for {
 		list, err := topts.ParamsRun.Clients.Kube.CoreV1().Secrets(topts.TargetNS).
 			List(context.Background(), metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("pipelinesascode.tekton.dev/url-repository=%s\n", topts.TargetNS),
+				LabelSelector: fmt.Sprintf("%s=%s\n", keys.URLRepository, topts.TargetNS),
 			})
 		assert.NilError(t, err)
 

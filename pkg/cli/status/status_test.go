@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -80,8 +81,8 @@ func getPipelineRun(prName, sha string, repo1 v1alpha1.Repository) *tektonv1.Pip
 			Name:      prName,
 			Namespace: repo1.GetNamespace(),
 			Labels: map[string]string{
-				"pipelinesascode.tekton.dev/repository": repo1.GetName(),
-				"pipelinesascode.tekton.dev/sha":        sha,
+				keys.Repository: repo1.GetName(),
+				keys.SHA:        sha,
 			},
 		},
 		Spec: tektonv1.PipelineRunSpec{

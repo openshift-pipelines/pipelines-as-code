@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/google/go-github/v50/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	kstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction/status"
@@ -38,7 +39,7 @@ func RepositoryRunStatusRemoveSameSHA(rs []pacv1alpha1.RepositoryRunStatus, live
 func convertPrStatusToRepositoryStatus(ctx context.Context, cs *params.Run, pr tektonv1.PipelineRun, logurl string) pacv1alpha1.RepositoryRunStatus {
 	kinteract, _ := kubeinteraction.NewKubernetesInteraction(cs)
 	failurereasons := kstatus.CollectFailedTasksLogSnippet(ctx, cs, kinteract, &pr, defaultNumLinesOfLogsInContainersToGrabForErr)
-	prSHA := pr.GetLabels()["pipelinesascode.tekton.dev/sha"]
+	prSHA := pr.GetAnnotations()[keys.SHA]
 	return pacv1alpha1.RepositoryRunStatus{
 		Status:             pr.Status.Status,
 		LogURL:             &logurl,
@@ -46,16 +47,16 @@ func convertPrStatusToRepositoryStatus(ctx context.Context, cs *params.Run, pr t
 		CollectedTaskInfos: &failurereasons,
 		StartTime:          pr.Status.StartTime,
 		SHA:                github.String(prSHA),
-		SHAURL:             github.String(pr.GetAnnotations()["pipelinesascode.tekton.dev/sha-url"]),
-		Title:              github.String(pr.GetAnnotations()["pipelinesascode.tekton.dev/sha-title"]),
-		TargetBranch:       github.String(pr.GetLabels()["pipelinesascode.tekton.dev/branch"]),
-		EventType:          github.String(pr.GetLabels()["pipelinesascode.tekton.dev/event-type"]),
+		SHAURL:             github.String(pr.GetAnnotations()[keys.ShaURL]),
+		Title:              github.String(pr.GetAnnotations()[keys.ShaTitle]),
+		TargetBranch:       github.String(pr.GetAnnotations()[keys.Branch]),
+		EventType:          github.String(pr.GetAnnotations()[keys.EventType]),
 	}
 }
 
 func MixLivePRandRepoStatus(ctx context.Context, cs *params.Run, repository pacv1alpha1.Repository) []pacv1alpha1.RepositoryRunStatus {
 	repositorystatus := repository.Status
-	label := "pipelinesascode.tekton.dev/repository=" + repository.Name
+	label := keys.Repository + "=" + repository.Name
 	prs, err := cs.Clients.Tekton.TektonV1().PipelineRuns(repository.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: label,
 	})
@@ -65,7 +66,7 @@ func MixLivePRandRepoStatus(ctx context.Context, cs *params.Run, repository pacv
 
 	for i := range prs.Items {
 		pr := prs.Items[i]
-		repositorystatus = RepositoryRunStatusRemoveSameSHA(repositorystatus, pr.GetLabels()["pipelinesascode.tekton.dev/sha"])
+		repositorystatus = RepositoryRunStatusRemoveSameSHA(repositorystatus, pr.GetAnnotations()[keys.SHA])
 		logurl := cs.Clients.ConsoleUI.DetailURL(&pr)
 		repositorystatus = append(repositorystatus, convertPrStatusToRepositoryStatus(ctx, cs, pr, logurl))
 	}
