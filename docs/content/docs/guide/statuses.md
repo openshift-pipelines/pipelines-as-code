@@ -49,7 +49,7 @@ sources.
 
 ![log snippet](/images/snippet-failure-message.png)
 
-### Annotations (alpha feature)
+### Error detection from containers logs as Github Annotation
 
 If you enable the `error-detection-from-container-logs` option in the
 pipeline-as-code configuration map, Pipelines as Code will attempt to detect
