@@ -15,8 +15,8 @@ import (
 func TestCustomGood(t *testing.T) {
 	consoleName := "MyCorp Console"
 	consoleURL := "https://mycorp.console"
-	consolePRdetail := "https://mycorp.console/{{ namespace }}/{{ pr }}"
-	consolePRtasklog := "https://mycorp.console/{{ namespace }}/{{ pr }}/{{ task }}/{{ pod }}/{{ firstFailedStep }}"
+	consolePRdetail := "https://mycorp.console/{{ namespace }}/{{ pr }}/params/{{ foo }}"
+	consolePRtasklog := "https://mycorp.console/{{ namespace }}/{{ pr }}/{{ task }}/{{ pod }}/{{ firstFailedStep }}/params/{{ foo }}/{{ nonewline }}"
 
 	c := CustomConsole{
 		Info: &info.Info{
@@ -30,6 +30,10 @@ func TestCustomGood(t *testing.T) {
 			},
 		},
 	}
+	c.SetParams(map[string]string{
+		"foo":       "bar",
+		"nonewline": "nonewline\n ",
+	})
 	pr := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns",
@@ -64,8 +68,25 @@ func TestCustomGood(t *testing.T) {
 	}
 	assert.Equal(t, c.GetName(), consoleName)
 	assert.Equal(t, c.URL(), consoleURL)
-	assert.Equal(t, c.DetailURL(pr), "https://mycorp.console/ns/pr")
-	assert.Equal(t, c.TaskLogURL(pr, trStatus), "https://mycorp.console/ns/pr/task/pod/failure")
+	assert.Equal(t, c.DetailURL(pr), "https://mycorp.console/ns/pr/params/bar")
+	assert.Equal(t, c.TaskLogURL(pr, trStatus), "https://mycorp.console/ns/pr/task/pod/failure/params/bar/nonewline")
+
+	// test if we fallback properly
+	f := CustomConsole{
+		Info: &info.Info{
+			Pac: &info.PacOpts{
+				Settings: &settings.Settings{
+					CustomConsoleName:      consoleName,
+					CustomConsoleURL:       consoleURL,
+					CustomConsolePRdetail:  "{{ notthere}}",
+					CustomConsolePRTaskLog: "{{ notthere}}",
+				},
+			},
+		},
+	}
+	f.SetParams(map[string]string{})
+	assert.Assert(t, strings.Contains(c.DetailURL(pr), consoleURL))
+	assert.Assert(t, strings.Contains(c.TaskLogURL(pr, trStatus), consoleURL))
 }
 
 func TestCustomBad(t *testing.T) {

@@ -63,6 +63,8 @@ func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, error)
 			// if the cel filter condition is false we skip it
 			cond, err := celFilter(value.Filter, p.event.Event, stdParams)
 			if err != nil {
+				p.eventEmitter.EmitMessage(p.repo, zap.ErrorLevel,
+					"ParamsFilterError", fmt.Sprintf("there is an error on the cel filter: %s: %s", value.Name, err.Error()))
 				return map[string]string{}, err
 			}
 			if !cond {

@@ -16,7 +16,11 @@ limitations under the License.
 
 package keys
 
-import "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+import (
+	"regexp"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
+)
 
 const (
 	Task            = pipelinesascode.GroupName + "/task"
@@ -55,3 +59,5 @@ const (
 	GithubApplicationID = "github-application-id"
 	GithubPrivateKey    = "github-private-key"
 )
+
+var ParamsRe = regexp.MustCompile(`{{([^}]{2,})}}`)

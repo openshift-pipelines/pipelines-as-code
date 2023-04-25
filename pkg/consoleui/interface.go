@@ -16,6 +16,7 @@ type Interface interface {
 	UI(ctx context.Context, kdyn dynamic.Interface) error
 	URL() string
 	GetName() string
+	SetParams(mt map[string]string)
 }
 
 type FallBackConsole struct{}
@@ -38,6 +39,9 @@ func (f FallBackConsole) UI(_ context.Context, _ dynamic.Interface) error {
 
 func (f FallBackConsole) URL() string {
 	return consoleIsnotConfiguredURL
+}
+
+func (f FallBackConsole) SetParams(_ map[string]string) {
 }
 
 func New(ctx context.Context, kdyn dynamic.Interface, _ *info.Info) Interface {

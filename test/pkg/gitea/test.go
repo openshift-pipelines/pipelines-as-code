@@ -130,7 +130,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	}
 
 	if topts.Regexp != nil {
-		WaitForPullRequestCommentMatch(ctx, t, topts)
+		WaitForPullRequestCommentMatch(t, topts)
 	}
 
 	events, err := topts.ParamsRun.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
@@ -231,13 +231,12 @@ func WaitForSecretDeletion(t *testing.T, topts *TestOpts, _ string) {
 	}
 }
 
-func WaitForPullRequestCommentMatch(ctx context.Context, t *testing.T, topts *TestOpts) {
+func WaitForPullRequestCommentMatch(t *testing.T, topts *TestOpts) {
 	i := 0
 	for {
-		tls, err := GetIssueTimeline(ctx, topts)
+		comments, _, err := topts.GiteaCNX.Client.ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
 		assert.NilError(t, err)
-		for _, v := range tls {
-			// look for the regexp "Pipelines as Code CI.*has.*successfully" in v.body
+		for _, v := range comments {
 			if topts.Regexp.MatchString(v.Body) {
 				topts.ParamsRun.Clients.Log.Infof("Found regexp \"%s\" in PR comments", topts.Regexp.String())
 				return
