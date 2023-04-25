@@ -90,6 +90,7 @@ func createRepository(ctx context.Context, nsTemplate string, clients clients.Cl
 	if err != nil {
 		return fmt.Errorf("failed to create repository for repo: %v: %w", gitEvent.Repo.GetHTMLURL(), err)
 	}
+	logger = logger.With("namespace", repo.Namespace)
 	logger.Infof("github: repository created: %s/%s ", repo.Namespace, repo.Name)
 	return nil
 }

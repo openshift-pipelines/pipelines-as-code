@@ -38,6 +38,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, pr *tektonv1.PipelineRun)
 			return err
 		}
 
+		logger = logger.With("namespace", repo.Namespace)
 		next := r.qm.RemoveFromQueue(repo, pr)
 		if next != "" {
 			key := strings.Split(next, "/")
