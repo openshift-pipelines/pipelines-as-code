@@ -33,3 +33,6 @@ func (t *TektonDashboard) URL() string {
 func (t *TektonDashboard) UI(_ context.Context, _ dynamic.Interface) error {
 	return nil
 }
+
+func (t *TektonDashboard) SetParams(_ map[string]string) {
+}

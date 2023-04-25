@@ -1,16 +1,15 @@
 package templates
 
 import (
-	"regexp"
 	"strings"
-)
 
-var reTemplate = regexp.MustCompile(`{{([^}]{2,})}}`)
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+)
 
 // ReplacePlaceHoldersVariables Replace those {{var}} placeholders to the runinfo variable
 func ReplacePlaceHoldersVariables(template string, dico map[string]string) string {
-	return reTemplate.ReplaceAllStringFunc(template, func(s string) string {
-		parts := reTemplate.FindStringSubmatch(s)
+	return keys.ParamsRe.ReplaceAllStringFunc(template, func(s string) string {
+		parts := keys.ParamsRe.FindStringSubmatch(s)
 		key := strings.TrimSpace(parts[1])
 		if _, ok := dico[key]; !ok {
 			return s

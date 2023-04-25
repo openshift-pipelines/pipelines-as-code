@@ -85,20 +85,12 @@ func TestProcessTemplates(t *testing.T) {
 			},
 		},
 		{
-			name:     "params/use last params when two values of the same name",
-			expected: map[string]string{"params": "robin"},
+			name:     "params/fallback to stdparams",
+			expected: map[string]string{"event_type": "pull_request"},
+			event:    &info.Event{EventType: "pull_request"},
 			repository: &v1alpha1.Repository{
 				Spec: v1alpha1.RepositorySpec{
-					Params: &[]v1alpha1.Params{
-						{
-							Name:  "params",
-							Value: "batman",
-						},
-						{
-							Name:  "params",
-							Value: "robin",
-						},
-					},
+					Params: &[]v1alpha1.Params{},
 				},
 			},
 		},
@@ -283,7 +275,7 @@ func TestProcessTemplates(t *testing.T) {
 			}
 			if tt.expectedLogSnippet != "" {
 				logmsg := log.FilterMessageSnippet(tt.expectedLogSnippet).TakeAll()
-				assert.Assert(t, len(logmsg) > 0, "log message filtered %s expected %s alllogs: %+v", logmsg,
+				assert.Assert(t, len(logmsg) > 0, "log message filtered %s expected %s all logs: %+v", logmsg,
 					tt.expectedLogSnippet, log.TakeAll())
 			}
 		})

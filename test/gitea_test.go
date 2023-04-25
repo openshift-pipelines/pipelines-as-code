@@ -22,6 +22,7 @@ import (
 	tknpacgenerate "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	tknpaclist "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/list"
 	tknpacresolve "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
@@ -208,7 +209,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
 
 	topts.Regexp = successRegexp
-	tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
 func TestGiteaRetestAfterPush(t *testing.T) {
@@ -267,7 +268,7 @@ func TestGiteaACLOrgSkipped(t *testing.T) {
 	topts.CheckForStatus = "success"
 	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
 	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
-	tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
 func TestGiteaACLCommentsAllowing(t *testing.T) {
@@ -305,11 +306,11 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 			topts.CheckForStatus = "success"
 			tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
 			topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
-			tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
+			tgitea.WaitForPullRequestCommentMatch(t, topts)
 
 			tgitea.PostCommentOnPullRequest(t, topts, tt.comment)
 			topts.Regexp = successRegexp
-			tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
+			tgitea.WaitForPullRequestCommentMatch(t, topts)
 		})
 	}
 }
@@ -648,7 +649,7 @@ func TestGiteaErrorSnippet(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 
 	topts.Regexp = regexp.MustCompile(`Hey man i just wanna to say i am not such a failure, i am useful in my failure`)
-	tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
 func TestGiteaErrorSnippetWithSecret(t *testing.T) {
@@ -670,7 +671,7 @@ func TestGiteaErrorSnippetWithSecret(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 
 	topts.Regexp = regexp.MustCompile(`I WANT TO SAY \*\*\*\*\* OUT LOUD BUT NOBODY UNDERSTAND ME`)
-	tgitea.WaitForPullRequestCommentMatch(context.Background(), t, topts)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
 // TestGiteaNotExistingClusterTask checks that the pipeline run fails if the clustertask does not exist
@@ -776,6 +777,44 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 				"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from" +
 					" a" +
 					" payload match"), 2))
+}
+
+func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {
+	ctx := context.Background()
+	topts := &tgitea.TestOpts{
+		CheckForStatus:  "success",
+		SkipEventsCheck: true,
+		TargetEvent:     options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/params.yaml",
+		},
+		RepoCRParams: &[]v1alpha1.Params{
+			{
+				Name:  "custom",
+				Value: "myconsole",
+			},
+		},
+	}
+	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	topts.TargetNS = topts.TargetRefName
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
+	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+
+	cfgMapData := map[string]string{
+		"custom-console-name":           "Custom Console",
+		"custom-console-url":            "https://url",
+		"custom-console-url-pr-details": "https://url/detail/{{ custom }}",
+		"custom-console-url-pr-tasklog": "https://url/log/{{ custom }}",
+		"tekton-dashboard-url":          "",
+	}
+	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, cfgMapData)()
+	defer tgitea.TestPR(t, topts)()
+	// topts.Regexp = regexp.MustCompile(`(?m).*Custom Console.*https://url/detail/myconsole.*https://url/log/myconsole`)
+	topts.Regexp = regexp.MustCompile(`(?m).*Custom Console.*https://url/detail/myconsole`)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+	topts.Regexp = regexp.MustCompile(`(?m).*https://url/log/myconsole`)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
 // Local Variables:
