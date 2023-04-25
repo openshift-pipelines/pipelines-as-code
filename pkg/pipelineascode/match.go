@@ -60,6 +60,9 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		return nil, nil
 	}
 
+	p.logger = p.logger.With("namespace", repo.Namespace)
+	p.vcx.SetLogger(p.logger)
+	p.eventEmitter.SetLogger(p.logger)
 	// If we have a git_provider field in repository spec, then get all the
 	// information from there, including the webhook secret.
 	// otherwise get the secret from the current ns (i.e: pipelines-as-code/openshift-pipelines.)

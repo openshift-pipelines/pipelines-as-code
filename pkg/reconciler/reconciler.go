@@ -46,7 +46,7 @@ var (
 
 // ReconcileKind is the main entry point for reconciling PipelineRun resources.
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun) pkgreconciler.Event {
-	logger := logging.FromContext(ctx)
+	logger := logging.FromContext(ctx).With("namespace", pr.GetNamespace())
 
 	// if pipelineRun is in completed or failed state then return
 	state, exist := pr.GetAnnotations()[keys.State]

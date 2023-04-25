@@ -127,9 +127,9 @@ func (l *listener) processIncoming(targetRepo *v1alpha1.Repository) (provider.In
 		case "bitbucket-server":
 			provider = &bitbucketserver.Provider{}
 		default:
-			return l.processRes(false, nil, l.logger, "", fmt.Errorf("no supported Git provider has been detected"))
+			return l.processRes(false, nil, l.logger.With("namespace", targetRepo.Namespace), "", fmt.Errorf("no supported Git provider has been detected"))
 		}
 	}
 
-	return l.processRes(true, provider, l.logger.With("provider", "incoming"), "", nil)
+	return l.processRes(true, provider, l.logger.With("provider", "incoming", "namespace", targetRepo.Namespace), "", nil)
 }
