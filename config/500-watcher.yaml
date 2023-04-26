@@ -48,6 +48,8 @@ spec:
           image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-watcher"
           imagePullPolicy: Always
           env:
+          - name: CONFIG_LOGGING_NAME
+            value: pac-config-logging
           - name: SYSTEM_NAMESPACE
             valueFrom:
               fieldRef:
