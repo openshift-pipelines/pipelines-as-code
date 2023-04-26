@@ -27,6 +27,8 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -135,10 +137,12 @@ func TestGithubSplitURL(t *testing.T) {
 
 func TestGetTektonDir(t *testing.T) {
 	testGetTektonDir := []struct {
-		treepath       string
-		event          *info.Event
-		name           string
-		expectedString string
+		treepath             string
+		event                *info.Event
+		name                 string
+		expectedString       string
+		provenance           string
+		filterMessageSnippet string
 	}{
 		{
 			name: "test no subtree",
@@ -147,8 +151,21 @@ func TestGetTektonDir(t *testing.T) {
 				Repository:   "cat",
 				SHA:          "123",
 			},
-			expectedString: "PipelineRun",
-			treepath:       "testdata/tree/simple",
+			expectedString:       "PipelineRun",
+			treepath:             "testdata/tree/simple",
+			filterMessageSnippet: "Using PipelineRun definition from source pull request SHA",
+		},
+		{
+			name: "test provenance default_branch ",
+			event: &info.Event{
+				Organization:  "tekton",
+				Repository:    "cat",
+				DefaultBranch: "main",
+			},
+			expectedString:       "FROMDEFAULTBRANCH",
+			treepath:             "testdata/tree/defaultbranch",
+			provenance:           "default_branch",
+			filterMessageSnippet: "Using PipelineRun definition from default_branch: main",
 		},
 		{
 			name: "test with subtree",
@@ -163,19 +180,30 @@ func TestGetTektonDir(t *testing.T) {
 	}
 	for _, tt := range testGetTektonDir {
 		t.Run(tt.name, func(t *testing.T) {
+			observer, exporter := zapobserver.New(zap.InfoLevel)
+			fakelogger := zap.New(observer).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			gvcs := Provider{
 				Client: fakeclient,
+				Logger: fakelogger,
 			}
-			shaDir := fmt.Sprintf("%x", sha256.Sum256([]byte(tt.treepath)))
-			tt.event.SHA = shaDir
+			if tt.provenance == "default_branch" {
+				tt.event.SHA = tt.event.DefaultBranch
+			} else {
+				shaDir := fmt.Sprintf("%x", sha256.Sum256([]byte(tt.treepath)))
+				tt.event.SHA = shaDir
+			}
 			ghtesthelper.SetupGitTree(t, mux, tt.treepath, tt.event, false)
 
-			got, err := gvcs.GetTektonDir(ctx, tt.event, ".tekton")
+			got, err := gvcs.GetTektonDir(ctx, tt.event, ".tekton", tt.provenance)
 			assert.NilError(t, err)
 			assert.Assert(t, strings.Contains(got, tt.expectedString), "expected %s, got %s", tt.expectedString, got)
+			if tt.filterMessageSnippet != "" {
+				gotcha := exporter.FilterMessageSnippet(tt.filterMessageSnippet)
+				assert.Assert(t, gotcha.Len() > 0, "expected to find %s in logs, found %v", tt.filterMessageSnippet, exporter.All())
+			}
 		})
 	}
 }

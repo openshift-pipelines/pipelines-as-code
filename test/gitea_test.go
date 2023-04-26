@@ -817,6 +817,38 @@ func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
+func TestGiteaProvenance(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		SkipEventsCheck:       true,
+		TargetEvent:           options.PullRequestEvent,
+		Settings:              &v1alpha1.Settings{PipelineRunProvenance: "default_branch"},
+		NoPullRequestCreation: true,
+	}
+	tgitea.TestPR(t, topts)
+	branch := topts.TargetRefName
+	prmap := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"}
+	entries, err := payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
+	assert.NilError(t, err)
+	topts.TargetRefName = topts.DefaultBranch
+	tgitea.PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
+	topts.TargetRefName = branch
+	prmap = map[string]string{"notgonnatobetested.yaml": "testdata/pipelinerun.yaml"}
+	entries, err = payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
+	assert.NilError(t, err)
+	tgitea.PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
+
+	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, topts.TargetRefName, gitea.CreatePullRequestOption{
+		Title: "Test Pull Request - " + topts.TargetRefName,
+		Head:  topts.TargetRefName,
+		Base:  options.MainBranch,
+	})
+	assert.NilError(t, err)
+	topts.PullRequest = pr
+	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
+	topts.CheckForStatus = "success"
+	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -run TestGiteaPush ."
 // End:

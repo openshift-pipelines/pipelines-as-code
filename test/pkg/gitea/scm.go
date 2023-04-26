@@ -54,6 +54,9 @@ func PushFilesToRefGit(t *testing.T, topts *TestOpts, entries map[string]string,
 	_, err = git.RunGit(path, "remote", "add", "-f", "origin", topts.GitCloneURL)
 	assert.NilError(t, err)
 
+	_, err = git.RunGit(path, "fetch", "-a", "origin")
+	assert.NilError(t, err)
+
 	_, err = git.RunGit(path, "checkout", "-B", topts.TargetRefName, "origin/"+baseRefFrom)
 	assert.NilError(t, err)
 

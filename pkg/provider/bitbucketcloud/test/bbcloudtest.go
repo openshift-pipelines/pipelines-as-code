@@ -84,11 +84,15 @@ func MuxOrgMember(t *testing.T, mux *http.ServeMux, event *info.Event, members [
 		})
 }
 
-func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, filescontents map[string]string) {
+func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, filescontents map[string]string, provenance string) {
 	t.Helper()
 
+	sha := event.SHA
+	if provenance == "default_branch" {
+		sha = event.DefaultBranch
+	}
 	for key := range filescontents {
-		target := fmt.Sprintf("/repositories/%s/%s/src/%s", event.Organization, event.Repository, event.SHA)
+		target := fmt.Sprintf("/repositories/%s/%s/src/%s", event.Organization, event.Repository, sha)
 		mux.HandleFunc(target+"/"+key, func(rw http.ResponseWriter, r *http.Request) {
 			s := strings.ReplaceAll(r.URL.String(), target, "")
 			s = strings.TrimPrefix(s, "/")
@@ -97,11 +101,15 @@ func MuxFiles(t *testing.T, mux *http.ServeMux, event *info.Event, filescontents
 	}
 }
 
-func MuxListDirFiles(t *testing.T, mux *http.ServeMux, event *info.Event, dirs map[string][]bitbucket.RepositoryFile) {
+func MuxListDirFiles(t *testing.T, mux *http.ServeMux, event *info.Event, dirs map[string][]bitbucket.RepositoryFile, provenance string) {
 	t.Helper()
+	sha := event.SHA
+	if provenance == "default_branch" {
+		sha = event.DefaultBranch
+	}
 
 	for key, value := range dirs {
-		urlp := "/repositories/" + event.Organization + "/" + event.Repository + "/src/" + event.SHA + "/" + key + "/"
+		urlp := "/repositories/" + event.Organization + "/" + event.Repository + "/src/" + sha + "/" + key + "/"
 		mux.HandleFunc(urlp, func(rw http.ResponseWriter, r *http.Request) {
 			dircontents := map[string][]bitbucket.RepositoryFile{
 				"values": value,
@@ -181,7 +189,7 @@ func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expec
 	})
 }
 
-func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testdir string) {
+func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testdir, provenance string) {
 	t.Helper()
 	files, err := os.ReadDir(testdir)
 	assert.NilError(t, err)
@@ -201,7 +209,7 @@ func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testdir 
 				Type: btype,
 			})
 
-			MuxDirContent(t, mux, event, fpath)
+			MuxDirContent(t, mux, event, fpath, provenance)
 		} else {
 			btype := "file"
 			brfiles[relativenamedir] = append(brfiles[relativenamedir], bitbucket.RepositoryFile{
@@ -213,8 +221,8 @@ func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testdir 
 			filecontents[relativename] = string(content)
 		}
 	}
-	MuxListDirFiles(t, mux, event, brfiles)
-	MuxFiles(t, mux, event, filecontents)
+	MuxListDirFiles(t, mux, event, brfiles, provenance)
+	MuxFiles(t, mux, event, filecontents, provenance)
 }
 
 func MakePREvent(accountid, nickname, sha, comment string) types.PullRequestEvent {

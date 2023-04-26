@@ -75,6 +75,12 @@ spec:
                       items:
                         description: list of repositories where Github token can be scoped
                         type: string
+                    pipelinerun_provenance:
+                      description: From where the PipelineRun definitions will be coming from
+                      type: string
+                      enum:
+                        - source
+                        - default_branch
                 concurrency_limit:
                   description: Number of maximum pipelinerun running at any moment
                   type: integer

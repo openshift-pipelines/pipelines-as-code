@@ -21,6 +21,7 @@ type Provider struct {
 	Logger        *zap.SugaredLogger
 	Token, APIURL *string
 	Username      *string
+	provenance    string
 }
 
 // GetTaskURI TODO: Implement ME
@@ -115,7 +116,8 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 	return nil
 }
 
-func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path string) (string, error) {
+func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, provenance string) (string, error) {
+	v.provenance = provenance
 	repositoryFiles, err := v.getDir(event, path)
 	if err != nil {
 		return "", err
@@ -125,10 +127,18 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path strin
 }
 
 func (v *Provider) getDir(event *info.Event, path string) ([]bitbucket.RepositoryFile, error) {
+	// default set provenance from the SHA
+	revision := event.SHA
+	if v.provenance == "default_branch" {
+		revision = event.DefaultBranch
+		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
+	} else {
+		v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", event.SHA)
+	}
 	repoFileOpts := &bitbucket.RepositoryFilesOptions{
 		Owner:    event.Organization,
 		RepoSlug: event.Repository,
-		Ref:      event.SHA,
+		Ref:      revision,
 		Path:     path,
 	}
 
@@ -139,8 +149,12 @@ func (v *Provider) getDir(event *info.Event, path string) ([]bitbucket.Repositor
 	return repositoryFiles, nil
 }
 
-func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, path, _ string) (string, error) {
-	return v.getBlob(runevent, runevent.SHA, path)
+func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path, _ string) (string, error) {
+	revision := event.SHA
+	if v.provenance == "default_branch" {
+		revision = event.DefaultBranch
+	}
+	return v.getBlob(event, revision, path)
 }
 
 func (v *Provider) SetClient(_ context.Context, _ *params.Run, event *info.Event) error {
@@ -203,16 +217,20 @@ func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	return nil
 }
 
-func (v *Provider) concatAllYamlFiles(objects []bitbucket.RepositoryFile, runevent *info.Event) (string, error) {
+func (v *Provider) concatAllYamlFiles(objects []bitbucket.RepositoryFile, event *info.Event) (string, error) {
 	var allTemplates string
 
+	revision := event.SHA
+	if v.provenance == "default_branch" {
+		revision = event.DefaultBranch
+	}
 	for _, value := range objects {
 		if value.Type == "commit_directory" {
-			objects, err := v.getDir(runevent, value.Path)
+			objects, err := v.getDir(event, value.Path)
 			if err != nil {
 				return "", err
 			}
-			subdirdata, err := v.concatAllYamlFiles(objects, runevent)
+			subdirdata, err := v.concatAllYamlFiles(objects, event)
 			if err != nil {
 				return "", err
 			}
@@ -222,7 +240,7 @@ func (v *Provider) concatAllYamlFiles(objects []bitbucket.RepositoryFile, runeve
 			allTemplates += fmt.Sprintf("\n%s\n", subdirdata)
 		} else if strings.HasSuffix(value.Path, ".yaml") ||
 			strings.HasSuffix(value.Path, ".yml") {
-			data, err := v.getBlob(runevent, runevent.SHA, value.Path)
+			data, err := v.getBlob(event, revision, value.Path)
 			if err != nil {
 				return "", err
 			}

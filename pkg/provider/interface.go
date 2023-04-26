@@ -30,7 +30,7 @@ type Interface interface {
 	ParsePayload(context.Context, *params.Run, *http.Request, string) (*info.Event, error)
 	IsAllowed(context.Context, *info.Event) (bool, error)
 	CreateStatus(context.Context, versioned.Interface, *info.Event, *info.PacOpts, StatusOpts) error
-	GetTektonDir(context.Context, *info.Event, string) (string, error)              // ctx, event, path
+	GetTektonDir(context.Context, *info.Event, string, string) (string, error)      // ctx, event, path, provenance
 	GetFileInsideRepo(context.Context, *info.Event, string, string) (string, error) // ctx, event, path, branch
 	SetClient(context.Context, *params.Run, *info.Event) error
 	GetCommitInfo(context.Context, *info.Event) error

@@ -42,7 +42,7 @@ specific branch and event like a `push` or `pull_request`. It wil start the
 `PipelineRun` where the `Repository` CR has been created. You can only start the
 `PipelineRun` in the namespace where the Repository CR is located.
 
-## Additional Repository CR Security
+## Setting PipelineRun definition source
 
 An additional layer of security can be added by using a PipelineRun annotation
 to explicitly target a specific namespace. However, a Repository CRD must still
@@ -70,6 +70,45 @@ that only one Repository CRD is created per URL on a cluster.
 If you disable this webhook, multiple Repository CRDs can be created for the
 same URL. However, only the oldest created Repository CRD will be matched,
 unless you use the `target-namespace` annotation.
+{{< /hint >}}
+
+### PipelineRun definition provenance
+
+By default on a `Push` or a `Pull Request`, Pipelines as Code will fetch the
+PipelineRun definition from the branch of where the event has been triggered.
+
+This behavior can be changed by setting the setting `pipelinerun_provenance`.
+The setting currently accept two values:
+
+- `source`: The default behavior, the PipelineRun definition will be fetched
+  from the branch of where the event has been triggered.
+- `default_branch`: The PipelineRun definition will be fetched from the default
+  branch of the repository as configured on the git platform. For example
+  `main`, `master`, or `trunk`.
+
+Example:
+
+This configuration specifies a repository named my-repo with a URL of
+<https://github.com/my-org/my-repo>. It also sets the `pipelinerun_provenance`
+setting to `default_branch`, which means that the PipelineRun definition will be
+fetched from the default branch of the repository.
+
+```yaml
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: my-repo
+spec:
+  url: "https://github.com/owner/repo"
+  settings:
+    pipelinerun_provenance: "default_branch"
+```
+
+{{< hint info >}}
+Letting the user specify the provenance of the PipelineRun definition to default
+branch is another layer of security. It ensures that only the one who has the
+right to merge commit to the default branch can change the PipelineRun and have
+access to the infrastrucutre.
 {{< /hint >}}
 
 ## Concurrency

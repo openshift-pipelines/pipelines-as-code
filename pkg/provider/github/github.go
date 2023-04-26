@@ -37,6 +37,7 @@ type Provider struct {
 	Token, APIURL *string
 	ApplicationID *int64
 	providerName  string
+	provenance    string
 	Run           *params.Run
 	RepositoryIDs []int64
 
@@ -253,10 +254,20 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 }
 
 // GetTektonDir Get all yaml files in tekton directory return as a single concated file
-func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path string) (string, error) {
+func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path, provenance string) (string, error) {
 	tektonDirSha := ""
 
-	rootobjects, _, err := v.Client.Git.GetTree(ctx, runevent.Organization, runevent.Repository, runevent.SHA, false)
+	v.provenance = provenance
+	// default set provenance from the SHA
+	revision := runevent.SHA
+	if provenance == "default_branch" {
+		revision = runevent.DefaultBranch
+		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", runevent.DefaultBranch)
+	} else {
+		v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", runevent.SHA)
+	}
+
+	rootobjects, _, err := v.Client.Git.GetTree(ctx, runevent.Organization, runevent.Repository, revision, false)
 	if err != nil {
 		return "", err
 	}
@@ -325,6 +336,8 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 	ref := runevent.SHA
 	if target != "" {
 		ref = runevent.BaseBranch
+	} else if v.provenance == "default_branch" {
+		ref = runevent.DefaultBranch
 	}
 
 	fp, objects, _, err := v.Client.Repositories.GetContents(ctx, runevent.Organization,

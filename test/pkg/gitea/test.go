@@ -25,29 +25,31 @@ import (
 )
 
 type TestOpts struct {
-	SkipEventsCheck      bool
-	NoCleanup            bool
-	TargetNS             string
-	TargetEvent          string
-	Regexp               *regexp.Regexp
-	YAMLFiles            map[string]string
-	ExtraArgs            map[string]string
-	RepoCRParams         *[]v1alpha1.Params
-	CheckForStatus       string
-	TargetRefName        string
-	CheckForNumberStatus int
-	ConcurrencyLimit     *int
-	ParamsRun            *params.Run
-	GiteaCNX             pgitea.Provider
-	Opts                 options.E2E
-	PullRequest          *gitea.PullRequest
-	DefaultBranch        string
-	GitCloneURL          string
-	GitHTMLURL           string
-	GiteaAPIURL          string
-	GiteaPassword        string
-	ExpectEvents         bool
-	InternalGiteaURL     string
+	NoPullRequestCreation bool
+	SkipEventsCheck       bool
+	NoCleanup             bool
+	TargetNS              string
+	TargetEvent           string
+	Settings              *v1alpha1.Settings
+	Regexp                *regexp.Regexp
+	YAMLFiles             map[string]string
+	ExtraArgs             map[string]string
+	RepoCRParams          *[]v1alpha1.Params
+	CheckForStatus        string
+	TargetRefName         string
+	CheckForNumberStatus  int
+	ConcurrencyLimit      *int
+	ParamsRun             *params.Run
+	GiteaCNX              pgitea.Provider
+	Opts                  options.E2E
+	PullRequest           *gitea.PullRequest
+	DefaultBranch         string
+	GitCloneURL           string
+	GitHTMLURL            string
+	GiteaAPIURL           string
+	GiteaPassword         string
+	ExpectEvents          bool
+	InternalGiteaURL      string
 }
 
 func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
@@ -101,6 +103,14 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	err = CreateCRD(ctx, topts)
 	assert.NilError(t, err)
 
+	url, err := MakeGitCloneURL(repoInfo.CloneURL, os.Getenv("TEST_GITEA_USERNAME"), os.Getenv("TEST_GITEA_PASSWORD"))
+	assert.NilError(t, err)
+	topts.GitCloneURL = url
+
+	if topts.NoPullRequestCreation {
+		return cleanup
+	}
+
 	entries, err := payload.GetEntries(topts.YAMLFiles,
 		topts.TargetNS,
 		repoInfo.DefaultBranch,
@@ -108,9 +118,6 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 		topts.ExtraArgs)
 	assert.NilError(t, err)
 
-	url, err := MakeGitCloneURL(repoInfo.CloneURL, os.Getenv("TEST_GITEA_USERNAME"), os.Getenv("TEST_GITEA_PASSWORD"))
-	assert.NilError(t, err)
-	topts.GitCloneURL = url
 	PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
 	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, repoInfo.Name, gitea.CreatePullRequestOption{
 		Title: "Test Pull Request - " + topts.TargetRefName,

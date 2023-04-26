@@ -68,7 +68,7 @@ func (v *TestProviderImp) CreateStatus(_ context.Context, _ versioned.Interface,
 	return nil
 }
 
-func (v *TestProviderImp) GetTektonDir(_ context.Context, _ *info.Event, _ string) (string, error) {
+func (v *TestProviderImp) GetTektonDir(_ context.Context, _ *info.Event, _, _ string) (string, error) {
 	return v.TektonDirTemplate, nil
 }
 

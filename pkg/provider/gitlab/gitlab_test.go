@@ -14,6 +14,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	"github.com/xanzy/go-gitlab"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -246,17 +248,19 @@ func TestGetTektonDir(t *testing.T) {
 		userID          int
 	}
 	type args struct {
-		event *info.Event
-		path  string
+		event      *info.Event
+		path       string
+		provenance string
 	}
 	tests := []struct {
-		name       string
-		fields     fields
-		args       args
-		wantStr    string
-		wantErr    bool
-		wantClient bool
-		prcontent  string
+		name                 string
+		fields               fields
+		args                 args
+		wantStr              string
+		wantErr              bool
+		wantClient           bool
+		prcontent            string
+		filterMessageSnippet string
 	}{
 		{
 			name:    "no client set",
@@ -288,6 +292,23 @@ func TestGetTektonDir(t *testing.T) {
 			fields: fields{
 				sourceProjectID: 100,
 			},
+			wantClient:           true,
+			wantStr:              "kind: PipelineRun",
+			filterMessageSnippet: `Using PipelineRun definition from source merge request SHA`,
+		},
+		{
+			name:      "list tekton dir on default_branch",
+			prcontent: string(samplePR),
+			args: args{
+				provenance: "default_branch",
+				path:       ".tekton",
+				event: &info.Event{
+					DefaultBranch: "main",
+				},
+			},
+			fields: fields{
+				sourceProjectID: 100,
+			},
 			wantClient: true,
 			wantStr:    "kind: PipelineRun",
 		},
@@ -311,27 +332,38 @@ func TestGetTektonDir(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 
+			observer, exporter := zapobserver.New(zap.InfoLevel)
+			fakelogger := zap.New(observer).Sugar()
 			v := &Provider{
 				targetProjectID: tt.fields.targetProjectID,
 				sourceProjectID: tt.fields.sourceProjectID,
 				userID:          tt.fields.userID,
+				Logger:          fakelogger,
 			}
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
 				v.Client = client
+				muxbranch := tt.args.event.HeadBranch
+				if tt.args.provenance == "default_branch" {
+					muxbranch = tt.args.event.DefaultBranch
+				}
 				if tt.args.path != "" && tt.prcontent != "" {
-					thelp.MuxListTektonDir(t, mux, tt.fields.sourceProjectID, tt.args.event.HeadBranch, tt.prcontent)
+					thelp.MuxListTektonDir(t, mux, tt.fields.sourceProjectID, muxbranch, tt.prcontent)
 				}
 				defer tearDown()
 			}
 
-			got, err := v.GetTektonDir(ctx, tt.args.event, tt.args.path)
+			got, err := v.GetTektonDir(ctx, tt.args.event, tt.args.path, tt.args.provenance)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTektonDir() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if tt.wantStr != "" {
 				assert.Assert(t, strings.Contains(got, tt.wantStr), "%s is not in %s", tt.wantStr, got)
+			}
+			if tt.filterMessageSnippet != "" {
+				gotcha := exporter.FilterMessageSnippet(tt.filterMessageSnippet)
+				assert.Assert(t, gotcha.Len() > 0, "expected to find %s in logs, found %v", tt.filterMessageSnippet, exporter.All())
 			}
 		})
 	}

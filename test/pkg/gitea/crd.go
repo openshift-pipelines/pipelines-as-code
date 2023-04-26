@@ -45,6 +45,7 @@ func CreateCRD(ctx context.Context, topts *TestOpts) error {
 			},
 			ConcurrencyLimit: topts.ConcurrencyLimit,
 			Params:           topts.RepoCRParams,
+			Settings:         topts.Settings,
 		},
 	}
 
