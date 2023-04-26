@@ -162,8 +162,13 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return nil, err
 	}
 
+	processedEvent.InstallationID = installationIDFrompayload
+	processedEvent.GHEURL = event.Provider.URL
+	processedEvent.Provider.URL = event.Provider.URL
+
 	// regenerate token scoped to the repo IDs
 	if run.Info.Pac.SecretGHAppRepoScoped && installationIDFrompayload != -1 && len(v.RepositoryIDs) > 0 {
+		repoLists := []string{}
 		if run.Info.Pac.SecretGhAppTokenScopedExtraRepos != "" {
 			// this is going to show up a lot in the logs but i guess that
 			// would make people fix the value instead of being lost into
@@ -173,23 +178,15 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 				if configValueS == "" {
 					continue
 				}
-				split := strings.Split(configValueS, "/")
-				info, _, err := v.Client.Repositories.Get(ctx, split[0], split[1])
-				if err != nil {
-					v.Logger.Warn("we have an invalid repository: `%s` in configmap key or no access to it: %v", configValueS, err)
-					continue
-				}
-				v.RepositoryIDs = append(v.RepositoryIDs, info.GetID())
+				repoLists = append(repoLists, configValueS)
 			}
 		}
-		var err error
-		if processedEvent.Provider.Token, err = v.GetAppToken(ctx, run.Clients.Kube, event.Provider.URL, installationIDFrompayload, systemNS); err != nil {
+		token, err := v.ScopeGithubTokenToListOfRepos(ctx, repoLists, run, processedEvent)
+		if err != nil {
 			return nil, err
 		}
+		processedEvent.Provider.Token = token
 	}
-
-	processedEvent.InstallationID = installationIDFrompayload
-	processedEvent.GHEURL = event.Provider.URL
 
 	return processedEvent, nil
 }

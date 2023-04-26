@@ -140,8 +140,10 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 			Namespace: testNamespace.Name,
 		},
 		Spec: v1alpha1.RepositorySpec{
-			URL:                      repoFromWhichEventComes,
-			GithubAppTokenScopeRepos: []string{"owner2/repo2"},
+			URL: repoFromWhichEventComes,
+			Settings: &v1alpha1.Settings{
+				GithubAppTokenScopeRepos: []string{"owner2/repo2"},
+			},
 		},
 	}
 	repoData1 := &v1alpha1.Repository{
@@ -220,7 +222,7 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 				"SYSTEM_NAMESPACE": testNamespace.Name,
 			},
 			repoListsByGlobalConf: "",
-			wantError:             "repo owner2/repo2 does not exist in namespace pipelinesascode",
+			wantError:             "failed to scope Github token as repo owner2/repo2 does not exist in namespace pipelinesascode",
 			wantToken:             "",
 		},
 		{
@@ -291,7 +293,7 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 				})
 			}
 			p := NewPacs(info, gvcs, run, nil, logger)
-			token, err := p.scopeTokenToListOfRipos(ctx, tt.repository)
+			token, err := p.scopeTokenToListOfRepos(ctx, tt.repository)
 			assert.Equal(t, token, tt.wantToken)
 			if err != nil {
 				assert.Equal(t, err.Error(), tt.wantError)

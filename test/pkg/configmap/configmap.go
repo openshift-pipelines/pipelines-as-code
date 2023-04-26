@@ -2,8 +2,8 @@ package configmap
 
 import (
 	"context"
-	"testing"
 	"os"
+	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"golang.org/x/exp/maps"

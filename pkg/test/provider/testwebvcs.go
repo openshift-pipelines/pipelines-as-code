@@ -83,6 +83,6 @@ func (v *TestProviderImp) GetFiles(_ context.Context, _ *info.Event) ([]string, 
 	return []string{}, nil
 }
 
-func (v *TestProviderImp) ListRepository(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
+func (v *TestProviderImp) ScopeGithubTokenToListOfRepos(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
 	return "", nil
 }
