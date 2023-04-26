@@ -75,7 +75,12 @@ type RepositorySpec struct {
 	GitProvider              *GitProvider `json:"git_provider,omitempty"`
 	Incomings                *[]Incoming  `json:"incoming,omitempty"`
 	Params                   *[]Params    `json:"params,omitempty"`
+	Settings                 *Settings    `json:"settings,omitempty"`
 	GithubAppTokenScopeRepos []string     `json:"github_app_token_scope_repos,omitempty"`
+}
+
+type Settings struct {
+	GithubAppTokenScopeRepos []string `json:"github_app_token_scope_repos,omitempty"`
 }
 
 type Params struct {

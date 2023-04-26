@@ -7,12 +7,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
@@ -22,7 +24,6 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 )
 
 func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
@@ -70,15 +71,19 @@ func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
 
 	splittedValue := []string{}
 	if remoteTaskURL != "" {
-		splittedValue = strings.Split(remoteTaskURL, "/")
+		urlData, err := url.ParseRequestURI(remoteTaskURL)
+		assert.NilError(t, err)
+		splittedValue = strings.Split(urlData.Path, "/")
 	}
 	repository := &pacv1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
-			URL:                      repoinfo.GetHTMLURL(),
-			GithubAppTokenScopeRepos: []string{splittedValue[3] + "/" + splittedValue[4]},
+			URL: repoinfo.GetHTMLURL(),
+			Settings: &pacv1alpha1.Settings{
+				GithubAppTokenScopeRepos: []string{splittedValue[1] + "/" + splittedValue[2]},
+			},
 		},
 	}
 
@@ -93,7 +98,7 @@ func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
 			GenerateName: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
-			URL: "https://github.com/" + splittedValue[3] + "/" + splittedValue[4],
+			URL: "https://github.com/" + splittedValue[1] + "/" + splittedValue[2],
 		},
 	}
 

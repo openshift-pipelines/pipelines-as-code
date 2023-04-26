@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -62,7 +63,7 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 	}
 
 	if p.event.InstallationID > 0 {
-		token, err := p.scopeTokenToListOfRipos(ctx, repo)
+		token, err := p.scopeTokenToListOfRepos(ctx, repo)
 		if err != nil {
 			return nil, err
 		}
@@ -259,11 +260,10 @@ func (p *PacRun) checkNeedUpdate(tmpl string) (string, bool) {
 	return "", false
 }
 
-func (p *PacRun) scopeTokenToListOfRipos(ctx context.Context, repo *v1alpha1.Repository) (string, error) {
+func (p *PacRun) scopeTokenToListOfRepos(ctx context.Context, repo *v1alpha1.Repository) (string, error) {
 	var (
 		listRepos bool
 		token     string
-		err       error
 	)
 	listURLs := map[string]string{}
 	repoListToScopeToken := []string{}
@@ -279,35 +279,49 @@ func (p *PacRun) scopeTokenToListOfRipos(ctx context.Context, repo *v1alpha1.Rep
 		}
 		listRepos = true
 	}
-	if len(repo.Spec.GithubAppTokenScopeRepos) != 0 {
+	if repo.Spec.Settings != nil && len(repo.Spec.Settings.GithubAppTokenScopeRepos) != 0 {
 		ns := repo.Namespace
 		repoListInPerticularNamespace, err := p.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(ns).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			return "", err
 		}
 		for i := range repoListInPerticularNamespace.Items {
-			splitData := strings.Split(repoListInPerticularNamespace.Items[i].Spec.URL, "/")
-			listURLs[splitData[3]+"/"+splitData[4]] = splitData[3] + "/" + splitData[4]
+			splitData, err := getURLPathData(repoListInPerticularNamespace.Items[i].Spec.URL)
+			if err != nil {
+				return "", err
+			}
+			listURLs[splitData[1]+"/"+splitData[2]] = splitData[1] + "/" + splitData[2]
 		}
-		for i := range repo.Spec.GithubAppTokenScopeRepos {
-			_, ok := listURLs[repo.Spec.GithubAppTokenScopeRepos[i]]
-			if !ok {
-				msg := fmt.Sprintf("repo %s does not exist in namespace %s", repo.Spec.GithubAppTokenScopeRepos[i], ns)
-				p.eventEmitter.EmitMessage(nil, zap.ErrorLevel, "RepoDoesnotExistInNamespace", msg)
+		for i := range repo.Spec.Settings.GithubAppTokenScopeRepos {
+			if _, ok := listURLs[repo.Spec.Settings.GithubAppTokenScopeRepos[i]]; !ok {
+				msg := fmt.Sprintf("failed to scope Github token as repo %s does not exist in namespace %s", repo.Spec.Settings.GithubAppTokenScopeRepos[i], ns)
+				p.eventEmitter.EmitMessage(nil, zap.ErrorLevel, "RepoDoesNotExistInNamespace", msg)
 				return "", errors.New(msg)
 			}
-			repoListToScopeToken = append(repoListToScopeToken, repo.Spec.GithubAppTokenScopeRepos[i])
+			repoListToScopeToken = append(repoListToScopeToken, repo.Spec.Settings.GithubAppTokenScopeRepos[i])
 		}
 		listRepos = true
 	}
 	if listRepos {
-		repoInfoFromWhichEventCame := strings.Split(repo.Spec.URL, "/")
+		repoInfoFromWhichEventCame, err := getURLPathData(repo.Spec.URL)
+		if err != nil {
+			return "", err
+		}
 		// adding the repo info from which event came so that repositoryID will be added while scoping the token
-		repoListToScopeToken = append(repoListToScopeToken, repoInfoFromWhichEventCame[3]+"/"+repoInfoFromWhichEventCame[4])
-		token, err = p.vcx.ListRepository(ctx, repoListToScopeToken, p.run, p.event)
+		repoListToScopeToken = append(repoListToScopeToken, repoInfoFromWhichEventCame[1]+"/"+repoInfoFromWhichEventCame[2])
+		token, err = p.vcx.ScopeGithubTokenToListOfRepos(ctx, repoListToScopeToken, p.run, p.event)
 		if err != nil {
 			return "", fmt.Errorf("failed to scope token to repositories with error : %w", err)
 		}
+		p.logger.Infof("Github token scope extended to %v ", repoListToScopeToken)
 	}
 	return token, nil
+}
+
+func getURLPathData(urlInfo string) ([]string, error) {
+	urlData, err := url.ParseRequestURI(urlInfo)
+	if err != nil {
+		return []string{}, err
+	}
+	return strings.Split(urlData.Path, "/"), nil
 }

@@ -206,39 +206,32 @@ and a pull request event.
 - [Gitlab Documentation for webhook events](https://docs.gitlab.com/ee/user/project/integrations/webhook_events.html)
 {{< /hint >}}
 
-## Scope GitHub token to a list of private and public repositories within and outside namespaces
+## Scope Github token to a list of private and public repositories within and outside namespaces
 
-The proposal helps user to scope GitHub token to a list of provided repositories which exist in same namespace(By providing configuration at Repository level)
-as well as different namespaces(Global Configuration).
+By default, the Github token that Pipelines as Code generates is scoped only to the repository where the payload comes from.
+However, in some cases, the developer team might want the token to allow control over additional repositories.
+For example, there might be a CI repository where the `.tekton/pr.yaml` file and source payload might be located, however the build process defined in `pr.yaml` might fetch tasks from a separate private CD repository.
 
-It is useful in a scenario where CI Repos Differ from CD Repos, and
-the teams would like the generated GitHub Token from Pipelines As Code to allow control over these secondary repos,
-even if they were not the one triggering the pipeline.
+You can extend the scope of the Github token in two ways:
 
-Ex:
+- _Repository level configuration_: extend the Github token to a list of repositories that exist in the same namespace as the original repository.
 
-Assuming CD repos are private and CI repo is the one which triggers the event, payload coming from CI repos fetches some tasks from CD Repos which are private.
+- _Global configuration_: extend the Github token to a list of repositories in different namespaces.
 
-There are two ways to scope GitHub token to a list of provided Repos
+### Note
 
-1. Scoping GH token to a list of Repos provided by global configuration
-2. Scoping GH token to a list of Repos provided by Repository level configuration
+Ignore Scoping of Github token for webhook based usecases.
 
 ### Prerequisite
 
-Disable `secret-github-app-token-scoped` to `false` from `pipelines-as-code` configmap in order to scope
-GitHub token to private and public repos listed under Global and Repo level configuration.
+- In the `pipelines-as-code` configmap, set the `secret-github-app-token-scoped` key to `false`.
+This setting enables the scoping of the Github token to private and public repositories listed under the Global and Repository level configuration.
 
-### Scoping GH token to a list of repos provided by global configuration
+#### Scoping the Github token using Global configuration
 
-- When list of Repos provided by global configuration then scope all those repos by a Github token
-irrespective of the namespaces.
+You can use global configuration to set a list of repositories in any namespaces.
 
-- The configuration exists in `pipelines-as-code` configmap.
-
-- The key which used to have list of Repos is `secret-github-app-scope-extra-repos`
-
-  Ex:
+To set the global configuration, in the `pipelines-as-code` configmap, set the `secret-github-app-scope-extra-repos` key, as in the following example:
 
   ```yaml
   apiVersion: v1
@@ -250,12 +243,12 @@ irrespective of the namespaces.
     namespace: pipelines-as-code
   ```
 
-### Scoping GitHub token to a list of repos provided by Repository level configuration
+#### Scoping the Github token using Repository level configuration
 
-- Scope token to a list of repos provided by `repo_list_to_scope_token` spec configuration within
-the Repository custom resource
+You can use the `Repository` custom resource to scope the generated Github token to a list of repositories.
+The repositories can be public or private, but must reside in the same namespace as the repository with which the `Repository` resource is associated.
 
-- Repos can be private or public
+Set the `github_app_token_scope_repos` spec configuration within the `Repository` custom resource, as in the following example:
 
   ```yaml
   apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
@@ -265,37 +258,29 @@ the Repository custom resource
     namespace: test-repo
   spec:
     url: "https://github.com/linda/project"
-    repo_list_to_scope_token: 
-    - "owner/project"
-    - "owner1/project1"
+    settings:
+      github_app_token_scope_repos:
+      - "owner/project"
+      - "owner1/project1"
   ```
 
-  Now PAC will read `test` Repository custom resource and scope token to `owner/project`, `owner1/project1` and `linda/project` as well
+In this example, the `Repository` custom resource is associated with the `linda/project` repository in the `test-repo` namespace.
+The scope of the generated Github token is extended to the `owner/project` and `owner1/project1` repositories, as well as the `linda/project` repository. These repositories must exist under the `test-repo` namespace.
 
-  **Note:**
+**Note:**
 
-  1. Both `owner/project` and `owner1/project1` Repository should be in the same namespace where `test` Repository exists which is `test-repo` ns.
+If any of the repositories does not exist in the namespace, the scoping of the Github token fails with an error message as in the following example:
 
-  2. If any one of the `owner/project` or `owner1/project1` doesn't exist then scoping token will fail
+```yaml
+failed to scope Github token as repo owner1/project1 does not exist in namespace test-repo
+```
 
-     Ex:
+### Scenarios for providing global and repository level configurations
 
-     If `owner1/project1` does not exist in the namespace
+- When you provide both a `secret-github-app-scope-extra-repos` key in the `pipelines-as-code` configmap and
+a `github_app_token_scope_repos` spec configuration in the `Repository` custom resource, the token is scoped to all the repositories from both configurations, as in the following example:
 
-     Then below error will be displayed
-
-     ```yaml
-     repo owner1/project1 does not exist in namespace test-repo
-     ```
-
-#### Scenarios when both global and Repo level configurations provided
-
-- When repos are provided by both `secret-github-app-scope-extra-repos` and `repo_list_to_scope_token`
-then token will be scoped to all the repos from both configuration
-
-    Ex:
-
-  - List of Repos provided by `secret-github-app-scope-extra-repos` in cm
+  - `pipelines-as-code` configmap:
 
     ```yaml
     apiVersion: v1
@@ -307,7 +292,7 @@ then token will be scoped to all the repos from both configuration
       namespace: pipelines-as-code
     ```
 
-  - List of Repos provided by `repo_list_to_scope_token` in Repository spec
+  - `Repository` custom resource
 
     ```yaml
      apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
@@ -317,9 +302,59 @@ then token will be scoped to all the repos from both configuration
        namespace: test-repo
      spec:
        url: "https://github.com/linda/project"
-       repo_list_to_scope_token: 
-       - "owner/project"
-       - "owner1/project1"
+       settings:
+         github_app_token_scope_repos: 
+         - "owner/project"
+         - "owner1/project1"
     ```
 
-    Now the GitHub token will be scoped to `owner/project`, `owner1/project1`, `owner2/project2`, `owner3/project3`, `linda/project`
+    The Github token is scoped to the following repositories: `owner/project`, `owner1/project1`, `owner2/project2`, `owner3/project3`, `linda/project`.
+
+- If you set only the global configuration in the `secret-github-app-scope-extra-repos` key in the `pipelines-as-code` configmap,
+the Github token is scoped to all the listed repositories, as well as the original repository from which the payload files come.
+
+- If you set only the `github_app_token_scope_repos` spec in the `Repository` custom resource,
+the Github token is scoped to all the listed repositories, as well as the original repository from which the payload files come.
+All the repositories must exist in the same namespace where the `Repository` custom resource is created.
+
+- If you did not install the Github app for any repositories that you list in the global or repository level configuration,
+creation of the Github token fails with the following error message:
+
+    ```text
+    failed to scope token to repositories in namespace test-repo with error : could not refresh installation id 36523992's token: received non 2xx response status \"422 Unprocessable Entity\" when fetching https://api.github.com/app/installations/36523992/access_tokens: Post \"https://api.github.com/repos/savitaashture/article/check-runs\
+    ```
+
+- If the scoping of the Github token to the repositories set in global or repository level configuration fails for any reason,
+the CI process does not run. This includes cases where the same repository is listed in the global or repository level configuration,
+and the scoping fails for the repository level configuration because the repository is not in the same namespace as the `Repository` custom resource.
+
+  In the following example, the `owner5/project5` repository is listed in both the global configuration and in tyhe repository level configuration:
+
+  ```yaml
+  apiVersion: v1
+  data:
+    secret-github-app-scope-extra-repos: "owner5/project5"
+  kind: ConfigMap
+  metadata:
+    name: pipelines-as-code
+    namespace: pipelines-as-code
+  ```
+
+  ```yaml
+  apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+  kind: Repository
+  metadata:
+    name: test
+    namespace: test-repo
+  spec:
+    url: "https://github.com/linda/project"
+    setting
+      github_app_token_scope_repos:
+      - "owner5/project5"
+  ```
+
+  In this example, if the `owner5/project5` repository is not under the `test-repo` namespace, scoping of the Github token fails with the following error message:
+
+  ```yaml
+  failed to scope Github token as repo owner5/project5 does not exist in namespace test-repo
+  ```

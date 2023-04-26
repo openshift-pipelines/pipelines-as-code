@@ -775,16 +775,18 @@ func TestListRepos(t *testing.T) {
 	assert.Equal(t, data[0], "https://matched/by/incoming")
 }
 
-func TestListRepository(t *testing.T) {
+func TestScopeGithubTokenToListOfRepos(t *testing.T) {
 	repos := []v1alpha1.Repository{{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "repo1",
 			Namespace: "test1",
 		},
 		Spec: v1alpha1.RepositorySpec{
-			ConcurrencyLimit:         nil,
-			URL:                      "https://github.com/owner/project1",
-			GithubAppTokenScopeRepos: []string{"owner/project1", "owner/project2"},
+			ConcurrencyLimit: nil,
+			URL:              "https://github.com/owner/project1",
+			Settings: &v1alpha1.Settings{
+				GithubAppTokenScopeRepos: []string{"owner/project1", "owner/project2"},
+			},
 		},
 	}, {
 		ObjectMeta: metav1.ObjectMeta{
@@ -844,7 +846,9 @@ func TestListRepository(t *testing.T) {
 	extraRepoInstallIds := map[string]string{"owner/project1": "789", "owner/project2": "10112"}
 	urlData := []string{}
 	for _, r := range repos {
-		urlData = append(urlData, r.Spec.GithubAppTokenScopeRepos...)
+		if r.Spec.Settings != nil {
+			urlData = append(urlData, r.Spec.Settings.GithubAppTokenScopeRepos...)
+		}
 	}
 	for _, v := range urlData {
 		split := strings.Split(v, "/")
@@ -855,7 +859,7 @@ func TestListRepository(t *testing.T) {
 	}
 
 	provider := &Provider{Client: fakeclient}
-	_, err := provider.ListRepository(ctx, urlData, run, info)
+	_, err := provider.ScopeGithubTokenToListOfRepos(ctx, urlData, run, info)
 	if len(provider.RepositoryIDs) != 2 {
 		assert.Error(t, fmt.Errorf("found repositoryIDs are %d which is less than expected", len(provider.RepositoryIDs)),
 			"expected repositoryIDs are 2")

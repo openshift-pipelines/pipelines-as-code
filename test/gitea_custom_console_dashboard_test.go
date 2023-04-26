@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 )
 
 const (
@@ -46,9 +46,9 @@ func TestGiteaCustomConsoleDashboard(t *testing.T) {
 
 	data := map[string]string{
 		customConsoleDashboardName:        "My custom console",
-		customConsoleDashboardURL:         "https://custom-console.ospqa.com",
-		customConsoleDashboardPRDetailURL: "https://custom-console.ospqa.com/foo-pr",
-		customConsoleDashboardPRTaskLog:   "https://custom-console.ospqa.com/foo-pr/logs/task",
+		customConsoleDashboardURL:         "https://custom-console.test.com",
+		customConsoleDashboardPRDetailURL: "https://custom-console.test.com/foo-pr",
+		customConsoleDashboardPRTaskLog:   "https://custom-console.test.com/foo-pr/logs/task",
 	}
 	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, data)()
 
@@ -80,7 +80,7 @@ func TestGiteaCustomConsoleDashboard(t *testing.T) {
 		logURL[v.Annotations[keys.LogURL]] = v.Annotations[keys.LogURL]
 	}
 	// Check that latest create Pipeline Run will have the console dashboard URL
-	assert.Assert(t, logURL["https://custom-console.ospqa.com/foo-pr"] == "https://custom-console.ospqa.com/foo-pr")
+	assert.Assert(t, logURL["https://custom-console.test.com/foo-pr"] == "https://custom-console.test.com/foo-pr")
 }
 
 // Local Variables:
