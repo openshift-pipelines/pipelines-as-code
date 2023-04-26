@@ -2,7 +2,6 @@ package reconciler
 
 import (
 	"context"
-	"log"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -19,10 +18,12 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/logging"
 )
 
 func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		log := logging.FromContext(ctx)
 		run := params.New()
 		err := run.Clients.NewClients(ctx, &run.Info)
 		if err != nil {
