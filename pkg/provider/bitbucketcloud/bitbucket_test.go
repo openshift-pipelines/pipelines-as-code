@@ -10,6 +10,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -22,18 +24,29 @@ func TestGetConfig(t *testing.T) {
 
 func TestGetTektonDir(t *testing.T) {
 	tests := []struct {
-		name            string
-		event           *info.Event
-		testDirPath     string
-		contentContains string
-		wantErr         bool
-		removeSuffix    bool
+		name                 string
+		event                *info.Event
+		testDirPath          string
+		contentContains      string
+		wantErr              bool
+		removeSuffix         bool
+		provenance           string
+		filterMessageSnippet string
 	}{
 		{
-			name:            "Get Tekton Directory",
-			event:           bbcloudtest.MakeEvent(nil),
-			testDirPath:     "../../pipelineascode/testdata/pull_request/.tekton",
-			contentContains: "kind: PipelineRun",
+			name:                 "Get Tekton Directory",
+			event:                bbcloudtest.MakeEvent(nil),
+			testDirPath:          "../../pipelineascode/testdata/pull_request/.tekton",
+			contentContains:      "kind: PipelineRun",
+			filterMessageSnippet: "Using PipelineRun definition from source pull request SHA",
+		},
+		{
+			name:                 "Get Tekton Directory Mainbranch",
+			event:                bbcloudtest.MakeEvent(&info.Event{DefaultBranch: "main"}),
+			testDirPath:          "../../pipelineascode/testdata/pull_request/.tekton",
+			contentContains:      "kind: PipelineRun",
+			provenance:           "default_branch",
+			filterMessageSnippet: "Using PipelineRun definition from default_branch: main",
 		},
 		{
 			name:            "Get Tekton Directory and subdirectory",
@@ -50,12 +63,14 @@ func TestGetTektonDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			observer, exporter := zapobserver.New(zap.InfoLevel)
+			fakelogger := zap.New(observer).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
-			v := &Provider{Client: bbclient}
-			bbcloudtest.MuxDirContent(t, mux, tt.event, tt.testDirPath)
-			content, err := v.GetTektonDir(ctx, tt.event, ".tekton")
+			v := &Provider{Logger: fakelogger, Client: bbclient}
+			bbcloudtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.provenance)
+			content, err := v.GetTektonDir(ctx, tt.event, ".tekton", tt.provenance)
 			if tt.wantErr {
 				assert.Assert(t, err != nil, "GetTektonDir() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -65,6 +80,11 @@ func TestGetTektonDir(t *testing.T) {
 				return
 			}
 			assert.Assert(t, strings.Contains(content, tt.contentContains), "content %s doesn't have %s", content, tt.contentContains)
+
+			if tt.filterMessageSnippet != "" {
+				gotcha := exporter.FilterMessageSnippet(tt.filterMessageSnippet)
+				assert.Assert(t, gotcha.Len() > 0, "expected to find %s in logs, found %v", tt.filterMessageSnippet, exporter.All())
+			}
 		})
 	}
 }

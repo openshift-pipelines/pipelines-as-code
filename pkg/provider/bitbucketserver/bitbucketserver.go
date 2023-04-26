@@ -27,6 +27,7 @@ type Provider struct {
 	defaultBranchLatestCommit string
 	pullRequestNumber         int
 	apiURL                    string
+	provenance                string
 	projectKey                string
 }
 
@@ -153,9 +154,18 @@ func (v *Provider) getRaw(runevent *info.Event, revision, path string) (string, 
 	return string(resp.Payload), nil
 }
 
-func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path string) (string, error) {
+func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, provenance string) (string, error) {
+	v.provenance = provenance
 	allValues, err := paginate(func(nextPage int) (*bbv1.APIResponse, error) {
-		localVarOptionals := map[string]interface{}{"at": event.SHA}
+		// according to the docs, if no at parameters is specified it will default to the default branch
+		// cf: https://docs.atlassian.com/bitbucket-server/rest/4.1.0/bitbucket-rest.html#idp2425664
+		localVarOptionals := map[string]interface{}{}
+		if v.provenance == "source" {
+			localVarOptionals = map[string]interface{}{"at": event.SHA}
+			v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", event.SHA)
+		} else {
+			v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
+		}
 		if nextPage != 0 {
 			localVarOptionals["start"] = nextPage
 		}

@@ -177,7 +177,7 @@ func TestIsAllowed(t *testing.T) {
 
 			bbcloudtest.MuxOrgMember(t, mux, tt.event, tt.fields.workspaceMembers)
 			bbcloudtest.MuxComments(t, mux, tt.event, tt.fields.comments)
-			bbcloudtest.MuxFiles(t, mux, tt.event, tt.fields.filescontents)
+			bbcloudtest.MuxFiles(t, mux, tt.event, tt.fields.filescontents, "")
 
 			v := &Provider{Client: bbclient}
 

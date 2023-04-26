@@ -1,0 +1,11 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+spec:
+  tasks:
+    - name: task
+      taskSpec:
+        steps:
+          - name: task
+            image: registry.access.redhat.com/ubi9/ubi-micro
+            command: ["/bin/echo", "FROMDEFAULTBRANCH"]

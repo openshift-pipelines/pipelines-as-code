@@ -150,7 +150,11 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 
 // getPipelineRunsFromRepo fetches pipelineruns from git repository and prepare them for creation
 func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Repository) ([]matcher.Match, error) {
-	rawTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir)
+	provenance := "source"
+	if repo.Spec.Settings != nil && repo.Spec.Settings.PipelineRunProvenance != "" {
+		provenance = repo.Spec.Settings.PipelineRunProvenance
+	}
+	rawTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir, provenance)
 	if err != nil || rawTemplates == "" {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
 		if err != nil {

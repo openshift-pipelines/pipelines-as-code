@@ -175,9 +175,18 @@ func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 	return status.OriginalPipelineRunName
 }
 
-func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path string) (string, error) {
+func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, provenance string) (string, error) {
+	// default set provenance from the SHA
+	revision := event.SHA
+	if provenance == "default_branch" {
+		revision = event.DefaultBranch
+		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
+	} else {
+		v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", event.SHA)
+	}
+
 	tektonDirSha := ""
-	rootobjects, _, err := v.Client.GetTrees(event.Organization, event.Repository, event.SHA, false)
+	rootobjects, _, err := v.Client.GetTrees(event.Organization, event.Repository, revision, false)
 	if err != nil {
 		return "", err
 	}

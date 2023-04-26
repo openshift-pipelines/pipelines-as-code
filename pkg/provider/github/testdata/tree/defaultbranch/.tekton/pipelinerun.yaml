@@ -1,0 +1,11 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pipeline
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "%s"
+    pipelinesascode.tekton.dev/on-target-branch: "[%s]"
+    pipelinesascode.tekton.dev/on-event: "[%s]"
+spec:
+  pipelineRef:
+    name: pipeline

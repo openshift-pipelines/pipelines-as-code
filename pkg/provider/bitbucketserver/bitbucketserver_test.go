@@ -20,6 +20,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/test"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -51,12 +53,14 @@ func TestGetTektonDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			client, mux, tearDown := bbtest.SetupBBServerClient(ctx)
 			defer tearDown()
-			v := &Provider{Client: client, projectKey: tt.event.Organization}
+			v := &Provider{Logger: logger, Client: client, projectKey: tt.event.Organization}
 			bbtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path)
-			content, err := v.GetTektonDir(ctx, tt.event, tt.path)
+			content, err := v.GetTektonDir(ctx, tt.event, tt.path, "")
 			if tt.wantErr {
 				assert.Assert(t, err != nil,
 					"GetTektonDir() error = %v, wantErr %v", err, tt.wantErr)
