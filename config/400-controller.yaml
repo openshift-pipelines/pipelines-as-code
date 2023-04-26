@@ -73,6 +73,8 @@ spec:
             successThreshold: 1
             timeoutSeconds: 1
           env:
+            - name: CONFIG_LOGGING_NAME
+              value: pac-config-logging
             - name: TLS_KEY
               value: "key"
             - name: TLS_CERT
