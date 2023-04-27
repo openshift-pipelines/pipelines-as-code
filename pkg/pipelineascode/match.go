@@ -62,24 +62,6 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		return nil, nil
 	}
 
-	// Set the client, we should error out if there is a problem with
-	// token or secret or we won't be able to do much.
-	err = p.vcx.SetClient(ctx, p.run, p.event)
-	if err != nil {
-		return repo, err
-	}
-
-	if p.event.InstallationID > 0 {
-		token, err := p.scopeTokenToListOfRepos(ctx, repo)
-		if err != nil {
-			return nil, err
-		}
-		// If Global and Repo level configurations are not provided the lets not override the provider token.
-		if token != "" {
-			p.event.Provider.Token = token
-		}
-	}
-
 	// If we have a git_provider field in repository spec, then get all the
 	// information from there, including the webhook secret.
 	// otherwise get the secret from the current ns (i.e: pipelines-as-code/openshift-pipelines.)
@@ -110,6 +92,24 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositorySecretValidation", msg)
 			}
 			return repo, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
+		}
+	}
+
+	// Set the client, we should error out if there is a problem with
+	// token or secret or we won't be able to do much.
+	err = p.vcx.SetClient(ctx, p.run, p.event)
+	if err != nil {
+		return repo, err
+	}
+
+	if p.event.InstallationID > 0 {
+		token, err := p.scopeTokenToListOfRepos(ctx, repo)
+		if err != nil {
+			return nil, err
+		}
+		// If Global and Repo level configurations are not provided then lets not override the provider token.
+		if token != "" {
+			p.event.Provider.Token = token
 		}
 	}
 
@@ -281,6 +281,7 @@ func (p *PacRun) scopeTokenToListOfRepos(ctx context.Context, repo *v1alpha1.Rep
 			repoListToScopeToken = append(repoListToScopeToken, configValueS)
 		}
 		listRepos = true
+		p.logger.Infof("configured Global configuration to %v to scope Github token ", repoListToScopeToken)
 	}
 	if repo.Spec.Settings != nil && len(repo.Spec.Settings.GithubAppTokenScopeRepos) != 0 {
 		ns := repo.Namespace
@@ -304,6 +305,7 @@ func (p *PacRun) scopeTokenToListOfRepos(ctx context.Context, repo *v1alpha1.Rep
 			repoListToScopeToken = append(repoListToScopeToken, repo.Spec.Settings.GithubAppTokenScopeRepos[i])
 		}
 		listRepos = true
+		p.logger.Infof("configured repo level configuration to %v to scope Github token ", repo.Spec.Settings.GithubAppTokenScopeRepos)
 	}
 	if listRepos {
 		repoInfoFromWhichEventCame, err := getURLPathData(repo.Spec.URL)
@@ -312,7 +314,7 @@ func (p *PacRun) scopeTokenToListOfRepos(ctx context.Context, repo *v1alpha1.Rep
 		}
 		// adding the repo info from which event came so that repositoryID will be added while scoping the token
 		repoListToScopeToken = append(repoListToScopeToken, repoInfoFromWhichEventCame[1]+"/"+repoInfoFromWhichEventCame[2])
-		token, err = p.vcx.ScopeGithubTokenToListOfRepos(ctx, repoListToScopeToken, p.run, p.event)
+		token, err = p.vcx.CreateToken(ctx, repoListToScopeToken, p.run, p.event)
 		if err != nil {
 			return "", fmt.Errorf("failed to scope token to repositories with error : %w", err)
 		}

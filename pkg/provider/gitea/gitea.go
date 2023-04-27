@@ -292,6 +292,6 @@ func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) 
 	return []string{}, fmt.Errorf("GetFiles is not supported on Gitea")
 }
 
-func (v *Provider) ScopeGithubTokenToListOfRepos(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
+func (v *Provider) CreateToken(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
 	return "", nil
 }

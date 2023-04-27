@@ -214,9 +214,10 @@ For example, there might be a CI repository where the `.tekton/pr.yaml` file and
 
 You can extend the scope of the Github token in two ways:
 
-- _Repository level configuration_: extend the Github token to a list of repositories that exist in the same namespace as the original repository.
+- _Global configuration_: extend the Github token to a list of repositories in different namespaces and admin have access to set this configuration.
 
-- _Global configuration_: extend the Github token to a list of repositories in different namespaces.
+- _Repository level configuration_: extend the Github token to a list of repositories that exist in the same namespace as the original repository
+and both admin, non-admin have access to set this configuration.
 
 ### Note
 
@@ -229,18 +230,18 @@ This setting enables the scoping of the Github token to private and public repos
 
 #### Scoping the Github token using Global configuration
 
-You can use global configuration to set a list of repositories in any namespaces.
+You can use the global configuration to use as a list of repositories used from any Repository CR in any namespaces.
 
 To set the global configuration, in the `pipelines-as-code` configmap, set the `secret-github-app-scope-extra-repos` key, as in the following example:
 
   ```yaml
   apiVersion: v1
-  data:
-    secret-github-app-scope-extra-repos: "owner2/project2, owner3/project3"
   kind: ConfigMap
   metadata:
     name: pipelines-as-code
     namespace: pipelines-as-code
+  data:
+    secret-github-app-scope-extra-repos: "owner2/project2, owner3/project3"
   ```
 
 #### Scoping the Github token using Repository level configuration
@@ -271,7 +272,7 @@ The scope of the generated Github token is extended to the `owner/project` and `
 
 If any of the repositories does not exist in the namespace, the scoping of the Github token fails with an error message as in the following example:
 
-```yaml
+```console
 failed to scope Github token as repo owner1/project1 does not exist in namespace test-repo
 ```
 
@@ -284,12 +285,12 @@ a `github_app_token_scope_repos` spec configuration in the `Repository` custom r
 
     ```yaml
     apiVersion: v1
-    data:
-      secret-github-app-scope-extra-repos: "owner2/project2, owner3/project3"
     kind: ConfigMap
     metadata:
       name: pipelines-as-code
-      namespace: pipelines-as-code
+      namespace: pipelines-as-code    
+    data:
+      secret-github-app-scope-extra-repos: "owner2/project2, owner3/project3"
     ```
 
   - `Repository` custom resource
@@ -332,12 +333,12 @@ and the scoping fails for the repository level configuration because the reposit
 
   ```yaml
   apiVersion: v1
-  data:
-    secret-github-app-scope-extra-repos: "owner5/project5"
   kind: ConfigMap
   metadata:
     name: pipelines-as-code
-    namespace: pipelines-as-code
+    namespace: pipelines-as-code  
+  data:
+    secret-github-app-scope-extra-repos: "owner5/project5"
   ```
 
   ```yaml
