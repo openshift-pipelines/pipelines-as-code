@@ -62,12 +62,22 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		return nil, nil
 	}
 
+	// Set the client, we should error out if there is a problem with
+	// token or secret or we won't be able to do much.
+	err = p.vcx.SetClient(ctx, p.run, p.event)
+	if err != nil {
+		return repo, err
+	}
+
 	if p.event.InstallationID > 0 {
 		token, err := p.scopeTokenToListOfRepos(ctx, repo)
 		if err != nil {
 			return nil, err
 		}
-		p.event.Provider.Token = token
+		// If Global and Repo level configurations are not provided the lets not override the provider token.
+		if token != "" {
+			p.event.Provider.Token = token
+		}
 	}
 
 	// If we have a git_provider field in repository spec, then get all the
@@ -101,13 +111,6 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 			}
 			return repo, fmt.Errorf("could not validate payload, check your webhook secret?: %w", err)
 		}
-	}
-
-	// Set the client, we should error out if there is a problem with
-	// token or secret or we won't be able to do much.
-	err = p.vcx.SetClient(ctx, p.run, p.event)
-	if err != nil {
-		return repo, err
 	}
 
 	// Get the SHA commit info, we want to get the URL and commit title
