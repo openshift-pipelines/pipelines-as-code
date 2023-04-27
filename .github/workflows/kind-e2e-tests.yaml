@@ -66,12 +66,6 @@ jobs:
           kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"bitbucket-cloud-check-source-ip\": \"false\"}}" \
           --type merge pipelines-as-code
 
-          # Add an extra Repository ID to the token scope to fetch private url
-          # This goes with the variable TEST_GITHUB_PRIVATE_TASK_NAME and tested with
-          # the TestGithubPullRequestRemoteTaskAnnotations test
-          kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"secret-github-app-scope-extra-repos\": \"openshift-pipelines/pipelines-as-code-e2e-tests-private\"}}" \
-          --type merge pipelines-as-code
-
           # restart controller
           kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=controller
 

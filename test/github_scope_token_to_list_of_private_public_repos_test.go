@@ -27,9 +27,9 @@ import (
 )
 
 func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
+	// if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+	//	 t.Skip("Skipping test since only enabled for nightly")
+	// }
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
