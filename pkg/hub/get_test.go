@@ -30,10 +30,10 @@ func TestGetTask(t *testing.T) {
 			wantErr: false,
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
-					"body": `{"data":{"latestVersion": {"rawURL": "https://get.me/task1"}}}`,
+					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
 					"code": "200",
 				},
-				"https://get.me/task1": {
+				fmt.Sprintf("%s/resource/%s/task/task1/0.2/raw", testHubURL, testCatalogHubName): {
 					"body": "This is Task1",
 					"code": "200",
 				},
@@ -66,10 +66,10 @@ func TestGetTask(t *testing.T) {
 			wantErr: false,
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task2/1.1", testHubURL, testCatalogHubName): {
-					"body": `{"data":{"rawURL": "https://get.me/task2"}}`,
+					"body": `{}`,
 					"code": "200",
 				},
-				"https://get.me/task2": {
+				fmt.Sprintf("%s/resource/%s/task/task2/1.1/raw", testHubURL, testCatalogHubName): {
 					"body": "This is Task2",
 					"code": "200",
 				},
