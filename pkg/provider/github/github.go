@@ -451,7 +451,7 @@ func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 	return repoURLs, nil
 }
 
-func (v *Provider) ScopeGithubTokenToListOfRepos(ctx context.Context, repository []string, run *params.Run, event *info.Event) (string, error) {
+func (v *Provider) CreateToken(ctx context.Context, repository []string, run *params.Run, event *info.Event) (string, error) {
 	for _, r := range repository {
 		split := strings.Split(r, "/")
 		infoData, _, err := v.Client.Repositories.Get(ctx, split[0], split[1])

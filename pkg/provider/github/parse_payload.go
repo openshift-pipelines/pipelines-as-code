@@ -180,8 +180,9 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 				}
 				repoLists = append(repoLists, configValueS)
 			}
+			v.Logger.Infof("Github token scope extended to %v keeping SecretGHAppRepoScoped to true", repoLists)
 		}
-		token, err := v.ScopeGithubTokenToListOfRepos(ctx, repoLists, run, processedEvent)
+		token, err := v.CreateToken(ctx, repoLists, run, processedEvent)
 		if err != nil {
 			return nil, err
 		}

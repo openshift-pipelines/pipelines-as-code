@@ -775,7 +775,7 @@ func TestListRepos(t *testing.T) {
 	assert.Equal(t, data[0], "https://matched/by/incoming")
 }
 
-func TestScopeGithubTokenToListOfRepos(t *testing.T) {
+func TestCreateToken(t *testing.T) {
 	repos := []v1alpha1.Repository{{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "repo1",
@@ -859,7 +859,7 @@ func TestScopeGithubTokenToListOfRepos(t *testing.T) {
 	}
 
 	provider := &Provider{Client: fakeclient}
-	_, err := provider.ScopeGithubTokenToListOfRepos(ctx, urlData, run, info)
+	_, err := provider.CreateToken(ctx, urlData, run, info)
 	if len(provider.RepositoryIDs) != 2 {
 		assert.Error(t, fmt.Errorf("found repositoryIDs are %d which is less than expected", len(provider.RepositoryIDs)),
 			"expected repositoryIDs are 2")
