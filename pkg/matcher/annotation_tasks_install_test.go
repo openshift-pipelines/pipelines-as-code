@@ -1,6 +1,7 @@
 package matcher
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -185,10 +186,10 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			},
 			remoteURLS: map[string]map[string]string{
 				testHubURL + "/resource/" + testCatalogHubName + "/task/chmouzie": {
-					"body": `{"data": {"LatestVersion": {"RawURL": "http://simple.task"}}}`,
+					"body": `{"data": {"LatestVersion": {"version": "0.1"}}}`,
 					"code": "200",
 				},
-				"http://simple.task": {
+				fmt.Sprintf("%s/resource/%s/task/chmouzie/0.1/raw", testHubURL, testCatalogHubName): {
 					"body": readTDfile(t, "task-good"),
 					"code": "200",
 				},
@@ -202,10 +203,10 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			},
 			remoteURLS: map[string]map[string]string{
 				testHubURL + "/resource/" + testCatalogHubName + "/task/chmouzie/0.2": {
-					"body": `{"data": {"RawURL": "http://simple.task"}}`,
+					"body": `{}`,
 					"code": "200",
 				},
-				"http://simple.task": {
+				fmt.Sprintf("%s/resource/%s/task/chmouzie/0.2/raw", testHubURL, testCatalogHubName): {
 					"body": readTDfile(t, "task-good"),
 					"code": "200",
 				},

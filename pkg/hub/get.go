@@ -13,9 +13,9 @@ func getSpecificVersion(ctx context.Context, cs *params.Run, task string) (strin
 	split := strings.Split(task, ":")
 	version := split[len(split)-1]
 	taskName := split[0]
+	url := fmt.Sprintf("%s/resource/%s/task/%s/%s", cs.Info.Pac.HubURL, cs.Info.Pac.HubCatalogName, taskName, version)
 	hr := hubResourceVersion{}
-	data, err := cs.Clients.GetURL(ctx,
-		fmt.Sprintf("%s/resource/%s/task/%s/%s", cs.Info.Pac.HubURL, cs.Info.Pac.HubCatalogName, taskName, version))
+	data, err := cs.Clients.GetURL(ctx, url)
 	if err != nil {
 		return "", fmt.Errorf("could not fetch specific task version from the hub %s:%s: %w", task, version, err)
 	}
@@ -23,12 +23,13 @@ func getSpecificVersion(ctx context.Context, cs *params.Run, task string) (strin
 	if err != nil {
 		return "", err
 	}
-	return *hr.Data.RawURL, nil
+	return fmt.Sprintf("%s/raw", url), nil
 }
 
 func getLatestVersion(ctx context.Context, cs *params.Run, task string) (string, error) {
+	url := fmt.Sprintf("%s/resource/%s/task/%s", cs.Info.Pac.HubURL, cs.Info.Pac.HubCatalogName, task)
 	hr := new(hubResource)
-	data, err := cs.Clients.GetURL(ctx, fmt.Sprintf("%s/resource/%s/task/%s", cs.Info.Pac.HubURL, cs.Info.Pac.HubCatalogName, task))
+	data, err := cs.Clients.GetURL(ctx, url)
 	if err != nil {
 		return "", err
 	}
@@ -37,7 +38,7 @@ func getLatestVersion(ctx context.Context, cs *params.Run, task string) (string,
 		return "", err
 	}
 
-	return *hr.Data.LatestVersion.RawURL, nil
+	return fmt.Sprintf("%s/%s/raw", url, *hr.Data.LatestVersion.Version), nil
 }
 
 func GetTask(ctx context.Context, cli *params.Run, task string) (string, error) {
