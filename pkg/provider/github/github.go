@@ -38,7 +38,7 @@ type Provider struct {
 	ApplicationID *int64
 	providerName  string
 	Run           *params.Run
-	repositoryIDs []int64
+	RepositoryIDs []int64
 
 	skippedRun
 }
@@ -385,7 +385,7 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 	runevent.BaseBranch = pr.GetBase().GetRef()
 	runevent.EventType = "pull_request"
 
-	v.repositoryIDs = []int64{
+	v.RepositoryIDs = []int64{
 		pr.GetBase().GetRepo().GetID(),
 	}
 	return runevent, nil
@@ -449,4 +449,35 @@ func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 		repoURLs = append(repoURLs, *repoList.Repositories[i].HTMLURL)
 	}
 	return repoURLs, nil
+}
+
+func (v *Provider) CreateToken(ctx context.Context, repository []string, run *params.Run, event *info.Event) (string, error) {
+	for _, r := range repository {
+		split := strings.Split(r, "/")
+		infoData, _, err := v.Client.Repositories.Get(ctx, split[0], split[1])
+		if err != nil {
+			v.Logger.Warn("we have an invalid repository: `%s` or no access to it: %v", r, err)
+			continue
+		}
+		v.RepositoryIDs = uniqueRepositoryID(v.RepositoryIDs, infoData.GetID())
+	}
+	token, err := v.GetAppToken(ctx, run.Clients.Kube, event.Provider.URL, event.InstallationID, os.Getenv("SYSTEM_NAMESPACE"))
+	if err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+func uniqueRepositoryID(repoIDs []int64, id int64) []int64 {
+	r := repoIDs
+	m := make(map[int64]bool)
+	for _, val := range repoIDs {
+		if _, ok := m[val]; !ok {
+			m[val] = true
+		}
+	}
+	if _, ok := m[id]; !ok {
+		r = append(r, id)
+	}
+	return r
 }

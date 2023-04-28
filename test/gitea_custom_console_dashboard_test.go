@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -23,23 +23,6 @@ const (
 	customConsoleDashboardPRDetailURL = "custom-console-url-pr-details"
 	customConsoleDashboardPRTaskLog   = "custom-console-url-pr-tasklog"
 )
-
-func revertCM(ctx context.Context, t *testing.T, runcnx *params.Run) {
-	cmList, err := runcnx.Clients.Kube.CoreV1().ConfigMaps("").List(ctx, metav1.ListOptions{})
-	assert.NilError(t, err)
-	for _, v := range cmList.Items {
-		if v.Name == "pipelines-as-code" {
-			cmData, err := runcnx.Clients.Kube.CoreV1().ConfigMaps(v.Namespace).Get(ctx, v.Name, metav1.GetOptions{})
-			assert.NilError(t, err)
-			delete(cmData.Data, customConsoleDashboardName)
-			delete(cmData.Data, customConsoleDashboardURL)
-			delete(cmData.Data, customConsoleDashboardPRDetailURL)
-			delete(cmData.Data, customConsoleDashboardPRTaskLog)
-			_, err = runcnx.Clients.Kube.CoreV1().ConfigMaps(v.Namespace).Update(ctx, cmData, metav1.UpdateOptions{})
-			assert.NilError(t, err)
-		}
-	}
-}
 
 func TestGiteaCustomConsoleDashboard(t *testing.T) {
 	ctx := context.TODO()
@@ -61,21 +44,13 @@ func TestGiteaCustomConsoleDashboard(t *testing.T) {
 	// asserting with non empty because we are not sure the URL for K8S and Openshift
 	assert.Assert(t, prs.Items[0].Annotations[keys.LogURL] != "")
 
-	// update config map with console dashboard information
-	cmList, er := topts.ParamsRun.Clients.Kube.CoreV1().ConfigMaps("").List(ctx, metav1.ListOptions{})
-	assert.NilError(t, er)
-	for _, v := range cmList.Items {
-		if v.Name == "pipelines-as-code" {
-			cmData, err := topts.ParamsRun.Clients.Kube.CoreV1().ConfigMaps(v.Namespace).Get(ctx, v.Name, metav1.GetOptions{})
-			assert.NilError(t, err)
-			cmData.Data[customConsoleDashboardName] = "My custom console"
-			cmData.Data[customConsoleDashboardURL] = "https://custom-console.ospqa.com"
-			cmData.Data[customConsoleDashboardPRDetailURL] = "https://custom-console.ospqa.com/foo-pr"
-			cmData.Data[customConsoleDashboardPRTaskLog] = "https://custom-console.ospqa.com/foo-pr/logs/task"
-			_, err = topts.ParamsRun.Clients.Kube.CoreV1().ConfigMaps(v.Namespace).Update(ctx, cmData, metav1.UpdateOptions{})
-			assert.NilError(t, err)
-		}
+	data := map[string]string{
+		customConsoleDashboardName:        "My custom console",
+		customConsoleDashboardURL:         "https://custom-console.test.com",
+		customConsoleDashboardPRDetailURL: "https://custom-console.test.com/foo-pr",
+		customConsoleDashboardPRTaskLog:   "https://custom-console.test.com/foo-pr/logs/task",
 	}
+	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, data)()
 
 	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
 	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
@@ -105,10 +80,7 @@ func TestGiteaCustomConsoleDashboard(t *testing.T) {
 		logURL[v.Annotations[keys.LogURL]] = v.Annotations[keys.LogURL]
 	}
 	// Check that latest create Pipeline Run will have the console dashboard URL
-	assert.Assert(t, logURL["https://custom-console.ospqa.com/foo-pr"] == "https://custom-console.ospqa.com/foo-pr")
-
-	// Resetting back by removing console dashboard information
-	defer revertCM(ctx, t, topts.ParamsRun)
+	assert.Assert(t, logURL["https://custom-console.test.com/foo-pr"] == "https://custom-console.test.com/foo-pr")
 }
 
 // Local Variables:

@@ -20,10 +20,16 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/ptr"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -767,4 +773,98 @@ func TestListRepos(t *testing.T) {
 	data, err := ListRepos(ctx, provider)
 	assert.NilError(t, err)
 	assert.Equal(t, data[0], "https://matched/by/incoming")
+}
+
+func TestCreateToken(t *testing.T) {
+	repos := []v1alpha1.Repository{{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "repo1",
+			Namespace: "test1",
+		},
+		Spec: v1alpha1.RepositorySpec{
+			ConcurrencyLimit: nil,
+			URL:              "https://github.com/owner/project1",
+			Settings: &v1alpha1.Settings{
+				GithubAppTokenScopeRepos: []string{"owner/project1", "owner/project2"},
+			},
+		},
+	}, {
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "repo2",
+			Namespace: "test1",
+		},
+		Spec: v1alpha1.RepositorySpec{
+			ConcurrencyLimit: nil,
+			URL:              "https://github.com/owner/project2",
+		},
+	}}
+
+	ctx, _ := rtesting.SetupFakeContext(t)
+	logger, _ := logger.GetLogger()
+	testNamespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pipelinesascode",
+		},
+	}
+	validSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pipelines-as-code-secret",
+			Namespace: testNamespace.Name,
+		},
+		Data: map[string][]byte{
+			"github-application-id": []byte("12345"),
+			"github-private-key":    []byte(fakePrivateKey),
+		},
+	}
+
+	t.Setenv("SYSTEM_NAMESPACE", testNamespace.Name)
+	tdata := testclient.Data{
+		Namespaces: []*corev1.Namespace{testNamespace},
+		Secret:     []*corev1.Secret{validSecret},
+	}
+
+	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
+
+	run := &params.Run{
+		Clients: clients.Clients{
+			Log:            logger,
+			PipelineAsCode: stdata.PipelineAsCode,
+			Kube:           stdata.Kube,
+		},
+	}
+
+	info := &info.Event{
+		Provider: &info.Provider{
+			URL: "",
+		},
+		InstallationID: int64(1234567),
+	}
+
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+
+	extraRepoInstallIds := map[string]string{"owner/project1": "789", "owner/project2": "10112"}
+	urlData := []string{}
+	for _, r := range repos {
+		if r.Spec.Settings != nil {
+			urlData = append(urlData, r.Spec.Settings.GithubAppTokenScopeRepos...)
+		}
+	}
+	for _, v := range urlData {
+		split := strings.Split(v, "/")
+		mux.HandleFunc(fmt.Sprintf("/repos/%s/%s", split[0], split[1]), func(w http.ResponseWriter, r *http.Request) {
+			sid := extraRepoInstallIds[fmt.Sprintf("%s/%s", split[0], split[1])]
+			_, _ = fmt.Fprintf(w, `{"id": %s}`, sid)
+		})
+	}
+
+	provider := &Provider{Client: fakeclient}
+	_, err := provider.CreateToken(ctx, urlData, run, info)
+	if len(provider.RepositoryIDs) != 2 {
+		assert.Error(t, fmt.Errorf("found repositoryIDs are %d which is less than expected", len(provider.RepositoryIDs)),
+			"expected repositoryIDs are 2")
+	}
+	if err != nil {
+		assert.Equal(t, strings.Contains(err.Error(), "could not refresh installation id 1234567's token"), true)
+	}
 }

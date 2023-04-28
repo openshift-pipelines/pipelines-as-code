@@ -82,3 +82,7 @@ func (v *TestProviderImp) GetFileInsideRepo(_ context.Context, _ *info.Event, fi
 func (v *TestProviderImp) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
 	return []string{}, nil
 }
+
+func (v *TestProviderImp) CreateToken(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
+	return "", nil
+}

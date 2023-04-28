@@ -66,6 +66,15 @@ spec:
             spec:
               description: Spec defines the desired state of Repository
               properties:
+                settings:
+                  description: Settings relative to the Repository
+                  type: object
+                  properties:
+                    github_app_token_scope_repos:
+                      type: array
+                      items:
+                        description: list of repositories where Github token can be scoped
+                        type: string
                 concurrency_limit:
                   description: Number of maximum pipelinerun running at any moment
                   type: integer
@@ -170,7 +179,6 @@ spec:
                         name:
                           type: string
                           description: "The secret name"
-
               type: object
           type: object
   scope: Namespaced

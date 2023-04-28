@@ -7,12 +7,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
@@ -24,23 +27,32 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubPullRequestRemoteTaskAnnotations(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
+func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
+	// if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+	//	 t.Skip("Skipping test since only enabled for nightly")
+	// }
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
 	assert.NilError(t, err)
 
-	remoteTaskURL := options.RemoteTaskURL
+	var remoteTaskURL, remoteTaskName string
 	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL") != "" {
 		remoteTaskURL = os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL")
+	} else {
+		t.Error("Env TEST_GITHUB_PRIVATE_TASK_URL not provided")
+		return
 	}
-	remoteTaskName := options.RemoteTaskName
+
 	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_NAME") != "" {
 		remoteTaskName = os.Getenv("TEST_GITHUB_PRIVATE_TASK_NAME")
+	} else {
+		t.Error("Env TEST_GITHUB_PRIVATE_TASK_NAME not provided")
+		return
 	}
+
+	data := map[string]string{"secret-github-app-token-scoped": "false"}
+	defer configmap.ChangeGlobalConfig(ctx, t, runcnx, data)()
 
 	entries, err := payload.GetEntries(map[string]string{
 		".tekton/pr.yaml":                              "testdata/pipelinerun_remote_task_annotations.yaml",
@@ -58,12 +70,21 @@ func TestGithubPullRequestRemoteTaskAnnotations(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
+	splittedValue := []string{}
+	if remoteTaskURL != "" {
+		urlData, err := url.ParseRequestURI(remoteTaskURL)
+		assert.NilError(t, err)
+		splittedValue = strings.Split(urlData.Path, "/")
+	}
 	repository := &pacv1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: targetNS,
 		},
 		Spec: pacv1alpha1.RepositorySpec{
 			URL: repoinfo.GetHTMLURL(),
+			Settings: &pacv1alpha1.Settings{
+				GithubAppTokenScopeRepos: []string{splittedValue[1] + "/" + splittedValue[2]},
+			},
 		},
 	}
 
@@ -71,6 +92,18 @@ func TestGithubPullRequestRemoteTaskAnnotations(t *testing.T) {
 	assert.NilError(t, err)
 
 	err = trepo.CreateRepo(ctx, targetNS, runcnx, repository)
+	assert.NilError(t, err)
+
+	repositoryForPrivateRepo := &pacv1alpha1.Repository{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: targetNS,
+		},
+		Spec: pacv1alpha1.RepositorySpec{
+			URL: "https://github.com/" + splittedValue[1] + "/" + splittedValue[2],
+		},
+	}
+
+	err = trepo.CreateRepo(ctx, targetNS, runcnx, repositoryForPrivateRepo)
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",
@@ -121,5 +154,5 @@ func TestGithubPullRequestRemoteTaskAnnotations(t *testing.T) {
 }
 
 // Local Variables:
-// compile-command: "go test -tags=e2e -v -info TestPullRequestRemoteAnnotations$ ."
+// compile-command: "go test -tags=e2e -v -run ^TestGithubPullRequestScopeTokenToListOfRepos$"
 // End:

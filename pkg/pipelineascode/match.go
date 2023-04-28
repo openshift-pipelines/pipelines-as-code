@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
@@ -97,6 +98,17 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	err = p.vcx.SetClient(ctx, p.run, p.event)
 	if err != nil {
 		return repo, err
+	}
+
+	if p.event.InstallationID > 0 {
+		token, err := github.ScopeTokenToListOfRepos(ctx, p.vcx, repo, p.run, p.event, p.eventEmitter, p.logger)
+		if err != nil {
+			return nil, err
+		}
+		// If Global and Repo level configurations are not provided then lets not override the provider token.
+		if token != "" {
+			p.event.Provider.Token = token
+		}
 	}
 
 	// Get the SHA commit info, we want to get the URL and commit title
