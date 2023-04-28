@@ -566,3 +566,21 @@ func TestRun(t *testing.T) {
 		})
 	}
 }
+
+func TestGetLogURLMergePatch(t *testing.T) {
+	con := consoleui.FallBackConsole{}
+	clients := clients.Clients{
+		ConsoleUI: con,
+	}
+	pr := &pipelinev1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-pipeline-run",
+		},
+	}
+	result := getLogURLMergePatch(clients, pr)
+	m, ok := result["metadata"].(map[string]interface{})
+	assert.Assert(t, ok)
+	a, ok := m["annotations"].(map[string]string)
+	assert.Assert(t, ok)
+	assert.Equal(t, a[filepath.Join(apipac.GroupName, "log-url")], con.URL())
+}
