@@ -131,7 +131,8 @@ func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Even
 			SHA:  github.String(f.sha),
 		})
 	}
-	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/git/trees/%v", event.Organization, event.Repository, event.SHA), func(rw http.ResponseWriter, r *http.Request) {
+	u := fmt.Sprintf("/repos/%v/%v/git/trees/%v", event.Organization, event.Repository, event.SHA)
+	mux.HandleFunc(u, func(rw http.ResponseWriter, r *http.Request) {
 		tree := &github.Tree{
 			SHA:     &event.SHA,
 			Entries: entries,

@@ -18,6 +18,7 @@ type RepoTestcreationOpts struct {
 	ProviderURL       string
 	CreateTime        metav1.Time
 	RepoStatus        []v1alpha1.RepositoryRunStatus
+	ConcurrencyLimit  int
 }
 
 func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
@@ -69,6 +70,9 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 			URL: opts.URL,
 		},
 		Status: opts.RepoStatus,
+	}
+	if opts.ConcurrencyLimit > 0 {
+		repo.Spec.ConcurrencyLimit = &opts.ConcurrencyLimit
 	}
 
 	if opts.SecretName != "" || opts.ProviderURL != "" || opts.WebhookSecretName != "" {

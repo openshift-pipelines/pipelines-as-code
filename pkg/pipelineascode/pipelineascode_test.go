@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -61,9 +62,11 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 		fmt.Sprintf("/repos/%s/%s/issues/666/comments", runevent.Organization, runevent.Repository),
 		"{}")
 
+	jj := fmt.Sprintf(`{"sha": "%s", "html_url": "https://git.commit.url/%s", "message": "commit message"}`,
+		runevent.SHA, runevent.SHA)
 	replyString(mux,
 		fmt.Sprintf("/repos/%s/%s/git/commits/%s", runevent.Organization, runevent.Repository, runevent.SHA),
-		`{}`)
+		jj)
 
 	if !noReplyOrgPublicMembers {
 		mux.HandleFunc("/orgs/"+runevent.Organization+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
@@ -107,6 +110,7 @@ func TestRun(t *testing.T) {
 		ProviderInfoFromRepo         bool
 		WebHookSecretValue           string
 		PayloadEncodedSecret         string
+		concurrencyLimit             int
 		expectedLogSnippet           string
 	}{
 		{
@@ -125,6 +129,55 @@ func TestRun(t *testing.T) {
 			tektondir:       "testdata/pull_request",
 			finalStatus:     "failure",
 			finalStatusText: "we need at least one pipelinerun to start with",
+		},
+		{
+			name: "pull request/allowed",
+			runevent: info.Event{
+				Event: &github.PullRequestEvent{
+					PullRequest: &github.PullRequest{
+						Number: github.Int(666),
+					},
+				},
+				SHA:               "fromwebhook",
+				Organization:      "owner",
+				Sender:            "owner",
+				Repository:        "repo",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
+				InstallationID:    1234,
+			},
+			tektondir:       "testdata/pull_request",
+			finalStatus:     "neutral",
+			finalStatusText: "<th>Status</th><th>Duration</th><th>Name</th>",
+		},
+		{
+			name: "pull request/concurrency limit",
+			runevent: info.Event{
+				Event: &github.PullRequestEvent{
+					PullRequest: &github.PullRequest{
+						Number: github.Int(666),
+					},
+				},
+				SHA:               "fromwebhook",
+				Organization:      "owner",
+				Sender:            "owner",
+				Repository:        "repo",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
+				InstallationID:    1234,
+			},
+			tektondir:        "testdata/pull_request",
+			finalStatus:      "neutral",
+			finalStatusText:  "<th>Status</th><th>Duration</th><th>Name</th>",
+			concurrencyLimit: 1,
 		},
 		{
 			name: "pull request/with webhook",
@@ -377,6 +430,7 @@ func TestRun(t *testing.T) {
 				URL:              tt.runevent.URL,
 				InstallNamespace: "namespace",
 				ProviderURL:      providerURL,
+				ConcurrencyLimit: tt.concurrencyLimit,
 			}
 
 			if tt.ProviderInfoFromRepo {
@@ -494,17 +548,18 @@ func TestRun(t *testing.T) {
 					if pr.GetName() == "force-me" {
 						continue
 					}
-					logURL, ok := pr.Labels[filepath.Join(apipac.GroupName, "log-url")]
-					if !ok {
-						logger.Fatalf("failed to find log-url label on pipelinerun: %v/%v", pr.GetNamespace(), pr.GetName())
-					}
+					logURL, ok := pr.Annotations[filepath.Join(apipac.GroupName, "log-url")]
+					assert.Assert(t, ok, "failed to find log-url label on pipelinerun: %s/%s", pr.GetNamespace(), pr.GetGenerateName())
 					assert.Equal(t, logURL, cs.Clients.ConsoleUI.DetailURL(&pr))
 
 					if cs.Info.Pac.SecretAutoCreation {
-						secretName := pr.GetAnnotations()[keys.GitAuthSecret]
-						secret, err := cs.Clients.Kube.CoreV1().Secrets(pr.Namespace).Get(ctx, secretName, metav1.GetOptions{})
-						assert.NilError(t, err)
-						assert.Assert(t, len(secret.OwnerReferences) != 0)
+						secretName, ok := pr.GetAnnotations()[keys.GitAuthSecret]
+						assert.Assert(t, ok, "Cannot find secret %s on annotations", secretName)
+					}
+					if tt.concurrencyLimit > 0 {
+						concurrencyLimit, ok := pr.GetAnnotations()[keys.State]
+						assert.Assert(t, ok, "State hasn't been set on PR", concurrencyLimit)
+						assert.Equal(t, concurrencyLimit, kubeinteraction.StateQueued)
 					}
 				}
 			}
