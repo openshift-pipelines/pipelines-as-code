@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/adapter"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -12,6 +11,7 @@ import (
 	"knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
+	"knative.dev/pkg/system"
 )
 
 const (
@@ -40,8 +40,7 @@ func main() {
 	// set up kubernetes interface to retrieve configmap with log configuration
 	ctx = context.WithValue(ctx, client.Key{}, run.Clients.Kube)
 
-
-	ctx = evadapter.WithNamespace(ctx, os.Getenv("SYSTEM_NAMESPACE"))
+	ctx = evadapter.WithNamespace(ctx, system.Namespace())
 	ctx = evadapter.WithConfigWatcherEnabled(ctx)
 
 	evadapter.MainWithContext(ctx, PACControllerLogKey, adapter.NewEnvConfig, adapter.New(run, kinteract))
