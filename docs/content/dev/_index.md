@@ -60,6 +60,93 @@ override it you can set the `PAC_DIRS` environment variable.
   instead of ko. `-c` will only do the pac configuration (ie: creation of
   secrets/ingress etc..)
 
+## Configuring debug logging
+
+pipeline-as-code uses ConfigMap named `pac-config-logging` in the same namespace (`pipelines-as-code` by default) with controllers. To get configmap use the command:
+
+```bash
+$ kubectl get configmap pac-config-logging -n pipelines-as-code
+
+NAME                 DATA   AGE
+pac-config-logging   4      9m44s
+```
+
+To retrieve configmap content:
+
+```bash
+$ kubectl get configmap pac-config-logging -n pipelines-as-code -o yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+  name: pac-config-logging
+  namespace: pipelines-as-code
+data:
+  loglevel.pac-watcher: info
+  loglevel.pipelines-as-code-webhook: info
+  loglevel.pipelinesascode: info
+  zap-logger-config: |
+    {
+      "level": "info",
+      "development": false,
+      "sampling": {
+        "initial": 100,
+        "thereafter": 100
+      },
+      "outputPaths": ["stdout"],
+      "errorOutputPaths": ["stderr"],
+      "encoding": "json",
+      "encoderConfig": {
+        "timeKey": "ts",
+        "levelKey": "level",
+        "nameKey": "logger",
+        "callerKey": "caller",
+        "messageKey": "msg",
+        "stacktraceKey": "stacktrace",
+        "lineEnding": "",
+        "levelEncoder": "",
+        "timeEncoder": "iso8601",
+        "durationEncoder": "",
+        "callerEncoder": ""
+      }
+    }
+```
+
+Controllers log level defined in the `loglevel.*` fields:
+- loglevel.pipelinesascode - log level for pipelines-as-code-controller component
+- loglevel.pipelines-as-code-webhook - log level for pipelines-as-code-webhook component
+- loglevel.pac-watcher - log level for pipelines-as-code-watcher component
+
+You can change log level from `info` to `debug` or any other supported values. For example, set up log level `debug` for pipelines-as-code-watcher component:
+
+```bash
+$ kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[{"op": "replace", "path": "/data/loglevel.pac-watcher", "value":"debug"}]'
+```
+
+After that you need to re-scale corresponding controller:
+
+```bash
+$ kubectl scale deployment pipelines-as-code-watcher --replicas=0 -n pipelines-as-code
+$ kubectl scale deployment pipelines-as-code-watcher --replicas=1 -n pipelines-as-code
+```
+
+List zap supported log level values:
+
+```
+debug - fine-grained debugging
+info - normal logging
+warn - unexpected but non-critical errors
+error - critical errors; unexpected during normal operation
+dpanic - in debug mode, trigger a panic (crash)
+panic - trigger a panic (crash)
+fatal - immediately exit with exit status 1 (failure)
+```
+
+See more: https://knative.dev/docs/serving/observability/logging/config-logging
+
 ## Gitea
 
 Gitea is "unofficially" supported. You just need to configure Gitea the same way
