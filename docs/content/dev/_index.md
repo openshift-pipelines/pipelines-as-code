@@ -126,12 +126,15 @@ You can change log level from `info` to `debug` or any other supported values. F
 $ kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[{"op": "replace", "path": "/data/loglevel.pac-watcher", "value":"debug"}]'
 ```
 
-After that you need to re-scale corresponding controller:
+After that coresponding controller should get a new log level value.
+If you want to use the same log level for all pipelines-as-code components, then you have
+to delete `level.*` values from configmap:
 
 ```bash
-$ kubectl scale deployment pipelines-as-code-watcher --replicas=0 -n pipelines-as-code
-$ kubectl scale deployment pipelines-as-code-watcher --replicas=1 -n pipelines-as-code
+$ kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[  {"op": "remove", "path": "/data/loglevel.pac-watcher"},  {"op": "remove", "path": "/data/loglevel.pipelines-as-code-webhook"},  {"op": "remove", "path": "/data/loglevel.pipelinesascode"}]'
 ```
+
+In this case pipelines-as-code components should get common log level from `zap-logger-config` - `level` field from the json.
 
 List zap supported log level values:
 
