@@ -219,16 +219,16 @@ You can extend the scope of the Github token in two ways:
 - _Repository level configuration_: extend the Github token to a list of repositories that exist in the same namespace as the original repository
 and both admin, non-admin have access to set this configuration.
 
-### Note
+{{< hint info >}}
+when using a GitHub webhook, the scoping of the token is what you set when creating your [fine grained personal access token](https://github.blog/2022-10-18-introducing-fine-grained-personal-access-tokens-for-github/#creating-personal-access-tokens).
+{{</ hint >}}
 
-Ignore Scoping of Github token for webhook based usecases.
-
-### Prerequisite
+Prerequisite
 
 - In the `pipelines-as-code` configmap, set the `secret-github-app-token-scoped` key to `false`.
 This setting enables the scoping of the Github token to private and public repositories listed under the Global and Repository level configuration.
 
-#### Scoping the Github token using Global configuration
+### Scoping the Github token using Global configuration
 
 You can use the global configuration to use as a list of repositories used from any Repository CR in any namespaces.
 
@@ -244,7 +244,7 @@ To set the global configuration, in the `pipelines-as-code` configmap, set the `
     secret-github-app-scope-extra-repos: "owner2/project2, owner3/project3"
   ```
 
-#### Scoping the Github token using Repository level configuration
+### Scoping the Github token using Repository level configuration
 
 You can use the `Repository` custom resource to scope the generated Github token to a list of repositories.
 The repositories can be public or private, but must reside in the same namespace as the repository with which the `Repository` resource is associated.
@@ -276,7 +276,7 @@ If any of the repositories does not exist in the namespace, the scoping of the G
 failed to scope Github token as repo owner1/project1 does not exist in namespace test-repo
 ```
 
-### Scenarios for providing global and repository level configurations
+### Combining global and repository level configuration
 
 - When you provide both a `secret-github-app-scope-extra-repos` key in the `pipelines-as-code` configmap and
 a `github_app_token_scope_repos` spec configuration in the `Repository` custom resource, the token is scoped to all the repositories from both configurations, as in the following example:
