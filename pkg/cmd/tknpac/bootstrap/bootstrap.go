@@ -69,14 +69,14 @@ var successTmpl = fmt.Sprintf(`
 
 func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	if !opts.forceInstall {
-		fmt.Fprintln(opts.ioStreams.Out, "🏃 Checking if Pipelines as Code is installed.")
+		fmt.Fprintln(opts.ioStreams.Out, "=> Checking if Pipelines as Code is installed.")
 	}
 	tektonInstalled, err := checkPipelinesInstalled(run)
 	if err != nil {
 		return err
 	}
 	if !tektonInstalled {
-		return fmt.Errorf("a Tekton installation has not been found on this cluster, install Tekton first before launching this command")
+		return fmt.Errorf("no Tekton installation has been found on this kubernetes cluster, install Tekton first before launching this command")
 	}
 
 	// if we gt a ns back it means it has been detected in here so keep it as is.
@@ -94,7 +94,7 @@ func install(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	}
 
 	if !opts.forceInstall && err == nil && installed {
-		fmt.Fprintln(opts.ioStreams.Out, "👌 Pipelines as Code is already installed.")
+		fmt.Fprintln(opts.ioStreams.Out, "✓ Pipelines as Code is already installed.")
 	} else if err := installPac(ctx, run, opts); err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				return err
 			}
 			// installed but there is error for missing resources
-			if installed && err != nil && !opts.forceInstall {
+			if installed && !opts.forceInstall {
 				return err
 			}
 
