@@ -3,7 +3,10 @@ package consoleui
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
@@ -12,7 +15,12 @@ import (
 )
 
 type CustomConsole struct {
-	Info *info.Info
+	Info   *info.Info
+	params map[string]string
+}
+
+func (o *CustomConsole) SetParams(mt map[string]string) {
+	o.params = mt
 }
 
 func (o *CustomConsole) GetName() string {
@@ -29,14 +37,32 @@ func (o *CustomConsole) URL() string {
 	return o.Info.Pac.CustomConsoleURL
 }
 
+// generateURL will generate a URL from a template, trim some of the spaces and
+// \n we get from yaml
+// return the default URL if there it's not become a proper url or that it has
+// some of the templates like {{}} left
+func (o *CustomConsole) generateURL(urlTmpl string, dict map[string]string) string {
+	newurl := templates.ReplacePlaceHoldersVariables(urlTmpl, dict)
+	// trim new line because yaml parser adds new line at the end of the string
+	newurl = strings.TrimSpace(strings.TrimSuffix(newurl, "\n"))
+	if _, err := url.ParseRequestURI(newurl); err != nil {
+		return o.URL()
+	}
+	// detect if there is still some {{}} in the url
+	if keys.ParamsRe.MatchString(newurl) {
+		return o.URL()
+	}
+	return newurl
+}
+
 func (o *CustomConsole) DetailURL(pr *tektonv1.PipelineRun) string {
 	if o.Info.Pac.CustomConsolePRdetail == "" {
 		return fmt.Sprintf("https://detailurl.setting.%s.is.not.configured", settings.CustomConsolePRDetailKey)
 	}
-	return templates.ReplacePlaceHoldersVariables(o.Info.Pac.CustomConsolePRdetail, map[string]string{
-		"namespace": pr.GetNamespace(),
-		"pr":        pr.GetName(),
-	})
+	nm := o.params
+	nm["namespace"] = pr.GetNamespace()
+	nm["pr"] = pr.GetName()
+	return o.generateURL(o.Info.Pac.CustomConsolePRdetail, nm)
 }
 
 func (o *CustomConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tektonv1.PipelineRunTaskRunStatus) string {
@@ -51,13 +77,14 @@ func (o *CustomConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tekt
 			break
 		}
 	}
-	return templates.ReplacePlaceHoldersVariables(o.Info.Pac.CustomConsolePRTaskLog, map[string]string{
-		"namespace":       pr.GetNamespace(),
-		"pr":              pr.GetName(),
-		"task":            taskRunStatus.PipelineTaskName,
-		"pod":             taskRunStatus.Status.PodName,
-		"firstFailedStep": firstFailedStep,
-	})
+
+	nm := o.params
+	nm["namespace"] = pr.GetNamespace()
+	nm["pr"] = pr.GetName()
+	nm["task"] = taskRunStatus.PipelineTaskName
+	nm["pod"] = taskRunStatus.Status.PodName
+	nm["firstFailedStep"] = firstFailedStep
+	return o.generateURL(o.Info.Pac.CustomConsolePRTaskLog, nm)
 }
 
 func (o *CustomConsole) UI(_ context.Context, _ dynamic.Interface) error {

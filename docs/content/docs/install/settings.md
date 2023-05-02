@@ -186,55 +186,95 @@ A few settings are available to configure this feature:
 
    `<filename>`, `<line>`, `<error>`
 
-### Reporting logs URL to Tekton Dashboard or a custom Dashboard or Console
+### Reporting logs
 
-Pipelines as Code have the ability to automatically detect the OpenShift Console and link the logs of the tasks to the
-public URL of the OpenShift Console. If you are using the Tekton Dashboard, you can configure this feature using the
-`tekton-dashboard-url` setting. Simply set this to your dashboard URL, and the pipelinerun status and tasklog will be
-displayed there.
+  Pipeline as Code can report the logs of the tasks to the [OpenShift
+  Console](https://docs.openshift.com/container-platform/latest/web_console/web-console.html),
+  the [Tekton Dashboard](https://tekton.dev/docs/dashboard/) or if you have your
+  own give you flexibility to link to your custom Dashboard.
 
-Alternatively, you can also configure a custom console with the following settings:
+#### OpenShift Console
+
+  Pipelines as Code will automatically detect the OpenShift Console and link the logs of the tasks to the
+  public URL of the OpenShift Console.
+
+#### [Tekton Dashboard](https://tekton.dev/docs/dashboard/)
+
+  If you are using the Tekton Dashboard, you can configure this feature using the
+  `tekton-dashboard-url` setting. Simply set this to your dashboard URL, and the pipelinerun status and tasklog will be
+  displayed there.
+
+#### Custom Console (or dashboard)
+
+  Alternatively, you have the ability to configure the links to go to your custom
+  dashboard using the following settings:
 
 * `custom-console-name`
 
- Set this to the name of your custom console. example: `MyCorp Console`
+  Set this to the name of your custom console. example: `MyCorp Console`
 
 * `custom-console-url`
 
- Set this to the root URL of your custom console. example: `https://mycorp.com`
+  Set this to the root URL of your custom console. example: `https://mycorp.com`
 
 * `custom-console-url-pr-details`
 
- Set this to the URL where to view the details of the `PipelineRun`. This is
- shown when the PipelineRun is started so the user can follow execution on your
- console or when to see more details about the pipelinerun ion result.
+  Set this to the URL where to view the details of the `PipelineRun`. This is
+  shown when the PipelineRun is started so the user can follow execution on your
+  console or when to see more details about the pipelinerun on result.
 
- The URL suports templating for these value:
+  The URL suports all the standard variables as exposed on the Pipelinerun (refer to
+  the documentation on [Authoring PipelineRuns](../authoringprs)) with the added
+  variable:
 
-* `{{ namespace }}`: The target namespace where the pipelinerun is executed
-* `{{ pr }}`: The PipelineRun name.
+  * `{{ namespace }}`: The target namespace where the pipelinerun is executed
+  * `{{ pr }}`: The PipelineRun name.
+  
+  example: `https://mycorp.com/ns/{{ namespace }}/pipelinerun/{{ pr }}`
 
- example: `https://mycorp.com/ns/{{ namespace }}/pipelienrun/{{ pr }}`
+  Moreover it can access the [custom parameters](../guide/repositorycrd/#custom-parameter-expansion) from a
+  Repository CR. For example if the user has a parameter in their Repo CR like this :
 
+   ```yaml
+   [...]
+   spec:
+    params:
+      - name: custom
+        value: value
+   ```
+
+  and the global configuration setting for `custom-console-url-pr-details` is:
+  
+  `https://mycorp.com/ns/{{ namespace }}/{{ custom }}`
+  
+  the `{{ custom }}` tag in the URL is expanded as `value`.
+  
+  This let operator to add specific informations like a `UUID` about a user as
+  parameter in their repo CR and let it link to the console.
+  
 * `custom-console-url-pr-tasklog`
+  
+  Set this to the URL where to view the log of the taskrun of the `PipelineRun`. This is
+  shown when we post a result of the task breakdown to link to the logs of the taskrun.
 
- Set this to the URL where to view the log of the taskrun of the `PipelineRun`. This is
- shown when we post a result of the task breakdown to link to the logs of the taskrun.
+  The URL suports custom parameter on Repo CR and the standard parameters as
+  described in the `custom-console-url-pr-details` setting and as well those added
+  values:
 
- The URL suports templating for these value:
+  * `{{ namespace }}`: The target namespace where the pipelinerun is executed
+  * `{{ pr }}`: The PipelineRun name.
+  * `{{ task }}`: The Task name in the PR
+  * `{{ pod }}`: The Pod name of the TaskRun
+  * `{{ firstFailedStep }}`: The name of the first failed step in the TaskRun
 
-* `{{ namespace }}`: The target namespace where the pipelinerun is executed
-* `{{ pr }}`: The PipelineRun name.
-* `{{ task }}`: The Task name in the PR
-* `{{ pod }}`: The Pod name of the TaskRun
-* `{{ firstFailedStep }}`: The name of the first failed step in the TaskRun
-
- example: `https://mycorp.com/ns/{{ namespace }}/pipelinerun/{{ pr }}/logs/{{ task }}#{{ pod }}-{{ firstFailedStep }}`
+  example: `https://mycorp.com/ns/{{ namespace }}/pipelinerun/{{ pr }}/logs/{{ task }}#{{ pod }}-{{ firstFailedStep }}`
 
 ## Pipelines-As-Code Info
 
   There are a settings exposed through a config map for which any authenticated
-  user can access to know about the Pipeline as Code status.
+  user can access to know about the Pipeline as Code status. This Configmap
+  will be automatically created with the [OpenShift Pipelines Operator](https://docs.openshift.com/container-platform/latest/cicd/pipelines/understanding-openshift-pipelines.html)
+  or when installing with [tkn pac boostrap](../../guide/cli/#bootstrap) command.
 
 * `version`
 

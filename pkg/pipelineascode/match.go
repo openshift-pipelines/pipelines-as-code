@@ -164,6 +164,11 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		return nil, fmt.Errorf(msg)
 	}
 
+	// This is for bitbucket
+	if p.event.CloneURL == "" {
+		p.event.AccountID = ""
+	}
+
 	// Replace those {{var}} placeholders user has in her template to the run.Info variable
 	allTemplates := p.makeTemplate(ctx, repo, rawTemplates)
 	pipelineRuns, err := resolve.Resolve(ctx, p.run, p.logger, p.vcx, p.event, allTemplates, &resolve.Opts{

@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/customparams"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
@@ -63,6 +64,15 @@ func (p *PacRun) Run(ctx context.Context) error {
 	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit != 0 {
 		p.manager.Enable()
 	}
+
+	// set params for the console driver, only used for the custom console ones
+	cp := customparams.NewCustomParams(p.event, repo, p.run, p.k8int, p.eventEmitter)
+	maptemplate, err := cp.GetParams(ctx)
+	if err != nil {
+		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "ParamsError",
+			fmt.Sprintf("error processing repository CR custom params: %s", err.Error()))
+	}
+	p.run.Clients.ConsoleUI.SetParams(maptemplate)
 
 	var wg sync.WaitGroup
 	for _, match := range matchedPRs {
