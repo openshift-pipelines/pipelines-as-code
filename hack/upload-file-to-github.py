@@ -133,11 +133,22 @@ def upload_to_github(args):
     last_commit_sha = jeez["object"]["sha"]
 
     for entry in args.filename:
-        filename, dest = entry.split(":")
-        print(f"Upload file {filename} to {dest} based on {last_commit_sha}")
+        left, dest = entry.split(":")
 
-        # pylint: disable=consider-using-with
-        base64content = base64.b64encode(open(filename, "rb").read())
+        content: str = ""
+        if os.path.exists(left):
+            with open(left, "r", encoding="utf-8") as f:
+                content: str = f.read()
+            print(
+                f"Uploading file {left} to destination {dest} based on {last_commit_sha}"
+            )
+        else:
+            content: str = left.strip()
+            print(
+                f"Setting value {left} into the destionation {dest} based on {last_commit_sha}"
+            )
+
+        base64content = base64.b64encode(content)
         _, jeez = github_request(
             args.token,
             "POST",
