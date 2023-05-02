@@ -108,11 +108,11 @@ will fetch the task directly from that remote URL :
   pipelinesascode.tekton.dev/task: "[https://remote.url/task.yaml]"
 ```
 
-### Remote HTTP URL from a private Github repository
+### Remote HTTP URL from a private GitHub repository
 
 If you are using `GitHub` and If the remote task URL uses the same host as where
 the repo CRD is, PAC will use the  GitHub token and fetch the URL using the
-Github API.
+GitHub API.
 
 For example if you have a repo URL looking like this :
 
@@ -122,7 +122,7 @@ and the remote HTTP URLs is a referenced GitHub "blob" URL:
 
 <https://github.com/organization/repository/blob/mainbranch/path/file>
 
-or a Github rawURL (rawurl reference is only working on public GitHub):
+or a GitHub rawURL (rawurl reference is only working on public GitHub):
 
 <https://raw.githubusercontent.com/organization/repository/mainbranch/path/file>
 
@@ -130,7 +130,7 @@ It will be able to fetch the files from that private repository with the GitHub 
 
 This allows you to reference a task or a pipeline from a private repository easily.
 
-Github app token are scoped to the owner or organization where the repository is located.
+GitHub app token are scoped to the owner or organization where the repository is located.
 If you are using the GitHub webhook method you are able to fetch any private or
 public repositories on any organization where the personal token is allowed.
 

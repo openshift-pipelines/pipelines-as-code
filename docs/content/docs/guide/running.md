@@ -36,10 +36,10 @@ another user that does meet these requirements can comment `/ok-to-test` on the 
 to run the PipelineRun.
 
 {{< hint info >}}
-If you are using the Github Apps and have installed it on an Organization,
+If you are using the GitHub Apps and have installed it on an Organization,
 Pipelines as Code will only be initiated when a Repo CR matching one of the
 repositories in a URL is detected on a repository belonging to the organization
-where the Github App has been installed.
+where the GitHub App has been installed.
 Otherwise, Pipelines as Code will not be triggered.
 {{< /hint >}}
 
@@ -137,6 +137,6 @@ roses are red, violets are blue. why to run the pipeline when the infra is down.
 /cancel <pipelinerun-name>
 ```
 
-On Github App the status of the Pipeline will be set to `cancelled`.
+On GitHub App the status of the Pipeline will be set to `cancelled`.
 
 ![pipelinerun canceled](/images/pr-cancel.png)

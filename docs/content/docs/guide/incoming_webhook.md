@@ -104,7 +104,7 @@ task can be added directly to the Pipeline, or the Repo CRD can be inspected
 using the tkn pac CLI. The [statuses](/docs/guide/statuses) documentation
 provides guidance on how to achieve this.
 
-### Webhook methods (Github Webhook, Gitlab, Bitbucket etc..)
+### Webhook methods (GitHub Webhook, Gitlab, Bitbucket etc..)
 
 Here is an example of a Repository CRD matching the target branch main:
 

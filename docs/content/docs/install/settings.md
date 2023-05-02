@@ -21,7 +21,7 @@ There is a few things you can configure through the config map
 
 * `secret-github-app-token-scoped`
 
-  When using a Github app, `Pipelines as Code` will generate a temporary
+  When using a GitHub app, `Pipelines as Code` will generate a temporary
   installation token for every allowed event coming through the controller.
 
   The generated token will be scoped to the repository from the repository where
@@ -112,7 +112,7 @@ There is a few things you can configure through the config map
 
 {{< hint info >}}
  If you have a GitHub App already setup then verify if the `repository` event is
- subscribed into your Github App setting.
+ subscribed into your GitHub App setting.
 {{< /hint >}}
 
 * `auto-configure-repo-namespace-template`
@@ -136,7 +136,7 @@ There is a few things you can configure through the config map
 Pipelines as Code detect if the PipelineRun has failed and show a snippet of
 the last few lines of the error.
 
-On Github Aopps, It also try to detect and match the error messages in the container logs and expose them as annotations on Pull
+On GitHub Aopps, It also try to detect and match the error messages in the container logs and expose them as annotations on Pull
 Request.
 
 A few settings are available to configure this feature:
@@ -158,7 +158,7 @@ A few settings are available to configure this feature:
   Enable or disable the inspection of the container logs to detect error message
   and expose them as annotations on Pull Request.
 
-  Only Github apps is supported.
+  Only GitHub apps is supported.
 
 * `error-detection-max-number-of-lines`
 
