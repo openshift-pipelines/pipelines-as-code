@@ -28,18 +28,19 @@ const (
 var providerTargets = []string{"github-app", "github-enterprise-app"}
 
 type bootstrapOpts struct {
-	providerType      string
-	installNightly    bool
-	skipInstall       bool
-	skipGithubAPP     bool
-	forceInstall      bool
-	webserverPort     int
-	cliOpts           *cli.PacCliOpts
-	ioStreams         *cli.IOStreams
-	targetNamespace   string
-	autoDetectedRoute bool
-	forwarderURL      string
-	dashboardURL      string
+	forceInstallGosmee bool
+	providerType       string
+	installNightly     bool
+	skipInstall        bool
+	skipGithubAPP      bool
+	forceInstall       bool
+	webserverPort      int
+	cliOpts            *cli.PacCliOpts
+	ioStreams          *cli.IOStreams
+	targetNamespace    string
+	autoDetectedRoute  bool
+	forwarderURL       string
+	dashboardURL       string
 
 	RouteName              string
 	GithubAPIURL           string
@@ -173,6 +174,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	addGithubAppFlag(cmd, opts)
 
 	cmd.PersistentFlags().BoolVar(&opts.forceInstall, "force-install", false, "whether we should force pac install even if it's already installed")
+	cmd.PersistentFlags().BoolVar(&opts.forceInstallGosmee, "force-gosmee", false, "force install gosmee on OpenShift if your cluster is not reachable from the internet")
 	cmd.PersistentFlags().BoolVar(&opts.skipInstall, "skip-install", false, "skip Pipelines as Code installation")
 	cmd.PersistentFlags().BoolVar(&opts.skipGithubAPP, "skip-github-app", false, "skip creating github application")
 

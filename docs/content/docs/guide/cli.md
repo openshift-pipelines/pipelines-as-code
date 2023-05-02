@@ -110,14 +110,23 @@ Bootstrap detect the OpenShift Route automatically associated to the Pipelines
 as code controller service and uses this as endpoint for the created Github
 application.
 
-On Kubernetes, tkn-pac will attempt to detect the tekton-dashboard Ingress URL.
+You can use the `--route-url` flag to replace the OpenShift Route URL or specify
+a custom URL on an
+[Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) in a
+Kubernetes cluster.
 
-It will also ask you if you want to install a webhook forwarder called
-[gosmee](https://github.com/chmouel/gosmee) on <https://hook.pipelinesascode.com>.
-This allows you to connect the Pipelines as Code controller to GitHub even if
-it's is not directly accessible from the internet.
+The OpenShift console is automaticaly detected, on Kubernetes, `tkn-pac` will
+attempt to detect the tekton-dashboard Ingress URL and let you choose to use it
+as the endpoint for the created Github application.
 
-You can override the URL with the flag `--route-url`
+If your cluster is not accessible to the internet, Pipelines as Code provides an
+option to install a webhook forwarder called
+[gosmee](https://github.com/chmouel/gosmee). This forwarder enables connectivity
+between the Pipelines as Code controller and GitHub without requiring an
+internet connection. In this scenario, it will set up a forwarding URL on
+<https://hook.pipelinesascode.com> and set it up on Github. For OpenShift, it
+will not prompt you unless you explicitly specify the `--force-gosmee` flag
+(which can be useful if you are running [OpenShift Local](https://developers.redhat.com/products/openshift-local/overview) for instance).
 
 {{< /details >}}
 
