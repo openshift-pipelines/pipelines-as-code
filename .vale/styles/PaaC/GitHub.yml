@@ -1,0 +1,7 @@
+extends: substitution
+message: Use '%s' instead of '%s'
+level: error
+scoope: text
+nonword: false
+swap:
+  "Github": GitHub
