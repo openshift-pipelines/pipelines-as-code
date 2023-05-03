@@ -110,7 +110,7 @@ update-golden: ./vendor ## run unit tests (updating golden files)
 generated: update-golden fumpt ## generate all files that needs to be generated
 
 .PHONY: html-coverage
-html-coverage: ./vendor ## generate html coverage
+html-coverage: ## generate html coverage
 	@mkdir -p tmp
 	@go test -coverprofile=tmp/c.out ./.../ && go tool cover -html=tmp/c.out
 
