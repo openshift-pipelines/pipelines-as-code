@@ -88,25 +88,28 @@ data:
   # Add extra IPS (ie: 127.0.0.1) or networks (127.0.0.0/16) separated by commas.
   bitbucket-cloud-additional-source-ip: ""
 
-  # max-keep-run-upper-limit defines the upper limit for max-keep-run annotation value which a user can set on
-  # pipelineRun. the value set on annotation should be less than or equal to the upper limit otherwise
-  # the upper limit will be used while cleaning up
+  # max-keep-run-upper-limit defines the upper limit for max-keep-run annotation
+  # value which a user can set on pipelineRun. the value set on annotation
+  # should be less than or equal to the upper limit otherwise the upper limit
+  # will be used while cleaning up
   max-keep-run-upper-limit: ""
 
   # if defined then applies to all pipelineRun who doesn't have max-keep-runs annotation
   default-max-keep-runs: ""
 
-  # Whether to auto configure newly created repositories, this will create a new namespace
-  # and repository CR, supported only with GitHub App
+  # Whether to auto configure newly created repositories, this will create a new
+  # namespace and repository CR, supported only with GitHub App
   auto-configure-new-github-repo: "false"
 
-  # add a template to generate name for namespace for your auto configured github repo
-  # supported fields are repo_owner, repo_name
-  # eg. if defined as `{{repo_owner}}-{{repo_name}}-ci`, then namespace generated for repository
+  # add a template to generate name for namespace for your auto configured
+  # github repo supported fields are repo_owner, repo_name eg. if defined as
+  # `{{repo_owner}}-{{repo_name}}-ci`, then namespace generated for repository
   # https://github.com/owner/repo will be `owner-repo-ci`
   auto-configure-repo-namespace-template: ""
 
-  # Configure a custom console here
+  # Configure a custom console here, the driver support custom parameters from
+  # Repo CR along a few other template variable, see documentation for more
+  # details
   #
   # custom-console-name: Console Name
   # custom-console-url: https://url
