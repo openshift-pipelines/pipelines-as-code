@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# See https://pipelinesascode.com/docs/install/settings/ for the complete
+# documentation of all the settings.
 
 apiVersion: v1
 data:
