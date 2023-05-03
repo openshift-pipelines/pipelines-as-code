@@ -106,6 +106,7 @@ spec:
           steps:
             - image: registry.access.redhat.com/ubi9/python-39
               name: release
+              workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
                   valueFrom:
@@ -115,11 +116,11 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
+                ssa=$(git rev-parse --short HEAD)
                 bash hack/generate-releaseyaml.sh > release.k8s.yaml
                 env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > release.yaml
                 set +x # Do not show TOKEN in logs
-                python hack/upload-file-to-github.py --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" --from-ref refs/heads/main --to-ref refs/heads/nightly --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} -f release.k8s.yaml:release.k8s.yaml -f release.yaml:release.yaml -f nightly:docs/content/VERSION
-              workingDir: $(workspaces.source.path)
+                python hack/upload-file-to-github.py --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" --from-ref refs/heads/main --to-ref refs/heads/nightly --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} -f release.k8s.yaml:release.k8s.yaml -f release.yaml:release.yaml -f nightly:docs/content/VERSION -f "nightly-$ssa-$(date +%Y%m%d):pkg/params/version/version.txt"
           workspaces:
             - name: source
         workspaces:

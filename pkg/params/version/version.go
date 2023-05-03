@@ -1,4 +1,6 @@
 package version
 
-// Version is dynamically set by the toolchain or overridden by the Makefile.
-var Version = "nightly"
+import _ "embed"
+
+//go:embed version.txt
+var Version string
