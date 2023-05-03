@@ -148,7 +148,7 @@ def upload_to_github(args):
                 f"Setting value {left} into the destionation {dest} based on {last_commit_sha}"
             )
 
-        base64content = base64.b64encode(content)
+        base64content = base64.b64encode(content.encode())
         _, jeez = github_request(
             args.token,
             "POST",
