@@ -102,7 +102,7 @@ lint-py: ${PY_FILES} ## runs pylint on all python files
 	@pylint $(PY_FILES)
 
 .PHONY: update-golden
-update-golden: ./vendor ## run unit tests (updating golden files)
+update-golden: ## run unit tests (updating golden files)
 	@echo "Running unit tests to update golden files..."
 	@./hack/update-golden.sh
 
