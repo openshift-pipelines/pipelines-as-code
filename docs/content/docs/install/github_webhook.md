@@ -183,7 +183,7 @@ $ tkn pac create repo
 
 ## Add webhook secret
 
-* For an existing `Repository`, if webhook secret has been deleted (or you want to add a new webhook to project settings) for Github,
+* For an existing `Repository`, if webhook secret has been deleted (or you want to add a new webhook to project settings) for GitHub,
   use `tkn pac webhook add` command to add a webhook to project repository settings, as well as update the `webhook.secret`
   key in the existing `Secret` object without updating `Repository`.
 

@@ -107,7 +107,7 @@ release. If you add the flag `--nightly` it will install the latest code ci
 release.
 
 Bootstrap detect the OpenShift Route automatically associated to the Pipelines
-as code controller service and uses this as endpoint for the created Github
+as code controller service and uses this as endpoint for the created GitHub
 application.
 
 You can use the `--route-url` flag to replace the OpenShift Route URL or specify
@@ -124,7 +124,7 @@ option to install a webhook forwarder called
 [gosmee](https://github.com/chmouel/gosmee). This forwarder enables connectivity
 between the Pipelines as Code controller and GitHub without requiring an
 internet connection. In this scenario, it will set up a forwarding URL on
-<https://hook.pipelinesascode.com> and set it up on Github. For OpenShift, it
+<https://hook.pipelinesascode.com> and set it up on GitHub. For OpenShift, it
 will not prompt you unless you explicitly specify the `--force-gosmee` flag
 (which can be useful if you are running [OpenShift Local](https://developers.redhat.com/products/openshift-local/overview) for instance).
 
@@ -313,7 +313,7 @@ There is no clean-up of the secret after the run.
 
 {{< details "tkn pac webhook add" >}}
 
-### Configure and create webhook secret for Github, Gitlab and Bitbucket Cloud provider
+### Configure and create webhook secret for GitHub, Gitlab and Bitbucket Cloud provider
 
 `tkn-pac webhook add [-n namespace]`: Allows you to add new webhook secret for a given provider and update the value of the new webhook secret in the existing `Secret` object used to interact with Pipelines as Code
 
