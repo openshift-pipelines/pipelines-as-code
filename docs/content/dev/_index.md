@@ -62,7 +62,7 @@ override it you can set the `PAC_DIRS` environment variable.
 
 ## Configuring debug logging
 
-pipeline-as-code uses ConfigMap named `pac-config-logging` in the same namespace (`pipelines-as-code` by default) with controllers. To get configmap use the command:
+pipeline-as-code uses the ConfigMap named `pac-config-logging` in the same namespace (`pipelines-as-code` by default) as the controllers. To get the ConfigMap use the following command:
 
 ```bash
 $ kubectl get configmap pac-config-logging -n pipelines-as-code
@@ -71,7 +71,7 @@ NAME                 DATA   AGE
 pac-config-logging   4      9m44s
 ```
 
-To retrieve configmap content:
+To retrieve the content of the ConfigMap:
 
 ```bash
 $ kubectl get configmap pac-config-logging -n pipelines-as-code -o yaml
@@ -115,29 +115,28 @@ data:
     }
 ```
 
-Controllers log level defined in the `loglevel.*` fields:
+The `loglevel.*` fields define the log level for the controllers:
 
-- loglevel.pipelinesascode - log level for pipelines-as-code-controller component
-- loglevel.pipelines-as-code-webhook - log level for pipelines-as-code-webhook component
-- loglevel.pac-watcher - log level for pipelines-as-code-watcher component
+- loglevel.pipelinesascode - the log level for the pipelines-as-code-controller component
+- loglevel.pipelines-as-code-webhook - the log level for the pipelines-as-code-webhook component
+- loglevel.pac-watcher - the log level for the pipelines-as-code-watcher component
 
-You can change log level from `info` to `debug` or any other supported values. For example, set up log level `debug` for pipelines-as-code-watcher component:
+You can change the log level from `info` to `debug` or any other supported values. For example, select the `debug` log level for the pipelines-as-code-watcher component:
 
 ```bash
 kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[{"op": "replace", "path": "/data/loglevel.pac-watcher", "value":"debug"}]'
 ```
 
-After that coresponding controller should get a new log level value.
-If you want to use the same log level for all pipelines-as-code components, then you have
-to delete `level.*` values from configmap:
+After this command, the controller gets a new log level value.
+If you want to use the same log level for all pipelines-as-code components, delete `level.*` values from configmap:
 
 ```bash
 kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[  {"op": "remove", "path": "/data/loglevel.pac-watcher"},  {"op": "remove", "path": "/data/loglevel.pipelines-as-code-webhook"},  {"op": "remove", "path": "/data/loglevel.pipelinesascode"}]'
 ```
 
-In this case pipelines-as-code components should get common log level from `zap-logger-config` - `level` field from the json.
+In this case, all pipelines-as-code components get a common log level from `zap-logger-config` - `level` field from the json.
 
-List zap supported log level values:
+`zap-logger-config` supports the following log levels:
 
 - debug - fine-grained debugging
 - info - normal logging
