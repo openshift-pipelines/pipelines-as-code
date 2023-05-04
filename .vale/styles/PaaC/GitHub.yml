@@ -1,7 +1,7 @@
 extends: substitution
 message: Use '%s' instead of '%s'
 level: error
-scoope: text
+scope: text
 nonword: false
 swap:
   "Github": GitHub
