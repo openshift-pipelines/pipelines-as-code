@@ -78,6 +78,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.URL = e.PulRequest.ToRef.Repository.Links.Self[0].Href
 		processedEvent.BaseBranch = e.PulRequest.ToRef.DisplayID
 		processedEvent.HeadBranch = e.PulRequest.FromRef.DisplayID
+		processedEvent.BaseURL = e.PulRequest.ToRef.Repository.Links.Self[0].Href
+		processedEvent.HeadURL = e.PulRequest.FromRef.Repository.Links.Self[0].Href
 		processedEvent.AccountID = fmt.Sprintf("%d", e.Actor.ID)
 		processedEvent.Sender = e.Actor.Name
 		for _, value := range e.PulRequest.FromRef.Repository.Links.Clone {
@@ -95,6 +97,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.URL = e.Repository.Links.Self[0].Href
 		processedEvent.BaseBranch = e.Changes[0].RefID
 		processedEvent.HeadBranch = e.Changes[0].RefID
+		processedEvent.BaseURL = e.Repository.Links.Self[0].Href
+		processedEvent.HeadURL = e.Repository.Links.Self[0].Href
 		processedEvent.AccountID = fmt.Sprintf("%d", e.Actor.ID)
 		processedEvent.Sender = e.Actor.Name
 		// Should we care about clone via SSH or just only do HTTP clones?

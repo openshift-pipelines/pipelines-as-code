@@ -43,6 +43,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.SHATitle = gitEvent.ObjectAttributes.Title
 		processedEvent.HeadBranch = gitEvent.ObjectAttributes.SourceBranch
 		processedEvent.BaseBranch = gitEvent.ObjectAttributes.TargetBranch
+		processedEvent.HeadURL = gitEvent.ObjectAttributes.Source.WebURL
+		processedEvent.BaseURL = gitEvent.ObjectAttributes.Target.WebURL
 		processedEvent.PullRequestNumber = gitEvent.ObjectAttributes.IID
 		processedEvent.PullRequestTitle = gitEvent.ObjectAttributes.Title
 		v.targetProjectID = gitEvent.Project.ID
@@ -67,6 +69,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.SHATitle = gitEvent.Commits[0].Title
 		processedEvent.HeadBranch = gitEvent.Ref
 		processedEvent.BaseBranch = gitEvent.Ref
+		processedEvent.HeadURL = gitEvent.Project.WebURL
+		processedEvent.BaseURL = processedEvent.HeadURL
 		processedEvent.TriggerTarget = "push"
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
@@ -86,6 +90,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.SHATitle = gitEvent.MergeRequest.LastCommit.Message
 		processedEvent.BaseBranch = gitEvent.MergeRequest.TargetBranch
 		processedEvent.HeadBranch = gitEvent.MergeRequest.SourceBranch
+		processedEvent.BaseURL = gitEvent.MergeRequest.Target.WebURL
+		processedEvent.HeadURL = gitEvent.MergeRequest.Source.WebURL
 		// if it is a /test or /retest comment with pipelinerun name figure out the pipelineRun name
 		if provider.IsTestRetestComment(gitEvent.ObjectAttributes.Note) {
 			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(gitEvent.ObjectAttributes.Note)

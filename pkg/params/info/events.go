@@ -27,6 +27,8 @@ type Event struct {
 	BaseBranch        string // branch against where we are making the PR
 	DefaultBranch     string // master/main branches to know where things like the OWNERS file is located.
 	HeadBranch        string // branch from where our SHA get tested
+	BaseURL           string // url against where we are making the PR
+	HeadURL           string // url from where our SHA get tested
 	SHA               string
 	Sender            string
 	URL               string // WEB url not the git URL, which would match to the repo.spec

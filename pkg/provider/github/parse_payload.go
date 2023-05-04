@@ -243,6 +243,8 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.BaseBranch = gitEvent.GetRef()
 		processedEvent.EventType = event.TriggerTarget
 		processedEvent.HeadBranch = processedEvent.BaseBranch // in push events Head Branch is the same as Basebranch
+		processedEvent.BaseURL = gitEvent.GetRepo().GetHTMLURL()
+		processedEvent.HeadURL = processedEvent.BaseURL // in push events Head URL is the same as BaseURL
 	case *github.PullRequestEvent:
 		processedEvent = info.NewEvent()
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
@@ -252,6 +254,8 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.URL = gitEvent.GetRepo().GetHTMLURL()
 		processedEvent.BaseBranch = gitEvent.GetPullRequest().Base.GetRef()
 		processedEvent.HeadBranch = gitEvent.GetPullRequest().Head.GetRef()
+		processedEvent.BaseURL = gitEvent.GetPullRequest().Base.GetRepo().GetHTMLURL()
+		processedEvent.HeadURL = gitEvent.GetPullRequest().Head.GetRepo().GetHTMLURL()
 		processedEvent.Sender = gitEvent.GetPullRequest().GetUser().GetLogin()
 		processedEvent.EventType = event.EventType
 		processedEvent.PullRequestNumber = gitEvent.GetPullRequest().GetNumber()
@@ -278,9 +282,11 @@ func (v *Provider) handleReRequestEvent(ctx context.Context, event *github.Check
 	runevent.DefaultBranch = event.GetRepo().GetDefaultBranch()
 	runevent.SHA = event.GetCheckRun().GetCheckSuite().GetHeadSHA()
 	runevent.HeadBranch = event.GetCheckRun().GetCheckSuite().GetHeadBranch()
+	runevent.HeadURL = event.GetCheckRun().GetCheckSuite().GetRepository().GetHTMLURL()
 	// If we don't have a pull_request in this it probably mean a push
 	if len(event.GetCheckRun().GetCheckSuite().PullRequests) == 0 {
 		runevent.BaseBranch = runevent.HeadBranch
+		runevent.BaseURL = runevent.HeadURL
 		runevent.EventType = "push"
 		// we allow the rerequest user here, not the push user, i guess it's
 		// fine because you can't do a rereq without being a github owner?
@@ -301,10 +307,12 @@ func (v *Provider) handleCheckSuites(ctx context.Context, event *github.CheckSui
 	runevent.DefaultBranch = event.GetRepo().GetDefaultBranch()
 	runevent.SHA = event.GetCheckSuite().GetHeadSHA()
 	runevent.HeadBranch = event.GetCheckSuite().GetHeadBranch()
+	runevent.HeadURL = event.GetCheckSuite().GetRepository().GetHTMLURL()
 	// If we don't have a pull_request in this it probably mean a push
 	// we are not able to know which
 	if len(event.GetCheckSuite().PullRequests) == 0 {
 		runevent.BaseBranch = runevent.HeadBranch
+		runevent.BaseURL = runevent.HeadURL
 		runevent.EventType = "push"
 		runevent.TriggerTarget = "push"
 		// we allow the rerequest user here, not the push user, i guess it's
