@@ -12,5 +12,6 @@ import "strings"
 // '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')
 func CleanValueKubernetes(s string) string {
 	replasoeur := strings.NewReplacer("/", "-", " ", "_", "[", "__", "]", "__")
-	return replasoeur.Replace(strings.TrimRight(s, " -_[]"))
+	replaced := replasoeur.Replace(strings.TrimRight(s, " -_[]"))
+	return strings.TrimSpace(replaced)
 }

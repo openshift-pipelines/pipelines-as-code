@@ -28,6 +28,11 @@ func TestK8LabelsCleanup(t *testing.T) {
 			str:  "MBAPPEvsMESSI--",
 			want: "MBAPPEvsMESSI",
 		},
+		{
+			name: "remove new line",
+			str:  "foo\n",
+			want: "foo",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

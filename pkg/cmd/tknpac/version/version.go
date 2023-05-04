@@ -2,6 +2,7 @@ package version
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
@@ -14,7 +15,7 @@ func Command(ioStreams *cli.IOStreams) *cobra.Command {
 		Use:   "version",
 		Short: fmt.Sprintf("Print %s pac version", settings.TknBinaryName),
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Fprintln(ioStreams.Out, version.Version)
+			fmt.Fprintln(ioStreams.Out, strings.TrimSpace(version.Version))
 		},
 		Annotations: map[string]string{
 			"commandType": "main",
