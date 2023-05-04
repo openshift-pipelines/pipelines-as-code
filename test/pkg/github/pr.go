@@ -121,7 +121,8 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 		yamlEntries[filepath.Join(".tekton", filepath.Base(v))] = v
 	}
 
-	entries, err := payload.GetEntries(yamlEntries, targetNS, options.MainBranch, options.PullRequestEvent, map[string]string{})
+	entries, err := payload.GetEntries(yamlEntries, targetNS, options.MainBranch, options.PullRequestEvent,
+		map[string]string{"TargetURL": repoinfo.GetHTMLURL(), "SourceURL": repoinfo.GetHTMLURL()})
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s",

@@ -6,7 +6,7 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
     pipelinesascode.tekton.dev/on-cel-expression: |
-      target_branch == "\\ .TargetBranch //" && event == "\\ .TargetEvent //"
+      target_branch == "\\ .TargetBranch //" && event == "\\ .TargetEvent //" && target_url == "\\ .TargetURL //" && source_url == "\\ .SourceURL //"
 spec:
   pipelineSpec:
     tasks:

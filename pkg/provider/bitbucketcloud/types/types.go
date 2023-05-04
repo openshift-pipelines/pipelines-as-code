@@ -29,7 +29,9 @@ type Branch struct {
 }
 
 type Destination struct {
-	Branch Branch `json:"branch"`
+	Branch     Branch     `json:"branch"`
+	Commit     Commit     `json:"commit"`
+	Repository Repository `json:"repository"`
 }
 
 type Commit struct {
@@ -40,8 +42,9 @@ type Commit struct {
 }
 
 type Source struct {
-	Branch Branch `json:"branch"`
-	Commit Commit `json:"commit"`
+	Branch     Branch     `json:"branch"`
+	Commit     Commit     `json:"commit"`
+	Repository Repository `json:"repository"`
 }
 
 type PullRequest struct {

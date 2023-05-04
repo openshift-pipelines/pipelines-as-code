@@ -296,6 +296,11 @@ func MakePREvent(event *info.Event, comment string) *types.PullRequestEvent {
 						Clone []bbv1.CloneLink "json:\"clone,omitempty\""
 						Self  []bbv1.SelfLink  "json:\"self,omitempty\""
 					}{
+						Self: []bbv1.SelfLink{
+							{
+								Href: event.HeadURL,
+							},
+						},
 						Clone: []bbv1.CloneLink{
 							{
 								Name: "http",
