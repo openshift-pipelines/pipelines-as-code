@@ -26,7 +26,7 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1.PipelineRu
 		// These keys are used in LabelSelector query so we are keeping in Labels as it is.
 		// But adding same keys to Annotations so UI/CLI can fetch the actual value instead of modified value
 		"app.kubernetes.io/managed-by": pipelinesascode.GroupName,
-		"app.kubernetes.io/version":    version.Version,
+		"app.kubernetes.io/version":    formatting.CleanValueKubernetes(version.Version),
 		keys.URLOrg:                    formatting.CleanValueKubernetes(event.Organization),
 		keys.URLRepository:             formatting.CleanValueKubernetes(event.Repository),
 		keys.SHA:                       formatting.CleanValueKubernetes(event.SHA),

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -66,7 +67,7 @@ func (l *listener) Start(ctx context.Context) error {
 	if envAdapterPort != "" {
 		adapterPort = envAdapterPort
 	}
-	l.logger.Infof("Starting Pipelines as Code version: %s", version.Version)
+	l.logger.Infof("Starting Pipelines as Code version: %s", strings.TrimSpace(version.Version))
 
 	mux := http.NewServeMux()
 
