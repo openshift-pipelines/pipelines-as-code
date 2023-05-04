@@ -116,6 +116,7 @@ data:
 ```
 
 Controllers log level defined in the `loglevel.*` fields:
+
 - loglevel.pipelinesascode - log level for pipelines-as-code-controller component
 - loglevel.pipelines-as-code-webhook - log level for pipelines-as-code-webhook component
 - loglevel.pac-watcher - log level for pipelines-as-code-watcher component
@@ -123,7 +124,7 @@ Controllers log level defined in the `loglevel.*` fields:
 You can change log level from `info` to `debug` or any other supported values. For example, set up log level `debug` for pipelines-as-code-watcher component:
 
 ```bash
-$ kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[{"op": "replace", "path": "/data/loglevel.pac-watcher", "value":"debug"}]'
+kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[{"op": "replace", "path": "/data/loglevel.pac-watcher", "value":"debug"}]'
 ```
 
 After that coresponding controller should get a new log level value.
@@ -131,24 +132,22 @@ If you want to use the same log level for all pipelines-as-code components, then
 to delete `level.*` values from configmap:
 
 ```bash
-$ kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[  {"op": "remove", "path": "/data/loglevel.pac-watcher"},  {"op": "remove", "path": "/data/loglevel.pipelines-as-code-webhook"},  {"op": "remove", "path": "/data/loglevel.pipelinesascode"}]'
+kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[  {"op": "remove", "path": "/data/loglevel.pac-watcher"},  {"op": "remove", "path": "/data/loglevel.pipelines-as-code-webhook"},  {"op": "remove", "path": "/data/loglevel.pipelinesascode"}]'
 ```
 
 In this case pipelines-as-code components should get common log level from `zap-logger-config` - `level` field from the json.
 
 List zap supported log level values:
 
-```
-debug - fine-grained debugging
-info - normal logging
-warn - unexpected but non-critical errors
-error - critical errors; unexpected during normal operation
-dpanic - in debug mode, trigger a panic (crash)
-panic - trigger a panic (crash)
-fatal - immediately exit with exit status 1 (failure)
-```
+- debug - fine-grained debugging
+- info - normal logging
+- warn - unexpected but non-critical errors
+- error - critical errors; unexpected during normal operation
+- dpanic - in debug mode, trigger a panic (crash)
+- panic - trigger a panic (crash)
+- fatal - immediately exit with exit status 1 (failure)
 
-See more: https://knative.dev/docs/serving/observability/logging/config-logging
+See more: <https://knative.dev/docs/serving/observability/logging/config-logging>
 
 ## Gitea
 
