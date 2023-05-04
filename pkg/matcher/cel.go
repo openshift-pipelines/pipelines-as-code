@@ -43,6 +43,8 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 		"event_title":   eventTitle,
 		"target_branch": event.BaseBranch,
 		"source_branch": event.HeadBranch,
+		"target_url":    event.BaseURL,
+		"source_url":    event.HeadURL,
 	}
 
 	env, err := cel.NewEnv(
@@ -51,7 +53,9 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 			decls.NewVar("event", decls.String),
 			decls.NewVar("event_title", decls.String),
 			decls.NewVar("target_branch", decls.String),
-			decls.NewVar("source_branch", decls.String)))
+			decls.NewVar("source_branch", decls.String),
+			decls.NewVar("target_url", decls.String),
+			decls.NewVar("source_url", decls.String)))
 	if err != nil {
 		return nil, err
 	}

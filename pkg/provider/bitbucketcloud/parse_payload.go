@@ -155,6 +155,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.URL = e.Repository.Links.HTML.HRef
 		processedEvent.BaseBranch = e.PullRequest.Destination.Branch.Name
 		processedEvent.HeadBranch = e.PullRequest.Source.Branch.Name
+		processedEvent.BaseURL = e.PullRequest.Destination.Repository.Links.HTML.HRef
+		processedEvent.HeadURL = e.PullRequest.Source.Repository.Links.HTML.HRef
 		processedEvent.AccountID = e.PullRequest.Author.AccountID
 		processedEvent.Sender = e.PullRequest.Author.Nickname
 		processedEvent.PullRequestNumber = e.PullRequest.ID
@@ -168,6 +170,8 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.URL = e.Repository.Links.HTML.HRef
 		processedEvent.BaseBranch = e.Push.Changes[0].New.Name
 		processedEvent.HeadBranch = e.Push.Changes[0].Old.Name
+		processedEvent.BaseURL = e.Push.Changes[0].New.Target.Links.HTML.HRef
+		processedEvent.HeadURL = e.Push.Changes[0].Old.Target.Links.HTML.HRef
 		processedEvent.AccountID = e.Actor.AccountID
 		processedEvent.Sender = e.Actor.Nickname
 	default:
