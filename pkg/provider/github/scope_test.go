@@ -72,14 +72,15 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 		},
 	}
 	tests := []struct {
-		name                  string
-		tData                 testclient.Data
-		envs                  map[string]string
-		repository            *v1alpha1.Repository
-		repoListsByGlobalConf string
-		wantError             string
-		wantToken             string
-		repositoryID          []int64
+		name                     string
+		tData                    testclient.Data
+		envs                     map[string]string
+		repository               *v1alpha1.Repository
+		repoListsByGlobalConf    string
+		secretGHAppRepoScopedKey bool
+		wantError                string
+		wantToken                string
+		repositoryID             []int64
 	}{
 		{
 			name: "repos are listed under global configuration",
@@ -137,7 +138,7 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 				"SYSTEM_NAMESPACE": testNamespace.Name,
 			},
 			repoListsByGlobalConf: "",
-			wantError:             "failed to scope Github token as repo owner2/repo2 does not exist in namespace pipelinesascode",
+			wantError:             "failed to scope GitHub token as repo owner2/repo2 does not exist in namespace pipelinesascode",
 			wantToken:             "",
 		},
 		{
@@ -158,6 +159,24 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 			wantToken:             "123abcdfrf",
 			repositoryID:          []int64{789, 10112, 112233},
 		},
+		{
+			name: "failed to scope GitHub token as repo scoped key secret-github-app-token-scoped is enabled",
+			tData: testclient.Data{
+				Namespaces: []*corev1.Namespace{testNamespace},
+				Secret:     []*corev1.Secret{validSecret},
+				Repositories: []*v1alpha1.Repository{
+					repoData, repoData1,
+				},
+			},
+			envs: map[string]string{
+				"SYSTEM_NAMESPACE": testNamespace.Name,
+			},
+			repository:               repoData,
+			secretGHAppRepoScopedKey: true,
+			wantError: "failed to scope GitHub token as repo scoped key secret-github-app-token-scoped is enabled. " +
+				"Hint: update key secret-github-app-token-scoped from pipelines-as-code configmap to false",
+			wantToken: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -174,6 +193,7 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 					Pac: &info.PacOpts{
 						Settings: &settings.Settings{
 							SecretGhAppTokenScopedExtraRepos: tt.repoListsByGlobalConf,
+							SecretGHAppRepoScoped:            tt.secretGHAppRepoScopedKey,
 						},
 					},
 				},
