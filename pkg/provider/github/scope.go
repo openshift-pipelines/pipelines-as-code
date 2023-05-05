@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,11 +54,17 @@ func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, repo *
 		}
 		for i := range repo.Spec.Settings.GithubAppTokenScopeRepos {
 			if _, ok := listURLs[repo.Spec.Settings.GithubAppTokenScopeRepos[i]]; !ok {
-				msg := fmt.Sprintf("failed to scope Github token as repo %s does not exist in namespace %s", repo.Spec.Settings.GithubAppTokenScopeRepos[i], ns)
+				msg := fmt.Sprintf("failed to scope GitHub token as repo %s does not exist in namespace %s", repo.Spec.Settings.GithubAppTokenScopeRepos[i], ns)
 				eventEmitter.EmitMessage(nil, zap.ErrorLevel, "RepoDoesNotExistInNamespace", msg)
 				return "", errors.New(msg)
 			}
 			repoListToScopeToken = append(repoListToScopeToken, repo.Spec.Settings.GithubAppTokenScopeRepos[i])
+		}
+		if run.Info.Pac.SecretGHAppRepoScoped {
+			msg := fmt.Sprintf(`failed to scope GitHub token as repo scoped key %s is enabled. Hint: update key %s from pipelines-as-code configmap to false`,
+				settings.SecretGhAppTokenRepoScopedKey, settings.SecretGhAppTokenRepoScopedKey)
+			eventEmitter.EmitMessage(nil, zap.ErrorLevel, "SecretGHAppTokenRepoScopeIsEnabled", msg)
+			return "", errors.New(msg)
 		}
 		listRepos = true
 		logger.Infof("configured repo level configuration to %v to scope Github token ", repo.Spec.Settings.GithubAppTokenScopeRepos)
