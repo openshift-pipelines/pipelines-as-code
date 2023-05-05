@@ -54,7 +54,8 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 		nsName := strings.Split(prKeys, "/")
 		pr, err = r.run.Clients.Tekton.TektonV1().PipelineRuns(nsName[0]).Get(ctx, nsName[1], metav1.GetOptions{})
 		if err != nil {
-			logger.Info("failed to get pr with namespace and name: ", nsName[0], nsName[1])
+			logger.With("name", nsName[1], "action", "VIEW").
+				Info("failed to get pr with namespace and name: ", nsName[0], nsName[1])
 			return err
 		}
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {

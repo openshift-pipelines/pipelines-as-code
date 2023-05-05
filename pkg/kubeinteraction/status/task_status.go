@@ -45,7 +45,8 @@ func GetStatusFromTaskStatusOrFromAsking(ctx context.Context, pr *tektonv1.Pipel
 			ctx, run.Clients.Tekton, pr.GetNamespace(), cr,
 		)
 		if err != nil {
-			run.Clients.Log.Warnf("cannot get taskrun status pr %s ns: %s err: %w", pr.GetName(), pr.GetNamespace(), err)
+			run.Clients.Log.With("name", pr.GetName(), "action", "VIEW").
+				Warnf("cannot get taskrun status pr %s ns: %s err: %w", pr.GetName(), pr.GetNamespace(), err)
 			continue
 		}
 		trStatus[cr.Name] = &tektonv1.PipelineRunTaskRunStatus{
@@ -90,7 +91,8 @@ func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract
 				if step.Terminated != nil && step.Terminated.ExitCode != 0 {
 					log, err := kinteract.GetPodLogs(ctx, pr.GetNamespace(), task.Status.PodName, step.Container, numLines)
 					if err != nil {
-						cs.Clients.Log.Errorf("cannot get pod logs: %w", err)
+						cs.Clients.Log.With("name", task.Status.PodName, "action", "VIEW").
+							Errorf("cannot get pod logs: %w", err)
 						continue
 					}
 					trimmed := strings.TrimSpace(log)

@@ -60,6 +60,7 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 		if err != nil {
 			return err
 		}
+		log := logger.With("name", lastrepo.Name, "action", "Update")
 
 		// Append PipelineRun status files to the repo status
 		if len(lastrepo.Status) >= maxPipelineRunStatusRun {
@@ -71,10 +72,10 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 		nrepo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(lastrepo.Namespace).Update(
 			ctx, lastrepo, metav1.UpdateOptions{})
 		if err != nil {
-			logger.Infof("Could not update repo %s, retrying %d/%d: %s", lastrepo.Namespace, i, maxRun, err.Error())
+			log.Infof("Could not update repo %s, retrying %d/%d: %s", lastrepo.Namespace, i, maxRun, err.Error())
 			continue
 		}
-		logger.Infof("Repository status of %s has been updated", nrepo.Name)
+		log.Infof("Repository status of %s has been updated", nrepo.Name)
 		return nil
 	}
 

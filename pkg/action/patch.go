@@ -17,6 +17,8 @@ func PatchPipelineRun(ctx context.Context, logger *zap.SugaredLogger, whatPatchi
 	if pr == nil {
 		return nil, nil
 	}
+	logger = logger.With(zap.String("name", pr.Name), zap.String("action", "UPDATE"))
+
 	var patchedPR *tektonv1.PipelineRun
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		patch, err := json.Marshal(mergePatch)

@@ -57,7 +57,9 @@ func createRepository(ctx context.Context, nsTemplate string, clients clients.Cl
 		return fmt.Errorf("failed to generate namespace for repo: %w", err)
 	}
 
-	logger.Info("github: generated namespace name: ", repoNsName)
+	logger.Info("github: generated namespace and repository name: ", repoNsName)
+
+	logger = logger.With("namespace", repoNsName, "action", "ADD")
 
 	// create namespace
 	repoNs := &corev1.Namespace{
@@ -76,6 +78,8 @@ func createRepository(ctx context.Context, nsTemplate string, clients clients.Cl
 		logger.Info("github: created repository namespace: ", repoNs.Name)
 	}
 
+	logger = logger.With("name", repoNsName)
+
 	// create repository
 	repo := &v1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
@@ -90,7 +94,6 @@ func createRepository(ctx context.Context, nsTemplate string, clients clients.Cl
 	if err != nil {
 		return fmt.Errorf("failed to create repository for repo: %v: %w", gitEvent.Repo.GetHTMLURL(), err)
 	}
-	logger = logger.With("namespace", repo.Namespace)
 	logger.Infof("github: repository created: %s/%s ", repo.Namespace, repo.Name)
 	return nil
 }

@@ -61,7 +61,7 @@ func (r *reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (r *reconciler) reconcileCertificate(ctx context.Context) error {
-	logger := logging.FromContext(ctx)
+	logger := logging.FromContext(ctx).With("name", r.key.Name, "namespace", r.key.Namespace)
 
 	secret, err := r.secretlister.Secrets(r.key.Namespace).Get(r.key.Name)
 	if apierrors.IsNotFound(err) {
@@ -70,7 +70,7 @@ func (r *reconciler) reconcileCertificate(ctx context.Context) error {
 		// secret information.
 		return nil
 	} else if err != nil {
-		logger.Errorf("Error accessing certificate secret %q: %v", r.key.Name, err)
+		logger.With("action", "VIEW").Errorf("Error accessing certificate secret %q: %v", r.key.Name, err)
 		return err
 	}
 
@@ -100,9 +100,15 @@ func (r *reconciler) reconcileCertificate(ctx context.Context) error {
 	// One of the secret's keys is missing, so synthesize a new one and update the secret.
 	newSecret, err := certresources.MakeSecret(ctx, r.key.Name, r.key.Namespace, r.serviceName)
 	if err != nil {
+		logger.With("action", "ADD").Errorf("Failed to create sertificate secret")
 		return err
 	}
 	secret.Data = newSecret.Data
 	_, err = r.client.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
-	return err
+	if err != nil {
+		logger.With("action", "UPDATE").Errorf("Failed to update sertificate secret %v", err)
+		return err
+	}
+
+	return nil
 }

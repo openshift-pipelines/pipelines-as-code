@@ -16,7 +16,7 @@ import (
 
 func (k Interaction) CleanupPipelines(ctx context.Context, logger *zap.SugaredLogger, repo *v1alpha1.Repository, pr *tektonv1.PipelineRun, maxKeep int) error {
 	if _, ok := pr.GetAnnotations()[keys.OriginalPRName]; !ok {
-		return fmt.Errorf("generate pipelienrun should have had the %s label for selection set but we could not find"+
+		return fmt.Errorf("generate pipelinerun should have had the %s label for selection set but we could not find"+
 			" it",
 			keys.OriginalPRName)
 	}
@@ -39,7 +39,8 @@ func (k Interaction) CleanupPipelines(ctx context.Context, logger *zap.SugaredLo
 		}
 
 		if c >= maxKeep {
-			logger.Infof("cleaning old PipelineRun: %s", prun.GetName())
+			logger.With("name", prun.Name).With("action", "DELETE").
+				Infof("cleaning old PipelineRun: %s", prun.GetName())
 			err := k.Run.Clients.Tekton.TektonV1().PipelineRuns(repo.GetNamespace()).Delete(
 				ctx, prun.GetName(), metav1.DeleteOptions{})
 			if err != nil {

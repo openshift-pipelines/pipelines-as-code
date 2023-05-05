@@ -52,7 +52,8 @@ func (k Interaction) UpdateSecretWithOwnerRef(ctx context.Context, logger *zap.S
 
 		_, err = k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Update(ctx, secret, metav1.UpdateOptions{})
 		if err != nil {
-			logger.Infof("failed to update secret, retrying  %v/%v: %v", targetNamespace, secretName, err)
+			logger.With("name", secretName, "action", "UPDATE").
+				Infof("failed to update secret, retrying  %v/%v: %v", targetNamespace, secretName, err)
 			return err
 		}
 		return nil
