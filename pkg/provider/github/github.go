@@ -387,6 +387,7 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 	runevent.DefaultBranch = pr.GetBase().GetRepo().GetDefaultBranch()
 	runevent.URL = pr.GetBase().GetRepo().GetHTMLURL()
 	runevent.SHA = pr.GetHead().GetSHA()
+	runevent.BaseSHA = pr.GetBase().GetSHA()
 	runevent.SHAURL = fmt.Sprintf("%s/commit/%s", pr.GetHTMLURL(), pr.GetHead().GetSHA())
 	runevent.PullRequestTitle = pr.GetTitle()
 

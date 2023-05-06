@@ -28,6 +28,7 @@ type Event struct {
 	DefaultBranch     string // master/main branches to know where things like the OWNERS file is located.
 	HeadBranch        string // branch from where our SHA get tested
 	SHA               string
+	BaseSHA           string
 	Sender            string
 	URL               string // WEB url not the git URL, which would match to the repo.spec
 	SHAURL            string // pretty URL for web browsing for UIs (cli/web)

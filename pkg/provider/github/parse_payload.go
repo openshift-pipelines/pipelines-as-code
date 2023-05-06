@@ -241,6 +241,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.SHATitle = gitEvent.GetHeadCommit().GetMessage()
 		processedEvent.Sender = gitEvent.GetSender().GetLogin()
 		processedEvent.BaseBranch = gitEvent.GetRef()
+		processedEvent.BaseSHA = gitEvent.GetBefore()
 		processedEvent.EventType = event.TriggerTarget
 		processedEvent.HeadBranch = processedEvent.BaseBranch // in push events Head Branch is the same as Basebranch
 	case *github.PullRequestEvent:
@@ -251,6 +252,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.SHA = gitEvent.GetPullRequest().Head.GetSHA()
 		processedEvent.URL = gitEvent.GetRepo().GetHTMLURL()
 		processedEvent.BaseBranch = gitEvent.GetPullRequest().Base.GetRef()
+		processedEvent.BaseSHA = gitEvent.GetPullRequest().Base.GetSHA()
 		processedEvent.HeadBranch = gitEvent.GetPullRequest().Head.GetRef()
 		processedEvent.Sender = gitEvent.GetPullRequest().GetUser().GetLogin()
 		processedEvent.EventType = event.EventType
@@ -277,6 +279,7 @@ func (v *Provider) handleReRequestEvent(ctx context.Context, event *github.Check
 	runevent.URL = event.GetRepo().GetHTMLURL()
 	runevent.DefaultBranch = event.GetRepo().GetDefaultBranch()
 	runevent.SHA = event.GetCheckRun().GetCheckSuite().GetHeadSHA()
+	runevent.BaseSHA = event.GetCheckRun().GetCheckSuite().GetBeforeSHA()
 	runevent.HeadBranch = event.GetCheckRun().GetCheckSuite().GetHeadBranch()
 	// If we don't have a pull_request in this it probably mean a push
 	if len(event.GetCheckRun().GetCheckSuite().PullRequests) == 0 {
@@ -300,6 +303,7 @@ func (v *Provider) handleCheckSuites(ctx context.Context, event *github.CheckSui
 	runevent.URL = event.GetRepo().GetHTMLURL()
 	runevent.DefaultBranch = event.GetRepo().GetDefaultBranch()
 	runevent.SHA = event.GetCheckSuite().GetHeadSHA()
+	runevent.BaseSHA = event.GetCheckSuite().GetBeforeSHA()
 	runevent.HeadBranch = event.GetCheckSuite().GetHeadBranch()
 	// If we don't have a pull_request in this it probably mean a push
 	// we are not able to know which
