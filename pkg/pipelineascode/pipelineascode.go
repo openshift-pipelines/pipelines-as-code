@@ -168,7 +168,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	}
 
 	// Create status with the log url
-	p.logger.With("name", pr.GetName(), "action", "ADD").
+	p.logger.With("audit", true).With("name", pr.GetName(), "action", "ADD").
 		Infof("pipelinerun %s has been created in namespace %s for SHA: %s Target Branch: %s",
 			pr.GetName(), match.Repo.GetNamespace(), p.event.SHA, p.event.BaseBranch)
 	consoleURL := p.run.Clients.ConsoleUI.DetailURL(pr)
