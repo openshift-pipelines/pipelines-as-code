@@ -301,7 +301,7 @@ A few settings are available to configure this feature:
 
 ## Logging Configuration.
 
-  pipeline-as-code uses the ConfigMap named `pac-config-logging` in the same namespace (`pipelines-as-code` by default) as the controllers. To get the ConfigMap use the following command:
+  Pipelines as Code uses the ConfigMap named `pac-config-logging` in the same namespace (`pipelines-as-code` by default) as the controllers. To get the ConfigMap use the following command:
 
   ```bash
   $ kubectl get configmap pac-config-logging -n pipelines-as-code
