@@ -365,13 +365,13 @@ A few settings are available to configure this feature:
   ```
 
   After this command, the controller gets a new log level value.
-  If you want to use the same log level for all pipelines-as-code components, delete `level.*` values from configmap:
+  If you want to use the same log level for all Pipelines as Code components, delete `level.*` values from configmap:
 
   ```bash
   kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[  {"op": "remove", "path": "/data/loglevel.pac-watcher"},  {"op": "remove", "path": "/data/loglevel.pipelines-as-code-webhook"},  {"op": "remove", "path": "/data/loglevel.pipelinesascode"}]'
   ```
 
-  In this case, all pipelines-as-code components get a common log level from `zap-logger-config` - `level` field from the json.
+  In this case, all Pipelines as Code components get a common log level from `zap-logger-config` - `level` field from the json.
 
   `zap-logger-config` supports the following log levels:
 
