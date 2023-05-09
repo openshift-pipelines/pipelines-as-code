@@ -613,6 +613,46 @@ spec:
       - repo
 ---
 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pac-config-logging
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: pipelines-as-code
+data:
+  zap-logger-config: |
+    {
+      "level": "info",
+      "development": false,
+      "sampling": {
+        "initial": 100,
+        "thereafter": 100
+      },
+      "outputPaths": ["stdout"],
+      "errorOutputPaths": ["stderr"],
+      "encoding": "json",
+      "encoderConfig": {
+        "timeKey": "ts",
+        "levelKey": "level",
+        "nameKey": "logger",
+        "callerKey": "caller",
+        "messageKey": "msg",
+        "stacktraceKey": "stacktrace",
+        "lineEnding": "",
+        "levelEncoder": "",
+        "timeEncoder": "iso8601",
+        "durationEncoder": "",
+        "callerEncoder": ""
+      }
+    }
+  # Log level overrides
+  loglevel.pipelinesascode: "info"
+  loglevel.pac-watcher: "info"
+  loglevel.pipelines-as-code-webhook: "info"
+---
+
 # Copyright 2023 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -952,6 +992,8 @@ spec:
             successThreshold: 1
             timeoutSeconds: 1
           env:
+            - name: CONFIG_LOGGING_NAME
+              value: pac-config-logging
             - name: TLS_KEY
               value: "key"
             - name: TLS_CERT
@@ -1060,6 +1102,8 @@ spec:
           image: "ghcr.io/openshift-pipelines/pipelines-as-code-watcher:main"
           imagePullPolicy: Always
           env:
+          - name: CONFIG_LOGGING_NAME
+            value: pac-config-logging
           - name: SYSTEM_NAMESPACE
             valueFrom:
               fieldRef:
@@ -1176,6 +1220,8 @@ spec:
         - name: pac-webhook
           image: "ghcr.io/openshift-pipelines/pipelines-as-code-webhook:main"
           env:
+            - name: CONFIG_LOGGING_NAME
+              value: pac-config-logging
             - name: SYSTEM_NAMESPACE
               valueFrom:
                 fieldRef:
