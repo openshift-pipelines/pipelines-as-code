@@ -28,13 +28,9 @@ import (
 )
 
 func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
-	// if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-	//	 t.Skip("Skipping test since only enabled for nightly")
-	// }
-	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
-	ctx := context.Background()
-	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
-	assert.NilError(t, err)
+	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+		t.Skip("Skipping test since only enabled for nightly")
+	}
 
 	var remoteTaskURL, remoteTaskName string
 	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL") != "" {
@@ -52,6 +48,48 @@ func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
 	}
 
 	data := map[string]string{"secret-github-app-token-scoped": "false"}
+
+	verifyGHTokenScope(t, remoteTaskURL, remoteTaskName, data)
+}
+
+func TestGithubPullRequestScopeTokenToListOfReposByGlobalConfiguration(t *testing.T) {
+	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
+		t.Skip("Skipping test since only enabled for nightly")
+	}
+
+	var remoteTaskURL, remoteTaskName string
+	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL") != "" {
+		remoteTaskURL = os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL")
+	} else {
+		t.Error("Env TEST_GITHUB_PRIVATE_TASK_URL not provided")
+		return
+	}
+
+	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_NAME") != "" {
+		remoteTaskName = os.Getenv("TEST_GITHUB_PRIVATE_TASK_NAME")
+	} else {
+		t.Error("Env TEST_GITHUB_PRIVATE_TASK_NAME not provided")
+		return
+	}
+
+	splittedValue := []string{}
+	if remoteTaskURL != "" {
+		urlData, err := url.ParseRequestURI(remoteTaskURL)
+		assert.NilError(t, err)
+		splittedValue = strings.Split(urlData.Path, "/")
+	}
+
+	data := map[string]string{"secret-github-app-scope-extra-repos": splittedValue[1] + "/" + splittedValue[2]}
+
+	verifyGHTokenScope(t, remoteTaskURL, remoteTaskName, data)
+}
+
+func verifyGHTokenScope(t *testing.T, remoteTaskURL, remoteTaskName string, data map[string]string) {
+	ctx := context.Background()
+	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
+	assert.NilError(t, err)
+
+	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	defer configmap.ChangeGlobalConfig(ctx, t, runcnx, data)()
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -154,5 +192,5 @@ func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
 }
 
 // Local Variables:
-// compile-command: "go test -tags=e2e -v -run ^TestGithubPullRequestScopeTokenToListOfRepos$"
+// compile-command: "go test -tags=e2e -v -run TestGithubPullRequestScopeToken ."
 // End:
