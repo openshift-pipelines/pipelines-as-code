@@ -10,7 +10,7 @@ import (
 
 	_ "embed"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v52/github"
 	"github.com/juju/ansiterm"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -22,14 +22,8 @@ import (
 
 var targetNamespaces = []string{"openshift-pipelines", "pipelines-as-code"}
 
-// google/go-github is missing the count from their struct
-type MyGapp struct {
-	*github.App
-	InstallationsCount int `json:"installations_count,omitempty"`
-}
-
 type InstallInfo struct {
-	App        *MyGapp
+	App        *github.App
 	run        *params.Run
 	jwtToken   string
 	apiURL     string
