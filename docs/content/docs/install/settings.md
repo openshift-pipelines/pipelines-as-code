@@ -10,8 +10,10 @@ There is a few things you can configure through the config map
 
 * `application-name`
 
-  The name of the application showing for example in the GitHub Checks
-  labels. Default to `Pipelines as Code CI`
+  The name of the application for example when showing the results of the
+  pipelinerun. If youre using the GitHub App you will
+  need to customize the label on the github app setting as well. .  Default to
+  `Pipelines as Code CI`
 
 * `secret-auto-create`
 

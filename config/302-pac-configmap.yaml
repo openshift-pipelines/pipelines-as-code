@@ -17,7 +17,7 @@
 
 apiVersion: v1
 data:
-  # The application name, you can customize this label
+  # The application name, you can customize this label. If using the Github App you will need to customize the label on the github app setting as well.
   application-name: "Pipelines as Code CI"
 
   # Whether to automatically create a secret with the token to be use by git-clone
