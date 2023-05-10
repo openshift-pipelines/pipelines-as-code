@@ -116,6 +116,7 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
+                git config --global --add safe.directory $(workspaces.source.path)
                 ssa=$(git rev-parse --short HEAD)
                 bash hack/generate-releaseyaml.sh > release.k8s.yaml
                 env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > release.yaml
