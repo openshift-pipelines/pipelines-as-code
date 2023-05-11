@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v52/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -41,7 +41,8 @@ func newIOStream() (*cli.IOStreams, *bytes.Buffer) {
 
 func TestList(t *testing.T) {
 	running := tektonv1.PipelineRunReasonRunning.String()
-	cw := clockwork.NewFakeClock()
+	t1 := time.Date(1999, time.February, 3, 4, 5, 6, 7, time.UTC)
+	cw := clockwork.NewFakeClockAt(t1)
 	namespace1 := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "namespace1",

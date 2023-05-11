@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	ghlib "github.com/google/go-github/v50/github"
+	ghlib "github.com/google/go-github/v52/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
