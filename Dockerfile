@@ -4,6 +4,7 @@ ARG BINARY_NAME=pipelines-as-code-controller
 COPY . /src
 WORKDIR /src
 RUN \
+    git config --global --add safe.directory /src && \
     make /tmp/${BINARY_NAME} LDFLAGS="-s -w" OUTPUT_DIR=/tmp
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal
