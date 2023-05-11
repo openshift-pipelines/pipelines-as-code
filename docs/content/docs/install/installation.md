@@ -8,7 +8,7 @@ weight: 2
 
 The easiest way to install Pipelines as Code on OpenShift is with the [Red Hat Openshift Pipelines Operator](https://docs.openshift.com/container-platform/latest/cicd/pipelines/installing-pipelines.html).
 
-On the Openshift Pipelines Operator, the default namespace is `openshift-pipelines`.
+On the OpenShift Pipelines Operator, the default namespace is `openshift-pipelines`.
 
 ## Manual Install
 
@@ -57,7 +57,7 @@ runs and is supposed to be accessible only by the admins.
 
 ### OpenShift
 
-On Openshift the Route URL for the Pipelines as Code Controller is automatically created when
+On OpenShift the Route URL for the Pipelines as Code Controller is automatically created when
 you apply the `release.yaml`. You will need to reference this URL when configuring
 your GitHub provider.
 
