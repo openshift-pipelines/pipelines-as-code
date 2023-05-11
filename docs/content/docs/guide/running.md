@@ -4,43 +4,64 @@ weight: 4
 ---
 # Running the PipelineRun
 
-Pipelines as Code will run any PipelineRuns committed to the default branch of the repo
-when the specified events occur on the repo.
-For example, if a PipelineRun on the default branch has the annotation
-`pipelinesascode.tekton.dev/on-event: "[pull_request]"`, it will run whenever a pull request event occurs.
-
-Pipelines as Code will also run any PipelineRuns from a branch in a pull request (or merge request in Gitlab).
-For example, if you're testing out a new PipelineRun, you can create a pull request
-with that PipelineRun, and it will run if the following conditions are met:
-
-- The pull request author's PipelineRun will be run if:
-
-  - The author is the owner of the repository.
-  - The author is a collaborator on the repository.
-  - The author is a member (public or private) on the repository's organization.
-  - The author has permissions to push to branches inside the repository.
-  - The pull request author is inside an OWNER file located in the
-  repository root on the main branch (the main branch as defined in the GitHub
-  configuration for the repo) and added to either `approvers` or `reviewers`
-  sections. For example, if the approvers section looks like this:
-
-```yaml
-approvers:
-  - approved
-```
-
-then the user `approved` will be allowed.
-
-If the pull request author does not meet these requirements,
-another user that does meet these requirements can comment `/ok-to-test` on the pull request
-to run the PipelineRun.
+Pipelines as Code (PAC) can be used to run pipelines on events such as pushes
+or pull requests. When an event occurs, PAC will try to match it to any
+PipelineRuns located in the `.tekton` directory of your repository
+that are annotated with the appropriate event type.
 
 {{< hint info >}}
-If you are using the GitHub Apps and have installed it on an Organization,
-Pipelines as Code will only be initiated when a Repo CR matching one of the
-repositories in a URL is detected on a repository belonging to the organization
-where the GitHub App has been installed.
-Otherwise, Pipelines as Code will not be triggered.
+The PipelineRuns definitions are fetched from the `.tekton` directory at the
+root of you repository from where the event come from, this is unless you have
+configured the [provenance from the default
+branch](../repositorycrd/#pipelinerun-definition-provenance) on you Repository
+CR.
+{{< /hint >}}
+
+For example, if a PipelineRun has this annotation:
+
+```yaml
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+```
+
+it will be matched when a pull request is created and run on the cluster, as
+long as the submitter is allowed to run it.
+
+The rules for determining whether a submitter is allowed to run a PipelineRun
+on CI are as follows. Any of the following conditions will allow a submitter to
+run a PipelineRun on CI:
+
+- The author of the pull request is the owner of the repository.
+- The author of the pull request is a collaborator on the repository.
+- The author of the pull request is a public or private member of the organization that
+  owns the repository.
+- The author of the pull request has permissions to push to branches inside the
+  repository.
+
+- The author of the pull request is listed in an OWNER file located in the root
+  directory of the branch that is configured as the default branch on GitHub or
+  your other provider. The OWNER file follows the [Prow OWNERS file format](https://www.kubernetes.dev/docs/guide/owners/),
+  and Pipelines as Code will allow a contributor to run a PipelineRun if they
+  are listed in the `approvers` or `reviewers` sections.
+
+  For example, if the approvers section of your OWNERS file in the main or master branch of your repository looks like this:
+
+  ```yaml
+  approvers:
+    - approved
+  ```
+
+  then the user `approved` will be allowed.
+
+If the pull request author does not have the necessary permissions to run a
+PipelineRun, another user who does have the necessary permissions can comment
+`/ok-to-test` on the pull request to run the PipelineRun.
+
+{{< hint info >}}
+If you are using the GitHub Apps and have installed it on an organization,
+Pipelines as Code will only be triggered if it detects a Repo CR that matches
+one of the repositories in a URL on a repository that belongs to the
+organization where the GitHub App has been installed. Otherwise, Pipelines as
+Code will not be triggered.
 {{< /hint >}}
 
 ## PipelineRun Execution
@@ -63,7 +84,7 @@ tkn pac logs -n my-pipeline-ci
 ```
 
 If you have set-up Pipelines as Code with the [Tekton Dashboard](https://github.com/tektoncd/dashboard/)
-or on OpenShift using the Openshift Console.
+or on OpenShift using the OpenShift Console.
 Pipelines as Code will post a URL in the Checks tab for GitHub apps to let you
 click on it and follow the pipeline execution directly there.
 
