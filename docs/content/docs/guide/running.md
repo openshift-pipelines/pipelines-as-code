@@ -17,7 +17,7 @@ with that PipelineRun, and it will run if the following conditions are met:
 
   - The author is the owner of the repository.
   - The author is a collaborator on the repository.
-  - The author is a public member on the organization of the repository.
+  - The author is a member (public or private) on the repository's organization.
   - The author has permissions to push to branches inside the repository.
   - The pull request author is inside an OWNER file located in the
   repository root on the main branch (the main branch as defined in the GitHub
