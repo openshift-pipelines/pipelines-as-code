@@ -102,9 +102,9 @@ func MuxGetFile(mux *http.ServeMux, pid int, fname, content string) {
 }
 
 type TEvent struct {
-	Username, DefaultBranch, URL, SHA, SHAurl, SHAtitle, Headbranch, Basebranch string
-	UserID, MRID, TargetProjectID, SourceProjectID                              int
-	PathWithNameSpace, Comment                                                  string
+	Username, DefaultBranch, URL, SHA, SHAurl, SHAtitle, Headbranch, Basebranch, HeadURL, BaseURL string
+	UserID, MRID, TargetProjectID, SourceProjectID                                                int
+	PathWithNameSpace, Comment                                                                    string
 }
 
 func (t TEvent) PushEventAsJSON(withcommits bool) string {
@@ -163,9 +163,15 @@ func (t TEvent) NoteEventAsJSON(comment string) string {
             "url": "%s://gitlab.com/pac-chmou/pac-group/-/commit/e29c24f4b6000cf0c2eae3b8bc588cb855b67756",
             "title": "%s",
             "message": "%s"
-        }
+        },
+		"target": {
+			"web_url": "%s"
+		},
+		"source": {
+			"web_url": "%s"
+		}
     }
-}`, comment, t.Username, t.DefaultBranch, t.URL, t.PathWithNameSpace, t.MRID, t.TargetProjectID, t.SourceProjectID, t.Basebranch, t.Headbranch, t.SHA, t.SHAurl, t.SHAtitle, t.SHAtitle)
+}`, comment, t.Username, t.DefaultBranch, t.URL, t.PathWithNameSpace, t.MRID, t.TargetProjectID, t.SourceProjectID, t.Basebranch, t.Headbranch, t.SHA, t.SHAurl, t.SHAtitle, t.SHAtitle, t.BaseURL, t.HeadURL)
 }
 
 func (t TEvent) MREventAsJSON() string {
@@ -191,9 +197,13 @@ func (t TEvent) MREventAsJSON() string {
             "url": "%s"
         },
 		"target": {
-			"path_with_namespace": "%s"
+			"path_with_namespace": "%s",
+			"web_url": "%s"
+		},
+		"source": {
+			"web_url": "%s"
 		}
     }
 }`, t.UserID, t.Username, t.TargetProjectID, t.URL, t.DefaultBranch, t.MRID,
-		t.SourceProjectID, t.SHAtitle, t.Headbranch, t.Basebranch, t.SHA, t.SHAurl, t.PathWithNameSpace)
+		t.SourceProjectID, t.SHAtitle, t.Headbranch, t.Basebranch, t.SHA, t.SHAurl, t.PathWithNameSpace, t.BaseURL, t.HeadURL)
 }

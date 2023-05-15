@@ -41,6 +41,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.SHAURL = fmt.Sprintf("%s/commit/%s", gitEvent.PullRequest.HTMLURL, processedEvent.SHA)
 		processedEvent.HeadBranch = gitEvent.PullRequest.Head.Ref
 		processedEvent.BaseBranch = gitEvent.PullRequest.Base.Ref
+		processedEvent.HeadURL = gitEvent.PullRequest.Head.Repository.HTMLURL
+		processedEvent.BaseURL = gitEvent.PullRequest.Base.Repository.HTMLURL
 		processedEvent.PullRequestNumber = int(gitEvent.Index)
 		processedEvent.PullRequestTitle = gitEvent.PullRequest.Title
 		processedEvent.Organization = gitEvent.Repository.Owner.UserName
@@ -66,6 +68,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.BaseBranch = gitEvent.Ref
 		processedEvent.EventType = eventType
 		processedEvent.HeadBranch = processedEvent.BaseBranch // in push events Head Branch is the same as Basebranch
+		processedEvent.BaseURL = gitEvent.Repo.HTMLURL
+		processedEvent.HeadURL = processedEvent.BaseURL // in push events Head URL is the same as BaseURL
 		processedEvent.TriggerTarget = "push"
 	case *giteastruct.IssueCommentPayload:
 		if gitEvent.Issue.PullRequest == nil {

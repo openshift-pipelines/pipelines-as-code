@@ -149,6 +149,9 @@ The fields available are :
 * `target_branch`: The branch we are targeting.
 * `source_branch`: The branch where this pull_request come from. (on `push` this
   is the same as `target_branch`).
+* `target_url`: The url of the repository we are targeting.
+* `source_url`: The url of the repository where this pull_request come from. (on `push` this
+  is the same as `target_url`).
 * `event_title`: Match the title of the event. When doing a push this will match
   the commit title and when matching on PR it will match the Pull or Merge
   Request title. (only `GitHub`, `Gitlab` and `BitbucketCloud` providers are supported)

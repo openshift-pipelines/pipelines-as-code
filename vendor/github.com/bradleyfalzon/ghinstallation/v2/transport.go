@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v50/github"
+	"github.com/google/go-github/v52/github"
 )
 
 const (
@@ -62,6 +62,11 @@ type HTTPError struct {
 
 func (e *HTTPError) Error() string {
 	return e.Message
+}
+
+// Unwrap implements the standard library's error wrapping. It unwraps to the root cause.
+func (e *HTTPError) Unwrap() error {
+	return e.RootCause
 }
 
 var _ http.RoundTripper = &Transport{}

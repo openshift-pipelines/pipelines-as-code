@@ -16,7 +16,7 @@ package interpreter
 
 import (
 	"fmt"
-	"math"
+	"strings"
 
 	"github.com/google/cel-go/common/containers"
 	"github.com/google/cel-go/common/types"
@@ -232,7 +232,11 @@ type absoluteAttribute struct {
 
 // ID implements the Attribute interface method.
 func (a *absoluteAttribute) ID() int64 {
-	return a.id
+	qualCount := len(a.qualifiers)
+	if qualCount == 0 {
+		return a.id
+	}
+	return a.qualifiers[qualCount-1].ID()
 }
 
 // IsOptional returns trivially false for an attribute as the attribute represents a fully
@@ -240,18 +244,6 @@ func (a *absoluteAttribute) ID() int64 {
 // is created and marks the attribute as optional.
 func (a *absoluteAttribute) IsOptional() bool {
 	return false
-}
-
-// Cost implements the Coster interface method.
-func (a *absoluteAttribute) Cost() (min, max int64) {
-	for _, q := range a.qualifiers {
-		minQ, maxQ := estimateCost(q)
-		min += minQ
-		max += maxQ
-	}
-	min++ // For object retrieval.
-	max++
-	return
 }
 
 // AddQualifier implements the Attribute interface method.
@@ -314,7 +306,14 @@ func (a *absoluteAttribute) Resolve(vars Activation) (any, error) {
 			}
 		}
 	}
-	return nil, missingAttribute(a.String())
+	var attrNames strings.Builder
+	for i, nm := range a.namespaceNames {
+		if i != 0 {
+			attrNames.WriteString(", ")
+		}
+		attrNames.WriteString(nm)
+	}
+	return nil, missingAttribute(attrNames.String())
 }
 
 type conditionalAttribute struct {
@@ -328,6 +327,11 @@ type conditionalAttribute struct {
 
 // ID is an implementation of the Attribute interface method.
 func (a *conditionalAttribute) ID() int64 {
+	// There's a field access after the conditional.
+	if a.truthy.ID() == a.falsy.ID() {
+		return a.truthy.ID()
+	}
+	// Otherwise return the conditional id as the consistent id being tracked.
 	return a.id
 }
 
@@ -336,16 +340,6 @@ func (a *conditionalAttribute) ID() int64 {
 // is created and marks the attribute as optional.
 func (a *conditionalAttribute) IsOptional() bool {
 	return false
-}
-
-// Cost provides the heuristic cost of a ternary operation <expr> ? <t> : <f>.
-// The cost is computed as cost(expr) plus the min/max costs of evaluating either
-// `t` or `f`.
-func (a *conditionalAttribute) Cost() (min, max int64) {
-	tMin, tMax := estimateCost(a.truthy)
-	fMin, fMax := estimateCost(a.falsy)
-	eMin, eMax := estimateCost(a.expr)
-	return eMin + findMin(tMin, fMin), eMax + findMax(tMax, fMax)
 }
 
 // AddQualifier appends the same qualifier to both sides of the conditional, in effect managing
@@ -402,7 +396,7 @@ type maybeAttribute struct {
 
 // ID is an implementation of the Attribute interface method.
 func (a *maybeAttribute) ID() int64 {
-	return a.id
+	return a.attrs[0].ID()
 }
 
 // IsOptional returns trivially false for an attribute as the attribute represents a fully
@@ -410,18 +404,6 @@ func (a *maybeAttribute) ID() int64 {
 // is created and marks the attribute as optional.
 func (a *maybeAttribute) IsOptional() bool {
 	return false
-}
-
-// Cost implements the Coster interface method. The min cost is computed as the minimal cost among
-// all the possible attributes, the max cost ditto.
-func (a *maybeAttribute) Cost() (min, max int64) {
-	min, max = math.MaxInt64, 0
-	for _, a := range a.attrs {
-		minA, maxA := estimateCost(a)
-		min = findMin(min, minA)
-		max = findMax(max, maxA)
-	}
-	return
 }
 
 // AddQualifier adds a qualifier to each possible attribute variant, and also creates
@@ -471,7 +453,9 @@ func (a *maybeAttribute) AddQualifier(qual Qualifier) (Attribute, error) {
 		}
 	}
 	// Next, ensure the most specific variable / type reference is searched first.
-	a.attrs = append([]NamespacedAttribute{a.fac.AbsoluteAttribute(qual.ID(), augmentedNames...)}, a.attrs...)
+	if len(augmentedNames) != 0 {
+		a.attrs = append([]NamespacedAttribute{a.fac.AbsoluteAttribute(qual.ID(), augmentedNames...)}, a.attrs...)
+	}
 	return a, nil
 }
 
@@ -529,7 +513,11 @@ type relativeAttribute struct {
 
 // ID is an implementation of the Attribute interface method.
 func (a *relativeAttribute) ID() int64 {
-	return a.id
+	qualCount := len(a.qualifiers)
+	if qualCount == 0 {
+		return a.id
+	}
+	return a.qualifiers[qualCount-1].ID()
 }
 
 // IsOptional returns trivially false for an attribute as the attribute represents a fully
@@ -537,17 +525,6 @@ func (a *relativeAttribute) ID() int64 {
 // is created and marks the attribute as optional.
 func (a *relativeAttribute) IsOptional() bool {
 	return false
-}
-
-// Cost implements the Coster interface method.
-func (a *relativeAttribute) Cost() (min, max int64) {
-	min, max = estimateCost(a.operand)
-	for _, qual := range a.qualifiers {
-		minQ, maxQ := estimateCost(qual)
-		min += minQ
-		max += maxQ
-	}
-	return
 }
 
 // AddQualifier implements the Attribute interface method.
@@ -700,11 +677,6 @@ func (q *attrQualifier) IsOptional() bool {
 	return q.optional
 }
 
-// Cost returns zero for constant field qualifiers
-func (q *attrQualifier) Cost() (min, max int64) {
-	return estimateCost(q.Attribute)
-}
-
 type stringQualifier struct {
 	id       int64
 	value    string
@@ -804,11 +776,6 @@ func (q *stringQualifier) qualifyInternal(vars Activation, obj any, presenceTest
 // Value implements the ConstantQualifier interface
 func (q *stringQualifier) Value() ref.Val {
 	return q.celValue
-}
-
-// Cost returns zero for constant field qualifiers
-func (q *stringQualifier) Cost() (min, max int64) {
-	return 0, 0
 }
 
 type intQualifier struct {
@@ -938,11 +905,6 @@ func (q *intQualifier) Value() ref.Val {
 	return q.celValue
 }
 
-// Cost returns zero for constant field qualifiers
-func (q *intQualifier) Cost() (min, max int64) {
-	return 0, 0
-}
-
 type uintQualifier struct {
 	id       int64
 	value    uint64
@@ -1008,11 +970,6 @@ func (q *uintQualifier) Value() ref.Val {
 	return q.celValue
 }
 
-// Cost returns zero for constant field qualifiers
-func (q *uintQualifier) Cost() (min, max int64) {
-	return 0, 0
-}
-
 type boolQualifier struct {
 	id       int64
 	value    bool
@@ -1062,11 +1019,6 @@ func (q *boolQualifier) qualifyInternal(vars Activation, obj any, presenceTest, 
 // Value implements the ConstantQualifier interface
 func (q *boolQualifier) Value() ref.Val {
 	return q.celValue
-}
-
-// Cost returns zero for constant field qualifiers
-func (q *boolQualifier) Cost() (min, max int64) {
-	return 0, 0
 }
 
 // fieldQualifier indicates that the qualification is a well-defined field with a known
@@ -1123,11 +1075,6 @@ func (q *fieldQualifier) QualifyIfPresent(vars Activation, obj any, presenceOnly
 // Value implements the ConstantQualifier interface
 func (q *fieldQualifier) Value() ref.Val {
 	return types.String(q.Name)
-}
-
-// Cost returns zero for constant field qualifiers
-func (q *fieldQualifier) Cost() (min, max int64) {
-	return 0, 0
 }
 
 // doubleQualifier qualifies a CEL object, map, or list using a double value.
@@ -1364,7 +1311,7 @@ func (e *resolutionError) Error() string {
 		return fmt.Sprintf("index out of bounds: %v", e.missingIndex)
 	}
 	if e.missingAttribute != "" {
-		return fmt.Sprintf("no such attribute: %s", e.missingAttribute)
+		return fmt.Sprintf("no such attribute(s): %s", e.missingAttribute)
 	}
 	return "invalid attribute"
 }

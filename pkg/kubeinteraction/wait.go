@@ -13,6 +13,7 @@ const (
 )
 
 func PollImmediateWithContext(ctx context.Context, pollTimeout time.Duration, fn func() (bool, error)) error {
+	//nolint: staticcheck
 	return wait.PollImmediate(interval, pollTimeout, func() (bool, error) {
 		select {
 		case <-ctx.Done():

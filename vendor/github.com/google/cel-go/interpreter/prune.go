@@ -26,6 +26,7 @@ import (
 
 type astPruner struct {
 	expr       *exprpb.Expr
+	macroCalls map[int64]*exprpb.Expr
 	state      EvalState
 	nextExprID int64
 }
@@ -65,13 +66,26 @@ type astPruner struct {
 // compiled and constant folded expressions, but is not willing to constant
 // fold(and thus cache results of) some external calls, then they can prepare
 // the overloads accordingly.
-func PruneAst(expr *exprpb.Expr, state EvalState) *exprpb.Expr {
+func PruneAst(expr *exprpb.Expr, macroCalls map[int64]*exprpb.Expr, state EvalState) *exprpb.ParsedExpr {
+	pruneState := NewEvalState()
+	maxID := int64(1)
+	for _, id := range state.IDs() {
+		v, _ := state.Value(id)
+		pruneState.SetValue(id, v)
+		if id > maxID {
+			maxID = id + 1
+		}
+	}
 	pruner := &astPruner{
 		expr:       expr,
-		state:      state,
-		nextExprID: 1}
-	newExpr, _ := pruner.prune(expr)
-	return newExpr
+		macroCalls: macroCalls,
+		state:      pruneState,
+		nextExprID: maxID}
+	newExpr, _ := pruner.maybePrune(expr)
+	return &exprpb.ParsedExpr{
+		Expr:       newExpr,
+		SourceInfo: &exprpb.SourceInfo{MacroCalls: pruner.macroCalls},
+	}
 }
 
 func (p *astPruner) createLiteral(id int64, val *exprpb.Constant) *exprpb.Expr {
@@ -86,24 +100,31 @@ func (p *astPruner) createLiteral(id int64, val *exprpb.Constant) *exprpb.Expr {
 func (p *astPruner) maybeCreateLiteral(id int64, val ref.Val) (*exprpb.Expr, bool) {
 	switch val.Type() {
 	case types.BoolType:
+		p.state.SetValue(id, val)
 		return p.createLiteral(id,
 			&exprpb.Constant{ConstantKind: &exprpb.Constant_BoolValue{BoolValue: val.Value().(bool)}}), true
 	case types.IntType:
+		p.state.SetValue(id, val)
 		return p.createLiteral(id,
 			&exprpb.Constant{ConstantKind: &exprpb.Constant_Int64Value{Int64Value: val.Value().(int64)}}), true
 	case types.UintType:
+		p.state.SetValue(id, val)
 		return p.createLiteral(id,
 			&exprpb.Constant{ConstantKind: &exprpb.Constant_Uint64Value{Uint64Value: val.Value().(uint64)}}), true
 	case types.StringType:
+		p.state.SetValue(id, val)
 		return p.createLiteral(id,
 			&exprpb.Constant{ConstantKind: &exprpb.Constant_StringValue{StringValue: val.Value().(string)}}), true
 	case types.DoubleType:
+		p.state.SetValue(id, val)
 		return p.createLiteral(id,
 			&exprpb.Constant{ConstantKind: &exprpb.Constant_DoubleValue{DoubleValue: val.Value().(float64)}}), true
 	case types.BytesType:
+		p.state.SetValue(id, val)
 		return p.createLiteral(id,
 			&exprpb.Constant{ConstantKind: &exprpb.Constant_BytesValue{BytesValue: val.Value().([]byte)}}), true
 	case types.NullType:
+		p.state.SetValue(id, val)
 		return p.createLiteral(id,
 			&exprpb.Constant{ConstantKind: &exprpb.Constant_NullValue{NullValue: val.Value().(structpb.NullValue)}}), true
 	}
@@ -123,6 +144,7 @@ func (p *astPruner) maybeCreateLiteral(id int64, val ref.Val) (*exprpb.Expr, boo
 			}
 			elemExprs[i] = elemExpr
 		}
+		p.state.SetValue(id, val)
 		return &exprpb.Expr{
 			Id: id,
 			ExprKind: &exprpb.Expr_ListExpr{
@@ -162,6 +184,7 @@ func (p *astPruner) maybeCreateLiteral(id int64, val ref.Val) (*exprpb.Expr, boo
 			entries[i] = entry
 			i++
 		}
+		p.state.SetValue(id, val)
 		return &exprpb.Expr{
 			Id: id,
 			ExprKind: &exprpb.Expr_StructExpr{
@@ -174,6 +197,37 @@ func (p *astPruner) maybeCreateLiteral(id int64, val ref.Val) (*exprpb.Expr, boo
 
 	// TODO(issues/377) To construct message literals, the type provider will need to support
 	// the enumeration the fields for a given message.
+	return nil, false
+}
+
+func (p *astPruner) maybePruneIn(node *exprpb.Expr) (*exprpb.Expr, bool) {
+	if !p.existsWithUnknownValue(node.GetId()) {
+		return nil, false
+	}
+	call := node.GetCallExpr()
+	val, valueExists := p.value(call.GetArgs()[1].GetId())
+	if !valueExists {
+		return nil, false
+	}
+	if sz, ok := val.(traits.Sizer); ok && sz.Size() == types.IntZero {
+		return p.maybeCreateLiteral(node.GetId(), types.False)
+	}
+	return nil, false
+}
+
+func (p *astPruner) maybePruneLogicalNot(node *exprpb.Expr) (*exprpb.Expr, bool) {
+	if !p.existsWithUnknownValue(node.GetId()) {
+		return nil, false
+	}
+	call := node.GetCallExpr()
+	arg := call.GetArgs()[0]
+	v, exists := p.value(arg.GetId())
+	if !exists {
+		return nil, false
+	}
+	if b, ok := v.(types.Bool); ok {
+		return p.maybeCreateLiteral(node.GetId(), !b)
+	}
 	return nil, false
 }
 
@@ -219,8 +273,21 @@ func (p *astPruner) maybePruneFunction(node *exprpb.Expr) (*exprpb.Expr, bool) {
 	if call.Function == operators.Conditional {
 		return p.maybePruneConditional(node)
 	}
-
+	if call.Function == operators.In {
+		return p.maybePruneIn(node)
+	}
+	if call.Function == operators.LogicalNot {
+		return p.maybePruneLogicalNot(node)
+	}
 	return nil, false
+}
+
+func (p *astPruner) maybePrune(node *exprpb.Expr) (*exprpb.Expr, bool) {
+	out, pruned := p.prune(node)
+	if pruned {
+		delete(p.macroCalls, node.GetId())
+	}
+	return out, pruned
 }
 
 func (p *astPruner) prune(node *exprpb.Expr) (*exprpb.Expr, bool) {
@@ -240,7 +307,7 @@ func (p *astPruner) prune(node *exprpb.Expr) (*exprpb.Expr, bool) {
 
 	switch node.GetExprKind().(type) {
 	case *exprpb.Expr_SelectExpr:
-		if operand, pruned := p.prune(node.GetSelectExpr().GetOperand()); pruned {
+		if operand, pruned := p.maybePrune(node.GetSelectExpr().GetOperand()); pruned {
 			return &exprpb.Expr{
 				Id: node.GetId(),
 				ExprKind: &exprpb.Expr_SelectExpr{
@@ -253,10 +320,6 @@ func (p *astPruner) prune(node *exprpb.Expr) (*exprpb.Expr, bool) {
 			}, true
 		}
 	case *exprpb.Expr_CallExpr:
-		if newExpr, pruned := p.maybePruneFunction(node); pruned {
-			newExpr, _ = p.prune(newExpr)
-			return newExpr, true
-		}
 		var prunedCall bool
 		call := node.GetCallExpr()
 		args := call.GetArgs()
@@ -268,22 +331,27 @@ func (p *astPruner) prune(node *exprpb.Expr) (*exprpb.Expr, bool) {
 		}
 		for i, arg := range args {
 			newArgs[i] = arg
-			if newArg, prunedArg := p.prune(arg); prunedArg {
+			if newArg, prunedArg := p.maybePrune(arg); prunedArg {
 				prunedCall = true
 				newArgs[i] = newArg
 			}
 		}
-		if newTarget, prunedTarget := p.prune(call.GetTarget()); prunedTarget {
+		if newTarget, prunedTarget := p.maybePrune(call.GetTarget()); prunedTarget {
 			prunedCall = true
 			newCall.Target = newTarget
 		}
+		newNode := &exprpb.Expr{
+			Id: node.GetId(),
+			ExprKind: &exprpb.Expr_CallExpr{
+				CallExpr: newCall,
+			},
+		}
+		if newExpr, pruned := p.maybePruneFunction(newNode); pruned {
+			newExpr, _ = p.maybePrune(newExpr)
+			return newExpr, true
+		}
 		if prunedCall {
-			return &exprpb.Expr{
-				Id: node.GetId(),
-				ExprKind: &exprpb.Expr_CallExpr{
-					CallExpr: newCall,
-				},
-			}, true
+			return newNode, true
 		}
 	case *exprpb.Expr_ListExpr:
 		elems := node.GetListExpr().GetElements()
@@ -291,7 +359,7 @@ func (p *astPruner) prune(node *exprpb.Expr) (*exprpb.Expr, bool) {
 		var prunedList bool
 		for i, elem := range elems {
 			newElems[i] = elem
-			if newElem, prunedElem := p.prune(elem); prunedElem {
+			if newElem, prunedElem := p.maybePrune(elem); prunedElem {
 				newElems[i] = newElem
 				prunedList = true
 			}
@@ -313,8 +381,8 @@ func (p *astPruner) prune(node *exprpb.Expr) (*exprpb.Expr, bool) {
 		newEntries := make([]*exprpb.Expr_CreateStruct_Entry, len(entries))
 		for i, entry := range entries {
 			newEntries[i] = entry
-			newKey, prunedKey := p.prune(entry.GetMapKey())
-			newValue, prunedValue := p.prune(entry.GetValue())
+			newKey, prunedKey := p.maybePrune(entry.GetMapKey())
+			newValue, prunedValue := p.maybePrune(entry.GetValue())
 			if !prunedKey && !prunedValue {
 				continue
 			}
@@ -349,7 +417,7 @@ func (p *astPruner) prune(node *exprpb.Expr) (*exprpb.Expr, bool) {
 		// Only the range of the comprehension is pruned since the state tracking only records
 		// the last iteration of the comprehension and not each step in the evaluation which
 		// means that the any residuals computed in between might be inaccurate.
-		if newRange, pruned := p.prune(compre.GetIterRange()); pruned {
+		if newRange, pruned := p.maybePrune(compre.GetIterRange()); pruned {
 			return &exprpb.Expr{
 				Id: node.GetId(),
 				ExprKind: &exprpb.Expr_ComprehensionExpr{
