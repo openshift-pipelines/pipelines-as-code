@@ -141,9 +141,7 @@ func (v *Provider) checkPullRequestForSameURL(ctx context.Context, runevent *inf
 // only get the one that the user sets as public 🤷
 func (v *Provider) checkSenderOrgMembership(ctx context.Context, runevent *info.Event) (bool, error) {
 	users, resp, err := v.Client.Organizations.ListMembers(ctx, runevent.Organization,
-		&github.ListMembersOptions{
-			PublicOnly: true, // We can't list private member in a org
-		})
+		&github.ListMembersOptions{})
 	// If we are 404 it means we are checking a repo owner and not a org so let's bail out with grace
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return false, nil

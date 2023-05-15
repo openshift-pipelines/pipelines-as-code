@@ -148,11 +148,11 @@ func TestAclCheckAll(t *testing.T) {
 
 	errit := "err"
 
-	mux.HandleFunc("/orgs/"+orgallowed+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/orgs/"+orgallowed+"/members", func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(rw, `[{"login": "login_%s"}]`, orgallowed)
 	})
 
-	mux.HandleFunc("/orgs/"+orgdenied+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/orgs/"+orgdenied+"/members", func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(rw, `[]`)
 	})
 
@@ -160,11 +160,11 @@ func TestAclCheckAll(t *testing.T) {
 		fmt.Fprint(rw, `[]`)
 	})
 
-	mux.HandleFunc("/orgs/"+errit+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/orgs/"+errit+"/members", func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(rw, `x1x`)
 	})
 
-	mux.HandleFunc("/orgs/"+repoOwnerFileAllowed+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/orgs/"+repoOwnerFileAllowed+"/members", func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(rw, `[]`)
 	})
 	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/collaborators", func(rw http.ResponseWriter, r *http.Request) {

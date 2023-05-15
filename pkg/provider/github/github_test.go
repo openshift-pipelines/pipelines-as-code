@@ -335,7 +335,7 @@ func TestCheckSenderOrgMembership(t *testing.T) {
 			gprovider := Provider{
 				Client: fakeclient,
 			}
-			mux.HandleFunc(fmt.Sprintf("/orgs/%s/public_members", tt.runevent.Organization), func(rw http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc(fmt.Sprintf("/orgs/%s/members", tt.runevent.Organization), func(rw http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(rw, tt.apiReturn)
 			})
 

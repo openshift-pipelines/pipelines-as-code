@@ -69,7 +69,7 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 		jj)
 
 	if !noReplyOrgPublicMembers {
-		mux.HandleFunc("/orgs/"+runevent.Organization+"/public_members", func(rw http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/orgs/"+runevent.Organization+"/members", func(rw http.ResponseWriter, r *http.Request) {
 			_, _ = fmt.Fprintf(rw, `[{"login": "%s"}]`, runevent.Sender)
 		})
 	}
