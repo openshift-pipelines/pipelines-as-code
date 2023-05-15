@@ -299,7 +299,7 @@ A few settings are available to configure this feature:
   GitHub App is already configured when a user runs the bootstrap command a
   second time or the `webhook add` command.
 
-## Logging Configuration.
+## Logging Configuration
 
   Pipelines as Code uses the ConfigMap named `pac-config-logging` in the same namespace (`pipelines-as-code` by default) as the controllers. To get the ConfigMap use the following command:
 
@@ -356,9 +356,9 @@ A few settings are available to configure this feature:
 
   The `loglevel.*` fields define the log level for the controllers:
 
-  - loglevel.pipelinesascode - the log level for the pipelines-as-code-controller component
-  - loglevel.pipelines-as-code-webhook - the log level for the pipelines-as-code-webhook component
-  - loglevel.pac-watcher - the log level for the pipelines-as-code-watcher component
+* loglevel.pipelinesascode - the log level for the pipelines-as-code-controller component
+* loglevel.pipelines-as-code-webhook - the log level for the pipelines-as-code-webhook component
+* loglevel.pac-watcher - the log level for the pipelines-as-code-watcher component
 
   You can change the log level from `info` to `debug` or any other supported values. For example, select the `debug` log level for the pipelines-as-code-watcher component:
 
@@ -377,12 +377,12 @@ A few settings are available to configure this feature:
 
   `zap-logger-config` supports the following log levels:
 
-  - debug - fine-grained debugging
-  - info - normal logging
-  - warn - unexpected but non-critical errors
-  - error - critical errors; unexpected during normal operation
-  - dpanic - in debug mode, trigger a panic (crash)
-  - panic - trigger a panic (crash)
-  - fatal - immediately exit with exit status 1 (failure)
+* debug - fine-grained debugging
+* info - normal logging
+* warn - unexpected but non-critical errors
+* error - critical errors; unexpected during normal operation
+* dpanic - in debug mode, trigger a panic (crash)
+* panic - trigger a panic (crash)
+* fatal - immediately exit with exit status 1 (failure)
 
   See more: <https://knative.dev/docs/serving/observability/logging/config-logging>
