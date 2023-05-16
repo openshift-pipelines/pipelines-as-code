@@ -70,6 +70,9 @@ spec:
                   description: Settings relative to the Repository
                   type: object
                   properties:
+                    only_trusts_users_from_repository:
+                      type: boolean
+                      description: Only trusts users from the repository. For example on GitHub do not trust the users from the organisation.
                     github_app_token_scope_repos:
                       type: array
                       items:

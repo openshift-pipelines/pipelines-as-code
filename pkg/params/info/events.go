@@ -1,6 +1,10 @@
 package info
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+)
 
 type Event struct {
 	State
@@ -56,6 +60,7 @@ type Event struct {
 	// Gitlab
 	SourceProjectID int
 	TargetProjectID int
+	Settings        *v1alpha1.Settings
 }
 
 type State struct {

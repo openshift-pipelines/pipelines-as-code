@@ -60,6 +60,8 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		return nil, nil
 	}
 
+	// set repo settings in context
+	p.event.Settings = repo.Spec.Settings
 	p.logger = p.logger.With("namespace", repo.Namespace)
 	p.vcx.SetLogger(p.logger)
 	p.eventEmitter.SetLogger(p.logger)

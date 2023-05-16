@@ -156,6 +156,15 @@ func GetIssueTimeline(ctx context.Context, topts *TestOpts) (Timelines, error) {
 	return tls, nil
 }
 
+func CreateGiteaOrg(giteaClient *gitea.Client, org, user string) (*gitea.Organization, error) {
+	ret, _, err := giteaClient.AdminCreateOrg(user, gitea.CreateOrgOption{
+		Name:                      org,
+		Visibility:                "public",
+		RepoAdminChangeTeamAccess: false,
+	})
+	return ret, err
+}
+
 func CreateGiteaRepo(giteaClient *gitea.Client, user, name, hookURL string) (*gitea.Repository, error) {
 	// Create a new repo
 	repo, _, err := giteaClient.AdminCreateRepo(user, gitea.CreateRepoOption{

@@ -327,7 +327,7 @@ a `github_app_token_scope_repos` spec configuration in the `Repository` custom r
     kind: ConfigMap
     metadata:
       name: pipelines-as-code
-      namespace: pipelines-as-code    
+      namespace: pipelines-as-code
     data:
       secret-github-app-scope-extra-repos: "owner2/project2, owner3/project3"
     ```
@@ -343,7 +343,7 @@ a `github_app_token_scope_repos` spec configuration in the `Repository` custom r
      spec:
        url: "https://github.com/linda/project"
        settings:
-         github_app_token_scope_repos: 
+         github_app_token_scope_repos:
          - "owner/project"
          - "owner1/project1"
     ```
@@ -375,7 +375,7 @@ and the scoping fails for the repository level configuration because the reposit
   kind: ConfigMap
   metadata:
     name: pipelines-as-code
-    namespace: pipelines-as-code  
+    namespace: pipelines-as-code
   data:
     secret-github-app-scope-extra-repos: "owner5/project5"
   ```
@@ -388,7 +388,7 @@ and the scoping fails for the repository level configuration because the reposit
     namespace: test-repo
   spec:
     url: "https://github.com/linda/project"
-    setting
+    settings:
       github_app_token_scope_repos:
       - "owner5/project5"
   ```
@@ -398,3 +398,28 @@ and the scoping fails for the repository level configuration because the reposit
   ```yaml
   failed to scope github token as repo owner5/project5 does not exist in namespace test-repo
   ```
+
+### Don't automatically allow the users from the organisation to start Pipelines-as-Code on a Repository
+
+By default, when using for example the GitHub provider, if your repository is
+belong to an organization, the users belonging to that organization
+are granted automatic permissions to initiate the pipelines. However,
+considering the potential existence of malicious users within a large organization
+and the need to exercise caution, there may be certain repositories for which we
+do not wish to extend trust to everyone.
+
+To address this, you have the option to deactivate this functionality by
+configuring the repository settings and setting the
+`only_trusts_users_from_repository` parameter to `true`.
+
+```yaml
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: test
+  namespace: test-repo
+spec:
+  url: "https://github.com/linda/project"
+  settings:
+    only_trusts_users_from_repository: true
+```

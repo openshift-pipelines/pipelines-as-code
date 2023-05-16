@@ -85,14 +85,19 @@ func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, erro
 		}
 	}
 
-	// If the user who has submitted the pr is a owner on the repo then allows
-	// the CI to be run.
-	isUserMemberRepo, err := v.checkSenderOrgMembership(ctx, rev)
+	// If the user who has submitted the pr is a member of the organization then allow
+	// the CI to be run. That's unless the setting github_app_no_trust_org_users
+	// is set to true.
+	isUserMemberOrg, err := v.checkSenderOrgMembership(ctx, rev)
 	if err != nil {
 		return false, err
 	}
-	if isUserMemberRepo {
-		return true, nil
+	if isUserMemberOrg {
+		if rev.Settings != nil && rev.Settings.OnlyTrustsUsersFromRepository {
+			v.Logger.Infof("User %s is a member of the organisation %s but the setting only_trusts_users_from_repository is disallowing trusting automatically the org users", rev.Sender, rev.Organization)
+		} else {
+			return true, nil
+		}
 	}
 
 	checkSenderRepoMembership, err := v.checkSenderRepoMembership(ctx, rev)

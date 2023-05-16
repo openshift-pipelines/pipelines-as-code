@@ -79,8 +79,9 @@ type RepositorySpec struct {
 }
 
 type Settings struct {
-	GithubAppTokenScopeRepos []string `json:"github_app_token_scope_repos,omitempty"`
-	PipelineRunProvenance    string   `json:"pipelinerun_provenance,omitempty"`
+	OnlyTrustsUsersFromRepository bool     `json:"only_trusts_users_from_repository,omitempty"`
+	GithubAppTokenScopeRepos      []string `json:"github_app_token_scope_repos,omitempty"`
+	PipelineRunProvenance         string   `json:"pipelinerun_provenance,omitempty"`
 }
 
 type Params struct {

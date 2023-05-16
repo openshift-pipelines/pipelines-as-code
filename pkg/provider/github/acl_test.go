@@ -8,8 +8,12 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v52/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
+	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -182,16 +186,20 @@ func TestAclCheckAll(t *testing.T) {
 		rw.WriteHeader(204)
 	})
 
+	observer, catcheur := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
 	ctx, _ := rtesting.SetupFakeContext(t)
 	gprovider := Provider{
 		Client: fakeclient,
+		Logger: logger,
 	}
 
 	tests := []struct {
-		name     string
-		runevent info.Event
-		allowed  bool
-		wantErr  bool
+		name               string
+		runevent           info.Event
+		allowed            bool
+		wantErr            bool
+		expectedLogSnippet string
 	}{
 		{
 			name: "sender allowed in org",
@@ -201,6 +209,19 @@ func TestAclCheckAll(t *testing.T) {
 			},
 			allowed: true,
 			wantErr: false,
+		},
+		{
+			name: "sender allowed in org but disallowed from repo spec setting",
+			runevent: info.Event{
+				Organization: orgallowed,
+				Sender:       "login_allowed",
+				Settings: &v1alpha1.Settings{
+					OnlyTrustsUsersFromRepository: true,
+				},
+			},
+			allowed:            false,
+			wantErr:            false,
+			expectedLogSnippet: "the setting only_trusts_users_from_repository is disallowing trusting automatically the org users",
 		},
 		{
 			name: "sender allowed from owner file",
@@ -258,6 +279,11 @@ func TestAclCheckAll(t *testing.T) {
 			}
 			if got != tt.allowed {
 				t.Errorf("aclCheckAll() = %v, want %v", got, tt.allowed)
+			}
+			if tt.expectedLogSnippet != "" {
+				logmsg := catcheur.FilterMessageSnippet(tt.expectedLogSnippet).TakeAll()
+				assert.Assert(t, len(logmsg) > 0, "log message filtered %s expected %s all logs: %+v", logmsg,
+					tt.expectedLogSnippet, catcheur.TakeAll())
 			}
 		})
 	}
@@ -367,8 +393,11 @@ func TestIfPullRequestIsForSameRepoWithoutFork(t *testing.T) {
 				fmt.Fprint(rw, string(b))
 			})
 
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
 			gprovider := Provider{
 				Client: fakeclient,
+				Logger: logger,
 			}
 
 			got, err := gprovider.aclCheckAll(ctx, tt.event)
