@@ -52,8 +52,12 @@ func MuxNotePost(t *testing.T, mux *http.ServeMux, projectNumber, mrID int, catc
 	})
 }
 
-func MuxAllowUserID(mux *http.ServeMux, projectID, userID int) {
-	path := fmt.Sprintf("/projects/%d/members/all/%d", projectID, userID)
+func MuxAllowUserID(mux *http.ServeMux, projectID, userID int, inherited bool) {
+	d := ""
+	if inherited {
+		d = "/all"
+	}
+	path := fmt.Sprintf("/projects/%d/members%s/%d", projectID, d, userID)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(rw, `{"id": %d}`, userID)
 	})

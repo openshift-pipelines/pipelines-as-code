@@ -423,3 +423,7 @@ spec:
   settings:
     only_trusts_users_from_repository: true
 ```
+
+{{< hint info >}}
+This works with GitHub Application, GitHub Webhook and Gitlab providers.
+{{< /hint >}}

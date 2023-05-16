@@ -20,7 +20,15 @@ func (v *Provider) isAllowedFromOwnerFile(event *info.Event) bool {
 }
 
 func (v *Provider) checkMembership(event *info.Event, userid int) bool {
-	member, _, err := v.Client.ProjectMembers.GetInheritedProjectMember(v.targetProjectID, userid)
+	var member *gitlab.ProjectMember
+	var err error
+	if event.Settings != nil && event.Settings.OnlyTrustsUsersFromRepository {
+		v.Logger.Infof("Checking membership for user %d in project %d scopped to the repository due of the only_trusts_users_from_repository setting", userid, v.targetProjectID)
+		member, _, err = v.Client.ProjectMembers.GetProjectMember(v.targetProjectID, userid)
+	} else {
+		v.Logger.Infof("Checking membership for user %d and inherited project %d and group", userid, v.targetProjectID)
+		member, _, err = v.Client.ProjectMembers.GetInheritedProjectMember(v.targetProjectID, userid)
+	}
 	if err == nil && member.ID == userid {
 		return true
 	}
