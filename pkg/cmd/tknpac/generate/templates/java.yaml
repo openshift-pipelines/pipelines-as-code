@@ -15,6 +15,9 @@ metadata:
     # with taskRef and it will automatically be embedded into our pipeline.
     pipelinesascode.tekton.dev/task: "git-clone"
 
+    # Use maven task from the hub to test our Java project
+    pipelinesascode.tekton.dev/task-1: "maven"
+
     # You can add more tasks by increasing the suffix number, you can specify
     # them as array to have multiple of them.
     # browse the tasks you want to include from hub on https://hub.tekton.dev/
@@ -35,7 +38,6 @@ spec:
     params:
       - name: repo_url
       - name: revision
-      - name: image_name
     workspaces:
       - name: source
       - name: basic-auth
