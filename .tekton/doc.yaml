@@ -57,7 +57,7 @@ spec:
                 echo "Preview URL: ${url}"
             - name: upload-to-static-server
               # it has curl and we already pulled it
-              image: mirror.gcr.io/curlimages/curl:7.85.0
+              image: curlimages/curl
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
