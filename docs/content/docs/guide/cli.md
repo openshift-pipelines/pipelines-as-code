@@ -294,6 +294,12 @@ to push it first before using `tkn pac resolve|kubectl create -`.
 Compared with running directly on CI, you need to explicitly specify the list of
 filenames or directory where you have the templates.
 
+On certain clusters, the conversion from v1beta1 to v1 in Tekton may not
+function correctly, leading to errors when applying the resolved PipelineRun on
+a different cluster that doesn't have the bundle feature enabled. To resolve
+this issue, you can use the `--v1beta1` flag (or `-B` for short) to explicitly
+output the PipelineRun as v1beta1 and work around the error.
+
 When you run the resolver it will try to detect if you have a `{{
 git_auth_secret }}` string inside your template and if there is a match it will
 ask you to provide a Git provider token.

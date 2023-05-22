@@ -75,14 +75,21 @@ func TestResolveFilenames(t *testing.T) {
 	tmplSimpleWithPrefix := fmt.Sprintf("---\n%s", tmplSimpleNoPrefix)
 
 	tests := []struct {
-		name    string
-		tmpl    string
-		wantErr bool
+		name      string
+		tmpl      string
+		wantErr   bool
+		asv1beta1 bool
 	}{
 		{
 			name:    "Resolve templates no prefix",
 			tmpl:    tmplSimpleNoPrefix,
 			wantErr: false,
+		},
+		{
+			name:      "Resolve templates no prefix as v1beta1",
+			tmpl:      tmplSimpleNoPrefix,
+			wantErr:   false,
+			asv1beta1: true,
 		},
 		{
 			name:    "Resolve templates with prefix",
@@ -101,7 +108,7 @@ func TestResolveFilenames(t *testing.T) {
 				assertfs.WithFile("file.yaml", strings.ReplaceAll(tt.tmpl, "\t", "    ")))
 			defer dir.Remove()
 			ctx, _ := rtesting.SetupFakeContext(t)
-			got, err := resolveFilenames(ctx, cs, []string{dir.Path()}, map[string]string{"foo": "bar"})
+			got, err := resolveFilenames(ctx, cs, []string{dir.Path()}, map[string]string{"foo": "bar"}, tt.asv1beta1)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("resolveFilenames() error = %v, wantErr %v", err, tt.wantErr)
 				return
