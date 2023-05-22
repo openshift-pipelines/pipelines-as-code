@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
 	"github.com/spf13/cobra"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 )
@@ -33,6 +34,7 @@ var (
 	noSecret       bool
 	providerToken  string
 	output         string
+	asv1beta1      bool
 )
 
 var longhelp = fmt.Sprintf(`
@@ -126,7 +128,7 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 				mapped["repo_name"] = strings.Split(repoOwner, "/")[1]
 			}
 
-			s, err := resolveFilenames(ctx, run, filenames, mapped)
+			s, err := resolveFilenames(ctx, run, filenames, mapped, asv1beta1)
 			if err != nil {
 				return err
 			}
@@ -164,6 +166,8 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 	cmd.Flags().BoolVar(&remoteTask, "remoteTask", true,
 		"set this to false to avoid fetching and embed remote tasks")
 
+	cmd.Flags().BoolVarP(&asv1beta1, "v1beta1", "B", false, "output as tekton v1beta1")
+
 	cmd.Flags().StringVarP(&providerToken, "providerToken", "t", "", "use this token to generate the git-auth secret,\n you can set the environment PAC_PROVIDER_TOKEN to have this set automatically")
 	err := run.Info.Pac.AddFlags(cmd)
 	if err != nil {
@@ -182,7 +186,7 @@ func splitArgsInMap(args []string) map[string]string {
 	return m
 }
 
-func resolveFilenames(ctx context.Context, cs *params.Run, filenames []string, params map[string]string) (string, error) {
+func resolveFilenames(ctx context.Context, cs *params.Run, filenames []string, params map[string]string, asv1beta1 bool) (string, error) {
 	var ret string
 
 	ropt := &resolve.Opts{
@@ -217,13 +221,27 @@ func resolveFilenames(ctx context.Context, cs *params.Run, filenames []string, p
 	cleanRe := regexp.MustCompile(`\n(\t|\s)*(status|taskRunTemplate|creationTimestamp|spec|taskRunTemplate|metadata|computeResources):\s*(null|{})\n`)
 
 	for _, run := range prun {
-		run.APIVersion = tektonv1.SchemeGroupVersion.String()
-		run.Kind = "PipelineRun"
-		d, err := yaml.Marshal(run)
-		if err != nil {
-			return "", err
+		var doc []byte
+		if asv1beta1 {
+			nrun := &tektonv1beta1.PipelineRun{}
+			if err := nrun.ConvertFrom(ctx, run); err != nil {
+				return "", err
+			}
+			nrun.APIVersion = tektonv1beta1.SchemeGroupVersion.String()
+			nrun.Kind = "PipelineRun"
+			nrun.SetNamespace("")
+			if doc, err = yaml.Marshal(nrun); err != nil {
+				return "", err
+			}
+		} else {
+			run.APIVersion = tektonv1.SchemeGroupVersion.String()
+			run.Kind = "PipelineRun"
+			run.SetNamespace("")
+			if doc, err = yaml.Marshal(run); err != nil {
+				return "", err
+			}
 		}
-		cleaned := cleanRe.ReplaceAllString(string(d), "\n")
+		cleaned := cleanRe.ReplaceAllString(string(doc), "\n")
 		ret += fmt.Sprintf("---\n%s\n", cleaned)
 	}
 	return ret, nil
