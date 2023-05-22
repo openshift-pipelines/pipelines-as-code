@@ -106,7 +106,7 @@ func TestResolveFilenames(t *testing.T) {
 				t.Errorf("resolveFilenames() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			} else if !tt.wantErr {
-				golden.Assert(t, string(got), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
+				golden.Assert(t, got, strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
 				assert.Assert(t, got != "")
 			}
 		})
