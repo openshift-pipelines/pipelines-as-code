@@ -25,11 +25,15 @@ func TestDetectWebhookSecret(t *testing.T) {
 		want    bool
 	}{
 		{
-			name:    "detects webhook secret",
-			content: basicAuthSecretString,
+			name:    "detects webhook secret single quote",
+			content: "secretName: '{{ git_auth_secret }}'",
 			want:    true,
 		},
-
+		{
+			name:    "detects webhook secret no quote",
+			content: "secretName: {{ git_auth_secret }}",
+			want:    true,
+		},
 		{
 			name:    "not webhook secret detected",
 			content: "foobar",

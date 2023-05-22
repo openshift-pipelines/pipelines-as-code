@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
+	"regexp"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -20,10 +20,12 @@ import (
 
 // nolint: gosec
 const (
-	basicAuthSecretString = `secretName: "{{ git_auth_secret }}"`
-	gitProviderTokenKey   = "git-provider-token"
+	gitProviderTokenKey = "git-provider-token"
 )
 
+var basicAuthSecretStringRe = regexp.MustCompile(`.*secretName:\s*(.|")?{{\s*git_auth_secret\s*}}`)
+
+// detectWebhookSecret detects if the webhook secret is used in the yaml files
 func detectWebhookSecret(filenames []string) bool {
 	for _, filename := range filenames {
 		file, err := os.Open(filename)
@@ -31,14 +33,9 @@ func detectWebhookSecret(filenames []string) bool {
 			return false
 		}
 		defer file.Close()
-		// check if we have the string secretName: "{{ git_auth_secret }}" and
-		// return true if it does
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			if strings.Contains(scanner.Text(), basicAuthSecretString) {
-				if err := scanner.Err(); err != nil {
-					return false
-				}
+			if basicAuthSecretStringRe.MatchString(scanner.Text()) {
 				return true
 			}
 		}
@@ -46,9 +43,14 @@ func detectWebhookSecret(filenames []string) bool {
 	return false
 }
 
+// makeGitAuthSecret creates a secret for the git provider token
+// we first try to reuse the one that is already created on cluster with the label matching the repo owner and name
+// we then try to reuse the PAC_PROVIDER_TOKEN env var if it exists
+// if any of the above is not possible, we ask the user to provide the token
 func makeGitAuthSecret(ctx context.Context, cs *params.Run, filenames []string, token string, params map[string]string) (string, string, error) {
+	allFilenames := listAllYamls(filenames)
 	var ret, basicAuthsecretName string
-	if !detectWebhookSecret(filenames) {
+	if !detectWebhookSecret(allFilenames) {
 		return "", "", nil
 	}
 
@@ -73,7 +75,7 @@ func makeGitAuthSecret(ctx context.Context, cs *params.Run, filenames []string, 
 	// try from running cluster
 	if token == "" {
 		provideSecret := false
-		msg := "We have detected a git_auth_secret in your Pipelinerun. Would you like to provide a token for the git_clone task?"
+		msg := "We have detected a git_auth_secret in your PipelineRun. Would you like to provide a API token for the git_clone task?"
 		if err := prompt.SurveyAskOne(&survey.Confirm{Message: msg, Default: true}, &provideSecret); err != nil {
 			return "", "", fmt.Errorf("canceled")
 		}
