@@ -149,7 +149,7 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 		"Params to resolve (ie: revision, repo_url)")
 
 	cmd.Flags().StringVarP(&output, "output", "o", "",
-		"Params to resolve (ie: revision, repo_url)")
+		"output to this file instead of stdout")
 
 	cmd.Flags().StringSliceVarP(&filenames, "filename", "f", filenames,
 		"Filename, directory, or URL to files to use to create the resource")
