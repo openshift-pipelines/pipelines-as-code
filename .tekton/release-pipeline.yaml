@@ -65,6 +65,7 @@ spec:
                 # release-0.5.6, release-0.5.x and stable
                 set -eufx
                 git fetch --tag -v
+                git config --global --add safe.directory $(workspaces.source.path)
                 version=$(git  --no-pager tag --points-at HEAD)
                 [[ -z ${version} ]] && {
                     echo "No tags detected"
