@@ -76,7 +76,10 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 			}
 
 			var providerName string
-			_, installationNS, err := bootstrap.DetectPacInstallation(ctx, createOpts.pacNamespace, run)
+			installed, installationNS, err := bootstrap.DetectPacInstallation(ctx, createOpts.pacNamespace, run)
+			if !installed {
+				return fmt.Errorf("pipelines-as-code is not installed in the cluster")
+			}
 			if err != nil {
 				return err
 			}
