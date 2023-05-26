@@ -160,7 +160,7 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 			repositoryID:          []int64{789, 10112, 112233},
 		},
 		{
-			name: "failed to scope GitHub token as repo scoped key secret-github-app-token-scoped is enabled",
+			name: "failed to scope GitHub token to a list of repositories provided by repo level as repo scoped key secret-github-app-token-scoped is enabled",
 			tData: testclient.Data{
 				Namespaces: []*corev1.Namespace{testNamespace},
 				Secret:     []*corev1.Secret{validSecret},
@@ -176,6 +176,25 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 			wantError: "failed to scope GitHub token as repo scoped key secret-github-app-token-scoped is enabled. " +
 				"Hint: update key secret-github-app-token-scoped from pipelines-as-code configmap to false",
 			wantToken: "",
+		},
+		{
+			name: "successfully scoped GitHub token to a list of repositories provided by global and repo level even though secret-github-app-token-scoped key is enabled because global configuration takes precedence",
+			tData: testclient.Data{
+				Namespaces: []*corev1.Namespace{testNamespace},
+				Secret:     []*corev1.Secret{validSecret},
+				Repositories: []*v1alpha1.Repository{
+					repoData, repoData1,
+				},
+			},
+			envs: map[string]string{
+				"SYSTEM_NAMESPACE": testNamespace.Name,
+			},
+			repository:               repoData,
+			secretGHAppRepoScopedKey: true,
+			repoListsByGlobalConf:    "owner1/repo1",
+			wantError:                "",
+			wantToken:                "123abcdfrf",
+			repositoryID:             []int64{789, 10112, 112233},
 		},
 	}
 	for _, tt := range tests {

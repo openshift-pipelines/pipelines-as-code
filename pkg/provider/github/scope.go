@@ -60,7 +60,8 @@ func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, repo *
 			}
 			repoListToScopeToken = append(repoListToScopeToken, repo.Spec.Settings.GithubAppTokenScopeRepos[i])
 		}
-		if run.Info.Pac.SecretGHAppRepoScoped {
+		// When the global configuration is not set then check for secret-github-app-token-scoped key for the repo level configuration
+		if run.Info.Pac.SecretGHAppRepoScoped && run.Info.Pac.SecretGhAppTokenScopedExtraRepos == "" {
 			msg := fmt.Sprintf(`failed to scope GitHub token as repo scoped key %s is enabled. Hint: update key %s from pipelines-as-code configmap to false`,
 				settings.SecretGhAppTokenRepoScopedKey, settings.SecretGhAppTokenRepoScopedKey)
 			eventEmitter.EmitMessage(nil, zap.ErrorLevel, "SecretGHAppTokenRepoScopeIsEnabled", msg)
