@@ -233,7 +233,7 @@ def parse_args():
         default=os.environ.get("GITHUBAPP_RESULT_PATH"),
     )
     args = parser.parse_args()
-    if not args.installation_id or not args.jwt_token:
+    if not args.installation_id and not args.jwt_token:
         parser.print_help()
         print("Description:", end="")
         print("\n".join([f"  {x}" for x in HELP_TEXT.splitlines()]))
