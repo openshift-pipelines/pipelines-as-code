@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	giteaStruct "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/structs"
 )
 
 func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
@@ -39,9 +39,9 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 	}
 
 	switch event := revent.Event.(type) {
-	case *giteaStruct.IssueCommentPayload:
+	case *giteaStructs.IssueCommentPayload:
 		revent.URL = event.Issue.URL
-	case *giteaStruct.PullRequestPayload:
+	case *giteaStructs.PullRequestPayload:
 		revent.URL = event.PullRequest.HTMLURL
 	default:
 		return false, nil

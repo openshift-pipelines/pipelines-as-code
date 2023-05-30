@@ -7,17 +7,17 @@ import (
 	"net/http"
 	"testing"
 
-	giteaStruct "code.gitea.io/gitea/modules/structs"
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/structs"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestOkToTestComment(t *testing.T) {
-	issueCommentPayload := &giteaStruct.IssueCommentPayload{
-		Issue: &giteaStruct.Issue{
+	issueCommentPayload := &giteaStructs.IssueCommentPayload{
+		Issue: &giteaStructs.Issue{
 			URL: "http://url.com/owner/repo/1",
 		},
 	}
@@ -62,7 +62,7 @@ func TestOkToTestComment(t *testing.T) {
 				Repository:   "repo",
 				Sender:       "nonowner",
 				EventType:    "issue_comment",
-				Event:        &giteaStruct.RepositoryPayload{},
+				Event:        &giteaStructs.RepositoryPayload{},
 			},
 			allowed: false,
 		},

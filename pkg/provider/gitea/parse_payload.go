@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	giteastruct "code.gitea.io/gitea/modules/structs"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/structs"
 )
 
 func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
@@ -31,7 +31,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 	_ = json.Unmarshal(payloadB, &eventInt)
 
 	switch gitEvent := eventInt.(type) {
-	case *giteastruct.PullRequestPayload:
+	case *giteaStructs.PullRequestPayload:
 		processedEvent = info.NewEvent()
 		// // Organization:  event.GetRepo().GetOwner().GetLogin(),
 		processedEvent.Sender = gitEvent.Sender.UserName
@@ -49,7 +49,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.Repository = gitEvent.Repository.Name
 		processedEvent.TriggerTarget = "pull_request"
 		processedEvent.EventType = "pull_request"
-	case *giteastruct.PushPayload:
+	case *giteaStructs.PushPayload:
 		if len(gitEvent.Commits) == 0 {
 			return nil, fmt.Errorf("no commits attached to this push event")
 		}
@@ -71,7 +71,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.BaseURL = gitEvent.Repo.HTMLURL
 		processedEvent.HeadURL = processedEvent.BaseURL // in push events Head URL is the same as BaseURL
 		processedEvent.TriggerTarget = "push"
-	case *giteastruct.IssueCommentPayload:
+	case *giteaStructs.IssueCommentPayload:
 		if gitEvent.Issue.PullRequest == nil {
 			return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
 		}

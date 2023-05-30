@@ -28,8 +28,9 @@ type ListOauth2Option struct {
 
 // CreateOauth2Option required options for creating an Application
 type CreateOauth2Option struct {
-	Name         string   `json:"name"`
-	RedirectURIs []string `json:"redirect_uris"`
+	Name               string   `json:"name"`
+	RedirectURIs       []string `json:"redirect_uris"`
+	ConfidentialClient bool     `json:"confidential_client"`
 }
 
 // CreateOauth2 create an Oauth2 Application and returns a completed Oauth2 object.

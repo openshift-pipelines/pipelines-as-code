@@ -1,7 +1,4 @@
-# code.gitea.io/gitea/modules/structs v0.0.0-20190610152049-835b53fc259c
-## explicit; go 1.12
-code.gitea.io/gitea/modules/structs
-# code.gitea.io/sdk/gitea v0.15.1
+# code.gitea.io/sdk/gitea v0.15.1 => code.gitea.io/sdk/gitea v0.15.1-0.20230509035020-970776d1c1e9
 ## explicit; go 1.13
 code.gitea.io/sdk/gitea
 # contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d
@@ -111,6 +108,9 @@ github.com/cloudflare/circl/sign/ed448
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
+# github.com/davidmz/go-pageant v1.0.2
+## explicit; go 1.16
+github.com/davidmz/go-pageant
 # github.com/emicklei/go-restful/v3 v3.10.2
 ## explicit; go 1.13
 github.com/emicklei/go-restful/v3
@@ -127,6 +127,9 @@ github.com/fvbommel/sortorder
 # github.com/gfleury/go-bitbucket-v1 v0.0.0-20220418082332-711d7d5e805f
 ## explicit; go 1.14
 github.com/gfleury/go-bitbucket-v1
+# github.com/go-fed/httpsig v1.1.0
+## explicit; go 1.13
+github.com/go-fed/httpsig
 # github.com/go-kit/log v0.2.1
 ## explicit; go 1.17
 github.com/go-kit/log
@@ -225,6 +228,8 @@ github.com/google/go-querystring/query
 ## explicit; go 1.12
 github.com/google/gofuzz
 github.com/google/gofuzz/bytesource
+# github.com/google/pprof v0.0.0-20230111200839-76d1ae5aea2b
+## explicit; go 1.18
 # github.com/google/uuid v1.3.0
 ## explicit
 github.com/google/uuid
@@ -251,7 +256,7 @@ github.com/hashicorp/go-retryablehttp
 # github.com/hashicorp/go-version v1.6.0
 ## explicit
 github.com/hashicorp/go-version
-# github.com/hashicorp/golang-lru v0.5.4
+# github.com/hashicorp/golang-lru v0.6.0
 ## explicit; go 1.12
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
@@ -329,6 +334,9 @@ github.com/openzipkin/zipkin-go/reporter/http
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
+github.com/pmezard/go-difflib/difflib
 # github.com/prometheus/client_golang v1.15.1
 ## explicit; go 1.17
 github.com/prometheus/client_golang/prometheus
@@ -367,7 +375,10 @@ github.com/spf13/pflag
 # github.com/stoewer/go-strcase v1.3.0
 ## explicit; go 1.11
 github.com/stoewer/go-strcase
-# github.com/tektoncd/pipeline v0.47.0
+# github.com/stretchr/testify v1.8.2
+## explicit; go 1.13
+github.com/stretchr/testify/assert
+# github.com/tektoncd/pipeline v0.48.0 => github.com/tektoncd/pipeline v0.48.0
 ## explicit; go 1.19
 github.com/tektoncd/pipeline/pkg/apis/config
 github.com/tektoncd/pipeline/pkg/apis/pipeline
@@ -465,9 +476,21 @@ go.uber.org/zap/zaptest/observer
 ## explicit; go 1.17
 golang.org/x/crypto/argon2
 golang.org/x/crypto/blake2b
+golang.org/x/crypto/blake2s
+golang.org/x/crypto/blowfish
 golang.org/x/crypto/cast5
+golang.org/x/crypto/chacha20
+golang.org/x/crypto/curve25519
+golang.org/x/crypto/curve25519/internal/field
+golang.org/x/crypto/ed25519
 golang.org/x/crypto/hkdf
+golang.org/x/crypto/internal/alias
+golang.org/x/crypto/internal/poly1305
+golang.org/x/crypto/ripemd160
 golang.org/x/crypto/sha3
+golang.org/x/crypto/ssh
+golang.org/x/crypto/ssh/agent
+golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 # golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
 ## explicit; go 1.20
 golang.org/x/exp/constraints
@@ -1150,3 +1173,5 @@ sigs.k8s.io/structured-merge-diff/v4/value
 sigs.k8s.io/yaml
 # k8s.io/client-go => k8s.io/client-go v0.25.4
 # k8s.io/api => k8s.io/api v0.26.3
+# code.gitea.io/sdk/gitea => code.gitea.io/sdk/gitea v0.15.1-0.20230509035020-970776d1c1e9
+# github.com/tektoncd/pipeline => github.com/tektoncd/pipeline v0.48.0

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	giteastruct "code.gitea.io/gitea/modules/structs"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/structs"
 	"go.uber.org/zap"
 )
 
@@ -34,7 +34,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 	_ = json.Unmarshal([]byte(payload), &eventInt)
 
 	switch gitEvent := eventInt.(type) {
-	case *giteastruct.IssueCommentPayload:
+	case *giteaStructs.IssueCommentPayload:
 		if gitEvent.Action == "created" &&
 			gitEvent.Issue.PullRequest != nil &&
 			gitEvent.Issue.State == "open" {
@@ -50,13 +50,13 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			return setLoggerAndProceed(false, "", nil)
 		}
 		return setLoggerAndProceed(false, "not a issue comment we care about", nil)
-	case *giteastruct.PullRequestPayload:
+	case *giteaStructs.PullRequestPayload:
 		if provider.Valid(string(gitEvent.Action), []string{"opened", "synchronize", "synchronized", "reopened"}) {
 			return setLoggerAndProceed(true, "", nil)
 		}
 		return setLoggerAndProceed(false, fmt.Sprintf("not a merge event we care about: \"%s\"",
 			string(gitEvent.Action)), nil)
-	case *giteastruct.PushPayload:
+	case *giteaStructs.PushPayload:
 		if gitEvent.Pusher != nil {
 			return setLoggerAndProceed(true, "", nil)
 		}
