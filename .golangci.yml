@@ -3,6 +3,7 @@ run:
     - e2e
   skip-dirs:
     - vendor
+    - pkg/provider/gitea/structs
 linters-settings:
   gocritic:
     disabled-checks:

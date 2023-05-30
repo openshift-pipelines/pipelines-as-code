@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	gitea "code.gitea.io/gitea/modules/structs"
+	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/structs"
 )
 
 // whEventType represents a Gitea webhook event
@@ -34,25 +34,25 @@ const (
 func parseWebhook(eventType whEventType, payload []byte) (event interface{}, err error) {
 	switch eventType {
 	case EventTypePush:
-		event = &gitea.PushPayload{}
+		event = &giteaStructs.PushPayload{}
 	case EventTypeCreate:
-		event = &gitea.CreatePayload{}
+		event = &giteaStructs.CreatePayload{}
 	case EventTypeDelete:
-		event = &gitea.DeletePayload{}
+		event = &giteaStructs.DeletePayload{}
 	case EventTypeFork:
-		event = &gitea.ForkPayload{}
+		event = &giteaStructs.ForkPayload{}
 	case EventTypeIssues:
-		event = &gitea.IssuePayload{}
+		event = &giteaStructs.IssuePayload{}
 	case EventTypeIssueComment:
-		event = &gitea.IssueCommentPayload{}
+		event = &giteaStructs.IssueCommentPayload{}
 	case EventTypeRepository:
-		event = &gitea.RepositoryPayload{}
+		event = &giteaStructs.RepositoryPayload{}
 	case EventTypeRelease:
-		event = &gitea.ReleasePayload{}
+		event = &giteaStructs.ReleasePayload{}
 	case EventTypePullRequestComment:
-		event = &gitea.IssueCommentPayload{}
+		event = &giteaStructs.IssueCommentPayload{}
 	case EventTypePullRequest, EventTypePullRequestApproved, EventTypePullRequestSync, EventTypePullRequestRejected:
-		event = &gitea.PullRequestPayload{}
+		event = &giteaStructs.PullRequestPayload{}
 	default:
 		return nil, fmt.Errorf("unexpected event type: %s", eventType)
 	}
