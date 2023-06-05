@@ -757,6 +757,13 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 					Key:  "secret",
 				},
 			},
+			{
+				Name: "secret_nothere",
+				SecretRef: &v1alpha1.Secret{
+					Name: "param-secret-not-present",
+					Key:  "unknowsecret",
+				},
+			},
 		},
 	}
 	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
@@ -781,9 +788,7 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 			fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=params",
 				repo.Status[0].PipelineRunName),
 			"step-test-params-value", *regexp.MustCompile(
-				"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from" +
-					" a" +
-					" payload match"), 2))
+				"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from a payload match\n{{ secret_nothere }}"), 2))
 }
 
 func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {
