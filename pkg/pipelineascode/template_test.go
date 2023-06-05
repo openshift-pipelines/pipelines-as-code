@@ -263,6 +263,24 @@ func TestProcessTemplates(t *testing.T) {
 			},
 		},
 		{
+			name:     "params/unnown secret skipped",
+			template: `No {{ customparams }}`,
+			expected: "No {{ customparams }}",
+			event:    &info.Event{EventType: "push"},
+			repository: &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{
+					Params: &[]v1alpha1.Params{
+						{
+							Name: "customparams",
+							SecretRef: &v1alpha1.Secret{
+								Name: "unkownsecret",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name:     "params/bad filter skipped",
 			template: `I am {{ params }}`,
 			expected: "I am {{ params }}",

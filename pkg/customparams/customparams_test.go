@@ -67,6 +67,25 @@ func TestProcessTemplates(t *testing.T) {
 			},
 		},
 		{
+			name:          "params/from unknown secret",
+			expectedError: true,
+			repository: &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: ns,
+				},
+				Spec: v1alpha1.RepositorySpec{
+					Params: &[]v1alpha1.Params{
+						{
+							Name: "params",
+							SecretRef: &v1alpha1.Secret{
+								Name: "unknown",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name:     "params/use last params when two values of the same name",
 			expected: map[string]string{"params": "robin"},
 			repository: &v1alpha1.Repository{
