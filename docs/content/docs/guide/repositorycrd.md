@@ -170,15 +170,15 @@ For instance, the following code will retrieve the value for the company
 spec:
   params:
     - name: company
-      secretRef:
+      secret_ref:
         name: my-secret
         key: companyname
 ```
 
 {{< hint info >}}
 
-- If you have a `value` and a `secretRef` defined, the `value` will be used.
-- If you don't have a `value` or a `secretRef` the parameter will not be
+- If you have a `value` and a `secret_ref` defined, the `value` will be used.
+- If you don't have a `value` or a `secret_ref` the parameter will not be
   parsed, it will be shown as `{{ param }}` in the `PipelineRun`.
 - If you don't have a `name` in the `params` the parameter will not parsed.
 - If you have multiple `params` with the same `name` the last one will be used.
