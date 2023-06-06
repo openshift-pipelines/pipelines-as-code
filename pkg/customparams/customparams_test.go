@@ -261,7 +261,7 @@ func TestProcessTemplates(t *testing.T) {
 			if tt.event == nil {
 				tt.event = &info.Event{}
 			}
-			p := NewCustomParams(tt.event, repo, run, &kitesthelper.KinterfaceTest{GetSecretResult: tt.secretData}, nil)
+			p := NewCustomParams(tt.event, repo, run, &kitesthelper.KinterfaceTest{GetSecretResult: tt.secretData}, nil, nil)
 			stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
 			p.eventEmitter = events.NewEventEmitter(stdata.Kube, logger)
 			ret, err := p.GetParams(ctx)

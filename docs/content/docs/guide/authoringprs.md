@@ -39,6 +39,7 @@ weight: 3
   * `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
   * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
   * `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
+  * `{{change_files}}`: The list of files changed in the event separated by a comma. On pull request every files belonging to the pull request will be listed.
 
 * For Pipelines as Code to process your `PipelineRun`, you must have either an
   embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML

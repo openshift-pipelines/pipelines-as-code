@@ -5,8 +5,10 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	tprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestMakeStandardParamsFromEvent(t *testing.T) {
@@ -31,6 +33,7 @@ func TestMakeStandardParamsFromEvent(t *testing.T) {
 		"source_branch":    "foo",
 		"target_branch":    "main",
 		"target_namespace": "myns",
+		"change_files":     "foo.go,bar.c",
 	}
 
 	repo := &v1alpha1.Repository{
@@ -39,16 +42,17 @@ func TestMakeStandardParamsFromEvent(t *testing.T) {
 			Namespace: "myns",
 		},
 	}
-
-	p := NewCustomParams(event, repo, nil, nil, nil)
-	params := p.makeStandardParamsFromEvent()
+	ctx, _ := rtesting.SetupFakeContext(t)
+	vcx := &tprovider.TestProviderImp{WantGetFiles: []string{"foo.go", "bar.c"}}
+	p := NewCustomParams(event, repo, nil, nil, nil, vcx)
+	params := p.makeStandardParamsFromEvent(ctx)
 	assert.DeepEqual(t, params, result)
 
 	nevent := &info.Event{}
 	event.DeepCopyInto(nevent)
 	nevent.CloneURL = "https://blahblah"
 	p.event = nevent
-	nparams := p.makeStandardParamsFromEvent()
+	nparams := p.makeStandardParamsFromEvent(ctx)
 	result["repo_url"] = nevent.CloneURL
 	assert.DeepEqual(t, nparams, result)
 }

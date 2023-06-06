@@ -100,7 +100,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		return nil, fmt.Errorf("reportFinalStatus: %w", err)
 	}
 
-	cp := customparams.NewCustomParams(event, repo, r.run, r.kinteract, r.eventEmitter)
+	cp := customparams.NewCustomParams(event, repo, r.run, r.kinteract, r.eventEmitter, nil)
 	maptemplate, err := cp.GetParams(ctx)
 	if err != nil {
 		r.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "ParamsError",
