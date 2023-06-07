@@ -38,7 +38,8 @@ func PatchPipelineRun(ctx context.Context, logger *zap.SugaredLogger, whatPatchi
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to patch pipelinerun %v/%v with %v: %w", pr.Namespace, whatPatching, pr.Name, err)
+		// return the original PipelineRun, let the caller decide what to do with it after the error is processed
+		return pr, fmt.Errorf("failed to patch pipelinerun %v/%v with %v: %w", pr.Namespace, whatPatching, pr.Name, err)
 	}
 	return patchedPR, nil
 }
