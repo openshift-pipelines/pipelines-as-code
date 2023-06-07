@@ -18,6 +18,12 @@ func PatchPipelineRun(ctx context.Context, logger *zap.SugaredLogger, whatPatchi
 		return nil, nil
 	}
 	var patchedPR *tektonv1.PipelineRun
+	// double the retry; see https://issues.redhat.com/browse/SRVKP-3134
+	doubleRetry := retry.DefaultRetry
+	doubleRetry.Steps *= 2
+	doubleRetry.Duration *= 2
+	doubleRetry.Factor *= 2
+	doubleRetry.Jitter *= 2
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		patch, err := json.Marshal(mergePatch)
 		if err != nil {
