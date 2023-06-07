@@ -173,7 +173,7 @@ func WaitForStatus(t *testing.T, topts *TestOpts, ref string) {
 	for {
 		cs, _, err := topts.GiteaCNX.Client.GetCombinedStatus(topts.Opts.Organization, topts.Opts.Repo, ref)
 		assert.NilError(t, err)
-		if cs.State != "" && cs.State != "pending" {
+		if (cs.State != "" && cs.State != "pending") || topts.CheckForStatus == string(cs.State) {
 			assert.Equal(t, string(cs.State), topts.CheckForStatus)
 			topts.ParamsRun.Clients.Log.Infof("Status is %s", cs.State)
 

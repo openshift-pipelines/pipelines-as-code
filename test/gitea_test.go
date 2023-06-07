@@ -265,12 +265,15 @@ func TestGiteaACLOrgSkipped(t *testing.T) {
 	assert.NilError(t, err)
 
 	topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
-	topts.CheckForStatus = "success"
+	topts.CheckForStatus = "pending"
 	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
 	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
+// TestGiteaACLCommentsAllowing tests when non authorized user sends a PR the status shows as pending unless
+// the authorized user adds a comment like /ok-to-test,/retest or /test, When authorized user adds those comments
+// the status of CI shows as success.
 func TestGiteaACLCommentsAllowing(t *testing.T) {
 	tests := []struct {
 		name, comment string
@@ -303,12 +306,14 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 			assert.NilError(t, err)
 
 			topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
-			topts.CheckForStatus = "success"
+			// status of CI is pending because PR sent by non authorized user
+			topts.CheckForStatus = "pending"
 			tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
 			topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
 			tgitea.WaitForPullRequestCommentMatch(t, topts)
 
 			tgitea.PostCommentOnPullRequest(t, topts, tt.comment)
+			// status of CI is success because comment /ok-to-test,/retest or /test added by authorized user
 			topts.Regexp = successRegexp
 			tgitea.WaitForPullRequestCommentMatch(t, topts)
 		})
