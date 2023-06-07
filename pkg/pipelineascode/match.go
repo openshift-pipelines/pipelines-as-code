@@ -134,8 +134,9 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 			p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryPermissionDenied", msg)
 
 			status := provider.StatusOpts{
-				Status:     "completed",
-				Conclusion: "skipped",
+				Status:     "queued",
+				Title:      "Pending approval",
+				Conclusion: "pending",
 				Text:       msg,
 				DetailsURL: p.event.URL,
 			}
