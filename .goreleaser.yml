@@ -22,13 +22,16 @@ builds:
       - -s
       - -X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version={{.Version}}
 archives:
-  - name_template: "{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    replacements:
-      darwin: MacOS
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
+  - name_template: >-
+     {{ .Binary }}_
+     {{ .Version }}_
+     {{ .Os }}_
+     {{- if eq .Arch "amd64" }}x86_64
+     {{- else if eq .Arch "386" }}i386
+     {{- else if eq .Arch "darwin" }}MacOS
+     {{- else if eq .Arch "linux" }}Linux
+     {{- else if eq .Arch "windows" }}Windows
+     {{- else }}{{ .Arch }}{{ end }}
     format_overrides:
       - goos: windows
         format: zip
@@ -44,9 +47,10 @@ release:
   header: |
     # Pipelines as Code version {{.Tag}}
 
-    OpenShift Pipelines as Code patch version {{.Tag }} has been released 🥳
+    OpenShift Pipelines as Code {{.Tag }} has been released 🥳
 
-    TODO: XXXXX add high level changelog before setting this as released XXXXX
+    TODO: XXXXX add high level changelog before setting this as released XXXXX,
+          describe the large features with some nice screenshot/demo if possible with doc links and pr links, if bugfixes just mention the notable bugfixes, see older releases for some example
 
     ## Installation
 
@@ -62,10 +66,9 @@ release:
     ```
     ### Documentation
 
-    documentation is available here :
+    The documentation for this release is available here :
 
-    https://pipelinesascode.com
-
+    https://release-{{ replace .Tag "." "-" }}.pipelines-as-code.pages.dev
 
 brews:
   - name: tektoncd-pac
@@ -87,7 +90,15 @@ brews:
       (zsh_completion/"_tkn-pac").write output
       prefix.install_metafiles
 nfpms:
-  - file_name_template: "tkn-pac-{{.Version}}_{{.Os}}-{{.Arch}}"
+  - file_name_template: >-
+      tkn-pac-
+      {{.Version}}_{{.Os}}-
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else if eq .Arch "darwin" }}MacOS
+      {{- else if eq .Arch "linux" }}Linux
+      {{- else if eq .Arch "windows" }}Windows
+      {{- else }}{{ .Arch }}{{ end }}
     homepage: https://pipelinesascode.com
     description: A command line interface to OpenShift Pipelines as Code
     maintainer: OpenShift Pipelines Developers <pipelines-dev@redhat.com>
@@ -97,15 +108,6 @@ nfpms:
       - deb
       - rpm
     bindir: /usr/bin
-    replacements:
-      amd64: 64bit
-      386: 32bit
-      arm: ARM
-      arm64: ARM64
-      darwin: macOS
-      linux: Linux
-      windows: Windows
-
 changelog:
   sort: asc
   use: github
