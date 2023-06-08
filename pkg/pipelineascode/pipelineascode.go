@@ -146,11 +146,16 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	// Add labels and annotations to pipelinerun
 	kubeinteraction.AddLabelsAndAnnotations(p.event, match.PipelineRun, match.Repo, p.vcx.GetConfig())
 
+	userAsksForPending := match.Repo.Spec.ConcurrencyLimit != nil && *match.Repo.Spec.ConcurrencyLimit != 0
+	// regardless of whether the user has set concurrency, we use the pending bit for a very short time to
+	// attempt to reduce updates conflicts between ourselves and other controllers that start updating the PipelineRun
+	// as soon as the underlying Pod(s) have started, so we have a better chance updating the PipelineRun after its
+	// initial creation
+	match.PipelineRun.Spec.Status = tektonv1.PipelineRunSpecStatusPending
+
 	// if concurrency is defined then start the pipelineRun in pending state and
 	// state as queued
-	if match.Repo.Spec.ConcurrencyLimit != nil && *match.Repo.Spec.ConcurrencyLimit != 0 {
-		// pending status
-		match.PipelineRun.Spec.Status = tektonv1.PipelineRunSpecStatusPending
+	if userAsksForPending {
 		// pac state as queued
 		match.PipelineRun.Labels[keys.State] = kubeinteraction.StateQueued
 		match.PipelineRun.Annotations[keys.State] = kubeinteraction.StateQueued
@@ -187,7 +192,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	}
 
 	// if pipelineRun is in pending state then report status as queued
-	if pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
+	if pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending && userAsksForPending {
 		status.Status = "queued"
 		status.Text = fmt.Sprintf(params.QueuingPipelineRunText, pr.GetName(), match.Repo.GetNamespace())
 	}
@@ -217,6 +222,15 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 			return pr, fmt.Errorf("cannot update pipelinerun %s with ownerRef: %w", pr.GetGenerateName(), err)
 		}
 	}
+
+	// now unset pending bit to get the other controllers, including the tekton pipeline controller, started with the PipelineRun,
+	// where they start making updates, unless user has specified concurrency control
+	if !userAsksForPending {
+		pr, err = action.PatchPipelineRun(ctx, p.logger, "specStatus", p.run.Clients.Tekton, pr, getPendingPatch(""))
+		if err != nil {
+			return pr, fmt.Errorf("cannot patch pipelinerun pending bit %s: %w", pr.GetGenerateName(), err)
+		}
+	}
 	return pr, nil
 }
 
@@ -236,6 +250,14 @@ func getExecutionOrderPatch(order string) map[string]interface{} {
 			"annotations": map[string]string{
 				keys.ExecutionOrder: order,
 			},
+		},
+	}
+}
+
+func getPendingPatch(specStatus string) map[string]interface{} {
+	return map[string]interface{}{
+		"spec": map[string]interface{}{
+			"status": specStatus,
 		},
 	}
 }
