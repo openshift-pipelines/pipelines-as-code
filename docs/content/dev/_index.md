@@ -22,6 +22,7 @@ When it finished you will have the following installed in your kind cluster:
 - A ingress controller with nginx for routing.
 - Tekton and Dashboard installed with a ingress route.
 - Pipelines as code deployed from your repo with ko.
+- Gitea service running locally so you can run your E2E tests that targets gitea (the most comprehensive ones)
 
 By default it will try to install from
 $GOPATH/src/github.com/openshift-pipelines/pipelines-as-code, if you want to
@@ -46,10 +47,10 @@ override it you can set the `PAC_DIRS` environment variable.
 - If you need to redeploy your pac install (and only pac) you can do :
 
   ```shell
-  ./install.sh -p
+  ./hack/dev/kind/install.sh/install.sh -p
   ```
 
-  or directly with ko :
+  or you can do this directly with ko :
 
   ```shell
   env KO_DOCKER_REPO=localhost:5000 ko apply -f ${1:-"config"} -B
@@ -59,6 +60,8 @@ override it you can set the `PAC_DIRS` environment variable.
   install from latest stable release (override with env variable `PAC_RELEASE`)
   instead of ko. `-c` will only do the pac configuration (ie: creation of
   secrets/ingress etc..)
+
+- see the [install.sh](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/hack/dev/kind/install.sh) -h for all flags
 
 ## Gitea
 

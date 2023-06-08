@@ -210,8 +210,28 @@ main() {
     echo "And we are done :): "
 }
 
-while getopts "RGgpcrb" o; do
+function usage() {
+    cat <<EOF
+Usage: $0 [OPTIONS]
+
+Options:
+  -h          Show this message
+  -b          Only install the registry/kind/nginx and tekton and don't install PAC
+  -c          Configure PAC
+  -p          Install only PAC
+  -g          Install only Gitea
+  -G          Disable Gitea when installing
+  -r          Install from release instead of local checkout with ko
+  -R          Restart the PAC pods
+EOF
+}
+
+while getopts "RGhgpcrb" o; do
     case "${o}" in
+        h)
+            usage
+            exit
+            ;;
         b)
             start_registry
             reinstall_kind
