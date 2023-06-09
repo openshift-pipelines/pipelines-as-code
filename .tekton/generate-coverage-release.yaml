@@ -115,6 +115,7 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
+                git config --global --add safe.directory $(workspaces.source.path)
                 bash hack/generate-releaseyaml.sh > release.k8s.yaml
                 env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > release.yaml
                 set +x # Do not show TOKEN in logs
