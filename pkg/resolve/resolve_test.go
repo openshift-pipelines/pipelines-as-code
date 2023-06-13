@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 func setup() {
 	s := k8scheme.Scheme
 	if err := tektonv1.AddToScheme(s); err != nil {
-		log.Fatalf("Unable to add route scheme: (%v)", err)
+		log.Fatalf("Unable to add tekton v1 scheme: (%v)", err)
 	}
 }
 
