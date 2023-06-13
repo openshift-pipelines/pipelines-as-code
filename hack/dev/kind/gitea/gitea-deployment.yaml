@@ -25,6 +25,9 @@ data:
     [repository.upload]
     TEMP_PATH = /home/gitea/uploads
 
+    [oauth2]
+    ENABLE = false
+
     [server]
     APP_DATA_PATH    = /home/gitea
     DOMAIN           = VAR_GITEA_HOST
@@ -138,7 +141,7 @@ spec:
         app: gitea
     spec:
       volumes:
-        - name: gitea-config
+        - name: gitea-configmap
           configMap:
             name: gitea-config
             items:
@@ -153,13 +156,13 @@ spec:
               value: VAR_GITEA_HOST
             - name: GITEA_URL
               value: VAR_GITEA_URL
+          command:
+            ["bash", "-xvec", "rm -rf /home/gitea/conf;cp -av /configmap /home/gitea/conf;rungitea"]
           ports:
             - containerPort: 3000
           volumeMounts:
-            # - name: gitea-data
-            #   mountPath: /home/gitea/gitea
-            - name: gitea-config
-              mountPath: /home/gitea/conf
+            - name: gitea-configmap
+              mountPath: /configmap
           readinessProbe:
             httpGet:
               path: /
