@@ -12,20 +12,8 @@ import (
 
 func createToken(topts *TestOpts) (string, error) {
 	token, _, err := topts.GiteaCNX.Client.CreateAccessToken(gitea.CreateAccessTokenOption{
-		Name: topts.TargetNS,
-		Scopes: []gitea.AccessTokenScope{
-			gitea.AccessTokenScopeRepo,
-			gitea.AccessTokenScopeAdminOrg,
-			gitea.AccessTokenScopeAdminPublicKey,
-			gitea.AccessTokenScopeAdminRepoHook,
-			gitea.AccessTokenScopeAdminOrgHook,
-			gitea.AccessTokenScopeNotification,
-			gitea.AccessTokenScopeUser,
-			gitea.AccessTokenScopeDeleteRepo,
-			gitea.AccessTokenScopePackage,
-			gitea.AccessTokenScopeAdminGPGKey,
-			gitea.AccessTokenScopeSudo,
-		},
+		Name:   topts.TargetNS,
+		Scopes: []gitea.AccessTokenScope{gitea.AccessTokenScopeAll},
 	})
 	if err != nil {
 		return "", err
