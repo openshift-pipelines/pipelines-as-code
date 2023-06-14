@@ -82,6 +82,7 @@ class ProvisionGitea:
                 if r.status_code == 200:
                     # wait a bit more that it finishes
                     time.sleep(5)
+                    print(f"installed gitea version is: {r.json()['version']}")
                     return True
                 r.raise_for_status()
             except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError):
