@@ -41,7 +41,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.CONTROLLER_IMAGE_NAME }}
 
       - name: Build and push controller docker image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v4.1.1
         with:
           context: .
           build-args: |
@@ -59,7 +59,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.WATCHER_IMAGE_NAME }}
 
       - name: Build and push watcher docker image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v4.1.1
         with:
           context: .
           build-args: |
@@ -77,7 +77,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.WEBHOOK_IMAGE_NAME }}
 
       - name: Build and push webhook docker image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v4.1.1
         with:
           context: .
           build-args: |
@@ -95,7 +95,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.TKN_PAC_IMAGE_NAME }}
 
       - name: Build and push cli docker image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v4.1.1
         with:
           context: .
           build-args: |
