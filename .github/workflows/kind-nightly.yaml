@@ -111,6 +111,7 @@ jobs:
 
       - name: Install wine
         run: |
+          sudo apt-get update
           sudo apt-get install -y --install-recommends wine
 
       - name: Compile tkn-pac for windows
