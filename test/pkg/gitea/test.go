@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -137,7 +139,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
 
 	if topts.CheckForStatus != "" {
-		WaitForStatus(t, topts, topts.TargetRefName, "")
+		WaitForStatus(t, topts, topts.TargetRefName, "", false)
 	}
 
 	if topts.Regexp != nil {
@@ -172,11 +174,29 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	return cleanup
 }
 
-func WaitForStatus(t *testing.T, topts *TestOpts, ref, forcontext string) {
+func WaitForStatus(t *testing.T, topts *TestOpts, ref, forcontext string, onlylatest bool) {
 	i := 0
+	if strings.HasPrefix(ref, "heads/") {
+		refo, _, err := topts.GiteaCNX.Client.GetRepoRefs(topts.Opts.Organization, topts.Opts.Repo, ref)
+		assert.NilError(t, err)
+		ref = refo[0].Object.SHA
+	}
+	checkNumberOfStatus := topts.CheckForNumberStatus
+	if checkNumberOfStatus == 0 {
+		checkNumberOfStatus = 1
+	}
 	for {
+		numstatus := 0
+		// get first sha of tree ref
 		statuses, _, err := topts.GiteaCNX.Client.ListStatuses(topts.Opts.Organization, topts.Opts.Repo, ref, gitea.ListStatusesOption{})
 		assert.NilError(t, err)
+		// sort statuses by id
+		sort.Slice(statuses, func(i, j int) bool {
+			return statuses[i].ID < statuses[j].ID
+		})
+		if onlylatest {
+			statuses = statuses[len(statuses)-1:]
+		}
 		for _, cstatus := range statuses {
 			if cstatus.State == "pending" {
 				continue
@@ -185,11 +205,11 @@ func WaitForStatus(t *testing.T, topts *TestOpts, ref, forcontext string) {
 				continue
 			}
 			assert.Equal(t, string(cstatus.State), topts.CheckForStatus)
-			topts.ParamsRun.Clients.Log.Infof("Status on SHA: %s is %s", ref, cstatus.State)
-			if topts.CheckForNumberStatus != 0 {
-				assert.Equal(t, len(statuses), topts.CheckForNumberStatus)
-			}
-
+			topts.ParamsRun.Clients.Log.Infof("Status on SHA: %s is %s from %s", ref, cstatus.State, cstatus.Context)
+			numstatus++
+		}
+		topts.ParamsRun.Clients.Log.Infof("Number of gitea status on PR: %d/%d", numstatus, checkNumberOfStatus)
+		if numstatus >= checkNumberOfStatus {
 			return
 		}
 		if i > 50 {
