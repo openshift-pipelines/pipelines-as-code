@@ -251,7 +251,8 @@ func TestGiteaACLOrgAllowed(t *testing.T) {
 	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
 }
 
-func TestGiteaACLOrgSkipped(t *testing.T) {
+// TestGiteaACLOrgPendingApproval tests when non authorized user sends a PR the status of CI shows as pending.
+func TestGiteaACLOrgPendingApproval(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		TargetEvent: options.PullRequestEvent,
 		YAMLFiles: map[string]string{
@@ -265,6 +266,7 @@ func TestGiteaACLOrgSkipped(t *testing.T) {
 	assert.NilError(t, err)
 
 	topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
+	// status of CI is pending because PR sent by non authorized user
 	topts.CheckForStatus = "pending"
 	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
 	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
