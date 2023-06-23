@@ -182,8 +182,8 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	entries = map[string]string{".tekton/pr.yaml": processed}
 	tgitea.PushFilesToRefGit(t, topts, entries, topts.TargetRefName)
 
-	gotPipelineRunPending := false
 	// loop until we get the status
+	gotPipelineRunPending := false
 	for i := 0; i < 30; i++ {
 		prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 		assert.NilError(t, err)
@@ -194,10 +194,12 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 			status := pr.Spec.Status
 			if status == "PipelineRunPending" {
 				gotPipelineRunPending = true
+				break
 			}
 		}
 		if gotPipelineRunPending {
 			topts.ParamsRun.Clients.Log.Info("Found PipelineRunPending in PipelineRuns")
+			break
 		}
 		time.Sleep(5 * time.Second)
 	}
@@ -206,7 +208,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	}
 
 	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 
 	topts.Regexp = successRegexp
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
@@ -230,7 +232,7 @@ func TestGiteaRetestAfterPush(t *testing.T) {
 	assert.NilError(t, err)
 	tgitea.PushFilesToRefGit(t, topts, entries, topts.TargetRefName)
 	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 }
 
 func TestGiteaConfigMaxKeepRun(t *testing.T) {
@@ -246,7 +248,7 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 	}
 	defer tgitea.TestPR(t, topts)()
 	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 
 	waitOpts := twait.Opts{
 		RepoName:        topts.TargetNS,
@@ -286,7 +288,7 @@ func TestGiteaPush(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, resp.StatusCode < 400, resp)
 	assert.Assert(t, merged)
-	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "")
+	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
 	time.Sleep(5 * time.Second)
 	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
 		LabelSelector: pacapi.EventType + "=push",
@@ -436,7 +438,7 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 			_, err = git.RunGit(tmpdir, "push", "origin", topts.TargetRefName)
 			assert.NilError(t, err)
 
-			tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
+			tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 
 			prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
 				LabelSelector: pacapi.EventType + "=pull_request",
@@ -712,7 +714,7 @@ func TestGiteaProvenance(t *testing.T) {
 	topts.PullRequest = pr
 	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
 	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 }
 
 // TestGiteaClusterTasks is a test to verify that we can use cluster tasks with PaaC

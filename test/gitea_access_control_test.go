@@ -59,7 +59,7 @@ func TestGiteaPolicyPullRequest(t *testing.T) {
 	topts.Regexp = regexp.MustCompile(
 		fmt.Sprintf(`.*policy check: pull_request, user: %s is not a member of any of the allowed teams.*`, normalUserNamePasswd))
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName, settings.PACApplicationNameDefaultValue)
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, settings.PACApplicationNameDefaultValue, false)
 
 	pullRequesterTeam, err := tgitea.CreateTeam(topts, orgName, "pull_requester")
 	assert.NilError(t, err)
@@ -132,7 +132,7 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 		fmt.Sprintf(`.*policy check: ok-to-test, user: %s is not a member of any of the allowed teams.*`, normalUserNamePasswd))
 	topts.CheckForStatus = "failure"
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName, settings.PACApplicationNameDefaultValue)
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, settings.PACApplicationNameDefaultValue, true)
 
 	// make sure we delete the old comment to don't have a false positive
 	topts.GiteaCNX = adminCNX
@@ -146,14 +146,14 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	topts.CheckForStatus = "failure"
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName, settings.PACApplicationNameDefaultValue)
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, settings.PACApplicationNameDefaultValue, true)
 	topts.GiteaCNX = okToTestUserCnx
 	topts.ParamsRun.Clients.Log.Infof("Sending a /ok-to-test comment as a user belonging to an allowed team in Repo CR policy")
 	tgitea.PostCommentOnPullRequest(t, topts, "/ok-to-test")
 	topts.Regexp = successRegexp
 	topts.CheckForStatus = "success"
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", true)
 }
 
 // TestGiteaACLOrgAllowed tests that the policy check works when the user is part of an allowed org
@@ -172,7 +172,7 @@ func TestGiteaACLOrgAllowed(t *testing.T) {
 
 	tgitea.CreateForkPullRequest(t, topts, secondcnx, "read", "echo Hello from user "+topts.TargetRefName)
 	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 }
 
 // TestGiteaACLOrgPendingApproval tests when non authorized user sends a PR the status of CI shows as pending.
@@ -191,7 +191,7 @@ func TestGiteaACLOrgPendingApproval(t *testing.T) {
 
 	topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
 	topts.CheckForStatus = "pending"
-	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "")
+	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
 	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
@@ -230,7 +230,7 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 
 			topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
 			topts.CheckForStatus = "pending"
-			tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "")
+			tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
 			topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
 			tgitea.WaitForPullRequestCommentMatch(t, topts)
 
