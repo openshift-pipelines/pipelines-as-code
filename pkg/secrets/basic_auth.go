@@ -54,9 +54,10 @@ func MakeBasicAuthSecret(runevent *info.Event, secretName string) (*corev1.Secre
 	// in the *** to do it in shell.
 	token := url.QueryEscape(runevent.Provider.Token)
 
+	baseCloneURL := fmt.Sprintf("%s://%s", repoURL.Scheme, repoURL.Host)
 	urlWithToken := fmt.Sprintf("%s://%s:%s@%s%s", repoURL.Scheme, gitUser, token, repoURL.Host, repoURL.Path)
 	secretData := map[string]string{
-		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, cloneURL),
+		".gitconfig":       fmt.Sprintf(basicAuthGitConfigData, baseCloneURL),
 		".git-credentials": urlWithToken,
 		// With the GitHub APP method the token is available for 8h if you have
 		// the user to server token expiration.  the token is scoped to the
