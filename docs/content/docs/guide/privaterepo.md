@@ -18,6 +18,12 @@ This secret contains a [Git Config](https://git-scm.com/docs/git-config) file:
 file: .git-credentials, which includes the https URL using the token obtained
 from the GitHub application or secret attached to the repo CR.
 
+{{< hint info >}} For compatibility, the [Git
+Config](https://git-scm.com/docs/git-config) file uses the detected repository's
+base URL instead of the full URL. For more information, see [this
+issue](https://github.com/openshift-pipelines/pipelines-as-code/issues/1307) {{<
+/hint >}}
+
 The secret includes a key referencing the token as a key to let you easily use it in your task for
 other provider operations. See the documentation with example on how to use it
 [here](../authoringprs/#using-the-temporary-github-app-token-for-github-api-operations)

@@ -1,6 +1,8 @@
 package secrets
 
 import (
+	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -25,6 +27,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 		name                    string
 		targetNS                string
 		event                   info.Event
+		expectedGitConfigURL    string
 		expectedGitCredentials  string
 		expectedStartSecretName string
 		expectedError           bool
@@ -34,6 +37,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 			name:                    "Target secret not there",
 			targetNS:                nsNotThere,
 			event:                   event,
+			expectedGitConfigURL:    "https://forge",
 			expectedGitCredentials:  "https://git:verysecrete@forge/owner/repo",
 			expectedStartSecretName: "pac-gitauth-owner-repo",
 			expectedLabels: map[string]string{
@@ -50,6 +54,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 				Repository:   "yoyo",
 				URL:          "https://forge/owner/yoyo/foo/bar/linux/kernel",
 			},
+			expectedGitConfigURL:    "https://forge",
 			expectedGitCredentials:  "https://git:verysecrete@forge/owner/yoyo/foo/bar/linux/kernel",
 			expectedStartSecretName: "pac-gitauth-owner-repo",
 			expectedLabels: map[string]string{
@@ -62,6 +67,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 			name:                    "Use clone URL",
 			targetNS:                nsNotThere,
 			event:                   event,
+			expectedGitConfigURL:    "https://forge",
 			expectedGitCredentials:  "https://git:verysecrete@forge/owner/repo",
 			expectedStartSecretName: "pac-gitauth-owner-repo",
 		},
@@ -69,6 +75,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 			name:                    "Target secret already there",
 			targetNS:                nsthere,
 			event:                   event,
+			expectedGitConfigURL:    "https://forge",
 			expectedGitCredentials:  "https://git:verysecrete@forge/owner/repo",
 			expectedStartSecretName: "pac-gitauth-owner-repo",
 		},
@@ -80,6 +87,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 				Repository:   "CASE",
 				URL:          "https://forge/UPPER/CASE",
 			},
+			expectedGitConfigURL:    "https://forge",
 			expectedGitCredentials:  "https://git:verysecrete@forge/UPPER/CASE",
 			expectedStartSecretName: "pac-gitauth-upper-case",
 		},
@@ -92,6 +100,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 				URL:          "https://forge/hello/moto",
 				CloneURL:     "https://forge/miss/robinson",
 			},
+			expectedGitConfigURL:    "https://forge",
 			expectedGitCredentials:  "https://git:verysecrete@forge/miss/robinson",
 			expectedStartSecretName: "pac-gitauth-upper-case",
 		},
@@ -107,6 +116,7 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 					Token: "supersecrete",
 				},
 			},
+			expectedGitConfigURL:    "https://forge",
 			expectedGitCredentials:  "https://superman:supersecrete@forge/bat/cave",
 			expectedStartSecretName: "pac-gitauth-upper-case",
 		},
@@ -126,6 +136,11 @@ func TestCreateBasicAuthSecret(t *testing.T) {
 				}
 			}
 			assert.Assert(t, strings.HasPrefix(secret.GetName(), tt.expectedStartSecretName))
+			gitConfig := secret.StringData[".gitconfig"]
+			regPattern := fmt.Sprintf("\\[credential\\s+\\\"%s\\\"\\]", tt.expectedGitConfigURL)
+			match, err := regexp.MatchString(regPattern, gitConfig)
+			assert.NilError(t, err)
+			assert.Assert(t, match, ".gitconfig URL should not have path component: %s", gitConfig)
 			assert.Equal(t, secret.StringData[".git-credentials"], tt.expectedGitCredentials)
 		})
 	}
