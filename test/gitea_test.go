@@ -662,6 +662,7 @@ func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {
 				Value: "myconsole",
 			},
 		},
+		StatusOnlyLatest: true,
 	}
 	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
 	topts.TargetNS = topts.TargetRefName

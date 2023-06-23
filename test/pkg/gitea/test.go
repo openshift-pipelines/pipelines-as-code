@@ -27,6 +27,7 @@ import (
 )
 
 type TestOpts struct {
+	StatusOnlyLatest      bool
 	OnOrg                 bool
 	NoPullRequestCreation bool
 	SkipEventsCheck       bool
@@ -139,7 +140,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
 
 	if topts.CheckForStatus != "" {
-		WaitForStatus(t, topts, topts.TargetRefName, "", false)
+		WaitForStatus(t, topts, topts.TargetRefName, "", topts.StatusOnlyLatest)
 	}
 
 	if topts.Regexp != nil {
@@ -195,16 +196,32 @@ func WaitForStatus(t *testing.T, topts *TestOpts, ref, forcontext string, onlyla
 			return statuses[i].ID < statuses[j].ID
 		})
 		if onlylatest {
-			statuses = statuses[len(statuses)-1:]
+			if len(statuses) > 1 {
+				statuses = statuses[len(statuses)-1:]
+			} else {
+				time.Sleep(5 * time.Second)
+				continue
+			}
 		}
 		for _, cstatus := range statuses {
+			if topts.CheckForStatus == "Skipped" {
+				if strings.HasSuffix(cstatus.Description, "Pending approval") {
+					numstatus++
+					break
+				}
+			}
 			if cstatus.State == "pending" {
 				continue
 			}
 			if forcontext != "" && cstatus.Context != forcontext {
 				continue
 			}
-			assert.Equal(t, string(cstatus.State), topts.CheckForStatus)
+			statuscheck := topts.CheckForStatus
+			if statuscheck != "" && statuscheck != string(cstatus.State) {
+				if statuscheck != cstatus.Description {
+					t.Errorf("Status on SHA: %s is %s from %s", ref, cstatus.State, cstatus.Context)
+				}
+			}
 			topts.ParamsRun.Clients.Log.Infof("Status on SHA: %s is %s from %s", ref, cstatus.State, cstatus.Context)
 			numstatus++
 		}

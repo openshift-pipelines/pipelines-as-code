@@ -190,7 +190,7 @@ func TestGiteaACLOrgPendingApproval(t *testing.T) {
 	assert.NilError(t, err)
 
 	topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
-	topts.CheckForStatus = "pending"
+	topts.CheckForStatus = "Skipped"
 	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
 	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
@@ -229,7 +229,7 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 			assert.NilError(t, err)
 
 			topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
-			topts.CheckForStatus = "pending"
+			topts.CheckForStatus = "Skipped"
 			tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
 			topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
 			tgitea.WaitForPullRequestCommentMatch(t, topts)
