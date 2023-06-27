@@ -1,22 +1,22 @@
-# Pipelines as Code
+# Pipelines-as-Code
 
 [![Container Repository on GHC](https://img.shields.io/badge/GHCR-image-87DCC0.svg?logo=GitHub)](https://github.com/openshift-pipelines/pipelines-as-code/pkgs/container/pipelines-as-code) [![codecov](https://codecov.io/gh/openshift-pipelines/pipelines-as-code/branch/main/graph/badge.svg)](https://codecov.io/gh/openshift-pipelines/pipelines-as-code) [![Go Report Card](https://goreportcard.com/badge/google/ko)](https://goreportcard.com/report/openshift-pipelines/pipelines-as-code) [![E2E Tests](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/kind-e2e-tests.yaml/badge.svg)](https://github.com/openshift-pipelines/pipelines-as-code/actions/workflows/kind-e2e-tests.yaml)
 
-Pipelines as Code -- An opinionated CI based on OpenShift Pipelines / Tekton.
+Pipelines-as-Code -- An opinionated CI based on OpenShift Pipelines / Tekton.
 
 Full documentation for the stable version is available from <https://pipelinesascode.com>
 Documentation for the development branch is available [here](https://nightly.pipelines-as-code.pages.dev/)
 
 ## Introduction
 
-Pipelines as Code let you use
-the [Pipelines as Code flow]([https://www.thoughtworks.com/radar/techniques/pipelines-as-code](https://www.thoughtworks.com/radar/techniques/pipelines-as-code)) directly with Tekton and OpenShift Pipelines.
+Pipelines-as-Code let you use
+the [Pipelines-as-Code flow]([https://www.thoughtworks.com/radar/techniques/pipelines-as-code](https://www.thoughtworks.com/radar/techniques/pipelines-as-code)) directly with Tekton and OpenShift Pipelines.
 
-The goal of Pipelines as Code is to let you define your
+The goal of Pipelines-as-Code is to let you define your
 [Tekton](https://tekton.dev) templates inside your source code repository and have the pipeline run and report the status
 of the execution when triggered by a Pull Request or a Push.
 
-Pipelines as Code features:
+Pipelines-as-Code features:
 
 - Pull-request status support: When iterating over a Pull Request, status and control is done on the platform.
 
@@ -50,15 +50,15 @@ Connected to your cluster execute the command :
 -$ tkn pac bootstrap
 ```
 
-and follow the questions and installation methods which will install Pipelines as Code on cluster and help you create a GitHub Application.
+and follow the questions and installation methods which will install Pipelines-as-Code on cluster and help you create a GitHub Application.
 
 feel free to look over the `--help` to see the different options on how to install for example on GitHub Enterprise.
 
 This getting started video will guide you thought the `tkn-pac bootstrap` flow using [Kind](https://kind.sigs.k8s.io/) :
 
-[![Getting started to Pipelines as Code](https://img.youtube.com/vi/cNOqPgpRXQY/0.jpg)](https://www.youtube.com/watch?v=cNOqPgpRXQY)
+[![Getting started to Pipelines-as-Code](https://img.youtube.com/vi/cNOqPgpRXQY/0.jpg)](https://www.youtube.com/watch?v=cNOqPgpRXQY)
 
-For more details on the different installation method please follow [this document](docs/install.md) for installing Pipelines as Code on OpenShift.
+For more details on the different installation method please follow [this document](docs/install.md) for installing Pipelines-as-Code on OpenShift.
 
 ## Getting Started
 
@@ -70,7 +70,7 @@ Start creating a GitHub repository by going to this URL
 <https://github.com/new>, you will need to provide a name (eg: `pac-demo`) and check
 the `"[ ] Add a README file"` box before pressing the `"Create Repository"` button.
 
-You are now able to enable the `Pipelines as Code` Github Application as created
+You are now able to enable the `Pipelines-as-Code` GitHub Application as created
 by the Admin onto your new repository by following this guide
 [here](https://docs.github.com/en/developers/apps/managing-github-apps/installing-github-apps).
 
@@ -129,6 +129,6 @@ There are several ways to communicate with us:
 
 ## Videos/Blog Posts
 
-- [OpenShift Developer Experience Office Hours: Pipeline as Code with OpenShift Pipelines](https://www.youtube.com/watch?v=PhqzGsJnFEI)
-- [How to make a release pipeline with Pipelines as Code](https://blog.chmouel.com/2021/07/01/how-to-make-a-release-pipeline-with-pipelines-as-code)
+- [OpenShift Developer Experience Office Hours: Pipelines-as-Code with OpenShift Pipelines](https://www.youtube.com/watch?v=PhqzGsJnFEI)
+- [How to make a release pipeline with Pipelines-as-Code](https://blog.chmouel.com/2021/07/01/how-to-make-a-release-pipeline-with-pipelines-as-code)
 - Main branch documentation - <https://main.pipelines-as-code.pages.dev/>
