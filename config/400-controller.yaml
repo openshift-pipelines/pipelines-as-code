@@ -31,6 +31,7 @@ spec:
   template:
     metadata:
       labels:
+        app: pipelines-as-code-controller
         app.kubernetes.io/name: controller
         app.kubernetes.io/component: controller
         app.kubernetes.io/instance: default
@@ -49,6 +50,8 @@ spec:
           ports:
             - name: api
               containerPort: 8080
+            - name: metrics
+              containerPort: 9090
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -86,9 +89,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: K_METRICS_CONFIG
-              value: '{"Domain":"pipelinesascode.tekton.dev/controller","Component":"controller","PrometheusPort":0,"PrometheusHost":"","ConfigMap":{}}'
+              value: '{"Domain":"pipelinesascode.tekton.dev/controller","Component":"pac_controller","PrometheusPort":9090,"ConfigMap":{"name":"pipelines-as-code-config-observability"}}'
             - name: K_TRACING_CONFIG
-              value: '{"backend":"","debug":"false","sample-rate":"0"}'
+              value: '{"backend":"prometheus","debug":"false","sample-rate":"0"}'
             - name: K_SINK_TIMEOUT
               value: "30"
           volumeMounts:
