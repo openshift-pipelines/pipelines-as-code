@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-github/v52/github"
@@ -71,10 +72,20 @@ func PushFilesToRefGit(t *testing.T, topts *TestOpts, entries map[string]string,
 	_, err = git.RunGit(path, "-c", "commit.gpgsign=false", "commit", "-m", "Committing files from test on "+topts.TargetRefName)
 	assert.NilError(t, err)
 
-	_, err = git.RunGit(path, "push", "origin", topts.TargetRefName)
-	assert.NilError(t, err)
-	// parse url topts.GitURL
-	topts.ParamsRun.Clients.Log.Infof("Pushed files to repo %s branch %s", topts.GitHTMLURL, topts.TargetRefName)
+	// use a loop to try multiple times in case of error
+	count := 0
+	for {
+		if _, err = git.RunGit(path, "push", "origin", topts.TargetRefName); err == nil {
+			topts.ParamsRun.Clients.Log.Infof("Pushed files to repo %s branch %s", topts.GitHTMLURL, topts.TargetRefName)
+			return
+		}
+		count++
+		if count > 5 {
+			t.Fatalf("Failed to push files to repo %s branch %s, %+v", topts.GitHTMLURL, topts.TargetRefName, err.Error())
+		}
+		topts.ParamsRun.Clients.Log.Infof("Failed to push files to repo %s branch %s, retrying in 5 seconds", topts.GitHTMLURL, topts.TargetRefName)
+		time.Sleep(5 * time.Second)
+	}
 }
 
 // Make a clone url with username and password
