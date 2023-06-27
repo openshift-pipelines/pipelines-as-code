@@ -88,7 +88,7 @@ lint-md: ${MD_FILES} ## runs markdownlint and vale on all markdown files
 	@echo "Linting markdown files..."
 	@markdownlint $(MD_FILES)
 	@echo "Grammar check with vale of documentation..."
-	@vale docs/content --minAlertLevel=error --output=line
+	@vale docs/content *.md --minAlertLevel=error --output=line
 
 .PHONY: fix-markdownlint
 fix-markdownlint: ${MD_FILES} ## run markdownlint and fix on all markdown file
