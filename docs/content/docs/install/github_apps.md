@@ -19,7 +19,7 @@ There are 2 ways to set up GitHub App:
 
 You could use [`tkn pac bootstrap`](/docs/guide/cli) command which will a create GitHub App, provides
 steps to configure it with your Git repository and also creates required secrets.
-After creating the GitHub App, you must install it on the repositories you want to use for Pipelines as Code.
+After creating the GitHub App, you must install it on the repositories you want to use for Pipelines-as-Code.
 
 Alternatively, you could set up manually by following the steps [here](#setup-manually).
 
@@ -30,7 +30,7 @@ Alternatively, you could set up manually by following the steps [here](#setup-ma
 * Provide the following info in the GitHub App form
   * **GitHub Application Name**: `OpenShift Pipelines`
   * **Homepage URL**: *[OpenShift Console URL]*
-  * **Webhook URL**: *[the Pipelines as Code route or ingress URL as copied in the previous section]*
+  * **Webhook URL**: *[the Pipelines-as-Code route or ingress URL as copied in the previous section]*
   * **Webhook secret**: *[an arbitrary secret, you can generate one with `openssl rand -hex 20`]*
 
 * Select the following repository permissions:
@@ -88,11 +88,11 @@ kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
         --from-literal webhook.secret="WEBHOOK_SECRET"
 ```
 
-Lastly, install the App on any repos you'd like to use with Pipelines as Code.
+Lastly, install the App on any repos you'd like to use with Pipelines-as-Code.
 
 ## GitHub Enterprise
 
-Pipelines as Code supports GitHub Enterprise.
+Pipelines-as-Code supports GitHub Enterprise.
 
 You don't need to do anything special to get Pipelines as code working with
 GHE. Pipelines as code automatically detect the header as set from GHE and

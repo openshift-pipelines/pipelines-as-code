@@ -2,12 +2,12 @@
 title: Resolver
 weight: 2
 ---
-# Pipelines as Code resolver
+# Pipelines-as-Code resolver
 
-Pipelines as Code resolver ensures the PipelineRun you are running does not
+Pipelines-as-Code resolver ensures the PipelineRun you are running does not
 conflicts with others.
 
-If `Pipelines as Code` sees a PipelineRun with a reference to a `Task` or to a
+If `Pipelines-as-Code` sees a PipelineRun with a reference to a `Task` or to a
 `Pipeline` in any YAML file located in the `.tekton/` directory it will
 automatically try to *resolves* it (see below) as a single PipelineRun with an
 embedded `PipelineSpec` to a `PipelineRun`.
@@ -28,7 +28,7 @@ The resolver will skip resolving if it sees these type of tasks:
 
 It just uses them "as is" and will not try to do anything with it.
 
-If Pipelines as Code cannot resolve the referenced tasks in the `Pipeline` or
+If Pipelines-as-Code cannot resolve the referenced tasks in the `Pipeline` or
 `PipelineSpec`, the run will fail before applying the pipelinerun onto the
 cluster.
 
@@ -42,7 +42,7 @@ command to learn on how to use it.
 
 ## Remote Task annotations
 
-`Pipelines as Code` support fetching remote tasks or pipeline from a remote
+`Pipelines-as-Code` support fetching remote tasks or pipeline from a remote
 location with annotations on PipelineRun.
 
 If the resolver sees a PipelineRun referencing a remote task or a Pipeline in
@@ -87,7 +87,7 @@ example :
   pipelinesascode.tekton.dev/task-2: "tkn"
 ```
 
-By default, `Pipelines as Code` will interpret the string as the `latest` task to
+By default, `Pipelines-as-Code` will interpret the string as the `latest` task to
 grab
 from [tekton hub](https://hub.tekton.dev).
 
@@ -101,7 +101,7 @@ pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # this will install git-clone
 
 ### Remote HTTP URL
 
-If you have a string starting with `http://` or `https://`, `Pipelines as Code`
+If you have a string starting with `http://` or `https://`, `Pipelines-as-Code`
 will fetch the task directly from that remote URL :
 
 ```yaml
@@ -151,7 +151,7 @@ This will grab the file `share/tasks/git-clone.yaml` from the current
 repository on the `SHA` where the event come from (i.e: the current pull
 request or the current branch push).
 
-If there is any error fetching those resources, `Pipelines as Code` will error
+If there is any error fetching those resources, `Pipelines-as-Code` will error
 out and not process the pipeline.
 
 If the object fetched cannot be parsed as a Tekton `Task` it will error out.

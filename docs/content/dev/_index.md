@@ -1,7 +1,7 @@
 ---
 title: Developer Resources
 ---
-# How to get started developing for the Pipelines as Code project
+# How to get started developing for the Pipelines-as-Code project
 
 ## Please read the Code of conduct
 
@@ -106,7 +106,7 @@ stringData:
   webhook: "" # make sure it's empty when you set this up on the interface and here
 ```
 
-There is some gotchas with the webhook validation secret, Pipelines as Code
+There is some gotchas with the webhook validation secret, Pipelines-as-Code
 detect a Gitea install and let the user set a empty webhook secret (by default
 it's enforced).
 

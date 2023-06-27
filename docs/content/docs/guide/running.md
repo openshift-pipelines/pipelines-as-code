@@ -4,7 +4,7 @@ weight: 4
 ---
 # Running the PipelineRun
 
-Pipelines as Code (PAC) can be used to run pipelines on events such as pushes
+Pipelines-as-Code (PAC) can be used to run pipelines on events such as pushes
 or pull requests. When an event occurs, PAC will try to match it to any
 PipelineRuns located in the `.tekton` directory of your repository
 that are annotated with the appropriate event type.
@@ -40,7 +40,7 @@ run a PipelineRun on CI:
 - The author of the pull request is listed in an OWNER file located in the root
   directory of the branch that is configured as the default branch on GitHub or
   your other provider. The OWNER file follows the [Prow OWNERS file format](https://www.kubernetes.dev/docs/guide/owners/),
-  and Pipelines as Code will allow a contributor to run a PipelineRun if they
+  and Pipelines-as-Code will allow a contributor to run a PipelineRun if they
   are listed in the `approvers` or `reviewers` sections.
 
   For example, if the approvers section of your OWNERS file in the main or master branch of your repository looks like this:
@@ -58,7 +58,7 @@ PipelineRun, another user who does have the necessary permissions can comment
 
 {{< hint info >}}
 If you are using the GitHub Apps and have installed it on an organization,
-Pipelines as Code will only be triggered if it detects a Repo CR that matches
+Pipelines-as-Code will only be triggered if it detects a Repo CR that matches
 one of the repositories in a URL on a repository that belongs to the
 organization where the GitHub App has been installed. Otherwise, Pipelines as
 Code will not be triggered.
@@ -83,9 +83,9 @@ repository :
 tkn pac logs -n my-pipeline-ci
 ```
 
-If you have set-up Pipelines as Code with the [Tekton Dashboard](https://github.com/tektoncd/dashboard/)
+If you have set-up Pipelines-as-Code with the [Tekton Dashboard](https://github.com/tektoncd/dashboard/)
 or on OpenShift using the OpenShift Console.
-Pipelines as Code will post a URL in the Checks tab for GitHub apps to let you
+Pipelines-as-Code will post a URL in the Checks tab for GitHub apps to let you
 click on it and follow the pipeline execution directly there.
 
 ## Restarting the PipelineRun
@@ -97,7 +97,7 @@ your branch or pull_request.
 
 If you are using the GitHub apps method, you have the option to access the "Checks"
 tab where you can find an upper right button labeled "Re-Run". By clicking on
-this button, you can trigger Pipelines as Code to respond and recommence
+this button, you can trigger Pipelines-as-Code to respond and recommence
 testing the PipelineRun.
 
 This feature enables you to either rerun a particular pipeline or execute the

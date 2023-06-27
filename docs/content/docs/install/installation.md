@@ -24,7 +24,7 @@ install the latest released version using the following command
 If you are not installing the most recent version, ensure that you have Tekton Pipeline installed and running at a version that is higher than v0.44.0.
 {{< /hint >}}
 
-If you want to do a manual installation of the stable release of Pipelines as Code
+If you want to do a manual installation of the stable release of Pipelines-as-Code
 on your OpenShift cluster you can apply the template with kubectl :
 
 ```shell
@@ -55,7 +55,7 @@ runs and is supposed to be accessible only by the admins.
 
 ### OpenShift
 
-On OpenShift the Route URL for the Pipelines as Code Controller is automatically created when
+On OpenShift the Route URL for the Pipelines-as-Code Controller is automatically created when
 you apply the `release.yaml`. You will need to reference this URL when configuring
 your GitHub provider.
 
@@ -104,7 +104,7 @@ subjects:
 
 ## CLI
 
-`Pipelines as Code` provide a CLI which is designed to work as tkn plug-in. To
+`Pipelines-as-Code` provide a CLI which is designed to work as tkn plug-in. To
 install the plug-in follow the instruction from the [CLI](/docs/guide/cli)
 documentation.
 
@@ -140,7 +140,7 @@ You can use following command to update the envs on the controller
 
 ## Proxy service for PAC controller
 
-Pipelines as Code requires an externally accessible URL to receive events from Git providers.
+Pipelines-as-Code requires an externally accessible URL to receive events from Git providers.
 If you're developing locally (such as on kind or Minikube) or don't want to set up an ingress on your cluster,
 you can also use a proxy service to expose the `pipelines-as-code-controller` service and allow it to receive events.
 

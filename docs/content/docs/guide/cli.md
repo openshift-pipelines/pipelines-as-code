@@ -2,19 +2,19 @@
 title: CLI tkn-pac
 weight: 10
 ---
-# Pipelines as Code CLI
+# Pipelines-as-Code CLI
 
-Pipelines as Code provide a powerful CLI designed to work as a plug-in to the [Tekton CLI (tkn)](https://github.com/tektoncd/cli).
+Pipelines-as-Code provide a powerful CLI designed to work as a plug-in to the [Tekton CLI (tkn)](https://github.com/tektoncd/cli).
 
 `tkn pac` allows you to :
 
-* `bootstrap`: quickly bootstrap a Pipelines as Code installation.
-* `create`: create a new Pipelines as Code Repository definition.
-* `delete`: delete an existing Pipelines as Code Repository definition.
-* `generate`: generate a simple pipelinerun to get you started with Pipelines as Code.
-* `list`: list Pipelines as Code Repositories.
+* `bootstrap`: quickly bootstrap a Pipelines-as-Code installation.
+* `create`: create a new Pipelines-as-Code Repository definition.
+* `delete`: delete an existing Pipelines-as-Code Repository definition.
+* `generate`: generate a simple pipelinerun to get you started with Pipelines-as-Code.
+* `list`: list Pipelines-as-Code Repositories.
 * `logs`: show the logs of a PipelineRun form a Repository CRD.
-* `describe`: describe a Pipelines as Code Repository and the runs associated with it.
+* `describe`: describe a Pipelines-as-Code Repository and the runs associated with it.
 * `resolve`: Resolve a pipelinerun as if it were executed by pipelines as code on service.
 * `webhook`: Updates webhook secret.
 * `info`: Show informations (currently only about your installation with `info install`).
@@ -101,7 +101,7 @@ configuring Pipelines as code. It currently supports the following providers:
 * GitHub Application on public GitHub
 * GitHub Application on GitHub Enterprise
 
-It will start checking if you have installed Pipelines as Code and if not it
+It will start checking if you have installed Pipelines-as-Code and if not it
 will ask you if you want to install (with `kubectl`) the latest stable
 release. If you add the flag `--nightly` it will install the latest code ci
 release.
@@ -119,10 +119,10 @@ The OpenShift console is automaticaly detected, on Kubernetes, `tkn-pac` will
 attempt to detect the tekton-dashboard Ingress URL and let you choose to use it
 as the endpoint for the created GitHub application.
 
-If your cluster is not accessible to the internet, Pipelines as Code provides an
+If your cluster is not accessible to the internet, Pipelines-as-Code provides an
 option to install a webhook forwarder called
 [gosmee](https://github.com/chmouel/gosmee). This forwarder enables connectivity
-between the Pipelines as Code controller and GitHub without requiring an
+between the Pipelines-as-Code controller and GitHub without requiring an
 internet connection. In this scenario, it will set up a forwarding URL on
 <https://hook.pipelinesascode.com> and set it up on GitHub. For OpenShift, it
 will not prompt you unless you explicitly specify the `--force-gosmee` flag
@@ -134,7 +134,7 @@ will not prompt you unless you explicitly specify the `--force-gosmee` flag
 
 ### bootstrap github-app
 
-If you only want to create a GitHub application to use with Pipelines as Code
+If you only want to create a GitHub application to use with Pipelines-as-Code
 and not the full `bootstrap` excercise, you can use `tkn pac bootstrap
 github-app` directly which will skip the installation and only create the
 GitHub application and the secret with all the information needed in the
@@ -146,7 +146,7 @@ GitHub application and the secret with all the information needed in the
 
 ### Repository Creation
 
-`tkn pac create repo` -- Creates a new Pipelines as Code `Repository` custom resource definition,
+`tkn pac create repo` -- Creates a new Pipelines-as-Code `Repository` custom resource definition,
 With a Git repository to execute pipelineruns based on Git events. It
 will also generate a sample file with a [PipelineRun](/docs/guide/authoringprs)
 in the `.tekton` directory called `pipelinerun.yaml` targeting the `main` branch
@@ -161,10 +161,10 @@ questions if you want to configure a webhook for your provider of choice.
 
 ### Repository Deletion
 
-`tkn pac delete repo` -- will delete a Pipelines as Code Repository definition.
+`tkn pac delete repo` -- will delete a Pipelines-as-Code Repository definition.
 
 You can specify the flag `--cascade` to optionally delete the attached secrets
-(ie: webhook or provider secret) to the Pipelines as Code Repository definition.
+(ie: webhook or provider secret) to the Pipelines-as-Code Repository definition.
 
 {{< /details >}}
 
@@ -172,7 +172,7 @@ You can specify the flag `--cascade` to optionally delete the attached secrets
 
 ### Repository Listing
 
-`tkn pac list` -- will list all the Pipelines as Code Repositories
+`tkn pac list` -- will list all the Pipelines-as-Code Repositories
 definition and display the last or the current status (if its running) of the
 PipelineRun associated with it.
 
@@ -197,7 +197,7 @@ with it.
 
 ### Repository Describe
 
-`tkn pac describe` -- will describe a Pipelines as Code Repository
+`tkn pac describe` -- will describe a Pipelines-as-Code Repository
 definition and the runs associated with it.
 
 You can choose to display the real time as RFC3339 rather than the relative time
@@ -242,7 +242,7 @@ the logs.
 ### Generate
 
 `tkn pac generate`: will generate a simple pipelinerun to get you started with
-Pipelines as Code. It will try to be as smart as possible by detecting the
+Pipelines-as-Code. It will try to be as smart as possible by detecting the
 current Git information if you run the command from your source code.
 
 It has some basic language detection and add extra task depending on the
@@ -321,7 +321,7 @@ There is no clean-up of the secret after the run.
 
 ### Configure and create webhook secret for GitHub, Gitlab and Bitbucket Cloud provider
 
-`tkn-pac webhook add [-n namespace]`: Allows you to add new webhook secret for a given provider and update the value of the new webhook secret in the existing `Secret` object used to interact with Pipelines as Code
+`tkn-pac webhook add [-n namespace]`: Allows you to add new webhook secret for a given provider and update the value of the new webhook secret in the existing `Secret` object used to interact with Pipelines-as-Code
 
 {{< /details >}}
 
@@ -329,7 +329,7 @@ There is no clean-up of the secret after the run.
 
 ### Update provider token for existing webhook
 
-`tkn pac webhook update-token [-n namespace]`: Allows you to update provider token for an existing `Secret` object to interact with Pipelines as Code.
+`tkn pac webhook update-token [-n namespace]`: Allows you to update provider token for an existing `Secret` object to interact with Pipelines-as-Code.
 
 {{< /details >}}
 
@@ -337,7 +337,7 @@ There is no clean-up of the secret after the run.
 
 ### Installation Info
 
-The command tkn pac info provides information about your Pipelines as Code
+The command tkn pac info provides information about your Pipelines-as-Code
 installation, including the location and version. You can also view an overview
 of all Repositories CR created on the cluster and their associated URLs.
 
