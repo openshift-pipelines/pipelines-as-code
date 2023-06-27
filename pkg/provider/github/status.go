@@ -57,8 +57,8 @@ func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Eve
 	}
 
 	for _, checkrun := range res.CheckRuns {
-		// if it is a skipped checkrun then overwrite it
-		if isSkippedCheckrun(checkrun) {
+		// if it is a Pending approval checkrun then overwrite it
+		if isPendingApprovalCheckrun(checkrun) {
 			if v.canIUseCheckrunID(checkrun.ID) {
 				return checkrun.ID, nil
 			}
@@ -71,13 +71,13 @@ func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Eve
 	return nil, nil
 }
 
-func isSkippedCheckrun(run *github.CheckRun) bool {
+func isPendingApprovalCheckrun(run *github.CheckRun) bool {
 	if run == nil || run.Output == nil {
 		return false
 	}
-	if run.Output.Title != nil && *run.Output.Title == "Skipped" &&
+	if run.Output.Title != nil && strings.Contains(*run.Output.Title, "Pending") &&
 		run.Output.Summary != nil &&
-		strings.Contains(*run.Output.Summary, "is skipping this commit") {
+		strings.Contains(*run.Output.Summary, "is waiting for approval") {
 		return true
 	}
 	return false
@@ -279,8 +279,12 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 	var err error
 	now := time.Now()
 	switch status.Conclusion {
-	case "skipped", "neutral":
+	case "neutral":
 		status.Conclusion = "success" // We don't have a choice than setting as success, no pending here.
+	case "pending":
+		if status.Title != "" {
+			status.Conclusion = "pending"
+		}
 	}
 	if status.Status == "in_progress" {
 		status.Conclusion = "pending"
@@ -298,7 +302,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		runevent.Organization, runevent.Repository, runevent.SHA, ghstatus); err != nil {
 		return err
 	}
-	if status.Status == "completed" && status.Text != "" && runevent.EventType == "pull_request" {
+	if (status.Status == "completed" || (status.Status == "queued" && status.Title == "Pending approval")) && status.Text != "" && runevent.EventType == "pull_request" {
 		_, _, err = v.Client.Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
 			runevent.PullRequestNumber,
 			&github.IssueComment{
@@ -325,9 +329,15 @@ func (v *Provider) CreateStatus(ctx context.Context, tekton versioned.Interface,
 	case "failure":
 		statusOpts.Title = "Failed"
 		statusOpts.Summary = "has <b>failed</b>."
-	case "skipped":
-		statusOpts.Title = "Skipped"
-		statusOpts.Summary = "is skipping this commit."
+	case "pending":
+		// for concurrency set title as pending
+		if statusOpts.Title == "" {
+			statusOpts.Title = "Pending"
+			statusOpts.Summary = "is skipping this commit."
+		} else {
+			// for unauthorized user set title as Pending approval
+			statusOpts.Summary = "is waiting for approval."
+		}
 	case "neutral":
 		statusOpts.Title = "Unknown"
 		statusOpts.Summary = "doesn't know what happened with this commit."

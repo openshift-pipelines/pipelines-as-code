@@ -193,13 +193,17 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	}
 
 	if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
-		return nil, fmt.Errorf("cannot use the API on the provider platform to create a in_progress status: %w", err)
+		// we still return the created PR with error, and allow caller to decide what to do with the PR, and avoid
+		// unneeded SIGSEGV's
+		return pr, fmt.Errorf("cannot use the API on the provider platform to create a in_progress status: %w", err)
 	}
 
 	// Patch pipelineRun with logURL annotation, skips for GitHub App as we patch logURL while patching CheckrunID
 	if _, ok := pr.Annotations[keys.InstallationID]; !ok {
 		pr, err = action.PatchPipelineRun(ctx, p.logger, "logURL", p.run.Clients.Tekton, pr, getLogURLMergePatch(p.run.Clients, pr))
 		if err != nil {
+			// we still return the created PR with error, and allow caller to decide what to do with the PR, and avoid
+			// unneeded SIGSEGV's
 			return pr, fmt.Errorf("cannot patch pipelinerun %s: %w", pr.GetGenerateName(), err)
 		}
 	}
@@ -208,7 +212,9 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	if p.run.Info.Pac.SecretAutoCreation {
 		err := p.k8int.UpdateSecretWithOwnerRef(ctx, p.logger, pr.Namespace, gitAuthSecretName, pr)
 		if err != nil {
-			return nil, fmt.Errorf("cannot update pipelinerun %s with ownerRef: %w", pr.GetGenerateName(), err)
+			// we still return the created PR with error, and allow caller to decide what to do with the PR, and avoid
+			// unneeded SIGSEGV's
+			return pr, fmt.Errorf("cannot update pipelinerun %s with ownerRef: %w", pr.GetGenerateName(), err)
 		}
 	}
 	return pr, nil

@@ -18,7 +18,7 @@ const (
 	openShiftRouteGroup            = "route.openshift.io"
 	openShiftRouteVersion          = "v1"
 	openShiftRouteResource         = "routes"
-	openshiftConsoleName           = "OpenShift console"
+	openshiftConsoleName           = "OpenShift Console"
 )
 
 type OpenshiftConsole struct {

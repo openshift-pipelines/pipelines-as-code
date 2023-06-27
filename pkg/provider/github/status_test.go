@@ -92,7 +92,7 @@ func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 	assert.Equal(t, *id, chosenID)
 }
 
-func TestGetExistingSkippedCheckRunID(t *testing.T) {
+func TestGetExistingPendingApprovalCheckRunID(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	client, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
@@ -116,8 +116,8 @@ func TestGetExistingSkippedCheckRunID(t *testing.T) {
 					"id": %v,
 					"external_id": "%s",
 					"output": {
-						"title": "Skipped",
-						"summary": "My CI is skipping this commit"
+						"title": "Pending approval",
+						"summary": "My CI is waiting for approval"
 					}
 				}
 			]
@@ -181,7 +181,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "success with using existing skipped run checkrun",
+			name: "success with using existing pending approval run checkrun",
 			args: args{
 				runevent:    runEvent,
 				status:      "completed",
@@ -246,11 +246,11 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			name: "skipped",
 			args: args{
 				runevent:    runEvent,
-				status:      "completed",
-				conclusion:  "skipped",
+				status:      "queued",
+				conclusion:  "pending",
 				text:        "Skipit",
 				detailsURL:  "https://cireport.com",
-				titleSubstr: "Skipped",
+				titleSubstr: "Pending",
 				githubApps:  true,
 			},
 			want:    &github.CheckRun{ID: &resultid},
@@ -300,7 +300,10 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 					assert.Assert(t, checkRun.GetCompletedAt().Year() == 0o001)
 				}
 				assert.Equal(t, checkRun.GetStatus(), tt.args.status)
-				assert.Equal(t, checkRun.GetConclusion(), tt.args.conclusion)
+				// pending status is not provided by GitHub its something added to handle skipped part from PAC side
+				if tt.args.conclusion != "pending" {
+					assert.Equal(t, checkRun.GetConclusion(), tt.args.conclusion)
+				}
 				assert.Equal(t, checkRun.Output.GetText(), tt.args.text)
 				assert.Equal(t, checkRun.GetDetailsURL(), tt.args.detailsURL)
 				assert.Assert(t, strings.Contains(checkRun.Output.GetTitle(), tt.args.titleSubstr))
@@ -316,9 +319,11 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 							{
 								"id": %v,
 								"external_id": "%v",
+                                "status": "queued",
+                                "conclusion": "pending", 
 								"output": {
-									"title": "Skipped",
-									"summary": "My CI is skipping this commit"
+									"title": "Pending approval",
+									"summary": "My CI is waiting for approval"
 								}
 							}
 						]
@@ -407,12 +412,12 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 			expectedConclusion: "pending",
 		},
 		{
-			name:  "pull_request status skipped",
+			name:  "pull_request status pending",
 			event: anevent,
 			status: provider.StatusOpts{
-				Conclusion: "skipped",
+				Conclusion: "pending",
 			},
-			expectedConclusion: "success",
+			expectedConclusion: "pending",
 		},
 		{
 			name:  "pull_request status neutral",

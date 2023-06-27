@@ -107,8 +107,12 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 	case "failure":
 		statusOpts.Title = "Failed"
 		statusOpts.Summary = "has <b>failed</b>."
-	case "skipped":
-		statusOpts.Title = "Skipped"
+	case "pending":
+		// for concurrency set title as pending
+		if statusOpts.Title == "" {
+			statusOpts.Title = "Pending"
+		}
+		// for unauthorized user set title as Pending approval
 		statusOpts.Summary = "is skipping this commit."
 	case "neutral":
 		statusOpts.Title = "Unknown"
@@ -133,8 +137,12 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
 	state := gitea.StatusState(status.Conclusion)
 	switch status.Conclusion {
-	case "skipped", "neutral":
+	case "neutral":
 		state = gitea.StatusSuccess // We don't have a choice than setting as success, no pending here.c
+	case "pending":
+		if status.Title != "" {
+			state = gitea.StatusPending
+		}
 	}
 	if status.Status == "in_progress" {
 		state = gitea.StatusPending
