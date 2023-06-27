@@ -4,7 +4,7 @@ weight: 20
 ---
 # Kubernetes
 
-Pipelines as Code works on kubernetes/minikube/kind.
+Pipelines-as-Code works on kubernetes/minikube/kind.
 
 ## Prerequisites
 
@@ -53,7 +53,7 @@ The ingress configuration depends on your Kubernetes provider. See below for
 some examples.
 
 Either the ingress hostname or its IP address may be used as the webhook URL.
-You'll have to provide this URL when connecting Pipelines as Code to
+You'll have to provide this URL when connecting Pipelines-as-Code to
 your Git provider. You can find the ingress's address via
 `kubectl get ingress pipelines-as-code -n pipelines-as-code`.
 

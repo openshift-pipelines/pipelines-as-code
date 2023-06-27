@@ -3,16 +3,16 @@ title: Incoming Webhook
 ---
 # Incoming webhook
 
-Pipelines as Code support the concept of incoming webhook URL. It let you
+Pipelines-as-Code support the concept of incoming webhook URL. It let you
 trigger PipelineRun in a Repository using a shared secret and URL,
 instead of creating a new code iteration.
 
 ## Incoming Webhook URL
 
-To use incoming webhooks in Pipelines as Code, you must configure the
+To use incoming webhooks in Pipelines-as-Code, you must configure the
 incoming field in your Repository CRD. This field references a `Secret`, which
 serves as the shared secret, as well as the branches targeted by the incoming
-webhook. Once configured, Pipelines as Code will match `PipelineRuns` located in
+webhook. Once configured, Pipelines-as-Code will match `PipelineRuns` located in
 your `.tekton` directory if the `on-event` annotation of the targetted pipelinerun is
 targettting a push or incoming event.
 

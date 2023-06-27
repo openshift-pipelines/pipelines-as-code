@@ -19,7 +19,7 @@ infrastructure.
 
 Any other error that may arise during the execution of the pipeline will also
 be reported to the GitHub user interface. However, if there was no match for the
-namespace, the error will be logged in the Pipeline as Code Controller's logs.
+namespace, the error will be logged in the Pipelines-as-Code Controller's logs.
 
 ## Statuses for other providers (Webhook based)
 
@@ -36,7 +36,7 @@ the last three lines from the task breakdown is displayed. However, the API has
 a character limit that restricts us to output only the output of the first
 failed task.
 
-To prevent exposing secrets, Pipelines as Code analyze the PipelineRun and
+To prevent exposing secrets, Pipelines-as-Code analyze the PipelineRun and
 replace secret values with hidden characters. This is achieved by retrieving
 all secrets from the environment variables associated with tasks and steps, and
 searching for matches of these values in the output snippet. These matches are
@@ -52,7 +52,7 @@ sources.
 ### Error detection from containers logs as GitHub Annotation
 
 If you enable the `error-detection-from-container-logs` option in the
-pipeline-as-code configuration map, Pipelines as Code will attempt to detect
+pipeline-as-code configuration map, Pipelines-as-Code will attempt to detect
 errors from the container logs and add them as annotations on the corresponding
 Pull Request where the error occurred.
 
@@ -66,7 +66,7 @@ filename:line:column: error message
 Tools like `golangci-lint`, `pylint`, `yamllint`, and many others can
 produce errors in this format.
 
-You can refer to the Pipelines as Code
+You can refer to the Pipelines-as-Code
 [pull_request.yaml](https://github.com/openshift-pipelines/pipelines-as-code/blob/7c9b16409a1a6c93e9480758f069f881e5a50f05/.tekton/pull-request.yaml#L70)
 for an example of how we lint our code and output errors in the
 specified format.
@@ -78,7 +78,7 @@ in specifying the matching criteria. The necessary groups for matching are
 filename, line, and error (the column group is not used). The default regular
 expression is defined in the configuration map.
 
-By default, Pipelines as Code searches for errors in only the last 50 lines of
+By default, Pipelines-as-Code searches for errors in only the last 50 lines of
 the container logs. However, you can increase this limit by setting the
 `error-detection-max-number-of-lines` value. If you set this value to -1, the
 system will search through all available lines for errors. Keep in mind that
@@ -89,7 +89,7 @@ watcher.
 
 ## Namespace Event stream
 
-When a namespace has been matched to a repository, Pipelines as Code will emit
+When a namespace has been matched to a repository, Pipelines-as-Code will emit
 its log messages as Kubernetes events within the namespace of the corresponding
 repository.
 
@@ -110,7 +110,7 @@ well as their metadata.
 
 ## Notifications
 
-Notifications are not managed by Pipelines as Code.
+Notifications are not managed by Pipelines-as-Code.
 
 To add notifications to your pipeline runs, you can use the [finally feature of
 Tekton
@@ -122,7 +122,7 @@ Here is an example of a task sending a [Slack](https://slack.com) message on fai
 
 <https://github.com/chmouel/tekton-slack-task-status>
 
-As an example, you can refer to the push pipeline in the Pipelines as Code
+As an example, you can refer to the push pipeline in the Pipelines-as-Code
 repository, which sends a Slack message if there are any failures while
 generating artifacts on every push. The relevant section of the pipeline can be
 found here:

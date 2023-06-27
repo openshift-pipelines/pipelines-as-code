@@ -2,7 +2,7 @@
 bookToc: false
 title: An opinionated CI based on OpenShift Pipelines / Tekton
 ---
-# Pipelines as Code
+# Pipelines-as-Code
 
 An opinionated CI based on OpenShift Pipelines / Tekton.
 
@@ -62,9 +62,9 @@ while connected to your cluster (for example using [kind](https://kind.sigs.k8s.
 -$ tkn pac bootstrap
 ```
 
-and follow the questions to get Pipelines as Code installed on your cluster.
-It will then help you create a GitHub Application to connect your repositories to Pipelines as Code.
-If you are in a source code project, it will immediately ask you if you want to have a sample `PipelineRun` for `Pipelines as Code`
+and follow the questions to get Pipelines-as-Code installed on your cluster.
+It will then help you create a GitHub Application to connect your repositories to Pipelines-as-Code.
+If you are in a source code project, it will immediately ask you if you want to have a sample `PipelineRun` for `Pipelines-as-Code`
 
 ## Walkthrough video
 
@@ -75,8 +75,8 @@ This 10-minute video will guide you through the `tkn-pac bootstrap` flow :
 ## Documentation
 
 For more details on the different installation methods please follow [the
-installation document](/docs/install/overview) detailing the Pipelines as Code
+installation document](/docs/install/overview) detailing the Pipelines-as-Code
 installation steps.
 
-If you need to use `Pipelines as Code` and author `PipelineRuns` you can follow
+If you need to use `Pipelines-as-Code` and author `PipelineRuns` you can follow
 the [usage guide](/docs/guide)

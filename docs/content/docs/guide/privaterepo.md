@@ -4,12 +4,12 @@ weight: 7
 ---
 # Private repositories
 
-Pipelines as Code allows the use of private repositories by creating or
+Pipelines-as-Code allows the use of private repositories by creating or
 updating a secret in the target namespace. This secret contains the user token
 required for the [git-clone](https://hub.tekton.dev/tekton/task/git-clone) task
 to clone private repositories.
 
-Whenever Pipelines as Code creates a new PipelineRun in the target namespace,
+Whenever Pipelines-as-Code creates a new PipelineRun in the target namespace,
 it also creates a secret with a specific name format:
 
 `pac-gitauth-REPOSITORY_OWNER-REPOSITORY_NAME-RANDOM_STRING`

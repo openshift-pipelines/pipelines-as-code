@@ -12,7 +12,7 @@ graph TD
     C1 -->|Not Defined| D1[Create PipelineRun with state='started']
     C1 -->|Defined| E1[Create PipelineRun with pending status and state='queued']
 
-    Z[Pipelines as Code]
+    Z[Pipelines-as-Code]
 
     A[Watcher] --> B(PipelineRun Reconciler)
     B --> C{Check state}

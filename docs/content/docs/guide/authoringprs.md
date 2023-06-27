@@ -4,9 +4,9 @@ weight: 3
 ---
 # Authoring PipelineRuns in `.tekton/` directory
 
-* Pipelines as Code will always try to be as close to the tekton template as
+* Pipelines-as-Code will always try to be as close to the tekton template as
   possible. Usually you will write your template and save them with a `.yaml`
-  extension and Pipelines as Code will run them.
+  extension and Pipelines-as-Code will run them.
 
 * The `.tekton` directory must be at the top level of the repo.
   You can reference YAML files in other repos using remote URLs
@@ -14,7 +14,7 @@ weight: 3
   but PipelineRuns will only be triggered by events in the repository containing
   the `.tekton` directory.
 
-* Using its [resolver](../resolver/) Pipelines as Code will try to bundle the
+* Using its [resolver](../resolver/) Pipelines-as-Code will try to bundle the
   PipelineRun with all its Task as a single PipelineRun with no external
   dependencies.
 
@@ -24,7 +24,7 @@ weight: 3
   [git-clone](https://github.com/tektoncd/catalog/blob/main/task/git-clone/)
   task from the [tektoncd/catalog](https://github.com/tektoncd/catalog).
 
-  To be able to specify the parameters of your commit and URL, Pipelines as Code
+  To be able to specify the parameters of your commit and URL, Pipelines-as-Code
   allows you to have those "dynamic" variables expanded. Those variables look
   like this `{{ var }}` and those are the one you can use:
 
@@ -40,7 +40,7 @@ weight: 3
   * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
   * `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
 
-* For Pipelines as Code to process your `PipelineRun`, you must have either an
+* For Pipelines-as-Code to process your `PipelineRun`, you must have either an
   embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML
   file in the `.tekton` directory. The Pipeline object can include `TaskSpecs`,
   which may be defined separately as Tasks in another YAML file in the same
@@ -61,7 +61,7 @@ your `PipelineRun`:
     pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-`Pipelines as Code` will match the pipelinerun `pipeline-pr-main` if the Git
+`Pipelines-as-Code` will match the pipelinerun `pipeline-pr-main` if the Git
 provider events target the branch `main` and it's coming from a `[pull_request]`
 
 Multiple target branch can be specified separated by comma, i.e:
@@ -101,7 +101,7 @@ A full example for a push of a tag :
 This will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0
 tags into your repository.
 
-Matching annotations are currently mandated or `Pipelines as Code` will not
+Matching annotations are currently mandated or `Pipelines-as-Code` will not
 match your `PipelineRun`.
 
 If there are multiple pipelinerun matching an event, it will run all of them in
@@ -110,7 +110,7 @@ finishes.
 
 ## Advanced event matching
 
-If you need to do some advanced matching, `Pipelines as Code` supports CEL
+If you need to do some advanced matching, `Pipelines-as-Code` supports CEL
 filtering.
 
 If you have the ``pipelinesascode.tekton.dev/on-cel-expression`` annotation in
@@ -202,7 +202,7 @@ tasks:
         - name: REQUEST_URL
           value: "{{ repo_url }}/pull/{{ pull_request_number }}"
         - name: COMMENT_OR_FILE
-          value: "Pipelines as Code IS GREAT!"
+          value: "Pipelines-as-Code IS GREAT!"
         - name: GITHUB_TOKEN_SECRET_NAME
           value: "{{ git_auth_secret }}"
         - name: GITHUB_TOKEN_SECRET_KEY

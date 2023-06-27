@@ -1,5 +1,5 @@
 ---
-title: Pipelines as Code Flows
+title: Pipelines-as-Code Flows
 weight: 1
 ---
 

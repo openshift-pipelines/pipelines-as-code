@@ -75,9 +75,9 @@ $ tkn pac create repo
 - From the left navigation pane of your Bitbucket Cloud repository, go to **Repository settings** -->
   **Webhooks** tab and click on the **Add webhook** button.
 
-  - Set a **Title** (i.e: Pipelines as Code)
+  - Set a **Title** (i.e: Pipelines-as-Code)
 
-  - Set the **URL** to Pipeline as Code controller public URL. On OpenShift, you can get the public URL of the Pipelines-as-Code
+  - Set the **URL** to Pipelines-as-Code controller public URL. On OpenShift, you can get the public URL of the Pipelines-as-Code
   controller like this:
 
     ```shell

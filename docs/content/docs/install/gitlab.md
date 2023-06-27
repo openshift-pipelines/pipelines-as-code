@@ -69,7 +69,7 @@ $ tkn pac create repo
 
 * Go to your project and click on *Settings* and *"Webhooks"* from the sidebar on the left.
 
-  * Set the **URL** to Pipeline as Code controller public URL. On OpenShift, you can get the public URL of the
+  * Set the **URL** to Pipelines-as-Code controller public URL. On OpenShift, you can get the public URL of the
   Pipelines-as-Code controller like this :
 
     ```shell

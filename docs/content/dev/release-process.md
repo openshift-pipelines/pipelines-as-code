@@ -1,7 +1,7 @@
 ---
-title: Pipelines as Code Release Process
+title: Pipelines-as-Code Release Process
 ---
-# Release process for Pipelines as Code
+# Release process for Pipelines-as-Code
 
 * Clear out the PR needed to be merged.
 * Wait that CI is connected.

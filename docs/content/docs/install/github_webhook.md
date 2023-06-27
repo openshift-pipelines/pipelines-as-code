@@ -7,7 +7,7 @@ weight: 12
 
 If you are not able to create a GitHub application you can use Pipelines-as-Code with [GitHub Webhook](https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks) on your repository.
 
-Using Pipelines as Code through GitHub webhook does not give you access to the
+Using Pipelines-as-Code through GitHub webhook does not give you access to the
 [GitHub CheckRun
 API](https://docs.github.com/en/rest/guides/getting-started-with-the-checks-api),
 therefore the status of
@@ -24,7 +24,7 @@ git commit --amend -a --no-edit && git push --force-with-lease origin branchname
 
 ## Create GitHub Personal Access Token
 
-After Pipelines as Code [installation](/docs/install/installation), you will
+After Pipelines-as-Code [installation](/docs/install/installation), you will
 need to create a GitHub personal access token for Pipelines-as-Code GitHub API
 operations.
 
@@ -116,7 +116,7 @@ $ tkn pac create repo
 
 * Go to your repository or organization **Settings** --> **Webhooks** and click on **Add webhook** button.
 
-  * Set the **Payload URL** to Pipeline as Code controller public URL. On OpenShift, you can get the public URL of the Pipelines-as-Code controller like this:
+  * Set the **Payload URL** to Pipelines-as-Code controller public URL. On OpenShift, you can get the public URL of the Pipelines-as-Code controller like this:
 
     ```shell
     echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')

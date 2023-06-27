@@ -13,7 +13,7 @@ There is a few things you can configure through the config map
   The name of the application for example when showing the results of the
   pipelinerun. If youre using the GitHub App you will
   need to customize the label on the github app setting as well. .  Default to
-  `Pipelines as Code CI`
+  `Pipelines-as-Code CI`
 
 * `secret-auto-create`
 
@@ -23,7 +23,7 @@ There is a few things you can configure through the config map
 
 * `secret-github-app-token-scoped`
 
-  When using a GitHub app, `Pipelines as Code` will generate a temporary
+  When using a GitHub app, `Pipelines-as-Code` will generate a temporary
   installation token for every allowed event coming through the controller.
 
   The generated token will be scoped to the repository from the repository where
@@ -31,7 +31,7 @@ There is a few things you can configure through the config map
   access to.
 
   Having access to every repositories the app has access to is a problem when
-  you install the `Pipelines as Code` application into an organization that has
+  you install the `Pipelines-as-Code` application into an organization that has
   a mixed between public and private repositories where every users in the
   organization is not trusted to have access to the private repositores. Since
   the scoping of the token only allow the user do operations and access on the
@@ -107,7 +107,7 @@ There is a few things you can configure through the config map
 * `auto-configure-new-github-repo`
 
   This setting let you autoconfigure newly created GitHub repositories. When
-  Pipelines as Code sees a new repository URL from a payload, It Code will set
+  Pipelines-as-Code sees a new repository URL from a payload, It Code will set
   up a namespace for your repository and create a Repository CR.
 
   This feature is disabled by default and is only supported with GitHub App.
@@ -135,7 +135,7 @@ There is a few things you can configure through the config map
 
 ### Error Detection
 
-Pipelines as Code detect if the PipelineRun has failed and show a snippet of
+Pipelines-as-Code detect if the PipelineRun has failed and show a snippet of
 the last few lines of the error.
 
 On GitHub Aopps, It also try to detect and match the error messages in the container logs and expose them as annotations on Pull
@@ -179,7 +179,7 @@ A few settings are available to configure this feature:
    test.js:100:10: an error occurred
    ```
 
-   Pipelines as Code will see this line and show it as an annotation on the pull
+   Pipelines-as-Code will see this line and show it as an annotation on the pull
    request where the error occurred, in the `test.js` file at line 100.
 
    You can configure the default regexp used for detection. You will need to
@@ -190,14 +190,14 @@ A few settings are available to configure this feature:
 
 ### Reporting logs
 
-  Pipeline as Code can report the logs of the tasks to the [OpenShift
+  Pipelines-as-Code can report the logs of the tasks to the [OpenShift
   Console](https://docs.openshift.com/container-platform/latest/web_console/web-console.html),
   the [Tekton Dashboard](https://tekton.dev/docs/dashboard/) or if you have your
   own give you flexibility to link to your custom Dashboard.
 
 #### OpenShift Console
 
-  Pipelines as Code will automatically detect the OpenShift Console and link the logs of the tasks to the
+  Pipelines-as-Code will automatically detect the OpenShift Console and link the logs of the tasks to the
   public URL of the OpenShift Console.
 
 #### [Tekton Dashboard](https://tekton.dev/docs/dashboard/)
@@ -274,7 +274,7 @@ A few settings are available to configure this feature:
 ## Pipelines-As-Code Info
 
   There are a settings exposed through a config map for which any authenticated
-  user can access to know about the Pipeline as Code status. This Configmap
+  user can access to know about the Pipelines-as-Code status. This Configmap
   will be automatically created with the [OpenShift Pipelines Operator](https://docs.openshift.com/container-platform/latest/cicd/pipelines/understanding-openshift-pipelines.html)
   or when installing with [tkn pac boostrap](../../guide/cli/#bootstrap) command.
 
@@ -301,7 +301,7 @@ A few settings are available to configure this feature:
 
 ## Logging Configuration
 
-  Pipelines as Code uses the ConfigMap named `pac-config-logging` in the same namespace (`pipelines-as-code` by default) as the controllers. To get the ConfigMap use the following command:
+  Pipelines-as-Code uses the ConfigMap named `pac-config-logging` in the same namespace (`pipelines-as-code` by default) as the controllers. To get the ConfigMap use the following command:
 
   ```bash
   $ kubectl get configmap pac-config-logging -n pipelines-as-code
@@ -367,13 +367,13 @@ A few settings are available to configure this feature:
   ```
 
   After this command, the controller gets a new log level value.
-  If you want to use the same log level for all Pipelines as Code components, delete `level.*` values from configmap:
+  If you want to use the same log level for all Pipelines-as-Code components, delete `level.*` values from configmap:
 
   ```bash
   kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[  {"op": "remove", "path": "/data/loglevel.pac-watcher"},  {"op": "remove", "path": "/data/loglevel.pipelines-as-code-webhook"},  {"op": "remove", "path": "/data/loglevel.pipelinesascode"}]'
   ```
 
-  In this case, all Pipelines as Code components get a common log level from `zap-logger-config` - `level` field from the json.
+  In this case, all Pipelines-as-Code components get a common log level from `zap-logger-config` - `level` field from the json.
 
   `zap-logger-config` supports the following log levels:
 

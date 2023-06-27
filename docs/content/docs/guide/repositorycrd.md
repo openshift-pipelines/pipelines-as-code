@@ -6,7 +6,7 @@ weight: 1
 
 The Repository CR serves the following purposes:
 
-- Informing Pipelines as Code that an event from a specific URL needs to be handled.
+- Informing Pipelines-as-Code that an event from a specific URL needs to be handled.
 - Specifying the namespace where the `PipelineRuns` will be executed.
 - Referencing an API secret, username, or API URL if necessary for Git provider
   platforms that require it (e.g., when using webhooks instead of the GitHub
@@ -33,7 +33,7 @@ EOF
 ```
 
 With this configuration when an event from the `linda/project` repository
-occurs, Pipelines as Code will know it needs to be handled and begin checking
+occurs, Pipelines-as-Code will know it needs to be handled and begin checking
 out the contents of linda/project to match with the PipelineRun in the .tekton/
 directory.
 
@@ -59,12 +59,12 @@ To use this feature, add the following annotation to the pipeline:
 pipelinesascode.tekton.dev/target-namespace: "mynamespace"
 ```
 
-Pipelines as Code will then only match the repository in the mynamespace
+Pipelines-as-Code will then only match the repository in the mynamespace
 namespace instead of trying to match it from all available repositories on the
 cluster.
 
 {{< hint info >}}
-Pipelines as Code installs a Kubernetes Mutating Admission Webhook to ensure
+Pipelines-as-Code installs a Kubernetes Mutating Admission Webhook to ensure
 that only one Repository CRD is created per URL on a cluster.
 
 If you disable this webhook, multiple Repository CRDs can be created for the
@@ -74,7 +74,7 @@ unless you use the `target-namespace` annotation.
 
 ### PipelineRun definition provenance
 
-By default on a `Push` or a `Pull Request`, Pipelines as Code will fetch the
+By default on a `Push` or a `Pull Request`, Pipelines-as-Code will fetch the
 PipelineRun definition from the branch of where the event has been triggered.
 
 This behavior can be changed by setting the setting `pipelinerun_provenance`.
@@ -133,7 +133,7 @@ while the rest will be queued.
 
 ## Custom Parameter Expansion
 
-Using the `{{ param }}` syntax, Pipelines as Code let you expand a variable
+Using the `{{ param }}` syntax, Pipelines-as-Code let you expand a variable
 inside a template directly within your PipelineRuns.
 
 By default, there are
@@ -247,7 +247,7 @@ and a pull request event.
 
 ## Scope GitHub token to a list of private and public repositories within and outside namespaces
 
-By default, the GitHub token that Pipelines as Code generates is scoped only to the repository where the payload comes from.
+By default, the GitHub token that Pipelines-as-Code generates is scoped only to the repository where the payload comes from.
 However, in some cases, the developer team might want the token to allow control over additional repositories.
 For example, there might be a CI repository where the `.tekton/pr.yaml` file and source payload might be located, however the build process defined in `pr.yaml` might fetch tasks from a separate private CD repository.
 

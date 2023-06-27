@@ -1,0 +1,9 @@
+extends: substitution
+message: Use '%s' instead of '%s'
+level: error
+scope: text
+nonword: false
+swap:
+  "Pipeline as Code": Pipelines-as-Code
+  "Pipelines as Code": Pipelines-as-Code
+  "Pipeline-as-Code": Pipelines-as-Code
