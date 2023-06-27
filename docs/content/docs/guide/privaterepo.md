@@ -4,28 +4,26 @@ weight: 7
 ---
 # Private repositories
 
-Pipelines as Code enables the use of private repositories by creating or
-updating a secret in the target namespace that contains the user token for the
-`git-clone` task to clone private repositories.
+Pipelines as Code allows the use of private repositories by creating or
+updating a secret in the target namespace. This secret contains the user token
+required for the [git-clone](https://hub.tekton.dev/tekton/task/git-clone) task
+to clone private repositories.
 
-This is done whenever Pipelines as Code creates a new PipelineRun in the target
-namespace, which will result in the creation with a secret named like this:
+Whenever Pipelines as Code creates a new PipelineRun in the target namespace,
+it also creates a secret with a specific name format:
 
 `pac-gitauth-REPOSITORY_OWNER-REPOSITORY_NAME-RANDOM_STRING`
 
-This secret contains a [Git Config](https://git-scm.com/docs/git-config) file:
-.gitconfig and a [Git credentials](https://git-scm.com/docs/gitcredentials)
-file: .git-credentials, which includes the https URL using the token obtained
-from the GitHub application or secret attached to the repo CR.
-
-{{< hint info >}} For compatibility, the [Git
-Config](https://git-scm.com/docs/git-config) file uses the detected repository's
-base URL instead of the full URL. For more information, see [this
-issue](https://github.com/openshift-pipelines/pipelines-as-code/issues/1307) {{<
-/hint >}}
+This secret contains a [Git Config](https://git-scm.com/docs/git-config) file named
+`.gitconfig` and a [Git credentials](https://git-scm.com/docs/gitcredentials)
+file named `.git-credentials`. These files configure the base HTTPS URL of the git provider
+(such as <https://github.com>) using the token obtained from the GitHub application
+or from a secret attached to the repository CR on git provider when using the webhook method.
 
 The secret includes a key referencing the token as a key to let you easily use it in your task for
-other provider operations. See the documentation with example on how to use it
+other provider operations.
+
+See the documentation with example on how to use it
 [here](../authoringprs/#using-the-temporary-github-app-token-for-github-api-operations)
 
 The secret has a
@@ -33,7 +31,7 @@ The secret has a
 field to the created PipelineRun. This means the secret will be auto deleted
 when you delete the `PipelineRun` it references to.
 
-{{< hint info >}}
+{{< hint warning >}}
 To disable this behavior, you can configure the `secret-auto-create` setting in
 the Pipelines-as-Code Configmap. You can set it to either false or true
 depending on your requirements.
