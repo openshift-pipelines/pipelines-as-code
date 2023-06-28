@@ -1,13 +1,37 @@
 <div class="flex flex-wrap justify-between">
-
+{{ if fileExists "ALLVERSIONS" }}
+{{ $versions := os.ReadFile "ALLVERSIONS" }}
+{{ $version := "nightly"}}
 {{ if fileExists "VERSION" }}
-{{ $version := os.ReadFile "VERSION" }}
-<div>
-  <a class="flex align-center" href="{{ .Site.Params.BookRepo }}/tree/{{ trim $version "\n" }}" target="_blank" rel="noopener">
-      <img src="{{ "svg/version.svg" | relURL }}" class="book-icon" alt="Calendar" />
-      <span>{{ $version | title }}</span>
-  </a>
-</div>
+{{ $version = os.ReadFile "VERSION" | strings.TrimLeft "\n" | strings.TrimRight "\n" }}
+{{ end }}
+{{ $splitted := split $versions "," }}
+    <select name="version" id="version" onchange="javascript:handleVersion(this)">
+        {{ range $splitted }}
+            {{ $trimmed := strings.TrimLeft " " . | strings.TrimRight " " }}
+            {{ if ne $trimmed $version }}
+                <option value="{{ $trimmed }}">{{$trimmed}}</option>
+            {{ else }}
+                <option selected value="{{ $trimmed }}">{{$trimmed}}</option>
+            {{ end }}
+        {{ end }}
+    </select>
+    <script type="text/javascript">
+      function handleVersion(elm)
+      {
+          if (elm.value == "nightly")
+          {
+              window.location = "https://nightly.pipelines-as-code.pages.dev"
+              return
+          } else if (elm.value == "stable")
+          {
+              window.location = "https://pipelinesascode.com"
+              return
+          }
+          var v = elm.value.replace(/\./g, "-");
+          window.location = "https://release-" + v + ".pipelines-as-code.pages.dev/"
+      }
+    </script>
 {{ end }}
 
 {{ if and .GitInfo .Site.Params.BookRepo }}
