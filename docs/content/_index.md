@@ -53,24 +53,19 @@ tracking using a Git workflow.
 
 ## Getting Started
 
-The easiest way to get started is to use the `tkn pac` CLI and its [bootstrap](/docs/guide/cli/#commands) command.
+The easiest way to get started is to use the `tkn pac` CLI and its
+[bootstrap](/docs/guide/cli/#commands) command. We recommend you to start
+playing with Pipelines-as-Code with your personal [GitHub](https://github.com/)
+user by installing Pipelines-as-Code on your laptop with
+[Kind](https://kind.sigs.k8s.io/) or [OpenShift
+Local](https://developers.redhat.com/products/openshift-local/overview) and
+explore how it works before installing it on your own cluster.
 
-Start downloading and install the tkn-pac CLI following [these instructions](/docs/guide/cli#install) and
-while connected to your cluster (for example using [kind](https://kind.sigs.k8s.io/) for testing) run the command :
-
-```bash
--$ tkn pac bootstrap
-```
-
-and follow the questions to get Pipelines-as-Code installed on your cluster.
-It will then help you create a GitHub Application to connect your repositories to Pipelines-as-Code.
-If you are in a source code project, it will immediately ask you if you want to have a sample `PipelineRun` for `Pipelines-as-Code`
-
-## Walkthrough video
-
-This 10-minute video will guide you through the `tkn-pac bootstrap` flow :
-
-{{< youtube cNOqPgpRXQY >}}
+- This [Guide]({{< relref "/docs/install/getting-started.md" >}}) will help you
+  get started by creating a GitHub Application, configuring Pipelines-as-Code,
+  and creating your first PipelineRun from a Pull Request.
+- If you prefer a video, this [walkthrough video](https://youtu.be/cNOqPgpRXQY)
+  will guide you through the process.
 
 ## Documentation
 
