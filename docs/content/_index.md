@@ -55,22 +55,8 @@ tracking using a Git workflow.
 
 The easiest way to get started is to use the `tkn pac` CLI and its [bootstrap](/docs/guide/cli/#commands) command.
 
-Start downloading and install the tkn-pac CLI following [these instructions](/docs/guide/cli#install) and
-while connected to your cluster (for example using [kind](https://kind.sigs.k8s.io/) for testing) run the command :
-
-```bash
--$ tkn pac bootstrap
-```
-
-and follow the questions to get Pipelines-as-Code installed on your cluster.
-It will then help you create a GitHub Application to connect your repositories to Pipelines-as-Code.
-If you are in a source code project, it will immediately ask you if you want to have a sample `PipelineRun` for `Pipelines-as-Code`
-
-## Walkthrough video
-
-This 10-minute video will guide you through the `tkn-pac bootstrap` flow :
-
-{{< youtube cNOqPgpRXQY >}}
+- This [Guide]({{< relref "/docs/install/getting-started.md" >}}) will help you getting started
+- If you prefer a video, this [Walkthrough video](https://youtu.be/cNOqPgpRXQY) will guide you through the `tkn-pac bootstrap` flow.
 
 ## Documentation
 
