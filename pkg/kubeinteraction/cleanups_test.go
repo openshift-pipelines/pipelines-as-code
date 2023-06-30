@@ -13,6 +13,7 @@ import (
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
+	"golang.org/x/exp/maps"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,14 +28,13 @@ func TestCleanupPipelines(t *testing.T) {
 		keys.OriginalPRName: cleanupPRName,
 		keys.Repository:     cleanupRepoName,
 	}
-	cleanupAnnotation := map[string]string{
-		keys.OriginalPRName: cleanupPRName,
-		keys.Repository:     cleanupRepoName,
-	}
+	// copy of cleanupLabels to be used in annotations
+	cleanupAnnotations := maps.Clone(cleanupLabels)
 
 	clock := clockwork.NewFakeClock()
 
 	type args struct {
+		logSnippet       string
 		namespace        string
 		repositoryName   string
 		maxKeep          int
@@ -42,6 +42,7 @@ func TestCleanupPipelines(t *testing.T) {
 		prunCurrent      *tektonv1.PipelineRun
 		kept             int
 		prunLatestInList string
+		secrets          []*corev1.Secret
 	}
 
 	tests := []struct {
@@ -56,11 +57,11 @@ func TestCleanupPipelines(t *testing.T) {
 				repositoryName: cleanupRepoName,
 				maxKeep:        1,
 				kept:           1,
-				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: cleanupAnnotation}},
+				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: cleanupAnnotations}},
 				pruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-					tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-					tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+					tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 10),
+					tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 20),
+					tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 30),
 				},
 				prunLatestInList: "pipeline-newest",
 			},
@@ -72,13 +73,52 @@ func TestCleanupPipelines(t *testing.T) {
 				repositoryName: cleanupRepoName,
 				maxKeep:        1,
 				kept:           1, // see my comment in code why only 1 is kept.
-				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: cleanupAnnotation}},
+				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: cleanupAnnotations}},
 				pruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(clock, "pipeline-running", ns, tektonv1.PipelineRunReasonRunning.String(), cleanupLabels, 10),
-					tektontest.MakePRCompletion(clock, "pipeline-toclean", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
-					tektontest.MakePRCompletion(clock, "pipeline-tokeep", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
+					tektontest.MakePRCompletion(clock, "pipeline-running", ns, tektonv1.PipelineRunReasonRunning.String(), nil, cleanupLabels, 10),
+					tektontest.MakePRCompletion(clock, "pipeline-toclean", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 30),
+					tektontest.MakePRCompletion(clock, "pipeline-tokeep", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 20),
 				},
 				prunLatestInList: "pipeline-running",
+			},
+		},
+		{
+			name: "cleanup with secrets",
+			args: args{
+				namespace:      ns,
+				repositoryName: cleanupRepoName,
+				logSnippet:     "secret pac-gitauth-secret attached to pipelinerun pipeline-toclean has been deleted",
+				prunCurrent: &tektonv1.PipelineRun{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: cleanupLabels,
+						Annotations: map[string]string{
+							keys.OriginalPRName: cleanupPRName,
+							keys.Repository:     cleanupRepoName,
+							keys.GitAuthSecret:  "pac-gitauth-secret",
+						},
+					},
+				},
+				maxKeep: 0,
+				kept:    0,
+				pruns: []*tektonv1.PipelineRun{
+					tektontest.MakePRCompletion(clock, "pipeline-toclean", ns, tektonv1.PipelineRunReasonSuccessful.String(), map[string]string{
+						keys.OriginalPRName: cleanupPRName,
+						keys.Repository:     cleanupRepoName,
+						keys.GitAuthSecret:  "pac-gitauth-secret",
+					}, cleanupLabels, 30),
+				},
+				secrets: []*corev1.Secret{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "pac-gitauth-secret",
+							Namespace: ns,
+						},
+						Data: map[string][]byte{
+							"username": []byte("test"),
+							"password": []byte("test"),
+						},
+					},
+				},
 			},
 		},
 	}
@@ -101,9 +141,10 @@ func TestCleanupPipelines(t *testing.T) {
 						},
 					},
 				},
+				Secret: tt.args.secrets,
 			}
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
-			observer, _ := zapobserver.New(zap.InfoLevel)
+			observer, logCatcher := zapobserver.New(zap.InfoLevel)
 			fakelogger := zap.New(observer).Sugar()
 			kint := Interaction{
 				Run: &params.Run{
@@ -125,6 +166,9 @@ func TestCleanupPipelines(t *testing.T) {
 			assert.Equal(t, tt.args.kept, len(plist.Items), "we have %d pruns kept when we wanted only %d", len(plist.Items), tt.args.kept)
 			if tt.args.prunLatestInList != "" {
 				assert.Equal(t, tt.args.prunLatestInList, plist.Items[0].Name)
+			}
+			if tt.args.logSnippet != "" {
+				assert.Assert(t, logCatcher.FilterMessageSnippet(tt.args.logSnippet).Len() > 0, logCatcher.All())
 			}
 		})
 	}

@@ -65,7 +65,7 @@ func MakePR(namespace, name string, childStatus []tektonv1.ChildStatusReference,
 	}
 }
 
-func MakePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus string, labels map[string]string, timeshift int) *tektonv1.PipelineRun {
+func MakePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus string, annotations, labels map[string]string, timeshift int) *tektonv1.PipelineRun {
 	// fakeing time logic give me headache
 	// this will make the pr finish 5mn ago, starting 5-5mn ago
 	starttime := time.Duration((timeshift - 5*-1) * int(time.Minute))
@@ -78,13 +78,16 @@ func MakePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus stri
 		runstatus = "Failed"
 		statuscondition = corev1.ConditionFalse
 	}
+	if len(annotations) == 0 {
+		annotations = labels
+	}
 
 	return &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Namespace:   namespace,
 			Labels:      labels,
-			Annotations: labels,
+			Annotations: annotations,
 		},
 		Status: tektonv1.PipelineRunStatus{
 			Status: knativeduckv1.Status{
