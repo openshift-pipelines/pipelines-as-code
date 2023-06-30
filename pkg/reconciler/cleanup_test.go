@@ -59,9 +59,9 @@ func TestCleanupPipelineRuns(t *testing.T) {
 		{
 			name: "using from annotation",
 			pruns: []*tektonv1.PipelineRun{
-				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 10),
+				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 20),
+				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 30),
 			},
 			repoNs:   ns,
 			repoName: cleanupRepoName,
@@ -75,9 +75,9 @@ func TestCleanupPipelineRuns(t *testing.T) {
 		{
 			name: "using from config, as annotation value is more than config",
 			pruns: []*tektonv1.PipelineRun{
-				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 10),
+				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 20),
+				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 30),
 			},
 			repoNs:   ns,
 			repoName: cleanupRepoName,
@@ -92,9 +92,9 @@ func TestCleanupPipelineRuns(t *testing.T) {
 		{
 			name: "using from annotation, as annotation value is less than config",
 			pruns: []*tektonv1.PipelineRun{
-				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 10),
+				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 20),
+				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 30),
 			},
 			repoNs:   ns,
 			repoName: cleanupRepoName,
@@ -109,9 +109,9 @@ func TestCleanupPipelineRuns(t *testing.T) {
 		{
 			name: "no max-keep-runs annotation, using default from config",
 			pruns: []*tektonv1.PipelineRun{
-				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 10),
-				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 20),
-				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), cleanupLabels, 30),
+				tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 10),
+				tektontest.MakePRCompletion(clock, "pipeline-middest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 20),
+				tektontest.MakePRCompletion(clock, "pipeline-oldest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 30),
 			},
 			repoNs:             ns,
 			repoName:           cleanupRepoName,

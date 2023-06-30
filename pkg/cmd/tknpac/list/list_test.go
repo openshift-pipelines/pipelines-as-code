@@ -170,7 +170,7 @@ func TestList(t *testing.T) {
 				},
 				repositories: []*pacv1alpha1.Repository{repoNamespace1},
 				pipelineruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", namespace1.GetName(), running, map[string]string{
+					tektontest.MakePRCompletion(cw, "running", namespace1.GetName(), running, nil, map[string]string{
 						keys.Repository: repoNamespace1.GetName(),
 						keys.SHA:        repoNamespace1SHA,
 					}, 30),
