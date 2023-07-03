@@ -44,7 +44,7 @@ func TestLogs(t *testing.T) {
 			currentNamespace: ns,
 			shift:            0,
 			pruns: []*tektonv1.PipelineRun{
-				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
+				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, nil, map[string]string{
 					keys.Repository: "test",
 				}, 30),
 			},
@@ -56,10 +56,10 @@ func TestLogs(t *testing.T) {
 			currentNamespace: ns,
 			useLastPR:        true,
 			pruns: []*tektonv1.PipelineRun{
-				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
+				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, nil, map[string]string{
 					keys.Repository: "test",
 				}, 30),
-				tektontest.MakePRCompletion(cw, "test-pipeline2", ns, completed, map[string]string{
+				tektontest.MakePRCompletion(cw, "test-pipeline2", ns, completed, nil, map[string]string{
 					keys.Repository: "test",
 				}, 30),
 			},
@@ -71,7 +71,7 @@ func TestLogs(t *testing.T) {
 			currentNamespace: ns,
 			shift:            2,
 			pruns: []*tektonv1.PipelineRun{
-				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, map[string]string{
+				tektontest.MakePRCompletion(cw, "test-pipeline", ns, completed, nil, map[string]string{
 					keys.Repository: "test",
 				}, 30),
 			},

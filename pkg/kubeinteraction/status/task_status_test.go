@@ -51,7 +51,7 @@ func TestCollectFailedTasksLogSnippet(t *testing.T) {
 				exitcode = 1
 			}
 
-			pr := tektontest.MakePRCompletion(clock, "pipeline-newest", "ns", tektonv1.PipelineRunReasonSuccessful.String(), make(map[string]string), 10)
+			pr := tektontest.MakePRCompletion(clock, "pipeline-newest", "ns", tektonv1.PipelineRunReasonSuccessful.String(), nil, make(map[string]string), 10)
 			pr.Status.ChildReferences = []tektonv1.ChildStatusReference{
 				{
 					TypeMeta: runtime.TypeMeta{

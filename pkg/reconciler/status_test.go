@@ -48,7 +48,7 @@ func TestPostFinalStatus(t *testing.T) {
 	labels := map[string]string{}
 	ns := "namespace"
 	clock := clockwork.NewFakeClock()
-	pr1 := tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), labels, 10)
+	pr1 := tektontest.MakePRCompletion(clock, "pipeline-newest", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, labels, 10)
 	pr1.Status.Conditions = append(pr1.Status.Conditions, apis.Condition{Status: "False", Message: "Hello not good", Type: "Succeeded", Reason: "CouldntGetTask"})
 	ctx, _ := rtesting.SetupFakeContext(t)
 	tdata := testclient.Data{PipelineRuns: []*tektonv1.PipelineRun{pr1}}

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/google/go-github/v52/github"
+	"github.com/google/go-github/v53/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -137,7 +137,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			if tt.finalStatus == finalFailureStatus {
 				statusPR = tektonv1.PipelineRunReasonFailed
 			}
-			pr := tektontest.MakePRCompletion(clock, "pipeline-newest", "ns", string(statusPR), make(map[string]string), 10)
+			pr := tektontest.MakePRCompletion(clock, "pipeline-newest", "ns", string(statusPR), nil, make(map[string]string), 10)
 			pr.Status.ChildReferences = []tektonv1.ChildStatusReference{
 				{
 					TypeMeta: runtime.TypeMeta{

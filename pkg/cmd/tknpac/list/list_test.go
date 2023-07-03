@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v52/github"
+	"github.com/google/go-github/v53/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -170,7 +170,7 @@ func TestList(t *testing.T) {
 				},
 				repositories: []*pacv1alpha1.Repository{repoNamespace1},
 				pipelineruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", namespace1.GetName(), running, map[string]string{
+					tektontest.MakePRCompletion(cw, "running", namespace1.GetName(), running, nil, map[string]string{
 						keys.Repository: repoNamespace1.GetName(),
 						keys.SHA:        repoNamespace1SHA,
 					}, 30),
