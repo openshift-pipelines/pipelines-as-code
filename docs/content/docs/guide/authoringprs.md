@@ -39,6 +39,11 @@ weight: 3
   * `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
   * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
   * `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
+  * `{{all_changed_files}}`: The list of all files changed in the event (added, deleted, modified and renamed) separated by a comma. On pull request every file belonging to the pull request will be listed.
+  * `{{added_files}}`: The list of added files in the event separated by a comma. On pull request every added file belonging to the pull request will be listed.
+  * `{{deleted_files}}`: The list of deleted files in the event separated by a comma. On pull request every deleted file belonging to the pull request will be listed.
+  * `{{modified_files}}`: The list of modified files in the event separated by a comma. On pull request every modified file belonging to the pull request will be listed.
+  * `{{renamed_files}}`: The list of renamed files in the event separated by a comma. On pull request every renamed file belonging to the pull request will be listed.
 
 * For Pipelines-as-Code to process your `PipelineRun`, you must have either an
   embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML
@@ -134,6 +139,20 @@ suffix) in the `docs` directory :
 ```yaml
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "pull_request" && "docs/*.md".pathChanged()
+```
+
+This example will match any changed file (added, modified, removed or renamed) that was in the `tmp` directory:
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      all_changed_files.matches('tmp/')
+```
+
+This example will match any added file that was in the `src` directory:
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      added_files.matches('src/')
 ```
 
 This example will match all pull request starting with the title `[DOWNSTREAM]`:

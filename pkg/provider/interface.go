@@ -35,9 +35,17 @@ type Interface interface {
 	SetClient(context.Context, *params.Run, *info.Event) error
 	GetCommitInfo(context.Context, *info.Event) error
 	GetConfig() *info.ProviderConfig
-	GetFiles(context.Context, *info.Event) ([]string, error)
+	GetFiles(context.Context, *info.Event) (ChangedFiles, error)
 	GetTaskURI(ctx context.Context, params *params.Run, event *info.Event, uri string) (bool, string, error)
 	CreateToken(context.Context, []string, *params.Run, *info.Event) (string, error)
 }
 
 const DefaultProviderAPIUser = "git"
+
+type ChangedFiles struct {
+	All      []string
+	Added    []string
+	Deleted  []string
+	Modified []string
+	Renamed  []string
+}

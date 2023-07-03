@@ -568,10 +568,14 @@ func TestValidate(t *testing.T) {
 
 func TestGetFiles(t *testing.T) {
 	tests := []struct {
-		name        string
-		event       *info.Event
-		commitFiles []*github.CommitFile
-		commit      *github.RepositoryCommit
+		name                   string
+		event                  *info.Event
+		commitFiles            []*github.CommitFile
+		commit                 *github.RepositoryCommit
+		wantAddedFilesCount    int
+		wantDeletedFilesCount  int
+		wantModifiedFilesCount int
+		wantRenamedFilesCount  int
 	}{
 		{
 			name: "pull-request",
@@ -583,11 +587,23 @@ func TestGetFiles(t *testing.T) {
 			},
 			commitFiles: []*github.CommitFile{
 				{
-					Filename: ptr.String("first.yaml"),
+					Filename: ptr.String("modified.yaml"),
+					Status:   ptr.String("modified"),
 				}, {
-					Filename: ptr.String("second.doc"),
+					Filename: ptr.String("added.doc"),
+					Status:   ptr.String("added"),
+				}, {
+					Filename: ptr.String("removed.yaml"),
+					Status:   ptr.String("removed"),
+				}, {
+					Filename: ptr.String("renamed.doc"),
+					Status:   ptr.String("renamed"),
 				},
 			},
+			wantAddedFilesCount:    1,
+			wantDeletedFilesCount:  1,
+			wantModifiedFilesCount: 1,
+			wantRenamedFilesCount:  1,
 		},
 		{
 			name: "push",
@@ -600,29 +616,66 @@ func TestGetFiles(t *testing.T) {
 			commit: &github.RepositoryCommit{
 				Files: []*github.CommitFile{
 					{
-						Filename: ptr.String("first.yaml"),
+						Filename: ptr.String("modified.yaml"),
+						Status:   ptr.String("modified"),
 					}, {
-						Filename: ptr.String("second.doc"),
+						Filename: ptr.String("added.doc"),
+						Status:   ptr.String("added"),
+					}, {
+						Filename: ptr.String("removed.yaml"),
+						Status:   ptr.String("removed"),
+					}, {
+						Filename: ptr.String("renamed.doc"),
+						Status:   ptr.String("renamed"),
 					},
 				},
 			},
+			wantAddedFilesCount:    1,
+			wantDeletedFilesCount:  1,
+			wantModifiedFilesCount: 1,
+			wantRenamedFilesCount:  1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-			commitFiles := []*github.CommitFile{
+			prCommitFiles := []*github.CommitFile{
 				{
-					Filename: ptr.String("first.yaml"),
+					Filename: ptr.String("modified.yaml"),
+					Status:   ptr.String("modified"),
 				}, {
-					Filename: ptr.String("second.doc"),
+					Filename: ptr.String("added.doc"),
+					Status:   ptr.String("added"),
+				}, {
+					Filename: ptr.String("removed.yaml"),
+					Status:   ptr.String("removed"),
+				}, {
+					Filename: ptr.String("renamed.doc"),
+					Status:   ptr.String("renamed"),
 				},
 			}
+
+			pushCommitFiles := []*github.CommitFile{
+				{
+					Filename: ptr.String("modified.yaml"),
+					Status:   ptr.String("modified"),
+				}, {
+					Filename: ptr.String("added.doc"),
+					Status:   ptr.String("added"),
+				}, {
+					Filename: ptr.String("removed.yaml"),
+					Status:   ptr.String("removed"),
+				}, {
+					Filename: ptr.String("renamed.doc"),
+					Status:   ptr.String("renamed"),
+				},
+			}
+
 			if tt.event.TriggerTarget == "pull_request" {
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/pulls/%d/files",
 					tt.event.Organization, tt.event.Repository, tt.event.PullRequestNumber), func(rw http.ResponseWriter, r *http.Request) {
-					b, _ := json.Marshal(commitFiles)
+					b, _ := json.Marshal(prCommitFiles)
 					fmt.Fprint(rw, string(b))
 				})
 			}
@@ -630,7 +683,7 @@ func TestGetFiles(t *testing.T) {
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/commits/%s",
 					tt.event.Organization, tt.event.Repository, tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
 					c := &github.RepositoryCommit{
-						Files: commitFiles,
+						Files: pushCommitFiles,
 					}
 					b, _ := json.Marshal(c)
 					fmt.Fprint(rw, string(b))
@@ -639,16 +692,22 @@ func TestGetFiles(t *testing.T) {
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			provider := &Provider{Client: fakeclient}
-			fileData, err := provider.GetFiles(ctx, tt.event)
+			changedFiles, err := provider.GetFiles(ctx, tt.event)
 			assert.NilError(t, err, nil)
+
+			assert.Equal(t, tt.wantAddedFilesCount, len(changedFiles.Added))
+			assert.Equal(t, tt.wantDeletedFilesCount, len(changedFiles.Deleted))
+			assert.Equal(t, tt.wantModifiedFilesCount, len(changedFiles.Modified))
+			assert.Equal(t, tt.wantRenamedFilesCount, len(changedFiles.Renamed))
+
 			if tt.event.TriggerTarget == "pull_request" {
-				for i := range fileData {
-					assert.Equal(t, *tt.commitFiles[i].Filename, fileData[i])
+				for i := range changedFiles.All {
+					assert.Equal(t, *tt.commitFiles[i].Filename, changedFiles.All[i])
 				}
 			}
 			if tt.event.TriggerTarget == "push" {
-				for i := range fileData {
-					assert.Equal(t, *tt.commit.Files[i].Filename, fileData[i])
+				for i := range changedFiles.All {
+					assert.Equal(t, *tt.commit.Files[i].Filename, changedFiles.All[i])
 				}
 			}
 		})
