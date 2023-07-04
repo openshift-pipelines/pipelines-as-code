@@ -16,6 +16,7 @@ type ownersConfig struct {
 
 // UserInOwnerFile Parse a Prow type Owner, Approver files and return true if the sender is in
 // there.
+// Does not support OWNERS_ALIASES
 func UserInOwnerFile(ownerContent, sender string) (bool, error) {
 	oc := ownersConfig{}
 	err := yaml.Unmarshal([]byte(ownerContent), &oc)
