@@ -95,8 +95,6 @@ spec:
                     secretKeyRef:
                       name: pipelines-as-code-codecov-token
                       key: token
-                - name: GITHUB_PULL_REQUEST_ID
-                  value: "{{pull_request_number}}"
               script: |
                 #!/usr/bin/env bash
                 set -eux
@@ -104,7 +102,7 @@ spec:
                 chmod +x ./codecov
                 git config --global --add safe.directory $(workspaces.source.path)
                 git fetch -a --tags
-                ./codecov -P $GITHUB_PULL_REQUEST_ID -C {{revision}} -v
+                ./codecov -C {{revision}} -v
 
       - name: upload-release-yaml
         runAfter:
