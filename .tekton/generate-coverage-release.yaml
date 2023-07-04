@@ -95,6 +95,8 @@ spec:
                     secretKeyRef:
                       name: pipelines-as-code-codecov-token
                       key: token
+                - name: GITHUB_PULL_REQUEST_ID
+                  value: "{{pull_request_number}}"
               script: |
                 #!/usr/bin/env bash
                 set -eux
