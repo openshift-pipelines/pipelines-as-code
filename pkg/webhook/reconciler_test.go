@@ -5,13 +5,14 @@ import (
 	"testing"
 )
 
-func Test_reconciler_Reconcile(t *testing.T) {
+// Test_Reconcile tests the reconcile function
+// TODO: make it a more complete test
+func Test_Reconcile(t *testing.T) {
 	tests := []struct {
 		name    string
 		wantErr bool
 	}{
 		{
-			// TODO: make it a more complete test
 			name:    "run reconcile",
 			wantErr: false,
 		},
