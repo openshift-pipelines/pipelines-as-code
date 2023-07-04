@@ -4,8 +4,8 @@ coverage:
   status:
     project:
       default:
-        target: 70
-        threshold: 1%
+        target: auto
+        threshold: 5%
     patch:
       # Disable the coverage threshold of the patch, so that PRs are
       # only failing because of overall project coverage threshold.

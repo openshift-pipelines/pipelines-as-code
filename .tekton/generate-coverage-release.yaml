@@ -97,7 +97,12 @@ spec:
                       key: token
               script: |
                 #!/usr/bin/env bash
-                bash <(curl https://codecov.io/bash)
+                set -eux
+                curl -Os https://uploader.codecov.io/v0.1.0_4653/linux/codecov
+                chmod +x ./codecov
+                git config --global --add safe.directory $(workspaces.source.path)
+                git fetch -a --tags
+                ./codecov -C {{revision}} -v
 
       - name: upload-release-yaml
         runAfter:
