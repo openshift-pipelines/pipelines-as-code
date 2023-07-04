@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/structs"
 	"go.uber.org/zap"
@@ -14,9 +15,9 @@ import (
 // returns (if is a Gitea event, whether to process or reject, logger with event metadata,, error if any occurred)
 func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	isGitea := false
-	event := req.Header.Get("X-Gitea-Event-Type")
-	if event == "" {
-		return false, false, logger, "no gitea event", nil
+	eventType := req.Header.Get("X-Gitea-Event-Type")
+	if eventType == "" {
+		return false, false, logger, "not a gitea event", nil
 	}
 
 	isGitea = true
@@ -27,41 +28,51 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 		return isGitea, processEvent, logger, reason, err
 	}
 
-	eventInt, err := parseWebhook(whEventType(event), []byte(payload))
+	eventInt, err := parseWebhook(whEventType(eventType), []byte(payload))
 	if err != nil {
 		return setLoggerAndProceed(false, "", err)
 	}
 	_ = json.Unmarshal([]byte(payload), &eventInt)
-
-	switch gitEvent := eventInt.(type) {
-	case *giteaStructs.IssueCommentPayload:
-		if gitEvent.Action == "created" &&
-			gitEvent.Issue.PullRequest != nil &&
-			gitEvent.Issue.State == "open" {
-			if provider.IsTestRetestComment(gitEvent.Comment.Body) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if provider.IsOkToTestComment(gitEvent.Comment.Body) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if provider.IsCancelComment(gitEvent.Comment.Body) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			return setLoggerAndProceed(false, "", nil)
-		}
-		return setLoggerAndProceed(false, "not a issue comment we care about", nil)
-	case *giteaStructs.PullRequestPayload:
-		if provider.Valid(string(gitEvent.Action), []string{"opened", "synchronize", "synchronized", "reopened"}) {
-			return setLoggerAndProceed(true, "", nil)
-		}
-		return setLoggerAndProceed(false, fmt.Sprintf("not a merge event we care about: \"%s\"",
-			string(gitEvent.Action)), nil)
-	case *giteaStructs.PushPayload:
-		if gitEvent.Pusher != nil {
-			return setLoggerAndProceed(true, "", nil)
-		}
-		return setLoggerAndProceed(false, "push: no pusher in event", nil)
-	default:
-		return setLoggerAndProceed(false, "", fmt.Errorf("gitea: event \"%s\" is not supported", event))
+	eType, errReason := detectTriggerTypeFromPayload(eventType, eventInt)
+	if eType != "" {
+		return setLoggerAndProceed(true, "", nil)
 	}
+
+	return setLoggerAndProceed(false, errReason, nil)
+}
+
+// detectTriggerTypeFromPayload will detect the event type from the payload,
+// filtering out the events that are not supported.
+func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.TriggerType, string) {
+	switch event := eventInt.(type) {
+	case *giteaStructs.PushPayload:
+		if event.Pusher != nil {
+			return info.TriggerTypePush, ""
+		}
+		return "", "invalid payload: no pusher in event"
+	case *giteaStructs.PullRequestPayload:
+		if provider.Valid(string(event.Action), []string{"opened", "synchronize", "synchronized", "reopened"}) {
+			return info.TriggerTypePullRequest, ""
+		}
+		return "", fmt.Sprintf("pull_request: unsupported action \"%s\"", event.Action)
+
+	case *giteaStructs.IssueCommentPayload:
+		if event.Action == "created" &&
+			event.Issue.PullRequest != nil &&
+			event.Issue.State == "open" {
+			if provider.IsTestRetestComment(event.Comment.Body) {
+				return info.TriggerTypeRetest, ""
+			}
+			if provider.IsOkToTestComment(event.Comment.Body) {
+				return info.TriggerTypeOkToTest, ""
+			}
+			if provider.IsCancelComment(event.Comment.Body) {
+				return info.TriggerTypeCancel, ""
+			}
+			// this ignores the comment if it is not a PAC gitops comment and not return an error
+			return "", ""
+		}
+		return "", "skip: not a PAC gitops comment"
+	}
+	return "", fmt.Sprintf("gitea: event \"%v\" is not supported", ghEventType)
 }

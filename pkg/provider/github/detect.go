@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/v53/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 )
@@ -39,7 +40,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 	}
 
 	_ = json.Unmarshal([]byte(payload), &eventInt)
-	eType, errReason := detectEventTypeFromPayload(eventType, eventInt)
+	eType, errReason := detectTriggerTypeFromPayload(eventType, eventInt)
 	if eType != "" {
 		return setLoggerAndProceed(true, "", nil)
 	}
@@ -47,19 +48,19 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 	return setLoggerAndProceed(false, errReason, nil)
 }
 
-// detectEventTypeFromPayload will detect the event type from the payload,
+// detectTriggerTypeFromPayload will detect the event type from the payload,
 // filtering out the events that are not supported.
 // first arg will get the event type and the second one will get an error string explaining why it's not supported.
-func detectEventTypeFromPayload(eventType string, eventInt any) (string, string) {
+func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.TriggerType, string) {
 	switch event := eventInt.(type) {
 	case *github.PushEvent:
 		if event.GetPusher() != nil {
-			return "push", ""
+			return info.TriggerTypePush, ""
 		}
 		return "", "no pusher in payload"
 	case *github.PullRequestEvent:
 		if provider.Valid(event.GetAction(), []string{"opened", "synchronize", "synchronized", "reopened"}) {
-			return "pull_request", ""
+			return info.TriggerTypePullRequest, ""
 		}
 		return "", fmt.Sprintf("pull_request: unsupported action \"%s\"", event.GetAction())
 	case *github.IssueCommentEvent:
@@ -67,26 +68,26 @@ func detectEventTypeFromPayload(eventType string, eventInt any) (string, string)
 			event.GetIssue().IsPullRequest() &&
 			event.GetIssue().GetState() == "open" {
 			if provider.IsTestRetestComment(event.GetComment().GetBody()) {
-				return "comment-retest", ""
+				return info.TriggerTypeRetest, ""
 			}
 			if provider.IsOkToTestComment(event.GetComment().GetBody()) {
-				return "comment-ok-to-test", ""
+				return info.TriggerTypeOkToTest, ""
 			}
 			if provider.IsCancelComment(event.GetComment().GetBody()) {
-				return "comment-cancel", ""
+				return info.TriggerTypeCancel, ""
 			}
 		}
 		return "", "comment: not a PAC gitops pull request comment"
 	case *github.CheckSuiteEvent:
 		if event.GetAction() == "rerequested" && event.GetCheckSuite() != nil {
-			return "check-suite-rerequested", ""
+			return info.TriggerTypeCheckSuiteRerequested, ""
 		}
 		return "", fmt.Sprintf("check_suite: unsupported action \"%s\"", event.GetAction())
 	case *github.CheckRunEvent:
 		if event.GetAction() == "rerequested" && event.GetCheckRun() != nil {
-			return "check-run-rerequested", ""
+			return info.TriggerTypeCheckRunRerequested, ""
 		}
 		return "", fmt.Sprintf("check_run: unsupported action \"%s\"", event.GetAction())
 	}
-	return "", fmt.Sprintf("github: event \"%v\" is not supported", eventType)
+	return "", fmt.Sprintf("github: event \"%v\" is not supported", ghEventType)
 }

@@ -47,7 +47,7 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, bitbucketcloud.Provid
 		URL:   bitbucketCloudAPIURL,
 		User:  bitbucketCloudUser,
 	}
-	if err := bbc.SetClient(ctx, nil, event); err != nil {
+	if err := bbc.SetClient(ctx, nil, event, nil); err != nil {
 		return nil, options.E2E{}, bitbucketcloud.Provider{}, err
 	}
 	return run, e2eoptions, bbc, nil

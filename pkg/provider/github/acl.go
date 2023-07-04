@@ -9,9 +9,57 @@ import (
 	"github.com/google/go-github/v53/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/policy"
 )
 
+// CheckPolicyAllowing check that policy is allowing the event to be processed
+// we  check the membership of the team alloed
+// if the team is not found we explicitly disallow the policy, user have to correct the setting
+func (v *Provider) CheckPolicyAllowing(ctx context.Context, event *info.Event, allowedTeams []string) (bool, string) {
+	for _, team := range allowedTeams {
+		// TODO: caching
+		members, resp, err := v.Client.Teams.ListTeamMembersBySlug(ctx, event.Organization, team, &github.TeamListTeamMembersOptions{})
+		if resp.StatusCode == http.StatusNotFound {
+			// we explicitly disallow the policy when the team is not found
+			// maybe we should ignore it instead? i'd rather keep this explicit
+			// and conservative since being security related.
+			return false, fmt.Sprintf("team: %s is not found on the organization: %s", team, event.Organization)
+		}
+		if err != nil {
+			// probably a 500 or another api error, no need to try again and again with other teams
+			return false, fmt.Sprintf("error while getting team membership for user: %s in team: %s, error: %s", event.Sender, team, err.Error())
+		}
+		for _, member := range members {
+			if member.GetLogin() == event.Sender {
+				return true, fmt.Sprintf("allowing user: %s as a member of the team: %s", event.Sender, team)
+			}
+		}
+	}
+
+	return false, fmt.Sprintf("user: %s is not a member of any of the allowed teams: %v", event.Sender, allowedTeams)
+}
+
 func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
+	aclPolicy := policy.Policy{
+		Settings: v.repoSettings,
+		Event:    event,
+		VCX:      v,
+		Logger:   v.Logger,
+	}
+
+	// checkIfPolicyIsAllowing
+	tType, _ := detectTriggerTypeFromPayload("", event.Event)
+	policyRes, err := aclPolicy.IsAllowed(ctx, tType)
+	switch policyRes {
+	case policy.ResultAllowed:
+		return true, nil
+	case policy.ResultDisallowed:
+		return false, err
+	case policy.ResultNotSet:
+		// showing as debug so we don't spill useless logs all the time in default info
+		v.Logger.Debugf("policy check: policy is not set, checking for other conditions for sender: %s", event.Sender)
+	}
+
 	// Do most of the checks first, if user is a owner or in a organisation
 	allowed, err := v.aclCheckAll(ctx, event)
 	if err != nil {

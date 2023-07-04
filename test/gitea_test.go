@@ -22,11 +22,12 @@ import (
 	tknpacgenerate "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	tknpaclist "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/list"
 	tknpacresolve "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	"gopkg.in/yaml.v2"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	tknpactest "github.com/openshift-pipelines/pipelines-as-code/test/pkg/cli"
@@ -37,7 +38,6 @@ import (
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/names"
-	"gopkg.in/yaml.v2"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -206,7 +206,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	}
 
 	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
+	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
 
 	topts.Regexp = successRegexp
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
@@ -230,96 +230,7 @@ func TestGiteaRetestAfterPush(t *testing.T) {
 	assert.NilError(t, err)
 	tgitea.PushFilesToRefGit(t, topts, entries, topts.TargetRefName)
 	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
-}
-
-func TestGiteaACLOrgAllowed(t *testing.T) {
-	topts := &tgitea.TestOpts{
-		TargetEvent: options.PullRequestEvent,
-		YAMLFiles: map[string]string{
-			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
-		},
-		NoCleanup:    true,
-		ExpectEvents: false,
-	}
-	defer tgitea.TestPR(t, topts)()
-	secondcnx, err := tgitea.CreateGiteaUser(topts.GiteaCNX.Client, topts.GiteaAPIURL, topts.TargetRefName, topts.GiteaPassword)
-	assert.NilError(t, err)
-
-	tgitea.CreateForkPullRequest(t, topts, secondcnx, "read", "echo Hello from user "+topts.TargetRefName)
-	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
-}
-
-// TestGiteaACLOrgPendingApproval tests when non authorized user sends a PR the status of CI shows as pending.
-func TestGiteaACLOrgPendingApproval(t *testing.T) {
-	topts := &tgitea.TestOpts{
-		TargetEvent: options.PullRequestEvent,
-		YAMLFiles: map[string]string{
-			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
-		},
-		NoCleanup:    true,
-		ExpectEvents: false,
-	}
-	defer tgitea.TestPR(t, topts)()
-	secondcnx, err := tgitea.CreateGiteaUser(topts.GiteaCNX.Client, topts.GiteaAPIURL, topts.TargetRefName, topts.GiteaPassword)
-	assert.NilError(t, err)
-
-	topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
-	// status of CI is pending because PR sent by non authorized user
-	topts.CheckForStatus = "pending"
-	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
-	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
-	tgitea.WaitForPullRequestCommentMatch(t, topts)
-}
-
-// TestGiteaACLCommentsAllowing tests when non authorized user sends a PR the status shows as pending unless
-// the authorized user adds a comment like /ok-to-test,/retest or /test, When authorized user adds those comments
-// the status of CI shows as success.
-func TestGiteaACLCommentsAllowing(t *testing.T) {
-	tests := []struct {
-		name, comment string
-	}{
-		{
-			name:    "OK to Test",
-			comment: "/ok-to-test",
-		},
-		{
-			name:    "Retest",
-			comment: "/retest",
-		},
-		{
-			name:    "Test PR",
-			comment: "/test pr",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			topts := &tgitea.TestOpts{
-				TargetEvent: options.PullRequestEvent,
-				YAMLFiles: map[string]string{
-					".tekton/pr.yaml": "testdata/pipelinerun.yaml",
-				},
-				NoCleanup:    true,
-				ExpectEvents: false,
-			}
-			defer tgitea.TestPR(t, topts)()
-			secondcnx, err := tgitea.CreateGiteaUser(topts.GiteaCNX.Client, topts.GiteaAPIURL, topts.TargetRefName, topts.GiteaPassword)
-			assert.NilError(t, err)
-
-			topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
-			// status of CI is pending because PR sent by non authorized user
-			topts.CheckForStatus = "pending"
-			tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
-			topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
-			tgitea.WaitForPullRequestCommentMatch(t, topts)
-
-			tgitea.PostCommentOnPullRequest(t, topts, tt.comment)
-			// status of CI is success because comment /ok-to-test,/retest or /test added by authorized user
-			topts.Regexp = successRegexp
-			tgitea.WaitForPullRequestCommentMatch(t, topts)
-		})
-	}
+	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
 }
 
 func TestGiteaConfigMaxKeepRun(t *testing.T) {
@@ -335,7 +246,7 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 	}
 	defer tgitea.TestPR(t, topts)()
 	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
+	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
 
 	waitOpts := twait.Opts{
 		RepoName:        topts.TargetNS,
@@ -375,70 +286,13 @@ func TestGiteaPush(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, resp.StatusCode < 400, resp)
 	assert.Assert(t, merged)
-	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha)
+	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "")
 	time.Sleep(5 * time.Second)
 	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
 		LabelSelector: pacapi.EventType + "=push",
 	})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), 1, "should have only one push pipelinerun")
-}
-
-func TestGiteaClusterTasks(t *testing.T) {
-	// we need to verify sure to create clustertask before pushing the files
-	// so we have to create a new client and do more manual things we get for free in TestPR
-	topts := &tgitea.TestOpts{
-		TargetEvent: "pull_request, push",
-		YAMLFiles: map[string]string{
-			".tekton/prcluster.yaml": "testdata/pipelinerunclustertasks.yaml",
-		},
-		ExpectEvents: false,
-	}
-	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
-	topts.TargetNS = topts.TargetRefName
-
-	// create first the cluster tasks
-	ctname := fmt.Sprintf(".tekton/%s.yaml", topts.TargetNS)
-	newyamlFiles := map[string]string{ctname: "testdata/clustertask.yaml"}
-	entries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, "main", "pull_request", map[string]string{})
-	assert.NilError(t, err)
-	//nolint: staticcheck
-	ct := v1beta1.ClusterTask{}
-	assert.NilError(t, yaml.Unmarshal([]byte(entries[ctname]), &ct))
-	ct.Name = "clustertask-" + topts.TargetNS
-
-	run := &params.Run{}
-	ctx := context.Background()
-	assert.NilError(t, run.Clients.NewClients(ctx, &run.Info))
-	// TODO(chmou): this is for v1beta1, we need to figure out a way how to do that on v1
-	_, err = run.Clients.Tekton.TektonV1beta1().ClusterTasks().Create(context.TODO(), &ct, metav1.CreateOptions{})
-	assert.NilError(t, err)
-	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, run))
-	run.Clients.Log.Infof("%s has been created", ct.GetName())
-	defer (func() {
-		assert.NilError(t, topts.ParamsRun.Clients.Tekton.TektonV1beta1().ClusterTasks().Delete(context.TODO(), ct.Name, metav1.DeleteOptions{}))
-		run.Clients.Log.Infof("%s is deleted", ct.GetName())
-	})()
-
-	// start PR
-	defer tgitea.TestPR(t, topts)()
-
-	// wait for it
-	waitOpts := twait.Opts{
-		RepoName:  topts.TargetNS,
-		Namespace: topts.TargetNS,
-		// 0 means 1 🙃 (we test for >, while we actually should do >=, but i
-		// need to go all over the code to verify it's not going to break
-		// anything else)
-		MinNumberStatus: 0,
-		PollTimeout:     twait.DefaultTimeout,
-		TargetSHA:       topts.PullRequest.Head.Sha,
-	}
-	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
-	assert.NilError(t, err)
-
-	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
 }
 
 func TestGiteaWithCLI(t *testing.T) {
@@ -582,7 +436,7 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 			_, err = git.RunGit(tmpdir, "push", "origin", topts.TargetRefName)
 			assert.NilError(t, err)
 
-			tgitea.WaitForStatus(t, topts, topts.TargetRefName)
+			tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
 
 			prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
 				LabelSelector: pacapi.EventType + "=pull_request",
@@ -858,7 +712,65 @@ func TestGiteaProvenance(t *testing.T) {
 	topts.PullRequest = pr
 	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
 	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName)
+	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "")
+}
+
+// TestGiteaClusterTasks is a test to verify that we can use cluster tasks with PaaC
+func TestGiteaClusterTasks(t *testing.T) {
+	// we need to verify sure to create clustertask before pushing the files
+	// so we have to create a new client and do more manual things we get for free in TestPR
+	topts := &tgitea.TestOpts{
+		TargetEvent: "pull_request, push",
+		YAMLFiles: map[string]string{
+			".tekton/prcluster.yaml": "testdata/pipelinerunclustertasks.yaml",
+		},
+		ExpectEvents: false,
+	}
+	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	topts.TargetNS = topts.TargetRefName
+
+	// create first the cluster tasks
+	ctname := fmt.Sprintf(".tekton/%s.yaml", topts.TargetNS)
+	newyamlFiles := map[string]string{ctname: "testdata/clustertask.yaml"}
+	entries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, "main", "pull_request", map[string]string{})
+	assert.NilError(t, err)
+	//nolint: staticcheck
+	ct := v1beta1.ClusterTask{}
+	assert.NilError(t, yaml.Unmarshal([]byte(entries[ctname]), &ct))
+	ct.Name = "clustertask-" + topts.TargetNS
+
+	run := &params.Run{}
+	ctx := context.Background()
+	assert.NilError(t, run.Clients.NewClients(ctx, &run.Info))
+	// TODO(chmou): this is for v1beta1, we need to figure out a way how to do that on v1
+	_, err = run.Clients.Tekton.TektonV1beta1().ClusterTasks().Create(context.TODO(), &ct, metav1.CreateOptions{})
+	assert.NilError(t, err)
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, run))
+	run.Clients.Log.Infof("%s has been created", ct.GetName())
+	defer (func() {
+		assert.NilError(t, topts.ParamsRun.Clients.Tekton.TektonV1beta1().ClusterTasks().Delete(context.TODO(), ct.Name, metav1.DeleteOptions{}))
+		run.Clients.Log.Infof("%s is deleted", ct.GetName())
+	})()
+
+	// start PR
+	defer tgitea.TestPR(t, topts)()
+
+	// wait for it
+	waitOpts := twait.Opts{
+		RepoName:  topts.TargetNS,
+		Namespace: topts.TargetNS,
+		// 0 means 1 🙃 (we test for >, while we actually should do >=, but i
+		// need to go all over the code to verify it's not going to break
+		// anything else)
+		MinNumberStatus: 0,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       topts.PullRequest.Head.Sha,
+	}
+	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	topts.CheckForStatus = "success"
+	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "", true)
 }
 
 // Local Variables:

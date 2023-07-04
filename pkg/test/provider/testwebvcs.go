@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -21,6 +22,14 @@ type TestProviderImp struct {
 	CreateStatusErorring   bool
 	FilesInsideRepo        map[string]string
 	WantProviderRemoteTask bool
+	PolicyDisallowing      bool
+}
+
+func (v *TestProviderImp) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
+	if v.PolicyDisallowing {
+		return false, "policy disallowing"
+	}
+	return true, ""
 }
 
 func (v *TestProviderImp) SetLogger(_ *zap.SugaredLogger) {
@@ -46,7 +55,7 @@ func (v *TestProviderImp) GetCommitInfo(_ context.Context, _ *info.Event) error 
 	return nil
 }
 
-func (v *TestProviderImp) SetClient(_ context.Context, _ *params.Run, _ *info.Event) error {
+func (v *TestProviderImp) SetClient(_ context.Context, _ *params.Run, _ *info.Event, _ *v1alpha1.Settings) error {
 	return nil
 }
 

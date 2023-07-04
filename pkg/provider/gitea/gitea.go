@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"code.gitea.io/sdk/gitea"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -34,13 +35,17 @@ const (
 </table>`
 )
 
+// validate the struct to interface
+var _ provider.Interface = (*Provider)(nil)
+
 type Provider struct {
 	Client           *gitea.Client
 	Logger           *zap.SugaredLogger
 	Token            *string
 	giteaInstanceURL string
 	// only exposed for e2e tests
-	Password string
+	Password     string
+	repoSettings *v1alpha1.Settings
 }
 
 // GetTaskURI TODO: Implement ME
@@ -75,7 +80,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Event, repoSettings *v1alpha1.Settings) error {
 	var err error
 	apiURL := runevent.Provider.URL
 	// password is not exposed to CRD, it's only used from the e2e tests
@@ -91,6 +96,7 @@ func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Ev
 		return err
 	}
 	v.giteaInstanceURL = runevent.Provider.URL
+	v.repoSettings = repoSettings
 	return nil
 }
 

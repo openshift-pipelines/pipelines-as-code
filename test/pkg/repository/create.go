@@ -21,6 +21,6 @@ func CreateRepo(ctx context.Context, targetNS string, cs *params.Run, repository
 	if err != nil {
 		return err
 	}
-	cs.Clients.Log.Infof("Repository created in %s", repo.GetNamespace())
+	cs.Clients.Log.Infof("PipelinesAsCode Repository %s has been created in namespace %s", repo.GetName(), repo.GetNamespace())
 	return nil
 }

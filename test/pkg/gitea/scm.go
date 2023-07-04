@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	"go.uber.org/zap"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
 	"gotest.tools/v3/fs"
@@ -41,7 +43,11 @@ func InitGitRepo(t *testing.T) (string, func()) {
 
 func PushFilesToRefGit(t *testing.T, topts *TestOpts, entries map[string]string, baseRefFrom string) {
 	tmpdir := fs.NewDir(t, t.Name())
-	defer tmpdir.Remove()
+	defer (func() {
+		if os.Getenv("TEST_NOCLEANUP") == "" {
+			tmpdir.Remove()
+		}
+	})()
 	defer env.ChangeWorkingDir(t, tmpdir.Path())()
 	path := tmpdir.Path()
 	_, err := git.RunGit(path, "init")
@@ -93,7 +99,7 @@ func MakeGitCloneURL(targetURL, giteaUsername, giteaPassword string) (string, er
 	// parse hostname of giteaURL
 	parsedURL, err := url.Parse(targetURL)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse url %s: %w", targetURL, err)
 	}
 
 	return fmt.Sprintf("%s://%s:%s@%s%s", parsedURL.Scheme, giteaUsername, giteaPassword, parsedURL.Host, parsedURL.Path), nil
@@ -167,16 +173,40 @@ func GetIssueTimeline(ctx context.Context, topts *TestOpts) (Timelines, error) {
 	return tls, nil
 }
 
-func CreateGiteaRepo(giteaClient *gitea.Client, user, name, hookURL string) (*gitea.Repository, error) {
+func CreateGiteaRepo(giteaClient *gitea.Client, user, name, hookURL string, onOrg bool, logger *zap.SugaredLogger) (*gitea.Repository, error) {
+	var repo *gitea.Repository
+	var err error
 	// Create a new repo
-	repo, _, err := giteaClient.AdminCreateRepo(user, gitea.CreateRepoOption{
-		Name:        name,
-		Description: "This is a repo it's a wonderful thing",
-		AutoInit:    true,
-	})
-	if err != nil {
-		return nil, err
+	if onOrg {
+		logger.Infof("Creating org %s", name)
+		user = "org-" + name
+		_, _, err := giteaClient.CreateOrg(gitea.CreateOrgOption{
+			Name: user,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create org: %w", err)
+		}
+		logger.Infof("Creating gitea repository on org %s", name)
+		repo, _, err = giteaClient.CreateOrgRepo(user, gitea.CreateRepoOption{
+			Name:        name,
+			Description: "This is a repo it's a wonderful thing",
+			AutoInit:    true,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create repo: %w", err)
+		}
+	} else {
+		logger.Infof("Creating gitea repository %s for user %s", name, user)
+		repo, _, err = giteaClient.AdminCreateRepo(user, gitea.CreateRepoOption{
+			Name:        name,
+			Description: "This is a repo it's a wonderful thing",
+			AutoInit:    true,
+		})
 	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to create repo: %w", err)
+	}
+	logger.Infof("Creating webhook to smee url on gitea repository %s", name)
 	_, _, err = giteaClient.CreateRepoHook(user, repo.Name, gitea.CreateHookOption{
 		Type:   "gitea",
 		Active: true,
@@ -190,7 +220,34 @@ func CreateGiteaRepo(giteaClient *gitea.Client, user, name, hookURL string) (*gi
 	return repo, err
 }
 
-func CreateGiteaUser(giteaClient *gitea.Client, apiURL, username, password string) (pgitea.Provider, error) {
+func CreateTeam(topts *TestOpts, orgName, teamName string) (*gitea.Team, error) {
+	team, _, err := topts.GiteaCNX.Client.CreateTeam(orgName, gitea.CreateTeamOption{
+		Permission: gitea.AccessModeWrite,
+		Units: []gitea.RepoUnitType{
+			gitea.RepoUnitPulls,
+		},
+		Name: teamName,
+	})
+	topts.ParamsRun.Clients.Log.Infof("Team %s has been created on Org %s", team.Name, orgName)
+	return team, err
+}
+
+func RemoveCommentMatching(topts *TestOpts, commentString *regexp.Regexp) error {
+	comments, _, err := topts.GiteaCNX.Client.ListIssueComments(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index, gitea.ListIssueCommentOptions{})
+	if err != nil {
+		return err
+	}
+	for _, c := range comments {
+		if commentString.MatchString(c.Body) {
+			topts.ParamsRun.Clients.Log.Infof("Removing comment %d matching %s", c.ID, commentString.String())
+			_, err := topts.GiteaCNX.Client.DeleteIssueComment(topts.Opts.Organization, topts.Opts.Repo, c.ID)
+			return err
+		}
+	}
+	return fmt.Errorf("no comment matching %s found", commentString.String())
+}
+
+func CreateGiteaUser(giteaClient *gitea.Client, username, password string) (*gitea.User, error) {
 	visibility := gitea.VisibleTypePublic
 	opts := gitea.CreateUserOption{
 		LoginName:          username,
@@ -202,31 +259,42 @@ func CreateGiteaUser(giteaClient *gitea.Client, apiURL, username, password strin
 	}
 	newuser, _, err := giteaClient.AdminCreateUser(opts)
 	if err != nil {
-		return pgitea.Provider{}, err
+		return &gitea.User{}, err
 	}
-	secondprovider, err := CreateProvider(context.Background(),
-		apiURL, newuser.UserName, password)
-	if err != nil {
-		return pgitea.Provider{}, err
-	}
-	return secondprovider, err
+	return newuser, nil
 }
 
-func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider,
-	accessMode, command string,
-) *gitea.PullRequest {
+// func CreateGiteaUserSecondCnx(giteaClient *gitea.Client, apiURL, username, password string) (pgitea.Provider, *gitea.User, error) {
+func CreateGiteaUserSecondCnx(topts *TestOpts, username, password string) (pgitea.Provider, *gitea.User, error) {
+	newuser, err := CreateGiteaUser(topts.GiteaCNX.Client, username, password)
+	if err != nil {
+		return pgitea.Provider{}, newuser, fmt.Errorf("failed to create user: %w", err)
+	}
+	secondprovider, err := CreateProvider(context.Background(), topts.GiteaAPIURL, newuser.UserName, password)
+	if err != nil {
+		return pgitea.Provider{}, newuser, fmt.Errorf("failed to create provider: %w", err)
+	}
+	return secondprovider, newuser, err
+}
+
+func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider, accessMode, command string) *gitea.PullRequest {
+	forkuserinfo, _, err := secondcnx.Client.GetMyUserInfo()
+	assert.NilError(t, err)
 	forkrepo, _, err := secondcnx.Client.CreateFork(topts.Opts.Organization, topts.TargetRefName,
 		gitea.CreateForkOption{})
 	assert.NilError(t, err)
-	cloneURL, err := MakeGitCloneURL(forkrepo.CloneURL, topts.TargetRefName, topts.GiteaPassword)
+	topts.ParamsRun.Clients.Log.Infof("Forked repository %s has been created", forkrepo.CloneURL)
+	cloneURL, err := MakeGitCloneURL(forkrepo.CloneURL, forkuserinfo.UserName, secondcnx.Password)
 	assert.NilError(t, err)
 	newopts := &TestOpts{
-		GitCloneURL: cloneURL, TargetRefName: topts.TargetRefName, ParamsRun: topts.ParamsRun,
+		GitCloneURL:   cloneURL,
+		TargetRefName: topts.TargetRefName,
+		ParamsRun:     topts.ParamsRun,
 	}
 	processed, err := payload.ApplyTemplate("testdata/pipelinerun-alt.yaml", map[string]string{
 		"TargetNamespace": topts.TargetNS,
 		"TargetEvent":     topts.TargetEvent,
-		"TargetBranch":    topts.TargetRefName,
+		"TargetBranch":    topts.DefaultBranch,
 		"PipelineName":    "pr",
 		"Command":         command,
 	})
@@ -240,12 +308,12 @@ func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provi
 
 	pr, _, err := secondcnx.Client.CreatePullRequest(topts.Opts.Organization, topts.TargetRefName,
 		gitea.CreatePullRequestOption{
-			Head:  fmt.Sprintf("%s:%s", topts.TargetRefName, topts.TargetRefName),
-			Base:  topts.TargetRefName,
+			Base:  topts.DefaultBranch,
+			Head:  fmt.Sprintf("%s:%s", forkrepo.Owner.UserName, topts.TargetRefName),
 			Title: fmt.Sprintf("New PR from %s", topts.TargetRefName),
 		})
 	assert.NilError(t, err)
-	topts.ParamsRun.Clients.Log.Infof("Created pr %s", pr.HTMLURL)
+	topts.ParamsRun.Clients.Log.Infof("Created pr %s branch:%s from fork %s, branch:%s", pr.HTMLURL, topts.DefaultBranch, forkrepo.FullName, topts.TargetRefName)
 	return pr
 }
 

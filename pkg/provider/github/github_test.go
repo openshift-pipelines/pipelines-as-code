@@ -488,7 +488,7 @@ func TestGithubSetClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			v := Provider{}
-			err := v.SetClient(ctx, nil, tt.event)
+			err := v.SetClient(ctx, nil, tt.event, nil)
 			assert.NilError(t, err)
 			assert.Equal(t, tt.expectedURL, *v.APIURL)
 			assert.Equal(t, "https", v.Client.BaseURL.Scheme)

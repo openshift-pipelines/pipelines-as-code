@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -35,6 +36,8 @@ const (
 </table>`
 )
 
+var _ provider.Interface = (*Provider)(nil)
+
 type Provider struct {
 	Client            *gitlab.Client
 	Logger            *zap.SugaredLogger
@@ -50,6 +53,11 @@ type Provider struct {
 // GetTaskURI TODO: Implement me
 func (v *Provider) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
+}
+
+// CheckPolicyAllowing TODO: Implement ME
+func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
+	return false, ""
 }
 
 func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
@@ -90,7 +98,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Event, _ *v1alpha1.Settings) error {
 	var err error
 	if runevent.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")

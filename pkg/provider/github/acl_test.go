@@ -8,10 +8,83 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v53/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
+	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func TestCheckPolicyAllowing(t *testing.T) {
+	tests := []struct {
+		name         string
+		allowedTeams []string
+		reply        string
+		otherReply   string
+		wantAllowed  bool
+		wantReason   string
+	}{
+		{
+			name:         "user is a member of the allowed team",
+			allowedTeams: []string{"allowedTeam"},
+			wantAllowed:  true,
+			wantReason:   "allowing user: allowedUser as a member of the team: allowedTeam",
+			reply:        `[{"login": "allowedUser"}]`,
+		},
+		{
+			name:         "user is not a member of the allowed team",
+			allowedTeams: []string{"otherteam"},
+			wantAllowed:  false,
+			wantReason:   "user: allowedUser is not a member of any of the allowed teams: [otherteam]",
+			otherReply:   `[{"login": "myuser"}]`,
+		},
+		{
+			name:         "team is not found",
+			allowedTeams: []string{"nothere"},
+			wantAllowed:  false,
+			wantReason:   "team: nothere is not found on the organization: myorg",
+		},
+		{
+			name:         "error while getting team membership",
+			allowedTeams: []string{"allowedTeam"},
+			wantAllowed:  false,
+			wantReason:   `error while getting team membership for user: allowedUser in team: allowedTeam, error: invalid character 't' in literal true (expecting 'r')`,
+			reply:        `tttttt`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+
+			event := &info.Event{
+				Organization: "myorg",
+				Sender:       "allowedUser",
+			}
+			mux.HandleFunc("/orgs/myorg/teams/allowedTeam/members", func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(rw, tt.reply)
+			})
+			mux.HandleFunc("/orgs/myorg/teams/otherteam/members", func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(rw, tt.otherReply)
+			})
+			ctx, _ := rtesting.SetupFakeContext(t)
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+			gprovider := Provider{
+				Client:       fakeclient,
+				repoSettings: &v1alpha1.Settings{},
+				Logger:       logger,
+			}
+
+			gotAllowed, gotReason := gprovider.CheckPolicyAllowing(ctx, event, tt.allowedTeams)
+			assert.Equal(t, tt.wantAllowed, gotAllowed)
+			assert.Equal(t, tt.wantReason, gotReason)
+		})
+	}
+}
 
 func TestOkToTestComment(t *testing.T) {
 	tests := []struct {
@@ -119,8 +192,12 @@ func TestOkToTestComment(t *testing.T) {
 				fmt.Fprint(rw, "[]")
 			})
 			ctx, _ := rtesting.SetupFakeContext(t)
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
 			gprovider := Provider{
-				Client: fakeclient,
+				Client:       fakeclient,
+				repoSettings: &v1alpha1.Settings{},
+				Logger:       logger,
 			}
 
 			got, err := gprovider.IsAllowed(ctx, &tt.runevent)
@@ -182,9 +259,12 @@ func TestAclCheckAll(t *testing.T) {
 		rw.WriteHeader(204)
 	})
 
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
 	ctx, _ := rtesting.SetupFakeContext(t)
 	gprovider := Provider{
 		Client: fakeclient,
+		Logger: logger,
 	}
 
 	tests := []struct {
@@ -369,6 +449,9 @@ func TestIfPullRequestIsForSameRepoWithoutFork(t *testing.T) {
 
 			gprovider := Provider{
 				Client: fakeclient,
+				repoSettings: &v1alpha1.Settings{
+					Policy: &v1alpha1.Policy{},
+				},
 			}
 
 			got, err := gprovider.aclCheckAll(ctx, tt.event)
