@@ -100,7 +100,9 @@ spec:
                 set -eux
                 curl -Os https://uploader.codecov.io/v0.1.0_4653/linux/codecov
                 chmod +x ./codecov
-                ./codecov
+                git config --global --add safe.directory $(workspaces.source.path)
+                git fetch -a --tags
+                ./codecov -P $GITHUB_PULL_REQUEST_ID -C {{revision}} -v
 
       - name: upload-release-yaml
         runAfter:
