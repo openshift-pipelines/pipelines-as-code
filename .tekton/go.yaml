@@ -91,15 +91,15 @@ spec:
               # ratelimit so workaround this.
               image: registry.access.redhat.com/ubi9/go-toolset@sha256:a2bdd33c7fc0cda56eb3745e80820c1ee29efeaac720f7c52a59224a39003261
               env:
+                - name: CODECOV_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: pipelines-as-code-codecov-token
+                      key: token
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
                 - name: GOMODCACHE
                   value: $(workspaces.source.path)/go-build-cache/mod
-                - name: GITHUB_TOKEN
-                  valueFrom:
-                    secretKeyRef:
-                      name: "{{ git_auth_secret }}"
-                      key: "git-provider-token"
                 - name: GITHUB_REPOSITORY
                   value: "{{repo_owner}}/{{repo_name}}"
                 - name: GITHUB_PULL_REQUEST_ID
@@ -109,15 +109,10 @@ spec:
                 #!/usr/bin/env bash
                 set -eux
                 git config --global --add safe.directory $(workspaces.source.path)
-                currentsha=$(git rev-parse HEAD)
-                git fetch --tag -v
-                git checkout main
-                export GO_TEST_FLAGS="-v -race -coverprofile=main.txt -covermode=atomic"
-                make test
-                git checkout -b current ${currentsha}
-                go install github.com/flipgroup/golang-cover-diff@main
-                ~/go/bin/golang-cover-diff coverage.txt main.txt
-
+                git fetch -a --tags
+                curl -Os https://uploader.codecov.io/v0.1.0_4653/linux/codecov
+                chmod +x ./codecov
+                ./codecov -P $GITHUB_PULL_REQUEST_ID -C {{revision}} -v
             - name: lint
               # golangci-lint has not tagged their image for 1.40.0 yet so using latest for now until we can pin it
               image: mirror.gcr.io/golangci/golangci-lint:latest
