@@ -4,7 +4,7 @@ kind: PipelineRun
 metadata:
   name: go-testing
   annotations:
-    pipelinesascode.tekton.dev/task: "[git-clone]"
+    pipelinesascode.tekton.dev/task: "[.tekton/tasks/git-clone.yaml]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "pull_request" && "***/*.go".pathChanged()
@@ -56,7 +56,6 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                git config --global --add safe.directory $(workspaces.source.path)
                 mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
                 cd $(dirname ${GOCACHE})
 
@@ -82,7 +81,6 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                git config --global --add safe.directory $(workspaces.source.path)
                 export GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
                 make test
 
@@ -108,7 +106,6 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                git config --global --add safe.directory $(workspaces.source.path)
                 git fetch -a --tags
                 curl -Os https://uploader.codecov.io/v0.1.0_4653/linux/codecov
                 chmod +x ./codecov

@@ -12,7 +12,7 @@ It's important: <https://github.com/openshift-pipelines/pipelines-as-code/blob/m
 It uses kind under docker. You start it with:
 
 ```shell
-make allinone
+./hack/dev/kind/install.sh
 ```
 
 When it finished you will have the following installed in your kind cluster:

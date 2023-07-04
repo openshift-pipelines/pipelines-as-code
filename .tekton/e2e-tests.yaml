@@ -6,7 +6,7 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/task: "https://raw.githubusercontent.com/chmouel/tekton-slack-task-status/main/tekton-slack-task-status.yaml"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
-    pipelinesascode.tekton.dev/task-1: "[git-clone]"
+    pipelinesascode.tekton.dev/task-1: "[.tekton/tasks/git-clone.yaml]"
 spec:
   taskRunSpecs:
     - pipelineTaskName: e2e-tests

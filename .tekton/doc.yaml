@@ -4,7 +4,7 @@ kind: PipelineRun
 metadata:
   name: doc-generation
   annotations:
-    pipelinesascode.tekton.dev/task: "[git-clone]"
+    pipelinesascode.tekton.dev/task: "[.tekton/tasks/git-clone.yaml]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "pull_request" && "docs/***".pathChanged()
@@ -51,7 +51,6 @@ spec:
               script: |
                 version=$(curl -s https://api.github.com/repos/gohugoio/hugo/releases/latest|python -c 'import sys, json;dico=json.load(sys.stdin);print(dico["tag_name"])')
                 curl --fail-early -sL https://github.com/gohugoio/hugo/releases/download/${version}/hugo_extended_${version/v/}_Linux-64bit.tar.gz -o-|tar -x -z -v -f- hugo
-                git config --global --add safe.directory $(workspaces.source.path)
                 cd docs
                 sed -i '1acanonifyURLs = true' config.toml
                 url="${UPLOADER_PUBLIC_URL}/docs/{{ pull_request_number }}"

@@ -5,7 +5,7 @@ metadata:
   name: push-generate-coverage-releaseyaml
   annotations:
     pipelinesascode.tekton.dev/task-1: "https://raw.githubusercontent.com/chmouel/tekton-slack-task-status/main/tekton-slack-task-status.yaml"  # send slack message on failure
-    pipelinesascode.tekton.dev/task: "[git-clone]"
+    pipelinesascode.tekton.dev/task: "[.tekton/tasks/git-clone.yaml]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "push" && target_branch == "main" && ("***/*.go".pathChanged() || "config/***".pathChanged())
@@ -100,7 +100,6 @@ spec:
                 set -eux
                 curl -Os https://uploader.codecov.io/v0.1.0_4653/linux/codecov
                 chmod +x ./codecov
-                git config --global --add safe.directory $(workspaces.source.path)
                 git fetch -a --tags
                 ./codecov -C {{revision}} -v
 
@@ -121,7 +120,6 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                git config --global --add safe.directory $(workspaces.source.path)
                 git fetch -a --tags
                 ssa=$(git rev-parse --short HEAD)
                 bash hack/generate-releaseyaml.sh >release.k8s.yaml
