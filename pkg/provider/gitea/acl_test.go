@@ -8,12 +8,88 @@ import (
 	"testing"
 
 	"code.gitea.io/sdk/gitea"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/structs"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func TestCheckPolicyAllowing(t *testing.T) {
+	tests := []struct {
+		name                string
+		allowedTeams        []string
+		listOrgReply        string
+		listTeamMemberships string
+		wantAllowed         bool
+		wantReason          string
+	}{
+		{
+			name:                "user is a member of the allowed team",
+			allowedTeams:        []string{"allowedTeam"},
+			wantAllowed:         true,
+			wantReason:          "allowing user: allowedUser as a member of the team: allowedTeam",
+			listOrgReply:        `[{"name": "allowedTeam", "id": 1}]`,
+			listTeamMemberships: `{"id": 2}`,
+		},
+		{
+			name:                "user is not a member of the allowed team",
+			allowedTeams:        []string{"otherteam"},
+			wantAllowed:         false,
+			wantReason:          "user: allowedUser is not a member of any of the allowed teams: [otherteam]",
+			listOrgReply:        `[{"name": "notgoodteam", "id": 1}]`,
+			listTeamMemberships: `{"id": 0}`,
+		},
+		{
+			name:         "no team in org is found",
+			allowedTeams: []string{"nothere"},
+			wantAllowed:  false,
+			wantReason:   "no teams on org myorg",
+		},
+		{
+			name:         "error while getting team membership",
+			allowedTeams: []string{"allowedTeam"},
+			wantAllowed:  false,
+			wantReason:   `error while getting org team, error: invalid character 't' in literal true (expecting 'r')`,
+			listOrgReply: `ttttttaaa`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, teardown := tgitea.Setup(t)
+			defer teardown()
+
+			event := &info.Event{
+				Organization: "myorg",
+				Sender:       "allowedUser",
+			}
+			if tt.listOrgReply != "" {
+				mux.HandleFunc(fmt.Sprintf("/orgs/%s/teams", event.Organization), func(rw http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(rw, tt.listOrgReply)
+				})
+			}
+			mux.HandleFunc(fmt.Sprintf("/teams/1/members/%s", event.Sender), func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(rw, tt.listTeamMemberships)
+			})
+			ctx, _ := rtesting.SetupFakeContext(t)
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+			gprovider := Provider{
+				Client:       fakeclient,
+				repoSettings: &v1alpha1.Settings{},
+				Logger:       logger,
+			}
+
+			gotAllowed, gotReason := gprovider.CheckPolicyAllowing(ctx, event, tt.allowedTeams)
+			assert.Equal(t, tt.wantAllowed, gotAllowed)
+			assert.Equal(t, tt.wantReason, gotReason)
+		})
+	}
+}
 
 func TestOkToTestComment(t *testing.T) {
 	issueCommentPayload := &giteaStructs.IssueCommentPayload{
@@ -95,6 +171,8 @@ func TestOkToTestComment(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
 			tt.runevent.TriggerTarget = "ok-to-test-comment"
 			fakeclient, mux, teardown := tgitea.Setup(t)
 			defer teardown()
@@ -111,6 +189,7 @@ func TestOkToTestComment(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gprovider := Provider{
 				Client: fakeclient,
+				Logger: logger,
 			}
 
 			isAllowed, err := gprovider.IsAllowed(ctx, &tt.runevent)
@@ -175,10 +254,13 @@ func TestAclCheckAll(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeclient, mux, teardown := tgitea.Setup(t)
 			defer teardown()
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gprovider := Provider{
 				Client: fakeclient,
+				Logger: logger,
 			}
 
 			if tt.allowedRules.collabo {

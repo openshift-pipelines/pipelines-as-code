@@ -3,15 +3,68 @@ package gitea
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/policy"
 	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/structs"
 )
 
+func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, allowedTeams []string) (bool, string) {
+	if event.Organization == event.Repository {
+		return true, ""
+	}
+	// TODO: caching
+	orgTeams, resp, err := v.Client.ListOrgTeams(event.Organization, gitea.ListTeamsOptions{})
+	if resp.StatusCode == http.StatusNotFound {
+		// we explicitly disallow the policy when there is no team on org
+		return false, fmt.Sprintf("no teams on org %s", event.Organization)
+	}
+	if err != nil {
+		// probably a 500 or another api error, no need to try again and again with other teams
+		return false, fmt.Sprintf("error while getting org team, error: %s", err.Error())
+	}
+	for _, allowedTeam := range allowedTeams {
+		for _, orgTeam := range orgTeams {
+			if orgTeam.Name == allowedTeam {
+				teamMember, _, err := v.Client.GetTeamMember(orgTeam.ID, event.Sender)
+				if err != nil {
+					v.Logger.Infof("error while getting team member: %s, error: %s", event.Sender, err.Error())
+					continue
+				}
+				if teamMember.ID != 0 {
+					return true, fmt.Sprintf("allowing user: %s as a member of the team: %s", event.Sender, orgTeam.Name)
+				}
+			}
+		}
+	}
+	return false, fmt.Sprintf("user: %s is not a member of any of the allowed teams: %v", event.Sender, allowedTeams)
+}
+
 func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
+	aclPolicy := policy.Policy{
+		Settings: v.repoSettings,
+		Event:    event,
+		VCX:      v,
+		Logger:   v.Logger,
+	}
+
+	// checkIfPolicyIsAllowing
+	tType, _ := detectTriggerTypeFromPayload("", event.Event)
+	policyRes, err := aclPolicy.IsAllowed(ctx, tType)
+	switch policyRes {
+	case policy.ResultAllowed:
+		return true, nil
+	case policy.ResultDisallowed:
+		return false, err
+	case policy.ResultNotSet:
+		// showing as debug so we don't spill useless logs all the time in default info
+		v.Logger.Debugf("policy check: policy is not set, checking for other conditions for sender: %s", event.Sender)
+	}
+
 	// Do most of the checks first, if user is a owner or in a organisation
 	allowed, err := v.aclCheckAll(ctx, event)
 	if err != nil {
@@ -93,8 +146,6 @@ func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, erro
 	return acl.UserInOwnerFile(ownerContent, rev.Sender)
 }
 
-// checkSenderOrgMembership Get sender user's organization. We can
-// only get the one that the user sets as public 🤷
 func (v *Provider) checkSenderRepoMembership(_ context.Context, runevent *info.Event) (bool, error) {
 	ret, _, err := v.Client.IsCollaborator(runevent.Organization, runevent.Repository, runevent.Sender)
 	return ret, err

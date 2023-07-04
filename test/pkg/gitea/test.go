@@ -25,6 +25,7 @@ import (
 )
 
 type TestOpts struct {
+	OnOrg                 bool
 	NoPullRequestCreation bool
 	SkipEventsCheck       bool
 	NoCleanup             bool
@@ -50,6 +51,7 @@ type TestOpts struct {
 	GiteaPassword         string
 	ExpectEvents          bool
 	InternalGiteaURL      string
+	Token                 string
 }
 
 func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
@@ -65,11 +67,15 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	ctx := context.Background()
 	if topts.ParamsRun == nil {
 		runcnx, opts, giteacnx, err := Setup(ctx)
+		assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
 		topts.GiteaCNX = giteacnx
 		topts.ParamsRun = runcnx
 		topts.Opts = opts
-		assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
 	}
+	giteaURL := os.Getenv("TEST_GITEA_API_URL")
+	giteaPassword := os.Getenv("TEST_GITEA_PASSWORD")
+	topts.GiteaAPIURL = giteaURL
+	topts.GiteaPassword = giteaPassword
 	hookURL := os.Getenv("TEST_GITEA_SMEEURL")
 	topts.InternalGiteaURL = os.Getenv("TEST_GITEA_INTERNAL_URL")
 	if topts.InternalGiteaURL == "" {
@@ -88,7 +94,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 		assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
 	}
 
-	repoInfo, err := CreateGiteaRepo(topts.GiteaCNX.Client, topts.Opts.Organization, topts.TargetRefName, hookURL)
+	repoInfo, err := CreateGiteaRepo(topts.GiteaCNX.Client, topts.Opts.Organization, topts.TargetRefName, hookURL, topts.OnOrg, topts.ParamsRun.Clients.Log)
 	assert.NilError(t, err)
 	topts.Opts.Repo = repoInfo.Name
 	topts.Opts.Organization = repoInfo.Owner.UserName
@@ -100,8 +106,10 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 			defer TearDown(ctx, t, topts)
 		}
 	}
-	err = CreateCRD(ctx, topts)
+	topts.Token, err = CreateToken(topts)
 	assert.NilError(t, err)
+
+	assert.NilError(t, CreateCRD(ctx, topts))
 
 	url, err := MakeGitCloneURL(repoInfo.CloneURL, os.Getenv("TEST_GITEA_USERNAME"), os.Getenv("TEST_GITEA_PASSWORD"))
 	assert.NilError(t, err)
@@ -127,13 +135,9 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	assert.NilError(t, err)
 	topts.PullRequest = pr
 	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
-	giteaURL := os.Getenv("TEST_GITEA_API_URL")
-	giteaPassword := os.Getenv("TEST_GITEA_PASSWORD")
-	topts.GiteaAPIURL = giteaURL
-	topts.GiteaPassword = giteaPassword
 
 	if topts.CheckForStatus != "" {
-		WaitForStatus(t, topts, topts.TargetRefName)
+		WaitForStatus(t, topts, topts.TargetRefName, "")
 	}
 
 	if topts.Regexp != nil {
@@ -168,19 +172,25 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	return cleanup
 }
 
-func WaitForStatus(t *testing.T, topts *TestOpts, ref string) {
+func WaitForStatus(t *testing.T, topts *TestOpts, ref, forcontext string) {
 	i := 0
 	for {
-		cs, _, err := topts.GiteaCNX.Client.GetCombinedStatus(topts.Opts.Organization, topts.Opts.Repo, ref)
+		statuses, _, err := topts.GiteaCNX.Client.ListStatuses(topts.Opts.Organization, topts.Opts.Repo, ref, gitea.ListStatusesOption{})
 		assert.NilError(t, err)
-		if (cs.State != "" && cs.State != "pending") || topts.CheckForStatus == string(cs.State) {
-			assert.Equal(t, string(cs.State), topts.CheckForStatus)
-			topts.ParamsRun.Clients.Log.Infof("Status is %s", cs.State)
-
-			if topts.CheckForNumberStatus != 0 {
-				assert.Equal(t, len(cs.Statuses), topts.CheckForNumberStatus)
+		for _, cstatus := range statuses {
+			if cstatus.State == "pending" {
+				continue
 			}
-			break
+			if forcontext != "" && cstatus.Context != forcontext {
+				continue
+			}
+			assert.Equal(t, string(cstatus.State), topts.CheckForStatus)
+			topts.ParamsRun.Clients.Log.Infof("Status on SHA: %s is %s", ref, cstatus.State)
+			if topts.CheckForNumberStatus != 0 {
+				assert.Equal(t, len(statuses), topts.CheckForNumberStatus)
+			}
+
+			return
 		}
 		if i > 50 {
 			t.Fatalf("gitea status has not been updated")

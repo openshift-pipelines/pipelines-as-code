@@ -25,7 +25,7 @@ func TestProviderDetect(t *testing.T) {
 	}{
 		{
 			name:       "bad/test not a gitea request",
-			wantReason: "no gitea event",
+			wantReason: "not a gitea event",
 			args: args{
 				req: &http.Request{
 					Header: http.Header{
@@ -57,7 +57,7 @@ func TestProviderDetect(t *testing.T) {
 				},
 				payload: `{"foo": "bar"}`,
 			},
-			wantReason: "push: no pusher in event",
+			wantReason: "invalid payload: no pusher in event",
 			isGitea:    true,
 		},
 		{
@@ -70,7 +70,7 @@ func TestProviderDetect(t *testing.T) {
 				},
 				payload: `{"action": "foo"}`,
 			},
-			wantReason: `not a merge event we care about: "foo"`,
+			wantReason: `pull_request: unsupported action "foo"`,
 			isGitea:    true,
 		},
 		{
@@ -83,7 +83,7 @@ func TestProviderDetect(t *testing.T) {
 				},
 				payload: `{"action": "foo"}`,
 			},
-			wantReason: `not a issue comment we care about`,
+			wantReason: `skip: not a PAC gitops comment`,
 			isGitea:    true,
 		},
 		{

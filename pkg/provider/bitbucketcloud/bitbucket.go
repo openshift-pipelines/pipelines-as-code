@@ -8,6 +8,7 @@ import (
 
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/mitchellh/mapstructure"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -16,12 +17,19 @@ import (
 	"go.uber.org/zap"
 )
 
+var _ provider.Interface = (*Provider)(nil)
+
 type Provider struct {
 	Client        *bitbucket.Client
 	Logger        *zap.SugaredLogger
 	Token, APIURL *string
 	Username      *string
 	provenance    string
+}
+
+// CheckPolicyAllowing TODO: Implement ME
+func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
+	return false, ""
 }
 
 // GetTaskURI TODO: Implement ME
@@ -157,7 +165,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path,
 	return v.getBlob(event, revision, path)
 }
 
-func (v *Provider) SetClient(_ context.Context, _ *params.Run, event *info.Event) error {
+func (v *Provider) SetClient(_ context.Context, _ *params.Run, event *info.Event, _ *v1alpha1.Settings) error {
 	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}

@@ -9,6 +9,7 @@ import (
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/google/go-github/v53/github"
 	"github.com/mitchellh/mapstructure"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -20,6 +21,8 @@ const taskStatusTemplate = `
 {{range $taskrun := .TaskRunList }}* **{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}**  {{ $taskrun.ConsoleLogURL }} *{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}*
 {{ end }}`
 
+var _ provider.Interface = (*Provider)(nil)
+
 type Provider struct {
 	Client                    *bbv1.APIClient
 	Logger                    *zap.SugaredLogger
@@ -29,6 +32,10 @@ type Provider struct {
 	apiURL                    string
 	provenance                string
 	projectKey                string
+}
+
+func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
+	return false, ""
 }
 
 // GetTaskURI TODO: Implement ME
@@ -198,7 +205,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path,
 	return ret, err
 }
 
-func (v *Provider) SetClient(ctx context.Context, _ *params.Run, event *info.Event) error {
+func (v *Provider) SetClient(ctx context.Context, _ *params.Run, event *info.Event, _ *v1alpha1.Settings) error {
 	if event.Provider.User == "" {
 		return fmt.Errorf("no provider.user has been set in the repo crd")
 	}

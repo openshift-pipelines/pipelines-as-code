@@ -197,7 +197,7 @@ func TestGetConfig(t *testing.T) {
 func TestSetClient(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	v := &Provider{}
-	assert.Assert(t, v.SetClient(ctx, nil, info.NewEvent()) != nil)
+	assert.Assert(t, v.SetClient(ctx, nil, info.NewEvent(), nil) != nil)
 
 	client, _, tearDown := thelp.Setup(t)
 	defer tearDown()
@@ -206,7 +206,7 @@ func TestSetClient(t *testing.T) {
 		Provider: &info.Provider{
 			Token: "hello",
 		},
-	})
+	}, nil)
 	assert.NilError(t, err)
 	assert.Assert(t, *vv.Token != "")
 }
@@ -218,14 +218,14 @@ func TestSetClientDetectAPIURL(t *testing.T) {
 	defer tearDown()
 	v := &Provider{Client: client}
 	event := info.NewEvent()
-	err := v.SetClient(ctx, nil, event)
+	err := v.SetClient(ctx, nil, event, nil)
 	assert.ErrorContains(t, err, "no git_provider.secret has been set")
 
 	event.Provider.Token = "hello"
 
 	v.repoURL, event.URL, event.Provider.URL = "", "", ""
 	event.URL = fmt.Sprintf("%s/hello-this-is-me-ze/project", fakehost)
-	err = v.SetClient(ctx, nil, event)
+	err = v.SetClient(ctx, nil, event, nil)
 	assert.NilError(t, err)
 	assert.Equal(t, fakehost, v.apiURL)
 

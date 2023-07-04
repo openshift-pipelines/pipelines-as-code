@@ -57,7 +57,7 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitlab.Provider, erro
 			Token: gitlabToken,
 			URL:   gitlabURL,
 		},
-	})
+	}, nil)
 	if err != nil {
 		return nil, options.E2E{}, gitlab.Provider{}, err
 	}

@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-github/v53/github"
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -31,6 +32,8 @@ const (
 	publicRawURLHost = "raw.githubusercontent.com"
 )
 
+var _ provider.Interface = (*Provider)(nil)
+
 type Provider struct {
 	Client        *github.Client
 	Logger        *zap.SugaredLogger
@@ -40,6 +43,7 @@ type Provider struct {
 	provenance    string
 	Run           *params.Run
 	RepositoryIDs []int64
+	repoSettings  *v1alpha1.Settings
 
 	skippedRun
 }
@@ -230,10 +234,11 @@ func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.
 	return nil
 }
 
-func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event) error {
+func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, repoSettings *v1alpha1.Settings) error {
 	client, providerName, apiURL := makeClient(ctx, event.Provider.URL, event.Provider.Token)
 	v.providerName = providerName
 	v.Run = run
+	v.repoSettings = repoSettings
 
 	// check that the Client is not already set, so we don't override our fakeclient
 	// from unittesting.

@@ -162,6 +162,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return nil, err
 	}
 
+	processedEvent.Event = eventInt
 	processedEvent.InstallationID = installationIDFrompayload
 	processedEvent.GHEURL = event.Provider.URL
 	processedEvent.Provider.URL = event.Provider.URL
@@ -197,7 +198,6 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 	var err error
 
 	processedEvent = info.NewEvent()
-	processedEvent.Event = eventInt
 
 	switch gitEvent := eventInt.(type) {
 	case *github.CheckRunEvent:
