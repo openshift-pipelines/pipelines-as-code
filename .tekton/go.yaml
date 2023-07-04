@@ -56,6 +56,7 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
+                git config --global --add safe.directory $(workspaces.source.path)
                 mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
                 cd $(dirname ${GOCACHE})
 
@@ -81,6 +82,7 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
+                git config --global --add safe.directory $(workspaces.source.path)
                 export GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
                 make test
 
@@ -105,6 +107,8 @@ spec:
               workingDir: $(workspaces.source.path)
               script: |
                 #!/usr/bin/env bash
+                set -eux
+                git config --global --add safe.directory $(workspaces.source.path)
                 currentsha=$(git rev-parse HEAD)
                 git fetch --tag -v
                 git checkout main
