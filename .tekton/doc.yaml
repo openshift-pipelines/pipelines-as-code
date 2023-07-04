@@ -40,7 +40,7 @@ spec:
             - name: source
           steps:
             - name: hugo-gen
-              image: registry.access.redhat.com/ubi9/python-311 # using this image since it has git and curl and python
+              image: registry.access.redhat.com/ubi9/python-311  # using this image since it has git and curl and python
               workingDir: $(workspaces.source.path)
               env:
                 - name: UPLOADER_PUBLIC_URL
