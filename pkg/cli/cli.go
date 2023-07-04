@@ -7,6 +7,7 @@ import (
 	"github.com/AlecAivazis/survey/v2/terminal"
 )
 
+// TODO: move to context
 type PacCliOpts struct {
 	NoColoring    bool
 	AllNameSpaces bool
