@@ -74,6 +74,10 @@ func readTypes(ctx context.Context, log *zap.SugaredLogger, data string) (Types,
 	return types, nil
 }
 
+// getTaskRunByName returns the taskrun with the given name the first one found
+// will be matched. It does not handle conflicts so user has fetched multiple
+// taskruns with the same name it will just pick up the first one.
+// if the taskrun is not found it returns an error
 func getTaskByName(name string, tasks []*tektonv1.Task) (*tektonv1.Task, error) {
 	for _, value := range tasks {
 		if value.Name == name {

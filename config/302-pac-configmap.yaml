@@ -49,6 +49,18 @@ data:
   # Tekton HUB catalog name
   hub-catalog-name: "tekton"
 
+  # Additional Hub Catalogs is supported, for example:
+  #
+  # catalog-1-id: anotherhub
+  # catalog-1-name: tekton
+  # catalog-1-url: https://api.other.com/v1
+  #
+  # this configuration will have a new catalog named anotherhub on  https://api.other.com/v1 endpoint and catalog name tekton
+  # to be used by a user in their templates like this:
+  # pipelinesascode.tekton.dev/task: "anotherhub://task"
+  #
+  # Increase the number of the catalog to add more of them
+
   # Allow fetching remote tasks
   remote-tasks: "true"
 
