@@ -155,6 +155,13 @@ This example will match any added file that was in the `src` directory:
       added_files.matches('src/')
 ```
 
+This example will match modified files with the name of test.go:
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      modified_files.matches('test\.go')
+```
+
 This example will match all pull request starting with the title `[DOWNSTREAM]`:
 
 ```yaml
