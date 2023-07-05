@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (p *CustomParams) getChangedFilesCommaSeparated(ctx context.Context) provider.ChangedFiles {
+func (p *CustomParams) getChangedFiles(ctx context.Context) provider.ChangedFiles {
 	if p.vcx == nil {
 		return provider.ChangedFiles{}
 	}
@@ -30,7 +30,7 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) map[stri
 	if p.event.CloneURL != "" {
 		repoURL = p.event.CloneURL
 	}
-	changedFiles := p.getChangedFilesCommaSeparated(ctx)
+	changedFiles := p.getChangedFiles(ctx)
 	return map[string]string{
 		"revision":          p.event.SHA,
 		"repo_url":          repoURL,

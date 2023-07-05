@@ -177,7 +177,6 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:       "cel/match path by glob",
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
-				// fileChanged: []string{".tekton/pull_request.yaml"},
 				fileChanged: []struct {
 					FileName    string
 					Status      string

@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	// regex allows GetFiles function to execute only when a property requiring
-	// GetFiles is used in the cel expression
+	// Utilizing this regex, the GetFiles function will be selectively executed exclusively when a property
+	// such as 'all_changed_files' or 'added_files' is specified within the CEL expression
 	changedFilesTags = "all_changed_files|added_files|deleted_files|modified_files|renamed_files"
 )
 
