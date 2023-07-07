@@ -46,6 +46,18 @@ func readTDfile(t *testing.T, testname string) string {
 }
 
 func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
+	hubCatalogs := map[string]settings.HubCatalog{
+		"default": {
+			ID:   "default",
+			URL:  testHubURL,
+			Name: testCatalogHubName,
+		},
+		"anotherHub": {
+			ID:   "anotherHub",
+			URL:  testHubURL,
+			Name: testCatalogHubName,
+		},
+	}
 	tests := []struct {
 		annotations            map[string]string
 		filesInsideRepo        map[string]string
@@ -179,6 +191,32 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			wantErr: "returning empty",
 		},
 		{
+			name: "test-annotations-unknown-hub",
+			annotations: map[string]string{
+				keys.Task: "[foo://bar]",
+			},
+			wantLog: "custom catalog foo is not found",
+			wantErr: "error getting remote task \"foo://bar\": returning empty",
+		},
+		{
+			name:        "test-get-from-custom-hub",
+			gotTaskName: "task",
+			annotations: map[string]string{
+				keys.Task: "[anotherHub://chmouzie]",
+			},
+			wantLog: "successfully fetched task chmouzie from custom catalog HUB anotherHub on URL https://mybelovedhub",
+			remoteURLS: map[string]map[string]string{
+				testHubURL + "/resource/" + testCatalogHubName + "/task/chmouzie": {
+					"body": `{"data": {"LatestVersion": {"version": "0.1"}}}`,
+					"code": "200",
+				},
+				fmt.Sprintf("%s/resource/%s/task/chmouzie/0.1/raw", testHubURL, testCatalogHubName): {
+					"body": readTDfile(t, "task-good"),
+					"code": "200",
+				},
+			},
+		},
+		{
 			name:        "test-get-from-hub-latest",
 			gotTaskName: "task",
 			annotations: map[string]string{
@@ -226,8 +264,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				Info: info.Info{
 					Pac: &info.PacOpts{
 						Settings: &settings.Settings{
-							HubURL:         testHubURL,
-							HubCatalogName: testCatalogHubName,
+							HubCatalogs: hubCatalogs,
 						},
 					},
 				},
@@ -244,12 +281,12 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			}
 
 			got, err := rt.GetTaskFromAnnotations(ctx, tt.annotations)
+			if tt.wantLog != "" {
+				assert.Assert(t, len(fakelog.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", fakelog)
+			}
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr, "We should have get an error with %v but we didn't", tt.wantErr)
 				return
-			}
-			if tt.wantLog != "" {
-				assert.Assert(t, len(fakelog.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", fakelog)
 			}
 			assert.NilError(t, err, "GetTaskFromAnnotations() error = %v, wantErr %v", err, tt.wantErr)
 			assert.Assert(t, len(got) > 0, "GetTaskFromAnnotations() error no tasks has been processed")
@@ -391,8 +428,13 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 				Info: info.Info{
 					Pac: &info.PacOpts{
 						Settings: &settings.Settings{
-							HubURL:         testHubURL,
-							HubCatalogName: testCatalogHubName,
+							HubCatalogs: map[string]settings.HubCatalog{
+								"default": {
+									ID:   "default",
+									URL:  testHubURL,
+									Name: testCatalogHubName,
+								},
+							},
 						},
 					},
 				},

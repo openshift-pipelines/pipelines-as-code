@@ -16,18 +16,32 @@ func TestGetTask(t *testing.T) {
 	const testHubURL = "https://myprecioushub"
 	const testCatalogHubName = "tekton"
 
+	hubCatalogs := map[string]settings.HubCatalog{
+		"default": {
+			ID:   "default",
+			URL:  testHubURL,
+			Name: testCatalogHubName,
+		},
+		"anotherHub": {
+			ID:   "anotherHub",
+			URL:  testHubURL,
+			Name: testCatalogHubName,
+		},
+	}
 	tests := []struct {
-		name    string
-		task    string
-		want    string
-		wantErr bool
-		config  map[string]map[string]string
+		name        string
+		task        string
+		want        string
+		wantErr     bool
+		config      map[string]map[string]string
+		catalogName string
 	}{
 		{
-			name:    "get-task-latest",
-			task:    "task1",
-			want:    "This is Task1",
-			wantErr: false,
+			name:        "get-task-latest",
+			task:        "task1",
+			want:        "This is Task1",
+			wantErr:     false,
+			catalogName: "default",
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
 					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
@@ -40,9 +54,27 @@ func TestGetTask(t *testing.T) {
 			},
 		},
 		{
-			name:    "get-latest-task-not-there",
-			task:    "task1",
-			wantErr: true,
+			name:        "get-task-latest-custom",
+			task:        "task1",
+			want:        "This is Task1",
+			wantErr:     false,
+			catalogName: "anotherHub",
+			config: map[string]map[string]string{
+				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
+					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
+					"code": "200",
+				},
+				fmt.Sprintf("%s/resource/%s/task/task1/0.2/raw", testHubURL, testCatalogHubName): {
+					"body": "This is Task1",
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:        "get-latest-task-not-there",
+			task:        "task1",
+			catalogName: "default",
+			wantErr:     true,
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
 					"code": "404",
@@ -50,9 +82,10 @@ func TestGetTask(t *testing.T) {
 			},
 		},
 		{
-			name:    "get-specific-task-not-there",
-			task:    "task1:1.1",
-			wantErr: true,
+			name:        "get-specific-task-not-there",
+			task:        "task1:1.1",
+			wantErr:     true,
+			catalogName: "default",
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task1/1.1", testHubURL, testCatalogHubName): {
 					"code": "404",
@@ -60,10 +93,11 @@ func TestGetTask(t *testing.T) {
 			},
 		},
 		{
-			name:    "get-task-specific",
-			task:    "task2:1.1",
-			want:    "This is Task2",
-			wantErr: false,
+			name:        "get-task-specific",
+			task:        "task2:1.1",
+			want:        "This is Task2",
+			wantErr:     false,
+			catalogName: "default",
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task2/1.1", testHubURL, testCatalogHubName): {
 					"body": `{}`,
@@ -84,9 +118,13 @@ func TestGetTask(t *testing.T) {
 				Clients: clients.Clients{
 					HTTP: *httpTestClient,
 				},
-				Info: info.Info{Pac: &info.PacOpts{Settings: &settings.Settings{HubURL: testHubURL, HubCatalogName: testCatalogHubName}}},
+				Info: info.Info{Pac: &info.PacOpts{
+					Settings: &settings.Settings{
+						HubCatalogs: hubCatalogs,
+					},
+				}},
 			}
-			got, err := GetTask(ctx, cs, tt.task)
+			got, err := GetTask(ctx, cs, tt.catalogName, tt.task)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTask() error = %v, wantErr %v", err, tt.wantErr)
 				return

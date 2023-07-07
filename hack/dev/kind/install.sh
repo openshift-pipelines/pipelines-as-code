@@ -164,7 +164,8 @@ function configure_pac() {
 
     kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"bitbucket-cloud-check-source-ip\": \"false\"}}"  pipelines-as-code && \
     kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"tekton-dashboard-url\": \"http://dashboard.${DOMAIN_NAME}\"}}" --type merge pipelines-as-code
-
+    # add custom catalog so we can use it in e2e, this will points to the normal upstream hub so we can easily use it
+    kubectl patch configmap -n pipelines-as-code -p '{"data":{"catalog-1-id": "custom", "catalog-1-name": "tekton", "catalog-1-url": "https://api.hub.tekton.dev/v1"}}' --type merge pipelines-as-code
     set +x
     if [[ -n ${PAC_PASS_SECRET_FOLDER} ]];then
         echo "Installing PAC secrets"

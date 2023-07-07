@@ -104,20 +104,34 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 	}
 
 	switch {
-	case strings.HasPrefix(uri, "https://"), strings.HasPrefix(uri, "http://"):
+	case strings.HasPrefix(uri, "https://"), strings.HasPrefix(uri, "http://"): // if it starts with http(s)://, it is a remote resource
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
 		res, err := rt.Run.Clients.HTTP.Do(req)
 		if err != nil {
 			return "", err
 		}
 		if res.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("cannot get remote resource: \"%s\": %s", uri, res.Status)
+			return "", fmt.Errorf("cannot get remote resource: %s: %s", uri, res.Status)
 		}
 		data, _ := io.ReadAll(res.Body)
 		defer res.Body.Close()
-		rt.Logger.Infof("successfully fetched \"%s\" from remote https url", uri)
+		rt.Logger.Infof("successfully fetched %s from remote https url", uri)
 		return string(data), nil
-	case strings.Contains(uri, "/"):
+	case fromHub && strings.Contains(uri, "://"): // if it contains ://, it is a remote custom catalog
+		split := strings.Split(uri, "://")
+		catalogID := split[0]
+		if _, ok := rt.Run.Info.Pac.HubCatalogs[catalogID]; !ok {
+			rt.Logger.Infof("custom catalog %s is not found, skipping", catalogID)
+			return "", nil
+		}
+		uri = strings.TrimPrefix(uri, fmt.Sprintf("%s://", catalogID))
+		data, err := hub.GetTask(ctx, rt.Run, catalogID, uri)
+		if err != nil {
+			return "", err
+		}
+		rt.Logger.Infof("successfully fetched task %s from custom catalog HUB %s on URL %s", uri, catalogID, rt.Run.Info.Pac.HubCatalogs[catalogID].URL)
+		return data, nil
+	case strings.Contains(uri, "/"): // if it contains a slash, it is a file inside a repository
 		var data string
 		var err error
 		if rt.Event.SHA != "" {
@@ -135,14 +149,14 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 			}
 		}
 
-		rt.Logger.Infof("successfully fetched \"%s\" inside repository", uri)
+		rt.Logger.Infof("successfully fetched %s inside repository", uri)
 		return data, nil
-	case fromHub:
-		data, err := hub.GetTask(ctx, rt.Run, uri)
+	case fromHub: // finally a simple word will fetch from the default catalog (if enabled)
+		data, err := hub.GetTask(ctx, rt.Run, "default", uri)
 		if err != nil {
 			return "", err
 		}
-		rt.Logger.Infof("successfully fetched \"%s\" from hub URL: %s", uri, rt.Run.Info.Pac.HubURL)
+		rt.Logger.Infof("successfully fetched %s from default configured catalog HUB on URL: %s", uri, rt.Run.Info.Pac.HubCatalogs["default"].URL)
 		return data, nil
 	}
 	return "", fmt.Errorf(`cannot find "%s" anywhere`, uri)

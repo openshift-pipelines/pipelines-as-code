@@ -48,6 +48,9 @@ location with annotations on PipelineRun.
 If the resolver sees a PipelineRun referencing a remote task or a Pipeline in
 a PipelineRun or a PipelineSpec it will automatically inlines them.
 
+If multiple annotations reference the same task name the resolver will pick the
+first one fetched from the annotations.
+
 An annotation to a remote task looks like this :
 
 ```yaml
@@ -98,6 +101,20 @@ this example :
 ```yaml
 pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # this will install git-clone 0.1 from tekton.hub
 ```
+
+#### Custom [Tekton Hub](https://github.com/tektoncd/hub/)
+
+Additionally if the cluster administrator has [set-up](/docs/install/settings#tekton-hub-support) a custom Tekton Hub you
+are able to reference it from your template like this example:
+
+```yaml
+pipelinesascode.tekton.dev/task: "[anothercatalog://curl]" # this will install curl from the custom catalog configured by the cluster administrator as anothercatalog
+```
+
+There is no fallback to the default Tekton Hub if the custom Tekton Hub does not
+have the task referenced it will fail.
+
+There is no support for custom hub from the CLI on the `tkn pac resolver` command.
 
 ### Remote HTTP URL
 

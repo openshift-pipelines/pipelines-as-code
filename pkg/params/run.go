@@ -125,7 +125,13 @@ func New() *Run {
 			Pac: &info.PacOpts{
 				Settings: &settings.Settings{
 					ApplicationName: settings.PACApplicationNameDefaultValue,
-					HubURL:          settings.HubURLDefaultValue,
+					HubCatalogs: map[string]settings.HubCatalog{
+						"default": {
+							ID:   "default",
+							Name: settings.HubCatalogNameDefaultValue,
+							URL:  settings.HubURLDefaultValue,
+						},
+					},
 				},
 			},
 		},

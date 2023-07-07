@@ -89,7 +89,15 @@ func TestConfigToSettings(t *testing.T) {
 					HubURLKey: "https://test",
 				},
 			},
-			wantLogContains: "hub URL set to https://test",
+		},
+		{
+			name: "set hub name",
+			args: args{
+				setting: &Settings{},
+				config: map[string]string{
+					HubCatalogNameKey: "foo",
+				},
+			},
 		},
 	}
 	for _, tt := range tests {

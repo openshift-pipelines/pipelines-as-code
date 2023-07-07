@@ -3,7 +3,7 @@ title: Settings
 weight: 3
 ---
 
-## Pipelines-As-Code configuration settings
+## Pipelines-as-Code configuration settings
 
 There is a few things you can configure through the config map
 `pipelines-as-code` in the `pipelines-as-code` namespace.
@@ -62,15 +62,6 @@ There is a few things you can configure through the config map
 
   This allows fetching remote tasks on pipelinerun annotations. This feature is
   enabled by default.
-
-* `hub-url`
-
-  The base URL for the [tekton hub](https://github.com/tektoncd/hub/)
-  API. This default to the [public hub](https://hub.tekton.dev/): <https://api.hub.tekton.dev/v1>
-
-* `hub-catalog-name`
-
-  The [tekton hub](https://github.com/tektoncd/hub/) catalog name. default to `tekton`
 
 * `bitbucket-cloud-check-source-ip`
 
@@ -133,13 +124,44 @@ There is a few things you can configure through the config map
 
   `https://github.com/owner/repo` will be `owner-repo-ci`
 
+### Tekton Hub support
+
+Pipelines-as-Code supports fetching task with its remote annotations feature, by default it will fetch it from the [public tekton hub](https://hub.tekton.dev/) but you can configure it to point to your own with these settings:
+
+* `hub-url`
+
+  The base URL for the [tekton hub](https://github.com/tektoncd/hub/)
+  API. This default to the [public hub](https://hub.tekton.dev/): <https://api.hub.tekton.dev/v1>
+
+* `hub-catalog-name`
+
+  The [tekton hub](https://github.com/tektoncd/hub/) catalog name. default to `tekton`
+
+* Additionally you can have multiple hub configured by using the following format:
+
+  ```yaml
+  catalog-1-id: "custom"
+  catalog-1-name: "tekton"
+  catalog-1-url: "https://api.custom.hub/v1"
+  ```
+
+  Users are able to reference the custom hub by adding a `custom://` prefix to
+  their task they want to fetch from the `custom` catalog.
+
+  You can add as many custom hub as you want by incrementing the `catalog-NUMBER` number.
+
+  Pipelines-as-Code will not try to fallback to the default or another custom hub
+  if the task referenced is not found (the Pull Request will be set as failed)
+
 ### Error Detection
 
 Pipelines-as-Code detect if the PipelineRun has failed and show a snippet of
 the last few lines of the error.
 
-On GitHub Aopps, It also try to detect and match the error messages in the container logs and expose them as annotations on Pull
-Request.
+When using the GitHub App, It will try to detect and match the error messages
+in the container logs and expose them as [GitHub
+annotations](https://github.blog/2018-12-14-introducing-check-runs-and-annotations/)
+on Pull Request.
 
 A few settings are available to configure this feature:
 
@@ -231,7 +253,7 @@ A few settings are available to configure this feature:
 
   * `{{ namespace }}`: The target namespace where the pipelinerun is executed
   * `{{ pr }}`: The PipelineRun name.
-  
+
   example: `https://mycorp.com/ns/{{ namespace }}/pipelinerun/{{ pr }}`
 
   Moreover it can access the [custom parameters](../guide/repositorycrd/#custom-parameter-expansion) from a
@@ -246,16 +268,16 @@ A few settings are available to configure this feature:
    ```
 
   and the global configuration setting for `custom-console-url-pr-details` is:
-  
+
   `https://mycorp.com/ns/{{ namespace }}/{{ custom }}`
-  
+
   the `{{ custom }}` tag in the URL is expanded as `value`.
-  
+
   This let operator to add specific informations like a `UUID` about a user as
   parameter in their repo CR and let it link to the console.
-  
+
 * `custom-console-url-pr-tasklog`
-  
+
   Set this to the URL where to view the log of the taskrun of the `PipelineRun`. This is
   shown when we post a result of the task breakdown to link to the logs of the taskrun.
 
@@ -271,7 +293,7 @@ A few settings are available to configure this feature:
 
   example: `https://mycorp.com/ns/{{ namespace }}/pipelinerun/{{ pr }}/logs/{{ task }}#{{ pod }}-{{ firstFailedStep }}`
 
-## Pipelines-As-Code Info
+## Pipelines-as-Code Info
 
   There are a settings exposed through a config map for which any authenticated
   user can access to know about the Pipelines-as-Code status. This Configmap
