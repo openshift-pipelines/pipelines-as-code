@@ -813,6 +813,16 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		},
 	}
 
+	pipelinePush := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pipeline-push",
+			Annotations: map[string]string{
+				keys.OnEvent:        "[push]",
+				keys.OnTargetBranch: "[main]",
+			},
+		},
+	}
+
 	pipelineOther := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-other",
@@ -1049,6 +1059,22 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "refs/heads/main"},
 			},
 			wantErr: false,
+		},
+		{
+			name: "not-match-push-branch-matching",
+			args: args{
+				runevent: info.Event{TriggerTarget: "push", EventType: "push", BaseBranch: "refs/heads/someothername/then/main"},
+				pruns:    []*tektonv1.PipelineRun{pipelineGood, pipelinePush},
+			},
+			wantErr: true,
+		},
+		{
+			name: "not-match-pull-request-branch-matching",
+			args: args{
+				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "someothername/then/main"},
+				pruns:    []*tektonv1.PipelineRun{pipelineGood, pipelinePush},
+			},
+			wantErr: true,
 		},
 	}
 
