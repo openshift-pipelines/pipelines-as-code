@@ -23,15 +23,15 @@ builds:
       - -X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version={{.Version}}
 archives:
   - name_template: >-
-     {{ .Binary }}_
-     {{ .Version }}_
-     {{ .Os }}_
-     {{- if eq .Arch "amd64" }}x86_64
-     {{- else if eq .Arch "386" }}i386
-     {{- else if eq .Arch "darwin" }}MacOS
-     {{- else if eq .Arch "linux" }}Linux
-     {{- else if eq .Arch "windows" }}Windows
-     {{- else }}{{ .Arch }}{{ end }}
+      {{ .Binary }}_
+      {{ .Version }}_
+      {{ .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else if eq .Arch "darwin" }}MacOS
+      {{- else if eq .Arch "linux" }}Linux
+      {{- else if eq .Arch "windows" }}Windows
+      {{- else }}{{ .Arch }}{{ end }}
     format_overrides:
       - goos: windows
         format: zip
@@ -72,7 +72,7 @@ release:
 
 brews:
   - name: tektoncd-pac
-    tap:
+    repository:
       owner: openshift-pipelines
       name: homebrew-pipelines-as-code
     folder: Formula
