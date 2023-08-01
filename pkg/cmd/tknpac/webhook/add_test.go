@@ -118,6 +118,7 @@ func TestWebhookAdd(t *testing.T) {
 		opts         *cli.PacCliOpts
 		wantErr      bool
 		wantMsg      string
+		pacNamespace string
 	}{{
 		name: "Use webhook add command to add Github webhook when GithubApp is configured",
 		askStubs: func(as *prompt.AskStubber) {
@@ -133,9 +134,10 @@ func TestWebhookAdd(t *testing.T) {
 		opts: &cli.PacCliOpts{
 			Namespace: namespace1.GetName(),
 		},
-		configMaps: []*corev1.ConfigMap{configMap},
-		wantErr:    true, // returning error while creating webhook because it requires actual personal access token in order to connect github
-		wantMsg:    "✓ Setting up GitHub Webhook for Repository https://anurl.com/owner/repo\n👀 I have detected a controller url: https://hook.pipelinesascode.com/WKR2cP3ug5K6A92T\nℹ ️You now need to create a GitHub personal access token, please checkout the docs at https://is.gd/KJ1dDH for the required scopes\n",
+		pacNamespace: namespace2.GetName(),
+		configMaps:   []*corev1.ConfigMap{configMap},
+		wantErr:      true, // returning error while creating webhook because it requires actual personal access token in order to connect github
+		wantMsg:      "✓ Setting up GitHub Webhook for Repository https://anurl.com/owner/repo\n👀 I have detected a controller url: https://hook.pipelinesascode.com/WKR2cP3ug5K6A92T\nℹ ️You now need to create a GitHub personal access token, please checkout the docs at https://is.gd/KJ1dDH for the required scopes\n",
 	}, {
 		name:         "failed to configure webhook when git_provider secret is empty",
 		namespaces:   []*corev1.Namespace{namespace2},
@@ -144,8 +146,9 @@ func TestWebhookAdd(t *testing.T) {
 		opts: &cli.PacCliOpts{
 			Namespace: namespace2.GetName(),
 		},
-		wantErr: false,
-		wantMsg: "! Can not configure webhook as git_provider secret is empty",
+		wantErr:      false,
+		wantMsg:      "! Can not configure webhook as git_provider secret is empty",
+		pacNamespace: namespace2.GetName(),
 	}, {
 		name:         "list all repositories",
 		namespaces:   []*corev1.Namespace{namespace2},
@@ -156,7 +159,8 @@ func TestWebhookAdd(t *testing.T) {
 			as.StubOne("true")
 			as.StubOne("yes")
 		},
-		repoName: "",
+		pacNamespace: namespace2.GetName(),
+		repoName:     "",
 		opts: &cli.PacCliOpts{
 			Namespace: "test",
 		},
@@ -169,7 +173,8 @@ func TestWebhookAdd(t *testing.T) {
 		opts: &cli.PacCliOpts{
 			Namespace: "default",
 		},
-		wantErr: true, // error out here saying no repo found because no repo created in default ns
+		pacNamespace: namespace2.GetName(),
+		wantErr:      true, // error out here saying no repo found because no repo created in default ns
 	}, {
 		name:         "invalid repository",
 		namespaces:   []*corev1.Namespace{namespace1},
@@ -178,7 +183,8 @@ func TestWebhookAdd(t *testing.T) {
 		opts: &cli.PacCliOpts{
 			Namespace: namespace1.GetName(),
 		},
-		wantErr: true, // error out with invalidRepo not found because it was not created
+		pacNamespace: namespace2.GetName(),
+		wantErr:      true, // error out with invalidRepo not found because it was not created
 	}, {
 		name: "Update secret token for existing github webhook",
 		askStubs: func(as *prompt.AskStubber) {
@@ -196,8 +202,9 @@ func TestWebhookAdd(t *testing.T) {
 		opts: &cli.PacCliOpts{
 			Namespace: namespace2.GetName(),
 		},
-		wantMsg: "✓ Setting up GitHub Webhook for Repository https://github.com/owner/repo\n👀 I have detected a controller url: https://hook.pipelinesascode.com/WKR2cP3ug5K6A92T\n",
-		wantErr: true, // error out because creating webhook in a repository requires valid provider token
+		pacNamespace: namespace2.GetName(),
+		wantMsg:      "✓ Setting up GitHub Webhook for Repository https://github.com/owner/repo\n👀 I have detected a controller url: https://hook.pipelinesascode.com/WKR2cP3ug5K6A92T\n",
+		wantErr:      true, // error out because creating webhook in a repository requires valid provider token
 
 	}}
 	for _, tt := range tests {
@@ -224,7 +231,7 @@ func TestWebhookAdd(t *testing.T) {
 			}
 			io, out := newIOStream()
 			if err := add(ctx, tt.opts, cs, io,
-				tt.repoName, ""); (err != nil) != tt.wantErr {
+				tt.repoName, tt.pacNamespace); (err != nil) != tt.wantErr {
 				t.Errorf("add() error = %v, wantErr %v", err, tt.wantErr)
 			} else {
 				if res := cmp.Diff(out.String(), tt.wantMsg); res != "" {

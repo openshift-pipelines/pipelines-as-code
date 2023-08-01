@@ -10,8 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const configMapPacLabel = "app.kubernetes.io/part-of=pipelines-as-code"
-
 // deleteSecret delete secret first if it exists
 func deleteSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	return run.Clients.Kube.CoreV1().Secrets(opts.targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
