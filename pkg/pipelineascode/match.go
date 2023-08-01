@@ -49,14 +49,8 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 	}
 
 	if repo == nil {
-		if p.event.Provider.Token == "" {
-			msg := fmt.Sprintf("cannot set status since no repository has been matched on %s", p.event.URL)
-			p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositorySetStatus", msg)
-			return nil, nil
-		}
-		msg := fmt.Sprintf("cannot find a namespace match for %s", p.event.URL)
+		msg := fmt.Sprintf("cannot find a repository match for %s", p.event.URL)
 		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNamespaceMatch", msg)
-
 		return nil, nil
 	}
 
