@@ -3,7 +3,6 @@ package matcher
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -26,12 +25,6 @@ const (
 )
 
 func branchMatch(prunBranch, baseBranch string) bool {
-	// If we have targetBranch in annotation and refs/heads/targetBranch from
-	// webhook, then allow it.
-	if filepath.Base(baseBranch) == filepath.Base(prunBranch) {
-		return true
-	}
-
 	// if target is refs/heads/.. and base is without ref (for pullRequest)
 	if strings.HasPrefix(prunBranch, "refs/heads") && !strings.Contains(baseBranch, "/") {
 		ref := "refs/heads/" + baseBranch
