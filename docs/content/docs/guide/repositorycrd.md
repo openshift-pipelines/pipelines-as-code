@@ -194,10 +194,7 @@ spec:
   params:
     - name: company
       value: "My Beautiful Company"
-      filter:
-        - name: event
-          value: |
-      pac.event_type == "pull_request"
+      filter: pac.event_type == "pull_request"
 ```
 
 The `pac` prefix contains all the values as set by default in the templates
@@ -224,10 +221,7 @@ spec:
   params:
     - name: company
       value: "My Beautiful Company"
-      filter:
-        - name: event
-          value: |
-      body.action == "opened" && pac.event_type == "pull_request"
+      filter: body.action == "opened" && pac.event_type == "pull_request"
 ```
 
 The payload of the event contains much more information that can be used with
