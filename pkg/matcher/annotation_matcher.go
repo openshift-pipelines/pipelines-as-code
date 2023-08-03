@@ -25,18 +25,22 @@ const (
 )
 
 func branchMatch(prunBranch, baseBranch string) bool {
-	// if target is refs/heads/.. and base is without ref (for pullRequest)
-	if strings.HasPrefix(prunBranch, "refs/heads") && !strings.Contains(baseBranch, "/") {
-		ref := "refs/heads/" + baseBranch
+	// if target is refs/heads/.. and base is without ref (for pullRequest action)
+	if strings.HasPrefix(prunBranch, "refs/heads/") {
+		ref := baseBranch
+		if !strings.HasPrefix(baseBranch, "refs/heads/") {
+			ref = "refs/heads/" + baseBranch
+		}
 		g := glob.MustCompile(prunBranch)
 		if g.Match(ref) {
 			return true
 		}
-	}
-
-	// if base is refs/heads/.. and target is without ref (for push rerequested action)
-	if strings.HasPrefix(baseBranch, "refs/heads") && !strings.Contains(prunBranch, "/") {
-		prunRef := "refs/heads/" + prunBranch
+	} else {
+		// if base is refs/heads/.. and target is without ref (for push request action)
+		prunRef := prunBranch
+		if !strings.HasPrefix(prunBranch, "refs/heads/") {
+			prunRef = "refs/heads/" + prunBranch
+		}
 		g := glob.MustCompile(prunRef)
 		if g.Match(baseBranch) {
 			return true

@@ -833,6 +833,16 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		},
 	}
 
+	pipelineWithSlashInBranchName := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pipeline-withslashesinbranch",
+			Annotations: map[string]string{
+				keys.OnEvent:        "[pull_request, push]",
+				keys.OnTargetBranch: "[test/main]",
+			},
+		},
+	}
+
 	pipelineRefAll := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-other",
@@ -1061,7 +1071,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "not-match-push-branch-matching",
+			name: "branch-matching-doesnot-match-for-push-event",
 			args: args{
 				runevent: info.Event{TriggerTarget: "push", EventType: "push", BaseBranch: "refs/heads/someothername/then/main"},
 				pruns:    []*tektonv1.PipelineRun{pipelineGood, pipelinePush},
@@ -1069,12 +1079,28 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "not-match-pull-request-branch-matching",
+			name: "branch-matching-doesnot-match-for-pull-request",
 			args: args{
 				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "someothername/then/main"},
 				pruns:    []*tektonv1.PipelineRun{pipelineGood, pipelinePush},
 			},
 			wantErr: true,
+		},
+		{
+			name: "branch-matching-match-for-push-when-there-are-slashes-in-between-branch-name",
+			args: args{
+				runevent: info.Event{TriggerTarget: "push", EventType: "push", BaseBranch: "refs/heads/test/main"},
+				pruns:    []*tektonv1.PipelineRun{pipelineWithSlashInBranchName},
+			},
+			wantErr: false,
+		},
+		{
+			name: "branch-matching-match-for-pull_request-when-there-are-slashes-in-between-branch-name",
+			args: args{
+				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "refs/heads/test/main"},
+				pruns:    []*tektonv1.PipelineRun{pipelineWithSlashInBranchName},
+			},
+			wantErr: false,
 		},
 	}
 
