@@ -223,7 +223,7 @@ type PipelineRunSpec struct {
 	PipelineSpec *PipelineSpec `json:"pipelineSpec,omitempty"`
 	// Params is a list of parameter names and values.
 	// +listType=atomic
-	Params []Param `json:"params,omitempty"`
+	Params Params `json:"params,omitempty"`
 
 	// Used for cancelling a pipelinerun (and maybe more later on)
 	// +optional
@@ -469,6 +469,8 @@ const (
 	TasksTimedOutSkip SkippingReason = "PipelineRun Tasks timeout has been reached"
 	// FinallyTimedOutSkip means the task was skipped because the PipelineRun has passed its Timeouts.Finally.
 	FinallyTimedOutSkip SkippingReason = "PipelineRun Finally timeout has been reached"
+	// EmptyArrayInMatrixParams means the task was skipped because Matrix parameters contain empty array.
+	EmptyArrayInMatrixParams SkippingReason = "Matrix Parameters have an empty array"
 	// None means the task was not skipped
 	None SkippingReason = "None"
 )
@@ -553,9 +555,9 @@ func (pr *PipelineRun) GetTaskRunSpec(pipelineTaskName string) PipelineTaskRunSp
 	}
 	for _, task := range pr.Spec.TaskRunSpecs {
 		if task.PipelineTaskName == pipelineTaskName {
-			if task.PodTemplate != nil {
-				s.PodTemplate = task.PodTemplate
-			}
+			// merge podTemplates specified in pipelineRun.spec.taskRunSpecs[].podTemplate and pipelineRun.spec.podTemplate
+			// with taskRunSpecs taking higher precedence
+			s.PodTemplate = pod.MergePodTemplateWithDefault(task.PodTemplate, s.PodTemplate)
 			if task.ServiceAccountName != "" {
 				s.ServiceAccountName = task.ServiceAccountName
 			}

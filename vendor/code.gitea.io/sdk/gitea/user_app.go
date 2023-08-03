@@ -42,8 +42,7 @@ func (c *Client) ListAccessTokens(opts ListAccessTokensOptions) ([]*AccessToken,
 
 // CreateAccessTokenOption options when create access token
 type CreateAccessTokenOption struct {
-	Name   string   `json:"name"`
-	Scopes []string `json:"scopes"`
+	Name string `json:"name"`
 }
 
 // CreateAccessToken create one access token with options
@@ -72,7 +71,7 @@ func (c *Client) DeleteAccessToken(value interface{}) (*Response, error) {
 		return nil, fmt.Errorf("\"username\" not set: only BasicAuth allowed")
 	}
 
-	token := ""
+	var token = ""
 
 	switch reflect.ValueOf(value).Kind() {
 	case reflect.Int64:
