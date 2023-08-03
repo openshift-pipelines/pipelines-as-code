@@ -1,6 +1,6 @@
 module github.com/openshift-pipelines/pipelines-as-code
 
-go 1.18
+go 1.19
 
 require (
 	code.gitea.io/gitea/modules/structs v0.0.0-20190610152049-835b53fc259c
@@ -47,10 +47,14 @@ require (
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230320150741-8451524ecd7e // indirect
 	github.com/cloudflare/circl v1.3.2 // indirect
+	github.com/davidmz/go-pageant v1.0.2 // indirect
+	github.com/go-fed/httpsig v1.1.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a // indirect
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.25.4
+
+replace code.gitea.io/sdk/gitea => code.gitea.io/sdk/gitea v0.15.1-0.20230509035020-970776d1c1e9
 
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d // indirect

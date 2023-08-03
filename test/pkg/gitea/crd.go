@@ -13,7 +13,7 @@ import (
 func createToken(topts *TestOpts) (string, error) {
 	token, _, err := topts.GiteaCNX.Client.CreateAccessToken(gitea.CreateAccessTokenOption{
 		Name:   topts.TargetNS,
-		Scopes: []string{"repo", "admin:org", "admin:public_key", "admin:repo_hook", "admin:org_hook", "notification", "user", "delete_repo", "package", "admin:gpg_key", "admin:application", "sudo"},
+		Scopes: []gitea.AccessTokenScope{gitea.AccessTokenScopeAll},
 	})
 	if err != nil {
 		return "", err
