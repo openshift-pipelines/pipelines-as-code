@@ -223,6 +223,7 @@ func resolveFilenames(ctx context.Context, cs *params.Run, filenames []string, p
 	for _, run := range prun {
 		var doc []byte
 		if asv1beta1 {
+			//nolint: staticcheck
 			nrun := &tektonv1beta1.PipelineRun{}
 			if err := nrun.ConvertFrom(ctx, run); err != nil {
 				return "", err

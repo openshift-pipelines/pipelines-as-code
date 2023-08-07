@@ -45,7 +45,7 @@ func (rt RemoteTasks) convertToPipeline(ctx context.Context, uri, data string) (
 	switch o := obj.(type) {
 	case *tektonv1.Pipeline:
 		pipeline = o
-	case *tektonv1beta1.Pipeline:
+	case *tektonv1beta1.Pipeline: //nolint: staticcheck
 		c := &tektonv1.Pipeline{}
 		// TODO: figure ou the issue we have with setdefault setting defaults SA
 		// and then don't let pipeline do its job to automatically set a
@@ -80,7 +80,7 @@ func (rt RemoteTasks) convertTotask(ctx context.Context, uri, data string) (*tek
 	switch o := obj.(type) {
 	case *tektonv1.Task:
 		task = o
-	case *tektonv1beta1.Task:
+	case *tektonv1beta1.Task: //nolint: staticcheck // we need to support v1beta1
 		c := &tektonv1.Task{}
 		// o.SetDefaults(ctx)
 		// if err := o.Validate(ctx); err != nil {
