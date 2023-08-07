@@ -24,26 +24,38 @@ import (
 	"net/url"
 	"time"
 
-	obshttp "github.com/cloudevents/sdk-go/observability/opencensus/v2/http"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/tracing/propagation/tracecontextb3"
 
 	"knative.dev/eventing/pkg/adapter/v2/util/crstatusevent"
+	"knative.dev/eventing/pkg/apis"
 	"knative.dev/eventing/pkg/eventingtls"
 	"knative.dev/eventing/pkg/metrics/source"
 	obsclient "knative.dev/eventing/pkg/observability/client"
 )
 
+type closeIdler interface {
+	CloseIdleConnections()
+}
+
+type Client interface {
+	cloudevents.Client
+	closeIdler
+}
+
 var newClientHTTPObserved = NewClientHTTPObserved
 
-func NewClientHTTPObserved(topt []http.Option, copt []ceclient.Option) (ceclient.Client, error) {
-	t, err := obshttp.NewObservedHTTP(topt...)
+func NewClientHTTPObserved(topt []http.Option, copt []ceclient.Option) (Client, error) {
+	t, err := http.New(append(topt,
+		http.WithMiddleware(tracecontextMiddleware),
+	)...)
 	if err != nil {
 		return nil, err
 	}
@@ -55,85 +67,134 @@ func NewClientHTTPObserved(topt []http.Option, copt []ceclient.Option) (ceclient
 		return nil, err
 	}
 
-	return c, nil
+	return &client{
+		ceClient: c,
+	}, nil
 }
 
 // NewCloudEventsClient returns a client that will apply the ceOverrides to
 // outbound events and report outbound event counts.
-func NewCloudEventsClient(target string, ceOverrides *duckv1.CloudEventOverrides, reporter source.StatsReporter) (cloudevents.Client, error) {
+func NewCloudEventsClient(target string, ceOverrides *duckv1.CloudEventOverrides, reporter source.StatsReporter) (Client, error) {
 	opts := make([]http.Option, 0)
 	if len(target) > 0 {
 		opts = append(opts, cloudevents.WithTarget(target))
 	}
-	return newCloudEventsClientCRStatus(nil, ceOverrides, reporter, nil, opts...)
+	return NewClient(ClientConfig{
+		CeOverrides: ceOverrides,
+		Reporter:    reporter,
+		Options:     opts,
+	})
 }
 
 // NewCloudEventsClientWithOptions returns a client created with provided options
-func NewCloudEventsClientWithOptions(ceOverrides *duckv1.CloudEventOverrides, reporter source.StatsReporter, opts ...http.Option) (cloudevents.Client, error) {
-	return newCloudEventsClientCRStatus(nil, ceOverrides, reporter, nil, opts...)
+func NewCloudEventsClientWithOptions(ceOverrides *duckv1.CloudEventOverrides, reporter source.StatsReporter, opts ...http.Option) (Client, error) {
+	return NewClient(ClientConfig{
+		CeOverrides: ceOverrides,
+		Reporter:    reporter,
+		Options:     opts,
+	})
 }
 
 // NewCloudEventsClientCRStatus returns a client CR status
-func NewCloudEventsClientCRStatus(env EnvConfigAccessor, reporter source.StatsReporter, crStatusEventClient *crstatusevent.CRStatusEventClient) (cloudevents.Client, error) {
-	return newCloudEventsClientCRStatus(env, nil, reporter, crStatusEventClient)
+func NewCloudEventsClientCRStatus(env EnvConfigAccessor, reporter source.StatsReporter, crStatusEventClient *crstatusevent.CRStatusEventClient) (Client, error) {
+	return NewClient(ClientConfig{
+		Env:                 env,
+		Reporter:            reporter,
+		CrStatusEventClient: crStatusEventClient,
+	})
 }
-func newCloudEventsClientCRStatus(env EnvConfigAccessor, ceOverrides *duckv1.CloudEventOverrides, reporter source.StatsReporter,
-	crStatusEventClient *crstatusevent.CRStatusEventClient, opts ...http.Option) (cloudevents.Client, error) {
+
+type ClientConfig struct {
+	Env                 EnvConfigAccessor
+	CeOverrides         *duckv1.CloudEventOverrides
+	Reporter            source.StatsReporter
+	CrStatusEventClient *crstatusevent.CRStatusEventClient
+	Options             []http.Option
+}
+
+type clientConfigKey struct{}
+
+func withClientConfig(ctx context.Context, r ClientConfig) context.Context {
+	return context.WithValue(ctx, clientConfigKey{}, r)
+}
+
+func GetClientConfig(ctx context.Context) ClientConfig {
+	val := ctx.Value(clientConfigKey{})
+	if val == nil {
+		return ClientConfig{}
+	}
+	return val.(ClientConfig)
+}
+
+func NewClient(cfg ClientConfig) (Client, error) {
+	transport := &ochttp.Transport{
+		Base:        nethttp.DefaultTransport.(*nethttp.Transport),
+		Propagation: tracecontextb3.TraceContextEgress,
+	}
 
 	pOpts := make([]http.Option, 0)
-	pOpts = append(pOpts, cloudevents.WithRoundTripper(&ochttp.Transport{
-		Propagation: tracecontextb3.TraceContextEgress,
-	}))
 
-	if env != nil {
-		if target := env.GetSink(); len(target) > 0 {
+	ceOverrides := cfg.CeOverrides
+	if cfg.Env != nil {
+		if target := cfg.Env.GetSink(); len(target) > 0 {
 			pOpts = append(pOpts, cloudevents.WithTarget(target))
 		}
-		if sinkWait := env.GetSinktimeout(); sinkWait > 0 {
+		if sinkWait := cfg.Env.GetSinktimeout(); sinkWait > 0 {
 			pOpts = append(pOpts, setTimeOut(time.Duration(sinkWait)*time.Second))
 		}
-		if caCerts := env.GetCACerts(); (caCerts != nil && *caCerts != "") && eventingtls.IsHttpsSink(env.GetSink()) {
+		if eventingtls.IsHttpsSink(cfg.Env.GetSink()) {
 			var err error
 
 			clientConfig := eventingtls.NewDefaultClientConfig()
-			clientConfig.CACerts = caCerts
+			clientConfig.CACerts = cfg.Env.GetCACerts()
 
-			transport := nethttp.DefaultTransport.(*nethttp.Transport).Clone()
-			transport.TLSClientConfig, err = eventingtls.GetTLSClientConfig(clientConfig)
+			tlsConfig, err := eventingtls.GetTLSClientConfig(clientConfig)
 			if err != nil {
 				return nil, err
 			}
 
-			pOpts = append(pOpts, http.WithRoundTripper(&ochttp.Transport{
-				Base:        transport,
+			httpsTransport := transport.Base.(*nethttp.Transport).Clone()
+			httpsTransport.TLSClientConfig = tlsConfig
+
+			transport = &ochttp.Transport{
+				Base:        httpsTransport,
 				Propagation: tracecontextb3.TraceContextEgress,
-			}))
+			}
 		}
 		if ceOverrides == nil {
 			var err error
-			ceOverrides, err = env.GetCloudEventOverrides()
+			ceOverrides, err = cfg.Env.GetCloudEventOverrides()
 			if err != nil {
 				return nil, err
 			}
 		}
+
+		pOpts = append(pOpts, http.WithHeader(apis.KnNamespaceHeader, cfg.Env.GetNamespace()))
 	}
 
+	httpClient := nethttp.Client{Transport: roundTripperDecorator(transport)}
+
+	// Important: prepend HTTP client option to make sure that other options are applied to this
+	// client and not to the default client.
+	pOpts = append([]http.Option{http.WithClient(httpClient)}, pOpts...)
+
 	// Make sure that explicitly set options have priority
-	opts = append(pOpts, opts...)
+	opts := append(pOpts, cfg.Options...)
 
 	ceClient, err := newClientHTTPObserved(opts, nil)
 
-	if crStatusEventClient == nil {
-		crStatusEventClient = crstatusevent.GetDefaultClient()
+	if cfg.CrStatusEventClient == nil {
+		cfg.CrStatusEventClient = crstatusevent.GetDefaultClient()
 	}
 	if err != nil {
 		return nil, err
 	}
 	return &client{
 		ceClient:            ceClient,
+		closeIdler:          transport.Base.(*nethttp.Transport),
 		ceOverrides:         ceOverrides,
-		reporter:            reporter,
-		crStatusEventClient: crStatusEventClient,
+		reporter:            cfg.Reporter,
+		crStatusEventClient: cfg.CrStatusEventClient,
 	}, nil
 }
 
@@ -155,6 +216,11 @@ type client struct {
 	ceOverrides         *duckv1.CloudEventOverrides
 	reporter            source.StatsReporter
 	crStatusEventClient *crstatusevent.CRStatusEventClient
+	closeIdler          closeIdler
+}
+
+func (c *client) CloseIdleConnections() {
+	c.closeIdler.CloseIdleConnections()
 }
 
 var _ cloudevents.Client = (*client)(nil)
@@ -189,6 +255,9 @@ func (c *client) applyOverrides(event *cloudevents.Event) {
 }
 
 func (c *client) reportMetrics(ctx context.Context, event cloudevents.Event, result protocol.Result) {
+	if c.reporter == nil {
+		return
+	}
 	tags := MetricTagFromContext(ctx)
 	reportArgs := &source.ReportArgs{
 		Namespace:     tags.Namespace,
@@ -270,5 +339,25 @@ func MetricTagFromContext(ctx context.Context) *MetricTag {
 		Name:          "unknown",
 		Namespace:     "unknown",
 		ResourceGroup: "unknown",
+	}
+}
+
+func roundTripperDecorator(roundTripper nethttp.RoundTripper) nethttp.RoundTripper {
+	return &ochttp.Transport{
+		Propagation:    &tracecontext.HTTPFormat{},
+		Base:           roundTripper,
+		FormatSpanName: formatSpanName,
+	}
+}
+
+func formatSpanName(r *nethttp.Request) string {
+	return "cloudevents.http." + r.URL.Path
+}
+
+func tracecontextMiddleware(h nethttp.Handler) nethttp.Handler {
+	return &ochttp.Handler{
+		Propagation:    &tracecontext.HTTPFormat{},
+		Handler:        h,
+		FormatSpanName: formatSpanName,
 	}
 }

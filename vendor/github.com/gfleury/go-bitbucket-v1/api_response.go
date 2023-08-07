@@ -223,6 +223,16 @@ type PullRequest struct {
 	Links Links `json:"links"`
 }
 
+// EditPullRequestOptions editable values of a pull request.
+type EditPullRequestOptions struct {
+	Version         string         `json:"version"`
+	ID              int64          `json:"id,omitempty"`
+	State           string         `json:"state,omitempty"`
+	Title           string         `json:"title,omitempty"`
+	Description     string         `json:"description,omitempty"`
+	TargetBranchRef PullRequestRef `json:"targetBranchRef"`
+}
+
 // SSHKey contains data from a SSHKey in the BitBucket Server
 type SSHKey struct {
 	ID    int    `json:"id"`
