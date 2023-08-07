@@ -15,12 +15,14 @@
 package interpreter
 
 import (
+	"fmt"
+
+	"github.com/google/cel-go/common/functions"
 	"github.com/google/cel-go/common/operators"
 	"github.com/google/cel-go/common/overloads"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/google/cel-go/common/types/traits"
-	"github.com/google/cel-go/interpreter/functions"
 )
 
 // Interpretable can accept a given Activation and produce a value along with
@@ -50,7 +52,7 @@ type InterpretableAttribute interface {
 	Attr() Attribute
 
 	// Adapter returns the type adapter to be used for adapting resolved Attribute values.
-	Adapter() ref.TypeAdapter
+	Adapter() types.Adapter
 
 	// AddQualifier proxies the Attribute.AddQualifier method.
 	//
@@ -69,6 +71,7 @@ type InterpretableAttribute interface {
 	// to whether the qualifier is present.
 	QualifyIfPresent(vars Activation, obj any, presenceOnly bool) (any, bool, error)
 
+	// IsOptional indicates whether the resulting value is an optional type.
 	IsOptional() bool
 
 	// Resolve returns the value of the Attribute given the current Activation.
@@ -108,10 +111,8 @@ type InterpretableConstructor interface {
 // Core Interpretable implementations used during the program planning phase.
 
 type evalTestOnly struct {
-	id    int64
-	attr  InterpretableAttribute
-	qual  Qualifier
-	field types.String
+	id int64
+	InterpretableAttribute
 }
 
 // ID implements the Interpretable interface method.
@@ -121,28 +122,55 @@ func (test *evalTestOnly) ID() int64 {
 
 // Eval implements the Interpretable interface method.
 func (test *evalTestOnly) Eval(ctx Activation) ref.Val {
-	val, err := test.attr.Resolve(ctx)
+	val, err := test.Resolve(ctx)
+	// Return an error if the resolve step fails
 	if err != nil {
-		return types.NewErr(err.Error())
+		return types.WrapErr(err)
 	}
-	optVal, isOpt := val.(*types.Optional)
-	if isOpt {
-		if !optVal.HasValue() {
-			return types.False
-		}
-		val = optVal.GetValue()
+	if optVal, isOpt := val.(*types.Optional); isOpt {
+		return types.Bool(optVal.HasValue())
 	}
-	out, found, err := test.qual.QualifyIfPresent(ctx, val, true)
+	return test.Adapter().NativeToValue(val)
+}
+
+// AddQualifier appends a qualifier that will always and only perform a presence test.
+func (test *evalTestOnly) AddQualifier(q Qualifier) (Attribute, error) {
+	cq, ok := q.(ConstantQualifier)
+	if !ok {
+		return nil, fmt.Errorf("test only expressions must have constant qualifiers: %v", q)
+	}
+	return test.InterpretableAttribute.AddQualifier(&testOnlyQualifier{ConstantQualifier: cq})
+}
+
+type testOnlyQualifier struct {
+	ConstantQualifier
+}
+
+// Qualify determines whether the test-only qualifier is present on the input object.
+func (q *testOnlyQualifier) Qualify(vars Activation, obj any) (any, error) {
+	out, present, err := q.ConstantQualifier.QualifyIfPresent(vars, obj, true)
 	if err != nil {
-		return types.NewErr(err.Error())
+		return nil, err
 	}
 	if unk, isUnk := out.(types.Unknown); isUnk {
-		return unk
+		return unk, nil
 	}
-	if found {
-		return types.True
+	if opt, isOpt := out.(types.Optional); isOpt {
+		return opt.HasValue(), nil
 	}
-	return types.False
+	return present, nil
+}
+
+// QualifyIfPresent returns whether the target field in the test-only expression is present.
+func (q *testOnlyQualifier) QualifyIfPresent(vars Activation, obj any, presenceOnly bool) (any, bool, error) {
+	// Only ever test for presence.
+	return q.ConstantQualifier.QualifyIfPresent(vars, obj, true)
+}
+
+// QualifierValueEquals determines whether the test-only constant qualifier equals the input value.
+func (q *testOnlyQualifier) QualifierValueEquals(value any) bool {
+	// The input qualifier will always be of type string
+	return q.ConstantQualifier.Value().Value() == value
 }
 
 // NewConstValue creates a new constant valued Interpretable.
@@ -174,9 +202,8 @@ func (cons *evalConst) Value() ref.Val {
 }
 
 type evalOr struct {
-	id  int64
-	lhs Interpretable
-	rhs Interpretable
+	id    int64
+	terms []Interpretable
 }
 
 // ID implements the Interpretable interface method.
@@ -186,41 +213,39 @@ func (or *evalOr) ID() int64 {
 
 // Eval implements the Interpretable interface method.
 func (or *evalOr) Eval(ctx Activation) ref.Val {
-	// short-circuit lhs.
-	lVal := or.lhs.Eval(ctx)
-	lBool, lok := lVal.(types.Bool)
-	if lok && lBool == types.True {
-		return types.True
+	var err ref.Val = nil
+	var unk *types.Unknown
+	for _, term := range or.terms {
+		val := term.Eval(ctx)
+		boolVal, ok := val.(types.Bool)
+		// short-circuit on true.
+		if ok && boolVal == types.True {
+			return types.True
+		}
+		if !ok {
+			isUnk := false
+			unk, isUnk = types.MaybeMergeUnknowns(val, unk)
+			if !isUnk && err == nil {
+				if types.IsError(val) {
+					err = val
+				} else {
+					err = types.MaybeNoSuchOverloadErr(val)
+				}
+			}
+		}
 	}
-	// short-circuit on rhs.
-	rVal := or.rhs.Eval(ctx)
-	rBool, rok := rVal.(types.Bool)
-	if rok && rBool == types.True {
-		return types.True
+	if unk != nil {
+		return unk
 	}
-	// return if both sides are bool false.
-	if lok && rok {
-		return types.False
+	if err != nil {
+		return err
 	}
-	// TODO: return both values as a set if both are unknown or error.
-	// prefer left unknown to right unknown.
-	if types.IsUnknown(lVal) {
-		return lVal
-	}
-	if types.IsUnknown(rVal) {
-		return rVal
-	}
-	// If the left-hand side is non-boolean return it as the error.
-	if types.IsError(lVal) {
-		return lVal
-	}
-	return types.ValOrErr(rVal, "no such overload")
+	return types.False
 }
 
 type evalAnd struct {
-	id  int64
-	lhs Interpretable
-	rhs Interpretable
+	id    int64
+	terms []Interpretable
 }
 
 // ID implements the Interpretable interface method.
@@ -230,35 +255,34 @@ func (and *evalAnd) ID() int64 {
 
 // Eval implements the Interpretable interface method.
 func (and *evalAnd) Eval(ctx Activation) ref.Val {
-	// short-circuit lhs.
-	lVal := and.lhs.Eval(ctx)
-	lBool, lok := lVal.(types.Bool)
-	if lok && lBool == types.False {
-		return types.False
+	var err ref.Val = nil
+	var unk *types.Unknown
+	for _, term := range and.terms {
+		val := term.Eval(ctx)
+		boolVal, ok := val.(types.Bool)
+		// short-circuit on false.
+		if ok && boolVal == types.False {
+			return types.False
+		}
+		if !ok {
+			isUnk := false
+			unk, isUnk = types.MaybeMergeUnknowns(val, unk)
+			if !isUnk && err == nil {
+				if types.IsError(val) {
+					err = val
+				} else {
+					err = types.MaybeNoSuchOverloadErr(val)
+				}
+			}
+		}
 	}
-	// short-circuit on rhs.
-	rVal := and.rhs.Eval(ctx)
-	rBool, rok := rVal.(types.Bool)
-	if rok && rBool == types.False {
-		return types.False
+	if unk != nil {
+		return unk
 	}
-	// return if both sides are bool true.
-	if lok && rok {
-		return types.True
+	if err != nil {
+		return err
 	}
-	// TODO: return both values as a set if both are unknown or error.
-	// prefer left unknown to right unknown.
-	if types.IsUnknown(lVal) {
-		return lVal
-	}
-	if types.IsUnknown(rVal) {
-		return rVal
-	}
-	// If the left-hand side is non-boolean return it as the error.
-	if types.IsError(lVal) {
-		return lVal
-	}
-	return types.ValOrErr(rVal, "no such overload")
+	return types.True
 }
 
 type evalEq struct {
@@ -551,7 +575,7 @@ type evalList struct {
 	elems        []Interpretable
 	optionals    []bool
 	hasOptionals bool
-	adapter      ref.TypeAdapter
+	adapter      types.Adapter
 }
 
 // ID implements the Interpretable interface method.
@@ -597,7 +621,7 @@ type evalMap struct {
 	vals         []Interpretable
 	optionals    []bool
 	hasOptionals bool
-	adapter      ref.TypeAdapter
+	adapter      types.Adapter
 }
 
 // ID implements the Interpretable interface method.
@@ -661,7 +685,7 @@ type evalObj struct {
 	vals         []Interpretable
 	optionals    []bool
 	hasOptionals bool
-	provider     ref.TypeProvider
+	provider     types.Provider
 }
 
 // ID implements the Interpretable interface method.
@@ -711,7 +735,7 @@ type evalFold struct {
 	cond          Interpretable
 	step          Interpretable
 	result        Interpretable
-	adapter       ref.TypeAdapter
+	adapter       types.Adapter
 	exhaustive    bool
 	interruptable bool
 }
@@ -837,18 +861,40 @@ type evalWatchAttr struct {
 // AddQualifier creates a wrapper over the incoming qualifier which observes the qualification
 // result.
 func (e *evalWatchAttr) AddQualifier(q Qualifier) (Attribute, error) {
-	cq, isConst := q.(ConstantQualifier)
-	if isConst {
+	switch qual := q.(type) {
+	// By default, the qualifier is either a constant or an attribute
+	// There may be some custom cases where the attribute is neither.
+	case ConstantQualifier:
+		// Expose a method to test whether the qualifier matches the input pattern.
 		q = &evalWatchConstQual{
-			ConstantQualifier: cq,
+			ConstantQualifier: qual,
 			observer:          e.observer,
-			adapter:           e.InterpretableAttribute.Adapter(),
+			adapter:           e.Adapter(),
 		}
-	} else {
-		q = &evalWatchQual{
-			Qualifier: q,
+	case *evalWatchAttr:
+		// Unwrap the evalWatchAttr since the observation will be applied during Qualify or
+		// QualifyIfPresent rather than Eval.
+		q = &evalWatchAttrQual{
+			Attribute: qual.InterpretableAttribute,
 			observer:  e.observer,
-			adapter:   e.InterpretableAttribute.Adapter(),
+			adapter:   e.Adapter(),
+		}
+	case Attribute:
+		// Expose methods which intercept the qualification prior to being applied as a qualifier.
+		// Using this interface ensures that the qualifier is converted to a constant value one
+		// time during attribute pattern matching as the method embeds the Attribute interface
+		// needed to trip the conversion to a constant.
+		q = &evalWatchAttrQual{
+			Attribute: qual,
+			observer:  e.observer,
+			adapter:   e.Adapter(),
+		}
+	default:
+		// This is likely a custom qualifier type.
+		q = &evalWatchQual{
+			Qualifier: qual,
+			observer:  e.observer,
+			adapter:   e.Adapter(),
 		}
 	}
 	_, err := e.InterpretableAttribute.AddQualifier(q)
@@ -867,7 +913,7 @@ func (e *evalWatchAttr) Eval(vars Activation) ref.Val {
 type evalWatchConstQual struct {
 	ConstantQualifier
 	observer EvalObserver
-	adapter  ref.TypeAdapter
+	adapter  types.Adapter
 }
 
 // Qualify observes the qualification of a object via a constant boolean, int, string, or uint.
@@ -875,12 +921,29 @@ func (e *evalWatchConstQual) Qualify(vars Activation, obj any) (any, error) {
 	out, err := e.ConstantQualifier.Qualify(vars, obj)
 	var val ref.Val
 	if err != nil {
-		val = types.NewErr(err.Error())
+		val = types.WrapErr(err)
 	} else {
 		val = e.adapter.NativeToValue(out)
 	}
 	e.observer(e.ID(), e.ConstantQualifier, val)
 	return out, err
+}
+
+// QualifyIfPresent conditionally qualifies the variable and only records a value if one is present.
+func (e *evalWatchConstQual) QualifyIfPresent(vars Activation, obj any, presenceOnly bool) (any, bool, error) {
+	out, present, err := e.ConstantQualifier.QualifyIfPresent(vars, obj, presenceOnly)
+	var val ref.Val
+	if err != nil {
+		val = types.WrapErr(err)
+	} else if out != nil {
+		val = e.adapter.NativeToValue(out)
+	} else if presenceOnly {
+		val = types.Bool(present)
+	}
+	if present || presenceOnly {
+		e.observer(e.ID(), e.ConstantQualifier, val)
+	}
+	return out, present, err
 }
 
 // QualifierValueEquals tests whether the incoming value is equal to the qualifying constant.
@@ -889,11 +952,48 @@ func (e *evalWatchConstQual) QualifierValueEquals(value any) bool {
 	return ok && qve.QualifierValueEquals(value)
 }
 
+// evalWatchAttrQual observes the qualification of an object by a value computed at runtime.
+type evalWatchAttrQual struct {
+	Attribute
+	observer EvalObserver
+	adapter  ref.TypeAdapter
+}
+
+// Qualify observes the qualification of a object via a value computed at runtime.
+func (e *evalWatchAttrQual) Qualify(vars Activation, obj any) (any, error) {
+	out, err := e.Attribute.Qualify(vars, obj)
+	var val ref.Val
+	if err != nil {
+		val = types.WrapErr(err)
+	} else {
+		val = e.adapter.NativeToValue(out)
+	}
+	e.observer(e.ID(), e.Attribute, val)
+	return out, err
+}
+
+// QualifyIfPresent conditionally qualifies the variable and only records a value if one is present.
+func (e *evalWatchAttrQual) QualifyIfPresent(vars Activation, obj any, presenceOnly bool) (any, bool, error) {
+	out, present, err := e.Attribute.QualifyIfPresent(vars, obj, presenceOnly)
+	var val ref.Val
+	if err != nil {
+		val = types.WrapErr(err)
+	} else if out != nil {
+		val = e.adapter.NativeToValue(out)
+	} else if presenceOnly {
+		val = types.Bool(present)
+	}
+	if present || presenceOnly {
+		e.observer(e.ID(), e.Attribute, val)
+	}
+	return out, present, err
+}
+
 // evalWatchQual observes the qualification of an object by a value computed at runtime.
 type evalWatchQual struct {
 	Qualifier
 	observer EvalObserver
-	adapter  ref.TypeAdapter
+	adapter  types.Adapter
 }
 
 // Qualify observes the qualification of a object via a value computed at runtime.
@@ -901,12 +1001,29 @@ func (e *evalWatchQual) Qualify(vars Activation, obj any) (any, error) {
 	out, err := e.Qualifier.Qualify(vars, obj)
 	var val ref.Val
 	if err != nil {
-		val = types.NewErr(err.Error())
+		val = types.WrapErr(err)
 	} else {
 		val = e.adapter.NativeToValue(out)
 	}
 	e.observer(e.ID(), e.Qualifier, val)
 	return out, err
+}
+
+// QualifyIfPresent conditionally qualifies the variable and only records a value if one is present.
+func (e *evalWatchQual) QualifyIfPresent(vars Activation, obj any, presenceOnly bool) (any, bool, error) {
+	out, present, err := e.Qualifier.QualifyIfPresent(vars, obj, presenceOnly)
+	var val ref.Val
+	if err != nil {
+		val = types.WrapErr(err)
+	} else if out != nil {
+		val = e.adapter.NativeToValue(out)
+	} else if presenceOnly {
+		val = types.Bool(present)
+	}
+	if present || presenceOnly {
+		e.observer(e.ID(), e.Qualifier, val)
+	}
+	return out, present, err
 }
 
 // evalWatchConst describes a watcher of an instConst Interpretable.
@@ -924,9 +1041,8 @@ func (e *evalWatchConst) Eval(vars Activation) ref.Val {
 
 // evalExhaustiveOr is just like evalOr, but does not short-circuit argument evaluation.
 type evalExhaustiveOr struct {
-	id  int64
-	lhs Interpretable
-	rhs Interpretable
+	id    int64
+	terms []Interpretable
 }
 
 // ID implements the Interpretable interface method.
@@ -936,38 +1052,44 @@ func (or *evalExhaustiveOr) ID() int64 {
 
 // Eval implements the Interpretable interface method.
 func (or *evalExhaustiveOr) Eval(ctx Activation) ref.Val {
-	lVal := or.lhs.Eval(ctx)
-	rVal := or.rhs.Eval(ctx)
-	lBool, lok := lVal.(types.Bool)
-	if lok && lBool == types.True {
+	var err ref.Val = nil
+	var unk *types.Unknown
+	isTrue := false
+	for _, term := range or.terms {
+		val := term.Eval(ctx)
+		boolVal, ok := val.(types.Bool)
+		// flag the result as true
+		if ok && boolVal == types.True {
+			isTrue = true
+		}
+		if !ok && !isTrue {
+			isUnk := false
+			unk, isUnk = types.MaybeMergeUnknowns(val, unk)
+			if !isUnk && err == nil {
+				if types.IsError(val) {
+					err = val
+				} else {
+					err = types.MaybeNoSuchOverloadErr(val)
+				}
+			}
+		}
+	}
+	if isTrue {
 		return types.True
 	}
-	rBool, rok := rVal.(types.Bool)
-	if rok && rBool == types.True {
-		return types.True
+	if unk != nil {
+		return unk
 	}
-	if lok && rok {
-		return types.False
+	if err != nil {
+		return err
 	}
-	if types.IsUnknown(lVal) {
-		return lVal
-	}
-	if types.IsUnknown(rVal) {
-		return rVal
-	}
-	// TODO: Combine the errors into a set in the future.
-	// If the left-hand side is non-boolean return it as the error.
-	if types.IsError(lVal) {
-		return lVal
-	}
-	return types.MaybeNoSuchOverloadErr(rVal)
+	return types.False
 }
 
 // evalExhaustiveAnd is just like evalAnd, but does not short-circuit argument evaluation.
 type evalExhaustiveAnd struct {
-	id  int64
-	lhs Interpretable
-	rhs Interpretable
+	id    int64
+	terms []Interpretable
 }
 
 // ID implements the Interpretable interface method.
@@ -977,38 +1099,45 @@ func (and *evalExhaustiveAnd) ID() int64 {
 
 // Eval implements the Interpretable interface method.
 func (and *evalExhaustiveAnd) Eval(ctx Activation) ref.Val {
-	lVal := and.lhs.Eval(ctx)
-	rVal := and.rhs.Eval(ctx)
-	lBool, lok := lVal.(types.Bool)
-	if lok && lBool == types.False {
+	var err ref.Val = nil
+	var unk *types.Unknown
+	isFalse := false
+	for _, term := range and.terms {
+		val := term.Eval(ctx)
+		boolVal, ok := val.(types.Bool)
+		// short-circuit on false.
+		if ok && boolVal == types.False {
+			isFalse = true
+		}
+		if !ok && !isFalse {
+			isUnk := false
+			unk, isUnk = types.MaybeMergeUnknowns(val, unk)
+			if !isUnk && err == nil {
+				if types.IsError(val) {
+					err = val
+				} else {
+					err = types.MaybeNoSuchOverloadErr(val)
+				}
+			}
+		}
+	}
+	if isFalse {
 		return types.False
 	}
-	rBool, rok := rVal.(types.Bool)
-	if rok && rBool == types.False {
-		return types.False
+	if unk != nil {
+		return unk
 	}
-	if lok && rok {
-		return types.True
+	if err != nil {
+		return err
 	}
-	if types.IsUnknown(lVal) {
-		return lVal
-	}
-	if types.IsUnknown(rVal) {
-		return rVal
-	}
-	// TODO: Combine the errors into a set in the future.
-	// If the left-hand side is non-boolean return it as the error.
-	if types.IsError(lVal) {
-		return lVal
-	}
-	return types.MaybeNoSuchOverloadErr(rVal)
+	return types.True
 }
 
 // evalExhaustiveConditional is like evalConditional, but does not short-circuit argument
 // evaluation.
 type evalExhaustiveConditional struct {
 	id      int64
-	adapter ref.TypeAdapter
+	adapter types.Adapter
 	attr    *conditionalAttribute
 }
 
@@ -1028,22 +1157,24 @@ func (cond *evalExhaustiveConditional) Eval(ctx Activation) ref.Val {
 	}
 	if cBool {
 		if tErr != nil {
-			return types.NewErr(tErr.Error())
+			return types.WrapErr(tErr)
 		}
 		return cond.adapter.NativeToValue(tVal)
 	}
 	if fErr != nil {
-		return types.NewErr(fErr.Error())
+		return types.WrapErr(fErr)
 	}
 	return cond.adapter.NativeToValue(fVal)
 }
 
 // evalAttr evaluates an Attribute value.
 type evalAttr struct {
-	adapter  ref.TypeAdapter
+	adapter  types.Adapter
 	attr     Attribute
 	optional bool
 }
+
+var _ InterpretableAttribute = &evalAttr{}
 
 // ID of the attribute instruction.
 func (a *evalAttr) ID() int64 {
@@ -1063,7 +1194,7 @@ func (a *evalAttr) Attr() Attribute {
 }
 
 // Adapter implements the InterpretableAttribute interface method.
-func (a *evalAttr) Adapter() ref.TypeAdapter {
+func (a *evalAttr) Adapter() types.Adapter {
 	return a.adapter
 }
 
@@ -1071,7 +1202,7 @@ func (a *evalAttr) Adapter() ref.TypeAdapter {
 func (a *evalAttr) Eval(ctx Activation) ref.Val {
 	v, err := a.attr.Resolve(ctx)
 	if err != nil {
-		return types.NewErr(err.Error())
+		return types.WrapErr(err)
 	}
 	return a.adapter.NativeToValue(v)
 }

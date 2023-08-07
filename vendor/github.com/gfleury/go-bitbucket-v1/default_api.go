@@ -661,6 +661,68 @@ func (a *DefaultApiService) CreatePullRequest(projectKey, repositorySlug string,
 	return NewBitbucketAPIResponse(localVarHTTPResponse)
 }
 
+/*
+	DefaultApiService
+
+Update the title, description, reviewers or destination branch of an existing pull request.  &lt;p&gt;  &lt;strong&gt;Note:&lt;/strong&gt; the &lt;em&gt;reviewers&lt;/em&gt; list may be updated using this resource. However the  &lt;em&gt;author&lt;/em&gt; and &lt;em&gt;participants&lt;/em&gt; list may not.  &lt;p&gt;  The authenticated user must either:  &lt;ul&gt;      &lt;li&gt;be the author of the pull request and have the &lt;strong&gt;REPO_READ&lt;/strong&gt; permission for the repository      that this pull request targets; or&lt;/li&gt;      &lt;li&gt;have the &lt;strong&gt;REPO_WRITE&lt;/strong&gt; permission for the repository that this pull request targets&lt;/li&gt;  &lt;/ul&gt;  to call this resource.
+
+@param pullRequestId the ID of the pull request within the repository
+@return
+*/
+func (a *DefaultApiService) UpdatePullRequest(projectKey, repositorySlug string, options *EditPullRequestOptions) (*APIResponse, error) {
+	var (
+		localVarHTTPMethod = strings.ToUpper("Put")
+		localVarPostBody   interface{}
+		localVarFileName   string
+		localVarFileBytes  []byte
+	)
+
+	// create path and map variables
+	localVarPath := a.client.cfg.BasePath + "/api/1.0/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}"
+	localVarPath = strings.Replace(localVarPath, "{"+"projectKey"+"}", fmt.Sprintf("%v", projectKey), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"repositorySlug"+"}", fmt.Sprintf("%v", repositorySlug), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"pullRequestId"+"}", fmt.Sprintf("%v", options.ID), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/json"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	localVarPostBody = &options
+	r, err := a.client.prepareRequest(a.client.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(r)
+	if err != nil || localVarHTTPResponse == nil {
+		return NewAPIResponseWithError(localVarHTTPResponse, nil, err)
+	}
+	defer localVarHTTPResponse.Body.Close()
+	if localVarHTTPResponse.StatusCode >= 300 {
+		bodyBytes, _ := ioutil.ReadAll(localVarHTTPResponse.Body)
+		return NewAPIResponseWithError(localVarHTTPResponse, bodyBytes, reportError("Status: %v, Description: %s", localVarHTTPResponse.Status, bodyBytes))
+	}
+
+	return NewBitbucketAPIResponse(localVarHTTPResponse)
+}
+
 /* DefaultApiService
 Creates a branch using the information provided in the {@link RestCreateBranchRequest request}  &lt;p&gt;  The authenticated user must have &lt;strong&gt;REPO_WRITE&lt;/strong&gt; permission for the context repository to call  this resource.
 

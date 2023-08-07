@@ -43,6 +43,14 @@ const (
 	TLSCrt = "tls.crt"
 	// DefaultMinTLSVersion is the default minimum TLS version for servers and clients.
 	DefaultMinTLSVersion = tls.VersionTLS12
+	// SecretCACrt is the name of the CA Cert in the secret
+	SecretCACert = "ca.crt"
+	// IMCDispatcherServerTLSSecretName is the name of the tls secret for the imc dispatcher server
+	IMCDispatcherServerTLSSecretName = "imc-dispatcher-server-tls" //nolint:gosec // This is not a hardcoded credential
+	// BrokerFilterServerTLSSecretName is the name of the tls secret for the broker filter server
+	BrokerFilterServerTLSSecretName = "mt-broker-filter-server-tls" //nolint:gosec // This is not a hardcoded credential
+	// BrokerIngressServerTLSSecretName is the name of the tls secret for the broker ingress server
+	BrokerIngressServerTLSSecretName = "mt-broker-ingress-server-tls" //nolint:gosec // This is not a hardcoded credential
 )
 
 type ClientConfig struct {
@@ -118,16 +126,18 @@ func GetCertificateFromSecret(ctx context.Context, informer coreinformersv1.Secr
 		},
 	})
 
-	// Store the current value so that we have certHolder initialized.
+	// If the Secret already exists, store its value
 	firstValue, err := informer.Lister().Secrets(secret.Namespace).Get(secret.Name)
 	if err != nil {
 		// Try to get the secret from the API Server when the lister failed.
 		firstValue, err = kube.CoreV1().Secrets(secret.Namespace).Get(ctx, secret.Name, metav1.GetOptions{})
 		if err != nil {
-			logger.Fatal(err.Error())
+			logger.Warn(err.Error())
 		}
 	}
-	store(firstValue)
+	if firstValue != nil {
+		store(firstValue)
+	}
 
 	return func(info *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		cert := certHolder.Load()
@@ -170,7 +180,7 @@ func GetTLSServerConfig(config ServerConfig) (*tls.Config, error) {
 // IsHttpsSink returns true if the sink has scheme equal to https.
 func IsHttpsSink(sink string) bool {
 	s, err := apis.ParseURL(sink)
-	if err != nil {
+	if err != nil || s == nil {
 		return false
 	}
 	return strings.EqualFold(s.Scheme, "https")

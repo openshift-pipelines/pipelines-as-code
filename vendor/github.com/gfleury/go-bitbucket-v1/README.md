@@ -192,6 +192,7 @@ Class | Method | HTTP request | Description
 *DefaultApi* | [**UpdateComment_0**](docs/DefaultApi.md#updatecomment_0) | **Put** /api/1.0/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId} | 
 *DefaultApi* | [**UpdateProject**](docs/DefaultApi.md#updateproject) | **Put** /api/1.0/projects/{projectKey} | 
 *DefaultApi* | [**UpdatePullRequestSettings**](docs/DefaultApi.md#updatepullrequestsettings) | **Post** /api/1.0/projects/{projectKey}/repos/{repositorySlug}/settings/pull-requests | 
+*DefaultApi* | [**UpdatePullRequest**](docs/DefaultApi.md#updatepullrequest)                             | **Put** /api/1.0/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}                            |
 *DefaultApi* | [**UpdatePullRequestSettings_0**](docs/DefaultApi.md#updatepullrequestsettings_0) | **Post** /api/1.0/projects/{projectKey}/settings/pull-requests/{scmId} | 
 *DefaultApi* | [**UpdateRepository**](docs/DefaultApi.md#updaterepository) | **Put** /api/1.0/projects/{projectKey}/repos/{repositorySlug} | 
 *DefaultApi* | [**UpdateSettings**](docs/DefaultApi.md#updatesettings) | **Post** /api/1.0/users/{userSlug}/settings | 
