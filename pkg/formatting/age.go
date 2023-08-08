@@ -25,6 +25,9 @@ func Duration(t1, t2 *metav1.Time) string {
 	return durafmt.ParseShort(dur).String()
 }
 
+// PRDuration calculates the duration of a repository run, given its status.
+// It takes a RepositoryRunStatus object as input.
+// It returns a string with the duration of the run, or nonAttributedStr if the run has not started or completed.
 func PRDuration(runStatus v1alpha1.RepositoryRunStatus) string {
 	if runStatus.StartTime == nil {
 		return nonAttributedStr
