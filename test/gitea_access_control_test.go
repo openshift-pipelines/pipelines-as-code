@@ -4,6 +4,7 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
@@ -11,10 +12,13 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"gotest.tools/v3/assert"
 )
+
+const okToTestComment = "/ok-to-test"
 
 // TestGiteaPolicyPullRequest tests the pull_request policy
 // create a CRD which a policy allowing only users in the team pull_requester to allow a PR
@@ -54,7 +58,7 @@ func TestGiteaPolicyPullRequest(t *testing.T) {
 	_, err = topts.GiteaCNX.Client.AddTeamMember(normalTeam.ID, normalUser.UserName)
 	assert.NilError(t, err)
 	topts.ParamsRun.Clients.Log.Infof("User %s has been added to team %s", normalUser.UserName, normalTeam.Name)
-	tgitea.CreateForkPullRequest(t, topts, normalUserCnx, "", "echo Hello from user "+topts.TargetRefName)
+	tgitea.CreateForkPullRequest(t, topts, normalUserCnx, "")
 	topts.CheckForStatus = "failure"
 	topts.Regexp = regexp.MustCompile(
 		fmt.Sprintf(`.*policy check: pull_request, user: %s is not a member of any of the allowed teams.*`, normalUserNamePasswd))
@@ -69,7 +73,7 @@ func TestGiteaPolicyPullRequest(t *testing.T) {
 	_, err = topts.GiteaCNX.Client.AddTeamMember(pullRequesterTeam.ID, pullRequesterUser.UserName)
 	assert.NilError(t, err)
 	topts.ParamsRun.Clients.Log.Infof("User %s has been added to team %s", pullRequesterUser.UserName, pullRequesterTeam.Name)
-	tgitea.CreateForkPullRequest(t, topts, pullRequesterUserCnx, "", "echo Hello from user "+topts.TargetRefName)
+	tgitea.CreateForkPullRequest(t, topts, pullRequesterUserCnx, "")
 	topts.Regexp = successRegexp
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
@@ -170,7 +174,7 @@ func TestGiteaACLOrgAllowed(t *testing.T) {
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 
-	tgitea.CreateForkPullRequest(t, topts, secondcnx, "read", "echo Hello from user "+topts.TargetRefName)
+	tgitea.CreateForkPullRequest(t, topts, secondcnx, "read")
 	topts.CheckForStatus = "success"
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 }
@@ -189,7 +193,7 @@ func TestGiteaACLOrgPendingApproval(t *testing.T) {
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 
-	topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
+	topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "")
 	topts.CheckForStatus = "Skipped"
 	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
 	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
@@ -203,7 +207,7 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 	}{
 		{
 			name:    "OK to Test",
-			comment: "/ok-to-test",
+			comment: okToTestComment,
 		},
 		{
 			name:    "Retest",
@@ -228,7 +232,7 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 			secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 			assert.NilError(t, err)
 
-			topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "", "echo Hello from user "+topts.TargetRefName)
+			topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "")
 			topts.CheckForStatus = "Skipped"
 			tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
 			topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
@@ -239,6 +243,107 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 			tgitea.WaitForPullRequestCommentMatch(t, topts)
 		})
 	}
+}
+
+// TestGiteaACLCommentsAllowingRememberOkToTestFalse tests when unauthorized user sends a PR the status shows as pending
+// unless the authorized user adds a comment like /ok-to-test, When authorized user adds those comments
+// the status of CI shows as success. Now non authorized user pushes to PR, the CI will again go to pending
+// and require /ok-to-test again from authorized user.
+func TestGiteaACLCommentsAllowingRememberOkToTestFalse(t *testing.T) {
+	ctx := context.Background()
+	topts := &tgitea.TestOpts{
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+		},
+		NoCleanup:    true,
+		ExpectEvents: false,
+	}
+
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
+	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+
+	cfgMapData := map[string]string{
+		"remember-ok-to-test": "false",
+	}
+	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, cfgMapData)()
+
+	defer tgitea.TestPR(t, topts)()
+	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
+	assert.NilError(t, err)
+
+	topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "")
+	// status of CI is pending because PR sent by unauthorized user
+	topts.CheckForStatus = "Skipped"
+	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
+	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+
+	tgitea.PostCommentOnPullRequest(t, topts, okToTestComment)
+	// status of CI is success because comment /ok-to-test added by authorized user
+	topts.Regexp = successRegexp
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+
+	// push to PR
+	tgitea.PushToPullRequest(t, topts, secondcnx, "echo Hello from user "+topts.TargetRefName)
+
+	// get the latest PR for the new sha
+	pr, _, err := topts.GiteaCNX.Client.GetPullRequest("pac", topts.PullRequest.Head.Name, topts.PullRequest.Index)
+	assert.NilError(t, err)
+
+	// status of CI is pending because pushed to PR and remember-ok-to-test is false
+	topts.CheckForStatus = "Skipped"
+	tgitea.WaitForStatus(t, topts, pr.Head.Sha, "", false)
+	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+
+	tgitea.PostCommentOnPullRequest(t, topts, okToTestComment)
+
+	// status of CI is success because comment /ok-to-test added by authorized user
+	topts.Regexp = successRegexp
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+}
+
+// TestGiteaACLCommentsAllowingRememberOkToTestTrue tests when unauthorized user sends a PR the status shows as pending
+// unless the authorized user adds a comment like /ok-to-test, When authorized user adds those comments
+// the status of CI shows as success. Now non authorized user pushes to PR, the CI will run without
+// requiring /ok-to-test again from authorized user.
+func TestGiteaACLCommentsAllowingRememberOkToTestTrue(t *testing.T) {
+	ctx := context.Background()
+	topts := &tgitea.TestOpts{
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+		},
+		NoCleanup:    true,
+		ExpectEvents: false,
+	}
+
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
+	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+
+	defer tgitea.TestPR(t, topts)()
+	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
+	assert.NilError(t, err)
+
+	topts.PullRequest = tgitea.CreateForkPullRequest(t, topts, secondcnx, "")
+	// status of CI is pending because PR sent by unauthorized user
+	topts.CheckForStatus = "Skipped"
+	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
+	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+
+	tgitea.PostCommentOnPullRequest(t, topts, okToTestComment)
+	// status of CI is success because comment /ok-to-test added by authorized user
+	topts.Regexp = successRegexp
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+
+	// push to PR
+	tgitea.PushToPullRequest(t, topts, secondcnx, "echo Hello from user "+topts.TargetRefName)
+
+	// status of CI is success because comment /ok-to-test added by authorized user before
+	topts.Regexp = successRegexp
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
 // Local Variables:

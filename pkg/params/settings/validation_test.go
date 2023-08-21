@@ -20,6 +20,7 @@ func TestValidate(t *testing.T) {
 				BitbucketCloudCheckSourceIPKey: "false",
 				MaxKeepRunUpperLimitKey:        "7",
 				DefaultMaxKeepRunsKey:          "8",
+				RememberOKToTestKey:            "true",
 			},
 			wantErr: "",
 		},
@@ -29,6 +30,13 @@ func TestValidate(t *testing.T) {
 				SecretAutoCreateKey: "random",
 			},
 			wantErr: "invalid value for key secret-auto-create, acceptable values: true or false",
+		},
+		{
+			name: "invalid bool",
+			config: map[string]string{
+				RememberOKToTestKey: "random",
+			},
+			wantErr: "invalid value for key remember-ok-to-test, acceptable values: true or false",
 		},
 		{
 			name: "invalid max keep run upper limit",

@@ -217,7 +217,9 @@ func TestIsAllowed(t *testing.T) {
 				projectKey:                tt.event.Organization,
 			}
 
-			got, err := v.IsAllowed(ctx, tt.event)
+			pacopts := info.PacOpts{}
+
+			got, err := v.IsAllowed(ctx, tt.event, &pacopts)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return

@@ -82,6 +82,16 @@ func TestConfigToSettings(t *testing.T) {
 			wantLogContains: "secret auto create",
 		},
 		{
+			name: "set remember-ok-to-test key",
+			args: args{
+				setting: &Settings{RememberOKToTest: true},
+				config: map[string]string{
+					RememberOKToTestKey: "false",
+				},
+			},
+			wantLogContains: "remember ok-to-test",
+		},
+		{
 			name: "set hub url",
 			args: args{
 				setting: &Settings{},

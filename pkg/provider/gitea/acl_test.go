@@ -10,6 +10,7 @@ import (
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/structs"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
 	"go.uber.org/zap"
@@ -93,16 +94,25 @@ func TestCheckPolicyAllowing(t *testing.T) {
 
 func TestOkToTestComment(t *testing.T) {
 	issueCommentPayload := &giteaStructs.IssueCommentPayload{
+		Comment: &giteaStructs.Comment{
+			ID: 1,
+		},
 		Issue: &giteaStructs.Issue{
 			URL: "http://url.com/owner/repo/1",
 		},
 	}
+	pullRequestPayload := &giteaStructs.PullRequestPayload{
+		PullRequest: &giteaStructs.PullRequest{
+			HTMLURL: "http://url.com/owner/repo/1",
+		},
+	}
 	tests := []struct {
-		name          string
-		commentsReply string
-		runevent      info.Event
-		allowed       bool
-		wantErr       bool
+		name             string
+		commentsReply    string
+		runevent         info.Event
+		allowed          bool
+		wantErr          bool
+		rememberOkToTest bool
 	}{
 		{
 			name:          "allowed_from_org/good issue comment event",
@@ -114,8 +124,9 @@ func TestOkToTestComment(t *testing.T) {
 				EventType:    "issue_comment",
 				Event:        issueCommentPayload,
 			},
-			allowed: true,
-			wantErr: false,
+			allowed:          true,
+			wantErr:          false,
+			rememberOkToTest: true,
 		},
 		{
 			name:          "allowed_from_org/good issue pull request event",
@@ -125,10 +136,11 @@ func TestOkToTestComment(t *testing.T) {
 				Repository:   "repo",
 				Sender:       "nonowner",
 				EventType:    "issue_comment",
-				Event:        issueCommentPayload,
+				Event:        pullRequestPayload,
 			},
-			allowed: true,
-			wantErr: false,
+			allowed:          true,
+			wantErr:          false,
+			rememberOkToTest: true,
 		},
 		{
 			name:          "disallowed/bad event origin",
@@ -140,7 +152,9 @@ func TestOkToTestComment(t *testing.T) {
 				EventType:    "issue_comment",
 				Event:        &giteaStructs.RepositoryPayload{},
 			},
-			allowed: false,
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: true,
 		},
 		{
 			name:          "disallowed/no-ok-to-test",
@@ -152,8 +166,9 @@ func TestOkToTestComment(t *testing.T) {
 				EventType:    "issue_comment",
 				Event:        issueCommentPayload,
 			},
-			allowed: false,
-			wantErr: false,
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: true,
 		},
 		{
 			name:          "disallowed/ok-to-test-not-from-owner",
@@ -165,8 +180,79 @@ func TestOkToTestComment(t *testing.T) {
 				EventType:    "issue_comment",
 				Event:        issueCommentPayload,
 			},
-			allowed: false,
-			wantErr: false,
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: true,
+		},
+		{
+			name:          "allowed_from_org/good issue comment event without remember",
+			commentsReply: `{"body": "/ok-to-test", "user": {"login": "owner"}}`,
+			runevent: info.Event{
+				Organization: "owner",
+				Repository:   "repo",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event:        issueCommentPayload,
+			},
+			allowed:          true,
+			wantErr:          false,
+			rememberOkToTest: false,
+		},
+		{
+			name:          "allowed_from_org/good issue pull request event without remember",
+			commentsReply: `{"body": "/ok-to-test", "user": {"login": "owner"}}`,
+			runevent: info.Event{
+				Organization: "owner",
+				Repository:   "repo",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event:        pullRequestPayload,
+			},
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: false,
+		},
+		{
+			name:          "disallowed/bad event origin without remember",
+			commentsReply: `{"body": "/ok-to-test", "user": {"login": "owner"}}`,
+			runevent: info.Event{
+				Organization: "owner",
+				Repository:   "repo",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event:        &giteaStructs.RepositoryPayload{},
+			},
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: false,
+		},
+		{
+			name:          "disallowed/no-ok-to-test without remember",
+			commentsReply: `{"body": "Foo Bar", "user": {"login": "owner"}}`,
+			runevent: info.Event{
+				Organization: "owner",
+				Repository:   "repo",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event:        issueCommentPayload,
+			},
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: false,
+		},
+		{
+			name:          "disallowed/ok-to-test-not-from-owner without remember",
+			commentsReply: `{"body": "/ok-to-test", "user": {"login": "notowner"}}`,
+			runevent: info.Event{
+				Organization: "owner",
+				Repository:   "repo",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event:        issueCommentPayload,
+			},
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: false,
 		},
 	}
 	for _, tt := range tests {
@@ -183,6 +269,13 @@ func TestOkToTestComment(t *testing.T) {
 				) {
 					fmt.Fprint(rw, tt.commentsReply)
 				})
+			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/issues/comments/1", tt.runevent.Organization,
+				tt.runevent.Repository),
+				func(rw http.ResponseWriter,
+					r *http.Request,
+				) {
+					fmt.Fprint(rw, tt.commentsReply)
+				})
 			mux.HandleFunc("/repos/owner/collaborators", func(rw http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(rw, "[]")
 			})
@@ -191,8 +284,13 @@ func TestOkToTestComment(t *testing.T) {
 				Client: fakeclient,
 				Logger: logger,
 			}
+			pacopts := info.PacOpts{
+				Settings: &settings.Settings{
+					RememberOKToTest: tt.rememberOkToTest,
+				},
+			}
 
-			isAllowed, err := gprovider.IsAllowed(ctx, &tt.runevent)
+			isAllowed, err := gprovider.IsAllowed(ctx, &tt.runevent, &pacopts)
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 			} else {
@@ -290,7 +388,7 @@ func TestAclCheckAll(t *testing.T) {
 					_, _ = rw.Write(b)
 				})
 			}
-			isAllowed, err := gprovider.IsAllowed(ctx, &tt.runevent)
+			isAllowed, err := gprovider.aclCheckAll(ctx, &tt.runevent)
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 			} else {

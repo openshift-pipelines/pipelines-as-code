@@ -122,6 +122,15 @@ data:
   # https://github.com/owner/repo will be `owner-repo-ci`
   auto-configure-repo-namespace-template: ""
 
+  # Enable or disable the feature to rerun the CI if push event happens on
+  # a pull request
+  #
+  # By default it is true and CI will be re-run in case of push/amend on the
+  # pull request if ok-to-test is done once
+  #
+  # you may want to disable this if ok-to-test should be done on each iteration
+  remember-ok-to-test: "true"
+
   # Configure a custom console here, the driver support custom parameters from
   # Repo CR along a few other template variable, see documentation for more
   # details

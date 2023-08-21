@@ -121,4 +121,8 @@ func SetDefaults(config map[string]string) {
 	if v, ok := config[CustomConsolePRTaskLogKey]; !ok || v == "" {
 		config[CustomConsolePRTaskLogKey] = v
 	}
+
+	if rememberOKToTest, ok := config[RememberOKToTestKey]; !ok || rememberOKToTest == "" {
+		config[RememberOKToTestKey] = rememberOKToTestValue
+	}
 }

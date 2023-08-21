@@ -11,7 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
 )
 
-func (v *Provider) IsAllowed(_ context.Context, event *info.Event) (bool, error) {
+func (v *Provider) IsAllowed(_ context.Context, event *info.Event, _ *info.PacOpts) (bool, error) {
 	// Check first if the user is in the owner file or part of the workspace
 	allowed, err := v.checkMember(event)
 	if err != nil {

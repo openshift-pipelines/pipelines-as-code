@@ -124,6 +124,15 @@ There is a few things you can configure through the config map
 
   `https://github.com/owner/repo` will be `owner-repo-ci`
 
+* `remember-ok-to-test`
+
+  If `remember-ok-to-test` is true then if `ok-to-test` is done on pull request then in
+  case of push event on pull request either through new commit or amend, then CI will
+  re-run automatically
+
+  You can disable by setting false if you want to provide `ok-to-test` on every iteration
+  (only GitHub and Gitea is supported at the moment).
+
 ### Tekton Hub support
 
 Pipelines-as-Code supports fetching task with its remote annotations feature, by default it will fetch it from the [public tekton hub](https://hub.tekton.dev/) but you can configure it to point to your own with these settings:

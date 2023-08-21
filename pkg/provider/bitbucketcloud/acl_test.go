@@ -181,7 +181,9 @@ func TestIsAllowed(t *testing.T) {
 
 			v := &Provider{Client: bbclient}
 
-			got, err := v.IsAllowed(ctx, tt.event)
+			pacopts := info.PacOpts{}
+
+			got, err := v.IsAllowed(ctx, tt.event, &pacopts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Provider.IsAllowed() error = %v, wantErr %v", err, tt.wantErr)
 				return
