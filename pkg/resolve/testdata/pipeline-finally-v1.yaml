@@ -1,0 +1,49 @@
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: pr-test1
+spec:
+  pipelineRef:
+    name: pipeline-with-finally
+  params:
+    - name: key
+      value: "{{value}}"
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: pipeline-with-finally
+spec:
+  params:
+    - name: repo_url
+    - name: revision
+  finally:
+    - name: finally-task
+      taskRef:
+        name: finally-task
+  tasks:
+    - name: normal-task
+      taskRef:
+        name: normal-task
+  steps:
+    - name: first-step
+      image: image
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: normal-task
+spec:
+  steps:
+    - name: normal-task
+      image: image
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: finally-task
+spec:
+  steps:
+    - name: finally-task
+      image: image

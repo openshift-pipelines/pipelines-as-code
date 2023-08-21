@@ -206,7 +206,11 @@ func resolveFilenames(ctx context.Context, cs *params.Run, filenames []string, p
 	// We use github here but since we don't do remotetask we would not care
 	providerintf := github.New()
 	event := info.NewEvent()
-	prun, err := resolve.Resolve(ctx, cs, cs.Clients.Log, providerintf, event, allTheYamls, ropt)
+	types, err := resolve.ReadTektonTypes(ctx, cs.Clients.Log, allTheYamls)
+	if err != nil {
+		return "", err
+	}
+	prun, err := resolve.Resolve(ctx, cs, cs.Clients.Log, providerintf, types, event, ropt)
 	if err != nil {
 		return "", err
 	}

@@ -18,7 +18,7 @@ import (
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
 )
 
-type Types struct {
+type TektonTypes struct {
 	PipelineRuns []*tektonv1.PipelineRun
 	Pipelines    []*tektonv1.Pipeline
 	TaskRuns     []*tektonv1.TaskRun
@@ -27,8 +27,8 @@ type Types struct {
 
 var yamlDocSeparatorRe = regexp.MustCompile(`(?m)^---\s*$`)
 
-func readTypes(ctx context.Context, log *zap.SugaredLogger, data string) (Types, error) {
-	types := Types{}
+func ReadTektonTypes(ctx context.Context, log *zap.SugaredLogger, data string) (TektonTypes, error) {
+	types := TektonTypes{}
 	decoder := k8scheme.Codecs.UniversalDeserializer()
 
 	for _, doc := range yamlDocSeparatorRe.Split(data, -1) {
@@ -109,7 +109,7 @@ func isTektonAPIVersion(apiVersion string) bool {
 	return strings.HasPrefix(apiVersion, "tekton.dev/") || apiVersion == ""
 }
 
-func inlineTasks(tasks []tektonv1.PipelineTask, ropt *Opts, types Types) ([]tektonv1.PipelineTask, error) {
+func inlineTasks(tasks []tektonv1.PipelineTask, ropt *Opts, types TektonTypes) ([]tektonv1.PipelineTask, error) {
 	pipelineTasks := []tektonv1.PipelineTask{}
 	for _, task := range tasks {
 		if task.TaskRef != nil &&
@@ -140,11 +140,7 @@ type Opts struct {
 // Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
 // generateName can be set as True to set the name as a generateName + "-" for
 // unique pipelinerun
-func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, providerintf provider.Interface, event *info.Event, data string, ropt *Opts) ([]*tektonv1.PipelineRun, error) {
-	types, err := readTypes(ctx, logger, data)
-	if err != nil {
-		return []*tektonv1.PipelineRun{}, err
-	}
+func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, providerintf provider.Interface, types TektonTypes, event *info.Event, ropt *Opts) ([]*tektonv1.PipelineRun, error) {
 	if len(types.PipelineRuns) == 0 {
 		return []*tektonv1.PipelineRun{}, fmt.Errorf("could not find any PipelineRun in your .tekton/ directory")
 	}
