@@ -52,7 +52,12 @@ func readTDfile(t *testing.T, testname string, generateName, remoteTasking bool)
 	}
 	event := &info.Event{}
 	tprovider := &testprovider.TestProviderImp{}
-	resolved, err := Resolve(ctx, cs, logger, tprovider, event, string(data), ropt)
+
+	types, err := ReadTektonTypes(ctx, logger, string(data))
+	if err != nil {
+		return &tektonv1.PipelineRun{}, nil, err
+	}
+	resolved, err := Resolve(ctx, cs, logger, tprovider, types, event, ropt)
 	if err != nil {
 		return &tektonv1.PipelineRun{}, nil, err
 	}
@@ -135,6 +140,12 @@ func TestPipelineRunPipelineSpecTaskSpec(t *testing.T) {
 
 func TestPipelineRunWithFinally(t *testing.T) {
 	resolved, _, err := readTDfile(t, "pipelinerun-finally", false, true)
+	assert.NilError(t, err)
+	assert.Equal(t, resolved.Spec.PipelineSpec.Finally[0].TaskSpec.Steps[0].Name, "finally-task")
+}
+
+func TestPipelineRunWithFinallyV1(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipeline-finally-v1", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, resolved.Spec.PipelineSpec.Finally[0].TaskSpec.Steps[0].Name, "finally-task")
 }
@@ -299,4 +310,14 @@ func TestPipelineRunsWithSameName(t *testing.T) {
 			assert.Equal(t, err.Error(), tt.err)
 		})
 	}
+}
+
+func TestSkippingTask(t *testing.T) {
+	skippedTasks := []string{"task1", "task3"}
+
+	// Test case where taskName is in skippedTasks
+	assert.Equal(t, skippingTask("task1", skippedTasks), true)
+
+	// Test case where taskName is not in skippedTasks
+	assert.Equal(t, skippingTask("task2", skippedTasks), false)
 }

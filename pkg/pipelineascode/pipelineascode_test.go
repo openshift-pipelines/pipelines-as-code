@@ -150,6 +150,47 @@ func TestRun(t *testing.T) {
 			finalStatusText: "we need at least one pipelinerun to start with",
 		},
 		{
+			name: "pull request/unknown-remotetask-but-fail-on-matching",
+			runevent: info.Event{
+				SHA:           "principale",
+				Organization:  "organizationes",
+				Repository:    "lagaffe",
+				URL:           "https://service/documentation",
+				HeadBranch:    "press",
+				BaseBranch:    "main",
+				Sender:        "fantasio",
+				EventType:     "push",
+				TriggerTarget: "push",
+			},
+			tektondir:       "testdata/pull_request-nomatch-remotetask",
+			finalStatus:     "failure",
+			finalStatusText: "we need at least one pipelinerun to start with",
+		},
+		{
+			name: "pull request/match-but-fail-to-start-on-unknown-remotetask",
+			runevent: info.Event{
+				Event: &github.PullRequestEvent{
+					PullRequest: &github.PullRequest{
+						Number: github.Int(666),
+					},
+				},
+				SHA:               "fromwebhook",
+				Organization:      "owner",
+				Sender:            "owner",
+				Repository:        "repo",
+				URL:               "https://service/documentation",
+				HeadBranch:        "press",
+				BaseBranch:        "main",
+				EventType:         "pull_request",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: 666,
+				InstallationID:    1234,
+			},
+			tektondir:       "testdata/pull_request-nomatch-remotetask",
+			finalStatus:     "failure",
+			finalStatusText: "error getting remote task",
+		},
+		{
 			name: "pull request/allowed",
 			runevent: info.Event{
 				Event: &github.PullRequestEvent{
@@ -502,6 +543,7 @@ func TestRun(t *testing.T) {
 					Pac: &info.PacOpts{
 						Settings: &settings.Settings{
 							SecretAutoCreation: true,
+							RemoteTasks:        true,
 							HubCatalogs:        &hubCatalogs,
 						},
 					},

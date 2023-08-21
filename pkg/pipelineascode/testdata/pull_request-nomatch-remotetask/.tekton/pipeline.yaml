@@ -1,0 +1,9 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline1
+tasks:
+  - name: task-from-tektondir
+    taskRef:
+      name: task-from-tektondir

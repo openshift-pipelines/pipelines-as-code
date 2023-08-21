@@ -173,17 +173,23 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 
 	// Replace those {{var}} placeholders user has in her template to the run.Info variable
 	allTemplates := p.makeTemplate(ctx, repo, rawTemplates)
-	pipelineRuns, err := resolve.Resolve(ctx, p.run, p.logger, p.vcx, p.event, allTemplates, &resolve.Opts{
-		GenerateName: true,
-		RemoteTasks:  p.run.Info.Pac.RemoteTasks,
-	})
+
+	types, err := resolve.ReadTektonTypes(ctx, p.logger, allTemplates)
 	if err != nil {
-		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryFailedToMatch", fmt.Sprintf("failed to match pipelineRuns: %s", err.Error()))
 		return nil, err
 	}
-	if pipelineRuns == nil {
+	pipelineRuns := types.PipelineRuns
+	if len(pipelineRuns) == 0 {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
 		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryCannotLocatePipelineRun", msg)
+		return nil, nil
+	}
+
+	// Match the PipelineRun with annotation
+	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx)
+	if err != nil {
+		// Don't fail when you don't have a match between pipeline and annotations
+		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
 		return nil, nil
 	}
 
@@ -195,13 +201,32 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		return nil, nil
 	}
 
+	// finally resolve with fetching the remote tasks (if enabled)
+	if p.run.Info.Pac.RemoteTasks {
+		// only resolve on the matched pipelineruns
+		types.PipelineRuns = nil
+		for _, match := range matchedPRs {
+			for pr := range pipelineRuns {
+				if match.PipelineRun.Name == pipelineRuns[pr].Name {
+					types.PipelineRuns = append(types.PipelineRuns, pipelineRuns[pr])
+				}
+			}
+		}
+		pipelineRuns, err = resolve.Resolve(ctx, p.run, p.logger, p.vcx, types, p.event, &resolve.Opts{
+			GenerateName: true,
+			RemoteTasks:  true,
+		})
+		if err != nil {
+			p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryFailedToMatch", fmt.Sprintf("failed to match pipelineRuns: %s", err.Error()))
+			return nil, err
+		}
+	}
+
 	err = changeSecret(pipelineRuns)
 	if err != nil {
 		return nil, err
 	}
-
-	// Match the PipelineRun with annotation
-	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx)
+	matchedPRs, err = matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx)
 	if err != nil {
 		// Don't fail when you don't have a match between pipeline and annotations
 		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
