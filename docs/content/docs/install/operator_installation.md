@@ -41,6 +41,7 @@ spec:
             ]*)?(?P<error>.*)
           secret-auto-create: 'true'
           secret-github-app-token-scoped: 'true'
+          remember-ok-to-test: 'true'
 ```
 
 You can add or update all supported configuration keys for Pipelines-as-Code under `settings`. After you change the `TektonConfig` custom resource, the operator updates the configuration of your `pipelines-as-code` configmap automatically.

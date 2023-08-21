@@ -246,7 +246,6 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.BaseURL = gitEvent.GetRepo().GetHTMLURL()
 		processedEvent.HeadURL = processedEvent.BaseURL // in push events Head URL is the same as BaseURL
 	case *github.PullRequestEvent:
-		processedEvent = info.NewEvent()
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
 		processedEvent.Organization = gitEvent.GetRepo().Owner.GetLogin()
 		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()

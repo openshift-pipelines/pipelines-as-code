@@ -277,30 +277,11 @@ func CreateGiteaUserSecondCnx(topts *TestOpts, username, password string) (pgite
 	return secondprovider, newuser, err
 }
 
-func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider, accessMode, command string) *gitea.PullRequest {
-	forkuserinfo, _, err := secondcnx.Client.GetMyUserInfo()
-	assert.NilError(t, err)
+func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider, accessMode string) *gitea.PullRequest {
 	forkrepo, _, err := secondcnx.Client.CreateFork(topts.Opts.Organization, topts.TargetRefName,
 		gitea.CreateForkOption{})
 	assert.NilError(t, err)
 	topts.ParamsRun.Clients.Log.Infof("Forked repository %s has been created", forkrepo.CloneURL)
-	cloneURL, err := MakeGitCloneURL(forkrepo.CloneURL, forkuserinfo.UserName, secondcnx.Password)
-	assert.NilError(t, err)
-	newopts := &TestOpts{
-		GitCloneURL:   cloneURL,
-		TargetRefName: topts.TargetRefName,
-		ParamsRun:     topts.ParamsRun,
-	}
-	processed, err := payload.ApplyTemplate("testdata/pipelinerun-alt.yaml", map[string]string{
-		"TargetNamespace": topts.TargetNS,
-		"TargetEvent":     topts.TargetEvent,
-		"TargetBranch":    topts.DefaultBranch,
-		"PipelineName":    "pr",
-		"Command":         command,
-	})
-	assert.NilError(t, err)
-	entries := map[string]string{".tekton/pr.yaml": processed}
-	PushFilesToRefGit(t, newopts, entries, topts.TargetRefName)
 
 	if accessMode != "" {
 		assert.NilError(t, CreateAccess(topts, topts.TargetRefName, accessMode))
@@ -315,6 +296,26 @@ func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provi
 	assert.NilError(t, err)
 	topts.ParamsRun.Clients.Log.Infof("Created pr %s branch:%s from fork %s, branch:%s", pr.HTMLURL, topts.DefaultBranch, forkrepo.FullName, topts.TargetRefName)
 	return pr
+}
+
+func PushToPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider, command string) {
+	forkuserinfo, _, err := secondcnx.Client.GetMyUserInfo()
+	assert.NilError(t, err)
+	cloneURL, err := MakeGitCloneURL(topts.PullRequest.Head.Repository.HTMLURL, forkuserinfo.UserName, secondcnx.Password)
+	assert.NilError(t, err)
+	newopts := &TestOpts{
+		GitCloneURL: cloneURL, TargetRefName: topts.TargetRefName, ParamsRun: topts.ParamsRun,
+	}
+	processed, err := payload.ApplyTemplate("testdata/pipelinerun-alt.yaml", map[string]string{
+		"TargetNamespace": topts.TargetNS,
+		"TargetEvent":     topts.TargetEvent,
+		"TargetBranch":    topts.TargetRefName,
+		"PipelineName":    "pr-push",
+		"Command":         command,
+	})
+	assert.NilError(t, err)
+	entries := map[string]string{".tekton/pr-push.yaml": processed}
+	PushFilesToRefGit(t, newopts, entries, topts.TargetRefName)
 }
 
 func CreateAccess(topts *TestOpts, touser, accessMode string) error {

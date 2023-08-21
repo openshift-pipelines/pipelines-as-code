@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-github/v53/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -99,11 +100,12 @@ func TestCheckPolicyAllowing(t *testing.T) {
 
 func TestOkToTestComment(t *testing.T) {
 	tests := []struct {
-		name          string
-		commentsReply string
-		runevent      info.Event
-		allowed       bool
-		wantErr       bool
+		name             string
+		commentsReply    string
+		runevent         info.Event
+		allowed          bool
+		wantErr          bool
+		rememberOkToTest bool
 	}{
 		{
 			name:          "good issue comment event",
@@ -120,8 +122,9 @@ func TestOkToTestComment(t *testing.T) {
 					},
 				},
 			},
-			allowed: true,
-			wantErr: false,
+			allowed:          true,
+			wantErr:          false,
+			rememberOkToTest: true,
 		},
 		{
 			name:          "good issue pull request event",
@@ -136,8 +139,9 @@ func TestOkToTestComment(t *testing.T) {
 					},
 				},
 			},
-			allowed: true,
-			wantErr: false,
+			allowed:          true,
+			wantErr:          false,
+			rememberOkToTest: true,
 		},
 		{
 			name:          "bad event origin",
@@ -152,7 +156,9 @@ func TestOkToTestComment(t *testing.T) {
 					},
 				},
 			},
-			allowed: false,
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: true,
 		},
 		{
 			name:          "no-ok-to-test",
@@ -169,8 +175,9 @@ func TestOkToTestComment(t *testing.T) {
 					},
 				},
 			},
-			allowed: false,
-			wantErr: false,
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: true,
 		},
 		{
 			name:          "ok-to-test-not-from-owner",
@@ -187,8 +194,100 @@ func TestOkToTestComment(t *testing.T) {
 					},
 				},
 			},
-			allowed: false,
-			wantErr: false,
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: true,
+		},
+		{
+			name:          "good issue comment event without remember",
+			commentsReply: `{"body": "/ok-to-test", "user": {"login": "owner"}}`,
+			runevent: info.Event{
+				Organization: "owner",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event: &github.IssueCommentEvent{
+					Issue: &github.Issue{
+						PullRequestLinks: &github.PullRequestLinks{
+							HTMLURL: github.String("http://url.com/owner/repo/1"),
+						},
+					},
+				},
+			},
+			allowed:          true,
+			wantErr:          false,
+			rememberOkToTest: false,
+		},
+		{
+			name:          "good issue pull request event without remember",
+			commentsReply: `{"body": "/ok-to-test", "user": {"login": "owner"}}`,
+			runevent: info.Event{
+				Organization: "owner",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event: &github.PullRequestEvent{
+					PullRequest: &github.PullRequest{
+						HTMLURL: github.String("http://url.com/owner/repo/1"),
+					},
+				},
+			},
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: false,
+		},
+		{
+			name:          "bad event origin without remember",
+			commentsReply: `{"body": "/ok-to-test", "user": {"login": "owner"}}`,
+			runevent: info.Event{
+				Organization: "owner",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event: &github.CheckRunEvent{
+					CheckRun: &github.CheckRun{
+						HTMLURL: github.String("http://url.com/owner/repo/1"),
+					},
+				},
+			},
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: false,
+		},
+		{
+			name:          "no-ok-to-test without remember",
+			commentsReply: `{"body": "Foo Bar", "user": {"login": "owner"}}`,
+			runevent: info.Event{
+				Organization: "owner",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event: &github.IssueCommentEvent{
+					Issue: &github.Issue{
+						PullRequestLinks: &github.PullRequestLinks{
+							HTMLURL: github.String("http://url.com/owner/repo/1"),
+						},
+					},
+				},
+			},
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: false,
+		},
+		{
+			name:          "ok-to-test-not-from-owner without remember",
+			commentsReply: `{"body": "/ok-to-test", "user": {"login": "notowner"}}`,
+			runevent: info.Event{
+				Organization: "owner",
+				Sender:       "nonowner",
+				EventType:    "issue_comment",
+				Event: &github.IssueCommentEvent{
+					Issue: &github.Issue{
+						PullRequestLinks: &github.PullRequestLinks{
+							HTMLURL: github.String("http://url.com/owner/repo/1"),
+						},
+					},
+				},
+			},
+			allowed:          false,
+			wantErr:          false,
+			rememberOkToTest: false,
 		},
 	}
 	for _, tt := range tests {
@@ -196,6 +295,9 @@ func TestOkToTestComment(t *testing.T) {
 			tt.runevent.TriggerTarget = "ok-to-test-comment"
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
+			mux.HandleFunc("/repos/owner/issues/comments/0", func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(rw, tt.commentsReply)
+			})
 			mux.HandleFunc("/repos/owner/issues/1/comments", func(rw http.ResponseWriter, r *http.Request) {
 				// this will test if pagination works okay
 				if r.URL.Query().Get("page") == "" || r.URL.Query().Get("page") == "1" {
@@ -218,7 +320,13 @@ func TestOkToTestComment(t *testing.T) {
 				paginedNumber: 1,
 			}
 
-			got, err := gprovider.IsAllowed(ctx, &tt.runevent)
+			pacopts := info.PacOpts{
+				Settings: &settings.Settings{
+					RememberOKToTest: tt.rememberOkToTest,
+				},
+			}
+
+			got, err := gprovider.IsAllowed(ctx, &tt.runevent, &pacopts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("aclCheck() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -356,7 +464,7 @@ func TestAclCheckAll(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gprovider.IsAllowed(ctx, &tt.runevent)
+			got, err := gprovider.aclCheckAll(ctx, &tt.runevent)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("aclCheckAll() error = %v, wantErr %v", err, tt.wantErr)
 				return

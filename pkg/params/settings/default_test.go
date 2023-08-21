@@ -15,6 +15,7 @@ func TestSetDefaults(t *testing.T) {
 	assert.Equal(t, config[SecretAutoCreateKey], secretAutoCreateDefaultValue)
 	assert.Equal(t, config[BitbucketCloudCheckSourceIPKey], bitbucketCloudCheckSourceIPDefaultValue)
 	assert.Equal(t, config[ApplicationNameKey], PACApplicationNameDefaultValue)
+	assert.Equal(t, config[RememberOKToTestKey], rememberOKToTestValue)
 }
 
 func TestGetCatalogHub(t *testing.T) {

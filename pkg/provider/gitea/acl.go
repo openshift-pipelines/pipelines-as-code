@@ -44,7 +44,7 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, all
 	return false, fmt.Sprintf("user: %s is not a member of any of the allowed teams: %v", event.Sender, allowedTeams)
 }
 
-func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
+func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, pac *info.PacOpts) (bool, error) {
 	aclPolicy := policy.Policy{
 		Settings: v.repoSettings,
 		Event:    event,
@@ -74,15 +74,15 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, erro
 		return true, nil
 	}
 
-	// Finally try to parse all comments
-	return v.aclAllowedOkToTestFromAnOwner(ctx, event)
+	// Finally try to parse comments
+	return v.aclAllowedOkToTestFromAnOwner(ctx, event, pac)
 }
 
-// allowedOkToTestFromAnOwner Go over every comments in a pull request and check
+// allowedOkToTestFromAnOwner Go over comments in a pull request and check
 // if there is a /ok-to-test in there running an aclCheck again on the comment
 // Sender if she is an OWNER and then allow it to run CI.
 // TODO: pull out the github logic from there in an agnostic way.
-func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Event) (bool, error) {
+func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Event, pac *info.PacOpts) (bool, error) {
 	revent := info.NewEvent()
 	event.DeepCopyInto(revent)
 	revent.EventType = ""
@@ -93,8 +93,18 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 
 	switch event := revent.Event.(type) {
 	case *giteaStructs.IssueCommentPayload:
+		// if we don't need to check old comments, then on issue comment we
+		// need to check if comment have /ok-to-test and is from allowed user
+		if !pac.RememberOKToTest {
+			return v.aclAllowedOkToTestCurrentComment(ctx, revent, event.Comment.ID)
+		}
 		revent.URL = event.Issue.URL
 	case *giteaStructs.PullRequestPayload:
+		// if we don't need to check old comments, then on push event we don't need
+		// to check anything for the non-allowed user
+		if !pac.RememberOKToTest {
+			return false, nil
+		}
 		revent.URL = event.PullRequest.HTMLURL
 	default:
 		return false, nil
@@ -106,6 +116,26 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 	}
 
 	for _, comment := range comments {
+		revent.Sender = comment.Poster.UserName
+		allowed, err := v.aclCheckAll(ctx, revent)
+		if err != nil {
+			return false, err
+		}
+		if allowed {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// aclAllowedOkToTestCurrentEvent only check if this is issue comment event
+// have /ok-to-test regex and sender is allowed.
+func (v *Provider) aclAllowedOkToTestCurrentComment(ctx context.Context, revent *info.Event, id int64) (bool, error) {
+	comment, _, err := v.Client.GetIssueComment(revent.Organization, revent.Repository, id)
+	if err != nil {
+		return false, err
+	}
+	if acl.MatchRegexp(acl.OKToTestCommentRegexp, comment.Body) {
 		revent.Sender = comment.Poster.UserName
 		allowed, err := v.aclCheckAll(ctx, revent)
 		if err != nil {
