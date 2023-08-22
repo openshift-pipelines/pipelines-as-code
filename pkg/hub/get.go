@@ -7,13 +7,19 @@ import (
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 )
 
 func getSpecificVersion(ctx context.Context, cs *params.Run, catalogName, task string) (string, error) {
 	split := strings.Split(task, ":")
 	version := split[len(split)-1]
 	taskName := split[0]
-	url := fmt.Sprintf("%s/resource/%s/task/%s/%s", cs.Info.Pac.HubCatalogs[catalogName].URL, cs.Info.Pac.HubCatalogs[catalogName].Name, taskName, version)
+	value, _ := cs.Info.Pac.HubCatalogs.Load(catalogName)
+	catalogValue, ok := value.(settings.HubCatalog)
+	if !ok {
+		return "", fmt.Errorf("could not get details for catalog name: %s", catalogName)
+	}
+	url := fmt.Sprintf("%s/resource/%s/task/%s/%s", catalogValue.URL, catalogValue.Name, taskName, version)
 	hr := hubResourceVersion{}
 	data, err := cs.Clients.GetURL(ctx, url)
 	if err != nil {
@@ -27,7 +33,12 @@ func getSpecificVersion(ctx context.Context, cs *params.Run, catalogName, task s
 }
 
 func getLatestVersion(ctx context.Context, cs *params.Run, catalogName, task string) (string, error) {
-	url := fmt.Sprintf("%s/resource/%s/task/%s", cs.Info.Pac.HubCatalogs[catalogName].URL, cs.Info.Pac.HubCatalogs[catalogName].Name, task)
+	value, _ := cs.Info.Pac.HubCatalogs.Load(catalogName)
+	catalogValue, ok := value.(settings.HubCatalog)
+	if !ok {
+		return "", fmt.Errorf("could not get details for catalog name: %s", catalogName)
+	}
+	url := fmt.Sprintf("%s/resource/%s/task/%s", catalogValue.URL, catalogValue.Name, task)
 	hr := new(hubResource)
 	data, err := cs.Clients.GetURL(ctx, url)
 	if err != nil {

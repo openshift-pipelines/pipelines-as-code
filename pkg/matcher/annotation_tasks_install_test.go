@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
@@ -46,18 +47,19 @@ func readTDfile(t *testing.T, testname string) string {
 }
 
 func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
-	hubCatalogs := map[string]settings.HubCatalog{
-		"default": {
+	var hubCatalogs sync.Map
+	hubCatalogs.Store(
+		"default", settings.HubCatalog{
 			ID:   "default",
 			URL:  testHubURL,
 			Name: testCatalogHubName,
-		},
-		"anotherHub": {
+		})
+	hubCatalogs.Store(
+		"anotherHub", settings.HubCatalog{
 			ID:   "anotherHub",
 			URL:  testHubURL,
 			Name: testCatalogHubName,
-		},
-	}
+		})
 	tests := []struct {
 		annotations            map[string]string
 		filesInsideRepo        map[string]string
@@ -264,7 +266,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				Info: info.Info{
 					Pac: &info.PacOpts{
 						Settings: &settings.Settings{
-							HubCatalogs: hubCatalogs,
+							HubCatalogs: &hubCatalogs,
 						},
 					},
 				},
@@ -299,6 +301,13 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 }
 
 func TestGetPipelineFromAnnotations(t *testing.T) {
+	var hubCatalogs sync.Map
+	hubCatalogs.Store(
+		"default", settings.HubCatalog{
+			ID:   "default",
+			URL:  testHubURL,
+			Name: testCatalogHubName,
+		})
 	tests := []struct {
 		annotations     map[string]string
 		filesInsideRepo map[string]string
@@ -420,6 +429,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 			httpTestClient := httptesthelper.MakeHTTPTestClient(tt.remoteURLS)
 			observer, fakelog := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
+
 			cs := &params.Run{
 				Clients: clients.Clients{
 					HTTP: *httpTestClient,
@@ -428,13 +438,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 				Info: info.Info{
 					Pac: &info.PacOpts{
 						Settings: &settings.Settings{
-							HubCatalogs: map[string]settings.HubCatalog{
-								"default": {
-									ID:   "default",
-									URL:  testHubURL,
-									Name: testCatalogHubName,
-								},
-							},
+							HubCatalogs: &hubCatalogs,
 						},
 					},
 				},

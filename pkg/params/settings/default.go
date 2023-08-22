@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"sync"
 
 	"go.uber.org/zap"
 )
 
-func gethHubCatalogs(logger *zap.SugaredLogger, settings *Settings, config map[string]string) map[string]HubCatalog {
-	catalogs := make(map[string]HubCatalog)
+func getHubCatalogs(logger *zap.SugaredLogger, config map[string]string) *sync.Map {
+	catalogs := sync.Map{}
 	if hubURL, ok := config[HubURLKey]; !ok || hubURL == "" {
 		config[HubURLKey] = HubURLDefaultValue
 		logger.Infof("CONFIG: using default hub url %s", HubURLDefaultValue)
@@ -18,11 +19,11 @@ func gethHubCatalogs(logger *zap.SugaredLogger, settings *Settings, config map[s
 	if hubCatalogName, ok := config[HubCatalogNameKey]; !ok || hubCatalogName == "" {
 		config[HubCatalogNameKey] = HubCatalogNameDefaultValue
 	}
-	catalogs["default"] = HubCatalog{
+	catalogs.Store("default", HubCatalog{
 		ID:   "default",
 		Name: config[HubCatalogNameKey],
 		URL:  config[HubURLKey],
-	}
+	})
 
 	for k := range config {
 		m := hubCatalogNameRegex.FindStringSubmatch(k)
@@ -55,18 +56,16 @@ func gethHubCatalogs(logger *zap.SugaredLogger, settings *Settings, config map[s
 					logger.Warnf("CONFIG: custom hub %s, catalog url %s is not valid, skipping catalog configuration", catalogID, catalogURL)
 					break
 				}
-				if _, ok := settings.HubCatalogs[catalogID]; !ok {
-					logger.Infof("CONFIG: setting custom hub %s, catalog %s", catalogID, catalogURL)
-				}
-				catalogs[catalogID] = HubCatalog{
+				logger.Infof("CONFIG: setting custom hub %s, catalog %s", catalogID, catalogURL)
+				catalogs.Store(catalogID, HubCatalog{
 					ID:   catalogID,
 					Name: config[fmt.Sprintf("%s-name", cPrefix)],
 					URL:  catalogURL,
-				}
+				})
 			}
 		}
 	}
-	return catalogs
+	return &catalogs
 }
 
 func SetDefaults(config map[string]string) {
