@@ -65,18 +65,29 @@ func TestCheckPolicyAllowing(t *testing.T) {
 				Sender:       "allowedUser",
 			}
 			mux.HandleFunc("/orgs/myorg/teams/allowedTeam/members", func(rw http.ResponseWriter, r *http.Request) {
-				fmt.Fprint(rw, tt.reply)
+				if r.URL.Query().Get("page") == "" || r.URL.Query().Get("page") == "1" {
+					rw.Header().Add("Link", `<https://api.github.com/orgs/myorg/teams/allowedTeam/members?page=2&per_page=1>; rel="next"`)
+					fmt.Fprint(rw, `[]`)
+				} else {
+					fmt.Fprint(rw, tt.reply)
+				}
 			})
 			mux.HandleFunc("/orgs/myorg/teams/otherteam/members", func(rw http.ResponseWriter, r *http.Request) {
-				fmt.Fprint(rw, tt.otherReply)
+				if r.URL.Query().Get("page") == "" || r.URL.Query().Get("page") == "1" {
+					rw.Header().Add("Link", `<https://api.github.com/orgs/myorg/teams/otherteam/members?page=2&per_page=1>; rel="next"`)
+					fmt.Fprint(rw, `[]`)
+				} else {
+					fmt.Fprint(rw, tt.otherReply)
+				}
 			})
 			ctx, _ := rtesting.SetupFakeContext(t)
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 			gprovider := Provider{
-				Client:       fakeclient,
-				repoSettings: &v1alpha1.Settings{},
-				Logger:       logger,
+				Client:        fakeclient,
+				repoSettings:  &v1alpha1.Settings{},
+				Logger:        logger,
+				paginedNumber: 1,
 			}
 
 			gotAllowed, gotReason := gprovider.CheckPolicyAllowing(ctx, event, tt.allowedTeams)
@@ -186,7 +197,13 @@ func TestOkToTestComment(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			mux.HandleFunc("/repos/owner/issues/1/comments", func(rw http.ResponseWriter, r *http.Request) {
-				fmt.Fprint(rw, tt.commentsReply)
+				// this will test if pagination works okay
+				if r.URL.Query().Get("page") == "" || r.URL.Query().Get("page") == "1" {
+					rw.Header().Add("Link", `<https://api.github.com/owner/repo/issues/1/comments?page=2&per_page=1>; rel="next"`)
+					fmt.Fprint(rw, `[{"body": "Foo Bar", "user": {"login": "notallowed"}}]`, tt.commentsReply)
+				} else {
+					fmt.Fprint(rw, tt.commentsReply)
+				}
 			})
 			mux.HandleFunc("/repos/owner/collaborators", func(rw http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(rw, "[]")
@@ -195,9 +212,10 @@ func TestOkToTestComment(t *testing.T) {
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 			gprovider := Provider{
-				Client:       fakeclient,
-				repoSettings: &v1alpha1.Settings{},
-				Logger:       logger,
+				Client:        fakeclient,
+				repoSettings:  &v1alpha1.Settings{},
+				Logger:        logger,
+				paginedNumber: 1,
 			}
 
 			got, err := gprovider.IsAllowed(ctx, &tt.runevent)
@@ -226,7 +244,13 @@ func TestAclCheckAll(t *testing.T) {
 	errit := "err"
 
 	mux.HandleFunc("/orgs/"+orgallowed+"/members", func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(rw, `[{"login": "login_%s"}]`, orgallowed)
+		// this will test if pagination works okay
+		if r.URL.Query().Get("page") == "" || r.URL.Query().Get("page") == "1" {
+			rw.Header().Add("Link", `<https://api.github.com/orgs/`+orgallowed+`/members?page=2&per_page=1>; rel="next"`)
+			fmt.Fprint(rw, `[{"login": "notallowed"}]`, orgallowed)
+		} else {
+			fmt.Fprintf(rw, `[{"login": "login_%s"}]`, orgallowed)
+		}
 	})
 
 	mux.HandleFunc("/orgs/"+orgdenied+"/members", func(rw http.ResponseWriter, r *http.Request) {
@@ -263,8 +287,9 @@ func TestAclCheckAll(t *testing.T) {
 	logger := zap.New(observer).Sugar()
 	ctx, _ := rtesting.SetupFakeContext(t)
 	gprovider := Provider{
-		Client: fakeclient,
-		Logger: logger,
+		Client:        fakeclient,
+		Logger:        logger,
+		paginedNumber: 1,
 	}
 
 	tests := []struct {

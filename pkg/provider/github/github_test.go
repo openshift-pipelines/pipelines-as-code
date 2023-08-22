@@ -620,8 +620,13 @@ func TestGetFiles(t *testing.T) {
 			if tt.event.TriggerTarget == "pull_request" {
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/pulls/%d/files",
 					tt.event.Organization, tt.event.Repository, tt.event.PullRequestNumber), func(rw http.ResponseWriter, r *http.Request) {
-					b, _ := json.Marshal(commitFiles)
-					fmt.Fprint(rw, string(b))
+					if r.URL.Query().Get("page") == "" || r.URL.Query().Get("page") == "1" {
+						rw.Header().Add("Link", fmt.Sprintf("<https://api.github.com/repos/%s/%s/pulls/%d/files?page=2>; rel=\"next\"", tt.event.Organization, tt.event.Repository, tt.event.PullRequestNumber))
+						fmt.Fprint(rw, "[]")
+					} else {
+						b, _ := json.Marshal(commitFiles)
+						fmt.Fprint(rw, string(b))
+					}
 				})
 			}
 			if tt.event.TriggerTarget == "push" {
@@ -636,7 +641,10 @@ func TestGetFiles(t *testing.T) {
 			}
 
 			ctx, _ := rtesting.SetupFakeContext(t)
-			provider := &Provider{Client: fakeclient}
+			provider := &Provider{
+				Client:        fakeclient,
+				paginedNumber: 1,
+			}
 			fileData, err := provider.GetFiles(ctx, tt.event)
 			assert.NilError(t, err, nil)
 			if tt.event.TriggerTarget == "pull_request" {
@@ -792,11 +800,16 @@ func TestListRepos(t *testing.T) {
 	mux.HandleFunc("/installation/repositories", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Authorization", "Bearer 12345")
 		w.Header().Set("Accept", "application/vnd.github+json")
-		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"}]}`)
+		if r.URL.Query().Get("page") == "" || r.URL.Query().Get("page") == "1" {
+			w.Header().Add("Link", `<https://api.github.com/installation/repositories?page=2&per_page=1>; rel="next"`)
+			_, _ = fmt.Fprint(w, `{}`)
+		} else {
+			_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"}]}`)
+		}
 	})
 
 	ctx, _ := rtesting.SetupFakeContext(t)
-	provider := &Provider{Client: fakeclient}
+	provider := &Provider{Client: fakeclient, paginedNumber: 1}
 	data, err := ListRepos(ctx, provider)
 	assert.NilError(t, err)
 	assert.Equal(t, data[0], "https://matched/by/incoming")

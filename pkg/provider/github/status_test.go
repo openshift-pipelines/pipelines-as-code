@@ -59,7 +59,8 @@ func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 	defer teardown()
 
 	cnx := &Provider{
-		Client: client,
+		Client:        client,
+		paginedNumber: 1,
 	}
 	event := &info.Event{
 		Organization: "owner",
@@ -69,8 +70,13 @@ func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 
 	chosenOne := "chosenOne"
 	chosenID := int64(55555)
-	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA), func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, `{
+	url := fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA)
+	mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("page") == "" || r.URL.Query().Get("page") == "1" {
+			w.Header().Add("Link", `<https://api.github.com`+url+`?page=2&per_page=1>; rel="next"`)
+			fmt.Fprint(w, `{}`)
+		} else {
+			_, _ = fmt.Fprintf(w, `{
 			"total_count": 2,
 			"check_runs": [
 				{
@@ -83,12 +89,14 @@ func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 				}
 			]
 		}`, chosenID, chosenOne)
+		}
 	})
 
 	id, err := cnx.getExistingCheckRunID(ctx, event, provider.StatusOpts{
 		PipelineRunName: chosenOne,
 	})
 	assert.NilError(t, err)
+	assert.Assert(t, id != nil)
 	assert.Equal(t, *id, chosenID)
 }
 

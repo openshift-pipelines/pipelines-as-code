@@ -45,27 +45,32 @@ func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 }
 
 func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
-	res, _, err := v.Client.Checks.ListCheckRunsForRef(ctx, runevent.Organization, runevent.Repository,
-		runevent.SHA, &github.ListCheckRunsOptions{
-			AppID: v.ApplicationID,
-		})
-	if err != nil {
-		return nil, err
-	}
-	if *res.Total == 0 {
-		return nil, nil
-	}
+	opt := github.ListOptions{PerPage: v.paginedNumber}
+	for {
+		res, resp, err := v.Client.Checks.ListCheckRunsForRef(ctx, runevent.Organization, runevent.Repository,
+			runevent.SHA, &github.ListCheckRunsOptions{
+				AppID:       v.ApplicationID,
+				ListOptions: opt,
+			})
+		if err != nil {
+			return nil, err
+		}
 
-	for _, checkrun := range res.CheckRuns {
-		// if it is a Pending approval checkrun then overwrite it
-		if isPendingApprovalCheckrun(checkrun) {
-			if v.canIUseCheckrunID(checkrun.ID) {
+		for _, checkrun := range res.CheckRuns {
+			// if it is a Pending approval checkrun then overwrite it
+			if isPendingApprovalCheckrun(checkrun) {
+				if v.canIUseCheckrunID(checkrun.ID) {
+					return checkrun.ID, nil
+				}
+			}
+			if *checkrun.ExternalID == status.PipelineRunName {
 				return checkrun.ID, nil
 			}
 		}
-		if *checkrun.ExternalID == status.PipelineRunName {
-			return checkrun.ID, nil
+		if resp.NextPage == 0 {
+			break
 		}
+		opt.Page = resp.NextPage
 	}
 
 	return nil, nil
