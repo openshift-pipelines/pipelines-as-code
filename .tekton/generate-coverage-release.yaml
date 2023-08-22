@@ -130,23 +130,20 @@ spec:
                     echo -n "nightly,stable,"
                     for i in $(git tag -l | grep '^v' | sort -rn); do echo -n "$i,"; done | sed 's/,$//'
                 )
-                set +x # Do not show TOKEN in logs
-                echo python hack/upload-file-to-github.py --message "'Release yaml generated from {{repo_url}}/commit/{{revision}}'" \
-                    --from-ref refs/heads/main --to-ref refs/heads/nightly \
-                    --owner-repository openshift-pipelines/pipelines-as-code --token \$HUB_TOKEN \
-                    -f release.k8s.yaml:release.k8s.yaml \
-                    -f release.yaml:release.yaml \
-                    -f nightly:docs/content/VERSION \
-                    -f ${allversions}:docs/content/ALLVERSIONS \
-                    -f "nightly-$ssa-$(date +%Y%m%d):pkg/params/version/version.txt"
-                python hack/upload-file-to-github.py --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" \
-                    --from-ref refs/heads/main --to-ref refs/heads/nightly \
-                    --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} \
-                    -f release.k8s.yaml:release.k8s.yaml \
-                    -f release.yaml:release.yaml \
-                    -f nightly:docs/content/VERSION \
-                    -f ${allversions}:docs/content/ALLVERSIONS \
-                    -f "nightly-$ssa-$(date +%Y%m%d):pkg/params/version/version.txt"
+
+                git checkout -B nightly origin/main
+                echo nightly > docs/content/VERSION
+                echo ${allversions} > docs/content/ALLVERSIONS
+                echo "nightly-$ssa-$(date +%Y%m%d)" > pkg/params/version/version.txt
+                git add release.yaml release.k8s.yaml docs/content/VERSION docs/content/ALLVERSIONS pkg/params/version/version.txt
+                git config --global user.email "pac-dev@redhat.com"
+                git config --global user.name "Pipelines as Code CI Robot"
+                git commit -m "Release yaml generated from {{repo_url}}/commit/{{revision}}"
+                set +x
+                echo git push "https://git:\$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }} nightly:nightly"
+                git push --force https://git:$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }}/ nightly:nightly
+                set -x
+                git checkout -
           workspaces:
             - name: source
         workspaces:
