@@ -7,6 +7,7 @@ your descriptive commit message(s)! -->
 
 # Submitter Checklist
 
+- [ ] 📝 A good commit message is important for other reviewers to understand the context of your change. Please refer to [How to Write a Git Commit Message](https://cbea.ms/git-commit/) for more details how to write beautiful commit messages. We rather have the commit message in the PR body and the commit message instead of an external website.
 - [ ] ♽ Run `make test` before submitting a PR (ie: with [pre-commit](https://pipelinesascode.com/dev/tools), no need to waste CPU cycle on CI. (or even better install [pre-commit](https://pre-commit.com/) and do `pre-commit install` in the root of this repo).
 - [ ] ✨ We heavily rely on linters to get our code clean and consistent, please ensure that you have run `make lint` before submitting a PR. The [markdownlint](https://github.com/DavidAnson/markdownlint) error can get usually fixed by running `make fix-markdownlint` (make sure it's installed first)
 - [ ] 📖 If you are adding a user facing feature or make a change of the behavior, please verify that you have documented it
