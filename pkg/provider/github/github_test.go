@@ -3,8 +3,6 @@ package github
 import (
 	"context"
 	"crypto/hmac"
-
-	//nolint: gosec
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
