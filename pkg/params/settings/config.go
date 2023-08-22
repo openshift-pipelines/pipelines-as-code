@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"go.uber.org/zap"
 )
@@ -58,6 +59,7 @@ const (
 var (
 	TknBinaryName       = `tkn`
 	hubCatalogNameRegex = regexp.MustCompile(`^catalog-(\d+)-`)
+	mu                  sync.Mutex
 )
 
 type HubCatalog struct {
@@ -137,7 +139,9 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 		logger.Infof("CONFIG: hub catalog name set to %v", config[HubCatalogNameKey])
 		catalogDefault.Name = config[HubCatalogNameKey]
 	}
+	mu.Lock()
 	setting.HubCatalogs["default"] = catalogDefault
+	defer mu.Unlock()
 	// TODO: detect changes in extra hub catalogs
 
 	remoteTask := StringToBool(config[RemoteTasksKey])
@@ -221,17 +225,6 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 		logger.Infof("CONFIG: setting custom console pr task log URL to %v", config[CustomConsolePRTaskLogKey])
 		setting.CustomConsolePRTaskLog = config[CustomConsolePRTaskLogKey]
 	}
-
-	s := setting.HubCatalogs["default"]
-	if s.URL != config[HubURLKey] {
-		logger.Infof("CONFIG: hub URL set to %v", config[HubURLKey])
-		s.URL = config[HubURLKey]
-	}
-	if s.Name != config[HubCatalogNameKey] {
-		logger.Infof("CONFIG: hub catalog name set to %v", config[HubCatalogNameKey])
-		s.Name = config[HubCatalogNameKey]
-	}
-	setting.HubCatalogs["default"] = s
 	return nil
 }
 
