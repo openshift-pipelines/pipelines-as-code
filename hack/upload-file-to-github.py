@@ -26,6 +26,7 @@ import json
 import os.path
 import re
 import urllib
+import time
 
 RE_RELEASE = re.compile(r"(\d+\.\d+)\.\d+")
 GIT_NAME = "Openshift Pipeline Release Team"
@@ -131,7 +132,6 @@ def upload_to_github(args):
         args.token, "GET", f"/repos/{args.owner_repository}/git/{args.to_ref}"
     )
     last_commit_sha = jeez["object"]["sha"]
-
     for entry in args.filename:
         left, dest = entry.split(":")
 
@@ -190,6 +190,8 @@ def upload_to_github(args):
             },
         )
         last_commit_sha = jeez["sha"]
+        print(f"Last commit SHA: {last_commit_sha}")
+        time.sleep(30)
 
         _, jeez = github_request(
             args.token,

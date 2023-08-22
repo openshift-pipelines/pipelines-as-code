@@ -8,7 +8,7 @@ metadata:
     pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/on-cel-expression: |
-      event == "push" && target_branch == "main" && ("***/*.go".pathChanged() || "config/***".pathChanged())
+      event == "push" && target_branch == "main" && ("***/*.go".pathChanged() || "config/***".pathChanged() || ".tekton/generate-coverage-release.yaml".pathChanged())
 spec:
   params:
     - name: repo_url
@@ -131,6 +131,14 @@ spec:
                     for i in $(git tag -l | grep '^v' | sort -rn); do echo -n "$i,"; done | sed 's/,$//'
                 )
                 set +x # Do not show TOKEN in logs
+                echo python hack/upload-file-to-github.py --message "'Release yaml generated from {{repo_url}}/commit/{{revision}}'" \
+                    --from-ref refs/heads/main --to-ref refs/heads/nightly \
+                    --owner-repository openshift-pipelines/pipelines-as-code --token \$HUB_TOKEN \
+                    -f release.k8s.yaml:release.k8s.yaml \
+                    -f release.yaml:release.yaml \
+                    -f nightly:docs/content/VERSION \
+                    -f ${allversions}:docs/content/ALLVERSIONS \
+                    -f "nightly-$ssa-$(date +%Y%m%d):pkg/params/version/version.txt"
                 python hack/upload-file-to-github.py --message "Release yaml generated from {{repo_url}}/commit/{{revision}}" \
                     --from-ref refs/heads/main --to-ref refs/heads/nightly \
                     --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} \

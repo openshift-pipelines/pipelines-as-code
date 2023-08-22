@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
 	kapierror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -26,6 +27,8 @@ const (
 )
 
 var providerTargets = []string{"github-app", "github-enterprise-app"}
+
+var defaultNamespaces = []string{"openshift-pipelines", pacNS}
 
 type bootstrapOpts struct {
 	forceInstallGosmee bool
@@ -261,17 +264,37 @@ func DetectPacInstallation(ctx context.Context, wantedNS string, run *params.Run
 		return installed, "", fmt.Errorf("could not detect Pipelines as Code configmap in %s namespace : %w, please reinstall", wantedNS, err)
 	}
 
-	cms, err := run.Clients.Kube.CoreV1().ConfigMaps("").List(ctx, metav1.ListOptions{
-		LabelSelector: configMapPacLabel,
-	})
+	cm, err := getConfigMap(ctx, run)
 	if err == nil {
-		for _, cm := range cms.Items {
-			if cm.Name == infoConfigMap {
-				return installed, cm.Namespace, nil
+		return installed, cm.Namespace, nil
+	}
+	return installed, "", fmt.Errorf("could not detect Pipelines as Code configmap on the cluster, please specify the namespace in which pac is installed: %s", err.Error())
+}
+
+func getConfigMap(ctx context.Context, run *params.Run) (*corev1.ConfigMap, error) {
+	var (
+		err       error
+		configMap *corev1.ConfigMap
+	)
+	for _, n := range defaultNamespaces {
+		configMap, err = run.Clients.Kube.CoreV1().ConfigMaps(n).Get(ctx, infoConfigMap, metav1.GetOptions{})
+		if err != nil {
+			if kapierror.IsNotFound(err) {
+				continue
 			}
+			if strings.Contains(err.Error(), fmt.Sprintf(`cannot get resource "configmaps" in API group "" in the namespace "%s"`, n)) {
+				continue
+			}
+			return nil, err
+		}
+		if configMap != nil {
+			break
 		}
 	}
-	return installed, "", fmt.Errorf("could not detect Pipelines as Code configmap on the cluster, please reinstall")
+	if configMap == nil {
+		return nil, fmt.Errorf("ConfigMap not found in default namespaces (\"openshift-pipelines\", \"pipelines-as-code\")")
+	}
+	return configMap, nil
 }
 
 func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {

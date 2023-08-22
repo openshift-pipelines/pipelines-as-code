@@ -189,6 +189,7 @@ type Settings struct {
 	HousekeepingFullRepackPeriod                          int               `json:"housekeeping_full_repack_period"`
 	HousekeepingGcPeriod                                  int               `json:"housekeeping_gc_period"`
 	HousekeepingIncrementalRepackPeriod                   int               `json:"housekeeping_incremental_repack_period"`
+	HousekeepingOptimizeRepositoryPeriod                  int               `json:"housekeeping_optimize_repository_period"`
 	ImportSources                                         []string          `json:"import_sources"`
 	InactiveProjectsDeleteAfterMonths                     int               `json:"inactive_projects_delete_after_months"`
 	InactiveProjectsMinSizeMB                             int               `json:"inactive_projects_min_size_mb"`
@@ -411,7 +412,7 @@ func (s *SettingsService) GetSettings(options ...RequestOptionFunc) (*Settings, 
 		return nil, resp, err
 	}
 
-	return as, resp, err
+	return as, resp, nil
 }
 
 // UpdateSettingsOptions represents the available UpdateSettings() options.
@@ -567,6 +568,7 @@ type UpdateSettingsOptions struct {
 	HousekeepingFullRepackPeriod                          *int               `url:"housekeeping_full_repack_period,omitempty" json:"housekeeping_full_repack_period,omitempty"`
 	HousekeepingGcPeriod                                  *int               `url:"housekeeping_gc_period,omitempty" json:"housekeeping_gc_period,omitempty"`
 	HousekeepingIncrementalRepackPeriod                   *int               `url:"housekeeping_incremental_repack_period,omitempty" json:"housekeeping_incremental_repack_period,omitempty"`
+	HousekeepingOptimizedepositoryPeriod                  *int               `url:"housekeeping_optimize_repository_period,omitempty" json:"housekeeping_optimize_repository_period,omitempty"`
 	ImportSources                                         *[]string          `url:"import_sources,omitempty" json:"import_sources,omitempty"`
 	InactiveProjectsDeleteAfterMonths                     *int               `url:"inactive_projects_delete_after_months,omitempty" json:"inactive_projects_delete_after_months,omitempty"`
 	InactiveProjectsMinSizeMB                             *int               `url:"inactive_projects_min_size_mb,omitempty" json:"inactive_projects_min_size_mb,omitempty"`
@@ -773,5 +775,5 @@ func (s *SettingsService) UpdateSettings(opt *UpdateSettingsOptions, options ...
 		return nil, resp, err
 	}
 
-	return as, resp, err
+	return as, resp, nil
 }
