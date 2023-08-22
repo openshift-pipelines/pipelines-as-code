@@ -64,3 +64,25 @@ spec:
   selector:
     matchLabels:
       app: pipelines-as-code-watcher
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: pipelines-as-code-controller-monitor
+  namespace: pipelines-as-code
+  labels:
+    app.kubernetes.io/version: "devel"
+    app.kubernetes.io/part-of: pipelines-as-code
+  annotations:
+    networkoperator.openshift.io/ignore-errors: ""
+spec:
+  endpoints:
+    - interval: 10s
+      port: http-metrics
+  jobLabel: app
+  namespaceSelector:
+    matchNames:
+    - pipelines-as-code
+  selector:
+    matchLabels:
+      app: pipelines-as-code-controller
