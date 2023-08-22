@@ -18,21 +18,28 @@ import (
 func (v *Provider) CheckPolicyAllowing(ctx context.Context, event *info.Event, allowedTeams []string) (bool, string) {
 	for _, team := range allowedTeams {
 		// TODO: caching
-		members, resp, err := v.Client.Teams.ListTeamMembersBySlug(ctx, event.Organization, team, &github.TeamListTeamMembersOptions{})
-		if resp.StatusCode == http.StatusNotFound {
-			// we explicitly disallow the policy when the team is not found
-			// maybe we should ignore it instead? i'd rather keep this explicit
-			// and conservative since being security related.
-			return false, fmt.Sprintf("team: %s is not found on the organization: %s", team, event.Organization)
-		}
-		if err != nil {
-			// probably a 500 or another api error, no need to try again and again with other teams
-			return false, fmt.Sprintf("error while getting team membership for user: %s in team: %s, error: %s", event.Sender, team, err.Error())
-		}
-		for _, member := range members {
-			if member.GetLogin() == event.Sender {
-				return true, fmt.Sprintf("allowing user: %s as a member of the team: %s", event.Sender, team)
+		opt := github.ListOptions{PerPage: v.paginedNumber}
+		for {
+			members, resp, err := v.Client.Teams.ListTeamMembersBySlug(ctx, event.Organization, team, &github.TeamListTeamMembersOptions{ListOptions: opt})
+			if resp.StatusCode == http.StatusNotFound {
+				// we explicitly disallow the policy when the team is not found
+				// maybe we should ignore it instead? i'd rather keep this explicit
+				// and conservative since being security related.
+				return false, fmt.Sprintf("team: %s is not found on the organization: %s", team, event.Organization)
 			}
+			if err != nil {
+				// probably a 500 or another api error, no need to try again and again with other teams
+				return false, fmt.Sprintf("error while getting team membership for user: %s in team: %s, error: %s", event.Sender, team, err.Error())
+			}
+			for _, member := range members {
+				if member.GetLogin() == event.Sender {
+					return true, fmt.Sprintf("allowing user: %s as a member of the team: %s", event.Sender, team)
+				}
+			}
+			if resp.NextPage == 0 {
+				break
+			}
+			opt.Page = resp.NextPage
 		}
 	}
 
@@ -115,6 +122,7 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 
 // aclCheck check if we are allowed to run the pipeline on that PR
 func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, error) {
+	// if the sender own the repo, then allow it to run
 	if rev.Organization == rev.Sender {
 		return true, nil
 	}
@@ -188,22 +196,30 @@ func (v *Provider) checkPullRequestForSameURL(ctx context.Context, runevent *inf
 // checkSenderOrgMembership Get sender user's organization. We can
 // only get the one that the user sets as public 🤷
 func (v *Provider) checkSenderOrgMembership(ctx context.Context, runevent *info.Event) (bool, error) {
-	users, resp, err := v.Client.Organizations.ListMembers(ctx, runevent.Organization,
-		&github.ListMembersOptions{})
-	// If we are 404 it means we are checking a repo owner and not a org so let's bail out with grace
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		return false, nil
+	opt := &github.ListMembersOptions{
+		ListOptions: github.ListOptions{PerPage: v.paginedNumber},
 	}
 
-	if err != nil {
-		return false, err
-	}
-	for _, v := range users {
-		if v.GetLogin() == runevent.Sender {
-			return true, nil
+	for {
+		users, resp, err := v.Client.Organizations.ListMembers(ctx, runevent.Organization, opt)
+		// If we are 404 it means we are checking a repo owner and not a org so let's bail out with grace
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return false, nil
 		}
-	}
 
+		if err != nil {
+			return false, err
+		}
+		for _, v := range users {
+			if v.GetLogin() == runevent.Sender {
+				return true, nil
+			}
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
 	return false, nil
 }
 
@@ -236,15 +252,24 @@ func (v *Provider) GetStringPullRequestComment(ctx context.Context, runevent *in
 		return nil, err
 	}
 
-	comments, _, err := v.Client.Issues.ListComments(ctx, runevent.Organization, runevent.Repository,
-		prNumber, &github.IssueListCommentsOptions{})
-	if err != nil {
-		return nil, err
+	opt := &github.IssueListCommentsOptions{
+		ListOptions: github.ListOptions{PerPage: v.paginedNumber},
 	}
-	for _, v := range comments {
-		if acl.MatchRegexp(reg, v.GetBody()) {
-			ret = append(ret, v)
+	for {
+		comments, resp, err := v.Client.Issues.ListComments(ctx, runevent.Organization, runevent.Repository,
+			prNumber, opt)
+		if err != nil {
+			return nil, err
 		}
+		for _, v := range comments {
+			if acl.MatchRegexp(reg, v.GetBody()) {
+				ret = append(ret, v)
+			}
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
 	}
 	return ret, nil
 }

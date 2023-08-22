@@ -30,6 +30,8 @@ const (
 	// we can perhaps do some autodetection with event.Provider.GHEURL and adding
 	// a raw into it
 	publicRawURLHost = "raw.githubusercontent.com"
+
+	defaultPaginedNumber = 100
 )
 
 var _ provider.Interface = (*Provider)(nil)
@@ -44,7 +46,7 @@ type Provider struct {
 	Run           *params.Run
 	RepositoryIDs []int64
 	repoSettings  *v1alpha1.Settings
-
+	paginedNumber int
 	skippedRun
 }
 
@@ -55,6 +57,7 @@ type skippedRun struct {
 
 func New() *Provider {
 	return &Provider{
+		paginedNumber: defaultPaginedNumber,
 		skippedRun: skippedRun{
 			mutex: &sync.Mutex{},
 		},
@@ -414,13 +417,20 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 // GetFiles get a files from pull request
 func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string, error) {
 	if runevent.TriggerTarget == "pull_request" {
-		repoCommit, _, err := v.Client.PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, &github.ListOptions{})
-		if err != nil {
-			return []string{}, err
-		}
+		opt := &github.ListOptions{PerPage: v.paginedNumber}
 		result := []string{}
-		for j := range repoCommit {
-			result = append(result, *repoCommit[j].Filename)
+		for {
+			repoCommit, resp, err := v.Client.PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, opt)
+			if err != nil {
+				return []string{}, err
+			}
+			for j := range repoCommit {
+				result = append(result, *repoCommit[j].Filename)
+			}
+			if resp.NextPage == 0 {
+				break
+			}
+			opt.Page = resp.NextPage
 		}
 		return result, nil
 	}
@@ -460,13 +470,20 @@ func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
+	opt := &github.ListOptions{PerPage: v.paginedNumber}
 	repoURLs := []string{}
-	repoList, _, err := v.Client.Apps.ListRepos(ctx, &github.ListOptions{})
-	if err != nil {
-		return []string{}, err
-	}
-	for i := range repoList.Repositories {
-		repoURLs = append(repoURLs, *repoList.Repositories[i].HTMLURL)
+	for {
+		repoList, resp, err := v.Client.Apps.ListRepos(ctx, opt)
+		if err != nil {
+			return []string{}, err
+		}
+		for i := range repoList.Repositories {
+			repoURLs = append(repoURLs, *repoList.Repositories[i].HTMLURL)
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
 	}
 	return repoURLs, nil
 }
