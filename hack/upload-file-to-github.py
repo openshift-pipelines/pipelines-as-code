@@ -132,7 +132,6 @@ def upload_to_github(args):
         args.token, "GET", f"/repos/{args.owner_repository}/git/{args.to_ref}"
     )
     last_commit_sha = jeez["object"]["sha"]
-
     for entry in args.filename:
         left, dest = entry.split(":")
 
@@ -191,7 +190,9 @@ def upload_to_github(args):
             },
         )
         last_commit_sha = jeez["sha"]
-        time.sleep(2)
+        print(f"Last commit SHA: {last_commit_sha}")
+        time.sleep(30)
+
         _, jeez = github_request(
             args.token,
             "PATCH",
