@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	ApplicationNameKey                    = "application-name"
-	HubURLKey                             = "hub-url"
-	HubCatalogNameKey                     = "hub-catalog-name"
+	ApplicationNameKey = "application-name"
+	HubURLKey          = "hub-url"
+	HubCatalogNameKey  = "hub-catalog-name"
+	//nolint: gosec
 	MaxKeepRunUpperLimitKey               = "max-keep-run-upper-limit"
 	DefaultMaxKeepRunsKey                 = "default-max-keep-runs"
 	RemoteTasksKey                        = "remote-tasks"
