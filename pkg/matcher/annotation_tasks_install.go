@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/hub"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -120,7 +121,8 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 	case fromHub && strings.Contains(uri, "://"): // if it contains ://, it is a remote custom catalog
 		split := strings.Split(uri, "://")
 		catalogID := split[0]
-		if _, ok := rt.Run.Info.Pac.HubCatalogs[catalogID]; !ok {
+		value, _ := rt.Run.Info.Pac.HubCatalogs.Load(catalogID)
+		if _, ok := rt.Run.Info.Pac.HubCatalogs.Load(catalogID); !ok {
 			rt.Logger.Infof("custom catalog %s is not found, skipping", catalogID)
 			return "", nil
 		}
@@ -129,7 +131,11 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 		if err != nil {
 			return "", err
 		}
-		rt.Logger.Infof("successfully fetched task %s from custom catalog HUB %s on URL %s", uri, catalogID, rt.Run.Info.Pac.HubCatalogs[catalogID].URL)
+		catalogValue, ok := value.(settings.HubCatalog)
+		if !ok {
+			return "", fmt.Errorf("could not get details for catalog name: %s", catalogID)
+		}
+		rt.Logger.Infof("successfully fetched task %s from custom catalog HUB %s on URL %s", uri, catalogID, catalogValue.URL)
 		return data, nil
 	case strings.Contains(uri, "/"): // if it contains a slash, it is a file inside a repository
 		var data string
@@ -156,7 +162,12 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 		if err != nil {
 			return "", err
 		}
-		rt.Logger.Infof("successfully fetched %s from default configured catalog HUB on URL: %s", uri, rt.Run.Info.Pac.HubCatalogs["default"].URL)
+		value, _ := rt.Run.Info.Pac.HubCatalogs.Load("default")
+		catalogValue, ok := value.(settings.HubCatalog)
+		if !ok {
+			return "", fmt.Errorf("could not get details for catalog name: %s", "default")
+		}
+		rt.Logger.Infof("successfully fetched %s from default configured catalog HUB on URL: %s", uri, catalogValue.URL)
 		return data, nil
 	}
 	return "", fmt.Errorf(`cannot find "%s" anywhere`, uri)

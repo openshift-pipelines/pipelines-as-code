@@ -2,6 +2,7 @@ package hub
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -16,18 +17,19 @@ func TestGetTask(t *testing.T) {
 	const testHubURL = "https://myprecioushub"
 	const testCatalogHubName = "tekton"
 
-	hubCatalogs := map[string]settings.HubCatalog{
-		"default": {
+	var hubCatalogs sync.Map
+	hubCatalogs.Store(
+		"default", settings.HubCatalog{
 			ID:   "default",
 			URL:  testHubURL,
 			Name: testCatalogHubName,
-		},
-		"anotherHub": {
+		})
+	hubCatalogs.Store(
+		"anotherHub", settings.HubCatalog{
 			ID:   "anotherHub",
 			URL:  testHubURL,
 			Name: testCatalogHubName,
-		},
-	}
+		})
 	tests := []struct {
 		name        string
 		task        string
@@ -120,7 +122,7 @@ func TestGetTask(t *testing.T) {
 				},
 				Info: info.Info{Pac: &info.PacOpts{
 					Settings: &settings.Settings{
-						HubCatalogs: hubCatalogs,
+						HubCatalogs: &hubCatalogs,
 					},
 				}},
 			}

@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"go.uber.org/zap"
 )
@@ -70,7 +71,7 @@ type Settings struct {
 	ApplicationName string
 	// HubURL                             string
 	// HubCatalogName                     string
-	HubCatalogs                        map[string]HubCatalog
+	HubCatalogs                        *sync.Map
 	RemoteTasks                        bool
 	MaxKeepRunsUpperLimit              int
 	DefaultMaxKeepRuns                 int
@@ -98,7 +99,7 @@ type Settings struct {
 func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[string]string) error {
 	// pass through defaulting
 	SetDefaults(config)
-	setting.HubCatalogs = gethHubCatalogs(logger, setting, config)
+	setting.HubCatalogs = getHubCatalogs(logger, config)
 
 	// validate fields
 	if err := Validate(config); err != nil {
@@ -128,16 +129,19 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 		setting.SecretGhAppTokenScopedExtraRepos = secretGHAppScopedExtraRepos
 	}
 
-	catalogDefault := setting.HubCatalogs["default"]
-	if catalogDefault.URL != config[HubURLKey] {
-		logger.Infof("CONFIG: hub URL set to %v", config[HubURLKey])
-		catalogDefault.URL = config[HubURLKey]
+	value, _ := setting.HubCatalogs.Load("default")
+	catalogDefault, ok := value.(HubCatalog)
+	if ok {
+		if catalogDefault.URL != config[HubURLKey] {
+			logger.Infof("CONFIG: hub URL set to %v", config[HubURLKey])
+			catalogDefault.URL = config[HubURLKey]
+		}
+		if catalogDefault.Name != config[HubCatalogNameKey] {
+			logger.Infof("CONFIG: hub catalog name set to %v", config[HubCatalogNameKey])
+			catalogDefault.Name = config[HubCatalogNameKey]
+		}
 	}
-	if catalogDefault.Name != config[HubCatalogNameKey] {
-		logger.Infof("CONFIG: hub catalog name set to %v", config[HubCatalogNameKey])
-		catalogDefault.Name = config[HubCatalogNameKey]
-	}
-	setting.HubCatalogs["default"] = catalogDefault
+	setting.HubCatalogs.Store("default", catalogDefault)
 	// TODO: detect changes in extra hub catalogs
 
 	remoteTask := StringToBool(config[RemoteTasksKey])
@@ -222,16 +226,6 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 		setting.CustomConsolePRTaskLog = config[CustomConsolePRTaskLogKey]
 	}
 
-	s := setting.HubCatalogs["default"]
-	if s.URL != config[HubURLKey] {
-		logger.Infof("CONFIG: hub URL set to %v", config[HubURLKey])
-		s.URL = config[HubURLKey]
-	}
-	if s.Name != config[HubCatalogNameKey] {
-		logger.Infof("CONFIG: hub catalog name set to %v", config[HubCatalogNameKey])
-		s.Name = config[HubCatalogNameKey]
-	}
-	setting.HubCatalogs["default"] = s
 	return nil
 }
 

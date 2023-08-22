@@ -23,11 +23,10 @@ func TestGetCatalogHub(t *testing.T) {
 	config["catalog-1-url"] = "https://foo.com"
 	config["catalog-1-name"] = "https://foo.com"
 	tests := []struct {
-		name             string
-		config           map[string]string
-		numCatalogs      int
-		wantLog          string
-		existingSettings *Settings
+		name        string
+		config      map[string]string
+		numCatalogs int
+		wantLog     string
 	}{
 		{
 			name:        "good/default catalog",
@@ -80,11 +79,13 @@ func TestGetCatalogHub(t *testing.T) {
 			if tt.config == nil {
 				tt.config = map[string]string{}
 			}
-			if tt.existingSettings == nil {
-				tt.existingSettings = &Settings{}
-			}
-			catalogs := gethHubCatalogs(fakelogger, tt.existingSettings, tt.config)
-			assert.Equal(t, len(catalogs), tt.numCatalogs)
+			catalogs := getHubCatalogs(fakelogger, tt.config)
+			length := 0
+			catalogs.Range(func(_, _ interface{}) bool {
+				length++
+				return true
+			})
+			assert.Equal(t, length, tt.numCatalogs)
 			if tt.wantLog != "" {
 				assert.Assert(t, len(catcher.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", catcher)
 			}
