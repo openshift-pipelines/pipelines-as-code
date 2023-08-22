@@ -1,6 +1,9 @@
 name: Create and publish a Docker image to ghcr
 
-on: ["push"]
+on:
+  push:
+    paths:
+      - "**.go"
 
 env:
   REGISTRY: ghcr.io
