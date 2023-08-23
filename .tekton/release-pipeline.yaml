@@ -72,25 +72,26 @@ spec:
                     exit
                 }
                 stable_tag=${version%.*}.x
+                allversions=$(echo -n "nightly,stable,";for i in $(git tag -l|grep '^v'|sort -rn);do echo -n "$i,";done|sed 's/,$//')
+                git config --global user.email "pac-dev@redhat.com"
+                git config --global user.name "Pipelines as Code CI Robot"
+
                 for target in release-${version} release-${stable_tag} stable;do
-                  export PAC_VERSION=${version} TARGET_BRANCH=${target//release-}
+                  export PAC_VERSION=${version}
+                  export TARGET_BRANCH=${target//release-}
                   ./hack/generate-releaseyaml.sh > /tmp/release.k8s.yaml
                   env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > /tmp/release.yaml
                   msg="pac release ${version} on branch ${target}"
-                  # fetch all versions and generate a file for the dropdown menu to select the version documentation
-                  allversions=$(echo -n "nightly,stable,";for i in $(git tag -l|grep '^v'|sort -rn);do echo -n "$i,";done|sed 's/,$//')
-                  set +x
-                  echo python hack/upload-file-to-github.py \
-                        --message "Release yaml generated for ${msg}" \
-                        --owner-repository openshift-pipelines/pipelines-as-code --token "TOKEN" \
-                        --to-ref=refs/heads/${target} --from-ref=refs/tags/${version} \
-                        -f release.k8s.yaml:release.k8s.yaml \
-                        -f release.yaml:release.yaml \
-                        -f ${TARGET_BRANCH}:docs/content/VERSION \
-                        -f ${allversions}:docs/content/ALLVERSIONS \
-                        -f "${version}:pkg/params/version/version.txt"
-                  python hack/upload-file-to-github.py --message "Release yaml generated for ${msg}" --owner-repository openshift-pipelines/pipelines-as-code --token ${HUB_TOKEN} --to-ref=refs/heads/${target} --from-ref=refs/tags/${version} -f /tmp/release.k8s.yaml:release.k8s.yaml -f /tmp/release.yaml:release.yaml -f ${TARGET_BRANCH}:docs/content/VERSION -f "${version}:pkg/params/version/version.txt"
+                  git checkout -B $target {{ revision }}
+                  echo ${TARGET_BRANCH} > docs/content/VERSION
+                  echo ${allversions} > docs/content/ALLVERSIONS
+                  echo "$version" > pkg/params/version/version.txt
+                  git add release.yaml release.k8s.yaml docs/content/VERSION docs/content/ALLVERSIONS pkg/params/version/version.txt
+                  git commit -m "Release yaml generated from {{repo_url}}/commit/{{revision}} for release ${version}"
+                  echo git push "https://git:\$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }} refs/heads/${target}"
+                  git push --force "https://git:$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }} refs/heads/${target}"
                   set -x
+                  git checkout -
                 done
       - name: gorelease
         runAfter:
