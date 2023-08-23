@@ -155,10 +155,9 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 		"Filename, directory, or URL to files to use to create the resource")
 
 	cmd.Flags().StringSliceVarP(&skipInlining, "skip", "s", filenames,
-		"skip inlining")
+		"skip inlining this task and use them as is (must be present in namespace to be able to use them). multiple values are supported")
 
-	cmd.Flags().BoolVar(&noSecret, "no-secret", false,
-		"skip generating or asking for secrets")
+	cmd.Flags().BoolVar(&noSecret, "no-secret", false, "don't ask if you would like to generate a secret when git_auth_secret is found in the template")
 
 	cmd.Flags().BoolVar(&noGenerateName, "no-generate-name", false,
 		"don't automatically generate a GenerateName for pipelinerun uniqueness")
@@ -169,11 +168,6 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 	cmd.Flags().BoolVarP(&asv1beta1, "v1beta1", "B", false, "output as tekton v1beta1")
 
 	cmd.Flags().StringVarP(&providerToken, "providerToken", "t", "", "use this token to generate the git-auth secret,\n you can set the environment PAC_PROVIDER_TOKEN to have this set automatically")
-	err := run.Info.Pac.AddFlags(cmd)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	return cmd
 }
 
