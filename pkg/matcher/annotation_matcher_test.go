@@ -1199,3 +1199,109 @@ func Test_getAnnotationValues(t *testing.T) {
 		})
 	}
 }
+
+func TestBranchMatch(t *testing.T) {
+	tests := []struct {
+		name       string
+		baseBranch string
+		prunBranch string
+		output     bool
+	}{
+		{
+			name:       "both names",
+			baseBranch: "main",
+			prunBranch: "main",
+			output:     true,
+		},
+		{
+			name:       "baseBranch refs/head",
+			baseBranch: "refs/heads/main",
+			prunBranch: "main",
+			output:     true,
+		},
+		{
+			name:       "prunBranch refs/head",
+			baseBranch: "main",
+			prunBranch: "refs/heads/main",
+			output:     true,
+		},
+		{
+			name:       "both refs/heads",
+			baseBranch: "refs/heads/main",
+			prunBranch: "refs/heads/main",
+			output:     true,
+		},
+		{
+			name:       "baseBranch refs/tags",
+			baseBranch: "refs/tags/v0.20.0",
+			prunBranch: "main",
+			output:     false,
+		},
+		{
+			name:       "prunBranch refs/tags",
+			baseBranch: "main",
+			prunBranch: "refs/tags/*",
+			output:     false,
+		},
+		{
+			name:       "baseBranch refs/tags and prunBranch refs/head",
+			baseBranch: "refs/tags/v0.20.0",
+			prunBranch: "refs/heads/main",
+			output:     false,
+		},
+		{
+			name:       "baseBranch refs/head and prunBranch refs/tags",
+			baseBranch: "refs/heads/main",
+			prunBranch: "refs/tags/*",
+			output:     false,
+		},
+		{
+			name:       "both refs/tags",
+			baseBranch: "refs/tags/v0.20.0",
+			prunBranch: "refs/tags/*",
+			output:     true,
+		},
+		{
+			name:       "different names",
+			baseBranch: "main",
+			prunBranch: "test",
+			output:     false,
+		},
+		{
+			name:       "base value of path is same",
+			baseBranch: "refs/heads/foo/test",
+			prunBranch: "test",
+			output:     false,
+		},
+		{
+			name:       "base value of path is same opposite",
+			baseBranch: "test",
+			prunBranch: "refs/heads/foo/test",
+			output:     false,
+		},
+		{
+			name:       "base value of path is same in both",
+			baseBranch: "refs/heads/bar/test",
+			prunBranch: "refs/heads/foo/test",
+			output:     false,
+		},
+		{
+			name:       "different refs/tags",
+			baseBranch: "refs/tags/v0.20.0",
+			prunBranch: "refs/tags/v0.19.0",
+			output:     false,
+		},
+		{
+			name:       "different refs/heads",
+			baseBranch: "refs/heads/main",
+			prunBranch: "refs/heads/mains",
+			output:     false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := branchMatch(tt.prunBranch, tt.baseBranch)
+			assert.Equal(t, got, tt.output)
+		})
+	}
+}
