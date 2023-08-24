@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
+	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/logs"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
@@ -328,4 +329,27 @@ func CheckIfPipelineRunsCancelled(t *testing.T, topts *TestOpts) {
 		time.Sleep(5 * time.Second)
 		i++
 	}
+}
+
+func GetStandardParams(t *testing.T, topts *TestOpts, eventType string) (repoURL, sourceURL, sourceBranch, targetBranch string) {
+	t.Helper()
+	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
+		LabelSelector: keys.EventType + "=" + eventType,
+	})
+	assert.NilError(t, err)
+	assert.Equal(t, len(prs.Items), 1, "should have only one "+eventType+" pipelinerun")
+
+	out, err := tlogs.GetPodLog(context.Background(), topts.ParamsRun.Clients.Kube.CoreV1(), topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s",
+		prs.Items[0].Name), "step-test-standard-params-value")
+	assert.NilError(t, err)
+	assert.Assert(t, out != "")
+
+	outputDataForPR := strings.Split(out, "--")
+
+	repoURL = outputDataForPR[0]
+	sourceURL = strings.TrimPrefix(outputDataForPR[1], "\n")
+	sourceBranch = strings.TrimPrefix(outputDataForPR[2], "\n")
+	targetBranch = strings.TrimPrefix(outputDataForPR[3], "\n")
+
+	return repoURL, sourceURL, sourceBranch, targetBranch
 }

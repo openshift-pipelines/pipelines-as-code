@@ -22,22 +22,21 @@ import (
 	tknpacgenerate "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/generate"
 	tknpaclist "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/list"
 	tknpacresolve "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
-	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
-	"gopkg.in/yaml.v2"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	tknpactest "github.com/openshift-pipelines/pipelines-as-code/test/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/names"
+	"gopkg.in/yaml.v2"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -774,6 +773,54 @@ func TestGiteaClusterTasks(t *testing.T) {
 
 	topts.CheckForStatus = "success"
 	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "", true)
+}
+
+func TestGiteaStandardParamsCheckForPushAndPullEvent(t *testing.T) {
+	var (
+		repoURL      string
+		sourceURL    string
+		sourceBranch string
+		targetBranch string
+	)
+	topts := &tgitea.TestOpts{
+		Regexp:      successRegexp,
+		TargetEvent: "pull_request, push",
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-standard-params-display.yaml",
+		},
+		CheckForStatus: "success",
+		ExpectEvents:   false,
+	}
+	defer tgitea.TestPR(t, topts)()
+	merged, resp, err := topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+		gitea.MergePullRequestOption{
+			Title: "Merged with Panache",
+			Style: "merge",
+		},
+	)
+	assert.NilError(t, err)
+	assert.Assert(t, resp.StatusCode < 400, resp)
+	assert.Assert(t, merged)
+	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
+	time.Sleep(5 * time.Second)
+
+	// get standard parameter info for pull_request
+	_, _, sourceBranch, targetBranch = tgitea.GetStandardParams(t, topts, "pull_request")
+	// sourceBranch and targetBranch are different for pull_request
+	if sourceBranch == targetBranch {
+		assert.Error(t, fmt.Errorf(`source_branch %s is same as target_branch %s for pull_request`, sourceBranch, targetBranch), fmt.Sprintf(`source_branch %s should be different from target_branch %s for pull_request`, sourceBranch, targetBranch))
+	}
+
+	// get standard parameter info for push
+	repoURL, sourceURL, sourceBranch, targetBranch = tgitea.GetStandardParams(t, topts, "push")
+	// sourceBranch and targetBranch are same for push
+	if sourceBranch != targetBranch {
+		assert.Error(t, fmt.Errorf(`source_branch %s is different from target_branch %s for push`, sourceBranch, targetBranch), fmt.Sprintf(`source_branch %s is same as target_branch %s for push`, sourceBranch, targetBranch))
+	}
+	// sourceURL and repoURL are same for push
+	if repoURL != sourceURL {
+		assert.Error(t, fmt.Errorf(`source_url %s is different from repo_url %s for push`, repoURL, sourceURL), fmt.Sprintf(`source_url %s is same as repo_url %s for push`, repoURL, sourceURL))
+	}
 }
 
 // Local Variables:
