@@ -19,6 +19,7 @@ func TestMakeStandardParamsFromEvent(t *testing.T) {
 		EventType:    "pull_request",
 		Sender:       "SENDER",
 		URL:          "https://paris.com",
+		HeadURL:      "https://india.com",
 	}
 
 	result := map[string]string{
@@ -26,6 +27,7 @@ func TestMakeStandardParamsFromEvent(t *testing.T) {
 		"repo_name":        "repo",
 		"repo_owner":       "org",
 		"repo_url":         "https://paris.com",
+		"source_url":       "https://india.com",
 		"revision":         "1234567890",
 		"sender":           "sender",
 		"source_branch":    "foo",

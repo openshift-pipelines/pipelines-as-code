@@ -777,6 +777,54 @@ func TestGiteaClusterTasks(t *testing.T) {
 	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "", true)
 }
 
+func TestGiteaStandardParamsCheckForPushAndPullEvent(t *testing.T) {
+	var (
+		repoURL      string
+		sourceURL    string
+		sourceBranch string
+		targetBranch string
+	)
+	topts := &tgitea.TestOpts{
+		Regexp:      successRegexp,
+		TargetEvent: "pull_request, push",
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-standard-params-display.yaml",
+		},
+		CheckForStatus: "success",
+		ExpectEvents:   false,
+	}
+	defer tgitea.TestPR(t, topts)()
+	merged, resp, err := topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+		gitea.MergePullRequestOption{
+			Title: "Merged with Panache",
+			Style: "merge",
+		},
+	)
+	assert.NilError(t, err)
+	assert.Assert(t, resp.StatusCode < 400, resp)
+	assert.Assert(t, merged)
+	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
+	time.Sleep(5 * time.Second)
+
+	// get standard parameter info for pull_request
+	_, _, sourceBranch, targetBranch = tgitea.GetStandardParams(t, topts, "pull_request")
+	// sourceBranch and targetBranch are different for pull_request
+	if sourceBranch == targetBranch {
+		assert.Error(t, fmt.Errorf(`source_branch %s is same as target_branch %s for pull_request`, sourceBranch, targetBranch), fmt.Sprintf(`source_branch %s should be different from target_branch %s for pull_request`, sourceBranch, targetBranch))
+	}
+
+	// get standard parameter info for push
+	repoURL, sourceURL, sourceBranch, targetBranch = tgitea.GetStandardParams(t, topts, "push")
+	// sourceBranch and targetBranch are same for push
+	if sourceBranch != targetBranch {
+		assert.Error(t, fmt.Errorf(`source_branch %s is different from target_branch %s for push`, sourceBranch, targetBranch), fmt.Sprintf(`source_branch %s is same as target_branch %s for push`, sourceBranch, targetBranch))
+	}
+	// sourceURL and repoURL are same for push
+	if repoURL != sourceURL {
+		assert.Error(t, fmt.Errorf(`source_url %s is different from repo_url %s for push`, repoURL, sourceURL), fmt.Sprintf(`source_url %s is same as repo_url %s for push`, repoURL, sourceURL))
+	}
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -run TestGiteaPush ."
 // End:
