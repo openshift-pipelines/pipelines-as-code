@@ -24,6 +24,7 @@ const (
 	reValidateTag = `^\[(.*)\]$|^[^[\]\s]*$`
 )
 
+// prunBranch is value from annotations and baseBranch is event.Base value from event
 func branchMatch(prunBranch, baseBranch string) bool {
 	// Helper function to match glob pattern
 	matchGlob := func(pattern, branch string) bool {
@@ -31,25 +32,30 @@ func branchMatch(prunBranch, baseBranch string) bool {
 		return g.Match(branch)
 	}
 
+	// Case: target is refs/heads/..
 	if strings.HasPrefix(prunBranch, "refs/heads/") {
-		// Case: target is refs/heads/..
 		ref := baseBranch
-		if !strings.HasPrefix(baseBranch, "refs/heads/") {
-			// If base is without refs/heads/ prefix, add it
+		if !strings.HasPrefix(baseBranch, "refs/heads/") && !strings.HasPrefix(baseBranch, "refs/tags/") {
+			// If base is without refs/heads/.. and not refs/tags/.. prefix, add it
 			ref = "refs/heads/" + baseBranch
 		}
-		// Match the prunBranch pattern with the modified baseBranch
 		return matchGlob(prunBranch, ref)
 	}
 
-	// Case: base is refs/heads/..
-	prunRef := prunBranch
-	if !strings.HasPrefix(prunBranch, "refs/heads/") {
-		// If prunBranch is without refs/heads/ prefix, add it
-		prunRef = "refs/heads/" + prunBranch
+	// Case: target is not refs/heads/.. and not refs/tags/..
+	if !strings.HasPrefix(prunBranch, "refs/heads/") && !strings.HasPrefix(prunBranch, "refs/tags/") {
+		prunRef := "refs/heads/" + prunBranch
+		ref := baseBranch
+		if !strings.HasPrefix(baseBranch, "refs/heads/") && !strings.HasPrefix(baseBranch, "refs/tags/") {
+			// If base is without refs/heads/.. and not refs/tags/.. prefix, add it
+			ref = "refs/heads/" + baseBranch
+		}
+		return matchGlob(prunRef, ref)
 	}
+
 	// Match the prunRef pattern with the baseBranch
-	return matchGlob(prunRef, baseBranch)
+	// this will cover the scenarios of match globs like refs/tags/0.* and any other if any
+	return matchGlob(prunBranch, baseBranch)
 }
 
 // TODO: move to another file since it's common to all annotations_* files
