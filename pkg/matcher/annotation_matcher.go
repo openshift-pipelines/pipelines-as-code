@@ -25,31 +25,31 @@ const (
 )
 
 func branchMatch(prunBranch, baseBranch string) bool {
-	// Helper function to match glob pattern
-	matchGlob := func(pattern, branch string) bool {
-		g := glob.MustCompile(pattern)
-		return g.Match(branch)
-	}
-
+	// if target is refs/heads/.. and base is without ref (for pullRequest action)
 	if strings.HasPrefix(prunBranch, "refs/heads/") {
-		// Case: target is refs/heads/..
 		ref := baseBranch
 		if !strings.HasPrefix(baseBranch, "refs/heads/") {
-			// If base is without refs/heads/ prefix, add it
 			ref = "refs/heads/" + baseBranch
 		}
-		// Match the prunBranch pattern with the modified baseBranch
-		return matchGlob(prunBranch, ref)
+		g := glob.MustCompile(prunBranch)
+		if g.Match(ref) {
+			return true
+		}
+	} else {
+		// if base is refs/heads/.. and target is without ref (for push request action)
+		prunRef := prunBranch
+		if !strings.HasPrefix(prunBranch, "refs/heads/") {
+			prunRef = "refs/heads/" + prunBranch
+		}
+		g := glob.MustCompile(prunRef)
+		if g.Match(baseBranch) {
+			return true
+		}
 	}
 
-	// Case: base is refs/heads/..
-	prunRef := prunBranch
-	if !strings.HasPrefix(prunBranch, "refs/heads/") {
-		// If prunBranch is without refs/heads/ prefix, add it
-		prunRef = "refs/heads/" + prunBranch
-	}
-	// Match the prunRef pattern with the baseBranch
-	return matchGlob(prunRef, baseBranch)
+	// match globs like refs/tags/0.*
+	g := glob.MustCompile(prunBranch)
+	return g.Match(baseBranch)
 }
 
 // TODO: move to another file since it's common to all annotations_* files
