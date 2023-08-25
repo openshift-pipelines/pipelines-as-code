@@ -79,8 +79,8 @@ spec:
                 for target in release-${version} release-${stable_tag} stable;do
                   export PAC_VERSION=${version}
                   export TARGET_BRANCH=${target//release-}
-                  ./hack/generate-releaseyaml.sh > /tmp/release.k8s.yaml
-                  env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > /tmp/release.yaml
+                  ./hack/generate-releaseyaml.sh > release.k8s.yaml
+                  env TARGET_OPENSHIFT=true bash hack/generate-releaseyaml.sh > release.yaml
                   msg="pac release ${version} on branch ${target}"
                   git checkout -B $target {{ revision }}
                   echo ${TARGET_BRANCH} > docs/content/VERSION
