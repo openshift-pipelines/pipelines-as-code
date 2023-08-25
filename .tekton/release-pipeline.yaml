@@ -89,7 +89,7 @@ spec:
                   git add release.yaml release.k8s.yaml docs/content/VERSION docs/content/ALLVERSIONS pkg/params/version/version.txt
                   git commit -m "Release yaml generated from {{repo_url}}/commit/{{revision}} for release ${version}"
                   echo git push "https://git:\$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }} refs/heads/${target}"
-                  git push --force "https://git:$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }} refs/heads/${target}"
+                  git push --force https://git:$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }} refs/heads/${target}
                   set -x
                   git checkout -
                 done
