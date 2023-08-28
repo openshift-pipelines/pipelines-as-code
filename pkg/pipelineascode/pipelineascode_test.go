@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/go-github/v53/github"
@@ -35,6 +36,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
+)
+
+const (
+	testHubURL         = "https://mybelovedhub"
+	testCatalogHubName = "tekton"
 )
 
 func replyString(mux *http.ServeMux, url, body string) {
@@ -95,6 +101,19 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 }
 
 func TestRun(t *testing.T) {
+	var hubCatalogs sync.Map
+	hubCatalogs.Store(
+		"default", settings.HubCatalog{
+			ID:   "default",
+			URL:  testHubURL,
+			Name: testCatalogHubName,
+		})
+	hubCatalogs.Store(
+		"anotherHub", settings.HubCatalog{
+			ID:   "anotherHub",
+			URL:  testHubURL,
+			Name: testCatalogHubName,
+		})
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	tests := []struct {
@@ -483,6 +502,7 @@ func TestRun(t *testing.T) {
 					Pac: &info.PacOpts{
 						Settings: &settings.Settings{
 							SecretAutoCreation: true,
+							HubCatalogs:        &hubCatalogs,
 						},
 					},
 				},
