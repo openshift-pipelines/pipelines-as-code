@@ -77,7 +77,14 @@ func detectGHERawURL(event *info.Event, taskHost string) bool {
 // splitGithubURL Take a Github url and split it with org/repo path ref, supports rawURL
 func splitGithubURL(event *info.Event, uri string) (string, string, string, string, error) {
 	pURL, err := url.Parse(uri)
-	splitted := strings.Split(pURL.Path, "/")
+	if err != nil {
+		return "", "", "", "", fmt.Errorf("URL %s does not seem to be a proper provider url: %w", uri, err)
+	}
+	path := pURL.Path
+	if pURL.RawPath != "" {
+		path = pURL.RawPath
+	}
+	splitted := strings.Split(path, "/")
 	if len(splitted) <= 3 {
 		return "", "", "", "", fmt.Errorf("URL %s does not seem to be a proper provider url: %w", uri, err)
 	}
@@ -95,6 +102,19 @@ func splitGithubURL(event *info.Event, uri string) (string, string, string, stri
 		spPath = strings.Join(splitted[5:], "/")
 	default:
 		return "", "", "", "", fmt.Errorf("cannot recognize task as a Github URL to fetch: %s", uri)
+	}
+	// url decode the org, repo, ref and path
+	if spRef, err = url.QueryUnescape(spRef); err != nil {
+		return "", "", "", "", fmt.Errorf("cannot decode ref: %w", err)
+	}
+	if spPath, err = url.QueryUnescape(spPath); err != nil {
+		return "", "", "", "", fmt.Errorf("cannot decode path: %w", err)
+	}
+	if spOrg, err = url.QueryUnescape(spOrg); err != nil {
+		return "", "", "", "", fmt.Errorf("cannot decode org: %w", err)
+	}
+	if spRepo, err = url.QueryUnescape(spRepo); err != nil {
+		return "", "", "", "", fmt.Errorf("cannot decode repo: %w", err)
 	}
 	return spOrg, spRepo, spPath, spRef, nil
 }
