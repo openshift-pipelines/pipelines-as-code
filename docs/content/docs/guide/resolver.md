@@ -139,12 +139,11 @@ and the remote HTTP URLs is a referenced GitHub "blob" URL:
 
 <https://github.com/organization/repository/blob/mainbranch/path/file>
 
-or a GitHub rawURL (rawurl reference is only working on public GitHub):
+if the remote HTTP url has a slash (/) in the branch name you will need to html encode with the `%2F` character, eg:
 
-<https://raw.githubusercontent.com/organization/repository/mainbranch/path/file>
+<https://github.com/organization/repository/blob/feature%2Fmainbranch/path/file>
 
-It will be able to fetch the files from that private repository with the GitHub app token.
-
+It will be use the GitHub API with the generated token to fetch that file.
 This allows you to reference a task or a pipeline from a private repository easily.
 
 GitHub app token are scoped to the owner or organization where the repository is located.
