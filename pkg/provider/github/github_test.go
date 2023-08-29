@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -33,6 +34,71 @@ import (
 	"knative.dev/pkg/ptr"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func TestGetTaskURI(t *testing.T) {
+	tests := []struct {
+		name       string
+		wantErr    bool
+		disallowed bool
+		eventURL   string
+		uri        string
+		ret        string
+	}{
+		{
+			name:     "Get Task URI",
+			eventURL: "https://foo.com/owner/repo/pull/1",
+			uri:      "https://foo.com/owner/repo/blob/main/file",
+			wantErr:  false,
+			ret:      "hello world",
+		},
+		{
+			name:       "not comparable host",
+			eventURL:   "https://foo/owner/repo/pull/1",
+			uri:        "https://bar/owner/repo/blob/main/file",
+			disallowed: true,
+		},
+		{
+			name:       "bad uri",
+			eventURL:   "https://foo/owner/repo/pull/1",
+			uri:        "https://foo/owner/aooaooadoodao",
+			disallowed: true,
+			wantErr:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sha := "sha"
+			content := base64.StdEncoding.EncodeToString([]byte(tt.ret))
+			ctx, _ := rtesting.SetupFakeContext(t)
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+			provider := &Provider{Client: fakeclient}
+			event := info.NewEvent()
+			event.HeadBranch = "main"
+			event.URL = tt.eventURL
+			mux.HandleFunc("/repos/owner/repo/contents/file", func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(rw, `{"sha": "%s"}`, sha)
+			})
+			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/blobs/%s", "owner", "repo", sha), func(rw http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(rw, `{"content": "%s"}`, content)
+			})
+			allowed, content, err := provider.GetTaskURI(ctx, nil, event, tt.uri)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetTaskURI() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.disallowed && allowed {
+				t.Errorf("GetTaskURI() is allowed and we want it to be disallowed")
+				return
+			} else if !tt.disallowed {
+				return
+			}
+			if content != tt.ret {
+				t.Errorf("GetTaskURI() got = %v, want %v", content, tt.ret)
+			}
+		})
+	}
+}
 
 func TestGithubSplitURL(t *testing.T) {
 	tests := []struct {

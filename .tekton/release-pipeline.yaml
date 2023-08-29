@@ -72,11 +72,16 @@ spec:
                     exit
                 }
                 stable_tag=${version%.*}.x
-                allversions=$(echo -n "nightly,stable,";for i in $(git tag -l|grep '^v'|sort -rn);do echo -n "$i,";done|sed 's/,$//')
+                alltags=$(for i in $(git tag -l|grep '^v'|sort -rn);do echo -n "$i,";done|sed 's/,$//'))
+                allversions="nightly,stable,$alltags"
                 git config --global user.email "pac-dev@redhat.com"
                 git config --global user.name "Pipelines as Code CI Robot"
 
-                for target in release-${version} release-${stable_tag} stable;do
+                target_tags="release-${version} release-${stable_tag}"
+                # if the current version is higher than all the other ones then tag it as the current stable
+                pip3 install packaging
+                [[ $(./hack/compare-versions.py $version $alltags) == true ]] && target_tags="${target_tags} stable"
+                for target in ${target_tags};do
                   export PAC_VERSION=${version}
                   export TARGET_BRANCH=${target//release-}
                   ./hack/generate-releaseyaml.sh > release.k8s.yaml
