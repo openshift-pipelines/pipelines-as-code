@@ -126,6 +126,7 @@ func (gl *gitLabConfig) create() error {
 		MergeRequestsEvents:   gitlab.Bool(true),
 		NoteEvents:            gitlab.Bool(true),
 		PushEvents:            gitlab.Bool(true),
+		TagPushEvents:         gitlab.Bool(true),
 		Token:                 gitlab.String(gl.webhookSecret),
 		URL:                   gitlab.String(gl.controllerURL),
 	}

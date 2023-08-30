@@ -105,6 +105,13 @@ func TestProvider_Detect(t *testing.T) {
 			isGL:       true,
 			processReq: true,
 		},
+		{
+			name:       "tag event",
+			event:      sample.PushEventAsJSON(true),
+			eventType:  gitlab.EventTypeTagPush,
+			isGL:       true,
+			processReq: true,
+		},
 	}
 
 	for _, tt := range tests {

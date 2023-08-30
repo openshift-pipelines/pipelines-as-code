@@ -95,7 +95,19 @@ func TestParsePayload(t *testing.T) {
 				Repository:    "project",
 			},
 		},
-
+		{
+			name: "tag event",
+			args: args{
+				event:   gitlab.EventTypeTagPush,
+				payload: sample.PushEventAsJSON(true),
+			},
+			want: &info.Event{
+				EventType:     "Tag Push",
+				TriggerTarget: "push",
+				Organization:  "hello-this-is-me-ze",
+				Repository:    "project",
+			},
+		},
 		{
 			name: "note event",
 			args: args{

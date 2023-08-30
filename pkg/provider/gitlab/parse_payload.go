@@ -56,6 +56,26 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.TriggerTarget = "pull_request"
 		processedEvent.SourceProjectID = gitEvent.ObjectAttributes.SourceProjectID
 		processedEvent.TargetProjectID = gitEvent.Project.ID
+	case *gitlab.TagEvent:
+		processedEvent = info.NewEvent()
+		processedEvent.Sender = gitEvent.UserUsername
+		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
+		processedEvent.URL = gitEvent.Project.WebURL
+		processedEvent.SHA = gitEvent.Commits[0].ID
+		processedEvent.SHAURL = gitEvent.Commits[0].URL
+		processedEvent.SHATitle = gitEvent.Commits[0].Title
+		processedEvent.HeadBranch = gitEvent.Ref
+		processedEvent.BaseBranch = gitEvent.Ref
+		processedEvent.HeadURL = gitEvent.Project.WebURL
+		processedEvent.BaseURL = processedEvent.HeadURL
+		processedEvent.TriggerTarget = "push"
+		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
+		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
+		v.targetProjectID = gitEvent.ProjectID
+		v.sourceProjectID = gitEvent.ProjectID
+		v.userID = gitEvent.UserID
+		processedEvent.SourceProjectID = gitEvent.ProjectID
+		processedEvent.TargetProjectID = gitEvent.ProjectID
 	case *gitlab.PushEvent:
 		if len(gitEvent.Commits) == 0 {
 			return nil, fmt.Errorf("no commits attached to this push event")
