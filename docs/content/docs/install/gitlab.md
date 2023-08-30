@@ -89,6 +89,7 @@ $ tkn pac create repo
     * Merge request Events
     * Push Events
     * Comments
+    * Tag push events
 
   * Click on **Add webhook**
 
