@@ -28,17 +28,18 @@ weight: 3
   allows you to have those "dynamic" variables expanded. Those variables look
   like this `{{ var }}` and those are the one you can use:
 
-  * `{{repo_owner}}`: The repository owner.
-  * `{{event_type}}`: The event type (eg: `pull_request` or `push`)
+  * `{{event_type}}`: The event type (eg: `pull_request` or `push`).
+  * `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
+  * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
   * `{{repo_name}}`: The repository name.
+  * `{{repo_owner}}`: The repository owner.
   * `{{repo_url}}`: The repository full URL.
-  * `{{target_namespace}}`: The target namespace where the Repository has matched and the PipelineRun will be created.
   * `{{revision}}`: The commit full sha revision.
   * `{{sender}}`: The sender username (or accountid on some providers) of the commit.
   * `{{source_branch}}`: The branch name where the event come from.
+  * `{{source_url}}`: The source repository URL from which the event come from (same as `repo_url` for push events).
   * `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
-  * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
-  * `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
+  * `{{target_namespace}}`: The target namespace where the Repository has matched and the PipelineRun will be created.
 
 * For Pipelines-as-Code to process your `PipelineRun`, you must have either an
   embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML

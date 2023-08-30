@@ -1,0 +1,36 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
+    pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
+spec:
+  params:
+    - name: repo_url
+      value: "{{ repo_url }}"
+    - name: source_url
+      value: "{{ source_url }}"
+    - name: source_branch
+      value: "{{ source_branch }}"
+    - name: target_branch
+      value: "{{ target_branch }}"
+  pipelineSpec:
+    params:
+      - name: repo_url
+      - name: source_url
+      - name: source_branch
+      - name: target_branch
+    tasks:
+      - name: params
+        taskSpec:
+          steps:
+            - name: test-standard-params-value
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                echo "{{ repo_url }}--"
+                echo "{{ source_url }}--"
+                echo "{{ source_branch }}--"
+                echo "{{ target_branch }}--"

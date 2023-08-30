@@ -22,6 +22,7 @@ func (p *CustomParams) makeStandardParamsFromEvent() map[string]string {
 		"repo_name":        strings.ToLower(p.event.Repository),
 		"target_branch":    formatting.SanitizeBranch(p.event.BaseBranch),
 		"source_branch":    formatting.SanitizeBranch(p.event.HeadBranch),
+		"source_url":       p.event.HeadURL,
 		"sender":           strings.ToLower(p.event.Sender),
 		"target_namespace": p.repo.GetNamespace(),
 		"event_type":       p.event.EventType,
