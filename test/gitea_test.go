@@ -694,7 +694,7 @@ func TestGiteaProvenance(t *testing.T) {
 		Settings:              &v1alpha1.Settings{PipelineRunProvenance: "default_branch"},
 		NoPullRequestCreation: true,
 	}
-	tgitea.TestPR(t, topts)
+	defer tgitea.TestPR(t, topts)()
 	branch := topts.TargetRefName
 	prmap := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"}
 	entries, err := payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
@@ -717,6 +717,35 @@ func TestGiteaProvenance(t *testing.T) {
 	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
 	topts.CheckForStatus = "success"
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
+}
+
+func TestGiteaPushToTagGreedy(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		SkipEventsCheck:       true,
+		TargetEvent:           options.PushEvent,
+		NoPullRequestCreation: true,
+	}
+	defer tgitea.TestPR(t, topts)()
+	prmap := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"}
+	entries, err := payload.GetEntries(prmap, topts.TargetNS, "refs/tags/*", topts.TargetEvent, map[string]string{})
+	assert.NilError(t, err)
+	topts.TargetRefName = topts.DefaultBranch
+	tgitea.PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
+
+	topts.TargetRefName = "refs/tags/v1.0.0"
+	tgitea.PushFilesToRefGit(t, topts, map[string]string{"README.md": "hello new version from tag"}, topts.DefaultBranch)
+
+	waitOpts := twait.Opts{
+		RepoName:  topts.TargetNS,
+		Namespace: topts.TargetNS,
+		// 0 means 1 🙃 (we test for >, while we actually should do >=, but i
+		// need to go all over the code to verify it's not going to break
+		// anything else)
+		MinNumberStatus: 0,
+		PollTimeout:     twait.DefaultTimeout,
+	}
+	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
 }
 
 // TestGiteaClusterTasks is a test to verify that we can use cluster tasks with PaaC

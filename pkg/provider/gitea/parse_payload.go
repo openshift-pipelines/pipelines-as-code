@@ -50,21 +50,18 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.TriggerTarget = "pull_request"
 		processedEvent.EventType = "pull_request"
 	case *giteaStructs.PushPayload:
-		if len(gitEvent.Commits) == 0 {
-			return nil, fmt.Errorf("no commits attached to this push event")
-		}
 		processedEvent = info.NewEvent()
-		processedEvent.Organization = gitEvent.Repo.Owner.UserName
-		processedEvent.Repository = gitEvent.Repo.Name
-		processedEvent.DefaultBranch = gitEvent.Repo.DefaultBranch
-		processedEvent.URL = gitEvent.Repo.HTMLURL
 		processedEvent.SHA = gitEvent.HeadCommit.ID
 		if processedEvent.SHA == "" {
 			processedEvent.SHA = gitEvent.Before
 		}
-		processedEvent.Sender = gitEvent.Sender.UserName
 		processedEvent.SHAURL = gitEvent.HeadCommit.URL
 		processedEvent.SHATitle = gitEvent.HeadCommit.Message
+		processedEvent.Organization = gitEvent.Repo.Owner.UserName
+		processedEvent.Repository = gitEvent.Repo.Name
+		processedEvent.DefaultBranch = gitEvent.Repo.DefaultBranch
+		processedEvent.URL = gitEvent.Repo.HTMLURL
+		processedEvent.Sender = gitEvent.Sender.UserName
 		processedEvent.BaseBranch = gitEvent.Ref
 		processedEvent.EventType = eventType
 		processedEvent.HeadBranch = processedEvent.BaseBranch // in push events Head Branch is the same as Basebranch

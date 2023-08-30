@@ -60,6 +60,7 @@ func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts O
 			}
 		}
 
+		clients.Log.Infof("Repo number of statuses: %d", len(r.Status))
 		return len(r.Status) > opts.MinNumberStatus, nil
 	})
 }

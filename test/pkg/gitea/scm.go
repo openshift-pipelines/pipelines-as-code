@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -64,7 +65,11 @@ func PushFilesToRefGit(t *testing.T, topts *TestOpts, entries map[string]string,
 	_, err = git.RunGit(path, "fetch", "-a", "origin")
 	assert.NilError(t, err)
 
-	_, err = git.RunGit(path, "checkout", "-B", topts.TargetRefName, "origin/"+baseRefFrom)
+	if strings.HasPrefix(topts.TargetRefName, "refs/tags") {
+		_, err = git.RunGit(path, "reset", "--hard", "origin/"+baseRefFrom)
+	} else {
+		_, err = git.RunGit(path, "checkout", "-B", topts.TargetRefName, "origin/"+baseRefFrom)
+	}
 	assert.NilError(t, err)
 
 	for filename, content := range entries {
@@ -78,6 +83,10 @@ func PushFilesToRefGit(t *testing.T, topts *TestOpts, entries map[string]string,
 	_, err = git.RunGit(path, "-c", "commit.gpgsign=false", "commit", "-m", "Committing files from test on "+topts.TargetRefName)
 	assert.NilError(t, err)
 
+	if strings.HasPrefix(topts.TargetRefName, "refs/tags") {
+		_, err = git.RunGit(path, "tag", "-f", filepath.Base(topts.TargetRefName))
+		assert.NilError(t, err)
+	}
 	// use a loop to try multiple times in case of error
 	count := 0
 	for {
