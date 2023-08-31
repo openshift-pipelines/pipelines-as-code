@@ -7,7 +7,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 	"testing"
+
+	"github.com/tektoncd/pipeline/pkg/names"
+	"gotest.tools/v3/assert"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
@@ -15,11 +20,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"github.com/tektoncd/pipeline/pkg/names"
-	"gotest.tools/v3/assert"
 )
 
-func TestGithubAppIncoming(t *testing.T) {
+func TestGithubIncomingWebhook(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false)
@@ -42,6 +45,9 @@ func TestGithubAppIncoming(t *testing.T) {
 				Key:  "incoming",
 			},
 			Targets: []string{randomedString},
+			Params: []string{
+				"the_best_superhero_is",
+			},
 		},
 	}
 
@@ -52,8 +58,8 @@ func TestGithubAppIncoming(t *testing.T) {
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
-		".tekton/pr-clone.yaml": "testdata/pipelinerun-clone.yaml", ".tekton/pr.yaml": "testdata/pipelinerun.yaml",
-	}, randomedString, randomedString, options.PushEvent, map[string]string{})
+		".tekton/pr.yaml": "testdata/pipelinerun-incoming.yaml",
+	}, randomedString, randomedString, options.IncomingEvent, map[string]string{})
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s", randomedString)
@@ -69,19 +75,25 @@ func TestGithubAppIncoming(t *testing.T) {
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to branch %s", sha, targetRefName)
 
 	url := fmt.Sprintf("%s/incoming?repository=%s&branch=%s&pipelinerun=%s&secret=%s", opts.ControllerURL,
-		randomedString, randomedString, "pr-clone", incomingSecreteValue)
-
+		randomedString, randomedString, "pipelinerun-incoming", incomingSecreteValue)
+	body := `{"params":{"the_best_superhero_is":"Superman"}}`
 	client := &http.Client{}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(body))
+	req.Header.Add("Content-Type", "application/json")
 	assert.NilError(t, err)
 	httpResp, err := client.Do(req)
 	assert.NilError(t, err)
 	defer httpResp.Body.Close()
 	runcnx.Clients.Log.Infof("Kicked off on incoming URL: %s", url)
 	assert.Assert(t, httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
+	// to reenable after debugging...
 	defer tgithub.TearDown(ctx, t, runcnx, ghprovider, -1, targetRefName, randomedString, opts)
-
 	wait.Succeeded(ctx, t, runcnx, opts, "Pull_Request", randomedString, 3, "", title)
+	err = wait.RegexpMatchingInPodLog(context.Background(),
+		runcnx, randomedString,
+		"pipelinesascode.tekton.dev/event-type=incoming",
+		"step-task", *regexp.MustCompile(".*It's a Bird... It's a Plane... It's Superman"), 2)
+	assert.NilError(t, err, "Error while checking the logs of the pods")
 }
 
 // Local Variables:

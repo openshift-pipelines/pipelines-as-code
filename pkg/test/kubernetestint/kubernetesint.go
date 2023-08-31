@@ -41,8 +41,7 @@ func (k *KinterfaceTest) UpdateSecretWithOwnerRef(_ context.Context, _ *zap.Suga
 }
 
 func (k *KinterfaceTest) GetSecret(_ context.Context, secret ktypes.GetSecretOpt) (string, error) {
-	// check if secret exist in k.GetSecretResult
-	if k.GetSecretResult[secret.Name] == "" {
+	if _, ok := k.GetSecretResult[secret.Name]; !ok {
 		return "", fmt.Errorf("secret %s does not exist", secret.Name)
 	}
 	return k.GetSecretResult[secret.Name], nil

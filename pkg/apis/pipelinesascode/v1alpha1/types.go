@@ -100,6 +100,7 @@ type Params struct {
 type Incoming struct {
 	Type    string   `json:"type"`
 	Secret  Secret   `json:"secret"`
+	Params  []string `json:"params,omitempty"`
 	Targets []string `json:"targets,omitempty"`
 }
 
