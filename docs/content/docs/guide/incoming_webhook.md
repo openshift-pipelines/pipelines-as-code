@@ -1,6 +1,7 @@
 ---
 title: Incoming Webhook
 ---
+
 # Incoming webhook
 
 Pipelines-as-Code support the concept of incoming webhook URL. It let you
@@ -51,7 +52,7 @@ spec:
   url: "https://github.com/owner/repo"
   incoming:
     - targets:
-      - main
+        - main
       secret:
         name: repo-incoming-secret
       type: webhook-url
@@ -98,18 +99,61 @@ in this snippet, note two things the `"/incoming"` path to the controller URL
 and the `"POST"` method to the URL rather than a simple `"GET"`.
 
 It is important to note that when the PipelineRun is triggered, Pipelines as
-Code will treat it as a push event and will have the capabilty to report the
+Code will treat it as a push event and will have the capability to report the
 status of the PipelineRuns. To obtain a report or a notification, a finally
 task can be added directly to the Pipeline, or the Repo CRD can be inspected
 using the tkn pac CLI. The [statuses](/docs/guide/statuses) documentation
 provides guidance on how to achieve this.
 
-### Webhook methods (GitHub Webhook, Gitlab, Bitbucket etc..)
+### Passing dynamic parameter value to incoming webhook
 
-Here is an example of a Repository CRD matching the target branch main:
+You can define the value of a any Pipelines-as Code Parameters (including
+redefining the [builtin ones](../authoringprs#default-parameters).
+
+You need to list the overridden or added params in the params section of the
+Repo CR configuration and pass the value in the json body of the incoming webhook
+request.
+
+You will need to pass the `content-type` as `application/json` in the header of
+your URL request.
+
+Here is a Repository CR letting passing the `pull_request_number` dynamic variable:
 
 ```yaml
 ---
+apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
+kind: Repository
+metadata:
+  name: repo
+  namespace: ns
+spec:
+  url: "https://github.com/owner/repo"
+  incoming:
+    - targets:
+        - main
+      params:
+        - pull_request_number
+      secret:
+        name: repo-incoming-secret
+      type: webhook-url
+```
+
+and here is a curl snippet passing the `pull_request_number` value:
+
+```shell
+curl -H "Content-Type: application/json" -X POST "http://conteoller.pac.url:8080/incoming?repository=repo&branch=main&secret=foo&pipelinerun=manual-pipelinerun" -d '{"params": {"pull_request_number": "12345"}}'
+```
+
+The parameter value of `pull_request_number` will be set to `12345` when using the variable `{{pull_request_number}}` in your PipelineRun.
+
+### Using incoming webhook with webhook based providers
+
+Webhook based providers (i.e: GitHub Webhook, Gitlab, Bitbucket etc..) supports
+incoming webhook, using the token provided in the git_provider section.
+
+Here is an example of a Repository CRD matching the target branch main with a GitHub webhook provider:
+
+```yaml
 apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
 kind: Repository
 metadata:
@@ -123,11 +167,11 @@ spec:
       name: "owner-token"
   incoming:
     - targets:
-      - main
+        - main
       secret:
         name: repo-incoming-secret
       type: webhook-url
 ```
 
-As noted in the section above, you need to specify a incoming secret  inside
+As noted in the section above, you need to specify a incoming secret inside
 the `repo-incoming-secret` Secret.

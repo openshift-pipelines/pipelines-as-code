@@ -139,7 +139,7 @@ inside a template directly within your PipelineRuns.
 By default, there are
 several variables exposed according to the event. To view all the variables
 exposed by default, refer to the documentation on [Authoring
-PipelineRuns](../authoringprs).
+PipelineRuns](../authoringprs#default-parameters).
 
 With the custom Parameter expansion, you can specify some custom values to be
 replaced inside the template.

@@ -150,6 +150,12 @@ spec:
                         type: string
                         enum:
                           - webhook-url
+                      params:
+                        description: Parameters accepted to be overwritten when posting to the webhook
+                        type: array
+                        items:
+                          description: Parameter
+                          type: string
                       targets:
                         description: List of target branches or ref to trigger webhooks on
                         type: array
