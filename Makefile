@@ -135,6 +135,14 @@ fmt:
 fumpt:
 	@find test pkg -name '*.go'|xargs -P4 $(GOFUMPT) -w -extra
 
+.PHONY: dev
+dev: ## deploys dev setup locally
+	./hack/dev/kind/install.sh
+
+.PHONY: rdev 
+rdev: ## redeploy pac in local setup
+	./hack/dev/kind/install.sh -p
+
 .PHONY: help
 help: ## print this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {gsub("\\\\n",sprintf("\n%22c",""), $$2);printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
