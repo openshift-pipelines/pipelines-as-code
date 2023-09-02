@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -101,15 +100,15 @@ func (l *listener) Start(ctx context.Context) error {
 
 func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
-		c := make(chan struct{})
-		go func() {
-			c <- struct{}{}
-			if err := l.run.WatchConfigMapChanges(ctx); err != nil {
-				log.Fatal("error from WatchConfigMapChanges for controller : ", err)
-			}
-		}()
-		// Force WatchConfigMapChanges go routines to actually start
-		<-c
+		// c := make(chan struct{})
+		// go func() {
+		// 	c <- struct{}{}
+		// 	if err := l.run.WatchConfigMapChanges(ctx); err != nil {
+		// 		log.Fatal("error from WatchConfigMapChanges for controller : ", err)
+		// 	}
+		// }()
+		// // Force WatchConfigMapChanges go routines to actually start
+		// <-c
 
 		if request.Method != http.MethodPost {
 			l.writeResponse(response, http.StatusOK, "ok")

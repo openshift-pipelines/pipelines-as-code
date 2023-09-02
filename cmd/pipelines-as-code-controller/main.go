@@ -26,7 +26,9 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to init clients : ", err)
 	}
-
+	if err := run.InitConfig(ctx); err != nil {
+		log.Fatal("failed to init config : ", err)
+	}
 	kinteract, err := kubeinteraction.NewKubernetesInteraction(run)
 	if err != nil {
 		log.Fatal("failed to init kinit client : ", err)

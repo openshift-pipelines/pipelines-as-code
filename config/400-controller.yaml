@@ -98,8 +98,13 @@ spec:
             - mountPath: "/etc/pipelines-as-code/tls"
               readOnly: true
               name: tls
+            - mountPath: "/etc/pipelines-as-code/config"
+              name: config
       volumes:
       - name: tls
         secret:
           secretName: pipelines-as-code-tls-secret
           optional: true
+      - name: config
+        configMap:
+          name: pipelines-as-code

@@ -3,8 +3,10 @@ package settings
 import (
 	"testing"
 
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
+	"gotest.tools/v3/assert"
 )
 
 func TestStringToBool(t *testing.T) {
@@ -122,6 +124,81 @@ func TestConfigToSettings(t *testing.T) {
 				if len(all) == 0 {
 					t.Errorf("ConfigToSettings() want log contains %v given: %v", tt.wantLogContains, all)
 				}
+			}
+		})
+	}
+}
+
+func TestReadHubCatalog(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]string
+		numCatalogs int
+		wantLog     string
+	}{
+		{
+			name:        "good/default catalog",
+			numCatalogs: 1,
+		},
+		{
+			name: "good/custom catalog",
+			config: map[string]string{
+				"catalog-1-id":   "custom",
+				"catalog-1-url":  "https://foo.com",
+				"catalog-1-name": "tekton",
+			},
+			numCatalogs: 2,
+			wantLog:     "CONFIG: setting custom hub custom, catalog https://foo.com",
+		},
+		{
+			name: "bad/missing keys custom catalog",
+			config: map[string]string{
+				"catalog-1-id":   "custom",
+				"catalog-1-name": "tekton",
+			},
+			numCatalogs: 1,
+			wantLog:     "CONFIG: hub 1 should have the key catalog-1-url, skipping catalog configuration",
+		},
+		{
+			name: "bad/custom catalog called https",
+			config: map[string]string{
+				"catalog-1-id":   "https",
+				"catalog-1-url":  "https://foo.com",
+				"catalog-1-name": "tekton",
+			},
+			numCatalogs: 1,
+			wantLog:     "CONFIG: custom hub catalog name cannot be https, skipping catalog configuration",
+		},
+		{
+			name: "bad/invalid url",
+			config: map[string]string{
+				"catalog-1-id":   "custom",
+				"catalog-1-url":  "/u1!@1!@#$afoo.com",
+				"catalog-1-name": "tekton",
+			},
+			numCatalogs: 1,
+			wantLog:     "catalog url /u1!@1!@#$afoo.com is not valid, skipping catalog configuration",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observer, catcher := zapobserver.New(zap.InfoLevel)
+			fakelogger := zap.New(observer).Sugar()
+			config := viper.New()
+			if tt.config != nil {
+				for k, v := range tt.config {
+					config.Set(k, v)
+				}
+			}
+			catalogs := readHubCatalog(config, fakelogger)
+			length := 0
+			catalogs.Range(func(_, _ interface{}) bool {
+				length++
+				return true
+			})
+			assert.Equal(t, length, tt.numCatalogs)
+			if tt.wantLog != "" {
+				assert.Assert(t, len(catcher.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", catcher)
 			}
 		})
 	}

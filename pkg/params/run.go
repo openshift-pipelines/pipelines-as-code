@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/spf13/viper"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -26,8 +27,9 @@ const (
 )
 
 type Run struct {
-	Clients clients.Clients
-	Info    info.Info
+	Clients       clients.Clients
+	Info          info.Info
+	configWatcher *viper.Viper
 }
 
 func StringToBool(s string) bool {

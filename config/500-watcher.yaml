@@ -84,3 +84,10 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5
+          volumeMounts:
+            - mountPath: "/etc/pipelines-as-code/config"
+              name: config
+      volumes:
+      - name: config
+        configMap:
+          name: pipelines-as-code

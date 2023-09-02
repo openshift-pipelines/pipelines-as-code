@@ -29,20 +29,23 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 		if err != nil {
 			log.Fatal("failed to init clients : ", err)
 		}
+		if err := run.InitConfig(ctx); err != nil {
+			log.Fatal("failed to init config : ", err)
+		}
 
 		kinteract, err := kubeinteraction.NewKubernetesInteraction(run)
 		if err != nil {
 			log.Fatal("failed to init kinit client : ", err)
 		}
 
-		c := make(chan struct{})
-		go func() {
-			c <- struct{}{}
-			if err := run.WatchConfigMapChanges(ctx); err != nil {
-				log.Fatal("error from WatchConfigMapChanges from watcher reconciler : ", err)
-			}
-		}()
-		<-c
+		// c := make(chan struct{})
+		// go func() {
+		// 	c <- struct{}{}
+		// 	if err := run.WatchConfigMapChanges(ctx); err != nil {
+		// 		log.Fatal("error from WatchConfigMapChanges from watcher reconciler : ", err)
+		// 	}
+		// }()
+		// <-c
 
 		pipelineRunInformer := tektonPipelineRunInformerv1.Get(ctx)
 

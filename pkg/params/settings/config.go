@@ -2,11 +2,14 @@ package settings
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/mcuadros/go-defaults"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -71,34 +74,161 @@ type HubCatalog struct {
 }
 
 type Settings struct {
-	ApplicationName string
+	ApplicationName string `mapstructure:"application-name" default:"Pipelines as Code CI"`
 	// HubURL                             string
 	// HubCatalogName                     string
-	HubCatalogs                        *sync.Map
-	RemoteTasks                        bool
-	MaxKeepRunsUpperLimit              int
-	DefaultMaxKeepRuns                 int
-	BitbucketCloudCheckSourceIP        bool
-	BitbucketCloudAdditionalSourceIP   string
-	TektonDashboardURL                 string
-	AutoConfigureNewGitHubRepo         bool
-	AutoConfigureRepoNamespaceTemplate string
+	HubCatalogs           *sync.Map
+	RemoteTasks           bool   `mapstructure:"remote-tasks" default:"true"`
+	MaxKeepRunsUpperLimit int    `mapstructure:"max-keep-run-upper-limit" `
+	DefaultMaxKeepRuns    int    `mapstructure:"default-max-keep-runs" `
+	TektonDashboardURL    string `mapstructure:"tekton-dashboard-url"`
 
-	SecretAutoCreation               bool
-	SecretGHAppRepoScoped            bool
-	SecretGhAppTokenScopedExtraRepos string
+	AutoConfigureNewGitHubRepo         bool   `mapstructure:"auto-configure-new-github-repo" default:"false"`
+	AutoConfigureRepoNamespaceTemplate string `mapstructure:"auto-configure-repo-namespace-template" `
 
-	ErrorLogSnippet             bool
-	ErrorDetection              bool
-	ErrorDetectionNumberOfLines int
-	ErrorDetectionSimpleRegexp  string
+	BitbucketCloudCheckSourceIP      bool   `mapstructure:"bitbucket-cloud-check-source-ip" default:"true"`
+	BitbucketCloudAdditionalSourceIP string `mapstructure:"bitbucket-cloud-additional-source-ip" `
 
-	CustomConsoleName      string
-	CustomConsoleURL       string
-	CustomConsolePRdetail  string
-	CustomConsolePRTaskLog string
+	SecretAutoCreation               bool   `mapstructure:"secret-auto-create" default:"true"`
+	SecretGHAppRepoScoped            bool   `mapstructure:"secret-github-app-token-scoped" default:"true"`
+	SecretGhAppTokenScopedExtraRepos string `mapstructure:"secret-github-app-scope-extra-repos"`
 
-	RememberOKToTest bool
+	ErrorLogSnippet             bool   `mapstructure:"error-log-snippet" default:"true"`
+	ErrorDetection              bool   `mapstructure:"error-detection-from-container-logs" default:"true"`
+	ErrorDetectionNumberOfLines int    `mapstructure:"error-detection-max-number-of-lines" default:"50"`
+	ErrorDetectionSimpleRegexp  string `mapstructure:"error-detection-simple-regexp" default:"^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+):([ ]*)?(?P<error>.*)"`
+
+	CustomConsoleName      string `mapstructure:"custom-console-name" `
+	CustomConsoleURL       string `mapstructure:"custom-console-url" `
+	CustomConsolePRdetail  string `mapstructure:"custom-console-url-pr-details" `
+	CustomConsolePRTaskLog string `mapstructure:"custom-console-url-pr-tasklog" `
+
+	RememberOKToTest bool `mapstructure:"remember-ok-to-test" default:"true"`
+}
+
+func ReadConfig(config *viper.Viper, logger *zap.SugaredLogger) (*Settings, error) {
+	setting := &Settings{}
+
+	// Run through defaulting before updating the values
+	defaults.SetDefaults(setting)
+
+	err := config.Unmarshal(&setting)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the config into settings: %w", err)
+	}
+
+	// read hub catalogs
+	setting.HubCatalogs = readHubCatalog(config, logger)
+
+	// add validation for configuration values here if required
+	if err := validate(config, setting, logger); err != nil {
+		return nil, err
+	}
+
+	return setting, nil
+}
+
+func validate(config *viper.Viper, setting *Settings, logger *zap.SugaredLogger) error {
+	if setting.TektonDashboardURL != "" {
+		if _, err := url.ParseRequestURI(setting.TektonDashboardURL); err != nil {
+			return fmt.Errorf("invalid value %v for key tekton-dashboard-url, invalid url: %w", setting.TektonDashboardURL, err)
+		}
+	}
+
+	if setting.ErrorDetectionSimpleRegexp != "" {
+		if _, err := regexp.Compile(setting.ErrorDetectionSimpleRegexp); err != nil {
+			return fmt.Errorf("cannot use %v as regexp for error-detection-simple-regexp: %w", setting.ErrorDetectionSimpleRegexp, err)
+		}
+	}
+
+	if setting.CustomConsoleURL != "" {
+		if _, err := url.ParseRequestURI(setting.CustomConsoleURL); err != nil {
+			return fmt.Errorf("invalid value %v for key custom-console-url, invalid url: %w", setting.CustomConsoleURL, err)
+		}
+	}
+
+	if setting.CustomConsolePRTaskLog != "" {
+		// check if custom console start with http:// or https://
+		if strings.HasPrefix(setting.CustomConsolePRTaskLog, "http://") || !strings.HasPrefix(setting.CustomConsolePRTaskLog, "https://") {
+			return fmt.Errorf("invalid value %v for key custom-console-url-pr-tasklog, must start with http:// or https://", setting.CustomConsolePRTaskLog)
+		}
+	}
+
+	if setting.CustomConsolePRdetail != "" {
+		if strings.HasPrefix(setting.CustomConsolePRdetail, "http://") || !strings.HasPrefix(setting.CustomConsolePRdetail, "https://") {
+			return fmt.Errorf("invalid value %v for key custom-console-url-pr-details, must start with http:// or https://", setting.CustomConsolePRdetail)
+		}
+	}
+
+	value, _ := setting.HubCatalogs.Load("default")
+	catalogDefault, ok := value.(HubCatalog)
+	if ok {
+		if catalogDefault.URL != config.GetString(HubURLKey) {
+			logger.Infof("CONFIG: hub URL set to %v", config.GetString(HubURLKey))
+			catalogDefault.URL = config.GetString(HubURLKey)
+		}
+		if catalogDefault.Name != config.GetString(HubCatalogNameKey) {
+			logger.Infof("CONFIG: hub catalog name set to %v", config.GetString(HubCatalogNameKey))
+			catalogDefault.Name = config.GetString(HubCatalogNameKey)
+		}
+	}
+	setting.HubCatalogs.Store("default", catalogDefault)
+	return nil
+}
+
+func readHubCatalog(config *viper.Viper, logger *zap.SugaredLogger) *sync.Map {
+	catalogs := sync.Map{}
+	if hubURL := config.GetString(HubURLKey); hubURL == "" {
+		config.Set(HubURLKey, HubURLDefaultValue)
+		logger.Infof("CONFIG: using default hub url %s", HubURLDefaultValue)
+	}
+
+	if hubCatalogName := config.GetString(HubCatalogNameKey); hubCatalogName == "" {
+		config.Set(HubCatalogNameKey, HubCatalogNameDefaultValue)
+	}
+	catalogs.Store("default", HubCatalog{
+		ID:   "default",
+		Name: config.GetString(HubCatalogNameKey),
+		URL:  config.GetString(HubURLKey),
+	})
+
+	for _, k := range config.AllKeys() {
+		m := hubCatalogNameRegex.FindStringSubmatch(k)
+		if len(m) > 0 {
+			id := m[1]
+			cPrefix := fmt.Sprintf("catalog-%s", id)
+			skip := false
+			for _, kk := range []string{"id", "name", "url"} {
+				cKey := fmt.Sprintf("%s-%s", cPrefix, kk)
+				// check if key exist in config
+				if key := config.GetString(cKey); key == "" {
+					logger.Warnf("CONFIG: hub %v should have the key %s, skipping catalog configuration", id, cKey)
+					skip = true
+					break
+				}
+			}
+			if !skip {
+				catalogID := config.GetString(fmt.Sprintf("%s-id", cPrefix))
+				if catalogID == "http" || catalogID == "https" {
+					logger.Warnf("CONFIG: custom hub catalog name cannot be %s, skipping catalog configuration", catalogID)
+					break
+				}
+				catalogURL := config.GetString(fmt.Sprintf("%s-url", cPrefix))
+				u, err := url.Parse(catalogURL)
+				if err != nil || u.Scheme == "" || u.Host == "" {
+					logger.Warnf("CONFIG: custom hub %s, catalog url %s is not valid, skipping catalog configuration", catalogID, catalogURL)
+					break
+				}
+				logger.Infof("CONFIG: setting custom hub %s, catalog %s", catalogID, catalogURL)
+				catalogs.Store(catalogID, HubCatalog{
+					ID:   catalogID,
+					Name: config.GetString(fmt.Sprintf("%s-name", cPrefix)),
+					URL:  catalogURL,
+				})
+			}
+		}
+	}
+	return &catalogs
 }
 
 func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[string]string) error {
