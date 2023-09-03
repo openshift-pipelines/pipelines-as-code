@@ -47,7 +47,7 @@ spec:
           image: "ko://github.com/openshift-pipelines/pipelines-as-code/cmd/pipelines-as-code-webhook"
           env:
             - name: CONFIG_LOGGING_NAME
-              value: pac-config-logging
+              value: pipelines-as-code-config-logging
             - name: SYSTEM_NAMESPACE
               valueFrom:
                 fieldRef:

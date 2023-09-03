@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pac-config-logging
+  name: pipelines-as-code-config-logging
   namespace: pipelines-as-code
   labels:
     app.kubernetes.io/instance: default
