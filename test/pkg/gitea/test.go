@@ -11,6 +11,11 @@ import (
 	"time"
 
 	"code.gitea.io/sdk/gitea"
+	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"github.com/tektoncd/pipeline/pkg/names"
+	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -21,10 +26,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
-	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	"github.com/tektoncd/pipeline/pkg/names"
-	"gotest.tools/v3/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type TestOpts struct {
@@ -333,12 +334,28 @@ func CheckIfPipelineRunsCancelled(t *testing.T, topts *TestOpts) {
 
 func GetStandardParams(t *testing.T, topts *TestOpts, eventType string) (repoURL, sourceURL, sourceBranch, targetBranch string) {
 	t.Helper()
-	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
-		LabelSelector: keys.EventType + "=" + eventType,
-	})
-	assert.NilError(t, err)
-	assert.Equal(t, len(prs.Items), 1, "should have only one "+eventType+" pipelinerun")
+	var err error
+	prs := &v1.PipelineRunList{}
+	for i := 0; i < 21; i++ {
+		prs, err = topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{
+			LabelSelector: keys.EventType + "=" + eventType,
+		})
+		assert.NilError(t, err)
+		// get all pipelinerun names
+		names := []string{}
+		for _, pr := range prs.Items {
+			names = append(names, pr.Name)
+		}
+		assert.Equal(t, len(prs.Items), 1, "should have only one "+eventType+" pipelinerun", names)
 
+		if prs.Items[0].Status.Status.Conditions[0].Reason == "Succeeded" || prs.Items[0].Status.Status.Conditions[0].Reason == "Failed" {
+			break
+		}
+		time.Sleep(5 * time.Second)
+		if i == 20 {
+			t.Fatalf("pipelinerun has not finished, something is fishy")
+		}
+	}
 	out, err := tlogs.GetPodLog(context.Background(), topts.ParamsRun.Clients.Kube.CoreV1(), topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s",
 		prs.Items[0].Name), "step-test-standard-params-value")
 	assert.NilError(t, err)
