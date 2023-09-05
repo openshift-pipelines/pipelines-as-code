@@ -27,9 +27,9 @@ func TestStatusTmpl(t *testing.T) {
 			wantErr: true,
 			tmpl:    "{{.XXX}}",
 			prTaskRunStatus: map[string]*tektonv1.PipelineRunTaskRunStatus{
-				"first":  tektontest.MakePrTrStatus("first", 5),
-				"last":   tektontest.MakePrTrStatus("last", 15),
-				"middle": tektontest.MakePrTrStatus("middle", 10),
+				"first":  tektontest.MakePrTrStatus("first", "", 5),
+				"last":   tektontest.MakePrTrStatus("last", "", 15),
+				"middle": tektontest.MakePrTrStatus("middle", "", 10),
 			},
 		},
 		{
@@ -37,9 +37,19 @@ func TestStatusTmpl(t *testing.T) {
 			wantRegexp: regexp.MustCompile(".*first.*middle.*last.*"),
 			tmpl:       flattedTmpl,
 			prTaskRunStatus: map[string]*tektonv1.PipelineRunTaskRunStatus{
-				"first":  tektontest.MakePrTrStatus("first", 5),
-				"last":   tektontest.MakePrTrStatus("last", 15),
-				"middle": tektontest.MakePrTrStatus("middle", 10),
+				"first":  tektontest.MakePrTrStatus("first", "", 5),
+				"last":   tektontest.MakePrTrStatus("last", "", 15),
+				"middle": tektontest.MakePrTrStatus("middle", "", 10),
+			},
+		},
+		{
+			name:       "sorted with displayname",
+			wantRegexp: regexp.MustCompile(".*Primo.*Median.*Ultimo"),
+			tmpl:       flattedTmpl,
+			prTaskRunStatus: map[string]*tektonv1.PipelineRunTaskRunStatus{
+				"first":  tektontest.MakePrTrStatus("first", "Primo", 5),
+				"last":   tektontest.MakePrTrStatus("last", "Ultimo", 15),
+				"middle": tektontest.MakePrTrStatus("middle", "Median", 10),
 			},
 		},
 		{
@@ -47,9 +57,9 @@ func TestStatusTmpl(t *testing.T) {
 			wantRegexp: regexp.MustCompile(".*notcompleted.*first.*last.*"),
 			tmpl:       flattedTmpl,
 			prTaskRunStatus: map[string]*tektonv1.PipelineRunTaskRunStatus{
-				"first":  tektontest.MakePrTrStatus("first", 5),
-				"last":   tektontest.MakePrTrStatus("last", 15),
-				"middle": tektontest.MakePrTrStatus("notcompleted", -1),
+				"first":  tektontest.MakePrTrStatus("first", "", 5),
+				"last":   tektontest.MakePrTrStatus("last", "", 15),
+				"middle": tektontest.MakePrTrStatus("notcompleted", "", -1),
 			},
 		},
 		{

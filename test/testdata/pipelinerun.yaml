@@ -11,6 +11,7 @@ spec:
   pipelineSpec:
     tasks:
       - name: task
+        displayName: "The Task name is Task"
         taskSpec:
           steps:
             - name: task

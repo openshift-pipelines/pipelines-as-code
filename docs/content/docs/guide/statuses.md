@@ -2,13 +2,19 @@
 title: PipelineRun status
 weight: 6
 ---
+
 # Status
 
 ## GitHub apps
 
-After the pipeline has finished, its status will be shown in the GitHub Check
-tabs, along with a concise overview of the duration of each task in the
-pipeline. If any step fails, a small portion of the log from that step will
+After the `PipelineRun` has finished, its status will be
+shown in the GitHub Check tabs, along with a concise overview
+of the status the name and the duration of each task in the pipeline. If the task has a
+[displayName](https://tekton.dev/docs/pipelines/tasks/#specifying-a-display-name)
+it will use it as the description of the task or otherwise just the task
+name.
+
+If any step fails, a small portion of the log from that step will
 also be included in the output.
 
 In case an error is encountered while creating the `PipelineRun` on the cluster,
@@ -104,7 +110,7 @@ NAME                  URL                                                       
 pipelines-as-code-ci   https://github.com/openshift-pipelines/pipelines-as-code   pipelines-as-code-ci   True        Succeeded   59m         56m
 ```
 
-Using the tkn pac describe command from the [cli](../cli/)  you can easily view
+Using the tkn pac describe command from the [cli](../cli/) you can easily view
 all of the statuses of the PipelineRuns associated with your repository, as
 well as their metadata.
 
