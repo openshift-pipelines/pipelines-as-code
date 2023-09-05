@@ -12,7 +12,7 @@ It's important: <https://github.com/openshift-pipelines/pipelines-as-code/blob/m
 It uses kind under docker. You start it with:
 
 ```shell
-make allinone
+make dev
 ```
 
 When it finished you will have the following installed in your kind cluster:
@@ -47,7 +47,13 @@ override it you can set the `PAC_DIRS` environment variable.
 - If you need to redeploy your pac install (and only pac) you can do :
 
   ```shell
-  ./hack/dev/kind/install.sh/install.sh -p
+  ./hack/dev/kind/install.sh -p
+  ```
+
+  or
+
+  ```shell
+  make rdev
   ```
 
   or you can do this directly with ko :

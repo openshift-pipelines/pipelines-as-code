@@ -184,7 +184,7 @@ function configure_pac() {
         echo "No secret has been installed"
         echo "you need to create a pass https://www.passwordstore.org/ folder with"
         echo "github-application-id github-private-key webhook.secret information in there"
-        echo "and export the PAC_PASS_SECRET_FOLDER vairable to that folder"
+        echo "and export the PAC_PASS_SECRET_FOLDER variable to that folder"
         echo "or install your pipelines-as-code-secret manually"
         kubectl delete secret -n pipelines-as-code pipelines-as-code-secret >/dev/null 2>/dev/null || true
     fi
