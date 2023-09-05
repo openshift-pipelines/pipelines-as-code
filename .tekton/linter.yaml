@@ -63,6 +63,7 @@ spec:
               image: jorisroovers/gitlint
               workingDir: $(workspaces.source.path)
               script: |
+                git config --global --add safe.directory /workspace/source
                 gitlint --debug
 
       - name: yamllint

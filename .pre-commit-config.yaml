@@ -4,7 +4,7 @@ default_install_hook_types: ["pre-push"]
 exclude: '(^docs/themes/hugo-book|^vendor|.*golden$|^\.vale)'
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.2.0
+  rev: v4.4.0
   hooks:
   - id: check-added-large-files
   - id: check-toml
@@ -13,6 +13,10 @@ repos:
   - id: check-vcs-permalinks
   - id: detect-private-key
     exclude: ".*_test.go"
+- repo: https://github.com/jorisroovers/gitlint
+  rev: v0.19.1
+  hooks:
+    - id: gitlint
 - repo: local
   hooks:
   - id: black
