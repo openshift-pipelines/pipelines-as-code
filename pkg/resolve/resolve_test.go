@@ -281,10 +281,58 @@ func TestPipelineRunsWithSameName(t *testing.T) {
 					},
 				},
 			},
-			err: "found multiple pipelinerun in .tekton with same name: pipelinerun-abc, please update",
+			err: "found multiple pipelinerun in .tekton with the same name: pipelinerun-abc, please update",
 		},
 		{
-			name: "doesn't exists",
+			name: "same name and generateName pipelineruns exists",
+			prs: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pipelinerun-abc",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pipelinerun-abc",
+					},
+				},
+			},
+			err: "found multiple pipelinerun in .tekton with the same generateName: pipelinerun-abc, please update",
+		},
+		{
+			name: "same generateName pipelineruns exists",
+			prs: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pipelinerun-abc-",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pipelinerun-abc-",
+					},
+				},
+			},
+			err: "found multiple pipelinerun in .tekton with the same generateName: pipelinerun-abc-, please update",
+		},
+		{
+			name: "different pipelineruns exists",
+			prs: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pipelinerun-abc-",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pipelinerun-bcd",
+					},
+				},
+			},
+			err: "",
+		},
+		{
+			name: "doesn't pipelinerun name exists",
 			prs: []*tektonv1.PipelineRun{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -294,6 +342,22 @@ func TestPipelineRunsWithSameName(t *testing.T) {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "pipelinerun-bcd",
+					},
+				},
+			},
+			err: "",
+		},
+		{
+			name: "doesn't pipelinerun generateName exists",
+			prs: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pipelinerun-abc",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pipelinerun-bcd",
 					},
 				},
 			},
