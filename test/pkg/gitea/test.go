@@ -132,14 +132,22 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	assert.NilError(t, err)
 
 	PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
-	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, repoInfo.Name, gitea.CreatePullRequestOption{
-		Title: "Test Pull Request - " + topts.TargetRefName,
-		Head:  topts.TargetRefName,
-		Base:  options.MainBranch,
-	})
-	assert.NilError(t, err)
-	topts.PullRequest = pr
-	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
+
+	// try multiple times, cause sometime we get this kind of error:
+	// error: failed to push some refs to '/home/gitea/repositories/org-pac-e2e-test-zg6sx/pac-e2e-test-zg6sx.git'
+	for i := 0; i < 5; i++ {
+		if topts.PullRequest, _, err = topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, repoInfo.Name, gitea.CreatePullRequestOption{
+			Title: "Test Pull Request - " + topts.TargetRefName,
+			Head:  topts.TargetRefName,
+			Base:  options.MainBranch,
+		}); err == nil {
+			break
+		}
+		if i == 4 {
+			t.Fatalf("cannot create pull request: %v", err)
+		}
+	}
+	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", topts.PullRequest.HTMLURL)
 
 	if topts.CheckForStatus != "" {
 		WaitForStatus(t, topts, topts.TargetRefName, "", topts.StatusOnlyLatest)
