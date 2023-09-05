@@ -62,6 +62,22 @@ func TestGiteaPullRequestTaskAnnotations(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 }
 
+func TestGiteaUseDisplayName(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		Regexp:      regexp.MustCompile(`.*The Task name is Task.*`),
+		TargetEvent: options.PullRequestEvent,
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+		},
+		CheckForStatus: "success",
+		ExtraArgs: map[string]string{
+			"RemoteTaskURL":  options.RemoteTaskURL,
+			"RemoteTaskName": options.RemoteTaskName,
+		},
+	}
+	defer tgitea.TestPR(t, topts)()
+}
+
 func TestGiteaPullRequestPipelineAnnotations(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,

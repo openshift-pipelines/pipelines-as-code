@@ -32,6 +32,7 @@ spec:
             workspace: source
 
       - name: generate-release-yaml
+        displayName: "Generate release.yaml"
         runAfter:
           - fetchit
         taskSpec:
@@ -50,6 +51,7 @@ spec:
             workspace: source
 
       - name: gitlint
+        displayName: "Git commit linter"
         runAfter:
           - fetchit
         workspaces:
@@ -67,6 +69,7 @@ spec:
                 gitlint --commit "$(git log --format=format:%H --no-merges -1)"
 
       - name: yamllint
+        generateName: "YAML Linter"
         runAfter:
           - generate-release-yaml
         taskSpec:
@@ -84,6 +87,7 @@ spec:
             workspace: source
 
       - name: pylint
+        generateName: "Python Linter"
         runAfter:
           - fetchit
         taskSpec:
@@ -100,6 +104,7 @@ spec:
             workspace: source
 
       - name: black
+        generateName: "Python Formatter check"
         runAfter:
           - pylint
         taskSpec:
@@ -116,6 +121,7 @@ spec:
             workspace: source
 
       - name: markdownlint
+        generateName: "Markdown Linter"
         runAfter:
           - fetchit
         taskSpec:
@@ -132,6 +138,7 @@ spec:
             workspace: source
 
       - name: vale
+        generateName: "Spelling and Grammar"
         runAfter:
           - fetchit
         taskSpec:

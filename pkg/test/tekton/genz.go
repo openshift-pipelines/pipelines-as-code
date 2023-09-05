@@ -13,7 +13,7 @@ import (
 	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-func MakePrTrStatus(ptaskname string, completionmn int) *tektonv1.PipelineRunTaskRunStatus {
+func MakePrTrStatus(ptaskname, displayName string, completionmn int) *tektonv1.PipelineRunTaskRunStatus {
 	clock := clockwork.NewFakeClock()
 
 	completionTime := &metav1.Time{}
@@ -34,6 +34,9 @@ func MakePrTrStatus(ptaskname string, completionmn int) *tektonv1.PipelineRunTas
 			TaskRunStatusFields: tektonv1.TaskRunStatusFields{
 				StartTime:      &metav1.Time{Time: clock.Now().Add(time.Duration(completionmn+10) * time.Minute)},
 				CompletionTime: completionTime,
+				TaskSpec: &tektonv1.TaskSpec{
+					DisplayName: displayName,
+				},
 			},
 			Status: conditionTrue,
 		},

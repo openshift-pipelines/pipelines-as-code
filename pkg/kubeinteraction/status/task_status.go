@@ -48,6 +48,18 @@ func GetStatusFromTaskStatusOrFromAsking(ctx context.Context, pr *tektonv1.Pipel
 			run.Clients.Log.Warnf("cannot get taskrun status pr %s ns: %s err: %w", pr.GetName(), pr.GetNamespace(), err)
 			continue
 		}
+		if ts == nil {
+			run.Clients.Log.Warnf("cannot get taskrun status pr %s ns: %s, ts come back nil?", pr.GetName(), pr.GetNamespace(), err)
+			continue
+		}
+		// search in taskSpecs if there is a displayName for that status
+		if pr.Spec.PipelineSpec != nil && pr.Spec.PipelineSpec.Tasks != nil {
+			for _, taskSpec := range pr.Spec.PipelineSpec.Tasks {
+				if ts.TaskSpec != nil && taskSpec.Name == cr.PipelineTaskName {
+					ts.TaskSpec.DisplayName = taskSpec.DisplayName
+				}
+			}
+		}
 		trStatus[cr.Name] = &tektonv1.PipelineRunTaskRunStatus{
 			PipelineTaskName: cr.PipelineTaskName,
 			Status:           ts,
@@ -77,6 +89,7 @@ func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract
 			Message:        reasonMessageReplacementRegexp.ReplaceAllString(task.Status.Conditions[0].Message, ""),
 			CompletionTime: task.Status.CompletionTime,
 			Reason:         task.Status.Conditions[0].Reason,
+			DisplayName:    task.Status.TaskSpec.DisplayName,
 		}
 		if ti.Reason == "TaskRunValidationFailed" || ti.Reason == tektonv1.TaskRunReasonCancelled.String() || ti.Reason == tektonv1.TaskRunReasonTimedOut.String() || ti.Reason == tektonv1.TaskRunReasonImagePullFailed.String() {
 			failureReasons[task.PipelineTaskName] = ti

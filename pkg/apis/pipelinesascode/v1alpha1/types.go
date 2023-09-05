@@ -65,6 +65,7 @@ type TaskInfos struct {
 	Message        string
 	LogSnippet     string
 	Reason         string
+	DisplayName    string
 	CompletionTime *metav1.Time
 }
 

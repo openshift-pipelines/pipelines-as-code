@@ -159,8 +159,9 @@ func TestDescribe(t *testing.T) {
 						},
 						CollectedTaskInfos: &map[string]v1alpha1.TaskInfos{
 							"task1": {
-								Reason:     tektonv1.PipelineRunReasonFailed.String(),
-								LogSnippet: "Error error miss robinson",
+								Reason:      tektonv1.PipelineRunReasonFailed.String(),
+								DisplayName: "And here's to you, Mrs. Robinson",
+								LogSnippet:  "We'd like to help you learn to help yourself",
 							},
 
 							"task2": {

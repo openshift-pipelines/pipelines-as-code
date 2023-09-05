@@ -95,7 +95,11 @@ func (r *Reconciler) getFailureSnippet(ctx context.Context, pr *tektonv1.Pipelin
 	if text == "" {
 		text = sortedTaskInfos[0].Message
 	}
-	return fmt.Sprintf("task <b>%s</b> has the status <b>\"%s\"</b>:\n<pre>%s</pre>", sortedTaskInfos[0].Name, sortedTaskInfos[0].Reason, text)
+	name := sortedTaskInfos[0].Name
+	if sortedTaskInfos[0].DisplayName != "" {
+		name = strings.ToLower(sortedTaskInfos[0].DisplayName)
+	}
+	return fmt.Sprintf("task <b>%s</b> has the status <b>\"%s\"</b>:\n<pre>%s</pre>", name, sortedTaskInfos[0].Reason, text)
 }
 
 func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLogger, vcx provider.Interface, event *info.Event, createdPR *tektonv1.PipelineRun) (*tektonv1.PipelineRun, error) {
