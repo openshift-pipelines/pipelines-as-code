@@ -64,7 +64,7 @@ spec:
               workingDir: $(workspaces.source.path)
               script: |
                 git config --global --add safe.directory /workspace/source
-                gitlint --debug
+                gitlint --commit "$(git log --format=format:%H --no-merges -1)"
 
       - name: yamllint
         runAfter:
