@@ -9,12 +9,13 @@ import (
 	"testing"
 
 	ghlib "github.com/google/go-github/v53/github"
+	"gotest.tools/v3/assert"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
-	"gotest.tools/v3/assert"
 )
 
 func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E, *github.Provider, error) {
@@ -100,6 +101,9 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 }
 
 func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovider *github.Provider, prNumber int, ref, targetNS string, opts options.E2E) {
+	if os.Getenv("TEST_NOCLEANUP") == "true" {
+		return
+	}
 	runcnx.Clients.Log.Infof("Closing PR %d", prNumber)
 	if prNumber != -1 {
 		state := "closed"
