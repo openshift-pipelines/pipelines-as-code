@@ -232,3 +232,22 @@ func matchOnAnnotation(annotations string, eventType []string, branchMatching bo
 	}
 	return true, nil
 }
+
+func MatchRunningPipelineRunForIncomingWebhook(eventType, incomingPipelineRun string, prs []*tektonv1.PipelineRun) []*tektonv1.PipelineRun {
+	// return all pipelineruns if EventType is not incoming or TargetPipelineRun is ""
+	if eventType != "incoming" || incomingPipelineRun == "" {
+		return prs
+	}
+
+	for _, pr := range prs {
+		// check incomingPipelineRun with pr name
+		if incomingPipelineRun == pr.GetName() {
+			return []*tektonv1.PipelineRun{pr}
+		}
+		// check incomingPipelineRun with pr generateName
+		if incomingPipelineRun == strings.TrimSuffix(pr.GetGenerateName(), "-") {
+			return []*tektonv1.PipelineRun{pr}
+		}
+	}
+	return nil
+}
