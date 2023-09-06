@@ -1305,3 +1305,187 @@ func TestBranchMatch(t *testing.T) {
 		})
 	}
 }
+
+func TestMatchRunningPipelineRunForIncomingWebhook(t *testing.T) {
+	tests := []struct {
+		name              string
+		runevent          info.Event
+		pruns             []*tektonv1.PipelineRun
+		wantedPrunsNumber int
+	}{
+		{
+			name: "return all pipelineruns if event type is other than incoming",
+			runevent: info.Event{
+				EventType:         "pull_request",
+				TargetPipelineRun: "pr1",
+			},
+			pruns: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr1",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[pull_request]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr2",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[push]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+			},
+			wantedPrunsNumber: 2,
+		},
+		{
+			name: "return all pipelineruns if pipelinerun name is empty for incoming event",
+			runevent: info.Event{
+				EventType:         "incoming",
+				TargetPipelineRun: "",
+			},
+			pruns: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr1",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[pull_request]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr2",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[push]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+			},
+			wantedPrunsNumber: 2,
+		},
+		{
+			name: "return all pipelineruns if event type is different and incoming pipelinerun name is empty",
+			runevent: info.Event{
+				EventType:         "pull_request",
+				TargetPipelineRun: "",
+			},
+			pruns: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr1",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[pull_request]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr2",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[push]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+			},
+			wantedPrunsNumber: 2,
+		},
+		{
+			name: "return matched pipelinerun for matching pipelinerun name",
+			runevent: info.Event{
+				EventType:         "incoming",
+				TargetPipelineRun: "pr1",
+			},
+			pruns: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr1",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[incoming]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr2",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[incoming]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+			},
+			wantedPrunsNumber: 1,
+		},
+		{
+			name: "return matched pipelinerun for matching pipelinerun generateName",
+			runevent: info.Event{
+				EventType:         "incoming",
+				TargetPipelineRun: "pr1",
+			},
+			pruns: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pr1-",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[incoming]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr2",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[pull_request]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+			},
+			wantedPrunsNumber: 1,
+		},
+		{
+			name: "return nil when failing to match with an event type or a pipelinerun name",
+			runevent: info.Event{
+				EventType:         "incoming",
+				TargetPipelineRun: "pr1",
+			},
+			pruns: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr3",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[incoming]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pr2",
+						Annotations: map[string]string{
+							keys.OnEvent:        "[incoming]",
+							keys.OnTargetBranch: "main",
+						},
+					},
+				},
+			},
+			wantedPrunsNumber: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			outPruns := MatchRunningPipelineRunForIncomingWebhook(tt.runevent.EventType, tt.runevent.TargetPipelineRun, tt.pruns)
+			assert.Equal(t, len(outPruns), tt.wantedPrunsNumber)
+		})
+	}
+}

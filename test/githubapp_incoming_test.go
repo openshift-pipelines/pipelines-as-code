@@ -11,19 +11,46 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tektoncd/pipeline/pkg/names"
-	"gotest.tools/v3/assert"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	"github.com/tektoncd/pipeline/pkg/names"
+	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubIncomingWebhook(t *testing.T) {
+// TestGithubAppIncoming tests that a Pipelinerun with the incoming event
+// gets created despite the presence of multiple Pipelineruns in the .tekton directory with
+// eventType as incoming
+func TestGithubAppIncoming(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml", ".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+	}, randomedString, randomedString, options.IncomingEvent, map[string]string{})
+	assert.NilError(t, err)
+
+	verifyIncomingWebhook(t, randomedString, entries)
+}
+
+// TestGithubAppIncomingForDifferentEvent tests that a Pipelinerun with the incoming event
+// gets created despite the presence of multiple Pipelineruns in the .tekton directory,
+// where one has an eventType as incoming and another as pull_request
+func TestGithubAppIncomingForDifferentEvent(t *testing.T) {
+	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming-generatename.yaml", ".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+	}, randomedString, randomedString, options.PullRequestEvent, map[string]string{})
+	assert.NilError(t, err)
+
+	verifyIncomingWebhook(t, randomedString, entries)
+}
+
+func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[string]string) {
 	ctx := context.Background()
 	runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false)
 	assert.NilError(t, err)
@@ -57,11 +84,6 @@ func TestGithubIncomingWebhook(t *testing.T) {
 	err = secret.Create(ctx, runcnx, map[string]string{"incoming": incomingSecreteValue}, randomedString, incomingSecretName)
 	assert.NilError(t, err)
 
-	entries, err := payload.GetEntries(map[string]string{
-		".tekton/pr.yaml": "testdata/pipelinerun-incoming.yaml",
-	}, randomedString, randomedString, options.IncomingEvent, map[string]string{})
-	assert.NilError(t, err)
-
 	targetRefName := fmt.Sprintf("refs/heads/%s", randomedString)
 
 	title := "TestGithubAppIncoming - " + randomedString
@@ -86,9 +108,21 @@ func TestGithubIncomingWebhook(t *testing.T) {
 	defer httpResp.Body.Close()
 	runcnx.Clients.Log.Infof("Kicked off on incoming URL: %s", url)
 	assert.Assert(t, httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
-	// to reenable after debugging...
+	// to re enable after debugging...
 	defer tgithub.TearDown(ctx, t, runcnx, ghprovider, -1, targetRefName, randomedString, opts)
-	wait.Succeeded(ctx, t, runcnx, opts, "Pull_Request", randomedString, 3, "", title)
+
+	wait.Succeeded(ctx, t, runcnx, opts, options.IncomingEvent, randomedString, 1, "", title)
+	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(randomedString).List(ctx, metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(prsNew.Items) == 1)
+
+	prName := prsNew.Items[0].GetName()
+	index := strings.LastIndex(prsNew.Items[0].GetGenerateName(), "-")
+	if index != -1 {
+		prName = prsNew.Items[0].GetGenerateName()[:index]
+	}
+	assert.Assert(t, prName == "pipelinerun-incoming")
+
 	err = wait.RegexpMatchingInPodLog(context.Background(),
 		runcnx, randomedString,
 		"pipelinesascode.tekton.dev/event-type=incoming",
@@ -97,5 +131,5 @@ func TestGithubIncomingWebhook(t *testing.T) {
 }
 
 // Local Variables:
-// compile-command: "go test -tags=e2e -v -run TestGithubAppIncoming$ ."
+// compile-command: "go test -tags=e2e -v -run TestGithubAppIncoming ."
 // End:

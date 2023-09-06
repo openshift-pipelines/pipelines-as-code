@@ -87,7 +87,7 @@ stringData:
 After setting this up, you will be able to start the PipelineRun with a POST
 request sent to the controller URL appended with /incoming. The request
 includes the very-secure-shared-secret, the repository name (repo), the target
-branch (main), and the PipelineRun name (target_pipelinerun).
+branch (main), and the PipelineRun name (or the generateName if used) (target_pipelinerun).
 
 As an example here is a curl snippet starting the PipelineRun:
 
@@ -141,7 +141,7 @@ spec:
 and here is a curl snippet passing the `pull_request_number` value:
 
 ```shell
-curl -H "Content-Type: application/json" -X POST "http://conteoller.pac.url:8080/incoming?repository=repo&branch=main&secret=foo&pipelinerun=manual-pipelinerun" -d '{"params": {"pull_request_number": "12345"}}'
+curl -H "Content-Type: application/json" -X POST "https://control.pac.url/incoming?repository=repo&branch=main&secret=very-secure-shared-secret&pipelinerun=target_pipelinerun" -d '{"params": {"pull_request_number": "12345"}}'
 ```
 
 The parameter value of `pull_request_number` will be set to `12345` when using the variable `{{pull_request_number}}` in your PipelineRun.

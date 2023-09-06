@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -17,6 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -54,7 +56,7 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
-		".tekton/pr.yaml": "testdata/pipelinerun.yaml", ".tekton/pr-clone.yaml": "testdata/pipelinerun-clone.yaml",
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml", ".tekton/pr-clone.yaml": "testdata/pipelinerun-clone.yaml",
 	}, randomedString, randomedString, options.IncomingEvent, map[string]string{})
 	assert.NilError(t, err)
 
@@ -68,7 +70,7 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", randomedString)
 
 	url := fmt.Sprintf("%s/incoming?repository=%s&branch=%s&pipelinerun=%s&secret=%s", opts.ControllerURL,
-		randomedString, randomedString, "pipeline-clone", incomingSecreteValue)
+		randomedString, randomedString, "pipelinerun-incoming", incomingSecreteValue)
 	client := &http.Client{}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	assert.NilError(t, err)
@@ -79,7 +81,17 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 	assert.Assert(t, httpResp.StatusCode > 200 && httpResp.StatusCode < 300)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, -1, randomedString, randomedString, opts.ProjectID)
 
-	wait.Succeeded(ctx, t, runcnx, opts, "Merge_Request", randomedString, 2, "", title)
+	wait.Succeeded(ctx, t, runcnx, opts, options.IncomingEvent, randomedString, 1, "", title)
+	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(randomedString).List(ctx, metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(prsNew.Items) == 1)
+
+	prName := prsNew.Items[0].GetName()
+	index := strings.LastIndex(prsNew.Items[0].GetGenerateName(), "-")
+	if index != -1 {
+		prName = prsNew.Items[0].GetGenerateName()[:index]
+	}
+	assert.Assert(t, prName == "pipelinerun-incoming")
 }
 
 // Local Variables:
