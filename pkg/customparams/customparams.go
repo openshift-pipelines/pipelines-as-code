@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	sectypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
 	"go.uber.org/zap"
 )
@@ -19,15 +20,17 @@ type CustomParams struct {
 	k8int        kubeinteraction.Interface
 	eventEmitter *events.EventEmitter
 	repo         *v1alpha1.Repository
+	vcx          provider.Interface
 }
 
-func NewCustomParams(event *info.Event, repo *v1alpha1.Repository, run *params.Run, k8int kubeinteraction.Interface, eventEmitter *events.EventEmitter) CustomParams {
+func NewCustomParams(event *info.Event, repo *v1alpha1.Repository, run *params.Run, k8int kubeinteraction.Interface, eventEmitter *events.EventEmitter, prov provider.Interface) CustomParams {
 	return CustomParams{
 		event:        event,
 		repo:         repo,
 		run:          run,
 		k8int:        k8int,
 		eventEmitter: eventEmitter,
+		vcx:          prov,
 	}
 }
 
@@ -38,7 +41,7 @@ func NewCustomParams(event *info.Event, repo *v1alpha1.Repository, run *params.R
 // if multiple params name has a filter we pick up the first one that has
 // matched true.
 func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, error) {
-	stdParams := p.makeStandardParamsFromEvent()
+	stdParams := p.makeStandardParamsFromEvent(ctx)
 	if p.repo.Spec.Params == nil {
 		return stdParams, nil
 	}

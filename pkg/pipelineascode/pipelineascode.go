@@ -66,7 +66,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 	}
 
 	// set params for the console driver, only used for the custom console ones
-	cp := customparams.NewCustomParams(p.event, repo, p.run, p.k8int, p.eventEmitter)
+	cp := customparams.NewCustomParams(p.event, repo, p.run, p.k8int, p.eventEmitter, p.vcx)
 	maptemplate, err := cp.GetParams(ctx)
 	if err != nil {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "ParamsError",

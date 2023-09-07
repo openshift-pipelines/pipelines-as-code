@@ -28,18 +28,22 @@ weight: 3
   allows you to have those "dynamic" variables expanded. Those variables look
   like this `{{ var }}` and those are the one you can use:
 
-  * `{{event_type}}`: The event type (eg: `pull_request` or `push`).
-  * `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
-  * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
-  * `{{repo_name}}`: The repository name.
   * `{{repo_owner}}`: The repository owner.
+  * `{{event_type}}`: The event type (eg: `pull_request` or `push`)
+  * `{{repo_name}}`: The repository name.
   * `{{repo_url}}`: The repository full URL.
+  * `{{target_namespace}}`: The target namespace where the Repository has matched and the PipelineRun will be created.
   * `{{revision}}`: The commit full sha revision.
   * `{{sender}}`: The sender username (or accountid on some providers) of the commit.
   * `{{source_branch}}`: The branch name where the event come from.
-  * `{{source_url}}`: The source repository URL from which the event come from (same as `repo_url` for push events).
   * `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
-  * `{{target_namespace}}`: The target namespace where the Repository has matched and the PipelineRun will be created.
+  * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
+  * `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
+  * `{{all_changed_files}}`: The list of all files changed in the event (added, deleted, modified and renamed) separated by a comma. On pull request every file belonging to the pull request will be listed.
+  * `{{added_files}}`: The list of added files in the event separated by a comma. On pull request every added file belonging to the pull request will be listed.
+  * `{{deleted_files}}`: The list of deleted files in the event separated by a comma. On pull request every deleted file belonging to the pull request will be listed.
+  * `{{modified_files}}`: The list of modified files in the event separated by a comma. On pull request every modified file belonging to the pull request will be listed.
+  * `{{renamed_files}}`: The list of renamed files in the event separated by a comma. On pull request every renamed file belonging to the pull request will be listed.
 
 * For Pipelines-as-Code to process your `PipelineRun`, you must have either an
   embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML
@@ -126,6 +130,9 @@ coming from a branch called `wip`:
       event == "pull_request" && target_branch == "main" && source_branch == "wip"
 ```
 
+> *NOTE*: `Pipelines-as-Code` supports two ways to match files changed in a particular event. The `.pathChanged` suffix function supports [glob
+pattern](https://github.com/ganbarodigital/go_glob#what-does-a-glob-pattern-look-like) and does not support different types of "changes" i.e. added, modified, deleted and so on. The other option is to use fields directly related to changes files (`all_changed_files`, `added_files`, `deleted_files`, `modified_files`, `renamed_files`) which can target specific types of changed files and supports using regex matching through CEL.
+
 Another example, if you want to have a PipelineRun running only if a path has
 changed you can use the `.pathChanged` suffix function with a [glob
 pattern](https://github.com/ganbarodigital/go_glob#what-does-a-glob-pattern-look-like). Here
@@ -135,6 +142,27 @@ suffix) in the `docs` directory :
 ```yaml
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "pull_request" && "docs/*.md".pathChanged()
+```
+
+This example will match any changed file (added, modified, removed or renamed) that was in the `tmp` directory:
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      all_changed_files.matches('tmp\/')
+```
+
+This example will match any added file that was in the `src` or `pkg` directory:
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      added_files.matches('src\/|pkg\/')
+```
+
+This example will match modified files with the name of test.go:
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      modified_files.matches('test\.go')
 ```
 
 This example will match all pull request starting with the title `[DOWNSTREAM]`:
@@ -158,6 +186,11 @@ The fields available are :
   Request title. (only `GitHub`, `Gitlab` and `BitbucketCloud` providers are supported)
 * `.pathChanged`: a suffix function to a string which can be a glob of a path to
   check if changed (only `GitHub` and `Gitlab` provider is supported)
+* `all_changed_files`: The list of all files changed in the event (added, deleted, modified and renamed) separated by a comma. On pull request every file belonging to the pull request will be listed.
+* `added_files`: The list of added files in the event separated by a comma. On pull request every added file belonging to the pull request will be listed.
+* `deleted_files`: The list of deleted files in the event separated by a comma. On pull request every deleted file belonging to the pull request will be listed.
+* `modified_files`: The list of modified files in the event separated by a comma. On pull request every modified file belonging to the pull request will be listed.
+* `renamed_files`: The list of renamed files in the event separated by a comma. On pull request every renamed file belonging to the pull request will be listed.
 
 Compared to the simple "on-target" annotation matching, the CEL expression
 allows you to complex filtering and most importantly express negation.

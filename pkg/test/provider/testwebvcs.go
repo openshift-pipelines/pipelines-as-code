@@ -23,6 +23,11 @@ type TestProviderImp struct {
 	FilesInsideRepo        map[string]string
 	WantProviderRemoteTask bool
 	PolicyDisallowing      bool
+	WantAllChangedFiles    []string
+	WantAddedFiles         []string
+	WantDeletedFiles       []string
+	WantModifiedFiles      []string
+	WantRenamedFiles       []string
 }
 
 func (v *TestProviderImp) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
@@ -88,8 +93,14 @@ func (v *TestProviderImp) GetFileInsideRepo(_ context.Context, _ *info.Event, fi
 	return "", fmt.Errorf("could not find %s in tests", file)
 }
 
-func (v *TestProviderImp) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
-	return []string{}, nil
+func (v *TestProviderImp) GetFiles(_ context.Context, _ *info.Event) (provider.ChangedFiles, error) {
+	return provider.ChangedFiles{
+		All:      v.WantAllChangedFiles,
+		Added:    v.WantAddedFiles,
+		Deleted:  v.WantDeletedFiles,
+		Modified: v.WantModifiedFiles,
+		Renamed:  v.WantRenamedFiles,
+	}, nil
 }
 
 func (v *TestProviderImp) CreateToken(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {

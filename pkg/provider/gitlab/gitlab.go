@@ -305,36 +305,59 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 	return nil
 }
 
-func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
+func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (provider.ChangedFiles, error) {
 	if v.Client == nil {
-		return []string{}, fmt.Errorf("no gitlab client has been initiliazed, " +
+		return provider.ChangedFiles{}, fmt.Errorf("no gitlab client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	if runevent.TriggerTarget == "pull_request" {
 		mrchanges, _, err := v.Client.MergeRequests.GetMergeRequestChanges(v.sourceProjectID, runevent.PullRequestNumber, &gitlab.GetMergeRequestChangesOptions{})
 		if err != nil {
-			return []string{}, err
+			return provider.ChangedFiles{}, err
 		}
-
-		result := []string{}
+		changedFiles := provider.ChangedFiles{}
 		for _, change := range mrchanges.Changes {
-			result = append(result, change.NewPath)
+			changedFiles.All = append(changedFiles.All, change.NewPath)
+			if change.NewFile {
+				changedFiles.Added = append(changedFiles.Added, change.NewPath)
+			}
+			if change.DeletedFile {
+				changedFiles.Deleted = append(changedFiles.Deleted, change.NewPath)
+			}
+			if !change.RenamedFile && !change.DeletedFile && !change.NewFile {
+				changedFiles.Modified = append(changedFiles.Modified, change.NewPath)
+			}
+			if change.RenamedFile {
+				changedFiles.Renamed = append(changedFiles.Renamed, change.NewPath)
+			}
 		}
-		return result, nil
+		return changedFiles, nil
 	}
 
 	if runevent.TriggerTarget == "push" {
 		pushChanges, _, err := v.Client.Commits.GetCommitDiff(v.sourceProjectID, runevent.SHA, &gitlab.GetCommitDiffOptions{})
 		if err != nil {
-			return []string{}, err
+			return provider.ChangedFiles{}, err
 		}
-		result := []string{}
+		changedFiles := provider.ChangedFiles{}
 		for _, change := range pushChanges {
-			result = append(result, change.NewPath)
+			changedFiles.All = append(changedFiles.All, change.NewPath)
+			if change.NewFile {
+				changedFiles.Added = append(changedFiles.Added, change.NewPath)
+			}
+			if change.DeletedFile {
+				changedFiles.Deleted = append(changedFiles.Deleted, change.NewPath)
+			}
+			if !change.RenamedFile && !change.DeletedFile && !change.NewFile {
+				changedFiles.Modified = append(changedFiles.Modified, change.NewPath)
+			}
+			if change.RenamedFile {
+				changedFiles.Renamed = append(changedFiles.Renamed, change.NewPath)
+			}
 		}
-		return result, nil
+		return changedFiles, nil
 	}
-	return []string{}, nil
+	return provider.ChangedFiles{}, nil
 }
 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
