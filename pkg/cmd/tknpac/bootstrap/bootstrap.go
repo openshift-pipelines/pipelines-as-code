@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
+	kapierror "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
-	"github.com/spf13/cobra"
-	corev1 "k8s.io/api/core/v1"
-	kapierror "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -226,6 +227,12 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 					fmt.Fprintf(opts.ioStreams.Out, "👕 Using Public Github on %s\n", keys.PublicGithubAPIURL)
 					opts.GithubAPIURL = keys.PublicGithubAPIURL
 				} else {
+					// check if it finishes with /api/v3 and strip it out if it does
+					opts.GithubAPIURL = strings.TrimSuffix(opts.GithubAPIURL, "/api/v3")
+					// if we have only a host then add https into it
+					if !strings.HasPrefix(opts.GithubAPIURL, "https://") {
+						opts.GithubAPIURL = fmt.Sprintf("https://%s", opts.GithubAPIURL)
+					}
 					fmt.Fprintf(opts.ioStreams.Out, "👔 Using Github Enterprise URL: %s\n", opts.GithubAPIURL)
 					opts.providerType = "github-enterprise-app"
 				}
@@ -301,7 +308,9 @@ func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 	cmd.PersistentFlags().StringVar(&opts.GithubOrganizationName, "github-organization-name", "", "Whether you want to target an organization instead of the current user")
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationName, "github-application-name", "", "GitHub Application Name")
 	cmd.PersistentFlags().StringVar(&opts.GithubApplicationURL, "github-application-url", "", "GitHub Application URL")
-	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enterprise API URL")
+	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-hostname", "", "", "Github Enterprise Hostname ")
+	cmd.PersistentFlags().StringVarP(&opts.GithubAPIURL, "github-api-url", "", "", "Github Enterprise API Host or URL")
+	_ = cmd.Flags().MarkDeprecated("github-api-url", "please use --github-hostname flag instead")
 	cmd.PersistentFlags().StringVar(&opts.RouteName, "route-url", "", "The public URL for the pipelines-as-code controller")
 	cmd.PersistentFlags().StringVar(&opts.forwarderURL, "web-forwarder-url", defaultWebForwarderURL, "the web forwarder url")
 	cmd.PersistentFlags().StringVar(&opts.dashboardURL, "dashboard-url", "", "the full URL to the tekton dashboard ")
