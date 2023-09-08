@@ -71,6 +71,7 @@ jobs:
 
           # restart controller
           kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=controller
+          kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=watcher
 
           # wait for controller to start
           i=0
