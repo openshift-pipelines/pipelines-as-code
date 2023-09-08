@@ -2,6 +2,7 @@
 title: Getting started guide.
 weight: 2
 ---
+
 # Getting started with Pipelines-as-Code
 
 This guide will walk you through the process of getting started with Pipelines-as-Code.
@@ -14,9 +15,9 @@ Pipelines-as-Code flow looks like.
 
 ## Prerequisites
 
-* A Kubernetes cluster like [Kind](https://kind.sigs.k8s.io/), [Minikube](https://minikube.sigs.k8s.io/docs/start/), or [OpenShift Local](<https://developers.redhat.com/products/openshift-local/overview>)
-* The OpenShift Pipelines Operator installed or [Tekton Pipelines](https://tekton.dev/docs/pipelines/install/) installed on your cluster
-* The [Tekton CLI](https://tekton.dev/docs/cli/#installation) installed, and the Pipelines-as-Code CLI plugin ([tkn-pac](https://pipelinesascode.com/docs/guide/cli/#install)) installed
+- A Kubernetes cluster like [Kind](https://kind.sigs.k8s.io/), [Minikube](https://minikube.sigs.k8s.io/docs/start/), or [OpenShift Local](https://developers.redhat.com/products/openshift-local/overview)
+- The OpenShift Pipelines Operator installed or [Tekton Pipelines](https://tekton.dev/docs/pipelines/install/) installed on your cluster
+- The [Tekton CLI](https://tekton.dev/docs/cli/#installation) installed, and the Pipelines-as-Code CLI plugin ([tkn-pac](https://pipelinesascode.com/docs/guide/cli/#install)) installed
 
 ## Installing Pipelines-as-Code
 
@@ -26,7 +27,12 @@ You can also install it manually by applying the YAML files to your cluster or u
 
 The `tkn pac bootstrap` command allows you to get started quickly and try out Pipelines-as-Code. If you are running this in production, you should consider installing Pipelines-as-Code using a GitOps tool like [OpenShift GitOps](https://www.openshift.com/learn/topics/gitops/) or [ArgoCD](https://argoproj.github.io/argo-cd/) following the manual installation instructions.
 
-Let's get started with `tkn pac bootstrap`:
+Let's get started with `tkn pac bootstrap`.
+
+{{< hint info >}}
+Note: this assumes using the public GitHub instance, if you are using GitHub
+Enterprise you will need to use the `--github-hostname` flag with the hostname of your GitHub Enterprise instance.
+{{< /hint >}}
 
 ### Pipelines-as-Code Installation
 
@@ -34,7 +40,7 @@ Let's get started with `tkn pac bootstrap`:
 % tkn pac bootstrap
 => Checking if Pipelines-as-Code is installed.
 🕵️ Pipelines-as-Code doesn't seem to be installed in the pipelines-as-code namespace.
-? Do you want me to install Pipelines-as-Code v0.19.2? (Y/n) 
+? Do you want me to install Pipelines-as-Code v0.19.2? (Y/n)
 ```
 
 As soon as you get started, it will try to detect if you have Pipelines-as-Code installed. If it isn't installed, you will be asked if you want to install it.
@@ -46,10 +52,10 @@ You can go ahead and press `Y` to install it.
 The second question asks if you want to install the tool called [gosmee](https://github.com/chmouel/gosmee). This will only be asked if you are not running on OpenShift. This is not required, but since we need a way to have GitHub reach the Pipelines-as-Code controller from the internet, it's the easiest way to do it.
 
 ```console
-Pipelines-as-Code does not install an Ingress object to allow the controller to be accessed from the internet. 
-We can install a webhook forwarder called gosmee (https://github.com/chmouel/gosmee) using a https://hook.pipelinesascode.com URL. 
+Pipelines-as-Code does not install an Ingress object to allow the controller to be accessed from the internet.
+We can install a webhook forwarder called gosmee (https://github.com/chmouel/gosmee) using a https://hook.pipelinesascode.com URL.
 This will let your git platform provider (e.g., GitHub) reach the controller without requiring public access.
-? Do you want me to install the gosmee forwarder? (Y/n) 
+? Do you want me to install the gosmee forwarder? (Y/n)
 💡 Your gosmee forward URL has been generated: https://hook.pipelinesascode.com/zZVuUUOkCzPD
 ```
 
@@ -229,7 +235,7 @@ That was on purpose, we have detected some error on the Go code and GolangCI lin
 
 ### Fixing the error and pushing again
 
-Let's go ahead and go back to our terminal and fix that error. Edit the file `main.go` select everything and  replace it with this content
+Let's go ahead and go back to our terminal and fix that error. Edit the file `main.go` select everything and replace it with this content
 
 ```go
 package main
