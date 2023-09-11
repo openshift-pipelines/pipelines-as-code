@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	apincoming "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/incoming"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -34,6 +35,23 @@ func NewCustomParams(event *info.Event, repo *v1alpha1.Repository, run *params.R
 	}
 }
 
+// applyIncomingParams apply incoming params to an existing map (overwriting existing keys)
+func (p *CustomParams) applyIncomingParams(ret map[string]string) map[string]string {
+	if p.event.Request == nil {
+		return ret
+	}
+	if incomingParams, err := apincoming.ParseIncomingPayload(p.event.Request.Payload); err == nil {
+		for k, v := range incomingParams.Params {
+			if vs, ok := v.(string); ok {
+				ret[k] = vs
+			} else {
+				p.eventEmitter.EmitMessage(p.repo, zap.WarnLevel, "IncomingParamsNotString", fmt.Sprintf("cannot convert incoming param key: %s value: %v as string", k, v))
+			}
+		}
+	}
+	return ret
+}
+
 // GetParams will process the parameters as set in the repo.Spec CR.
 // value can come from a string or from a secretKeyRef or from a string value
 // if both is set we pick the value and issue a warning in the user namespace
@@ -43,7 +61,7 @@ func NewCustomParams(event *info.Event, repo *v1alpha1.Repository, run *params.R
 func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, error) {
 	stdParams := p.makeStandardParamsFromEvent(ctx)
 	if p.repo.Spec.Params == nil {
-		return stdParams, nil
+		return p.applyIncomingParams(stdParams), nil
 	}
 	ret := map[string]string{}
 	mapFilters := map[string]string{}
@@ -107,5 +125,5 @@ func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, error)
 		}
 	}
 
-	return ret, nil
+	return p.applyIncomingParams(ret), nil
 }

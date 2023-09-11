@@ -57,6 +57,15 @@ func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, g
 		RepositoryIDs: v.RepositoryIDs,
 	}
 
+	// This is a hack when we have auth and api disassociated like in our
+	// unittests since we are using a custom http server with httptest
+	reqTokenURL := os.Getenv("PAC_GIT_PROVIDER_TOKEN_APIURL")
+	if reqTokenURL != "" {
+		itr.BaseURL = reqTokenURL
+		v.APIURL = &reqTokenURL
+		gheURL = strings.TrimSuffix(reqTokenURL, "/api/v3")
+	}
+
 	if gheURL != "" {
 		if !strings.HasPrefix(gheURL, "https://") && !strings.HasPrefix(gheURL, "http://") {
 			gheURL = "https://" + gheURL
@@ -65,12 +74,6 @@ func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, g
 		itr.BaseURL = strings.TrimSuffix(v.Client.BaseURL.String(), "/")
 	} else {
 		v.Client = github.NewClient(&http.Client{Transport: itr})
-	}
-
-	// This is a hack when we have auth and api disassociated
-	reqTokenURL := os.Getenv("PAC_GIT_PROVIDER_TOKEN_APIURL")
-	if reqTokenURL != "" {
-		itr.BaseURL = reqTokenURL
 	}
 
 	// Get a token ASAP because we need it for setting private repos

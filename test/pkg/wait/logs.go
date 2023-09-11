@@ -31,6 +31,7 @@ func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg
 func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labelselector, containerName string, reg regexp.Regexp, maxNumberOfLoop int) error {
 	var err error
 	output := ""
+	clients.Clients.Log.Infof("looking for regexp %s in %s:%s labelSelector/pod", reg.String(), labelselector, containerName)
 	for i := 0; i <= maxNumberOfLoop; i++ {
 		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName)
 		if err != nil {
@@ -44,6 +45,6 @@ func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labels
 		}
 		time.Sleep(5 * time.Second)
 	}
-	return fmt.Errorf("could not find a match in %s:%s labelSelector/pod for regexp:\n%s\noutput:\n%s",
+	return fmt.Errorf("could not find a match in %s:%s labelSelector/pod for regexp: '%s' output: '%s'",
 		labelselector, containerName, reg.String(), output)
 }

@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"os"
 
+	"go.uber.org/zap"
+
+	apincoming "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/incoming"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
@@ -18,24 +21,48 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github/app"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
-	"go.uber.org/zap"
 )
 
 func compareSecret(incomingSecret, secretValue string) bool {
 	return subtle.ConstantTimeCompare([]byte(incomingSecret), []byte(secretValue)) != 0
 }
 
-func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payload []byte) (bool, *v1alpha1.Repository, error) {
+func applyIncomingParams(req *http.Request, payloadBody []byte, params []string) (apincoming.Payload, error) {
+	if req.Header.Get("Content-Type") != "application/json" {
+		return apincoming.Payload{}, fmt.Errorf("invalid content type, only application/json is accepted when posting a body")
+	}
+	payload, err := apincoming.ParseIncomingPayload(payloadBody)
+	if err != nil {
+		return apincoming.Payload{}, fmt.Errorf("error parsing incoming payload, not the expected format?: %w", err)
+	}
+	for k := range payload.Params {
+		allowed := false
+		for _, allowedP := range params {
+			if k == allowedP {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return apincoming.Payload{}, fmt.Errorf("param %s is not allowed in incoming webhook CR", k)
+		}
+	}
+	return payload, nil
+}
+
+func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloadBody []byte) (bool, *v1alpha1.Repository, error) {
 	repository := req.URL.Query().Get("repository")
 	querySecret := req.URL.Query().Get("secret")
 	pipelineRun := req.URL.Query().Get("pipelinerun")
 	branch := req.URL.Query().Get("branch")
+
 	if req.URL.Path != "/incoming" {
 		return false, nil, nil
 	}
+	l.logger.Infof("incoming request has been requested: %v", req.URL)
 	if pipelineRun == "" || repository == "" || querySecret == "" || branch == "" {
-		return false, nil, fmt.Errorf("missing query URL argument: pipelinerun, branch, repository, secret: %+v",
-			req.URL.Query())
+		err := fmt.Errorf("missing query URL argument: pipelinerun, branch, repository, secret: '%s' '%s' '%s' '%s'", pipelineRun, branch, repository, querySecret)
+		return false, nil, err
 	}
 
 	repo, err := matcher.GetRepo(ctx, l.run, repository)
@@ -55,6 +82,9 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 		return false, nil, fmt.Errorf("branch '%s' has not matched any rules in repo incoming webhooks spec: %+v", branch, *repo.Spec.Incomings)
 	}
 
+	// log incoming request
+	l.logger.Infof("incoming request targeting pipelinerun %s on branch %s for repository %s has been accepted", pipelineRun, branch, repository)
+
 	secretOpts := ktypes.GetSecretOpt{
 		Namespace: repo.Namespace,
 		Name:      hook.Secret.Name,
@@ -64,10 +94,13 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 	if err != nil {
 		return false, nil, fmt.Errorf("error getting secret referenced in incoming-webhook: %w", err)
 	}
+	if secretValue == "" {
+		return false, nil, fmt.Errorf("secret referenced in incoming-webhook %s is empty or key %s is not existent", hook.Secret.Name, hook.Secret.Key)
+	}
 
 	// TODO: move to somewhere common to share between gitlab and here
 	if !compareSecret(querySecret, secretValue) {
-		return false, nil, fmt.Errorf("secret passed to the webhook is %s which does not match with the incoming webhook secret %s in %s", secretValue, querySecret, hook.Secret.Name)
+		return false, nil, fmt.Errorf("secret passed to the webhook does not match the incoming webhook secret set on repository CR in secret %s", hook.Secret.Name)
 	}
 
 	if repo.Spec.GitProvider == nil || repo.Spec.GitProvider.Type == "" {
@@ -88,6 +121,13 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 		}
 	}
 
+	// make sure accepted is json
+	if string(payloadBody) != "" {
+		if l.event.Event, err = applyIncomingParams(req, payloadBody, hook.Params); err != nil {
+			return false, nil, err
+		}
+	}
+
 	// TODO: more than i think about it and more i think triggertarget should be
 	// eventType and vice versa, but keeping as is for now.
 	l.event.EventType = "incoming"
@@ -96,7 +136,7 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 	l.event.HeadBranch = branch
 	l.event.BaseBranch = branch
 	l.event.Request.Header = req.Header
-	l.event.Request.Payload = payload
+	l.event.Request.Payload = payloadBody
 	l.event.URL = repo.Spec.URL
 	l.event.Sender = "incoming"
 	return true, repo, nil
