@@ -28,6 +28,7 @@ func TestProcessTemplates(t *testing.T) {
 		secretData         map[string]string
 		expectedLogSnippet string
 		expectedError      bool
+		incomingPayload    string
 	}{
 		{
 			name:     "params/basic",
@@ -42,6 +43,41 @@ func TestProcessTemplates(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name: "params/added_from_incoming",
+			expected: map[string]string{
+				"the_best_superhero_is": "superman",
+				"event_type":            "",
+				"repo_name":             "",
+				"repo_owner":            "",
+				"repo_url":              "",
+				"revision":              "",
+				"sender":                "",
+				"source_branch":         "",
+				"source_url":            "",
+				"target_branch":         "",
+				"target_namespace":      "",
+			},
+			repository: &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{},
+			},
+			incomingPayload: `{"params":{"the_best_superhero_is":"superman"}}`,
+		},
+		{
+			name:     "params/added_from_incoming_webhook_override",
+			expected: map[string]string{"the_best_superhero_is": "you"},
+			repository: &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{
+					Params: &[]v1alpha1.Params{
+						{
+							Name:  "the_best_superhero_is",
+							Value: "batman",
+						},
+					},
+				},
+			},
+			incomingPayload: `{"params":{"the_best_superhero_is":"you"}}`,
 		},
 		{
 			name:     "params/from secret",
@@ -280,6 +316,7 @@ func TestProcessTemplates(t *testing.T) {
 			if tt.event == nil {
 				tt.event = &info.Event{}
 			}
+			tt.event.Request = &info.Request{Payload: []byte(tt.incomingPayload)}
 			p := NewCustomParams(tt.event, repo, run, &kitesthelper.KinterfaceTest{GetSecretResult: tt.secretData}, nil)
 			stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
 			p.eventEmitter = events.NewEventEmitter(stdata.Kube, logger)

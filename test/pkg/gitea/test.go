@@ -132,7 +132,6 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	assert.NilError(t, err)
 
 	PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
-
 	// try multiple times, cause sometime we get this kind of error:
 	// error: failed to push some refs to '/home/gitea/repositories/org-pac-e2e-test-zg6sx/pac-e2e-test-zg6sx.git'
 	for i := 0; i < 5; i++ {

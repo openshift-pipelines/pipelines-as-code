@@ -18,7 +18,11 @@ type tkr struct {
 }
 
 func (t tkr) ConsoleLogURL() string {
-	return fmt.Sprintf("[%s](%s)", t.PipelineTaskName, t.taskLogURL)
+	name := t.PipelineTaskName
+	if t.Status != nil && t.Status.TaskSpec != nil && t.Status.TaskSpec.DisplayName != "" {
+		name = t.Status.TaskSpec.DisplayName
+	}
+	return fmt.Sprintf("[%s](%s)", name, t.taskLogURL)
 }
 
 type taskrunList []tkr

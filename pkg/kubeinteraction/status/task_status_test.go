@@ -25,10 +25,10 @@ func TestCollectFailedTasksLogSnippet(t *testing.T) {
 	clock := clockwork.NewFakeClock()
 
 	tests := []struct {
-		name            string
-		message, status string
-		wantFailure     int
-		podOutput       string
+		name, displayName string
+		message, status   string
+		wantFailure       int
+		podOutput         string
 	}{
 		{
 			name:        "no failures",
@@ -42,6 +42,7 @@ func TestCollectFailedTasksLogSnippet(t *testing.T) {
 			message:     "i am gonna to make you fail",
 			podOutput:   "hahah i am the devil of the pod",
 			wantFailure: 1,
+			displayName: "A task",
 		},
 	}
 	for _, tt := range tests {
@@ -63,7 +64,8 @@ func TestCollectFailedTasksLogSnippet(t *testing.T) {
 			}
 
 			taskStatus := tektonv1.TaskRunStatusFields{
-				PodName: "task1",
+				PodName:  "task1",
+				TaskSpec: &tektonv1.TaskSpec{DisplayName: tt.displayName},
 				Steps: []tektonv1.StepState{
 					{
 						Name: "step1",
@@ -106,6 +108,9 @@ func TestCollectFailedTasksLogSnippet(t *testing.T) {
 			if tt.podOutput != "" {
 				assert.Equal(t, tt.podOutput, got["task1"].LogSnippet)
 			}
+			if tt.displayName != "" {
+				assert.Equal(t, tt.displayName, got["task1"].DisplayName)
+			}
 		})
 	}
 }
@@ -118,7 +123,72 @@ func TestGetStatusFromTaskStatusOrFromAsking(t *testing.T) {
 		numStatus          int
 		expectedLogSnippet string
 		taskRuns           []*tektonv1.TaskRun
+		displayNames       []string
 	}{
+		{
+			name:         "get status with displayName",
+			numStatus:    2,
+			displayNames: []string{"Hello Moto", ""},
+			pr: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: testNS,
+				},
+				Spec: tektonv1.PipelineRunSpec{
+					PipelineSpec: &tektonv1.PipelineSpec{
+						Tasks: []tektonv1.PipelineTask{
+							{
+								Name:        "hello",
+								DisplayName: "Hello Moto",
+							},
+						},
+					},
+				},
+				Status: tektonv1.PipelineRunStatus{
+					PipelineRunStatusFields: tektonv1.PipelineRunStatusFields{
+						ChildReferences: []tektonv1.ChildStatusReference{
+							{
+								TypeMeta: runtime.TypeMeta{
+									Kind: "TaskRun",
+								},
+								Name:             "hello",
+								PipelineTaskName: "hello",
+							},
+							{
+								TypeMeta: runtime.TypeMeta{
+									Kind: "TaskRun",
+								},
+								Name:             "yolo",
+								PipelineTaskName: "yolo",
+							},
+						},
+					},
+				},
+			},
+			taskRuns: []*tektonv1.TaskRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "hello",
+						Namespace: testNS,
+					},
+					Status: tektonv1.TaskRunStatus{
+						TaskRunStatusFields: tektonv1.TaskRunStatusFields{
+							TaskSpec: &tektonv1.TaskSpec{},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "yolo",
+						Namespace: testNS,
+					},
+					Status: tektonv1.TaskRunStatus{
+						TaskRunStatusFields: tektonv1.TaskRunStatusFields{
+							TaskSpec: &tektonv1.TaskSpec{},
+						},
+					},
+				},
+			},
+		},
 		{
 			name:      "get status from child references post tektoncd/pipelines 0.44",
 			numStatus: 2,
@@ -151,14 +221,22 @@ func TestGetStatusFromTaskStatusOrFromAsking(t *testing.T) {
 						Name:      "hello",
 						Namespace: testNS,
 					},
-					Status: tektonv1.TaskRunStatus{},
+					Status: tektonv1.TaskRunStatus{
+						TaskRunStatusFields: tektonv1.TaskRunStatusFields{
+							TaskSpec: &tektonv1.TaskSpec{},
+						},
+					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "yolo",
 						Namespace: testNS,
 					},
-					Status: tektonv1.TaskRunStatus{},
+					Status: tektonv1.TaskRunStatus{
+						TaskRunStatusFields: tektonv1.TaskRunStatusFields{
+							TaskSpec: &tektonv1.TaskSpec{},
+						},
+					},
 				},
 			},
 		},
@@ -210,7 +288,13 @@ func TestGetStatusFromTaskStatusOrFromAsking(t *testing.T) {
 			}
 			statuses := GetStatusFromTaskStatusOrFromAsking(ctx, tt.pr, run)
 			assert.Equal(t, len(statuses), tt.numStatus)
-
+			displayNames := []string{}
+			if tt.displayNames != nil {
+				for _, prtrs := range statuses {
+					displayNames = append(displayNames, prtrs.Status.TaskSpec.DisplayName)
+				}
+				assert.DeepEqual(t, tt.displayNames, displayNames)
+			}
 			if tt.expectedLogSnippet != "" {
 				logmsg := obslog.FilterMessageSnippet(tt.expectedLogSnippet).TakeAll()
 				assert.Assert(t, len(logmsg) > 0, "log messages", logmsg, tt.expectedLogSnippet)

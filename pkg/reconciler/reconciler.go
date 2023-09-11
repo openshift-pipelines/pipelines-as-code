@@ -5,6 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1/pipelinerun"
+	tektonv1lister "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
+	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/logging"
+	pkgreconciler "knative.dev/pkg/reconciler"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -19,13 +27,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1/pipelinerun"
-	tektonv1lister "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
-	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/logging"
-	pkgreconciler "knative.dev/pkg/reconciler"
 )
 
 // Reconciler implements controller.Reconciler for PipelineRun resources.

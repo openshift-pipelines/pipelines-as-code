@@ -65,6 +65,7 @@ type TaskInfos struct {
 	Message        string
 	LogSnippet     string
 	Reason         string
+	DisplayName    string
 	CompletionTime *metav1.Time
 }
 
@@ -99,6 +100,7 @@ type Params struct {
 type Incoming struct {
 	Type    string   `json:"type"`
 	Secret  Secret   `json:"secret"`
+	Params  []string `json:"params,omitempty"`
 	Targets []string `json:"targets,omitempty"`
 }
 

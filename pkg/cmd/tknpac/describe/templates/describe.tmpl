@@ -24,7 +24,7 @@
 
 {{ $.ColorScheme.Underline "Failures:" }}
 {{ range $taskName, $task := $status.CollectedTaskInfos }}
-{{ $.ColorScheme.Bold "•" }} {{ $taskName }}:{{if ne $task.Reason "Failed"}} {{$.ColorScheme.Dimmed $task.Reason}}{{end}}
+{{ $.ColorScheme.Bold "•" }} {{if ne $task.DisplayName ""}}{{ $task.DisplayName }}{{ else }}{{ $taskName }}{{ end }}:{{if ne $task.Reason "Failed"}} {{$.ColorScheme.Dimmed $task.Reason}}{{end}}
 {{ if eq $task.LogSnippet ""}}  {{ $task.Message }}{{ else }}{{ formatError $.ColorScheme $task.LogSnippet }}{{end}}
 {{ end }}
 {{- end }}

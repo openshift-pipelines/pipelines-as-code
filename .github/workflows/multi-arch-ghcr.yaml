@@ -23,7 +23,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Log in to the Container registry
         uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
@@ -45,7 +45,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.CONTROLLER_IMAGE_NAME }}
 
       - name: Build and push controller docker image
-        uses: docker/build-push-action@v4.1.1
+        uses: docker/build-push-action@v4.2.1
         with:
           context: .
           build-args: |
@@ -62,7 +62,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.WATCHER_IMAGE_NAME }}
 
       - name: Build and push watcher docker image
-        uses: docker/build-push-action@v4.1.1
+        uses: docker/build-push-action@v4.2.1
         with:
           context: .
           build-args: |
@@ -79,7 +79,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.WEBHOOK_IMAGE_NAME }}
 
       - name: Build and push webhook docker image
-        uses: docker/build-push-action@v4.1.1
+        uses: docker/build-push-action@v4.2.1
         with:
           context: .
           build-args: |
@@ -96,7 +96,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.TKN_PAC_IMAGE_NAME }}
 
       - name: Build and push cli docker image
-        uses: docker/build-push-action@v4.1.1
+        uses: docker/build-push-action@v4.2.1
         with:
           context: .
           build-args: |

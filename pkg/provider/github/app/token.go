@@ -27,7 +27,7 @@ func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *par
 		return "", "", 0, err
 	}
 
-	installationURL := keys.PublicGithubAPIURL + keys.InstallationURL
+	installationURL := *gh.APIURL + keys.InstallationURL
 	enterpriseURL = req.Header.Get("X-GitHub-Enterprise-Host")
 	if enterpriseURL != "" {
 		installationURL = enterpriseURL + keys.InstallationURL
@@ -36,6 +36,10 @@ func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *par
 	res, err := GetReponse(ctx, http.MethodGet, installationURL, jwtToken, run)
 	if err != nil {
 		return "", "", 0, err
+	}
+
+	if res.StatusCode >= 300 {
+		return "", "", 0, fmt.Errorf("Non-OK HTTP status: %d", res.StatusCode)
 	}
 
 	defer res.Body.Close()
@@ -68,6 +72,7 @@ func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *par
 		}
 		if exist {
 			installationID = *installationData[i].ID
+			break
 		}
 	}
 	return enterpriseURL, token, installationID, nil

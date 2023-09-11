@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: "\\ .PipelineName //"
+  name: "pipelinerun-incoming"
   annotations:
     pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
     pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
@@ -11,9 +11,13 @@ spec:
   pipelineSpec:
     tasks:
       - name: task
-        displayName: "The Task name is Task"
         taskSpec:
           steps:
             - name: task
               image: registry.access.redhat.com/ubi9/ubi-micro
-              command: ["/bin/echo", "HELLOMOTO"]
+              command:
+                [
+                  "/bin/echo",
+                  "-n",
+                  "It's a Bird... It's a Plane... It's {{ the_best_superhero_is }}",
+                ]
