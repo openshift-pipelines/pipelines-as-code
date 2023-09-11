@@ -425,11 +425,10 @@ func TestAppTokenGeneration(t *testing.T) {
 		},
 	})
 
-	fakeGithubAuthURL := "https://fake.gitub.auth/api/v3/"
 	tests := []struct {
 		ctx                 context.Context
 		name                string
-		wantErr             bool
+		wantErrSubst        string
 		nilClient           bool
 		seedData            testclient.Clients
 		envs                map[string]string
@@ -443,8 +442,8 @@ func TestAppTokenGeneration(t *testing.T) {
 			envs: map[string]string{
 				"SYSTEM_NAMESPACE": "foo",
 			},
-			seedData: noSecret,
-			wantErr:  true,
+			seedData:     noSecret,
+			wantErrSubst: `secrets "pipelines-as-code-secret" not found`,
 		},
 		{
 			ctx:  ctx,
@@ -452,9 +451,8 @@ func TestAppTokenGeneration(t *testing.T) {
 			envs: map[string]string{
 				"SYSTEM_NAMESPACE": testNamespace,
 			},
-			seedData:      vaildSecret,
-			resultBaseURL: "https://fake.gitub.auth/api/v3/",
-			nilClient:     false,
+			seedData:  vaildSecret,
+			nilClient: false,
 		},
 		{
 			ctx:  ctx,
@@ -463,7 +461,6 @@ func TestAppTokenGeneration(t *testing.T) {
 				"SYSTEM_NAMESPACE": testNamespace,
 			},
 			seedData:        vaildSecret,
-			resultBaseURL:   "https://fake.gitub.auth/api/v3/",
 			nilClient:       false,
 			checkInstallIDs: []int64{123},
 		},
@@ -484,8 +481,8 @@ func TestAppTokenGeneration(t *testing.T) {
 			envs: map[string]string{
 				"SYSTEM_NAMESPACE": testNamespace,
 			},
-			wantErr:  true,
-			seedData: invalidAppID,
+			wantErrSubst: `could not parse the github application_id number from secret: strconv.ParseInt: parsing "abcd": invalid syntax`,
+			seedData:     invalidAppID,
 		},
 		{
 			ctx:  ctxInvalidPrivateKey,
@@ -493,8 +490,8 @@ func TestAppTokenGeneration(t *testing.T) {
 			envs: map[string]string{
 				"SYSTEM_NAMESPACE": testNamespace,
 			},
-			wantErr:  true,
-			seedData: invalidPrivateKey,
+			wantErrSubst: `could not parse private key: invalid key: Key must be a PEM encoded PKCS1 or PKCS8 key`,
+			seedData:     invalidPrivateKey,
 		},
 	}
 	for _, tt := range tests {
@@ -504,7 +501,6 @@ func TestAppTokenGeneration(t *testing.T) {
 			mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", testInstallationID), func(w http.ResponseWriter, r *http.Request) {
 				_, _ = fmt.Fprint(w, "{}")
 			})
-			tt.envs["PAC_GIT_PROVIDER_TOKEN_APIURL"] = serverURL + "/api/v3"
 			envRemove := env.PatchAll(t, tt.envs)
 			defer envRemove()
 
@@ -533,11 +529,8 @@ func TestAppTokenGeneration(t *testing.T) {
 			request := &http.Request{Header: map[string][]string{}}
 			request.Header.Set("X-GitHub-Event", "pull_request")
 			// a bit of a pain but works
-			if tt.resultBaseURL != "" {
-				request.Header.Set("X-GitHub-Enterprise-Host", fakeGithubAuthURL)
-			} else {
-				request.Header.Set("X-GitHub-Enterprise-Host", serverURL)
-			}
+			request.Header.Set("X-GitHub-Enterprise-Host", serverURL)
+			tt.envs["PAC_GIT_PROVIDER_TOKEN_APIURL"] = serverURL + "/api/v3"
 
 			run := &params.Run{
 				Clients: clients.Clients{
@@ -573,8 +566,9 @@ func TestAppTokenGeneration(t *testing.T) {
 			}
 
 			_, err := gprovider.ParsePayload(tt.ctx, run, request, string(jeez))
-			if tt.wantErr {
+			if tt.wantErrSubst != "" {
 				assert.Assert(t, err != nil)
+				assert.ErrorContains(t, err, tt.wantErrSubst)
 				return
 			}
 			assert.NilError(t, err)
