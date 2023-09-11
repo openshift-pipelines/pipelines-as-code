@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-github/v53/github"
 	"github.com/jonboulle/clockwork"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -57,6 +58,7 @@ type skippedRun struct {
 
 func New() *Provider {
 	return &Provider{
+		APIURL:        github.String(keys.PublicGithubAPIURL),
 		paginedNumber: defaultPaginedNumber,
 		skippedRun: skippedRun{
 			mutex: &sync.Mutex{},

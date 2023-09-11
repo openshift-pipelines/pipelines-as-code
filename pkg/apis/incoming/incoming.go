@@ -5,7 +5,7 @@ import "encoding/json"
 type (
 	Params  map[string]interface{}
 	Payload struct {
-		Params `json:"params"`
+		Params Params `json:"params"`
 	}
 )
 

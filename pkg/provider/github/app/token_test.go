@@ -154,11 +154,17 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 		Namespaces: []*corev1.Namespace{testNamespace},
 		Secret:     []*corev1.Secret{validSecret},
 	}
+	wantToken := "GOODTOKEN"
+	wantID := 120
+	badToken := "BADTOKEN"
+	badID := 666
 
+	fakeghclient, mux, serverURL, teardown := ghtesthelper.SetupGH()
+	defer teardown()
 	// created fakeconfig to get InstallationID
 	config := map[string]map[string]string{
-		"https://api.github.com/app/installations": {
-			"body": `[{"id":120}]`,
+		fmt.Sprintf("%s/app/installations", serverURL): {
+			"body": fmt.Sprintf(`[{"id":%d}, {"id":121}]`, wantID),
 			"code": "200",
 		},
 	}
@@ -183,9 +189,6 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 	jwtToken, err := GenerateJWT(ctx, testNamespace.GetName(), run)
 	assert.NilError(t, err)
 	req := httptest.NewRequest("GET", "http://localhost", strings.NewReader(""))
-
-	req.Header.Add("X-GitHub-Enterprise-Host", "https://api.github.com")
-
 	repo := &v1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "repo",
@@ -203,35 +206,34 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 		},
 	}
 
-	fakeghclient, mux, serverURL, teardown := ghtesthelper.SetupGH()
-	defer teardown()
+	gprovider := &github.Provider{Client: fakeghclient, APIURL: &serverURL}
 
-	gprovider := &github.Provider{Client: fakeghclient}
-
-	mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", 120), func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", wantID), func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
 		w.Header().Set("Authorization", "Bearer "+jwtToken)
 		w.Header().Set("Accept", "application/vnd.github+json")
-		_, _ = fmt.Fprint(w, `{"token": "12345"}`)
+		_, _ = fmt.Fprintf(w, `{"token": "%s"}`, wantToken)
+	})
+
+	mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", badID), func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "POST")
+		w.Header().Set("Authorization", "Bearer "+jwtToken)
+		w.Header().Set("Accept", "application/vnd.github+json")
+		_, _ = fmt.Fprintf(w, `{"token": "%s"}`, badToken)
 	})
 
 	t.Setenv("PAC_GIT_PROVIDER_TOKEN_APIURL", serverURL+"/api/v3")
 
-	mux.HandleFunc("user/installations/120/repositories/2", func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(rw)
-	})
-
 	mux.HandleFunc("/installation/repositories", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Authorization", "Bearer 12345")
 		w.Header().Set("Accept", "application/vnd.github+json")
-		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"}]}`)
+		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"},{"id":2,"html_url": "https://anotherrepo/that/would/failit"}]}`)
 	})
-	_, _, installationID, err := GetAndUpdateInstallationID(ctx, req, run, repo, gprovider, testNamespace.GetName())
-	if strings.Contains(err.Error(), "https://api.github.com/installation/repositories: 401 Bad credentials") && installationID == 0 {
-		assert.Assert(t, err != nil)
-	} else {
-		assert.Equal(t, err, nil)
-	}
+	_, token, installationID, err := GetAndUpdateInstallationID(ctx, req, run, repo, gprovider, testNamespace.GetName())
+	assert.NilError(t, err)
+	assert.Equal(t, installationID, int64(120))
+	assert.Equal(t, *gprovider.Token, wantToken)
+	assert.Equal(t, token, wantToken)
 }
 
 func testMethod(t *testing.T, r *http.Request, want string) {
