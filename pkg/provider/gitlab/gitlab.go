@@ -202,7 +202,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 	_, _, _ = v.Client.Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
 
 	// only add a note when we are on a MR
-	if event.EventType == "pull_request" || event.EventType == "Merge_Request" {
+	if event.EventType == "pull_request" || event.EventType == "Merge_Request" || event.EventType == "Merge Request" {
 		mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.String(body)}
 		_, _, err := v.Client.Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
 		return err
