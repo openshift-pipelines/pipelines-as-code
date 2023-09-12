@@ -250,11 +250,22 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 func pipelineRunsWithSameName(prs []*tektonv1.PipelineRun) error {
 	prNames := map[string]bool{}
 	for _, pr := range prs {
-		_, exist := prNames[pr.GetName()]
-		if exist {
-			return fmt.Errorf("found multiple pipelinerun in .tekton with same name: %v, please update", pr.GetName())
+		name := pr.GetName()
+		generateName := pr.GetGenerateName()
+
+		if name != "" {
+			if _, exist := prNames[name]; exist {
+				return fmt.Errorf("found multiple pipelinerun in .tekton with the same name: %v, please update", name)
+			}
+			prNames[name] = true
 		}
-		prNames[pr.GetName()] = true
+
+		if generateName != "" {
+			if _, exist := prNames[generateName]; exist {
+				return fmt.Errorf("found multiple pipelinerun in .tekton with the same generateName: %v, please update", generateName)
+			}
+			prNames[generateName] = true
+		}
 	}
 	return nil
 }
