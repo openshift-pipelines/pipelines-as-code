@@ -279,3 +279,7 @@ func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
 }
+
+func (v *Provider) GetToken() string {
+	return ""
+}

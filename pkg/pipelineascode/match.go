@@ -32,11 +32,32 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 		return nil, repo, p.cancelPipelineRuns(ctx, repo)
 	}
 
-	matchedPRs, err := p.getPipelineRunsFromRepo(ctx, repo)
+	types, err := p.getPipelineRuns(ctx, repo)
 	if err != nil {
 		return nil, repo, err
 	}
+
+	if types == nil {
+		return nil, repo, err
+	}
+
+	matchedPRs, err := p.getPipelineRunsToTrigger(ctx, repo, types)
+	if err != nil {
+		return nil, repo, err
+	}
+
 	return matchedPRs, repo, nil
+}
+
+func (p *PacRun) getPipelineRuns(ctx context.Context, repo *v1alpha1.Repository) (*resolve.TektonTypes, error) {
+	if p.run.Info.Pac.TektonDirInterceptorURL != "" {
+		request, err := p.getInterceptorRequest()
+		if err != nil {
+			return nil, err
+		}
+		return p.getPipelineRunsFromService(ctx, request)
+	}
+	return p.getPipelineRunsFromRepo(ctx, repo)
 }
 
 // verifyRepoAndUser verifies if the Repo CR exists for the Git Repository,
@@ -144,7 +165,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 }
 
 // getPipelineRunsFromRepo fetches pipelineruns from git repository and prepare them for creation
-func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Repository) ([]matcher.Match, error) {
+func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Repository) (*resolve.TektonTypes, error) {
 	provenance := "source"
 	if repo.Spec.Settings != nil && repo.Spec.Settings.PipelineRunProvenance != "" {
 		provenance = repo.Spec.Settings.PipelineRunProvenance
@@ -184,8 +205,13 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryCannotLocatePipelineRun", msg)
 		return nil, nil
 	}
+	return &types, nil
+}
 
-	pipelineRuns, err = resolve.MetadataResolve(pipelineRuns)
+func (p *PacRun) getPipelineRunsToTrigger(ctx context.Context, repo *v1alpha1.Repository, types *resolve.TektonTypes) ([]matcher.Match, error) {
+	pipelineRuns := types.PipelineRuns
+
+	pipelineRuns, err := resolve.MetadataResolve(pipelineRuns)
 	if err != nil && pipelineRuns == nil {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "FailedToResolvePipelineRunMetadata", err.Error())
 		return nil, err
@@ -227,7 +253,7 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 				}
 			}
 		}
-		pipelineRuns, err = resolve.Resolve(ctx, p.run, p.logger, p.vcx, types, p.event, &resolve.Opts{
+		pipelineRuns, err = resolve.Resolve(ctx, p.run, p.logger, p.vcx, *types, p.event, &resolve.Opts{
 			GenerateName: true,
 			RemoteTasks:  true,
 		})

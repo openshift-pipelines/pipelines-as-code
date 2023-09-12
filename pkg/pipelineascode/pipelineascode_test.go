@@ -583,7 +583,7 @@ func TestRun(t *testing.T) {
 				Token:  github.String("None"),
 				Logger: logger,
 			}
-			p := NewPacs(&tt.runevent, vcx, cs, k8int, logger)
+			p := NewPacs(&tt.runevent, vcx, cs, k8int, logger, nil)
 			err := p.Run(ctx)
 
 			if tt.wantErr != "" {

@@ -48,6 +48,6 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request) error 
 		}
 	}
 
-	p := pipelineascode.NewPacs(s.event, s.vcx, s.run, s.kint, s.logger)
+	p := pipelineascode.NewPacs(s.event, s.vcx, s.run, s.kint, s.logger, s.payload)
 	return p.Run(ctx)
 }

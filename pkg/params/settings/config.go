@@ -58,6 +58,8 @@ const (
 
 	RememberOKToTestKey   = "remember-ok-to-test"
 	rememberOKToTestValue = "true"
+
+	TektonDirInterceptorURLKey = "tekton-dir-interceptor-url"
 )
 
 var (
@@ -100,6 +102,8 @@ type Settings struct {
 	CustomConsoleNamespaceURL string
 
 	RememberOKToTest bool
+
+	TektonDirInterceptorURL string
 }
 
 func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[string]string) error {
@@ -241,6 +245,11 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 	if setting.RememberOKToTest != rememberOKToTest {
 		logger.Infof("CONFIG: setting remember ok-to-test to %v", rememberOKToTest)
 		setting.RememberOKToTest = rememberOKToTest
+	}
+
+	if setting.TektonDirInterceptorURL != config[TektonDirInterceptorURLKey] {
+		logger.Infof("CONFIG: setting tekton dir interceptor url to %v", config[TektonDirInterceptorURLKey])
+		setting.TektonDirInterceptorURL = config[TektonDirInterceptorURLKey]
 	}
 
 	return nil

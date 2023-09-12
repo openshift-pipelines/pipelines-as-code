@@ -288,7 +288,7 @@ func TestCancelPipelinerun(t *testing.T) {
 					Kube:   stdata.Kube,
 				},
 			}
-			pac := NewPacs(tt.event, nil, cs, nil, logger)
+			pac := NewPacs(tt.event, nil, cs, nil, logger, nil)
 			err := pac.cancelPipelineRuns(ctx, tt.repo)
 			assert.NilError(t, err)
 
