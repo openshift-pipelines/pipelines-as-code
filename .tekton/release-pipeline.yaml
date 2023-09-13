@@ -72,7 +72,7 @@ spec:
                     exit
                 }
                 stable_tag=${version%.*}.x
-                alltags=$(for i in $(git tag -l|grep '^v'|sort -rn);do echo -n "$i,";done|sed 's/,$//'))
+                alltags=$(for i in $(git tag -l|grep '^v'|sort -rn);do echo -n "$i,";done|sed 's/,$//')
                 allversions="nightly,stable,$alltags"
                 git config --global user.email "pac-dev@redhat.com"
                 git config --global user.name "Pipelines as Code CI Robot"
