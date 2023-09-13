@@ -14,6 +14,7 @@ import (
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
@@ -56,17 +57,23 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
-		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml", ".tekton/pr-clone.yaml": "testdata/pipelinerun-clone.yaml",
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml",
+		".tekton/subdir/pr.yaml":            "testdata/pipelinerun-clone.yaml",
 	}, randomedString, randomedString, options.IncomingEvent, map[string]string{})
 	assert.NilError(t, err)
 
 	title := "TestIncomingWebhook - " + randomedString
-	err = tgitlab.PushFilesToRef(glprovider.Client, title,
-		projectinfo.DefaultBranch,
-		randomedString,
-		opts.ProjectID,
-		entries, ".tekton/subdir/pr.yaml")
+	gitCloneURL, err := scm.MakeGitCloneURL(projectinfo.WebURL, opts.UserName, opts.Password)
 	assert.NilError(t, err)
+	scmOpts := &scm.Opts{
+		GitURL:        gitCloneURL,
+		Log:           runcnx.Clients.Log,
+		WebURL:        projectinfo.WebURL,
+		TargetRefName: randomedString,
+		BaseRefName:   projectinfo.DefaultBranch,
+		CommitTitle:   title,
+	}
+	scm.PushFilesToRefGit(t, scmOpts, entries)
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", randomedString)
 
 	url := fmt.Sprintf("%s/incoming?repository=%s&branch=%s&pipelinerun=%s&secret=%s", opts.ControllerURL,

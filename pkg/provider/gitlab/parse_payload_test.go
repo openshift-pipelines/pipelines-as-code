@@ -57,7 +57,7 @@ func TestParsePayload(t *testing.T) {
 			name: "event not supported",
 			args: args{
 				event:   gitlab.EventTypePipeline,
-				payload: sample.MREventAsJSON(),
+				payload: sample.MREventAsJSON("open", ""),
 			},
 			wantErr: true,
 		},
@@ -65,7 +65,7 @@ func TestParsePayload(t *testing.T) {
 			name: "merge event",
 			args: args{
 				event:   gitlab.EventTypeMergeRequest,
-				payload: sample.MREventAsJSON(),
+				payload: sample.MREventAsJSON("open", ""),
 			},
 			want: &info.Event{
 				EventType:     "Merge Request",

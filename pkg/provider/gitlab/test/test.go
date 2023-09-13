@@ -174,7 +174,12 @@ func (t TEvent) NoteEventAsJSON(comment string) string {
 }`, comment, t.Username, t.DefaultBranch, t.URL, t.PathWithNameSpace, t.MRID, t.TargetProjectID, t.SourceProjectID, t.Basebranch, t.Headbranch, t.SHA, t.SHAurl, t.SHAtitle, t.SHAtitle, t.BaseURL, t.HeadURL)
 }
 
-func (t TEvent) MREventAsJSON() string {
+// MREventAsJSON returns a JSON string representing the Merge Request event.
+// It includes information about the user, project, and object attributes such as action, iid, source project id, title, source branch, target branch, last commit, target path with namespace, target web url, and source web url.
+func (t TEvent) MREventAsJSON(action, extraStuff string) string {
+	if extraStuff != "" {
+		extraStuff = "," + extraStuff
+	}
 	return fmt.Sprintf(`{
     "user": {
         "id": %d,
@@ -186,7 +191,7 @@ func (t TEvent) MREventAsJSON() string {
         "default_branch": "%s"
     },
     "object_attributes": {
-		"action": "open",
+		"action": "%s",
         "iid": %d,
         "source_project_id": %d,
         "title": "%s",
@@ -202,8 +207,10 @@ func (t TEvent) MREventAsJSON() string {
 		},
 		"source": {
 			"web_url": "%s"
-		}
+		}%s
     }
-}`, t.UserID, t.Username, t.TargetProjectID, t.URL, t.DefaultBranch, t.MRID,
-		t.SourceProjectID, t.SHAtitle, t.Headbranch, t.Basebranch, t.SHA, t.SHAurl, t.PathWithNameSpace, t.BaseURL, t.HeadURL)
+}`, t.UserID, t.Username, t.TargetProjectID, t.URL, t.DefaultBranch, action, t.MRID,
+		t.SourceProjectID, t.SHAtitle, t.Headbranch, t.Basebranch, t.SHA, t.SHAurl, t.PathWithNameSpace,
+		t.BaseURL,
+		t.HeadURL, extraStuff)
 }

@@ -4,11 +4,6 @@ import (
 	ghlib "github.com/xanzy/go-gitlab"
 )
 
-var (
-	commitAuthor = "OpenShift Pipelines E2E test"
-	commitEmail  = "e2e-pipelines@redhat.com"
-)
-
 func CreateMR(client *ghlib.Client, pid int, sourceBranch, targetBranch, title string) (int, error) {
 	mr, _, err := client.MergeRequests.CreateMergeRequest(pid, &ghlib.CreateMergeRequestOptions{
 		Title:        &title,
