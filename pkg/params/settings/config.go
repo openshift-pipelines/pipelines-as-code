@@ -104,7 +104,7 @@ type Settings struct {
 func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[string]string) error {
 	// pass through defaulting
 	SetDefaults(config)
-	setting.HubCatalogs = getHubCatalogs(logger, config)
+	setting.HubCatalogs = getHubCatalogs(logger, setting.HubCatalogs, config)
 
 	// validate fields
 	if err := Validate(config); err != nil {
