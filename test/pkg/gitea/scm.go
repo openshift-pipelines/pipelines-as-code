@@ -16,13 +16,14 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-github/v53/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
-	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"go.uber.org/zap"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
 	"gotest.tools/v3/fs"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
+	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 )
 
 func InitGitRepo(t *testing.T) (string, func()) {
@@ -92,6 +93,8 @@ func PushFilesToRefGit(t *testing.T, topts *TestOpts, entries map[string]string,
 	for {
 		if _, err = git.RunGit(path, "push", "origin", topts.TargetRefName); err == nil {
 			topts.ParamsRun.Clients.Log.Infof("Pushed files to repo %s branch %s", topts.GitHTMLURL, topts.TargetRefName)
+			// trying to avoid the multiple events at the time of creation we have a sync
+			time.Sleep(5 * time.Second)
 			return
 		}
 		count++

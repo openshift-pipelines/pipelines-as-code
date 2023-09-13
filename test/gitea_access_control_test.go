@@ -10,12 +10,13 @@ import (
 	"regexp"
 	"testing"
 
+	"gotest.tools/v3/assert"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
-	"gotest.tools/v3/assert"
 )
 
 const okToTestComment = "/ok-to-test"
@@ -33,9 +34,10 @@ const okToTestComment = "/ok-to-test"
 // is not much gitea specifics compared to github
 func TestGiteaPolicyPullRequest(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		OnOrg:           true,
-		SkipEventsCheck: true,
-		TargetEvent:     options.PullRequestEvent,
+		OnOrg:                true,
+		SkipEventsCheck:      true,
+		CheckForNumberStatus: 2,
+		TargetEvent:          options.PullRequestEvent,
 		Settings: &v1alpha1.Settings{
 			Policy: &v1alpha1.Policy{
 				PullRequest: []string{"pull_requester"},
@@ -167,8 +169,9 @@ func TestGiteaACLOrgAllowed(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
-		NoCleanup:    true,
-		ExpectEvents: false,
+		NoCleanup:            true,
+		ExpectEvents:         false,
+		CheckForNumberStatus: 2,
 	}
 	defer tgitea.TestPR(t, topts)()
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)

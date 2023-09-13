@@ -134,6 +134,8 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
 	// try multiple times, cause sometime we get this kind of error:
 	// error: failed to push some refs to '/home/gitea/repositories/org-pac-e2e-test-zg6sx/pac-e2e-test-zg6sx.git'
+
+	topts.ParamsRun.Clients.Log.Infof("Creating PullRequest")
 	for i := 0; i < 5; i++ {
 		if topts.PullRequest, _, err = topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, repoInfo.Name, gitea.CreatePullRequestOption{
 			Title: "Test Pull Request - " + topts.TargetRefName,
@@ -142,9 +144,11 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 		}); err == nil {
 			break
 		}
+		topts.ParamsRun.Clients.Log.Infof("Creating PullRequest has failed, retrying %d/%d, err", i, 5, err)
 		if i == 4 {
 			t.Fatalf("cannot create pull request: %v", err)
 		}
+		time.Sleep(5 * time.Second)
 	}
 	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", topts.PullRequest.HTMLURL)
 
@@ -235,8 +239,11 @@ func WaitForStatus(t *testing.T, topts *TestOpts, ref, forcontext string, onlyla
 			numstatus++
 		}
 		topts.ParamsRun.Clients.Log.Infof("Number of gitea status on PR: %d/%d", numstatus, checkNumberOfStatus)
-		if numstatus >= checkNumberOfStatus {
+		if numstatus == checkNumberOfStatus {
 			return
+		}
+		if numstatus > checkNumberOfStatus {
+			t.Fatalf("Number of statuses is greater than expected, statuses: %d, expected: %d", numstatus, checkNumberOfStatus)
 		}
 		if i > 50 {
 			t.Fatalf("gitea status has not been updated")
