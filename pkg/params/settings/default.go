@@ -46,6 +46,9 @@ func getHubCatalogs(logger *zap.SugaredLogger, config map[string]string) *sync.M
 			}
 			if !skip {
 				catalogID := config[fmt.Sprintf("%s-id", cPrefix)]
+				if _, ok := catalogs.Load(catalogID); ok {
+					break
+				}
 				if catalogID == "http" || catalogID == "https" {
 					logger.Warnf("CONFIG: custom hub catalog name cannot be %s, skipping catalog configuration", catalogID)
 					break
