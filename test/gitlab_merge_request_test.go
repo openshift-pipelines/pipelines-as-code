@@ -8,14 +8,17 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/tektoncd/pipeline/pkg/names"
+	clientGitlab "github.com/xanzy/go-gitlab"
+	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"github.com/tektoncd/pipeline/pkg/names"
-	"gotest.tools/v3/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGitlabMergeRequest(t *testing.T) {
@@ -42,25 +45,48 @@ func TestGitlabMergeRequest(t *testing.T) {
 	assert.NilError(t, err)
 
 	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
-	title := "TestMergeRequest - " + targetRefName
-	err = tgitlab.PushFilesToRef(glprovider.Client, title,
-		projectinfo.DefaultBranch,
-		targetRefName,
-		opts.ProjectID,
-		entries, ".tekton/subdir/pr.yaml")
+
+	gitCloneURL, err := scm.MakeGitCloneURL(projectinfo.WebURL, opts.UserName, opts.Password)
 	assert.NilError(t, err)
+	scmOpts := &scm.Opts{
+		GitURL:        gitCloneURL,
+		Log:           runcnx.Clients.Log,
+		WebURL:        projectinfo.WebURL,
+		TargetRefName: targetRefName,
+		BaseRefName:   projectinfo.DefaultBranch,
+	}
+	scm.PushFilesToRefGit(t, scmOpts, entries)
+
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
-	mrID, err := tgitlab.CreateMR(glprovider.Client, opts.ProjectID, targetRefName, projectinfo.DefaultBranch, title)
+	mrTitle := "TestMergeRequest - " + targetRefName
+	mrID, err := tgitlab.CreateMR(glprovider.Client, opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("MergeRequest %s/-/merge_requests/%d has been created", projectinfo.WebURL, mrID)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
-	wait.Succeeded(ctx, t, runcnx, opts, "Merge Request", targetNS, 1, "", title)
+
+	// updating labels to test if we skip them, this used to create multiple PRs
+	_, _, err = glprovider.Client.MergeRequests.UpdateMergeRequest(opts.ProjectID, mrID, &clientGitlab.UpdateMergeRequestOptions{
+		Labels: &clientGitlab.Labels{"hello-label"},
+	})
+	assert.NilError(t, err)
+
+	// Send another Push to make an update and make sure we react to it
+	// this used to be not working
+	entries, err = payload.GetEntries(map[string]string{
+		"hello-world.yaml": "testdata/pipelinerun.yaml",
+	}, targetNS, projectinfo.DefaultBranch,
+		options.PullRequestEvent, map[string]string{})
+	assert.NilError(t, err)
+	scmOpts.BaseRefName = targetRefName
+	scm.PushFilesToRefGit(t, scmOpts, entries)
+	wait.Succeeded(ctx, t, runcnx, opts, "Merge Request", targetNS, 4, "", mrTitle)
 	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
-	assert.Assert(t, len(prsNew.Items) == 2)
+	assert.Assert(t, len(prsNew.Items) == 4)
 
-	assert.Equal(t, "Merge Request", prsNew.Items[0].Annotations[keys.EventType])
-	assert.Equal(t, "Merge Request", prsNew.Items[1].Annotations[keys.EventType])
+	for i := 0; i < len(prsNew.Items); i++ {
+		assert.Equal(t, "Merge Request", prsNew.Items[i].Annotations[keys.EventType])
+	}
 }
 
 // Local Variables:
