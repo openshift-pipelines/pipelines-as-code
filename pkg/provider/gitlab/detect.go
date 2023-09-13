@@ -37,7 +37,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 
 	switch gitEvent := eventInt.(type) {
 	case *gitlab.MergeEvent:
-		if provider.Valid(gitEvent.ObjectAttributes.Action, []string{"open", "update", "reopen"}) {
+		if provider.Valid(gitEvent.ObjectAttributes.Action, []string{"open", "reopen"}) {
 			return setLoggerAndProceed(true, "", nil)
 		}
 		return setLoggerAndProceed(false, fmt.Sprintf("not a merge event we care about: \"%s\"",
