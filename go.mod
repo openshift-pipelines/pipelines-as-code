@@ -25,6 +25,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.8.0
+	github.com/stretchr/testify v1.8.4
 	github.com/tektoncd/pipeline v0.53.1
 	github.com/xanzy/go-gitlab v0.94.0
 	go.opencensus.io v0.24.0
@@ -47,6 +48,7 @@ require (
 require (
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 )
 
 replace (

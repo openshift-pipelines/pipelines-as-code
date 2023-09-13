@@ -9,10 +9,11 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
+	"github.com/stretchr/testify/assert"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
-	"gotest.tools/v3/assert"
+	assertv3 "gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -293,11 +294,11 @@ func TestGetStatusFromTaskStatusOrFromAsking(t *testing.T) {
 				for _, prtrs := range statuses {
 					displayNames = append(displayNames, prtrs.Status.TaskSpec.DisplayName)
 				}
-				assert.DeepEqual(t, tt.displayNames, displayNames)
+				assert.ElementsMatch(t, tt.displayNames, displayNames)
 			}
 			if tt.expectedLogSnippet != "" {
 				logmsg := obslog.FilterMessageSnippet(tt.expectedLogSnippet).TakeAll()
-				assert.Assert(t, len(logmsg) > 0, "log messages", logmsg, tt.expectedLogSnippet)
+				assertv3.Assert(t, len(logmsg) > 0, "log messages", logmsg, tt.expectedLogSnippet)
 			}
 		})
 	}

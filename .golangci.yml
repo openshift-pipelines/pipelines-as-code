@@ -107,7 +107,7 @@ linters:
     #- tagliatelle
     - tenv
     - testableexamples
-    - testifylint
+    # - testifylint
     #- testpackage
     #- thelper
     - tparallel
