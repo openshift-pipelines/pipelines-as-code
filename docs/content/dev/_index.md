@@ -1,6 +1,7 @@
 ---
 title: Developer Resources
 ---
+
 # How to get started developing for the Pipelines-as-Code project
 
 ## Please read the Code of conduct
@@ -29,6 +30,7 @@ $GOPATH/src/github.com/openshift-pipelines/pipelines-as-code, if you want to
 override it you can set the `PAC_DIRS` environment variable.
 
 - It will deploy under the nip.io domain reflector, the URL will be :
+
   - <http://controller.paac-127-0-0-1.nip.io>
   - <http://dashboard.paac-127-0-0-1.nip.io>
 
@@ -130,10 +132,24 @@ The defaults are :
 
 The E2E tests will automatically create repo using the admin username for each tests.
 
+## Debugging E2E
+
+As long you have the secrets setup you should be able to run the e2e tests properly.
+Gitea are the easiest to run (since they are self contained), for the other you
+will need to setup some environment variables.
+
+See the [e2e on kind
+workflow](https://github.com/openshift-pipelines/pipelines-as-code/blob/8f990bf5f348f6529deaa3693257907b42287a35/.github/workflows/kind-e2e-tests.yaml#L90)
+for all the variables set by provider.
+
+By default the E2E tests cleanups after themselves if you want to keep the
+PR/MR opens and the namespace where the test has been created you can set the
+`TEST_NOCLEANUP` environment variable to `true`.
+
 ## Debugging controller
 
 Create a [hook](https://hook.pipelinesascode.com) URL and point your app/webhook to it. Use
-[gosmee](https://github.com/chmouel/gosmee) to forward the requests from github
+[gosmee](https://github.com/chmouel/gosmee) to forward the requests from GitHub
 to your locally installed controller (this can be either run on your debugger or
 inside kind).
 
@@ -143,7 +159,7 @@ the request that was sent directly to the controller without having to go throug
 another push.
 
 Use [snazy](https://github.com/chmouel/snazy) to watch the logs, it support pac
-by adding some context like which github provider.
+by adding some context like which GitHub provider.
 
 ![snazy screenshot](/images/pac-snazy.png)
 
@@ -187,7 +203,7 @@ pre-commit install
 ```
 
 This will run several `hooks` on the files that has been changed before you
-*push* to your remote branch. If you need to skip the verification (for whatever
+_push_ to your remote branch. If you need to skip the verification (for whatever
 reason), you can do :
 
 ```shell

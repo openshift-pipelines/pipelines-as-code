@@ -102,6 +102,7 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 
 func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovider *github.Provider, prNumber int, ref, targetNS string, opts options.E2E) {
 	if os.Getenv("TEST_NOCLEANUP") == "true" {
+		runcnx.Clients.Log.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
 		return
 	}
 	runcnx.Clients.Log.Infof("Closing PR %d", prNumber)
