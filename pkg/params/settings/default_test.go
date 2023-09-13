@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"sync"
 	"testing"
 
 	"go.uber.org/zap"
@@ -19,19 +20,23 @@ func TestSetDefaults(t *testing.T) {
 }
 
 func TestGetCatalogHub(t *testing.T) {
-	config := make(map[string]string)
-	config["catalog-1-id"] = "custom"
-	config["catalog-1-url"] = "https://foo.com"
-	config["catalog-1-name"] = "https://foo.com"
+	hubCatalog := sync.Map{}
+	hubCatalog.Store("custom", HubCatalog{
+		ID:   "custom",
+		URL:  "https://foo.com",
+		Name: "tekton",
+	})
 	tests := []struct {
 		name        string
 		config      map[string]string
 		numCatalogs int
 		wantLog     string
+		hubCatalogs *sync.Map
 	}{
 		{
 			name:        "good/default catalog",
 			numCatalogs: 1,
+			hubCatalogs: &sync.Map{},
 		},
 		{
 			name: "good/custom catalog",
@@ -41,6 +46,40 @@ func TestGetCatalogHub(t *testing.T) {
 				"catalog-1-name": "tekton",
 			},
 			numCatalogs: 2,
+			hubCatalogs: &sync.Map{},
+			wantLog:     "CONFIG: setting custom hub custom, catalog https://foo.com",
+		},
+		{
+			name: "good/custom catalog with same data",
+			config: map[string]string{
+				"catalog-1-id":   "custom",
+				"catalog-1-url":  "https://foo.com",
+				"catalog-1-name": "tekton",
+			},
+			numCatalogs: 2,
+			hubCatalogs: &hubCatalog,
+			wantLog:     "",
+		},
+		{
+			name: "good/custom catalog with different data",
+			config: map[string]string{
+				"catalog-1-id":   "custom",
+				"catalog-1-url":  "https://bar.com",
+				"catalog-1-name": "tekton",
+			},
+			numCatalogs: 2,
+			hubCatalogs: &hubCatalog,
+			wantLog:     "CONFIG: setting custom hub custom, catalog https://bar.com",
+		},
+		{
+			name: "good/custom catalog with initialization",
+			config: map[string]string{
+				"catalog-1-id":   "custom",
+				"catalog-1-url":  "https://foo.com",
+				"catalog-1-name": "tekton",
+			},
+			numCatalogs: 2,
+			hubCatalogs: nil,
 			wantLog:     "CONFIG: setting custom hub custom, catalog https://foo.com",
 		},
 		{
@@ -50,6 +89,7 @@ func TestGetCatalogHub(t *testing.T) {
 				"catalog-1-name": "tekton",
 			},
 			numCatalogs: 1,
+			hubCatalogs: &sync.Map{},
 			wantLog:     "CONFIG: hub 1 should have the key catalog-1-url, skipping catalog configuration",
 		},
 		{
@@ -60,6 +100,7 @@ func TestGetCatalogHub(t *testing.T) {
 				"catalog-1-name": "tekton",
 			},
 			numCatalogs: 1,
+			hubCatalogs: &sync.Map{},
 			wantLog:     "CONFIG: custom hub catalog name cannot be https, skipping catalog configuration",
 		},
 		{
@@ -70,6 +111,7 @@ func TestGetCatalogHub(t *testing.T) {
 				"catalog-1-name": "tekton",
 			},
 			numCatalogs: 1,
+			hubCatalogs: &sync.Map{},
 			wantLog:     "catalog url /u1!@1!@#$afoo.com is not valid, skipping catalog configuration",
 		},
 	}
@@ -80,7 +122,7 @@ func TestGetCatalogHub(t *testing.T) {
 			if tt.config == nil {
 				tt.config = map[string]string{}
 			}
-			catalogs := getHubCatalogs(fakelogger, tt.config)
+			catalogs := getHubCatalogs(fakelogger, tt.hubCatalogs, tt.config)
 			length := 0
 			catalogs.Range(func(_, _ interface{}) bool {
 				length++
