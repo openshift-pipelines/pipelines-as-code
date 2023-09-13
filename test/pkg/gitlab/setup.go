@@ -7,13 +7,14 @@ import (
 	"strconv"
 	"testing"
 
+	gitlab2 "github.com/xanzy/go-gitlab"
+	"gotest.tools/v3/assert"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
-	gitlab2 "github.com/xanzy/go-gitlab"
-	"gotest.tools/v3/assert"
 )
 
 func Setup(ctx context.Context) (*params.Run, options.E2E, gitlab.Provider, error) {
@@ -65,6 +66,10 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitlab.Provider, erro
 }
 
 func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, glprovider gitlab.Provider, mrNumber int, ref, targetNS string, projectid int) {
+	if os.Getenv("TEST_NOCLEANUP") == "true" {
+		runcnx.Clients.Log.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
+		return
+	}
 	runcnx.Clients.Log.Infof("Closing PR %d", mrNumber)
 	if mrNumber != -1 {
 		_, _, err := glprovider.Client.MergeRequests.UpdateMergeRequest(projectid, mrNumber,

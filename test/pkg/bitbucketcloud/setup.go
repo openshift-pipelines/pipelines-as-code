@@ -8,12 +8,13 @@ import (
 	"testing"
 
 	"github.com/ktrysmt/go-bitbucket"
+	"gotest.tools/v3/assert"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
-	"gotest.tools/v3/assert"
 )
 
 func Setup(ctx context.Context) (*params.Run, options.E2E, bitbucketcloud.Provider, error) {
@@ -54,6 +55,10 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, bitbucketcloud.Provid
 }
 
 func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, bprovider bitbucketcloud.Provider, opts options.E2E, prNumber int, ref, targetNS string) {
+	if os.Getenv("TEST_NOCLEANUP") == "true" {
+		runcnx.Clients.Log.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
+		return
+	}
 	runcnx.Clients.Log.Infof("Closing PR #%d", prNumber)
 	_, err := bprovider.Client.Repositories.PullRequests.Decline(&bitbucket.PullRequestsOptions{
 		ID:       fmt.Sprintf("%d", prNumber),
