@@ -61,4 +61,6 @@ func Succeeded(ctx context.Context, t *testing.T, runcnx *params.Run, opts optio
 		}
 		assert.Equal(t, title, pr.Annotations[keys.ShaTitle])
 	}
+
+	runcnx.Clients.Log.Infof("Success, number of status %d has been matched", numberofprmatch)
 }

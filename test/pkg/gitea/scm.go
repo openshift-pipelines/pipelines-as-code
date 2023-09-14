@@ -6,13 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"os"
-	"path/filepath"
 	"regexp"
-	"strings"
 	"testing"
-	"time"
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-github/v53/github"
@@ -24,6 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 )
 
 func InitGitRepo(t *testing.T) (string, func()) {
@@ -41,80 +37,6 @@ func InitGitRepo(t *testing.T) (string, func()) {
 		tmpdir.Remove()
 		envCleanups()
 	}
-}
-
-func PushFilesToRefGit(t *testing.T, topts *TestOpts, entries map[string]string, baseRefFrom string) {
-	tmpdir := fs.NewDir(t, t.Name())
-	defer (func() {
-		if os.Getenv("TEST_NOCLEANUP") == "" {
-			tmpdir.Remove()
-		}
-	})()
-	defer env.ChangeWorkingDir(t, tmpdir.Path())()
-	path := tmpdir.Path()
-	_, err := git.RunGit(path, "init")
-	assert.NilError(t, err)
-
-	_, err = git.RunGit(path, "config", "user.name", "OpenShift Pipelines E2E test")
-	assert.NilError(t, err)
-	_, err = git.RunGit(path, "config", "user.email", "e2e-pipeline@redhat.com")
-	assert.NilError(t, err)
-
-	_, err = git.RunGit(path, "remote", "add", "-f", "origin", topts.GitCloneURL)
-	assert.NilError(t, err)
-
-	_, err = git.RunGit(path, "fetch", "-a", "origin")
-	assert.NilError(t, err)
-
-	if strings.HasPrefix(topts.TargetRefName, "refs/tags") {
-		_, err = git.RunGit(path, "reset", "--hard", "origin/"+baseRefFrom)
-	} else {
-		_, err = git.RunGit(path, "checkout", "-B", topts.TargetRefName, "origin/"+baseRefFrom)
-	}
-	assert.NilError(t, err)
-
-	for filename, content := range entries {
-		assert.NilError(t, os.MkdirAll(filepath.Dir(filename), 0o755))
-		// write content to filename
-		assert.NilError(t, os.WriteFile(filename, []byte(content), 0o600))
-	}
-	_, err = git.RunGit(path, "add", ".")
-	assert.NilError(t, err)
-
-	_, err = git.RunGit(path, "-c", "commit.gpgsign=false", "commit", "-m", "Committing files from test on "+topts.TargetRefName)
-	assert.NilError(t, err)
-
-	if strings.HasPrefix(topts.TargetRefName, "refs/tags") {
-		_, err = git.RunGit(path, "tag", "-f", filepath.Base(topts.TargetRefName))
-		assert.NilError(t, err)
-	}
-	// use a loop to try multiple times in case of error
-	count := 0
-	for {
-		if _, err = git.RunGit(path, "push", "origin", topts.TargetRefName); err == nil {
-			topts.ParamsRun.Clients.Log.Infof("Pushed files to repo %s branch %s", topts.GitHTMLURL, topts.TargetRefName)
-			// trying to avoid the multiple events at the time of creation we have a sync
-			time.Sleep(5 * time.Second)
-			return
-		}
-		count++
-		if count > 5 {
-			t.Fatalf("Failed to push files to repo %s branch %s, %+v", topts.GitHTMLURL, topts.TargetRefName, err.Error())
-		}
-		topts.ParamsRun.Clients.Log.Infof("Failed to push files to repo %s branch %s, retrying in 5 seconds", topts.GitHTMLURL, topts.TargetRefName)
-		time.Sleep(5 * time.Second)
-	}
-}
-
-// Make a clone url with username and password
-func MakeGitCloneURL(targetURL, giteaUsername, giteaPassword string) (string, error) {
-	// parse hostname of giteaURL
-	parsedURL, err := url.Parse(targetURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse url %s: %w", targetURL, err)
-	}
-
-	return fmt.Sprintf("%s://%s:%s@%s%s", parsedURL.Scheme, giteaUsername, giteaPassword, parsedURL.Host, parsedURL.Path), nil
 }
 
 // PushFilesToRefAPI will push files to a given ref via API
@@ -313,11 +235,8 @@ func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provi
 func PushToPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider, command string) {
 	forkuserinfo, _, err := secondcnx.Client.GetMyUserInfo()
 	assert.NilError(t, err)
-	cloneURL, err := MakeGitCloneURL(topts.PullRequest.Head.Repository.HTMLURL, forkuserinfo.UserName, secondcnx.Password)
+	cloneURL, err := scm.MakeGitCloneURL(topts.PullRequest.Head.Repository.HTMLURL, forkuserinfo.UserName, secondcnx.Password)
 	assert.NilError(t, err)
-	newopts := &TestOpts{
-		GitCloneURL: cloneURL, TargetRefName: topts.TargetRefName, ParamsRun: topts.ParamsRun,
-	}
 	processed, err := payload.ApplyTemplate("testdata/pipelinerun-alt.yaml", map[string]string{
 		"TargetNamespace": topts.TargetNS,
 		"TargetEvent":     topts.TargetEvent,
@@ -327,7 +246,14 @@ func PushToPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider,
 	})
 	assert.NilError(t, err)
 	entries := map[string]string{".tekton/pr-push.yaml": processed}
-	PushFilesToRefGit(t, newopts, entries, topts.TargetRefName)
+	scmOpts := &scm.Opts{
+		GitURL:        cloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.TargetRefName,
+		BaseRefName:   topts.DefaultBranch,
+	}
+	scm.PushFilesToRefGit(t, scmOpts, entries)
 }
 
 func CreateAccess(topts *TestOpts, touser, accessMode string) error {
