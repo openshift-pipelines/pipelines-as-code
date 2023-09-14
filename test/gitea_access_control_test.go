@@ -10,13 +10,13 @@ import (
 	"regexp"
 	"testing"
 
-	"gotest.tools/v3/assert"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	"gotest.tools/v3/assert"
 )
 
 const okToTestComment = "/ok-to-test"
@@ -216,7 +216,7 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 		},
 		{
 			name:    "Test PR",
-			comment: "/test pr",
+			comment: "/test pr-gitops-comment",
 		},
 	}
 	for _, tt := range tests {
@@ -224,7 +224,7 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 			topts := &tgitea.TestOpts{
 				TargetEvent: options.PullRequestEvent,
 				YAMLFiles: map[string]string{
-					".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+					".tekton/pipelinerun-gitops.yaml": "testdata/pipelinerun-gitops.yaml",
 				},
 				ExpectEvents: false,
 			}
@@ -241,6 +241,12 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 			tgitea.PostCommentOnPullRequest(t, topts, tt.comment)
 			topts.Regexp = successRegexp
 			tgitea.WaitForPullRequestCommentMatch(t, topts)
+			tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
+			// checking the pod log to make sure /test <prname> works
+			err = wait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS,
+				"pipelinesascode.tekton.dev/event-type=pull_request",
+				"step-task", *regexp.MustCompile(".*MOTO"), 2)
+			assert.NilError(t, err, "Error while checking the logs of the pods")
 		})
 	}
 }
