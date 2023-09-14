@@ -34,7 +34,6 @@ type TestOpts struct {
 	OnOrg                 bool
 	NoPullRequestCreation bool
 	SkipEventsCheck       bool
-	NoCleanup             bool
 	TargetNS              string
 	TargetEvent           string
 	Settings              *v1alpha1.Settings
