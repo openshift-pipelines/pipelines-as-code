@@ -111,7 +111,14 @@ func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[stri
 	// to re enable after debugging...
 	defer tgithub.TearDown(ctx, t, runcnx, ghprovider, -1, targetRefName, randomedString, opts)
 
-	wait.Succeeded(ctx, t, runcnx, opts, options.IncomingEvent, randomedString, 1, "", title)
+	sopt := wait.SuccessOpt{
+		Title:           title,
+		OnEvent:         options.IncomingEvent,
+		TargetNS:        randomedString,
+		NumberofPRMatch: 1,
+		SHA:             "",
+	}
+	wait.Succeeded(ctx, t, runcnx, opts, sopt)
 	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(randomedString).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, len(prsNew.Items) == 1)

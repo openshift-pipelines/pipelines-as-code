@@ -33,7 +33,15 @@ func TestBitbucketCloudPullRequest(t *testing.T) {
 	hash, ok := repobranch.Target["hash"].(string)
 	assert.Assert(t, ok)
 
-	wait.Succeeded(ctx, t, runcnx, opts, options.PullRequestEvent, targetNS, 1, hash, title)
+	sopt := wait.SuccessOpt{
+		TargetNS:        targetNS,
+		OnEvent:         options.PullRequestEvent,
+		NumberofPRMatch: 1,
+		SHA:             hash,
+		Title:           title,
+		MinNumberStatus: 1,
+	}
+	wait.Succeeded(ctx, t, runcnx, opts, sopt)
 }
 
 // Local Variables:

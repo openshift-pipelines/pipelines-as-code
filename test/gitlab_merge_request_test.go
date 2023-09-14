@@ -79,7 +79,15 @@ func TestGitlabMergeRequest(t *testing.T) {
 	assert.NilError(t, err)
 	scmOpts.BaseRefName = targetRefName
 	scm.PushFilesToRefGit(t, scmOpts, entries)
-	wait.Succeeded(ctx, t, runcnx, opts, "Merge Request", targetNS, 4, "", mrTitle)
+
+	sopt := wait.SuccessOpt{
+		Title:           mrTitle,
+		OnEvent:         "Merge Request",
+		TargetNS:        targetNS,
+		NumberofPRMatch: 4,
+		SHA:             "",
+	}
+	wait.Succeeded(ctx, t, runcnx, opts, sopt)
 	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, len(prsNew.Items) == 4)

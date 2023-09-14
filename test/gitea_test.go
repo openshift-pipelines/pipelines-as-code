@@ -173,7 +173,6 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 		YAMLFiles:            map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"},
 		CheckForNumberStatus: numPipelines,
 		ConcurrencyLimit:     github.Int(1),
-		NoCleanup:            true,
 		ExpectEvents:         false,
 	}
 	defer tgitea.TestPR(t, topts)()
@@ -246,7 +245,6 @@ func TestGiteaRetestAfterPush(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/failures/pipelinerun-exit-1.yaml",
 		},
-		NoCleanup:      true,
 		CheckForStatus: "failure",
 		ExpectEvents:   false,
 	}
@@ -276,7 +274,6 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun-max-keep-run-1.yaml",
 		},
-		NoCleanup:      true,
 		CheckForStatus: "success",
 		ExpectEvents:   false,
 	}
@@ -580,7 +577,6 @@ func TestGiteaNotExistingClusterTask(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/failures/not-existing-clustertask.yaml",
 		},
-		NoCleanup:      true,
 		CheckForStatus: "failure",
 		ExpectEvents:   false,
 	}
@@ -596,7 +592,6 @@ func TestGiteaBadLinkOfTask(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/failures/bad-runafter-task.yaml",
 		},
-		NoCleanup:      true,
 		CheckForStatus: "failure",
 		ExpectEvents:   true,
 		Regexp:         regexp.MustCompile(".*There was an error creating the PipelineRun*"),

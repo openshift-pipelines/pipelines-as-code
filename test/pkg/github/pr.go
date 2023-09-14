@@ -137,6 +137,13 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), logmsg)
 	assert.NilError(t, err)
 
-	wait.Succeeded(ctx, t, runcnx, opts, options.PullRequestEvent, targetNS, len(yamlFiles), sha, logmsg)
+	sopt := wait.SuccessOpt{
+		Title:           logmsg,
+		OnEvent:         options.PullRequestEvent,
+		TargetNS:        targetNS,
+		NumberofPRMatch: len(yamlFiles),
+		SHA:             sha,
+	}
+	wait.Succeeded(ctx, t, runcnx, opts, sopt)
 	return runcnx, ghcnx, opts, targetNS, targetRefName, number, sha
 }

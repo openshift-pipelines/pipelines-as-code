@@ -169,7 +169,6 @@ func TestGiteaACLOrgAllowed(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
-		NoCleanup:            true,
 		ExpectEvents:         false,
 		CheckForNumberStatus: 2,
 	}
@@ -189,7 +188,6 @@ func TestGiteaACLOrgPendingApproval(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
-		NoCleanup:    true,
 		ExpectEvents: false,
 	}
 	defer tgitea.TestPR(t, topts)()
@@ -228,7 +226,6 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 				YAMLFiles: map[string]string{
 					".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 				},
-				NoCleanup:    true,
 				ExpectEvents: false,
 			}
 			defer tgitea.TestPR(t, topts)()
@@ -259,7 +256,6 @@ func TestGiteaACLCommentsAllowingRememberOkToTestFalse(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
-		NoCleanup:    true,
 		ExpectEvents: false,
 	}
 
@@ -318,7 +314,6 @@ func TestGiteaACLCommentsAllowingRememberOkToTestTrue(t *testing.T) {
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
-		NoCleanup:    true,
 		ExpectEvents: false,
 	}
 
