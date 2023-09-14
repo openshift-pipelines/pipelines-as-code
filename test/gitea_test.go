@@ -15,6 +15,13 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-github/v53/github"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/names"
+	"gopkg.in/yaml.v2"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/env"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	pacapi "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tknpacdelete "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/deleterepo"
@@ -32,14 +39,9 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	"github.com/tektoncd/pipeline/pkg/names"
-	"gopkg.in/yaml.v2"
-	"gotest.tools/v3/assert"
-	"gotest.tools/v3/env"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var successRegexp = regexp.MustCompile(`^Pipelines as Code CI.*has.*successfully`)
@@ -175,6 +177,14 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 		ExpectEvents:         false,
 	}
 	defer tgitea.TestPR(t, topts)()
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.TargetRefName,
+		BaseRefName:   topts.DefaultBranch,
+		PushForce:     true,
+	}
 	processed, err := payload.ApplyTemplate("testdata/pipelinerun-alt.yaml", map[string]string{
 		"TargetNamespace": topts.TargetNS,
 		"TargetBranch":    topts.DefaultBranch,
@@ -184,7 +194,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	entries := map[string]string{".tekton/pr.yaml": processed}
-	tgitea.PushFilesToRefGit(t, topts, entries, topts.TargetRefName)
+	scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	processed, err = payload.ApplyTemplate("testdata/pipelinerun-alt.yaml", map[string]string{
 		"TargetNamespace": topts.TargetNS,
@@ -195,7 +205,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	entries = map[string]string{".tekton/pr.yaml": processed}
-	tgitea.PushFilesToRefGit(t, topts, entries, topts.TargetRefName)
+	scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	// loop until we get the status
 	gotPipelineRunPending := false
@@ -245,7 +255,16 @@ func TestGiteaRetestAfterPush(t *testing.T) {
 	newyamlFiles := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"}
 	entries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
 	assert.NilError(t, err)
-	tgitea.PushFilesToRefGit(t, topts, entries, topts.TargetRefName)
+
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.TargetRefName,
+		BaseRefName:   topts.DefaultBranch,
+		PushForce:     true,
+	}
+	scm.PushFilesToRefGit(t, scmOpts, entries)
 	topts.CheckForStatus = "success"
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 }
@@ -711,28 +730,36 @@ func TestGiteaProvenance(t *testing.T) {
 		NoPullRequestCreation: true,
 	}
 	defer tgitea.TestPR(t, topts)()
-	branch := topts.TargetRefName
+	targetRef := topts.TargetRefName
 	prmap := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"}
 	entries, err := payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
 	assert.NilError(t, err)
 	topts.TargetRefName = topts.DefaultBranch
-	tgitea.PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
-	topts.TargetRefName = branch
+
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.DefaultBranch,
+		BaseRefName:   topts.DefaultBranch,
+	}
+	scm.PushFilesToRefGit(t, scmOpts, entries)
 	prmap = map[string]string{"notgonnatobetested.yaml": "testdata/pipelinerun.yaml"}
 	entries, err = payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
 	assert.NilError(t, err)
-	tgitea.PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
+	scmOpts.TargetRefName = targetRef
+	scm.PushFilesToRefGit(t, scmOpts, entries)
 
-	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, topts.TargetRefName, gitea.CreatePullRequestOption{
-		Title: "Test Pull Request - " + topts.TargetRefName,
-		Head:  topts.TargetRefName,
+	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, targetRef, gitea.CreatePullRequestOption{
+		Title: "Test Pull Request - " + targetRef,
+		Head:  targetRef,
 		Base:  options.MainBranch,
 	})
 	assert.NilError(t, err)
 	topts.PullRequest = pr
 	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
 	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
+	tgitea.WaitForStatus(t, topts, "heads/"+targetRef, "", false)
 }
 
 func TestGiteaPushToTagGreedy(t *testing.T) {
@@ -746,11 +773,18 @@ func TestGiteaPushToTagGreedy(t *testing.T) {
 	entries, err := payload.GetEntries(prmap, topts.TargetNS, "refs/tags/*", topts.TargetEvent, map[string]string{})
 	assert.NilError(t, err)
 	topts.TargetRefName = topts.DefaultBranch
-	tgitea.PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
 
-	topts.TargetRefName = "refs/tags/v1.0.0"
-	tgitea.PushFilesToRefGit(t, topts, map[string]string{"README.md": "hello new version from tag"}, topts.DefaultBranch)
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.DefaultBranch,
+		BaseRefName:   topts.DefaultBranch,
+	}
+	scm.PushFilesToRefGit(t, scmOpts, entries)
 
+	scmOpts.TargetRefName = "refs/tags/v1.0.0"
+	scm.PushFilesToRefGit(t, scmOpts, map[string]string{"README.md": "hello new version from tag"})
 	waitOpts := twait.Opts{
 		RepoName:  topts.TargetNS,
 		Namespace: topts.TargetNS,

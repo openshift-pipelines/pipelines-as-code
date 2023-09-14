@@ -26,6 +26,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 )
 
 type TestOpts struct {
@@ -116,7 +117,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 
 	assert.NilError(t, CreateCRD(ctx, topts))
 
-	url, err := MakeGitCloneURL(repoInfo.CloneURL, os.Getenv("TEST_GITEA_USERNAME"), os.Getenv("TEST_GITEA_PASSWORD"))
+	url, err := scm.MakeGitCloneURL(repoInfo.CloneURL, os.Getenv("TEST_GITEA_USERNAME"), os.Getenv("TEST_GITEA_PASSWORD"))
 	assert.NilError(t, err)
 	topts.GitCloneURL = url
 
@@ -131,9 +132,14 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 		topts.ExtraArgs)
 	assert.NilError(t, err)
 
-	PushFilesToRefGit(t, topts, entries, topts.DefaultBranch)
-	// try multiple times, cause sometime we get this kind of error:
-	// error: failed to push some refs to '/home/gitea/repositories/org-pac-e2e-test-zg6sx/pac-e2e-test-zg6sx.git'
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.TargetRefName,
+		BaseRefName:   topts.DefaultBranch,
+	}
+	scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	topts.ParamsRun.Clients.Log.Infof("Creating PullRequest")
 	for i := 0; i < 5; i++ {

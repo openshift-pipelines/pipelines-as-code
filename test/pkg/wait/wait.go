@@ -60,7 +60,8 @@ func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts O
 			}
 		}
 
-		clients.Log.Infof("Repo number of statuses: %d", len(r.Status))
+		clients.Log.Infof("Still waiting for repository status to be updated: %d/%d", len(r.Status), opts.MinNumberStatus)
+		time.Sleep(2 * time.Second)
 		return len(r.Status) > opts.MinNumberStatus, nil
 	})
 }

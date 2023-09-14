@@ -6,6 +6,8 @@ type E2E struct {
 	ProjectID          int
 	ControllerURL      string
 	Concurrency        int
+	UserName           string
+	Password           string
 }
 
 var (
