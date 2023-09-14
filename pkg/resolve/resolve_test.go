@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -372,6 +373,102 @@ func TestPipelineRunsWithSameName(t *testing.T) {
 				return
 			}
 			assert.Equal(t, err.Error(), tt.err)
+		})
+	}
+}
+
+func TestMetadataResolve(t *testing.T) {
+	tests := []struct {
+		name    string
+		prs     []*tektonv1.PipelineRun
+		wantPRs []*tektonv1.PipelineRun
+	}{
+		{
+			name: "label and annotation for pipelinerun name",
+			prs: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pipelinerun-abc",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pipelinerun-deb",
+					},
+				},
+			},
+			wantPRs: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pipelinerun-abc",
+						Labels: map[string]string{
+							apipac.OriginalPRName: "pipelinerun-abc",
+						},
+						Annotations: map[string]string{
+							apipac.OriginalPRName: "pipelinerun-abc",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pipelinerun-deb",
+						Labels: map[string]string{
+							apipac.OriginalPRName: "pipelinerun-deb",
+						},
+						Annotations: map[string]string{
+							apipac.OriginalPRName: "pipelinerun-deb",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "label and annotation for pipelinerun generateName",
+			prs: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pipelinerun-abc-",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pipelinerun-deb-",
+					},
+				},
+			},
+			wantPRs: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pipelinerun-abc-",
+						Labels: map[string]string{
+							apipac.OriginalPRName: "pipelinerun-abc",
+						},
+						Annotations: map[string]string{
+							apipac.OriginalPRName: "pipelinerun-abc-",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pipelinerun-deb-",
+						Labels: map[string]string{
+							apipac.OriginalPRName: "pipelinerun-deb",
+						},
+						Annotations: map[string]string{
+							apipac.OriginalPRName: "pipelinerun-deb-",
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pruns, err := MetadataResolve(tt.prs)
+			assert.NilError(t, err)
+			for i := range pruns {
+				assert.DeepEqual(t, pruns[i], tt.wantPRs[i])
+			}
 		})
 	}
 }

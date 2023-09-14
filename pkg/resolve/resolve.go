@@ -145,7 +145,7 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 		return []*tektonv1.PipelineRun{}, fmt.Errorf("could not find any PipelineRun in your .tekton/ directory")
 	}
 
-	if err := pipelineRunsWithSameName(types.PipelineRuns); err != nil {
+	if _, err := MetadataResolve(types.PipelineRuns); err != nil {
 		return []*tektonv1.PipelineRun{}, err
 	}
 
@@ -214,35 +214,12 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 			pipelinerun.Spec.PipelineSpec = &pipelineResolved.Spec
 		}
 
-		var originPipelinerunName string
-
-		originPipelinerunName = pipelinerun.Name
 		// Add a GenerateName based on the pipeline name and a "-"
 		// if we already have a GenerateName then just keep it like this
-		switch {
-		case ropt.GenerateName && pipelinerun.GenerateName == "":
+		if ropt.GenerateName && pipelinerun.GenerateName == "" {
 			pipelinerun.GenerateName = pipelinerun.Name + "-"
 			pipelinerun.Name = ""
-		case pipelinerun.GetGenerateName() == pipelinerun.GetName():
-			pipelinerun.SetName("")
-		case originPipelinerunName == "" && pipelinerun.GenerateName != "":
-			originPipelinerunName = pipelinerun.GenerateName
 		}
-
-		// keep the originalPipelineRun in a label
-		// because we would need it later on when grouping by cleanups and we
-		// can attach that pr file from .tekton directory.
-
-		// Don't overwrite the labels if there is some who already exist set by the user in repo
-		if pipelinerun.Labels == nil {
-			pipelinerun.Labels = map[string]string{}
-		}
-		// Don't overwrite the annotation if there is some who already exist set by the user in repo
-		if pipelinerun.Annotations == nil {
-			pipelinerun.Annotations = map[string]string{}
-		}
-		pipelinerun.Labels[apipac.OriginalPRName] = formatting.CleanValueKubernetes(originPipelinerunName)
-		pipelinerun.Annotations[apipac.OriginalPRName] = originPipelinerunName
 	}
 	return types.PipelineRuns, nil
 }
@@ -268,6 +245,35 @@ func pipelineRunsWithSameName(prs []*tektonv1.PipelineRun) error {
 		}
 	}
 	return nil
+}
+
+func MetadataResolve(prs []*tektonv1.PipelineRun) ([]*tektonv1.PipelineRun, error) {
+	if err := pipelineRunsWithSameName(prs); err != nil {
+		return []*tektonv1.PipelineRun{}, err
+	}
+
+	for _, prun := range prs {
+		originPipelineRunName := prun.GetName()
+		if originPipelineRunName == "" && prun.GenerateName != "" {
+			originPipelineRunName = prun.GetGenerateName()
+		}
+
+		// keep the originalPipelineRun in a label
+		// because we would need it later on when grouping by cleanups and we
+		// can attach that pr file from .tekton directory.
+
+		// Don't overwrite the labels if there is some who already exist set by the user in repo
+		if prun.GetLabels() == nil {
+			prun.Labels = map[string]string{}
+		}
+		// Don't overwrite the annotation if there is some who already exist set by the user in repo
+		if prun.GetAnnotations() == nil {
+			prun.Annotations = map[string]string{}
+		}
+		prun.GetLabels()[apipac.OriginalPRName] = formatting.CleanValueKubernetes(originPipelineRunName)
+		prun.GetAnnotations()[apipac.OriginalPRName] = originPipelineRunName
+	}
+	return prs, nil
 }
 
 //nolint:gochecknoinits
