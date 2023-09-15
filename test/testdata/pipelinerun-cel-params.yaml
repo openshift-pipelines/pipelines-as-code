@@ -1,0 +1,39 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
+    pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
+spec:
+  params:
+    - name: repo_url
+      value: "{{ repo_url }}"
+    - name: source_url
+      value: "{{ source_url }}"
+    - name: source_branch
+      value: "{{ source_branch }}"
+    - name: target_branch
+      value: "{{ target_branch }}"
+  pipelineSpec:
+    params:
+      - name: repo_url
+      - name: source_url
+      - name: source_branch
+      - name: target_branch
+    tasks:
+      - name: cel-params
+        taskSpec:
+          steps:
+            - name: test-cel-params-value
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                # reply Should be:
+                # Look mum I know that we are acting on a pull_request
+                # my email is a true beauty and like groot, I AM pac
+                cat <<EOF
+                Look mum I know that we are acting on a {{ headers['X-Gitea-Event-Type'] }}
+                my email is a {{ body.pull_request.user.email == 'pac@pac.com' }} beauty and like groot, I AM {{ body.pull_request.user.login }}
+                EOF

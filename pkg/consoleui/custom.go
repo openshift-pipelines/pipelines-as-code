@@ -43,7 +43,7 @@ func (o *CustomConsole) URL() string {
 // return the default URL if there it's not become a proper url or that it has
 // some of the templates like {{}} left
 func (o *CustomConsole) generateURL(urlTmpl string, dict map[string]string) string {
-	newurl := templates.ReplacePlaceHoldersVariables(urlTmpl, dict)
+	newurl := templates.ReplacePlaceHoldersVariables(urlTmpl, dict, nil, nil)
 	// trim new line because yaml parser adds new line at the end of the string
 	newurl = strings.TrimSpace(strings.TrimSuffix(newurl, "\n"))
 	if _, err := url.ParseRequestURI(newurl); err != nil {

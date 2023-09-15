@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/checker/decls"
-	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 )
 
@@ -34,41 +33,34 @@ func celEvaluate(expr string, env *cel.Env, data map[string]interface{}) (ref.Va
 	return out, nil
 }
 
-// celFilter filters a query with cel, it sets two variables for the user to use
-// in the cel filter. body and pac.
-// body is the payload of the event, since it's already casted we un-marshall/and
-// marshall it as a map[string]interface{}
-func celFilter(query string, body any, pacParams map[string]string) (bool, error) {
+// CelValue evaluates a CEL expression with the given body, headers and
+// / pacParams, it will output a Cel value or an error if selectedjm.
+func CelValue(query string, body any, headers, pacParams map[string]string) (ref.Val, error) {
+	// Marshal/Unmarshal the body to a map[string]interface{} so we can access it from the CEL
 	nbody, err := json.Marshal(body)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	var jsonMap map[string]interface{}
 	err = json.Unmarshal(nbody, &jsonMap)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	mapStrDyn := decls.NewMapType(decls.String, decls.Dyn)
 	celDec, _ := cel.NewEnv(
 		cel.Declarations(
 			decls.NewVar("body", mapStrDyn),
+			decls.NewVar("headers", mapStrDyn),
 			decls.NewVar("pac", mapStrDyn),
 		))
 	val, err := celEvaluate(query, celDec, map[string]any{
-		"body": jsonMap,
-		"pac":  pacParams,
+		"body":    jsonMap,
+		"pac":     pacParams,
+		"headers": headers,
 	})
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-
-	//nolint: gocritic
-	switch val.(type) {
-	case types.Bool:
-		if val.Value() == true {
-			return true, nil
-		}
-	}
-	return false, nil
+	return val, nil
 }

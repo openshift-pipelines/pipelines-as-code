@@ -3,6 +3,7 @@ package pipelineascode
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/customparams"
@@ -25,5 +26,11 @@ func (p *PacRun) makeTemplate(ctx context.Context, repo *v1alpha1.Repository, te
 		maptemplate["pull_request_number"] = fmt.Sprintf("%d", p.event.PullRequestNumber)
 	}
 
-	return templates.ReplacePlaceHoldersVariables(template, maptemplate)
+	// replace placeholders variable as well as evaluate cel expressions
+	headers := http.Header{}
+	if p.event.Request != nil && p.event.Request.Header != nil {
+		headers = p.event.Request.Header
+	}
+
+	return templates.ReplacePlaceHoldersVariables(template, maptemplate, p.event.Event, headers)
 }
