@@ -109,5 +109,5 @@ func generateNamespaceName(nsTemplate string, gitEvent *github.RepositoryEvent) 
 		"repo_owner": repoOwner,
 		"repo_name":  repoName,
 	}
-	return templates.ReplacePlaceHoldersVariables(nsTemplate, maptemplate), nil
+	return templates.ReplacePlaceHoldersVariables(nsTemplate, maptemplate, nil, http.Header{}), nil
 }

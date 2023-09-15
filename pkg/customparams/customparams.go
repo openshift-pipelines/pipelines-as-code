@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	celTypes "github.com/google/cel-go/common/types"
 	apincoming "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/incoming"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	pacCel "github.com/openshift-pipelines/pipelines-as-code/pkg/cel"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -62,7 +64,6 @@ func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, error)
 	}
 	ret := map[string]string{}
 	mapFilters := map[string]string{}
-
 	for index, value := range *p.repo.Spec.Params {
 		// if the name is empty we skip it
 		if value.Name == "" {
@@ -79,15 +80,23 @@ func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, error)
 			}
 
 			// if the cel filter condition is false we skip it
-			cond, err := celFilter(value.Filter, p.event.Event, stdParams)
+			// TODO: add headers to customparams?
+			cond, err := pacCel.CelValue(value.Filter, p.event.Event, nil, stdParams)
 			if err != nil {
 				p.eventEmitter.EmitMessage(p.repo, zap.ErrorLevel,
 					"ParamsFilterError", fmt.Sprintf("there is an error on the cel filter: %s: %s", value.Name, err.Error()))
 				return map[string]string{}, err
 			}
-			if !cond {
+			switch cond.(type) {
+			case celTypes.Bool:
+				if cond == celTypes.False {
+					p.eventEmitter.EmitMessage(p.repo, zap.InfoLevel,
+						"ParamsFilterSkipped", fmt.Sprintf("skipping params name %s, filter condition is false", value.Name))
+					continue
+				}
+			default:
 				p.eventEmitter.EmitMessage(p.repo, zap.InfoLevel,
-					"ParamsFilterSkipped", fmt.Sprintf("skipping params name %s, filter condition is false", value.Name))
+					"ParamsFilterSkipped", fmt.Sprintf("skipping params name %s, filter condition is not a boolean reply: %s", value.Name, cond.Type().TypeName()))
 				continue
 			}
 			mapFilters[value.Name] = value.Value

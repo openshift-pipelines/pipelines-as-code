@@ -379,8 +379,11 @@ func GetStandardParams(t *testing.T, topts *TestOpts, eventType string) (repoURL
 		prs.Items[0].Name), "step-test-standard-params-value")
 	assert.NilError(t, err)
 	assert.Assert(t, out != "")
-
+	out = strings.TrimSpace(out)
 	outputDataForPR := strings.Split(out, "--")
+	if len(outputDataForPR) != 5 {
+		t.Fatalf("expected 5 values in outputDataForPR, got %d: %v", len(outputDataForPR), outputDataForPR)
+	}
 
 	repoURL = outputDataForPR[0]
 	sourceURL = strings.TrimPrefix(outputDataForPR[1], "\n")

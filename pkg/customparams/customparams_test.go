@@ -281,6 +281,22 @@ func TestProcessTemplates(t *testing.T) {
 			},
 		},
 		{
+			name:               "params/not a condition",
+			expectedLogSnippet: "skipping params name params, filter condition is not a boolean",
+			event:              &info.Event{EventType: "push"},
+			repository: &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{
+					Params: &[]v1alpha1.Params{
+						{
+							Name:   "params",
+							Value:  "batman",
+							Filter: `pac.event_type`,
+						},
+					},
+				},
+			},
+		},
+		{
 			name:               "params/two filters same name, match first",
 			expected:           map[string]string{"params": "batman1", "event_type": "pull_request"},
 			event:              &info.Event{EventType: "pull_request"},

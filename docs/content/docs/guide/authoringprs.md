@@ -2,23 +2,24 @@
 title: Authoring PipelineRun
 weight: 3
 ---
+
 # Authoring PipelineRuns in `.tekton/` directory
 
-* Pipelines-as-Code will always try to be as close to the tekton template as
+- Pipelines-as-Code will always try to be as close to the tekton template as
   possible. Usually you will write your template and save them with a `.yaml`
   extension and Pipelines-as-Code will run them.
 
-* The `.tekton` directory must be at the top level of the repo.
+- The `.tekton` directory must be at the top level of the repo.
   You can reference YAML files in other repos using remote URLs
   (see [Remote HTTP URLs](./resolver.md#remote-http-url) for more information),
   but PipelineRuns will only be triggered by events in the repository containing
   the `.tekton` directory.
 
-* Using its [resolver](../resolver/) Pipelines-as-Code will try to bundle the
+- Using its [resolver](../resolver/) Pipelines-as-Code will try to bundle the
   PipelineRun with all its Task as a single PipelineRun with no external
   dependencies.
 
-* Inside your pipeline you need to be able to check out the commit as
+- Inside your pipeline you need to be able to check out the commit as
   received from the webhook by checking it out the repository from that ref. Most of the time
   you want to reuse the
   [git-clone](https://github.com/tektoncd/catalog/blob/main/task/git-clone/)
@@ -28,20 +29,21 @@ weight: 3
   allows you to have those "dynamic" variables expanded. Those variables look
   like this `{{ var }}` and those are the one you can use:
 
-  * `{{event_type}}`: The event type (eg: `pull_request` or `push`).
-  * `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
-  * `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
-  * `{{repo_name}}`: The repository name.
-  * `{{repo_owner}}`: The repository owner.
-  * `{{repo_url}}`: The repository full URL.
-  * `{{revision}}`: The commit full sha revision.
-  * `{{sender}}`: The sender username (or accountid on some providers) of the commit.
-  * `{{source_branch}}`: The branch name where the event come from.
-  * `{{source_url}}`: The source repository URL from which the event come from (same as `repo_url` for push events).
-  * `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
-  * `{{target_namespace}}`: The target namespace where the Repository has matched and the PipelineRun will be created.
-
-* For Pipelines-as-Code to process your `PipelineRun`, you must have either an
+  - `{{event_type}}`: The event type (eg: `pull_request` or `push`).
+  - `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
+  - `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
+  - `{{repo_name}}`: The repository name.
+  - `{{repo_owner}}`: The repository owner.
+  - `{{repo_url}}`: The repository full URL.
+  - `{{revision}}`: The commit full sha revision.
+  - `{{sender}}`: The sender username (or accountid on some providers) of the commit.
+  - `{{source_branch}}`: The branch name where the event come from.
+  - `{{source_url}}`: The source repository URL from which the event come from (same as `repo_url` for push events).
+  - `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
+  - `{{target_namespace}}`: The target namespace where the Repository has matched and the PipelineRun will be created.
+  - `{{body}}`: The full payload body available as a CEL expression (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter)).
+  - `{{headers}}`: The payload request headers available as a CEL expression (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter)).
+- For Pipelines-as-Code to process your `PipelineRun`, you must have either an
   embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML
   file in the `.tekton` directory. The Pipeline object can include `TaskSpecs`,
   which may be defined separately as Tasks in another YAML file in the same
@@ -55,11 +57,11 @@ annotations on the `PipelineRun`. For example when you have these metadatas in
 your `PipelineRun`:
 
 ```yaml
- metadata:
-    name: pipeline-pr-main
- annotations:
-    pipelinesascode.tekton.dev/on-target-branch: "[main]"
-    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+metadata:
+  name: pipeline-pr-main
+annotations:
+  pipelinesascode.tekton.dev/on-target-branch: "[main]"
+  pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
 `Pipelines-as-Code` will match the pipelinerun `pipeline-pr-main` if the Git
@@ -78,7 +80,7 @@ For example this will match the pipeline when there is a push to a commit in the
 `main` branch :
 
 ```yaml
- metadata:
+metadata:
   name: pipeline-push-on-main
   annotations:
     pipelinesascode.tekton.dev/on-target-branch: "[refs/heads/main]"
@@ -92,11 +94,11 @@ target branch or `refs/tags/1.*` will match all the tags starting from `1.`.
 A full example for a push of a tag :
 
 ```yaml
- metadata:
- name: pipeline-push-on-1.0-tags
- annotations:
-    pipelinesascode.tekton.dev/on-target-branch: "[refs/tags/1.0]"
-    pipelinesascode.tekton.dev/on-event: "[push]"
+metadata:
+name: pipeline-push-on-1.0-tags
+annotations:
+  pipelinesascode.tekton.dev/on-target-branch: "[refs/tags/1.0]"
+  pipelinesascode.tekton.dev/on-event: "[push]"
 ```
 
 This will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0
@@ -114,7 +116,7 @@ finishes.
 If you need to do some advanced matching, `Pipelines-as-Code` supports CEL
 filtering.
 
-If you have the ``pipelinesascode.tekton.dev/on-cel-expression`` annotation in
+If you have the `pipelinesascode.tekton.dev/on-cel-expression` annotation in
 your PipelineRun, the CEL expression will be used and the `on-target-branch` or
 `on-target-branch` annotations will then be skipped.
 
@@ -122,8 +124,8 @@ This example will match a `pull_request` event targeting the branch `main`
 coming from a branch called `wip`:
 
 ```yaml
-    pipelinesascode.tekton.dev/on-cel-expression: |
-      event == "pull_request" && target_branch == "main" && source_branch == "wip"
+pipelinesascode.tekton.dev/on-cel-expression: |
+  event == "pull_request" && target_branch == "main" && source_branch == "wip"
 ```
 
 Another example, if you want to have a PipelineRun running only if a path has
@@ -133,30 +135,30 @@ is a concrete example matching every markdown files (as files who has the `.md`
 suffix) in the `docs` directory :
 
 ```yaml
-    pipelinesascode.tekton.dev/on-cel-expression: |
-      event == "pull_request" && "docs/*.md".pathChanged()
+pipelinesascode.tekton.dev/on-cel-expression: |
+  event == "pull_request" && "docs/*.md".pathChanged()
 ```
 
 This example will match all pull request starting with the title `[DOWNSTREAM]`:
 
 ```yaml
-    pipelinesascode.tekton.dev/on-cel-expression: |
-      event == "pull_request && event_title.startsWith("[DOWNSTREAM]")
+pipelinesascode.tekton.dev/on-cel-expression: |
+  event == "pull_request && event_title.startsWith("[DOWNSTREAM]")
 ```
 
 The fields available are :
 
-* `event`: `push` or `pull_request`
-* `target_branch`: The branch we are targeting.
-* `source_branch`: The branch where this pull_request come from. (on `push` this
+- `event`: `push` or `pull_request`
+- `target_branch`: The branch we are targeting.
+- `source_branch`: The branch where this pull_request come from. (on `push` this
   is the same as `target_branch`).
-* `target_url`: The url of the repository we are targeting.
-* `source_url`: The url of the repository where this pull_request come from. (on `push` this
+- `target_url`: The URL of the repository we are targeting.
+- `source_url`: The URL of the repository where this pull_request come from. (on `push` this
   is the same as `target_url`).
-* `event_title`: Match the title of the event. When doing a push this will match
+- `event_title`: Match the title of the event. When doing a push this will match
   the commit title and when matching on PR it will match the Pull or Merge
   Request title. (only `GitHub`, `Gitlab` and `BitbucketCloud` providers are supported)
-* `.pathChanged`: a suffix function to a string which can be a glob of a path to
+- `.pathChanged`: a suffix function to a string which can be a glob of a path to
   check if changed (only `GitHub` and `Gitlab` provider is supported)
 
 Compared to the simple "on-target" annotation matching, the CEL expression
@@ -166,13 +168,73 @@ For example if I want to have a `PipelineRun` targeting a `pull_request` but
 not the `experimental` branch I would have :
 
 ```yaml
-    pipelinesascode.tekton.dev/on-cel-expression: |
-      event == "pull_request" && target_branch != experimental"
+pipelinesascode.tekton.dev/on-cel-expression: |
+  event == "pull_request" && target_branch != experimental"
 ```
 
 You can find more information about the CEL language spec here :
 
 <https://github.com/google/cel-spec/blob/master/doc/langdef.md>
+
+## Using the body and headers in a Pipelines-as-Code parameter
+
+Pipelines-as-Code let you access the full body and headers of the request as a CEL expression.
+
+This allows you to go beyond the standard variables and even play with multiple
+conditions and variable to output values.
+
+For example if you want to get the title of the Pull Request in your PipelineRun you can simply access it like this:
+
+```go
+{{ body.pull_request.title }}
+```
+
+You can then get creative and for example mix the variable inside a python
+script to evaluate the json.
+
+This task for example is using python and will check the labels on the PR,
+`exit 0` if it has the label called 'bug' on the pull request or `exit 1` if it
+doesn't:
+
+```yaml
+taskSpec:
+  steps:
+    - name: check-label
+      image: registry.access.redhat.com/ubi9/ubi
+      script: |
+        #!/usr/bin/env python3
+        import json
+        labels=json.loads("""{{ body.pull_request.labels }}""")
+        for label in labels:
+            if label['name'] == 'bug':
+              print('This is a PR targeting a BUG')
+              exit(0)
+        print('This is not a PR targeting a BUG :(')
+        exit(1)
+```
+
+The expression are CEL expressions so you can as well make some conditional:
+
+```yaml
+- name: bash
+  image: registry.access.redhat.com/ubi9/ubi
+  script: |
+    if {{ body.pull_request.state == "open" }}; then
+      echo "PR is Open"
+    fi
+```
+
+if the PR is open the condition then return `true` and the shell script see this
+as a valid boolean.
+
+Headers from the payload body can be accessed from the `headers` keyword, for
+example
+
+```yaml
+{{ headers['x-github-event'] }}
+```
+
+and then you can do the same conditional or access as described above for the `body` keyword.
 
 ## Using the temporary GitHub APP Token for GitHub API operations
 
@@ -188,7 +250,7 @@ task from the [Tekton Hub](https://hub.tekton.dev)
 using a [pipelines as code annotation](../resolver/#remote-http-url):
 
 ```yaml
-  pipelinesascode.tekton.dev/task: "github-add-comment"
+pipelinesascode.tekton.dev/task: "github-add-comment"
 ```
 
 you can then add the task to your [tasks section](https://tekton.dev/docs/pipelines/pipelines/#adding-tasks-to-the-pipeline) (or [finally](https://tekton.dev/docs/pipelines/pipelines/#adding-finally-to-the-pipeline) tasks) of your PipelineRun :
@@ -223,13 +285,12 @@ env:
       secretKeyRef:
         name: "{{ git_auth_secret }}"
         key: "git-provider-token"
-
 ```
 
 {{< hint info >}}
 
-* On GitHub apps the generated installation token [will be available for 8 hours](https://docs.github.com/en/developers/apps/building-github-apps/refreshing-user-to-server-access-tokens)
-* On GitHub apps the token is scoped to the repository the event (payload) come
+- On GitHub apps the generated installation token [will be available for 8 hours](https://docs.github.com/en/developers/apps/building-github-apps/refreshing-user-to-server-access-tokens)
+- On GitHub apps the token is scoped to the repository the event (payload) come
   from unless [configured](/docs/install/settings#pipelines-as-code-configuration-settings) it differently on cluster.
 
 {{< /hint >}}
