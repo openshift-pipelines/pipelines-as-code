@@ -308,19 +308,20 @@ func WaitForSecretDeletion(t *testing.T, topts *TestOpts, _ string) {
 
 func WaitForPullRequestCommentMatch(t *testing.T, topts *TestOpts) {
 	i := 0
+	topts.ParamsRun.Clients.Log.Infof("Looking for regexp \"%s\" in PR comments", topts.Regexp.String())
 	for {
 		comments, _, err := topts.GiteaCNX.Client.ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
 		assert.NilError(t, err)
 		for _, v := range comments {
 			if topts.Regexp.MatchString(v.Body) {
-				topts.ParamsRun.Clients.Log.Infof("Found regexp \"%s\" in PR comments", topts.Regexp.String())
+				topts.ParamsRun.Clients.Log.Infof("Found regexp in comment: %s", v.Body)
 				return
 			}
 		}
 		if i > 60 {
 			t.Fatalf("gitea driver has not been posted any comment")
 		}
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 		i++
 	}
 }
