@@ -76,9 +76,8 @@ func TestGetGitInfo(t *testing.T) {
 			tmpFile := fs.NewFile(t, "gitconfig-")
 			defer tmpFile.Remove()
 			defer env.PatchAll(t, map[string]string{
-				"HOME":  tmpFile.Path(),
-				"PATH":  "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
-				"EMAIL": "foo@foo.com",
+				"HOME": tmpFile.Path(),
+				"PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
 			})()
 
 			nd := fs.NewDir(t, "TestGetGitInfo")
@@ -88,6 +87,13 @@ func TestGetGitInfo(t *testing.T) {
 
 			_, err = RunGit(gitDir, "init")
 			assert.NilError(t, err)
+
+			_, err = RunGit(gitDir, "config", "--local", "user.email", "foo@foo.com")
+			assert.NilError(t, err)
+
+			_, err = RunGit(gitDir, "config", "--local", "user.name", "Mister Ze Foo")
+			assert.NilError(t, err)
+
 			_, err = RunGit(gitDir, "remote", "add", tt.remoteTarget, tt.gitURL)
 			assert.NilError(t, err)
 			_, err = RunGit(gitDir, "commit", "--allow-empty", "-m", "Empty Commmit")
