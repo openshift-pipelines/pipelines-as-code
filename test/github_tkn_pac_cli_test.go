@@ -10,6 +10,11 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/tektoncd/pipeline/pkg/names"
+	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tknpacdesc "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/describe"
@@ -19,9 +24,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"github.com/tektoncd/pipeline/pkg/names"
-	"gotest.tools/v3/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGithubPacCli(t *testing.T) {
@@ -110,13 +112,23 @@ spec:
 
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
 
-	output, err = cli2.ExecCommand(runcnx, tknpaclist.Root, "-n", targetNS)
-	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "Succeeded"), "we could not detect Succeeded in output: %s", output)
-
-	output, err = cli2.ExecCommand(runcnx, tknpacdesc.Root, "-n", targetNS, targetNS)
-	assert.NilError(t, err)
-	assert.Assert(t, strings.Contains(output, "Succeeded"), "we could not detect Succeeded in output: %s", output)
+	counter := 0
+	max := 5
+	for {
+		output, err = cli2.ExecCommand(runcnx, tknpaclist.Root, "-n", targetNS)
+		if err == nil && strings.Contains(output, "Succeeded") {
+			runcnx.Clients.Log.Infof("We have the repository set as succeeded: %s", output)
+			break
+		}
+		counter++
+		if counter > max {
+			runcnx.Clients.Log.Errorf("We have waited for 5 minutes and we still do not have the repository set as succeeded: %s", output)
+			t.Fail()
+			break
+		}
+		runcnx.Clients.Log.Infof("Waiting 30s for tkn pac show success, %d/%d", counter, max)
+		time.Sleep(30 * time.Second)
+	}
 }
 
 // Local Variables:

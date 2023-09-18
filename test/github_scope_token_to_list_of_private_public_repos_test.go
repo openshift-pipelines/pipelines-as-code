@@ -13,6 +13,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/tektoncd/pipeline/pkg/names"
+	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
@@ -21,10 +26,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	trepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"github.com/tektoncd/pipeline/pkg/names"
-	"gotest.tools/v3/assert"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
@@ -36,14 +37,14 @@ func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
 	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL") != "" {
 		remoteTaskURL = os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL")
 	} else {
-		t.Error("Env TEST_GITHUB_PRIVATE_TASK_URL not provided")
+		t.Skip("Env TEST_GITHUB_PRIVATE_TASK_URL not provided")
 		return
 	}
 
 	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_NAME") != "" {
 		remoteTaskName = os.Getenv("TEST_GITHUB_PRIVATE_TASK_NAME")
 	} else {
-		t.Error("Env TEST_GITHUB_PRIVATE_TASK_NAME not provided")
+		t.Skip("Env TEST_GITHUB_PRIVATE_TASK_NAME not provided")
 		return
 	}
 
@@ -61,14 +62,14 @@ func TestGithubPullRequestScopeTokenToListOfReposByGlobalConfiguration(t *testin
 	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL") != "" {
 		remoteTaskURL = os.Getenv("TEST_GITHUB_PRIVATE_TASK_URL")
 	} else {
-		t.Error("Env TEST_GITHUB_PRIVATE_TASK_URL not provided")
+		t.Skip("Env TEST_GITHUB_PRIVATE_TASK_URL not provided")
 		return
 	}
 
 	if os.Getenv("TEST_GITHUB_PRIVATE_TASK_NAME") != "" {
 		remoteTaskName = os.Getenv("TEST_GITHUB_PRIVATE_TASK_NAME")
 	} else {
-		t.Error("Env TEST_GITHUB_PRIVATE_TASK_NAME not provided")
+		t.Skip("Env TEST_GITHUB_PRIVATE_TASK_NAME not provided")
 		return
 	}
 

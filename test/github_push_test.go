@@ -70,7 +70,7 @@ func TestGithubPush(t *testing.T) {
 		waitOpts := twait.Opts{
 			RepoName:        targetNS,
 			Namespace:       targetNS,
-			MinNumberStatus: 0,
+			MinNumberStatus: 1,
 			PollTimeout:     twait.DefaultTimeout,
 			TargetSHA:       sha,
 		}
