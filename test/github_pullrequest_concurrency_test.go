@@ -96,6 +96,11 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	for i := 0; i < 15; i++ {
 		checkruns, _, err := ghcnx.Client.Checks.ListCheckRunsForRef(ctx, opts.Organization, opts.Repo, targetRefName, &github.ListCheckRunsOptions{})
 		assert.NilError(t, err)
+		if checkruns.Total == nil || *checkruns.Total < numberOfPipelineRuns {
+			t.Logf("Waiting for all checks to be created: %d/%d", *checkruns.Total, numberOfPipelineRuns)
+			time.Sleep(5 * time.Second)
+			continue
+		}
 		assert.Assert(t, *checkruns.Total >= numberOfPipelineRuns)
 		for _, checkrun := range checkruns.CheckRuns {
 			cname := checkrun.GetName()
