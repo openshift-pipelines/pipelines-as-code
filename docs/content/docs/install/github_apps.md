@@ -48,6 +48,7 @@ Alternatively, you could set up manually by following the steps [here](#setup-ma
   * Check run
   * Check suite
   * Issue comment
+  * Commit comment
   * Pull request
   * Push
 

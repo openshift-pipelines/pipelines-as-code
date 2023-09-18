@@ -63,8 +63,17 @@ func TestProvider_Detect(t *testing.T) {
 			event: github.CommitCommentEvent{
 				Action: github.String("something"),
 			},
+			eventType:  "release",
+			wantReason: "event \"release\" is not supported",
+			isGH:       true,
+			processReq: false,
+		},
+		{
+			name: "invalid commit_comment Event",
+			event: github.CommitCommentEvent{
+				Action: github.String("something"),
+			},
 			eventType:  "commit_comment",
-			wantReason: "event \"commit_comment\" is not supported",
 			isGH:       true,
 			processReq: false,
 		},
@@ -228,7 +237,7 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: true,
 		},
 		{
-			name: "issue comment Event with retest",
+			name: "issue comment Event with cancel comment ",
 			event: github.IssueCommentEvent{
 				Action: github.String("created"),
 				Issue: &github.Issue{
@@ -243,6 +252,45 @@ func TestProvider_Detect(t *testing.T) {
 				Comment: &github.IssueComment{Body: github.String("/cancel dummy")},
 			},
 			eventType:  "issue_comment",
+			isGH:       true,
+			processReq: true,
+		},
+		{
+			name: "commit comment event with cancel comment",
+			event: github.CommitCommentEvent{
+				Action: github.String("created"),
+				Installation: &github.Installation{
+					ID: github.Int64(123),
+				},
+				Comment: &github.RepositoryComment{Body: github.String("/cancel")},
+			},
+			eventType:  "commit_comment",
+			isGH:       true,
+			processReq: true,
+		},
+		{
+			name: "commit comment Event with retest",
+			event: github.CommitCommentEvent{
+				Action: github.String("created"),
+				Installation: &github.Installation{
+					ID: github.Int64(123),
+				},
+				Comment: &github.RepositoryComment{Body: github.String("/retest")},
+			},
+			eventType:  "commit_comment",
+			isGH:       true,
+			processReq: true,
+		},
+		{
+			name: "commit comment Event with test",
+			event: github.CommitCommentEvent{
+				Action: github.String("created"),
+				Installation: &github.Installation{
+					ID: github.Int64(123),
+				},
+				Comment: &github.RepositoryComment{Body: github.String("/test")},
+			},
+			eventType:  "commit_comment",
 			isGH:       true,
 			processReq: true,
 		},

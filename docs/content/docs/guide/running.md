@@ -114,12 +114,12 @@ entire suite of checks once again.
 
 ![github apps rerun check](/images/github-apps-rerun-checks.png)
 
-### Gitops command on pull or merge request
+### GitOps command on pull or merge request
 
-If you are targeting a pull or merge request you can use `GitOps` comment
+If you are targeting a push, pull or merge request you can use `GitOps` comment
 inside your pull request, to restart all or specific Pipelines.
 
-For example you want to restart all your pipeline you can add a comment starting
+For example, you want to restart all your pipeline you can add a comment starting
 with `/retest` and all PipelineRun attached to that pull or merge request will be
 restarted :
 
@@ -141,6 +141,58 @@ roses are red, violets are blue. pipeline are bound to flake by design.
 /test <pipelinerun-name>
 ```
 
+### GitOps command on push request
+
+To trigger GitOps commands in response to a push request, you can include `GitOps`
+comments within your commit messages. These comments can be used to restart
+either all pipelines or specific ones. Here's how it works:
+
+For restarting all pipeline runs:
+
+1. Use `/retest` or `/test` within your commit message.
+
+For restarting a specific pipeline run:
+2. Use `/retest <pipelinerun-name>` or `/test <pipelinerun-name>` within your
+commit message. Replace `<pipelinerun-name>` with the specific name of the
+pipeline run you want to restart.
+
+**Note:**
+
+When executing `GitOps` commands on a commit that exists in multiple branches
+within a push request, the branch with the latest commit will be used.
+
+This means:
+
+1. If a user specifies commands like `/retest` or `/test` without any argument
+in a comment on a branch, the test will automatically be performed on the **main** branch.
+
+   Examples :
+   1. `/retest`
+   2. `/test`
+   3. `/retest <pipelinerun-name>`
+   4. `/test <pipelinerun-name>`
+
+2. If the user includes a branch specification such as `/retest branch:test` or
+`/test branch:test`, the test will be executed on the commit where the comment is
+located, with the context of the **test** branch.
+
+   Examples :
+   1. `/retest branch:test`
+   2. `/test branch:test`
+   3. `/retest <pipelinerun-name> branch:test`
+   4. `/test <pipelinerun-name> branch:test`
+
+To add `GitOps` comments to a push request, follow these steps:
+
+1. Go to your repository.
+2. Click on the **Commits** section.
+3. Choose one of the individual **Commit**.
+4. Click on the line number where you want to add a `GitOps` comment, as shown in the image below:
+
+![GitOps Commits For Comments](/images/gitops-comments-on-commit.png)
+
+Please note that this feature is supported for the GitHub provider only.
+
 ## Cancelling the PipelineRun
 
 You can cancel a running PipelineRun by commenting on the PullRequest.
@@ -159,7 +211,7 @@ It seems the infra is down, so cancelling the pipelineruns.
 If you have multiple `PipelineRun` and you want to target a specific
 `PipelineRun` you can use the `/cancel` comment with the PipelineRun name
 
-Example:
+Example :
 
 ```text
 roses are red, violets are blue. why to run the pipeline when the infra is down.
@@ -170,3 +222,41 @@ roses are red, violets are blue. why to run the pipeline when the infra is down.
 On GitHub App the status of the Pipeline will be set to `cancelled`.
 
 ![pipelinerun canceled](/images/pr-cancel.png)
+
+### Cancelling the PipelineRun on push request
+
+You can cancel a running PipelineRun by commenting on the commit.
+Here's how you can do it.
+
+Example :
+
+1. Use `/cancel` to cancel all PipeineRuns.
+2. Use `/cancel <pipelinerun-name>` to cancel a specific PipeineRun
+
+**Note:**
+
+When executing `GitOps` comments on a commit that exists in multiple branches
+within a push request, the branch with the latest commit will be used.
+
+This means:
+
+1. If a user specifies commands like `/cancel`
+without any argument in a comment on a branch,
+it will automatically target the **main** branch.
+
+   Examples :
+   1. `/cancel`
+   2. `/cancel <pipelinerun-name>`
+
+2. If the user issues a command like `/cancel branch:test`,
+it will target the commit where the comment was made but use the **test** branch.
+
+   Examples :
+   1. `/cancel branch:test`
+   2. `/cancel <pipelinerun-name> branch:test`
+
+In the GitHub App, the status of the Pipeline will be set to `cancelled`.
+
+![GitOps Commits For Comments For PipelineRun Canceled](/images/gitops-comments-on-commit-cancel.png)
+
+Please note that this feature is supported for the GitHub provider only.

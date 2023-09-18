@@ -544,3 +544,20 @@ func uniqueRepositoryID(repoIDs []int64, id int64) []int64 {
 	}
 	return r
 }
+
+// isBranchContainsCommit checks whether provided branch has sha or not.
+func (v *Provider) isBranchContainsCommit(ctx context.Context, runevent *info.Event, branchName string) error {
+	if v.Client == nil {
+		return fmt.Errorf("no github client has been initialized, " +
+			"exiting... (hint: did you forget setting a secret on your repo?)")
+	}
+
+	branchInfo, _, err := v.Client.Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, branchName, true)
+	if err != nil {
+		return err
+	}
+	if branchInfo.Commit.GetSHA() == runevent.SHA {
+		return nil
+	}
+	return fmt.Errorf("provided branch %s does not contains sha %s", branchName, runevent.SHA)
+}
