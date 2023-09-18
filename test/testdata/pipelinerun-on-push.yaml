@@ -2,7 +2,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
-  name: "\\ .PipelineName //"
+  name: "pipelinerun-on-push"
   annotations:
     pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
     pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"

@@ -79,17 +79,19 @@ var samplePR = github.PullRequest{
 
 func TestParsePayLoad(t *testing.T) {
 	tests := []struct {
-		name                    string
-		wantErrString           string
-		eventType               string
-		payloadEventStruct      interface{}
-		jeez                    string
-		triggerTarget           string
-		githubClient            bool
-		muxReplies              map[string]interface{}
-		shaRet                  string
-		targetPipelinerun       string
-		targetCancelPipelinerun string
+		name                       string
+		wantErrString              string
+		eventType                  string
+		payloadEventStruct         interface{}
+		jeez                       string
+		triggerTarget              string
+		githubClient               bool
+		muxReplies                 map[string]interface{}
+		shaRet                     string
+		targetPipelinerun          string
+		targetCancelPipelinerun    string
+		wantedBranchName           string
+		isCancelPipelineRunEnabled bool
 	}{
 		{
 			name:          "bad/unknown event",
@@ -317,6 +319,161 @@ func TestParsePayLoad(t *testing.T) {
 			shaRet:                  "samplePRsha",
 			targetCancelPipelinerun: "dummy",
 		},
+		{
+			name:               "bad/commit comment retest only with github apps",
+			wantErrString:      "only supported with github apps",
+			eventType:          "commit_comment",
+			triggerTarget:      "push",
+			payloadEventStruct: github.CommitCommentEvent{Action: github.String("created")},
+		},
+		{
+			name:          "good/commit comment for retest a pr",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.String("samplePRsha"),
+					HTMLURL:  github.String("/777"),
+					Body:     github.String("/retest dummy"),
+				},
+			},
+			muxReplies:        map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePR},
+			shaRet:            "samplePRsha",
+			targetPipelinerun: "dummy",
+			wantedBranchName:  "main",
+		},
+		{
+			name:          "good/commit comment for retest all",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.String("samplePRsha"),
+					HTMLURL:  github.String("/777"),
+					Body:     github.String("/retest"),
+				},
+			},
+			muxReplies:       map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePR},
+			shaRet:           "samplePRsha",
+			wantedBranchName: "main",
+		},
+		{
+			name:          "good/commit comment for cancel all",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.String("samplePRsha"),
+					HTMLURL:  github.String("/999"),
+					Body:     github.String("/cancel"),
+				},
+			},
+			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/999": samplePR},
+			shaRet:                     "samplePRsha",
+			wantedBranchName:           "main",
+			isCancelPipelineRunEnabled: true,
+		},
+		{
+			name:          "good/commit comment for cancel a pr",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.String("samplePRsha"),
+					HTMLURL:  github.String("/888"),
+					Body:     github.String("/cancel dummy"),
+				},
+			},
+			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/888": samplePR},
+			shaRet:                     "samplePRsha",
+			targetCancelPipelinerun:    "dummy",
+			wantedBranchName:           "main",
+			isCancelPipelineRunEnabled: true,
+		},
+		{
+			name:          "good/commit comment for retest with branch name",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.String("samplePRsha"),
+					HTMLURL:  github.String("/777"),
+					Body:     github.String("/retest dummy branch:test1"),
+				},
+			},
+			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/7771": samplePR},
+			shaRet:                     "samplePRsha",
+			targetPipelinerun:          "dummy",
+			wantedBranchName:           "test1",
+			isCancelPipelineRunEnabled: false,
+		},
+		{
+			name:          "good/commit comment for cancel all with branch name",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.String("samplePRsha"),
+					HTMLURL:  github.String("/999"),
+					Body:     github.String("/cancel branch:test1"),
+				},
+			},
+			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/9991": samplePR},
+			shaRet:                     "samplePRsha",
+			wantedBranchName:           "test1",
+			isCancelPipelineRunEnabled: true,
+		},
+		{
+			name:          "good/commit comment for cancel a pr with branch name",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.String("samplePRsha"),
+					HTMLURL:  github.String("/888"),
+					Body:     github.String("/cancel dummy branch:test1"),
+				},
+			},
+			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/8881": samplePR},
+			shaRet:                     "samplePRsha",
+			targetCancelPipelinerun:    "dummy",
+			wantedBranchName:           "test1",
+			isCancelPipelineRunEnabled: true,
+		},
+		{
+			name:          "good/commit comment for cancel a pr with invalid branch name",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.String("samplePRsha"),
+					HTMLURL:  github.String("/888"),
+					Body:     github.String("/cancel dummy branch:test2"),
+				},
+			},
+			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/8881": samplePR},
+			shaRet:                     "samplePRsha",
+			targetCancelPipelinerun:    "dummy",
+			wantedBranchName:           "test2",
+			isCancelPipelineRunEnabled: false,
+			wantErrString:              "404 Not Found",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -331,6 +488,28 @@ func TestParsePayLoad(t *testing.T) {
 				mux.HandleFunc(key, func(rw http.ResponseWriter, r *http.Request) {
 					bjeez, _ := json.Marshal(value)
 					fmt.Fprint(rw, string(bjeez))
+				})
+			}
+			if tt.eventType == "commit_comment" {
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/branches/test1",
+					"owner", "reponame"), func(rw http.ResponseWriter, r *http.Request) {
+					_, err := fmt.Fprintf(rw, `{
+			"name": "test1",
+			"commit": {
+				"sha": "samplePRsha"
+			}
+		}`)
+					assert.NilError(t, err)
+				})
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/branches/main",
+					"owner", "reponame"), func(rw http.ResponseWriter, r *http.Request) {
+					_, err := fmt.Fprintf(rw, `{
+			"name": "main",
+			"commit": {
+				"sha": "samplePRsha"
+			}
+		}`)
+					assert.NilError(t, err)
 				})
 			}
 			logger, _ := logger.GetLogger()
@@ -361,6 +540,11 @@ func TestParsePayLoad(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Assert(t, ret != nil)
 			assert.Equal(t, tt.shaRet, ret.SHA)
+			if tt.eventType == "commit_comment" {
+				assert.Equal(t, tt.wantedBranchName, ret.HeadBranch)
+				assert.Equal(t, tt.wantedBranchName, ret.BaseBranch)
+				assert.Equal(t, tt.isCancelPipelineRunEnabled, ret.CancelPipelineRuns)
+			}
 			if tt.targetPipelinerun != "" {
 				assert.Equal(t, tt.targetPipelinerun, ret.TargetTestPipelineRun)
 			}

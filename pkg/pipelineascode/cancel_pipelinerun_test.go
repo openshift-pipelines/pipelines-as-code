@@ -32,6 +32,10 @@ var (
 			URL: "https://github.com/fooorg/foo",
 		},
 	}
+	fooRepoLabelsForPush = map[string]string{
+		keys.URLRepository: formatting.CleanValueKubernetes("foo"),
+		keys.SHA:           formatting.CleanValueKubernetes("foosha"),
+	}
 	fooRepoLabels = map[string]string{
 		keys.URLRepository: formatting.CleanValueKubernetes("foo"),
 		keys.SHA:           formatting.CleanValueKubernetes("foosha"),
@@ -66,12 +70,6 @@ func TestCancelPipelinerun(t *testing.T) {
 		pipelineRuns          []*pipelinev1.PipelineRun
 		cancelledPipelineRuns map[string]bool
 	}{
-		{
-			name: "not a pull request event",
-			event: &info.Event{
-				TriggerTarget: "push",
-			},
-		},
 		{
 			name: "cancel running",
 			event: &info.Event{
@@ -202,6 +200,76 @@ func TestCancelPipelinerun(t *testing.T) {
 			},
 			repo:                  fooRepo,
 			cancelledPipelineRuns: map[string]bool{},
+		},
+		{
+			name: "cancel running for push event",
+			event: &info.Event{
+				Repository:    "foo",
+				SHA:           "foosha",
+				TriggerTarget: "push",
+				State: info.State{
+					CancelPipelineRuns: true,
+				},
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo",
+						Namespace: "foo",
+						Labels:    fooRepoLabelsForPush,
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			repo: fooRepo,
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo": true,
+			},
+		},
+		{
+			name: "cancel a specific run for push event",
+			event: &info.Event{
+				Repository:    "foo",
+				SHA:           "foosha",
+				TriggerTarget: "push",
+				State: info.State{
+					CancelPipelineRuns:      true,
+					TargetCancelPipelineRun: "pr-foo-abc",
+				},
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "pr-foo",
+						Namespace:   "foo",
+						Labels:      fooRepoLabelsForPush,
+						Annotations: fooRepoAnnotations,
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "pr-foo-abc-123",
+						Namespace:   "foo",
+						Labels:      fooRepoLabelsPrFooAbc,
+						Annotations: fooRepoAnnotationsPrFooAbc,
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "pr-foo-pqr",
+						Namespace:   "foo",
+						Labels:      fooRepoLabelsForPush,
+						Annotations: fooRepoAnnotations,
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			repo: fooRepo,
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-abc-123": true,
+			},
 		},
 	}
 

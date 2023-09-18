@@ -147,3 +147,51 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 	wait.Succeeded(ctx, t, runcnx, opts, sopt)
 	return runcnx, ghcnx, opts, targetNS, targetRefName, number, sha
 }
+
+func RunPushRequest(ctx context.Context, t *testing.T, label string, yamlFiles []string, onWebhook bool) (*params.Run, *ghprovider.Provider, options.E2E, string, string, int, string) {
+	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-push")
+	targetBranch := targetNS
+	targetEvent := "push"
+	runcnx, opts, ghcnx, err := Setup(ctx, onWebhook)
+	assert.NilError(t, err)
+
+	var logmsg string
+	if onWebhook {
+		logmsg = fmt.Sprintf("Testing %s with Direct Webhook integration on %s", label, targetNS)
+		runcnx.Clients.Log.Info(logmsg)
+	} else {
+		logmsg = fmt.Sprintf("Testing %s with Github APPS integration on %s", label, targetNS)
+		runcnx.Clients.Log.Info(logmsg)
+	}
+	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
+	assert.NilError(t, err)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+	}
+	err = CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
+	assert.NilError(t, err)
+
+	yamlEntries := map[string]string{}
+	for _, v := range yamlFiles {
+		yamlEntries[filepath.Join(".tekton", filepath.Base(v))] = v
+	}
+
+	entries, err := payload.GetEntries(yamlEntries,
+		targetNS, targetBranch, targetEvent, map[string]string{})
+	assert.NilError(t, err)
+
+	targetRefName := fmt.Sprintf("refs/heads/%s", targetBranch)
+	sha, err := PushFilesToRef(ctx, ghcnx.Client, logmsg, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
+	assert.NilError(t, err)
+
+	sopt := wait.SuccessOpt{
+		Title:           logmsg,
+		OnEvent:         options.PushEvent,
+		TargetNS:        targetNS,
+		NumberofPRMatch: len(yamlFiles),
+		SHA:             sha,
+	}
+	wait.Succeeded(ctx, t, runcnx, opts, sopt)
+	return runcnx, ghcnx, opts, targetNS, targetRefName, -1, sha
+}

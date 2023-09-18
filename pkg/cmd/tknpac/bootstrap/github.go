@@ -21,6 +21,7 @@ func generateManifest(opts *bootstrapOpts) ([]byte, error) {
 			"check_run",
 			"check_suite",
 			"issue_comment",
+			"commit_comment",
 			"pull_request",
 			"push",
 		},

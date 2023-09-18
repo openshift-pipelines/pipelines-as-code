@@ -998,3 +998,47 @@ func TestCreateToken(t *testing.T) {
 		assert.Equal(t, strings.Contains(err.Error(), "could not refresh installation id 1234567's token"), true)
 	}
 }
+
+func TestGetBranch(t *testing.T) {
+	tests := []struct {
+		name       string
+		sha        string
+		branchName string
+		wantErr    bool
+	}{{
+		name:    "sha exist in the branch",
+		sha:     "SHA1",
+		wantErr: false,
+	}, {
+		name:    "sha doesn't exist in the branch",
+		sha:     "SHA2",
+		wantErr: true,
+	}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runEvent := &info.Event{
+				Organization:   "pushrequestowner",
+				Repository:     "pushrequestrepository",
+				SHA:            tt.sha,
+				InstallationID: int64(1234567),
+			}
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+
+			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/branches/test1",
+				runEvent.Organization, runEvent.Repository), func(rw http.ResponseWriter, r *http.Request) {
+				_, err := fmt.Fprintf(rw, `{
+			"name": "test1",
+			"commit": {
+				"sha": "SHA1"
+			}}}`)
+				assert.NilError(t, err)
+			})
+
+			ctx, _ := rtesting.SetupFakeContext(t)
+			provider := &Provider{Client: fakeclient}
+			err := provider.isBranchContainsCommit(ctx, runEvent, "test1")
+			assert.Equal(t, err != nil, tt.wantErr)
+		})
+	}
+}

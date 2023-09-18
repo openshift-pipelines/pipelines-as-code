@@ -24,18 +24,19 @@ var cancelMergePatch = map[string]interface{}{
 }
 
 func (p *PacRun) cancelPipelineRuns(ctx context.Context, repo *v1alpha1.Repository) error {
-	if p.event.TriggerTarget != "pull_request" {
-		msg := fmt.Sprintf("not a pullRequest event, event: %v", p.event.TriggerTarget)
-		p.eventEmitter.EmitMessage(repo, zap.WarnLevel, "RepositoryEvent", msg)
-		return nil
+	labelSelector := getLabelSelector(map[string]string{
+		keys.URLRepository: formatting.CleanValueKubernetes(p.event.Repository),
+		keys.SHA:           formatting.CleanValueKubernetes(p.event.SHA),
+	})
+
+	if p.event.TriggerTarget == "pull_request" {
+		labelSelector = getLabelSelector(map[string]string{
+			keys.PullRequest: strconv.Itoa(p.event.PullRequestNumber),
+		})
 	}
 
 	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(repo.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: getLabelSelector(map[string]string{
-			keys.URLRepository: formatting.CleanValueKubernetes(p.event.Repository),
-			keys.SHA:           formatting.CleanValueKubernetes(p.event.SHA),
-			keys.PullRequest:   strconv.Itoa(p.event.PullRequestNumber),
-		}),
+		LabelSelector: labelSelector,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to list pipelineRuns : %w", err)
