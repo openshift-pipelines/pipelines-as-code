@@ -6,12 +6,14 @@ package test
 import (
 	"context"
 	"testing"
+	"time"
 
 	ghlib "github.com/google/go-github/v53/github"
-	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
-	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 )
 
 func TestGithubMaxKeepRuns(t *testing.T) {
@@ -39,9 +41,18 @@ func TestGithubMaxKeepRuns(t *testing.T) {
 	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
-	prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
-	assert.NilError(t, err)
-	assert.Equal(t, len(prs.Items), 1)
+	count := 0
+	for {
+		prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+		if err == nil && len(prs.Items) == 1 {
+			break
+		}
+		time.Sleep(10 * time.Second)
+		if count > 10 {
+			t.Fatalf("PipelineRun cleanups has not been done, we found %d in %s", len(prs.Items), targetNS)
+		}
+		count++
+	}
 }
 
 // Local Variables:
