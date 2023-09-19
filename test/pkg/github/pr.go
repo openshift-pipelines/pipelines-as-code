@@ -9,13 +9,14 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v53/github"
+	"github.com/tektoncd/pipeline/pkg/names"
+	"gotest.tools/v3/assert"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"github.com/tektoncd/pipeline/pkg/names"
-	"gotest.tools/v3/assert"
 )
 
 func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (string, error) {
