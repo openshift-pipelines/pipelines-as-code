@@ -221,7 +221,8 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		types.PipelineRuns = nil
 		for _, match := range matchedPRs {
 			for pr := range pipelineRuns {
-				if match.PipelineRun.Name == pipelineRuns[pr].Name {
+				if match.PipelineRun.GetName() == "" && match.PipelineRun.GetGenerateName() == pipelineRuns[pr].GenerateName ||
+					match.PipelineRun.GetName() != "" && match.PipelineRun.GetName() == pipelineRuns[pr].Name {
 					types.PipelineRuns = append(types.PipelineRuns, pipelineRuns[pr])
 				}
 			}
