@@ -66,7 +66,9 @@ spec:
               workingDir: $(workspaces.source.path)
               script: |
                 git config --global --add safe.directory /workspace/source
-                gitlint --commit "$(git log --format=format:%H --no-merges -1)"
+                # don't lint merge commit
+                git log -1 |grep -q '^Merge:' && exit 0
+                gitlint --commit "$(git log --format=format:%H --no-merges -1)" --ignore "Merge branch"
 
       - name: yamllint
         generateName: "YAML Linter"
