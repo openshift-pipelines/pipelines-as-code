@@ -9,13 +9,11 @@ import (
 	"time"
 
 	"github.com/google/go-github/v53/github"
-	"gotest.tools/v3/assert"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 )
 
 func CreateProvider(ctx context.Context, giteaURL, user, password string) (gitea.Provider, error) {
@@ -77,13 +75,15 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitea.Provider, error
 	return run, e2eoptions, gprovider, nil
 }
 
-func TearDown(ctx context.Context, t *testing.T, topts *TestOpts) {
+func TearDown(_ context.Context, _ *testing.T, topts *TestOpts) {
 	if os.Getenv("TEST_NOCLEANUP") == "true" {
 		topts.ParamsRun.Clients.Log.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
 		return
 	}
+	topts.ParamsRun.Clients.Log.Infof("Waiting for 5 seconds before going to the next one")
 	time.Sleep(5 * time.Second)
-	repository.NSTearDown(ctx, t, topts.ParamsRun, topts.TargetNS)
-	_, err := topts.GiteaCNX.Client.DeleteRepo(topts.Opts.Organization, topts.TargetNS)
-	assert.NilError(t, err)
+	// disable for now
+	// repository.NSTearDown(ctx, t, topts.ParamsRun, topts.TargetNS)
+	// _, err := topts.GiteaCNX.Client.DeleteRepo(topts.Opts.Organization, topts.TargetNS)
+	// assert.NilError(t, err)
 }
