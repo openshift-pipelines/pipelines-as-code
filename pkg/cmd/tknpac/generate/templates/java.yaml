@@ -41,6 +41,7 @@ spec:
     workspaces:
       - name: source
       - name: basic-auth
+      - name: maven-settings
     tasks:
       - name: fetch-repository
         taskRef:
@@ -67,7 +68,11 @@ spec:
         workspaces:
           - name: source
             workspace: source
+          - name: maven-settings
+            workspace: maven-settings
   workspaces:
+    - name: maven-settings
+      emptyDir: {}
     - name: source
       volumeClaimTemplate:
         spec:
