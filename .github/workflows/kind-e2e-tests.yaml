@@ -57,12 +57,6 @@ jobs:
           export PAC_DIR=${PWD}
           export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
           bash -x ./hack/dev/kind/install.sh
-      
-      - name: Extract Configurations
-        id: config
-        run: |
-          value=$(cat ./.github/workflows/e2e-config.txt)
-          echo "::set-output name=value::$value"
 
       - name: Create PAC github-app-secret
         run: |
@@ -72,10 +66,7 @@ jobs:
             --from-literal github-application-id=${{ secrets.APPLICATION_ID }} \
             --from-literal webhook.secret=${{ secrets.WEBHOOK_SECRET }}
           # Disable Bitbucket Cloud Source IP check, since we should be god here.
-          # kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"bitbucket-cloud-check-source-ip\": \"false\"}}" \
-          # --type merge pipelines-as-code
-          kubectl patch configmap pipelines-as-code -n pipelines-as-code --type='json' \
-           -p='[{"op": "replace", "path": "/data/config.yaml", "'"${{ steps.config.outputs.value }}"'"}]'
+          kubectl apply -f ./.github/workflows/e2e-config.yaml
 
           # restart controller
           kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=controller
