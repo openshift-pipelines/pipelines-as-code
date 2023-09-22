@@ -61,7 +61,7 @@ jobs:
       - name: Extract Configurations
         id: config
         run: |
-          value=$(cat e2e-config.txt)
+          value=$(cat ./.github/workflows/e2e-config.txt)
           echo "::set-output name=value::$value"
 
       - name: Create PAC github-app-secret
