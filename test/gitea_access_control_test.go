@@ -17,6 +17,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 )
 
@@ -353,6 +355,61 @@ func TestGiteaACLCommentsAllowingRememberOkToTestTrue(t *testing.T) {
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
-// Local Variables:
-// compile-command: "go test -tags=e2e -v -run TestGiteaPush ."
-// End:
+// TestGiteaPolicyAllowedOwnerFiles test if owners files fallback is allowed
+func TestGiteaPolicyAllowedOwnerFiles(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		OnOrg:                 true,
+		SkipEventsCheck:       true,
+		NoPullRequestCreation: true,
+		TargetEvent:           options.PullRequestEvent,
+		Settings: &v1alpha1.Settings{
+			Policy: &v1alpha1.Policy{
+				PullRequest: []string{"normal"},
+			},
+		},
+	}
+	defer tgitea.TestPR(t, topts)()
+	targetRef := topts.TargetRefName
+	orgName := "org-" + topts.TargetRefName
+	topts.Opts.Organization = orgName
+
+	normalTeam, err := tgitea.CreateTeam(topts, orgName, "normal")
+	assert.NilError(t, err)
+	normalUserNamePasswd := fmt.Sprintf("normal-%s", topts.TargetRefName)
+	_, normalUser, err := tgitea.CreateGiteaUserSecondCnx(topts, normalUserNamePasswd, normalUserNamePasswd)
+	assert.NilError(t, err)
+	_, err = topts.GiteaCNX.Client.AddTeamMember(normalTeam.ID, normalUser.UserName)
+	assert.NilError(t, err)
+
+	// create an allowed user w
+	allowedUserNamePasswd := fmt.Sprintf("allowed-%s", topts.TargetRefName)
+	allowedCnx, allowedUser, err := tgitea.CreateGiteaUserSecondCnx(topts, allowedUserNamePasswd, allowedUserNamePasswd)
+	assert.NilError(t, err)
+
+	prmap := map[string]string{"OWNERS": "testdata/OWNERS"}
+	entries, err := payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{
+		"Approver": allowedUser.UserName,
+	})
+	assert.NilError(t, err)
+
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.DefaultBranch,
+		BaseRefName:   topts.DefaultBranch,
+	}
+	// push OWNERS file to main
+	scm.PushFilesToRefGit(t, scmOpts, entries)
+	scmOpts.TargetRefName = targetRef
+
+	newyamlFiles := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"}
+	newEntries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, targetRef, topts.TargetEvent, map[string]string{})
+	assert.NilError(t, err)
+	scm.PushFilesToRefGit(t, scmOpts, newEntries)
+
+	tgitea.CreateForkPullRequest(t, topts, allowedCnx, "")
+
+	topts.CheckForStatus = "success"
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, settings.PACApplicationNameDefaultValue, false)
+}
