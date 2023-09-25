@@ -48,10 +48,18 @@ var (
 // ReconcileKind is the main entry point for reconciling PipelineRun resources.
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun) pkgreconciler.Event {
 	logger := logging.FromContext(ctx).With("namespace", pr.GetNamespace())
-
 	// if pipelineRun is in completed or failed state then return
 	state, exist := pr.GetAnnotations()[keys.State]
 	if exist && (state == kubeinteraction.StateCompleted || state == kubeinteraction.StateFailed) {
+		return nil
+	}
+
+	// make sure we have the latest pipelinerun to reconcile, since there is something updating at the same time
+	lpr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("cannot get pipelineRun: %w", err)
+	}
+	if lpr.GetResourceVersion() != pr.GetResourceVersion() {
 		return nil
 	}
 
