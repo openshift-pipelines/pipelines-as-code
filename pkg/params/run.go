@@ -7,21 +7,21 @@ import (
 	"strings"
 	"sync"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
 )
 
 const (
 	PACConfigmapName        = "pipelines-as-code"
 	StartingPipelineRunText = `Starting Pipelinerun <b>%s</b> in namespace
-  <b>%s</b><br><br>You can follow the execution on the [%s](%s) PipelineRun viewer or via
-  the command line with :
-	<br><code>%s pr logs -n %s %s -f</code>`
-	QueuingPipelineRunText = `PipelineRun <b>%s</b> has been queued Queuing in namespace
+  <b>%s</b><br><br>You can monitor the execution using the [%s](%s) PipelineRun viewer or through the command line by using the following command:
+    <br><code>%s pr logs -n %s %s -f</code>`
+	QueuingPipelineRunText = `PipelineRun <b>%s</b> has been queued in namespace
   <b>%s</b><br><br>`
 )
 

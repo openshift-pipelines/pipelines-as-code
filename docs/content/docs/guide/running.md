@@ -2,6 +2,7 @@
 title: Running the PipelineRun
 weight: 4
 ---
+
 # Running the PipelineRun
 
 Pipelines-as-Code (PAC) can be used to run pipelines on events such as pushes
@@ -20,7 +21,7 @@ CR.
 For example, if a PipelineRun has this annotation:
 
 ```yaml
-    pipelinesascode.tekton.dev/on-event: "[pull_request]"
+pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
 it will be matched when a pull request is created and run on the cluster, as
@@ -76,7 +77,8 @@ Code will not be triggered.
 The PipelineRun will always run in the namespace of the Repository CRD associated with the repo
 that generated the event.
 
-You can follow the execution of your PipelineRun with the [tkn pac](../cli/#install) cli :
+You can monitor the execution using the command line with the [tkn
+pac](../cli/#install) CLI :
 
 ```console
 tkn pac logs -n my-pipeline-ci -L
