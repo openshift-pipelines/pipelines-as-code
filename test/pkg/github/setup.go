@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	ghlib "github.com/google/go-github/v53/github"
 	"gotest.tools/v3/assert"
@@ -106,8 +105,6 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovider 
 		runcnx.Clients.Log.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
 		return
 	}
-	runcnx.Clients.Log.Infof("Sleeping 5 seconds just for giggles and CI flakes")
-	time.Sleep(5 * time.Second)
 	runcnx.Clients.Log.Infof("Closing PR %d", prNumber)
 	if prNumber != -1 {
 		state := "closed"

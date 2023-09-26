@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/go-github/v53/github"
 	"gotest.tools/v3/assert"
@@ -82,7 +81,6 @@ func TearDown(ctx context.Context, t *testing.T, topts *TestOpts) {
 		topts.ParamsRun.Clients.Log.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
 		return
 	}
-	time.Sleep(5 * time.Second)
 	repository.NSTearDown(ctx, t, topts.ParamsRun, topts.TargetNS)
 	_, err := topts.GiteaCNX.Client.DeleteRepo(topts.Opts.Organization, topts.TargetNS)
 	assert.NilError(t, err)
