@@ -59,6 +59,7 @@ spec:
       # Customize this task if you like, or just do a taskRef
       # to one of the hub task.
       - name: noop-task
+        displayName: Task with no effect
         runAfter:
           - fetch-repository
         workspaces:
