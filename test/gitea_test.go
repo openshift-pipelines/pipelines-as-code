@@ -679,6 +679,7 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 }
 
 func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {
+	t.Skip("Skipping test changing the global config map for now")
 	ctx := context.Background()
 	topts := &tgitea.TestOpts{
 		CheckForStatus:  "success",

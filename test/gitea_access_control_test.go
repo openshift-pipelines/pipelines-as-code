@@ -10,13 +10,14 @@ import (
 	"regexp"
 	"testing"
 
+	"gotest.tools/v3/assert"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"gotest.tools/v3/assert"
 )
 
 const okToTestComment = "/ok-to-test"
@@ -256,6 +257,8 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 // the status of CI shows as success. Now non authorized user pushes to PR, the CI will again go to pending
 // and require /ok-to-test again from authorized user.
 func TestGiteaACLCommentsAllowingRememberOkToTestFalse(t *testing.T) {
+	t.Skip("Skipping test changing the global config map for now")
+
 	ctx := context.Background()
 	topts := &tgitea.TestOpts{
 		TargetEvent: options.PullRequestEvent,
