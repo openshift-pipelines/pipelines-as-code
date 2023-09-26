@@ -54,15 +54,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 		return nil
 	}
 
-	// make sure we have the latest pipelinerun to reconcile, since there is something updating at the same time
-	lpr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("cannot get pipelineRun: %w", err)
-	}
-	if lpr.GetResourceVersion() != pr.GetResourceVersion() {
-		return nil
-	}
-
 	// if its a GitHub App pipelineRun PR then process only if check run id is added otherwise wait
 	if _, ok := pr.Annotations[keys.InstallationID]; ok {
 		if _, ok := pr.Annotations[keys.CheckRunID]; !ok {
@@ -77,6 +68,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	}
 
 	if !pr.IsDone() {
+		return nil
+	}
+
+	// make sure we have the latest pipelinerun to reconcile, since there is something updating at the same time
+	lpr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("cannot get pipelineRun: %w", err)
+	}
+	if lpr.GetResourceVersion() != pr.GetResourceVersion() {
 		return nil
 	}
 
