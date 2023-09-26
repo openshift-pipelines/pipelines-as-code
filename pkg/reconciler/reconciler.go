@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/customparams"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	pipelinesascode "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
@@ -196,12 +197,19 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	}
 
 	consoleURL := r.run.Clients.ConsoleUI.DetailURL(pr)
-	msg := fmt.Sprintf(params.StartingPipelineRunText,
-		pr.GetName(), repo.GetNamespace(),
-		r.run.Clients.ConsoleUI.GetName(), consoleURL,
-		settings.TknBinaryName,
-		pr.GetNamespace(),
-		pr.GetName())
+
+	mt := formatting.MessageTemplate{
+		PipelineRunName: pr.GetName(),
+		Namespace:       repo.GetNamespace(),
+		ConsoleName:     r.run.Clients.ConsoleUI.GetName(),
+		ConsoleURL:      consoleURL,
+		TknBinary:       settings.TknBinaryName,
+		TknBinaryURL:    settings.TknBinaryURL,
+	}
+	msg, err := mt.MakeTemplate(formatting.StartingPipelineRunText)
+	if err != nil {
+		return fmt.Errorf("cannot create message template: %w", err)
+	}
 	status := provider.StatusOpts{
 		Status:                  "in_progress",
 		Conclusion:              "pending",
