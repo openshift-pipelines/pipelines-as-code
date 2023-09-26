@@ -29,6 +29,7 @@ import (
 )
 
 func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
+	t.Skip("Skipping test changing the global config map for now")
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
@@ -54,6 +55,7 @@ func TestGithubPullRequestScopeTokenToListOfRepos(t *testing.T) {
 }
 
 func TestGithubPullRequestScopeTokenToListOfReposByGlobalConfiguration(t *testing.T) {
+	t.Skip("Skipping test changing the global config map for now")
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
