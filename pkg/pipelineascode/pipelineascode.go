@@ -5,10 +5,15 @@ import (
 	"fmt"
 	"sync"
 
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/customparams"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -17,9 +22,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -168,14 +170,20 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	// Create status with the log url
 	p.logger.Infof("pipelinerun %s has been created in namespace %s for SHA: %s Target Branch: %s",
 		pr.GetName(), match.Repo.GetNamespace(), p.event.SHA, p.event.BaseBranch)
+
 	consoleURL := p.run.Clients.ConsoleUI.DetailURL(pr)
-	// Create status with the log url
-	msg := fmt.Sprintf(params.StartingPipelineRunText,
-		pr.GetName(), match.Repo.GetNamespace(),
-		p.run.Clients.ConsoleUI.GetName(), consoleURL,
-		settings.TknBinaryName,
-		pr.GetNamespace(),
-		pr.GetName())
+	mt := formatting.MessageTemplate{
+		PipelineRunName: pr.GetName(),
+		Namespace:       match.Repo.GetNamespace(),
+		ConsoleName:     p.run.Clients.ConsoleUI.GetName(),
+		ConsoleURL:      consoleURL,
+		TknBinary:       settings.TknBinaryName,
+		TknBinaryURL:    settings.TknBinaryURL,
+	}
+	msg, err := mt.MakeTemplate(formatting.StartingPipelineRunText)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create message template: %w", err)
+	}
 	status := provider.StatusOpts{
 		Status:                  "in_progress",
 		Conclusion:              "pending",
@@ -189,7 +197,9 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	// if pipelineRun is in pending state then report status as queued
 	if pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
 		status.Status = "queued"
-		status.Text = fmt.Sprintf(params.QueuingPipelineRunText, pr.GetName(), match.Repo.GetNamespace())
+		if status.Text, err = mt.MakeTemplate(formatting.QueuingPipelineRunText); err != nil {
+			return nil, fmt.Errorf("cannot create message template: %w", err)
+		}
 	}
 
 	if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {

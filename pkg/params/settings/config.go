@@ -61,6 +61,7 @@ const (
 
 var (
 	TknBinaryName       = `tkn`
+	TknBinaryURL        = `https://tekton.dev/docs/cli/#installation`
 	hubCatalogNameRegex = regexp.MustCompile(`^catalog-(\d+)-`)
 )
 
