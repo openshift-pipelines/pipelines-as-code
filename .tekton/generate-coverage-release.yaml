@@ -41,7 +41,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: registry.access.redhat.com/ubi9/go-toolset@sha256:a2bdd33c7fc0cda56eb3745e80820c1ee29efeaac720f7c52a59224a39003261
+            - image: registry.access.redhat.com/ubi9/go-toolset@sha256:d55ff49e9b6907d5f50290f8bcffa15657470da009a5f982202780c4122ce2dd
               name: get-cache
               workingDir: $(workspaces.source.path)
               env:
@@ -64,7 +64,7 @@ spec:
                 curl http://uploader:8080/golang-cache.tar.gz|tar -z -x -f- || \
                    curl -X DELETE -F "file=golang-cache.tar.gz" http://uploader:8080/upload
             - name: unittest
-              image: registry.access.redhat.com/ubi9/go-toolset@sha256:a2bdd33c7fc0cda56eb3745e80820c1ee29efeaac720f7c52a59224a39003261
+              image: registry.access.redhat.com/ubi9/go-toolset@sha256:d55ff49e9b6907d5f50290f8bcffa15657470da009a5f982202780c4122ce2dd
               workingDir: $(workspaces.source.path)
               env:
                 - name: GOCACHE
@@ -87,7 +87,7 @@ spec:
           steps:
             - name: codecov-run
               # Has everything we need in there and we already fetched it!
-              image: registry.access.redhat.com/ubi9/go-toolset@sha256:a2bdd33c7fc0cda56eb3745e80820c1ee29efeaac720f7c52a59224a39003261
+              image: registry.access.redhat.com/ubi9/go-toolset@sha256:d55ff49e9b6907d5f50290f8bcffa15657470da009a5f982202780c4122ce2dd
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN
