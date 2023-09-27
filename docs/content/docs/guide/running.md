@@ -116,7 +116,7 @@ entire suite of checks once again.
 
 ### Gitops command on pull or merge request
 
-If you are targetting a pull or merge request you can use `GitOps` comment
+If you are targeting a pull or merge request you can use `GitOps` comment
 inside your pull request, to restart all or specific Pipelines.
 
 For example you want to restart all your pipeline you can add a comment starting

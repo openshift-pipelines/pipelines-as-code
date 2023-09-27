@@ -21,7 +21,7 @@ the moment).
    issue a `/ok-to-test` comment on a Pull Request to trigger the CI on
    Pipelines-as-Code, this let running the CI on Pull Request contributed by a
    non collaborator of the repository or the organisation. This apply to the
-   `/test` and `/retest` commands as well. This take precendence on the
+   `/test` and `/retest` commands as well. This take precedence on the
    `pull_request` action.
 
 ## Configuring the Policy on the Repository CR

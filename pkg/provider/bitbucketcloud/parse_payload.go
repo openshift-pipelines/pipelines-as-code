@@ -19,8 +19,8 @@ const bitbucketCloudIPrangesList = "https://ip-ranges.atlassian.com/"
 // lastForwarderForIP get last ip from the X-Forwarded-For chain
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For
 func lastForwarderForIP(xff string) string {
-	splitted := strings.Split(xff, ",")
-	return splitted[len(splitted)-1]
+	split := strings.Split(xff, ",")
+	return split[len(split)-1]
 }
 
 // checkFromPublicCloudIPS Grab public IP from public cloud and make sure we match it

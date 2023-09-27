@@ -86,22 +86,22 @@ func splitGithubURL(event *info.Event, uri string) (string, string, string, stri
 	if pURL.RawPath != "" {
 		path = pURL.RawPath
 	}
-	splitted := strings.Split(path, "/")
-	if len(splitted) <= 3 {
+	split := strings.Split(path, "/")
+	if len(split) <= 3 {
 		return "", "", "", "", fmt.Errorf("URL %s does not seem to be a proper provider url: %w", uri, err)
 	}
 	var spOrg, spRepo, spRef, spPath string
 	switch {
-	case (pURL.Host == publicRawURLHost || detectGHERawURL(event, pURL.Host)) && len(splitted) >= 5:
-		spOrg = splitted[1]
-		spRepo = splitted[2]
-		spRef = splitted[3]
-		spPath = strings.Join(splitted[4:], "/")
-	case splitted[3] == "blob" && len(splitted) >= 5:
-		spOrg = splitted[1]
-		spRepo = splitted[2]
-		spRef = splitted[4]
-		spPath = strings.Join(splitted[5:], "/")
+	case (pURL.Host == publicRawURLHost || detectGHERawURL(event, pURL.Host)) && len(split) >= 5:
+		spOrg = split[1]
+		spRepo = split[2]
+		spRef = split[3]
+		spPath = strings.Join(split[4:], "/")
+	case split[3] == "blob" && len(split) >= 5:
+		spOrg = split[1]
+		spRepo = split[2]
+		spRef = split[4]
+		spPath = strings.Join(split[5:], "/")
 	default:
 		return "", "", "", "", fmt.Errorf("cannot recognize task as a Github URL to fetch: %s", uri)
 	}
@@ -331,7 +331,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 // be run after sewebhook while we already matched a token.
 func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) error {
 	if v.Client == nil {
-		return fmt.Errorf("no github client has been initiliazed, " +
+		return fmt.Errorf("no github client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
@@ -488,7 +488,7 @@ func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Eve
 // ListRepos lists all the repos for a particular token
 func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 	if v.Client == nil {
-		return []string{}, fmt.Errorf("no github client has been initiliazed, " +
+		return []string{}, fmt.Errorf("no github client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 

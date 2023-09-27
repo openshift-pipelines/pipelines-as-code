@@ -114,7 +114,7 @@ func MakeEvent(event *info.Event) *info.Event {
 func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir, targetDirName string) {
 	files, err := os.ReadDir(testDir)
 	if err != nil {
-		// no error just disapointed
+		// no error just disappointed
 		return
 	}
 	filenames := make([]string, 0, len(files))

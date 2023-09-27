@@ -13,7 +13,7 @@ import (
 )
 
 // CheckPolicyAllowing check that policy is allowing the event to be processed
-// we  check the membership of the team alloed
+// we  check the membership of the team allowed
 // if the team is not found we explicitly disallow the policy, user have to correct the setting
 func (v *Provider) CheckPolicyAllowing(ctx context.Context, event *info.Event, allowedTeams []string) (bool, string) {
 	for _, team := range allowedTeams {

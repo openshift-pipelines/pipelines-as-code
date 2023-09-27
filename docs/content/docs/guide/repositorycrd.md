@@ -38,7 +38,7 @@ out the contents of linda/project to match with the PipelineRun in the .tekton/
 directory.
 
 If the `PipelineRun` matches via its annotations the event, for example on a
-specific branch and event like a `push` or `pull_request`. It wil start the
+specific branch and event like a `push` or `pull_request`. It will start the
 `PipelineRun` where the `Repository` CR has been created. You can only start the
 `PipelineRun` in the namespace where the Repository CR is located.
 
@@ -362,7 +362,7 @@ creation of the GitHub token fails with the following error message:
 the CI process does not run. This includes cases where the same repository is listed in the global or repository level configuration,
 and the scoping fails for the repository level configuration because the repository is not in the same namespace as the `Repository` custom resource.
 
-  In the following example, the `owner5/project5` repository is listed in both the global configuration and in tyhe repository level configuration:
+  In the following example, the `owner5/project5` repository is listed in both the global configuration and in the repository level configuration:
 
   ```yaml
   apiVersion: v1

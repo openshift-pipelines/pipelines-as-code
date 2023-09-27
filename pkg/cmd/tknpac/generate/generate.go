@@ -96,7 +96,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&gopt.FileName, "file-name", "f", "",
 		"The file name location")
 	cmd.PersistentFlags().BoolVar(&gopt.overwrite, "overwrite", false,
-		"Wether to overwrite the file if it exist")
+		"Whether to overwrite the file if it exist")
 	cmd.PersistentFlags().StringVarP(&gopt.language, "language", "l", "",
 		"Generate for this programming language")
 	cmd.PersistentFlags().BoolVarP(&gopt.generateWithClusterTask, "use-clustertasks", "", false,

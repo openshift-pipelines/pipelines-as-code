@@ -279,7 +279,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, pa
 
 func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error {
 	if v.Client == nil {
-		return fmt.Errorf("no gitea client has been initiliazed, " +
+		return fmt.Errorf("no gitea client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
