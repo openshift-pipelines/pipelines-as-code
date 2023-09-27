@@ -61,6 +61,11 @@ func (o *CustomConsole) DetailURL(pr *tektonv1.PipelineRun) string {
 		return fmt.Sprintf("https://detailurl.setting.%s.is.not.configured", settings.CustomConsolePRDetailKey)
 	}
 	nm := o.params
+	// make sure the map is not nil before setting this up
+	// there is a case where SetParams is not called before DetailURL and this would crash the container
+	if nm == nil {
+		nm = make(map[string]string)
+	}
 	nm["namespace"] = pr.GetNamespace()
 	nm["pr"] = pr.GetName()
 	return o.generateURL(o.Info.Pac.CustomConsolePRdetail, nm)
@@ -80,6 +85,11 @@ func (o *CustomConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tekt
 	}
 
 	nm := o.params
+	// make sure the map is not nil before setting this up
+	// there is a case where SetParams is not called before DetailURL and this would crash the container
+	if nm == nil {
+		nm = make(map[string]string)
+	}
 	nm["namespace"] = pr.GetNamespace()
 	nm["pr"] = pr.GetName()
 	nm["task"] = taskRunStatus.PipelineTaskName
