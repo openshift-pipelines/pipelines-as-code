@@ -87,6 +87,21 @@ func TestCustomGood(t *testing.T) {
 	f.SetParams(map[string]string{})
 	assert.Assert(t, strings.Contains(c.DetailURL(pr), consoleURL))
 	assert.Assert(t, strings.Contains(c.TaskLogURL(pr, trStatus), consoleURL))
+
+	o := CustomConsole{
+		Info: &info.Info{
+			Pac: &info.PacOpts{
+				Settings: &settings.Settings{
+					CustomConsoleName:      consoleName,
+					CustomConsoleURL:       consoleURL,
+					CustomConsolePRdetail:  "{{ notthere}}",
+					CustomConsolePRTaskLog: "{{ notthere}}",
+				},
+			},
+		},
+	}
+	assert.Assert(t, strings.Contains(o.DetailURL(pr), consoleURL))
+	assert.Assert(t, strings.Contains(o.TaskLogURL(pr, trStatus), consoleURL))
 }
 
 func TestCustomBad(t *testing.T) {
