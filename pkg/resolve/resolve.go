@@ -191,11 +191,11 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 	for _, pipelinerun := range types.PipelineRuns {
 		// Resolve {Finally/Task}Ref inside PipelineSpec inside PipelineRun
 		if pipelinerun.Spec.PipelineSpec != nil {
-			truns, err := inlineTasks(pipelinerun.Spec.PipelineSpec.Tasks, ropt, types)
+			turns, err := inlineTasks(pipelinerun.Spec.PipelineSpec.Tasks, ropt, types)
 			if err != nil {
 				return nil, err
 			}
-			pipelinerun.Spec.PipelineSpec.Tasks = truns
+			pipelinerun.Spec.PipelineSpec.Tasks = turns
 
 			fruns, err := inlineTasks(pipelinerun.Spec.PipelineSpec.Finally, ropt, types)
 			if err != nil {

@@ -263,7 +263,7 @@ func TestProcessTemplates(t *testing.T) {
 			},
 		},
 		{
-			name:     "params/unnown secret skipped",
+			name:     "params/unknown secret skipped",
 			template: `No {{ customparams }}`,
 			expected: "No {{ customparams }}",
 			event:    &info.Event{EventType: "push"},

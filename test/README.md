@@ -9,7 +9,7 @@ Most E2E tests has this basic flow :
 - Create a temporary Namespace
 - Create a Repository CR into it
 - Create a Branch on a GitHUB repo
-- Create a commmit with files like pipelinerun inside that branch, the pipelinerun with have the namespace annotation to
+- Create a commit with files like pipelinerun inside that branch, the pipelinerun with have the namespace annotation to
   force the repository match on the namespace we have created and not catching other CR that may matching it.
 - Wait that the Repository is updated.
 - Some other stuff are done directly on the controller sink, bypassing a bit the GitHUB apis and generating the
@@ -79,7 +79,7 @@ We run those as nightly via github action on kind.
 You can use `make test-e2e-nightly` if you want to run those manually as long
 as you have all the env variables set.
 
-If you are writing a test targetting a nightly test you need to check for the env variable:
+If you are writing a test targeting a nightly test you need to check for the env variable:
 
 ```go
     if os.Getenv("NIGHTLY_E2E_TEST") != "true" {

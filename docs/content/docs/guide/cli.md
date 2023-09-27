@@ -17,7 +17,7 @@ Pipelines-as-Code provide a powerful CLI designed to work as a plug-in to the [T
 * `describe`: describe a Pipelines-as-Code Repository and the runs associated with it.
 * `resolve`: Resolve a pipelinerun as if it were executed by pipelines as code on service.
 * `webhook`: Updates webhook secret.
-* `info`: Show informations (currently only about your installation with `info install`).
+* `info`: Show information (currently only about your installation with `info install`).
 
 ## Install
 
@@ -115,7 +115,7 @@ a custom URL on an
 [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) in a
 Kubernetes cluster.
 
-The OpenShift console is automaticaly detected, on Kubernetes, `tkn-pac` will
+The OpenShift console is automatically detected, on Kubernetes, `tkn-pac` will
 attempt to detect the tekton-dashboard Ingress URL and let you choose to use it
 as the endpoint for the created GitHub application.
 
@@ -135,7 +135,7 @@ will not prompt you unless you explicitly specify the `--force-gosmee` flag
 ### bootstrap github-app
 
 If you only want to create a GitHub application to use with Pipelines-as-Code
-and not the full `bootstrap` excercise, you can use `tkn pac bootstrap
+and not the full `bootstrap` exercise, you can use `tkn pac bootstrap
 github-app` directly which will skip the installation and only create the
 GitHub application and the secret with all the information needed in the
 `pipelines-as-code` namespace.
@@ -307,7 +307,7 @@ ask you to provide a Git provider token.
 If you already have an existing secret created in your namespace matching your
 repository URL it will use it.
 
-You can explicitely provide a token on the command line with the `-t` or
+You can explicitly provide a token on the command line with the `-t` or
 `--providerToken` flag, or you can set the environment variable
 `PAC_PROVIDER_TOKEN` and it will use it instead of asking you.
 

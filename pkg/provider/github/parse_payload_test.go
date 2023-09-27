@@ -92,7 +92,7 @@ func TestParsePayLoad(t *testing.T) {
 		targetCancelPipelinerun string
 	}{
 		{
-			name:          "bad/unknow event",
+			name:          "bad/unknown event",
 			wantErrString: "unknown X-Github-Event",
 			eventType:     "unknown",
 			triggerTarget: "unknown",

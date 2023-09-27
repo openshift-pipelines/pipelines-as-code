@@ -50,6 +50,22 @@ spec:
           - name: source
             workspace: source
 
+      - name: codespell
+        displayName: "Code Spelling"
+        runAfter:
+          - fetchit
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: codespell
+              image: ghcr.io/codespell-project/actions-codespell/stable:v2
+              workingDir: $(workspaces.source.path)
+              script: |
+                codespell -d docs/content pkg test
       - name: gitlint
         displayName: "Git commit linter"
         runAfter:

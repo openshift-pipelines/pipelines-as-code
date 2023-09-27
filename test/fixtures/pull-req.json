@@ -33,7 +33,7 @@
       "type": "User",
       "site_admin": false
     },
-    "body": "Since trigger bugs out everytime when passing the whole body and when we\r\nhave quotes, we defines our own triggertemplates for it and regenerate\r\na json with the payload we need to be parsed.\r\n\r\nThis works but this is stupid :\\",
+    "body": "Since trigger bugs out every time when passing the whole body and when we\r\nhave quotes, we defines our own triggertemplates for it and regenerate\r\na json with the payload we need to be parsed.\r\n\r\nThis works but this is stupid :\\",
     "created_at": "2021-05-21T09:26:19Z",
     "updated_at": "2021-05-21T09:26:19Z",
     "closed_at": null,

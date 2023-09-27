@@ -204,12 +204,12 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 			return err
 		}
 		for _, pr := range prs.Items {
-			pevents, err := kinteract.GetEvents(ctx, repository.GetNamespace(), "PipelineRun", pr.GetName())
+			prevents, err := kinteract.GetEvents(ctx, repository.GetNamespace(), "PipelineRun", pr.GetName())
 			if err != nil {
 				continue
 			}
-			for i := range pevents.Items {
-				runTimeObj = append(runTimeObj, &pevents.Items[i])
+			for i := range prevents.Items {
+				runTimeObj = append(runTimeObj, &prevents.Items[i])
 			}
 		}
 		sort.ByField(creationTimestamp, runTimeObj)

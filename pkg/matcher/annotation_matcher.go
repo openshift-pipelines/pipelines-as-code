@@ -73,16 +73,16 @@ func getAnnotationValues(annotation string) ([]string, error) {
 	}
 
 	// Split all tasks by comma and make sure to trim spaces in there
-	splitted := strings.Split(re.FindStringSubmatch(annotation)[1], ",")
-	for i := range splitted {
-		splitted[i] = strings.TrimSpace(splitted[i])
+	split := strings.Split(re.FindStringSubmatch(annotation)[1], ",")
+	for i := range split {
+		split[i] = strings.TrimSpace(split[i])
 	}
 
-	if splitted[0] == "" {
+	if split[0] == "" {
 		return nil, fmt.Errorf("annotation \"%s\" has empty values", annotation)
 	}
 
-	return splitted, nil
+	return split, nil
 }
 
 func getTargetBranch(prun *tektonv1.PipelineRun, logger *zap.SugaredLogger, event *info.Event) (bool, string, string, error) {

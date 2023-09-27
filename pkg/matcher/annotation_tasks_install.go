@@ -68,7 +68,7 @@ func (rt RemoteTasks) convertToPipeline(ctx context.Context, uri, data string) (
 }
 
 // nolint: dupl
-// golint has decided that it is a duplication with convertToPipeline but i swear it isnt does two are different function
+// golint has decided that it is a duplication with convertToPipeline but i swear it isn't does two are different function
 // and not even sure this is possible to do this with generic crazyness
 func (rt RemoteTasks) convertTotask(ctx context.Context, uri, data string) (*tektonv1.Task, error) {
 	decoder := k8scheme.Codecs.UniversalDeserializer()

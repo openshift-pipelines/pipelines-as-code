@@ -80,9 +80,9 @@ func TestGetGitInfo(t *testing.T) {
 				"PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
 			})()
 
-			nd := fs.NewDir(t, "TestGetGitInfo")
-			defer nd.Remove()
-			gitDir := nd.Path()
+			newdir := fs.NewDir(t, "TestGetGitInfo")
+			defer newdir.Remove()
+			gitDir := newdir.Path()
 			var err error
 
 			_, err = RunGit(gitDir, "init")
@@ -96,7 +96,7 @@ func TestGetGitInfo(t *testing.T) {
 
 			_, err = RunGit(gitDir, "remote", "add", tt.remoteTarget, tt.gitURL)
 			assert.NilError(t, err)
-			_, err = RunGit(gitDir, "commit", "--allow-empty", "-m", "Empty Commmit")
+			_, err = RunGit(gitDir, "commit", "--allow-empty", "-m", "Empty Commit")
 			assert.NilError(t, err)
 			if tt.want.Branch != "" {
 				_, _ = RunGit(gitDir, "checkout", "-b", tt.want.Branch)

@@ -6,13 +6,14 @@ import (
 	"regexp"
 	"testing"
 
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/fs"
+
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"gotest.tools/v3/assert"
-	"gotest.tools/v3/fs"
 )
 
 func TestGenerateTemplate(t *testing.T) {
@@ -138,16 +139,16 @@ func TestGenerateTemplate(t *testing.T) {
 			}
 			io, _, _, _ := cli.IOTest()
 
-			nd := fs.NewDir(t, "TestGenerate")
-			defer nd.Remove()
-			tt.gitinfo.TopLevelPath = nd.Path()
+			newdir := fs.NewDir(t, "TestGenerate")
+			defer newdir.Remove()
+			tt.gitinfo.TopLevelPath = newdir.Path()
 
 			for key, value := range tt.addExtraFilesInRepo {
 				// make sure the dir is created
-				err := os.MkdirAll(filepath.Dir(nd.Join(key)), os.ModePerm)
-				assert.NilError(t, err, "failed to create dir: %s", filepath.Dir(nd.Join(key)))
+				err := os.MkdirAll(filepath.Dir(newdir.Join(key)), os.ModePerm)
+				assert.NilError(t, err, "failed to create dir: %s", filepath.Dir(newdir.Join(key)))
 
-				err = os.WriteFile(nd.Join(key), []byte(value), 0o600)
+				err = os.WriteFile(newdir.Join(key), []byte(value), 0o600)
 				assert.NilError(t, err, "failed to create file", key)
 			}
 
@@ -162,12 +163,12 @@ func TestGenerateTemplate(t *testing.T) {
 			// check if file has been generated
 			if tt.checkGeneratedFile != "" {
 				// check if file exists
-				_, err := os.Stat(nd.Join(tt.checkGeneratedFile))
+				_, err := os.Stat(newdir.Join(tt.checkGeneratedFile))
 				assert.Assert(t, !os.IsNotExist(err))
 			}
 			if tt.checkRegInGeneratedFile != nil {
 				// check if file contains the expected strings
-				b, err := os.ReadFile(nd.Join(tt.checkGeneratedFile))
+				b, err := os.ReadFile(newdir.Join(tt.checkGeneratedFile))
 				assert.NilError(t, err)
 				for _, s := range tt.checkRegInGeneratedFile {
 					// check if regexp matches

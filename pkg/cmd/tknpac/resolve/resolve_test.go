@@ -40,7 +40,7 @@ func TestSplitArgsInMap(t *testing.T) {
 	ret := splitArgsInMap(args)
 
 	if _, ok := ret["ride"]; !ok {
-		t.Error("args hasn't been splitted")
+		t.Error("args hasn't been split")
 	}
 }
 
