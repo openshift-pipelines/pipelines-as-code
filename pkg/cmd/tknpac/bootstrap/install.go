@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"net/url"
 	"os"
@@ -10,13 +11,11 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/google/go-github/v53/github"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
-
-	_ "embed"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //go:embed templates/gosmee.yaml
@@ -96,17 +95,17 @@ func getDashboardURL(ctx context.Context, opts *bootstrapOpts, run *params.Run) 
 		}
 	}
 
-	var ans string
+	var answer string
 	qs := &survey.Input{
 		Message: "Enter your Tekton Dashboard URL: ",
 	}
-	if err := prompt.SurveyAskOne(qs, &ans); err != nil {
+	if err := prompt.SurveyAskOne(qs, &answer); err != nil {
 		return err
 	}
-	if _, err := url.ParseRequestURI(ans); err != nil {
+	if _, err := url.ParseRequestURI(answer); err != nil {
 		return fmt.Errorf("invalid url: %w", err)
 	}
-	opts.dashboardURL = ans
+	opts.dashboardURL = answer
 	return nil
 }
 
@@ -190,7 +189,7 @@ func installPac(ctx context.Context, run *params.Run, opts *bootstrapOpts) error
 		if err := getDashboardURL(ctx, opts, run); err != nil {
 			return err
 		}
-		// only updating for now here since we don't have any other stuff to udpate yet in there
+		// only updating for now here since we don't have any other stuff to update yet in there
 		// maybe we will have to move this to a different function in the future
 		return updatePACConfigMap(ctx, run, opts)
 	}

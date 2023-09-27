@@ -31,15 +31,15 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, bitbucketcloud.Provid
 		}
 	}
 
-	splitted := strings.Split(bitbucketWSOwner, "/")
+	split := strings.Split(bitbucketWSOwner, "/")
 
 	run := &params.Run{}
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return nil, options.E2E{}, bitbucketcloud.Provider{}, err
 	}
 	e2eoptions := options.E2E{
-		Organization: splitted[0],
-		Repo:         splitted[1],
+		Organization: split[0],
+		Repo:         split[1],
 	}
 	bbc := bitbucketcloud.Provider{}
 	event := info.NewEvent()

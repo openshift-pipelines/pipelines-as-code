@@ -17,6 +17,11 @@ repos:
   rev: v0.19.1
   hooks:
     - id: gitlint
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.2.4
+  hooks:
+  - id: codespell
+    files: '^(docs/content|pkg|test)/.*'
 - repo: local
   hooks:
   - id: black
@@ -68,4 +73,3 @@ repos:
 
 # TODO: add a lint-py when we have the errors fix
 # TODO: add a lint-sh when we have the errors fix
-#

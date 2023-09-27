@@ -517,7 +517,7 @@ func TestGithubGetCommitInfo(t *testing.T) {
 		{
 			name:     "noclient",
 			event:    &info.Event{},
-			wantErr:  "no github client has been initiliazed",
+			wantErr:  "no github client has been initialized",
 			noclient: true,
 		},
 	}

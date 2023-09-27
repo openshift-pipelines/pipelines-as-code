@@ -29,7 +29,7 @@ graph TD
     H --> B
     G --> I(Update status in Repository)
     I --> J(Update state to 'completed')
-    J --> K{Check if concurency was defined?}
+    J --> K{Check if concurrency was defined?}
     K --> |Yes| L(Remove PipelineRun from Queue)
     L --> M(Start the next PipelineRun from Queue)
     M --> N[Done!]

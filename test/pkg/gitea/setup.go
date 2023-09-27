@@ -56,19 +56,19 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitea.Provider, error
 		}
 	}
 
-	var splitted []string
+	var split []string
 	if giteaURL == "" || giteaPassword == "" || giteaRepoOwner == "" {
 		return nil, options.E2E{}, gitea.Provider{}, fmt.Errorf("TEST_GITEA_API_URL TEST_GITEA_PASSWORD TEST_GITEA_REPO_OWNER need to be set")
 	}
-	splitted = strings.Split(giteaRepoOwner, "/")
+	split = strings.Split(giteaRepoOwner, "/")
 
 	run := &params.Run{}
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return nil, options.E2E{}, gitea.Provider{}, fmt.Errorf("cannot create new client: %w", err)
 	}
 	// Repo is actually not used
-	e2eoptions := options.E2E{Organization: splitted[0], Repo: splitted[1]}
-	gprovider, err := CreateProvider(ctx, giteaURL, splitted[0], giteaPassword)
+	e2eoptions := options.E2E{Organization: split[0], Repo: split[1]}
+	gprovider, err := CreateProvider(ctx, giteaURL, split[0], giteaPassword)
 	if err != nil {
 		return nil, options.E2E{}, gitea.Provider{}, fmt.Errorf("cannot set client: %w", err)
 	}

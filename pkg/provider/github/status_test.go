@@ -270,7 +270,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				runevent:    runEvent,
 				status:      "completed",
 				conclusion:  "neutral",
-				text:        "Je sais pas ce qui se passe wesh",
+				text:        "Je says pas ce qui se passe wesh",
 				detailsURL:  "https://cireport.com",
 				titleSubstr: "Unknown",
 				githubApps:  true,

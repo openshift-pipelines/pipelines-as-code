@@ -60,7 +60,7 @@ func Test_compareSecret(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "good/secret comparaison",
+			name: "good/secret comparison",
 			args: args{
 				incomingSecret: "foo",
 				secretValue:    "foo",
@@ -68,7 +68,7 @@ func Test_compareSecret(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "bad/secret comparaison",
+			name: "bad/secret comparison",
 			args: args{
 				incomingSecret: "foo",
 				secretValue:    "bar",

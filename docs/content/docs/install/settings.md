@@ -11,7 +11,7 @@ There is a few things you can configure through the config map
 * `application-name`
 
   The name of the application for example when showing the results of the
-  pipelinerun. If youre using the GitHub App you will
+  pipelinerun. If you're using the GitHub App you will
   need to customize the label on the github app setting as well. .  Default to
   `Pipelines-as-Code CI`
 
@@ -79,7 +79,7 @@ There is a few things you can configure through the config map
 * `bitbucket-cloud-additional-source-ip`
 
   Let you add extra IPS to allow bitbucket clouds, you can do a specific IP:
-  `127.0.0.1` or a networks `127.0.0.0/16`. Multile of them can be specified
+  `127.0.0.1` or a networks `127.0.0.0/16`. Multiple of them can be specified
   separated by commas.
 
 * `max-keep-run-upper-limit`
@@ -256,7 +256,7 @@ A few settings are available to configure this feature:
   shown when the PipelineRun is started so the user can follow execution on your
   console or when to see more details about the pipelinerun on result.
 
-  The URL suports all the standard variables as exposed on the Pipelinerun (refer to
+  The URL supports all the standard variables as exposed on the Pipelinerun (refer to
   the documentation on [Authoring PipelineRuns](../authoringprs)) with the added
   variable:
 
@@ -282,7 +282,7 @@ A few settings are available to configure this feature:
 
   the `{{ custom }}` tag in the URL is expanded as `value`.
 
-  This let operator to add specific informations like a `UUID` about a user as
+  This let operator to add specific information like a `UUID` about a user as
   parameter in their repo CR and let it link to the console.
 
 * `custom-console-url-pr-tasklog`
@@ -290,7 +290,7 @@ A few settings are available to configure this feature:
   Set this to the URL where to view the log of the taskrun of the `PipelineRun`. This is
   shown when we post a result of the task breakdown to link to the logs of the taskrun.
 
-  The URL suports custom parameter on Repo CR and the standard parameters as
+  The URL supports custom parameter on Repo CR and the standard parameters as
   described in the `custom-console-url-pr-details` setting and as well those added
   values:
 
@@ -307,7 +307,7 @@ A few settings are available to configure this feature:
   There are a settings exposed through a config map for which any authenticated
   user can access to know about the Pipelines-as-Code status. This Configmap
   will be automatically created with the [OpenShift Pipelines Operator](https://docs.openshift.com/container-platform/latest/cicd/pipelines/understanding-openshift-pipelines.html)
-  or when installing with [tkn pac boostrap](../../guide/cli/#bootstrap) command.
+  or when installing with [tkn pac bootstrap](../../guide/cli/#bootstrap) command.
 
 * `version`
 

@@ -99,7 +99,7 @@ func TestGetRepoOwnerFromGHURL(t *testing.T) {
 		{
 			name: "repoowner",
 			args: args{
-				ghURL: "https://allo/hello/moto",
+				ghURL: "https://allow/hello/moto",
 			},
 			want:    "hello/moto",
 			wantErr: false,
@@ -107,7 +107,7 @@ func TestGetRepoOwnerFromGHURL(t *testing.T) {
 		{
 			name: "repoowner with capital letters",
 			args: args{
-				ghURL: "https://allo/HELLO/moto",
+				ghURL: "https://allow/HELLO/moto",
 			},
 			want:    "hello/moto",
 			wantErr: false,

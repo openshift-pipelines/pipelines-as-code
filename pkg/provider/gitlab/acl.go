@@ -65,7 +65,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event, pag
 
 func (v *Provider) IsAllowed(_ context.Context, event *info.Event, _ *info.PacOpts) (bool, error) {
 	if v.Client == nil {
-		return false, fmt.Errorf("no github client has been initiliazed, " +
+		return false, fmt.Errorf("no github client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	if v.checkMembership(event, v.userID) {

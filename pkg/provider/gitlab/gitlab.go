@@ -154,7 +154,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 ) error {
 	var detailsURL string
 	if v.Client == nil {
-		return fmt.Errorf("no gitlab client has been initiliazed, " +
+		return fmt.Errorf("no gitlab client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	switch statusOpts.Conclusion {
@@ -212,7 +212,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 
 func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, provenance string) (string, error) {
 	if v.Client == nil {
-		return "", fmt.Errorf("no gitlab client has been initiliazed, " +
+		return "", fmt.Errorf("no gitlab client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	// default set provenance from head
@@ -286,7 +286,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, pa
 
 func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error {
 	if v.Client == nil {
-		return fmt.Errorf("no gitlab client has been initiliazed, " +
+		return fmt.Errorf("no gitlab client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
@@ -307,7 +307,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 
 func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, error) {
 	if v.Client == nil {
-		return []string{}, fmt.Errorf("no gitlab client has been initiliazed, " +
+		return []string{}, fmt.Errorf("no gitlab client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	if runevent.TriggerTarget == "pull_request" {

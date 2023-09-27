@@ -238,7 +238,7 @@ this will start a hugo server with live preview of the docs on :
 
 <https://localhost:1313>
 
-When we push the release, the docs get rebuilded by CloudFare.
+When we push the release, the docs get rebuilt by CloudFare.
 
 By default the website <https://pipelinesascode.com> only contains the "stable"
 documentation. If you want to preview the dev documentation as from `main` you
@@ -261,6 +261,8 @@ need to have on your system:
 - [black](https://github.com/psf/black) - Python code formatter check
 - [vale](https://github.com/errata-ai/vale) - For grammar check
 - [markdownlint](https://github.com/markdownlint/markdownlint) - For markdown lint
+- [codespell](https://github.com/codespell-project/codespell) - For code spelling
+- [gitlint](https://github.com/jorisroovers/gitlint) - For git commit messages lint
 - [hugo](https://gohugo.io) - For documentation
 - [ko](https://github.com/google/ko) - To rebuild and push change to kube cluster.
 - [kind](https://kind.sigs.k8s.io/) - For local devs

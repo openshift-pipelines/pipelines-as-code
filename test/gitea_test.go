@@ -569,7 +569,7 @@ func TestGiteaErrorSnippetWithSecret(t *testing.T) {
 }
 
 // TestGiteaNotExistingClusterTask checks that the pipeline run fails if the clustertask does not exist
-// This willl test properly if we error the reason in UI see bug #1160
+// This will test properly if we error the reason in UI see bug #1160
 func TestGiteaNotExistingClusterTask(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      regexp.MustCompile(`.*clustertasks.tekton.dev "foo-bar" not found`),
@@ -584,7 +584,7 @@ func TestGiteaNotExistingClusterTask(t *testing.T) {
 }
 
 // TestGiteaBadLinkOfTask checks that we fail properly with the error from the
-// tekton pipelines controlller. We check on the UI interface that we display
+// tekton pipelines controller. We check on the UI interface that we display
 // and inside the pac controller.
 func TestGiteaBadLinkOfTask(t *testing.T) {
 	topts := &tgitea.TestOpts{

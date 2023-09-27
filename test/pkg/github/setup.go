@@ -36,19 +36,19 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 		}
 	}
 
-	var splitted []string
+	var split []string
 	if !viaDirectWebhook {
 		if githubURL == "" || githubRepoOwnerGithubApp == "" {
 			return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_GITHUB_API_URL TEST_GITHUB_REPO_OWNER_GITHUBAPP need to be set")
 		}
-		splitted = strings.Split(githubRepoOwnerGithubApp, "/")
+		split = strings.Split(githubRepoOwnerGithubApp, "/")
 	}
 	if viaDirectWebhook {
 		githubToken = os.Getenv("TEST_GITHUB_TOKEN")
 		if githubURL == "" || githubToken == "" || githubRepoOwnerDirectWebhook == "" {
 			return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_GITHUB_API_URL TEST_GITHUB_TOKEN TEST_GITHUB_REPO_OWNER_WEBHOOK need to be set")
 		}
-		splitted = strings.Split(githubRepoOwnerDirectWebhook, "/")
+		split = strings.Split(githubRepoOwnerDirectWebhook, "/")
 	}
 
 	run := &params.Run{}
@@ -61,7 +61,7 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 		return nil, options.E2E{}, github.New(), fmt.Errorf("TEST_EL_URL variable is required, cannot continue")
 	}
 
-	e2eoptions := options.E2E{Organization: splitted[0], Repo: splitted[1], DirectWebhook: viaDirectWebhook, ControllerURL: controllerURL}
+	e2eoptions := options.E2E{Organization: split[0], Repo: split[1], DirectWebhook: viaDirectWebhook, ControllerURL: controllerURL}
 	gprovider := github.New()
 	event := info.NewEvent()
 
