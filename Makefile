@@ -11,7 +11,7 @@ GO_TEST_FLAGS +=
 SHELL := bash
 
 
-PY_FILES := $(shell find . -type f -regex ".*py" -print)
+PY_FILES := $(shell find . -type f -regex ".*\.py" -print)
 YAML_FILES := $(shell find . -type f -regex ".*y[a]ml" -print)
 MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./vendor/.*'  -not -regex '^./.vale/.*'  -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
 
