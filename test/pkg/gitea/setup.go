@@ -33,7 +33,7 @@ func CreateProvider(ctx context.Context, giteaURL, user, password string) (gitea
 		Token: password,
 	}
 	if err := gprovider.SetClient(ctx, nil, event, nil); err != nil {
-		return gitea.Provider{}, fmt.Errorf("cannot set client: %w", err)
+		return gitea.Provider{}, err
 	}
 	return gprovider, nil
 }
