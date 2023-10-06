@@ -84,9 +84,12 @@ func TestCheckPolicyAllowing(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
+			repo := &v1alpha1.Repository{Spec: v1alpha1.RepositorySpec{
+				Settings: &v1alpha1.Settings{},
+			}}
 			gprovider := Provider{
 				Client:        fakeclient,
-				repoSettings:  &v1alpha1.Settings{},
+				repo:          repo,
 				Logger:        logger,
 				paginedNumber: 1,
 			}
@@ -313,9 +316,12 @@ func TestOkToTestComment(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
+			repo := &v1alpha1.Repository{Spec: v1alpha1.RepositorySpec{
+				Settings: &v1alpha1.Settings{},
+			}}
 			gprovider := Provider{
 				Client:        fakeclient,
-				repoSettings:  &v1alpha1.Settings{},
+				repo:          repo,
 				Logger:        logger,
 				paginedNumber: 1,
 			}
@@ -580,11 +586,12 @@ func TestIfPullRequestIsForSameRepoWithoutFork(t *testing.T) {
 				fmt.Fprint(rw, string(b))
 			})
 
+			repo := &v1alpha1.Repository{Spec: v1alpha1.RepositorySpec{
+				Settings: &v1alpha1.Settings{},
+			}}
 			gprovider := Provider{
 				Client: fakeclient,
-				repoSettings: &v1alpha1.Settings{
-					Policy: &v1alpha1.Policy{},
-				},
+				repo:   repo,
 			}
 
 			got, err := gprovider.aclCheckAll(ctx, tt.event)

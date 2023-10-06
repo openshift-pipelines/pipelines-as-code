@@ -8,16 +8,22 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
+	"time"
 
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 )
 
 const okToTestComment = "/ok-to-test"
@@ -110,8 +116,6 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	topts.ParamsRun.Clients.Log.Infof("Repo CRD %s has been created with Policy: %+v", topts.TargetRefName, topts.Settings.Policy)
 
 	orgName := "org-" + topts.TargetRefName
-	adminCNX := topts.GiteaCNX
-
 	// create ok-to-test team on org and add user ok-to-test onto it
 	oktotestTeam, err := tgitea.CreateTeam(topts, orgName, "ok-to-test")
 	assert.NilError(t, err)
@@ -134,33 +138,37 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 
 	topts.ParamsRun.Clients.Log.Infof("Sending a /ok-to-test comment as a user not belonging to an allowed team in Repo CR policy but part of the organization")
 	topts.GiteaCNX = normalUserCnx
-	tgitea.PostCommentOnPullRequest(t, topts, "/ok-to-test")
+	tgitea.PostCommentOnPullRequest(t, topts, okToTestComment)
 	topts.Regexp = regexp.MustCompile(
 		fmt.Sprintf(`.*policy check: ok-to-test, user: %s is not a member of any of the allowed teams.*`, normalUserNamePasswd))
-	topts.CheckForStatus = "failure"
+	topts.CheckForStatus = "Skipped"
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
-	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, settings.PACApplicationNameDefaultValue, true)
-
-	// make sure we delete the old comment to don't have a false positive
-	topts.GiteaCNX = adminCNX
-	assert.NilError(t, tgitea.RemoveCommentMatching(topts, regexp.MustCompile(`.*policy check:`)))
 
 	topts.ParamsRun.Clients.Log.Infof("Sending a /retest comment as a user not belonging to an allowed team in Repo CR policy but part of the organization")
 	topts.GiteaCNX = normalUserCnx
 	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
 	topts.Regexp = regexp.MustCompile(
 		fmt.Sprintf(`.*policy check: retest, user: %s is not a member of any of the allowed teams.*`, normalUserNamePasswd))
-	topts.CheckForStatus = "failure"
+	topts.CheckForStatus = "Skipped"
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 
-	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, settings.PACApplicationNameDefaultValue, true)
 	topts.GiteaCNX = okToTestUserCnx
 	topts.ParamsRun.Clients.Log.Infof("Sending a /ok-to-test comment as a user belonging to an allowed team in Repo CR policy")
 	tgitea.PostCommentOnPullRequest(t, topts, "/ok-to-test")
 	topts.Regexp = successRegexp
-	topts.CheckForStatus = "success"
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
-	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", true)
+
+	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
+	firstpr := prs.Items[0]
+	generatename := strings.TrimSuffix(firstpr.GetGenerateName(), "-")
+
+	topts.CheckForStatus = "success"
+	// NOTE(chmouel): there is two status here, one old one which is the
+	// failure without the prun and the new one with the prun on success same
+	// bug we have github checkrun that we need to fix
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, fmt.Sprintf("%s / %s", settings.PACApplicationNameDefaultValue, generatename), true)
 }
 
 // TestGiteaACLOrgAllowed tests that the policy check works when the user is part of an allowed org
@@ -351,6 +359,78 @@ func TestGiteaACLCommentsAllowingRememberOkToTestTrue(t *testing.T) {
 	// status of CI is success because comment /ok-to-test added by authorized user before
 	topts.Regexp = successRegexp
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
+}
+
+func TestGiteaPolicyAllowedOwnerFiles(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		OnOrg:                 true,
+		NoPullRequestCreation: true,
+		TargetEvent:           options.PullRequestEvent,
+		Settings: &v1alpha1.Settings{
+			Policy: &v1alpha1.Policy{
+				PullRequest: []string{"normal"},
+			},
+		},
+	}
+	defer tgitea.TestPR(t, topts)()
+	targetRef := topts.TargetRefName
+	orgName := "org-" + topts.TargetRefName
+	topts.Opts.Organization = orgName
+
+	normalTeam, err := tgitea.CreateTeam(topts, orgName, "normal")
+	assert.NilError(t, err)
+	normalUserNamePasswd := fmt.Sprintf("normal-%s", topts.TargetRefName)
+	_, normalUser, err := tgitea.CreateGiteaUserSecondCnx(topts, normalUserNamePasswd, normalUserNamePasswd)
+	assert.NilError(t, err)
+	_, err = topts.GiteaCNX.Client.AddTeamMember(normalTeam.ID, normalUser.UserName)
+	assert.NilError(t, err)
+
+	// create an allowed user w
+	allowedUserNamePasswd := fmt.Sprintf("allowed-%s", topts.TargetRefName)
+	allowedCnx, allowedUser, err := tgitea.CreateGiteaUserSecondCnx(topts, allowedUserNamePasswd, allowedUserNamePasswd)
+	assert.NilError(t, err)
+
+	prmap := map[string]string{"OWNERS": "testdata/OWNERS"}
+	entries, err := payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{
+		"Approver": allowedUser.UserName,
+	})
+	assert.NilError(t, err)
+
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.DefaultBranch,
+		BaseRefName:   topts.DefaultBranch,
+	}
+	// push OWNERS file to main
+	scm.PushFilesToRefGit(t, scmOpts, entries)
+	scmOpts.TargetRefName = targetRef
+
+	newyamlFiles := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"}
+	newEntries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
+	assert.NilError(t, err)
+	scm.PushFilesToRefGit(t, scmOpts, newEntries)
+
+	npr := tgitea.CreateForkPullRequest(t, topts, allowedCnx, "")
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       npr.Head.Sha,
+	}
+	assert.NilError(t, twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts))
+	time.Sleep(5 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+
+	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
+
+	firstpr := prs.Items[0]
+	topts.CheckForStatus = "success"
+	generatename := strings.TrimSuffix(firstpr.GetGenerateName(), "-")
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, fmt.Sprintf("%s / %s", settings.PACApplicationNameDefaultValue, generatename), false)
 }
 
 // Local Variables:

@@ -236,7 +236,7 @@ func WaitForStatus(t *testing.T, topts *TestOpts, ref, forcontext string, onlyla
 			statuscheck := topts.CheckForStatus
 			if statuscheck != "" && statuscheck != string(cstatus.State) {
 				if statuscheck != cstatus.Description {
-					t.Errorf("Status on SHA: %s is %s from %s", ref, cstatus.State, cstatus.Context)
+					t.Fatalf("Status on SHA: %s is %s from %s", ref, cstatus.State, cstatus.Context)
 				}
 			}
 			topts.ParamsRun.Clients.Log.Infof("Status on SHA: %s is %s from %s", ref, cstatus.State, cstatus.Context)

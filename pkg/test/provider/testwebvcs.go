@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -55,7 +56,7 @@ func (v *TestProviderImp) GetCommitInfo(_ context.Context, _ *info.Event) error 
 	return nil
 }
 
-func (v *TestProviderImp) SetClient(_ context.Context, _ *params.Run, _ *info.Event, _ *v1alpha1.Settings) error {
+func (v *TestProviderImp) SetClient(_ context.Context, _ *params.Run, _ *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
 	return nil
 }
 

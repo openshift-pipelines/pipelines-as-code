@@ -15,6 +15,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -46,7 +47,8 @@ type Provider struct {
 	provenance    string
 	Run           *params.Run
 	RepositoryIDs []int64
-	repoSettings  *v1alpha1.Settings
+	repo          *v1alpha1.Repository
+	eventEmitter  *events.EventEmitter
 	paginedNumber int
 	skippedRun
 }
@@ -259,11 +261,12 @@ func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.
 	return nil
 }
 
-func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, repoSettings *v1alpha1.Settings) error {
+func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, repo *v1alpha1.Repository, eventsEmitter *events.EventEmitter) error {
 	client, providerName, apiURL := makeClient(ctx, event.Provider.URL, event.Provider.Token)
 	v.providerName = providerName
 	v.Run = run
-	v.repoSettings = repoSettings
+	v.repo = repo
+	v.eventEmitter = eventsEmitter
 
 	// check that the Client is not already set, so we don't override our fakeclient
 	// from unittesting.
