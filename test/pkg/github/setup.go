@@ -93,7 +93,8 @@ func Setup(ctx context.Context, viaDirectWebhook bool) (*params.Run, options.E2E
 		Token: githubToken,
 		URL:   githubURL,
 	}
-	if err := gprovider.SetClient(ctx, nil, event, nil); err != nil {
+	// TODO: before PR
+	if err := gprovider.SetClient(ctx, nil, event, nil, nil); err != nil {
 		return nil, options.E2E{}, github.New(), err
 	}
 

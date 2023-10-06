@@ -10,6 +10,7 @@ import (
 	"github.com/google/go-github/v53/github"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -205,7 +206,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path,
 	return ret, err
 }
 
-func (v *Provider) SetClient(ctx context.Context, _ *params.Run, event *info.Event, _ *v1alpha1.Settings) error {
+func (v *Provider) SetClient(ctx context.Context, _ *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
 	if event.Provider.User == "" {
 		return fmt.Errorf("no provider.user has been set in the repo crd")
 	}

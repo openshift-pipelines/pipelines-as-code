@@ -79,10 +79,13 @@ func TestCheckPolicyAllowing(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
+			repo := &v1alpha1.Repository{Spec: v1alpha1.RepositorySpec{
+				Settings: &v1alpha1.Settings{},
+			}}
 			gprovider := Provider{
-				Client:       fakeclient,
-				repoSettings: &v1alpha1.Settings{},
-				Logger:       logger,
+				Client: fakeclient,
+				repo:   repo,
+				Logger: logger,
 			}
 
 			gotAllowed, gotReason := gprovider.CheckPolicyAllowing(ctx, event, tt.allowedTeams)

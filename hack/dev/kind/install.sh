@@ -10,7 +10,7 @@
 # You probably need to install passwordstore https://www.passwordstore.org/ and
 # add your github secrets : github-application-id github-private-key
 # webhook.secret in a folder which needs to be specified  in
-# the PAC_PASS_SECRET_FOLDER variable. or otheriwse you have to create the
+# the PAC_PASS_SECRET_FOLDER variable. or otherwise you have to create the
 # pipelines-as-code-secret manually
 #
 # If you need to install old pac as shipped in OSP1.7, you check it out somewhere
