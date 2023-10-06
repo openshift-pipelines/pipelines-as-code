@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -33,7 +34,7 @@ type Interface interface {
 	CreateStatus(context.Context, versioned.Interface, *info.Event, *info.PacOpts, StatusOpts) error
 	GetTektonDir(context.Context, *info.Event, string, string) (string, error)      // ctx, event, path, provenance
 	GetFileInsideRepo(context.Context, *info.Event, string, string) (string, error) // ctx, event, path, branch
-	SetClient(context.Context, *params.Run, *info.Event, *v1alpha1.Settings) error
+	SetClient(context.Context, *params.Run, *info.Event, *v1alpha1.Repository, *events.EventEmitter) error
 	GetCommitInfo(context.Context, *info.Event) error
 	GetConfig() *info.ProviderConfig
 	GetFiles(context.Context, *info.Event) ([]string, error)

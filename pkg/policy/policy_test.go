@@ -3,18 +3,32 @@ package policy
 import (
 	"testing"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	testprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
+	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	testprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 )
+
+func newRepoWithPolicy(policy *v1alpha1.Policy) *v1alpha1.Repository {
+	return &v1alpha1.Repository{
+		Spec: v1alpha1.RepositorySpec{
+			Settings: &v1alpha1.Settings{
+				Policy: policy,
+			},
+		},
+	}
+}
 
 func TestPolicy_IsAllowed(t *testing.T) {
 	type fields struct {
-		Settings *v1alpha1.Settings
-		Event    *info.Event
+		repository *v1alpha1.Repository
+		event      *info.Event
 	}
 	type args struct {
 		tType info.TriggerType
@@ -24,149 +38,115 @@ func TestPolicy_IsAllowed(t *testing.T) {
 		fields       fields
 		args         args
 		replyAllowed bool
-		want         Result
+		want         bool
 		wantErr      bool
+		wantReason   string
 	}{
 		{
 			name: "Test Policy.IsAllowed with no settings",
 			fields: fields{
-				Settings: nil,
-				Event:    nil,
+				repository: nil,
+				event:      nil,
 			},
 			args: args{
 				tType: info.TriggerTypePush,
 			},
-			want: ResultNotSet,
+			want: false,
 		},
 		{
 			name: "Test Policy.IsAllowed with unknown event type",
 			fields: fields{
-				Settings: &v1alpha1.Settings{
-					Policy: &v1alpha1.Policy{
-						PullRequest: []string{"pull_request"},
-					},
-				},
-				Event: nil,
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"pull_request"}}),
+				event:      nil,
 			},
 			args: args{
 				tType: "unknown",
 			},
-			want: ResultNotSet,
+			want: false,
 		},
 		{
 			name: "allowing member not in team for pull request",
 			fields: fields{
-				Settings: &v1alpha1.Settings{
-					Policy: &v1alpha1.Policy{
-						PullRequest: []string{"pull_request"},
-					},
-				},
-				Event: info.NewEvent(),
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"pull_request"}}),
+				event:      info.NewEvent(),
 			},
 			args: args{
 				tType: info.TriggerTypePullRequest,
 			},
 			replyAllowed: true,
-			want:         ResultAllowed,
+			want:         true,
 		},
 		{
-			name: "empty settings policy ignore",
+			name:       "empty settings policy ignore",
+			wantReason: "policy check: pull_request, policy disallowing",
 			fields: fields{
-				Settings: &v1alpha1.Settings{
-					Policy: &v1alpha1.Policy{
-						PullRequest: []string{},
-					},
-				},
-				Event: info.NewEvent(),
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{""}}),
+				event:      info.NewEvent(),
 			},
 			args: args{
 				tType: info.TriggerTypePullRequest,
 			},
-			replyAllowed: true,
-			want:         ResultNotSet,
+			want: false,
 		},
 		{
-			name: "disallowing member not in team for pull request",
+			name:       "disallowing member not in team for pull request",
+			wantReason: "policy check: pull_request, policy disallowing",
 			fields: fields{
-				Settings: &v1alpha1.Settings{
-					Policy: &v1alpha1.Policy{
-						PullRequest: []string{"pull_request"},
-					},
-				},
-				Event: info.NewEvent(),
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"pull_request"}}),
+				event:      info.NewEvent(),
 			},
 			args: args{
 				tType: info.TriggerTypePullRequest,
 			},
-			replyAllowed: false,
-			want:         ResultDisallowed,
-			wantErr:      true,
+			want:    false,
+			wantErr: true,
 		},
 		{
-			name: "allowing member not in team for ok-to-test",
+			name: "allowing member in team for ok-to-test",
 			fields: fields{
-				Settings: &v1alpha1.Settings{
-					Policy: &v1alpha1.Policy{
-						OkToTest: []string{"ok-to-test"},
-					},
-				},
-				Event: info.NewEvent(),
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"ok-to-test"}}),
+				event:      info.NewEvent(),
 			},
 			args: args{
 				tType: info.TriggerTypeOkToTest,
 			},
 			replyAllowed: true,
-			want:         ResultAllowed,
+			want:         false,
 		},
 		{
 			name: "disallowing member not in team for ok-to-test",
 			fields: fields{
-				Settings: &v1alpha1.Settings{
-					Policy: &v1alpha1.Policy{
-						OkToTest: []string{"ok-to-test"},
-					},
-				},
-				Event: info.NewEvent(),
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"ok-to-test"}}),
+				event:      info.NewEvent(),
 			},
 			args: args{
 				tType: info.TriggerTypeOkToTest,
 			},
-			replyAllowed: false,
-			want:         ResultDisallowed,
-			wantErr:      true,
+			want:    false,
+			wantErr: true,
 		},
 		{
 			name: "allowing member not in team for retest",
 			fields: fields{
-				Settings: &v1alpha1.Settings{
-					Policy: &v1alpha1.Policy{
-						OkToTest: []string{"ok-to-test"},
-					},
-				},
-				Event: info.NewEvent(),
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"ok-to-test"}}),
+				event:      info.NewEvent(),
 			},
 			args: args{
 				tType: info.TriggerTypeRetest,
 			},
-			replyAllowed: true,
-			want:         ResultAllowed,
+			want: false,
 		},
 		{
 			name: "disallowing member not in team for retest",
 			fields: fields{
-				Settings: &v1alpha1.Settings{
-					Policy: &v1alpha1.Policy{
-						OkToTest: []string{"ok-to-test"},
-					},
-				},
-				Event: info.NewEvent(),
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"ok-to-test"}}),
+				event:      info.NewEvent(),
 			},
 			args: args{
 				tType: info.TriggerTypeRetest,
 			},
-			replyAllowed: false,
-			want:         ResultDisallowed,
-			wantErr:      true,
+			want:    false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -174,22 +154,25 @@ func TestPolicy_IsAllowed(t *testing.T) {
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 
-			vcx := &testprovider.TestProviderImp{PolicyDisallowing: !tt.replyAllowed}
-			p := &Policy{
-				Settings: tt.fields.Settings,
-				Event:    tt.fields.Event,
-				VCX:      vcx,
-				Logger:   logger,
-			}
 			ctx, _ := rtesting.SetupFakeContext(t)
-			got, err := p.IsAllowed(ctx, tt.args.tType)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Policy.IsAllowed() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
+
+			vcx := &testprovider.TestProviderImp{PolicyDisallowing: !tt.replyAllowed}
+			if tt.fields.event == nil {
+				tt.fields.event = info.NewEvent()
 			}
+			p := &Policy{
+				Repository:   tt.fields.repository,
+				Event:        tt.fields.event,
+				VCX:          vcx,
+				Logger:       logger,
+				EventEmitter: events.NewEventEmitter(stdata.Kube, logger),
+			}
+			got, reason := p.IsAllowed(ctx, tt.args.tType)
 			if got != tt.want {
 				t.Errorf("Policy.IsAllowed() = %v, want %v", got, tt.want)
 			}
+			assert.Equal(t, tt.wantReason, reason)
 		})
 	}
 }

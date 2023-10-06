@@ -9,6 +9,7 @@ import (
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -165,7 +166,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path,
 	return v.getBlob(event, revision, path)
 }
 
-func (v *Provider) SetClient(_ context.Context, _ *params.Run, event *info.Event, _ *v1alpha1.Settings) error {
+func (v *Provider) SetClient(_ context.Context, _ *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
 	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}

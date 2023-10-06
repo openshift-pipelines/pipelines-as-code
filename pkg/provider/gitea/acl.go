@@ -46,36 +46,45 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, all
 
 func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, pac *info.PacOpts) (bool, error) {
 	aclPolicy := policy.Policy{
-		Settings: v.repoSettings,
-		Event:    event,
-		VCX:      v,
-		Logger:   v.Logger,
+		Repository:   v.repo,
+		EventEmitter: v.eventEmitter,
+		Event:        event,
+		VCX:          v,
+		Logger:       v.Logger,
 	}
 
-	// checkIfPolicyIsAllowing
+	// Try to detect a policy rule allowed it
 	tType, _ := detectTriggerTypeFromPayload("", event.Event)
-	policyRes, err := aclPolicy.IsAllowed(ctx, tType)
-	switch policyRes {
-	case policy.ResultAllowed:
+	policyAllowed, policyReason := aclPolicy.IsAllowed(ctx, tType)
+	if policyAllowed {
 		return true, nil
-	case policy.ResultDisallowed:
-		return false, err
-	case policy.ResultNotSet:
-		// showing as debug so we don't spill useless logs all the time in default info
-		v.Logger.Debugf("policy check: policy is not set, checking for other conditions for sender: %s", event.Sender)
 	}
 
-	// Do most of the checks first, if user is a owner or in a organisation
+	// Check all the ACL rules
 	allowed, err := v.aclCheckAll(ctx, event)
 	if err != nil {
-		return false, fmt.Errorf("aclCheckAll: %w", err)
+		return false, err
 	}
 	if allowed {
 		return true, nil
 	}
 
-	// Finally try to parse comments
-	return v.aclAllowedOkToTestFromAnOwner(ctx, event, pac)
+	// Try to parse the comment from an owner who has issues a /ok-to-test
+	ownerAllowed, err := v.aclAllowedOkToTestFromAnOwner(ctx, event, pac)
+	if err != nil {
+		return false, err
+	}
+	if ownerAllowed {
+		return true, nil
+	}
+
+	// error with the policy reason if it was set
+	if policyReason != "" {
+		return false, fmt.Errorf(policyReason)
+	}
+
+	// finally silently return false if no rules allowed this
+	return false, nil
 }
 
 // allowedOkToTestFromAnOwner Go over comments in a pull request and check
