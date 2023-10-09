@@ -44,7 +44,7 @@ func create(ctx context.Context, args *Args) error {
 	}
 
 	parsed, _ := url.Parse(repoInfo.HTMLURL)
-	userPasswordURL := fmt.Sprintf("http://git:%s@%s%s", *provider.Token, parsed.Host, parsed.Path)
+	userPasswordURL := fmt.Sprintf("http://pac:%s@%s%s", *provider.Token, parsed.Host, parsed.Path)
 
 	targetNS := *args.targetNS
 	if targetNS == "" {
@@ -63,8 +63,8 @@ func create(ctx context.Context, args *Args) error {
 	_ = pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun)
 	err = run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Delete(
 		ctx, targetNS, metav1.DeleteOptions{})
-	if err != nil {
-		return err
+	if err == nil {
+		run.Clients.Log.Infof("repository %s/%s deleted", topts.TargetNS, targetNS)
 	}
 	_ = run.Clients.Kube.CoreV1().Secrets(topts.TargetNS).Delete(ctx, "gitea-secret", metav1.DeleteOptions{})
 	if err := tgitea.CreateCRD(ctx, topts); err != nil {
