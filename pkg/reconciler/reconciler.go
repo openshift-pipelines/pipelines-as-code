@@ -126,7 +126,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		}
 	}
 
-	err = provider.SetClient(ctx, r.run, event, repo.Spec.Settings)
+	err = provider.SetClient(ctx, r.run, event, repo, r.eventEmitter)
 	if err != nil {
 		return repo, fmt.Errorf("cannot set client: %w", err)
 	}
@@ -191,7 +191,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		}
 	}
 
-	err = p.SetClient(ctx, r.run, event, repo.Spec.Settings)
+	err = p.SetClient(ctx, r.run, event, repo, r.eventEmitter)
 	if err != nil {
 		return fmt.Errorf("cannot set client: %w", err)
 	}
