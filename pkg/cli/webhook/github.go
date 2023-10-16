@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v55/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
@@ -180,7 +180,7 @@ func (gh *gitHubConfig) newGHClientByToken(ctx context.Context) (*github.Client,
 		return github.NewClient(oauth2.NewClient(ctx, ts)), nil
 	}
 
-	gprovider, err := github.NewEnterpriseClient(gh.APIURL, "", oauth2.NewClient(ctx, ts))
+	gprovider, err := github.NewClient(oauth2.NewClient(ctx, ts)).WithEnterpriseURLs(gh.APIURL, gh.APIURL)
 	if err != nil {
 		return nil, err
 	}

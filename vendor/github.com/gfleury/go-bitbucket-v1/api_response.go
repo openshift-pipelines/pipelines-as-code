@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -539,10 +538,33 @@ func (p PermissionRepository) String() string {
 	return string(p)
 }
 
+type AccessTokenResponse struct {
+	ID                string   `json:"id"`
+	CreatedDate       int64    `json:"createdDate"`
+	LastAuthenticated int64    `json:"lastAuthenticated"`
+	Name              string   `json:"name"`
+	Permissions       []string `json:"permissions"`
+	User              User     `json:"user"`
+	Token             string   `json:"token"`
+}
+
+// GetAccessTokenResponse cast AccessTokenResponse into structure
+func GetAccessTokenResponse(r *APIResponse) (AccessTokenResponse, error) {
+	var m AccessTokenResponse
+	err := mapstructure.Decode(r.Values, &m)
+	return m, err
+}
+
 func (k *SSHKey) String() string {
 	parts := make([]string, 1, 2)
 	parts[0] = strings.TrimSpace(k.Text)
 	return strings.Join(parts, " ")
+}
+
+func GetProjectsResponse(r *APIResponse) ([]Project, error) {
+	var m []Project
+	err := mapstructure.Decode(r.Values["values"], &m)
+	return m, err
 }
 
 // GetCommitsResponse cast Commits into structure
@@ -708,7 +730,7 @@ func NewBitbucketAPIResponse(r *http.Response) (*APIResponse, error) {
 
 	if decoder.More() {
 		// there's more data in the stream, so discard whatever is left
-		_, _ = io.Copy(ioutil.Discard, r.Body)
+		_, _ = io.Copy(io.Discard, r.Body)
 	}
 
 	return response, err
@@ -717,7 +739,7 @@ func NewBitbucketAPIResponse(r *http.Response) (*APIResponse, error) {
 // NewRawAPIResponse create new API response from http.response with raw data
 func NewRawAPIResponse(r *http.Response) (*APIResponse, error) {
 	response := &APIResponse{Response: r}
-	raw, err := ioutil.ReadAll(r.Body)
+	raw, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}

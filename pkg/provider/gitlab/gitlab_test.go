@@ -462,17 +462,7 @@ func TestGetFiles(t *testing.T) {
 				PullRequestNumber: 10,
 			},
 			mrchanges: &gitlab.MergeRequest{
-				Changes: append(commitFiles.Changes,
-					struct {
-						OldPath     string `json:"old_path"`
-						NewPath     string `json:"new_path"`
-						AMode       string `json:"a_mode"`
-						BMode       string `json:"b_mode"`
-						Diff        string `json:"diff"`
-						NewFile     bool   `json:"new_file"`
-						RenamedFile bool   `json:"renamed_file"`
-						DeletedFile bool   `json:"deleted_file"`
-					}{NewPath: "test.txt"}),
+				Changes: append(commitFiles.Changes, &gitlab.MergeRequestDiff{NewPath: "test.txt"}),
 			},
 		},
 		{
@@ -498,17 +488,7 @@ func TestGetFiles(t *testing.T) {
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
 			mergeFileChanges := &gitlab.MergeRequest{
-				Changes: append(commitFiles.Changes,
-					struct {
-						OldPath     string `json:"old_path"`
-						NewPath     string `json:"new_path"`
-						AMode       string `json:"a_mode"`
-						BMode       string `json:"b_mode"`
-						Diff        string `json:"diff"`
-						NewFile     bool   `json:"new_file"`
-						RenamedFile bool   `json:"renamed_file"`
-						DeletedFile bool   `json:"deleted_file"`
-					}{NewPath: "test.txt"}),
+				Changes: append(commitFiles.Changes, &gitlab.MergeRequestDiff{NewPath: "test.txt"}),
 			}
 			if tt.event.TriggerTarget == "pull_request" {
 				mux.HandleFunc(fmt.Sprintf("/projects/0/merge_requests/%d/changes",
@@ -526,12 +506,12 @@ func TestGetFiles(t *testing.T) {
 				},
 			}
 			if tt.event.TriggerTarget == "push" {
-				mux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff",
-					tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
-					jeez, err := json.Marshal(pushFileChanges)
-					assert.NilError(t, err)
-					_, _ = rw.Write(jeez)
-				})
+				mux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff", tt.event.SHA),
+					func(rw http.ResponseWriter, r *http.Request) {
+						jeez, err := json.Marshal(pushFileChanges)
+						assert.NilError(t, err)
+						_, _ = rw.Write(jeez)
+					})
 			}
 
 			providerInfo := &Provider{Client: fakeclient}

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v55/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -734,17 +734,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 					})
 				} else {
 					for _, v := range tt.args.fileChanged {
-						commitFiles.Changes = append(commitFiles.Changes,
-							struct {
-								OldPath     string `json:"old_path"`
-								NewPath     string `json:"new_path"`
-								AMode       string `json:"a_mode"`
-								BMode       string `json:"b_mode"`
-								Diff        string `json:"diff"`
-								NewFile     bool   `json:"new_file"`
-								RenamedFile bool   `json:"renamed_file"`
-								DeletedFile bool   `json:"deleted_file"`
-							}{NewPath: v})
+						commitFiles.Changes = append(commitFiles.Changes, &gitlab.MergeRequestDiff{NewPath: v})
 					}
 					url := fmt.Sprintf("/projects/0/merge_requests/%d/changes", tt.args.runevent.PullRequestNumber)
 					glMux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
