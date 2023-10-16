@@ -312,6 +312,7 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, 
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	if runevent.TriggerTarget == "pull_request" {
+		//nolint: staticcheck
 		mrchanges, _, err := v.Client.MergeRequests.GetMergeRequestChanges(v.sourceProjectID, runevent.PullRequestNumber, &gitlab.GetMergeRequestChangesOptions{})
 		if err != nil {
 			return []string{}, err

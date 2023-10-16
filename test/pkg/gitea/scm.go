@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"code.gitea.io/sdk/gitea"
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v55/github"
 	"go.uber.org/zap"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-github/scrape"
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v56/github"
 )
 
 // generateManifest generate manifest from the given options
@@ -43,7 +43,7 @@ func getGHClient(opts *bootstrapOpts) (*github.Client, error) {
 		return github.NewClient(nil), nil
 	}
 
-	gprovider, err := github.NewEnterpriseClient(opts.GithubAPIURL, "", nil)
+	gprovider, err := github.NewClient(nil).WithEnterpriseURLs(opts.GithubAPIURL, "")
 	if err != nil {
 		return nil, err
 	}

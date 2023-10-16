@@ -44,7 +44,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event) (bo
 		if nextPage > 0 {
 			localVarOptionals["start"] = int(nextPage)
 		}
-		return v.Client.DefaultApi.GetActivities(v.projectKey, event.Repository, int64(v.pullRequestNumber), localVarOptionals)
+		return v.Client.DefaultApi.GetActivities(v.projectKey, event.Repository, v.pullRequestNumber, localVarOptionals)
 	})
 	if err != nil {
 		return false, err

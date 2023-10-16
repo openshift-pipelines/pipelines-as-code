@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v55/github"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
@@ -155,7 +155,7 @@ func (v *Provider) getRaw(runevent *info.Event, revision, path string) (string, 
 	localVarOptionals := map[string]interface{}{
 		"at": revision,
 	}
-	resp, err := v.Client.DefaultApi.GetContent_11(v.projectKey, runevent.Repository, path, localVarOptionals)
+	resp, err := v.Client.DefaultApi.GetRawContent(v.projectKey, runevent.Repository, path, localVarOptionals)
 	if err != nil {
 		return "", err
 	}

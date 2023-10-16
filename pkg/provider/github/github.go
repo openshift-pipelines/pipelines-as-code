@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v55/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -199,7 +199,8 @@ func makeClient(ctx context.Context, apiURL, token string) (*github.Client, stri
 	providerName := "github"
 	if apiURL != "" && apiURL != apiPublicURL {
 		providerName = "github-enterprise"
-		client, _ = github.NewEnterpriseClient(apiURL, apiURL, tc)
+		uploadURL := apiURL + "/api/uploads"
+		client, _ = github.NewClient(tc).WithEnterpriseURLs(apiURL, uploadURL)
 	} else {
 		client = github.NewClient(tc)
 		apiURL = client.BaseURL.String()

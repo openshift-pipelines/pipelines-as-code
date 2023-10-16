@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	ghlib "github.com/google/go-github/v53/github"
+	ghlib "github.com/google/go-github/v55/github"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
