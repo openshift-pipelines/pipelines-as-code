@@ -152,7 +152,7 @@ cd pac-demo
 ```
 
 We navigate inside our repository since `tkn pac` will use the Git information
-to provide some hepful defaults with the subsequent commands we will execute.
+to provide some helpful defaults with the subsequent commands we will execute.
 
 ## Create a Repository CR
 
@@ -209,7 +209,7 @@ Let's commit the `.tekton/pipelinerun.yaml` file and push it to our repository:
 
 ```bash
 git add .
-git commit -m "Adding Tekton CI`
+git commit -m "Adding Tekton CI"
 git push origin tektonci
 ```
 
