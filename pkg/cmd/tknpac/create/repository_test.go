@@ -283,3 +283,38 @@ func TestGenerateTemplate(t *testing.T) {
 	assert.NilError(t, err)
 	golden.Assert(t, string(content), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
 }
+
+func TestReplaceSpecialCharsWithDash(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantInput string
+	}{
+		{
+			name:      "input with underscore",
+			input:     "tartanpion_repo",
+			wantInput: "tartanpion-repo",
+		},
+		{
+			name:      "input with dash",
+			input:     "tartanpion-repo",
+			wantInput: "tartanpion-repo",
+		},
+		{
+			name:      "input with asterisk",
+			input:     "tartanpion*repo",
+			wantInput: "tartanpion-repo",
+		},
+		{
+			name:      "input with dot",
+			input:     "tartanpion.repo",
+			wantInput: "tartanpion-repo",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := replaceSpecialCharsWithDash(tt.input)
+			assert.Equal(t, got, tt.wantInput)
+		})
+	}
+}
