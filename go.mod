@@ -62,7 +62,6 @@ require (
 )
 
 replace (
-	code.gitea.io/sdk/gitea => code.gitea.io/sdk/gitea v0.15.1-0.20230509035020-970776d1c1e9
 	k8s.io/api => k8s.io/api v0.25.9
 	k8s.io/apimachinery => k8s.io/apimachinery v0.26.5
 	k8s.io/client-go => k8s.io/client-go v0.25.9
@@ -142,7 +141,7 @@ require (
 	google.golang.org/api v0.147.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/grpc v1.58.3 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/protobuf v1.31.0
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apiextensions-apiserver v0.28.2 // indirect
