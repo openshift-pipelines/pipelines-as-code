@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -252,7 +253,7 @@ func createRepoCRD(ctx context.Context, opts *RepoOptions) (string, string, erro
 	if err != nil {
 		return "", "", fmt.Errorf("invalid git URL: %s, it should be of format: https://gitprovider/project/repository", opts.Event.URL)
 	}
-	repositoryName := strings.ReplaceAll(repoOwner, "/", "-")
+	repositoryName := replaceSpecialCharsWithDash(repoOwner)
 	opts.Repository, err = opts.Run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Repository.Namespace).Create(
 		ctx,
 		&apipac.Repository{
@@ -274,4 +275,11 @@ func createRepoCRD(ctx context.Context, opts *RepoOptions) (string, string, erro
 		opts.Repository.Namespace,
 	)
 	return opts.Repository.Name, opts.Repository.Namespace, nil
+}
+
+func replaceSpecialCharsWithDash(input string) string {
+	regex := regexp.MustCompile(`[^a-zA-Z0-9]+`)
+	result := regex.ReplaceAllString(input, "-")
+
+	return result
 }
