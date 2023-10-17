@@ -231,6 +231,8 @@ type MergePullRequestOption struct {
 	Message                string     `json:"MergeMessageField"`
 	DeleteBranchAfterMerge bool       `json:"delete_branch_after_merge"`
 	ForceMerge             bool       `json:"force_merge"`
+	HeadCommitId           string     `json:"head_commit_id"`
+	MergeWhenChecksSucceed bool       `json:"merge_when_checks_succeed"`
 }
 
 // Validate the MergePullRequestOption struct
