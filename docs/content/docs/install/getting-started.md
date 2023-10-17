@@ -21,13 +21,23 @@ Pipelines-as-Code flow looks like.
 
 ## Installing Pipelines-as-Code
 
-There are multiple ways to install Pipelines-as-Code. The easiest way is to have it managed by the OpenShift Pipelines Operator, which installs Pipelines-as-Code by default.
+There are multiple ways to install Pipelines-as-Code. The easiest way is to have
+it managed by the OpenShift Pipelines Operator, which installs Pipelines-as-Code
+by default.
 
-You can also install it manually by applying the YAML files to your cluster or use `tkn pac bootstrap` to do it for you.
+You can also install it manually by applying the YAML files to your cluster or
+use `tkn pac bootstrap` to do it for you.
 
-The `tkn pac bootstrap` command allows you to get started quickly and try out Pipelines-as-Code. If you are running this in production, you should consider installing Pipelines-as-Code using a GitOps tool like [OpenShift GitOps](https://www.openshift.com/learn/topics/gitops/) or [ArgoCD](https://argoproj.github.io/argo-cd/) following the manual installation instructions.
+The `tkn pac bootstrap` command lets you getting started quickly to try out
+Pipelines-as-Code.
 
-Let's get started with `tkn pac bootstrap`.
+If you are running Pipelines-as-Code in production, you should consider installing
+using a GitOps tool like [OpenShift
+GitOps](https://www.openshift.com/learn/topics/gitops/) or
+[ArgoCD](https://argoproj.github.io/argo-cd/) following the manual installation
+instructions.
+
+This guide use `tkn pac bootstrap` to get you started.
 
 {{< hint info >}}
 Note: this assumes using the public GitHub instance, if you are using GitHub
@@ -43,13 +53,21 @@ Enterprise you will need to use the `--github-hostname` flag with the hostname o
 ? Do you want me to install Pipelines-as-Code v0.19.2? (Y/n)
 ```
 
-As soon as you get started, it will try to detect if you have Pipelines-as-Code installed. If it isn't installed, you will be asked if you want to install it.
+As soon as you get started, `tkn pac bootstrap` tries to detect if you have
+Pipelines-as-Code installed. If it isn't installed, you will be asked if you
+want to install it.
 
 You can go ahead and press `Y` to install it.
 
 ### Webhook Forwarder
 
-The second question asks if you want to install the tool called [gosmee](https://github.com/chmouel/gosmee). This will only be asked if you are not running on OpenShift. This is not required, but since we need a way to have GitHub reach the Pipelines-as-Code controller from the internet, it's the easiest way to do it.
+The second question asks if you want to install the tool called
+[gosmee](https://github.com/chmouel/gosmee). This will only be asked if you are
+not running on OpenShift.
+
+This is not required, but considering the need to have GitHub reach our
+Pipelines-as-Code controller from the internet, using `gosmee` is the most
+straightforward way to do it.
 
 ```console
 Pipelines-as-Code does not install an Ingress object to allow the controller to be accessed from the internet.
@@ -61,10 +79,10 @@ This will let your git platform provider (e.g., GitHub) reach the controller wit
 
 ### Tekton Dashboard
 
-Another question is only asked if you are not running on OpenShift. It will
-detect if you have the [Tekton Dashboard](https://github.com/tekton/dashboard)
+If you have the [Tekton Dashboard](https://github.com/tekton/dashboard)
 installed and if you want to use it for the links to show the logs or
-description of the PipelineRun.
+description of the PipelineRun. If you are running on `OpenShift` it will
+automatically detect the OpenShift console Route and use it.
 
 ```console
 👀 We have detected a tekton dashboard install on http://dashboard.paac-127-0-0-1.nip.io
@@ -92,7 +110,10 @@ the following screen:
 
 ![GitHub Application Creation](/images/github-app-creation-screen.png)
 
-If you are satisfied with the name, you can click the "Create GitHub App" button. Then, you can return to your terminal where `tkn pac bootstrap` was launched. You will see that the GitHub Application has been created and a secret token has been generated.
+Unless you want to change the name, you can click the "Create GitHub App"
+button. Then, you can return to your terminal where `tkn pac bootstrap` was
+launched. You will see that the GitHub Application has been created and a secret
+token has been generated.
 
 ```console
 🔑 Secret pipelines-as-code-secret has been created in the pipelines-as-code namespace
@@ -103,11 +124,11 @@ https://github.com/apps/my-paac-application
 💡 Don't forget to run "tkn pac create repository" to create a new Repository CR on your cluster.
 ```
 
-You can visit the your newly created GitHub Application by clicking on the URL,
-by clicking on the `App settings` button you can inspect how the GitHub
-Application has been created. The `tkn pac bootstrap` command will have
-configured everything you need to get started with Pipelines-as-Code, but you
-can customize advanced settings in there if necessary.
+You can visit your newly created GitHub Application by clicking on the URL,
+if you are clicking on the `App settings` button on that webpage you can inspect
+how the GitHub Application has been created. The `tkn pac bootstrap` command
+will have configured everything you need to get started with Pipelines-as-Code,
+but you can customize advanced settings in there if necessary.
 
 {{< hint info >}}
 A useful tab to look at is the "Advanced" tab, this is where you can see all the recent deliveries of the GitHub app toward the Pipelines-as-Code controller. This is useful to debug if you have any issues with the communication between GitHub and the endpoint URL, or to investigate which events are being sent.
@@ -131,9 +152,11 @@ Your repository is now created on GitHub at <https://github.com/yourusername/pac
 
 ### Install the GitHub Application in our Repository
 
-Next, you need to add the GitHub Application you created to this repository. You can do that by following these steps:
+Next, you need to add the GitHub Application you just created on your GitHub
+repository. You can do this by following these steps:
 
-1. Go to the GitHub App URL provided by `tkn pac bootstrap`, for example: [https://github.com/apps/my-paac-application](https://github.com/apps/my-paac-application).
+1. Go to the GitHub App URL provided by `tkn pac bootstrap`, for example:
+   [https://github.com/apps/my-paac-application](https://github.com/apps/my-paac-application).
 2. Click on the "Install" button.
 3. Choose the repository you just created under your username.
 
@@ -141,23 +164,27 @@ Here is an example of what it looks like for me:
 
 ![GitHub Application Installation](/images/github-app-install-application-on-repo.png)
 
-### Check-out the newly created repository
+### Check-out the newly created GitHub repository
 
-Let's go back to the terminal and check-out the newly created repository
-with Git:
+Let's go back to the terminal and check-out with `git` the newly created repository:
 
 ```bash
 git clone https://github.com/$yourusername/pac-demo
 cd pac-demo
 ```
 
-We navigate inside our repository since `tkn pac` will use the Git information
-to provide some helpful defaults with the subsequent commands we will execute.
+We navigate inside our repository since `tkn pac` will use the information from `git`
+to provide some helpful defaults for the next commands we will execute.
 
 ## Create a Repository CR
 
 {{< hint info >}}
-A Repository CR is how you configure Pipelines-as-Code. It's a Kubernetes object that is not part of the core Kubernetes API. It's a way to extend Kubernetes with new objects. In this case, we are using a CR to specify which Repository URL (among other [settings]({{< relref "/docs/guide/repositorycrd.md" >}})) we want to use with Pipelines-as-Code and the namespace location where our PipelineRuns will be run.
+A Repository CR is how you configure Pipelines-as-Code. A CR or Custom
+Resourceis a Kubernetes object that is not part of the core Kubernetes API. It's
+a way to extend Kubernetes with new objects. In this case, we are using a CR to
+specify which Repository URL (among other [settings]({{< relref
+"/docs/guide/repositorycrd.md" >}})) we want to use with Pipelines-as-Code and
+the namespace location is where our PipelineRuns will be run.
 {{< /hint >}}
 
 You are now ready to create a Repository CR with the command:
@@ -167,14 +194,16 @@ tkn pac create repository
 ```
 
 The command try to be smart and helpful, and as soon you are launching it will have
-detected the git information of the current repository and will ask you if you
+detected the git information of the current repository and ask you if you
 want to use those values.
 
 ```console
 ? Enter the Git repository url (default: https://github.com/chmouel/pac-demo):
 ```
 
-You probably want to press enter here to use the default value, and then it will ask you to which namespace you will want to have your CI running. Again you can choose the default value here:
+You probably want to press enter here to use the default value, and then it will
+ask you to which namespace you will want to have your CI running. Again you can
+choose the default value here:
 
 ```console
 ? Please enter the namespace where the pipeline should run (default: pac-demo-pipelines):
@@ -182,7 +211,9 @@ You probably want to press enter here to use the default value, and then it will
 ? Would you like me to create the namespace pac-demo-pipelines? (Y/n)
 ```
 
-When this is done the process will be over it will generate a `Repository` CR in your cluster and create a directory called `.tekton` with a file named `pipelinerun.yaml` in it.
+When this is done the process will be over it will generate a `Repository` CR in
+your cluster and create a directory called `.tekton` with a file named
+`pipelinerun.yaml` in it.
 
 ```console
 ℹ Directory .tekton has been created.
@@ -191,13 +222,20 @@ When this is done the process will be over it will generate a `Repository` CR in
 ℹ You can test your pipeline by pushing generated template to your git repository
 ```
 
-Note that the command detected that you are using Go and created a basic template for you and had customized for the Go language (ie: it will add the [golangci-lint](https://hub.tekton.dev/tekton/task/golangci-lint) task to your PipelineRun).
+Note that the `tkn pac create repository` command detected that the repository
+is using the Go programming language and created a basic template for you to be
+customized tailored for the Go programming language (ie: it will add the
+[golangci-lint](https://hub.tekton.dev/tekton/task/golangci-lint) linter as a
+task to your PipelineRun).
 
-Feel free to open the file `.tekton/pipelinerun.yaml` and customize it to your liking. The file has plenty of comments to help you get started.
+Feel free to open the file `.tekton/pipelinerun.yaml` and inspect what is
+does. The file has plenty of comments to help you understand how it works.
 
 ## Creating a Pull Request
 
-Now that we have our Repository CR created in our namespace our `.tekton/pipelinerun.yaml` generated we are now able to test if Pipelines-as-Code works.
+Now that we have our Repository CR created in our namespace our
+`.tekton/pipelinerun.yaml` generated we are now able to test if
+Pipelines-as-Code works.
 
 Let's first create a branch to create a Pull Request from that branch.
 
@@ -217,25 +255,40 @@ git push origin tektonci
 We assume you have already set-up your system to be able to push to GitHub. If that's not the case see the official GitHub documentation on how to do it: <https://docs.github.com/en/get-started/getting-started-with-git/setting-your-username-in-git>
 {{< /hint >}}
 
-When the branch is pushed you can start creating a new Pull Request by going to the URL <https://github.com/yourusername/pac-demo/pull/new/tektonci>
+When the branch is pushed you can start creating a new Pull Request by going to
+the URL (make sure yourusername is replace with your username)
+<https://github.com/yourusername/pac-demo/pull/new/tektonci>
 
-As soon as you create the Pull Request you will see that the Pipelines-as-Code has been triggered:
+As soon as you create the Pull Request you will see that Pipelines-as-Code has
+been triggered and run on your Pull Request:
 
 ![GitHub Application Installation](/images/github-app-install-CI-triggered.png)
 
-You can click on the "Details" link to see the details of the running of the PipelineRun. `Pipelines-as-Code` will let you know that you can follow the logs on your Dashboard like [Tekton Dashboard](https://github.com/tekton/dashboard) or the OpenShift Pipelines [Console](https://docs.openshift.com/container-platform/latest/web_console/web-console.html) or if you prefer you can use [tekton CLI](https://tekton.dev/docs/cli/) to follow the PipelineRun execution on your cluster.
+You can click on the "Details" link to see the details of the running of the
+PipelineRun. `Pipelines-as-Code` will let you know that you can follow the logs
+on your Dashboard like [Tekton Dashboard](https://github.com/tekton/dashboard)
+or the OpenShift Pipelines
+[Console](https://docs.openshift.com/container-platform/latest/web_console/web-console.html)
+or if you prefer you can use [tekton CLI](https://tekton.dev/docs/cli/) to
+follow the PipelineRun execution on your cluster.
 
 When the PipelineRun is finished you will see an error on that Detail screen:
 
 ![GitHub Application Installation](/images/github-app-install-CI-failed.png)
 
-That was on purpose, we have detected some error on the Go code and GolangCI lint that is not correct. See how the error displayed link to the line of the code that is wrong. Pipelines-as-Code analyze the log error of the PipelineRun and try to match it to the line of the code that is wrong so you can easily fix it.
+That was on purpose, we have detected some linting error on the Go code and
+GolangCI linted it as not correct. See how the error displayed link to the line
+of the code that is wrong. Pipelines-as-Code analyze the log error of the
+PipelineRun and try to match it to the line of the code that is wrong so you can
+easily fix it.
 
 ![GitHub Application Installation](/images/github-app-matching-annotations.png)
 
 ### Fixing the error and pushing again
 
-Let's go ahead and go back to our terminal and fix that error. Edit the file `main.go` select everything and replace it with this content
+Let's go ahead and go back to our terminal to fix that error.
+
+Edit the file `main.go` select everything and replace it with this content:
 
 ```go
 package main
@@ -257,7 +310,8 @@ git commit -a -m "Errare humanum est, ignoscere divinum."
 git push origin tektonci
 ```
 
-If you go back to your web browser you will see that the PipelineRun has been triggered again and this time it has succeeded:
+If you go back to your web browser you will see that the PipelineRun has been
+triggered again and this time has succeeded:
 
 ![GitHub Application Installation](/images/github-app-install-CI-succeeded.png)
 
@@ -267,3 +321,13 @@ Congratulations! You have now successfully setup Pipelines-as-Code for running
 Continuous Integration on your repository. Now, you can freely proceed to
 [customize]({{< relref "/docs/guide/authoringprs.md" >}}) your `.tekton/pipelinerun.yaml` file as per your preferences and
 include additional tasks as needed.
+
+### Summary
+
+In this document we have:
+
+- [Installed]({{< relref "/docs/install/installation" >}}) Pipelines-as-Code on our Kubernetes Cluster.
+- Created a [GitHub Application]({{< relref "/docs/install/github_apps" >}}).
+- Created a [Repository CR]({{< relref "/docs/guide/repositorycrd" >}}).
+- Generated a Pipelines-as-Code [PipelineRun]({{< relref "/docs/guide/authoringprs" >}}).
+- [Run the PipelineRun]({{< relref "/docs/guide/running" >}}) on the Pull Request.
