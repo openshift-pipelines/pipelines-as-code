@@ -129,6 +129,82 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			},
 		},
 		{
+			name:       "cel/match body payload",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "body.foo == 'bar'",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "pull_request",
+					EventType:     "pull_request",
+					BaseBranch:    mainBranch,
+					HeadBranch:    "unittests",
+					Event: map[string]interface{}{
+						"foo": "bar",
+					},
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:       "cel/match request header",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "headers['foo'] == 'bar'",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "pull_request",
+					EventType:     "pull_request",
+					BaseBranch:    mainBranch,
+					HeadBranch:    "unittests",
+					Request: &info.Request{
+						Header: http.Header{
+							"Foo": []string{"bar"},
+						},
+					},
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
 			name:       "cel/match path by glob",
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
@@ -676,6 +752,9 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			vcx := &ghprovider.Provider{
 				Client: fakeclient,
 				Token:  github.String("None"),
+			}
+			if tt.args.runevent.Request == nil {
+				tt.args.runevent.Request = &info.Request{Header: http.Header{}, Payload: nil}
 			}
 			if len(tt.args.fileChanged) > 0 {
 				commitFiles := []*github.CommitFile{}

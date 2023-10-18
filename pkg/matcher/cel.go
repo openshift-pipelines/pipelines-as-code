@@ -2,6 +2,7 @@ package matcher
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -38,6 +39,20 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 		}
 	}
 
+	nbody, err := json.Marshal(event.Event)
+	if err != nil {
+		return nil, err
+	}
+	var jsonMap map[string]interface{}
+	err = json.Unmarshal(nbody, &jsonMap)
+	if err != nil {
+		return nil, err
+	}
+	headerMap := make(map[string]string)
+	for k, v := range event.Request.Header {
+		headerMap[strings.ToLower(k)] = v[0]
+	}
+
 	data := map[string]interface{}{
 		"event":         event.TriggerTarget,
 		"event_title":   eventTitle,
@@ -45,12 +60,16 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 		"source_branch": event.HeadBranch,
 		"target_url":    event.BaseURL,
 		"source_url":    event.HeadURL,
+		"body":          jsonMap,
+		"headers":       headerMap,
 	}
 
 	env, err := cel.NewEnv(
 		cel.Lib(celPac{vcx, ctx, event}),
 		cel.Declarations(
 			decls.NewVar("event", decls.String),
+			decls.NewVar("headers", decls.NewMapType(decls.String, decls.Dyn)),
+			decls.NewVar("body", decls.NewMapType(decls.String, decls.Dyn)),
 			decls.NewVar("event_title", decls.String),
 			decls.NewVar("target_branch", decls.String),
 			decls.NewVar("source_branch", decls.String),

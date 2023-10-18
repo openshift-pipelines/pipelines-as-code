@@ -12,6 +12,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -185,30 +186,80 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 				"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from a payload match\n{{ secret_nothere }}"), 2))
 }
 
-// TestParamshBodyHeadersCEL Test that we can access the body and headers in params as a CEL expression
-func TestParamshBodyHeadersCEL(t *testing.T) {
+// TestGiteaParamsBodyHeadersCEL Test that we can access the pull request body and headers in params
+// as a CEL expression and cel filter
+func TestGiteaParamsBodyHeadersCEL(t *testing.T) {
+	// Setup a repo and create a pull request with two pipelinerun in tekton
+	// dir, one matching pull via cel filtering expression and one for push
+	// and make it succeed
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,
-		TargetEvent: "pull_request, push",
+		TargetEvent: "pull_request",
 		YAMLFiles: map[string]string{
-			".tekton/pr.yaml": "testdata/pipelinerun-cel-params.yaml",
+			".tekton/pullrequest.yaml": "testdata/pipelinerun-cel-params-pullrequest.yaml",
+			".tekton/push.yaml":        "testdata/pipelinerun-cel-params-push.yaml",
 		},
 		CheckForStatus: "success",
 		ExpectEvents:   false,
 	}
 	defer tgitea.TestPR(t, topts)()
 
+	// check the repos CR only one pr should have run
 	repo, err := topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
-	assert.Assert(t, len(repo.Status) != 0)
+	assert.Equal(t, len(repo.Status), 1, repo.Status)
 
+	// check the output logs if the CEL body headers has expanded  properly
 	output := `Look mum I know that we are acting on a pull_request
 my email is a true beauty and like groot, I AM pac`
 	err = twait.RegexpMatchingInPodLog(context.Background(),
 		topts.ParamsRun,
 		topts.TargetNS,
-		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-params",
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-pullrequest-params",
 			repo.Status[0].PipelineRunName),
+		"step-test-cel-params-value", *regexp.MustCompile(output), 2)
+	assert.NilError(t, err)
+
+	// Merge the pull request so we can generate a push event and wait that it is updated
+	merged, resp, err := topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+		gitea.MergePullRequestOption{
+			Title: "Merged with Panache",
+			Style: "merge",
+		},
+	)
+	assert.NilError(t, err)
+	assert.Assert(t, resp.StatusCode < 400, resp)
+	assert.Assert(t, merged)
+
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 2, // 1 means 2 🙃
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       topts.PullRequest.Head.Sha,
+	}
+	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	time.Sleep(5 * time.Second)
+
+	// check the repository CR now we should have two status the previous pull request and new one on push
+	repo, err = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(repo.Status), 2, repo.Status)
+
+	// sort status to make sure we get the latest PipelineRun that has been created
+	sortedstatus := sort.RepositorySortRunStatus(repo.Status)
+
+	// check the output of the last status PipelineRun which should be a
+	// push matching the expanded CEL body and headers values
+	output = `Look mum I know that we are acting on a push
+my email is a true beauty and you can call me pacman`
+	err = twait.RegexpMatchingInPodLog(context.Background(),
+		topts.ParamsRun,
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-push-params",
+			sortedstatus[0].PipelineRunName),
 		"step-test-cel-params-value", *regexp.MustCompile(output), 2)
 	assert.NilError(t, err)
 }
