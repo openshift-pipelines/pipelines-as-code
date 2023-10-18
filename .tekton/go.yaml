@@ -108,7 +108,7 @@ spec:
 
             - name: lint
               # golangci-lint has not tagged their image for 1.40.0 yet so using latest for now until we can pin it
-              image: mirror.gcr.io/golangci/golangci-lint:latest
+              image: mirror.gcr.io/golangci/golangci-lint:v1.52.2
               workingDir: $(workspaces.source.path)
               env:
                 - name: GOCACHE
