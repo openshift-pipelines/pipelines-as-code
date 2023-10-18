@@ -29,6 +29,8 @@ weight: 3
   allows you to have those "dynamic" variables expanded. Those variables look
   like this `{{ var }}` and those are the one you can use:
 
+  - `{{body}}`: The full payload body available directly or as a CEL expression (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter))
+  - `{{headers}}`: The payload request headers available directly or as a CEL expression (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter)).
   - `{{event_type}}`: The event type (eg: `pull_request` or `push`).
   - `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
   - `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
@@ -41,14 +43,13 @@ weight: 3
   - `{{source_url}}`: The source repository URL from which the event come from (same as `repo_url` for push events).
   - `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
   - `{{target_namespace}}`: The target namespace where the Repository has matched and the PipelineRun will be created.
-  - `{{body}}`: The full payload body available as a CEL expression (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter)).
-  - `{{headers}}`: The payload request headers available as a CEL expression (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter)).
+
 - For Pipelines-as-Code to process your `PipelineRun`, you must have either an
   embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML
   file in the `.tekton` directory. The Pipeline object can include `TaskSpecs`,
   which may be defined separately as Tasks in another YAML file in the same
   directory. It's important to give each `PipelineRun` a unique name to avoid
-  conflicts. **Duplicate names are not permitted**.
+  conflicts. **PipelineRuns with duplicate names will never be matched**.
 
 ## Matching an event to a PipelineRun
 
@@ -111,6 +112,12 @@ If there are multiple pipelinerun matching an event, it will run all of them in
 parallel and posting the results to the provider as soon the PipelineRun
 finishes.
 
+{{< hint info >}}
+The matching on payload can only occur on the events Pipelines-as-Code responds
+too, it will only be matched when a `Pull Request` is opened or updated or on a
+`Push` to a branch
+{{< /hint >}}
+
 ## Advanced event matching
 
 If you need to do some advanced matching, `Pipelines-as-Code` supports CEL
@@ -118,7 +125,7 @@ filtering.
 
 If you have the `pipelinesascode.tekton.dev/on-cel-expression` annotation in
 your PipelineRun, the CEL expression will be used and the `on-target-branch` or
-`on-target-branch` annotations will then be skipped.
+`on-target-branch` annotations will be skipped.
 
 This example will match a `pull_request` event targeting the branch `main`
 coming from a branch called `wip`:
@@ -126,24 +133,6 @@ coming from a branch called `wip`:
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
   event == "pull_request" && target_branch == "main" && source_branch == "wip"
-```
-
-Another example, if you want to have a PipelineRun running only if a path has
-changed you can use the `.pathChanged` suffix function with a [glob
-pattern](https://github.com/ganbarodigital/go_glob#what-does-a-glob-pattern-look-like). Here
-is a concrete example matching every markdown files (as files who has the `.md`
-suffix) in the `docs` directory :
-
-```yaml
-pipelinesascode.tekton.dev/on-cel-expression: |
-  event == "pull_request" && "docs/*.md".pathChanged()
-```
-
-This example will match all pull request starting with the title `[DOWNSTREAM]`:
-
-```yaml
-pipelinesascode.tekton.dev/on-cel-expression: |
-  event == "pull_request && event_title.startsWith("[DOWNSTREAM]")
 ```
 
 The fields available are :
@@ -158,6 +147,8 @@ The fields available are :
 - `event_title`: Match the title of the event. When doing a push this will match
   the commit title and when matching on PR it will match the Pull or Merge
   Request title. (only `GitHub`, `Gitlab` and `BitbucketCloud` providers are supported)
+- `body`: The full body as passed by the Git provider. (example: `body.pull_request.number` will get the pull request number on GitHub)
+- `headers`: The full set of headers as passed by the Git provider. (example: `headers['x-github-event']` will get the event type on GitHub)
 - `.pathChanged`: a suffix function to a string which can be a glob of a path to
   check if changed (only `GitHub` and `Gitlab` provider is supported)
 
@@ -175,6 +166,64 @@ pipelinesascode.tekton.dev/on-cel-expression: |
 You can find more information about the CEL language spec here :
 
 <https://github.com/google/cel-spec/blob/master/doc/langdef.md>
+
+### Matching PipelineRun by path change
+
+If you want to have a PipelineRun running only if a path has
+changed you can use the `.pathChanged` suffix function with a [glob
+pattern](https://github.com/ganbarodigital/go_glob#what-does-a-glob-pattern-look-like). Here
+is a concrete example matching every markdown files (as files who has the `.md`
+suffix) in the `docs` directory :
+
+```yaml
+pipelinesascode.tekton.dev/on-cel-expression: |
+  event == "pull_request" && "docs/*.md".pathChanged()
+```
+
+### Matching PipelineRun on event title
+
+This example will match all pull request starting with the title `[DOWNSTREAM]`:
+
+```yaml
+pipelinesascode.tekton.dev/on-cel-expression: |
+  event == "pull_request && event_title.startsWith("[DOWNSTREAM]")
+```
+
+The event title will be the pull request title on `pull_request` and the
+commit title on `push`
+
+### Matching PipelineRun on body payload
+
+The payload body as passed by the Git provider is available in the CEL
+variable as `body` and you can use this expression to do any filtering on
+anything the Git provider is sending over:
+
+For example this expression when run on GitHub:
+
+```yaml
+pipelinesascode.tekton.dev/on-cel-expression: |
+  body.pull_request.base.ref == "main" &&
+    body.pull_request.user.login == "superuser" &&
+    body.action == "synchronize"
+```
+
+will only match if the pull request is targeting the `main` branch, the author
+of the pull request is called `superuser` and the action is `synchronize` (ie:
+an update occurred on a pull request)
+
+### Matching PipelineRun on request header
+
+You can do some further filtering on the headers as passed by the Git provider
+with the CEL variable `headers`.
+
+The headers are available as a list and are always in lower case.
+
+For example this is how to make sure the event is a pull_request on [GitHub](https://docs.github.com/en/webhooks/webhook-events-and-payloads#delivery-headers):
+
+```yaml
+pipelinesascode.tekton.dev/on-cel-expression: |
+  headers['x-github-event'] == "pull_request"
+```
 
 ## Using the body and headers in a Pipelines-as-Code parameter
 

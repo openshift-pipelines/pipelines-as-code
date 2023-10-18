@@ -5,8 +5,11 @@ metadata:
   name: "\\ .PipelineName //"
   annotations:
     pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
-    pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
-    pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      target_branch == "\\ .TargetBranch //" &&
+        event == "\\ .TargetEvent //" &&
+        body.pull_request.user.login == "pac" &&
+        headers['x-gitea-event-type'] == 'pull_request'
 spec:
   params:
     - name: repo_url
@@ -24,7 +27,7 @@ spec:
       - name: source_branch
       - name: target_branch
     tasks:
-      - name: cel-params
+      - name: cel-pullrequest-params
         taskSpec:
           steps:
             - name: test-cel-params-value
