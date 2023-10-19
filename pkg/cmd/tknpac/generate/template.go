@@ -94,5 +94,10 @@ func (o *Opts) genTmpl() (*bytes.Buffer, error) {
 	tmplB = bytes.ReplaceAll(tmplB, []byte(fmt.Sprintf("name: pipelinerun-%s", lang)),
 		[]byte(fmt.Sprintf("name: %s", prName)))
 
+	if o.generateWithClusterTask {
+		tmplB = bytes.ReplaceAll(tmplB, []byte(fmt.Sprintf("name: %s", gitCloneClusterTaskName)),
+			[]byte(fmt.Sprintf("name: %s\n          kind: ClusterTask", gitCloneClusterTaskName)))
+	}
+
 	return bytes.NewBuffer(tmplB), nil
 }
