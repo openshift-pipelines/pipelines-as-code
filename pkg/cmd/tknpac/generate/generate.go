@@ -62,17 +62,20 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			gopt.CLIOpts = cli.NewCliOptions()
 			gopt.IOStreams.SetColorEnabled(!gopt.CLIOpts.NoColoring)
 
-			if !gopt.generateWithClusterTask {
+			if gopt.generateWithClusterTask {
 				if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 					// if we don't have access to the cluster we can't do much about it
 					gopt.generateWithClusterTask = false
 				} else {
 					// NOTE(chmou): This is for v1beta1, we need to figure out how to do this for v1.
 					// Trying to find resolver with that same name?
-					_, err := run.Clients.Tekton.TektonV1beta1().ClusterTasks().Get(ctx, gitCloneClusterTaskName,
+					_, err := run.Clients.Tekton.TektonV1beta1().ClusterTasks().Get(ctx,
+						gitCloneClusterTaskName,
 						metav1.GetOptions{})
 					if err == nil {
 						gopt.generateWithClusterTask = true
+					} else {
+						gopt.generateWithClusterTask = false
 					}
 				}
 			}
@@ -99,8 +102,8 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		"Whether to overwrite the file if it exist")
 	cmd.PersistentFlags().StringVarP(&gopt.language, "language", "l", "",
 		"Generate for this programming language")
-	cmd.PersistentFlags().BoolVarP(&gopt.generateWithClusterTask, "use-clustertasks", "", false,
-		"By default we will generate the pipeline using task from hub. If you want to use cluster tasks, set this flag")
+	cmd.PersistentFlags().BoolVarP(&gopt.generateWithClusterTask, "use-clustertasks", "", true,
+		"By default we try to use the clustertasks unless not available")
 	return cmd
 }
 

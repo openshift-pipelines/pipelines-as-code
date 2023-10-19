@@ -31,6 +31,7 @@ func TestGenerateTemplate(t *testing.T) {
 		checkRegInGeneratedFile []*regexp.Regexp
 		addExtraFilesInRepo     map[string]string
 		regenerateTemplate      bool
+		useClusterTask          bool
 	}{
 		{
 			name: "pull request default",
@@ -48,6 +49,23 @@ func TestGenerateTemplate(t *testing.T) {
 				URL: "https://hello/moto",
 			},
 			regenerateTemplate: true,
+		},
+		{
+			name: "pull request with clustertasks",
+			askStubs: func(as *prompt.AskStubber) {
+				as.StubOneDefault() // pull_request
+				as.StubOne("")      // default as main
+				as.StubOne(true)    // pipelinerun generation
+			},
+			checkGeneratedFile: ".tekton/pull-request.yaml",
+			checkRegInGeneratedFile: []*regexp.Regexp{
+				regexp.MustCompile("kind: ClusterTask"),
+			},
+			gitinfo: git.Info{
+				URL: "https://hello/moto",
+			},
+			regenerateTemplate: true,
+			useClusterTask:     true,
 		},
 		{
 			name: "pull request already exist don't overwrite",
@@ -153,10 +171,11 @@ func TestGenerateTemplate(t *testing.T) {
 			}
 
 			err := Generate(&Opts{
-				Event:     &tt.event,
-				GitInfo:   &tt.gitinfo,
-				IOStreams: io,
-				CLIOpts:   &cli.PacCliOpts{},
+				Event:                   &tt.event,
+				GitInfo:                 &tt.gitinfo,
+				IOStreams:               io,
+				CLIOpts:                 &cli.PacCliOpts{},
+				generateWithClusterTask: tt.useClusterTask,
 			}, tt.regenerateTemplate)
 			assert.NilError(t, err)
 
