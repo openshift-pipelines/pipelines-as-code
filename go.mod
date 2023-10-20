@@ -25,11 +25,11 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.6.1
-	github.com/tektoncd/pipeline v0.44.0
+	github.com/tektoncd/pipeline v0.44.5
 	github.com/xanzy/go-gitlab v0.79.0
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/oauth2 v0.4.0
+	golang.org/x/oauth2 v0.7.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/text v0.13.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -39,11 +39,14 @@ require (
 	k8s.io/client-go v0.26.1
 	k8s.io/utils v0.0.0-20230115233650-391b47cb4029
 	knative.dev/eventing v0.35.5
-	knative.dev/pkg v0.0.0-20230125083639-408ad0773f47
+	knative.dev/pkg v0.0.0-20230221152827-2d84369c105d
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require golang.org/x/net v0.17.0 // indirect
+require (
+	golang.org/x/net v0.17.0 // indirect
+	google.golang.org/grpc v1.56.3 // indirect
+)
 
 replace k8s.io/client-go => k8s.io/client-go v0.25.4
 
@@ -74,7 +77,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/go-containerregistry v0.13.0 // indirect
 	github.com/google/go-github/v49 v49.1.0
@@ -122,9 +125,8 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/api v0.108.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230124163310-31e0e69b6fc2 // indirect
-	google.golang.org/grpc v1.52.1 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.26.1 // indirect
