@@ -10,6 +10,7 @@
 # semantic numbers with v is supported
 import sys
 
+# pylint: disable=no-name-in-module
 from packaging import version
 
 if len(sys.argv[1]) == 0:
