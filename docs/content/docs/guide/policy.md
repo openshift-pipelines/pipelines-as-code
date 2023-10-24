@@ -1,6 +1,6 @@
 ---
 title: Policy on actions
-weight: 9
+weight: 50
 ---
 # Policy on Pipelines-as-Code actions
 
