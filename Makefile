@@ -116,7 +116,12 @@ html-coverage: ## generate html coverage
 
 .PHONY: docs-dev
 docs-dev: ## preview live your docs with hugo
-	@hugo server -s docs/
+	@hugo server -s docs/ &
+	if type -p xdg-open 2>/dev/null >/dev/null; then \
+		xdg-open http://localhost:1313; \
+	elif type -p open 2>/dev/null >/dev/null; then \
+		open http://localhost:1313; \
+	fi
 
 check-generated: # vendor update-golden
 	@git status -uno |grep -E "modified:[ ]*(vendor/|.*.golden$)" && \

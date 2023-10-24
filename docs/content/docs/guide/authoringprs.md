@@ -29,20 +29,22 @@ weight: 3
   allows you to have those "dynamic" variables expanded. Those variables look
   like this `{{ var }}` and those are the one you can use:
 
-  - `{{body}}`: The full payload body available directly or as a CEL expression (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter))
-  - `{{headers}}`: The payload request headers available directly or as a CEL expression (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter)).
-  - `{{event_type}}`: The event type (eg: `pull_request` or `push`).
-  - `{{git_auth_secret}}`: The secret name auto generated with provider token to check out private repos.
-  - `{{pull_request_number}}`: The pull or merge request number, only defined when we are in a `pull_request` event type.
-  - `{{repo_name}}`: The repository name.
-  - `{{repo_owner}}`: The repository owner.
-  - `{{repo_url}}`: The repository full URL.
-  - `{{revision}}`: The commit full sha revision.
-  - `{{sender}}`: The sender username (or accountid on some providers) of the commit.
-  - `{{source_branch}}`: The branch name where the event come from.
-  - `{{source_url}}`: The source repository URL from which the event come from (same as `repo_url` for push events).
-  - `{{target_branch}}`: The branch name on which the event targets (same as `source_branch` for push events).
-  - `{{target_namespace}}`: The target namespace where the Repository has matched and the PipelineRun will be created.
+| Variable            | Description                                                                                       | Example                             | Example Output               |
+|---------------------|---------------------------------------------------------------------------------------------------|-------------------------------------|------------------------------|
+| body                | The full payload body (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter)) | `{{body.pull_request.user.email }}` | <email@domain.com>             |
+| event_type          | The event type (eg: `pull_request` or `push`)                                                     | `{{event_type}}`                    | pull_request                 |
+| git_auth_secret     | The secret name auto generated with provider token to check out private repos.                    | `{{git_auth_secret}}`               | pac-gitauth-xkxkx            |
+| headers             | The request headers (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter))   | `{{headers['x-github-event']}}`     | push                         |
+| pull_request_number | The pull or merge request number, only defined when we are in a `pull_request` event type.        | `{{pull_request_number}}`           | 1                            |
+| repo_name           | The repository name.                                                                              | `{{repo_name}}`                     | pipelines-as-code            |
+| repo_owner          | The repository owner.                                                                             | `{{repo_owner}}`                    | openshift-pipelines          |
+| repo_url            | The repository full URL.                                                                          | `{{repo_url}}`                      | https:/github.com/repo/owner |
+| revision            | The commit full sha revision.                                                                     | `{{revision}}`                      | 1234567890abcdef             |
+| sender              | The sender username (or accountid on some providers) of the commit.                               | `{{sender}}`                        | johndoe                      |
+| source_branch       | The branch name where the event come from.                                                        | `{{source_branch}}`                 | main                         |
+| source_url          | The source repository URL from which the event come from (same as `repo_url` for push events).    | `{{source_url}}`                    | https:/github.com/repo/owner |
+| target_branch       | The branch name on which the event targets (same as `source_branch` for push events).             | `{{target_branch}}`                 | main                         |
+| target_namespace    | The target namespace where the Repository has matched and the PipelineRun will be created.        | `{{target_namespace}}`              | my-namespace                 |
 
 - For Pipelines-as-Code to process your `PipelineRun`, you must have either an
   embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML
