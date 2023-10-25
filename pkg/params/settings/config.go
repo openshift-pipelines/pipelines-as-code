@@ -57,6 +57,8 @@ const (
 
 	RememberOKToTestKey   = "remember-ok-to-test"
 	rememberOKToTestValue = "true"
+
+	PacInterceptorURLKey = "pac-interceptor-url"
 )
 
 var (
@@ -99,6 +101,8 @@ type Settings struct {
 	CustomConsolePRTaskLog string
 
 	RememberOKToTest bool
+
+	PacInterceptorURL string
 }
 
 func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[string]string) error {
@@ -235,6 +239,11 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 	if setting.RememberOKToTest != rememberOKToTest {
 		logger.Infof("CONFIG: setting remember ok-to-test to %v", rememberOKToTest)
 		setting.RememberOKToTest = rememberOKToTest
+	}
+
+	if setting.PacInterceptorURL != config[PacInterceptorURLKey] {
+		logger.Infof("CONFIG: setting pac interceptor url to %v", config[PacInterceptorURLKey])
+		setting.PacInterceptorURL = config[PacInterceptorURLKey]
 	}
 
 	return nil
