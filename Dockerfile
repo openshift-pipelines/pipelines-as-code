@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset@sha256:a2bdd33c7fc0cda56eb3745e80820c1ee29efeaac720f7c52a59224a39003261 AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset@sha256:82d9bc5d3ceb43635288880f26207201e55d1c688a60ebbfff4f54d4963a62a1 AS builder
 
 ARG BINARY_NAME=pipelines-as-code-controller
 COPY . /src
