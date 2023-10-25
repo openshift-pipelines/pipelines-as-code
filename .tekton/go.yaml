@@ -38,7 +38,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: registry.access.redhat.com/ubi9/go-toolset@sha256:d55ff49e9b6907d5f50290f8bcffa15657470da009a5f982202780c4122ce2dd
+            - image: registry.access.redhat.com/ubi9/go-toolset@sha256:82d9bc5d3ceb43635288880f26207201e55d1c688a60ebbfff4f54d4963a62a1
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -72,7 +72,7 @@ spec:
             - name: unittest
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
-              image: registry.access.redhat.com/ubi9/go-toolset@sha256:d55ff49e9b6907d5f50290f8bcffa15657470da009a5f982202780c4122ce2dd
+              image: registry.access.redhat.com/ubi9/go-toolset@sha256:82d9bc5d3ceb43635288880f26207201e55d1c688a60ebbfff4f54d4963a62a1
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -89,7 +89,7 @@ spec:
             - name: coverage
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
-              image: registry.access.redhat.com/ubi9/go-toolset@sha256:d55ff49e9b6907d5f50290f8bcffa15657470da009a5f982202780c4122ce2dd
+              image: registry.access.redhat.com/ubi9/go-toolset@sha256:82d9bc5d3ceb43635288880f26207201e55d1c688a60ebbfff4f54d4963a62a1
               env:
                 - name: CODECOV_TOKEN
                   valueFrom:
