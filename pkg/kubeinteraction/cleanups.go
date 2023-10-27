@@ -44,9 +44,9 @@ func (k Interaction) CleanupPipelines(ctx context.Context, logger *zap.SugaredLo
 				return err
 			}
 
-			// Try to Delete the secret created for git-clone basic-auth, it should have been created with a owneref on the pipelinerun and due being deleted when the pipelinerun is deleted
-			// but in some cases of conflicts and the ownerRef not being set, the secret is not deleted and we need to delete it manually.
-			if secretName, ok := pr.GetAnnotations()[keys.GitAuthSecret]; ok {
+			// Try to Delete the secret created for git-clone basic-auth, it should have been created with a ownerRef on the pipelinerun and due being deleted when the pipelinerun is deleted
+			// but in some cases of conflicts and the ownerRef not being set, the secret is not deleted, and we need to delete it manually.
+			if secretName, ok := prun.GetAnnotations()[keys.GitAuthSecret]; ok {
 				err = k.Run.Clients.Kube.CoreV1().Secrets(repo.GetNamespace()).Delete(ctx, secretName, metav1.DeleteOptions{})
 				if err == nil {
 					logger.Infof("secret %s attached to pipelinerun %s has been deleted", secretName, prun.GetName())

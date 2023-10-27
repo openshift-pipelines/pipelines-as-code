@@ -43,6 +43,7 @@ func TestCleanupPipelines(t *testing.T) {
 		kept             int
 		prunLatestInList string
 		secrets          []*corev1.Secret
+		sList            int
 	}
 
 	tests := []struct {
@@ -121,6 +122,61 @@ func TestCleanupPipelines(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "cleanup the secrets related to pipelinerun but not the other secret",
+			args: args{
+				namespace:      ns,
+				repositoryName: cleanupRepoName,
+				logSnippet:     "secret pac-gitauth-secret attached to pipelinerun pipeline-toclean has been deleted",
+				prunCurrent: &tektonv1.PipelineRun{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: cleanupLabels,
+						Annotations: map[string]string{
+							keys.OriginalPRName: cleanupPRName,
+							keys.Repository:     cleanupRepoName,
+							keys.GitAuthSecret:  "pac-gitauth-secret",
+						},
+					},
+				},
+				maxKeep: 1,
+				kept:    1,
+				pruns: []*tektonv1.PipelineRun{
+					tektontest.MakePRCompletion(clock, "pipeline-notoclean", ns, tektonv1.PipelineRunReasonSuccessful.String(), map[string]string{
+						keys.OriginalPRName: cleanupPRName,
+						keys.Repository:     cleanupRepoName,
+						keys.GitAuthSecret:  "no-cleanuppac-gitauth-secret",
+					}, cleanupLabels, 30),
+					tektontest.MakePRCompletion(clock, "pipeline-toclean", ns, tektonv1.PipelineRunReasonSuccessful.String(), map[string]string{
+						keys.OriginalPRName: cleanupPRName,
+						keys.Repository:     cleanupRepoName,
+						keys.GitAuthSecret:  "pac-gitauth-secret",
+					}, cleanupLabels, 30),
+				},
+				secrets: []*corev1.Secret{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "pac-gitauth-secret",
+							Namespace: ns,
+						},
+						Data: map[string][]byte{
+							"username": []byte("test"),
+							"password": []byte("test"),
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "no-cleanuppac-gitauth-secret",
+							Namespace: ns,
+						},
+						Data: map[string][]byte{
+							"username": []byte("test"),
+							"password": []byte("test"),
+						},
+					},
+				},
+				sList: 1,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -170,6 +226,10 @@ func TestCleanupPipelines(t *testing.T) {
 			if tt.args.logSnippet != "" {
 				assert.Assert(t, logCatcher.FilterMessageSnippet(tt.args.logSnippet).Len() > 0, logCatcher.All())
 			}
+
+			secretList, err := kint.Run.Clients.Kube.CoreV1().Secrets(tt.args.namespace).List(ctx, metav1.ListOptions{})
+			assert.NilError(t, err)
+			assert.Equal(t, len(secretList.Items), tt.args.sList)
 		})
 	}
 }
