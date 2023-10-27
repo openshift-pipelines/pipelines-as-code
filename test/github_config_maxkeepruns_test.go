@@ -9,11 +9,12 @@ import (
 	"time"
 
 	ghlib "github.com/google/go-github/v55/github"
-	"gotest.tools/v3/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 func TestGithubMaxKeepRuns(t *testing.T) {
@@ -34,7 +35,7 @@ func TestGithubMaxKeepRuns(t *testing.T) {
 	waitOpts := twait.Opts{
 		RepoName:        targetNS,
 		Namespace:       targetNS,
-		MinNumberStatus: 1,
+		MinNumberStatus: 2,
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       sha,
 	}
@@ -45,6 +46,16 @@ func TestGithubMaxKeepRuns(t *testing.T) {
 	for {
 		prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 		if err == nil && len(prs.Items) == 1 {
+			if prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason() == "Running" {
+				t.Logf("skipping %s since currently running", prs.Items[0].GetName())
+				continue
+			}
+			// making sure secret is not deleted for existing pipelinerun
+			if secretName, ok := prs.Items[0].GetAnnotations()[keys.GitAuthSecret]; ok {
+				sData, err := runcnx.Clients.Kube.CoreV1().Secrets(targetNS).Get(ctx, secretName, metav1.GetOptions{})
+				assert.NilError(t, err, "Secret should not have been deleted while running pipelinerun")
+				assert.Assert(t, sData.Name != "")
+			}
 			break
 		}
 		time.Sleep(10 * time.Second)
@@ -56,5 +67,5 @@ func TestGithubMaxKeepRuns(t *testing.T) {
 }
 
 // Local Variables:
-// compile-command: "go test -tags=e2e -v -run TestMaxKeepRuns$ ."
+// compile-command: "go test -tags=e2e -v -run ^TestGithubMaxKeepRuns$"
 // End:
