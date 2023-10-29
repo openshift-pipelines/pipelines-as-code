@@ -57,13 +57,14 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.SourceProjectID = gitEvent.ObjectAttributes.SourceProjectID
 		processedEvent.TargetProjectID = gitEvent.Project.ID
 	case *gitlab.TagEvent:
+		lastCommitIdx := len(gitEvent.Commits) - 1
 		processedEvent = info.NewEvent()
 		processedEvent.Sender = gitEvent.UserUsername
 		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
 		processedEvent.URL = gitEvent.Project.WebURL
-		processedEvent.SHA = gitEvent.Commits[0].ID
-		processedEvent.SHAURL = gitEvent.Commits[0].URL
-		processedEvent.SHATitle = gitEvent.Commits[0].Title
+		processedEvent.SHA = gitEvent.Commits[lastCommitIdx].ID
+		processedEvent.SHAURL = gitEvent.Commits[lastCommitIdx].URL
+		processedEvent.SHATitle = gitEvent.Commits[lastCommitIdx].Title
 		processedEvent.HeadBranch = gitEvent.Ref
 		processedEvent.BaseBranch = gitEvent.Ref
 		processedEvent.HeadURL = gitEvent.Project.WebURL
@@ -80,13 +81,14 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		if len(gitEvent.Commits) == 0 {
 			return nil, fmt.Errorf("no commits attached to this push event")
 		}
+		lastCommitIdx := len(gitEvent.Commits) - 1
 		processedEvent = info.NewEvent()
 		processedEvent.Sender = gitEvent.UserUsername
 		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
 		processedEvent.URL = gitEvent.Project.WebURL
-		processedEvent.SHA = gitEvent.Commits[0].ID
-		processedEvent.SHAURL = gitEvent.Commits[0].URL
-		processedEvent.SHATitle = gitEvent.Commits[0].Title
+		processedEvent.SHA = gitEvent.Commits[lastCommitIdx].ID
+		processedEvent.SHAURL = gitEvent.Commits[lastCommitIdx].URL
+		processedEvent.SHATitle = gitEvent.Commits[lastCommitIdx].Title
 		processedEvent.HeadBranch = gitEvent.Ref
 		processedEvent.BaseBranch = gitEvent.Ref
 		processedEvent.HeadURL = gitEvent.Project.WebURL
