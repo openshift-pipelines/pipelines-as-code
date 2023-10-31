@@ -11,14 +11,15 @@ import (
 )
 
 const (
-	openShiftConsoleNS             = "openshift-console"
-	openShiftConsoleRouteName      = "console"
-	openShiftPipelineDetailViewURL = "https://%s/k8s/ns/%s/tekton.dev~v1beta1~PipelineRun/%s"
-	openShiftPipelineTaskLogURL    = "%s/logs/%s"
-	openShiftRouteGroup            = "route.openshift.io"
-	openShiftRouteVersion          = "v1"
-	openShiftRouteResource         = "routes"
-	openshiftConsoleName           = "OpenShift Console"
+	openShiftConsoleNS                = "openshift-console"
+	openShiftConsoleRouteName         = "console"
+	openShiftPipelineNamespaceViewURL = "https://%s/pipelines/ns/%s/pipeline-runs"
+	openShiftPipelineDetailViewURL    = "https://%s/k8s/ns/%s/tekton.dev~v1beta1~PipelineRun/%s"
+	openShiftPipelineTaskLogURL       = "%s/logs/%s"
+	openShiftRouteGroup               = "route.openshift.io"
+	openShiftRouteVersion             = "v1"
+	openShiftRouteResource            = "routes"
+	openshiftConsoleName              = "OpenShift Console"
 )
 
 type OpenshiftConsole struct {
@@ -42,6 +43,10 @@ func (o *OpenshiftConsole) DetailURL(pr *tektonv1.PipelineRun) string {
 
 func (o *OpenshiftConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tektonv1.PipelineRunTaskRunStatus) string {
 	return fmt.Sprintf(openShiftPipelineTaskLogURL, o.DetailURL(pr), taskRunStatus.PipelineTaskName)
+}
+
+func (o *OpenshiftConsole) NameSpaceURL(pr *tektonv1.PipelineRun) string {
+	return fmt.Sprintf(openShiftPipelineNamespaceViewURL, o.host, pr.GetNamespace())
 }
 
 // UI use dynamic client to get the route of the openshift

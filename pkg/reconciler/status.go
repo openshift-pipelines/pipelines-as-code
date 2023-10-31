@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	kstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
@@ -26,7 +27,6 @@ import (
 const (
 	maxPipelineRunStatusRun = 5
 	logSnippetNumLines      = 3
-	failureReasonText       = "%s<br><h4>Failure reason</h4><br>%s"
 )
 
 var backoffSchedule = []time.Duration{
@@ -127,7 +127,23 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		if failures != "" {
 			secretValues := secrets.GetSecretsAttachedToPipelineRun(ctx, r.kinteract, pr)
 			failures = secrets.ReplaceSecretsInText(failures, secretValues)
-			taskStatusText = fmt.Sprintf(failureReasonText, taskStatusText, failures)
+
+			consoleURL := r.run.Clients.ConsoleUI.DetailURL(pr)
+			namespaceURL := r.run.Clients.ConsoleUI.NameSpaceURL(pr)
+			mt := formatting.MessageTemplate{
+				PipelineRunName: pr.GetName(),
+				Namespace:       pr.GetNamespace(),
+				NamespaceURL:    namespaceURL,
+				ConsoleName:     r.run.Clients.ConsoleUI.GetName(),
+				ConsoleURL:      consoleURL,
+				TknBinary:       settings.TknBinaryName,
+				TknBinaryURL:    settings.TknBinaryURL,
+				TaskStatus:      taskStatusText,
+				FailureSnippet:  failures,
+			}
+			if taskStatusText, err = mt.MakeTemplate(formatting.FailurePipelineRunText); err != nil {
+				return nil, fmt.Errorf("cannot create message template: %w", err)
+			}
 		}
 	}
 
