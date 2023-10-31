@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/google/go-github/v55/github"
@@ -28,6 +29,7 @@ import (
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,33 +41,10 @@ import (
 var (
 	randomURL          = "https://github.com/random/app"
 	finalSuccessStatus = "success"
-	finalSuccessText   = `
-<table>
-  <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
-<tr>
-<td>✅ Succeeded</td>
-<td>-25 minutes</td><td>
-
-[task1](https://dashboard.is.not.configured)
-
-</td></tr>
-</table>`
-
 	finalFailureStatus = "failure"
-	finalFailureText   = `
-<table>
-  <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
-<tr>
-<td>❌ Failed</td>
-<td>-25 minutes</td><td>
-
-[task1](https://dashboard.is.not.configured)
-
-</td></tr>
-</table>`
 )
 
-func testSetupGHReplies(t *testing.T, mux *http.ServeMux, runevent *info.Event, checkrunID, finalStatus, finalStatusText string) {
+func testSetupGHReplies(t *testing.T, mux *http.ServeMux, runevent *info.Event, checkrunID, finalStatus string) {
 	t.Helper()
 	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/%s", runevent.Organization, runevent.Repository, checkrunID),
 		func(w http.ResponseWriter, r *http.Request) {
@@ -75,8 +54,7 @@ func testSetupGHReplies(t *testing.T, mux *http.ServeMux, runevent *info.Event, 
 			assert.NilError(t, err)
 			if created.GetStatus() == "completed" {
 				assert.Equal(t, created.GetConclusion(), finalStatus, "we got the status `%s` but we should have get the status `%s`", created.GetConclusion(), finalStatus)
-				assert.Equal(t, created.GetOutput().GetText(), finalStatusText,
-					"GetStatus/CheckRun %s != %s", created.GetOutput().GetText(), finalStatusText)
+				golden.Assert(t, created.GetOutput().GetText(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
 			}
 		})
 }
@@ -93,38 +71,35 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 	}
 
 	tests := []struct {
-		name            string
-		finalStatus     string
-		finalStatusText string
-		checkRunID      string
-		exitCode        int32
-		taskCondition   knativeduckv1.Conditions
+		name          string
+		finalStatus   string
+		checkRunID    string
+		exitCode      int32
+		taskCondition knativeduckv1.Conditions
 	}{
 		{
-			name:            "success pipelinerun",
-			checkRunID:      "6566930541",
-			finalStatus:     finalSuccessStatus,
-			finalStatusText: finalSuccessText,
-			exitCode:        0,
+			name:        "success pipelinerun",
+			checkRunID:  "6566930541",
+			finalStatus: finalSuccessStatus,
+			exitCode:    0,
 			taskCondition: knativeduckv1.Conditions{
 				{
 					Type:   knativeapi.ConditionSucceeded,
 					Status: corev1.ConditionTrue,
-					Reason: "Succeeded",
+					Reason: string(tektonv1.PipelineRunReasonSuccessful),
 				},
 			},
 		},
 		{
-			name:            "failed pipelinerun",
-			finalStatus:     finalFailureStatus,
-			finalStatusText: finalFailureText,
-			exitCode:        1,
-			checkRunID:      "6566930542",
+			name:        "failed pipelinerun",
+			finalStatus: finalFailureStatus,
+			exitCode:    1,
+			checkRunID:  "6566930542",
 			taskCondition: knativeduckv1.Conditions{
 				{
 					Type:   knativeapi.ConditionSucceeded,
 					Status: corev1.ConditionFalse,
-					Reason: "Error",
+					Reason: string(tektonv1.PipelineRunReasonFailed),
 				},
 			},
 		},
@@ -219,6 +194,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 					Info: info.Info{
 						Pac: &info.PacOpts{
 							Settings: &settings.Settings{
+								ErrorLogSnippet:    true,
 								SecretAutoCreation: true,
 							},
 						},
@@ -237,7 +213,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			}
 
 			event := buildEventFromPipelineRun(pr)
-			testSetupGHReplies(t, mux, event, tt.checkRunID, tt.finalStatus, tt.finalStatusText)
+			testSetupGHReplies(t, mux, event, tt.checkRunID, tt.finalStatus)
 
 			_, err = r.reportFinalStatus(ctx, fakelogger, event, pr, vcx)
 			assert.NilError(t, err)

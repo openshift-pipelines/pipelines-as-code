@@ -1,0 +1,12 @@
+<ul>
+<li><b>Namespace</b>: <a href="{{ .Mt.NamespaceURL }}">{{ .Mt.Namespace }}</a></li>
+<li><b>PipelineRun:</b> <a href="{{ .Mt.ConsoleURL }}">{{ .Mt.PipelineRunName }}</a></li>
+</ul>
+<hr>
+<h4>Task Statuses:</h4>
+{{ .Mt.TaskStatus }}
+{{- if not (eq .Mt.FailureSnippet "")}}
+<hr>
+<h4>Failure snippet:</h4>
+{{ .Mt.FailureSnippet }}
+{{- end }}

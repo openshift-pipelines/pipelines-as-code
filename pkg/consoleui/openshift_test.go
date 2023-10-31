@@ -103,15 +103,16 @@ func TestOpenshiftConsoleUI(t *testing.T) {
 func TestOpenshiftConsoleURLs(t *testing.T) {
 	pr := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "ns",
+			Namespace: "theNS",
 			Name:      "pr",
 		},
 	}
 	trStatus := &tektonv1.PipelineRunTaskRunStatus{
 		PipelineTaskName: "task",
 	}
-	o := OpenshiftConsole{host: "http://fakeconsole"}
-	assert.Assert(t, o.URL() != "")
-	assert.Assert(t, o.DetailURL(pr) != "")
-	assert.Assert(t, o.TaskLogURL(pr, trStatus) != "")
+	o := OpenshiftConsole{host: "fakeconsole"}
+	assert.Equal(t, o.URL(), "https://fakeconsole")
+	assert.Equal(t, o.DetailURL(pr), "https://fakeconsole/k8s/ns/theNS/tekton.dev~v1beta1~PipelineRun/pr")
+	assert.Equal(t, o.TaskLogURL(pr, trStatus), "https://fakeconsole/k8s/ns/theNS/tekton.dev~v1beta1~PipelineRun/pr/logs/task")
+	assert.Equal(t, o.NamespaceURL(pr), "https://fakeconsole/pipelines/ns/theNS/pipeline-runs")
 }

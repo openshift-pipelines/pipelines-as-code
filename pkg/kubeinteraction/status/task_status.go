@@ -89,8 +89,11 @@ func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract
 			Message:        reasonMessageReplacementRegexp.ReplaceAllString(task.Status.Conditions[0].Message, ""),
 			CompletionTime: task.Status.CompletionTime,
 			Reason:         task.Status.Conditions[0].Reason,
-			DisplayName:    task.Status.TaskSpec.DisplayName,
 		}
+		if task.Status.TaskSpec != nil {
+			ti.DisplayName = task.Status.TaskSpec.DisplayName
+		}
+		// don't check for pod logs into those
 		if ti.Reason == "TaskRunValidationFailed" || ti.Reason == tektonv1.TaskRunReasonCancelled.String() || ti.Reason == tektonv1.TaskRunReasonTimedOut.String() || ti.Reason == tektonv1.TaskRunReasonImagePullFailed.String() {
 			failureReasons[task.PipelineTaskName] = ti
 			continue

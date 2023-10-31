@@ -1,0 +1,21 @@
+<ul>
+<li><b>Namespace</b>: <a href="https://dashboard.is.not.configured">ns</a></li>
+<li><b>PipelineRun:</b> <a href="https://dashboard.is.not.configured">pipeline-newest</a></li>
+</ul>
+<hr>
+<h4>Task Statuses:</h4>
+
+<table>
+  <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
+<tr>
+<td>❌ Failed</td>
+<td>-25 minutes</td><td>
+
+[task1](https://dashboard.is.not.configured)
+
+</td></tr>
+</table>
+<hr>
+<h4>Failure snippet:</h4>
+task <b>task1</b> has the status <b>"Failed"</b>:
+<pre>fake logs</pre>

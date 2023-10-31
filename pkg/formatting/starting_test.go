@@ -12,6 +12,7 @@ func TestMessageTemplate_MakeTemplate(t *testing.T) {
 		ConsoleURL:      "https://test-console-url.com",
 		TknBinary:       "test-tkn",
 		TknBinaryURL:    "https://test-tkn-url.com",
+		FailureSnippet:  "such a failure",
 	}
 
 	tests := []struct {
@@ -32,6 +33,12 @@ func TestMessageTemplate_MakeTemplate(t *testing.T) {
 			mt:      mt,
 			msg:     "Starting Pipelinerun {{.Mt.PipelineRunName}} in namespace {{.FOOOBAR }}",
 			wantErr: true,
+		},
+		{
+			name: "Failure template",
+			mt:   mt,
+			msg:  "I am {{ .Mt.FailureSnippet }}",
+			want: "I am such a failure",
 		},
 	}
 	for _, tt := range tests {
