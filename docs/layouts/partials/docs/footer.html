@@ -19,17 +19,18 @@
     <script type="text/javascript">
       function handleVersion(elm)
       {
+          current_page_path = window.location.pathname
           if (elm.value == "nightly")
           {
-              window.location = "https://nightly.pipelines-as-code.pages.dev"
+              window.location = "https://nightly.pipelines-as-code.pages.dev" + current_page_path
               return
           } else if (elm.value == "stable")
           {
-              window.location = "https://pipelinesascode.com"
+              window.location = "https://pipelinesascode.com" + current_page_path
               return
           }
           var v = elm.value.replace(/\./g, "-");
-          window.location = "https://release-" + v + ".pipelines-as-code.pages.dev/"
+          window.location = "https://release-" + v + ".pipelines-as-code.pages.dev" + current_page_path
       }
     </script>
 {{ end }}
