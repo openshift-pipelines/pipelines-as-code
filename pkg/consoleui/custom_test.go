@@ -92,16 +92,18 @@ func TestCustomGood(t *testing.T) {
 		Info: &info.Info{
 			Pac: &info.PacOpts{
 				Settings: &settings.Settings{
-					CustomConsoleName:      consoleName,
-					CustomConsoleURL:       consoleURL,
-					CustomConsolePRdetail:  "{{ notthere}}",
-					CustomConsolePRTaskLog: "{{ notthere}}",
+					CustomConsoleName:         consoleName,
+					CustomConsoleURL:          consoleURL,
+					CustomConsolePRdetail:     "{{ notthere}}",
+					CustomConsolePRTaskLog:    "{{ notthere}}",
+					CustomConsoleNamespaceURL: "https://mycorp.console/{{ namespace }}",
 				},
 			},
 		},
 	}
 	assert.Assert(t, strings.Contains(o.DetailURL(pr), consoleURL))
 	assert.Assert(t, strings.Contains(o.TaskLogURL(pr, trStatus), consoleURL))
+	assert.Assert(t, strings.Contains(o.NamespaceURL(pr), "https://mycorp.console/ns"))
 }
 
 func TestCustomBad(t *testing.T) {
@@ -122,4 +124,5 @@ func TestCustomBad(t *testing.T) {
 	assert.Assert(t, strings.Contains(c.URL(), "is.not.configured"))
 	assert.Assert(t, strings.Contains(c.DetailURL(pr), "is.not.configured"))
 	assert.Assert(t, strings.Contains(c.TaskLogURL(pr, nil), "is.not.configured"))
+	assert.Assert(t, strings.Contains(c.NamespaceURL(pr), "is.not.configured"), c.NamespaceURL(pr))
 }

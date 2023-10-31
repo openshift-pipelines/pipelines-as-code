@@ -22,6 +22,10 @@ func (t *TektonDashboard) DetailURL(pr *tektonv1.PipelineRun) string {
 	return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns/%s", t.BaseURL, pr.GetNamespace(), pr.GetName())
 }
 
+func (t *TektonDashboard) NamespaceURL(pr *tektonv1.PipelineRun) string {
+	return fmt.Sprintf("%s/#/namespaces/%s/pipelineruns", t.BaseURL, pr.GetNamespace())
+}
+
 func (t *TektonDashboard) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tektonv1.PipelineRunTaskRunStatus) string {
 	return fmt.Sprintf("%s?pipelineTask=%s", t.DetailURL(pr), taskRunStatus.PipelineTaskName)
 }

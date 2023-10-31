@@ -250,6 +250,18 @@ A few settings are available to configure this feature:
 
   Set this to the root URL of your custom console. example: `https://mycorp.com`
 
+* `custom-console-url-namespace`
+
+  Set this to the URL where to view the details of the `Namespace`.
+
+  The URL supports all the standard variables as exposed on the Pipelinerun (refer to
+  the documentation on [Authoring PipelineRuns](../authoringprs)) with the added
+  variable:
+
+  * `{{ namespace }}`: The target namespace where the pipelinerun is executed
+
+  example: `https://mycorp.com/ns/{{ namespace }}`
+
 * `custom-console-url-pr-details`
 
   Set this to the URL where to view the details of the `PipelineRun`. This is

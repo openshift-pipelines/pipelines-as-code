@@ -13,6 +13,7 @@ const consoleIsnotConfiguredURL = "https://dashboard.is.not.configured"
 type Interface interface {
 	DetailURL(pr *tektonv1.PipelineRun) string
 	TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatusstatus *tektonv1.PipelineRunTaskRunStatus) string
+	NamespaceURL(pr *tektonv1.PipelineRun) string
 	UI(ctx context.Context, kdyn dynamic.Interface) error
 	URL() string
 	GetName() string
@@ -30,6 +31,10 @@ func (f FallBackConsole) DetailURL(_ *tektonv1.PipelineRun) string {
 }
 
 func (f FallBackConsole) TaskLogURL(_ *tektonv1.PipelineRun, _ *tektonv1.PipelineRunTaskRunStatus) string {
+	return consoleIsnotConfiguredURL
+}
+
+func (f FallBackConsole) NamespaceURL(_ *tektonv1.PipelineRun) string {
 	return consoleIsnotConfiguredURL
 }
 

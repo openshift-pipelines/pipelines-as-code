@@ -10,9 +10,9 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1a1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	kstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
@@ -26,7 +26,6 @@ import (
 const (
 	maxPipelineRunStatusRun = 5
 	logSnippetNumLines      = 3
-	failureReasonText       = "%s<br><h4>Failure reason</h4><br>%s"
 )
 
 var backoffSchedule = []time.Duration{
@@ -82,11 +81,7 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 }
 
 func (r *Reconciler) getFailureSnippet(ctx context.Context, pr *tektonv1.PipelineRun) string {
-	intf, err := kubeinteraction.NewKubernetesInteraction(r.run)
-	if err != nil {
-		return ""
-	}
-	taskinfos := kstatus.CollectFailedTasksLogSnippet(ctx, r.run, intf, pr, logSnippetNumLines)
+	taskinfos := kstatus.CollectFailedTasksLogSnippet(ctx, r.run, r.kinteract, pr, logSnippetNumLines)
 	if len(taskinfos) == 0 {
 		return ""
 	}
@@ -122,20 +117,36 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		taskStatusText = pr.Status.GetCondition(apis.ConditionSucceeded).Message
 	}
 
+	namespaceURL := r.run.Clients.ConsoleUI.NamespaceURL(pr)
+	consoleURL := r.run.Clients.ConsoleUI.DetailURL(pr)
+	mt := formatting.MessageTemplate{
+		PipelineRunName: pr.GetName(),
+		Namespace:       pr.GetNamespace(),
+		NamespaceURL:    namespaceURL,
+		ConsoleName:     r.run.Clients.ConsoleUI.GetName(),
+		ConsoleURL:      consoleURL,
+		TknBinary:       settings.TknBinaryName,
+		TknBinaryURL:    settings.TknBinaryURL,
+		TaskStatus:      taskStatusText,
+	}
 	if r.run.Info.Pac.ErrorLogSnippet {
 		failures := r.getFailureSnippet(ctx, pr)
 		if failures != "" {
 			secretValues := secrets.GetSecretsAttachedToPipelineRun(ctx, r.kinteract, pr)
 			failures = secrets.ReplaceSecretsInText(failures, secretValues)
-			taskStatusText = fmt.Sprintf(failureReasonText, taskStatusText, failures)
+			mt.FailureSnippet = failures
 		}
+	}
+	var tmplStatusText string
+	if tmplStatusText, err = mt.MakeTemplate(formatting.PipelineRunStatusText); err != nil {
+		return nil, fmt.Errorf("cannot create message template: %w", err)
 	}
 
 	status := provider.StatusOpts{
 		Status:                  "completed",
 		PipelineRun:             pr,
 		Conclusion:              formatting.PipelineRunStatus(pr),
-		Text:                    taskStatusText,
+		Text:                    tmplStatusText,
 		PipelineRunName:         pr.Name,
 		DetailsURL:              r.run.Clients.ConsoleUI.DetailURL(pr),
 		OriginalPipelineRunName: pr.GetAnnotations()[apipac.OriginalPRName],
