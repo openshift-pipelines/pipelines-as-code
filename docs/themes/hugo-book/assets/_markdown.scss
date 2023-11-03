@@ -88,7 +88,7 @@
   }
 
   p {
-    word-wrap:break-word;
+    word-wrap: break-word;
   }
 
   blockquote {
@@ -134,6 +134,7 @@
   ul,
   ol {
     padding-inline-start: $padding-16 * 2;
+    word-wrap: break-word;
   }
 
   dl {
