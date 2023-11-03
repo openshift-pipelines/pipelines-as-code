@@ -1,6 +1,6 @@
 # Hugo Book Theme
 
-[![Hugo](https://img.shields.io/badge/hugo-0.68-blue.svg)](https://gohugo.io)
+[![Hugo](https://img.shields.io/badge/hugo-0.79-blue.svg)](https://gohugo.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Build with Hugo](https://github.com/alex-shpak/hugo-book/workflows/Build%20with%20Hugo/badge.svg)
 
@@ -33,7 +33,7 @@
 
 ## Requirements
 
-- Hugo 0.68 or higher
+- Hugo 0.79 or higher
 - Hugo extended version, read more [here](https://gohugo.io/news/0.48-relnotes/)
 
 ## Installation
@@ -83,7 +83,7 @@ Below is an example on how to create a new site from scratch:
 hugo new site mydocs; cd mydocs
 git init
 git submodule add https://github.com/alex-shpak/hugo-book themes/hugo-book
-cp -R themes/hugo-book/exampleSite/content .
+cp -R themes/hugo-book/exampleSite/content.en/* ./content
 ```
 
 ```sh
@@ -127,7 +127,7 @@ headless = true
 
 And Enable it by setting `BookMenuBundle: /menu` in Site configuration.
 
-- [Example menu](https://github.com/alex-shpak/hugo-book/blob/master/exampleSite/content/menu/index.md)
+- [Example menu](https://github.com/alex-shpak/hugo-book/blob/master/exampleSite/content.en/menu/index.md)
 - [Example config file](https://github.com/alex-shpak/hugo-book/blob/master/exampleSite/config.yaml)
 - [Leaf bundles](https://gohugo.io/content-management/page-bundles/)
 
@@ -194,7 +194,7 @@ disableKinds = ['taxonomy', 'taxonomyTerm']
   # type.
   # Required if 'BookRepo' param is set.
   # Value used to construct a URL consisting of BookRepo/BookCommitPath/<commit-hash>
-  # GitHub uses 'commit', Bitbucket uses 'commits'
+  # Github uses 'commit', Bitbucket uses 'commits'
   BookCommitPath = 'commit'
 
   # Enable 'Edit this page' links for 'doc' page type.
