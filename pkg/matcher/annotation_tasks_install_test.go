@@ -463,10 +463,10 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 				assert.Assert(t, len(fakelog.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", fakelog)
 			}
 			assert.NilError(t, err)
-			assert.Assert(t, len(got) > 0, "GetPipelineFromAnnotations() error no pipelines has been processed")
+			assert.Assert(t, got != nil, "GetPipelineFromAnnotations() error no pipelines has been processed")
 
 			if tt.gotPipelineName != "" {
-				assert.Equal(t, tt.gotPipelineName, got[0].GetName())
+				assert.Equal(t, tt.gotPipelineName, got.GetName())
 			}
 		})
 	}

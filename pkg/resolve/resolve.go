@@ -27,6 +27,91 @@ type TektonTypes struct {
 
 var yamlDocSeparatorRe = regexp.MustCompile(`(?m)^---\s*$`)
 
+// getTaskRunByName returns the taskrun with the given name the first one found
+// will be matched. It does not handle conflicts so user has fetched multiple
+// taskruns with the same name it will just pick up the first one.
+// if the taskrun is not found it returns an error
+func getTaskByName(name string, tasks []*tektonv1.Task) (*tektonv1.Task, error) {
+	for _, value := range tasks {
+		if value.Name == name {
+			return value, nil
+		}
+	}
+	return &tektonv1.Task{}, fmt.Errorf("cannot find referenced task %s. if it's a remote task make sure to add it in the annotations", name)
+}
+
+func getPipelineByName(name string, tasks []*tektonv1.Pipeline) (*tektonv1.Pipeline, error) {
+	for _, value := range tasks {
+		if value.Name == name {
+			return value, nil
+		}
+	}
+	return &tektonv1.Pipeline{}, fmt.Errorf("cannot find referenced pipeline %s. for a remote pipeline make sure to add it in the annotation", name)
+}
+
+func pipelineRunsWithSameName(prs []*tektonv1.PipelineRun) error {
+	prNames := map[string]bool{}
+	for _, pr := range prs {
+		name := pr.GetName()
+		generateName := pr.GetGenerateName()
+
+		if name != "" {
+			if _, exist := prNames[name]; exist {
+				return fmt.Errorf("found multiple pipelinerun in .tekton with the same name: %v, please update", name)
+			}
+			prNames[name] = true
+		}
+
+		if generateName != "" {
+			if _, exist := prNames[generateName]; exist {
+				return fmt.Errorf("found multiple pipelinerun in .tekton with the same generateName: %v, please update", generateName)
+			}
+			prNames[generateName] = true
+		}
+	}
+	return nil
+}
+
+func skippingTask(taskName string, skippedTasks []string) bool {
+	for _, value := range skippedTasks {
+		if value == taskName {
+			return true
+		}
+	}
+	return false
+}
+
+func isTektonAPIVersion(apiVersion string) bool {
+	return strings.HasPrefix(apiVersion, "tekton.dev/") || apiVersion == ""
+}
+
+func inlineTasks(tasks []tektonv1.PipelineTask, ropt *Opts, types TektonTypes) ([]tektonv1.PipelineTask, error) {
+	pipelineTasks := []tektonv1.PipelineTask{}
+	for _, task := range tasks {
+		if task.TaskRef != nil &&
+			task.TaskRef.Resolver == "" &&
+			isTektonAPIVersion(task.TaskRef.APIVersion) &&
+			string(task.TaskRef.Kind) != "ClusterTask" &&
+			!skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
+			taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
+			if err != nil {
+				return nil, err
+			}
+			task.TaskRef = nil
+			task.TaskSpec = &tektonv1.EmbeddedTask{TaskSpec: taskResolved.Spec}
+		}
+		pipelineTasks = append(pipelineTasks, task)
+	}
+	return pipelineTasks, nil
+}
+
+type Opts struct {
+	GenerateName  bool     // whether to GenerateName
+	RemoteTasks   bool     // whether to parse annotation to fetch tasks from remote
+	SkipInlining  []string // task to skip inlining
+	ProviderToken string
+}
+
 func ReadTektonTypes(ctx context.Context, log *zap.SugaredLogger, data string) (TektonTypes, error) {
 	types := TektonTypes{}
 	decoder := k8scheme.Codecs.UniversalDeserializer()
@@ -74,68 +159,6 @@ func ReadTektonTypes(ctx context.Context, log *zap.SugaredLogger, data string) (
 	return types, nil
 }
 
-// getTaskRunByName returns the taskrun with the given name the first one found
-// will be matched. It does not handle conflicts so user has fetched multiple
-// taskruns with the same name it will just pick up the first one.
-// if the taskrun is not found it returns an error
-func getTaskByName(name string, tasks []*tektonv1.Task) (*tektonv1.Task, error) {
-	for _, value := range tasks {
-		if value.Name == name {
-			return value, nil
-		}
-	}
-	return &tektonv1.Task{}, fmt.Errorf("cannot find referenced task %s. if it's a remote task make sure to add it in the annotations", name)
-}
-
-func getPipelineByName(name string, tasks []*tektonv1.Pipeline) (*tektonv1.Pipeline, error) {
-	for _, value := range tasks {
-		if value.Name == name {
-			return value, nil
-		}
-	}
-	return &tektonv1.Pipeline{}, fmt.Errorf("cannot find referenced pipeline %s. for a remote pipeline make sure to add it in the annotation", name)
-}
-
-func skippingTask(taskName string, skippedTasks []string) bool {
-	for _, value := range skippedTasks {
-		if value == taskName {
-			return true
-		}
-	}
-	return false
-}
-
-func isTektonAPIVersion(apiVersion string) bool {
-	return strings.HasPrefix(apiVersion, "tekton.dev/") || apiVersion == ""
-}
-
-func inlineTasks(tasks []tektonv1.PipelineTask, ropt *Opts, types TektonTypes) ([]tektonv1.PipelineTask, error) {
-	pipelineTasks := []tektonv1.PipelineTask{}
-	for _, task := range tasks {
-		if task.TaskRef != nil &&
-			task.TaskRef.Resolver == "" &&
-			isTektonAPIVersion(task.TaskRef.APIVersion) &&
-			string(task.TaskRef.Kind) != "ClusterTask" &&
-			!skippingTask(task.TaskRef.Name, ropt.SkipInlining) {
-			taskResolved, err := getTaskByName(task.TaskRef.Name, types.Tasks)
-			if err != nil {
-				return nil, err
-			}
-			task.TaskRef = nil
-			task.TaskSpec = &tektonv1.EmbeddedTask{TaskSpec: taskResolved.Spec}
-		}
-		pipelineTasks = append(pipelineTasks, task)
-	}
-	return pipelineTasks, nil
-}
-
-type Opts struct {
-	GenerateName  bool     // whether to GenerateName
-	RemoteTasks   bool     // whether to parse annotation to fetch tasks from remote
-	SkipInlining  []string // task to skip inlining
-	ProviderToken string
-}
-
 // Resolve gets a large string which is a yaml multi documents containing
 // Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
 // generateName can be set as True to set the name as a generateName + "-" for
@@ -149,27 +172,18 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 		return []*tektonv1.PipelineRun{}, err
 	}
 
-	// First resolve Annotations Tasks
-	for _, pipelinerun := range types.PipelineRuns {
-		if ropt.RemoteTasks && pipelinerun.GetObjectMeta().GetAnnotations() != nil {
-			rt := matcher.RemoteTasks{
-				Run:               cs,
-				Event:             event,
-				ProviderInterface: providerintf,
-				Logger:            logger,
-			}
-			remoteTasks, err := rt.GetTaskFromAnnotations(ctx, pipelinerun.GetObjectMeta().GetAnnotations())
-			if err != nil {
-				return []*tektonv1.PipelineRun{}, err
-			}
-			// Merge remote tasks with local tasks
-			types.Tasks = append(types.Tasks, remoteTasks...)
-
-			remotePipelines, err := rt.GetPipelineFromAnnotations(ctx, pipelinerun.GetObjectMeta().GetAnnotations())
-			if err != nil {
-				return []*tektonv1.PipelineRun{}, err
-			}
-			types.Pipelines = append(types.Pipelines, remotePipelines...)
+	// Resolve remote annotations on remote task or remote pipeline or tasks
+	// inside remote pipeline
+	if ropt.RemoteTasks {
+		rt := &matcher.RemoteTasks{
+			Run:               cs,
+			Event:             event,
+			ProviderInterface: providerintf,
+			Logger:            logger,
+		}
+		var err error
+		if types, err = getRemotes(ctx, rt, types); err != nil {
+			return []*tektonv1.PipelineRun{}, err
 		}
 	}
 
@@ -222,29 +236,6 @@ func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, pro
 		}
 	}
 	return types.PipelineRuns, nil
-}
-
-func pipelineRunsWithSameName(prs []*tektonv1.PipelineRun) error {
-	prNames := map[string]bool{}
-	for _, pr := range prs {
-		name := pr.GetName()
-		generateName := pr.GetGenerateName()
-
-		if name != "" {
-			if _, exist := prNames[name]; exist {
-				return fmt.Errorf("found multiple pipelinerun in .tekton with the same name: %v, please update", name)
-			}
-			prNames[name] = true
-		}
-
-		if generateName != "" {
-			if _, exist := prNames[generateName]; exist {
-				return fmt.Errorf("found multiple pipelinerun in .tekton with the same generateName: %v, please update", generateName)
-			}
-			prNames[generateName] = true
-		}
-	}
-	return nil
 }
 
 func MetadataResolve(prs []*tektonv1.PipelineRun) ([]*tektonv1.PipelineRun, error) {

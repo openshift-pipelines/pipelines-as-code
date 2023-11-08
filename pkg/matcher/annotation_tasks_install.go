@@ -216,7 +216,7 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, annotations ma
 
 // GetPipelineFromAnnotations Get pipeline remotely if they are on Annotations
 // TODO: merge in a generic between the two
-func (rt RemoteTasks) GetPipelineFromAnnotations(ctx context.Context, annotations map[string]string) ([]*tektonv1.Pipeline, error) {
+func (rt RemoteTasks) GetPipelineFromAnnotations(ctx context.Context, annotations map[string]string) (*tektonv1.Pipeline, error) {
 	ret := []*tektonv1.Pipeline{}
 	pipelinesAnnotation, err := grabValuesFromAnnotations(annotations, pipelineAnnotationsRegexp)
 	if err != nil {
@@ -224,6 +224,9 @@ func (rt RemoteTasks) GetPipelineFromAnnotations(ctx context.Context, annotation
 	}
 	if len(pipelinesAnnotation) > 1 {
 		return nil, fmt.Errorf("only one pipeline is allowed on remote resolution, we have received multiple of them: %+v", pipelinesAnnotation)
+	}
+	if len(pipelinesAnnotation) == 0 {
+		return nil, nil
 	}
 	for _, v := range pipelinesAnnotation {
 		data, err := rt.getRemote(ctx, v, false)
@@ -239,7 +242,7 @@ func (rt RemoteTasks) GetPipelineFromAnnotations(ctx context.Context, annotation
 		}
 		ret = append(ret, pipeline)
 	}
-	return ret, nil
+	return ret[0], nil
 }
 
 // getTaskFromLocalFS get task locally if file exist

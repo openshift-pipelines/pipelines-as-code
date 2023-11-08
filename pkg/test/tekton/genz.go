@@ -50,7 +50,7 @@ func MakeChildStatusReference(name string) tektonv1.ChildStatusReference {
 	}
 }
 
-func MakePR(namespace, name string, childStatus []tektonv1.ChildStatusReference, status *knativeduckv1.Status) *tektonv1.PipelineRun {
+func MakePRStatus(namespace, name string, childStatus []tektonv1.ChildStatusReference, status *knativeduckv1.Status) *tektonv1.PipelineRun {
 	if status == nil {
 		status = &knativeduckv1.Status{}
 	}
@@ -65,6 +65,20 @@ func MakePR(namespace, name string, childStatus []tektonv1.ChildStatusReference,
 				ChildReferences: childStatus,
 			},
 		},
+	}
+}
+
+func MakePR(name string, annotations map[string]string, spec tektonv1.PipelineRunSpec) *tektonv1.PipelineRun {
+	return &tektonv1.PipelineRun{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "PipelineRun",
+			APIVersion: "tekton.dev/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Annotations: annotations,
+		},
+		Spec: spec,
 	}
 }
 
@@ -107,6 +121,33 @@ func MakePRCompletion(clock clockwork.FakeClock, name, namespace, runstatus stri
 				CompletionTime: &metav1.Time{Time: clock.Now().Add(endtime)},
 			},
 		},
+	}
+}
+
+func MakePipeline(name string, tasks []tektonv1.PipelineTask, annotations map[string]string) *tektonv1.Pipeline {
+	return &tektonv1.Pipeline{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pipeline",
+			APIVersion: "tekton.dev/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        name,
+			Annotations: annotations,
+		},
+		Spec: tektonv1.PipelineSpec{
+			Tasks: tasks,
+		},
+	}
+}
+
+func MakeTask(name string, taskSpec tektonv1.TaskSpec) *tektonv1.Task {
+	return &tektonv1.Task{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Task",
+			APIVersion: "tekton.dev/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec:       taskSpec,
 	}
 }
 

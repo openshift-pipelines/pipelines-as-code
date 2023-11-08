@@ -517,7 +517,7 @@ func TestRun(t *testing.T) {
 				},
 				Repositories: tt.repositories,
 				PipelineRuns: []*pipelinev1.PipelineRun{
-					tektontest.MakePR("namespace", "force-me", []pipelinev1.ChildStatusReference{
+					tektontest.MakePRStatus("namespace", "force-me", []pipelinev1.ChildStatusReference{
 						tektontest.MakeChildStatusReference("first"),
 						tektontest.MakeChildStatusReference("last"),
 						tektontest.MakeChildStatusReference("middle"),
