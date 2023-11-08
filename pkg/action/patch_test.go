@@ -22,7 +22,7 @@ func TestPatchPipelineRun(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 
-	testPR := tektontest.MakePR("namespace", "force-me", []pipelinev1.ChildStatusReference{
+	testPR := tektontest.MakePRStatus("namespace", "force-me", []pipelinev1.ChildStatusReference{
 		tektontest.MakeChildStatusReference("first"),
 		tektontest.MakeChildStatusReference("last"),
 		tektontest.MakeChildStatusReference("middle"),

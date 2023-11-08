@@ -33,7 +33,7 @@ func TestCheckStateAndEnqueue(t *testing.T) {
 	})
 
 	// Create a new PipelineRun object with the "started" state label.
-	testPR := tektontest.MakePR("namespace", "force-me", []pipelinev1.ChildStatusReference{
+	testPR := tektontest.MakePRStatus("namespace", "force-me", []pipelinev1.ChildStatusReference{
 		tektontest.MakeChildStatusReference("first"),
 		tektontest.MakeChildStatusReference("last"),
 		tektontest.MakeChildStatusReference("middle"),

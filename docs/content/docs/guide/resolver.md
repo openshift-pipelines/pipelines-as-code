@@ -46,7 +46,7 @@ command to learn on how to use it.
 location with annotations on PipelineRun.
 
 If the resolver sees a PipelineRun referencing a remote task or a Pipeline in
-a PipelineRun or a PipelineSpec it will automatically inlines them.
+a PipelineRun or a PipelineSpec it will automatically inline them.
 
 If multiple annotations reference the same task name the resolver will pick the
 first one fetched from the annotations.
@@ -128,10 +128,10 @@ will fetch the task directly from that remote URL :
 ### Remote HTTP URL from a private GitHub repository
 
 If you are using `GitHub` and If the remote task URL uses the same host as where
-the repo CRD is, PAC will use the  GitHub token and fetch the URL using the
+the repository CRD is, PAC will use the  GitHub token and fetch the URL using the
 GitHub API.
 
-For example if you have a repo URL looking like this :
+For example if you have a repository URL looking like this :
 
 <https://github.com/organization/repository>
 
@@ -139,7 +139,8 @@ and the remote HTTP URLs is a referenced GitHub "blob" URL:
 
 <https://github.com/organization/repository/blob/mainbranch/path/file>
 
-if the remote HTTP url has a slash (/) in the branch name you will need to html encode with the `%2F` character, eg:
+if the remote HTTP URL has a slash (/) in the branch name you will need to HTML
+encode with the `%2F` character, example:
 
 <https://github.com/organization/repository/blob/feature%2Fmainbranch/path/file>
 
@@ -150,14 +151,14 @@ GitHub app token are scoped to the owner or organization where the repository is
 If you are using the GitHub webhook method you are able to fetch any private or
 public repositories on any organization where the personal token is allowed.
 
-There is settings you can set in the pac `Configmap` to control that behavior, see the
+There is settings you can set in the pac `Configmap` to control that behaviour, see the
 `secret-github-app-token-scoped` and `secret-github-app-scope-extra-repos` settings in the
 [settings documentation](/docs/install/settings).
 
 ### Tasks or Pipelines inside the repository
 
 Additionally, you can as well have a reference to a task or pipeline from a YAML file inside
-your repo if you specify the relative path to it, for example :
+your repository if you specify the relative path to it, for example :
 
 ```yaml
 pipelinesascode.tekton.dev/task: "[share/tasks/git-clone.yaml]"
@@ -174,18 +175,77 @@ If the object fetched cannot be parsed as a Tekton `Task` it will error out.
 
 ## Remote Pipeline annotations
 
-Remote Pipeline can be referenced by annotation, this allows you to share your Pipeline definition across.
+Remote Pipeline can be referenced by annotation, allowing you to share a Pipeline across multiple repositories.
 
-Only one Pipeline is allowed in annotation.
+Only one Pipeline is allowed on the `PipelineRun` annotation.
 
-An annotation to a remote pipeline looks like this :
+An annotation to a remote pipeline looks like this, using a remote URL:
 
 ```yaml
 pipelinesascode.tekton.dev/pipeline: "https://git.provider/raw/pipeline.yaml
 ```
 
-It supports remote URL and files inside the same Git repository.
+or from a relative path inside the repository:
+
+```yaml
+pipelinesascode.tekton.dev/pipeline: "./tasks/pipeline.yaml
+```
+
+Fetching `Pipelines` from the [Tekton Hub](https://hub.tekton.dev) is not currently supported.
+
+### Overriding tasks from a remote pipeline on a PipelineRun
+
+Remote task annotations on the remote pipeline are supported. No other
+annotations like `on-target-branch`, `on-event` or `on-cel-expression` are
+supported.
+
+If a user wants to override one of the tasks from the remote pipeline, they can do
+so by adding a task in the annotations that has the same name In their `PipelineRun` annotations.
+
+For example if the user PipelineRun contains those annotations:
+
+```yaml
+kind: PipelineRun
+metadata:
+  annotations:
+    pipelinesascode.tekton.dev/pipeline: "https://git.provider/raw/pipeline.yaml
+    pipelinesascode.tekton.dev/task: "./my-git-clone-task.yaml
+```
+
+and the Pipeline referenced by the `pipelinesascode.tekton.dev/pipeline` annotation
+in "<https://git.provider/raw/pipeline.yaml>"  contains those annotations:
+
+```yaml
+kind: Pipeline
+metadata:
+  annotations:
+    pipelinesascode.tekton.dev/task: "git-clone"
+```
+
+In this case if the `my-git-clone-task.yaml` file in the root directory is a
+task named `git-clone` it will be used instead of the `git-clone` on the remote
+pipeline that is coming from the Tekon Hub.
 
 {{< hint info >}}
-[Tekton Hub](https://hub.tekton.dev) doesn't currently have support for `Pipeline`.
+Task overriding is only supported for tasks that are referenced by a `taskRef`
+to a `Name`, no override is done on `Tasks` embedded with a `taskSpec`. See
+[Tekton documentation](https://tekton.dev/docs/pipelines/pipelines/#adding-tasks-to-the-pipeline) for the differences between `taskRef` and `taskSpec`:
 {{< /hint >}}
+
+### Tasks or Pipelines Precedence
+
+From where tasks or pipelines of the same name takes precedence?
+
+for remote Tasks, when you have a `taskRef` on a task name, pac will try to find the task in this order:
+
+1. A task matched from the PipelineRun annotations
+2. A task matched from the remote Pipeline annotations
+3. A task matched fetched from the Tekton directory
+   (the tasks from the `.tekton` directory and its subdirs are automatically included)
+
+for remote Pipelines referenced on a `pipelineRef`, pac will try to match a
+pipeline in this order:
+
+1. Pipeline from the PipelineRun annotations
+2. Pipeline from the Tekton directory (pipelines are automatically fetched from
+   the `.tekton` directory and subdirs)
