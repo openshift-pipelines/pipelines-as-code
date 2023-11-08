@@ -1,6 +1,6 @@
 module github.com/openshift-pipelines/pipelines-as-code
 
-go 1.19
+go 1.20
 
 require (
 	code.gitea.io/sdk/gitea v0.16.0
