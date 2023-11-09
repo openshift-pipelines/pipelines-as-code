@@ -59,20 +59,24 @@ func NewAdmissionController(
 	c := controller.NewContext(ctx, wh, controller.ControllerOptions{WorkQueueName: "ValidationWebhook", Logger: logger.Named("ValidationWebhook")})
 
 	// Reconcile when the named ValidatingWebhookConfiguration changes.
-	vwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	if _, err := vwhInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterWithName(name),
 		// It doesn't matter what we enqueue because we will always Reconcile
 		// the named VWH resource.
 		Handler: controller.HandleAll(c.Enqueue),
-	})
+	}); err != nil {
+		logging.FromContext(ctx).Panicf("Couldn't register ValidatingWebhookConfiguration informer event handler: %w", err)
+	}
 
 	// Reconcile when the cert bundle changes.
-	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	if _, err := secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterWithNameAndNamespace(system.Namespace(), wh.secretName),
 		// It doesn't matter what we enqueue because we will always Reconcile
 		// the named MWH resource.
 		Handler: controller.HandleAll(c.Enqueue),
-	})
+	}); err != nil {
+		logging.FromContext(ctx).Panicf("Couldn't register Secret informer event handler: %w", err)
+	}
 
 	return c
 }

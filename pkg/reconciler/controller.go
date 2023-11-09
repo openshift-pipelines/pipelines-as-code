@@ -66,7 +66,9 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			log.Fatal("failed to init queues", err)
 		}
 
-		pipelineRunInformer.Informer().AddEventHandler(controller.HandleAll(checkStateAndEnqueue(impl)))
+		if _, err := pipelineRunInformer.Informer().AddEventHandler(controller.HandleAll(checkStateAndEnqueue(impl))); err != nil {
+			logging.FromContext(ctx).Panicf("Couldn't register PipelineRun informer event handler: %w", err)
+		}
 
 		return impl
 	}
