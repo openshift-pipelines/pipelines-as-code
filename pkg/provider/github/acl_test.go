@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-github/v55/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
@@ -319,20 +320,20 @@ func TestOkToTestComment(t *testing.T) {
 			repo := &v1alpha1.Repository{Spec: v1alpha1.RepositorySpec{
 				Settings: &v1alpha1.Settings{},
 			}}
+			pacopts := &info.PacOpts{
+				Settings: &settings.Settings{
+					RememberOKToTest: tt.rememberOkToTest,
+				},
+			}
 			gprovider := Provider{
 				Client:        fakeclient,
 				repo:          repo,
 				Logger:        logger,
 				paginedNumber: 1,
+				Run:           &params.Run{Info: info.Info{Pac: pacopts}},
 			}
 
-			pacopts := info.PacOpts{
-				Settings: &settings.Settings{
-					RememberOKToTest: tt.rememberOkToTest,
-				},
-			}
-
-			got, err := gprovider.IsAllowed(ctx, &tt.runevent, &pacopts)
+			got, err := gprovider.IsAllowed(ctx, &tt.runevent, pacopts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("aclCheck() error = %v, wantErr %v", err, tt.wantErr)
 				return

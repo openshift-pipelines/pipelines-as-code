@@ -56,8 +56,12 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, pac *info.P
 	// Try to detect a policy rule allowed it
 	tType, _ := detectTriggerTypeFromPayload("", event.Event)
 	policyAllowed, policyReason := aclPolicy.IsAllowed(ctx, tType)
-	if policyAllowed {
+	switch policyAllowed {
+	case policy.ResultAllowed:
 		return true, nil
+	case policy.ResultDisallowed:
+		return false, nil
+	case policy.ResultNotSet: // this is to make golangci-lint happy
 	}
 
 	// Check all the ACL rules
@@ -171,8 +175,14 @@ func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, erro
 		return true, nil
 	}
 
+	return v.IsAllowedOwnersFile(ctx, rev)
+}
+
+// IsAllowedOwners get the owner file from main branch and check if we have
+// explicitly allowed the user in there.
+func (v *Provider) IsAllowedOwnersFile(ctx context.Context, rev *info.Event) (bool, error) {
 	// If we have a prow OWNERS file in the defaultBranch (ie: master) then
-	// parse it in approvers and reviewers field and check if sender is in there.
+	// parse it in approver and reviewer field and check if sender is in there.
 	ownerContent, err := v.getFileFromDefaultBranch(ctx, "OWNERS", rev)
 	if err != nil {
 		if strings.Contains(err.Error(), "cannot find") {

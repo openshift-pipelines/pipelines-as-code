@@ -9,26 +9,28 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-// get the owner file from main branch and check if we are allowing there
-func (v *Provider) isAllowedFromOwnerFile(event *info.Event) bool {
+// IsAllowedOwners get the owner file from main branch and check if we have
+// explicitly allowed the user in there.
+func (v *Provider) IsAllowedOwnersFile(_ context.Context, event *info.Event) (bool, error) {
 	ownerContent, _ := v.getObject("OWNERS", event.DefaultBranch, v.targetProjectID)
 	if string(ownerContent) == "" {
-		return false
+		return false, nil
 	}
 	allowed, _ := acl.UserInOwnerFile(string(ownerContent), event.Sender)
-	return allowed
+	return allowed, nil
 }
 
-func (v *Provider) checkMembership(event *info.Event, userid int) bool {
+func (v *Provider) checkMembership(ctx context.Context, event *info.Event, userid int) bool {
 	member, _, err := v.Client.ProjectMembers.GetInheritedProjectMember(v.targetProjectID, userid)
 	if err == nil && member.ID == userid {
 		return true
 	}
 
-	return v.isAllowedFromOwnerFile(event)
+	isAllowed, _ := v.IsAllowedOwnersFile(ctx, event)
+	return isAllowed
 }
 
-func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event, page int) (bool, error) {
+func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, event *info.Event, page int) (bool, error) {
 	var nextPage int
 	opt := &gitlab.ListMergeRequestDiscussionsOptions{Page: page}
 	discussions, resp, err := v.Client.Discussions.ListMergeRequestDiscussions(v.targetProjectID, event.PullRequestNumber, opt)
@@ -50,27 +52,27 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(event *info.Event, pag
 			commenterEvent.HeadBranch = event.HeadBranch
 			commenterEvent.DefaultBranch = event.DefaultBranch
 			// TODO: we could probably do with caching when checking all issues?
-			if v.checkMembership(commenterEvent, topthread.Author.ID) {
+			if v.checkMembership(ctx, commenterEvent, topthread.Author.ID) {
 				return true, nil
 			}
 		}
 	}
 
 	if nextPage != 0 {
-		return v.checkOkToTestCommentFromApprovedMember(event, nextPage)
+		return v.checkOkToTestCommentFromApprovedMember(ctx, event, nextPage)
 	}
 
 	return false, nil
 }
 
-func (v *Provider) IsAllowed(_ context.Context, event *info.Event, _ *info.PacOpts) (bool, error) {
+func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, _ *info.PacOpts) (bool, error) {
 	if v.Client == nil {
 		return false, fmt.Errorf("no github client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
-	if v.checkMembership(event, v.userID) {
+	if v.checkMembership(ctx, event, v.userID) {
 		return true, nil
 	}
 
-	return v.checkOkToTestCommentFromApprovedMember(event, 1)
+	return v.checkOkToTestCommentFromApprovedMember(ctx, event, 1)
 }

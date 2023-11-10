@@ -31,6 +31,7 @@ type Interface interface {
 	Detect(*http.Request, string, *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error)
 	ParsePayload(context.Context, *params.Run, *http.Request, string) (*info.Event, error)
 	IsAllowed(context.Context, *info.Event, *info.PacOpts) (bool, error)
+	IsAllowedOwnersFile(context.Context, *info.Event) (bool, error)
 	CreateStatus(context.Context, versioned.Interface, *info.Event, *info.PacOpts, StatusOpts) error
 	GetTektonDir(context.Context, *info.Event, string, string) (string, error)      // ctx, event, path, provenance
 	GetFileInsideRepo(context.Context, *info.Event, string, string) (string, error) // ctx, event, path, branch

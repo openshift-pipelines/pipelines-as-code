@@ -24,6 +24,7 @@ type TestProviderImp struct {
 	FilesInsideRepo        map[string]string
 	WantProviderRemoteTask bool
 	PolicyDisallowing      bool
+	AllowedInOwnersFile    bool
 }
 
 func (v *TestProviderImp) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
@@ -31,6 +32,10 @@ func (v *TestProviderImp) CheckPolicyAllowing(_ context.Context, _ *info.Event, 
 		return false, "policy disallowing"
 	}
 	return true, ""
+}
+
+func (v *TestProviderImp) IsAllowedOwnersFile(_ context.Context, _ *info.Event) (bool, error) {
+	return v.AllowedInOwnersFile, nil
 }
 
 func (v *TestProviderImp) SetLogger(_ *zap.SugaredLogger) {

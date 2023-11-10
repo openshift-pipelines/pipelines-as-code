@@ -1,6 +1,8 @@
 package policy
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"go.uber.org/zap"
@@ -26,6 +28,10 @@ func newRepoWithPolicy(policy *v1alpha1.Policy) *v1alpha1.Repository {
 }
 
 func TestPolicy_IsAllowed(t *testing.T) {
+	senderName := "sender"
+	eventWithSender := info.NewEvent()
+	eventWithSender.Sender = senderName
+
 	type fields struct {
 		repository *v1alpha1.Repository
 		event      *info.Event
@@ -34,16 +40,18 @@ func TestPolicy_IsAllowed(t *testing.T) {
 		tType info.TriggerType
 	}
 	tests := []struct {
-		name         string
-		fields       fields
-		args         args
-		replyAllowed bool
-		want         bool
-		wantErr      bool
-		wantReason   string
+		name                 string
+		fields               fields
+		args                 args
+		vcsReplyAllowed      bool
+		want                 Result
+		wantErr              bool
+		wantReason           string
+		allowedInOwnersFile  bool
+		expectedLogsSnippets []string
 	}{
 		{
-			name: "Test Policy.IsAllowed with no settings",
+			name: "notset/not set",
 			fields: fields{
 				repository: nil,
 				event:      nil,
@@ -51,10 +59,10 @@ func TestPolicy_IsAllowed(t *testing.T) {
 			args: args{
 				tType: info.TriggerTypePush,
 			},
-			want: false,
+			want: ResultNotSet,
 		},
 		{
-			name: "Test Policy.IsAllowed with unknown event type",
+			name: "notset/unknown event type",
 			fields: fields{
 				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"pull_request"}}),
 				event:      nil,
@@ -62,10 +70,21 @@ func TestPolicy_IsAllowed(t *testing.T) {
 			args: args{
 				tType: "unknown",
 			},
-			want: false,
+			want: ResultNotSet,
 		},
 		{
-			name: "allowing member not in team for pull request",
+			name: "notset/push",
+			fields: fields{
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"pull_request"}}),
+				event:      nil,
+			},
+			args: args{
+				tType: info.TriggerTypePush,
+			},
+			want: ResultNotSet,
+		},
+		{
+			name: "allowed/allowing member for pull request",
 			fields: fields{
 				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"pull_request"}}),
 				event:      info.NewEvent(),
@@ -73,24 +92,63 @@ func TestPolicy_IsAllowed(t *testing.T) {
 			args: args{
 				tType: info.TriggerTypePullRequest,
 			},
-			replyAllowed: true,
-			want:         true,
+			vcsReplyAllowed: true,
+			want:            ResultAllowed,
 		},
 		{
-			name:       "empty settings policy ignore",
-			wantReason: "policy check: pull_request, policy disallowing",
+			name: "allowed/from owners file",
+			fields: fields{
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"pull_request"}}),
+				event:      eventWithSender,
+			},
+			args: args{
+				tType: info.TriggerTypePullRequest,
+			},
+			vcsReplyAllowed:     false,
+			allowedInOwnersFile: true,
+			want:                ResultAllowed,
+			expectedLogsSnippets: []string{
+				fmt.Sprintf("policy check: policy is set, sender %s not in the allowed policy but allowed via OWNERS file", senderName),
+			},
+		},
+		{
+			name: "allowed/member in team for ok-to-test",
+			fields: fields{
+				repository: newRepoWithPolicy(&v1alpha1.Policy{OkToTest: []string{"ok-to-test"}}),
+				event:      info.NewEvent(),
+			},
+			args: args{
+				tType: info.TriggerTypeOkToTest,
+			},
+			vcsReplyAllowed: true,
+			want:            ResultAllowed,
+		},
+		{
+			name: "allowed/retest same as ok-to-test",
+			fields: fields{
+				repository: newRepoWithPolicy(&v1alpha1.Policy{OkToTest: []string{"ok-to-test"}}),
+				event:      info.NewEvent(),
+			},
+			args: args{
+				tType: info.TriggerTypeRetest,
+			},
+			vcsReplyAllowed: true,
+			want:            ResultAllowed,
+		},
+		{
+			name:                 "disallowed/policy set with empty list",
+			expectedLogsSnippets: []string{"policy set and empty with no groups"},
 			fields: fields{
 				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{""}}),
-				event:      info.NewEvent(),
+				event:      eventWithSender,
 			},
 			args: args{
 				tType: info.TriggerTypePullRequest,
 			},
-			want: false,
+			want: ResultDisallowed,
 		},
 		{
-			name:       "disallowing member not in team for pull request",
-			wantReason: "policy check: pull_request, policy disallowing",
+			name: "disallowed/member not in team for pull request",
 			fields: fields{
 				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"pull_request"}}),
 				event:      info.NewEvent(),
@@ -98,66 +156,64 @@ func TestPolicy_IsAllowed(t *testing.T) {
 			args: args{
 				tType: info.TriggerTypePullRequest,
 			},
-			want:    false,
-			wantErr: true,
+			want:                 ResultDisallowed,
+			wantErr:              true,
+			expectedLogsSnippets: []string{"policy check: pull_request, policy disallowing"},
 		},
 		{
-			name: "allowing member in team for ok-to-test",
+			name: "disallowed/member not in team for ok-to-test",
 			fields: fields{
-				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"ok-to-test"}}),
+				repository: newRepoWithPolicy(&v1alpha1.Policy{OkToTest: []string{"nono"}}),
 				event:      info.NewEvent(),
 			},
 			args: args{
 				tType: info.TriggerTypeOkToTest,
 			},
-			replyAllowed: true,
-			want:         false,
+			want:                 ResultDisallowed,
+			wantErr:              true,
+			expectedLogsSnippets: []string{"policy check: ok-to-test, policy disallowing"},
 		},
 		{
-			name: "disallowing member not in team for ok-to-test",
+			name: "disallowed/member not in team",
 			fields: fields{
-				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"ok-to-test"}}),
-				event:      info.NewEvent(),
-			},
-			args: args{
-				tType: info.TriggerTypeOkToTest,
-			},
-			want:    false,
-			wantErr: true,
-		},
-		{
-			name: "allowing member not in team for retest",
-			fields: fields{
-				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"ok-to-test"}}),
+				repository: newRepoWithPolicy(&v1alpha1.Policy{OkToTest: []string{"ok-to-test"}}),
 				event:      info.NewEvent(),
 			},
 			args: args{
 				tType: info.TriggerTypeRetest,
 			},
-			want: false,
+			want:                 ResultDisallowed,
+			wantErr:              true,
+			vcsReplyAllowed:      false,
+			expectedLogsSnippets: []string{"policy check: retest, policy disallowing"},
 		},
 		{
-			name: "disallowing member not in team for retest",
+			name: "disallowed/from owners file",
 			fields: fields{
-				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"ok-to-test"}}),
+				repository: newRepoWithPolicy(&v1alpha1.Policy{PullRequest: []string{"pull_request"}}),
 				event:      info.NewEvent(),
 			},
 			args: args{
-				tType: info.TriggerTypeRetest,
+				tType: info.TriggerTypePullRequest,
 			},
-			want:    false,
-			wantErr: true,
+			vcsReplyAllowed:      false,
+			allowedInOwnersFile:  false,
+			want:                 ResultDisallowed,
+			expectedLogsSnippets: []string{"policy check: pull_request, policy disallowing"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			observer, _ := zapobserver.New(zap.InfoLevel)
+			observer, log := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
 
-			vcx := &testprovider.TestProviderImp{PolicyDisallowing: !tt.replyAllowed}
+			vcx := &testprovider.TestProviderImp{
+				PolicyDisallowing:   !tt.vcsReplyAllowed,
+				AllowedInOwnersFile: tt.allowedInOwnersFile,
+			}
 			if tt.fields.event == nil {
 				tt.fields.event = info.NewEvent()
 			}
@@ -169,10 +225,20 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				EventEmitter: events.NewEventEmitter(stdata.Kube, logger),
 			}
 			got, reason := p.IsAllowed(ctx, tt.args.tType)
-			if got != tt.want {
-				t.Errorf("Policy.IsAllowed() = %v, want %v", got, tt.want)
+			switch got {
+			case ResultAllowed:
+				assert.Equal(t, tt.want, ResultAllowed)
+			case ResultDisallowed:
+				assert.Equal(t, tt.want, ResultDisallowed)
+			case ResultNotSet:
+				assert.Equal(t, tt.want, ResultNotSet)
 			}
 			assert.Equal(t, tt.wantReason, reason)
+
+			for k, snippet := range tt.expectedLogsSnippets {
+				logmsg := log.AllUntimed()[k].Message
+				assert.Assert(t, strings.Contains(logmsg, snippet), "\n on index: %d\n we want: %s\n we  got: %s", k, snippet, logmsg)
+			}
 		})
 	}
 }

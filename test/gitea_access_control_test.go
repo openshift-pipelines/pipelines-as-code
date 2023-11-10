@@ -6,7 +6,6 @@ package test
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -67,9 +66,9 @@ func TestGiteaPolicyPullRequest(t *testing.T) {
 	assert.NilError(t, err)
 	topts.ParamsRun.Clients.Log.Infof("User %s has been added to team %s", normalUser.UserName, normalTeam.Name)
 	tgitea.CreateForkPullRequest(t, topts, normalUserCnx, "")
-	topts.CheckForStatus = "failure"
-	topts.Regexp = regexp.MustCompile(
-		fmt.Sprintf(`.*policy check: pull_request, user: %s is not a member of any of the allowed teams.*`, normalUserNamePasswd))
+	topts.CheckForStatus = "Skipped"
+	topts.CheckForNumberStatus = 1
+	topts.Regexp = regexp.MustCompile(`.*Pipelines as Code CI is skipping this commit.*`)
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, settings.PACApplicationNameDefaultValue, false)
 
@@ -100,7 +99,6 @@ func TestGiteaPolicyPullRequest(t *testing.T) {
 // is not much gitea specifics compared to github
 func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		Regexp:          regexp.MustCompile(fmt.Sprintf(`.*User %s is not allowed to run CI on this repo`, os.Getenv("TEST_GITEA_USERNAME"))),
 		OnOrg:           true,
 		SkipEventsCheck: true,
 		TargetEvent:     options.PullRequestEvent,
@@ -138,16 +136,13 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	topts.ParamsRun.Clients.Log.Infof("Sending a /ok-to-test comment as a user not belonging to an allowed team in Repo CR policy but part of the organization")
 	topts.GiteaCNX = normalUserCnx
 	tgitea.PostCommentOnPullRequest(t, topts, okToTestComment)
-	topts.Regexp = regexp.MustCompile(
-		fmt.Sprintf(`.*policy check: ok-to-test, user: %s is not a member of any of the allowed teams.*`, normalUserNamePasswd))
 	topts.CheckForStatus = "Skipped"
+	topts.Regexp = regexp.MustCompile(fmt.Sprintf("User %s is not allowed to run CI on this repo.", normalUser.UserName))
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 
 	topts.ParamsRun.Clients.Log.Infof("Sending a /retest comment as a user not belonging to an allowed team in Repo CR policy but part of the organization")
 	topts.GiteaCNX = normalUserCnx
 	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
-	topts.Regexp = regexp.MustCompile(
-		fmt.Sprintf(`.*policy check: retest, user: %s is not a member of any of the allowed teams.*`, normalUserNamePasswd))
 	topts.CheckForStatus = "Skipped"
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 
