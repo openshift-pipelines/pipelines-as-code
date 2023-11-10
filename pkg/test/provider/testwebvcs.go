@@ -65,7 +65,7 @@ func (v *TestProviderImp) SetClient(_ context.Context, _ *params.Run, _ *info.Ev
 	return nil
 }
 
-func (v *TestProviderImp) IsAllowed(_ context.Context, _ *info.Event, _ *info.PacOpts) (bool, error) {
+func (v *TestProviderImp) IsAllowed(_ context.Context, _ *info.Event) (bool, error) {
 	if v.AllowIT {
 		return true, nil
 	}

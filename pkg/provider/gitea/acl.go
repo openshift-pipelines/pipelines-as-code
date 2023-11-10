@@ -44,7 +44,7 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, all
 	return false, fmt.Sprintf("user: %s is not a member of any of the allowed teams: %v", event.Sender, allowedTeams)
 }
 
-func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, pac *info.PacOpts) (bool, error) {
+func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 	aclPolicy := policy.Policy{
 		Repository:   v.repo,
 		EventEmitter: v.eventEmitter,
@@ -74,7 +74,7 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, pac *info.P
 	}
 
 	// Try to parse the comment from an owner who has issues a /ok-to-test
-	ownerAllowed, err := v.aclAllowedOkToTestFromAnOwner(ctx, event, pac)
+	ownerAllowed, err := v.aclAllowedOkToTestFromAnOwner(ctx, event)
 	if err != nil {
 		return false, err
 	}
@@ -95,7 +95,7 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, pac *info.P
 // if there is a /ok-to-test in there running an aclCheck again on the comment
 // Sender if she is an OWNER and then allow it to run CI.
 // TODO: pull out the github logic from there in an agnostic way.
-func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Event, pac *info.PacOpts) (bool, error) {
+func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Event) (bool, error) {
 	revent := info.NewEvent()
 	event.DeepCopyInto(revent)
 	revent.EventType = ""
@@ -108,14 +108,14 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 	case *giteaStructs.IssueCommentPayload:
 		// if we don't need to check old comments, then on issue comment we
 		// need to check if comment have /ok-to-test and is from allowed user
-		if !pac.RememberOKToTest {
+		if !v.run.Info.Pac.RememberOKToTest {
 			return v.aclAllowedOkToTestCurrentComment(ctx, revent, event.Comment.ID)
 		}
 		revent.URL = event.Issue.URL
 	case *giteaStructs.PullRequestPayload:
 		// if we don't need to check old comments, then on push event we don't need
 		// to check anything for the non-allowed user
-		if !pac.RememberOKToTest {
+		if !v.run.Info.Pac.RememberOKToTest {
 			return false, nil
 		}
 		revent.URL = event.PullRequest.HTMLURL

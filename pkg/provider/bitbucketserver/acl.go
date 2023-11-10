@@ -14,7 +14,7 @@ import (
 
 type activitiesTypes struct{ Values []*bbv1.Activity }
 
-func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, _ *info.PacOpts) (bool, error) {
+func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 	allowed, err := v.checkMemberShip(ctx, event)
 	if err != nil {
 		return false, err

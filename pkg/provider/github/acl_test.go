@@ -333,7 +333,7 @@ func TestOkToTestComment(t *testing.T) {
 				Run:           &params.Run{Info: info.Info{Pac: pacopts}},
 			}
 
-			got, err := gprovider.IsAllowed(ctx, &tt.runevent, pacopts)
+			got, err := gprovider.IsAllowed(ctx, &tt.runevent)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("aclCheck() error = %v, wantErr %v", err, tt.wantErr)
 				return

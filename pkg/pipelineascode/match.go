@@ -116,7 +116,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 
 	// Check if the submitter is allowed to run this.
 	if p.event.TriggerTarget != "push" {
-		allowed, err := p.vcx.IsAllowed(ctx, p.event, p.run.Info.Pac)
+		allowed, err := p.vcx.IsAllowed(ctx, p.event)
 		if err != nil {
 			return repo, err
 		}

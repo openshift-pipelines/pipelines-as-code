@@ -48,6 +48,7 @@ type Provider struct {
 	Password     string
 	repo         *v1alpha1.Repository
 	eventEmitter *events.EventEmitter
+	run          *params.Run
 }
 
 // GetTaskURI TODO: Implement ME
@@ -82,7 +83,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Event, repo *v1alpha1.Repository, emitter *events.EventEmitter) error {
+func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.Event, repo *v1alpha1.Repository, emitter *events.EventEmitter) error {
 	var err error
 	apiURL := runevent.Provider.URL
 	// password is not exposed to CRD, it's only used from the e2e tests
@@ -100,6 +101,7 @@ func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Ev
 	v.giteaInstanceURL = runevent.Provider.URL
 	v.eventEmitter = emitter
 	v.repo = repo
+	v.run = run
 	return nil
 }
 

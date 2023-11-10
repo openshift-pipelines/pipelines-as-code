@@ -9,6 +9,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	giteaStructs "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/structs"
@@ -79,9 +80,11 @@ func TestCheckPolicyAllowing(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
-			repo := &v1alpha1.Repository{Spec: v1alpha1.RepositorySpec{
-				Settings: &v1alpha1.Settings{},
-			}}
+			repo := &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{
+					Settings: &v1alpha1.Settings{},
+				},
+			}
 			gprovider := Provider{
 				Client: fakeclient,
 				repo:   repo,
@@ -286,14 +289,17 @@ func TestOkToTestComment(t *testing.T) {
 			gprovider := Provider{
 				Client: fakeclient,
 				Logger: logger,
-			}
-			pacopts := info.PacOpts{
-				Settings: &settings.Settings{
-					RememberOKToTest: tt.rememberOkToTest,
+				run: &params.Run{
+					Info: info.Info{
+						Pac: &info.PacOpts{
+							Settings: &settings.Settings{
+								RememberOKToTest: tt.rememberOkToTest,
+							},
+						},
+					},
 				},
 			}
-
-			isAllowed, err := gprovider.IsAllowed(ctx, &tt.runevent, &pacopts)
+			isAllowed, err := gprovider.IsAllowed(ctx, &tt.runevent)
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 			} else {
