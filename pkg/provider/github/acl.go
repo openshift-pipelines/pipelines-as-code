@@ -46,7 +46,22 @@ func (v *Provider) CheckPolicyAllowing(ctx context.Context, event *info.Event, a
 	return false, fmt.Sprintf("user: %s is not a member of any of the allowed teams: %v", event.Sender, allowedTeams)
 }
 
-func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, pac *info.PacOpts) (bool, error) {
+// IsAllowedOwners get the owner file from main branch and check if we have
+// explicitly allowed the user in there.
+func (v *Provider) IsAllowedOwnersFile(ctx context.Context, event *info.Event) (bool, error) {
+	ownerContent, err := v.getFileFromDefaultBranch(ctx, "OWNERS", event)
+	if err != nil {
+		if strings.Contains(err.Error(), "cannot find") {
+			// no owner file, skipping
+			return false, nil
+		}
+		return false, err
+	}
+
+	return acl.UserInOwnerFile(ownerContent, event.Sender)
+}
+
+func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, _ *info.PacOpts) (bool, error) {
 	aclPolicy := policy.Policy{
 		Repository:   v.repo,
 		EventEmitter: v.eventEmitter,
@@ -55,11 +70,16 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, pac *info.P
 		Logger:       v.Logger,
 	}
 
-	// Try to detect a policy rule allowed it
+	// Try to detect a policy rule allowing this
 	tType, _ := detectTriggerTypeFromPayload("", event.Event)
 	policyAllowed, policyReason := aclPolicy.IsAllowed(ctx, tType)
-	if policyAllowed {
+
+	switch policyAllowed {
+	case policy.ResultAllowed:
 		return true, nil
+	case policy.ResultDisallowed:
+		return false, nil
+	case policy.ResultNotSet: // this is to make golangci-lint happy
 	}
 
 	// Check all the ACL rules
@@ -72,7 +92,7 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, pac *info.P
 	}
 
 	// Try to parse the comment from an owner who has issues a /ok-to-test
-	ownerAllowed, err := v.aclAllowedOkToTestFromAnOwner(ctx, event, pac)
+	ownerAllowed, err := v.aclAllowedOkToTestFromAnOwner(ctx, event)
 	if err != nil {
 		return false, err
 	}
@@ -93,7 +113,7 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, pac *info.P
 // if there is a /ok-to-test in there running an aclCheck again on the comment
 // Sender if she is an OWNER and then allow it to run CI.
 // TODO: pull out the github logic from there in an agnostic way.
-func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Event, pac *info.PacOpts) (bool, error) {
+func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *info.Event) (bool, error) {
 	revent := info.NewEvent()
 	event.DeepCopyInto(revent)
 	revent.EventType = ""
@@ -106,14 +126,14 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 	case *github.IssueCommentEvent:
 		// if we don't need to check old comments, then on issue comment we
 		// need to check if comment have /ok-to-test and is from allowed user
-		if !pac.RememberOKToTest {
+		if !v.Run.Info.Pac.RememberOKToTest {
 			return v.aclAllowedOkToTestCurrentComment(ctx, revent, event.Comment.GetID())
 		}
 		revent.URL = event.Issue.GetPullRequestLinks().GetHTMLURL()
 	case *github.PullRequestEvent:
 		// if we don't need to check old comments, then on push event we don't need
 		// to check anything for the non-allowed user
-		if !pac.RememberOKToTest {
+		if !v.Run.Info.Pac.RememberOKToTest {
 			return false, nil
 		}
 		revent.URL = event.GetPullRequest().GetHTMLURL()
@@ -200,16 +220,7 @@ func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, erro
 
 	// If we have a prow OWNERS file in the defaultBranch (ie: master) then
 	// parse it in approvers and reviewers field and check if sender is in there.
-	ownerContent, err := v.getFileFromDefaultBranch(ctx, "OWNERS", rev)
-	if err != nil {
-		if strings.Contains(err.Error(), "cannot find") {
-			// no owner file, skipping
-			return false, nil
-		}
-		return false, err
-	}
-
-	return acl.UserInOwnerFile(ownerContent, rev.Sender)
+	return v.IsAllowedOwnersFile(ctx, rev)
 }
 
 // checkPullRequestForSameURL checks If PullRequests are for same clone URL and different branches

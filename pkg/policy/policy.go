@@ -27,13 +27,13 @@ type Policy struct {
 	EventEmitter *events.EventEmitter
 }
 
-func (p *Policy) checkAllowed(ctx context.Context, tType info.TriggerType) (Result, error) {
+func (p *Policy) checkAllowed(ctx context.Context, tType info.TriggerType) (Result, string) {
 	if p.Repository == nil {
-		return ResultNotSet, nil
+		return ResultNotSet, ""
 	}
 	settings := p.Repository.Spec.Settings
 	if settings == nil || settings.Policy == nil {
-		return ResultNotSet, nil
+		return ResultNotSet, ""
 	}
 
 	var sType []string
@@ -45,42 +45,61 @@ func (p *Policy) checkAllowed(ctx context.Context, tType info.TriggerType) (Resu
 		sType = settings.Policy.PullRequest
 	// NOTE: not supported yet, will imp if it gets requested and reasonable to implement
 	case info.TriggerTypePush, info.TriggerTypeCancel, info.TriggerTypeCheckSuiteRerequested, info.TriggerTypeCheckRunRerequested:
-		return ResultNotSet, nil
+		return ResultNotSet, ""
 	default:
-		return ResultNotSet, nil
+		return ResultNotSet, ""
 	}
 
+	// if policy is set but empty then it mean disallow everything
 	if len(sType) == 0 {
-		return ResultNotSet, nil
+		return ResultDisallowed, "no policy set"
+	}
+
+	// remove empty values from sType
+	temp := []string{}
+	for _, val := range sType {
+		if val != "" {
+			temp = append(temp, val)
+		}
+	}
+	sType = temp
+
+	// if policy is set but with empty values then bail out.
+	if len(sType) == 0 {
+		return ResultDisallowed, "policy set and empty with no groups"
 	}
 
 	allowed, reason := p.VCX.CheckPolicyAllowing(ctx, p.Event, sType)
-	reasonMsg := fmt.Sprintf("policy check: %s, %s", string(tType), reason)
-	if reason != "" {
-		p.EventEmitter.EmitMessage(p.Repository, zap.InfoLevel, "PolicyCheck", reasonMsg)
-	}
 	if allowed {
-		return ResultAllowed, nil
+		return ResultAllowed, ""
 	}
-	return ResultDisallowed, fmt.Errorf(reasonMsg)
+	return ResultDisallowed, fmt.Sprintf("policy check: %s, %s", string(tType), reason)
 }
 
-func (p *Policy) IsAllowed(ctx context.Context, tType info.TriggerType) (bool, string) {
+func (p *Policy) IsAllowed(ctx context.Context, tType info.TriggerType) (Result, string) {
 	var reason string
-	policyRes, err := p.checkAllowed(ctx, tType)
-	if err != nil {
-		return false, err.Error()
-	}
+	policyRes, reason := p.checkAllowed(ctx, tType)
 	switch policyRes {
 	case ResultAllowed:
 		reason = fmt.Sprintf("policy check: policy is set for sender %s has been allowed to run CI via policy", p.Event.Sender)
 		p.EventEmitter.EmitMessage(p.Repository, zap.InfoLevel, "PolicySetAllowed", reason)
-		return true, ""
+		return ResultAllowed, ""
 	case ResultDisallowed:
-		reason = fmt.Sprintf("policy check: policy is set but sender %s is not in the allowed groups trying the next ACL conditions", p.Event.Sender)
+		allowed, err := p.VCX.IsAllowedOwnersFile(ctx, p.Event)
+		if err != nil {
+			return ResultDisallowed, err.Error()
+		}
+		if allowed {
+			reason = fmt.Sprintf("policy check: policy is set, sender %s not in the allowed policy but allowed via OWNERS file", p.Event.Sender)
+			p.EventEmitter.EmitMessage(p.Repository, zap.InfoLevel, "PolicySetAllowed", reason)
+			return ResultAllowed, ""
+		}
+		if reason == "" {
+			reason = fmt.Sprintf("policy check: policy is set but sender %s is not in the allowed groups", p.Event.Sender)
+		}
 		p.EventEmitter.EmitMessage(p.Repository, zap.InfoLevel, "PolicySetDisallowed", reason)
-	case ResultNotSet:
-		// should we put a warning here? it does fill up quite a bit the log every time! so I am not so sure..
+		return ResultDisallowed, ""
+	case ResultNotSet: // this is to make golangci-lint happy
 	}
-	return false, reason
+	return ResultNotSet, reason
 }
