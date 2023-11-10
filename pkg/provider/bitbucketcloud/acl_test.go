@@ -180,10 +180,7 @@ func TestIsAllowed(t *testing.T) {
 			bbcloudtest.MuxFiles(t, mux, tt.event, tt.fields.filescontents, "")
 
 			v := &Provider{Client: bbclient}
-
-			pacopts := info.PacOpts{}
-
-			got, err := v.IsAllowed(ctx, tt.event, &pacopts)
+			got, err := v.IsAllowed(ctx, tt.event)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Provider.IsAllowed() error = %v, wantErr %v", err, tt.wantErr)
 				return

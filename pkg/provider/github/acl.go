@@ -61,7 +61,7 @@ func (v *Provider) IsAllowedOwnersFile(ctx context.Context, event *info.Event) (
 	return acl.UserInOwnerFile(ownerContent, event.Sender)
 }
 
-func (v *Provider) IsAllowed(ctx context.Context, event *info.Event, _ *info.PacOpts) (bool, error) {
+func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 	aclPolicy := policy.Policy{
 		Repository:   v.repo,
 		EventEmitter: v.eventEmitter,

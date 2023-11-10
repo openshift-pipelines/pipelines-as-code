@@ -115,8 +115,7 @@ func TestIsAllowed(t *testing.T) {
 
 				defer tearDown()
 			}
-			pacopts := info.PacOpts{}
-			got, err := v.IsAllowed(ctx, tt.args.event, &pacopts)
+			got, err := v.IsAllowed(ctx, tt.args.event)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("IsAllowed() error = %v, wantErr %v", err, tt.wantErr)
 				return
