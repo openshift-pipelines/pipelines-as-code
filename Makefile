@@ -90,6 +90,8 @@ lint-md: ${MD_FILES} ## runs markdownlint and vale on all markdown files
 	@markdownlint $(MD_FILES)
 	@echo "Grammar check with vale of documentation..."
 	@vale docs/content *.md --minAlertLevel=error --output=line
+	@echo "CodeSpell on docs content"
+	@codespell docs/content
 
 .PHONY: fix-markdownlint
 fix-markdownlint: ${MD_FILES} ## run markdownlint and fix on all markdown file
