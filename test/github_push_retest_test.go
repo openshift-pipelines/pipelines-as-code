@@ -5,11 +5,9 @@ package test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/google/go-github/v56/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
@@ -25,7 +23,7 @@ func TestGithubPushRequestGitOpsComments(t *testing.T) {
 
 	pruns, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
-	assert.Assert(t, len(pruns.Items) == 2)
+	assert.Equal(t, len(pruns.Items), 2)
 
 	tests := []struct {
 		name, comment string
@@ -58,15 +56,8 @@ func TestGithubPushRequestGitOpsComments(t *testing.T) {
 					opts.Repo, sha,
 					&github.RepositoryComment{Body: github.String("/test pipelinerun-on-push branch:" + targetNS)})
 				assert.NilError(t, err)
-				for {
-					prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(waitOpts.Namespace).List(ctx, metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, waitOpts.TargetSHA),
-					})
-					assert.NilError(t, err)
-					if len(prs.Items) == tt.prNum {
-						break
-					}
-				}
+				err = twait.UntilPipelineRunCreated(ctx, runcnx.Clients, waitOpts)
+				assert.NilError(t, err)
 			}
 			runcnx.Clients.Log.Infof("%s on Push Request", tt.comment)
 			_, _, err = ghcnx.Client.Repositories.CreateComment(ctx,
@@ -83,14 +74,14 @@ func TestGithubPushRequestGitOpsComments(t *testing.T) {
 			repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
 			assert.NilError(t, err)
 			if tt.comment == "/cancel pipelinerun-on-push branch:"+targetNS {
-				assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionFalse)
+				assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionFalse)
 			} else {
-				assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
+				assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionTrue)
 			}
 
 			pruns, err = runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
-			assert.Assert(t, len(pruns.Items) == tt.prNum)
+			assert.Equal(t, len(pruns.Items), tt.prNum)
 		})
 	}
 }

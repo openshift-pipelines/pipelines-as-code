@@ -65,3 +65,20 @@ func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts O
 		return len(r.Status) >= opts.MinNumberStatus, nil
 	})
 }
+
+func UntilPipelineRunCreated(ctx context.Context, clients clients.Clients, opts Opts) error {
+	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
+	defer cancel()
+	return kubeinteraction.PollImmediateWithContext(ctx, opts.PollTimeout, func() (bool, error) {
+		clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace)
+		prs, err := clients.Tekton.TektonV1().PipelineRuns(opts.Namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, opts.TargetSHA),
+		})
+		if err != nil {
+			return true, err
+		}
+
+		clients.Log.Info("still waiting for pipelinerun to be created")
+		return len(prs.Items) == opts.MinNumberStatus, nil
+	})
+}
