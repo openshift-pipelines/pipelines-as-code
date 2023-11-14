@@ -10,7 +10,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 )
 
@@ -72,11 +71,11 @@ func (v *TestProviderImp) IsAllowed(_ context.Context, _ *info.Event) (bool, err
 	return false, nil
 }
 
-func (v *TestProviderImp) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
+func (v *TestProviderImp) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool, string, error) {
 	return v.WantProviderRemoteTask, "", nil
 }
 
-func (v *TestProviderImp) CreateStatus(_ context.Context, _ versioned.Interface, _ *info.Event, _ *info.PacOpts, _ provider.StatusOpts) error {
+func (v *TestProviderImp) CreateStatus(_ context.Context, _ *info.Event, _ provider.StatusOpts) error {
 	if v.CreateStatusErorring {
 		return fmt.Errorf("some provider error occurred while reporting status")
 	}
@@ -98,6 +97,6 @@ func (v *TestProviderImp) GetFiles(_ context.Context, _ *info.Event) ([]string, 
 	return []string{}, nil
 }
 
-func (v *TestProviderImp) CreateToken(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
+func (v *TestProviderImp) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
 }

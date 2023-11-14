@@ -14,7 +14,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 )
 
@@ -27,6 +26,7 @@ var _ provider.Interface = (*Provider)(nil)
 type Provider struct {
 	Client                    *bbv1.APIClient
 	Logger                    *zap.SugaredLogger
+	run                       *params.Run
 	baseURL                   string
 	defaultBranchLatestCommit string
 	pullRequestNumber         int
@@ -40,7 +40,7 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []str
 }
 
 // GetTaskURI TODO: Implement ME
-func (v *Provider) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
+func (v *Provider) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }
 
@@ -61,7 +61,7 @@ func sanitizeTitle(s string) string {
 	return strings.Split(s, "\n")[0]
 }
 
-func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event *info.Event, pacOpts *info.PacOpts, statusOpts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts) error {
 	detailsURL := event.Provider.URL
 	switch statusOpts.Conclusion {
 	case "skipped":
@@ -99,7 +99,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 		event.SHA,
 		bbv1.BuildStatus{
 			State:       statusOpts.Conclusion,
-			Name:        pacOpts.ApplicationName,
+			Name:        v.run.Info.Pac.ApplicationName,
 			Key:         key,
 			Description: statusOpts.Title,
 			Url:         detailsURL,
@@ -114,7 +114,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 		onPr = "/" + statusOpts.OriginalPipelineRunName
 	}
 	bbcomment := bbv1.Comment{
-		Text: fmt.Sprintf("**%s%s** - %s\n\n%s", pacOpts.ApplicationName, onPr,
+		Text: fmt.Sprintf("**%s%s** - %s\n\n%s", v.run.Info.Pac.ApplicationName, onPr,
 			statusOpts.Title, statusOpts.Text),
 	}
 
@@ -206,7 +206,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path,
 	return ret, err
 }
 
-func (v *Provider) SetClient(ctx context.Context, _ *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
+func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
 	if event.Provider.User == "" {
 		return fmt.Errorf("no provider.user has been set in the repo crd")
 	}
@@ -231,6 +231,7 @@ func (v *Provider) SetClient(ctx context.Context, _ *params.Run, event *info.Eve
 	ctx = context.WithValue(ctx, bbv1.ContextBasicAuth, basicAuth)
 	cfg := bbv1.NewConfiguration(event.Provider.URL)
 	v.Client = bbv1.NewAPIClient(ctx, cfg)
+	v.run = run
 
 	return nil
 }
@@ -275,6 +276,6 @@ func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) 
 	return []string{}, nil
 }
 
-func (v *Provider) CreateToken(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
+func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
 }

@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -177,10 +178,19 @@ func TestCreateStatus(t *testing.T) {
 			event := bbtest.MakeEvent(nil)
 			event.EventType = "pull_request"
 			event.Provider.Token = "token"
-			v := Provider{Client: client, pullRequestNumber: pullRequestNumber, projectKey: event.Organization}
+			v := &Provider{
+				Client:            client,
+				pullRequestNumber: pullRequestNumber,
+				projectKey:        event.Organization,
+				run: &params.Run{
+					Info: info.Info{
+						Pac: &tt.pacOpts,
+					},
+				},
+			}
 			bbtest.MuxCreateAndTestCommitStatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr, pullRequestNumber)
-			err := v.CreateStatus(ctx, nil, event, &tt.pacOpts, tt.status)
+			err := v.CreateStatus(ctx, event, tt.status)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return

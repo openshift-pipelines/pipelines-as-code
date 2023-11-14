@@ -17,7 +17,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -152,15 +151,15 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		OriginalPipelineRunName: pr.GetAnnotations()[apipac.OriginalPRName],
 	}
 
-	err = createStatusWithRetry(ctx, logger, r.run.Clients.Tekton, vcx, event, r.run.Info.Pac, status)
+	err = createStatusWithRetry(ctx, logger, vcx, event, status)
 	logger.Infof("pipelinerun %s has a status of '%s'", pr.Name, status.Conclusion)
 	return pr, err
 }
 
-func createStatusWithRetry(ctx context.Context, logger *zap.SugaredLogger, tekton versioned.Interface, vcx provider.Interface, event *info.Event, opts *info.PacOpts, status provider.StatusOpts) error {
+func createStatusWithRetry(ctx context.Context, logger *zap.SugaredLogger, vcx provider.Interface, event *info.Event, status provider.StatusOpts) error {
 	var finalError error
 	for _, backoff := range backoffSchedule {
-		err := vcx.CreateStatus(ctx, tekton, event, opts, status)
+		err := vcx.CreateStatus(ctx, event, status)
 		if err == nil {
 			return nil
 		}

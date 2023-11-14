@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/ktrysmt/go-bitbucket"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
@@ -286,7 +286,10 @@ func TestCreateStatus(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
-			v := &Provider{Client: bbclient}
+			v := &Provider{
+				Client: bbclient,
+				run:    params.New(),
+			}
 			event := bbcloudtest.MakeEvent(nil)
 			event.EventType = "pull_request"
 			event.Provider.Token = "token"
@@ -294,11 +297,7 @@ func TestCreateStatus(t *testing.T) {
 			bbcloudtest.MuxCreateCommitstatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbcloudtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr)
 
-			err := v.CreateStatus(ctx, nil, event, &info.PacOpts{
-				Settings: &settings.Settings{
-					ApplicationName: "HELLO APP",
-				},
-			}, tt.status)
+			err := v.CreateStatus(ctx, event, tt.status)
 			assert.NilError(t, err)
 		})
 	}

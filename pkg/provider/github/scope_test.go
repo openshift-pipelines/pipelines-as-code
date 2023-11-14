@@ -236,6 +236,7 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 			gvcs := &Provider{
 				Logger: logger,
 				Client: fakeghclient,
+				Run:    run,
 			}
 
 			extraRepoInstallIds := map[string]string{"owner/repo": "789", "owner1/repo1": "10112", "owner2/repo2": "112233"}

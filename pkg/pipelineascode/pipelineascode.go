@@ -49,7 +49,7 @@ func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, k8int k
 func (p *PacRun) Run(ctx context.Context) error {
 	matchedPRs, repo, err := p.matchRepoPR(ctx)
 	if err != nil {
-		createStatusErr := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, provider.StatusOpts{
+		createStatusErr := p.vcx.CreateStatus(ctx, p.event, provider.StatusOpts{
 			Status:     "completed",
 			Conclusion: "failure",
 			Text:       fmt.Sprintf("There was an issue validating the commit: %q", err),
@@ -90,7 +90,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 				errMsg := fmt.Sprintf("There was an error starting the PipelineRun %s, %s", match.PipelineRun.GetGenerateName(), err.Error())
 				errMsgM := fmt.Sprintf("There was an error creating the PipelineRun: <b>%s</b>\n\n%s", match.PipelineRun.GetGenerateName(), err.Error())
 				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", errMsg)
-				createStatusErr := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, provider.StatusOpts{
+				createStatusErr := p.vcx.CreateStatus(ctx, p.event, provider.StatusOpts{
 					Status:     "completed",
 					Conclusion: "failure",
 					Text:       errMsgM,
@@ -202,7 +202,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		}
 	}
 
-	if err := p.vcx.CreateStatus(ctx, p.run.Clients.Tekton, p.event, p.run.Info.Pac, status); err != nil {
+	if err := p.vcx.CreateStatus(ctx, p.event, status); err != nil {
 		// we still return the created PR with error, and allow caller to decide what to do with the PR, and avoid
 		// unneeded SIGSEGV's
 		return pr, fmt.Errorf("cannot use the API on the provider platform to create a in_progress status: %w", err)

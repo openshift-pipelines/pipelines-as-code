@@ -198,7 +198,7 @@ func CreateGiteaUser(giteaClient *gitea.Client, username, password string) (*git
 	return newuser, nil
 }
 
-// func CreateGiteaUserSecondCnx(giteaClient *gitea.Client, apiURL, username, password string) (pgitea.Provider, *gitea.User, error) {
+// CreateGiteaUserSecondCnx creates a new user and a new provider for this user
 func CreateGiteaUserSecondCnx(topts *TestOpts, username, password string) (pgitea.Provider, *gitea.User, error) {
 	newuser, err := CreateGiteaUser(topts.GiteaCNX.Client, username, password)
 	if err != nil {

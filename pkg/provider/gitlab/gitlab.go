@@ -14,7 +14,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
 )
@@ -42,6 +41,7 @@ var _ provider.Interface = (*Provider)(nil)
 type Provider struct {
 	Client            *gitlab.Client
 	Logger            *zap.SugaredLogger
+	run               *params.Run
 	Token             *string
 	targetProjectID   int
 	sourceProjectID   int
@@ -52,7 +52,7 @@ type Provider struct {
 }
 
 // GetTaskURI TODO: Implement me
-func (v *Provider) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
+func (v *Provider) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }
 
@@ -99,7 +99,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
+func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
 	var err error
 	if runevent.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
@@ -146,12 +146,12 @@ func (v *Provider) SetClient(_ context.Context, _ *params.Run, runevent *info.Ev
 		runevent.TargetProjectID = projectinfo.ID
 		runevent.DefaultBranch = projectinfo.DefaultBranch
 	}
+	v.run = run
 
 	return nil
 }
 
-func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event *info.Event, pacOpts *info.PacOpts,
-	statusOpts provider.StatusOpts,
+func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts,
 ) error {
 	var detailsURL string
 	if v.Client == nil {
@@ -186,7 +186,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 		onPr = "/" + statusOpts.OriginalPipelineRunName
 	}
 	body := fmt.Sprintf("**%s%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>",
-		pacOpts.ApplicationName, onPr, statusOpts.Title, statusOpts.Text, detailsURL)
+		v.run.Info.Pac.ApplicationName, onPr, statusOpts.Title, statusOpts.Text, detailsURL)
 
 	// in case we have access set the commit status, typically on MR from
 	// another users we won't have it but it would work on push or MR from a
@@ -195,7 +195,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 	// if we have an error fallback to send a issue comment
 	opt := &gitlab.SetCommitStatusOptions{
 		State:       gitlab.BuildStateValue(statusOpts.Conclusion),
-		Name:        gitlab.String(pacOpts.ApplicationName),
+		Name:        gitlab.String(v.run.Info.Pac.ApplicationName),
 		TargetURL:   gitlab.String(detailsURL),
 		Description: gitlab.String(statusOpts.Title),
 	}
@@ -339,6 +339,6 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) ([]string, 
 	return []string{}, nil
 }
 
-func (v *Provider) CreateToken(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
+func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
 }

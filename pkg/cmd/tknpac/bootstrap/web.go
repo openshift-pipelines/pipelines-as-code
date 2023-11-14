@@ -69,7 +69,7 @@ func startWebServer(ctx context.Context, opts *bootstrapOpts, run *params.Run, j
 	if err := info.UpdateInfoConfigMap(ctx, run, &info.Options{
 		TargetNamespace: opts.targetNamespace,
 		ControllerURL:   opts.RouteName,
-		Provider:        provider.ProviderGitHubApp,
+		Provider:        provider.GitHubApp,
 	}); err != nil {
 		return err
 	}

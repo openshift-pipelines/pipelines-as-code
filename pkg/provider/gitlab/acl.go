@@ -9,7 +9,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-// IsAllowedOwners get the owner file from main branch and check if we have
+// IsAllowedOwnersFile get the owner file from main branch and check if we have
 // explicitly allowed the user in there.
 func (v *Provider) IsAllowedOwnersFile(_ context.Context, event *info.Event) (bool, error) {
 	ownerContent, _ := v.getObject("OWNERS", event.DefaultBranch, v.targetProjectID)

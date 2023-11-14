@@ -100,7 +100,7 @@ func (rt RemoteTasks) convertTotask(ctx context.Context, uri, data string) (*tek
 }
 
 func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (string, error) {
-	if fetchedFromURIFromProvider, task, err := rt.ProviderInterface.GetTaskURI(ctx, rt.Run, rt.Event, uri); fetchedFromURIFromProvider {
+	if fetchedFromURIFromProvider, task, err := rt.ProviderInterface.GetTaskURI(ctx, rt.Event, uri); fetchedFromURIFromProvider {
 		return task, err
 	}
 

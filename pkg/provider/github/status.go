@@ -16,7 +16,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 )
 
 const taskStatusTemplate = `
@@ -57,7 +56,7 @@ func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Eve
 		}
 
 		for _, checkrun := range res.CheckRuns {
-			// if it is a Pending approval checkrun then overwrite it
+			// if it is a Pending approval CheckRun then overwrite it
 			if isPendingApprovalCheckrun(checkrun) {
 				if v.canIUseCheckrunID(checkrun.ID) {
 					return checkrun.ID, nil
@@ -99,10 +98,10 @@ func (v *Provider) canIUseCheckrunID(checkrunid *int64) bool {
 	return false
 }
 
-func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) (*int64, error) {
+func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	now := github.Timestamp{Time: time.Now()}
 	checkrunoption := github.CreateCheckRunOptions{
-		Name:       getCheckName(status, pacopts),
+		Name:       getCheckName(status, v.Run.Info.Pac),
 		HeadSHA:    runevent.SHA,
 		Status:     github.String("in_progress"),
 		DetailsURL: github.String(status.DetailsURL),
@@ -184,10 +183,11 @@ func (v *Provider) getFailuresMessageAsAnnotations(ctx context.Context, pr *tekt
 
 // getOrUpdateCheckRunStatus create a status via the checkRun API, which is only
 // available with Github apps tokens.
-func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton versioned.Interface, runevent *info.Event, pacopts *info.PacOpts, statusOpts provider.StatusOpts) error {
+func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info.Event, statusOpts provider.StatusOpts) error {
 	var err error
 	var checkRunID *int64
 	var found bool
+	pacopts := v.Run.Info.Pac
 
 	// check if pipelineRun has the label with checkRun-id
 	if statusOpts.PipelineRun != nil {
@@ -203,13 +203,13 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, tekton version
 	}
 	if !found {
 		if checkRunID, _ = v.getExistingCheckRunID(ctx, runevent, statusOpts); checkRunID == nil {
-			checkRunID, err = v.createCheckRunStatus(ctx, runevent, pacopts, statusOpts)
+			checkRunID, err = v.createCheckRunStatus(ctx, runevent, statusOpts)
 			if err != nil {
 				return err
 			}
 		}
 		if statusOpts.PipelineRun != nil {
-			if _, err := action.PatchPipelineRun(ctx, v.Logger, "checkRunID and logURL", tekton, statusOpts.PipelineRun, metadataPatch(checkRunID, statusOpts.DetailsURL)); err != nil {
+			if _, err := action.PatchPipelineRun(ctx, v.Logger, "checkRunID and logURL", v.Run.Clients.Tekton, statusOpts.PipelineRun, metadataPatch(checkRunID, statusOpts.DetailsURL)); err != nil {
 				return err
 			}
 		}
@@ -280,7 +280,7 @@ func metadataPatch(checkRunID *int64, logURL string) map[string]interface{} {
 
 // createStatusCommit use the classic/old statuses API which is available when we
 // don't have a github app token
-func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
+func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event, status provider.StatusOpts) error {
 	var err error
 	now := time.Now()
 	switch status.Conclusion {
@@ -299,7 +299,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		State:       github.String(status.Conclusion),
 		TargetURL:   github.String(status.DetailsURL),
 		Description: github.String(status.Title),
-		Context:     github.String(getCheckName(status, pacopts)),
+		Context:     github.String(getCheckName(status, v.Run.Info.Pac)),
 		CreatedAt:   &github.Timestamp{Time: now},
 	}
 
@@ -322,7 +322,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 	return nil
 }
 
-func (v *Provider) CreateStatus(ctx context.Context, tekton versioned.Interface, runevent *info.Event, pacopts *info.PacOpts, statusOpts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statusOpts provider.StatusOpts) error {
 	if v.Client == nil {
 		return fmt.Errorf("cannot set status on github no token or url set")
 	}
@@ -357,13 +357,13 @@ func (v *Provider) CreateStatus(ctx context.Context, tekton versioned.Interface,
 	if statusOpts.OriginalPipelineRunName != "" {
 		onPr = "/" + statusOpts.OriginalPipelineRunName
 	}
-	statusOpts.Summary = fmt.Sprintf("%s%s %s", pacopts.ApplicationName, onPr, statusOpts.Summary)
+	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.Run.Info.Pac.ApplicationName, onPr, statusOpts.Summary)
 
 	// If we have an installationID which mean we have a github apps and we can use the checkRun API
 	if runevent.InstallationID > 0 {
-		return v.getOrUpdateCheckRunStatus(ctx, tekton, runevent, pacopts, statusOpts)
+		return v.getOrUpdateCheckRunStatus(ctx, runevent, statusOpts)
 	}
 
 	// Otherwise use the update status commit API
-	return v.createStatusCommit(ctx, runevent, pacopts, statusOpts)
+	return v.createStatusCommit(ctx, runevent, statusOpts)
 }

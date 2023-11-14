@@ -77,7 +77,7 @@ func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, repo *
 		}
 		// adding the repo info from which event came so that repositoryID will be added while scoping the token
 		repoListToScopeToken = append(repoListToScopeToken, repoInfoFromWhichEventCame[1]+"/"+repoInfoFromWhichEventCame[2])
-		token, err = vcx.CreateToken(ctx, repoListToScopeToken, run, event)
+		token, err = vcx.CreateToken(ctx, repoListToScopeToken, event)
 		if err != nil {
 			return "", fmt.Errorf("failed to scope token to repositories with error : %w", err)
 		}

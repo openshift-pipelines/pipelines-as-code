@@ -579,6 +579,7 @@ func TestRun(t *testing.T) {
 
 			vcx := &ghprovider.Provider{
 				Client: fakeclient,
+				Run:    params.New(),
 				Token:  github.String("None"),
 				Logger: logger,
 			}
@@ -606,7 +607,7 @@ func TestRun(t *testing.T) {
 				// validate logURL label
 				for i := range prs.Items {
 					pr := prs.Items[i]
-					// skip existing seed pipelineRuns
+					// skip existing seeded PipelineRuns
 					if pr.GetName() == "force-me" {
 						continue
 					}

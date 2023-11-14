@@ -220,7 +220,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		OriginalPipelineRunName: pr.GetAnnotations()[keys.OriginalPRName],
 	}
 
-	if err := createStatusWithRetry(ctx, logger, r.run.Clients.Tekton, p, event, r.run.Info.Pac, status); err != nil {
+	if err := createStatusWithRetry(ctx, logger, p, event, status); err != nil {
 		// if failed to report status for running state, let the pipelineRun continue,
 		// pipelineRun is already started so we will try again once it completes
 		logger.Errorf("failed to report status to running on provider continuing! error: %v", err)

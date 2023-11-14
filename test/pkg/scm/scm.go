@@ -106,7 +106,7 @@ func PushFilesToRefGit(t *testing.T, opts *Opts, entries map[string]string) {
 	}
 }
 
-// Make a clone url with username and password
+// MakeGitCloneURL will make a clone url with username and password
 func MakeGitCloneURL(targetURL, userName, password string) (string, error) {
 	// parse hostname of giteaURL
 	parsedURL, err := url.Parse(targetURL)
