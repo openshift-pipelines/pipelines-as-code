@@ -26,7 +26,7 @@ func TestCreateStatusWithRetry(t *testing.T) {
 	fakelogger := zap.New(observer).Sugar()
 	vcx := tprovider.TestProviderImp{}
 
-	err := createStatusWithRetry(context.TODO(), fakelogger, nil, &vcx, nil, nil, provider.StatusOpts{})
+	err := createStatusWithRetry(context.TODO(), fakelogger, &vcx, nil, provider.StatusOpts{})
 	assert.NilError(t, err)
 }
 
@@ -36,7 +36,7 @@ func TestCreateStatusWithRetry_ErrorCase(t *testing.T) {
 	vcx := tprovider.TestProviderImp{}
 	vcx.CreateStatusErorring = true
 
-	err := createStatusWithRetry(context.TODO(), fakelogger, nil, &vcx, nil, nil, provider.StatusOpts{})
+	err := createStatusWithRetry(context.TODO(), fakelogger, &vcx, nil, provider.StatusOpts{})
 	assert.Error(t, err, "failed to report status: some provider error occurred while reporting status")
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/google/go-github/v55/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -30,6 +31,7 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	cnx := Provider{
 		Client: fakeclient,
+		Run:    params.New(),
 	}
 	defer teardown()
 	mux.HandleFunc("/repos/check/info/check-runs", func(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +48,7 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 		SHA:          "createCheckRunSHA",
 	}
 
-	err := cnx.getOrUpdateCheckRunStatus(ctx, nil, event, &info.PacOpts{Settings: &settings.Settings{}}, provider.StatusOpts{
+	err := cnx.getOrUpdateCheckRunStatus(ctx, event, provider.StatusOpts{
 		PipelineRunName: "pr1",
 		Status:          "hello moto",
 	})
@@ -350,9 +352,6 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			if tt.pr != nil {
 				status.PipelineRun = tt.pr
 			}
-			pacopts := &info.PacOpts{
-				Settings: &settings.Settings{},
-			}
 			if tt.notoken {
 				tt.args.runevent = info.NewEvent()
 			} else {
@@ -374,7 +373,11 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				}
 			}
 			stdata, _ := testclient.SeedTestData(t, ctx, testData)
-			err := gcvs.CreateStatus(ctx, stdata.Pipeline, tt.args.runevent, pacopts, status)
+			fakeClients := clients.Clients{
+				Tekton: stdata.Pipeline,
+			}
+			gcvs.Run.Clients = fakeClients
+			err := gcvs.CreateStatus(ctx, tt.args.runevent, status)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GithubProvider.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -456,9 +459,10 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			provider := &Provider{
 				Client: fakeclient,
+				Run:    params.New(),
 			}
 
-			if err := provider.createStatusCommit(ctx, tt.event, &info.PacOpts{Settings: &settings.Settings{}}, tt.status); (err != nil) != tt.wantErr {
+			if err := provider.createStatusCommit(ctx, tt.event, tt.status); (err != nil) != tt.wantErr {
 				t.Errorf("GetCommitInfo() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

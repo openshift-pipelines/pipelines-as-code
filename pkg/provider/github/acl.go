@@ -46,7 +46,7 @@ func (v *Provider) CheckPolicyAllowing(ctx context.Context, event *info.Event, a
 	return false, fmt.Sprintf("user: %s is not a member of any of the allowed teams: %v", event.Sender, allowedTeams)
 }
 
-// IsAllowedOwners get the owner file from main branch and check if we have
+// IsAllowedOwnersFile gets the owner file from main branch and check if we have
 // explicitly allowed the user in there.
 func (v *Provider) IsAllowedOwnersFile(ctx context.Context, event *info.Event) (bool, error) {
 	ownerContent, err := v.getFileFromDefaultBranch(ctx, "OWNERS", event)

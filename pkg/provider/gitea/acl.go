@@ -178,7 +178,7 @@ func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, erro
 	return v.IsAllowedOwnersFile(ctx, rev)
 }
 
-// IsAllowedOwners get the owner file from main branch and check if we have
+// IsAllowedOwnersFile get the owner file from main branch and check if we have
 // explicitly allowed the user in there.
 func (v *Provider) IsAllowedOwnersFile(ctx context.Context, rev *info.Event) (bool, error) {
 	// If we have a prow OWNERS file in the defaultBranch (ie: master) then

@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	validation_webhook "github.com/openshift-pipelines/pipelines-as-code/pkg/webhook"
+	validationWebhook "github.com/openshift-pipelines/pipelines-as-code/pkg/webhook"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
@@ -40,7 +40,7 @@ func main() {
 }
 
 func newValidationAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
-	return validation_webhook.NewAdmissionController(ctx,
+	return validationWebhook.NewAdmissionController(ctx,
 
 		// Name of the resource webhook.
 		"validation.pipelinesascode.tekton.dev",

@@ -41,11 +41,11 @@ var _ provider.Interface = (*Provider)(nil)
 type Provider struct {
 	Client        *github.Client
 	Logger        *zap.SugaredLogger
+	Run           *params.Run
 	Token, APIURL *string
 	ApplicationID *int64
 	providerName  string
 	provenance    string
-	Run           *params.Run
 	RepositoryIDs []int64
 	repo          *v1alpha1.Repository
 	eventEmitter  *events.EventEmitter
@@ -123,7 +123,7 @@ func splitGithubURL(event *info.Event, uri string) (string, string, string, stri
 	return spOrg, spRepo, spPath, spRef, nil
 }
 
-func (v *Provider) GetTaskURI(ctx context.Context, _ *params.Run, event *info.Event, uri string) (bool, string, error) {
+func (v *Provider) GetTaskURI(ctx context.Context, event *info.Event, uri string) (bool, string, error) {
 	if ret := provider.CompareHostOfURLS(uri, event.URL); !ret {
 		return false, "", nil
 	}
@@ -514,7 +514,7 @@ func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 	return repoURLs, nil
 }
 
-func (v *Provider) CreateToken(ctx context.Context, repository []string, run *params.Run, event *info.Event) (string, error) {
+func (v *Provider) CreateToken(ctx context.Context, repository []string, event *info.Event) (string, error) {
 	for _, r := range repository {
 		split := strings.Split(r, "/")
 		infoData, _, err := v.Client.Repositories.Get(ctx, split[0], split[1])
@@ -524,7 +524,7 @@ func (v *Provider) CreateToken(ctx context.Context, repository []string, run *pa
 		}
 		v.RepositoryIDs = uniqueRepositoryID(v.RepositoryIDs, infoData.GetID())
 	}
-	token, err := v.GetAppToken(ctx, run.Clients.Kube, event.Provider.URL, event.InstallationID, os.Getenv("SYSTEM_NAMESPACE"))
+	token, err := v.GetAppToken(ctx, v.Run.Clients.Kube, event.Provider.URL, event.InstallationID, os.Getenv("SYSTEM_NAMESPACE"))
 	if err != nil {
 		return "", err
 	}

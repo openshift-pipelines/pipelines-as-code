@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	"github.com/xanzy/go-gitlab"
@@ -155,6 +155,7 @@ func TestCreateStatus(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			v := &Provider{
 				targetProjectID: tt.fields.targetProjectID,
+				run:             params.New(),
 			}
 			if tt.args.event == nil {
 				tt.args.event = info.NewEvent()
@@ -168,8 +169,7 @@ func TestCreateStatus(t *testing.T) {
 				thelp.MuxNotePost(t, mux, v.targetProjectID, tt.args.event.PullRequestNumber, tt.args.postStr)
 			}
 
-			pacOpts := &info.PacOpts{Settings: &settings.Settings{ApplicationName: "Test me"}}
-			if err := v.CreateStatus(ctx, nil, tt.args.event, pacOpts, tt.args.statusOpts); (err != nil) != tt.wantErr {
+			if err := v.CreateStatus(ctx, tt.args.event, tt.args.statusOpts); (err != nil) != tt.wantErr {
 				t.Errorf("CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

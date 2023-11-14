@@ -15,7 +15,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 )
 
@@ -52,7 +51,7 @@ type Provider struct {
 }
 
 // GetTaskURI TODO: Implement ME
-func (v *Provider) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
+func (v *Provider) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }
 
@@ -105,9 +104,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	return nil
 }
 
-func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event *info.Event, pacOpts *info.PacOpts,
-	statusOpts provider.StatusOpts,
-) error {
+func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts) error {
 	if v.Client == nil {
 		return fmt.Errorf("cannot set status on gitea no token or url set")
 	}
@@ -140,9 +137,9 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 		onPr = fmt.Sprintf("/%s", statusOpts.PipelineRunName)
 	}
 	// gitea show weirdly the <br>
-	statusOpts.Summary = fmt.Sprintf("%s%s %s", pacOpts.ApplicationName, onPr, statusOpts.Summary)
+	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.run.Info.Pac.ApplicationName, onPr, statusOpts.Summary)
 
-	return v.createStatusCommit(event, pacOpts, statusOpts)
+	return v.createStatusCommit(event, v.run.Info.Pac, statusOpts)
 }
 
 func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
@@ -320,6 +317,6 @@ func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) 
 	return []string{}, fmt.Errorf("GetFiles is not supported on Gitea")
 }
 
-func (v *Provider) CreateToken(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
+func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
 }

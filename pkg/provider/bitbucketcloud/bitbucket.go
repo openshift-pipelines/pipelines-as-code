@@ -14,7 +14,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
-	"github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
 	"go.uber.org/zap"
 )
 
@@ -23,6 +22,7 @@ var _ provider.Interface = (*Provider)(nil)
 type Provider struct {
 	Client        *bitbucket.Client
 	Logger        *zap.SugaredLogger
+	run           *params.Run
 	Token, APIURL *string
 	Username      *string
 	provenance    string
@@ -34,7 +34,7 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []str
 }
 
 // GetTaskURI TODO: Implement ME
-func (v *Provider) GetTaskURI(_ context.Context, _ *params.Run, _ *info.Event, _ string) (bool, string, error) {
+func (v *Provider) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }
 
@@ -59,7 +59,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event *info.Event, pacopts *info.PacOpts, statusopts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts provider.StatusOpts) error {
 	switch statusopts.Conclusion {
 	case "skipped":
 		statusopts.Conclusion = "STOPPED"
@@ -86,7 +86,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 	}
 
 	cso := &bitbucket.CommitStatusOptions{
-		Key:         pacopts.ApplicationName,
+		Key:         v.run.Info.Pac.ApplicationName,
 		Url:         detailsURL,
 		State:       statusopts.Conclusion,
 		Description: statusopts.Title,
@@ -116,7 +116,7 @@ func (v *Provider) CreateStatus(_ context.Context, _ versioned.Interface, event 
 				Owner:         event.Organization,
 				RepoSlug:      event.Repository,
 				PullRequestID: strconv.Itoa(event.PullRequestNumber),
-				Content:       fmt.Sprintf("**%s%s** - %s\n\n%s", pacopts.ApplicationName, onPr, statusopts.Title, statusopts.Text),
+				Content:       fmt.Sprintf("**%s%s** - %s\n\n%s", v.run.Info.Pac.ApplicationName, onPr, statusopts.Title, statusopts.Text),
 			})
 		if err != nil {
 			return err
@@ -166,7 +166,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path,
 	return v.getBlob(event, revision, path)
 }
 
-func (v *Provider) SetClient(_ context.Context, _ *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
+func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
 	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
@@ -176,6 +176,7 @@ func (v *Provider) SetClient(_ context.Context, _ *params.Run, event *info.Event
 	v.Client = bitbucket.NewBasicAuth(event.Provider.User, event.Provider.Token)
 	v.Token = &event.Provider.Token
 	v.Username = &event.Provider.User
+	v.run = run
 	return nil
 }
 
@@ -280,6 +281,6 @@ func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) 
 	return []string{}, nil
 }
 
-func (v *Provider) CreateToken(_ context.Context, _ []string, _ *params.Run, _ *info.Event) (string, error) {
+func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
 }

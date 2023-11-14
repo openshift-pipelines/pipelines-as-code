@@ -47,7 +47,7 @@ var (
 func testSetupGHReplies(t *testing.T, mux *http.ServeMux, runevent *info.Event, checkrunID, finalStatus string) {
 	t.Helper()
 	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/%s", runevent.Organization, runevent.Repository, checkrunID),
-		func(w http.ResponseWriter, r *http.Request) {
+		func(_ http.ResponseWriter, r *http.Request) {
 			body, _ := io.ReadAll(r.Body)
 			created := github.CreateCheckRunOptions{}
 			err := json.Unmarshal(body, &created)

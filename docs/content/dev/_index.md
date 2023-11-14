@@ -36,7 +36,7 @@ override it you can set the `PAC_DIRS` environment variable.
 
 - You will need to create secret yourself, if you have the [pass cli](https://www.passwordstore.org/)
   installed you can point to a folder which contains : github-application-id github-private-key webhook.secret
-  As configured from your GitHub application. Configre `PAC_PASS_SECRET_FOLDER`
+  As configured from your GitHub application. Configure `PAC_PASS_SECRET_FOLDER`
   environment variable to point to it.
   For example :
 

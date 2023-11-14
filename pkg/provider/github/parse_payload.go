@@ -137,6 +137,9 @@ func getInstallationIDFromPayload(payload string) int64 {
 // exfiltrate the token, it would fail since the jwt token generation will fail, so we are safe here.
 // a bit too far fetched but i don't see any way we can exploit this.
 func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request, payload string) (*info.Event, error) {
+	// ParsePayload is really happening before SetClient so let's set this at first here.
+	// Only apply for GitHub provider since we do fancy token creation at payload parsing
+	v.Run = run
 	event := info.NewEvent()
 	// TODO: we should not have getenv in code only in main
 	systemNS := os.Getenv("SYSTEM_NAMESPACE")
@@ -187,7 +190,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 			}
 			v.Logger.Infof("Github token scope extended to %v keeping SecretGHAppRepoScoped to true", repoLists)
 		}
-		token, err := v.CreateToken(ctx, repoLists, run, processedEvent)
+		token, err := v.CreateToken(ctx, repoLists, processedEvent)
 		if err != nil {
 			return nil, err
 		}

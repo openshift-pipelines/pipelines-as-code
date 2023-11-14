@@ -12,7 +12,7 @@ import (
 )
 
 // ErrInvalidReceiveHook FIXME
-var ErrInvalidReceiveHook = errors.New("Invalid JSON payload received over webhook")
+var ErrInvalidReceiveHook = errors.New("invalid JSON payload received over webhook")
 
 // Hook a hook is a web hook when one repository changed
 type Hook struct {
@@ -165,7 +165,7 @@ func ParseCreateHook(raw []byte) (*CreatePayload, error) {
 // PusherType define the type to push
 type PusherType string
 
-// describe all the PusherTypes
+// PusherTypeUser is the type of pusher
 const (
 	PusherTypeUser PusherType = "user"
 )

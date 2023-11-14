@@ -82,7 +82,7 @@ func TestGetTaskURI(t *testing.T) {
 			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/git/blobs/%s", "owner", "repo", sha), func(rw http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(rw, `{"content": "%s"}`, content)
 			})
-			allowed, content, err := provider.GetTaskURI(ctx, nil, event, tt.uri)
+			allowed, content, err := provider.GetTaskURI(ctx, event, tt.uri)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTaskURI() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -989,7 +989,8 @@ func TestCreateToken(t *testing.T) {
 	}
 
 	provider := &Provider{Client: fakeclient}
-	_, err := provider.CreateToken(ctx, urlData, run, info)
+	provider.Run = run
+	_, err := provider.CreateToken(ctx, urlData, info)
 	if len(provider.RepositoryIDs) != 2 {
 		assert.Error(t, fmt.Errorf("found repositoryIDs are %d which is less than expected", len(provider.RepositoryIDs)),
 			"expected repositoryIDs are 2")

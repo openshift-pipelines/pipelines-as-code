@@ -248,6 +248,7 @@ func (l listener) detectProvider(req *http.Request, reqBody string) (provider.In
 	}
 
 	bitCloud := &bitbucketcloud.Provider{}
+
 	isBitCloud, processReq, logger, reason, err := bitCloud.Detect(req, reqBody, &log)
 	if isBitCloud {
 		return l.processRes(processReq, bitCloud, logger, reason, err)
