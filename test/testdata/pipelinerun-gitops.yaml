@@ -16,4 +16,7 @@ spec:
           steps:
             - name: task
               image: registry.access.redhat.com/ubi9/ubi-micro
-              command: ["/bin/echo", "HELLOMOTO"]
+              script: |
+                echo "HELLOMOTO"
+                sleep 10
+                exit 0
