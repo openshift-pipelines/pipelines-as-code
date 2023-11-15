@@ -22,7 +22,8 @@ endif
 FLAGS += -ldflags "-X github.com/openshift-pipelines/pipelines-as-code/pkg/params/version.Version=$(PAC_VERSION) $(LDFLAGS) -X github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings.TknBinaryName=$(TKN_BINARY_NAME) -X github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings.TknBinaryURL=$(TKN_BINARY_URL)"
 
 
-all: $(OUTPUT_DIR)/pipelines-as-code-controller $(OUTPUT_DIR)/tkn-pac test
+all: allbinaries test lint ## compile all binaries, test and lint
+allbinaries: $(OUTPUT_DIR)/pipelines-as-code-controller $(OUTPUT_DIR)/pipelines-as-code-watcher $(OUTPUT_DIR)/tkn-pac ## compile all binaries
 
 FORCE:
 
