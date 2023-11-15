@@ -195,16 +195,16 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	// if we have an error fallback to send a issue comment
 	opt := &gitlab.SetCommitStatusOptions{
 		State:       gitlab.BuildStateValue(statusOpts.Conclusion),
-		Name:        gitlab.String(v.run.Info.Pac.ApplicationName),
-		TargetURL:   gitlab.String(detailsURL),
-		Description: gitlab.String(statusOpts.Title),
+		Name:        gitlab.Ptr(v.run.Info.Pac.ApplicationName),
+		TargetURL:   gitlab.Ptr(detailsURL),
+		Description: gitlab.Ptr(statusOpts.Title),
 	}
 	//nolint: dogsled
 	_, _, _ = v.Client.Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
 
 	// only add a note when we are on a MR
 	if event.EventType == "pull_request" || event.EventType == "Merge_Request" || event.EventType == "Merge Request" {
-		mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.String(body)}
+		mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
 		_, _, err := v.Client.Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
 		return err
 	}
@@ -226,9 +226,9 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 	}
 
 	opt := &gitlab.ListTreeOptions{
-		Path:      gitlab.String(path),
-		Ref:       gitlab.String(revision),
-		Recursive: gitlab.Bool(true),
+		Path:      gitlab.Ptr(path),
+		Ref:       gitlab.Ptr(revision),
+		Recursive: gitlab.Ptr(true),
 	}
 
 	objects, resp, err := v.Client.Repositories.ListTree(v.sourceProjectID, opt)
@@ -265,7 +265,7 @@ func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, runevent *info
 
 func (v *Provider) getObject(fname, branch string, pid int) ([]byte, error) {
 	opt := &gitlab.GetRawFileOptions{
-		Ref: gitlab.String(branch),
+		Ref: gitlab.Ptr(branch),
 	}
 	file, resp, err := v.Client.RepositoryFiles.GetRawFile(pid, fname, opt)
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v55/github"
+	"github.com/google/go-github/v56/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -763,7 +763,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				}
 				if tt.args.runevent.TriggerTarget == "push" {
 					mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/commits/%s",
-						tt.args.runevent.Organization, tt.args.runevent.Repository, tt.args.runevent.SHA), func(w http.ResponseWriter, r *http.Request) {
+						tt.args.runevent.Organization, tt.args.runevent.Repository, tt.args.runevent.SHA), func(w http.ResponseWriter, _ *http.Request) {
 						c := &github.RepositoryCommit{
 							Files: commitFiles,
 						}
@@ -776,7 +776,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				if tt.args.runevent.TriggerTarget == "pull_request" {
 					url := fmt.Sprintf("/repos/%s/%s/pulls/%d/files", tt.args.runevent.Organization,
 						tt.args.runevent.Repository, tt.args.runevent.PullRequestNumber)
-					mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+					mux.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
 						jeez, err := json.Marshal(commitFiles)
 						assert.NilError(t, err)
 						_, _ = w.Write(jeez)
@@ -796,7 +796,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			defer glTeardown()
 			glVcx := &glprovider.Provider{
 				Client: glFakeClient,
-				Token:  gitlab.String("None"),
+				Token:  github.String("None"),
 			}
 			if len(tt.args.fileChanged) > 0 {
 				commitFiles := &gitlab.MergeRequest{}
@@ -806,7 +806,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 						pushFileChanges = append(pushFileChanges, &gitlab.Diff{NewPath: v})
 					}
 					glMux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff",
-						tt.args.runevent.SHA), func(rw http.ResponseWriter, r *http.Request) {
+						tt.args.runevent.SHA), func(rw http.ResponseWriter, _ *http.Request) {
 						jeez, err := json.Marshal(pushFileChanges)
 						assert.NilError(t, err)
 						_, _ = rw.Write(jeez)
@@ -816,7 +816,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 						commitFiles.Changes = append(commitFiles.Changes, &gitlab.MergeRequestDiff{NewPath: v})
 					}
 					url := fmt.Sprintf("/projects/0/merge_requests/%d/changes", tt.args.runevent.PullRequestNumber)
-					glMux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+					glMux.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
 						jeez, err := json.Marshal(commitFiles)
 						assert.NilError(t, err)
 						_, _ = w.Write(jeez)

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v55/github"
+	"github.com/google/go-github/v56/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -344,7 +344,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 	var commit *github.Commit
 	sha := runevent.SHA
 	if runevent.SHA == "" && runevent.HeadBranch != "" {
-		branchinfo, _, err := v.Client.Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, runevent.HeadBranch, true)
+		branchinfo, _, err := v.Client.Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, runevent.HeadBranch, 1)
 		if err != nil {
 			return err
 		}
@@ -552,7 +552,7 @@ func (v *Provider) isBranchContainsCommit(ctx context.Context, runevent *info.Ev
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
-	branchInfo, _, err := v.Client.Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, branchName, true)
+	branchInfo, _, err := v.Client.Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, branchName, 1)
 	if err != nil {
 		return err
 	}
