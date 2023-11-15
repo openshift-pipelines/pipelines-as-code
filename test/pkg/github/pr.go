@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/go-github/v55/github"
+	"github.com/google/go-github/v56/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -66,7 +66,7 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 				SHA: &mainSha,
 			},
 		},
-	})
+	}, &github.CreateCommitOptions{})
 	if err != nil {
 		return "", err
 	}

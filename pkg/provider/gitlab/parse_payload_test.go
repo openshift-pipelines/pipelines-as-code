@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/google/go-github/v56/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
@@ -167,7 +168,7 @@ func TestParsePayload(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			v := &Provider{
-				Token:           gitlab.String("tokeneuneu"),
+				Token:           github.String("tokeneuneu"),
 				targetProjectID: tt.fields.targetProjectID,
 				sourceProjectID: tt.fields.sourceProjectID,
 				userID:          tt.fields.userID,

@@ -122,13 +122,13 @@ func (gl *gitLabConfig) create() error {
 	}
 
 	hookOpts := &gitlab.AddProjectHookOptions{
-		EnableSSLVerification: gitlab.Bool(true),
-		MergeRequestsEvents:   gitlab.Bool(true),
-		NoteEvents:            gitlab.Bool(true),
-		PushEvents:            gitlab.Bool(true),
-		TagPushEvents:         gitlab.Bool(true),
-		Token:                 gitlab.String(gl.webhookSecret),
-		URL:                   gitlab.String(gl.controllerURL),
+		EnableSSLVerification: gitlab.Ptr(true),
+		MergeRequestsEvents:   gitlab.Ptr(true),
+		NoteEvents:            gitlab.Ptr(true),
+		PushEvents:            gitlab.Ptr(true),
+		TagPushEvents:         gitlab.Ptr(true),
+		Token:                 gitlab.Ptr(gl.webhookSecret),
+		URL:                   gitlab.Ptr(gl.controllerURL),
 	}
 
 	_, resp, err := glClient.Projects.AddProjectHook(gl.projectID, hookOpts)
