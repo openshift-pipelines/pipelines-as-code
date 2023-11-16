@@ -1947,8 +1947,8 @@ k8s.io/utils v0.0.0-20230726121419-3b25d923346b h1:sgn3ZU783SCgtaSJjpcVVlRqd6GSn
 k8s.io/utils v0.0.0-20230726121419-3b25d923346b/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
 knative.dev/eventing v0.38.4 h1:eH059bfeLilj2xAN6V7XXOh3wqzz5ssoMS/CIJpJfmk=
 knative.dev/eventing v0.38.4/go.mod h1:ct8t+v6nmp1kFCy6ngkDWIEvnjJDNDoKptrfnQVh+z8=
-knative.dev/pkg v0.0.0-20231011193800-bd99f2f98be7 h1:y3qbfYX1SuSr/1ysXvKfpV8q/kCwWLWieCUgAhBUHmQ=
-knative.dev/pkg v0.0.0-20231011193800-bd99f2f98be7/go.mod h1:g+UCgSKQ2f15kHYu/V3CPtoKo5F1x/2Y1ot0NSK7gA0=
+knative.dev/pkg v0.0.0-20231023150739-56bfe0dd9626 h1:qFE+UDBRg6cpF5LbA0sv1XK4XZ36Z7aTRCa+HcuxnNQ=
+knative.dev/pkg v0.0.0-20231023150739-56bfe0dd9626/go.mod h1:g+UCgSKQ2f15kHYu/V3CPtoKo5F1x/2Y1ot0NSK7gA0=
 lukechampine.com/uint128 v1.1.1/go.mod h1:c4eWIwlEGaxC/+H1VguhU4PHXNWDCDMUlWdIWl2j1gk=
 lukechampine.com/uint128 v1.2.0/go.mod h1:c4eWIwlEGaxC/+H1VguhU4PHXNWDCDMUlWdIWl2j1gk=
 modernc.org/cc/v3 v3.36.0/go.mod h1:NFUHyPn4ekoC/JHeZFfZurN6ixxawE1BnVonP/oahEI=
