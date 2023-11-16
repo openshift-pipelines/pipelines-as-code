@@ -319,7 +319,7 @@ There is no clean-up of the secret after the run.
 
 {{< details "tkn pac webhook add" >}}
 
-### Configure and create webhook secret for GitHub, Gitlab and Bitbucket Cloud provider
+### Configure and create webhook secret for GitHub, GitLab and Bitbucket Cloud provider
 
 `tkn-pac webhook add [-n namespace]`: Allows you to add new webhook secret for a given provider and update the value of the new webhook secret in the existing `Secret` object used to interact with Pipelines-as-Code
 

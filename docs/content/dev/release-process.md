@@ -28,7 +28,7 @@ git tag v1.2.3
 
 * After a while (gorelease takes sometime) If everything is fine you should
   have the new version set as pre-release in
-  github.com/openshift-pipelines/pipelines-as-code/releases
+  <https://github.com/openshift-pipelines/pipelines-as-code/releases>
 
 * Edit the release like the other releases has been done with a snippet of the highlight of the release.
 
