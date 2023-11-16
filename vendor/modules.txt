@@ -1138,7 +1138,7 @@ knative.dev/eventing/pkg/metrics
 knative.dev/eventing/pkg/metrics/source
 knative.dev/eventing/pkg/observability
 knative.dev/eventing/pkg/observability/client
-# knative.dev/pkg v0.0.0-20231016142534-0d0cd4e7dbef => knative.dev/pkg v0.0.0-20231011193800-bd99f2f98be7
+# knative.dev/pkg v0.0.0-20231023150739-56bfe0dd9626 => knative.dev/pkg v0.0.0-20231023150739-56bfe0dd9626
 ## explicit; go 1.18
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1204,4 +1204,4 @@ sigs.k8s.io/yaml
 # k8s.io/client-go => k8s.io/client-go v0.26.7
 # k8s.io/code-generator => k8s.io/code-generator v0.26.7
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230515203736-54b630e78af5
-# knative.dev/pkg => knative.dev/pkg v0.0.0-20231011193800-bd99f2f98be7
+# knative.dev/pkg => knative.dev/pkg v0.0.0-20231023150739-56bfe0dd9626
