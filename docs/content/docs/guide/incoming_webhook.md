@@ -149,7 +149,7 @@ The parameter value of `pull_request_number` will be set to `12345` when using t
 
 ### Using incoming webhook with webhook based providers
 
-Webhook based providers (i.e: GitHub Webhook, Gitlab, Bitbucket etc..) supports
+Webhook based providers (i.e: GitHub Webhook, GitLab, Bitbucket etc..) supports
 incoming webhook, using the token provided in the git_provider section.
 
 Here is an example of a Repository CRD matching the target branch main with a GitHub webhook provider:
