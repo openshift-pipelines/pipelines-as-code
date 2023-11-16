@@ -10,7 +10,7 @@ An opinionated CI based on OpenShift Pipelines / Tekton.
 
 Pipelines as code is a project allowing you to define your CI/CD using
 [Tekton](https://tekton.dev) PipelineRuns and Tasks in a file located in your
-source control management (SCM) system, such as GitHub or Gitlab. This file is
+source control management (SCM) system, such as GitHub or GitLab. This file is
 then used to automatically create a pipeline for a Pull Request or a Push to a
 branch.
 
@@ -45,7 +45,7 @@ tracking using a Git workflow.
 
 - Git events Filtering and support for separate pipelines for each event
 
-- Gitlab, Bitbucket Server, Bitbucket Cloud and GitHub Webhook support.
+- GitLab, Bitbucket Server, Bitbucket Cloud and GitHub Webhook support.
 
 - `tkn-pac` plug-in for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
 

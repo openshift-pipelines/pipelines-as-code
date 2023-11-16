@@ -1,11 +1,11 @@
 ---
-title: Gitlab
+title: GitLab
 weight: 13
 ---
 
-# Use Pipelines-as-Code with Gitlab Webhook
+# Use Pipelines-as-Code with GitLab Webhook
 
-Pipelines-As-Code supports on [Gitlab](https://www.gitlab.com) through a webhook.
+Pipelines-As-Code supports on [GitLab](https://www.gitlab.com) through a webhook.
 
 Follow the pipelines-as-code [installation](/docs/install/installation) according to your Kubernetes cluster.
 
@@ -64,7 +64,7 @@ $ tkn pac create repo
 
 ### Create a `Repository` and configure webhook manually
 
-* From the left navigation pane of your Gitlab repository, go to **settings** -->
+* From the left navigation pane of your GitLab repository, go to **settings** -->
   **Webhooks** tab.
 
 * Go to your project and click on *Settings* and *"Webhooks"* from the sidebar on the left.
@@ -119,6 +119,7 @@ $ tkn pac create repo
   spec:
     url: "https://gitlab.com/group/project"
     git_provider:
+      # url: "https://gitlab.example.com/ # Set this if you are using a private GitLab instance
       secret:
         name: "gitlab-webhook-config"
         # Set this if you have a different key in your secret
@@ -151,7 +152,7 @@ Below is the sample format for `tkn pac webhook add`
 $ tkn pac webhook add -n project-pipelines
 
 ✓ Setting up GitLab Webhook for Repository https://gitlab.com/repositories/project
-? Please enter the project ID for the repository you want to be configured, 
+? Please enter the project ID for the repository you want to be configured,
   project ID refers to an unique ID (e.g. 34405323) shown at the top of your GitLab project : 17103
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes
@@ -169,7 +170,7 @@ $ tkn pac webhook add -n project-pipelines
 
 There are two ways to update the provider token for the existing `Repository`:
 
-### Update using tkn pac cli
+### Update using tkn pac CLI
 
 * Use the [`tkn pac webhook update-token`](/docs/guide/cli) command which
   will update provider token for the existing Repository CR.
@@ -197,6 +198,7 @@ You can find the secret name in the `Repository` CR.
   ```yaml
   spec:
     git_provider:
+      # url: "https://gitlab.example.com/ # Set this if you are using a private GitLab instance
       secret:
         name: "gitlab-webhook-config"
   ```
