@@ -202,6 +202,21 @@ func TestReplaceSecretsInText(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "replace secrets in text with same prefix",
+			text:   "I am the most beautifuller person in the world with the most beautiful friends",
+			result: "I am the most ***** person in the world with the most ***** friends",
+			values: []types.SecretValue{
+				{
+					Name:  "beautiful-secret",
+					Value: "beautiful",
+				},
+				{
+					Name:  "most-beautiful-secret",
+					Value: "beautifuller",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -209,4 +224,23 @@ func TestReplaceSecretsInText(t *testing.T) {
 			assert.Equal(t, ret, tt.result)
 		})
 	}
+}
+
+func TestSortByLongest(t *testing.T) {
+	values := []types.SecretValue{
+		{
+			Name:  "beautiful-secret",
+			Value: "beautiful",
+		},
+		{
+			Name:  "Even more beautiful",
+			Value: "beautifuller",
+		},
+		{
+			Name:  "Not that beautiful",
+			Value: "notpretty",
+		},
+	}
+	ret := sortSecretsByLongests(values)
+	assert.Equal(t, ret[0].Name, "Even more beautiful")
 }
