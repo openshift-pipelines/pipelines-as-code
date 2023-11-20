@@ -45,8 +45,11 @@ failed task.
 To prevent exposing secrets, Pipelines-as-Code analyze the PipelineRun and
 replace secret values with hidden characters. This is achieved by retrieving
 all secrets from the environment variables associated with tasks and steps, and
-searching for matches of these values in the output snippet. These matches are
-then replaced with a `"*****"` placeholder hiding these secrets.
+searching for matches of these values in the output snippet.
+
+These matches are first sorted by the longest and then replaced with a
+`"*****"` placeholder in the output snippet. This ensures that the output
+will not contain any leaked secrets.
 
 The hiding of the secret does not support concealing secrets from `workspaces`
 and
