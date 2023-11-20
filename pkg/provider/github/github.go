@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -146,7 +145,7 @@ func (v *Provider) GetTaskURI(ctx context.Context, event *info.Event, uri string
 func (v *Provider) InitAppClient(ctx context.Context, kube kubernetes.Interface, event *info.Event) error {
 	var err error
 	// TODO: move this out of here when we move al config inside context
-	ns := os.Getenv("SYSTEM_NAMESPACE")
+	ns := info.GetNS(ctx)
 	event.Provider.Token, err = v.GetAppToken(ctx, kube, event.GHEURL, event.InstallationID, ns)
 	if err != nil {
 		return err
@@ -548,7 +547,8 @@ func (v *Provider) CreateToken(ctx context.Context, repository []string, event *
 		}
 		v.RepositoryIDs = uniqueRepositoryID(v.RepositoryIDs, infoData.GetID())
 	}
-	token, err := v.GetAppToken(ctx, v.Run.Clients.Kube, event.Provider.URL, event.InstallationID, os.Getenv("SYSTEM_NAMESPACE"))
+	ns := info.GetNS(ctx)
+	token, err := v.GetAppToken(ctx, v.Run.Clients.Kube, event.Provider.URL, event.InstallationID, ns)
 	if err != nil {
 		return "", err
 	}

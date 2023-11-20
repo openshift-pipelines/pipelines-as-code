@@ -2,10 +2,10 @@ package configmap
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"golang.org/x/exp/maps"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -13,10 +13,7 @@ import (
 )
 
 func ChangeGlobalConfig(ctx context.Context, t *testing.T, runcnx *params.Run, data map[string]string) func() {
-	ns, there := os.LookupEnv("SYSTEM_NAMESPACE")
-	if !there {
-		ns = "pipelines-as-code"
-	}
+	ns := info.GetNS(ctx)
 	// grab the old configmap content
 	origCfgmap, err := runcnx.Clients.Kube.CoreV1().ConfigMaps(ns).Get(ctx, "pipelines-as-code", metav1.GetOptions{})
 	assert.NilError(t, err)

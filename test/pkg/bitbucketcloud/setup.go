@@ -32,7 +32,7 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, bitbucketcloud.Provid
 
 	split := strings.Split(bitbucketWSOwner, "/")
 
-	run := &params.Run{}
+	run := params.New()
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return nil, options.E2E{}, bitbucketcloud.Provider{}, err
 	}

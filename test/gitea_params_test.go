@@ -13,6 +13,7 @@ import (
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -41,7 +42,8 @@ func TestGiteaParamsStandardCheckForPushAndPullEvent(t *testing.T) {
 		CheckForStatus: "success",
 		ExpectEvents:   false,
 	}
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 	merged, resp, err := topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
 		gitea.MergePullRequestOption{
 			Title: "Merged with Panache",
@@ -95,6 +97,8 @@ func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {
 	topts.TargetNS = topts.TargetRefName
 	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
 	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+	ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
 	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
 
 	cfgMapData := map[string]string{
@@ -105,7 +109,8 @@ func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {
 		"tekton-dashboard-url":          "",
 	}
 	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, cfgMapData)()
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 	// topts.Regexp = regexp.MustCompile(`(?m).*Custom Console.*https://url/detail/myconsole.*https://url/log/myconsole`)
 	topts.Regexp = regexp.MustCompile(`(?m).*Custom Console.*https://url/detail/myconsole`)
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
@@ -168,11 +173,14 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 	ctx := context.Background()
 	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
 	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+	ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
 	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
 	assert.NilError(t, secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS,
 		"param-secret"))
 
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 
 	repo, err := topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
@@ -203,7 +211,8 @@ func TestGiteaParamsBodyHeadersCEL(t *testing.T) {
 		CheckForStatus: "success",
 		ExpectEvents:   false,
 	}
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 
 	// check the repos CR only one pr should have run
 	repo, err := topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
@@ -298,7 +307,9 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 		},
 	}
 
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
 	// check the repos CR only one pr should have run
 	repo, err := topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
 	assert.NilError(t, err)

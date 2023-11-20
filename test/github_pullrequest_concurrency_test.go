@@ -40,7 +40,7 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	maxNumberOfConcurrentPipelineRuns := 3
 
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
-	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
+	_, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false, false)
 	assert.NilError(t, err)
 
 	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", label, targetNS)

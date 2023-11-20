@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +27,7 @@ func TestIsGithubAppInstalled(t *testing.T) {
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+			Name:      info.DefaultPipelinesAscodeSecretName,
 			Namespace: namespace.GetName(),
 		},
 		Data: map[string][]byte{

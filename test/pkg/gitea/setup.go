@@ -17,7 +17,7 @@ import (
 )
 
 func CreateProvider(ctx context.Context, giteaURL, user, password string) (gitea.Provider, error) {
-	run := &params.Run{}
+	run := params.New()
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return gitea.Provider{}, fmt.Errorf("cannot create new client: %w", err)
 	}
@@ -61,7 +61,7 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitea.Provider, error
 	}
 	split = strings.Split(giteaRepoOwner, "/")
 
-	run := &params.Run{}
+	run := params.New()
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return nil, options.E2E{}, gitea.Provider{}, fmt.Errorf("cannot create new client: %w", err)
 	}

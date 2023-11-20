@@ -68,11 +68,10 @@ func (l *listener) Start(ctx context.Context) error {
 		adapterPort = envAdapterPort
 	}
 	l.logger.Infof("Starting Pipelines as Code version: %s", strings.TrimSpace(version.Version))
-
 	mux := http.NewServeMux()
 
 	// for handling probes
-	mux.HandleFunc("/live", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/live", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = fmt.Fprint(w, "ok")
 	})
@@ -101,15 +100,15 @@ func (l *listener) Start(ctx context.Context) error {
 
 func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
-		c := make(chan struct{})
-		go func() {
-			c <- struct{}{}
-			if err := l.run.WatchConfigMapChanges(ctx); err != nil {
-				log.Fatal("error from WatchConfigMapChanges for controller : ", err)
-			}
-		}()
-		// Force WatchConfigMapChanges go routines to actually start
-		<-c
+		// we should fix this, this basically reads configmap on every request, is that supposed to be okay?
+		currentControllerName := info.GetCurrentControllerName(ctx)
+		if err := l.run.UpdatePACInfo(ctx); err != nil {
+			log.Fatalf("error getting config and setting from configmaps: %v", err)
+		}
+
+		ninfo := &info.Info{}
+		l.run.Info.DeepCopy(ninfo)
+		ctx = info.StoreInfo(ctx, currentControllerName, ninfo)
 
 		if request.Method != http.MethodPost {
 			l.writeResponse(response, http.StatusOK, "ok")

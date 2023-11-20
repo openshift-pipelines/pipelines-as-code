@@ -193,7 +193,7 @@ func TestList(t *testing.T) {
 					Tekton:         stdata.Pipeline,
 					ConsoleUI:      consoleui.FallBackConsole{},
 				},
-				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.args.currentNamespace}},
+				Info: info.Info{Kube: &info.KubeOpts{Namespace: tt.args.currentNamespace}},
 			}
 			io, out := newIOStream()
 			if err := list(ctx, cs, tt.args.opts, io,

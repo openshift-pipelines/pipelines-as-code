@@ -2,8 +2,18 @@ package reconciler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
+
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1/pipelinerun"
+	tektonv1lister "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
+	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/logging"
+	pkgreconciler "knative.dev/pkg/reconciler"
+	"knative.dev/pkg/system"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -20,13 +30,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1/pipelinerun"
-	tektonv1lister "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
-	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/logging"
-	pkgreconciler "knative.dev/pkg/reconciler"
 )
 
 // Reconciler implements controller.Reconciler for PipelineRun resources.
@@ -47,6 +50,7 @@ var (
 
 // ReconcileKind is the main entry point for reconciling PipelineRun resources.
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun) pkgreconciler.Event {
+	ctx = info.StoreNS(ctx, system.Namespace())
 	logger := logging.FromContext(ctx).With("namespace", pr.GetNamespace())
 	// if pipelineRun is in completed or failed state then return
 	state, exist := pr.GetAnnotations()[keys.State]
@@ -58,6 +62,30 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	if _, ok := pr.Annotations[keys.InstallationID]; ok {
 		if _, ok := pr.Annotations[keys.CheckRunID]; !ok {
 			return nil
+		}
+	}
+
+	// If we have a controllerInfo annotation, then we need to get the
+	// configmap configuration for it
+	//
+	// The annotation is a json string with a label, the pac controller
+	// configmap and the GitHub app secret .
+	//
+	// We always assume the controller is in the same namespace as the original
+	// controller but that may changes
+	if controllerInfo, ok := pr.GetAnnotations()[keys.ControllerInfo]; ok {
+		var parsedControllerInfo *info.ControllerInfo
+		if err := json.Unmarshal([]byte(controllerInfo), &parsedControllerInfo); err != nil {
+			return fmt.Errorf("failed to parse controllerInfo: %w", err)
+		}
+		r.run.Info.Controller = parsedControllerInfo
+		paramsinfo := info.GetInfo(ctx, parsedControllerInfo.Name)
+		if paramsinfo == nil {
+			if err := r.run.UpdatePACInfo(ctx); err != nil {
+				return fmt.Errorf("failed to get information for controller config %s: %w", controllerInfo, err)
+			}
+			ctx = info.StoreInfo(ctx, parsedControllerInfo.Name, &r.run.Info)
+			ctx = info.StoreCurrentControllerName(ctx, parsedControllerInfo.Name)
 		}
 	}
 

@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tcli "github.com/openshift-pipelines/pipelines-as-code/pkg/test/cli"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	httptesting "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
@@ -62,7 +63,7 @@ func TestInfo(t *testing.T) {
 	tests := []struct {
 		name             string
 		wantErr          bool
-		secrets          []*corev1.Secret
+		secret           *corev1.Secret
 		repositories     []*v1alpha1.Repository
 		controllerLabels map[string]string
 		controllerNs     string
@@ -71,16 +72,14 @@ func TestInfo(t *testing.T) {
 			name:         "with github app",
 			repositories: somerepositories,
 			controllerNs: "pipelines-as-code",
-			secrets: []*corev1.Secret{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "pipelines-as-code-secret",
-						Namespace: "pipelines-as-code",
-					},
-					Data: map[string][]byte{
-						"github-application-id": []byte("12345"),
-						"github-private-key":    []byte(fakePrivateKey),
-					},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "pipelines-as-code-secret",
+					Namespace: "pipelines-as-code",
+				},
+				Data: map[string][]byte{
+					"github-application-id": []byte("12345"),
+					"github-private-key":    []byte(fakePrivateKey),
 				},
 			},
 		},
@@ -113,6 +112,10 @@ func TestInfo(t *testing.T) {
 					"app.kubernetes.io/version": "testing",
 				}
 			}
+			secrets := []*corev1.Secret{}
+			if tt.secret != nil {
+				secrets = []*corev1.Secret{tt.secret}
+			}
 
 			tdata := testclient.Data{
 				Namespaces:   namespaces,
@@ -126,7 +129,7 @@ func TestInfo(t *testing.T) {
 						},
 					},
 				},
-				Secret: tt.secrets,
+				Secret: secrets,
 			}
 			apiURL := "http://github.url"
 			ghAppJSON := `{
@@ -152,6 +155,16 @@ func TestInfo(t *testing.T) {
 			})
 
 			ctx, _ := rtesting.SetupFakeContext(t)
+			ctx = info.StoreCurrentControllerName(ctx, "default")
+			name := ""
+			if tt.secret != nil {
+				name = tt.secret.GetName()
+			}
+			ctx = info.StoreInfo(ctx, "default", &info.Info{
+				Controller: &info.ControllerInfo{
+					Secret: name,
+				},
+			})
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 			cs := &params.Run{
 				Clients: clients.Clients{

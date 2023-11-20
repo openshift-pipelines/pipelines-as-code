@@ -16,15 +16,24 @@ func TestGithubPush(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
-	for _, onWebhook := range []bool{false, true} {
-		if onWebhook && os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
-			t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
-			continue
-		}
+	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
 		runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPushRequest(ctx, t,
-			"Github Push Request", []string{"testdata/pipelinerun-on-push.yaml"}, onWebhook)
+			"Github Push Request Webhook", []string{"testdata/pipelinerun-on-push.yaml"}, false, true)
 		defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+	} else {
+		t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
 	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPushRequest(ctx, t,
+		"Github Push Request Apps", []string{"testdata/pipelinerun-on-push.yaml"}, false, false)
+	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+}
+
+func TestGithubSecondPush(t *testing.T) {
+	ctx := context.Background()
+
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPushRequest(ctx, t,
+		"Github Push Request GHE Apps", []string{"testdata/pipelinerun-on-push.yaml"}, true, false)
+	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
 func TestGithubPushRequestCELMatchOnTitle(t *testing.T) {
@@ -35,7 +44,7 @@ func TestGithubPushRequestCELMatchOnTitle(t *testing.T) {
 			continue
 		}
 		runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPushRequest(ctx, t,
-			"Github Push Request", []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"}, onWebhook)
+			"Github Push Request", []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"}, false, onWebhook)
 		defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 	}
 }

@@ -20,6 +20,9 @@ func RunGit(dir string, args ...string) (string, error) {
 		//nolint: nilerr
 		return "", nil
 	}
+	// insert in args "-c", "gitcommit.gpgsign=false" at the beginning gpg sign when set in user
+	args = append([]string{"-c", "commit.gpgsign=false"}, args...)
+
 	c := exec.Command(gitPath, args...)
 	var output bytes.Buffer
 	c.Stderr = &output

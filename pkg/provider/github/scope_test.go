@@ -27,7 +27,7 @@ var (
 	tempToken      = "123abcdfrf"
 )
 
-func TestScopeTokenToListOfRipos(t *testing.T) {
+func TestScopeTokenToListOfRepos(t *testing.T) {
 	var (
 		repoFromWhichEventComes = "https://org.com/owner/repo"
 		privateRepo             = "https://org.com/owner2/repo2"
@@ -98,9 +98,6 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 					URL: repoFromWhichEventComes,
 				},
 			},
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace.Name,
-			},
 			repoListsByGlobalConf: "owner1/repo1",
 			wantError:             "",
 			wantToken:             "123abcdfrf",
@@ -115,10 +112,7 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 					repoData, repoData1,
 				},
 			},
-			repository: repoData,
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace.Name,
-			},
+			repository:            repoData,
 			repoListsByGlobalConf: "",
 			wantError:             "",
 			wantToken:             "123abcdfrf",
@@ -133,10 +127,7 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 					repoData,
 				},
 			},
-			repository: repoData,
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace.Name,
-			},
+			repository:            repoData,
 			repoListsByGlobalConf: "",
 			wantError:             "failed to scope GitHub token as repo owner2/repo2 does not exist in namespace pipelinesascode",
 			wantToken:             "",
@@ -149,9 +140,6 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 				Repositories: []*v1alpha1.Repository{
 					repoData, repoData1,
 				},
-			},
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace.Name,
 			},
 			repository:            repoData,
 			repoListsByGlobalConf: "owner1/repo1",
@@ -168,9 +156,6 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 					repoData, repoData1,
 				},
 			},
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace.Name,
-			},
 			repository:               repoData,
 			secretGHAppRepoScopedKey: true,
 			wantError: "failed to scope GitHub token as repo scoped key secret-github-app-token-scoped is enabled. " +
@@ -185,9 +170,6 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 				Repositories: []*v1alpha1.Repository{
 					repoData, repoData1,
 				},
-			},
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace.Name,
 			},
 			repository:               repoData,
 			secretGHAppRepoScopedKey: true,
@@ -217,11 +199,22 @@ func TestScopeTokenToListOfRipos(t *testing.T) {
 					},
 				},
 			}
+
+			ctx = info.StoreCurrentControllerName(ctx, "default")
+			ctx = info.StoreInfo(ctx, "default", &info.Info{
+				Controller: &info.ControllerInfo{
+					Secret: info.DefaultPipelinesAscodeSecretName,
+				},
+			})
+			ctx = info.StoreNS(ctx, testNamespace.GetName())
+
 			fakeghclient, mux, serverURL, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", installationID), func(w http.ResponseWriter, r *http.Request) {
 				_, _ = fmt.Fprintf(w, `{"token": "%s"}`, tempToken)
 			})
+
+			tt.envs = make(map[string]string)
 			tt.envs["PAC_GIT_PROVIDER_TOKEN_APIURL"] = serverURL + "/api/v3"
 			envRemove := env.PatchAll(t, tt.envs)
 			defer envRemove()

@@ -52,7 +52,7 @@ func TestGithubAppIncomingForDifferentEvent(t *testing.T) {
 
 func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[string]string) {
 	ctx := context.Background()
-	runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false)
+	ctx, runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false, false)
 	assert.NilError(t, err)
 	label := "GithubApp Incoming"
 	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", label, randomedString)

@@ -46,7 +46,7 @@ func TestUnsupportedEvent(t *testing.T) {
 	assert.NilError(t, err)
 	defer resp.Body.Close()
 
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
+	assert.Equal(t, resp.StatusCode, http.StatusOK, "%s reply expected 200 OK", elURL)
 }
 
 func TestSkippedEvent(t *testing.T) {
@@ -82,7 +82,7 @@ func TestSkippedEvent(t *testing.T) {
 	assert.NilError(t, err)
 	defer resp.Body.Close()
 
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
+	assert.Equal(t, resp.StatusCode, http.StatusOK, "%s reply expected 200 OK", elURL)
 }
 
 func TestGETCall(t *testing.T) {
@@ -106,5 +106,5 @@ func TestGETCall(t *testing.T) {
 	assert.NilError(t, err)
 	defer resp.Body.Close()
 
-	assert.Equal(t, resp.StatusCode, http.StatusOK)
+	assert.Equal(t, resp.StatusCode, http.StatusOK, "%s reply expected 200 OK", elURL)
 }

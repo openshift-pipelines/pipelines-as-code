@@ -1,6 +1,7 @@
 package kubeinteraction
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -9,6 +10,7 @@ import (
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestAddLabelsAndAnnotations(t *testing.T) {
@@ -22,9 +24,10 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 	event.SHAURL = "https://url/sha"
 
 	type args struct {
-		event       *info.Event
-		pipelineRun *tektonv1.PipelineRun
-		repo        *apipac.Repository
+		event          *info.Event
+		pipelineRun    *tektonv1.PipelineRun
+		repo           *apipac.Repository
+		controllerInfo *info.ControllerInfo
 	}
 	tests := []struct {
 		name string
@@ -45,18 +48,30 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 						Name: "repo",
 					},
 				},
+				controllerInfo: &info.ControllerInfo{
+					Name:      "controller",
+					Configmap: "configmap",
+					Secret:    "secret",
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := AddLabelsAndAnnotations(tt.args.event, tt.args.pipelineRun, tt.args.repo, &info.ProviderConfig{})
+			ctx, _ := rtesting.SetupFakeContext(t)
+			ctx = info.StoreCurrentControllerName(ctx, "default")
+			ctx = info.StoreInfo(ctx, "default", &info.Info{
+				Controller: tt.args.controllerInfo,
+			})
+			err := AddLabelsAndAnnotations(ctx, tt.args.event, tt.args.pipelineRun, tt.args.repo, &info.ProviderConfig{})
 			assert.NilError(t, err)
-			assert.Assert(t, tt.args.pipelineRun.Labels[keys.URLOrg] == tt.args.event.Organization, "'%s' != %s",
+			assert.Equal(t, tt.args.pipelineRun.Labels[keys.URLOrg], tt.args.event.Organization, "'%s' != %s",
 				tt.args.pipelineRun.Labels[keys.URLOrg], tt.args.event.Organization)
-			assert.Assert(t, tt.args.pipelineRun.Annotations[keys.URLOrg] == tt.args.event.Organization, "'%s' != %s",
+			assert.Equal(t, tt.args.pipelineRun.Annotations[keys.URLOrg], tt.args.event.Organization, "'%s' != %s",
 				tt.args.pipelineRun.Annotations[keys.URLOrg], tt.args.event.Organization)
-			assert.Assert(t, tt.args.pipelineRun.Annotations[keys.ShaURL] == tt.args.event.SHAURL)
+			assert.Equal(t, tt.args.pipelineRun.Annotations[keys.ShaURL], tt.args.event.SHAURL)
+			assert.Equal(t, tt.args.pipelineRun.Annotations[keys.ControllerInfo],
+				fmt.Sprintf(`{"name":"%s","configmap":"%s","secret":"%s"}`, tt.args.controllerInfo.Name, tt.args.controllerInfo.Configmap, tt.args.controllerInfo.Secret))
 		})
 	}
 }

@@ -173,5 +173,6 @@ func (c *Clients) NewClients(ctx context.Context, info *info.Info) error {
 
 	c.ConsoleUI = c.consoleUIClient(ctx, c.Dynamic, info)
 	c.ClientInitialized = true
+
 	return nil
 }

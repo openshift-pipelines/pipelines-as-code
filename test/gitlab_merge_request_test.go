@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
@@ -24,6 +25,8 @@ func TestGitlabMergeRequest(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	runcnx, opts, glprovider, err := tgitlab.Setup(ctx)
+	assert.NilError(t, err)
+	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Info("Testing with Gitlab")
 

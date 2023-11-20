@@ -21,14 +21,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const (
-	secretName = "pipelines-as-code-secret"
-)
-
 func GetAppIDAndPrivateKey(ctx context.Context, ns string, kube kubernetes.Interface) (int64, []byte, error) {
-	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
+	controllerName := info.GetCurrentControllerName(ctx)
+	paramsinfo := info.GetInfo(ctx, controllerName)
+	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, paramsinfo.Controller.Secret, v1.GetOptions{})
 	if err != nil {
-		return 0, []byte{}, err
+		return 0, []byte{}, fmt.Errorf("could not get the secret %s in ns %s: %w", paramsinfo.Controller.Secret, ns, err)
 	}
 
 	appID := secret.Data[keys.GithubApplicationID]
@@ -145,8 +143,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	// Only apply for GitHub provider since we do fancy token creation at payload parsing
 	v.Run = run
 	event := info.NewEvent()
-	// TODO: we should not have getenv in code only in main
-	systemNS := os.Getenv("SYSTEM_NAMESPACE")
+	systemNS := info.GetNS(ctx)
 	if err := v.parseEventType(request, event); err != nil {
 		return nil, err
 	}

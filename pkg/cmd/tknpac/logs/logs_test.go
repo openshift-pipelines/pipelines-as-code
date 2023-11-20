@@ -116,7 +116,7 @@ func TestLogs(t *testing.T) {
 					Tekton:         stdata.Pipeline,
 					ConsoleUI:      consoleui.FallBackConsole{},
 				},
-				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.currentNamespace}},
+				Info: info.Info{Kube: &info.KubeOpts{Namespace: tt.currentNamespace}},
 			}
 
 			tknPath, err := exec.LookPath("true")

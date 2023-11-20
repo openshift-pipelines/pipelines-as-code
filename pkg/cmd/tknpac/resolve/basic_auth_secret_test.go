@@ -156,7 +156,7 @@ func TestMakeGitAuthSecret(t *testing.T) {
 
 			if tt.args.matchedSecretValue != "" {
 				run.Info = info.Info{
-					Kube: info.KubeOpts{Namespace: "ns"},
+					Kube: &info.KubeOpts{Namespace: "ns"},
 				}
 				tdata := testclient.Data{
 					Namespaces: []*corev1.Namespace{

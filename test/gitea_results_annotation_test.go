@@ -26,7 +26,8 @@ func TestGiteaResultsAnnotations(t *testing.T) {
 		},
 		CheckForStatus: "success",
 	}
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 
 	// assertions for checking results specific annotation in the PipelineRuns manifest here
 	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
