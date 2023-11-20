@@ -601,13 +601,14 @@ func TestAppTokenGeneration(t *testing.T) {
 
 	ctxNoSecret, _ := rtesting.SetupFakeContext(t)
 	noSecret, _ := testclient.SeedTestData(t, ctxNoSecret, testclient.Data{})
+	secretName := "pipelines-as-code-secret"
 
 	ctx, _ := rtesting.SetupFakeContext(t)
 	vaildSecret, _ := testclient.SeedTestData(t, ctx, testclient.Data{
 		Secret: []*corev1.Secret{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "pipelines-as-code-secret",
+					Name:      secretName,
 					Namespace: testNamespace,
 				},
 				Data: map[string][]byte{
@@ -652,6 +653,7 @@ func TestAppTokenGeneration(t *testing.T) {
 
 	tests := []struct {
 		ctx                 context.Context
+		ctxNS               string
 		name                string
 		wantErrSubst        string
 		nilClient           bool
@@ -662,59 +664,47 @@ func TestAppTokenGeneration(t *testing.T) {
 		extraRepoInstallIds map[string]string
 	}{
 		{
-			name: "secret not found",
-			ctx:  ctxNoSecret,
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": "foo",
-			},
+			name:         "secret not found",
+			ctx:          ctxNoSecret,
+			ctxNS:        "foo",
 			seedData:     noSecret,
 			wantErrSubst: `secrets "pipelines-as-code-secret" not found`,
 		},
 		{
-			ctx:  ctx,
-			name: "secret found",
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace,
-			},
+			ctx:       ctx,
+			name:      "secret found",
+			ctxNS:     testNamespace,
 			seedData:  vaildSecret,
 			nilClient: false,
 		},
 		{
-			ctx:  ctx,
-			name: "check installation ids are set",
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace,
-			},
+			ctx:             ctx,
+			name:            "check installation ids are set",
+			ctxNS:           testNamespace,
 			seedData:        vaildSecret,
 			nilClient:       false,
 			checkInstallIDs: []int64{123},
 		},
 		{
-			ctx:  ctx,
-			name: "check extras installations ids set",
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace,
-			},
+			ctx:                 ctx,
+			name:                "check extras installations ids set",
+			ctxNS:               testNamespace,
 			seedData:            vaildSecret,
 			nilClient:           false,
 			checkInstallIDs:     []int64{123},
 			extraRepoInstallIds: map[string]string{"another/one": "789", "andanother/two": "10112"},
 		},
 		{
-			ctx:  ctxInvalidAppID,
-			name: "invalid app id in secret",
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace,
-			},
+			ctx:          ctxInvalidAppID,
+			name:         "invalid app id in secret",
+			ctxNS:        testNamespace,
 			wantErrSubst: `could not parse the github application_id number from secret: strconv.ParseInt: parsing "abcd": invalid syntax`,
 			seedData:     invalidAppID,
 		},
 		{
-			ctx:  ctxInvalidPrivateKey,
-			name: "invalid private key in secret",
-			envs: map[string]string{
-				"SYSTEM_NAMESPACE": testNamespace,
-			},
+			ctx:          ctxInvalidPrivateKey,
+			name:         "invalid private key in secret",
+			ctxNS:        testNamespace,
 			wantErrSubst: `could not parse private key: invalid key: Key must be a PEM encoded PKCS1 or PKCS8 key`,
 			seedData:     invalidPrivateKey,
 		},
@@ -755,6 +745,7 @@ func TestAppTokenGeneration(t *testing.T) {
 			request.Header.Set("X-GitHub-Event", "pull_request")
 			// a bit of a pain but works
 			request.Header.Set("X-GitHub-Enterprise-Host", serverURL)
+			tt.envs = make(map[string]string)
 			tt.envs["PAC_GIT_PROVIDER_TOKEN_APIURL"] = serverURL + "/api/v3"
 
 			run := &params.Run{
@@ -789,6 +780,12 @@ func TestAppTokenGeneration(t *testing.T) {
 				run.Info.Pac.SecretGHAppRepoScoped = true
 				run.Info.Pac.SecretGhAppTokenScopedExtraRepos = extras
 			}
+
+			tt.ctx = info.StoreCurrentControllerName(tt.ctx, "default")
+			tt.ctx = info.StoreInfo(tt.ctx, "default", &info.Info{
+				Controller: &info.ControllerInfo{Secret: secretName},
+			})
+			tt.ctx = info.StoreNS(tt.ctx, tt.ctxNS)
 
 			_, err := gprovider.ParsePayload(tt.ctx, run, request, string(jeez))
 			if tt.wantErrSubst != "" {

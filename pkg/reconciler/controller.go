@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	tektonPipelineRunInformerv1 "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1/pipelinerun"
@@ -19,33 +20,34 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/system"
 )
 
 func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 	return func(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+		ns := system.Namespace()
+		ctx = info.StoreNS(ctx, ns)
+
 		log := logging.FromContext(ctx)
 		run := params.New()
-		err := run.Clients.NewClients(ctx, &run.Info)
+		rinfo := &run.Info
+		rinfo.Controller = info.GetControllerInfoFromEnvOrDefault()
+		err := run.Clients.NewClients(ctx, rinfo)
 		if err != nil {
 			log.Fatal("failed to init clients : ", err)
 		}
+		ctx = info.StoreInfo(ctx, ns, &run.Info)
 
 		kinteract, err := kubeinteraction.NewKubernetesInteraction(run)
 		if err != nil {
 			log.Fatal("failed to init kinit client : ", err)
 		}
 
-		c := make(chan struct{})
-		go func() {
-			c <- struct{}{}
-			if err := run.WatchConfigMapChanges(ctx); err != nil {
-				log.Fatal("error from WatchConfigMapChanges from watcher reconciler : ", err)
-			}
-		}()
-		<-c
+		if err := run.UpdatePACInfo(ctx); err != nil {
+			log.Fatal("error from WatchConfigMapChanges from watcher reconciler : ", err)
+		}
 
 		pipelineRunInformer := tektonPipelineRunInformerv1.Get(ctx)
-
 		metrics, err := metrics.NewRecorder()
 		if err != nil {
 			log.Fatalf("Failed to create pipeline as code metrics recorder %v", err)

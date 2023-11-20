@@ -19,8 +19,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var targetNamespaces = []string{"openshift-pipelines", "pipelines-as-code"}
-
 type InstallInfo struct {
 	App        *github.App
 	run        *params.Run
@@ -60,23 +58,8 @@ func (g *InstallInfo) get(ctx context.Context) error {
 	return json.Unmarshal(data, &g.App)
 }
 
-func getPacLocation(ctx context.Context, run *params.Run) (string, string, error) {
-	for _, ns := range targetNamespaces {
-		version := "unknown"
-		deployment, err := run.Clients.Kube.AppsV1().Deployments(ns).Get(ctx, "pipelines-as-code-controller", metav1.GetOptions{})
-		if err != nil {
-			continue
-		}
-		if val, ok := deployment.GetLabels()["app.kubernetes.io/version"]; ok {
-			version = val
-		}
-		return ns, version, nil
-	}
-	return "", "", fmt.Errorf("cannot find your pipelines-as-code installation, check that it is installed and you have access")
-}
-
 func install(ctx context.Context, run *params.Run, ios *cli.IOStreams, apiURL string) error {
-	targetNs, version, err := getPacLocation(ctx, run)
+	targetNs, version, err := params.GetInstallLocation(ctx, run)
 	if err != nil {
 		return err
 	}
@@ -122,7 +105,7 @@ func installCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
 		Short: "Provides installation info for pipelines-as-code (admin only).",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := context.Background()
 			if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 				return err

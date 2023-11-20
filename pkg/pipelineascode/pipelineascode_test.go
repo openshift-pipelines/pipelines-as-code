@@ -496,12 +496,17 @@ func TestRun(t *testing.T) {
 			if tt.ProviderInfoFromRepo {
 				secrets[repoToken] = "token"
 				repo.SecretName = repoToken
-				repo.WebhookSecretName = DefaultPipelinesAscodeSecretName
-				secrets[DefaultPipelinesAscodeSecretName] = webhookSecret
+				repo.WebhookSecretName = info.DefaultPipelinesAscodeSecretName
+				secrets[info.DefaultPipelinesAscodeSecretName] = webhookSecret
 			} else {
-				secrets[DefaultPipelinesAscodeSecretName] = webhookSecret
+				secrets[info.DefaultPipelinesAscodeSecretName] = webhookSecret
 			}
 
+			ctx = info.StoreInfo(ctx, "default", &info.Info{
+				Controller: &info.ControllerInfo{
+					Secret: info.DefaultPipelinesAscodeSecretName,
+				},
+			})
 			if tt.repositories == nil {
 				tt.repositories = []*v1alpha1.Repository{
 					testnewrepo.NewRepo(repo),
@@ -564,6 +569,8 @@ func TestRun(t *testing.T) {
 				URL:   ghTestServerURL,
 				Token: "NONE",
 			}
+			ctx = info.StoreCurrentControllerName(ctx, "default")
+			ctx = info.StoreNS(ctx, repo.InstallNamespace)
 
 			k8int := &kitesthelper.KinterfaceTest{
 				ConsoleURL:               "https://console.url",

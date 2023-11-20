@@ -481,7 +481,7 @@ func TestDescribe(t *testing.T) {
 					ConsoleUI:      consoleui.FallBackConsole{},
 					Kube:           stdata.Kube,
 				},
-				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.args.currentNamespace}},
+				Info: info.Info{Kube: &info.KubeOpts{Namespace: tt.args.currentNamespace}},
 			}
 
 			io, out := tcli.NewIOStream()

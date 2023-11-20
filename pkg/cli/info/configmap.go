@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -17,7 +17,7 @@ type Options struct {
 }
 
 func IsGithubAppInstalled(ctx context.Context, run *params.Run, targetNamespace string) bool {
-	if _, err := run.Clients.Kube.CoreV1().Secrets(targetNamespace).Get(ctx, pipelineascode.DefaultPipelinesAscodeSecretName, metav1.GetOptions{}); err != nil {
+	if _, err := run.Clients.Kube.CoreV1().Secrets(targetNamespace).Get(ctx, info.DefaultPipelinesAscodeSecretName, metav1.GetOptions{}); err != nil {
 		return false
 	}
 	return true

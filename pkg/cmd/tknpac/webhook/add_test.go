@@ -227,7 +227,7 @@ func TestWebhookAdd(t *testing.T) {
 					PipelineAsCode: stdata.PipelineAsCode,
 					Kube:           stdata.Kube,
 				},
-				Info: info.Info{Kube: info.KubeOpts{Namespace: tt.opts.Namespace}},
+				Info: info.Info{Kube: &info.KubeOpts{Namespace: tt.opts.Namespace}},
 			}
 			io, out := newIOStream()
 			if err := add(ctx, tt.opts, cs, io,

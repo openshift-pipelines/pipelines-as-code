@@ -1,5 +1,4 @@
 //go:build e2e
-// +build e2e
 
 package test
 
@@ -13,6 +12,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -49,7 +49,9 @@ func TestGiteaPolicyPullRequest(t *testing.T) {
 		},
 		YAMLFiles: map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"},
 	}
-	tgitea.TestPR(t, topts)
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
 	topts.ParamsRun.Clients.Log.Infof("Repo CRD %s has been created with Policy: %+v", topts.TargetRefName, topts.Settings.Policy)
 
 	orgName := "org-" + topts.TargetRefName
@@ -108,7 +110,8 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 		},
 		YAMLFiles: map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"},
 	}
-	tgitea.TestPR(t, topts)
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 	topts.ParamsRun.Clients.Log.Infof("Repo CRD %s has been created with Policy: %+v", topts.TargetRefName, topts.Settings.Policy)
 
 	orgName := "org-" + topts.TargetRefName
@@ -174,7 +177,8 @@ func TestGiteaACLOrgAllowed(t *testing.T) {
 		ExpectEvents:         false,
 		CheckForNumberStatus: 2,
 	}
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 
@@ -192,7 +196,8 @@ func TestGiteaACLOrgPendingApproval(t *testing.T) {
 		},
 		ExpectEvents: false,
 	}
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 
@@ -230,7 +235,8 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 				},
 				ExpectEvents: false,
 			}
-			defer tgitea.TestPR(t, topts)()
+			_, f := tgitea.TestPR(t, topts)
+			defer f()
 			secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 			assert.NilError(t, err)
 
@@ -272,12 +278,16 @@ func TestGiteaACLCommentsAllowingRememberOkToTestFalse(t *testing.T) {
 	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
 	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
 
+	ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+
 	cfgMapData := map[string]string{
 		"remember-ok-to-test": "false",
 	}
 	defer configmap.ChangeGlobalConfig(ctx, t, topts.ParamsRun, cfgMapData)()
 
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 
@@ -329,8 +339,8 @@ func TestGiteaACLCommentsAllowingRememberOkToTestTrue(t *testing.T) {
 
 	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
 	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
-
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 
@@ -365,7 +375,8 @@ func TestGiteaPolicyAllowedOwnerFiles(t *testing.T) {
 			},
 		},
 	}
-	defer tgitea.TestPR(t, topts)()
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
 	targetRef := topts.TargetRefName
 	orgName := "org-" + topts.TargetRefName
 	topts.Opts.Organization = orgName

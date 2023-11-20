@@ -21,9 +21,9 @@ You could use [`tkn pac bootstrap`](/docs/guide/cli) command which will a create
 steps to configure it with your Git repository and also creates required secrets.
 After creating the GitHub App, you must install it on the repositories you want to use for Pipelines-as-Code.
 
-Alternatively, you could set up manually by following the steps [here](#setup-manually).
+Alternatively, you could set up manually by following the steps [here](./#setup-manually)
 
-## Setup Manually
+## Manual SetUp
 
 * Go to <https://github.com/settings/apps> (or *Settings > Developer settings > GitHub Apps*) and click on **New GitHub
   App** button

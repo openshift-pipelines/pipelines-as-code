@@ -43,10 +43,11 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, gitlab.Provider, erro
 		return nil, options.E2E{}, gitlab.Provider{}, fmt.Errorf("TEST_EL_URL variable is required, cannot continue")
 	}
 
-	run := &params.Run{}
+	run := params.New()
 	if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 		return nil, options.E2E{}, gitlab.Provider{}, err
 	}
+
 	e2eoptions := options.E2E{
 		ProjectID:     gitlabPid,
 		ControllerURL: controllerURL,

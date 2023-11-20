@@ -16,27 +16,65 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestHandleEvent(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	cs, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
+	cs, _ := testclient.SeedTestData(t, ctx, testclient.Data{
+		ConfigMap: []*corev1.ConfigMap{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      info.DefaultPipelinesAscodeConfigmapName,
+					Namespace: "default",
+				},
+				Data: map[string]string{},
+			},
+		},
+	})
 	logger, _ := logger.GetLogger()
 
-	t.Setenv("SYSTEM_NAMESPACE", "test")
+	ctx = info.StoreCurrentControllerName(ctx, "default")
+	ctx = info.StoreInfo(ctx, "default", &info.Info{
+		Controller: &info.ControllerInfo{
+			Secret:    info.DefaultPipelinesAscodeSecretName,
+			Configmap: info.DefaultPipelinesAscodeConfigmapName,
+		},
+	})
+	ctx = info.StoreNS(ctx, "default")
+
+	emptys := &unstructured.Unstructured{}
+	emptys.SetUnstructuredContent(map[string]interface{}{
+		"apiVersion": "route.openshift.io/v1",
+		"kind":       "Route",
+		"metadata": map[string]interface{}{
+			"name":      "not",
+			"namespace": "console",
+		},
+	})
+	dynClient := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme(), emptys)
 	l := listener{
 		run: &params.Run{
 			Clients: clients.Clients{
 				PipelineAsCode: cs.PipelineAsCode,
 				Log:            logger,
 				Kube:           cs.Kube,
+				Dynamic:        dynClient,
 			},
 			Info: info.Info{
 				Pac: &info.PacOpts{
 					Settings: &settings.Settings{
 						AutoConfigureNewGitHubRepo: false,
 					},
+				},
+				Controller: &info.ControllerInfo{
+					Configmap: info.DefaultPipelinesAscodeConfigmapName,
+					Secret:    info.DefaultPipelinesAscodeSecretName,
 				},
 			},
 		},

@@ -15,10 +15,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubPushRequestGitOpsComments(t *testing.T) {
+func TestGithubSecondPushRequestGitOpsComments(t *testing.T) {
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPushRequest(ctx, t,
-		"Github Push Request", []string{"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml"}, false)
+		"Github Push Request", []string{"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml"}, true, false)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	pruns, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})

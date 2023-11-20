@@ -5,12 +5,12 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"net/http"
-	"os"
 
 	apincoming "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/incoming"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
@@ -104,9 +104,7 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 
 	if repo.Spec.GitProvider == nil || repo.Spec.GitProvider.Type == "" {
 		gh := github.New()
-
-		// TODO: move this out of here
-		ns := os.Getenv("SYSTEM_NAMESPACE")
+		ns := info.GetNS(ctx)
 		enterpriseURL, token, installationID, err := app.GetAndUpdateInstallationID(ctx, req, l.run, repo, gh, ns)
 		if err != nil {
 			return false, nil, err

@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/logs"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
@@ -68,7 +69,7 @@ func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
 }
 
 // TestPR will test the pull request event and grab comments from the PR.
-func TestPR(t *testing.T, topts *TestOpts) func() {
+func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 	ctx := context.Background()
 	if topts.ParamsRun == nil {
 		runcnx, opts, giteacnx, err := Setup(ctx)
@@ -77,6 +78,8 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 		topts.ParamsRun = runcnx
 		topts.Opts = opts
 	}
+	ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
 	giteaURL := os.Getenv("TEST_GITEA_API_URL")
 	giteaPassword := os.Getenv("TEST_GITEA_PASSWORD")
 	topts.GiteaAPIURL = giteaURL
@@ -121,7 +124,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	topts.GitCloneURL = url
 
 	if topts.NoPullRequestCreation {
-		return cleanup
+		return ctx, cleanup
 	}
 
 	entries, err := payload.GetEntries(topts.YAMLFiles,
@@ -190,7 +193,7 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 	} else if !topts.SkipEventsCheck {
 		assert.Assert(t, len(events.Items) == 0, fmt.Sprintf("no events expected but got %v in %v ns, items: %+v", len(events.Items), topts.TargetNS, events.Items))
 	}
-	return cleanup
+	return ctx, cleanup
 }
 
 func NewPR(t *testing.T, topts *TestOpts) func() {

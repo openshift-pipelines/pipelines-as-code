@@ -12,7 +12,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
@@ -48,7 +47,7 @@ var testNamespace = &corev1.Namespace{
 
 var validSecret = &corev1.Secret{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+		Name:      info.DefaultPipelinesAscodeSecretName,
 		Namespace: testNamespace.GetName(),
 	},
 	Data: map[string][]byte{
@@ -72,7 +71,7 @@ func Test_GenerateJWT(t *testing.T) {
 
 	secretWithInavlidAppID := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+			Name:      info.DefaultPipelinesAscodeSecretName,
 			Namespace: testNamespace.Name,
 		},
 		Data: map[string][]byte{
@@ -82,7 +81,7 @@ func Test_GenerateJWT(t *testing.T) {
 	}
 	secretWithInvalidPrivateKey := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+			Name:      info.DefaultPipelinesAscodeSecretName,
 			Namespace: testNamespace.Name,
 		},
 		Data: map[string][]byte{
@@ -125,8 +124,19 @@ func Test_GenerateJWT(t *testing.T) {
 				Namespaces: []*corev1.Namespace{tt.namespace},
 				Secret:     []*corev1.Secret{tt.secret},
 			}
-			ctxNoSecret, _ := rtesting.SetupFakeContext(t)
-			stdata, _ := testclient.SeedTestData(t, ctxNoSecret, tdata)
+			ctx, _ := rtesting.SetupFakeContext(t)
+			ctx = info.StoreCurrentControllerName(ctx, "default")
+			name := ""
+			if tt.secret != nil {
+				name = tt.secret.GetName()
+			}
+			ctx = info.StoreInfo(ctx, "default", &info.Info{
+				Controller: &info.ControllerInfo{
+					Secret: name,
+				},
+			})
+
+			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 			run := &params.Run{
 				Clients: clients.Clients{
 					Log:            logger,
@@ -135,7 +145,7 @@ func Test_GenerateJWT(t *testing.T) {
 				},
 			}
 
-			token, err := GenerateJWT(ctxNoSecret, tt.namespace.GetName(), run)
+			token, err := GenerateJWT(ctx, tt.namespace.GetName(), run)
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 				return
@@ -185,6 +195,11 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 			},
 		},
 	}
+	ctx = info.StoreCurrentControllerName(ctx, "default")
+	ctx = info.StoreInfo(ctx, "default", &info.Info{
+		Controller: &info.ControllerInfo{Secret: validSecret.GetName()},
+	})
+	ctx = info.StoreNS(ctx, testNamespace.GetName())
 
 	jwtToken, err := GenerateJWT(ctx, testNamespace.GetName(), run)
 	assert.NilError(t, err)

@@ -22,7 +22,7 @@ func InitAskStubber() (*AskStubber, func()) {
 	origSurveyAskOne := SurveyAskOne
 	as := AskStubber{}
 
-	SurveyAskOne = func(p survey.Prompt, response interface{}, opts ...survey.AskOpt) error {
+	SurveyAskOne = func(p survey.Prompt, response interface{}, _ ...survey.AskOpt) error {
 		as.AskOnes = append(as.AskOnes, &p)
 		count := as.OneCount
 		as.OneCount++

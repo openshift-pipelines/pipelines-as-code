@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/system"
 )
 
 const tlsMountPath = "/etc/pipelines-as-code/tls"
@@ -17,7 +18,8 @@ func (l listener) isTLSEnabled() (bool, string, string) {
 	tlsKey := os.Getenv("TLS_KEY")
 	tlsCert := os.Getenv("TLS_CERT")
 
-	tls, err := l.run.Clients.Kube.CoreV1().Secrets(os.Getenv("SYSTEM_NAMESPACE")).
+	// TODO: Should we make different TLS by controller?
+	tls, err := l.run.Clients.Kube.CoreV1().Secrets(system.Namespace()).
 		Get(context.Background(), tlsSecret, v1.GetOptions{})
 	if err != nil {
 		return false, "", ""

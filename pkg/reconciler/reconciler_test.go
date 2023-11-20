@@ -124,6 +124,13 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			}
 
 			secretName := secrets.GenerateBasicAuthSecretName()
+			ctx = info.StoreCurrentControllerName(ctx, "default")
+			ctx = info.StoreInfo(ctx, "default", &info.Info{
+				Controller: &info.ControllerInfo{
+					Secret: secretName,
+				},
+			})
+
 			pr.Annotations = map[string]string{
 				keys.GitAuthSecret:  secretName,
 				keys.State:          kubeinteraction.StateCompleted,

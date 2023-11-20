@@ -10,19 +10,8 @@ import (
 	"testing"
 
 	apincoming "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/incoming"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
-	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -30,6 +19,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/kubernetestint"
 )
 
 const fakePrivateKey = `-----BEGIN RSA PRIVATE KEY-----
@@ -408,7 +409,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 					},
 					Secret: []*corev1.Secret{{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+							Name:      info.DefaultPipelinesAscodeSecretName,
 							Namespace: testNamespace.Name,
 						},
 						Data: map[string][]byte{
@@ -519,7 +520,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 					},
 					Secret: []*corev1.Secret{{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      pipelineascode.DefaultPipelinesAscodeSecretName,
+							Name:      info.DefaultPipelinesAscodeSecretName,
 							Namespace: testNamespace.Name,
 						},
 						Data: map[string][]byte{
@@ -653,6 +654,13 @@ func Test_listener_detectIncoming(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			ctx = info.StoreCurrentControllerName(ctx, "default")
+			ctx = info.StoreInfo(ctx, "default", &info.Info{
+				Controller: &info.ControllerInfo{
+					Secret: info.DefaultPipelinesAscodeSecretName,
+				},
+			})
+			ctx = info.StoreNS(ctx, testNamespace.GetName())
 			cs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
 			client := &params.Run{
 				Clients: clients.Clients{

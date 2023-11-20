@@ -88,7 +88,7 @@ func TestGithubPullRequestScopeTokenToListOfReposByGlobalConfiguration(t *testin
 
 func verifyGHTokenScope(t *testing.T, remoteTaskURL, remoteTaskName string, data map[string]string) {
 	ctx := context.Background()
-	runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false)
+	ctx, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false, false)
 	assert.NilError(t, err)
 
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")

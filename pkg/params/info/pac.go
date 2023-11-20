@@ -15,6 +15,10 @@ type PacOpts struct {
 	TektonDashboardURL string
 }
 
+func (p *PacOpts) DeepCopy(out *PacOpts) {
+	*out = *p
+}
+
 func (p *PacOpts) AddFlags(cmd *cobra.Command) error {
 	cmd.PersistentFlags().StringVarP(&p.WebhookType, "git-provider-type", "",
 		os.Getenv("PAC_GIT_PROVIDER_TYPE"),

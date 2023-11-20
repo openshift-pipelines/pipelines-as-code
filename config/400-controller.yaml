@@ -94,6 +94,12 @@ spec:
               value: '{"backend":"prometheus","debug":"false","sample-rate":"0"}'
             - name: K_SINK_TIMEOUT
               value: "30"
+            - name: PAC_CONTROLLER_LABEL
+              value: "default"
+            - name: PAC_CONTROLLER_SECRET
+              value: "pipelines-as-code-secret"
+            - name: PAC_CONTROLLER_CONFIGMAP
+              value: "pipelines-as-code"
           volumeMounts:
             - mountPath: "/etc/pipelines-as-code/tls"
               readOnly: true

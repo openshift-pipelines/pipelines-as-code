@@ -6,22 +6,17 @@ import (
 	"io"
 
 	"github.com/google/go-github/v56/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1i "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 func GetControllerLog(ctx context.Context, kclient corev1i.CoreV1Interface, labelselector, containerName string) (string, error) {
-	_, err := kclient.Namespaces().Get(ctx, "pipelines-as-code", metav1.GetOptions{})
-	var ns string
-	if err == nil {
-		ns = "pipelines-as-code"
-	} else {
-		_, err = kclient.Namespaces().Get(ctx, "openshift-pipelines", metav1.GetOptions{})
-		if err != nil {
-			return "", err
-		}
-		ns = "openshift-pipelines"
+	ns := info.GetNS(ctx)
+	_, err := kclient.Namespaces().Get(ctx, ns, metav1.GetOptions{})
+	if err != nil {
+		return "", err
 	}
 
 	return GetPodLog(ctx, kclient, ns, labelselector, containerName)

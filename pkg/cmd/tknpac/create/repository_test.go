@@ -138,7 +138,7 @@ func TestGetNamespace(t *testing.T) {
 				as.StubOne(true)
 			},
 			runInfo: info.Info{
-				Kube: info.KubeOpts{
+				Kube: &info.KubeOpts{
 					Namespace: "default",
 				},
 			},
@@ -151,6 +151,9 @@ func TestGetNamespace(t *testing.T) {
 			},
 			wantStdout: "! Namespace pasenvie is not found",
 			wantErrStr: "you need to create the target namespace first",
+			runInfo: info.Info{
+				Kube: &info.KubeOpts{},
+			},
 		},
 		{
 			name: "create ns here",
@@ -167,7 +170,7 @@ func TestGetNamespace(t *testing.T) {
 				},
 			},
 			runInfo: info.Info{
-				Kube: info.KubeOpts{
+				Kube: &info.KubeOpts{
 					Namespace: nshere,
 				},
 			},
@@ -180,6 +183,9 @@ func TestGetNamespace(t *testing.T) {
 				as.StubOne(true)
 			},
 			wantStdout: fmt.Sprintf("! Namespace %s is not found", nsnothere),
+			runInfo: info.Info{
+				Kube: &info.KubeOpts{},
+			},
 		},
 	}
 	for _, tt := range tests {

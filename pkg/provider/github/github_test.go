@@ -1003,8 +1003,14 @@ func TestCreateToken(t *testing.T) {
 			"github-private-key":    []byte(fakePrivateKey),
 		},
 	}
+	ctx = info.StoreNS(ctx, testNamespace.GetName())
+	ctx = info.StoreCurrentControllerName(ctx, "default")
+	ctx = info.StoreInfo(ctx, "default", &info.Info{
+		Controller: &info.ControllerInfo{
+			Secret: validSecret.GetName(),
+		},
+	})
 
-	t.Setenv("SYSTEM_NAMESPACE", testNamespace.Name)
 	tdata := testclient.Data{
 		Namespaces: []*corev1.Namespace{testNamespace},
 		Secret:     []*corev1.Secret{validSecret},
@@ -1048,12 +1054,9 @@ func TestCreateToken(t *testing.T) {
 	provider := &Provider{Client: fakeclient}
 	provider.Run = run
 	_, err := provider.CreateToken(ctx, urlData, info)
-	if len(provider.RepositoryIDs) != 2 {
-		assert.Error(t, fmt.Errorf("found repositoryIDs are %d which is less than expected", len(provider.RepositoryIDs)),
-			"expected repositoryIDs are 2")
-	}
+	assert.Assert(t, len(provider.RepositoryIDs) == 2, "found repositoryIDs are %d which is less than expected", len(provider.RepositoryIDs))
 	if err != nil {
-		assert.Equal(t, strings.Contains(err.Error(), "could not refresh installation id 1234567's token"), true)
+		assert.ErrorContains(t, err, "could not refresh installation id 1234567's token")
 	}
 }
 

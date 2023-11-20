@@ -31,7 +31,7 @@ func TestGithubPacCli(t *testing.T) {
 	}
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
-	runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false)
+	ctx, runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false, false)
 	assert.NilError(t, err)
 
 	entries := map[string]string{

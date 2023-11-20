@@ -3,7 +3,6 @@ package pipelineascode
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -17,7 +16,6 @@ import (
 const (
 	DefaultGitProviderSecretKey                  = "provider.token"
 	DefaultGitProviderWebhookSecretKey           = "webhook.secret"
-	DefaultPipelinesAscodeSecretName             = "pipelines-as-code-secret"
 	defaultPipelinesAscodeSecretWebhookSecretKey = "webhook.secret"
 )
 
@@ -91,11 +89,13 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	return nil
 }
 
-// GetCurrentNSWebhookSecret get secret from current namespace if it exists.
+// GetCurrentNSWebhookSecret get secret from namespace as stored on context.
 func GetCurrentNSWebhookSecret(ctx context.Context, k8int kubeinteraction.Interface) (string, error) {
+	ns := info.GetNS(ctx)
+	paramsinfo := info.GetInfo(ctx, info.GetCurrentControllerName(ctx))
 	s, err := k8int.GetSecret(ctx, ktypes.GetSecretOpt{
-		Namespace: os.Getenv("SYSTEM_NAMESPACE"),
-		Name:      DefaultPipelinesAscodeSecretName,
+		Namespace: ns,
+		Name:      paramsinfo.Controller.Secret,
 		Key:       defaultPipelinesAscodeSecretWebhookSecretKey,
 	})
 	// a lot of people have problem with this secret, when encoding it to base64 which add a \n when we do :

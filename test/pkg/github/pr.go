@@ -99,9 +99,10 @@ func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, o
 	return pr.GetNumber(), nil
 }
 
-func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles []string, webhook bool) (*params.Run, *ghprovider.Provider, options.E2E, string, string, int, string) {
+func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles []string, secondcontroller, webhook bool) (*params.Run, *ghprovider.Provider, options.E2E, string, string, int, string) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
-	runcnx, opts, ghcnx, err := Setup(ctx, webhook)
+
+	ctx, runcnx, opts, ghcnx, err := Setup(ctx, secondcontroller, webhook)
 	assert.NilError(t, err)
 
 	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", label, targetNS)
@@ -148,11 +149,11 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 	return runcnx, ghcnx, opts, targetNS, targetRefName, number, sha
 }
 
-func RunPushRequest(ctx context.Context, t *testing.T, label string, yamlFiles []string, onWebhook bool) (*params.Run, *ghprovider.Provider, options.E2E, string, string, int, string) {
+func RunPushRequest(ctx context.Context, t *testing.T, label string, yamlFiles []string, onSecondController, onWebhook bool) (*params.Run, *ghprovider.Provider, options.E2E, string, string, int, string) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-push")
 	targetBranch := targetNS
 	targetEvent := "push"
-	runcnx, opts, ghcnx, err := Setup(ctx, onWebhook)
+	ctx, runcnx, opts, ghcnx, err := Setup(ctx, onSecondController, onWebhook)
 	assert.NilError(t, err)
 
 	var logmsg string

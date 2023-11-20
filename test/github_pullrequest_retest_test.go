@@ -24,7 +24,7 @@ func TestGithubPullRequestRetest(t *testing.T) {
 	}
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t,
-		"Github Retest comment", []string{"testdata/pipelinerun.yaml"}, false)
+		"Github Retest comment", []string{"testdata/pipelinerun.yaml"}, false, false)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Creating /retest in PullRequest")
@@ -55,7 +55,7 @@ func TestGithubPullRequestRetest(t *testing.T) {
 func TestGithubPullRequestGitOpsComments(t *testing.T) {
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t,
-		"Github Retest comment", []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-gitops.yaml"}, false)
+		"Github Retest comment", []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-gitops.yaml"}, false, false)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	pruns, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
