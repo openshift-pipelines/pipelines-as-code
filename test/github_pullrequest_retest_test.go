@@ -51,6 +51,7 @@ func TestGithubPullRequestRetest(t *testing.T) {
 	assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionTrue)
 }
 
+// TestGithubPullRequestGitOpsComments tests GitOps comments /test, /retest and /cancel commands.
 func TestGithubPullRequestGitOpsComments(t *testing.T) {
 	ctx := context.Background()
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t,
