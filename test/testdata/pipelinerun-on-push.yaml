@@ -17,5 +17,5 @@ spec:
               image: registry.access.redhat.com/ubi9/ubi-micro
               script: |
                 echo "HELLOMOTO"
-                sleep 10
+                sleep 30
                 exit 0
