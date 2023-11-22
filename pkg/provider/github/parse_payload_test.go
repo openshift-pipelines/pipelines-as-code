@@ -77,6 +77,14 @@ var samplePR = github.PullRequest{
 	},
 }
 
+var samplePRAnother = github.PullRequest{
+	Number: github.Int(54321),
+	Head: &github.PullRequestBranch{
+		SHA:  github.String("samplePRshanew"),
+		Repo: sampleRepo,
+	},
+}
+
 func TestParsePayLoad(t *testing.T) {
 	tests := []struct {
 		name                       string
@@ -474,6 +482,25 @@ func TestParsePayLoad(t *testing.T) {
 			isCancelPipelineRunEnabled: false,
 			wantErrString:              "404 Not Found",
 		},
+		{
+			name:          "commit comment to retest a pr with a SHA that does not exist in the main branch",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.String("samplePRshanew"),
+					HTMLURL:  github.String("/777"),
+					Body:     github.String("/retest dummy"),
+				},
+			},
+			muxReplies:        map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePRAnother},
+			shaRet:            "samplePRshanew",
+			targetPipelinerun: "dummy",
+			wantedBranchName:  "main",
+			wantErrString:     "provided branch main does not contains sha samplePRshanew",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -497,6 +524,16 @@ func TestParsePayLoad(t *testing.T) {
 			"name": "test1",
 			"commit": {
 				"sha": "samplePRsha"
+			}
+		}`)
+					assert.NilError(t, err)
+				})
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/branches/testnew",
+					"owner", "reponame"), func(rw http.ResponseWriter, r *http.Request) {
+					_, err := fmt.Fprintf(rw, `{
+			"name": "testnew",
+			"commit": {
+				"sha": "samplePRshanew"
 			}
 		}`)
 					assert.NilError(t, err)
