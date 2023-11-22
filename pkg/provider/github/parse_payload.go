@@ -393,17 +393,15 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 	runevent.EventType = "push"
 	runevent.TriggerTarget = "push"
 
-	// by default head and base branch is main
-	runevent.HeadBranch = "main"
-	runevent.BaseBranch = "main"
-
+	// Set main as default branch to runevent.HeadBranch, runevent.BaseBranch
+	runevent.HeadBranch, runevent.BaseBranch = "main", "main"
 	var (
 		branchName string
 		prName     string
 		err        error
 	)
 
-	// if it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
+	// If it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
 	if provider.IsTestRetestComment(event.GetComment().GetBody()) {
 		prName, branchName, err = provider.GetPipelineRunAndBranchNameFromTestComment(event.GetComment().GetBody())
 		if err != nil {
@@ -411,30 +409,33 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 		}
 		runevent.TargetTestPipelineRun = prName
 	}
+	// Check for /cancel comment
 	if provider.IsCancelComment(event.GetComment().GetBody()) {
 		action = "cancellation"
 		prName, branchName, err = provider.GetPipelineRunAndBranchNameFromCancelComment(event.GetComment().GetBody())
 		if err != nil {
 			return runevent, err
 		}
+		runevent.CancelPipelineRuns = true
 		runevent.TargetCancelPipelineRun = prName
 	}
 
-	if branchName != "" {
-		if err = v.isBranchContainsCommit(ctx, runevent, branchName); err != nil {
-			return runevent, err
-		}
-		runevent.HeadBranch = branchName
-		runevent.BaseBranch = branchName
+	// If no branch is specified in GitOps comments, use runevent.HeadBranch
+	if branchName == "" {
+		branchName = runevent.HeadBranch
 	}
 
-	if provider.IsCancelComment(event.GetComment().GetBody()) {
-		if err = v.isBranchContainsCommit(ctx, runevent, runevent.HeadBranch); err != nil {
+	// Check if the specified branch contains the commit
+	if err = v.isBranchContainsCommit(ctx, runevent, branchName); err != nil {
+		if provider.IsCancelComment(event.GetComment().GetBody()) {
 			runevent.CancelPipelineRuns = false
-			return runevent, err
 		}
-		runevent.CancelPipelineRuns = true
+		return runevent, err
 	}
+	// Finally update branch information to runevent.HeadBranch and runevent.BaseBranch
+	runevent.HeadBranch = branchName
+	runevent.BaseBranch = branchName
+
 	v.Logger.Infof("commit_comment: pipelinerun %s on %s/%s#%s has been requested", action, runevent.Organization, runevent.Repository, runevent.SHA)
 	return runevent, nil
 }
