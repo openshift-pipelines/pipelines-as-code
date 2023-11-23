@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/clientset/versioned"
@@ -16,6 +18,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+)
+
+const (
+	// most programming languages  do not have a timeout, but c# does a default
+	// of 100 seconds so using that value.
+	ConnectMaxWaitTime = 100 * time.Second
+	RequestMaxWaitTime = 100 * time.Second
 )
 
 type Clients struct {
@@ -30,7 +39,10 @@ type Clients struct {
 }
 
 func (c *Clients) GetURL(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	nctx, cancel := context.WithTimeout(ctx, RequestMaxWaitTime)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(nctx, http.MethodGet, url, nil)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -125,6 +137,14 @@ func (c *Clients) NewClients(ctx context.Context, info *info.Info) error {
 	}()
 	c.Log = logger
 
+	c.HTTP = http.Client{
+		Timeout: RequestMaxWaitTime,
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: ConnectMaxWaitTime,
+			}).DialContext,
+		},
+	}
 	config, err := c.kubeConfig(info)
 	if err != nil {
 		return err
