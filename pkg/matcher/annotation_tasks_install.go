@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -106,16 +104,10 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 
 	switch {
 	case strings.HasPrefix(uri, "https://"), strings.HasPrefix(uri, "http://"): // if it starts with http(s)://, it is a remote resource
-		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
-		res, err := rt.Run.Clients.HTTP.Do(req)
+		data, err := rt.Run.Clients.GetURL(ctx, uri)
 		if err != nil {
 			return "", err
 		}
-		if res.StatusCode != http.StatusOK {
-			return "", fmt.Errorf("cannot get remote resource: %s: %s", uri, res.Status)
-		}
-		data, _ := io.ReadAll(res.Body)
-		defer res.Body.Close()
 		rt.Logger.Infof("successfully fetched %s from remote https url", uri)
 		return string(data), nil
 	case fromHub && strings.Contains(uri, "://"): // if it contains ://, it is a remote custom catalog
