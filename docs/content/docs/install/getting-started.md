@@ -219,7 +219,7 @@ your cluster and create a directory called `.tekton` with a file named
 ℹ Directory .tekton has been created.
 ✓ We have detected your repository using the programming language Go.
 ✓ A basic template has been created in /tmp/pac-demo/.tekton/pipelinerun.yaml, feel free to customize it.
-ℹ You can test your pipeline by pushing generated template to your git repository
+ℹ You can test your pipeline by pushing the generated template to your git repository
 ```
 
 Note that the `tkn pac create repository` command detected that the repository
