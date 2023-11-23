@@ -196,6 +196,8 @@ commit title on `push`
 
 ### Matching PipelineRun on body payload
 
+{{< tech_preview "Matching PipelineRun on body payload" >}}
+
 The payload body as passed by the Git provider is available in the CEL
 variable as `body` and you can use this expression to do any filtering on
 anything the Git provider is sending over:
@@ -212,6 +214,31 @@ pipelinesascode.tekton.dev/on-cel-expression: |
 will only match if the pull request is targeting the `main` branch, the author
 of the pull request is called `superuser` and the action is `synchronize` (ie:
 an update occurred on a pull request)
+
+{{< hint info >}}
+When matching the body payload in a Pull Request, the GitOps comments such as
+`/retest` won't be working as expected.
+
+The payload body will become of the comment and not the original pull request
+payload.
+
+Consequently, when a pull request event occurs, like opening or updating a pull
+request, the CEL body payload may not align with the defined specifications.
+
+To be able to retest your Pull Request when using a CEL on bod payload,
+you can make a dummy update to the Pull Request by sending a new SHA with this
+git command:
+
+```bash
+# assuming you are on the branch you want to retest
+# and the upstream remote are set
+git commit --amend --no-edit && \
+  git push --force-with-lease
+```
+
+or close/open the pull request.
+
+{{< /hint >}}
 
 ### Matching PipelineRun on request header
 
