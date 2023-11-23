@@ -89,7 +89,7 @@ $ tkn pac create repository
 ✓ Repository youruser-pac-demo has been created in pac-demo namespace
 ℹ Directory .tekton has been created.
 ✓ A basic template has been created in .tekton/pipelinerun.yaml, feel free to customize it.
-ℹ You can test your pipeline by pushing generated template to your git repository
+ℹ You can test your pipeline by pushing the generated template to your git repository
 ```
 
 The above command would create a `Repository` CRD in your `demo` namespace which is used to determine where the

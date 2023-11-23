@@ -107,7 +107,7 @@ $ tkn pac create repo
 ℹ Directory .tekton has been created.
 ✓ We have detected your repository using the programming language Go.
 ✓ A basic template has been created in /home/Go/src/github.com/owner/repo/.tekton/pipelinerun.yaml, feel free to customize it.
-ℹ You can test your pipeline by pushing generated template to your git repository
+ℹ You can test your pipeline by pushing the generated template to your git repository
 
 ```
 

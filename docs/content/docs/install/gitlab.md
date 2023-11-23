@@ -58,7 +58,7 @@ $ tkn pac create repo
 🔑 Repository CR repositories-project has been updated with webhook secret in the project-pipelines namespace
 ℹ Directory .tekton has been created.
 ✓ A basic template has been created in /home/Go/src/gitlab.com/repositories/project/.tekton/pipelinerun.yaml, feel free to customize it.
-ℹ You can test your pipeline by pushing generated template to your git repository
+ℹ You can test your pipeline by pushing the generated template to your git repository
 ```
 
 ### Create a `Repository` and configure webhook manually
