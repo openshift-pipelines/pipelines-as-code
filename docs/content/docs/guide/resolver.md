@@ -128,7 +128,7 @@ will fetch the task directly from that remote URL :
 ### Remote HTTP URL from a private GitHub repository
 
 If you are using `GitHub` and If the remote task URL uses the same host as where
-the repository CRD is, PAC will use the  GitHub token and fetch the URL using the
+the repository CRD is, Pipelines-as-Code will use the  GitHub token and fetch the URL using the
 GitHub API.
 
 For example if you have a repository URL looking like this :
@@ -151,7 +151,7 @@ GitHub app token are scoped to the owner or organization where the repository is
 If you are using the GitHub webhook method you are able to fetch any private or
 public repositories on any organization where the personal token is allowed.
 
-There is settings you can set in the pac `Configmap` to control that behaviour, see the
+There is settings you can set in the Pipelines-as-Code `Configmap` to control that behaviour, see the
 `secret-github-app-token-scoped` and `secret-github-app-scope-extra-repos` settings in the
 [settings documentation](/docs/install/settings).
 
@@ -195,6 +195,8 @@ Fetching `Pipelines` from the [Tekton Hub](https://hub.tekton.dev) is not curren
 
 ### Overriding tasks from a remote pipeline on a PipelineRun
 
+{{< tech_preview "Tasks from a remote Pipeline override" >}}
+
 Remote task annotations on the remote pipeline are supported. No other
 annotations like `on-target-branch`, `on-event` or `on-cel-expression` are
 supported.
@@ -212,7 +214,7 @@ metadata:
     pipelinesascode.tekton.dev/task: "./my-git-clone-task.yaml
 ```
 
-and the Pipeline referenced by the `pipelinesascode.tekton.dev/pipeline` annotation
+And the Pipeline referenced by the `pipelinesascode.tekton.dev/pipeline` annotation
 in "<https://git.provider/raw/pipeline.yaml>"  contains those annotations:
 
 ```yaml
@@ -236,16 +238,16 @@ to a `Name`, no override is done on `Tasks` embedded with a `taskSpec`. See
 
 From where tasks or pipelines of the same name takes precedence?
 
-for remote Tasks, when you have a `taskRef` on a task name, pac will try to find the task in this order:
+For the remote Tasks, when you have a `taskRef` on a task name, Pipelines-as-Code will try to find the task in this order:
 
 1. A task matched from the PipelineRun annotations
 2. A task matched from the remote Pipeline annotations
 3. A task matched fetched from the Tekton directory
-   (the tasks from the `.tekton` directory and its subdirs are automatically included)
+   (the tasks from the `.tekton` directory and its sub-directories are automatically included)
 
-for remote Pipelines referenced on a `pipelineRef`, pac will try to match a
+For the remote Pipeline referenced on a `pipelineRef`, Pipelines-as-Code will try to match a
 pipeline in this order:
 
-1. Pipeline from the PipelineRun annotations
-2. Pipeline from the Tekton directory (pipelines are automatically fetched from
-   the `.tekton` directory and subdirs)
+1. The Pipeline from the PipelineRun annotations
+2. The Pipeline from the Tekton directory (pipelines are automatically fetched from
+  the `.tekton` directory and its sub-directories)
