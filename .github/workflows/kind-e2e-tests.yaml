@@ -84,6 +84,17 @@ jobs:
             done
           done
 
+      - name: Create second Github APP Controller on GHE
+        run: |
+          python3 -m pip install PyYAML
+          env PAC_CONTROLLER_SMEE_URL="${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" ./hack/dev/second-controller.py ghe
+          kubectl delete secret -n pipelines-as-code ghe-secret || true
+          kubectl -n pipelines-as-code create secret ghe-secret \
+            --from-literal github-private-key="${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" \
+            --from-literal github-application-id="${{ secrets.TEST_GITHUB_SECOND_APPLICATION_ID }}" \
+            --from-literal webhook.secret="${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}"
+          kubectl patch configmap -n ghe-configmap -p '{"data":{"application-name": "Pipelines as Code GHE"}}'
+          kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=ghe-controller
       - name: Run E2E Tests
         run: |
           # Nothing specific to webhook here it  just that repo is private in that org and that's what we want to test
@@ -113,6 +124,13 @@ jobs:
           export TEST_GITHUB_REPO_OWNER_GITHUBAPP=openshift-pipelines/pipelines-as-code-e2e-tests
           export TEST_GITHUB_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
           export TEST_GITHUB_TOKEN="${{ secrets.GH_APPS_TOKEN }}"
+
+          export TEST_GITHUB_SECOND_API_URL=ghe.pipelinesascode.com
+          export TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP=pipelines-as-code/e2e
+          # TODO: webhook repo for second github
+          # export TEST_GITHUB_SECOND_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
+          export TEST_GITHUB_SECOND_REPO_INSTALLATION_ID="${{ secrets.TEST_GITHUB_SECOND_INSTALLATION_ID }}"
+          export TEST_GITHUB_SECOND_TOKEN="${{ secrets.TEST_GITHUB_SECOND_TOKEN }}"
 
           export TEST_GITLAB_API_URL="https://gitlab.com"
           export TEST_GITLAB_PROJECT_ID="34405323"
