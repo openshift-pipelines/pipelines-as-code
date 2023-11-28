@@ -87,7 +87,7 @@ jobs:
       - name: Create second Github APP Controller on GHE
         run: |
           python3 -m pip install PyYAML
-          env PAC_CONTROLLER_SMEE_URL="${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" ./hack/dev/second-controller.py ghe
+          env PAC_CONTROLLER_SMEE_URL="${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" ./hack/dev/second-controller.py ghe | ko apply -f-
           kubectl delete secret -n pipelines-as-code ghe-secret || true
           kubectl -n pipelines-as-code create secret ghe-secret \
             --from-literal github-private-key="${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" \
