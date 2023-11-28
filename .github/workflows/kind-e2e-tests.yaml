@@ -84,10 +84,14 @@ jobs:
             done
           done
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Create second Github APP Controller on GHE
         run: |
           python3 -m pip install PyYAML
-          env PAC_CONTROLLER_SMEE_URL="${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" ./hack/dev/second-controller.py ghe | ko apply -f-
+          env PAC_CONTROLLER_SMEE_URL="${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" ./hack/dev/second-controller.py ghe | tee /tmp/generated.yaml
+          ko apply -f /tmp/generated.yaml
           kubectl delete secret -n pipelines-as-code ghe-secret || true
           kubectl -n pipelines-as-code create secret ghe-secret \
             --from-literal github-private-key="${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" \
@@ -95,6 +99,8 @@ jobs:
             --from-literal webhook.secret="${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}"
           kubectl patch configmap -n ghe-configmap -p '{"data":{"application-name": "Pipelines as Code GHE"}}'
           kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=ghe-controller
+
+
       - name: Run E2E Tests
         run: |
           # Nothing specific to webhook here it  just that repo is private in that org and that's what we want to test
@@ -138,8 +144,6 @@ jobs:
           # https://gitlab.com/gitlab-com/alliances/ibm-red-hat/sandbox/openshift-pipelines/pac-e2e-tests
           make test-e2e
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
       - name: Collect logs
         if: ${{ always() }}
         run: |
