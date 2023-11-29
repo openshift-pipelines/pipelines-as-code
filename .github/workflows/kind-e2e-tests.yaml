@@ -102,7 +102,7 @@ jobs:
             --from-literal github-private-key="${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" \
             --from-literal github-application-id="2" \
             --from-literal webhook.secret="${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}"
-          kubectl patch configmap -n ghe-configmap -p '{"data":{"application-name": "Pipelines as Code GHE"}}'
+          kubectl patch configmap -n pipelines-as-code ghe-configmap -p '{"data":{"application-name": "Pipelines as Code GHE"}}'
           kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=ghe-controller
 
 
