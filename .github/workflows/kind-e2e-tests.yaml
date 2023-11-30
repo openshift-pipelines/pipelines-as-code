@@ -95,14 +95,17 @@ jobs:
       - name: Create second Github APP Controller on GHE
         run: |
           python3 -m pip install PyYAML
-          env PAC_CONTROLLER_SMEE_URL="${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" ./hack/dev/second-controller.py ghe | tee /tmp/generated.yaml
+          ./hack/second-controller.py \
+            --smee-url="${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" \
+            --namespace="pipelines-as-code" \
+            ghe > /tmp/generated.yaml
           ko apply -f /tmp/generated.yaml
           kubectl delete secret -n pipelines-as-code ghe-secret || true
           kubectl -n pipelines-as-code create secret generic ghe-secret \
             --from-literal github-private-key="${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" \
             --from-literal github-application-id="2" \
             --from-literal webhook.secret="${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}"
-          sed "s/name: pipelines-as-code/name: ghe-configmap/" <config/302-pac-configmap.yaml | kubectl apply -n pipelines-as-code -f-
+          sed "s/name: pipelines-as-code/name: ghe-configmap/" < config/302-pac-configmap.yaml | kubectl apply -n pipelines-as-code -f-
           kubectl patch configmap -n pipelines-as-code ghe-configmap -p '{"data":{"application-name": "Pipelines as Code GHE"}}'
           kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=ghe-controller
 
