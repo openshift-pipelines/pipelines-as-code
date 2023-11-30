@@ -147,6 +147,16 @@ curl -H "Content-Type: application/json" -X POST "https://control.pac.url/incomi
 
 The parameter value of `pull_request_number` will be set to `12345` when using the variable `{{pull_request_number}}` in your PipelineRun.
 
+### Using incoming webhook with GitHub Enterprise application
+
+When using a GitHub application over to a GitHub Enterprise, you will need to
+specify the `X-GitHub-Enterprise-Host` header when making the incoming webhook
+request. For example when using curl:
+
+```shell
+curl -H "X-GitHub-Enterprise-Host: github.example.com" -X POST "https://control.pac.url/incoming?repository=repo&branch=main&secret=very-secure-shared-secret&pipelinerun=target_pipelinerun"
+```
+
 ### Using incoming webhook with webhook based providers
 
 Webhook based providers (i.e: GitHub Webhook, GitLab, Bitbucket etc..) supports
