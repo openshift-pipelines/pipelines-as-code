@@ -96,6 +96,7 @@ jobs:
         run: |
           python3 -m pip install PyYAML
           ./hack/second-controller.py \
+            --controller-image="ko" \
             --smee-url="${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" \
             --namespace="pipelines-as-code" \
             ghe > /tmp/generated.yaml
