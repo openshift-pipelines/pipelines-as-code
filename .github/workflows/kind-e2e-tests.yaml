@@ -94,6 +94,8 @@ jobs:
 
       - name: Create second Github APP Controller on GHE
         run: |
+          # this is to handle compatibilty until the PR #1518 is merged
+          [[ -e ./hack/second-controller.py ]] || exit 0
           python3 -m pip install PyYAML
           ./hack/second-controller.py \
             --controller-image="ko" \
