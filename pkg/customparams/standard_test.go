@@ -5,8 +5,10 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	testprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	rectesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestMakeStandardParamsFromEvent(t *testing.T) {
@@ -42,15 +44,35 @@ func TestMakeStandardParamsFromEvent(t *testing.T) {
 		},
 	}
 
-	p := NewCustomParams(event, repo, nil, nil, nil)
-	params := p.makeStandardParamsFromEvent()
+	ctx, _ := rectesting.SetupFakeContext(t)
+	vcx := &testprovider.TestProviderImp{
+		WantAllChangedFiles: []string{"added.go", "deleted.go", "modified.go", "renamed.go"},
+		WantAddedFiles:      []string{"added.go"},
+		WantDeletedFiles:    []string{"deleted.go"},
+		WantModifiedFiles:   []string{"modified.go"},
+		WantRenamedFiles:    []string{"renamed.go"},
+	}
+
+	p := NewCustomParams(event, repo, nil, nil, nil, vcx)
+	params, changedFiles := p.makeStandardParamsFromEvent(ctx)
 	assert.DeepEqual(t, params, result)
+	assert.DeepEqual(t, changedFiles["all"], vcx.WantAllChangedFiles)
+	assert.DeepEqual(t, changedFiles["added"], vcx.WantAddedFiles)
+	assert.DeepEqual(t, changedFiles["deleted"], vcx.WantDeletedFiles)
+	assert.DeepEqual(t, changedFiles["modified"], vcx.WantModifiedFiles)
+	assert.DeepEqual(t, changedFiles["renamed"], vcx.WantRenamedFiles)
 
 	nevent := &info.Event{}
 	event.DeepCopyInto(nevent)
 	nevent.CloneURL = "https://blahblah"
 	p.event = nevent
-	nparams := p.makeStandardParamsFromEvent()
+	nparams, nchangedFiles := p.makeStandardParamsFromEvent(ctx)
 	result["repo_url"] = nevent.CloneURL
 	assert.DeepEqual(t, nparams, result)
+
+	assert.DeepEqual(t, nchangedFiles["all"], vcx.WantAllChangedFiles)
+	assert.DeepEqual(t, nchangedFiles["added"], vcx.WantAddedFiles)
+	assert.DeepEqual(t, nchangedFiles["deleted"], vcx.WantDeletedFiles)
+	assert.DeepEqual(t, nchangedFiles["modified"], vcx.WantModifiedFiles)
+	assert.DeepEqual(t, nchangedFiles["renamed"], vcx.WantRenamedFiles)
 }

@@ -1,0 +1,46 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-cel-expression: >-
+      ( event == "push" &&  target_branch == "main" ) &&
+      ( files.all.exists(x, x.matches('.tekton/pullrequest.yaml')) || files.all.exists(x, x.matches('modified.txt')) )
+spec:
+  # params:
+  #   - name: all_changed_files
+  #     value: "{{ files.all }}"
+  #   - name: added_files
+  #     value: "{{ files.added }}"
+  #   - name: deleted_files
+  #     value: "{{ files.deleted }}"
+  #   - name: modified_files
+  #     value: "{{ files.modified }}"
+  #   - name: renamed_files
+  #     value: "{{ files.renamed }}"
+  pipelineSpec:
+    # params:
+    #   - name: all_changed_files
+    #   - name: added_files
+    #   - name: deleted_files
+    #   - name: modified_files
+    #   - name: renamed_files
+    tasks:
+      - name: changed-files-push-params
+        taskSpec:
+          steps:
+            - name: test-changed-files-params-push
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                # reply Should be:
+                cat <<EOF
+                changed files...
+                files.all: {{ files.all }}
+                files.added: {{ files.added }}
+                files.deleted: {{ files.deleted }}
+                files.modified: {{ files.modified }}
+                files.renamed: {{ files.renamed }}
+
+                EOF

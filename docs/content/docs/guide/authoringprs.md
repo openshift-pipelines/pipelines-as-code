@@ -153,6 +153,7 @@ The fields available are :
 - `headers`: The full set of headers as passed by the Git provider. (example: `headers['x-github-event']` will get the event type on GitHub)
 - `.pathChanged`: a suffix function to a string which can be a glob of a path to
   check if changed (only `GitHub` and `Gitlab` provider is supported)
+- `files`: The list of files that changed in the event (all, added, deleted, modified and renamed). Example `files.all` or `files.deleted`. On pull request every file belonging to the pull request will be listed.
 
 Compared to the simple "on-target" annotation matching, the CEL expression
 allows you to complex filtering and most importantly express negation.
@@ -171,6 +172,9 @@ You can find more information about the CEL language spec here :
 
 ### Matching PipelineRun by path change
 
+> *NOTE*: `Pipelines-as-Code` supports two ways to match files changed in a particular event. The `.pathChanged` suffix function supports [glob
+pattern](https://github.com/ganbarodigital/go_glob#what-does-a-glob-pattern-look-like) and does not support different types of "changes" i.e. added, modified, deleted and so on. The other option is to use the `files.` property (`files.all`, `files.added`, `files.deleted`, `files.modified`, `files.renamed`) which can target specific types of changed files and supports using CEL expressions i.e. `files.all.exists(x, x.matches('renamed.go'))`.
+
 If you want to have a PipelineRun running only if a path has
 changed you can use the `.pathChanged` suffix function with a [glob
 pattern](https://github.com/ganbarodigital/go_glob#what-does-a-glob-pattern-look-like). Here
@@ -180,6 +184,27 @@ suffix) in the `docs` directory :
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
   event == "pull_request" && "docs/*.md".pathChanged()
+```
+
+This example will match any changed file (added, modified, removed or renamed) that was in the `tmp` directory:
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      files.all.exists(x, x.matches('tmp/'))
+```
+
+This example will match any added file that was in the `src` or `pkg` directory:
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      files.added.exists(x, x.matches('src/|pkg/'))
+```
+
+This example will match modified files with the name of test.go:
+
+```yaml
+    pipelinesascode.tekton.dev/on-cel-expression: |
+      files.modified.exists(x, x.matches('test.go'))   
 ```
 
 ### Matching PipelineRun on event title

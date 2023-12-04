@@ -56,6 +56,7 @@ type TestOpts struct {
 	ExpectEvents          bool
 	InternalGiteaURL      string
 	Token                 string
+	FileChanges           []scm.FileChange
 }
 
 func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
@@ -138,6 +139,123 @@ func TestPR(t *testing.T, topts *TestOpts) func() {
 		BaseRefName:   topts.DefaultBranch,
 	}
 	scm.PushFilesToRefGit(t, scmOpts, entries)
+
+	topts.ParamsRun.Clients.Log.Infof("Creating PullRequest")
+	for i := 0; i < 5; i++ {
+		if topts.PullRequest, _, err = topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, repoInfo.Name, gitea.CreatePullRequestOption{
+			Title: "Test Pull Request - " + topts.TargetRefName,
+			Head:  topts.TargetRefName,
+			Base:  options.MainBranch,
+		}); err == nil {
+			break
+		}
+		topts.ParamsRun.Clients.Log.Infof("Creating PullRequest has failed, retrying %d/%d, err", i, 5, err)
+		if i == 4 {
+			t.Fatalf("cannot create pull request: %v", err)
+		}
+		time.Sleep(5 * time.Second)
+	}
+	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", topts.PullRequest.HTMLURL)
+
+	if topts.CheckForStatus != "" {
+		WaitForStatus(t, topts, topts.TargetRefName, "", topts.StatusOnlyLatest)
+	}
+
+	if topts.Regexp != nil {
+		WaitForPullRequestCommentMatch(t, topts)
+	}
+
+	events, err := topts.ParamsRun.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, formatting.CleanValueKubernetes(topts.TargetNS)),
+	})
+	assert.NilError(t, err)
+	if topts.ExpectEvents {
+		// in some cases event is expected but it takes time
+		// to emit and before that this check gets executed
+		// so adds a sleep for that case eg. TestGiteaBadYaml
+		if len(events.Items) == 0 {
+			// loop 30 times over a 5 second period and try to get any events
+			for i := 0; i < 30; i++ {
+				events, err = topts.ParamsRun.Clients.Kube.CoreV1().Events(topts.TargetNS).List(ctx, metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("%s=%s", keys.Repository, formatting.CleanValueKubernetes(topts.TargetNS)),
+				})
+				assert.NilError(t, err)
+				if len(events.Items) > 0 {
+					break
+				}
+				time.Sleep(2 * time.Second)
+			}
+		}
+		assert.Assert(t, len(events.Items) != 0, "events expected in case of failure but got 0")
+	} else if !topts.SkipEventsCheck {
+		assert.Assert(t, len(events.Items) == 0, fmt.Sprintf("no events expected but got %v in %v ns, items: %+v", len(events.Items), topts.TargetNS, events.Items))
+	}
+	return cleanup
+}
+
+func NewPR(t *testing.T, topts *TestOpts) func() {
+	ctx := context.Background()
+	if topts.ParamsRun == nil {
+		runcnx, opts, giteacnx, err := Setup(ctx)
+		assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
+		topts.GiteaCNX = giteacnx
+		topts.ParamsRun = runcnx
+		topts.Opts = opts
+	}
+	giteaURL := os.Getenv("TEST_GITEA_API_URL")
+	giteaPassword := os.Getenv("TEST_GITEA_PASSWORD")
+	topts.GiteaAPIURL = giteaURL
+	topts.GiteaPassword = giteaPassword
+	topts.InternalGiteaURL = os.Getenv("TEST_GITEA_INTERNAL_URL")
+	if topts.InternalGiteaURL == "" {
+		topts.InternalGiteaURL = "http://gitea.gitea:3000"
+	}
+	if topts.ExtraArgs == nil {
+		topts.ExtraArgs = map[string]string{}
+	}
+	topts.ExtraArgs["ProviderURL"] = topts.InternalGiteaURL
+	if topts.TargetNS == "" {
+		topts.TargetNS = topts.TargetRefName
+	}
+	if topts.TargetRefName == "" {
+		topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+		topts.TargetNS = topts.TargetRefName
+		assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	}
+
+	repoInfo, err := GetGiteaRepo(topts.GiteaCNX.Client, topts.Opts.Organization, topts.TargetRefName, topts.ParamsRun.Clients.Log)
+	assert.NilError(t, err)
+	topts.Opts.Repo = repoInfo.Name
+	topts.Opts.Organization = repoInfo.Owner.UserName
+	topts.DefaultBranch = repoInfo.DefaultBranch
+	topts.GitHTMLURL = repoInfo.HTMLURL
+
+	cleanup := func() {
+		if os.Getenv("TEST_NOCLEANUP") != "true" {
+			defer TearDown(ctx, t, topts)
+		}
+	}
+	// topts.Token, err = CreateToken(topts)
+	// assert.NilError(t, err)
+
+	// assert.NilError(t, CreateCRD(ctx, topts))
+
+	url, err := scm.MakeGitCloneURL(repoInfo.CloneURL, os.Getenv("TEST_GITEA_USERNAME"), os.Getenv("TEST_GITEA_PASSWORD"))
+	assert.NilError(t, err)
+	topts.GitCloneURL = url
+
+	if topts.NoPullRequestCreation {
+		return cleanup
+	}
+
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.TargetRefName,
+		BaseRefName:   topts.DefaultBranch,
+	}
+	scm.ChangeFilesRefGit(t, scmOpts, topts.FileChanges)
 
 	topts.ParamsRun.Clients.Log.Infof("Creating PullRequest")
 	for i := 0; i < 5; i++ {

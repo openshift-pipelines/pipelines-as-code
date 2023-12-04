@@ -37,10 +37,16 @@ import (
 const pipelineTargetNSName = "pipeline-target-ns"
 
 type annotationTestArgs struct {
-	fileChanged []string
-	pruns       []*tektonv1.PipelineRun
-	runevent    info.Event
-	data        testclient.Data
+	fileChanged []struct {
+		FileName    string
+		Status      string
+		NewFile     bool
+		RenamedFile bool
+		DeletedFile bool
+	}
+	pruns    []*tektonv1.PipelineRun
+	runevent info.Event
+	data     testclient.Data
 }
 
 type annotationTest struct {
@@ -68,6 +74,45 @@ func makePipelineRunTargetNS(event, targetNS string) *tektonv1.PipelineRun {
 
 func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 	cw := clockwork.NewFakeClock()
+
+	filesChanged := []struct {
+		FileName    string
+		Status      string
+		NewFile     bool
+		RenamedFile bool
+		DeletedFile bool
+	}{
+		{
+			FileName:    "src/added.go",
+			Status:      "added",
+			NewFile:     true,
+			RenamedFile: false,
+			DeletedFile: false,
+		},
+		{
+			FileName:    "src/modified.go",
+			Status:      "modified",
+			NewFile:     false,
+			RenamedFile: false,
+			DeletedFile: false,
+		},
+		{
+			FileName:    "src/removed.go",
+			Status:      "removed",
+			NewFile:     false,
+			RenamedFile: false,
+			DeletedFile: true,
+		},
+
+		{
+			FileName:    "src/renamed.go",
+			Status:      "renamed",
+			NewFile:     false,
+			RenamedFile: true,
+			DeletedFile: false,
+		},
+	}
+
 	tests := []annotationTest{
 		{
 			name:       "match a repository with target NS",
@@ -208,7 +253,21 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:       "cel/match path by glob",
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
-				fileChanged: []string{".tekton/pull_request.yaml"},
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    ".tekton/pull_request.yaml",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
 				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -362,8 +421,20 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:    "cel/no match path by glob",
 			wantErr: true,
 			args: annotationTestArgs{
-				fileChanged: []string{
-					".tekton/foo.json",
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    ".tekton/foo.json",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
 				},
 				pruns: []*tektonv1.PipelineRun{
 					{
@@ -404,8 +475,20 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:       "cel/match by direct path",
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
-				fileChanged: []string{
-					".tekton/pull_request.yaml",
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    ".tekton/pull_request.yaml",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
 				},
 				pruns: []*tektonv1.PipelineRun{
 					{
@@ -707,7 +790,21 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name:       "cel/match path by glob along with push event and target_branch info",
 			wantPRName: pipelineTargetNSName,
 			args: annotationTestArgs{
-				fileChanged: []string{".tekton/push.yaml"},
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    ".tekton/push.yaml",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
 				pruns: []*tektonv1.PipelineRun{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -742,6 +839,126 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name:    "cel match on all changed files",
+			wantErr: false,
+			args: annotationTestArgs{
+				fileChanged: filesChanged,
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "files.all.exists(x, x.matches(\"added.go\"))",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					PullRequestTitle:  "[DOWNSTREAM] don't test me cause i'm famous",
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+
+		{
+			name:    "cel NOT match on all changed files",
+			wantErr: true,
+			args: annotationTestArgs{
+				fileChanged: filesChanged,
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "files.all.exists(x, x.matches(\"notmatch.go\"))",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					PullRequestTitle:  "[DOWNSTREAM] don't test me cause i'm famous",
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+
+		{
+			name:    "cel match on added, modified, deleted and renamed  files",
+			wantErr: false,
+			args: annotationTestArgs{
+				fileChanged: filesChanged,
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: "files.added.exists(x, x.matches(\"added.go\")) && files.deleted.exists(x, x.matches(\"removed.go\")) && files.modified.exists(x, x.matches(\"modified.go\")) && files.renamed.exists(x, x.matches(\"renamed.go\"))",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					PullRequestTitle:  "[DOWNSTREAM] don't test me cause i'm famous",
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -759,7 +976,10 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			if len(tt.args.fileChanged) > 0 {
 				commitFiles := []*github.CommitFile{}
 				for _, v := range tt.args.fileChanged {
-					commitFiles = append(commitFiles, &github.CommitFile{Filename: github.String(v)})
+					commitFiles = append(commitFiles, &github.CommitFile{
+						Filename: github.String(v.FileName),
+						Status:   github.String(v.Status),
+					})
 				}
 				if tt.args.runevent.TriggerTarget == "push" {
 					mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/commits/%s",
@@ -803,7 +1023,12 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				pushFileChanges := []*gitlab.Diff{}
 				if tt.args.runevent.TriggerTarget == "push" {
 					for _, v := range tt.args.fileChanged {
-						pushFileChanges = append(pushFileChanges, &gitlab.Diff{NewPath: v})
+						pushFileChanges = append(pushFileChanges, &gitlab.Diff{
+							NewPath:     v.FileName,
+							RenamedFile: v.RenamedFile,
+							DeletedFile: v.DeletedFile,
+							NewFile:     v.NewFile,
+						})
 					}
 					glMux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff",
 						tt.args.runevent.SHA), func(rw http.ResponseWriter, _ *http.Request) {
@@ -813,7 +1038,12 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 					})
 				} else {
 					for _, v := range tt.args.fileChanged {
-						commitFiles.Changes = append(commitFiles.Changes, &gitlab.MergeRequestDiff{NewPath: v})
+						commitFiles.Changes = append(commitFiles.Changes, &gitlab.MergeRequestDiff{
+							NewPath:     v.FileName,
+							RenamedFile: v.RenamedFile,
+							DeletedFile: v.DeletedFile,
+							NewFile:     v.NewFile,
+						})
 					}
 					url := fmt.Sprintf("/projects/0/merge_requests/%d/changes", tt.args.runevent.PullRequestNumber)
 					glMux.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {

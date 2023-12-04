@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	sectypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
 	"go.uber.org/zap"
 )
@@ -22,15 +23,17 @@ type CustomParams struct {
 	k8int        kubeinteraction.Interface
 	eventEmitter *events.EventEmitter
 	repo         *v1alpha1.Repository
+	vcx          provider.Interface
 }
 
-func NewCustomParams(event *info.Event, repo *v1alpha1.Repository, run *params.Run, k8int kubeinteraction.Interface, eventEmitter *events.EventEmitter) CustomParams {
+func NewCustomParams(event *info.Event, repo *v1alpha1.Repository, run *params.Run, k8int kubeinteraction.Interface, eventEmitter *events.EventEmitter, prov provider.Interface) CustomParams {
 	return CustomParams{
 		event:        event,
 		repo:         repo,
 		run:          run,
 		k8int:        k8int,
 		eventEmitter: eventEmitter,
+		vcx:          prov,
 	}
 }
 
@@ -57,10 +60,10 @@ func (p *CustomParams) applyIncomingParams(ret map[string]string) map[string]str
 // we let the user specify a cel filter. If false then we skip the parameters.
 // if multiple params name has a filter we pick up the first one that has
 // matched true.
-func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, error) {
-	stdParams := p.makeStandardParamsFromEvent()
+func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, map[string]interface{}, error) {
+	stdParams, changedFiles := p.makeStandardParamsFromEvent(ctx)
 	if p.repo.Spec.Params == nil {
-		return p.applyIncomingParams(stdParams), nil
+		return p.applyIncomingParams(stdParams), changedFiles, nil
 	}
 	ret := map[string]string{}
 	mapFilters := map[string]string{}
@@ -81,11 +84,11 @@ func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, error)
 
 			// if the cel filter condition is false we skip it
 			// TODO: add headers to customparams?
-			cond, err := pacCel.CelValue(value.Filter, p.event.Event, nil, stdParams)
+			cond, err := pacCel.CelValue(value.Filter, p.event.Event, nil, stdParams, changedFiles)
 			if err != nil {
 				p.eventEmitter.EmitMessage(p.repo, zap.ErrorLevel,
 					"ParamsFilterError", fmt.Sprintf("there is an error on the cel filter: %s: %s", value.Name, err.Error()))
-				return map[string]string{}, err
+				return map[string]string{}, changedFiles, err
 			}
 			switch cond.(type) {
 			case celTypes.Bool:
@@ -116,7 +119,7 @@ func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, error)
 				Key:       value.SecretRef.Key,
 			})
 			if err != nil {
-				return ret, err
+				return ret, changedFiles, err
 			}
 			ret[value.Name] = secretValue
 		}
@@ -131,5 +134,5 @@ func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, error)
 		}
 	}
 
-	return p.applyIncomingParams(ret), nil
+	return p.applyIncomingParams(ret), changedFiles, nil
 }

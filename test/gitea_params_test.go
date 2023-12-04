@@ -17,6 +17,7 @@ import (
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
@@ -261,5 +262,170 @@ my email is a true beauty and you can call me pacman`
 		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-push-params",
 			sortedstatus[0].PipelineRunName),
 		"step-test-cel-params-value", *regexp.MustCompile(output), 2)
+	assert.NilError(t, err)
+}
+
+// TestGiteaParamsChangedFilesCEL Test that we can access the pull request body and headers in params
+// as a CEL expression and cel filter.
+func TestGiteaParamsChangedFilesCEL(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		Regexp:      successRegexp,
+		TargetEvent: "pull_request",
+		YAMLFiles: map[string]string{
+			".tekton/pullrequest.yaml": "testdata/pipelinerun-changed-files-pullrequest.yaml",
+			".tekton/push.yaml":        "testdata/pipelinerun-changed-files-push.yaml",
+			"deleted.txt":              "testdata/changed_files_deleted",
+			"modified.txt":             "testdata/changed_files_modified",
+			"renamed.txt":              "testdata/changed_files_renamed",
+		},
+		CheckForStatus: "success",
+		ExpectEvents:   false,
+		FileChanges: []scm.FileChange{
+			{
+				FileName:   "deleted.txt",
+				ChangeType: "delete",
+			},
+			{
+				FileName:   "modified.txt",
+				ChangeType: "modify",
+				NewContent: "this file has been modified",
+			},
+			{
+				FileName:   "renamed.txt",
+				ChangeType: "rename",
+				NewName:    "hasbeenrenamed.txt",
+			},
+		},
+	}
+
+	defer tgitea.TestPR(t, topts)()
+	// check the repos CR only one pr should have run
+	repo, err := topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(repo.Status), 1, repo.Status)
+	// check the output logs if the CEL body headers has expanded  properly
+	output := `files\.all: *\["\.tekton/pullrequest\.yaml", *"\.tekton/push\.yaml", *"deleted\.txt", *"modified\.txt", *"renamed\.txt"\]
+files\.added: \["\.tekton/pullrequest\.yaml", *"\.tekton/push\.yaml", *"deleted\.txt", *"modified\.txt", *"renamed\.txt"\]
+files\.deleted: \[\]
+files\.modified: \[\]
+files\.renamed: \[\]`
+	err = twait.RegexpMatchingInPodLog(context.Background(),
+		topts.ParamsRun,
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-pullrequest-params",
+			repo.Status[0].PipelineRunName),
+		"step-test-changed-files-params-pull", *regexp.MustCompile(output), 2)
+	assert.NilError(t, err)
+	// ======================================================================================================================
+	// Merge the pull request so we can generate a push event and wait that it is updated
+	// ======================================================================================================================
+	merged, resp, err := topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+		gitea.MergePullRequestOption{
+			Title: "Merged with Panache",
+			Style: "merge",
+		},
+	)
+	assert.NilError(t, err)
+	assert.Assert(t, resp.StatusCode < 400, resp)
+	assert.Assert(t, merged)
+
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 2, // 1 means 2 🙃
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       topts.PullRequest.Head.Sha,
+	}
+	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+	time.Sleep(5 * time.Second)
+
+	// check the repository CR now we should have two status the previous pull request and new one on push
+	repo, err = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(repo.Status), 2, repo.Status)
+	// sort status to make sure we get the latest PipelineRun that has been created
+	sortedstatus := sort.RepositorySortRunStatus(repo.Status)
+
+	// check the output of the last status PipelineRun which should be a
+	// push matching the expanded CEL body and headers values
+	output = `files\.all: *\["\.tekton/pullrequest\.yaml", *"\.tekton/push\.yaml", *"deleted\.txt", *"modified\.txt", *"renamed\.txt"\]
+files\.added: \["\.tekton/pullrequest\.yaml", *"\.tekton/push\.yaml", *"deleted\.txt", *"modified\.txt", *"renamed\.txt"\]
+files\.deleted: \[\]
+files\.modified: \[\]
+files\.renamed: \[\]`
+	err = twait.RegexpMatchingInPodLog(context.Background(),
+		topts.ParamsRun,
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-push-params",
+			sortedstatus[0].PipelineRunName),
+		"step-test-changed-files-params-push", *regexp.MustCompile(output), 2)
+	assert.NilError(t, err)
+
+	// ======================================================================================================================
+	// Create second pull request with all change types
+	// ======================================================================================================================
+	tgitea.NewPR(t, topts)
+	// check the repository CR now we should have three status the previous pull request and push plus a new pull request
+	repo, err = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(repo.Status), 3, repo.Status)
+	// check the output logs if the CEL body headers has expanded  properly
+	output = `files\.all: \["deleted\.txt", *"hasbeenrenamed\.txt", *"modified\.txt"\]
+files\.added: \[\]
+files\.deleted: \["deleted\.txt"\]
+files\.modified: \["modified\.txt"\]
+files\.renamed: \["hasbeenrenamed\.txt"\]`
+	err = twait.RegexpMatchingInPodLog(context.Background(),
+		topts.ParamsRun,
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-pullrequest-params",
+			repo.Status[2].PipelineRunName),
+		"step-test-changed-files-params-pull", *regexp.MustCompile(output), 2)
+	assert.NilError(t, err)
+
+	// ======================================================================================================================
+	// Merge the pull request so we can generate a second push event and wait that it is updated
+	// ======================================================================================================================
+	merged, resp, err = topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+		gitea.MergePullRequestOption{
+			Title: "Merged with Panache",
+			Style: "merge",
+		},
+	)
+	assert.NilError(t, err)
+	assert.Assert(t, resp.StatusCode < 400, resp)
+	assert.Assert(t, merged)
+
+	waitOpts = twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 4, // 1 means 2 🙃
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       topts.PullRequest.Head.Sha,
+	}
+	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+	time.Sleep(5 * time.Second)
+
+	// check the repository CR now we should have two status the previous pull request and new one on push
+	repo, err = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(repo.Status), 4, repo.Status)
+	// sort status to make sure we get the latest PipelineRun that has been created
+	sortedstatus = sort.RepositorySortRunStatus(repo.Status)
+	// check the output of the last status PipelineRun which should be a
+	// push matching the expanded CEL body and headers values
+	output = `files\.all: \["hasbeenrenamed\.txt", *"modified\.txt", *"deleted\.txt", *"renamed\.txt"\]
+files\.added: \["hasbeenrenamed\.txt"\]
+files\.deleted: \["deleted\.txt", *"renamed\.txt"\]
+files\.modified: \["modified\.txt"\]
+files\.renamed: \[\]`
+	err = twait.RegexpMatchingInPodLog(context.Background(),
+		topts.ParamsRun,
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-push-params",
+			sortedstatus[0].PipelineRunName),
+		"step-test-changed-files-params-push", *regexp.MustCompile(output), 2)
 	assert.NilError(t, err)
 }

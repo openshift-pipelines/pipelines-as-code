@@ -277,8 +277,8 @@ func (v *Provider) getBlob(runevent *info.Event, ref, path string) (string, erro
 	return blob.String(), nil
 }
 
-func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
-	return []string{}, nil
+func (v *Provider) GetFiles(_ context.Context, _ *info.Event) (provider.ChangedFiles, error) {
+	return provider.ChangedFiles{}, nil
 }
 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
