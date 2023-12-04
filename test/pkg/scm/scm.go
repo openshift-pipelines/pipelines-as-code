@@ -26,6 +26,13 @@ type Opts struct {
 	PushForce     bool
 }
 
+type FileChange struct {
+	FileName   string
+	ChangeType string
+	NewName    string
+	NewContent string
+}
+
 func PushFilesToRefGit(t *testing.T, opts *Opts, entries map[string]string) {
 	tmpdir := fs.NewDir(t, t.Name())
 	defer (func() {
@@ -67,6 +74,93 @@ func PushFilesToRefGit(t *testing.T, opts *Opts, entries map[string]string) {
 	commitTitle := opts.CommitTitle
 	if commitTitle == "" {
 		commitTitle = "Committing files from test on " + opts.TargetRefName
+	}
+	_, err = git.RunGit(path, "-c", "commit.gpgsign=false", "commit", "-m", commitTitle)
+	assert.NilError(t, err)
+
+	if strings.HasPrefix(opts.TargetRefName, "refs/tags") {
+		_, err = git.RunGit(path, "tag", "-f", filepath.Base(opts.TargetRefName))
+		assert.NilError(t, err)
+	}
+	// use a loop to try multiple times in case of error
+	count := 0
+	for {
+		pushForce := "--no-force"
+		if opts.PushForce {
+			pushForce = "-f"
+		}
+		if _, err = git.RunGit(path, "push", "origin", pushForce, opts.TargetRefName); err == nil {
+			opts.Log.Infof("Pushed files to repo %s branch %s", opts.WebURL, opts.TargetRefName)
+			// trying to avoid the multiple events at the time of creation we have a sync
+			time.Sleep(5 * time.Second)
+			return
+		}
+		if strings.Contains(err.Error(), "non-fast-forward") {
+			_, err = git.RunGit(path, "fetch", "-a", "origin")
+			assert.NilError(t, err)
+			_, err := git.RunGit(path, "pull", "--rebase", "origin", opts.TargetRefName)
+			assert.NilError(t, err)
+			opts.Log.Infof("Rebased against branch %s", opts.TargetRefName)
+			continue
+		}
+		count++
+		if count > 5 {
+			t.Fatalf("Failed to push files to repo %s branch %s, %+v", opts.WebURL, opts.TargetRefName, err.Error())
+		}
+		opts.Log.Errorf("Failed to push files to repo %s branch %s, retrying in 5 seconds, err: %v", opts.WebURL, opts.TargetRefName, err)
+
+		time.Sleep(5 * time.Second)
+	}
+}
+
+func ChangeFilesRefGit(t *testing.T, opts *Opts, fileChanges []FileChange) {
+	tmpdir := fs.NewDir(t, t.Name())
+	defer (func() {
+		if os.Getenv("TEST_NOCLEANUP") == "" {
+			tmpdir.Remove()
+		}
+	})()
+	defer env.ChangeWorkingDir(t, tmpdir.Path())()
+	path := tmpdir.Path()
+	_, err := git.RunGit(path, "init")
+	assert.NilError(t, err)
+
+	_, err = git.RunGit(path, "config", "user.name", "OpenShift Pipelines E2E test")
+	assert.NilError(t, err)
+	_, err = git.RunGit(path, "config", "user.email", "e2e-pipeline@redhat.com")
+	assert.NilError(t, err)
+
+	_, err = git.RunGit(path, "remote", "add", "-f", "origin", opts.GitURL)
+	assert.NilError(t, err)
+
+	_, err = git.RunGit(path, "fetch", "-a", "origin")
+	assert.NilError(t, err)
+
+	if strings.HasPrefix(opts.TargetRefName, "refs/tags") {
+		_, err = git.RunGit(path, "reset", "--hard", "origin/"+opts.BaseRefName)
+	} else {
+		_, err = git.RunGit(path, "checkout", "-B", opts.TargetRefName, "origin/"+opts.BaseRefName)
+	}
+	assert.NilError(t, err)
+
+	for _, fileChange := range fileChanges {
+		switch fileChange.ChangeType {
+		case "rename":
+			_, err = git.RunGit(path, "mv", fileChange.FileName, fileChange.NewName)
+			assert.NilError(t, err)
+		case "delete":
+			assert.NilError(t, os.Remove(fileChange.FileName))
+		case "modify":
+			assert.NilError(t, os.Remove(fileChange.FileName))
+			assert.NilError(t, os.WriteFile(fileChange.FileName, []byte(fileChange.NewContent), 0o600))
+		}
+	}
+	_, err = git.RunGit(path, "add", ".")
+	assert.NilError(t, err)
+
+	commitTitle := opts.CommitTitle
+	if commitTitle == "" {
+		commitTitle = "Committing updated files from test on " + opts.TargetRefName
 	}
 	_, err = git.RunGit(path, "-c", "commit.gpgsign=false", "commit", "-m", commitTitle)
 	assert.NilError(t, err)

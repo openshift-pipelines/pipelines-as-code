@@ -3,7 +3,9 @@ package gitea
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"path"
 	"strconv"
 	"strings"
@@ -311,9 +313,85 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 	return nil
 }
 
-func (v *Provider) GetFiles(_ context.Context, _ *info.Event) ([]string, error) {
-	// TODO: figure out a way
-	return []string{}, fmt.Errorf("GetFiles is not supported on Gitea")
+func ShouldGetNextPage(resp *gitea.Response, currentPage int) (bool, int) {
+	val, exists := resp.Response.Header[http.CanonicalHeaderKey("x-pagecount")]
+	if !exists {
+		return false, 0
+	}
+	i, err := strconv.Atoi(val[0])
+	if err != nil {
+		return false, 0
+	}
+	if i >= currentPage {
+		return false, i
+	}
+	return true, (currentPage + 1)
+}
+
+type PushPayload struct {
+	Commits []gitea.PayloadCommit `json:"commits,omitempty"`
+}
+
+func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (provider.ChangedFiles, error) {
+	changedFiles := provider.ChangedFiles{}
+
+	switch runevent.TriggerTarget {
+	case "pull_request":
+		opt := gitea.ListPullRequestFilesOptions{ListOptions: gitea.ListOptions{Page: 1, PageSize: 50}}
+		shouldGetNextPage := false
+		for {
+			prChangedFiles, resp, err := v.Client.ListPullRequestFiles(runevent.Organization, runevent.Repository, int64(runevent.PullRequestNumber), opt)
+			if err != nil {
+				return provider.ChangedFiles{}, err
+			}
+			for j := range prChangedFiles {
+				changedFiles.All = append(changedFiles.All, prChangedFiles[j].Filename)
+				if prChangedFiles[j].Status == "added" {
+					changedFiles.Added = append(changedFiles.Added, prChangedFiles[j].Filename)
+				}
+				if prChangedFiles[j].Status == "deleted" {
+					changedFiles.Deleted = append(changedFiles.Deleted, prChangedFiles[j].Filename)
+				}
+				if prChangedFiles[j].Status == "changed" {
+					changedFiles.Modified = append(changedFiles.Modified, prChangedFiles[j].Filename)
+				}
+				if prChangedFiles[j].Status == "renamed" {
+					changedFiles.Renamed = append(changedFiles.Renamed, prChangedFiles[j].Filename)
+				}
+			}
+
+			shouldGetNextPage, opt.Page = ShouldGetNextPage(resp, opt.Page)
+			if !shouldGetNextPage {
+				break
+			}
+		}
+	case "push":
+		pushPayload := PushPayload{}
+		err := json.Unmarshal(runevent.Request.Payload, &pushPayload)
+		if err != nil {
+			v.Logger.Errorf("failed to unmarshal the push payload to get changed files - %v", err)
+			return provider.ChangedFiles{}, fmt.Errorf("failed to unmarshal the push payload to get changed files - %w", err)
+		}
+
+		for _, commit := range pushPayload.Commits {
+			for _, file := range commit.Added {
+				changedFiles.All = append(changedFiles.All, file)
+				changedFiles.Added = append(changedFiles.Added, file)
+			}
+			for _, file := range commit.Modified {
+				changedFiles.All = append(changedFiles.All, file)
+				changedFiles.Modified = append(changedFiles.Modified, file)
+			}
+			for _, file := range commit.Removed {
+				changedFiles.All = append(changedFiles.All, file)
+				changedFiles.Deleted = append(changedFiles.Deleted, file)
+			}
+		}
+	default:
+		v.Logger.Errorf("unable to get changed files. Unknown trigger type of '%s'. Expected pull_request or push", runevent.TriggerTarget)
+		return changedFiles, fmt.Errorf("unable to get changed files. Unknown trigger type of '%s'. Expected pull_request or push", runevent.TriggerTarget)
+	}
+	return changedFiles, nil
 }
 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {

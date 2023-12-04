@@ -35,7 +35,7 @@ func celEvaluate(expr string, env *cel.Env, data map[string]interface{}) (ref.Va
 
 // CelValue evaluates a CEL expression with the given body, headers and
 // / pacParams, it will output a Cel value or an error if selectedjm.
-func CelValue(query string, body any, headers, pacParams map[string]string) (ref.Val, error) {
+func CelValue(query string, body any, headers, pacParams map[string]string, changedFiles map[string]interface{}) (ref.Val, error) {
 	// Marshal/Unmarshal the body to a map[string]interface{} so we can access it from the CEL
 	nbody, err := json.Marshal(body)
 	if err != nil {
@@ -53,11 +53,13 @@ func CelValue(query string, body any, headers, pacParams map[string]string) (ref
 			decls.NewVar("body", mapStrDyn),
 			decls.NewVar("headers", mapStrDyn),
 			decls.NewVar("pac", mapStrDyn),
+			decls.NewVar("files", mapStrDyn),
 		))
 	val, err := celEvaluate(query, celDec, map[string]any{
 		"body":    jsonMap,
 		"pac":     pacParams,
 		"headers": headers,
+		"files":   changedFiles,
 	})
 	if err != nil {
 		return nil, err

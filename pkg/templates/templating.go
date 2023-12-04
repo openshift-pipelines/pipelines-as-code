@@ -22,18 +22,18 @@ var (
 )
 
 // ReplacePlaceHoldersVariables Replace those {{var}} placeholders to the runinfo variable.
-func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEvent any, headers http.Header) string {
+func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEvent any, headers http.Header, changedFiles map[string]interface{}) string {
 	return keys.ParamsRe.ReplaceAllStringFunc(template, func(s string) string {
 		parts := keys.ParamsRe.FindStringSubmatch(s)
 		key := strings.TrimSpace(parts[1])
-		if strings.HasPrefix(key, "body") || strings.HasPrefix(key, "headers") {
+		if strings.HasPrefix(key, "body") || strings.HasPrefix(key, "headers") || strings.HasPrefix(key, "files") {
 			if rawEvent != nil && headers != nil {
 				// convert headers to map[string]string
 				headerMap := make(map[string]string)
 				for k, v := range headers {
 					headerMap[k] = v[0]
 				}
-				val, err := customparams.CelValue(key, rawEvent, headerMap, map[string]string{})
+				val, err := customparams.CelValue(key, rawEvent, headerMap, map[string]string{}, changedFiles)
 				if err != nil {
 					return s
 				}

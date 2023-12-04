@@ -446,12 +446,15 @@ func TestValidate(t *testing.T) {
 }
 
 func TestGetFiles(t *testing.T) {
-	commitFiles := &gitlab.MergeRequest{}
 	tests := []struct {
-		name        string
-		event       *info.Event
-		mrchanges   *gitlab.MergeRequest
-		pushChanges []*gitlab.Diff
+		name                   string
+		event                  *info.Event
+		mrchanges              *gitlab.MergeRequest
+		pushChanges            []*gitlab.Diff
+		wantAddedFilesCount    int
+		wantDeletedFilesCount  int
+		wantModifiedFilesCount int
+		wantRenamedFilesCount  int
 	}{
 		{
 			name: "pull-request",
@@ -462,8 +465,28 @@ func TestGetFiles(t *testing.T) {
 				PullRequestNumber: 10,
 			},
 			mrchanges: &gitlab.MergeRequest{
-				Changes: append(commitFiles.Changes, &gitlab.MergeRequestDiff{NewPath: "test.txt"}),
+				Changes: []*gitlab.MergeRequestDiff{
+					{
+						NewPath: "modified.yaml",
+					},
+					{
+						NewPath: "added.doc",
+						NewFile: true,
+					},
+					{
+						NewPath:     "removed.yaml",
+						DeletedFile: true,
+					},
+					{
+						NewPath:     "renamed.doc",
+						RenamedFile: true,
+					},
+				},
 			},
+			wantAddedFilesCount:    1,
+			wantDeletedFilesCount:  1,
+			wantModifiedFilesCount: 1,
+			wantRenamedFilesCount:  1,
 		},
 		{
 			name: "push",
@@ -475,11 +498,25 @@ func TestGetFiles(t *testing.T) {
 			},
 			pushChanges: []*gitlab.Diff{
 				{
-					NewPath: "first.txt",
-				}, {
-					NewPath: "second.yaml",
+					NewPath: "modified.yaml",
+				},
+				{
+					NewPath: "added.doc",
+					NewFile: true,
+				},
+				{
+					NewPath:     "removed.yaml",
+					DeletedFile: true,
+				},
+				{
+					NewPath:     "renamed.doc",
+					RenamedFile: true,
 				},
 			},
+			wantAddedFilesCount:    1,
+			wantDeletedFilesCount:  1,
+			wantModifiedFilesCount: 1,
+			wantRenamedFilesCount:  1,
 		},
 	}
 	for _, tt := range tests {
@@ -488,7 +525,23 @@ func TestGetFiles(t *testing.T) {
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
 			mergeFileChanges := &gitlab.MergeRequest{
-				Changes: append(commitFiles.Changes, &gitlab.MergeRequestDiff{NewPath: "test.txt"}),
+				Changes: []*gitlab.MergeRequestDiff{
+					{
+						NewPath: "modified.yaml",
+					},
+					{
+						NewPath: "added.doc",
+						NewFile: true,
+					},
+					{
+						NewPath:     "removed.yaml",
+						DeletedFile: true,
+					},
+					{
+						NewPath:     "renamed.doc",
+						RenamedFile: true,
+					},
+				},
 			}
 			if tt.event.TriggerTarget == "pull_request" {
 				mux.HandleFunc(fmt.Sprintf("/projects/0/merge_requests/%d/changes",
@@ -500,9 +553,19 @@ func TestGetFiles(t *testing.T) {
 			}
 			pushFileChanges := []*gitlab.Diff{
 				{
-					NewPath: "first.txt",
-				}, {
-					NewPath: "second.yaml",
+					NewPath: "modified.yaml",
+				},
+				{
+					NewPath: "added.doc",
+					NewFile: true,
+				},
+				{
+					NewPath:     "removed.yaml",
+					DeletedFile: true,
+				},
+				{
+					NewPath:     "renamed.doc",
+					RenamedFile: true,
 				},
 			}
 			if tt.event.TriggerTarget == "push" {
@@ -515,16 +578,21 @@ func TestGetFiles(t *testing.T) {
 			}
 
 			providerInfo := &Provider{Client: fakeclient}
-			fileData, err := providerInfo.GetFiles(ctx, tt.event)
+			changedFiles, err := providerInfo.GetFiles(ctx, tt.event)
 			assert.NilError(t, err, nil)
+			assert.Equal(t, tt.wantAddedFilesCount, len(changedFiles.Added))
+			assert.Equal(t, tt.wantDeletedFilesCount, len(changedFiles.Deleted))
+			assert.Equal(t, tt.wantModifiedFilesCount, len(changedFiles.Modified))
+			assert.Equal(t, tt.wantRenamedFilesCount, len(changedFiles.Renamed))
+
 			if tt.event.TriggerTarget == "pull_request" {
-				for i := range fileData {
-					assert.Equal(t, tt.mrchanges.Changes[i].NewPath, fileData[i])
+				for i := range changedFiles.All {
+					assert.Equal(t, tt.mrchanges.Changes[i].NewPath, changedFiles.All[i])
 				}
 			}
 			if tt.event.TriggerTarget == "push" {
-				for i := range fileData {
-					assert.Equal(t, tt.pushChanges[i].NewPath, fileData[i])
+				for i := range changedFiles.All {
+					assert.Equal(t, tt.pushChanges[i].NewPath, changedFiles.All[i])
 				}
 			}
 		})

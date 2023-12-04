@@ -153,6 +153,16 @@ func CreateGiteaRepo(giteaClient *gitea.Client, user, name, hookURL string, onOr
 	return repo, err
 }
 
+func GetGiteaRepo(giteaClient *gitea.Client, user, name string, _ *zap.SugaredLogger) (*gitea.Repository, error) {
+	var repo *gitea.Repository
+	var err error
+	repo, _, err = giteaClient.GetRepo(user, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get repo: %w", err)
+	}
+	return repo, err
+}
+
 func CreateTeam(topts *TestOpts, orgName, teamName string) (*gitea.Team, error) {
 	team, _, err := topts.GiteaCNX.Client.CreateTeam(orgName, gitea.CreateTeamOption{
 		Permission: gitea.AccessModeWrite,
