@@ -270,6 +270,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.Sender = gitEvent.GetPullRequest().GetUser().GetLogin()
 		processedEvent.EventType = event.EventType
 		processedEvent.PullRequestNumber = gitEvent.GetPullRequest().GetNumber()
+		processedEvent.PullRequestTitle = gitEvent.GetPullRequest().GetTitle()
 		// getting the repository ids of the base and head of the pull request
 		// to scope the token to
 		v.RepositoryIDs = []int64{
