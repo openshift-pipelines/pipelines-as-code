@@ -38,6 +38,13 @@ func TestGithubPullRequestMatchOnCEL(t *testing.T) {
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
+func TestGithubPullRequestCELMatchOnTitle(t *testing.T) {
+	ctx := context.Background()
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
+		[]string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"}, false)
+	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+}
+
 func TestGithubPullRequestWebhook(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")

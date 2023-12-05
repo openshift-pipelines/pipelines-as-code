@@ -65,6 +65,7 @@ var samplePRevent = github.PullRequestEvent{
 		User: &github.User{
 			Login: github.String("user"),
 		},
+		Title: github.String("my first PR"),
 	},
 	Repo: sampleRepo,
 }
@@ -577,6 +578,9 @@ func TestParsePayLoad(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Assert(t, ret != nil)
 			assert.Equal(t, tt.shaRet, ret.SHA)
+			if tt.eventType == "pull_request" {
+				assert.Equal(t, "my first PR", ret.PullRequestTitle)
+			}
 			if tt.eventType == "commit_comment" {
 				assert.Equal(t, tt.wantedBranchName, ret.HeadBranch)
 				assert.Equal(t, tt.wantedBranchName, ret.BaseBranch)
