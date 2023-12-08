@@ -9,6 +9,7 @@ import (
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/interceptor"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
@@ -32,11 +33,43 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 		return nil, repo, p.cancelPipelineRuns(ctx, repo)
 	}
 
-	matchedPRs, err := p.getPipelineRunsFromRepo(ctx, repo)
+	matchedPRs, err := p.getPipelineRuns(ctx, repo)
 	if err != nil {
 		return nil, repo, err
 	}
 	return matchedPRs, repo, nil
+}
+
+func (p *PacRun) getPipelineRuns(ctx context.Context, repo *v1alpha1.Repository) ([]matcher.Match, error) {
+	//if p.run.Info.Pac.CustomResolverURL != "" {
+	//	// TODO
+	//}
+	if p.run.Info.Pac.PacInterceptorURL != "" {
+		// not handling push event for now
+		var providerType string
+		var URL string
+		if p.event.EventType == "pull_request" || p.event.EventType == "Merge Request" {
+			if repo != nil {
+				URL = repo.Spec.URL
+				if repo.Spec.GitProvider != nil {
+					providerType = repo.Spec.GitProvider.Type
+				}
+			}
+			request, err := interceptor.GetInterceptorRequest(providerType, URL, p.event)
+			if err != nil {
+				return nil, err
+			}
+			data, err := interceptor.GetPipelineRunsFromInterceptorService(ctx, request, p.run.Info.Pac.PacInterceptorURL)
+			if err != nil {
+				return nil, err
+			}
+			if strings.Contains(data, "have .tekton directory") {
+				return p.getFilesFromTektonDir(ctx, repo)
+			}
+			return p.getPipelineRunsFromRepo(ctx, data, repo)
+		}
+	}
+	return p.getFilesFromTektonDir(ctx, repo)
 }
 
 // verifyRepoAndUser verifies if the Repo CR exists for the Git Repository,
@@ -143,8 +176,8 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	return repo, nil
 }
 
-// getPipelineRunsFromRepo fetches pipelineruns from git repository and prepare them for creation
-func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Repository) ([]matcher.Match, error) {
+// getFilesFromTektonDir fetches files from .tekton directory
+func (p *PacRun) getFilesFromTektonDir(ctx context.Context, repo *v1alpha1.Repository) ([]matcher.Match, error) {
 	provenance := "source"
 	if repo.Spec.Settings != nil && repo.Spec.Settings.PipelineRunProvenance != "" {
 		provenance = repo.Spec.Settings.PipelineRunProvenance
@@ -159,6 +192,11 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		return nil, nil
 	}
 
+	return p.getPipelineRunsFromRepo(ctx, rawTemplates, repo)
+}
+
+// getPipelineRunsFromRepo fetches pipelineruns from git repository and prepare them for creation
+func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, rawTemplates string, repo *v1alpha1.Repository) ([]matcher.Match, error) {
 	// check for condition if need update the pipelinerun with regexp from the
 	// "raw" pipelinerun string
 	if msg, needUpdate := p.checkNeedUpdate(rawTemplates); needUpdate {

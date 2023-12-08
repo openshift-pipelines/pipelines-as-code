@@ -79,6 +79,15 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1.PipelineRu
 		annotations[keys.TargetProjectID] = strconv.Itoa(event.TargetProjectID)
 	}
 
+	// Don't overwrite the labels if there is some who already exist set by the user in repo
+	if pipelineRun.GetLabels() == nil {
+		pipelineRun.Labels = map[string]string{}
+	}
+	// Don't overwrite the annotation if there is some who already exist set by the user in repo
+	if pipelineRun.GetAnnotations() == nil {
+		pipelineRun.Annotations = map[string]string{}
+	}
+
 	for k, v := range labels {
 		pipelineRun.Labels[k] = v
 	}
