@@ -63,7 +63,7 @@ func (c *Clients) GetURL(ctx context.Context, url string) ([]byte, error) {
 	return data, nil
 }
 
-// Set kube client based on config
+// Set kube client based on config.
 func (c *Clients) kubeClient(config *rest.Config) (kubernetes.Interface, error) {
 	k8scs, err := kubernetes.NewForConfig(config)
 	if err != nil {

@@ -6,14 +6,13 @@ import (
 	"regexp"
 	"testing"
 
-	"gotest.tools/v3/assert"
-	"gotest.tools/v3/fs"
-
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/fs"
 )
 
 func TestGenerateTemplate(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	giteaStructs "code.gitea.io/gitea/modules/structs"
 )
 
-// whEventType represents a Gitea webhook event
+// whEventType represents a Gitea webhook event.
 type whEventType string
 
 // List of supported events

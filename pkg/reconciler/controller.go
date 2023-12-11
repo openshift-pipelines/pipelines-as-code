@@ -75,7 +75,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 }
 
 // enqueue only the pipelineruns which are in `started` state
-// pipelinerun will have a label `pipelinesascode.tekton.dev/state` to describe the state
+// pipelinerun will have a label `pipelinesascode.tekton.dev/state` to describe the state.
 func checkStateAndEnqueue(impl *controller.Impl) func(obj interface{}) {
 	return func(obj interface{}) {
 		object, err := kmeta.DeletionHandlingAccessor(obj)

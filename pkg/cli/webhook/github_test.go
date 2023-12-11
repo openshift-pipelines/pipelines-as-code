@@ -102,12 +102,12 @@ func TestCreate(t *testing.T) {
 
 	// webhook created for repo pac/valid
 	mux.HandleFunc("/repos/pac/valid/hooks", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(201)
+		w.WriteHeader(http.StatusCreated)
 	})
 
 	// webhook failed for repo pac/invalid
 	mux.HandleFunc("/repos/pac/invalid/hooks", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(403)
+		w.WriteHeader(http.StatusForbidden)
 		_, _ = fmt.Fprint(w, `{"status": "forbidden"}`)
 	})
 

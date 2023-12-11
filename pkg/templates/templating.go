@@ -21,7 +21,7 @@ var (
 	mapType    = reflect.TypeOf(&structpb.Struct{})
 )
 
-// ReplacePlaceHoldersVariables Replace those {{var}} placeholders to the runinfo variable
+// ReplacePlaceHoldersVariables Replace those {{var}} placeholders to the runinfo variable.
 func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEvent any, headers http.Header) string {
 	return keys.ParamsRe.ReplaceAllStringFunc(template, func(s string) string {
 		parts := keys.ParamsRe.FindStringSubmatch(s)

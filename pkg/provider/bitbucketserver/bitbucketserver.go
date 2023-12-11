@@ -39,7 +39,7 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []str
 	return false, ""
 }
 
-// GetTaskURI TODO: Implement ME
+// GetTaskURI TODO: Implement ME.
 func (v *Provider) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }

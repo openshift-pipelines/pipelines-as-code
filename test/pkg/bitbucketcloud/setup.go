@@ -8,13 +8,12 @@ import (
 	"testing"
 
 	"github.com/ktrysmt/go-bitbucket"
-	"gotest.tools/v3/assert"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	"gotest.tools/v3/assert"
 )
 
 func Setup(ctx context.Context) (*params.Run, options.E2E, bitbucketcloud.Provider, error) {

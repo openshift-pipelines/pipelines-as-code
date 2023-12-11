@@ -6,13 +6,12 @@ import (
 	"net/url"
 	"strings"
 
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	"k8s.io/client-go/dynamic"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"k8s.io/client-go/dynamic"
 )
 
 type CustomConsole struct {
@@ -41,7 +40,7 @@ func (o *CustomConsole) URL() string {
 // generateURL will generate a URL from a template, trim some of the spaces and
 // \n we get from yaml
 // return the default URL if there it's not become a proper url or that it has
-// some of the templates like {{}} left
+// some of the templates like {{}} left.
 func (o *CustomConsole) generateURL(urlTmpl string, dict map[string]string) string {
 	newurl := templates.ReplacePlaceHoldersVariables(urlTmpl, dict, nil, nil)
 	// trim new line because yaml parser adds new line at the end of the string

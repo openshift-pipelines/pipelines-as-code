@@ -30,7 +30,7 @@ var yamlDocSeparatorRe = regexp.MustCompile(`(?m)^---\s*$`)
 // getTaskRunByName returns the taskrun with the given name the first one found
 // will be matched. It does not handle conflicts so user has fetched multiple
 // taskruns with the same name it will just pick up the first one.
-// if the taskrun is not found it returns an error
+// if the taskrun is not found it returns an error.
 func getTaskByName(name string, tasks []*tektonv1.Task) (*tektonv1.Task, error) {
 	for _, value := range tasks {
 		if value.Name == name {
@@ -162,7 +162,7 @@ func ReadTektonTypes(ctx context.Context, log *zap.SugaredLogger, data string) (
 // Resolve gets a large string which is a yaml multi documents containing
 // Pipeline/PipelineRuns/Tasks and resolve them inline as a single PipelineRun
 // generateName can be set as True to set the name as a generateName + "-" for
-// unique pipelinerun
+// unique pipelinerun.
 func Resolve(ctx context.Context, cs *params.Run, logger *zap.SugaredLogger, providerintf provider.Interface, types TektonTypes, event *info.Event, ropt *Opts) ([]*tektonv1.PipelineRun, error) {
 	if len(types.PipelineRuns) == 0 {
 		return []*tektonv1.PipelineRun{}, fmt.Errorf("could not find any PipelineRun in your .tekton/ directory")

@@ -24,7 +24,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/spf13/cobra"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -162,7 +161,7 @@ func getTknPath() (string, error) {
 	return filepath.Abs(fname)
 }
 
-// getPipelineRunsToRepo returns all PipelineRuns running in a namespace
+// getPipelineRunsToRepo returns all PipelineRuns running in a namespace.
 func getPipelineRunsToRepo(ctx context.Context, lopt *logOption, repoName string) ([]string, error) {
 	opts := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s",

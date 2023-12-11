@@ -3,8 +3,6 @@ package bitbucketserver
 import (
 	"context"
 	"crypto/hmac"
-
-	//nolint
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"

@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-github/v56/github"
 )
 
-// generateManifest generate manifest from the given options
+// generateManifest generate manifest from the given options.
 func generateManifest(opts *bootstrapOpts) ([]byte, error) {
 	sc := scrape.AppManifest{
 		Name:           github.String(opts.GithubApplicationName),
@@ -38,7 +38,7 @@ func generateManifest(opts *bootstrapOpts) ([]byte, error) {
 	return json.Marshal(sc)
 }
 
-// getGHClient get github client
+// getGHClient get github client.
 func getGHClient(opts *bootstrapOpts) (*github.Client, error) {
 	if opts.GithubAPIURL == defaultPublicGithub {
 		return github.NewClient(nil), nil

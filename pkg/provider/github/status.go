@@ -279,7 +279,7 @@ func metadataPatch(checkRunID *int64, logURL string) map[string]interface{} {
 }
 
 // createStatusCommit use the classic/old statuses API which is available when we
-// don't have a github app token
+// don't have a github app token.
 func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event, status provider.StatusOpts) error {
 	var err error
 	now := time.Now()

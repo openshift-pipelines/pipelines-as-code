@@ -10,7 +10,6 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -35,7 +34,7 @@ const (
 </table>`
 )
 
-// validate the struct to interface
+// validate the struct to interface.
 var _ provider.Interface = (*Provider)(nil)
 
 type Provider struct {
@@ -50,7 +49,7 @@ type Provider struct {
 	run          *params.Run
 }
 
-// GetTaskURI TODO: Implement ME
+// GetTaskURI TODO: Implement ME.
 func (v *Provider) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }
@@ -180,7 +179,7 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 	return nil
 }
 
-// TODO: move to common since used in github and here
+// TODO: move to common since used in github and here.
 func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 	if pacopts.ApplicationName != "" {
 		if status.OriginalPipelineRunName == "" {

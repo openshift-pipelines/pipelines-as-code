@@ -33,7 +33,7 @@ func setup() {
 	}
 }
 
-// Not sure how to get testParams fixtures working
+// Not sure how to get testParams fixtures working.
 func readTDfile(t *testing.T, testname string, generateName, remoteTasking bool) (*tektonv1.PipelineRun, *zapobserver.ObservedLogs, error) {
 	t.Helper()
 	ctx, _ := rtesting.SetupFakeContext(t)
@@ -90,14 +90,14 @@ func TestGenerateName(t *testing.T) {
 	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
 }
 
-// TestPipelineBundlesSkipped effectively test conversion from beta1 to v1
+// TestPipelineBundlesSkipped effectively test conversion from beta1 to v1.
 func TestPipelineBundlesSkipped(t *testing.T) {
 	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-bundle", false, true)
 	assert.NilError(t, err)
 	assert.Equal(t, string(resolved.Spec.PipelineRef.ResolverRef.Params[0].Name), "bundle")
 }
 
-// TestPipelineBundlesSkipped effectively test conversion from beta1 to v1
+// TestPipelineBundlesSkipped effectively test conversion from beta1 to v1.
 func TestTaskBundlesSkipped(t *testing.T) {
 	resolved, _, err := readTDfile(t, "pipelinerun-task-bundle", false, true)
 	assert.NilError(t, err)

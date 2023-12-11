@@ -259,7 +259,7 @@ func appendYaml(filename string) string {
 	return fmt.Sprintf("---\n%s", s)
 }
 
-// listAllYamls takes a list of paths and returns a list of all the yaml files in those paths even if they are in subdirectories
+// listAllYamls takes a list of paths and returns a list of all the yaml files in those paths even if they are in subdirectories.
 func listAllYamls(paths []string) []string {
 	ret := []string{}
 
@@ -281,7 +281,7 @@ func listAllYamls(paths []string) []string {
 	return ret
 }
 
-// expandYamlsAsSingleTemplate takes a list of filenames and returns a single yaml
+// expandYamlsAsSingleTemplate takes a list of filenames and returns a single yaml.
 func expandYamlsAsSingleTemplate(filenames []string) string {
 	var yamlDoc string
 	for _, paths := range listAllYamls(filenames) {

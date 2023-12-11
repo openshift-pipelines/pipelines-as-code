@@ -465,13 +465,13 @@ func TestCompareHostOfURLS(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "same same",
+			name: "exact same",
 			url1: "https://shivam.com/foo/bar",
 			url2: "https://shivam.com/hello/moto",
 			want: true,
 		},
 		{
-			name: "same same but different",
+			name: "exact same but different",
 			url1: "https://shivam.com/foo/bar",
 			url2: "https://vincent.com/foo/bar",
 			want: false,

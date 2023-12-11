@@ -161,7 +161,7 @@ func (v *Provider) aclAllowedOkToTestCurrentComment(ctx context.Context, revent 
 	return false, nil
 }
 
-// aclCheck check if we are allowed to run the pipeline on that PR
+// aclCheck check if we are allowed to run the pipeline on that PR.
 func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, error) {
 	if rev.Organization == rev.Sender {
 		return true, nil
@@ -201,7 +201,7 @@ func (v *Provider) checkSenderRepoMembership(_ context.Context, runevent *info.E
 }
 
 // getFileFromDefaultBranch will get a file directly from the Default BaseBranch as
-// configured in runinfo which is directly set in webhook by Github
+// configured in runinfo which is directly set in webhook by Github.
 func (v *Provider) getFileFromDefaultBranch(ctx context.Context, path string, runevent *info.Event) (string, error) {
 	tektonyaml, err := v.GetFileInsideRepo(ctx, runevent, path, runevent.DefaultBranch)
 	if err != nil {
@@ -211,7 +211,7 @@ func (v *Provider) getFileFromDefaultBranch(ctx context.Context, path string, ru
 }
 
 // GetStringPullRequestComment return the comment if we find a regexp in one of
-// the comments text of a pull request
+// the comments text of a pull request.
 func (v *Provider) GetStringPullRequestComment(_ context.Context, runevent *info.Event, reg string) ([]*gitea.Comment, error) {
 	var ret []*gitea.Comment
 	prNumber, err := convertPullRequestURLtoNumber(runevent.URL)

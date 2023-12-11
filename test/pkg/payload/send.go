@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
-	"io"
-	"os"
-	"strings"
 
 	//nolint:gosec
 	"crypto/sha1"
@@ -14,8 +11,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 )
@@ -33,7 +33,7 @@ func Send(ctx context.Context, cs *params.Run, elURL, elWebHookSecret, githubURL
 	mac.Write(jeez)
 	sha256secret := hex.EncodeToString(mac.Sum(nil))
 
-	req, err := http.NewRequestWithContext(ctx, "POST", elURL, bytes.NewBuffer(jeez))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, elURL, bytes.NewBuffer(jeez))
 	if err != nil {
 		return err
 	}

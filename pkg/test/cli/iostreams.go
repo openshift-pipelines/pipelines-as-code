@@ -7,7 +7,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 )
 
-// NewIOStream return a fake iostreams
+// NewIOStream return a fake iostreams.
 func NewIOStream() (*cli.IOStreams, *bytes.Buffer) {
 	in := &bytes.Buffer{}
 	out := &bytes.Buffer{}

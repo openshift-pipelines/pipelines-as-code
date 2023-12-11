@@ -15,7 +15,7 @@ var prCount = stats.Float64("pipelines_as_code_pipelinerun_count",
 	"number of pipeline runs by pipelines as code",
 	stats.UnitDimensionless)
 
-// Recorder holds keys for metrics
+// Recorder holds keys for metrics.
 type Recorder struct {
 	initialized     bool
 	provider        tag.Key
@@ -24,7 +24,7 @@ type Recorder struct {
 }
 
 // NewRecorder creates a new metrics recorder instance
-// to log the PAC PipelineRun related metrics
+// to log the PAC PipelineRun related metrics.
 func NewRecorder() (*Recorder, error) {
 	r := &Recorder{
 		initialized: true,
@@ -62,7 +62,7 @@ func NewRecorder() (*Recorder, error) {
 	return r, nil
 }
 
-// Count logs number of times a pipelinerun is ran for a provider
+// Count logs number of times a pipelinerun is ran for a provider.
 func (r *Recorder) Count(provider, event string) error {
 	if !r.initialized {
 		return fmt.Errorf(

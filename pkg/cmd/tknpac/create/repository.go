@@ -152,7 +152,7 @@ func (r *RepoOptions) Create(ctx context.Context) (string, string, error) {
 	return repoName, repoNamespace, err
 }
 
-// getOrCreateNamespace ask and create namespace or use the default one
+// getOrCreateNamespace ask and create namespace or use the default one.
 func getOrCreateNamespace(ctx context.Context, opts *RepoOptions) error {
 	if opts.Repository.Namespace != "" {
 		return nil

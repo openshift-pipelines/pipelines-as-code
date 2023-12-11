@@ -6,7 +6,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 )
 
-// makeStandardParamsFromEvent will create a map of standard params out of the event
+// makeStandardParamsFromEvent will create a map of standard params out of the event.
 func (p *CustomParams) makeStandardParamsFromEvent() map[string]string {
 	repoURL := p.event.URL
 	// On bitbucket server you are have a special url for checking it out, they

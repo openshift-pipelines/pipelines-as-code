@@ -14,9 +14,8 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v56/github"
-	"gotest.tools/v3/assert"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"gotest.tools/v3/assert"
 )
 
 const (
@@ -25,7 +24,7 @@ const (
 	githubBaseURLPath = "/api/v3"
 )
 
-// SetupGH Setup a GitHUB httptest connection, from go-github test-suit
+// SetupGH Setup a GitHUB httptest connection, from go-github test-suit.
 func SetupGH() (client *github.Client, mux *http.ServeMux, serverURL string, teardown func()) {
 	// mux is the HTTP request multiplexer used with the test server.
 	mux = http.NewServeMux()
@@ -58,7 +57,7 @@ func SetupGH() (client *github.Client, mux *http.ServeMux, serverURL string, tea
 	return client, mux, server.URL, server.Close
 }
 
-// SetupGitTree Take a dir and fake a full GitTree GitHub api calls reply recursively over a muxer
+// SetupGitTree Take a dir and fake a full GitTree GitHub api calls reply recursively over a muxer.
 func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Event, recursive bool) {
 	entries := []*github.TreeEntry{}
 	type file struct {

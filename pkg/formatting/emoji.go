@@ -9,7 +9,7 @@ import (
 
 const nonAttributedStr = "---"
 
-// formatCondition knative formatcondition with emoji or not
+// formatCondition knative formatcondition with emoji or not.
 func formatCondition(c knative1.Conditions, skipemoji bool) string {
 	var status, emoji string
 	if len(c) == 0 {

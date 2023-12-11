@@ -8,7 +8,7 @@ import (
 )
 
 // PacCliOpts is the struct that holds all the options for the CLI
-// TODO: Pass this to a context
+// TODO: Pass this to a context.
 type PacCliOpts struct {
 	NoColoring    bool
 	AllNameSpaces bool

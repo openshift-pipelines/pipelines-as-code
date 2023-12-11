@@ -28,7 +28,7 @@ func AlphaString(length int) string {
 	return string(result)
 }
 
-// secureRandomBytes returns the requested number of bytes using crypto/rand
+// secureRandomBytes returns the requested number of bytes using crypto/rand.
 func secureRandomBytes(length int) []byte {
 	randomBytes := make([]byte, length)
 	_, _ = rand.Read(randomBytes)

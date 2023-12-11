@@ -5,16 +5,15 @@ import (
 	"strings"
 	"testing"
 
-	"go.uber.org/zap"
-	zapobserver "go.uber.org/zap/zaptest/observer"
-	"gotest.tools/v3/assert"
-	rtesting "knative.dev/pkg/reconciler/testing"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
+	"gotest.tools/v3/assert"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func newRepoWithPolicy(policy *v1alpha1.Policy) *v1alpha1.Repository {

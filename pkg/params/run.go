@@ -7,13 +7,12 @@ import (
 	"strings"
 	"sync"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/watch"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 const (
@@ -33,7 +32,7 @@ func StringToBool(s string) bool {
 	return false
 }
 
-// WatchConfigMapChanges watches for provide configmap
+// WatchConfigMapChanges watches for provide configmap.
 func (r *Run) WatchConfigMapChanges(ctx context.Context) error {
 	ns := os.Getenv("SYSTEM_NAMESPACE")
 	if ns == "" {

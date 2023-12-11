@@ -24,7 +24,7 @@ import (
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-// script kiddies, don't get too excited, this has been randomly generated with random words
+// script kiddies, don't get too excited, this has been randomly generated with random words.
 const fakePrivateKey = `-----BEGIN RSA PRIVATE KEY-----
 MIICXAIBAAKBgQC6GorZBeri0eVERMZQDFh5E1RMPjFk9AevaWr27yJse6eiUlos
 gY2L2vcZKLOrdvVR+TLLapIMFfg1E1qVr1iTHP3IiSCs1uW6NKDmxEQc9Uf/fG9c

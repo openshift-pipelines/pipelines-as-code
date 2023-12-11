@@ -40,7 +40,7 @@ func NewQueueManager(logger *zap.SugaredLogger) *QueueManager {
 // getSemaphore returns existing semaphore created for repository or create
 // a new one with limit provided in repository
 // Semaphore: nothing but a waiting and a running queue for a repository
-// with limit deciding how many should be running at a time
+// with limit deciding how many should be running at a time.
 func (qm *QueueManager) getSemaphore(repo *v1alpha1.Repository) (Semaphore, error) {
 	repoKey := repoKey(repo)
 
@@ -75,7 +75,7 @@ func (qm *QueueManager) checkAndUpdateSemaphoreSize(repo *v1alpha1.Repository, s
 // AddListToQueue adds the pipelineRun to the waiting queue of the repository
 // and if it is at the top and ready to run which means currently running pipelineRun < limit
 // then move it to running queue
-// This adds the pipelineRuns in the same order as in the list
+// This adds the pipelineRuns in the same order as in the list.
 func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string) ([]string, error) {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
@@ -105,7 +105,7 @@ func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string)
 
 // RemoveFromQueue removes the pipelineRun from the queues of the repository
 // It also start the next one which is on top of the waiting queue and return its name
-// if started or returns ""
+// if started or returns "".
 func (qm *QueueManager) RemoveFromQueue(repo *v1alpha1.Repository, run *tektonv1.PipelineRun) string {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
@@ -133,7 +133,7 @@ func getQueueKey(run *tektonv1.PipelineRun) string {
 }
 
 // InitQueues rebuild all the queues for all repository if concurrency is defined before
-// reconciler started reconciling them
+// reconciler started reconciling them.
 func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interface, pac versioned.Interface) error {
 	// fetch all repos
 	repos, err := pac.PipelinesascodeV1alpha1().Repositories("").List(ctx, v1.ListOptions{})

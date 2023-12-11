@@ -395,7 +395,7 @@ func TestAclCheckAll(t *testing.T) {
 	})
 
 	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/collaborators/%v", collabOwner, collabRepo, collaborator), func(rw http.ResponseWriter, r *http.Request) {
-		rw.WriteHeader(204)
+		rw.WriteHeader(http.StatusNoContent)
 	})
 
 	observer, _ := zapobserver.New(zap.InfoLevel)

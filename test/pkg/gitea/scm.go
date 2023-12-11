@@ -11,15 +11,14 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-github/v56/github"
-	"go.uber.org/zap"
-	"gotest.tools/v3/assert"
-	"gotest.tools/v3/env"
-	"gotest.tools/v3/fs"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
+	"go.uber.org/zap"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/env"
+	"gotest.tools/v3/fs"
 )
 
 func InitGitRepo(t *testing.T) (string, func()) {
@@ -39,7 +38,7 @@ func InitGitRepo(t *testing.T) (string, func()) {
 	}
 }
 
-// PushFilesToRefAPI will push files to a given ref via API
+// PushFilesToRefAPI will push files to a given ref via API.
 func PushFilesToRefAPI(t *testing.T, topts *TestOpts, entries map[string]string) (string, error) {
 	var sha string
 	commitAuthor := "OpenShift Pipelines E2E test"
@@ -71,7 +70,7 @@ func PushFilesToRefAPI(t *testing.T, topts *TestOpts, entries map[string]string)
 }
 
 func MakeRequest(ctx context.Context, httpClient http.Client, url, username, password string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +197,7 @@ func CreateGiteaUser(giteaClient *gitea.Client, username, password string) (*git
 	return newuser, nil
 }
 
-// CreateGiteaUserSecondCnx creates a new user and a new provider for this user
+// CreateGiteaUserSecondCnx creates a new user and a new provider for this user.
 func CreateGiteaUserSecondCnx(topts *TestOpts, username, password string) (pgitea.Provider, *gitea.User, error) {
 	newuser, err := CreateGiteaUser(topts.GiteaCNX.Client, username, password)
 	if err != nil {

@@ -11,11 +11,10 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/google/go-github/v56/github"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //go:embed templates/gosmee.yaml
@@ -109,7 +108,7 @@ func getDashboardURL(ctx context.Context, opts *bootstrapOpts, run *params.Run) 
 	return nil
 }
 
-// installGosmeeForwarder Install a gosmee forwarded to hook.pipelinesascode.com
+// installGosmeeForwarder Install a gosmee forwarded to hook.pipelinesascode.com.
 func installGosmeeForwarder(opts *bootstrapOpts) error {
 	gosmeInstall, err := askYN(true, fmt.Sprintf(gosmeeInstallHelpText, opts.forwarderURL), "Do you want me to install the gosmee forwarder?", opts.ioStreams.Out)
 	if err != nil {

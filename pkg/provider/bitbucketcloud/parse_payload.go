@@ -23,7 +23,7 @@ func lastForwarderForIP(xff string) string {
 	return split[len(split)-1]
 }
 
-// checkFromPublicCloudIPS Grab public IP from public cloud and make sure we match it
+// checkFromPublicCloudIPS Grab public IP from public cloud and make sure we match it.
 func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run, sourceIP string) (bool, error) {
 	if !run.Info.Pac.BitbucketCloudCheckSourceIP {
 		return true, nil

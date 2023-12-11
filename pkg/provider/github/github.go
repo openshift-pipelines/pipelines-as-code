@@ -30,7 +30,7 @@ const (
 	// on our GHE instance, it looks like this :
 	// https://raw.ghe.openshiftpipelines.com/pac/chmouel-test/main/README.md
 	// we can perhaps do some autodetection with event.Provider.GHEURL and adding
-	// a raw into it
+	// a raw into it.
 	publicRawURLHost = "raw.githubusercontent.com"
 
 	defaultPaginedNumber = 100
@@ -68,7 +68,7 @@ func New() *Provider {
 	}
 }
 
-// detectGHERawURL Detect if we have a raw URL in GHE
+// detectGHERawURL Detect if we have a raw URL in GHE.
 func detectGHERawURL(event *info.Event, taskHost string) bool {
 	gheURL, err := url.Parse(event.GHEURL)
 	if err != nil {
@@ -78,7 +78,7 @@ func detectGHERawURL(event *info.Event, taskHost string) bool {
 	return taskHost == fmt.Sprintf("raw.%s", gheURL.Host)
 }
 
-// splitGithubURL Take a Github url and split it with org/repo path ref, supports rawURL
+// splitGithubURL Take a Github url and split it with org/repo path ref, supports rawURL.
 func splitGithubURL(event *info.Event, uri string) (string, string, string, string, error) {
 	pURL, err := url.Parse(uri)
 	if err != nil {
@@ -231,7 +231,7 @@ func parseTS(headerTS string) (time.Time, error) {
 // ratelimited. we try to check first the header is set (unlimited life token  would
 // not have an expiration) we would anyway get a 401 error when trying to use it
 // but this gives a nice hint to the user into their namespace event of where
-// the issue was
+// the issue was.
 func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.Clock) error {
 	rl, resp, err := v.Client.RateLimits(ctx)
 	if resp.Header.Get("GitHub-Authentication-Token-Expiration") != "" {
@@ -287,7 +287,7 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	return nil
 }
 
-// GetTektonDir Get all yaml files in tekton directory return as a single concated file
+// GetTektonDir Get all yaml files in tekton directory return as a single concated file.
 func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path, provenance string) (string, error) {
 	tektonDirSha := ""
 
@@ -365,7 +365,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 
 // GetFileInsideRepo Get a file via Github API using the runinfo information, we
 // branch is true, the user the branch as ref instead of the SHA
-// TODO: merge GetFileInsideRepo amd GetTektonDir
+// TODO: merge GetFileInsideRepo amd GetTektonDir.
 func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, target string) (string, error) {
 	ref := runevent.SHA
 	if target != "" {
@@ -391,7 +391,7 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 	return string(getobj), nil
 }
 
-// concatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string
+// concatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string.
 func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []*github.TreeEntry, runevent *info.Event) (string, error) {
 	var allTemplates string
 
@@ -411,7 +411,7 @@ func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []*github.Tre
 	return allTemplates, nil
 }
 
-// getPullRequest get a pull request details
+// getPullRequest get a pull request details.
 func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*info.Event, error) {
 	pr, _, err := v.Client.PullRequests.Get(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	if err != nil {
@@ -440,7 +440,7 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 	return runevent, nil
 }
 
-// GetFiles get a files from pull request
+// GetFiles get a files from pull request.
 func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string, error) {
 	if runevent.TriggerTarget == "pull_request" {
 		opt := &github.ListOptions{PerPage: v.paginedNumber}
@@ -475,7 +475,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) ([]string
 	return []string{}, nil
 }
 
-// getObject Get an object from a repository
+// getObject Get an object from a repository.
 func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Event) ([]byte, error) {
 	blob, _, err := v.Client.Git.GetBlob(ctx, runevent.Organization, runevent.Repository, sha)
 	if err != nil {
@@ -489,7 +489,7 @@ func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Eve
 	return decoded, err
 }
 
-// ListRepos lists all the repos for a particular token
+// ListRepos lists all the repos for a particular token.
 func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 	if v.Client == nil {
 		return []string{}, fmt.Errorf("no github client has been initialized, " +

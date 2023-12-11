@@ -79,12 +79,12 @@ type Request struct {
 	Payload []byte
 }
 
-// DeepCopyInto deep copy runinfo in another instance
+// DeepCopyInto deep copy runinfo in another instance.
 func (r *Event) DeepCopyInto(out *Event) {
 	*out = *r
 }
 
-// NewEvent returns a new Event
+// NewEvent returns a new Event.
 func NewEvent() *Event {
 	return &Event{
 		Provider: &Provider{},
