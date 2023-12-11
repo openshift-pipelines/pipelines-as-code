@@ -135,4 +135,8 @@ func SetDefaults(config map[string]string) {
 	if rememberOKToTest, ok := config[RememberOKToTestKey]; !ok || rememberOKToTest == "" {
 		config[RememberOKToTestKey] = rememberOKToTestValue
 	}
+
+	if v, ok := config[TektonDirInterceptorURLKey]; !ok || v == "" {
+		config[TektonDirInterceptorURLKey] = v
+	}
 }

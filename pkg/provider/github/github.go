@@ -531,6 +531,10 @@ func (v *Provider) CreateToken(ctx context.Context, repository []string, event *
 	return token, nil
 }
 
+func (v *Provider) GetToken() string {
+	return *v.Token
+}
+
 func uniqueRepositoryID(repoIDs []int64, id int64) []int64 {
 	r := repoIDs
 	m := make(map[int64]bool)

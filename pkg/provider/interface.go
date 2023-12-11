@@ -40,6 +40,7 @@ type Interface interface {
 	GetFiles(context.Context, *info.Event) ([]string, error)
 	GetTaskURI(context.Context, *info.Event, string) (bool, string, error)
 	CreateToken(context.Context, []string, *info.Event) (string, error)
+	GetToken() string
 	CheckPolicyAllowing(context.Context, *info.Event, []string) (bool, string)
 }
 

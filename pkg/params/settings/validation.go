@@ -90,6 +90,12 @@ func Validate(config map[string]string) error {
 		}
 	}
 
+	if v, ok := config[TektonDirInterceptorURLKey]; ok && v != "" {
+		if _, err := url.ParseRequestURI(v); err != nil {
+			return fmt.Errorf("invalid value for key %v, invalid url: %w", TektonDirInterceptorURLKey, err)
+		}
+	}
+
 	return nil
 }
 

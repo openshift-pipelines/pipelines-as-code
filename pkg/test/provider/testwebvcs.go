@@ -100,3 +100,7 @@ func (v *TestProviderImp) GetFiles(_ context.Context, _ *info.Event) ([]string, 
 func (v *TestProviderImp) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
 }
+
+func (v *TestProviderImp) GetToken() string {
+	return ""
+}
