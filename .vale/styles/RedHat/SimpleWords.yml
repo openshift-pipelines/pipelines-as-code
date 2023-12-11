@@ -4,8 +4,10 @@ ignorecase: true
 level: suggestion
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/simplewords/
 message: "Use simple language. Consider using '%s' rather than '%s'."
-# source: "IBM - Conversational style; http://www.plainlanguage.gov/howto/wordsuggestions/simplewords.cfm"
+action:
+  name: replace
 swap:
+  "(?<!an |the |IP |IPv[46] |MAC |sub-)address": discuss
   "approximate(?:ly)?": about
   "objective(?! C?)": aim|goal
   absent: none|not here
@@ -20,7 +22,6 @@ swap:
   accurate: right|exact
   acquiesce: agree
   acquire: get|buy
-  "(?<!an |the |IP |IPv[46] |MAC )address": discuss
   addressees: you
   adjacent to: next to
   adjustment: change

@@ -3,12 +3,11 @@ extends: substitution
 ignorecase: true
 level: warning
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/consciouslanguage/
-message: Use '%s' rather than '%s.'
-# source: "https://redhat-documentation.github.io/supplementary-style-guide/#conscious-language"
+message: Use %s rather than '%s'.
 action:
   name: replace
 swap:
   blacklist: blocklist
-  whitelist: allowlist
   master(?! broker): primary|source|initiator|requester|controller|host|director|supplier
-  slave(?! broker): secondary|replica|responder|device|worker|proxy|performer|consumer
+  slave(?! broker): secondary|replica|responder|device|worker|proxy|performer|consumer|child
+  whitelist: allowlist

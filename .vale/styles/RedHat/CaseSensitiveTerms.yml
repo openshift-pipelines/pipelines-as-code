@@ -9,18 +9,29 @@ action:
   name: replace
 swap:
   "(?<!/)var": VAR
-  # Bind: BIND
+  "(?<!Business )Resource Planner|(?<!Business Resource )Planner": Business Resource Planner
+  "(?<!Microsoft )Azure": Microsoft Azure
+  "(?<!Microsoft Azure )On-Demand Marketplace": Microsoft Azure On-Demand Marketplace
+  "(?<!Red Hat )Customer Portal": Red Hat Customer Portal
+  "(?<!Red Hat )JBoss Enterprise Application Platform": Red Hat JBoss Enterprise Application Platform
+  "(?<!Red Hat )OpenStack Platform|RHOS|RH-OSP": Red Hat OpenStack Platform
+  "(?<!Red Hat JBoss )BRMS(?! engine)": inference engine
+  "(?<!Red Hat JBoss )BRMS|BRM|(?<!Red Hat )JBoss BRMS": Red Hat JBoss BRMS
+  "[dD]ay-0|day 0": Day 0
+  "[dD]ay-1|day 1": Day 1
+  "[dD]ay-2|day 2": Day 2
+  "BPMS|(?<!Red Hat )JBoss BPMS|(?<!Red Hat JBoss )BPM(?! Suite)": Red Hat JBoss BPM Suite
+  "DM(?![ -]Multipath)|directory manager": Directory Manager
+  "JBoss Broker|Red Hat Broker|The AMQ Broker": AMQ Broker
+  "JBoss Console|Red Hat Console": AMQ Console
+  "Kernel(?!-based Virtual Machine)": kernel
+  "OCM|(?<!Red Hat OpenShift )Cluster Manager|(?<!Red Hat )OpenShift Cluster Manager|the OpenShift Cluster Manager": Red Hat OpenShift Cluster Manager
+  "OD": Red Hat OpenShift Dedicated
+  "(?<!.-)javadocs?": Javadoc|API documentation|Java API documentation
+  '(?<!\.)IM': instant message
   '(?<!\.)yaml|Yaml': YAML
-  '(?<!Business )Resource Planner|(?<!Business Resource )Planner': Business Resource Planner
   '(?<!JBoss )EAP|(?<!Red Hat )JBoss(?!\sCommunity|\sBroker|\sClients|\sConsole|\sAMQ|\sData\sGrid|\sBRMS|\sBPMS|\sEnterprise\sApplication\sPlatform|\.org|\sInterconnect|\sEAP|\sBPM\sSuite)': JBoss EAP
-  '(?<!Microsoft )Azure': Microsoft Azure
-  '(?<!Microsoft Azure )On-Demand Marketplace': Microsoft Azure On-Demand Marketplace
   '(?<!Realtime )Decision\sServer': Realtime Decision Server
-  '(?<!Red Hat )Customer Portal': Red Hat Customer Portal
-  '(?<!Red Hat )JBoss Enterprise Application Platform': Red Hat JBoss Enterprise Application Platform
-  '(?<!Red Hat )OpenStack Platform|RHOS|RH-OSP': Red Hat OpenStack Platform
-  '(?<!Red Hat JBoss )BRMS(?! engine)': inference engine
-  '(?<!Red Hat JBoss )BRMS|BRM|(?<!Red Hat )JBoss BRMS': Red Hat JBoss BRMS
   '[nN]odejs|[nN]ode\.JS|node\.js': Node.js
   '\s\.Net Core|\s\.Net|\s\.NET\sCore|dotNet': .NET
   'A-MQ(?!\sBroker|\sClient|\sConsole|\sInterconnect)': AMQ
@@ -31,40 +42,38 @@ swap:
   'ack\spacket|ACK(?!\sflag)|ack': ACK flag
   'ActiveMQ\sArtemis|ActiveMQ(?!\sArtemis)': built-in messaging|JBoss EAP built-in messaging|JBoss EAP messaging
   'Admin\sPortal|webadmin\sportal|webadmin|Administrator\sPortal|Administration\sportal': Administration Portal
-  'BPMS|(?<!Red Hat )JBoss BPMS|(?<!Red Hat JBoss )BPM(?! Suite)': Red Hat JBoss BPM Suite
   'BRMS\sengine': inference engine
-  'DM(?![ -]Multipath)|directory manager': Directory Manager
   'GUI\seditor|Business\sCentral\seditor': guided editor
-  'JBoss Broker|Red Hat Broker|The AMQ Broker': AMQ Broker
-  'JBoss Console|Red Hat Console': AMQ Console
   'JBoss\.org': JBoss Community
   'JBoss\sAMQ': AMQ
   'JBoss\sInterconnect': AMQ Interconnect
-  'Kernel(?!-based Virtual Machine)': kernel
   'Kie(?!\sServer)': KIE
   'Kie\sServer': Intelligent Process Server
   'O\.K\.D|okd|OpenShift Kubernetes Distribution|OpenShift\sOrigin': OKD
-  'OCM|(?<!Red Hat OpenShift )Cluster Manager|(?<!Red Hat )OpenShift Cluster Manager|the OpenShift Cluster Manager': Red Hat OpenShift Cluster Manager
-  'OD': Red Hat OpenShift Dedicated
   'Red\sHat\sInterconnect': AMQ Interconnect
   'Red\sHat\sVirtualization\sHypervisor|RHV\sHost|RHV-H': Red Hat Virtualization Host
   'RHVM|RHV-M|RHV\sManager': Red Hat Virtualization Manager
   'self-hosted\sengine\svirtual\smachine|engine\sVM': Manager virtual machine
+  "sub version|(?<!Apache )Subversion": sub-version
+  Ansible playbook: Ansible Playbook
   Appliance Console: Appliance console
   Applix|ApplixWare: Applixware
+  application stream|Application stream: Application Stream
+  Appstream|appstream: AppStream repository
   asciidoctor|AsciiDoctor: Asciidoctor
   asciidoc|Asciidoc: AsciiDoc
   assertj|Assertj: AssertJ
   auto-link|AutoLink: autolink
-  basic authentication|Basic Authentication|basic auth|Basic auth|Basic Auth: Basic HTTP authentication (first instance)|Basic authentication
-  BC: Business Central
+  basic authentication|Basic Authentication|basic auth|Basic auth|Basic Auth: Basic HTTP authentication|Basic authentication
+  "(?<!T-)BC": Business Central
+  Bean: bean
   Bios: BIOS
   blue print|BluePrint: blueprint
   bluestore|Blue Store: BlueStore
   btrfs: Btrfs
   Capex|capex|capEx: CapEx
   Capsule server: Capsule Server
-  CD 1: CD #1
+  CD 1: "CD #1"
   CDS|Cds: CDs
   Ceph Ansible: ceph-ansible
   Ceph block device|Ceph block devices: Ceph Block Device
@@ -94,6 +103,7 @@ swap:
   devops|Devops|Dev-Ops|Dev Ops: DevOps
   directory server: Directory Server
   Disk druid|disk druid|diskdruid: Disk Druid
+  DNF automatic|dnf automatic: DNF Automatic
   dns: DNS
   DVD burner|burner: DVD writer
   DWH|data warehouse|Dataware House: Data Warehouse
@@ -124,6 +134,7 @@ swap:
   Gpl|gpl: GPL
   Graalvm|graalVM: GraalVM
   Greenboot|green boots: greenboot
+  grpc|GRPC: gRPC
   Grub: GRUB
   GTK|Gtk|gtk: GTK+
   hot rod|HotRod|hotrod: Hot Rod
@@ -131,10 +142,12 @@ swap:
   HTTP interface: management console
   hyperthreading|hyper-threading: Hyper-Threading
   HyperVisor|Hyperviser: hypervisor
+  i-fix|i-Fix|ifix|iFix: interim fix
   IA64|ia64: Itanium
   IBM z Systems: IBM Z
   Ignite|Fuse Ignite: Fuse Online|Red Hat Fuse Online|Syndesis
   ignition config: Ignition config
+  IM: instant message
   Image Builder: image builder
   INSTALL_DIR|installDir: FUSE_HOME
   Iops|IOPs: IOPS
@@ -144,6 +157,7 @@ swap:
   ipv6|IPV6|Ipv6: IPv6
   iSeries: ISeries
   iso: ISO
+  Istio Service Mesh: Istio service mesh
   Itanium2: Itanium 2
   jar file: JAR file
   Jbang|jbang: JBang
@@ -189,13 +203,16 @@ swap:
   Objective-C: Objective C
   OCP: Red Hat OpenShift Container Platform
   ODF: Red Hat OpenShift Data Foundation
+  OK button|okay|ok: OK
   Open InfiniBand|Infiniband: InfiniBand
   openid connect|Openid Connect: OpenID Connect
   openrewrite|Openrewrite|Open Rewrite: OpenRewrite
   Openshift online|OO: Red Hat OpenShift Online
+  Open Telemetry: OpenTelemetry (OTel)
   Operating Environment: operating environment
   Operator Hub|Operator hub|Operatorhub|operatorhub: OperatorHub
   Opex|Opex|OPEX|opEx: OpEx
+  ORAN: O-RAN
   Organization administrator|Org Admin|org admin: Organization Administrator
   OS|Operating System: operating system
   Overcloud: overcloud
@@ -235,6 +252,11 @@ swap:
   RHDS: Red Hat Directory Server
   RHEL host|RHEL-H: Red Hat Enterprise Linux host
   RHV: Red Hat Virtualization
+  Role Based Access Control|Role-Based Access Control|role based access control: role-based access control
+  rolling application stream: Rolling Application Stream
+  rolling application streams: Rolling Application Streams
+  rolling stream: Rolling Stream
+  rolling streams: Rolling Streams
   Rom|rom: ROM
   rpm: RPM
   s-record|S-Record|s-Record|SREC: S-record
@@ -248,6 +270,7 @@ swap:
   smart NIC|Smart-NIC: SmartNIC
   Smart State|smart state|Smart state|Smartstate|Analysis: SmartState analysis
   socks: SOCKS
+  SoftIRQ: softirq
   software collection|Software collection: Software Collection
   Source Navigator: Source-Navigator^TM^
   Spec: spec
@@ -273,6 +296,7 @@ swap:
   uid: UID
   ULTRASPARC|UltraSparc: UltraSPARC
   Unix|unix|UNIX-like: UNIX
+  uri: URI
   url: URL
   urn: URN
   VCPU|vcpu: vCPU
@@ -292,6 +316,7 @@ swap:
   web-UI|webUI: web UI
   Webauthn|webAuthn|WebAuthN: WebAuthn
   websocket|Websocket: WebSocket
+  WiFi|Wifi|wi-fi: Wi-Fi
   Window-Maker|WindowMaker: Window Maker
   Xemacs: XEmacs
   xplat-cli|x-plat-cli|xplat cli|x-plat cli|X-PLAT CLI|X-PLAT-CLI|XPLAT-CLI|XPLAT CLI: Microsoft Azure Cross-Platform Command-Line Interface
