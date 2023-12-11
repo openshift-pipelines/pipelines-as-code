@@ -1,15 +1,11 @@
 ---
-extends: existence
+extends: substitution
 level: warning
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/headingpunctuation/
 message: "Do not use end punctuation in headings."
 nonword: true
 scope: heading
-# source: "IBM - Periods in headings and titles, p. 61"
 action:
-  name: edit
-  params:
-    - remove
-    - ".?!"
-tokens:
-  - '[a-z0-9][.?!](?:\s|$)'
+  name: replace
+swap:
+  '[.?!]$': ''

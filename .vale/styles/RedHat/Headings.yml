@@ -79,6 +79,8 @@ exceptions:
   - Flathub
   - Flatpak
   - Flatpak Builder
+  - Fluentd
+  - Flyway
   - Fortran
   - Funqy
   - GCC
@@ -93,6 +95,7 @@ exceptions:
   - GraalVM
   - Gradle
   - GraphQL
+  - Graylog
   - Grayscale
   - GTK
   - HTTP
@@ -114,9 +117,12 @@ exceptions:
   - Infinispan
   - Intelephense
   - IntelliJ
+  - Istio
   - Itanium
   - JAR file
   - JBang
+  - JBoss Log Manager
+  - JBoss Logging
   - JUnit
   - JVM
   - Jakarta
@@ -136,6 +142,8 @@ exceptions:
   - Kubespray
   - Kylin
   - Laravel
+  - Liquibase
+  - Logstash
   - Lombok
   - Makefile
   - Mandrel
@@ -167,7 +175,9 @@ exceptions:
   - OpenJDK
   - OpenRewrite
   - OpenShift
+  - OpenTelemetry
   - OpenTracing
+  - OTel
   - PHP
   - Podman
   - Podman Desktop
@@ -208,6 +218,7 @@ exceptions:
   - Technology Preview
   - Tekton
   - Telekom
+  - Temurin
   - Tensorflow
   - Texinfo
   - Toolset
@@ -226,6 +237,7 @@ exceptions:
   - WebSocket
   - Webview
   - Webviews
+  - WebView
   - Wildfly
   - Window Maker
   - Windows
@@ -238,10 +250,12 @@ exceptions:
   - Zowe
   - cgroup
   - eServer
+  - gRPC
   - mutual TLS
   - mTLS
   - qeth
   - startx
   - vNIC
   - vNUMA
+  - xDS
   - xterm

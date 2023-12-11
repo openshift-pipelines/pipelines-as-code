@@ -120,15 +120,18 @@ exceptions:
   - OpenIPMI
   - OpenJDK
   - OpenRewrite
+  - OpenRAN
   - OpenSCAP
   - OpenShift
   - OpenSSH
   - OpenSSL
   - OpenStack
+  - OpenTelemetry
   - OpenTracing
   - OperatorHub
   - OpEx
   - OSBuild
+  - OTel
   - PaaS
   - PackageKit
   - PathTools
@@ -167,6 +170,7 @@ exceptions:
   - USBGuard
   - vDisk
   - vHost
+  - VMware
   - vSphere
   - WebAuthn
   - WebSocket

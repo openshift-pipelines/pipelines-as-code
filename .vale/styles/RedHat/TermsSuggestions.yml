@@ -4,38 +4,50 @@ ignorecase: false
 level: suggestion
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/termssuggestions/
 message: "Depending on the context, consider using '%s' rather than '%s'."
-# source: "https://redhat-documentation.github.io/supplementary-style-guide/#glossary-terms-conventions; IBM - Appendix C. Word usage, p. 300"
 action:
   name: replace
 swap:
-  "(?<!,) which": ", which (non restrictive clause preceded by a comma)|that (restrictive clause without a comma)"
-  "(?<!by) using": by using|that uses
-  "(?<!such )as": because|while
-  ", that": ", which (non restrictive clause preceded by a comma)|that (restrictive clause without a comma)"
-  "[Bb]are metal|[Bb]are-metal(?! clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| machines?| media| nodes?| provisioning| servers?| workers?)": bare metal (noun)|bare-metal (adjective)
+  "(?<!,| in| on| at| to| for| from| of| with| without| against) which": ", which| that"
+  "(?<!.-)jar": compress|archive
+  "(?<![Bb]y) using": by using|that uses
+  ", that": ", which| that"
+  "[Bb]are metal(?= clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| machines?| media| nodes?| provisioning| servers?| workers?)": bare-metal
+  "[Bb]are-metal(?! clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| machines?| media| nodes?| provisioning| servers?| workers?)": bare metal
+  "[Nn]avigate": click|select|browse|go to
+  "bottom(?:-)?left": lower left|lower-left
+  "bottom(?:-)?right": lower right|lower-right
   "shell(?! prompt| script)": shell prompt
-  and so on: "appropriate descriptive wording, unless you list a clear sequence of elements"
-  between: " - ' to indicate a 'range of numbers"
-  Bps|bps: Bps (bytes per second)|bps (bits per second)
-  CD|cd: cd (change directory command)|CD (compact disc)
-  channel: repository
-  client side|client-side: client-side (adjective)| client side (noun)
-  Cloud: cloud
-  code: write
-  crash: fail|lock up|stop|stop responding
-  functionality: functions # IBM
-  Hammer|x86_64|x86-64|x64|64-bit x86: AMD64
-  input|type: enter (followed by the text to enter in monospace) # https://redhat-documentation.github.io/supplementary-style-guide/#text-entry
-  jar: compress|archive (verb)
-  Navigate|navigate: '"click", "select", "browse", or "go to"'
-  recommend: direct users to take the recommended action
-  refer to: see
-  roll-out|roll out|rollout: roll out (verb)|rollout (noun)
-  Router: AMQ Interconnect
-  segfault: segmentation fault
-  tar: compress|archive
-  thru|through: "' - ' (range)|by using|finished|completed"
-  unjar: extract (verb)
-  user space|userspace|user-space: user space (noun)| user-space (modifier)
-  zip: compress
+  "x64|x86-64|(?<!64-bit )x86": 64-bit x86|x86_64
+  '(?<![\.\-])(?:zip|gzip|tar)(?! file| archive)': compress
+  '(?<!\.)tar file': ".tar file"
+  '(?<!\.)zip file': ".zip file"
+  above: later|previous|preceding
+  afterwards: afterward
+  all caps: uppercase
+  below: earlier|later|following
+  bottom left: lower left
+  bottom right: lower right
+  bugfix: bug fix
+  can not: cannot
+  choose: select
+  componentization: component-based development|component model|component architecture|shared components
+  componentize: develop components|divide into components|re-engineer into reusable software components
+  consumes: uses
+  drag and drop: drag
+  executable(?! program| routine| files?): executable program
+  frontend: front end|front-end
+  higher: later
+  hit: press|type
+  in order to: to
   information on: information about
+  launch: start|open
+  legacy: existing|traditional|established|classic|earlier|previous
+  once: after|when
+  refer to: see
+  segfault: segmentation fault
+  spawn: create
+  start up: start
+  tarball: ".tar file"
+  thus: therefore
+  translate: convert|transform
+  via: through|by|from|on|by using

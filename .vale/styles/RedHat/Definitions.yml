@@ -48,6 +48,7 @@ exceptions:
   - DRL
   - DSL
   - EIP
+  - ELB
   - ERROR
   - FAQ
   - FQDN
@@ -121,12 +122,14 @@ exceptions:
   - POST
   - PPP
   - PROM
+  - PTP
   - PXE
   - QCOW2
   - QEMU
   - RADOS
   - RAID
   - RAM
+  - RAN
   - RBAC
   - RBD
   - REPL
