@@ -3,71 +3,66 @@
 default_install_hook_types: ["pre-push"]
 exclude: '(^docs/themes/hugo-book|^vendor|.*golden$|^\.vale)'
 repos:
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.5.0
-  hooks:
-  - id: check-added-large-files
-  - id: check-toml
-  - id: check-shebang-scripts-are-executable
-  - id: check-json
-  - id: check-vcs-permalinks
-  - id: detect-private-key
-    exclude: ".*_test.go"
-- repo: https://github.com/jorisroovers/gitlint
-  rev: v0.19.1
-  hooks:
-    - id: gitlint
-- repo: https://github.com/codespell-project/codespell
-  rev: v2.2.6
-  hooks:
-  - id: codespell
-    files: '^(docs/content|pkg|test)/.*'
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.1.2
-  hooks:
-    - id: ruff
-- repo: local
-  hooks:
-  - id: black
-    types: [python]
-    language: system
-    entry: black
-    name: "Python check code Formatter"
-  - id: lint-markdown
-    name: "Lint Markdown"
-    entry: make
-    args: ["lint-md"]
-    language: system
-    types: [markdown]
-    pass_filenames: false
-  - id: lint-go
-    name: "Lint GO"
-    entry: make
-    args: ["lint-go"]
-    language: system
-    types: [go]
-    pass_filenames: false
-  - id: test
-    name: "Unit testing"
-    entry: make
-    args: ["test"]
-    language: system
-    types: [go]
-    pass_filenames: false
-  - id: lint-yaml
-    name: "Lint YAML"
-    entry: make
-    args: ["lint-yaml"]
-    language: system
-    types: [yaml]
-    pass_filenames: false
-  - id: check-generated
-    name: "Check generated vendor and golden files"
-    entry: make
-    args: ["check-generated"]
-    language: system
-    types: [go]
-    pass_filenames: false
-
-# TODO: add a lint-py when we have the errors fix
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-toml
+      - id: check-shebang-scripts-are-executable
+      - id: check-json
+      - id: check-vcs-permalinks
+      - id: detect-private-key
+        exclude: ".*_test.go"
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+      - id: gitlint
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        files: "^(docs/content|pkg|test)/.*"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.7
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+  - repo: local
+    hooks:
+      - id: lint-markdown
+        name: "Lint Markdown"
+        entry: make
+        args: ["lint-md"]
+        language: system
+        types: [markdown]
+        pass_filenames: false
+      - id: lint-go
+        name: "Lint GO"
+        entry: make
+        args: ["lint-go"]
+        language: system
+        types: [go]
+        pass_filenames: false
+      - id: test
+        name: "Unit testing"
+        entry: make
+        args: ["test"]
+        language: system
+        types: [go]
+        pass_filenames: false
+      - id: lint-yaml
+        name: "Lint YAML"
+        entry: make
+        args: ["lint-yaml"]
+        language: system
+        types: [yaml]
+        pass_filenames: false
+      - id: check-generated
+        name: "Check generated vendor and golden files"
+        entry: make
+        args: ["check-generated"]
+        language: system
+        types: [go]
+        pass_filenames: false
 # TODO: add a lint-sh when we have the errors fix
