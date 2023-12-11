@@ -114,24 +114,11 @@ spec:
               image: pipelinecomponents/ruff
               workingDir: $(workspaces.source.path)
               script: |
-                ruff $(find . -type f -name '*.py')
-        workspaces:
-          - name: source
-            workspace: source
-
-      - name: black
-        generateName: "Python Formatter check"
-        runAfter:
-          - ruff
-        taskSpec:
-          workspaces:
-            - name: source
-          steps:
-            - name: black
-              image: registry.gitlab.com/pipeline-components/black:latest
-              workingDir: $(workspaces.source.path)
-              script: |
-                black --check --verbose -- .
+                set -euxo pipefail
+                echo "Linting Python files"
+                ruff check $(find . -type f -name '*.py')
+                echo "Checking Python files are formatted"
+                ruff format --check $(find . -type f -name '*.py')
         workspaces:
           - name: source
             workspace: source
