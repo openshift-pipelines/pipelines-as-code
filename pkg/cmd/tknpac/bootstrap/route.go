@@ -16,7 +16,7 @@ const (
 	routePacLabel = "pipelines-as-code/route=controller"
 )
 
-// DetectOpenShiftRoute detect the openshift route where the pac controller is running
+// DetectOpenShiftRoute detect the openshift route where the pac controller is running.
 func DetectOpenShiftRoute(ctx context.Context, run *params.Run, targetNamespace string) (string, error) {
 	gvr := schema.GroupVersionResource{
 		Group: openShiftRouteGroup, Version: openShiftRouteVersion, Resource: openShiftRouteResource,
@@ -47,7 +47,7 @@ func DetectOpenShiftRoute(ctx context.Context, run *params.Run, targetNamespace 
 }
 
 func detectSelfSignedCertificate(ctx context.Context, url string) string {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return fmt.Sprintf("invalid url?? %s", url)
 	}

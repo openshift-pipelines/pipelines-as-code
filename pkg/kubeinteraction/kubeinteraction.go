@@ -5,11 +5,10 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-
-	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
 )
 
 type Interface interface {
@@ -24,7 +23,7 @@ type Interaction struct {
 	Run *params.Run
 }
 
-// validate the interface implementation
+// validate the interface implementation.
 var _ Interface = (*Interaction)(nil)
 
 func NewKubernetesInteraction(c *params.Run) (*Interaction, error) {

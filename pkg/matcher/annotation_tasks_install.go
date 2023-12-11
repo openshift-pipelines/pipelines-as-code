@@ -69,7 +69,7 @@ func (rt RemoteTasks) convertToPipeline(ctx context.Context, uri, data string) (
 
 // nolint: dupl
 // golint has decided that it is a duplication with convertToPipeline but i swear it isn't does two are different function
-// and not even sure this is possible to do this with generic crazyness
+// and not even sure this is possible to do this with generic crazyness.
 func (rt RemoteTasks) convertTotask(ctx context.Context, uri, data string) (*tektonv1.Task, error) {
 	decoder := k8scheme.Codecs.UniversalDeserializer()
 	obj, _, err := decoder.Decode([]byte(data), nil, nil)
@@ -177,7 +177,7 @@ func grabValuesFromAnnotations(annotations map[string]string, annotationReg stri
 	rtareg := regexp.MustCompile(fmt.Sprintf("%s/%s", pipelinesascode.GroupName, annotationReg))
 	var ret []string
 	for annotationK, annotationV := range annotations {
-		if !rtareg.Match([]byte(annotationK)) {
+		if !rtareg.MatchString(annotationK) {
 			continue
 		}
 		items, err := getAnnotationValues(annotationV)
@@ -189,7 +189,7 @@ func grabValuesFromAnnotations(annotations map[string]string, annotationReg stri
 	return ret, nil
 }
 
-// GetTaskFromAnnotations Get task remotely if they are on Annotations
+// GetTaskFromAnnotations Get task remotely if they are on Annotations.
 func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, annotations map[string]string) ([]*tektonv1.Task, error) {
 	ret := []*tektonv1.Task{}
 	tasks, err := grabValuesFromAnnotations(annotations, taskAnnotationsRegexp)
@@ -215,7 +215,7 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, annotations ma
 }
 
 // GetPipelineFromAnnotations Get pipeline remotely if they are on Annotations
-// TODO: merge in a generic between the two
+// TODO: merge in a generic between the two.
 func (rt RemoteTasks) GetPipelineFromAnnotations(ctx context.Context, annotations map[string]string) (*tektonv1.Pipeline, error) {
 	ret := []*tektonv1.Pipeline{}
 	pipelinesAnnotation, err := grabValuesFromAnnotations(annotations, pipelineAnnotationsRegexp)

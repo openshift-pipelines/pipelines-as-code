@@ -12,7 +12,7 @@ import (
 )
 
 // Detect processes event and detect if it is a github event, whether to process or reject it
-// returns (if is a GH event, whether to process or reject, error if any occurred)
+// returns (if is a GH event, whether to process or reject, error if any occurred).
 func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	// gitea set x-github-event too, so skip it for the gitea driver
 	if h := req.Header.Get("X-Gitea-Event-Type"); h != "" {

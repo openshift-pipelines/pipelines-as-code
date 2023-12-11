@@ -13,7 +13,7 @@ import (
 const leakedReplacement = "*****"
 
 // GetSecretsAttachedToPipelineRun get all secrets attached to a PipelineRun and
-// grab their values attached to it
+// grab their values attached to it.
 func GetSecretsAttachedToPipelineRun(ctx context.Context, k kubeinteraction.Interface, pr *tektonv1.PipelineRun) []ktypes.SecretValue {
 	ret := []ktypes.SecretValue{}
 	// check if pipelineRef is defined or exist
@@ -64,7 +64,7 @@ func GetSecretsAttachedToPipelineRun(ctx context.Context, k kubeinteraction.Inte
 
 // sortSecretsByLongests sort all secrets by length, the longest first
 // if we don't sort by longest then if there two passwords with the same prefix
-// the shortest one will replace and would leak the end of the passwords of the longest after
+// the shortest one will replace and would leak the end of the passwords of the longest after.
 func sortSecretsByLongests(values []ktypes.SecretValue) []ktypes.SecretValue {
 	ret := []ktypes.SecretValue{}
 	ret = append(ret, values...)
@@ -78,7 +78,7 @@ func sortSecretsByLongests(values []ktypes.SecretValue) []ktypes.SecretValue {
 	return ret
 }
 
-// ReplaceSecretsInText this will take a text snippet and hide the leaked secret
+// ReplaceSecretsInText this will take a text snippet and hide the leaked secret.
 func ReplaceSecretsInText(text string, values []ktypes.SecretValue) string {
 	for _, sv := range sortSecretsByLongests(values) {
 		text = strings.ReplaceAll(text, sv.Value, leakedReplacement)

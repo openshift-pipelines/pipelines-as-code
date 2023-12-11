@@ -11,7 +11,7 @@ import (
 )
 
 // SanitizeBranch remove refs/heads from string, only removing the first prefix
-// in case we have branch that are actually called refs-heads 🙃
+// in case we have branch that are actually called refs-heads 🙃.
 func SanitizeBranch(s string) string {
 	if strings.HasPrefix(s, "refs/heads/") {
 		return strings.TrimPrefix(s, "refs/heads/")
@@ -22,7 +22,7 @@ func SanitizeBranch(s string) string {
 	return s
 }
 
-// ShortSHA returns a shortsha
+// ShortSHA returns a shortsha.
 func ShortSHA(sha string) string {
 	if sha == "" {
 		return ""
@@ -56,7 +56,7 @@ func GetRepoOwnerSplitted(u string) (string, string, error) {
 	return org, repo, nil
 }
 
-// CamelCasit pull_request > PullRequest
+// CamelCasit pull_request > PullRequest.
 func CamelCasit(s string) string {
 	c := cases.Title(language.AmericanEnglish)
 	return strings.ReplaceAll(c.String(strings.ReplaceAll(s, "_", " ")), " ", "")

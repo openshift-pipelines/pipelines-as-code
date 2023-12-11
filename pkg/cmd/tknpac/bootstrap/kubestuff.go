@@ -10,12 +10,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// deleteSecret delete secret first if it exists
+// deleteSecret delete secret first if it exists.
 func deleteSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts) error {
 	return run.Clients.Kube.CoreV1().Secrets(opts.targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 }
 
-// create a kubernetes secret from the manifest file values
+// create a kubernetes secret from the manifest file values.
 func createPacSecret(ctx context.Context, run *params.Run, opts *bootstrapOpts, manifest *github.AppConfig) error {
 	_, err := run.Clients.Kube.CoreV1().Secrets(opts.targetNamespace).Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

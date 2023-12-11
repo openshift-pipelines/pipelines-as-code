@@ -31,7 +31,7 @@ func TestUnsupportedEvent(t *testing.T) {
 		t.Fatal("failed to find event listener url")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", elURL, bytes.NewBuffer(jeez))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, elURL, bytes.NewBuffer(jeez))
 	if err != nil {
 		t.Fatal("failed to build request : ", err)
 	}
@@ -67,7 +67,7 @@ func TestSkippedEvent(t *testing.T) {
 		t.Fatal("failed to find event listener url")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", elURL, bytes.NewBuffer(jeez))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, elURL, bytes.NewBuffer(jeez))
 	if err != nil {
 		t.Fatal("failed to build request : ", err)
 	}
@@ -93,7 +93,7 @@ func TestGETCall(t *testing.T) {
 		t.Fatal("failed to find event listener url")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", elURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, elURL, nil)
 	if err != nil {
 		t.Fatal("failed to build request : ", err)
 	}

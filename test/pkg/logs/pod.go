@@ -23,6 +23,7 @@ func GetControllerLog(ctx context.Context, kclient corev1i.CoreV1Interface, labe
 		}
 		ns = "openshift-pipelines"
 	}
+
 	return GetPodLog(ctx, kclient, ns, labelselector, containerName)
 }
 

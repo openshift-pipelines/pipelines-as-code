@@ -25,7 +25,7 @@ const (
 
 var basicAuthSecretStringRe = regexp.MustCompile(`.*secretName:\s*(.|")?{{\s*git_auth_secret\s*}}`)
 
-// detectWebhookSecret detects if the webhook secret is used in the yaml files
+// detectWebhookSecret detects if the webhook secret is used in the yaml files.
 func detectWebhookSecret(filenames []string) bool {
 	for _, filename := range filenames {
 		file, err := os.Open(filename)
@@ -46,7 +46,7 @@ func detectWebhookSecret(filenames []string) bool {
 // makeGitAuthSecret creates a secret for the git provider token
 // we first try to reuse the one that is already created on cluster with the label matching the repo owner and name
 // we then try to reuse the PAC_PROVIDER_TOKEN env var if it exists
-// if any of the above is not possible, we ask the user to provide the token
+// if any of the above is not possible, we ask the user to provide the token.
 func makeGitAuthSecret(ctx context.Context, cs *params.Run, filenames []string, token string, params map[string]string) (string, string, error) {
 	allFilenames := listAllYamls(filenames)
 	var ret, basicAuthsecretName string

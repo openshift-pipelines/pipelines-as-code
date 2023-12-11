@@ -111,7 +111,7 @@ func getPipelineRunAndBranchNameFromComment(typeOfComment, comment string) (stri
 }
 
 // CompareHostOfURLS compares the host of two parsed URLs and returns true if
-// they are
+// they are.
 func CompareHostOfURLS(uri1, uri2 string) bool {
 	u1, err := url.Parse(uri1)
 	if err != nil || u1.Host == "" {

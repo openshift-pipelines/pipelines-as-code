@@ -51,12 +51,12 @@ type Provider struct {
 	apiURL            string
 }
 
-// GetTaskURI TODO: Implement me
+// GetTaskURI TODO: Implement me.
 func (v *Provider) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool, string, error) {
 	return false, "", nil
 }
 
-// CheckPolicyAllowing TODO: Implement ME
+// CheckPolicyAllowing TODO: Implement ME.
 func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
 	return false, ""
 }
@@ -242,7 +242,7 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 	return v.concatAllYamlFiles(objects, event)
 }
 
-// concatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string
+// concatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string.
 func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, runevent *info.Event) (string, error) {
 	var allTemplates string
 

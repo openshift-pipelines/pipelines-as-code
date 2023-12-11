@@ -7,14 +7,13 @@ import (
 	"strconv"
 	"testing"
 
-	gitlab2 "github.com/xanzy/go-gitlab"
-	"gotest.tools/v3/assert"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	gitlab2 "github.com/xanzy/go-gitlab"
+	"gotest.tools/v3/assert"
 )
 
 func Setup(ctx context.Context) (*params.Run, options.E2E, gitlab.Provider, error) {

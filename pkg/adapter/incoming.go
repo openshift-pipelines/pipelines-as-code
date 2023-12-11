@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	"go.uber.org/zap"
-
 	apincoming "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/incoming"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
@@ -21,6 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github/app"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	ktypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
+	"go.uber.org/zap"
 )
 
 func compareSecret(incomingSecret, secretValue string) bool {

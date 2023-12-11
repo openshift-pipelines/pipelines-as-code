@@ -15,13 +15,6 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-github/v56/github"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	"github.com/tektoncd/pipeline/pkg/names"
-	"gopkg.in/yaml.v2"
-	"gotest.tools/v3/assert"
-	"gotest.tools/v3/env"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	pacapi "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tknpacdelete "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/deleterepo"
@@ -41,6 +34,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/names"
+	"gopkg.in/yaml.v2"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/env"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var successRegexp = regexp.MustCompile(`^Pipelines as Code CI.*has.*successfully`)
@@ -113,7 +112,7 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 
 // TestGiteaBadYaml we can't check pr status but this shows up in the
 // controller, so let's dig ourself in there....  TargetNS is a random string, so
-// it can only success if it matches it
+// it can only success if it matches it.
 func TestGiteaBadYaml(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		TargetEvent:  options.PullRequestEvent,
@@ -127,7 +126,7 @@ func TestGiteaBadYaml(t *testing.T) {
 		"pipelinerun.*has failed.*expected exactly one, got neither: spec.pipelineRef, spec.pipelineSpec"), 10))
 }
 
-// don't test concurrency limit here, just parallel pipeline
+// don't test concurrency limit here, just parallel pipeline.
 func TestGiteaMultiplesParallelPipelines(t *testing.T) {
 	maxParallel := 10
 	yamlFiles := map[string]string{}
@@ -145,7 +144,7 @@ func TestGiteaMultiplesParallelPipelines(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 }
 
-// multiple pipelineruns in the same .tekton directory and a concurrency of 1
+// multiple pipelineruns in the same .tekton directory and a concurrency of 1.
 func TestGiteaConcurrencyExclusivenessMultiplePipelines(t *testing.T) {
 	numPipelines := 10
 	yamlFiles := map[string]string{}
@@ -164,7 +163,7 @@ func TestGiteaConcurrencyExclusivenessMultiplePipelines(t *testing.T) {
 	defer tgitea.TestPR(t, topts)()
 }
 
-// multiple push to the same  repo, concurrency should q them
+// multiple push to the same  repo, concurrency should q them.
 func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	numPipelines := 1
 	topts := &tgitea.TestOpts{
@@ -568,7 +567,7 @@ func TestGiteaErrorSnippetWithSecret(t *testing.T) {
 }
 
 // TestGiteaNotExistingClusterTask checks that the pipeline run fails if the clustertask does not exist
-// This will test properly if we error the reason in UI see bug #1160
+// This will test properly if we error the reason in UI see bug #1160.
 func TestGiteaNotExistingClusterTask(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      regexp.MustCompile(`.*clustertasks.tekton.dev "foo-bar" not found`),
@@ -678,7 +677,7 @@ func TestGiteaPushToTagGreedy(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-// TestGiteaClusterTasks is a test to verify that we can use cluster tasks with PaaC
+// TestGiteaClusterTasks is a test to verify that we can use cluster tasks with PaaC.
 func TestGiteaClusterTasks(t *testing.T) {
 	// we need to verify sure to create clustertask before pushing the files
 	// so we have to create a new client and do more manual things we get for free in TestPR

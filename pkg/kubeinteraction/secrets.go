@@ -22,7 +22,7 @@ func (k Interaction) GetSecret(ctx context.Context, secretopt ktypes.GetSecretOp
 	return string(secret.Data[secretopt.Key]), nil
 }
 
-// DeleteSecret deletes the secret created for git-clone basic-auth
+// DeleteSecret deletes the secret created for git-clone basic-auth.
 func (k Interaction) DeleteSecret(ctx context.Context, _ *zap.SugaredLogger, targetNamespace, secretName string) error {
 	err := k.Run.Clients.Kube.CoreV1().Secrets(targetNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil && !errors.IsNotFound(err) {
@@ -31,7 +31,7 @@ func (k Interaction) DeleteSecret(ctx context.Context, _ *zap.SugaredLogger, tar
 	return nil
 }
 
-// UpdateSecretWithOwnerRef updates the secret with ownerReference
+// UpdateSecretWithOwnerRef updates the secret with ownerReference.
 func (k Interaction) UpdateSecretWithOwnerRef(ctx context.Context, logger *zap.SugaredLogger, targetNamespace, secretName string, pr *pipelinev1.PipelineRun) error {
 	controllerOwned := false
 	ownerRef := &metav1.OwnerReference{

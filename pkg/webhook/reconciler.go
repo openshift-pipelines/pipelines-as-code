@@ -49,7 +49,7 @@ var (
 	_ webhook.StatelessAdmissionController = (*reconciler)(nil)
 )
 
-// Reconcile implements controller.Reconciler
+// Reconcile implements controller.Reconciler.
 func (ac *reconciler) Reconcile(ctx context.Context, _ string) error {
 	logger := logging.FromContext(ctx)
 

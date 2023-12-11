@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CreateToken creates gitea token with all scopes
+// CreateToken creates gitea token with all scopes.
 func CreateToken(topts *TestOpts) (string, error) {
 	token, _, err := topts.GiteaCNX.Client.CreateAccessToken(gitea.CreateAccessTokenOption{
 		Name:   topts.TargetNS,

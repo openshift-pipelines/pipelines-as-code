@@ -8,7 +8,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Repository is the representation of a repo
+// Repository is the representation of a repo.
 type Repository struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -69,7 +69,7 @@ type TaskInfos struct {
 	CompletionTime *metav1.Time
 }
 
-// RepositorySpec is the spec of a repo
+// RepositorySpec is the spec of a repo.
 type RepositorySpec struct {
 	ConcurrencyLimit *int         `json:"concurrency_limit,omitempty"` // move it to settings in further version of the spec
 	URL              string       `json:"url"`
@@ -119,7 +119,7 @@ type Secret struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// RepositoryList is the list of Repositories
+// RepositoryList is the list of Repositories.
 type RepositoryList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

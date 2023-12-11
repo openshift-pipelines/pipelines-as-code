@@ -2,13 +2,12 @@ package info
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
 	"text/tabwriter"
 	"text/template"
-
-	_ "embed"
 
 	"github.com/google/go-github/v56/github"
 	"github.com/juju/ansiterm"

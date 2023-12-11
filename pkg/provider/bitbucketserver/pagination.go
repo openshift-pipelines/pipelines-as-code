@@ -8,7 +8,7 @@ import (
 
 type apiResultfunc func(int) (*bbv1.APIResponse, error)
 
-// paginate go over an API call and fetch next results
+// paginate go over an API call and fetch next results.
 func paginate(apiResultfunc apiResultfunc) ([]interface{}, error) {
 	var nextPageStart int
 

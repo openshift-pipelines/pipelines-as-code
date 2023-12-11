@@ -2,12 +2,12 @@ package prompt
 
 import "github.com/AlecAivazis/survey/v2"
 
-// SurveyAskOne ask one question to be stubbed later
+// SurveyAskOne ask one question to be stubbed later.
 var SurveyAskOne = func(p survey.Prompt, response interface{}, opts ...survey.AskOpt) error {
 	return survey.AskOne(p, response, opts...)
 }
 
-// SurveyAsk ask questions to be stubbed later
+// SurveyAsk ask questions to be stubbed later.
 var SurveyAsk = func(qs []*survey.Question, response interface{}, opts ...survey.AskOpt) error {
 	return survey.Ask(qs, response, opts...)
 }

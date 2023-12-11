@@ -14,7 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
 )
 
-// sanitizeEventURL returns the URL to the event without the /browse
+// sanitizeEventURL returns the URL to the event without the /browse.
 func sanitizeEventURL(eventURL string) string {
 	if strings.HasSuffix(eventURL, "/browse") {
 		return eventURL[:len(eventURL)-len("/browse")]
@@ -22,12 +22,12 @@ func sanitizeEventURL(eventURL string) string {
 	return eventURL
 }
 
-// sanitizeOwner remove ~ from OWNER in case of personal repos
+// sanitizeOwner remove ~ from OWNER in case of personal repos.
 func sanitizeOwner(owner string) string {
 	return strings.ReplaceAll(owner, "~", "")
 }
 
-// ParsePayload parses the payload from the event
+// ParsePayload parses the payload from the event.
 func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
 	payload string,
 ) (*info.Event, error) {

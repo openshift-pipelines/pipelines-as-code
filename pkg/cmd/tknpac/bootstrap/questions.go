@@ -23,7 +23,7 @@ func askYN(deflt bool, title, question string, writer io.Writer) (bool, error) {
 	return answer, err
 }
 
-// askQuestions ask questions to the user for the name and url of the app
+// askQuestions ask questions to the user for the name and url of the app.
 func askQuestions(opts *bootstrapOpts) error {
 	var qs []*survey.Question
 

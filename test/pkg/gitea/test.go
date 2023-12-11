@@ -66,7 +66,7 @@ func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
 	assert.NilError(t, err)
 }
 
-// TestPR will test the pull request event and grab comments from the PR
+// TestPR will test the pull request event and grab comments from the PR.
 func TestPR(t *testing.T, topts *TestOpts) func() {
 	ctx := context.Background()
 	if topts.ParamsRun == nil {

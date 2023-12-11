@@ -11,7 +11,7 @@ import (
 )
 
 // Detect processes event and detect if it is a gitlab event, whether to process or reject it
-// returns (if is a GL event, whether to process or reject, logger with event metadata,, error if any occurred)
+// returns (if is a GL event, whether to process or reject, logger with event metadata,, error if any occurred).
 func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	isGL := false
 	event := req.Header.Get("X-Gitlab-Event")

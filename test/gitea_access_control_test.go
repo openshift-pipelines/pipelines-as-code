@@ -11,9 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"gotest.tools/v3/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
@@ -22,6 +19,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const okToTestComment = "/ok-to-test"
@@ -36,7 +35,7 @@ const okToTestComment = "/ok-to-test"
 // we test that it was allowed succeeded
 //
 // this test paths is mostly to test the logic in the pkg/policy package, there
-// is not much gitea specifics compared to github
+// is not much gitea specifics compared to github.
 func TestGiteaPolicyPullRequest(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		OnOrg:                true,
@@ -96,7 +95,7 @@ func TestGiteaPolicyPullRequest(t *testing.T) {
 // we issue a /ok-to-test as user ok-to-test and check it was succeeded
 //
 // this test paths is mostly to test the logic in the pkg/policy package, there
-// is not much gitea specifics compared to github
+// is not much gitea specifics compared to github.
 func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		OnOrg:           true,
@@ -165,7 +164,7 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, fmt.Sprintf("%s / %s", settings.PACApplicationNameDefaultValue, generatename), true)
 }
 
-// TestGiteaACLOrgAllowed tests that the policy check works when the user is part of an allowed org
+// TestGiteaACLOrgAllowed tests that the policy check works when the user is part of an allowed org.
 func TestGiteaACLOrgAllowed(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		TargetEvent: options.PullRequestEvent,
@@ -204,7 +203,7 @@ func TestGiteaACLOrgPendingApproval(t *testing.T) {
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
-// TestGiteaACLCommentsAllowing tests that the gitops comment commands work
+// TestGiteaACLCommentsAllowing tests that the gitops comment commands work.
 func TestGiteaACLCommentsAllowing(t *testing.T) {
 	tests := []struct {
 		name, comment string

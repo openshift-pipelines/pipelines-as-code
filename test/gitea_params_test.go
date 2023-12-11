@@ -187,7 +187,7 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 }
 
 // TestGiteaParamsBodyHeadersCEL Test that we can access the pull request body and headers in params
-// as a CEL expression and cel filter
+// as a CEL expression and cel filter.
 func TestGiteaParamsBodyHeadersCEL(t *testing.T) {
 	// Setup a repo and create a pull request with two pipelinerun in tekton
 	// dir, one matching pull via cel filtering expression and one for push

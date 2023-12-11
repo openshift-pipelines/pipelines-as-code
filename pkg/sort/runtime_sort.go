@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sort"
 
+	"github.com/fvbommel/sortorder"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -12,8 +13,6 @@ import (
 	"k8s.io/client-go/util/jsonpath"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/integer"
-
-	"github.com/fvbommel/sortorder"
 )
 
 // The following code has been take from kubectl get command
@@ -21,14 +20,14 @@ import (
 // https://github.com/kubernetes/kubernetes/blob/8e48df135318026d5f8a972a96a2ff665889568a/staging/src/k8s.io/kubectl/pkg/cmd/get/sorter.go#L151
 
 // RuntimeSort is an implementation of the golang sort interface that knows how to sort
-// lists of runtime.Object
+// lists of runtime.Object.
 type RuntimeSort struct {
 	field        string
 	objs         []runtime.Object
 	origPosition []int
 }
 
-// NewRuntimeSort creates a new RuntimeSort struct that implements golang sort interface
+// NewRuntimeSort creates a new RuntimeSort struct that implements golang sort interface.
 func NewRuntimeSort(field string, objs []runtime.Object) *RuntimeSort {
 	sorter := &RuntimeSort{field: field, objs: objs, origPosition: make([]int, len(objs))}
 	for ix := range objs {
@@ -211,8 +210,6 @@ func (r *RuntimeSort) Less(i, j int) bool {
 }
 
 // OriginalPosition returns the starting (original) position of a particular index.
-// e.g. If OriginalPosition(0) returns 5 than the
-// the item currently at position 0 was at position 5 in the original unsorted array.
 func (r *RuntimeSort) OriginalPosition(ix int) int {
 	if ix < 0 || ix > len(r.origPosition) {
 		return -1
@@ -227,7 +224,7 @@ func findJSONPathResults(parser *jsonpath.JSONPath, from runtime.Object) ([][]re
 	return parser.FindResults(reflect.ValueOf(from).Elem().Interface())
 }
 
-// ByField sorts the runtime objects passed by the field
+// ByField sorts the runtime objects passed by the field.
 func ByField(field string, runTimeObj []runtime.Object) {
 	sorter := NewRuntimeSort(field, runTimeObj)
 	sort.Sort(sorter)

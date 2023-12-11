@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/generated/injection/informers/pipelinesascode/v1alpha1/repository"
-
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
@@ -17,7 +16,7 @@ import (
 	"knative.dev/pkg/webhook"
 )
 
-// NewAdmissionController constructs a reconciler
+// NewAdmissionController constructs a reconciler.
 func NewAdmissionController(
 	ctx context.Context,
 	name, path string,

@@ -188,7 +188,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 
 	jwtToken, err := GenerateJWT(ctx, testNamespace.GetName(), run)
 	assert.NilError(t, err)
-	req := httptest.NewRequest("GET", "http://localhost", strings.NewReader(""))
+	req := httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader(""))
 	repo := &v1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "repo",

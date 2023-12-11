@@ -126,7 +126,7 @@ func TestConfigureRepository(t *testing.T) {
 					},
 				},
 			}
-			req, err := http.NewRequestWithContext(context.TODO(), "POST", "URL", bytes.NewReader(tt.event))
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "URL", bytes.NewReader(tt.event))
 			if err != nil {
 				t.Fatalf("error creating request: %s", err)
 			}

@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-// NewTestClient returns *http.Client with Transport replaced to avoid making real calls
+// NewTestClient returns *http.Client with Transport replaced to avoid making real calls.
 func newHTTPTestClient(fn roundTripFunc) *http.Client {
 	return &http.Client{
 		Transport: fn,

@@ -8,7 +8,7 @@ import (
 
 const OKToTestCommentRegexp = `(^|\n)\/ok-to-test(\r\n|\r|\n|$)`
 
-// ownersConfig prow owner, only supporting approvers or reviewers in yaml
+// ownersConfig prow owner, only supporting approvers or reviewers in yaml.
 type ownersConfig struct {
 	Approvers []string `json:"approvers,omitempty"`
 	Reviewers []string `json:"reviewers,omitempty"`
@@ -16,7 +16,7 @@ type ownersConfig struct {
 
 // UserInOwnerFile Parse a Prow type Owner, Approver files and return true if the sender is in
 // there.
-// Does not support OWNERS_ALIASES
+// Does not support OWNERS_ALIASES.
 func UserInOwnerFile(ownerContent, sender string) (bool, error) {
 	oc := ownersConfig{}
 	err := yaml.Unmarshal([]byte(ownerContent), &oc)
@@ -32,7 +32,7 @@ func UserInOwnerFile(ownerContent, sender string) (bool, error) {
 	return false, nil
 }
 
-// MatchRegexp Match a regexp to a string
+// MatchRegexp Match a regexp to a string.
 func MatchRegexp(reg, comment string) bool {
 	re := regexp.MustCompile(reg)
 	return string(re.Find([]byte(comment))) != ""

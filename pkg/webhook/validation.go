@@ -15,12 +15,12 @@ import (
 
 var universalDeserializer = serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
 
-// Path implements AdmissionController
+// Path implements AdmissionController.
 func (ac *reconciler) Path() string {
 	return ac.path
 }
 
-// Admit implements AdmissionController
+// Admit implements AdmissionController.
 func (ac *reconciler) Admit(_ context.Context, request *v1.AdmissionRequest) *v1.AdmissionResponse {
 	raw := request.Object.Raw
 	repo := v1alpha1.Repository{}

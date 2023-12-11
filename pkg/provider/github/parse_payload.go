@@ -104,7 +104,7 @@ func (v *Provider) parseEventType(request *http.Request, event *info.Event) erro
 	return nil
 }
 
-func getInstallationIDFromPayload(payload string) int64 {
+func getInstallationIDFromPayload(payload string) (int64, error) {
 	var data map[string]interface{}
 	_ = json.Unmarshal([]byte(payload), &data)
 
@@ -112,10 +112,10 @@ func getInstallationIDFromPayload(payload string) int64 {
 	installData, ok := data["installation"]
 	if ok {
 		installation, _ := json.Marshal(installData)
-		_ = json.Unmarshal(installation, &i)
-		return *i.ID
+		err := json.Unmarshal(installation, &i)
+		return *i.ID, err
 	}
-	return -1
+	return -1, nil
 }
 
 // ParsePayload will parse the payload and return the event
@@ -147,7 +147,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		return nil, err
 	}
 
-	installationIDFrompayload := getInstallationIDFromPayload(payload)
+	installationIDFrompayload, err := getInstallationIDFromPayload(payload)
 	if installationIDFrompayload != -1 {
 		var err error
 		// TODO: move this out of here when we move al config inside context

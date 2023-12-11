@@ -1,10 +1,9 @@
 package webhook
 
 import (
-	"github.com/spf13/cobra"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/spf13/cobra"
 )
 
 func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {

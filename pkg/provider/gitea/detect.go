@@ -12,7 +12,7 @@ import (
 )
 
 // Detect processes event and detect if it is a gitea event, whether to process or reject it
-// returns (if is a Gitea event, whether to process or reject, logger with event metadata,, error if any occurred)
+// returns (if is a Gitea event, whether to process or reject, logger with event metadata,, error if any occurred).
 func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	isGitea := false
 	eventType := req.Header.Get("X-Gitea-Event-Type")

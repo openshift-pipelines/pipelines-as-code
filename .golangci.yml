@@ -20,52 +20,104 @@ linters-settings:
     extra-rules: true
 linters:
   enable:
+    - asasalint
     - asciicheck
+    - bidichk
     - bodyclose
-    # - depguard
+    #- containedctx
+    #- contextcheck
+    #- cyclop
+    - decorder
+    #- depguard
     - dogsled
+    - dupl
+    - dupword
     - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - execinquery
     - exhaustive
+    #- exhaustruct
     - exportloopref
     - forbidigo
     - forcetypeassert
+    #- funlen
+    #- gci
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    #- gochecknoglobals
     - gochecknoinits
-    - dupl
-    - errcheck
-    - errorlint
-    - gofumpt
-    - goimports
-    - gosec
+    - gochecksumtype
+    #- gocognit
+    #- goconst
     - gocritic
-    - misspell
-    - gosec
-    - gosimple
-    - govet
-    - importas
-    - makezero
-    - nakedret
-    - predeclared
-    - revive
-    - staticcheck
-    - stylecheck
-    - unused
-    - unparam
-    - gochecknoinits
-      # - goconst
-      # - gocyclo
-    # - goerr113
-    # - gofmt
+    #- gocyclo
+    - godot
+    #- godox
+    #- goerr113
+    #- gofmt
+    - gofumpt
     - goheader
+    - goimports
+    #- gomnd
+    #- gomoddirectives
     - gomodguard
     - goprintffuncname
+    - gosec
+    - gosimple
+    - gosmopolitan
+    - govet
+    - grouper
+    - importas
+    #- inamedparam
+    #- interfacebloat
+    #- ireturn
+    #- lll
+    - loggercheck
+    #- maintidx
+    - makezero
+    - mirror
+    - misspell
+    #- musttag
+    - nakedret
+    #- nestif
     - nilerr
+    #- nilnil
+    #- nlreturn
     - noctx
-      # - nolintlint (gofumpt conflict with it, create space all the time so :shrug:)
+    #- nolintlint
+    #- nonamedreturns
+    - nosprintfhostport
+    #- paralleltest
+    #- perfsprint
     - prealloc
+    - predeclared
     - promlinter
-    # - rowserrcheck
-    # - sqlclosecheck
+    - protogetter
+    - reassign
+    - revive
+    #- rowserrcheck
+    - sloglint
+    #- sqlclosecheck
+    - staticcheck
+    - stylecheck
+    - tagalign
+    #- tagliatelle
+    - tenv
+    - testableexamples
+    - testifylint
+    #- testpackage
+    #- thelper
     - tparallel
     #- unconvert
-    # - wastedassign
+    - unparam
+    - unused
+    - usestdlibvars
+    #- varnamelen
+    #- wastedassign
     - whitespace
+    #- wrapcheck
+    #- wsl
+    - zerologlint

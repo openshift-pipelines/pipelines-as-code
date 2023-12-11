@@ -24,7 +24,7 @@ const (
 	basicAuthSecretName = `pac-gitauth-%s`
 )
 
-// MakeBasicAuthSecret Make a secret for git-clone basic-auth workspace
+// MakeBasicAuthSecret Make a secret for git-clone basic-auth workspace.
 func MakeBasicAuthSecret(runevent *info.Event, secretName string) (*corev1.Secret, error) {
 	// Bitbucket Server have a different Clone URL than it's Repository URL, so we
 	// have to separate them

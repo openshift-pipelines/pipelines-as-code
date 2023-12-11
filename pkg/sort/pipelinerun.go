@@ -6,7 +6,7 @@ import (
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 )
 
-// From tekton cli prsort package
+// From tekton cli prsort package.
 type prSortByCompletionTime []tektonv1.PipelineRun
 
 func (prs prSortByCompletionTime) Len() int      { return len(prs) }

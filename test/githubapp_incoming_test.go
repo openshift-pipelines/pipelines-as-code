@@ -24,7 +24,7 @@ import (
 
 // TestGithubAppIncoming tests that a Pipelinerun with the incoming event
 // gets created despite the presence of multiple Pipelineruns in the .tekton directory with
-// eventType as incoming
+// eventType as incoming.
 func TestGithubAppIncoming(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
@@ -38,7 +38,7 @@ func TestGithubAppIncoming(t *testing.T) {
 
 // TestGithubAppIncomingForDifferentEvent tests that a Pipelinerun with the incoming event
 // gets created despite the presence of multiple Pipelineruns in the .tekton directory,
-// where one has an eventType as incoming and another as pull_request
+// where one has an eventType as incoming and another as pull_request.
 func TestGithubAppIncomingForDifferentEvent(t *testing.T) {
 	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 

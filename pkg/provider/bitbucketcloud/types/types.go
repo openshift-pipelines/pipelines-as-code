@@ -83,8 +83,8 @@ type Change struct {
 }
 
 type User struct {
-	DisplayName string `mapstructure:"display_name" json:"display_name"`
-	AccountID   string `mapstructure:"account_id" json:"account_id"`
+	DisplayName string `json:"display_name" mapstructure:"display_name"`
+	AccountID   string `json:"account_id"   mapstructure:"account_id"`
 	Nickname    string
 }
 

@@ -35,7 +35,7 @@ func RunGit(dir string, args ...string) (string, error) {
 	return output.String(), nil
 }
 
-// GetGitInfo try to detect the current remote for this URL return the origin url transformed and the topdir
+// GetGitInfo try to detect the current remote for this URL return the origin url transformed and the topdir.
 func GetGitInfo(dir string) *Info {
 	gitURL, err := RunGit(dir, "remote", "get-url", "origin")
 	if err != nil {

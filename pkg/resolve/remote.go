@@ -31,7 +31,7 @@ func alreadySeen[T NamedItem](items []T, item T) bool {
 // * Tasks from the Tekton directory
 //
 // The precedence logic for Pipeline is first from PipelineRun annotations and
-// then from Tekton directory
+// then from Tekton directory.
 func getRemotes(ctx context.Context, rt *matcher.RemoteTasks, types TektonTypes) (TektonTypes, error) {
 	remoteType := &TektonTypes{}
 	for _, pipelinerun := range types.PipelineRuns {

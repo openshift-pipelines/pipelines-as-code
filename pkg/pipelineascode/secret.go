@@ -21,7 +21,7 @@ const (
 	defaultPipelinesAscodeSecretWebhookSecretKey = "webhook.secret"
 )
 
-// SecretFromRepository grab the secret from the repository CRD
+// SecretFromRepository grab the secret from the repository CRD.
 func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.ProviderConfig, event *info.Event, repo *apipac.Repository, logger *zap.SugaredLogger) error {
 	var err error
 	if repo.Spec.GitProvider == nil {
@@ -91,7 +91,7 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 	return nil
 }
 
-// GetCurrentNSWebhookSecret get secret from current namespace if it exists
+// GetCurrentNSWebhookSecret get secret from current namespace if it exists.
 func GetCurrentNSWebhookSecret(ctx context.Context, k8int kubeinteraction.Interface) (string, error) {
 	s, err := k8int.GetSecret(ctx, ktypes.GetSecretOpt{
 		Namespace: os.Getenv("SYSTEM_NAMESPACE"),

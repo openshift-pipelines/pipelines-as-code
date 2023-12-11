@@ -34,7 +34,7 @@ func NewCustomParams(event *info.Event, repo *v1alpha1.Repository, run *params.R
 	}
 }
 
-// applyIncomingParams apply incoming params to an existing map (overwriting existing keys)
+// applyIncomingParams apply incoming params to an existing map (overwriting existing keys).
 func (p *CustomParams) applyIncomingParams(ret map[string]string) map[string]string {
 	if p.event.Request == nil {
 		return ret

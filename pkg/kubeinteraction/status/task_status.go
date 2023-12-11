@@ -37,7 +37,7 @@ func GetTaskRunStatusForPipelineTask(ctx context.Context, client versioned.Inter
 
 // GetStatusFromTaskStatusOrFromAsking will return the status of the taskruns,
 // it would use the embedded one if it's available (pre tekton 0.44.0) or try
-// to get it from the child references
+// to get it from the child references.
 func GetStatusFromTaskStatusOrFromAsking(ctx context.Context, pr *tektonv1.PipelineRun, run *params.Run) map[string]*tektonv1.PipelineRunTaskRunStatus {
 	trStatus := map[string]*tektonv1.PipelineRunTaskRunStatus{}
 	for _, cr := range pr.Status.ChildReferences {
@@ -69,7 +69,7 @@ func GetStatusFromTaskStatusOrFromAsking(ctx context.Context, pr *tektonv1.Pipel
 }
 
 // CollectFailedTasksLogSnippet collects all tasks information we are interested in.
-// should really be in a tektoninteractions package but i lack imagination at the moment
+// should really be in a tektoninteractions package but i lack imagination at the moment.
 func CollectFailedTasksLogSnippet(ctx context.Context, cs *params.Run, kinteract kubeinteraction.Interface, pr *tektonv1.PipelineRun, numLines int64) map[string]pacv1alpha1.TaskInfos {
 	failureReasons := map[string]pacv1alpha1.TaskInfos{}
 	if pr == nil {

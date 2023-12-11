@@ -20,11 +20,11 @@ import (
 
 const (
 	// regex allows array of string or a single string
-	// eg. ["foo", "bar"], ["foo"] or "foo"
+	// eg. ["foo", "bar"], ["foo"] or "foo".
 	reValidateTag = `^\[(.*)\]$|^[^[\]\s]*$`
 )
 
-// prunBranch is value from annotations and baseBranch is event.Base value from event
+// prunBranch is value from annotations and baseBranch is event.Base value from event.
 func branchMatch(prunBranch, baseBranch string) bool {
 	// Helper function to match glob pattern
 	matchGlob := func(pattern, branch string) bool {
@@ -58,11 +58,11 @@ func branchMatch(prunBranch, baseBranch string) bool {
 	return matchGlob(prunBranch, baseBranch)
 }
 
-// TODO: move to another file since it's common to all annotations_* files
+// TODO: move to another file since it's common to all annotations_* files.
 func getAnnotationValues(annotation string) ([]string, error) {
 	re := regexp.MustCompile(reValidateTag)
 	annotation = strings.TrimSpace(annotation)
-	match := re.Match([]byte(annotation))
+	match := re.MatchString(annotation)
 	if !match {
 		return nil, fmt.Errorf("annotations in pipeline are in wrong format: %s", annotation)
 	}
