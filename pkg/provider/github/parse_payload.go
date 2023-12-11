@@ -104,16 +104,20 @@ func (v *Provider) parseEventType(request *http.Request, event *info.Event) erro
 	return nil
 }
 
-func getInstallationIDFromPayload(payload string) (int64, error) {
-	var data map[string]interface{}
-	_ = json.Unmarshal([]byte(payload), &data)
+type Payload struct {
+	Installation struct {
+		ID *int64 `json:"id"`
+	} `json:"installation"`
+}
 
-	i := github.Installation{}
-	installData, ok := data["installation"]
-	if ok {
-		installation, _ := json.Marshal(installData)
-		err := json.Unmarshal(installation, &i)
-		return *i.ID, err
+func getInstallationIDFromPayload(payload string) (int64, error) {
+	var data Payload
+	err := json.Unmarshal([]byte(payload), &data)
+	if err != nil {
+		return -1, err
+	}
+	if data.Installation.ID != nil {
+		return *data.Installation.ID, nil
 	}
 	return -1, nil
 }
@@ -148,6 +152,9 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	}
 
 	installationIDFrompayload, err := getInstallationIDFromPayload(payload)
+	if err != nil {
+		return nil, err
+	}
 	if installationIDFrompayload != -1 {
 		var err error
 		// TODO: move this out of here when we move al config inside context
