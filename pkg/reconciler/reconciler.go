@@ -79,15 +79,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 			return fmt.Errorf("failed to parse controllerInfo: %w", err)
 		}
 		r.run.Info.Controller = parsedControllerInfo
-		paramsinfo := info.GetInfo(ctx, parsedControllerInfo.Name)
-		if paramsinfo == nil {
-			if err := r.run.UpdatePACInfo(ctx); err != nil {
-				return fmt.Errorf("failed to get information for controller config %s: %w", controllerInfo, err)
-			}
-			ctx = info.StoreInfo(ctx, parsedControllerInfo.Name, &r.run.Info)
-			ctx = info.StoreCurrentControllerName(ctx, parsedControllerInfo.Name)
-		}
+	} else {
+		r.run.Info.Controller = info.GetControllerInfoFromEnvOrDefault()
 	}
+	if err := r.run.UpdatePACInfo(ctx); err != nil {
+		return fmt.Errorf("failed to get information for controller config %v: %w", r.run.Info.Controller, err)
+	}
+	ctx = info.StoreInfo(ctx, r.run.Info.Controller.Name, &r.run.Info)
+	ctx = info.StoreCurrentControllerName(ctx, r.run.Info.Controller.Name)
 
 	// queue pipelines which are in queued state and pending status
 	// if status is not pending, it could be canceled so let it be reported, even if state is queued

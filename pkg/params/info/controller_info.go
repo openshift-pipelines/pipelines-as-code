@@ -17,9 +17,9 @@ const (
 var InstallNamespaces = []string{"openshift-pipelines", "pipelines-as-code"}
 
 type ControllerInfo struct {
-	Name      string
-	Configmap string
-	Secret    string
+	Name      string `json:"name"`
+	Configmap string `json:"configmap"`
+	Secret    string `json:"secret"`
 }
 
 // GetControllerInfoFromEnvOrDefault retrieves controller info from the env or use the defaults
