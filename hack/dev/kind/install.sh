@@ -24,8 +24,25 @@ export KUBECONFIG=${HOME}/.kube/config.${KIND_CLUSTER_NAME}
 export TARGET=kubernetes
 export DOMAIN_NAME=paac-127-0-0-1.nip.io
 
+if [ -z "${TEST_GITEA_SMEEURL}" ]; then
+    echo "You should forward the URL via smee, create a URL in there by going to https://hook.pipelinesascode.com"
+    echo "set it up as environement variable in the 'TEST_GITEA_SMEEURL=https://hook.pipelinesascode.com/XXXXXXXX' variable"
+    exit 1
+fi
+if ! builtin type -p kind &>/dev/null; then
+    echo "Install kind. https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
+    exit 1
+fi
 kind=$(type -p kind)
-[[ -z ${kind} ]] && { echo "Install kind"; exit 1 ;}
+if ! builtin type -p ko &>/dev/null; then
+    echo "Install ko. https://ko.build/install/"
+    exit 1
+fi
+ko=$(type -p ko)
+if ! builtin type -p gosmee &>/dev/null; then
+    echo "Install gosmee. https://github.com/chmouel/gosmee?tab=readme-ov-file#install"
+    exit 1
+fi
 
 TMPD=$(mktemp -d /tmp/.GITXXXX)
 REG_PORT='5000'
@@ -144,7 +161,7 @@ function install_pac() {
         oldPwd=${PWD}
         cd ${PAC_DIR}
         echo "Deploying PAC from ${PAC_DIR}"
-        [[ -n ${PAC_DEPLOY_SCRIPT:-""} ]] && ${PAC_DEPLOY_SCRIPT} || env KO_DOCKER_REPO=localhost:5000 ko apply -f config --sbom=none -B >/dev/null
+        [[ -n ${PAC_DEPLOY_SCRIPT:-""} ]] && ${PAC_DEPLOY_SCRIPT} || env KO_DOCKER_REPO=localhost:5000 $ko apply -f config --sbom=none -B >/dev/null
         cd ${oldPwd}
     fi
     configure_pac
@@ -191,8 +208,7 @@ function configure_pac() {
 
     echo "Set Active Namespace to pipelines-as-code"
     kubectl config set-context --current --namespace=pipelines-as-code >/dev/null
-    type -p gosmee || echo "You may want to install psmee with: go install -v github.com/chmouel/gosmee@latest and run:
-gosmee client --saveDir /tmp/replays https://hook.pipelinesascode.com/SMEEID http://controller.${DOMAIN_NAME}"
+    echo "Run: gosmee client --saveDir /tmp/replays ${TEST_GITEA_SMEEURL} http://controller.${DOMAIN_NAME}"
 }
 
 function install_gitea ()
