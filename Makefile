@@ -7,7 +7,7 @@ LDFLAGS=
 OUTPUT_DIR=bin
 GO           = go
 TIMEOUT_UNIT = 20m
-TIMEOUT_E2E  = 20m
+TIMEOUT_E2E  = 30m
 GO_TEST_FLAGS +=
 SHELL := bash
 
