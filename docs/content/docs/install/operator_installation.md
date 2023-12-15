@@ -57,7 +57,7 @@ spec:
       pipelinesAsCode:
         enable: true
         settings:
-          
+
 ```
 
 To disable installation of Pipelines-as-Code, you can set `enable: false` as in the following example:
@@ -69,5 +69,5 @@ spec:
       pipelinesAsCode:
         enable: false
         settings:
-          
+
 ```

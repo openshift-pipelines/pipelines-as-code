@@ -86,7 +86,7 @@ lint-yaml: ${YAML_FILES} ## runs yamllint on all yaml files
 
 
 .PHONY: lint-md
-lint-md: ${MD_FILES} ## runs markdownlint and vale on all markdown files
+lint-md: ## runs markdownlint and vale on all markdown files
 	@echo "Linting markdown files..."
 	@markdownlint $(MD_FILES)
 	@echo "Grammar check with vale of documentation..."
@@ -95,10 +95,24 @@ lint-md: ${MD_FILES} ## runs markdownlint and vale on all markdown files
 	@codespell docs/content
 
 .PHONY: fix-markdownlint
-fix-markdownlint: ${MD_FILES} ## run markdownlint and fix on all markdown file
+fix-markdownlint: ## run markdownlint and fix on all markdown file
 	@echo "Fixing markdown files..."
 	@markdownlint --fix $(MD_FILES)
+	@sed --in-place 's/[[:space:]]\+$$//' $(MD_FILES)
 	@[[ -n `git status --porcelain $(MD_FILES)` ]] && { echo "Markdowns has been cleaned 🧹. Cleaned Files: ";git status --porcelain $(MD_FILES) ;} || echo "Markdown is clean ✨"
+
+.PHONY: fix-golangci-lint
+fix-golangci-lint: ## run golangci-lint and fix on all go files
+	@echo "Fixing some golangi-lint files..."
+	@$(GOLANGCI_LINT) run ./... --modules-download-mode=vendor \
+							--max-issues-per-linter=0 \
+							--max-same-issues=0 \
+							--deadline $(TIMEOUT_UNIT) \
+							--fix
+	@[[ -n `git status --porcelain` ]] && { echo "Go files has been cleaned 🧹. Cleaned Files: ";git status --porcelain ;} || echo "Go files are clean ✨"
+
+.PHONY: fix-linters
+fix-linters: fix-golangci-lint fix-markdownlint ## run all linters fixes
 
 .PHONY: lint-py
 lint-py: ${PY_FILES} ## runs pylint on all python files
