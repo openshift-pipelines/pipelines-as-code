@@ -1,16 +1,20 @@
-<!-- 🎉🎉🎉 Thank you for the PR!!! 🎉🎉🎉 -->
-
-# Changes
+# Changes <!-- 🎉🎉🎉 Thank you for the PR!!! 🎉🎉🎉 -->
 
 <!-- Describe your changes here- ideally you can get that description straight from
 your descriptive commit message(s)! -->
 
 # Submitter Checklist
 
-- [ ] 📝 A good commit message is important for other reviewers to understand the context of your change. Please refer to [How to Write a Git Commit Message](https://cbea.ms/git-commit/) for more details how to write beautiful commit messages. We rather have the commit message in the PR body and the commit message instead of an external website.
-- [ ] ♽ Run `make test` before submitting a PR (ie: with [pre-commit](https://pipelinesascode.com/dev/tools), no need to waste CPU cycle on CI. (or even better install [pre-commit](https://pre-commit.com/) and do `pre-commit install` in the root of this repo).
-- [ ] ✨ We heavily rely on linters to get our code clean and consistent, please ensure that you have run `make lint` before submitting a PR. The [markdownlint](https://github.com/DavidAnson/markdownlint) error can get usually fixed by running `make fix-markdownlint` (make sure it's installed first)
-- [ ] 📖 If you are adding a user facing feature or make a change of the behavior, please verify that you have documented it
-- [ ] 🧪 100% coverage is not a target but most of the time we would rather have a unit test if you make a code change.
-- [ ] 🎁 If that's something that is possible to do please ensure to check if we can add a e2e test.
-- [ ] 🔎 If there is a flakiness in the CI tests then don't *necessary* ignore it, better get the flakyness fixed before merging or if that's not possible there is a good reason to bypass it. (token rate limitation may be a good reason to skip).
+- [ ] 📝 Please ensure your commit message is clear and informative. For guidance on crafting effective commit messages, refer to the How to write a git commit message guide. We prefer the commit message to be included in the PR body itself rather than a link to an external website (ie: Jira ticket).
+
+- [ ] ♽ Before submitting a PR, run make test lint to avoid unnecessary CI processing. For an even more efficient workflow, consider installing [pre-commit](https://pre-commit.com/) and running pre-commit install in the root of this repository.
+
+- [ ] ✨ We use linters to maintain clean and consistent code. Please ensure you've run make lint before submitting a PR. Some linters offer a --fix mode, which can be executed with the command make fix-linters (ensure [markdownlint](https://github.com/DavidAnson/markdownlint) and [golangci-lint](https://github.com/golangci/golangci-lint) tools are installed first).
+
+- [ ] 📖 If you're introducing a user-facing feature or changing existing behavior, please ensure it's properly documented.
+
+- [ ] 🧪 While 100% coverage isn't a requirement, we encourage unit tests for any code changes where possible.
+
+- [ ] 🎁 If feasible, please check if an end-to-end test can be added. See [README](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/README.md) for more details.
+
+- [ ] 🔎 If there's any flakiness in the CI tests, don't necessarily ignore it. It's better to address the issue before merging, or provide a valid reason to bypass it if fixing isn't possible (e.g., token rate limitations).
