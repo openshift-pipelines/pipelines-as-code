@@ -49,8 +49,8 @@ Below is the sample format for `tkn pac create repo`
 ```shell script
 $ tkn pac create repo
 
-? Enter the Git repository url (default: https://bitbucket.org/workspace/repo):  
-? Please enter the namespace where the pipeline should run (default: repo-pipelines): 
+? Enter the Git repository url (default: https://bitbucket.org/workspace/repo):
+? Please enter the namespace where the pipeline should run (default: repo-pipelines):
 ! Namespace repo-pipelines is not found
 ? Would you like me to create the namespace repo-pipelines? Yes
 ✓ Repository workspace-repo has been created in repo-pipelines namespace

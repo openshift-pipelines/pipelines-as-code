@@ -55,7 +55,7 @@ recreate it.
     --from-literal provider.token="TOKEN_AS_GENERATED_PREVIOUSLY" \
     --from-literal webhook.secret="SECRET_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
-  
+
 * And finally create Repository CRD with the secret field referencing it.
 
   * Here is an example of a Repository CRD :
@@ -72,7 +72,7 @@ recreate it.
     git_provider:
       # make sure you have the right bitbucket server api url without the
       # /api/v1.0 usually the # default install will have a /rest suffix
-      url: "https://bitbucket.server.api.url/rest" 
+      url: "https://bitbucket.server.api.url/rest"
       user: "your-bitbucket-username"
       secret:
         name: "bitbucket-server-webhook-config"

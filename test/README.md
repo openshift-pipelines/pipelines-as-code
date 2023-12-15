@@ -25,7 +25,7 @@ here are all the variables that is used by the E2E tests.
 - `TEST_GITHUB_REPO_OWNER_GITHUBAPP` - A repository/owner github repo that is configured with github apps.
 - `TEST_GITHUB_REPO_INSTALLATION_ID` - The installation id when you have installed the repo on the app. (get it from the
   webhook event on the console)
-  
+
 **Hint:** Go to [Github Apps](https://github.com/settings/apps) (or *Settings > Developer settings > GitHub Apps*) choose the Github App and go to *Advanced > Recent Deliveries*
 and search for **installation** which looks something like below
 
