@@ -204,7 +204,7 @@ This example will match modified files with the name of test.go:
 
 ```yaml
     pipelinesascode.tekton.dev/on-cel-expression: |
-      files.modified.exists(x, x.matches('test.go'))   
+      files.modified.exists(x, x.matches('test.go'))
 ```
 
 ### Matching PipelineRun on event title
