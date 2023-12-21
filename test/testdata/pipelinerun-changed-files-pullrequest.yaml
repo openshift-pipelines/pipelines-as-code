@@ -6,8 +6,8 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
     pipelinesascode.tekton.dev/on-cel-expression: >-
-      target_branch == "\\ .TargetBranch //" && 
-      event == "pull_request" && 
+      target_branch == "\\ .TargetBranch //" &&
+      event == "pull_request" &&
       files.all.exists(x, x.matches('tekton/|deleted.txt'))
 spec:
   # params:
