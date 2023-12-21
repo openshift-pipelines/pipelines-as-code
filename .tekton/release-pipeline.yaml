@@ -72,7 +72,23 @@ spec:
                     exit
                 }
                 stable_tag=${version%.*}.x
-                alltags=$(for i in $(git tag -l|grep '^v'|sort -rn);do echo -n "$i,";done|sed 's/,$//')
+
+                # Keep all the latest major versions
+                # i.e: i have v0.5.1, v0.5.2, v0.6.1, v0.6.2, v0.7.1, v0.7.2
+                # it will keep v0.5.2, v0.6.2, v0.7.2
+                declare -A hashmap=()
+                for i in $(git tag -l | grep '^v' | sort -V); do
+                  version=${i//v/}
+                  if [[ ${version} =~ ^([0-9]+\.[0-9]+)\.[0-9]+$ ]]; then
+                    major_version=${BASH_REMATCH[1]}
+                  fi
+                  hashmap["$major_version"]=$version
+                done
+                output=$(for i in "${!hashmap[@]}"; do
+                  echo v"${hashmap[$i]}"
+                done | sort -rV | tr "\n" ", ")
+                alltags=${output%,}
+
                 allversions="nightly,stable,$alltags"
                 git config --global user.email "pac-dev@redhat.com"
                 git config --global user.name "Pipelines as Code CI Robot"
