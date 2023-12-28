@@ -274,7 +274,7 @@ and the scoping fails for the repository level configuration because the reposit
     namespace: test-repo
   spec:
     url: "https://github.com/linda/project"
-    setting
+    settings:
       github_app_token_scope_repos:
       - "owner5/project5"
   ```
