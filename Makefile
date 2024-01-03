@@ -75,7 +75,7 @@ html-coverage: ## generate html coverage
 
 ##@ Linting
 .PHONY: lint
-lint: lint-go lint-yaml lint-md lint-py ## run all linters
+lint: lint-go lint-yaml lint-md lint-python ## run all linters
 
 .PHONY: lint-go
 lint-go: ## runs go linter on all go files
