@@ -1,9 +1,11 @@
 package customparams
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/google/go-github/v56/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/incoming"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
@@ -18,6 +20,95 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func TestApplyIncomingParams(t *testing.T) {
+	tests := []struct {
+		name               string
+		initialParams      map[string]string
+		payload            *incoming.Payload
+		expectedParams     map[string]string
+		expectedLogSnippet string
+	}{
+		{
+			name: "apply params",
+			initialParams: map[string]string{
+				"key1": "value1",
+			},
+			payload: &incoming.Payload{
+				Params: map[string]interface{}{
+					"key2": "value2",
+				},
+			},
+			expectedParams: map[string]string{
+				"key1": "value1",
+			},
+		},
+		{
+			name: "apply params with same key",
+			initialParams: map[string]string{
+				"key1": "value1",
+			},
+			payload: &incoming.Payload{
+				Params: map[string]interface{}{
+					"key1": "value2",
+				},
+			},
+			expectedParams: map[string]string{
+				"key1": "value2",
+			},
+		},
+		{
+			name: "no request in event",
+			initialParams: map[string]string{
+				"key1": "value1",
+			},
+			expectedParams: map[string]string{
+				"key1": "value1",
+			},
+		},
+		{
+			name: "cannot convert incoming param",
+			initialParams: map[string]string{
+				"key1": "value1",
+			},
+			payload: &incoming.Payload{
+				Params: map[string]interface{}{
+					"key2": 1,
+				},
+			},
+			expectedLogSnippet: "cannot convert incoming param key: key2 value: 1 as string",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observer, tlog := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+
+			jsonPayload, _ := json.Marshal(tt.payload)
+			event := &info.Event{}
+			if tt.payload != nil {
+				event.Request = &info.Request{
+					Payload: jsonPayload,
+				}
+			}
+			p := &CustomParams{
+				event: event,
+			}
+			ctx, _ := rtesting.SetupFakeContext(t)
+			stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
+			p.eventEmitter = events.NewEventEmitter(stdata.Kube, logger)
+			gotParams := p.applyIncomingParams(tt.initialParams)
+
+			assert.DeepEqual(t, tt.initialParams, gotParams)
+			if tt.expectedLogSnippet != "" {
+				logmsg := tlog.FilterMessageSnippet(tt.expectedLogSnippet).TakeAll()
+				assert.Assert(t, len(logmsg) > 0, "log message filtered %s expected %s alllogs: %+v", logmsg,
+					tt.expectedLogSnippet, tlog.TakeAll())
+			}
+		})
+	}
+}
 
 func TestProcessTemplates(t *testing.T) {
 	ns := "there"
