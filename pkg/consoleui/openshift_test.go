@@ -60,12 +60,19 @@ func TestOpenshiftConsoleUI(t *testing.T) {
 		unsf     *unstructured.Unstructured
 		wantErr  bool
 		wantHost string
+		wantName string
 	}{
 		{
 			name:     "Get Openshift Console url",
 			unsf:     fakeroute,
 			wantErr:  false,
 			wantHost: "http://fakeconsole",
+		},
+		{
+			name:     "Get Openshift Console name",
+			unsf:     fakeroute,
+			wantErr:  false,
+			wantName: "OpenShift Console",
 		},
 		{
 			name:    "No Openshift Console",
@@ -94,6 +101,11 @@ func TestOpenshiftConsoleUI(t *testing.T) {
 			if tt.wantHost != "" {
 				if o.host != tt.wantHost {
 					t.Fatalf("UI() host = %v, want %v", o.host, tt.wantHost)
+				}
+			}
+			if tt.wantName != "" {
+				if o.GetName() != tt.wantName {
+					t.Fatalf("UI() name = %v, want %v", o.GetName(), tt.wantName)
 				}
 			}
 		})
