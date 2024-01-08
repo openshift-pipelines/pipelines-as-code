@@ -39,4 +39,7 @@ func TestTektonDashboard(t *testing.T) {
 	assert.Assert(t, strings.Contains(tr.DetailURL(pr), "namespaces/ns"))
 	assert.Assert(t, strings.Contains(tr.TaskLogURL(pr, trStatus), "pipelineTask=task"))
 	assert.Assert(t, strings.Contains(tr.URL(), "test"))
+	assert.Assert(t, strings.Contains(tr.NamespaceURL(pr), "namespaces/ns"))
+	assert.Assert(t, strings.Contains(tr.GetName(), tektonDashboardName))
+	tr.SetParams(map[string]string{})
 }
