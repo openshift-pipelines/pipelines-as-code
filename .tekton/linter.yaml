@@ -66,6 +66,24 @@ spec:
               workingDir: $(workspaces.source.path)
               script: |
                 codespell -d docs/content pkg test
+
+      - name: shellcheck
+        displayName: "Shell scripts linter"
+        runAfter:
+          - fetchit
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: shellcheck
+              image: pipelinecomponents/shellcheck
+              workingDir: $(workspaces.source.path)
+              script: |
+                shellcheck $(find hack/ -type f -regex ".*sh" -print)
+
       - name: gitlint
         displayName: "Git commit linter"
         runAfter:

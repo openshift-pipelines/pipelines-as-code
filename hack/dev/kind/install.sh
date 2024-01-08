@@ -159,7 +159,11 @@ function install_pac() {
 		oldPwd=${PWD}
 		cd ${PAC_DIR}
 		echo "Deploying PAC from ${PAC_DIR}"
-		[[ -n ${PAC_DEPLOY_SCRIPT:-""} ]] && ${PAC_DEPLOY_SCRIPT} || env KO_DOCKER_REPO=localhost:5000 $ko apply -f config --sbom=none -B >/dev/null
+		if [[ -n ${PAC_DEPLOY_SCRIPT:-""} ]]; then
+			${PAC_DEPLOY_SCRIPT}
+		else
+			env KO_DOCKER_REPO=localhost:5000 $ko apply -f config --sbom=none -B >/dev/null
+		fi
 		cd ${oldPwd}
 	fi
 	configure_pac
