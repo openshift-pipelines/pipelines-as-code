@@ -38,7 +38,7 @@ envfile=/tmp/env
 noclean=
 
 function help() {
-    cat <<EOF
+	cat <<EOF
 Usage: $0 [options] [testcase]
 
 -h: this help
@@ -54,103 +54,103 @@ EOF
 }
 
 while getopts "nE:fSldnk:p:h:" o; do
-    case "${o}" in
-    n)
-        noclean=true
-        ;;
-    E)
-        [[ -z ${KUBECONFIG:-""} ]] && {
-            echo "need -k set first"
-            exit 1
-        }
-        passprofile=${OPTARG}
-        vars=$(pass ls pac/vars/${passprofile})
-        [[ -n ${vars} ]] || { echo "could not detect vars in pac/vars/${passprofile}"; }
-        pass show pac/vars/${passprofile} | sed -e '/#/d' -e '/^$/d' -e 's/export //' -e '/^KUBECONFIG=/d' >${envfile}
-        echo KUBECONFIG=$KUBECONFIG >>/tmp/env
-        echo "/tmp/env has been generated"
-        exit 0
-        ;;
-    d)
-        debug=yes
-        ;;
-    S)
-        nosnazy=yes
-        ;;
-    l)
-        [[ -e ${cachedir}/last ]] || {
-            echo "no last tests to run"
-            exit 1
-        }
-        testcases=$(cat ${cachedir}/last)
-        ;;
-    k)
-        export KUBECONFIG=$HOME/.kube/config.${OPTARG}
-        ;;
-    p)
-        passprofile=${OPTARG}
-        vars=$(pass show pac/vars/${passprofile})
-        if [[ -n ${vars} ]]; then
-            eval ${vars}
-        else
-            echo "could not detect vars in pac/vars/${passprofile}"
-        fi
-        ;;
-    f)
-        fzf="yes"
-        ;;
-    h)
-        help
-        exit 0
-        ;;
-    *)
-        echo "Invalid option"
-        exit 1
-        ;;
-    esac
+	case "${o}" in
+	n)
+		noclean=true
+		;;
+	E)
+		[[ -z ${KUBECONFIG:-""} ]] && {
+			echo "need -k set first"
+			exit 1
+		}
+		passprofile=${OPTARG}
+		vars=$(pass ls pac/vars/${passprofile})
+		[[ -n ${vars} ]] || { echo "could not detect vars in pac/vars/${passprofile}"; }
+		pass show pac/vars/${passprofile} | sed -e '/#/d' -e '/^$/d' -e 's/export //' -e '/^KUBECONFIG=/d' >${envfile}
+		echo KUBECONFIG=$KUBECONFIG >>/tmp/env
+		echo "/tmp/env has been generated"
+		exit 0
+		;;
+	d)
+		debug=yes
+		;;
+	S)
+		nosnazy=yes
+		;;
+	l)
+		[[ -e ${cachedir}/last ]] || {
+			echo "no last tests to run"
+			exit 1
+		}
+		testcases=$(cat ${cachedir}/last)
+		;;
+	k)
+		export KUBECONFIG=$HOME/.kube/config.${OPTARG}
+		;;
+	p)
+		passprofile=${OPTARG}
+		vars=$(pass show pac/vars/${passprofile})
+		if [[ -n ${vars} ]]; then
+			eval ${vars}
+		else
+			echo "could not detect vars in pac/vars/${passprofile}"
+		fi
+		;;
+	f)
+		fzf="yes"
+		;;
+	h)
+		help
+		exit 0
+		;;
+	*)
+		echo "Invalid option"
+		exit 1
+		;;
+	esac
 done
 shift $((OPTIND - 1))
 
 [[ -n ${debug} ]] && {
-    env | grep "^TEST_"
+	env | grep "^TEST_"
 }
 
 initial_query=
 [[ -n $* ]] && initial_query=(-q "$@")
 cd $(git rev-parse --show-toplevel)/test || exit
 if [[ -n ${testcases:-""} ]]; then
-    echo "Reusing last run runs: ${testcases}"
+	echo "Reusing last run runs: ${testcases}"
 elif [[ -z ${fzf} ]]; then
-    testcases=$*
+	testcases=$*
 else
-    testcases=$(rg --no-line-number --no-filename --no-heading '^func (Test[^(]+)' -o | sed 's/^func //' |
-        sort | env fzf -m -1 -0 ${initial_query[@]})
-    [[ -z ${testcases} ]] && exit 0
-    newt=
-    for t in ${testcases}; do
-        newt="${newt} ^${t}$"
-    done
-    testcases=${newt}
+	testcases=$(rg --no-line-number --no-filename --no-heading '^func (Test[^(]+)' -o | sed 's/^func //' |
+		sort | env fzf -m -1 -0 "${initial_query[@]}")
+	[[ -z ${testcases} ]] && exit 0
+	newt=
+	for t in ${testcases}; do
+		newt="${newt} ^${t}$"
+	done
+	testcases=${newt}
 fi
 
 [[ -d ${cachedir} ]] || mkdir -p ${cachedir}
 echo ${testcases} >${cachedir}/last
 
 if [[ -z ${noclean} ]]; then
-    e2e-cleanups || true
+	e2e-cleanups || true
 else
-    export TEST_NOCLEANUP=true
+	export TEST_NOCLEANUP=true
 fi
 
 [[ -z ${nosnazy} ]] && { type -p snazy >/dev/null 2>/dev/null || nosnazy=yes; }
 
 for testcase in ${testcases}; do
-    echo "Running ${testcase}"
-    make -f ../Makefile test-clean
-    cmd=(go test -v -tags e2e -count=1 -failfast -run "${testcase}")
-    if [[ -z ${nosnazy} ]]; then
-        "${cmd[@]}" | snazy
-    else
-        "${cmd[@]}"
-    fi
+	echo "Running ${testcase}"
+	make -f ../Makefile test-clean
+	cmd=(go test -v -tags e2e -count=1 -failfast -run "${testcase}")
+	if [[ -z ${nosnazy} ]]; then
+		"${cmd[@]}" | snazy
+	else
+		"${cmd[@]}"
+	fi
 done
