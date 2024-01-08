@@ -3,8 +3,8 @@
 set -eufo pipefail
 
 create_pac_github_app_secret() {
-	local application_id="${1}"
-	local app_private_key="${2}"
+	local app_private_key="${1}"
+	local application_id="${2}"
 	local webhook_secret="${3}"
 	kubectl delete secret -n pipelines-as-code pipelines-as-code-secret || true
 	kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
