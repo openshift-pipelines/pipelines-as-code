@@ -12,6 +12,7 @@ GO_TEST_FLAGS +=
 SHELL := bash
 
 PY_FILES := $(shell find . -type f -regex ".*\.py" -print)
+SH_FILES := $(shell find hack/ -type f -regex ".*\.sh" -print)
 YAML_FILES := $(shell find . -not -regex '^./vendor/.*' -type f -regex ".*y[a]ml" -print)
 MD_FILES := $(shell find . -type f -regex ".*md"  -not -regex '^./vendor/.*'  -not -regex '^./.vale/.*'  -not -regex "^./docs/themes/.*" -not -regex "^./.git/.*" -print)
 
@@ -75,7 +76,7 @@ html-coverage: ## generate html coverage
 
 ##@ Linting
 .PHONY: lint
-lint: lint-go lint-yaml lint-md lint-python ## run all linters
+lint: lint-go lint-yaml lint-md lint-python lint-shell ## run all linters
 
 .PHONY: lint-go
 lint-go: ## runs go linter on all go files
@@ -105,6 +106,11 @@ lint-python: ${PY_FILES} ## runs pylint on all python files
 	@echo "Linting python files..."
 	@ruff check $(PY_FILES)
 	@ruff format --check $(PY_FILES)
+
+.PHONY: lint-shell
+lint-shell: ${SH_FILES} ## runs shellcheck on all python files
+	@echo "Linting shell script files..."
+	@shellcheck $(SH_FILES)
 
 .PHONY: pre-commit
 pre-commit: ## Run pre-commit hooks script manually

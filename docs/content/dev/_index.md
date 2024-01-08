@@ -257,6 +257,7 @@ need to have on your system:
 
 - [golangci-lint](https://github.com/golangci/golangci-lint) - For golang lint
 - [yamllint](https://github.com/adrienverge/yamllint) - For YAML lint
+- [shellcheck](https://www.shellcheck.net/) - For shell scripts linting
 - [ruff](https://github.com/astral-sh/ruff) - Python code formatter check
 - [vale](https://github.com/errata-ai/vale) - For grammar check
 - [markdownlint](https://github.com/markdownlint/markdownlint) - For markdown lint

@@ -13,6 +13,10 @@ repos:
       - id: check-vcs-permalinks
       - id: detect-private-key
         exclude: ".*_test.go"
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.9.0
+    hooks:
+      - id: shellcheck
   - repo: https://github.com/jorisroovers/gitlint
     rev: v0.19.1
     hooks:
