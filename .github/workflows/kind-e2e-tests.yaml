@@ -1,6 +1,8 @@
 name: E2E Tests on Kind
 
 on:
+  schedule:
+  - cron: "0 5 * * *"
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -60,30 +62,10 @@ jobs:
 
       - name: Create PAC github-app-secret
         run: |
-          set -xv
-          kubectl delete secret -n pipelines-as-code pipelines-as-code-secret || true
-          kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
-            --from-literal github-private-key="${{ secrets.APP_PRIVATE_KEY }}" \
-            --from-literal github-application-id=${{ secrets.APPLICATION_ID }} \
-            --from-literal webhook.secret=${{ secrets.WEBHOOK_SECRET }}
-          # Disable Bitbucket Cloud Source IP check, since we should be god here.
-          kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"bitbucket-cloud-check-source-ip\": \"false\"}}" \
-          --type merge pipelines-as-code
-
-          # restart controller
-          kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=controller
-
-          # wait for controller to start
-          i=0
-          for tt in pipelines-as-code-controller;do
-            while true;do
-              [[ ${i} == 120 ]] && exit 1
-              ep=$(kubectl get ep -n pipelines-as-code ${tt} -o jsonpath='{.subsets[*].addresses[*].ip}')
-              [[ -n ${ep} ]] && break
-              sleep 2
-              i=$((i+1))
-            done
-          done
+         ./hack/gh-workflow-ci.sh create_pac_github_app_secret \
+            "${{ secrets.APP_PRIVATE_KEY }}" \
+            "${{ secrets.APPLICATION_ID }}" \
+            "${{secrets.WEBHOOK_SECRET }}"
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -94,78 +76,40 @@ jobs:
 
       - name: Create second Github APP Controller on GHE
         run: |
-          # this is to handle compatibilty until the PR #1518 is merged
-          [[ -e ./hack/second-controller.py ]] || exit 0
-          python3 -m pip install PyYAML
-          ./hack/second-controller.py \
-            --controller-image="ko" \
-            --smee-url="${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" \
-            --namespace="pipelines-as-code" \
-            ghe > /tmp/generated.yaml
-          ko apply -f /tmp/generated.yaml
-          kubectl delete secret -n pipelines-as-code ghe-secret || true
-          kubectl -n pipelines-as-code create secret generic ghe-secret \
-            --from-literal github-private-key="${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" \
-            --from-literal github-application-id="2" \
-            --from-literal webhook.secret="${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}"
-          sed "s/name: pipelines-as-code/name: ghe-configmap/" < config/302-pac-configmap.yaml | kubectl apply -n pipelines-as-code -f-
-          kubectl patch configmap -n pipelines-as-code ghe-configmap -p '{"data":{"application-name": "Pipelines as Code GHE"}}'
-          kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=ghe-controller
+         ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe \
+          "${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" \
+          "${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" \
+          "${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}"
 
-      - name: Run E2E Tests
+      - name: Run E2E Tests on pull_request
+        if: ${{ github.event_name != 'schedule' }}
         run: |
-          # Nothing specific to webhook here it  just that repo is private in that org and that's what we want to test
-          export TEST_GITHUB_PRIVATE_TASK_URL="https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml"
-          export TEST_GITHUB_PRIVATE_TASK_NAME="task-remote"
+         ./hack/gh-workflow-ci.sh run_e2e_tests \
+          "${{ secrets.BITBUCKET_CLOUD_TOKEN }}" \
+          "${{ secrets.WEBHOOK_SECRET }}" \
+          "${{ secrets.TEST_GITEA_SMEEURL }}" \
+          "${{ secrets.INSTALLATION_ID }}" \
+          "${{ secrets.GH_APPS_TOKEN }}" \
+          "${{ secrets.TEST_GITHUB_SECOND_TOKEN }}" \
+          "${{ secrets.GITLAB_TOKEN }}"
 
-          export GO_TEST_FLAGS="-v -race -failfast"
-
-          export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0
-          export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=cboudjna/pac-e2e-tests
-          export TEST_BITBUCKET_CLOUD_TOKEN=${{ secrets.BITBUCKET_CLOUD_TOKEN }}
-          export TEST_BITBUCKET_CLOUD_USER=cboudjna
-
-          export TEST_EL_URL="http://${CONTROLLER_DOMAIN_URL}"
-          export TEST_EL_WEBHOOK_SECRET="${{ secrets.WEBHOOK_SECRET }}"
-
-          export TEST_GITEA_API_URL="http://localhost:3000"
-          ## This is the URL used to forward requests from the webhook to the paac controller
-          ## badly named!
-          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
-          export TEST_GITEA_USERNAME=pac
-          export TEST_GITEA_PASSWORD=pac
-          export TEST_GITEA_REPO_OWNER=pac/pac
-
-          export TEST_GITHUB_API_URL=api.github.com
-          export TEST_GITHUB_REPO_INSTALLATION_ID="${{ secrets.INSTALLATION_ID }}"
-          export TEST_GITHUB_REPO_OWNER_GITHUBAPP=openshift-pipelines/pipelines-as-code-e2e-tests
-          export TEST_GITHUB_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
-          export TEST_GITHUB_TOKEN="${{ secrets.GH_APPS_TOKEN }}"
-
-          export TEST_GITHUB_SECOND_API_URL=ghe.pipelinesascode.com
-          export TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP=pipelines-as-code/e2e
-          # TODO: webhook repo for second github
-          # export TEST_GITHUB_SECOND_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
-          export TEST_GITHUB_SECOND_REPO_INSTALLATION_ID=1
-          export TEST_GITHUB_SECOND_TOKEN="${{ secrets.TEST_GITHUB_SECOND_TOKEN }}"
-
-          export TEST_GITLAB_API_URL="https://gitlab.com"
-          export TEST_GITLAB_PROJECT_ID="34405323"
-          export TEST_GITLAB_TOKEN=${{ secrets.GITLAB_TOKEN }}
-          # https://gitlab.com/gitlab-com/alliances/ibm-red-hat/sandbox/openshift-pipelines/pac-e2e-tests
-          make test-e2e
+      - name: Run E2E Tests on pull_request
+        if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+        run: |
+         export NIGHTLY_E2E_TEST="true"
+         ./hack/gh-workflow-ci.sh run_e2e_tests \
+          "${{ secrets.BITBUCKET_CLOUD_TOKEN }}" \
+          "${{ secrets.WEBHOOK_SECRET }}" \
+          "${{ secrets.TEST_GITEA_SMEEURL }}" \
+          "${{ secrets.INSTALLATION_ID }}" \
+          "${{ secrets.GH_APPS_TOKEN }}" \
+          "${{ secrets.TEST_GITHUB_SECOND_TOKEN }}" \
+          "${{ secrets.GITLAB_TOKEN }}"
 
       - name: Collect logs
         if: ${{ always() }}
         run: |
-          mkdir -p /tmp/logs
-          kind export logs /tmp/logs
-          [[ -d /tmp/gosmee-replay ]] && cp -a /tmp/gosmee-replay /tmp/logs/
-
-          kubectl get pipelineruns -A -o yaml > /tmp/logs/pac-pipelineruns.yaml
-          kubectl get repositories.pipelinesascode.tekton.dev -A -o yaml > /tmp/logs/pac-repositories.yaml
-          kubectl get configmap -n pipelines-as-code -o yaml > /tmp/logs/pac-configmap
-          kubectl get events -A > /tmp/logs/events
+         ./hack/gh-workflow-ci.sh collect_logs
 
       - name: Upload artifacts
         if: ${{ always() }}
