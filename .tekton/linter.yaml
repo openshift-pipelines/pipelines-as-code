@@ -83,7 +83,6 @@ spec:
               workingDir: $(workspaces.source.path)
               script: |
                 shellcheck $(find hack/ -type f -regex ".*sh" -print)
-
       - name: gitlint
         displayName: "Git commit linter"
         runAfter:

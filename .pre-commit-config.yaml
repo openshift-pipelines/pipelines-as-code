@@ -27,40 +27,33 @@ repos:
       - id: codespell
         files: "^(docs/content|pkg|test)/.*"
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.7
+    rev: v0.1.11
     hooks:
       - id: ruff
         args: ["--fix"]
       - id: ruff-format
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint-fix-docker
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        args: [-c=.yamllint]
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v1.55.2
+    hooks:
+      - id: golangci-lint
+        args: ["./pkg/...", "./test/..."]
   - repo: local
     hooks:
-      - id: lint-markdown
-        name: "Lint Markdown"
-        entry: make
-        args: ["lint-md"]
-        language: system
-        types: [markdown]
-        pass_filenames: false
-      - id: lint-go
-        name: "Lint GO"
-        entry: make
-        args: ["lint-go"]
-        language: system
-        types: [go]
-        pass_filenames: false
       - id: test
         name: "Unit testing"
         entry: make
         args: ["test"]
         language: system
         types: [go]
-        pass_filenames: false
-      - id: lint-yaml
-        name: "Lint YAML"
-        entry: make
-        args: ["lint-yaml"]
-        language: system
-        types: [yaml]
         pass_filenames: false
       - id: check-generated
         name: "Check generated vendor and golden files"
