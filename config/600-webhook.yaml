@@ -58,6 +58,8 @@ spec:
               value: pipelines-as-code-webhook-certs
             - name: METRICS_DOMAIN
               value: tekton.dev/pipelinesascode
+            - name: CONFIG_LEADERELECTION_NAME
+              value: pac-webhook-config-leader-election
           ports:
             - name: https-webhook
               containerPort: 8443

@@ -58,6 +58,8 @@ spec:
             value: tekton.dev/pipelinesascode
           - name: CONFIG_OBSERVABILITY_NAME
             value: pipelines-as-code-config-observability
+          - name: CONFIG_LEADERELECTION_NAME
+            value: pac-watcher-config-leader-election
           ports:
           - name: probes
             containerPort: 8080
