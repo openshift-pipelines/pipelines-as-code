@@ -1,6 +1,6 @@
 ---
-title: Running the PipelineRun
-weight: 4
+title: Metrics
+weight: 16
 ---
 
 # Metrics Overview
