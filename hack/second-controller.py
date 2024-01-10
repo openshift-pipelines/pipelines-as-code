@@ -119,6 +119,7 @@ with open("config/400-controller.yaml", "r", encoding="utf-8") as f:
         args.label + "-controller"
     )
     controller["metadata"]["name"] = args.label + "-controller"
+    controller["metadata"]["namespace"] = args.namespace
     controller["spec"]["template"]["metadata"]["labels"]["app"] = (
         args.label + "-controller"
     )
@@ -142,6 +143,7 @@ with open("config/401-controller-service.yaml", "r", encoding="utf-8") as f:
     service = yaml.load(f, Loader=yaml.FullLoader)
     service["spec"]["selector"]["app.kubernetes.io/name"] = args.label + "-controller"
     service["metadata"]["name"] = args.label + "-controller"
+    service["metadata"]["namespace"] = args.namespace
     service["metadata"]["labels"]["app"] = args.label
     service["metadata"]["labels"]["app.kubernetes.io/name"] = args.label + "-controller"
 
@@ -149,6 +151,7 @@ configmap = {}
 with open("config/302-pac-configmap.yaml", "r", encoding="utf-8") as f:
     configmap = yaml.load(f, Loader=yaml.FullLoader)
     configmap["metadata"]["name"] = args.configmap
+    configmap["metadata"]["namespace"] = args.namespace
 
 # re-encode as YAML to stdout
 for obj in [controller, service, configmap]:
