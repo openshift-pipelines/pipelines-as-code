@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -47,27 +48,18 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 
 	switch e := eventPayload.(type) {
 	case *types.PullRequestEvent:
+		processedEvent.TriggerTarget = "pull_request"
 		if provider.Valid(eventType, []string{"pr:from_ref_updated", "pr:opened"}) {
-			processedEvent.TriggerTarget = "pull_request"
 			processedEvent.EventType = "pull_request"
 		} else if provider.Valid(eventType, []string{"pr:comment:added", "pr:comment:edited"}) {
+			processedEvent.EventType, processedEvent.TargetTestPipelineRun = opscomments.SetEventTypeTestPipelineRun(e.Comment.Text)
 			switch {
-			case provider.IsTestRetestComment(e.Comment.Text):
-				processedEvent.TriggerTarget = "pull_request"
-				if strings.Contains(e.Comment.Text, "/test") {
-					processedEvent.EventType = "test-comment"
-				} else {
-					processedEvent.EventType = "retest-comment"
-				}
-				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(e.Comment.Text)
-			case provider.IsOkToTestComment(e.Comment.Text):
-				processedEvent.TriggerTarget = "pull_request"
+			case opscomments.IsOkToTestComment(e.Comment.Text):
 				processedEvent.EventType = "ok-to-test-comment"
-			case provider.IsCancelComment(e.Comment.Text):
-				processedEvent.TriggerTarget = "pull_request"
+			case opscomments.IsCancelComment(e.Comment.Text):
 				processedEvent.EventType = "cancel-comment"
 				processedEvent.CancelPipelineRuns = true
-				processedEvent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(e.Comment.Text)
+				processedEvent.TargetCancelPipelineRun = opscomments.GetPipelineRunFromCancelComment(e.Comment.Text)
 			}
 		}
 		// TODO: It's Really not an OWNER but a PROJECT
@@ -88,6 +80,9 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 			}
 		}
 		v.pullRequestNumber = e.PulRequest.ID
+		if processedEvent.EventType == "" {
+			processedEvent.EventType = "pull_request"
+		}
 	case *types.PushRequestEvent:
 		processedEvent.Event = "push"
 		processedEvent.TriggerTarget = "push"

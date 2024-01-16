@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v56/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
@@ -17,7 +18,7 @@ import (
 
 func TestGithubSecondPullRequestTest(t *testing.T) {
 	ctx := context.TODO()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:            "Github test comment",
 		YamlFiles:        []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"},
 		SecondController: true,
@@ -40,11 +41,37 @@ func TestGithubSecondPullRequestTest(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       sha,
 	}
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
 	repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
+}
+
+func TestGithubSecondTestExplicitelyNoMatchedPipelineRun(t *testing.T) {
+	ctx := context.Background()
+	g := tgithub.PRTest{
+		Label:            "Github test implicit comment",
+		YamlFiles:        []string{"testdata/pipelinerun-nomatch.yaml"},
+		SecondController: true,
+		NoStatusCheck:    true,
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
+	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+
+	runcnx.Clients.Log.Infof("Creating /test no-match on PullRequest")
+	_, _, err := ghcnx.Client.Issues.CreateComment(ctx,
+		opts.Organization,
+		opts.Repo, prNumber,
+		&github.IssueComment{Body: github.String("/test no-match")})
+	assert.NilError(t, err)
+	sopt := twait.SuccessOpt{
+		Title:           g.Label,
+		OnEvent:         opscomments.TestCommentEventType.String(),
+		TargetNS:        targetNS,
+		NumberofPRMatch: len(g.YamlFiles),
+	}
+	twait.Succeeded(ctx, t, runcnx, opts, sopt)
 }

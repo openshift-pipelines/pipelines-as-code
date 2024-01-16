@@ -141,6 +141,11 @@ roses are red, violets are blue. pipeline are bound to flake by design.
 /test <pipelinerun-name>
 ```
 
+Note that the `/test <pipelinerun-name>` comment will start the `PipelineRun`
+regardless if the pipelinerun is matching the annotations. This let you have
+explicit control of PipelineRun for some type of Pull Requests controlled by the
+user instead of events.
+
 ### GitOps command on push request
 
 To trigger GitOps commands in response to a push request, you can include `GitOps`

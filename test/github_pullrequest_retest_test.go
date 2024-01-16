@@ -23,7 +23,7 @@ func TestGithubPullRequestRetest(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:     "Github Retest comment",
 		YamlFiles: []string{"testdata/pipelinerun.yaml"},
 	}
@@ -45,7 +45,7 @@ func TestGithubPullRequestRetest(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       sha,
 	}
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
@@ -57,7 +57,7 @@ func TestGithubPullRequestRetest(t *testing.T) {
 // TestGithubPullRequestGitOpsComments tests GitOps comments /test, /retest and /cancel commands.
 func TestGithubPullRequestGitOpsComments(t *testing.T) {
 	ctx := context.Background()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:     "Github Retest comment",
 		YamlFiles: []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-gitops.yaml"},
 	}
@@ -110,7 +110,7 @@ func TestGithubPullRequestGitOpsComments(t *testing.T) {
 			assert.NilError(t, err)
 
 			runcnx.Clients.Log.Info("Waiting for Repository to be updated")
-			err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+			_, err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 			assert.NilError(t, err)
 
 			runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")

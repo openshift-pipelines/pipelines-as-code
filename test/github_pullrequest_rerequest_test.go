@@ -27,7 +27,7 @@ func TestGithubPullRerequest(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.TODO()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:     "Github Rerequest",
 		YamlFiles: []string{"testdata/pipelinerun.yaml"},
 	}
@@ -91,7 +91,7 @@ func TestGithubPullRerequest(t *testing.T) {
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Wait for the second repository update to be updated")
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, twait.Opts{
+	_, err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, twait.Opts{
 		RepoName:        targetNS,
 		Namespace:       targetNS,
 		MinNumberStatus: 1,
@@ -141,7 +141,7 @@ func TestGithubPullRerequest(t *testing.T) {
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Wait for the second repository update to be updated")
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, twait.Opts{
+	_, err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, twait.Opts{
 		RepoName:        targetNS,
 		Namespace:       targetNS,
 		MinNumberStatus: 2,

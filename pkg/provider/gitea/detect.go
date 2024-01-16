@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	giteaStructs "code.gitea.io/gitea/modules/structs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
@@ -60,13 +61,13 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.Trigge
 		if event.Action == "created" &&
 			event.Issue.PullRequest != nil &&
 			event.Issue.State == "open" {
-			if provider.IsTestRetestComment(event.Comment.Body) {
+			if opscomments.IsTestRetestComment(event.Comment.Body) != opscomments.NoCommentEventType {
 				return info.TriggerTypeRetest, ""
 			}
-			if provider.IsOkToTestComment(event.Comment.Body) {
+			if opscomments.IsOkToTestComment(event.Comment.Body) {
 				return info.TriggerTypeOkToTest, ""
 			}
-			if provider.IsCancelComment(event.Comment.Body) {
+			if opscomments.IsCancelComment(event.Comment.Body) {
 				return info.TriggerTypeCancel, ""
 			}
 			// this ignores the comment if it is not a PAC gitops comment and not return an error

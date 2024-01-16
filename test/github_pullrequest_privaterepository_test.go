@@ -17,7 +17,7 @@ func TestGithubPullRequestGitClone(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:     "Github Private Repo",
 		YamlFiles: []string{"testdata/pipelinerun_git_clone_private.yaml"},
 	}
@@ -27,7 +27,7 @@ func TestGithubPullRequestGitClone(t *testing.T) {
 
 func TestGithubSecondPullRequestGitClone(t *testing.T) {
 	ctx := context.Background()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:            "Github Private Repo on Second controller",
 		YamlFiles:        []string{"testdata/pipelinerun_git_clone_private.yaml"},
 		SecondController: true,
@@ -41,7 +41,7 @@ func TestGithubPullRequestPrivateRepositoryOnWebhook(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:     "Github Private Repo on webhook",
 		YamlFiles: []string{"testdata/pipelinerun_git_clone_private.yaml"},
 		Webhook:   true,

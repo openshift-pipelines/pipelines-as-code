@@ -14,9 +14,9 @@ import (
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v56/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -284,7 +284,9 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		return nil, errors.New("this event is not supported")
 	}
 
-	processedEvent.TriggerTarget = event.TriggerTarget
+	if processedEvent.TriggerTarget == "" {
+		processedEvent.TriggerTarget = event.TriggerTarget
+	}
 	processedEvent.Provider.Token = event.Provider.Token
 
 	return processedEvent, nil
@@ -357,20 +359,16 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
 	runevent.Repository = event.GetRepo().GetName()
 	runevent.Sender = event.GetSender().GetLogin()
-	// Always set the trigger target as pull_request on issue comment events
-	runevent.TriggerTarget = "pull_request"
 	if !event.GetIssue().IsPullRequest() {
 		return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
 	}
 
-	// if it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
-	if provider.IsTestRetestComment(event.GetComment().GetBody()) {
-		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(event.GetComment().GetBody())
-	}
-	if provider.IsCancelComment(event.GetComment().GetBody()) {
+	runevent.EventType, runevent.TargetTestPipelineRun = opscomments.SetEventTypeTestPipelineRun(event.GetComment().GetBody())
+
+	if opscomments.IsCancelComment(event.GetComment().GetBody()) {
 		action = "cancellation"
 		runevent.CancelPipelineRuns = true
-		runevent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(event.GetComment().GetBody())
+		runevent.TargetCancelPipelineRun = opscomments.GetPipelineRunFromCancelComment(event.GetComment().GetBody())
 	}
 	// We are getting the full URL so we have to get the last part to get the PR number,
 	// we don't have to care about URL query string/hash and other stuff because
@@ -407,17 +405,17 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 	)
 
 	// If it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
-	if provider.IsTestRetestComment(event.GetComment().GetBody()) {
-		prName, branchName, err = provider.GetPipelineRunAndBranchNameFromTestComment(event.GetComment().GetBody())
+	if opscomments.IsTestRetestComment(event.GetComment().GetBody()) != opscomments.NoCommentEventType {
+		prName, branchName, err = opscomments.GetPipelineRunAndBranchNameFromTestComment(event.GetComment().GetBody())
 		if err != nil {
 			return runevent, err
 		}
 		runevent.TargetTestPipelineRun = prName
 	}
 	// Check for /cancel comment
-	if provider.IsCancelComment(event.GetComment().GetBody()) {
+	if opscomments.IsCancelComment(event.GetComment().GetBody()) {
 		action = "cancellation"
-		prName, branchName, err = provider.GetPipelineRunAndBranchNameFromCancelComment(event.GetComment().GetBody())
+		prName, branchName, err = opscomments.GetPipelineRunAndBranchNameFromCancelComment(event.GetComment().GetBody())
 		if err != nil {
 			return runevent, err
 		}
@@ -432,7 +430,7 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 
 	// Check if the specified branch contains the commit
 	if err = v.isBranchContainsCommit(ctx, runevent, branchName); err != nil {
-		if provider.IsCancelComment(event.GetComment().GetBody()) {
+		if opscomments.IsCancelComment(event.GetComment().GetBody()) {
 			runevent.CancelPipelineRuns = false
 		}
 		return runevent, err

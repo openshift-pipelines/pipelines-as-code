@@ -31,6 +31,7 @@ const (
 	SHA             = pipelinesascode.GroupName + "/sha"
 	Sender          = pipelinesascode.GroupName + "/sender"
 	EventType       = pipelinesascode.GroupName + "/event-type"
+	TriggerTarget   = pipelinesascode.GroupName + "/trigger-target"
 	Branch          = pipelinesascode.GroupName + "/branch"
 	Repository      = pipelinesascode.GroupName + "/repository"
 	GitProvider     = pipelinesascode.GroupName + "/git-provider"

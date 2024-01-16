@@ -77,7 +77,7 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 			SHA: commit.SHA,
 		},
 	}
-	vref, _, err := client.Git.CreateRef(ctx, owner, repo, ref)
+	_, _, err = client.Git.CreateRef(ctx, owner, repo, ref)
 	if err != nil {
 		return "", nil, err
 	}
@@ -99,21 +99,21 @@ func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, o
 	return pr.GetNumber(), nil
 }
 
-type GitHubTest struct {
+type PRTest struct {
 	Label            string
 	YamlFiles        []string
 	SecondController bool
 	Webhook          bool
+	NoStatusCheck    bool
 }
 
-func RunPullRequest(ctx context.Context, t *testing.T, g GitHubTest) (*params.Run, *ghprovider.Provider, options.E2E, string, string, int, string) {
+func RunPullRequest(ctx context.Context, t *testing.T, g PRTest) (*params.Run, *ghprovider.Provider, options.E2E, string, string, int, string) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
 	ctx, runcnx, opts, ghcnx, err := Setup(ctx, g.SecondController, g.Webhook)
 	assert.NilError(t, err)
 
-	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, targetNS)
-	runcnx.Clients.Log.Info(logmsg)
+	runcnx.Clients.Log.Info(g.Label)
 
 	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
@@ -136,22 +136,23 @@ func RunPullRequest(ctx context.Context, t *testing.T, g GitHubTest) (*params.Ru
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, vref, err := PushFilesToRef(ctx, ghcnx.Client, logmsg, repoinfo.GetDefaultBranch(), targetRefName,
-		opts.Organization, opts.Repo, entries)
+	sha, vref, err := PushFilesToRef(ctx, ghcnx.Client, g.Label, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
 	number, err := PRCreate(ctx, runcnx, ghcnx, opts.Organization,
-		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), logmsg)
+		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), g.Label)
 	assert.NilError(t, err)
 
-	sopt := wait.SuccessOpt{
-		Title:           logmsg,
-		OnEvent:         options.PullRequestEvent,
-		TargetNS:        targetNS,
-		NumberofPRMatch: len(g.YamlFiles),
-		SHA:             sha,
+	if !g.NoStatusCheck {
+		sopt := wait.SuccessOpt{
+			Title:           g.Label,
+			OnEvent:         options.PullRequestEvent,
+			TargetNS:        targetNS,
+			NumberofPRMatch: len(g.YamlFiles),
+			SHA:             sha,
+		}
+		wait.Succeeded(ctx, t, runcnx, opts, sopt)
 	}
-	wait.Succeeded(ctx, t, runcnx, opts, sopt)
 	return runcnx, ghcnx, opts, targetNS, targetRefName, number, sha
 }
 

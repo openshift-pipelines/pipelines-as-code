@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/v56/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
@@ -67,13 +68,13 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.Trigge
 		if event.GetAction() == "created" &&
 			event.GetIssue().IsPullRequest() &&
 			event.GetIssue().GetState() == "open" {
-			if provider.IsTestRetestComment(event.GetComment().GetBody()) {
+			if opscomments.IsTestRetestComment(event.GetComment().GetBody()) != opscomments.NoCommentEventType {
 				return info.TriggerTypeRetest, ""
 			}
-			if provider.IsOkToTestComment(event.GetComment().GetBody()) {
+			if opscomments.IsOkToTestComment(event.GetComment().GetBody()) {
 				return info.TriggerTypeOkToTest, ""
 			}
-			if provider.IsCancelComment(event.GetComment().GetBody()) {
+			if opscomments.IsCancelComment(event.GetComment().GetBody()) {
 				return info.TriggerTypeCancel, ""
 			}
 		}
@@ -90,13 +91,13 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.Trigge
 		return "", fmt.Sprintf("check_run: unsupported action \"%s\"", event.GetAction())
 	case *github.CommitCommentEvent:
 		if event.GetAction() == "created" {
-			if provider.IsTestRetestComment(event.GetComment().GetBody()) {
+			if opscomments.IsTestRetestComment(event.GetComment().GetBody()) != opscomments.NoCommentEventType {
 				return info.TriggerTypeRetest, ""
 			}
-			if provider.IsOkToTestComment(event.GetComment().GetBody()) {
+			if opscomments.IsOkToTestComment(event.GetComment().GetBody()) {
 				return info.TriggerTypeOkToTest, ""
 			}
-			if provider.IsCancelComment(event.GetComment().GetBody()) {
+			if opscomments.IsCancelComment(event.GetComment().GetBody()) {
 				return info.TriggerTypeCancel, ""
 			}
 		}

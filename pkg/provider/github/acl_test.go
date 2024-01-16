@@ -299,7 +299,7 @@ func TestOkToTestComment(t *testing.T) {
 			tt.runevent.TriggerTarget = "ok-to-test-comment"
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-			mux.HandleFunc("/repos/owner/issues/comments/0", func(rw http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc("/repos/owner/issues/comments/0", func(rw http.ResponseWriter, _ *http.Request) {
 				fmt.Fprint(rw, tt.commentsReply)
 			})
 			mux.HandleFunc("/repos/owner/issues/1/comments", func(rw http.ResponseWriter, r *http.Request) {
@@ -311,7 +311,7 @@ func TestOkToTestComment(t *testing.T) {
 					fmt.Fprint(rw, tt.commentsReply)
 				}
 			})
-			mux.HandleFunc("/repos/owner/collaborators", func(rw http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc("/repos/owner/collaborators", func(rw http.ResponseWriter, _ *http.Request) {
 				fmt.Fprint(rw, "[]")
 			})
 			ctx, _ := rtesting.SetupFakeContext(t)
@@ -368,33 +368,33 @@ func TestAclCheckAll(t *testing.T) {
 		}
 	})
 
-	mux.HandleFunc("/orgs/"+orgdenied+"/members", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/orgs/"+orgdenied+"/members", func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(rw, `[]`)
 	})
 
-	mux.HandleFunc("/repos/"+orgdenied+"/collaborators", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/repos/"+orgdenied+"/collaborators", func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(rw, `[]`)
 	})
 
-	mux.HandleFunc("/orgs/"+errit+"/members", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/orgs/"+errit+"/members", func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(rw, `x1x`)
 	})
 
-	mux.HandleFunc("/orgs/"+repoOwnerFileAllowed+"/members", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/orgs/"+repoOwnerFileAllowed+"/members", func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(rw, `[]`)
 	})
-	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/collaborators", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/collaborators", func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(rw, `[]`)
 	})
-	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/contents/OWNERS", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/contents/OWNERS", func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(rw, `{"name": "OWNERS", "path": "OWNERS", "sha": "ownerssha"}`)
 	})
 
-	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/git/blobs/ownerssha", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/repos/"+repoOwnerFileAllowed+"/git/blobs/ownerssha", func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintf(rw, `{"content": "%s"}`, base64.RawStdEncoding.EncodeToString([]byte("approvers:\n  - approved\n")))
 	})
 
-	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/collaborators/%v", collabOwner, collabRepo, collaborator), func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/collaborators/%v", collabOwner, collabRepo, collaborator), func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusNoContent)
 	})
 
@@ -582,7 +582,7 @@ func TestIfPullRequestIsForSameRepoWithoutFork(t *testing.T) {
 			defer teardown()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/pulls/%d",
-				tt.event.Organization, tt.event.Repository, tt.pullRequestNumber), func(rw http.ResponseWriter, r *http.Request) {
+				tt.event.Organization, tt.event.Repository, tt.pullRequestNumber), func(rw http.ResponseWriter, _ *http.Request) {
 				b, _ := json.Marshal(tt.pullRequest)
 				fmt.Fprint(rw, string(b))
 			})

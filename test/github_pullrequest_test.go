@@ -13,7 +13,7 @@ import (
 
 func TestGithubPullRequest(t *testing.T) {
 	ctx := context.Background()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:     "Github PullRequest",
 		YamlFiles: []string{"testdata/pipelinerun.yaml"},
 	}
@@ -23,7 +23,7 @@ func TestGithubPullRequest(t *testing.T) {
 
 func TestGithubPullRequestSecondController(t *testing.T) {
 	ctx := context.Background()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:            "Github PullRequest on Second Controller",
 		YamlFiles:        []string{"testdata/pipelinerun.yaml"},
 		SecondController: true,
@@ -37,7 +37,7 @@ func TestGithubPullRequestMultiples(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:            "Github PullRequest multiple",
 		YamlFiles:        []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"},
 		SecondController: true,
@@ -50,7 +50,7 @@ func TestGithubPullRequestMatchOnCEL(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:     "Github PullRequest CEL annotations",
 		YamlFiles: []string{"testdata/pipelinerun-cel-annotation.yaml"},
 	}
@@ -61,7 +61,7 @@ func TestGithubPullRequestMatchOnCEL(t *testing.T) {
 
 func TestGithubPullRequestCELMatchOnTitle(t *testing.T) {
 	ctx := context.Background()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:     "Github Pull Request CEL annotations for title match",
 		YamlFiles: []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"},
 	}
@@ -78,7 +78,7 @@ func TestGithubPullRequestWebhook(t *testing.T) {
 		return
 	}
 	ctx := context.Background()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:     "Github Pull Request on webhook",
 		YamlFiles: []string{"testdata/pipelinerun.yaml"},
 		Webhook:   true,

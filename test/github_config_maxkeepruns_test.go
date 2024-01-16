@@ -19,7 +19,7 @@ import (
 
 func TestGithubMaxKeepRuns(t *testing.T) {
 	ctx := context.TODO()
-	g := tgithub.GitHubTest{
+	g := tgithub.PRTest{
 		Label:     "Github MaxKeepRun config",
 		YamlFiles: []string{"testdata/pipelinerun-max-keep-run-1.yaml"},
 	}
@@ -41,7 +41,7 @@ func TestGithubMaxKeepRuns(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       sha,
 	}
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	count := 0

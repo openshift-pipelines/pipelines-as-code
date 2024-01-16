@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	giteaStructs "code.gitea.io/gitea/modules/structs"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
 
 func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
@@ -77,14 +77,11 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.Repository = gitEvent.Repository.Name
 		processedEvent.Sender = gitEvent.Sender.UserName
 		processedEvent.TriggerTarget = "pull_request"
-		processedEvent.EventType = "pull_request"
+		processedEvent.EventType, processedEvent.TargetTestPipelineRun = opscomments.SetEventTypeTestPipelineRun(gitEvent.Comment.Body)
 
-		if provider.IsTestRetestComment(gitEvent.Comment.Body) {
-			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(gitEvent.Comment.Body)
-		}
-		if provider.IsCancelComment(gitEvent.Comment.Body) {
+		if opscomments.IsCancelComment(gitEvent.Comment.Body) {
 			processedEvent.CancelPipelineRuns = true
-			processedEvent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(gitEvent.Comment.Body)
+			processedEvent.TargetCancelPipelineRun = opscomments.GetPipelineRunFromCancelComment(gitEvent.Comment.Body)
 		}
 		processedEvent.PullRequestNumber, err = convertPullRequestURLtoNumber(gitEvent.Issue.URL)
 		if err != nil {
@@ -92,6 +89,9 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		}
 		processedEvent.URL = gitEvent.Repository.HTMLURL
 		processedEvent.DefaultBranch = gitEvent.Repository.DefaultBranch
+		if processedEvent.EventType == "" {
+			processedEvent.EventType = "pull_request"
+		}
 	default:
 		return nil, fmt.Errorf("event %s is not supported", eventType)
 	}

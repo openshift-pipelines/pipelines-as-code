@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -114,18 +114,17 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.HeadBranch = gitEvent.MergeRequest.SourceBranch
 		processedEvent.BaseURL = gitEvent.MergeRequest.Target.WebURL
 		processedEvent.HeadURL = gitEvent.MergeRequest.Source.WebURL
-		// if it is a /test or /retest comment with pipelinerun name figure out the pipelineRun name
-		if provider.IsTestRetestComment(gitEvent.ObjectAttributes.Note) {
-			processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(gitEvent.ObjectAttributes.Note)
+		processedEvent.TriggerTarget = "pull_request"
+		processedEvent.EventType, processedEvent.TargetTestPipelineRun = opscomments.SetEventTypeTestPipelineRun(gitEvent.ObjectAttributes.Note)
+		if opscomments.IsCancelComment(gitEvent.ObjectAttributes.Note) {
+			processedEvent.TargetCancelPipelineRun = opscomments.GetPipelineRunFromCancelComment(gitEvent.ObjectAttributes.Note)
 		}
-		if provider.IsCancelComment(gitEvent.ObjectAttributes.Note) {
-			processedEvent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(gitEvent.ObjectAttributes.Note)
+		if processedEvent.EventType == "" {
+			processedEvent.EventType = "pull_request"
 		}
 
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
-		processedEvent.TriggerTarget = "pull_request"
-
 		processedEvent.PullRequestNumber = gitEvent.MergeRequest.IID
 		v.targetProjectID = gitEvent.MergeRequest.TargetProjectID
 		v.sourceProjectID = gitEvent.MergeRequest.SourceProjectID
@@ -141,7 +140,9 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 	// Remove the " Hook" suffix so looks better in status, and since we don't
 	// really use it anymore we good to do whatever we want with it for
 	// cosmetics.
-	processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
+	if processedEvent.EventType == "" {
+		processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
+	}
 
 	v.repoURL = processedEvent.URL
 	return processedEvent, nil

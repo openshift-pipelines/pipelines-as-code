@@ -14,6 +14,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -1010,7 +1011,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			}
 
 			ghCs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
-			runTest(ctx, t, tt, vcx, ghCs)
+			runAMTest(ctx, t, tt, vcx, ghCs)
 
 			glFakeClient, glMux, glTeardown := gltesthelper.Setup(t)
 			defer glTeardown()
@@ -1058,12 +1059,12 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				Token: "NONE",
 			}
 
-			runTest(ctx, t, tt, glVcx, ghCs)
+			runAMTest(ctx, t, tt, glVcx, ghCs)
 		})
 	}
 }
 
-func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.Interface, cs testclient.Clients) {
+func runAMTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.Interface, cs testclient.Clients) {
 	t.Helper()
 	observer, log := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
@@ -1108,6 +1109,14 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			Annotations: map[string]string{
 				keys.OnEvent:        "[pull_request]",
 				keys.OnTargetBranch: "[main]",
+			},
+		},
+	}
+	pipelineRunNoMatch := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "no-match",
+			Annotations: map[string]string{
+				"bar": "foo",
 			},
 		},
 	}
@@ -1184,6 +1193,22 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 			wantErr:    false,
 			wantPrName: "pipeline-good",
+		},
+		{
+			name: "no-match-explicit-test-run",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{pipelineRunNoMatch},
+				runevent: info.Event{
+					TriggerTarget: "pull_request",
+					EventType:     opscomments.TestCommentEventType.String(),
+					State: info.State{
+						TargetTestPipelineRun: "no-match",
+					},
+				},
+			},
+			wantErr:    false,
+			wantPrName: "no-match",
+			wantLog:    "allowing pipelinerun no-match without annotations to run for implicit /test comment",
 		},
 		{
 			name: "first-one-match-with-two-good-ones",
@@ -1421,8 +1446,8 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 					matches[0].PipelineRun.GetName(), tt.wantPrName)
 			}
 			if tt.wantLog != "" {
-				logmsg := log.TakeAll()
-				assert.Assert(t, len(logmsg) > 0, "We didn't get any log message")
+				logmsg := log.FilterMessageSnippet(tt.wantLog).TakeAll()
+				assert.Assert(t, len(logmsg) > 0, "We didn't get any log messages, we want %s, messages received are, %+v", log.TakeAll())
 				assert.Assert(t, strings.Contains(logmsg[0].Message, tt.wantLog), logmsg[0].Message, tt.wantLog)
 			}
 		})

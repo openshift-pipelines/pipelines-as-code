@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v56/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
@@ -116,20 +117,34 @@ func TestParsePayload(t *testing.T) {
 				payload: sample.NoteEventAsJSON(""),
 			},
 			want: &info.Event{
-				EventType:     "Note",
+				EventType:     "pull_request",
 				TriggerTarget: "pull_request",
 				Organization:  "hello-this-is-me-ze",
 				Repository:    "project",
 			},
 		},
 		{
-			name: "note event test",
+			name: "comment test",
 			args: args{
 				event:   gitlab.EventTypeNote,
 				payload: sample.NoteEventAsJSON("/test dummy"),
 			},
 			want: &info.Event{
-				EventType:     "Note",
+				EventType:     opscomments.TestCommentEventType.String(),
+				TriggerTarget: "pull_request",
+				Organization:  "hello-this-is-me-ze",
+				Repository:    "project",
+				State:         info.State{TargetTestPipelineRun: "dummy"},
+			},
+		},
+		{
+			name: "comment retest",
+			args: args{
+				event:   gitlab.EventTypeNote,
+				payload: sample.NoteEventAsJSON("/retest dummy"),
+			},
+			want: &info.Event{
+				EventType:     opscomments.RetestCommentEventType.String(),
 				TriggerTarget: "pull_request",
 				Organization:  "hello-this-is-me-ze",
 				Repository:    "project",
@@ -143,7 +158,7 @@ func TestParsePayload(t *testing.T) {
 				payload: sample.NoteEventAsJSON("/cancel"),
 			},
 			want: &info.Event{
-				EventType:     "Note",
+				EventType:     "pull_request",
 				TriggerTarget: "pull_request",
 				Organization:  "hello-this-is-me-ze",
 				Repository:    "project",
@@ -156,7 +171,7 @@ func TestParsePayload(t *testing.T) {
 				payload: sample.NoteEventAsJSON("/cancel dummy"),
 			},
 			want: &info.Event{
-				EventType:     "Note",
+				EventType:     "pull_request",
 				TriggerTarget: "pull_request",
 				Organization:  "hello-this-is-me-ze",
 				Repository:    "project",

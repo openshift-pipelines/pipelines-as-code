@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
 	"go.uber.org/zap"
@@ -41,13 +42,13 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			return setLoggerAndProceed(true, "", nil)
 		}
 		if provider.Valid(event, []string{"pullrequest:comment_created"}) {
-			if provider.IsTestRetestComment(e.Comment.Content.Raw) {
+			if opscomments.IsTestRetestComment(e.Comment.Content.Raw) != opscomments.NoCommentEventType {
 				return setLoggerAndProceed(true, "", nil)
 			}
-			if provider.IsOkToTestComment(e.Comment.Content.Raw) {
+			if opscomments.IsOkToTestComment(e.Comment.Content.Raw) {
 				return setLoggerAndProceed(true, "", nil)
 			}
-			if provider.IsCancelComment(e.Comment.Content.Raw) {
+			if opscomments.IsCancelComment(e.Comment.Content.Raw) {
 				return setLoggerAndProceed(true, "", nil)
 			}
 		}

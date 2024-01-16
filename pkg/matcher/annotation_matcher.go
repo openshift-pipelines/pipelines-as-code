@@ -10,6 +10,7 @@ import (
 	"github.com/google/cel-go/common/types"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -114,7 +115,13 @@ func getTargetBranch(prun *tektonv1.PipelineRun, logger *zap.SugaredLogger, even
 		}
 	}
 
-	if targetEvent == "" || targetBranch == "" {
+	if event.TargetTestPipelineRun != "" && event.EventType == opscomments.TestCommentEventType.String() {
+		name := prun.GetGenerateName()
+		if name == "" {
+			name = prun.GetName()
+		}
+		logger.Infof("allowing pipelinerun %s without annotations to run for implicit /test comment", name)
+	} else if targetEvent == "" || targetBranch == "" {
 		logger.Infof("skipping pipelinerun %s, no on-target-event or on-target-branch has been set in pipelinerun", prun.GetGenerateName())
 		return false, "", "", nil
 	}

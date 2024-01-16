@@ -37,8 +37,8 @@ func AddLabelsAndAnnotations(ctx context.Context, event *info.Event, pipelineRun
 		keys.URLRepository:             formatting.CleanValueKubernetes(event.Repository),
 		keys.SHA:                       formatting.CleanValueKubernetes(event.SHA),
 		keys.Repository:                formatting.CleanValueKubernetes(repo.GetName()),
-		keys.State:                     StateStarted,
 		keys.EventType:                 formatting.CleanValueKubernetes(event.EventType),
+		keys.State:                     StateStarted,
 
 		// We are deprecating these below keys from labels and adding it to Annotations
 		// In PAC v0.20.x releases we will remove these keys from Labels
@@ -55,12 +55,18 @@ func AddLabelsAndAnnotations(ctx context.Context, event *info.Event, pipelineRun
 		keys.URLRepository:  event.Repository,
 		keys.SHA:            event.SHA,
 		keys.Sender:         event.Sender,
-		keys.EventType:      event.EventType,
 		keys.Branch:         event.BaseBranch,
 		keys.Repository:     repo.GetName(),
 		keys.GitProvider:    providerinfo.Name,
 		keys.State:          StateStarted,
 		keys.ControllerInfo: fmt.Sprintf(`{"name":"%s","configmap":"%s","secret":"%s"}`, paramsinfo.Controller.Name, paramsinfo.Controller.Configmap, paramsinfo.Controller.Secret),
+	}
+
+	if event.EventType != "" {
+		annotations[keys.EventType] = event.EventType
+	}
+	if event.TriggerTarget != "" {
+		annotations[keys.TriggerTarget] = event.TriggerTarget
 	}
 
 	if event.PullRequestNumber != 0 {

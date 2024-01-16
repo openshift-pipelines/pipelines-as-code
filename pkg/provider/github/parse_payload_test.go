@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v56/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -98,6 +99,8 @@ func TestParsePayLoad(t *testing.T) {
 		muxReplies                 map[string]interface{}
 		shaRet                     string
 		targetPipelinerun          string
+		targetTriggerTarget        string
+		targetEventType            string
 		targetCancelPipelinerun    string
 		wantedBranchName           string
 		isCancelPipelineRunEnabled bool
@@ -270,10 +273,12 @@ func TestParsePayLoad(t *testing.T) {
 			shaRet: "SHAPush",
 		},
 		{
-			name:          "good/issue comment for retest",
-			eventType:     "issue_comment",
-			triggerTarget: "pull_request",
-			githubClient:  true,
+			name:                "good/issue comment for retest",
+			eventType:           "issue_comment",
+			triggerTarget:       "pull_request",
+			githubClient:        true,
+			targetEventType:     opscomments.RetestCommentEventType.String(),
+			targetTriggerTarget: "pull_request",
 			payloadEventStruct: github.IssueCommentEvent{
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
@@ -283,6 +288,49 @@ func TestParsePayLoad(t *testing.T) {
 				Repo: sampleRepo,
 				Comment: &github.IssueComment{
 					Body: github.String("/retest dummy"),
+				},
+			},
+			muxReplies:        map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePR},
+			shaRet:            "samplePRsha",
+			targetPipelinerun: "dummy",
+		},
+		{
+			name:                "good/issue comment for /retest",
+			eventType:           "issue_comment",
+			triggerTarget:       "pull_request",
+			githubClient:        true,
+			targetTriggerTarget: "pull_request",
+			targetEventType:     opscomments.RetestAllCommentEventType.String(),
+			payloadEventStruct: github.IssueCommentEvent{
+				Issue: &github.Issue{
+					PullRequestLinks: &github.PullRequestLinks{
+						HTMLURL: github.String("/777"),
+					},
+				},
+				Repo: sampleRepo,
+				Comment: &github.IssueComment{
+					Body: github.String("/retest"),
+				},
+			},
+			muxReplies: map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePR},
+			shaRet:     "samplePRsha",
+		},
+		{
+			name:                "good/issue comment for /test",
+			eventType:           "issue_comment",
+			triggerTarget:       "pull_request",
+			githubClient:        true,
+			targetTriggerTarget: "pull_request",
+			targetEventType:     opscomments.TestCommentEventType.String(),
+			payloadEventStruct: github.IssueCommentEvent{
+				Issue: &github.Issue{
+					PullRequestLinks: &github.PullRequestLinks{
+						HTMLURL: github.String("/777"),
+					},
+				},
+				Repo: sampleRepo,
+				Comment: &github.IssueComment{
+					Body: github.String("/test dummy"),
 				},
 			},
 			muxReplies:        map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePR},
@@ -588,6 +636,12 @@ func TestParsePayLoad(t *testing.T) {
 			}
 			if tt.targetPipelinerun != "" {
 				assert.Equal(t, tt.targetPipelinerun, ret.TargetTestPipelineRun)
+			}
+			if tt.targetTriggerTarget != "" {
+				assert.Equal(t, tt.targetTriggerTarget, ret.TriggerTarget)
+			}
+			if tt.targetEventType != "" {
+				assert.Equal(t, tt.targetEventType, ret.EventType)
 			}
 			if tt.targetCancelPipelinerun != "" {
 				assert.Equal(t, tt.targetCancelPipelinerun, ret.TargetCancelPipelineRun)

@@ -7,9 +7,10 @@ import (
 	"regexp"
 	"strings"
 
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
@@ -191,20 +192,34 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		return nil, err
 	}
 
+	var matchedPRs []matcher.Match
 	// Match the PipelineRun with annotation
-	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx)
-	if err != nil {
-		// Don't fail when you don't have a match between pipeline and annotations
-		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
-		return nil, nil
-	}
-
-	// if event type is incoming then filter out the pipelineruns related to incoming event
-	pipelineRuns = matcher.MatchRunningPipelineRunForIncomingWebhook(p.event.EventType, p.event.TargetPipelineRun, pipelineRuns)
-	if pipelineRuns == nil {
-		msg := fmt.Sprintf("cannot find pipelinerun %s for matching an incoming event in this repository", p.event.TargetPipelineRun)
-		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryCannotLocatePipelineRunForIncomingEvent", msg)
-		return nil, nil
+	// if we are not doing an explicit testing of pipelinerun, via /test
+	// then only grab the pipelineRuns that are matching the events in the annotations
+	if p.event.TargetTestPipelineRun != "" && p.event.EventType == opscomments.TestCommentEventType.String() {
+		p.logger.Infof("explicit matching from a /test comment on pipelinerun %s, skipping annotation matching", p.event.TargetTestPipelineRun)
+		for _, pr := range pipelineRuns {
+			if pr.Name == p.event.TargetTestPipelineRun {
+				matchedPRs = append(matchedPRs, matcher.Match{
+					PipelineRun: pr,
+					Repo:        repo,
+				})
+			}
+		}
+	} else {
+		var err error
+		if matchedPRs, err = matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx); err != nil {
+			// Don't fail when you don't have a match between pipeline and annotations
+			p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
+			return nil, nil
+		}
+		// if event type is incoming then filter out the pipelineruns related to incoming event
+		pipelineRuns = matcher.MatchRunningPipelineRunForIncomingWebhook(p.event.EventType, p.event.TargetPipelineRun, pipelineRuns)
+		if pipelineRuns == nil {
+			msg := fmt.Sprintf("cannot find pipelinerun %s for matching an incoming event in this repository", p.event.TargetPipelineRun)
+			p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryCannotLocatePipelineRunForIncomingEvent", msg)
+			return nil, nil
+		}
 	}
 
 	// if /test command is used then filter out the pipelinerun
@@ -256,7 +271,7 @@ func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1.P
 		return prs
 	}
 	for _, pr := range prs {
-		if prName, ok := pr.GetAnnotations()[apipac.OriginalPRName]; ok {
+		if prName, ok := pr.GetAnnotations()[keys.OriginalPRName]; ok {
 			if prName == testPipeline {
 				return []*tektonv1.PipelineRun{pr}
 			}
@@ -289,7 +304,7 @@ func changeSecret(prs []*tektonv1.PipelineRun) error {
 		if np.Annotations == nil {
 			np.Annotations = map[string]string{}
 		}
-		np.Annotations[apipac.GitAuthSecret] = name
+		np.Annotations[keys.GitAuthSecret] = name
 		prs[k] = np
 	}
 	return nil

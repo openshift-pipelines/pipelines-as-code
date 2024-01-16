@@ -444,13 +444,13 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/statuses/%s",
-				tt.event.Organization, tt.event.Repository, tt.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
+				tt.event.Organization, tt.event.Repository, tt.event.SHA), func(_ http.ResponseWriter, r *http.Request) {
 				body, _ := io.ReadAll(r.Body)
 				assert.Check(t, strings.Contains(string(body), fmt.Sprintf(`"state":"%s"`, tt.expectedConclusion)))
 			})
 			if tt.status.Status == "completed" {
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/issues/%d/comments",
-					tt.event.Organization, tt.event.Repository, issuenumber), func(rw http.ResponseWriter, r *http.Request) {
+					tt.event.Organization, tt.event.Repository, issuenumber), func(_ http.ResponseWriter, r *http.Request) {
 					body, _ := io.ReadAll(r.Body)
 					assert.Equal(t, fmt.Sprintf(`{"body":"%s<br>%s"}`, tt.status.Summary, tt.status.Text)+"\n", string(body))
 				})
@@ -566,7 +566,7 @@ func TestProviderGetExistingCheckRunID(t *testing.T) {
 			v := &Provider{
 				Client: client,
 			}
-			mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA), func(w http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA), func(w http.ResponseWriter, _ *http.Request) {
 				_, _ = fmt.Fprintf(w, tt.jsonret)
 			})
 

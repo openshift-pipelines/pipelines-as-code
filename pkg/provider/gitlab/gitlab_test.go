@@ -545,7 +545,7 @@ func TestGetFiles(t *testing.T) {
 			}
 			if tt.event.TriggerTarget == "pull_request" {
 				mux.HandleFunc(fmt.Sprintf("/projects/0/merge_requests/%d/changes",
-					tt.event.PullRequestNumber), func(rw http.ResponseWriter, r *http.Request) {
+					tt.event.PullRequestNumber), func(rw http.ResponseWriter, _ *http.Request) {
 					jeez, err := json.Marshal(mergeFileChanges)
 					assert.NilError(t, err)
 					_, _ = rw.Write(jeez)
@@ -570,7 +570,7 @@ func TestGetFiles(t *testing.T) {
 			}
 			if tt.event.TriggerTarget == "push" {
 				mux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff", tt.event.SHA),
-					func(rw http.ResponseWriter, r *http.Request) {
+					func(rw http.ResponseWriter, _ *http.Request) {
 						jeez, err := json.Marshal(pushFileChanges)
 						assert.NilError(t, err)
 						_, _ = rw.Write(jeez)

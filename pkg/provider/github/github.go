@@ -432,7 +432,9 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 	runevent.BaseBranch = pr.GetBase().GetRef()
 	runevent.HeadURL = pr.GetHead().GetRepo().GetHTMLURL()
 	runevent.BaseURL = pr.GetBase().GetRepo().GetHTMLURL()
-	runevent.EventType = "pull_request"
+	if runevent.EventType == "" {
+		runevent.EventType = "pull_request"
+	}
 
 	v.RepositoryIDs = []int64{
 		pr.GetBase().GetRepo().GetID(),
