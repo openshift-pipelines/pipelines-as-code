@@ -25,6 +25,7 @@ import (
 )
 
 func TestHandleEvent(t *testing.T) {
+	t.Parallel()
 	ctx, _ := rtesting.SetupFakeContext(t)
 	cs, _ := testclient.SeedTestData(t, ctx, testclient.Data{
 		ConfigMap: []*corev1.ConfigMap{
@@ -80,9 +81,6 @@ func TestHandleEvent(t *testing.T) {
 		},
 		logger: logger,
 	}
-
-	ts := httptest.NewServer(l.handleEvent(ctx))
-	defer ts.Close()
 
 	// valid push event
 	testEvent := github.PushEvent{Pusher: &github.User{ID: github.Int64(101)}}
@@ -143,11 +141,17 @@ func TestHandleEvent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := http.NewRequestWithContext(context.TODO(), tt.requestType, ts.URL, bytes.NewReader(tt.event))
+			tn := tt
+			t.Parallel()
+
+			ts := httptest.NewServer(l.handleEvent(ctx))
+			defer ts.Close()
+
+			req, err := http.NewRequestWithContext(context.Background(), tn.requestType, ts.URL, bytes.NewReader(tn.event))
 			if err != nil {
 				t.Fatalf("error creating request: %s", err)
 			}
-			req.Header.Set("X-Github-Event", tt.eventType)
+			req.Header.Set("X-Github-Event", tn.eventType)
 
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
@@ -155,8 +159,8 @@ func TestHandleEvent(t *testing.T) {
 			}
 			defer resp.Body.Close()
 
-			if resp.StatusCode != tt.statusCode {
-				t.Fatalf("expected status code : %v but got %v ", tt.statusCode, resp.StatusCode)
+			if resp.StatusCode != tn.statusCode {
+				t.Fatalf("expected status code : %v but got %v ", tn.statusCode, resp.StatusCode)
 			}
 		})
 	}
