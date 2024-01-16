@@ -5,7 +5,6 @@ package test
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/google/go-github/v56/github"
@@ -16,13 +15,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubPullRequestTest(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
+func TestGithubSecondPullRequestTest(t *testing.T) {
 	ctx := context.TODO()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, "Github test comment",
-		[]string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"}, false, false)
+	g := tgithub.GitHubTest{
+		Label:            "Github test comment",
+		YamlFiles:        []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"},
+		SecondController: true,
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Creating /test in PullRequest")

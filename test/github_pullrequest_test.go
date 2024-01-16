@@ -13,16 +13,22 @@ import (
 
 func TestGithubPullRequest(t *testing.T) {
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
-		[]string{"testdata/pipelinerun.yaml"}, false, false)
+	g := tgithub.GitHubTest{
+		Label:     "Github PullRequest",
+		YamlFiles: []string{"testdata/pipelinerun.yaml"},
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
 func TestGithubPullRequestSecondController(t *testing.T) {
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(
-		ctx, t, "Github PullRequest", []string{"testdata/pipelinerun.yaml"}, true, false,
-	)
+	g := tgithub.GitHubTest{
+		Label:            "Github PullRequest on Second Controller",
+		YamlFiles:        []string{"testdata/pipelinerun.yaml"},
+		SecondController: true,
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
@@ -31,8 +37,12 @@ func TestGithubPullRequestMultiples(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
-		[]string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"}, false, false)
+	g := tgithub.GitHubTest{
+		Label:            "Github PullRequest multiple",
+		YamlFiles:        []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"},
+		SecondController: true,
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
@@ -40,16 +50,22 @@ func TestGithubPullRequestMatchOnCEL(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
+	g := tgithub.GitHubTest{
+		Label:     "Github PullRequest CEL annotations",
+		YamlFiles: []string{"testdata/pipelinerun-cel-annotation.yaml"},
+	}
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
-		[]string{"testdata/pipelinerun-cel-annotation.yaml"}, false, false)
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
 func TestGithubPullRequestCELMatchOnTitle(t *testing.T) {
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, "Github PullRequest",
-		[]string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"}, false, false)
+	g := tgithub.GitHubTest{
+		Label:     "Github Pull Request CEL annotations for title match",
+		YamlFiles: []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"},
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
@@ -62,9 +78,12 @@ func TestGithubPullRequestWebhook(t *testing.T) {
 		return
 	}
 	ctx := context.Background()
-
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t,
-		"Github PullRequest onWebhook", []string{"testdata/pipelinerun.yaml"}, false, true)
+	g := tgithub.GitHubTest{
+		Label:     "Github Pull Request on webhook",
+		YamlFiles: []string{"testdata/pipelinerun.yaml"},
+		Webhook:   true,
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 

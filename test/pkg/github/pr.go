@@ -99,13 +99,20 @@ func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, o
 	return pr.GetNumber(), nil
 }
 
-func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles []string, secondcontroller, webhook bool) (*params.Run, *ghprovider.Provider, options.E2E, string, string, int, string) {
+type GitHubTest struct {
+	Label            string
+	YamlFiles        []string
+	SecondController bool
+	Webhook          bool
+}
+
+func RunPullRequest(ctx context.Context, t *testing.T, g GitHubTest) (*params.Run, *ghprovider.Provider, options.E2E, string, string, int, string) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 
-	ctx, runcnx, opts, ghcnx, err := Setup(ctx, secondcontroller, webhook)
+	ctx, runcnx, opts, ghcnx, err := Setup(ctx, g.SecondController, g.Webhook)
 	assert.NilError(t, err)
 
-	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", label, targetNS)
+	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, targetNS)
 	runcnx.Clients.Log.Info(logmsg)
 
 	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
@@ -118,7 +125,7 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 	assert.NilError(t, err)
 
 	yamlEntries := map[string]string{}
-	for _, v := range yamlFiles {
+	for _, v := range g.YamlFiles {
 		yamlEntries[filepath.Join(".tekton", filepath.Base(v))] = v
 	}
 
@@ -141,7 +148,7 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 		Title:           logmsg,
 		OnEvent:         options.PullRequestEvent,
 		TargetNS:        targetNS,
-		NumberofPRMatch: len(yamlFiles),
+		NumberofPRMatch: len(g.YamlFiles),
 		SHA:             sha,
 	}
 	wait.Succeeded(ctx, t, runcnx, opts, sopt)

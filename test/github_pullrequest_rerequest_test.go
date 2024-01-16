@@ -27,8 +27,11 @@ func TestGithubPullRerequest(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.TODO()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, "Github Rerequest",
-		[]string{"testdata/pipelinerun.yaml"}, false, false)
+	g := tgithub.GitHubTest{
+		Label:     "Github Rerequest",
+		YamlFiles: []string{"testdata/pipelinerun.yaml"},
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)

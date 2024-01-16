@@ -16,15 +16,23 @@ func TestGithubPullRequestGitClone(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t,
-		"Github Private Repo", []string{"testdata/pipelinerun_git_clone_private.yaml"}, false, false)
+
+	g := tgithub.GitHubTest{
+		Label:     "Github Private Repo",
+		YamlFiles: []string{"testdata/pipelinerun_git_clone_private.yaml"},
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
 func TestGithubSecondPullRequestGitClone(t *testing.T) {
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t,
-		"Github Private Repo", []string{"testdata/pipelinerun_git_clone_private.yaml"}, true, false)
+	g := tgithub.GitHubTest{
+		Label:            "Github Private Repo on Second controller",
+		YamlFiles:        []string{"testdata/pipelinerun_git_clone_private.yaml"},
+		SecondController: true,
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 
@@ -33,8 +41,13 @@ func TestGithubPullRequestPrivateRepositoryOnWebhook(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t,
-		"Github Private Repo OnWebhook", []string{"testdata/pipelinerun_git_clone_private.yaml"}, false, true)
+	g := tgithub.GitHubTest{
+		Label:     "Github Private Repo on webhook",
+		YamlFiles: []string{"testdata/pipelinerun_git_clone_private.yaml"},
+		Webhook:   true,
+	}
+
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 }
 

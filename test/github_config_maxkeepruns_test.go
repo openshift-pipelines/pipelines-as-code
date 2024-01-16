@@ -19,9 +19,11 @@ import (
 
 func TestGithubMaxKeepRuns(t *testing.T) {
 	ctx := context.TODO()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t,
-		"Github MaxKeepRun config",
-		[]string{"testdata/pipelinerun-max-keep-run-1.yaml"}, false, false)
+	g := tgithub.GitHubTest{
+		Label:     "Github MaxKeepRun config",
+		YamlFiles: []string{"testdata/pipelinerun-max-keep-run-1.yaml"},
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Creating /retest in PullRequest")

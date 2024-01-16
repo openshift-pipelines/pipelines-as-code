@@ -23,8 +23,11 @@ func TestGithubPullRequestRetest(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t,
-		"Github Retest comment", []string{"testdata/pipelinerun.yaml"}, false, false)
+	g := tgithub.GitHubTest{
+		Label:     "Github Retest comment",
+		YamlFiles: []string{"testdata/pipelinerun.yaml"},
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	runcnx.Clients.Log.Infof("Creating /retest in PullRequest")
@@ -54,8 +57,11 @@ func TestGithubPullRequestRetest(t *testing.T) {
 // TestGithubPullRequestGitOpsComments tests GitOps comments /test, /retest and /cancel commands.
 func TestGithubPullRequestGitOpsComments(t *testing.T) {
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t,
-		"Github Retest comment", []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-gitops.yaml"}, false, false)
+	g := tgithub.GitHubTest{
+		Label:     "Github Retest comment",
+		YamlFiles: []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-gitops.yaml"},
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, g)
 	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 
 	pruns, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
