@@ -22,7 +22,11 @@ type Run struct {
 	Info    info.Info
 }
 
+var mutex = &sync.Mutex{}
+
 func (r *Run) UpdatePACInfo(ctx context.Context) error {
+	mutex.Lock()
+	defer mutex.Unlock()
 	ns := info.GetNS(ctx)
 	if ns == "" {
 		return fmt.Errorf("failed to find namespace")
