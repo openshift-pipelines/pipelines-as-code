@@ -15,6 +15,9 @@
 /pipelines-as-code
 /bin/*
 
+# ignore coverage files 
+coverage*
+
 # ignore tmp files
 tmp/*
 
