@@ -43,8 +43,7 @@ func TestGithubPushRequestCELMatchOnTitle(t *testing.T) {
 			t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
 			continue
 		}
-		runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPushRequest(ctx, t,
-			"Github Push Request", []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"}, false, onWebhook)
+		runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPushRequest(ctx, t, "GitHub Push Request", []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"}, false, onWebhook)
 		defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
 	}
 }

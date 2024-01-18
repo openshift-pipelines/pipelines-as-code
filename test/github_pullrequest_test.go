@@ -62,7 +62,7 @@ func TestGithubPullRequestMatchOnCEL(t *testing.T) {
 func TestGithubPullRequestCELMatchOnTitle(t *testing.T) {
 	ctx := context.Background()
 	g := tgithub.PRTest{
-		Label:     "Github Pull Request CEL annotations for title match",
+		Label:     "Testing GitHub Pull Request CEL annotations for title match",
 		YamlFiles: []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"},
 	}
 	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)

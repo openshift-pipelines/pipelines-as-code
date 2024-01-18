@@ -18,10 +18,10 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (string, *github.Reference, error) {
+func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, baseBranch, targetRef, owner, repo string, files map[string]string) (*github.Commit, error) {
 	maintree, _, err := client.Git.GetTree(ctx, owner, repo, baseBranch, false)
 	if err != nil {
-		return "", nil, fmt.Errorf("error getting tree: %w", err)
+		return nil, fmt.Errorf("error getting tree: %w", err)
 	}
 	mainSha := maintree.GetSHA()
 	entries := []*github.TreeEntry{}
@@ -34,7 +34,7 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 			Encoding: &encoding,
 		})
 		if err != nil {
-			return "", nil, fmt.Errorf("error creating blobs: %w", err)
+			return nil, fmt.Errorf("error creating blobs: %w", err)
 		}
 		sha := blob.GetSHA()
 
@@ -49,7 +49,7 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 
 	tree, _, err := client.Git.CreateTree(ctx, owner, repo, mainSha, entries)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	commitAuthor := "OpenShift Pipelines E2E test"
@@ -68,7 +68,7 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 		},
 	}, &github.CreateCommitOptions{})
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	ref := &github.Reference{
@@ -79,10 +79,10 @@ func PushFilesToRef(ctx context.Context, client *github.Client, commitMessage, b
 	}
 	_, _, err = client.Git.CreateRef(ctx, owner, repo, ref)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
-	return commit.GetSHA(), vref, nil
+	return commit, nil
 }
 
 func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, owner, repo, targetRef, defaultBranch, title string) (int, error) {
@@ -136,9 +136,11 @@ func RunPullRequest(ctx context.Context, t *testing.T, g PRTest) (*params.Run, *
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, vref, err := PushFilesToRef(ctx, ghcnx.Client, g.Label, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
+	commit, err := PushFilesToRef(ctx, ghcnx.Client, g.Label, repoinfo.GetDefaultBranch(), targetRefName,
+		opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
-	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", commit.GetHTMLURL(), targetRefName)
+	sha := commit.GetSHA()
 	number, err := PRCreate(ctx, runcnx, ghcnx, opts.Organization,
 		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), g.Label)
 	assert.NilError(t, err)
@@ -184,13 +186,13 @@ func RunPushRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 		yamlEntries[filepath.Join(".tekton", filepath.Base(v))] = v
 	}
 
-	entries, err := payload.GetEntries(yamlEntries,
-		targetNS, targetBranch, targetEvent, map[string]string{})
+	entries, err := payload.GetEntries(yamlEntries, targetNS, targetBranch, targetEvent, map[string]string{})
 	assert.NilError(t, err)
 
 	targetRefName := fmt.Sprintf("refs/heads/%s", targetBranch)
-	sha, vref, err := PushFilesToRef(ctx, ghcnx.Client, logmsg, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
-	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
+	commit, err := PushFilesToRef(ctx, ghcnx.Client, logmsg, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", commit.GetHTMLURL(), targetRefName)
+	sha := commit.GetSHA()
 	assert.NilError(t, err)
 
 	sopt := wait.SuccessOpt{

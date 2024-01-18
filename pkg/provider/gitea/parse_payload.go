@@ -12,9 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
 
-func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
-	payload string,
-) (*info.Event, error) {
+func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request, payload string) (*info.Event, error) {
 	// TODO: parse request to figure out which event
 	var processedEvent *info.Event
 
