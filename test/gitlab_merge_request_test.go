@@ -40,7 +40,8 @@ func TestGitlabIssueGitopsComment(t *testing.T) {
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
-		".tekton/no-match.yaml": "testdata/pipelinerun-nomatch.yaml",
+		".tekton/no-match.yaml":   "testdata/pipelinerun-nomatch.yaml",
+		".tekton/on-comment.yaml": "testdata/pipelinerun-on-comment-annotation.yaml",
 	}, targetNS, projectinfo.DefaultBranch,
 		options.PullRequestEvent, map[string]string{})
 	assert.NilError(t, err)
@@ -77,6 +78,20 @@ func TestGitlabIssueGitopsComment(t *testing.T) {
 		OnEvent:         opscomments.TestCommentEventType.String(),
 		TargetNS:        targetNS,
 		NumberofPRMatch: 1,
+	}
+	wait.Succeeded(ctx, t, runcnx, opts, sopt)
+
+	_, _, err = glprovider.Client.Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
+		Body: clientGitlab.Ptr("/hello-world"),
+	})
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Infof("Created gitops comment /hello-world")
+
+	sopt = wait.SuccessOpt{
+		Title:           mrTitle,
+		OnEvent:         opscomments.OnCommentEventType.String(),
+		TargetNS:        targetNS,
+		NumberofPRMatch: 2,
 	}
 	wait.Succeeded(ctx, t, runcnx, opts, sopt)
 }

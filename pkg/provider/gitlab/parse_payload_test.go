@@ -144,7 +144,7 @@ func TestParsePayload(t *testing.T) {
 				payload: sample.NoteEventAsJSON("/retest dummy"),
 			},
 			want: &info.Event{
-				EventType:     opscomments.RetestCommentEventType.String(),
+				EventType:     opscomments.RetestSingleCommentEventType.String(),
 				TriggerTarget: "pull_request",
 				Organization:  "hello-this-is-me-ze",
 				Repository:    "project",
@@ -158,7 +158,7 @@ func TestParsePayload(t *testing.T) {
 				payload: sample.NoteEventAsJSON("/cancel"),
 			},
 			want: &info.Event{
-				EventType:     "pull_request",
+				EventType:     opscomments.CancelCommentAllEventType.String(),
 				TriggerTarget: "pull_request",
 				Organization:  "hello-this-is-me-ze",
 				Repository:    "project",
@@ -171,7 +171,7 @@ func TestParsePayload(t *testing.T) {
 				payload: sample.NoteEventAsJSON("/cancel dummy"),
 			},
 			want: &info.Event{
-				EventType:     "pull_request",
+				EventType:     opscomments.CancelCommentSingleEventType.String(),
 				TriggerTarget: "pull_request",
 				Organization:  "hello-this-is-me-ze",
 				Repository:    "project",

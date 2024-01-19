@@ -6,6 +6,154 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+func TestCommentEventTypeTest(t *testing.T) {
+	tests := []struct {
+		name    string
+		comment string
+		want    EventCommentType
+	}{
+		{
+			name:    "retest all",
+			comment: "/retest",
+			want:    RetestAllCommentEventType,
+		},
+		{
+			name:    "retest single",
+			comment: "/retest prname",
+			want:    RetestSingleCommentEventType,
+		},
+		{
+			name:    "test all",
+			comment: "/test",
+			want:    TestCommentEventType,
+		},
+		{
+			name:    "test single",
+			comment: "/test prname",
+			want:    TestCommentEventType,
+		},
+		{
+			name:    "ok to test",
+			comment: "/ok-to-test",
+			want:    OkToTestCommentEventType,
+		},
+		{
+			name:    "no comment event type",
+			comment: "random comment",
+			want:    NoCommentEventType,
+		},
+		{
+			name:    "cancel all",
+			comment: "/cancel",
+			want:    CancelCommentAllEventType,
+		},
+		{
+			name:    "cancel single",
+			comment: "/cancel prname",
+			want:    CancelCommentSingleEventType,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := CommentEventType(tt.comment)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestIsAnyOpsComment(t *testing.T) {
+	tests := []struct {
+		name      string
+		eventType string
+		want      bool
+	}{
+		{
+			name:      "TestCommentEventType",
+			eventType: TestCommentEventType.String(),
+			want:      true,
+		},
+		{
+			name:      "RetestAllCommentEventType",
+			eventType: RetestAllCommentEventType.String(),
+			want:      true,
+		},
+		{
+			name:      "RetestSingleCommentEventType",
+			eventType: RetestSingleCommentEventType.String(),
+			want:      true,
+		},
+		{
+			name:      "CancelCommentSingleEventType",
+			eventType: CancelCommentSingleEventType.String(),
+			want:      true,
+		},
+		{
+			name:      "CancelCommentAllEventType",
+			eventType: CancelCommentAllEventType.String(),
+			want:      true,
+		},
+		{
+			name:      "OnCommentEventType",
+			eventType: OnCommentEventType.String(),
+			want:      true,
+		},
+		{
+			name:      "OkToTestCommentEventType",
+			eventType: OkToTestCommentEventType.String(),
+			want:      true,
+		},
+		{
+			name:      "NoCommentEventType",
+			eventType: NoCommentEventType.String(),
+			want:      false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsAnyOpsComment(tt.eventType)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestSetEventTypeTestPipelineRun(t *testing.T) {
+	tests := []struct {
+		name     string
+		comment  string
+		wantType string
+		wantPr   string
+	}{
+		{
+			name:     "no event type",
+			comment:  "random comment",
+			wantType: "",
+			wantPr:   "",
+		},
+		{
+			name:     "retest single event type",
+			comment:  "/retest prname",
+			wantType: "retest-comment",
+			wantPr:   "prname",
+		},
+		{
+			name:     "test event type",
+			comment:  "/test prname",
+			wantType: "test-comment",
+			wantPr:   "prname",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotType, gotPr := SetEventTypeTestPipelineRun(tt.comment)
+			assert.Equal(t, tt.wantType, gotType)
+			assert.Equal(t, tt.wantPr, gotPr)
+		})
+	}
+}
+
 func TestIsOkToTestComment(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -147,7 +295,7 @@ func TestIsTestRetestComment(t *testing.T) {
 		{
 			name:    "retest trigger single pr",
 			comment: "/retest abc",
-			want:    RetestCommentEventType,
+			want:    RetestSingleCommentEventType,
 		},
 		{
 			name:    "test trigger single pr",
@@ -168,7 +316,7 @@ func TestIsTestRetestComment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := IsTestRetestComment(tt.comment)
+			got := CommentEventType(tt.comment)
 			assert.Equal(t, tt.want, got)
 		})
 	}

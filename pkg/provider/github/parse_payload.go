@@ -362,7 +362,7 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 	if !event.GetIssue().IsPullRequest() {
 		return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
 	}
-
+	runevent.PullRequestComment = event.GetComment().GetBody()
 	runevent.EventType, runevent.TargetTestPipelineRun = opscomments.SetEventTypeTestPipelineRun(event.GetComment().GetBody())
 
 	if opscomments.IsCancelComment(event.GetComment().GetBody()) {
@@ -403,23 +403,26 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 		prName     string
 		err        error
 	)
-
-	// If it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
-	if opscomments.IsTestRetestComment(event.GetComment().GetBody()) != opscomments.NoCommentEventType {
+	commentEventType := opscomments.CommentEventType(event.GetComment().GetBody())
+	// If it is a "/test pr" or "/retest pr" kind of targeted comment then figure out the pipelinerun name
+	if commentEventType == opscomments.TestCommentEventType || commentEventType == opscomments.RetestSingleCommentEventType {
 		prName, branchName, err = opscomments.GetPipelineRunAndBranchNameFromTestComment(event.GetComment().GetBody())
 		if err != nil {
 			return runevent, err
 		}
 		runevent.TargetTestPipelineRun = prName
 	}
+
 	// Check for /cancel comment
-	if opscomments.IsCancelComment(event.GetComment().GetBody()) {
+	if commentEventType == opscomments.CancelCommentAllEventType || commentEventType == opscomments.CancelCommentSingleEventType {
 		action = "cancellation"
+		runevent.CancelPipelineRuns = true
+	}
+	if commentEventType == opscomments.CancelCommentSingleEventType {
 		prName, branchName, err = opscomments.GetPipelineRunAndBranchNameFromCancelComment(event.GetComment().GetBody())
 		if err != nil {
 			return runevent, err
 		}
-		runevent.CancelPipelineRuns = true
 		runevent.TargetCancelPipelineRun = prName
 	}
 

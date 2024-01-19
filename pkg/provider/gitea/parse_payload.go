@@ -76,7 +76,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.Sender = gitEvent.Sender.UserName
 		processedEvent.TriggerTarget = "pull_request"
 		processedEvent.EventType, processedEvent.TargetTestPipelineRun = opscomments.SetEventTypeTestPipelineRun(gitEvent.Comment.Body)
-
+		processedEvent.PullRequestComment = gitEvent.Comment.Body
 		if opscomments.IsCancelComment(gitEvent.Comment.Body) {
 			processedEvent.CancelPipelineRuns = true
 			processedEvent.TargetCancelPipelineRun = opscomments.GetPipelineRunFromCancelComment(gitEvent.Comment.Body)

@@ -41,7 +41,7 @@ func (p *Policy) checkAllowed(ctx context.Context, tType info.TriggerType) (Resu
 	// NOTE: This make /retest /ok-to-test /test bound to the same policy, which is fine from a security standpoint but maybe we want to refine this in the future.
 	case info.TriggerTypeOkToTest, info.TriggerTypeRetest:
 		sType = settings.Policy.OkToTest
-	case info.TriggerTypePullRequest:
+	case info.TriggerTypePullRequest, info.TriggerTypePrComment:
 		sType = settings.Policy.PullRequest
 	// NOTE: not supported yet, will imp if it gets requested and reasonable to implement
 	case info.TriggerTypePush, info.TriggerTypeCancel, info.TriggerTypeCheckSuiteRerequested, info.TriggerTypeCheckRunRerequested:

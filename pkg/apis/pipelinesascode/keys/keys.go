@@ -49,6 +49,7 @@ const (
 	CheckRunID      = pipelinesascode.GroupName + "/check-run-id"
 	OnEvent         = pipelinesascode.GroupName + "/on-event"
 	OnTargetBranch  = pipelinesascode.GroupName + "/on-target-branch"
+	OnComment       = pipelinesascode.GroupName + "/on-comment"
 	OnCelExpression = pipelinesascode.GroupName + "/on-cel-expression"
 	TargetNamespace = pipelinesascode.GroupName + "/target-namespace"
 	MaxKeepRuns     = pipelinesascode.GroupName + "/max-keep-runs"

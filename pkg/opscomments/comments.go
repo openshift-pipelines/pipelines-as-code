@@ -23,10 +23,14 @@ func (e EventCommentType) String() string {
 }
 
 var (
-	RetestCommentEventType    = EventCommentType("retest-comment")
-	TestCommentEventType      = EventCommentType("test-comment")
-	NoCommentEventType        = EventCommentType("")
-	RetestAllCommentEventType = EventCommentType("retest-all-comment")
+	NoCommentEventType           = EventCommentType("")
+	TestCommentEventType         = EventCommentType("test-comment")
+	RetestSingleCommentEventType = EventCommentType("retest-comment")
+	RetestAllCommentEventType    = EventCommentType("retest-all-comment")
+	OnCommentEventType           = EventCommentType("on-comment")
+	CancelCommentSingleEventType = EventCommentType("cancel-comment")
+	CancelCommentAllEventType    = EventCommentType("cancel-all-comment")
+	OkToTestCommentEventType     = EventCommentType("ok-to-test-comment")
 )
 
 const (
@@ -35,14 +39,20 @@ const (
 	cancelComment = "/cancel"
 )
 
-func IsTestRetestComment(comment string) EventCommentType {
+func CommentEventType(comment string) EventCommentType {
 	switch {
 	case retestAllRegex.MatchString(comment):
 		return RetestAllCommentEventType
 	case retestSingleRegex.MatchString(comment):
-		return RetestCommentEventType
+		return RetestSingleCommentEventType
 	case testAllRegex.MatchString(comment) || testSingleRegex.MatchString(comment):
 		return TestCommentEventType
+	case oktotestRegex.MatchString(comment):
+		return OkToTestCommentEventType
+	case cancelAllRegex.MatchString(comment):
+		return CancelCommentAllEventType
+	case cancelSingleRegex.MatchString(comment):
+		return CancelCommentSingleEventType
 	default:
 		return NoCommentEventType
 	}
@@ -50,13 +60,14 @@ func IsTestRetestComment(comment string) EventCommentType {
 
 func SetEventTypeTestPipelineRun(comment string) (string, string) {
 	var eventType, targetTestPipelineRun string
-	testRetestCommentType := IsTestRetestComment(comment)
+	testRetestCommentType := CommentEventType(comment)
 	if testRetestCommentType == NoCommentEventType {
 		return eventType, targetTestPipelineRun
 	}
-	eventType = string(testRetestCommentType)
-	targetTestPipelineRun = GetPipelineRunFromTestComment(comment)
-	return eventType, targetTestPipelineRun
+	if testRetestCommentType == RetestSingleCommentEventType || testRetestCommentType == TestCommentEventType {
+		targetTestPipelineRun = GetPipelineRunFromTestComment(comment)
+	}
+	return testRetestCommentType.String(), targetTestPipelineRun
 }
 
 func IsOkToTestComment(comment string) bool {
@@ -65,6 +76,16 @@ func IsOkToTestComment(comment string) bool {
 
 func IsCancelComment(comment string) bool {
 	return cancelAllRegex.MatchString(comment) || cancelSingleRegex.MatchString(comment)
+}
+
+func IsAnyOpsComment(eventType string) bool {
+	return eventType == TestCommentEventType.String() ||
+		eventType == RetestAllCommentEventType.String() ||
+		eventType == RetestSingleCommentEventType.String() ||
+		eventType == CancelCommentSingleEventType.String() ||
+		eventType == CancelCommentAllEventType.String() ||
+		eventType == OnCommentEventType.String() ||
+		eventType == OkToTestCommentEventType.String()
 }
 
 func GetPipelineRunFromTestComment(comment string) string {

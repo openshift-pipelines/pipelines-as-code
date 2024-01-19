@@ -170,6 +170,35 @@ You can find more information about the CEL language spec here :
 
 <https://github.com/google/cel-spec/blob/master/doc/langdef.md>
 
+### Matching a PipelineRun on a regexp in a comment
+
+{{< tech_preview "Matching PipelineRun on regexp in comments" >}}
+
+You can match a PipelineRun on a comment on a Pull Request with the annotation
+`pipelinesascode.tekton.dev/on-comment`.
+
+The comment is a regexp and if a newly created comment has this regexp it will
+automatically matches the PipelineRun and starts it.
+
+For example:
+
+```yaml
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "merge-pr"
+  annotations:
+    pipelinesascode.tekton.dev/on-comment: "^/merge-pr"
+```
+
+Will match the merge-pr PipelineRun when a comment on a pull request starts
+with `/merge-pr`
+
+Note that the `on-comment` annotation will respect the `pull_request` [Policy]({{< relref "/docs/guide/policy" >}}) rule,
+so only users into the `pull_request` policy will be able to trigger the
+PipelineRun.
+
 ### Matching PipelineRun by path change
 
 > *NOTE*: `Pipelines-as-Code` supports two ways to match files changed in a particular event. The `.pathChanged` suffix function supports [glob

@@ -75,3 +75,29 @@ func TestGithubSecondTestExplicitelyNoMatchedPipelineRun(t *testing.T) {
 	}
 	twait.Succeeded(ctx, t, runcnx, opts, sopt)
 }
+
+func TestGithubSecondOnCommentAnnotation(t *testing.T) {
+	ctx := context.Background()
+	g := tgithub.PRTest{
+		Label:            "Github test implicit comment",
+		YamlFiles:        []string{"testdata/pipelinerun-on-comment-annotation.yaml"},
+		SecondController: true,
+		NoStatusCheck:    true,
+	}
+	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPullRequest(ctx, t, g)
+	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+
+	runcnx.Clients.Log.Infof("Creating /hello-world custom comment on PullRequest")
+	_, _, err := ghcnx.Client.Issues.CreateComment(ctx,
+		opts.Organization,
+		opts.Repo, prNumber,
+		&github.IssueComment{Body: github.String("/hello-world")})
+	assert.NilError(t, err)
+	sopt := twait.SuccessOpt{
+		Title:           g.Label,
+		OnEvent:         opscomments.OnCommentEventType.String(),
+		TargetNS:        targetNS,
+		NumberofPRMatch: len(g.YamlFiles),
+	}
+	twait.Succeeded(ctx, t, runcnx, opts, sopt)
+}

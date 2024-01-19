@@ -26,18 +26,19 @@ type Event struct {
 	// Target PipelineRun, the target PipelineRun user request. Used in incoming webhook
 	TargetPipelineRun string
 
-	BaseBranch        string // branch against where we are making the PR
-	DefaultBranch     string // master/main branches to know where things like the OWNERS file is located.
-	HeadBranch        string // branch from where our SHA get tested
-	BaseURL           string // url against where we are making the PR
-	HeadURL           string // url from where our SHA get tested
-	SHA               string
-	Sender            string
-	URL               string // WEB url not the git URL, which would match to the repo.spec
-	SHAURL            string // pretty URL for web browsing for UIs (cli/web)
-	SHATitle          string // commit title for UIs
-	PullRequestNumber int    // Pull or Merge Request number
-	PullRequestTitle  string // Title of the pull Request
+	BaseBranch         string // branch against where we are making the PR
+	DefaultBranch      string // master/main branches to know where things like the OWNERS file is located.
+	HeadBranch         string // branch from where our SHA get tested
+	BaseURL            string // url against where we are making the PR
+	HeadURL            string // url from where our SHA get tested
+	SHA                string
+	Sender             string
+	URL                string // WEB url not the git URL, which would match to the repo.spec
+	SHAURL             string // pretty URL for web browsing for UIs (cli/web)
+	SHATitle           string // commit title for UIs
+	PullRequestNumber  int    // Pull or Merge Request number
+	PullRequestTitle   string // Title of the pull Request
+	PullRequestComment string // Pull Request Comment body
 
 	// TODO: move forge specifics to each driver
 	// Github
@@ -102,4 +103,5 @@ const (
 	TriggerTypeCancel                TriggerType = "cancel"
 	TriggerTypeCheckSuiteRerequested TriggerType = "check-suite-rerequested"
 	TriggerTypeCheckRunRerequested   TriggerType = "check-run-rerequested"
+	TriggerTypePrComment             TriggerType = "pr-comment"
 )

@@ -42,7 +42,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			return setLoggerAndProceed(true, "", nil)
 		}
 		if provider.Valid(event, []string{"pullrequest:comment_created"}) {
-			if opscomments.IsTestRetestComment(e.Comment.Content.Raw) != opscomments.NoCommentEventType {
+			if opscomments.CommentEventType(e.Comment.Content.Raw) != opscomments.NoCommentEventType {
 				return setLoggerAndProceed(true, "", nil)
 			}
 			if opscomments.IsOkToTestComment(e.Comment.Content.Raw) {

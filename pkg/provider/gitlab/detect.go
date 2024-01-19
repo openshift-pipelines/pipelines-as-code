@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
@@ -52,17 +51,10 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 		return setLoggerAndProceed(true, "", nil)
 	case *gitlab.MergeCommentEvent:
 		if gitEvent.MergeRequest.State == "opened" {
-			if opscomments.IsTestRetestComment(gitEvent.ObjectAttributes.Note) != opscomments.NoCommentEventType {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if opscomments.IsOkToTestComment(gitEvent.ObjectAttributes.Note) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if opscomments.IsCancelComment(gitEvent.ObjectAttributes.Note) {
-				return setLoggerAndProceed(true, "", nil)
-			}
+			// get any newly created comment on the MR as good, we will match it to a on-comment annotation later
+			return setLoggerAndProceed(true, "", nil)
 		}
-		return setLoggerAndProceed(false, "not a gitops style merge comment event", nil)
+		return setLoggerAndProceed(false, "", fmt.Errorf("issue_comment: unsupported action \"%s\"", gitEvent.MergeRequest.State))
 	default:
 		return setLoggerAndProceed(false, "", fmt.Errorf("gitlab: event \"%s\" is not supported", event))
 	}

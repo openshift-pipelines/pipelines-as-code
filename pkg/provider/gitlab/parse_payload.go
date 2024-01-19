@@ -116,6 +116,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.HeadURL = gitEvent.MergeRequest.Source.WebURL
 		processedEvent.TriggerTarget = "pull_request"
 		processedEvent.EventType, processedEvent.TargetTestPipelineRun = opscomments.SetEventTypeTestPipelineRun(gitEvent.ObjectAttributes.Note)
+		processedEvent.PullRequestComment = gitEvent.ObjectAttributes.Note
 		if opscomments.IsCancelComment(gitEvent.ObjectAttributes.Note) {
 			processedEvent.TargetCancelPipelineRun = opscomments.GetPipelineRunFromCancelComment(gitEvent.ObjectAttributes.Note)
 		}

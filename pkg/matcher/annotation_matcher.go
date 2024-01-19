@@ -173,6 +173,20 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			}
 		}
 
+		if targetComment, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnComment]; ok {
+			re, err := regexp.Compile(targetComment)
+			if err != nil {
+				logger.Warnf("could not compile regexp %s from pipelineRun %s", targetComment, prun.GetGenerateName())
+				continue
+			}
+			if re.MatchString(event.PullRequestComment) {
+				event.EventType = opscomments.OnCommentEventType.String()
+				logger.Infof("matched pipelinerun with name: %s on gitops comment: %q", prun.GetGenerateName(), event.PullRequestComment)
+				matchedPRs = append(matchedPRs, prMatch)
+				continue
+			}
+		}
+
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnCelExpression]; ok {
 			out, err := celEvaluate(ctx, celExpr, event, vcx)
 			if err != nil {

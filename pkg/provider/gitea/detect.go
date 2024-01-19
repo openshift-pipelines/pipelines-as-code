@@ -61,7 +61,7 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.Trigge
 		if event.Action == "created" &&
 			event.Issue.PullRequest != nil &&
 			event.Issue.State == "open" {
-			if opscomments.IsTestRetestComment(event.Comment.Body) != opscomments.NoCommentEventType {
+			if opscomments.CommentEventType(event.Comment.Body) != opscomments.NoCommentEventType {
 				return info.TriggerTypeRetest, ""
 			}
 			if opscomments.IsOkToTestComment(event.Comment.Body) {
@@ -71,9 +71,9 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.Trigge
 				return info.TriggerTypeCancel, ""
 			}
 			// this ignores the comment if it is not a PAC gitops comment and not return an error
-			return "", ""
+			return info.TriggerTypePrComment, ""
 		}
-		return "", "skip: not a PAC gitops comment"
+		return "", fmt.Sprintf("issue_comment: unsupported action \"%s\"", event.Action)
 	}
 	return "", fmt.Sprintf("gitea: event \"%v\" is not supported", ghEventType)
 }

@@ -65,10 +65,11 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.Trigge
 		}
 		return "", fmt.Sprintf("pull_request: unsupported action \"%s\"", event.GetAction())
 	case *github.IssueCommentEvent:
+		// only handle newly created issue comment, not an update/delete or others
 		if event.GetAction() == "created" &&
 			event.GetIssue().IsPullRequest() &&
 			event.GetIssue().GetState() == "open" {
-			if opscomments.IsTestRetestComment(event.GetComment().GetBody()) != opscomments.NoCommentEventType {
+			if opscomments.CommentEventType(event.GetComment().GetBody()) != opscomments.NoCommentEventType {
 				return info.TriggerTypeRetest, ""
 			}
 			if opscomments.IsOkToTestComment(event.GetComment().GetBody()) {
@@ -77,8 +78,9 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.Trigge
 			if opscomments.IsCancelComment(event.GetComment().GetBody()) {
 				return info.TriggerTypeCancel, ""
 			}
+			return info.TriggerTypePrComment, ""
 		}
-		return "", "comment: not a PAC gitops pull request comment"
+		return "", ""
 	case *github.CheckSuiteEvent:
 		if event.GetAction() == "rerequested" && event.GetCheckSuite() != nil {
 			return info.TriggerTypeCheckSuiteRerequested, ""
@@ -91,7 +93,7 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.Trigge
 		return "", fmt.Sprintf("check_run: unsupported action \"%s\"", event.GetAction())
 	case *github.CommitCommentEvent:
 		if event.GetAction() == "created" {
-			if opscomments.IsTestRetestComment(event.GetComment().GetBody()) != opscomments.NoCommentEventType {
+			if opscomments.CommentEventType(event.GetComment().GetBody()) != opscomments.NoCommentEventType {
 				return info.TriggerTypeRetest, ""
 			}
 			if opscomments.IsOkToTestComment(event.GetComment().GetBody()) {

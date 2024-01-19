@@ -63,6 +63,7 @@ func buildEventFromPipelineRun(pr *tektonv1.PipelineRun) *info.Event {
 	event.Organization = repo
 	event.Repository = org
 	event.EventType = prAnno[keys.EventType]
+	event.TriggerTarget = prAnno[keys.TriggerTarget]
 	event.BaseBranch = prAnno[keys.Branch]
 	event.SHA = prAnno[keys.SHA]
 

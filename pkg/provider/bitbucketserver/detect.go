@@ -43,7 +43,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			return setLoggerAndProceed(true, "", nil)
 		}
 		if provider.Valid(event, []string{"pr:comment:added"}) {
-			if opscomments.IsTestRetestComment(e.Comment.Text) != opscomments.NoCommentEventType {
+			if opscomments.CommentEventType(e.Comment.Text) != opscomments.NoCommentEventType {
 				return setLoggerAndProceed(true, "", nil)
 			}
 

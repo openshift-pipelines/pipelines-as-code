@@ -74,7 +74,7 @@ func TestProviderDetect(t *testing.T) {
 			isGitea:    true,
 		},
 		{
-			name: "bad/invalid issue comment payload type",
+			name: "bad/invalid issue comment action",
 			args: args{
 				req: &http.Request{
 					Header: http.Header{
@@ -83,8 +83,21 @@ func TestProviderDetect(t *testing.T) {
 				},
 				payload: `{"action": "foo"}`,
 			},
-			wantReason: `skip: not a PAC gitops comment`,
+			wantReason: `issue_comment: unsupported action "foo"`,
 			isGitea:    true,
+		},
+		{
+			name: "good/unknown issue comment",
+			args: args{
+				req: &http.Request{
+					Header: http.Header{
+						"X-Gitea-Event-Type": []string{"issue_comment"},
+					},
+				},
+				payload: `{"action": "created", "issue":{"pull_request": {"merged": false}, "state": "open"}, "comment": {"body": "foobar"}}`,
+			},
+			isGitea:      true,
+			processEvent: true,
 		},
 		{
 			name: "good/pull request",
@@ -139,19 +152,6 @@ func TestProviderDetect(t *testing.T) {
 			processEvent: true,
 		},
 		{
-			name: "bad/issue comment",
-			args: args{
-				req: &http.Request{
-					Header: http.Header{
-						"X-Gitea-Event-Type": []string{"issue_comment"},
-					},
-				},
-				payload: `{"action": "created", "comment":{"body": "YOYO/ok-to-test"}, "issue":{"pull_request": {"merged": false}, "state": "open"}}`,
-			},
-			isGitea:      true,
-			processEvent: false,
-		},
-		{
 			name: "bad/event not supported",
 			args: args{
 				req: &http.Request{
@@ -195,7 +195,7 @@ func TestProviderDetect(t *testing.T) {
 			logger := zap.New(observer).Sugar()
 			v := &Provider{}
 			isGitea, processEvent, _, gotReason, err := v.Detect(tt.args.req, tt.args.payload, logger)
-			assert.Assert(t, gotReason == tt.wantReason, gotReason, tt.wantReason)
+			assert.Assert(t, gotReason == tt.wantReason, "got %s != want %s", gotReason, tt.wantReason)
 			if tt.wantErrSubstr != "" {
 				assert.Assert(t, err != nil)
 				assert.Assert(t, strings.Contains(err.Error(), tt.wantErrSubstr), err.Error(), "doesn't have", tt.wantErrSubstr)

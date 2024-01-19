@@ -115,33 +115,46 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 		return repo, err
 	}
 
-	// Check if the submitter is allowed to run this.
-	if p.event.TriggerTarget != "push" {
-		allowed, err := p.vcx.IsAllowed(ctx, p.event)
-		if err != nil {
-			return repo, err
-		}
-		if !allowed {
-			msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", p.event.Sender)
-			if p.event.AccountID != "" {
-				msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", p.event.Sender, p.event.AccountID)
-			}
-			p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryPermissionDenied", msg)
-
-			status := provider.StatusOpts{
-				Status:     "queued",
-				Title:      "Pending approval",
-				Conclusion: "pending",
-				Text:       msg,
-				DetailsURL: p.event.URL,
-			}
-			if err := p.vcx.CreateStatus(ctx, p.event, status); err != nil {
-				return repo, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
-			}
-			return nil, nil
-		}
+	// on push submitted is always allowed (since she had the write access to push commit to the repo)
+	if p.event.TriggerTarget == "push" {
+		return repo, nil
 	}
-	return repo, nil
+
+	// If it's a comment but not a Ops comment, then we don't check for ACL
+	if p.event.PullRequestComment != "" && !opscomments.IsAnyOpsComment(p.event.EventType) {
+		return repo, nil
+	}
+
+	return p.checkAllowed(ctx, repo)
+}
+
+// checkAllowed checks if the user is allowed to run CI on this repo or issue a status if not allowed.
+func (p *PacRun) checkAllowed(ctx context.Context, repo *v1alpha1.Repository) (*v1alpha1.Repository, error) {
+	// Check if the user is allowed to run CI on this repo
+	allowed, err := p.vcx.IsAllowed(ctx, p.event)
+	if err != nil {
+		return nil, err
+	}
+	if allowed {
+		return repo, nil
+	}
+	msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", p.event.Sender)
+	if p.event.AccountID != "" {
+		msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", p.event.Sender, p.event.AccountID)
+	}
+	p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryPermissionDenied", msg)
+
+	status := provider.StatusOpts{
+		Status:     "queued",
+		Title:      "Pending approval",
+		Conclusion: "pending",
+		Text:       msg,
+		DetailsURL: p.event.URL,
+	}
+	if err := p.vcx.CreateStatus(ctx, p.event, status); err != nil {
+		return repo, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
+	}
+	return nil, nil
 }
 
 // getPipelineRunsFromRepo fetches pipelineruns from git repository and prepare them for creation.
@@ -252,10 +265,19 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		}
 	}
 
+	// if we are doing OnComment then check if the user is allowed, since we could not do that before when checking the ACL
+	if matchedPRs != nil && len(matchedPRs) > 0 && p.event.EventType == opscomments.OnCommentEventType.String() {
+		repo, err := p.checkAllowed(ctx, repo)
+		if repo == nil {
+			return nil, err
+		}
+	}
+
 	err = changeSecret(pipelineRuns)
 	if err != nil {
 		return nil, err
 	}
+
 	matchedPRs, err = matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx)
 	if err != nil {
 		// Don't fail when you don't have a match between pipeline and annotations

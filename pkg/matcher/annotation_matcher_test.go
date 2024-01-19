@@ -1121,6 +1121,15 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		},
 	}
 
+	pipelineRunOnComment := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "on-comment",
+			Annotations: map[string]string{
+				keys.OnComment: "/on-comment",
+			},
+		},
+	}
+
 	pipelinePush := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-push",
@@ -1185,6 +1194,20 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		wantPrName string
 		wantLog    string
 	}{
+		{
+			name: "good-match-with-only-one",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{pipelineRunOnComment},
+				runevent: info.Event{
+					TriggerTarget:      "pull_request",
+					EventType:          "pull_request",
+					BaseBranch:         "main",
+					PullRequestComment: "/on-comment",
+				},
+			},
+			wantErr:    false,
+			wantPrName: "on-comment",
+		},
 		{
 			name: "good-match-with-only-one",
 			args: args{

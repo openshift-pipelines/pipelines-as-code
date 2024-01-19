@@ -168,7 +168,7 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 		return err
 	}
 
-	if status.Text != "" && event.EventType == "pull_request" {
+	if status.Text != "" && (event.EventType == "pull_request" || event.TriggerTarget == "pull_request") {
 		status.Text = strings.ReplaceAll(strings.TrimSpace(status.Text), "<br>", "\n")
 		_, _, err := v.Client.CreateIssueComment(event.Organization, event.Repository,
 			int64(event.PullRequestNumber), gitea.CreateIssueCommentOption{

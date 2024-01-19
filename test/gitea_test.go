@@ -583,6 +583,41 @@ func TestGiteaErrorSnippetWithSecret(t *testing.T) {
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
+// TestGiteaOnCommentAnnotation test custom annotations for gitops comment.
+func TestGiteaOnCommentAnnotation(t *testing.T) {
+	var err error
+	ctx := context.Background()
+	topts := &tgitea.TestOpts{
+		TargetRefName: names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"),
+	}
+	topts.TargetNS = topts.TargetRefName
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, err = tgitea.Setup(ctx)
+	assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
+	ctx, err = cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	assert.NilError(t, secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS, "pac-secret"))
+	topts.TargetEvent = options.PullRequestEvent
+	topts.YAMLFiles = map[string]string{
+		".tekton/pr.yaml": "testdata/pipelinerun-on-comment-annotation.yaml",
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	tgitea.PostCommentOnPullRequest(t, topts, "/hello-world")
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+	}
+
+	repo, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+	assert.Equal(t, len(repo.Status), 1, "should have only 1 status")
+	assert.Equal(t, *repo.Status[0].EventType, opscomments.OnCommentEventType.String(), "should have a on comment event type")
+}
+
 // TestGiteaTestPipelineRunExplicitelyWithTestComment will test a pipelinerun
 // even if it hasn't matched when we are doing a /test comment.
 func TestGiteaTestPipelineRunExplicitelyWithTestComment(t *testing.T) {

@@ -277,7 +277,7 @@ func TestParsePayLoad(t *testing.T) {
 			eventType:           "issue_comment",
 			triggerTarget:       "pull_request",
 			githubClient:        true,
-			targetEventType:     opscomments.RetestCommentEventType.String(),
+			targetEventType:     opscomments.RetestSingleCommentEventType.String(),
 			targetTriggerTarget: "pull_request",
 			payloadEventStruct: github.IssueCommentEvent{
 				Issue: &github.Issue{
