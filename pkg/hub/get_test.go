@@ -32,18 +32,20 @@ func TestGetTask(t *testing.T) {
 		})
 	tests := []struct {
 		name        string
-		task        string
+		resource    string
 		want        string
 		wantErr     bool
 		config      map[string]map[string]string
 		catalogName string
+		kind        string
 	}{
 		{
 			name:        "get-task-latest",
-			task:        "task1",
+			resource:    "task1",
 			want:        "This is Task1",
 			wantErr:     false,
 			catalogName: "default",
+			kind:        "task",
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
 					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
@@ -57,10 +59,11 @@ func TestGetTask(t *testing.T) {
 		},
 		{
 			name:        "get-task-latest-custom",
-			task:        "task1",
+			resource:    "task1",
 			want:        "This is Task1",
 			wantErr:     false,
 			catalogName: "anotherHub",
+			kind:        "task",
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
 					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
@@ -74,9 +77,10 @@ func TestGetTask(t *testing.T) {
 		},
 		{
 			name:        "get-latest-task-not-there",
-			task:        "task1",
+			resource:    "task1",
 			catalogName: "default",
 			wantErr:     true,
+			kind:        "task",
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task1", testHubURL, testCatalogHubName): {
 					"code": "404",
@@ -85,9 +89,10 @@ func TestGetTask(t *testing.T) {
 		},
 		{
 			name:        "get-specific-task-not-there",
-			task:        "task1:1.1",
+			resource:    "task1:1.1",
 			wantErr:     true,
 			catalogName: "default",
+			kind:        "task",
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task1/1.1", testHubURL, testCatalogHubName): {
 					"code": "404",
@@ -95,11 +100,26 @@ func TestGetTask(t *testing.T) {
 			},
 		},
 		{
+			name:        "get-specific-hub-not-there",
+			resource:    "task1:1.1",
+			wantErr:     true,
+			catalogName: "notexist",
+			kind:        "task",
+		},
+		{
+			name:        "get-specific-hub-not-there-with-latest",
+			resource:    "task1",
+			wantErr:     true,
+			catalogName: "notexist",
+			kind:        "task",
+		},
+		{
 			name:        "get-task-specific",
-			task:        "task2:1.1",
+			resource:    "task2:1.1",
 			want:        "This is Task2",
 			wantErr:     false,
 			catalogName: "default",
+			kind:        "task",
 			config: map[string]map[string]string{
 				fmt.Sprintf("%s/resource/%s/task/task2/1.1", testHubURL, testCatalogHubName): {
 					"body": `{}`,
@@ -107,6 +127,84 @@ func TestGetTask(t *testing.T) {
 				},
 				fmt.Sprintf("%s/resource/%s/task/task2/1.1/raw", testHubURL, testCatalogHubName): {
 					"body": "This is Task2",
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:        "get-pipeline-latest",
+			resource:    "pipeline1",
+			want:        "This is Pipeline1",
+			wantErr:     false,
+			catalogName: "default",
+			kind:        "pipeline",
+			config: map[string]map[string]string{
+				fmt.Sprintf("%s/resource/%s/pipeline/pipeline1", testHubURL, testCatalogHubName): {
+					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
+					"code": "200",
+				},
+				fmt.Sprintf("%s/resource/%s/pipeline/pipeline1/0.2/raw", testHubURL, testCatalogHubName): {
+					"body": "This is Pipeline1",
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:        "get-pipeline-latest-custom",
+			resource:    "pipeline1",
+			want:        "This is Pipeline1",
+			wantErr:     false,
+			catalogName: "anotherHub",
+			kind:        "pipeline",
+			config: map[string]map[string]string{
+				fmt.Sprintf("%s/resource/%s/pipeline/pipeline1", testHubURL, testCatalogHubName): {
+					"body": `{"data":{"latestVersion": {"version": "0.2"}}}`,
+					"code": "200",
+				},
+				fmt.Sprintf("%s/resource/%s/pipeline/pipeline1/0.2/raw", testHubURL, testCatalogHubName): {
+					"body": "This is Pipeline1",
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:        "get-latest-pipeline-not-there",
+			resource:    "pipeline1",
+			catalogName: "default",
+			wantErr:     true,
+			kind:        "pipeline",
+			config: map[string]map[string]string{
+				fmt.Sprintf("%s/resource/%s/pipeline/pipeline1", testHubURL, testCatalogHubName): {
+					"code": "404",
+				},
+			},
+		},
+		{
+			name:        "get-specific-pipeline-not-there",
+			resource:    "pipeline1:1.1",
+			wantErr:     true,
+			catalogName: "default",
+			kind:        "pipeline",
+			config: map[string]map[string]string{
+				fmt.Sprintf("%s/resource/%s/pipeline/pipeline1/1.1", testHubURL, testCatalogHubName): {
+					"code": "404",
+				},
+			},
+		},
+		{
+			name:        "get-pipeline-specific",
+			resource:    "pipeline2:1.1",
+			want:        "This is Pipeline2",
+			wantErr:     false,
+			catalogName: "default",
+			kind:        "pipeline",
+			config: map[string]map[string]string{
+				fmt.Sprintf("%s/resource/%s/pipeline/pipeline2/1.1", testHubURL, testCatalogHubName): {
+					"body": `{}`,
+					"code": "200",
+				},
+				fmt.Sprintf("%s/resource/%s/pipeline/pipeline2/1.1/raw", testHubURL, testCatalogHubName): {
+					"body": "This is Pipeline2",
 					"code": "200",
 				},
 			},
@@ -126,7 +224,7 @@ func TestGetTask(t *testing.T) {
 					},
 				}},
 			}
-			got, err := GetTask(ctx, cs, tt.catalogName, tt.task)
+			got, err := GetResource(ctx, cs, tt.catalogName, tt.resource, tt.kind)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetTask() error = %v, wantErr %v", err, tt.wantErr)
 				return

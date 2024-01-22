@@ -189,7 +189,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 			annotations: map[string]string{
 				keys.Task: "[not/here]",
 			},
-			wantLog: "could not find remote task not/here",
+			wantLog: "could not find remote file not/here",
 			wantErr: "returning empty",
 		},
 		{
@@ -198,7 +198,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				keys.Task: "[foo://bar]",
 			},
 			wantLog: "custom catalog foo is not found",
-			wantErr: "error getting remote task \"foo://bar\": returning empty",
+			wantErr: "could not get remote task \"foo://bar\": returning empty",
 		},
 		{
 			name:        "test-get-from-custom-hub",
@@ -305,6 +305,12 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 	hubCatalogs.Store(
 		"default", settings.HubCatalog{
 			ID:   "default",
+			URL:  testHubURL,
+			Name: testCatalogHubName,
+		})
+	hubCatalogs.Store(
+		"anotherHub", settings.HubCatalog{
+			ID:   "anotherHub",
 			URL:  testHubURL,
 			Name: testCatalogHubName,
 		})
@@ -423,6 +429,66 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 			},
 			wantErr: "only one pipeline is allowed on remote",
 		},
+		{
+			name: "test-annotations-unknown-hub",
+			annotations: map[string]string{
+				keys.Pipeline: "[foo://bar]",
+			},
+			wantLog: "custom catalog foo is not found",
+			wantErr: "could not get remote pipeline \"foo://bar\": returning empty",
+		},
+		{
+			name:            "test-get-from-custom-hub",
+			gotPipelineName: "pipeline",
+			annotations: map[string]string{
+				keys.Pipeline: "[anotherHub://chmouzie]",
+			},
+			wantLog: "successfully fetched pipeline chmouzie from custom catalog HUB anotherHub on URL https://mybelovedhub",
+			remoteURLS: map[string]map[string]string{
+				testHubURL + "/resource/" + testCatalogHubName + "/pipeline/chmouzie": {
+					"body": `{"data": {"LatestVersion": {"version": "0.1"}}}`,
+					"code": "200",
+				},
+				fmt.Sprintf("%s/resource/%s/pipeline/chmouzie/0.1/raw", testHubURL, testCatalogHubName): {
+					"body": readTDfile(t, "pipeline-good"),
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:            "test-get-from-hub-latest",
+			gotPipelineName: "pipeline",
+			annotations: map[string]string{
+				keys.Pipeline: "[chmouzie]",
+			},
+			remoteURLS: map[string]map[string]string{
+				testHubURL + "/resource/" + testCatalogHubName + "/pipeline/chmouzie": {
+					"body": `{"data": {"LatestVersion": {"version": "0.1"}}}`,
+					"code": "200",
+				},
+				fmt.Sprintf("%s/resource/%s/pipeline/chmouzie/0.1/raw", testHubURL, testCatalogHubName): {
+					"body": readTDfile(t, "pipeline-good"),
+					"code": "200",
+				},
+			},
+		},
+		{
+			name:            "test-get-from-hub-specific-version",
+			gotPipelineName: "pipeline",
+			annotations: map[string]string{
+				keys.Pipeline: "[chmouzie:0.2]",
+			},
+			remoteURLS: map[string]map[string]string{
+				testHubURL + "/resource/" + testCatalogHubName + "/pipeline/chmouzie/0.2": {
+					"body": `{}`,
+					"code": "200",
+				},
+				fmt.Sprintf("%s/resource/%s/pipeline/chmouzie/0.2/raw", testHubURL, testCatalogHubName): {
+					"body": readTDfile(t, "pipeline-good"),
+					"code": "200",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -477,7 +543,7 @@ func TestGetTaskFromLocalFS(t *testing.T) {
 	defer env.ChangeWorkingDir(t, fs.NewDir(t, "TestGetTaskFromLocalFS", fs.WithFile("task1", content)).Path())()
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
-	taskContent, err := getTaskFromLocalFS("task1", logger)
+	taskContent, err := getFileFromLocalFS("task1", logger)
 	assert.NilError(t, err)
 	assert.Equal(t, content, taskContent)
 }
