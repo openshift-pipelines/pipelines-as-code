@@ -22,7 +22,7 @@ import (
 
 const (
 	taskAnnotationsRegexp     = `task(-[0-9]+)?$`
-	pipelineAnnotationsRegexp = `pipeline(-[0-9]+)?$`
+	pipelineAnnotationsRegexp = `pipeline$`
 )
 
 type RemoteTasks struct {
@@ -97,7 +97,7 @@ func (rt RemoteTasks) convertTotask(ctx context.Context, uri, data string) (*tek
 	return task, nil
 }
 
-func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (string, error) {
+func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool, kind string) (string, error) {
 	if fetchedFromURIFromProvider, task, err := rt.ProviderInterface.GetTaskURI(ctx, rt.Event, uri); fetchedFromURIFromProvider {
 		return task, err
 	}
@@ -119,7 +119,7 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 			return "", nil
 		}
 		uri = strings.TrimPrefix(uri, fmt.Sprintf("%s://", catalogID))
-		data, err := hub.GetTask(ctx, rt.Run, catalogID, uri)
+		data, err := hub.GetResource(ctx, rt.Run, catalogID, uri, kind)
 		if err != nil {
 			return "", err
 		}
@@ -127,7 +127,7 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 		if !ok {
 			return "", fmt.Errorf("could not get details for catalog name: %s", catalogID)
 		}
-		rt.Logger.Infof("successfully fetched task %s from custom catalog HUB %s on URL %s", uri, catalogID, catalogValue.URL)
+		rt.Logger.Infof("successfully fetched %s %s from custom catalog HUB %s on URL %s", kind, uri, catalogID, catalogValue.URL)
 		return data, nil
 	case strings.Contains(uri, "/"): // if it contains a slash, it is a file inside a repository
 		var data string
@@ -138,7 +138,7 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 				return "", err
 			}
 		} else {
-			data, err = getTaskFromLocalFS(uri, rt.Logger)
+			data, err = getFileFromLocalFS(uri, rt.Logger)
 			if err != nil {
 				return "", err
 			}
@@ -150,7 +150,7 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool) (
 		rt.Logger.Infof("successfully fetched %s inside repository", uri)
 		return data, nil
 	case fromHub: // finally a simple word will fetch from the default catalog (if enabled)
-		data, err := hub.GetTask(ctx, rt.Run, "default", uri)
+		data, err := hub.GetResource(ctx, rt.Run, "default", uri, kind)
 		if err != nil {
 			return "", err
 		}
@@ -189,12 +189,12 @@ func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, annotations ma
 		return nil, err
 	}
 	for _, v := range tasks {
-		data, err := rt.getRemote(ctx, v, true)
+		data, err := rt.getRemote(ctx, v, true, "task")
 		if err != nil {
 			return nil, fmt.Errorf("error getting remote task \"%s\": %w", v, err)
 		}
 		if data == "" {
-			return nil, fmt.Errorf("error getting remote task \"%s\": returning empty", v)
+			return nil, fmt.Errorf("could not get remote task \"%s\": returning empty", v)
 		}
 
 		task, err := rt.convertTotask(ctx, v, data)
@@ -221,12 +221,12 @@ func (rt RemoteTasks) GetPipelineFromAnnotations(ctx context.Context, annotation
 		return nil, nil
 	}
 	for _, v := range pipelinesAnnotation {
-		data, err := rt.getRemote(ctx, v, false)
+		data, err := rt.getRemote(ctx, v, true, "pipeline")
 		if err != nil {
 			return nil, fmt.Errorf("error getting remote pipeline %s: %w", v, err)
 		}
 		if data == "" {
-			return nil, fmt.Errorf("could not get pipeline \"%s\": returning empty", v)
+			return nil, fmt.Errorf("could not get remote pipeline \"%s\": returning empty", v)
 		}
 		pipeline, err := rt.convertToPipeline(ctx, v, data)
 		if err != nil {
@@ -237,19 +237,19 @@ func (rt RemoteTasks) GetPipelineFromAnnotations(ctx context.Context, annotation
 	return ret[0], nil
 }
 
-// getTaskFromLocalFS get task locally if file exist
+// getFileFromLocalFS get task locally if file exist
 // TODO: may want to try chroot to the git root dir first as well if we are able so.
-func getTaskFromLocalFS(taskName string, logger *zap.SugaredLogger) (string, error) {
+func getFileFromLocalFS(fileName string, logger *zap.SugaredLogger) (string, error) {
 	var data string
 	// We are most probably running with tkn pac resolve -f here, so
 	// let's try by any chance to check locally if the task is here on
 	// the filesystem
-	if _, err := os.Stat(taskName); errors.Is(err, os.ErrNotExist) {
-		logger.Warnf("could not find remote task %s inside Repo", taskName)
+	if _, err := os.Stat(fileName); errors.Is(err, os.ErrNotExist) {
+		logger.Warnf("could not find remote file %s inside Repo", fileName)
 		return "", nil
 	}
 
-	b, err := os.ReadFile(taskName)
+	b, err := os.ReadFile(fileName)
 	data = string(b)
 	if err != nil {
 		return "", err

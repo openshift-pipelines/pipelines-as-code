@@ -63,7 +63,7 @@ or multiple tasks with an array :
 pipelinesascode.tekton.dev/task: "[git-clone, pylint]"
 ```
 
-### [Tekton Hub](https://hub.tekton.dev)
+### [Tekton Hub](https://hub.tekton.dev) Support for Tasks
 
 ```yaml
 pipelinesascode.tekton.dev/task: "git-clone"
@@ -102,7 +102,7 @@ this example :
 pipelinesascode.tekton.dev/task: "[git-clone:0.1]" # this will install git-clone 0.1 from tekton.hub
 ```
 
-#### Custom [Tekton Hub](https://github.com/tektoncd/hub/)
+#### Custom [Tekton Hub](https://github.com/tektoncd/hub/) Support for Tasks
 
 Additionally if the cluster administrator has [set-up](/docs/install/settings#tekton-hub-support) a custom Tekton Hub you
 are able to reference it from your template like this example:
@@ -177,7 +177,8 @@ If the object fetched cannot be parsed as a Tekton `Task` it will error out.
 
 Remote Pipeline can be referenced by annotation, allowing you to share a Pipeline across multiple repositories.
 
-Only one Pipeline is allowed on the `PipelineRun` annotation.
+Only one pipeline annotation(pipelinesascode.tekton.dev/pipeline) for remote pipeline is allowed on the `PipelineRun`. Also, the
+value of the annotation should have one pipeline. Annotations like `pipelinesascode.tekton.dev/pipeline-1` are not supported.
 
 An annotation to a remote pipeline looks like this, using a remote URL:
 
@@ -191,7 +192,32 @@ or from a relative path inside the repository:
 pipelinesascode.tekton.dev/pipeline: "./tasks/pipeline.yaml
 ```
 
-Fetching `Pipelines` from the [Tekton Hub](https://hub.tekton.dev) is not currently supported.
+### [Tekton Hub](https://hub.tekton.dev) Support for Pipelines
+
+```yaml
+pipelinesascode.tekton.dev/pipeline: "[buildpacks]"
+```
+
+The syntax above installs the
+[buildpacks](https://github.com/tektoncd/catalog/tree/main/pipeline/buildpacks) pipeline
+from the [tekton hub](https://hub.tekton.dev) repository querying for the latest
+version with the tekton hub API.
+
+If you want to have a specific version of the pipeline, you can add a colon `:` to
+the string and a version number, like in this example :
+
+```yaml
+pipelinesascode.tekton.dev/pipeline: "[buildpacks:0.1]" # this will install buildpacks 0.1 from tekton hub
+```
+
+#### Custom [Tekton Hub](https://github.com/tektoncd/hub/) Support for Pipelines
+
+Additionally if the cluster administrator has [set-up](/docs/install/settings#tekton-hub-support) a custom Tekton Hub you
+are able to reference it from your template like this example:
+
+```yaml
+pipelinesascode.tekton.dev/pipeline: "[anothercatalog://buildpacks:0.1]" # this will install buildpacks from the custom catalog configured by the cluster administrator as anothercatalog
+```
 
 ### Overriding tasks from a remote pipeline on a PipelineRun
 
