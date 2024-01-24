@@ -59,7 +59,7 @@ func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Eve
 
 		for _, checkrun := range res.CheckRuns {
 			// if it is a Pending approval CheckRun then overwrite it
-			if isPendingApprovalCheckrun(checkrun) {
+			if isPendingApprovalCheckrun(checkrun) || isFailedCheckrun(checkrun) {
 				if v.canIUseCheckrunID(checkrun.ID) {
 					return checkrun.ID, nil
 				}
@@ -84,6 +84,18 @@ func isPendingApprovalCheckrun(run *github.CheckRun) bool {
 	if run.Output.Title != nil && strings.Contains(*run.Output.Title, "Pending") &&
 		run.Output.Summary != nil &&
 		strings.Contains(*run.Output.Summary, "is waiting for approval") {
+		return true
+	}
+	return false
+}
+
+func isFailedCheckrun(run *github.CheckRun) bool {
+	if run == nil || run.Output == nil {
+		return false
+	}
+	if run.Output.Title != nil && strings.Contains(*run.Output.Title, "Failed") &&
+		run.Output.Summary != nil &&
+		strings.Contains(*run.Output.Summary, "failed") {
 		return true
 	}
 	return false
@@ -184,12 +196,21 @@ func (v *Provider) getFailuresMessageAsAnnotations(ctx context.Context, pr *tekt
 }
 
 // getOrUpdateCheckRunStatus create a status via the checkRun API, which is only
-// available with Github apps tokens.
+// available with GitHub apps tokens.
 func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info.Event, statusOpts provider.StatusOpts) error {
 	var err error
 	var checkRunID *int64
 	var found bool
 	pacopts := v.Run.Info.Pac
+
+	// The purpose of this condition is to limit the generation of checkrun IDs
+	// when multiple pipelineruns fail. In such cases, generate only one checkrun ID,
+	// regardless of the number of failed pipelineruns.
+	if statusOpts.Title == "Failed" && statusOpts.PipelineRunName == "" {
+		if statusOpts.InstanceCountForCheckRun >= 1 {
+			return nil
+		}
+	}
 
 	// check if pipelineRun has the label with checkRun-id
 	if statusOpts.PipelineRun != nil {
