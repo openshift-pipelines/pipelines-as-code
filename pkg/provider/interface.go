@@ -14,15 +14,16 @@ import (
 )
 
 type StatusOpts struct {
-	PipelineRun             *v1.PipelineRun
-	PipelineRunName         string
-	OriginalPipelineRunName string
-	Status                  string
-	Conclusion              string
-	Text                    string
-	DetailsURL              string
-	Summary                 string
-	Title                   string
+	PipelineRun              *v1.PipelineRun
+	PipelineRunName          string
+	OriginalPipelineRunName  string
+	Status                   string
+	Conclusion               string
+	Text                     string
+	DetailsURL               string
+	Summary                  string
+	Title                    string
+	InstanceCountForCheckRun int
 }
 
 type Interface interface {

@@ -60,6 +60,44 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestGetOrUpdateCheckRunStatusForMultipleFailedPipelineRun(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+	cnx := Provider{
+		Client:  fakeclient,
+		Run:     params.New(),
+		pacInfo: &info.PacOpts{},
+	}
+	defer teardown()
+	statusOptionData := []provider.StatusOpts{{
+		PipelineRunName:          "",
+		Title:                    "Failed",
+		InstanceCountForCheckRun: 0,
+	}, {
+		PipelineRunName:          "",
+		Title:                    "Failed",
+		InstanceCountForCheckRun: 1,
+	}}
+	mux.HandleFunc("/repos/check/info/check-runs", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = fmt.Fprint(w, `{"id": 555}`)
+	})
+
+	mux.HandleFunc("/repos/check/info/check-runs/555", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = fmt.Fprint(w, `{"id": 555}`)
+	})
+
+	event := &info.Event{
+		Organization: "check",
+		Repository:   "info",
+		SHA:          "createCheckRunSHA",
+	}
+
+	for i := range statusOptionData {
+		err := cnx.getOrUpdateCheckRunStatus(ctx, event, statusOptionData[i])
+		assert.NilError(t, err)
+	}
+}
+
 func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	client, mux, _, teardown := ghtesthelper.SetupGH()
@@ -133,6 +171,45 @@ func TestGetExistingPendingApprovalCheckRunID(t *testing.T) {
 					"output": {
 						"title": "Pending approval",
 						"summary": "My CI is waiting for approval"
+					}
+				}
+			]
+		}`, chosenID, chosenOne)
+	})
+
+	id, err := cnx.getExistingCheckRunID(ctx, event, provider.StatusOpts{
+		PipelineRunName: chosenOne,
+	})
+	assert.NilError(t, err)
+	assert.Equal(t, *id, chosenID)
+}
+
+func TestGetExistingFailedCheckRunID(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	client, mux, _, teardown := ghtesthelper.SetupGH()
+	defer teardown()
+
+	cnx := New()
+	cnx.Client = client
+
+	event := &info.Event{
+		Organization: "owner",
+		Repository:   "repository",
+		SHA:          "sha",
+	}
+
+	chosenOne := "chosenOne"
+	chosenID := int64(55555)
+	mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA), func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = fmt.Fprintf(w, `{
+			"total_count": 1,
+			"check_runs": [
+				{
+					"id": %v,
+					"external_id": "%s",
+					"output": {
+						"title": "Failed",
+						"summary": "CI is failed to run"
 					}
 				}
 			]

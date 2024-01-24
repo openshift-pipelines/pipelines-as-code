@@ -340,9 +340,9 @@ func (p *PacRun) checkAccessOrErrror(ctx context.Context, repo *v1alpha1.Reposit
 	}
 	p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryPermissionDenied", msg)
 	status := provider.StatusOpts{
-		Status:     "queued",
+		Status:     queuedStatus,
 		Title:      "Pending approval",
-		Conclusion: "pending",
+		Conclusion: pendingConclusion,
 		Text:       msg,
 		DetailsURL: p.event.URL,
 	}
