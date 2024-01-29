@@ -1,0 +1,6 @@
+changed files...
+files.all: ["deleted.txt", "hasbeenrenamed.txt", "modified.txt"]
+files.added: []
+files.deleted: ["deleted.txt"]
+files.modified: ["modified.txt"]
+files.renamed: ["hasbeenrenamed.txt"]

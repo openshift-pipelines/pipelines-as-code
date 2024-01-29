@@ -38,5 +38,5 @@ spec:
                 # my email is a true beauty and like groot, I AM pac
                 cat <<EOF
                 Look mum I know that we are acting on a {{ headers['X-Gitea-Event-Type'] }}
-                my email is a {{ body.pull_request.user.email == 'pac@pac.com' }} beauty and like groot, I AM {{ body.pull_request.user.login }}
+                my email is a {{ body.pull_request.user.email.startsWith("pac@")  }} beauty and like groot, I AM {{ body.pull_request.user.login }}
                 EOF

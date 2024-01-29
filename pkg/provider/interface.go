@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -37,18 +38,10 @@ type Interface interface {
 	SetClient(context.Context, *params.Run, *info.Event, *v1alpha1.Repository, *events.EventEmitter) error
 	GetCommitInfo(context.Context, *info.Event) error
 	GetConfig() *info.ProviderConfig
-	GetFiles(context.Context, *info.Event) (ChangedFiles, error)
+	GetFiles(context.Context, *info.Event) (changedfiles.ChangedFiles, error)
 	GetTaskURI(ctx context.Context, event *info.Event, uri string) (bool, string, error)
 	CreateToken(context.Context, []string, *info.Event) (string, error)
 	CheckPolicyAllowing(context.Context, *info.Event, []string) (bool, string)
 }
 
 const DefaultProviderAPIUser = "git"
-
-type ChangedFiles struct {
-	All      []string
-	Added    []string
-	Deleted  []string
-	Modified []string
-	Renamed  []string
-}

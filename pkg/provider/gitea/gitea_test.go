@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -24,7 +24,7 @@ func TestProvider_GetFiles(t *testing.T) {
 		name         string
 		args         args
 		changedFiles string
-		want         provider.ChangedFiles
+		want         changedfiles.ChangedFiles
 		wantErr      bool
 	}{
 		{
@@ -37,7 +37,7 @@ func TestProvider_GetFiles(t *testing.T) {
 					TriggerTarget:     "pull_request",
 				},
 			},
-			want: provider.ChangedFiles{
+			want: changedfiles.ChangedFiles{
 				All: []string{
 					"added.txt",
 					"deleted.txt",
@@ -66,7 +66,7 @@ func TestProvider_GetFiles(t *testing.T) {
 					},
 				},
 			},
-			want: provider.ChangedFiles{
+			want: changedfiles.ChangedFiles{
 				All: []string{
 					".tekton/pullrequest.yaml",
 					".tekton/push.yaml",

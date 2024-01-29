@@ -14,6 +14,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -440,14 +441,14 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 }
 
 // GetFiles get a files from pull request.
-func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (provider.ChangedFiles, error) {
+func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
 	if runevent.TriggerTarget == "pull_request" {
 		opt := &github.ListOptions{PerPage: v.paginedNumber}
-		changedFiles := provider.ChangedFiles{}
+		changedFiles := changedfiles.ChangedFiles{}
 		for {
 			repoCommit, resp, err := v.Client.PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, opt)
 			if err != nil {
-				return provider.ChangedFiles{}, err
+				return changedfiles.ChangedFiles{}, err
 			}
 			for j := range repoCommit {
 				changedFiles.All = append(changedFiles.All, *repoCommit[j].Filename)
@@ -473,10 +474,10 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (provider
 	}
 
 	if runevent.TriggerTarget == "push" {
-		changedFiles := provider.ChangedFiles{}
+		changedFiles := changedfiles.ChangedFiles{}
 		rC, _, err := v.Client.Repositories.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA, &github.ListOptions{})
 		if err != nil {
-			return provider.ChangedFiles{}, err
+			return changedfiles.ChangedFiles{}, err
 		}
 		for i := range rC.Files {
 			changedFiles.All = append(changedFiles.All, *rC.Files[i].Filename)
@@ -495,7 +496,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (provider
 		}
 		return changedFiles, nil
 	}
-	return provider.ChangedFiles{}, nil
+	return changedfiles.ChangedFiles{}, nil
 }
 
 // getObject Get an object from a repository.

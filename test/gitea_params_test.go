@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -314,19 +315,9 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 	repo, err := topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(repo.Status), 1, repo.Status)
-	// check the output logs if the CEL body headers has expanded  properly
-	output := `files\.all: *\["\.tekton/pullrequest\.yaml", *"\.tekton/push\.yaml", *"deleted\.txt", *"modified\.txt", *"renamed\.txt"\]
-files\.added: \["\.tekton/pullrequest\.yaml", *"\.tekton/push\.yaml", *"deleted\.txt", *"modified\.txt", *"renamed\.txt"\]
-files\.deleted: \[\]
-files\.modified: \[\]
-files\.renamed: \[\]`
-	err = twait.RegexpMatchingInPodLog(context.Background(),
-		topts.ParamsRun,
-		topts.TargetNS,
-		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-pullrequest-params",
-			repo.Status[0].PipelineRunName),
-		"step-test-changed-files-params-pull", *regexp.MustCompile(output), 2)
-	assert.NilError(t, err)
+	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-pullrequest-params", repo.Status[0].PipelineRunName),
+		"step-test-changed-files-params-pull", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-pullrequest-params-1.golden", t.Name()), "/", "-"), 2)
 	// ======================================================================================================================
 	// Merge the pull request so we can generate a push event and wait that it is updated
 	// ======================================================================================================================
@@ -358,20 +349,9 @@ files\.renamed: \[\]`
 	// sort status to make sure we get the latest PipelineRun that has been created
 	sortedstatus := sort.RepositorySortRunStatus(repo.Status)
 
-	// check the output of the last status PipelineRun which should be a
-	// push matching the expanded CEL body and headers values
-	output = `files\.all: *\["\.tekton/pullrequest\.yaml", *"\.tekton/push\.yaml", *"deleted\.txt", *"modified\.txt", *"renamed\.txt"\]
-files\.added: \["\.tekton/pullrequest\.yaml", *"\.tekton/push\.yaml", *"deleted\.txt", *"modified\.txt", *"renamed\.txt"\]
-files\.deleted: \[\]
-files\.modified: \[\]
-files\.renamed: \[\]`
-	err = twait.RegexpMatchingInPodLog(context.Background(),
-		topts.ParamsRun,
-		topts.TargetNS,
-		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-push-params",
-			sortedstatus[0].PipelineRunName),
-		"step-test-changed-files-params-push", *regexp.MustCompile(output), 2)
-	assert.NilError(t, err)
+	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-push-params", sortedstatus[0].PipelineRunName),
+		"step-test-changed-files-params-push", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-push-params-1.golden", t.Name()), "/", "-"), 2)
 
 	// ======================================================================================================================
 	// Create second pull request with all change types
@@ -381,19 +361,9 @@ files\.renamed: \[\]`
 	repo, err = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(repo.Status), 3, repo.Status)
-	// check the output logs if the CEL body headers has expanded  properly
-	output = `files\.all: \["deleted\.txt", *"hasbeenrenamed\.txt", *"modified\.txt"\]
-files\.added: \[\]
-files\.deleted: \["deleted\.txt"\]
-files\.modified: \["modified\.txt"\]
-files\.renamed: \["hasbeenrenamed\.txt"\]`
-	err = twait.RegexpMatchingInPodLog(context.Background(),
-		topts.ParamsRun,
-		topts.TargetNS,
-		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-pullrequest-params",
-			repo.Status[2].PipelineRunName),
-		"step-test-changed-files-params-pull", *regexp.MustCompile(output), 2)
-	assert.NilError(t, err)
+	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-pullrequest-params", repo.Status[2].PipelineRunName),
+		"step-test-changed-files-params-pull", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-pullrequest-params-2.golden", t.Name()), "/", "-"), 2)
 
 	// ======================================================================================================================
 	// Merge the pull request so we can generate a second push event and wait that it is updated
@@ -427,16 +397,7 @@ files\.renamed: \["hasbeenrenamed\.txt"\]`
 	sortedstatus = sort.RepositorySortRunStatus(repo.Status)
 	// check the output of the last status PipelineRun which should be a
 	// push matching the expanded CEL body and headers values
-	output = `files\.all: \["hasbeenrenamed\.txt", *"modified\.txt", *"deleted\.txt", *"renamed\.txt"\]
-files\.added: \["hasbeenrenamed\.txt"\]
-files\.deleted: \["deleted\.txt", *"renamed\.txt"\]
-files\.modified: \["modified\.txt"\]
-files\.renamed: \[\]`
-	err = twait.RegexpMatchingInPodLog(context.Background(),
-		topts.ParamsRun,
-		topts.TargetNS,
-		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-push-params",
-			sortedstatus[0].PipelineRunName),
-		"step-test-changed-files-params-push", *regexp.MustCompile(output), 2)
-	assert.NilError(t, err)
+	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=changed-files-push-params", sortedstatus[0].PipelineRunName),
+		"step-test-changed-files-params-push", strings.ReplaceAll(fmt.Sprintf("%s-changed-files-push-params-2.golden", t.Name()), "/", "-"), 2)
 }

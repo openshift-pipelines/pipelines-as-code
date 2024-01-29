@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -306,19 +307,19 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 	return nil
 }
 
-func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (provider.ChangedFiles, error) {
+func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
 	if v.Client == nil {
-		return provider.ChangedFiles{}, fmt.Errorf("no gitlab client has been initialized, " +
+		return changedfiles.ChangedFiles{}, fmt.Errorf("no gitlab client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	if runevent.TriggerTarget == "pull_request" {
 		//nolint: staticcheck
 		mrchanges, _, err := v.Client.MergeRequests.GetMergeRequestChanges(v.sourceProjectID, runevent.PullRequestNumber, &gitlab.GetMergeRequestChangesOptions{})
 		if err != nil {
-			return provider.ChangedFiles{}, err
+			return changedfiles.ChangedFiles{}, err
 		}
 
-		changedFiles := provider.ChangedFiles{}
+		changedFiles := changedfiles.ChangedFiles{}
 		for _, change := range mrchanges.Changes {
 			changedFiles.All = append(changedFiles.All, change.NewPath)
 			if change.NewFile {
@@ -340,9 +341,9 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (provider.C
 	if runevent.TriggerTarget == "push" {
 		pushChanges, _, err := v.Client.Commits.GetCommitDiff(v.sourceProjectID, runevent.SHA, &gitlab.GetCommitDiffOptions{})
 		if err != nil {
-			return provider.ChangedFiles{}, err
+			return changedfiles.ChangedFiles{}, err
 		}
-		changedFiles := provider.ChangedFiles{}
+		changedFiles := changedfiles.ChangedFiles{}
 		for _, change := range pushChanges {
 			changedFiles.All = append(changedFiles.All, change.NewPath)
 			if change.NewFile {
@@ -360,7 +361,7 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (provider.C
 		}
 		return changedFiles, nil
 	}
-	return provider.ChangedFiles{}, nil
+	return changedfiles.ChangedFiles{}, nil
 }
 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
