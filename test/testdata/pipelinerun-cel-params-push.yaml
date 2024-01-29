@@ -36,5 +36,5 @@ spec:
                 # my email is a true beauty and you can call me pacman
                 cat <<EOF
                 Look mum I know that we are acting on a {{ headers['X-Gitea-Event-Type'] }}
-                my email is a {{ body.sender.email == 'pac@pac.com' }} beauty and you can call me {{ body.sender.username }}man
+                my email is a {{ body.sender.email.startsWith('pac@') }} beauty and you can call me {{ body.sender.username }}man
                 EOF

@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 )
 
-func (p *CustomParams) getChangedFiles(ctx context.Context) provider.ChangedFiles {
+func (p *CustomParams) getChangedFiles(ctx context.Context) changedfiles.ChangedFiles {
 	if p.vcx == nil {
-		return provider.ChangedFiles{}
+		return changedfiles.ChangedFiles{}
 	}
 	changedFiles, err := p.vcx.GetFiles(ctx, p.event)
 	if err != nil {
 		p.eventEmitter.EmitMessage(p.repo, zap.ErrorLevel, "ParamsError", fmt.Sprintf("error getting changed files: %s", err.Error()))
 	}
+	changedFiles.RemoveDuplicates()
 	return changedFiles
 }
 

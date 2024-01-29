@@ -12,6 +12,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -332,8 +333,8 @@ type PushPayload struct {
 	Commits []gitea.PayloadCommit `json:"commits,omitempty"`
 }
 
-func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (provider.ChangedFiles, error) {
-	changedFiles := provider.ChangedFiles{}
+func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
+	changedFiles := changedfiles.ChangedFiles{}
 
 	switch runevent.TriggerTarget {
 	case "pull_request":
@@ -342,7 +343,7 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (provider.C
 		for {
 			prChangedFiles, resp, err := v.Client.ListPullRequestFiles(runevent.Organization, runevent.Repository, int64(runevent.PullRequestNumber), opt)
 			if err != nil {
-				return provider.ChangedFiles{}, err
+				return changedfiles.ChangedFiles{}, err
 			}
 			for j := range prChangedFiles {
 				changedFiles.All = append(changedFiles.All, prChangedFiles[j].Filename)
@@ -370,7 +371,7 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (provider.C
 		err := json.Unmarshal(runevent.Request.Payload, &pushPayload)
 		if err != nil {
 			v.Logger.Errorf("failed to unmarshal the push payload to get changed files - %v", err)
-			return provider.ChangedFiles{}, fmt.Errorf("failed to unmarshal the push payload to get changed files - %w", err)
+			return changedfiles.ChangedFiles{}, fmt.Errorf("failed to unmarshal the push payload to get changed files - %w", err)
 		}
 
 		for _, commit := range pushPayload.Commits {
@@ -391,6 +392,7 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (provider.C
 		v.Logger.Errorf("unable to get changed files. Unknown trigger type of '%s'. Expected pull_request or push", runevent.TriggerTarget)
 		return changedFiles, fmt.Errorf("unable to get changed files. Unknown trigger type of '%s'. Expected pull_request or push", runevent.TriggerTarget)
 	}
+
 	return changedFiles, nil
 }
 

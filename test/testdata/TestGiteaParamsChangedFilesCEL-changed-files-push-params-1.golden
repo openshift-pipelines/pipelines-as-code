@@ -1,0 +1,7 @@
+changed files...
+files.all: [".tekton/pullrequest.yaml", ".tekton/push.yaml", "deleted.txt", "modified.txt", "renamed.txt"]
+files.added: [".tekton/pullrequest.yaml", ".tekton/push.yaml", "deleted.txt", "modified.txt", "renamed.txt"]
+files.deleted: []
+files.modified: []
+files.renamed: []
+

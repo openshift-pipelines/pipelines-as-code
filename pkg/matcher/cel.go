@@ -12,6 +12,7 @@ import (
 	"github.com/google/cel-go/checker/decls"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
@@ -61,7 +62,7 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 	}
 
 	r := regexp.MustCompile(changedFilesTags)
-	changedFiles := provider.ChangedFiles{}
+	changedFiles := changedfiles.ChangedFiles{}
 
 	if r.MatchString(expr) {
 		changedFiles, err = vcx.GetFiles(ctx, event)

@@ -4,11 +4,15 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
+	"testing"
 	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/logs"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 )
 
 func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg regexp.Regexp, maxNumberOfLoop int, controllerName string) error {
@@ -50,4 +54,28 @@ func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labels
 	}
 	return fmt.Errorf("could not find a match in %s:%s labelSelector/pod for regexp: '%s' output: '%s'",
 		labelselector, containerName, reg.String(), output)
+}
+
+// GoldenPodLog is a helper function to get the logs of a pod and compare it to a golden file.
+func GoldenPodLog(ctx context.Context, t *testing.T, clients *params.Run, ns, labelselector, containerName, goldenFile string, maxNumberOfLoop int) {
+	var err error
+	for i := 0; i <= maxNumberOfLoop; i++ {
+		var output string
+		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName)
+		if err != nil {
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		// Note(chmouel) This is one of the weirdest bug i have seen,
+		// only my laptop, the getpodlog outputs things like that
+		// files.all: [".tekton/pullrequest.yaml",".tekton/push.yaml","deleted.txt","modified.txt","renamed.txt"]
+		// and on CI it has a space
+		// files.all: [".tekton/pullrequest.yaml", ".tekton/push.yaml", "deleted.txt", "modified.txt", "renamed.txt"]
+		// so we make the output consistent so i can run from my laptop which has probably everything newer than CI
+		// anyway this is weird but got the e2e tests working on CI and local dev
+		// but something to look out for in the future
+		output = strings.ReplaceAll(output, `","`, `", "`)
+		golden.Assert(t, output, goldenFile)
+	}
+	assert.NilError(t, err)
 }

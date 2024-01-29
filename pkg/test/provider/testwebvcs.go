@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -98,11 +99,11 @@ func (v *TestProviderImp) GetFileInsideRepo(_ context.Context, _ *info.Event, fi
 	return "", fmt.Errorf("could not find %s in tests", file)
 }
 
-func (v *TestProviderImp) GetFiles(_ context.Context, _ *info.Event) (provider.ChangedFiles, error) {
+func (v *TestProviderImp) GetFiles(_ context.Context, _ *info.Event) (changedfiles.ChangedFiles, error) {
 	if v == nil {
-		return provider.ChangedFiles{}, nil
+		return changedfiles.ChangedFiles{}, nil
 	}
-	return provider.ChangedFiles{
+	return changedfiles.ChangedFiles{
 		All:      v.WantAllChangedFiles,
 		Added:    v.WantAddedFiles,
 		Deleted:  v.WantDeletedFiles,
