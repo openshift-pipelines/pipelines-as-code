@@ -2,18 +2,18 @@ name: E2E Tests on Kind
 
 on:
   schedule:
-  - cron: "0 5 * * *"
+    - cron: "0 5 * * *"
   workflow_dispatch:
     inputs:
       debug_enabled:
         type: boolean
-        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        description: "Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)"
         required: false
         default: false
   pull_request_target:
     types: [opened, synchronize, reopened]
     paths:
-      - '**.go'
+      - "**.go"
 jobs:
   e2e-tests:
     concurrency:
@@ -34,7 +34,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: "go.mod"
 
       - uses: actions/cache@v4
         with:
@@ -62,10 +62,10 @@ jobs:
 
       - name: Create PAC github-app-secret
         run: |
-         ./hack/gh-workflow-ci.sh create_pac_github_app_secret \
-            "${{ secrets.APP_PRIVATE_KEY }}" \
-            "${{ secrets.APPLICATION_ID }}" \
-            "${{secrets.WEBHOOK_SECRET }}"
+          ./hack/gh-workflow-ci.sh create_pac_github_app_secret \
+             "${{ secrets.APP_PRIVATE_KEY }}" \
+             "${{ secrets.APPLICATION_ID }}" \
+             "${{secrets.WEBHOOK_SECRET }}"
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -76,40 +76,40 @@ jobs:
 
       - name: Create second Github APP Controller on GHE
         run: |
-         ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe \
-          "${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" \
-          "${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" \
-          "${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}"
+          ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe \
+           "${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}" \
+           "${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}" \
+           "${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}"
 
       - name: Run E2E Tests on pull_request
         if: ${{ github.event_name != 'schedule' }}
         run: |
-         ./hack/gh-workflow-ci.sh run_e2e_tests \
-          "${{ secrets.BITBUCKET_CLOUD_TOKEN }}" \
-          "${{ secrets.WEBHOOK_SECRET }}" \
-          "${{ secrets.TEST_GITEA_SMEEURL }}" \
-          "${{ secrets.INSTALLATION_ID }}" \
-          "${{ secrets.GH_APPS_TOKEN }}" \
-          "${{ secrets.TEST_GITHUB_SECOND_TOKEN }}" \
-          "${{ secrets.GITLAB_TOKEN }}"
+          ./hack/gh-workflow-ci.sh run_e2e_tests \
+           "${{ secrets.BITBUCKET_CLOUD_TOKEN }}" \
+           "${{ secrets.WEBHOOK_SECRET }}" \
+           "${{ secrets.TEST_GITEA_SMEEURL }}" \
+           "${{ secrets.INSTALLATION_ID }}" \
+           "${{ secrets.GH_APPS_TOKEN }}" \
+           "${{ secrets.TEST_GITHUB_SECOND_TOKEN }}" \
+           "${{ secrets.GITLAB_TOKEN }}"
 
       - name: Run E2E Tests on pull_request
         if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         run: |
-         export NIGHTLY_E2E_TEST="true"
-         ./hack/gh-workflow-ci.sh run_e2e_tests \
-          "${{ secrets.BITBUCKET_CLOUD_TOKEN }}" \
-          "${{ secrets.WEBHOOK_SECRET }}" \
-          "${{ secrets.TEST_GITEA_SMEEURL }}" \
-          "${{ secrets.INSTALLATION_ID }}" \
-          "${{ secrets.GH_APPS_TOKEN }}" \
-          "${{ secrets.TEST_GITHUB_SECOND_TOKEN }}" \
-          "${{ secrets.GITLAB_TOKEN }}"
+          export NIGHTLY_E2E_TEST="true"
+          ./hack/gh-workflow-ci.sh run_e2e_tests \
+           "${{ secrets.BITBUCKET_CLOUD_TOKEN }}" \
+           "${{ secrets.WEBHOOK_SECRET }}" \
+           "${{ secrets.TEST_GITEA_SMEEURL }}" \
+           "${{ secrets.INSTALLATION_ID }}" \
+           "${{ secrets.GH_APPS_TOKEN }}" \
+           "${{ secrets.TEST_GITHUB_SECOND_TOKEN }}" \
+           "${{ secrets.GITLAB_TOKEN }}"
 
       - name: Collect logs
         if: ${{ always() }}
         run: |
-         ./hack/gh-workflow-ci.sh collect_logs
+          ./hack/gh-workflow-ci.sh collect_logs
 
       - name: Upload artifacts
         if: ${{ always() }}
@@ -117,3 +117,12 @@ jobs:
         with:
           name: logs
           path: /tmp/logs
+
+      - name: Report Status
+        if: ${{ always() }}
+        uses: ravsamhq/notify-slack-action@v2
+        with:
+          status: ${{ job.status }}
+          notify_when: "failure"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
