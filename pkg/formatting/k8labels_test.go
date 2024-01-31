@@ -1,6 +1,9 @@
 package formatting
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestK8LabelsCleanup(t *testing.T) {
 	tests := []struct {
@@ -15,8 +18,8 @@ func TestK8LabelsCleanup(t *testing.T) {
 		},
 		{
 			name: "keep dash",
-			str:  "foo-bar_hello",
-			want: "foo-bar_hello",
+			str:  "foo-bar-hello",
+			want: "foo-bar-hello",
 		},
 		{
 			name: "github bot name",
@@ -33,7 +36,29 @@ func TestK8LabelsCleanup(t *testing.T) {
 			str:  "foo\n",
 			want: "foo",
 		},
+
+		{
+			name: "secret name longer than 63 characters",
+			str:  strings.Repeat("a", 64),
+			want: strings.Repeat("a", 62),
+		},
+		{
+			name: "secret name ends with non-alphanumeric character",
+			str:  "secret-name-",
+			want: "secret-name",
+		},
+		{
+			name: "secret name starts with non-alphanumeric character",
+			str:  "-secret-name",
+			want: "secret-name",
+		},
+		{
+			name: "secret name contains non-alphanumeric characters keep underscore",
+			str:  "secret:name/with_underscores",
+			want: "secret-name-with_underscores",
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := CleanValueKubernetes(tt.str); got != tt.want {
