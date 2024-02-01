@@ -88,9 +88,9 @@ spec:
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, err := tgithub.PushFilesToRef(ctx, ghprovider.Client, "TestPacCli - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
+	sha, vref, err := tgithub.PushFilesToRef(ctx, ghprovider.Client, "TestPacCli - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
-	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
 
 	title := "TestPacCli - " + targetRefName
 	number, err := tgithub.PRCreate(ctx, runcnx, ghprovider, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
