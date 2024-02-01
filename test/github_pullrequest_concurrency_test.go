@@ -69,10 +69,10 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, logmsg, repoinfo.GetDefaultBranch(), targetRefName,
+	sha, vref, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, logmsg, repoinfo.GetDefaultBranch(), targetRefName,
 		opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
-	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, targetRefName)
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
 
 	prNumber, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Organization,
 		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), logmsg)

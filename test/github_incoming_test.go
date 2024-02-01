@@ -87,14 +87,14 @@ func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[stri
 	targetRefName := fmt.Sprintf("refs/heads/%s", randomedString)
 
 	title := "TestGithubAppIncoming - " + randomedString
-	sha, err := tgithub.PushFilesToRef(ctx, ghprovider.Client, title,
+	sha, vref, err := tgithub.PushFilesToRef(ctx, ghprovider.Client, title,
 		repoinfo.GetDefaultBranch(),
 		targetRefName,
 		opts.Organization,
 		opts.Repo,
 		entries)
 	assert.NilError(t, err)
-	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to branch %s", sha, targetRefName)
+	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to branch %s", sha, vref.GetURL())
 
 	url := fmt.Sprintf("%s/incoming?repository=%s&branch=%s&pipelinerun=%s&secret=%s", opts.ControllerURL,
 		randomedString, randomedString, "pipelinerun-incoming", incomingSecreteValue)
