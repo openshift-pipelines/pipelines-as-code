@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 	"golang.org/x/oauth2"
 )
@@ -133,7 +134,7 @@ func (gh *gitHubConfig) create(ctx context.Context) error {
 		Active: github.Bool(true),
 		Events: []string{
 			"issue_comment",
-			"pull_request",
+			triggertype.PullRequest.String(),
 			"push",
 		},
 		Config: map[string]interface{}{

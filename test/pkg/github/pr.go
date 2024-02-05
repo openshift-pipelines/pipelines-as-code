@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/go-github/v56/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
@@ -122,7 +123,7 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 		yamlEntries[filepath.Join(".tekton", filepath.Base(v))] = v
 	}
 
-	entries, err := payload.GetEntries(yamlEntries, targetNS, options.MainBranch, options.PullRequestEvent,
+	entries, err := payload.GetEntries(yamlEntries, targetNS, options.MainBranch, triggertype.PullRequest.String(),
 		map[string]string{"TargetURL": repoinfo.GetHTMLURL(), "SourceURL": repoinfo.GetHTMLURL()})
 	assert.NilError(t, err)
 
@@ -139,7 +140,7 @@ func RunPullRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 
 	sopt := wait.SuccessOpt{
 		Title:           logmsg,
-		OnEvent:         options.PullRequestEvent,
+		OnEvent:         triggertype.PullRequest.String(),
 		TargetNS:        targetNS,
 		NumberofPRMatch: len(yamlFiles),
 		SHA:             sha,
@@ -187,7 +188,7 @@ func RunPushRequest(ctx context.Context, t *testing.T, label string, yamlFiles [
 
 	sopt := wait.SuccessOpt{
 		Title:           logmsg,
-		OnEvent:         options.PushEvent,
+		OnEvent:         triggertype.Push.String(),
 		TargetNS:        targetNS,
 		NumberofPRMatch: len(yamlFiles),
 		SHA:             sha,

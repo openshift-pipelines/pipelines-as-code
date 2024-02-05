@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	glprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
@@ -24,7 +25,6 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
@@ -590,11 +590,11 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name: "matching incoming webhook event on push target",
 			args: annotationTestArgs{
 				pruns: []*tektonv1.PipelineRun{
-					makePipelineRunTargetNS(options.PushEvent, ""),
+					makePipelineRunTargetNS(triggertype.Push.String(), ""),
 				},
 				runevent: info.Event{
 					URL:        targetURL,
-					EventType:  options.IncomingEvent,
+					EventType:  triggertype.Incoming.String(),
 					BaseBranch: mainBranch,
 				},
 				data: testclient.Data{
@@ -614,11 +614,11 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			name: "matching incoming webhook event on incoming target",
 			args: annotationTestArgs{
 				pruns: []*tektonv1.PipelineRun{
-					makePipelineRunTargetNS(options.IncomingEvent, ""),
+					makePipelineRunTargetNS(triggertype.Incoming.String(), ""),
 				},
 				runevent: info.Event{
 					URL:        targetURL,
-					EventType:  options.IncomingEvent,
+					EventType:  triggertype.Incoming.String(),
 					BaseBranch: mainBranch,
 				},
 				data: testclient.Data{

@@ -13,11 +13,11 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
@@ -82,7 +82,7 @@ func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		CheckForStatus:  "success",
 		SkipEventsCheck: true,
-		TargetEvent:     options.PullRequestEvent,
+		TargetEvent:     triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/params.yaml",
 		},
@@ -123,7 +123,7 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		CheckForStatus:  "success",
 		SkipEventsCheck: true,
-		TargetEvent:     options.PullRequestEvent,
+		TargetEvent:     triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/params.yaml",
 		},

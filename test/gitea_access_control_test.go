@@ -12,10 +12,10 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -41,7 +41,7 @@ func TestGiteaPolicyPullRequest(t *testing.T) {
 		OnOrg:                true,
 		SkipEventsCheck:      true,
 		CheckForNumberStatus: 2,
-		TargetEvent:          options.PullRequestEvent,
+		TargetEvent:          triggertype.PullRequest.String(),
 		Settings: &v1alpha1.Settings{
 			Policy: &v1alpha1.Policy{
 				PullRequest: []string{"pull_requester"},
@@ -102,7 +102,7 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		OnOrg:           true,
 		SkipEventsCheck: true,
-		TargetEvent:     options.PullRequestEvent,
+		TargetEvent:     triggertype.PullRequest.String(),
 		Settings: &v1alpha1.Settings{
 			Policy: &v1alpha1.Policy{
 				OkToTest: []string{"ok-to-test"},
@@ -170,7 +170,7 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 // TestGiteaACLOrgAllowed tests that the policy check works when the user is part of an allowed org.
 func TestGiteaACLOrgAllowed(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
@@ -190,7 +190,7 @@ func TestGiteaACLOrgAllowed(t *testing.T) {
 // TestGiteaACLOrgPendingApproval tests when non authorized user sends a PR the status of CI shows as pending.
 func TestGiteaACLOrgPendingApproval(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
@@ -229,7 +229,7 @@ func TestGiteaACLCommentsAllowing(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			topts := &tgitea.TestOpts{
-				TargetEvent: options.PullRequestEvent,
+				TargetEvent: triggertype.PullRequest.String(),
 				YAMLFiles: map[string]string{
 					".tekton/pipelinerun-gitops.yaml": "testdata/pipelinerun-gitops.yaml",
 				},
@@ -268,7 +268,7 @@ func TestGiteaACLCommentsAllowingRememberOkToTestFalse(t *testing.T) {
 
 	ctx := context.Background()
 	topts := &tgitea.TestOpts{
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
@@ -330,7 +330,7 @@ func TestGiteaACLCommentsAllowingRememberOkToTestFalse(t *testing.T) {
 func TestGiteaACLCommentsAllowingRememberOkToTestTrue(t *testing.T) {
 	ctx := context.Background()
 	topts := &tgitea.TestOpts{
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
@@ -368,7 +368,7 @@ func TestGiteaPolicyAllowedOwnerFiles(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		OnOrg:                 true,
 		NoPullRequestCreation: true,
-		TargetEvent:           options.PullRequestEvent,
+		TargetEvent:           triggertype.PullRequest.String(),
 		Settings: &v1alpha1.Settings{
 			Policy: &v1alpha1.Policy{
 				PullRequest: []string{"normal"},

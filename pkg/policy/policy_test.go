@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	"go.uber.org/zap"
@@ -36,7 +37,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 		event      *info.Event
 	}
 	type args struct {
-		tType info.TriggerType
+		tType triggertype.Trigger
 	}
 	tests := []struct {
 		name                 string
@@ -56,7 +57,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      nil,
 			},
 			args: args{
-				tType: info.TriggerTypePush,
+				tType: triggertype.Push,
 			},
 			want: ResultNotSet,
 		},
@@ -78,7 +79,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      nil,
 			},
 			args: args{
-				tType: info.TriggerTypePush,
+				tType: triggertype.Push,
 			},
 			want: ResultNotSet,
 		},
@@ -89,7 +90,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      info.NewEvent(),
 			},
 			args: args{
-				tType: info.TriggerTypePullRequest,
+				tType: triggertype.PullRequest,
 			},
 			vcsReplyAllowed: true,
 			want:            ResultAllowed,
@@ -101,7 +102,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      eventWithSender,
 			},
 			args: args{
-				tType: info.TriggerTypePullRequest,
+				tType: triggertype.PullRequest,
 			},
 			vcsReplyAllowed:     false,
 			allowedInOwnersFile: true,
@@ -117,7 +118,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      info.NewEvent(),
 			},
 			args: args{
-				tType: info.TriggerTypeOkToTest,
+				tType: triggertype.OkToTest,
 			},
 			vcsReplyAllowed: true,
 			want:            ResultAllowed,
@@ -129,7 +130,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      info.NewEvent(),
 			},
 			args: args{
-				tType: info.TriggerTypeRetest,
+				tType: triggertype.Retest,
 			},
 			vcsReplyAllowed: true,
 			want:            ResultAllowed,
@@ -142,7 +143,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      eventWithSender,
 			},
 			args: args{
-				tType: info.TriggerTypePullRequest,
+				tType: triggertype.PullRequest,
 			},
 			want: ResultDisallowed,
 		},
@@ -153,7 +154,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      info.NewEvent(),
 			},
 			args: args{
-				tType: info.TriggerTypePullRequest,
+				tType: triggertype.PullRequest,
 			},
 			want:                 ResultDisallowed,
 			wantErr:              true,
@@ -166,7 +167,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      info.NewEvent(),
 			},
 			args: args{
-				tType: info.TriggerTypeOkToTest,
+				tType: triggertype.OkToTest,
 			},
 			want:                 ResultDisallowed,
 			wantErr:              true,
@@ -179,7 +180,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      info.NewEvent(),
 			},
 			args: args{
-				tType: info.TriggerTypeRetest,
+				tType: triggertype.Retest,
 			},
 			want:                 ResultDisallowed,
 			wantErr:              true,
@@ -193,7 +194,7 @@ func TestPolicy_IsAllowed(t *testing.T) {
 				event:      info.NewEvent(),
 			},
 			args: args{
-				tType: info.TriggerTypePullRequest,
+				tType: triggertype.PullRequest,
 			},
 			vcsReplyAllowed:      false,
 			allowedInOwnersFile:  false,

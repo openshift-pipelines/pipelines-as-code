@@ -9,6 +9,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/xanzy/go-gitlab"
 )
@@ -53,7 +54,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 
 		v.pathWithNamespace = gitEvent.ObjectAttributes.Target.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
-		processedEvent.TriggerTarget = "pull_request"
+		processedEvent.TriggerTarget = triggertype.PullRequest
 		processedEvent.SourceProjectID = gitEvent.ObjectAttributes.SourceProjectID
 		processedEvent.TargetProjectID = gitEvent.Project.ID
 	case *gitlab.TagEvent:
@@ -124,7 +125,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
-		processedEvent.TriggerTarget = "pull_request"
+		processedEvent.TriggerTarget = triggertype.PullRequest
 
 		processedEvent.PullRequestNumber = gitEvent.MergeRequest.IID
 		v.targetProjectID = gitEvent.MergeRequest.TargetProjectID

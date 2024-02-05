@@ -11,9 +11,9 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
@@ -62,7 +62,7 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 	entries, err := payload.GetEntries(map[string]string{
 		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml",
 		".tekton/subdir/pr.yaml":            "testdata/pipelinerun-clone.yaml",
-	}, randomedString, randomedString, options.IncomingEvent, map[string]string{})
+	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
 	assert.NilError(t, err)
 
 	title := "TestIncomingWebhook - " + randomedString
@@ -93,7 +93,7 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 
 	sopt := wait.SuccessOpt{
 		Title:           title,
-		OnEvent:         options.IncomingEvent,
+		OnEvent:         triggertype.Incoming.String(),
 		TargetNS:        randomedString,
 		NumberofPRMatch: 1,
 		SHA:             "",

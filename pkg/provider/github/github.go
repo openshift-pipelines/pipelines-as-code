@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -432,7 +433,7 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 	runevent.BaseBranch = pr.GetBase().GetRef()
 	runevent.HeadURL = pr.GetHead().GetRepo().GetHTMLURL()
 	runevent.BaseURL = pr.GetBase().GetRepo().GetHTMLURL()
-	runevent.EventType = "pull_request"
+	runevent.EventType = triggertype.PullRequest.String()
 
 	v.RepositoryIDs = []int64{
 		pr.GetBase().GetRepo().GetID(),
@@ -442,7 +443,7 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 
 // GetFiles get a files from pull request.
 func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
-	if runevent.TriggerTarget == "pull_request" {
+	if runevent.TriggerTarget == triggertype.PullRequest {
 		opt := &github.ListOptions{PerPage: v.paginedNumber}
 		changedFiles := changedfiles.ChangedFiles{}
 		for {

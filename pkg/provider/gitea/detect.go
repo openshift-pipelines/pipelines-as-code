@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	giteaStructs "code.gitea.io/gitea/modules/structs"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 )
@@ -43,16 +43,16 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 
 // detectTriggerTypeFromPayload will detect the event type from the payload,
 // filtering out the events that are not supported.
-func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.TriggerType, string) {
+func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype.Trigger, string) {
 	switch event := eventInt.(type) {
 	case *giteaStructs.PushPayload:
 		if event.Pusher != nil {
-			return info.TriggerTypePush, ""
+			return triggertype.Push, ""
 		}
 		return "", "invalid payload: no pusher in event"
 	case *giteaStructs.PullRequestPayload:
 		if provider.Valid(string(event.Action), []string{"opened", "synchronize", "synchronized", "reopened"}) {
-			return info.TriggerTypePullRequest, ""
+			return triggertype.PullRequest, ""
 		}
 		return "", fmt.Sprintf("pull_request: unsupported action \"%s\"", event.Action)
 
@@ -61,13 +61,13 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.Trigge
 			event.Issue.PullRequest != nil &&
 			event.Issue.State == "open" {
 			if provider.IsTestRetestComment(event.Comment.Body) {
-				return info.TriggerTypeRetest, ""
+				return triggertype.Retest, ""
 			}
 			if provider.IsOkToTestComment(event.Comment.Body) {
-				return info.TriggerTypeOkToTest, ""
+				return triggertype.OkToTest, ""
 			}
 			if provider.IsCancelComment(event.Comment.Body) {
-				return info.TriggerTypeCancel, ""
+				return triggertype.Cancel, ""
 			}
 			// this ignores the comment if it is not a PAC gitops comment and not return an error
 			return "", ""

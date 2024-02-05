@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -43,7 +43,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 		".tekton/pipelinerun.yaml":       "testdata/pipelinerun.yaml",
 		".tekton/pipelinerun-clone.yaml": "testdata/pipelinerun-clone.yaml",
 	}, targetNS, projectinfo.DefaultBranch,
-		options.PullRequestEvent, map[string]string{})
+		triggertype.PullRequest.String(), map[string]string{})
 	assert.NilError(t, err)
 
 	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
@@ -77,7 +77,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 	entries, err = payload.GetEntries(map[string]string{
 		"hello-world.yaml": "testdata/pipelinerun.yaml",
 	}, targetNS, projectinfo.DefaultBranch,
-		options.PullRequestEvent, map[string]string{})
+		triggertype.PullRequest.String(), map[string]string{})
 	assert.NilError(t, err)
 	scmOpts.BaseRefName = targetRefName
 	scm.PushFilesToRefGit(t, scmOpts, entries)

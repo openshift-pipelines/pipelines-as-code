@@ -7,6 +7,7 @@ import (
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -21,7 +22,7 @@ func MakePR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Run,
 
 	entries, err := payload.GetEntries(
 		map[string]string{".tekton/pipelinerun.yaml": "testdata/pipelinerun.yaml"},
-		targetNS, options.MainBranch, options.PullRequestEvent, map[string]string{})
+		targetNS, options.MainBranch, triggertype.PullRequest.String(), map[string]string{})
 	assert.NilError(t, err)
 	tmpfile := fs.NewFile(t, "pipelinerun", fs.WithContent(entries[".tekton/pipelinerun.yaml"]))
 	defer tmpfile.Remove()

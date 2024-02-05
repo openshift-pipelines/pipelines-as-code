@@ -10,6 +10,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
 )
@@ -48,12 +49,12 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 	switch e := eventPayload.(type) {
 	case *types.PullRequestEvent:
 		if provider.Valid(eventType, []string{"pr:from_ref_updated", "pr:opened"}) {
-			processedEvent.TriggerTarget = "pull_request"
-			processedEvent.EventType = "pull_request"
+			processedEvent.TriggerTarget = triggertype.PullRequest
+			processedEvent.EventType = triggertype.PullRequest.String()
 		} else if provider.Valid(eventType, []string{"pr:comment:added", "pr:comment:edited"}) {
 			switch {
 			case provider.IsTestRetestComment(e.Comment.Text):
-				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.TriggerTarget = triggertype.PullRequest
 				if strings.Contains(e.Comment.Text, "/test") {
 					processedEvent.EventType = "test-comment"
 				} else {
@@ -61,10 +62,10 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 				}
 				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(e.Comment.Text)
 			case provider.IsOkToTestComment(e.Comment.Text):
-				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.TriggerTarget = triggertype.PullRequest
 				processedEvent.EventType = "ok-to-test-comment"
 			case provider.IsCancelComment(e.Comment.Text):
-				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.TriggerTarget = triggertype.PullRequest
 				processedEvent.EventType = "cancel-comment"
 				processedEvent.CancelPipelineRuns = true
 				processedEvent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(e.Comment.Text)
@@ -138,14 +139,14 @@ func parsePayloadType(event string) (interface{}, error) {
 		}) {
 			return nil, fmt.Errorf("event \"%s\" is not supported", event)
 		}
-		localEvent = "pull_request"
+		localEvent = triggertype.PullRequest.String()
 	} else if event == "repo:refs_changed" {
 		localEvent = "push"
 	}
 
 	var intfType interface{}
 	switch localEvent {
-	case "pull_request":
+	case triggertype.PullRequest.String():
 		intfType = &types.PullRequestEvent{}
 	case "push":
 		intfType = &types.PushRequestEvent{}

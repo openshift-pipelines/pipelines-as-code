@@ -7,8 +7,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	tbb "github.com/openshift-pipelines/pipelines-as-code/test/pkg/bitbucketcloud"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
@@ -35,7 +35,7 @@ func TestBitbucketCloudPullRequest(t *testing.T) {
 
 	sopt := wait.SuccessOpt{
 		TargetNS:        targetNS,
-		OnEvent:         options.PullRequestEvent,
+		OnEvent:         triggertype.PullRequest.String(),
 		NumberofPRMatch: 1,
 		SHA:             hash,
 		Title:           title,
