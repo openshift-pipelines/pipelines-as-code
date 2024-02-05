@@ -78,11 +78,11 @@ spec:
                 # it will keep v0.5.2, v0.6.2, v0.7.2
                 declare -A hashmap=()
                 for i in $(git tag -l | grep '^v' | sort -V); do
-                  version=${i//v/}
-                  if [[ ${version} =~ ^([0-9]+\.[0-9]+)\.[0-9]+$ ]]; then
+                  semanticVersion=${i//v/}
+                  if [[ ${semanticVersion} =~ ^([0-9]+\.[0-9]+)\.[0-9]+$ ]]; then
                     major_version=${BASH_REMATCH[1]}
                   fi
-                  hashmap["$major_version"]=$version
+                  hashmap["$major_version"]=$semanticVersion
                 done
                 output=$(for i in "${!hashmap[@]}"; do
                   echo v"${hashmap[$i]}"
