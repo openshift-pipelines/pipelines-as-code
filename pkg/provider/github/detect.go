@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/v56/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 )
@@ -51,16 +51,16 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 // detectTriggerTypeFromPayload will detect the event type from the payload,
 // filtering out the events that are not supported.
 // first arg will get the event type and the second one will get an error string explaining why it's not supported.
-func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.TriggerType, string) {
+func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype.Trigger, string) {
 	switch event := eventInt.(type) {
 	case *github.PushEvent:
 		if event.GetPusher() != nil {
-			return info.TriggerTypePush, ""
+			return triggertype.Push, ""
 		}
 		return "", "no pusher in payload"
 	case *github.PullRequestEvent:
 		if provider.Valid(event.GetAction(), []string{"opened", "synchronize", "synchronized", "reopened"}) {
-			return info.TriggerTypePullRequest, ""
+			return triggertype.PullRequest, ""
 		}
 		return "", fmt.Sprintf("pull_request: unsupported action \"%s\"", event.GetAction())
 	case *github.IssueCommentEvent:
@@ -68,36 +68,36 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (info.Trigge
 			event.GetIssue().IsPullRequest() &&
 			event.GetIssue().GetState() == "open" {
 			if provider.IsTestRetestComment(event.GetComment().GetBody()) {
-				return info.TriggerTypeRetest, ""
+				return triggertype.Retest, ""
 			}
 			if provider.IsOkToTestComment(event.GetComment().GetBody()) {
-				return info.TriggerTypeOkToTest, ""
+				return triggertype.OkToTest, ""
 			}
 			if provider.IsCancelComment(event.GetComment().GetBody()) {
-				return info.TriggerTypeCancel, ""
+				return triggertype.Cancel, ""
 			}
 		}
 		return "", "comment: not a PAC gitops pull request comment"
 	case *github.CheckSuiteEvent:
 		if event.GetAction() == "rerequested" && event.GetCheckSuite() != nil {
-			return info.TriggerTypeCheckSuiteRerequested, ""
+			return triggertype.CheckSuiteRerequested, ""
 		}
 		return "", fmt.Sprintf("check_suite: unsupported action \"%s\"", event.GetAction())
 	case *github.CheckRunEvent:
 		if event.GetAction() == "rerequested" && event.GetCheckRun() != nil {
-			return info.TriggerTypeCheckRunRerequested, ""
+			return triggertype.CheckRunRerequested, ""
 		}
 		return "", fmt.Sprintf("check_run: unsupported action \"%s\"", event.GetAction())
 	case *github.CommitCommentEvent:
 		if event.GetAction() == "created" {
 			if provider.IsTestRetestComment(event.GetComment().GetBody()) {
-				return info.TriggerTypeRetest, ""
+				return triggertype.Retest, ""
 			}
 			if provider.IsOkToTestComment(event.GetComment().GetBody()) {
-				return info.TriggerTypeOkToTest, ""
+				return triggertype.OkToTest, ""
 			}
 			if provider.IsCancelComment(event.GetComment().GetBody()) {
-				return info.TriggerTypeCancel, ""
+				return triggertype.Cancel, ""
 			}
 		}
 		return "", fmt.Sprintf("commit_comment: unsupported action \"%s\"", event.GetAction())

@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 )
@@ -168,7 +169,7 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 		return err
 	}
 
-	if status.Text != "" && event.EventType == "pull_request" {
+	if status.Text != "" && event.EventType == triggertype.PullRequest.String() {
 		status.Text = strings.ReplaceAll(strings.TrimSpace(status.Text), "<br>", "\n")
 		_, _, err := v.Client.CreateIssueComment(event.Organization, event.Repository,
 			int64(event.PullRequestNumber), gitea.CreateIssueCommentOption{
@@ -336,8 +337,9 @@ type PushPayload struct {
 func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
 	changedFiles := changedfiles.ChangedFiles{}
 
+	//nolint:exhaustive // we don't need to handle all cases
 	switch runevent.TriggerTarget {
-	case "pull_request":
+	case triggertype.PullRequest:
 		opt := gitea.ListPullRequestFilesOptions{ListOptions: gitea.ListOptions{Page: 1, PageSize: 50}}
 		shouldGetNextPage := false
 		for {
@@ -366,7 +368,7 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 				break
 			}
 		}
-	case "push":
+	case triggertype.Push:
 		pushPayload := PushPayload{}
 		err := json.Unmarshal(runevent.Request.Payload, &pushPayload)
 		if err != nil {

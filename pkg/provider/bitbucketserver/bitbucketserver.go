@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 )
@@ -120,7 +121,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	}
 
 	if statusOpts.Conclusion == "SUCCESSFUL" && statusOpts.Status == "completed" &&
-		statusOpts.Text != "" && event.EventType == "pull_request" && v.pullRequestNumber > 0 {
+		statusOpts.Text != "" && event.EventType == triggertype.PullRequest.String() && v.pullRequestNumber > 0 {
 		_, err := v.Client.DefaultApi.CreatePullRequestComment(
 			v.projectKey, event.Repository, v.pullRequestNumber,
 			bbcomment, []string{"application/json"})

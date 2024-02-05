@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -96,7 +97,7 @@ func (v *Provider) parseEventType(request *http.Request, event *info.Event) erro
 	if event.EventType == "push" {
 		event.TriggerTarget = "push"
 	} else {
-		event.TriggerTarget = "pull_request"
+		event.TriggerTarget = triggertype.PullRequest
 	}
 
 	return nil
@@ -257,7 +258,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.SHATitle = gitEvent.GetHeadCommit().GetMessage()
 		processedEvent.Sender = gitEvent.GetSender().GetLogin()
 		processedEvent.BaseBranch = gitEvent.GetRef()
-		processedEvent.EventType = event.TriggerTarget
+		processedEvent.EventType = event.TriggerTarget.String()
 		processedEvent.HeadBranch = processedEvent.BaseBranch // in push events Head Branch is the same as Basebranch
 		processedEvent.BaseURL = gitEvent.GetRepo().GetHTMLURL()
 		processedEvent.HeadURL = processedEvent.BaseURL // in push events Head URL is the same as BaseURL
@@ -310,7 +311,7 @@ func (v *Provider) handleReRequestEvent(ctx context.Context, event *github.Check
 		return runevent, nil
 	}
 	runevent.PullRequestNumber = event.GetCheckRun().GetCheckSuite().PullRequests[0].GetNumber()
-	runevent.TriggerTarget = "pull_request"
+	runevent.TriggerTarget = triggertype.PullRequest
 	v.Logger.Infof("Recheck of PR %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	return v.getPullRequest(ctx, runevent)
 }
@@ -338,7 +339,7 @@ func (v *Provider) handleCheckSuites(ctx context.Context, event *github.CheckSui
 		// return nil, fmt.Errorf("check suite event is not supported for push events")
 	}
 	runevent.PullRequestNumber = event.GetCheckSuite().PullRequests[0].GetNumber()
-	runevent.TriggerTarget = "pull_request"
+	runevent.TriggerTarget = triggertype.PullRequest
 	v.Logger.Infof("Rerun of all check on PR %s/%s#%d has been requested", runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	return v.getPullRequest(ctx, runevent)
 }
@@ -358,7 +359,7 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 	runevent.Repository = event.GetRepo().GetName()
 	runevent.Sender = event.GetSender().GetLogin()
 	// Always set the trigger target as pull_request on issue comment events
-	runevent.TriggerTarget = "pull_request"
+	runevent.TriggerTarget = triggertype.PullRequest
 	if !event.GetIssue().IsPullRequest() {
 		return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
 	}

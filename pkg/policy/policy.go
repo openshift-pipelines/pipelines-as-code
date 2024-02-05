@@ -7,6 +7,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
 )
@@ -27,7 +28,7 @@ type Policy struct {
 	EventEmitter *events.EventEmitter
 }
 
-func (p *Policy) checkAllowed(ctx context.Context, tType info.TriggerType) (Result, string) {
+func (p *Policy) checkAllowed(ctx context.Context, tType triggertype.Trigger) (Result, string) {
 	if p.Repository == nil {
 		return ResultNotSet, ""
 	}
@@ -39,12 +40,12 @@ func (p *Policy) checkAllowed(ctx context.Context, tType info.TriggerType) (Resu
 	var sType []string
 	switch tType {
 	// NOTE: This make /retest /ok-to-test /test bound to the same policy, which is fine from a security standpoint but maybe we want to refine this in the future.
-	case info.TriggerTypeOkToTest, info.TriggerTypeRetest:
+	case triggertype.OkToTest, triggertype.Retest:
 		sType = settings.Policy.OkToTest
-	case info.TriggerTypePullRequest:
+	case triggertype.PullRequest:
 		sType = settings.Policy.PullRequest
-	// NOTE: not supported yet, will imp if it gets requested and reasonable to implement
-	case info.TriggerTypePush, info.TriggerTypeCancel, info.TriggerTypeCheckSuiteRerequested, info.TriggerTypeCheckRunRerequested:
+		// NOTE: not supported yet, will imp if it gets requested and reasonable to implement
+	case triggertype.Push, triggertype.Cancel, triggertype.CheckSuiteRerequested, triggertype.CheckRunRerequested, triggertype.Incoming:
 		return ResultNotSet, ""
 	default:
 		return ResultNotSet, ""
@@ -76,7 +77,7 @@ func (p *Policy) checkAllowed(ctx context.Context, tType info.TriggerType) (Resu
 	return ResultDisallowed, fmt.Sprintf("policy check: %s, %s", string(tType), reason)
 }
 
-func (p *Policy) IsAllowed(ctx context.Context, tType info.TriggerType) (Result, string) {
+func (p *Policy) IsAllowed(ctx context.Context, tType triggertype.Trigger) (Result, string) {
 	var reason string
 	policyRes, reason := p.checkAllowed(ctx, tType)
 	switch policyRes {

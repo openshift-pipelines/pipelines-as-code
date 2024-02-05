@@ -25,6 +25,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tknpactest "github.com/openshift-pipelines/pipelines-as-code/test/pkg/cli"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
@@ -47,7 +48,7 @@ var successRegexp = regexp.MustCompile(`^Pipelines as Code CI.*has.*successfully
 func TestGiteaPullRequestTaskAnnotations(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pipeline.yaml":                        "testdata/pipeline_in_tektondir.yaml",
 			".other-tasks/task-referenced-internally.yaml": "testdata/task_referenced_internally.yaml",
@@ -66,7 +67,7 @@ func TestGiteaPullRequestTaskAnnotations(t *testing.T) {
 func TestGiteaUseDisplayName(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      regexp.MustCompile(`.*The Task name is Task.*`),
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun.yaml",
 		},
@@ -83,7 +84,7 @@ func TestGiteaUseDisplayName(t *testing.T) {
 func TestGiteaPullRequestPipelineAnnotations(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun_remote_pipeline_annotations.yaml",
 		},
@@ -101,7 +102,7 @@ func TestGiteaPullRequestPipelineAnnotations(t *testing.T) {
 func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pipeline.yaml": "testdata/pipelinerun_git_clone_private-gitea.yaml",
 		},
@@ -118,7 +119,7 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 // it can only success if it matches it.
 func TestGiteaBadYaml(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		TargetEvent:  options.PullRequestEvent,
+		TargetEvent:  triggertype.PullRequest.String(),
 		YAMLFiles:    map[string]string{".tekton/pr-bad-format.yaml": "testdata/failures/pipeline_bad_format.yaml"},
 		ExpectEvents: true,
 	}
@@ -138,7 +139,7 @@ func TestGiteaMultiplesParallelPipelines(t *testing.T) {
 	}
 	topts := &tgitea.TestOpts{
 		Regexp:               successRegexp,
-		TargetEvent:          options.PullRequestEvent,
+		TargetEvent:          triggertype.PullRequest.String(),
 		YAMLFiles:            yamlFiles,
 		CheckForStatus:       "success",
 		CheckForNumberStatus: maxParallel,
@@ -157,7 +158,7 @@ func TestGiteaConcurrencyExclusivenessMultiplePipelines(t *testing.T) {
 	}
 	topts := &tgitea.TestOpts{
 		Regexp:               successRegexp,
-		TargetEvent:          options.PullRequestEvent,
+		TargetEvent:          triggertype.PullRequest.String(),
 		YAMLFiles:            yamlFiles,
 		CheckForStatus:       "success",
 		CheckForNumberStatus: numPipelines,
@@ -172,7 +173,7 @@ func TestGiteaConcurrencyExclusivenessMultiplePipelines(t *testing.T) {
 func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	numPipelines := 1
 	topts := &tgitea.TestOpts{
-		TargetEvent:          options.PullRequestEvent,
+		TargetEvent:          triggertype.PullRequest.String(),
 		YAMLFiles:            map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"},
 		CheckForNumberStatus: numPipelines,
 		ConcurrencyLimit:     github.Int(1),
@@ -245,7 +246,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 func TestGiteaRetestAfterPush(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      regexp.MustCompile(`.*has <b>failed</b>`),
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/failures/pipelinerun-exit-1.yaml",
 		},
@@ -275,7 +276,7 @@ func TestGiteaRetestAfterPush(t *testing.T) {
 func TestGiteaConfigMaxKeepRun(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun-max-keep-run-1.yaml",
 		},
@@ -491,7 +492,7 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 
 func TestGiteaCancelRun(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun_long_running.yaml",
 		},
@@ -519,7 +520,7 @@ func TestGiteaCancelRun(t *testing.T) {
 func TestGiteaConcurrencyOrderedExecution(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelineruns-ordered-execution.yaml",
 		},
@@ -543,7 +544,7 @@ func TestGiteaConcurrencyOrderedExecution(t *testing.T) {
 
 func TestGiteaErrorSnippet(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun-error-snippet.yaml",
 		},
@@ -570,7 +571,7 @@ func TestGiteaErrorSnippetWithSecret(t *testing.T) {
 	assert.NilError(t, err)
 	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
 	assert.NilError(t, secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS, "pac-secret"))
-	topts.TargetEvent = options.PullRequestEvent
+	topts.TargetEvent = triggertype.PullRequest.String()
 	topts.YAMLFiles = map[string]string{
 		".tekton/pr.yaml": "testdata/pipelinerun-error-snippet-with-secret.yaml",
 	}
@@ -587,7 +588,7 @@ func TestGiteaErrorSnippetWithSecret(t *testing.T) {
 func TestGiteaNotExistingClusterTask(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      regexp.MustCompile(`.*clustertasks.tekton.dev "foo-bar" not found`),
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/failures/not-existing-clustertask.yaml",
 		},
@@ -603,7 +604,7 @@ func TestGiteaNotExistingClusterTask(t *testing.T) {
 // and inside the pac controller.
 func TestGiteaBadLinkOfTask(t *testing.T) {
 	topts := &tgitea.TestOpts{
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/failures/bad-runafter-task.yaml",
 		},
@@ -622,7 +623,7 @@ func TestGiteaBadLinkOfTask(t *testing.T) {
 func TestGiteaProvenance(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		SkipEventsCheck:       true,
-		TargetEvent:           options.PullRequestEvent,
+		TargetEvent:           triggertype.PullRequest.String(),
 		Settings:              &v1alpha1.Settings{PipelineRunProvenance: "default_branch"},
 		NoPullRequestCreation: true,
 	}
@@ -663,7 +664,7 @@ func TestGiteaProvenance(t *testing.T) {
 func TestGiteaPushToTagGreedy(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		SkipEventsCheck:       true,
-		TargetEvent:           options.PushEvent,
+		TargetEvent:           triggertype.Push.String(),
 		NoPullRequestCreation: true,
 	}
 	_, f := tgitea.TestPR(t, topts)

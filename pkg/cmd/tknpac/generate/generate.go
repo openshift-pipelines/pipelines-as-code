@@ -14,11 +14,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var eventTypes = map[string]string{"pull_request": "Pull Request", "push": "Push to a Branch or a Tag"}
+var eventTypes = map[string]string{triggertype.PullRequest.String(): "Pull Request", "push": "Push to a Branch or a Tag"}
 
 const (
 	gitCloneClusterTaskName = "git-clone"
@@ -162,7 +163,7 @@ func (o *Opts) branchOrTag() error {
 
 	o.Event.BaseBranch = mainBranch
 
-	if o.Event.EventType == "pull_request" {
+	if o.Event.EventType == triggertype.PullRequest.String() {
 		msg = "Enter the target GIT branch for the Pull Request (default: %s): "
 	} else if o.Event.EventType == "push" {
 		msg = "Enter a target GIT branch or a tag for the push (default: %s)"

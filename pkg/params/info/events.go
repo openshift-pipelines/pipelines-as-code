@@ -1,6 +1,10 @@
 package info
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+)
 
 type Event struct {
 	State
@@ -19,9 +23,7 @@ type Event struct {
 	// TriggerTarget stable field across providers, ie: on Gitlab, Github and
 	// others it would be always be pull_request we can rely on to know if it's
 	// a push or a pull_request
-	// we need to merge this with the TriggerType type by doing a review of
-	// every instance using this and adapt it.
-	TriggerTarget string
+	TriggerTarget triggertype.Trigger
 
 	// Target PipelineRun, the target PipelineRun user request. Used in incoming webhook
 	TargetPipelineRun string
@@ -91,15 +93,3 @@ func NewEvent() *Event {
 		Request:  &Request{},
 	}
 }
-
-type TriggerType string
-
-const (
-	TriggerTypeOkToTest              TriggerType = "ok-to-test"
-	TriggerTypeRetest                TriggerType = "retest"
-	TriggerTypePush                  TriggerType = "push"
-	TriggerTypePullRequest           TriggerType = "pull_request"
-	TriggerTypeCancel                TriggerType = "cancel"
-	TriggerTypeCheckSuiteRerequested TriggerType = "check-suite-rerequested"
-	TriggerTypeCheckRunRerequested   TriggerType = "check-run-rerequested"
-)

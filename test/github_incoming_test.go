@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -30,7 +30,7 @@ func TestGithubAppIncoming(t *testing.T) {
 
 	entries, err := payload.GetEntries(map[string]string{
 		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml", ".tekton/pr.yaml": "testdata/pipelinerun.yaml",
-	}, randomedString, randomedString, options.IncomingEvent, map[string]string{})
+	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
 	assert.NilError(t, err)
 
 	verifyIncomingWebhook(t, randomedString, entries)
@@ -44,7 +44,7 @@ func TestGithubAppIncomingForDifferentEvent(t *testing.T) {
 
 	entries, err := payload.GetEntries(map[string]string{
 		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming-generatename.yaml", ".tekton/pr.yaml": "testdata/pipelinerun.yaml",
-	}, randomedString, randomedString, options.PullRequestEvent, map[string]string{})
+	}, randomedString, randomedString, triggertype.PullRequest.String(), map[string]string{})
 	assert.NilError(t, err)
 
 	verifyIncomingWebhook(t, randomedString, entries)
@@ -113,7 +113,7 @@ func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[stri
 
 	sopt := wait.SuccessOpt{
 		Title:           title,
-		OnEvent:         options.IncomingEvent,
+		OnEvent:         triggertype.Incoming.String(),
 		TargetNS:        randomedString,
 		NumberofPRMatch: 1,
 		SHA:             "",

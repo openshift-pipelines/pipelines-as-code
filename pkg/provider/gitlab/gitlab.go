@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
@@ -204,7 +205,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	_, _, _ = v.Client.Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
 
 	// only add a note when we are on a MR
-	if event.EventType == "pull_request" || event.EventType == "Merge_Request" || event.EventType == "Merge Request" {
+	if event.EventType == triggertype.PullRequest.String() || event.EventType == "Merge_Request" || event.EventType == "Merge Request" {
 		mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
 		_, _, err := v.Client.Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
 		return err
@@ -312,7 +313,7 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 		return changedfiles.ChangedFiles{}, fmt.Errorf("no gitlab client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
-	if runevent.TriggerTarget == "pull_request" {
+	if runevent.TriggerTarget == triggertype.PullRequest {
 		//nolint: staticcheck
 		mrchanges, _, err := v.Client.MergeRequests.GetMergeRequestChanges(v.sourceProjectID, runevent.PullRequestNumber, &gitlab.GetMergeRequestChangesOptions{})
 		if err != nil {

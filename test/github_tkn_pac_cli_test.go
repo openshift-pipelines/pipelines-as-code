@@ -15,6 +15,7 @@ import (
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tknpacdesc "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/describe"
 	tknpaclist "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/list"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	cli2 "github.com/openshift-pipelines/pipelines-as-code/test/pkg/cli"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
@@ -53,7 +54,7 @@ spec:
             - name: task
               image: gcr.io/google-containers/busybox
               command: ["/bin/echo", "HELLOMOTO"]
-`, targetNS, options.MainBranch, options.PullRequestEvent),
+`, targetNS, options.MainBranch, triggertype.PullRequest.String()),
 	}
 
 	repoinfo, resp, err := ghprovider.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)

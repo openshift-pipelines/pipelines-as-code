@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
 	"go.uber.org/zap"
@@ -107,7 +108,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts
 		return err
 	}
 	if statusopts.Conclusion != "STOPPED" && statusopts.Status == "completed" &&
-		statusopts.Text != "" && event.EventType == "pull_request" {
+		statusopts.Text != "" && event.EventType == triggertype.PullRequest.String() {
 		onPr := ""
 		if statusopts.OriginalPipelineRunName != "" {
 			onPr = "/" + statusopts.OriginalPipelineRunName

@@ -10,6 +10,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
 )
@@ -81,13 +82,13 @@ func parsePayloadType(event, rawPayload string) (interface{}, error) {
 		}) {
 			return nil, fmt.Errorf("event %s is not supported", event)
 		}
-		localEvent = "pull_request"
+		localEvent = triggertype.PullRequest.String()
 	} else if event == "repo:push" {
 		localEvent = "push"
 	}
 
 	switch localEvent {
-	case "pull_request":
+	case triggertype.PullRequest.String():
 		payload = &types.PullRequestEvent{}
 	case "push":
 		payload = &types.PushRequestEvent{}
@@ -127,12 +128,12 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	switch e := eventInt.(type) {
 	case *types.PullRequestEvent:
 		if provider.Valid(event, []string{"pullrequest:created", "pullrequest:updated"}) {
-			processedEvent.TriggerTarget = "pull_request"
-			processedEvent.EventType = "pull_request"
+			processedEvent.TriggerTarget = triggertype.PullRequest
+			processedEvent.EventType = triggertype.PullRequest.String()
 		} else if provider.Valid(event, []string{"pullrequest:comment_created"}) {
 			switch {
 			case provider.IsTestRetestComment(e.Comment.Content.Raw):
-				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.TriggerTarget = triggertype.PullRequest
 				if strings.Contains(e.Comment.Content.Raw, "/test") {
 					processedEvent.EventType = "test-comment"
 				} else {
@@ -140,10 +141,10 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 				}
 				processedEvent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(e.Comment.Content.Raw)
 			case provider.IsOkToTestComment(e.Comment.Content.Raw):
-				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.TriggerTarget = triggertype.PullRequest
 				processedEvent.EventType = "ok-to-test-comment"
 			case provider.IsCancelComment(e.Comment.Content.Raw):
-				processedEvent.TriggerTarget = "pull_request"
+				processedEvent.TriggerTarget = triggertype.PullRequest
 				processedEvent.EventType = "cancel-comment"
 				processedEvent.CancelPipelineRuns = true
 				processedEvent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(e.Comment.Content.Raw)

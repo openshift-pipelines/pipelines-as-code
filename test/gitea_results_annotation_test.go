@@ -11,8 +11,8 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -20,7 +20,7 @@ import (
 func TestGiteaResultsAnnotations(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,
-		TargetEvent: options.PullRequestEvent,
+		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pipeline.yaml": "testdata/pipelinerun.yaml",
 		},
