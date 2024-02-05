@@ -44,23 +44,17 @@ for i in $output; do
 	git clean -f .
 done
 
+latest=${output/ *//}
 # generate simple HTML
 cat <<EOF >${versiondir}/index.html
-<html>
-<head>
-<title>OpenShift Pipelines as Code versions Documentation</title>
-</head>
-<body>
-<div style="text-align: center;width: 100%">
-<h1>Pipeline as Code versions Documentation</h1>
-EOF
-
-for i in $output; do
-	cat <<EOF >>${versiondir}/index.html
-  <a href="./${i}">${i}</a><br>
-EOF
-done
-
-cat <<EOF >>${versiondir}/index.html
-</div></body></html>
+ <html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>OpenShift Pipelines as Code versions Documentation</title>
+    <meta http-equiv="refresh" content="0;URL='./${latest}'" />
+  </head>
+  <body>
+    <p>This page has moved to a <a href="./${latest}">
+      ./${latest}</a>.</p>
+  </body>
+</html>
 EOF
