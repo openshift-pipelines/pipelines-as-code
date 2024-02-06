@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
 	"gotest.tools/v3/assert"
@@ -20,6 +22,7 @@ func TestParsePayload(t *testing.T) {
 		payloadEvent              interface{}
 		wantErr                   bool
 		expectedSender            string
+		expectedEventType         string
 		expectedAccountID         string
 		expectedSHA               string
 		eventType                 string
@@ -36,6 +39,7 @@ func TestParsePayload(t *testing.T) {
 			expectedAccountID: "PushAccountID",
 			expectedSHA:       "slighlyhashed",
 			eventType:         "repo:push",
+			expectedEventType: triggertype.Push.String(),
 		},
 		{
 			name:              "parse pull request",
@@ -44,6 +48,7 @@ func TestParsePayload(t *testing.T) {
 			expectedSender:    "Sender",
 			expectedSHA:       "SHABidou",
 			eventType:         "pullrequest:created",
+			expectedEventType: triggertype.PullRequest.String(),
 		},
 		{
 			name:              "check source ip allowed",
@@ -59,9 +64,11 @@ func TestParsePayload(t *testing.T) {
 					"code": "200",
 				},
 			},
+			expectedEventType: triggertype.PullRequest.String(),
 		},
 		{
 			name:              "check source ip allowed multiple xff",
+			expectedEventType: triggertype.PullRequest.String(),
 			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", ""),
 			expectedAccountID: "account",
 			expectedSender:    "sender",
@@ -77,6 +84,7 @@ func TestParsePayload(t *testing.T) {
 		},
 		{
 			name:              "check source ip not allowed",
+			expectedEventType: triggertype.PullRequest.String(),
 			wantErr:           true,
 			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", ""),
 			expectedAccountID: "account",
@@ -93,6 +101,7 @@ func TestParsePayload(t *testing.T) {
 		},
 		{
 			name:                      "additional source ip allowed",
+			expectedEventType:         triggertype.PullRequest.String(),
 			payloadEvent:              bbcloudtest.MakePREvent("account", "sender", "sha", ""),
 			expectedAccountID:         "account",
 			expectedSender:            "sender",
@@ -109,6 +118,7 @@ func TestParsePayload(t *testing.T) {
 		},
 		{
 			name:                      "additional network allowed with spaces",
+			expectedEventType:         triggertype.PullRequest.String(),
 			payloadEvent:              bbcloudtest.MakePREvent("account", "sender", "sha", ""),
 			expectedAccountID:         "account",
 			expectedSender:            "sender",
@@ -152,6 +162,7 @@ func TestParsePayload(t *testing.T) {
 		},
 		{
 			name:              "retest comment with a pipelinerun",
+			expectedEventType: opscomments.RetestSingleCommentEventType.String(),
 			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", "/retest dummy"),
 			eventType:         "pullrequest:comment_created",
 			expectedAccountID: "account",
@@ -161,6 +172,7 @@ func TestParsePayload(t *testing.T) {
 		},
 		{
 			name:              "ok-to-test comment",
+			expectedEventType: opscomments.OkToTestCommentEventType.String(),
 			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", "/ok-to-test"),
 			eventType:         "pullrequest:comment_created",
 			expectedAccountID: "account",
@@ -169,6 +181,7 @@ func TestParsePayload(t *testing.T) {
 		},
 		{
 			name:              "test comment",
+			expectedEventType: opscomments.TestCommentEventType.String(),
 			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", "/test"),
 			eventType:         "pullrequest:comment_created",
 			expectedAccountID: "account",
@@ -177,6 +190,7 @@ func TestParsePayload(t *testing.T) {
 		},
 		{
 			name:              "cancel comment with a pipelinerun",
+			expectedEventType: opscomments.CancelCommentSingleEventType.String(),
 			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", "/cancel dummy"),
 			eventType:         "pullrequest:comment_created",
 			expectedAccountID: "account",
@@ -186,6 +200,7 @@ func TestParsePayload(t *testing.T) {
 		},
 		{
 			name:              "cancel all comment",
+			expectedEventType: opscomments.CancelCommentAllEventType.String(),
 			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", "/cancel"),
 			eventType:         "pullrequest:comment_created",
 			expectedAccountID: "account",
@@ -233,6 +248,7 @@ func TestParsePayload(t *testing.T) {
 			assert.Equal(t, tt.expectedAccountID, got.AccountID)
 			assert.Equal(t, tt.expectedSender, got.Sender)
 			assert.Equal(t, tt.expectedSHA, got.SHA, "%s != %s", tt.expectedSHA, got.SHA)
+			assert.Equal(t, tt.expectedEventType, got.EventType, "%s != %s", tt.expectedEventType, got.EventType)
 			if tt.targetPipelinerun != "" {
 				assert.Equal(t, tt.targetPipelinerun, got.TargetTestPipelineRun, tt.targetPipelinerun, got.TargetTestPipelineRun)
 			}

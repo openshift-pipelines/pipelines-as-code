@@ -53,7 +53,6 @@ func NewRecorder() (*Recorder, error) {
 			TagKeys:     []tag.Key{r.provider, r.eventType},
 		},
 	)
-
 	if err != nil {
 		r.initialized = false
 		return r, err
