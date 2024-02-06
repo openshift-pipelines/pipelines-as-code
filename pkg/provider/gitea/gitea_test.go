@@ -2,14 +2,19 @@ package gitea
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"sort"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -90,7 +95,7 @@ func TestProvider_GetFiles(t *testing.T) {
 			fakeclient, mux, teardown := tgitea.Setup(t)
 			defer teardown()
 
-			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/pulls/%d/files", tt.args.runevent.Organization, tt.args.runevent.Repository, tt.args.runevent.PullRequestNumber), func(rw http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/pulls/%d/files", tt.args.runevent.Organization, tt.args.runevent.Repository, tt.args.runevent.PullRequestNumber), func(rw http.ResponseWriter, _ *http.Request) {
 				fmt.Fprint(rw, tt.changedFiles)
 			})
 			ctx, _ := rtesting.SetupFakeContext(t)
@@ -139,6 +144,189 @@ func TestProvider_GetFiles(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got.Renamed, tt.want.Renamed) {
 				t.Errorf("Provider.GetFiles() Renamed = %v, want %v", got.Renamed, tt.want.Renamed)
+			}
+		})
+	}
+}
+
+func TestProvider_CreateStatusCommit(t *testing.T) {
+	type args struct {
+		event   *info.Event
+		pacopts *info.PacOpts
+		status  provider.StatusOpts
+	}
+	tests := []struct {
+		name                            string
+		args                            args
+		wantErr                         bool
+		wantCommentJSON, wantStatusJSON string
+	}{
+		{
+			name: "success",
+			args: args{
+				pacopts: &info.PacOpts{Settings: &settings.Settings{
+					ApplicationName: "myapp",
+				}},
+				event: &info.Event{
+					Organization:      "myorg",
+					Repository:        "myrepo",
+					PullRequestNumber: 1,
+					TriggerTarget:     "pull_request",
+					SHA:               "123456",
+				},
+				status: provider.StatusOpts{
+					Conclusion: "neutral",
+				},
+			},
+			wantStatusJSON: `{"state":"success","target_url":"","description":"","context":"myapp"}`,
+		},
+		{
+			name: "pending",
+			args: args{
+				status: provider.StatusOpts{
+					Conclusion: "pending",
+					Title:      "Pipeline run for myapp has been triggered",
+				},
+				pacopts: &info.PacOpts{Settings: &settings.Settings{
+					ApplicationName: "myapp",
+				}},
+				event: &info.Event{
+					Organization:      "myorg",
+					Repository:        "myrepo",
+					PullRequestNumber: 1,
+					TriggerTarget:     "pull_request",
+					SHA:               "123456",
+				},
+			},
+			wantStatusJSON: `{"state":"pending","target_url":"","description":"Pipeline run for myapp has been triggered","context":"myapp"}`,
+		},
+		{
+			name: "pending from status",
+			args: args{
+				status: provider.StatusOpts{
+					Status: "in_progress",
+					Title:  "Pipeline run for myapp has been triggered",
+				},
+				pacopts: &info.PacOpts{Settings: &settings.Settings{
+					ApplicationName: "myapp",
+				}},
+				event: &info.Event{
+					Organization:      "myorg",
+					Repository:        "myrepo",
+					PullRequestNumber: 1,
+					TriggerTarget:     "pull_request",
+					SHA:               "123456",
+				},
+			},
+			wantStatusJSON: `{"state":"pending","target_url":"","description":"Pipeline run for myapp has been triggered","context":"myapp"}`,
+		},
+		{
+			name: "ok-to-test",
+			args: args{
+				status: provider.StatusOpts{
+					Conclusion: "pending",
+					Title:      "Pipeline run for myapp has been triggered",
+					Text:       "time to get started",
+				},
+				pacopts: &info.PacOpts{Settings: &settings.Settings{
+					ApplicationName: "myapp",
+				}},
+				event: &info.Event{
+					Organization:      "myorg",
+					Repository:        "myrepo",
+					PullRequestNumber: 1,
+					EventType:         triggertype.OkToTest.String(),
+					SHA:               "123456",
+				},
+			},
+			wantStatusJSON:  `{"state":"pending","target_url":"","description":"Pipeline run for myapp has been triggered","context":"myapp"}`,
+			wantCommentJSON: `{"body":"\ntime to get started"}`,
+		},
+		{
+			name: "cancel",
+			args: args{
+				status: provider.StatusOpts{
+					Conclusion: "pending",
+					Title:      "Pipeline run for myapp has been triggered",
+					Text:       "time to get started",
+				},
+				pacopts: &info.PacOpts{Settings: &settings.Settings{
+					ApplicationName: "myapp",
+				}},
+				event: &info.Event{
+					Organization:      "myorg",
+					Repository:        "myrepo",
+					PullRequestNumber: 1,
+					EventType:         triggertype.Cancel.String(),
+					SHA:               "123456",
+				},
+			},
+			wantStatusJSON:  `{"state":"pending","target_url":"","description":"Pipeline run for myapp has been triggered","context":"myapp"}`,
+			wantCommentJSON: `{"body":"\ntime to get started"}`,
+		},
+		{
+			name: "retest",
+			args: args{
+				status: provider.StatusOpts{
+					Conclusion: "pending",
+					Title:      "Pipeline run for myapp has been triggered",
+					Text:       "time to get started",
+				},
+				pacopts: &info.PacOpts{Settings: &settings.Settings{
+					ApplicationName: "myapp",
+				}},
+				event: &info.Event{
+					Organization:      "myorg",
+					Repository:        "myrepo",
+					PullRequestNumber: 1,
+					EventType:         triggertype.Retest.String(),
+					SHA:               "123456",
+				},
+			},
+			wantStatusJSON:  `{"state":"pending","target_url":"","description":"Pipeline run for myapp has been triggered","context":"myapp"}`,
+			wantCommentJSON: `{"body":"\ntime to get started"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, teardown := tgitea.Setup(t)
+			defer teardown()
+
+			// Mock the CreateStatus API
+			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/statuses/%s", tt.args.event.Organization, tt.args.event.Repository, tt.args.event.SHA), func(rw http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					http.Error(rw, "Failed to read request body", http.StatusInternalServerError)
+					return
+				}
+
+				if res := cmp.Diff(string(tt.wantStatusJSON), string(body)); res != "" {
+					t.Errorf("Received: %s Diff %s:", string(body), res)
+				}
+
+				_, _ = rw.Write([]byte(`{"state":"success"}`))
+			})
+
+			// Mock the CreateIssueComment API
+			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/issues/%d/comments", tt.args.event.Organization, tt.args.event.Repository, tt.args.event.PullRequestNumber), func(rw http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					http.Error(rw, "Failed to read request body", http.StatusInternalServerError)
+					return
+				}
+
+				if res := cmp.Diff(string(tt.wantCommentJSON), string(body)); res != "" {
+					t.Errorf("Received: %s Diff %s:", string(body), res)
+				}
+				_, _ = rw.Write([]byte(`{"body":"Pipeline run for myapp has been triggered"}`))
+			})
+
+			v := &Provider{
+				Client: fakeclient,
+			}
+
+			if err := v.createStatusCommit(tt.args.event, tt.args.pacopts, tt.args.status); (err != nil) != tt.wantErr {
+				t.Errorf("Provider.createStatusCommit() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

@@ -14,6 +14,7 @@ import (
 	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v56/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -363,16 +364,7 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 	if !event.GetIssue().IsPullRequest() {
 		return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
 	}
-
-	// if it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
-	if provider.IsTestRetestComment(event.GetComment().GetBody()) {
-		runevent.TargetTestPipelineRun = provider.GetPipelineRunFromTestComment(event.GetComment().GetBody())
-	}
-	if provider.IsCancelComment(event.GetComment().GetBody()) {
-		action = "cancellation"
-		runevent.CancelPipelineRuns = true
-		runevent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(event.GetComment().GetBody())
-	}
+	opscomments.SetEventTypeAndTargetPR(runevent, event.GetComment().GetBody())
 	// We are getting the full URL so we have to get the last part to get the PR number,
 	// we don't have to care about URL query string/hash and other stuff because
 	// that comes up from the API.
@@ -407,6 +399,7 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 		err        error
 	)
 
+	// TODO: reuse the code from opscomments
 	// If it is a /test or /retest comment with pipelinerun name figure out the pipelinerun name
 	if provider.IsTestRetestComment(event.GetComment().GetBody()) {
 		prName, branchName, err = provider.GetPipelineRunAndBranchNameFromTestComment(event.GetComment().GetBody())
