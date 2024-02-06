@@ -17,12 +17,11 @@ kind: Namespace
 metadata:
   name: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
     openshift.io/cluster-monitoring: "true"
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +41,7 @@ metadata:
   name: pipelines-as-code-info
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -61,7 +60,7 @@ metadata:
   name: pipelines-as-code-info
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -78,7 +77,7 @@ kind: ClusterRole
 metadata:
   name: pipelines-as-code-aggregate
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
@@ -98,7 +97,6 @@ rules:
       - update
       - watch
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -118,7 +116,7 @@ metadata:
   name: pipelines-as-code-controller
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 ---
@@ -128,7 +126,7 @@ metadata:
   name: pipelines-as-code-controller-role
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -142,7 +140,7 @@ metadata:
   name: pipelines-as-code-controller-binding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -159,7 +157,7 @@ metadata:
   name: pipeline-as-code-controller-clusterrole
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -185,19 +183,18 @@ metadata:
   name: pipelines-as-code-controller-clusterbinding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
-- kind: ServiceAccount
-  name: pipelines-as-code-controller
-  namespace: pipelines-as-code
+  - kind: ServiceAccount
+    name: pipelines-as-code-controller
+    namespace: pipelines-as-code
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: pipeline-as-code-controller-clusterrole
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -217,7 +214,7 @@ metadata:
   name: pipelines-as-code-watcher
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 ---
@@ -227,7 +224,7 @@ metadata:
   name: pipelines-as-code-watcher-role
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -244,7 +241,7 @@ metadata:
   name: pipelines-as-code-watcher-binding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -261,7 +258,7 @@ metadata:
   name: pipeline-as-code-watcher-clusterrole
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -290,19 +287,18 @@ metadata:
   name: pipelines-as-code-watcher-clusterbinding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
-- kind: ServiceAccount
-  name: pipelines-as-code-watcher
-  namespace: pipelines-as-code
+  - kind: ServiceAccount
+    name: pipelines-as-code-watcher
+    namespace: pipelines-as-code
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: pipeline-as-code-watcher-clusterrole
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -322,7 +318,7 @@ metadata:
   name: pipelines-as-code-webhook
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 ---
@@ -332,7 +328,7 @@ metadata:
   name: pipelines-as-code-webhook-role
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -360,7 +356,7 @@ metadata:
   name: pipelines-as-code-webhook-binding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
@@ -377,7 +373,7 @@ metadata:
   name: pipeline-as-code-webhook-clusterrole
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 rules:
@@ -402,19 +398,18 @@ metadata:
   name: pipelines-as-code-webhook-clusterbinding
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
-- kind: ServiceAccount
-  name: pipelines-as-code-webhook
-  namespace: pipelines-as-code
+  - kind: ServiceAccount
+    name: pipelines-as-code-webhook
+    namespace: pipelines-as-code
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: pipeline-as-code-webhook-clusterrole
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -434,7 +429,7 @@ kind: CustomResourceDefinition
 metadata:
   name: repositories.pipelinesascode.tekton.dev
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
@@ -632,7 +627,6 @@ spec:
     shortNames:
       - repo
 ---
-
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -672,7 +666,6 @@ data:
   loglevel.pac-watcher: "info"
   loglevel.pipelines-as-code-webhook: "info"
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -820,10 +813,9 @@ metadata:
   name: pipelines-as-code
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -846,7 +838,7 @@ metadata:
 apiVersion: v1
 data:
   # pipelines as code controller version
-  version: "0.24.0"
+  version: "v0.24.0"
 
   # controller url to be used for configuring webhook using cli
   controller-url: ""
@@ -861,10 +853,9 @@ metadata:
   name: pipelines-as-code-info
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -884,7 +875,7 @@ metadata:
   name: pipelines-as-code-webhook-certs
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
 # The data is populated at install time
 ---
@@ -893,7 +884,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: validation.pipelinesascode.tekton.dev
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
 webhooks:
   - admissionReviewVersions: ["v1"]
@@ -905,7 +896,6 @@ webhooks:
     sideEffects: None
     name: validation.pipelinesascode.tekton.dev
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -926,7 +916,7 @@ metadata:
   name: pipelines-as-code-config-observability
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
 data:
   _example: |
@@ -958,6 +948,7 @@ data:
     # charge.  If metrics.backend-destination is not Stackdriver, this is
     # ignored.
     metrics.allow-stackdriver-custom-metrics: "false"
+
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1010,6 +1001,7 @@ data:
     # bucket will take care of the reconciling for the keys partitioned into
     # that bucket.
     buckets: "1"
+
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1062,6 +1054,7 @@ data:
     # bucket will take care of the reconciling for the keys partitioned into
     # that bucket.
     buckets: "1"
+
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1082,7 +1075,7 @@ metadata:
   name: pipelines-as-code-controller
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   replicas: 1
@@ -1100,7 +1093,7 @@ spec:
         app.kubernetes.io/component: controller
         app.kubernetes.io/instance: default
         app.kubernetes.io/part-of: pipelines-as-code
-        app.kubernetes.io/version: "0.24.0"
+        app.kubernetes.io/version: "v0.24.0"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -1109,7 +1102,7 @@ spec:
       serviceAccountName: pipelines-as-code-controller
       containers:
         - name: pac-controller
-          image: "ghcr.io/openshift-pipelines/pipelines-as-code-controller:0.24.0"
+          image: "ghcr.io/openshift-pipelines/pipelines-as-code-controller:v0.24.0"
           imagePullPolicy: Always
           ports:
             - name: api
@@ -1169,10 +1162,10 @@ spec:
               readOnly: true
               name: tls
       volumes:
-      - name: tls
-        secret:
-          secretName: pipelines-as-code-tls-secret
-          optional: true
+        - name: tls
+          secret:
+            secretName: pipelines-as-code-tls-secret
+            optional: true
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1194,18 +1187,18 @@ metadata:
   namespace: pipelines-as-code
   labels:
     app: pipelines-as-code-controller
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   ports:
-  - name: http-listener
-    port: 8080
-    protocol: TCP
-    targetPort: 8080
-  - name: http-metrics
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
+    - name: http-listener
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    - name: http-metrics
+      port: 9090
+      protocol: TCP
+      targetPort: 9090
   selector:
     app.kubernetes.io/name: controller
     app.kubernetes.io/component: controller
@@ -1231,7 +1224,7 @@ metadata:
   name: pipelines-as-code-watcher
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   replicas: 1
@@ -1248,7 +1241,7 @@ spec:
         app.kubernetes.io/component: watcher
         app.kubernetes.io/instance: default
         app.kubernetes.io/part-of: pipelines-as-code
-        app.kubernetes.io/version: "0.24.0"
+        app.kubernetes.io/version: "v0.24.0"
         app: pipelines-as-code-watcher
     spec:
       securityContext:
@@ -1258,26 +1251,26 @@ spec:
       serviceAccountName: pipelines-as-code-watcher
       containers:
         - name: pac-watcher
-          image: "ghcr.io/openshift-pipelines/pipelines-as-code-watcher:0.24.0"
+          image: "ghcr.io/openshift-pipelines/pipelines-as-code-watcher:v0.24.0"
           imagePullPolicy: Always
           env:
-          - name: CONFIG_LOGGING_NAME
-            value: pac-config-logging
-          - name: SYSTEM_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: METRICS_DOMAIN
-            value: tekton.dev/pipelinesascode
-          - name: CONFIG_OBSERVABILITY_NAME
-            value: pipelines-as-code-config-observability
-          - name: CONFIG_LEADERELECTION_NAME
-            value: pac-watcher-config-leader-election
+            - name: CONFIG_LOGGING_NAME
+              value: pac-config-logging
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: METRICS_DOMAIN
+              value: tekton.dev/pipelinesascode
+            - name: CONFIG_OBSERVABILITY_NAME
+              value: pipelines-as-code-config-observability
+            - name: CONFIG_LEADERELECTION_NAME
+              value: pac-watcher-config-leader-election
           ports:
-          - name: probes
-            containerPort: 8080
-          - name: metrics
-            containerPort: 9090
+            - name: probes
+              containerPort: 8080
+            - name: metrics
+              containerPort: 9090
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -1319,15 +1312,15 @@ metadata:
   name: pipelines-as-code-watcher
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
     app: pipelines-as-code-watcher
 spec:
   ports:
-  - name: http-metrics
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
+    - name: http-metrics
+      port: 9090
+      protocol: TCP
+      targetPort: 9090
   selector:
     app.kubernetes.io/name: watcher
     app.kubernetes.io/component: watcher
@@ -1353,7 +1346,7 @@ metadata:
   name: pipelines-as-code-webhook
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   replicas: 1
@@ -1370,7 +1363,7 @@ spec:
         app.kubernetes.io/component: webhook
         app.kubernetes.io/instance: default
         app.kubernetes.io/part-of: pipelines-as-code
-        app.kubernetes.io/version: "0.24.0"
+        app.kubernetes.io/version: "v0.24.0"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -1379,7 +1372,7 @@ spec:
       serviceAccountName: pipelines-as-code-webhook
       containers:
         - name: pac-webhook
-          image: "ghcr.io/openshift-pipelines/pipelines-as-code-webhook:0.24.0"
+          image: "ghcr.io/openshift-pipelines/pipelines-as-code-webhook:v0.24.0"
           env:
             - name: CONFIG_LOGGING_NAME
               value: pac-config-logging
@@ -1423,7 +1416,7 @@ metadata:
   name: pipelines-as-code-webhook
   namespace: pipelines-as-code
   labels:
-    app.kubernetes.io/version: "0.24.0"
+    app.kubernetes.io/version: "v0.24.0"
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   ports:
