@@ -24,7 +24,7 @@ import (
 func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Repository, error) {
 	repo, err := p.verifyRepoAndUser(ctx)
 	if err != nil {
-		return nil, repo, err
+		return nil, nil, err
 	}
 	if repo == nil {
 		return nil, nil, nil
@@ -120,8 +120,8 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	// on push we don't need to check the policy since the user has pushed to the repo so it has access to it.
 	// on comment we skip it for now, we are going to check later on
 	if p.event.TriggerTarget != triggertype.Push && p.event.EventType != opscomments.NoOpsCommentEventType.String() {
-		if allowed, err := p.checkAccessOrErrror(ctx, repo, ""); !allowed {
-			return repo, err
+		if allowed, err := p.checkAccessOrErrror(ctx, repo, "via "+p.event.TriggerTarget.String()); !allowed {
+			return nil, err
 		}
 	}
 	return repo, nil

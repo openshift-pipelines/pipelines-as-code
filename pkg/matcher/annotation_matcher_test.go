@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/golden"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -766,7 +767,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 		{
 			name:    "no match a repository with target NS",
 			wantErr: true,
-			wantLog: "matching pipelineruns to event: URL",
+			wantLog: "could not find Repository CRD in branch targetNamespace, the pipelineRun pipeline-target-ns has a label that explicitly targets it",
 			args: annotationTestArgs{
 				pruns: []*tektonv1.PipelineRun{
 					makePipelineRunTargetNS("pull_request", targetNamespace),
@@ -1096,9 +1097,7 @@ func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.
 		assert.Assert(t, tt.wantPRName == matches[0].PipelineRun.GetName())
 	}
 	if tt.wantLog != "" {
-		logmsg := log.TakeAll()
-		assert.Assert(t, len(logmsg) > 0, "We didn't get any log message")
-		assert.Assert(t, strings.Contains(logmsg[0].Message, tt.wantLog), logmsg[0].Message, tt.wantLog)
+		assert.Assert(t, log.FilterMessage(tt.wantLog) != nil, "We didn't get the expected log message")
 	}
 }
 
@@ -1847,6 +1846,121 @@ func TestMatchRunningPipelineRunForIncomingWebhook(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			outPruns := MatchRunningPipelineRunForIncomingWebhook(tt.runevent.EventType, tt.runevent.TargetPipelineRun, tt.pruns)
 			assert.Equal(t, len(outPruns), tt.wantedPrunsNumber)
+		})
+	}
+}
+
+func TestBuildAvailableMatchingAnnotationErr(t *testing.T) {
+	tests := []struct {
+		name  string
+		pruns []*tektonv1.PipelineRun
+		event *info.Event
+	}{
+		{
+			name: "Test with one PipelineRun and one annotation",
+			pruns: []*tektonv1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-pipeline",
+						Annotations: map[string]string{
+							keys.OnEvent: "pull_request",
+							keys.Task:    "test-task",
+						},
+					},
+				},
+			},
+			event: &info.Event{
+				EventType:  "pull_request",
+				HeadBranch: "feature",
+				BaseBranch: "main",
+			},
+		},
+		// Add more test cases as needed
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildAvailableMatchingAnnotationErr(tt.event, tt.pruns)
+			golden.Assert(t, got, strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
+		})
+	}
+}
+
+func TestGetTargetBranch(t *testing.T) {
+	tests := []struct {
+		name           string
+		prun           *tektonv1.PipelineRun
+		event          *info.Event
+		expectedMatch  bool
+		expectedEvent  string
+		expectedBranch string
+	}{
+		{
+			name: "Test with pull_request event",
+			prun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						keys.OnEvent:        "pull_request",
+						keys.OnTargetBranch: "main",
+					},
+				},
+			},
+			event: &info.Event{
+				TriggerTarget: triggertype.PullRequest,
+				EventType:     triggertype.PullRequest.String(),
+				BaseBranch:    "main",
+			},
+			expectedMatch:  true,
+			expectedEvent:  "pull_request",
+			expectedBranch: "main",
+		},
+		{
+			name: "Test with incoming event",
+			prun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						keys.OnEvent:        "incoming",
+						keys.OnTargetBranch: "main",
+					},
+				},
+			},
+			event: &info.Event{
+				TriggerTarget: triggertype.Incoming,
+				EventType:     triggertype.Incoming.String(),
+				BaseBranch:    "main",
+			},
+			expectedMatch:  true,
+			expectedEvent:  "incoming",
+			expectedBranch: "main",
+		},
+		{
+			name: "Test with no match",
+			prun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						keys.OnEvent:        "push",
+						keys.OnTargetBranch: "develop",
+					},
+				},
+			},
+			event: &info.Event{
+				TriggerTarget: triggertype.PullRequest,
+				EventType:     triggertype.PullRequest.String(),
+				BaseBranch:    "main",
+			},
+			expectedMatch:  false,
+			expectedEvent:  "",
+			expectedBranch: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			matched, targetEvent, targetBranch, err := getTargetBranch(tt.prun, tt.event)
+			assert.NilError(t, err)
+			assert.Equal(t, tt.expectedMatch, matched)
+			assert.Equal(t, tt.expectedEvent, targetEvent)
+			assert.Equal(t, tt.expectedBranch, targetBranch)
 		})
 	}
 }
