@@ -242,7 +242,7 @@ func TestGetTektonDir(t *testing.T) {
 			},
 			expectedString:       "PipelineRun",
 			treepath:             "testdata/tree/simple",
-			filterMessageSnippet: "Using PipelineRun definition from source pull request SHA",
+			filterMessageSnippet: "Using PipelineRun definition from source pull request tekton/cat#0",
 		},
 		{
 			name: "test provenance default_branch ",

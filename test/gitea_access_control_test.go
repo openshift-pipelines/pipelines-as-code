@@ -51,6 +51,7 @@ func TestGiteaPolicyPullRequest(t *testing.T) {
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
+	adminCnx := topts.GiteaCNX
 
 	topts.ParamsRun.Clients.Log.Infof("Repo CRD %s has been created with Policy: %+v", topts.TargetRefName, topts.Settings.Policy)
 
@@ -84,6 +85,7 @@ func TestGiteaPolicyPullRequest(t *testing.T) {
 	tgitea.CreateForkPullRequest(t, topts, pullRequesterUserCnx, "")
 	topts.Regexp = successRegexp
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
+	topts.GiteaCNX = adminCnx
 }
 
 // TestGiteaPolicyOkToTestRetest test the ok-to-test and retest policy
@@ -112,6 +114,7 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
+	adminCnx := topts.GiteaCNX
 	topts.ParamsRun.Clients.Log.Infof("Repo CRD %s has been created with Policy: %+v", topts.TargetRefName, topts.Settings.Policy)
 
 	orgName := "org-" + topts.TargetRefName
@@ -139,7 +142,7 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	topts.GiteaCNX = normalUserCnx
 	tgitea.PostCommentOnPullRequest(t, topts, okToTestComment)
 	topts.CheckForStatus = "Skipped"
-	topts.Regexp = regexp.MustCompile(fmt.Sprintf("User %s is not allowed to run CI on this repo.", normalUser.UserName))
+	topts.Regexp = regexp.MustCompile(fmt.Sprintf(".*User %s is not allowed to trigger CI via pull_request on this repo.", normalUser.UserName))
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 
 	topts.ParamsRun.Clients.Log.Infof("Sending a /retest comment as a user not belonging to an allowed team in Repo CR policy but part of the organization")
@@ -165,6 +168,7 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	// failure without the prun and the new one with the prun on success same
 	// bug we have github checkrun that we need to fix
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, fmt.Sprintf("%s / %s", settings.PACApplicationNameDefaultValue, generatename), true)
+	topts.GiteaCNX = adminCnx
 }
 
 // TestGiteaACLOrgAllowed tests that the policy check works when the user is part of an allowed org.
@@ -179,12 +183,14 @@ func TestGiteaACLOrgAllowed(t *testing.T) {
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
+	adminCnx := topts.GiteaCNX
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 
 	tgitea.CreateForkPullRequest(t, topts, secondcnx, "read")
 	topts.CheckForStatus = "success"
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
+	topts.GiteaCNX = adminCnx
 }
 
 // TestGiteaACLOrgPendingApproval tests when non authorized user sends a PR the status of CI shows as pending.
@@ -198,6 +204,7 @@ func TestGiteaACLOrgPendingApproval(t *testing.T) {
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
+	adminCnx := topts.GiteaCNX
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 
@@ -206,6 +213,7 @@ func TestGiteaACLOrgPendingApproval(t *testing.T) {
 	tgitea.WaitForStatus(t, topts, topts.PullRequest.Head.Sha, "", false)
 	topts.Regexp = regexp.MustCompile(`.*is skipping this commit.*`)
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
+	topts.GiteaCNX = adminCnx
 }
 
 // TestGiteaACLCommentsAllowing tests that the gitops comment commands work.
@@ -288,6 +296,8 @@ func TestGiteaACLCommentsAllowingRememberOkToTestFalse(t *testing.T) {
 
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
+	adminCnx := topts.GiteaCNX
+
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 
@@ -321,6 +331,7 @@ func TestGiteaACLCommentsAllowingRememberOkToTestFalse(t *testing.T) {
 	// status of CI is success because comment /ok-to-test added by authorized user
 	topts.Regexp = successRegexp
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
+	topts.GiteaCNX = adminCnx
 }
 
 // TestGiteaACLCommentsAllowingRememberOkToTestTrue tests when unauthorized user sends a PR the status shows as pending
@@ -341,6 +352,7 @@ func TestGiteaACLCommentsAllowingRememberOkToTestTrue(t *testing.T) {
 	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
+	adminCnx := topts.GiteaCNX
 	secondcnx, _, err := tgitea.CreateGiteaUserSecondCnx(topts, topts.TargetRefName, topts.GiteaPassword)
 	assert.NilError(t, err)
 
@@ -362,6 +374,7 @@ func TestGiteaACLCommentsAllowingRememberOkToTestTrue(t *testing.T) {
 	// status of CI is success because comment /ok-to-test added by authorized user before
 	topts.Regexp = successRegexp
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
+	topts.GiteaCNX = adminCnx
 }
 
 func TestGiteaPolicyAllowedOwnerFiles(t *testing.T) {
@@ -377,6 +390,7 @@ func TestGiteaPolicyAllowedOwnerFiles(t *testing.T) {
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
+	adminCnx := topts.GiteaCNX
 	targetRef := topts.TargetRefName
 	orgName := "org-" + topts.TargetRefName
 	topts.Opts.Organization = orgName
@@ -436,9 +450,10 @@ func TestGiteaPolicyAllowedOwnerFiles(t *testing.T) {
 	topts.CheckForStatus = "success"
 	generatename := strings.TrimSuffix(firstpr.GetGenerateName(), "-")
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, fmt.Sprintf("%s / %s", settings.PACApplicationNameDefaultValue, generatename), false)
+	topts.GiteaCNX = adminCnx
 }
 
-// TestGiteaPolicyOnComment tests that on-comments annotation respect the pull_requests policy
+// TestGiteaPolicyOnComment tests that on-comments annotation respect the pull_requests policy.
 func TestGiteaPolicyOnComment(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		OnOrg:                true,
@@ -491,6 +506,7 @@ func TestGiteaPolicyOnComment(t *testing.T) {
 	tgitea.PostCommentOnPullRequest(t, topts, "/hello-world")
 	topts.Regexp = successRegexp
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
+	topts.GiteaCNX = adminCnx
 }
 
 // Local Variables:
