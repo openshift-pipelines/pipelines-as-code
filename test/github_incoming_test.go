@@ -109,7 +109,17 @@ func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[stri
 	runcnx.Clients.Log.Infof("Kicked off on incoming URL: %s", url)
 	assert.Assert(t, httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
 	// to re enable after debugging...
-	defer tgithub.TearDown(ctx, t, runcnx, ghprovider, -1, targetRefName, randomedString, opts)
+	g := tgithub.PRTest{
+		Cnx:             runcnx,
+		Options:         opts,
+		Provider:        ghprovider,
+		TargetNamespace: randomedString,
+		TargetRefName:   targetRefName,
+		PRNumber:        -1,
+		SHA:             sha,
+		Logger:          runcnx.Clients.Log,
+	}
+	defer g.TearDown(ctx, t)
 
 	sopt := wait.SuccessOpt{
 		Title:           title,

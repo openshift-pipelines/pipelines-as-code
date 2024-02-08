@@ -97,7 +97,17 @@ spec:
 	number, err := tgithub.PRCreate(ctx, runcnx, ghprovider, opts.Organization, opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), title)
 	assert.NilError(t, err)
 
-	defer tgithub.TearDown(ctx, t, runcnx, ghprovider, number, targetRefName, targetNS, opts)
+	g := tgithub.PRTest{
+		Cnx:             runcnx,
+		Options:         opts,
+		Provider:        ghprovider,
+		TargetNamespace: targetNS,
+		TargetRefName:   targetRefName,
+		PRNumber:        number,
+		SHA:             sha,
+		Logger:          runcnx.Clients.Log,
+	}
+	defer g.TearDown(ctx, t)
 
 	runcnx.Clients.Log.Infof("Waiting for Repository to be updated")
 	waitOpts := twait.Opts{
@@ -107,7 +117,7 @@ spec:
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       sha,
 	}
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")

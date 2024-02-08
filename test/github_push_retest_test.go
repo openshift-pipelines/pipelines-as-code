@@ -17,11 +17,15 @@ import (
 
 func TestGithubSecondPushRequestGitOpsComments(t *testing.T) {
 	ctx := context.Background()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPushRequest(ctx, t,
-		"Github Push Request", []string{"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml"}, true, false)
-	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+	g := &tgithub.PRTest{
+		Label:            "Github push request",
+		YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml", "testdata/pipelinerun.yaml"},
+		SecondController: false,
+	}
+	g.RunPushRequest(ctx, t)
+	defer g.TearDown(ctx, t)
 
-	pruns, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), 2)
 
@@ -31,55 +35,55 @@ func TestGithubSecondPushRequestGitOpsComments(t *testing.T) {
 	}{
 		{
 			name:    "Retest",
-			comment: "/retest branch:" + targetNS,
+			comment: "/retest branch:" + g.TargetNamespace,
 			prNum:   4,
 		},
 		{
 			name:    "Test and Cancel PipelineRun",
-			comment: "/cancel pipelinerun-on-push branch:" + targetNS,
+			comment: "/cancel pipelinerun-on-push branch:" + g.TargetNamespace,
 			prNum:   5,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			waitOpts := twait.Opts{
-				RepoName:        targetNS,
-				Namespace:       targetNS,
+				RepoName:        g.TargetNamespace,
+				Namespace:       g.TargetNamespace,
 				MinNumberStatus: tt.prNum,
 				PollTimeout:     twait.DefaultTimeout,
-				TargetSHA:       sha,
+				TargetSHA:       g.SHA,
 			}
-			if tt.comment == "/cancel pipelinerun-on-push branch:"+targetNS {
-				runcnx.Clients.Log.Info("/test pipelinerun-on-push on Push Request before canceling")
-				_, _, err = ghcnx.Client.Repositories.CreateComment(ctx,
-					opts.Organization,
-					opts.Repo, sha,
-					&github.RepositoryComment{Body: github.String("/test pipelinerun-on-push branch:" + targetNS)})
+			if tt.comment == "/cancel pipelinerun-on-push branch:"+g.TargetNamespace {
+				g.Cnx.Clients.Log.Info("/test pipelinerun-on-push on Push Request before canceling")
+				_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
+					g.Options.Organization,
+					g.Options.Repo, g.SHA,
+					&github.RepositoryComment{Body: github.String("/test pipelinerun-on-push branch:" + g.TargetNamespace)})
 				assert.NilError(t, err)
-				err = twait.UntilPipelineRunCreated(ctx, runcnx.Clients, waitOpts)
+				err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
 				assert.NilError(t, err)
 			}
-			runcnx.Clients.Log.Infof("%s on Push Request", tt.comment)
-			_, _, err = ghcnx.Client.Repositories.CreateComment(ctx,
-				opts.Organization,
-				opts.Repo, sha,
+			g.Cnx.Clients.Log.Infof("%s on Push Request", tt.comment)
+			_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
+				g.Options.Organization,
+				g.Options.Repo, g.SHA,
 				&github.RepositoryComment{Body: github.String(tt.comment)})
 			assert.NilError(t, err)
 
-			runcnx.Clients.Log.Info("Waiting for Repository to be updated")
-			err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+			g.Cnx.Clients.Log.Info("Waiting for Repository to be updated")
+			_, err = twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts)
 			assert.NilError(t, err)
 
-			runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
-			repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
+			g.Cnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
+			repo, err := g.Cnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(g.TargetNamespace).Get(ctx, g.TargetNamespace, metav1.GetOptions{})
 			assert.NilError(t, err)
-			if tt.comment == "/cancel pipelinerun-on-push branch:"+targetNS {
+			if tt.comment == "/cancel pipelinerun-on-push branch:"+g.TargetNamespace {
 				assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionFalse)
 			} else {
 				assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionTrue)
 			}
 
-			pruns, err = runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+			pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
 			assert.NilError(t, err)
 			assert.Equal(t, len(pruns.Items), tt.prNum)
 		})

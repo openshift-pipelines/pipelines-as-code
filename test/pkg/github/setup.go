@@ -6,16 +6,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"testing"
 
-	ghlib "github.com/google/go-github/v56/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
-	"gotest.tools/v3/assert"
 )
 
 func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (context.Context, *params.Run, options.E2E, *github.Provider, error) {
@@ -117,25 +113,4 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 	}
 
 	return ctx, run, e2eoptions, gprovider, nil
-}
-
-func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, ghprovider *github.Provider, prNumber int, ref, targetNS string, opts options.E2E) {
-	if os.Getenv("TEST_NOCLEANUP") == "true" {
-		runcnx.Clients.Log.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
-		return
-	}
-	runcnx.Clients.Log.Infof("Closing PR %d", prNumber)
-	if prNumber != -1 {
-		state := "closed"
-		_, _, err := ghprovider.Client.PullRequests.Edit(ctx,
-			opts.Organization, opts.Repo, prNumber,
-			&ghlib.PullRequest{State: &state})
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	repository.NSTearDown(ctx, t, runcnx, targetNS)
-	runcnx.Clients.Log.Infof("Deleting Ref %s", ref)
-	_, err := ghprovider.Client.Git.DeleteRef(ctx, opts.Organization, opts.Repo, ref)
-	assert.NilError(t, err)
 }

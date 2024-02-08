@@ -21,30 +21,34 @@ func TestGithubPullRequestTest(t *testing.T) {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
 	ctx := context.TODO()
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, sha := tgithub.RunPullRequest(ctx, t, "Github test comment",
-		[]string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"}, false, false)
-	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+	g := &tgithub.PRTest{
+		Label:            "Github test implicit comment",
+		YamlFiles:        []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-clone.yaml"},
+		SecondController: false,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
 
-	runcnx.Clients.Log.Infof("Creating /test in PullRequest")
-	_, _, err := ghcnx.Client.Issues.CreateComment(ctx,
-		opts.Organization,
-		opts.Repo, prNumber,
+	g.Cnx.Clients.Log.Infof("Creating /test in PullRequest")
+	_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.PRNumber,
 		&github.IssueComment{Body: github.String("/test pipeline")})
 	assert.NilError(t, err)
 
-	runcnx.Clients.Log.Infof("Wait for the second repository update to be updated")
+	g.Cnx.Clients.Log.Infof("Wait for the second repository update to be updated")
 	waitOpts := twait.Opts{
-		RepoName:        targetNS,
-		Namespace:       targetNS,
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
 		MinNumberStatus: 1,
 		PollTimeout:     twait.DefaultTimeout,
-		TargetSHA:       sha,
+		TargetSHA:       g.SHA,
 	}
-	err = twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
-	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
-	repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
+	g.Cnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
+	repo, err := g.Cnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(g.TargetNamespace).Get(ctx, g.TargetNamespace, metav1.GetOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
 }

@@ -5,6 +5,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -17,23 +18,34 @@ func TestGithubPush(t *testing.T) {
 	}
 	ctx := context.Background()
 	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
-		runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPushRequest(ctx, t,
-			"Github Push Request Webhook", []string{"testdata/pipelinerun-on-push.yaml"}, false, true)
-		defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+		g := &tgithub.PRTest{
+			Label:            "Github push request on Webhook",
+			YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml"},
+			SecondController: false,
+			Webhook:          true,
+		}
+		g.RunPushRequest(ctx, t)
+		defer g.TearDown(ctx, t)
 	} else {
 		t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
 	}
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPushRequest(ctx, t,
-		"Github Push Request Apps", []string{"testdata/pipelinerun-on-push.yaml"}, false, false)
-	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+	g := &tgithub.PRTest{
+		Label:     "Github apps push request",
+		YamlFiles: []string{"testdata/pipelinerun-on-push.yaml"},
+	}
+	g.RunPushRequest(ctx, t)
+	defer g.TearDown(ctx, t)
 }
 
 func TestGithubSecondPush(t *testing.T) {
 	ctx := context.Background()
-
-	runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPushRequest(ctx, t,
-		"Github Push Request GHE Apps", []string{"testdata/pipelinerun-on-push.yaml"}, true, false)
-	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+	g := &tgithub.PRTest{
+		Label:            "Github push request",
+		YamlFiles:        []string{"testdata/pipelinerun-on-push.yaml"},
+		SecondController: true,
+	}
+	g.RunPushRequest(ctx, t)
+	defer g.TearDown(ctx, t)
 }
 
 func TestGithubPushRequestCELMatchOnTitle(t *testing.T) {
@@ -43,8 +55,12 @@ func TestGithubPushRequestCELMatchOnTitle(t *testing.T) {
 			t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
 			continue
 		}
-		runcnx, ghcnx, opts, targetNS, targetRefName, prNumber, _ := tgithub.RunPushRequest(ctx, t,
-			"Github Push Request", []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"}, false, onWebhook)
-		defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+		g := &tgithub.PRTest{
+			Label:     fmt.Sprintf("Github push request test CEL match on title onWebhook=%v", onWebhook),
+			YamlFiles: []string{"testdata/pipelinerun-cel-annotation-for-title-match.yaml"},
+			Webhook:   onWebhook,
+		}
+		g.RunPushRequest(ctx, t)
+		defer g.TearDown(ctx, t)
 	}
 }
