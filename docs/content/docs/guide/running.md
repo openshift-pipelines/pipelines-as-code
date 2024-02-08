@@ -141,6 +141,9 @@ roses are red, violets are blue. pipeline are bound to flake by design.
 /test <pipelinerun-name>
 ```
 
+You can expose custom GitOps commands on `Pull Request` comment via the
+[on-comment]({{< relref "/docs/guide/authoringprs.md#matching-a-pipelinerun-on-a-regexp-in-a-comment" >}}) annotation.
+
 ### GitOps command on push request
 
 To trigger GitOps commands in response to a push request, you can include `GitOps`

@@ -43,6 +43,7 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 			"sender":           strings.ToLower(p.event.Sender),
 			"target_namespace": p.repo.GetNamespace(),
 			"event_type":       p.event.EventType,
+			"trigger_comment":  p.event.TriggerComment,
 		}, map[string]interface{}{
 			"all":      changedFiles.All,
 			"added":    changedFiles.Added,

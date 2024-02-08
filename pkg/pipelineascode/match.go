@@ -10,6 +10,8 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
@@ -115,29 +117,11 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	}
 
 	// Check if the submitter is allowed to run this.
-	if p.event.TriggerTarget != "push" {
-		allowed, err := p.vcx.IsAllowed(ctx, p.event)
-		if err != nil {
+	// on push we don't need to check the policy since the user has pushed to the repo so it has access to it.
+	// on comment we skip it for now, we are going to check later on
+	if p.event.TriggerTarget != triggertype.Push && p.event.EventType != opscomments.NoOpsCommentEventType.String() {
+		if allowed, err := p.checkAccessOrErrror(ctx, repo, ""); !allowed {
 			return repo, err
-		}
-		if !allowed {
-			msg := fmt.Sprintf("User %s is not allowed to run CI on this repo.", p.event.Sender)
-			if p.event.AccountID != "" {
-				msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to run CI on this repo.", p.event.Sender, p.event.AccountID)
-			}
-			p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryPermissionDenied", msg)
-
-			status := provider.StatusOpts{
-				Status:     "queued",
-				Title:      "Pending approval",
-				Conclusion: "pending",
-				Text:       msg,
-				DetailsURL: p.event.URL,
-			}
-			if err := p.vcx.CreateStatus(ctx, p.event, status); err != nil {
-				return repo, fmt.Errorf("failed to run create status, user is not allowed to run: %w", err)
-			}
-			return nil, nil
 		}
 	}
 	return repo, nil
@@ -204,6 +188,14 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		// Don't fail when you don't have a match between pipeline and annotations
 		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
 		return nil, nil
+	}
+
+	// if the event is a comment event, but we don't have any match from the keys.OnComment then do the ACL checks again
+	// we skipped previously so we can get the match from the event to the pipelineruns
+	if p.event.EventType == opscomments.NoOpsCommentEventType.String() || p.event.EventType == opscomments.OnCommentEventType.String() {
+		if allowed, err := p.checkAccessOrErrror(ctx, repo, "by gitops comment"); !allowed {
+			return nil, err
+		}
 	}
 
 	// if event type is incoming then filter out the pipelineruns related to incoming event
@@ -313,4 +305,30 @@ func (p *PacRun) checkNeedUpdate(tmpl string) (string, bool) {
 		return `!Update needed! you have a old basic auth secret name, you need to modify your pipelinerun and change the string "secret: pac-git-basic-auth-{{repo_owner}}-{{repo_name}}" to "secret: {{ git_auth_secret }}"`, true
 	}
 	return "", false
+}
+
+func (p *PacRun) checkAccessOrErrror(ctx context.Context, repo *v1alpha1.Repository, viamsg string) (bool, error) {
+	allowed, err := p.vcx.IsAllowed(ctx, p.event)
+	if err != nil {
+		return false, err
+	}
+	if allowed {
+		return true, nil
+	}
+	msg := fmt.Sprintf("User %s is not allowed to trigger CI %s on this repo.", p.event.Sender, viamsg)
+	if p.event.AccountID != "" {
+		msg = fmt.Sprintf("User: %s AccountID: %s is not allowed to trigger CI %s on this repo.", p.event.Sender, p.event.AccountID, viamsg)
+	}
+	p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryPermissionDenied", msg)
+	status := provider.StatusOpts{
+		Status:     "queued",
+		Title:      "Pending approval",
+		Conclusion: "pending",
+		Text:       msg,
+		DetailsURL: p.event.URL,
+	}
+	if err := p.vcx.CreateStatus(ctx, p.event, status); err != nil {
+		return false, fmt.Errorf("failed to run create status, user is not allowed to run the CI:: %w", err)
+	}
+	return false, nil
 }

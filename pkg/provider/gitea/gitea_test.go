@@ -1,6 +1,7 @@
 package gitea
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -20,6 +23,137 @@ import (
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func TestProvider_CreateStatus(t *testing.T) {
+	type args struct {
+		event      *info.Event
+		statusOpts provider.StatusOpts
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Test with success conclusion",
+			args: args{
+				event: &info.Event{},
+				statusOpts: provider.StatusOpts{
+					Conclusion: "success",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test with failure conclusion",
+			args: args{
+				event: &info.Event{},
+				statusOpts: provider.StatusOpts{
+					Conclusion: "failure",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test with pending conclusion",
+			args: args{
+				event: &info.Event{},
+				statusOpts: provider.StatusOpts{
+					Conclusion: "pending",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test with neutral conclusion",
+			args: args{
+				event: &info.Event{},
+				statusOpts: provider.StatusOpts{
+					Conclusion: "neutral",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test with in_progress status",
+			args: args{
+				event: &info.Event{},
+				statusOpts: provider.StatusOpts{
+					Status: "in_progress",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test with onpr",
+			args: args{
+				event: &info.Event{},
+				statusOpts: provider.StatusOpts{
+					Status:          "in_progress",
+					PipelineRunName: "mypr",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test with ok-to-test event",
+			args: args{
+				event: &info.Event{EventType: triggertype.OkToTest.String()},
+				statusOpts: provider.StatusOpts{
+					Status:          "in_progress",
+					PipelineRunName: "mypr",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test with oncomment event",
+			args: args{
+				event: &info.Event{EventType: opscomments.OkToTestCommentEventType.String()},
+				statusOpts: provider.StatusOpts{
+					Status:          "in_progress",
+					PipelineRunName: "mypr",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test status_text",
+			args: args{
+				event: &info.Event{EventType: triggertype.PullRequest.String()},
+				statusOpts: provider.StatusOpts{
+					Status:          "in_progress",
+					PipelineRunName: "mypr",
+					Text:            "mytext",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, teardown := tgitea.Setup(t)
+			defer teardown()
+			run := params.New()
+			p := &Provider{
+				Client: fakeclient, // Set this to a valid client for the tests where wantErr is false
+				run:    run,
+			}
+			tt.args.event.Organization = "myorg"
+			tt.args.event.Repository = "myrepo"
+
+			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/issues/0/comments", tt.args.event.Organization, tt.args.event.Repository), func(rw http.ResponseWriter, _ *http.Request) {
+				fmt.Fprintf(rw, `{"state":"success"}`)
+			})
+			mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/statuses/", tt.args.event.Organization, tt.args.event.Repository), func(rw http.ResponseWriter, _ *http.Request) {
+				fmt.Fprintf(rw, `{"state":"success"}`)
+			})
+			if err := p.CreateStatus(context.Background(), tt.args.event, tt.args.statusOpts); (err != nil) != tt.wantErr {
+				t.Errorf("Provider.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
 
 func TestProvider_GetFiles(t *testing.T) {
 	type args struct {

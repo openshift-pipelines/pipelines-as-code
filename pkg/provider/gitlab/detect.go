@@ -51,17 +51,9 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 		return setLoggerAndProceed(true, "", nil)
 	case *gitlab.MergeCommentEvent:
 		if gitEvent.MergeRequest.State == "opened" {
-			if provider.IsTestRetestComment(gitEvent.ObjectAttributes.Note) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if provider.IsOkToTestComment(gitEvent.ObjectAttributes.Note) {
-				return setLoggerAndProceed(true, "", nil)
-			}
-			if provider.IsCancelComment(gitEvent.ObjectAttributes.Note) {
-				return setLoggerAndProceed(true, "", nil)
-			}
+			return setLoggerAndProceed(true, "", nil)
 		}
-		return setLoggerAndProceed(false, "not a gitops style merge comment event", nil)
+		return setLoggerAndProceed(false, "comments on closed merge requests is not supported", nil)
 	default:
 		return setLoggerAndProceed(false, "", fmt.Errorf("gitlab: event \"%s\" is not supported", event))
 	}

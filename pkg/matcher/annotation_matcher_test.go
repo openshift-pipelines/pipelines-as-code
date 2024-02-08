@@ -14,6 +14,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -1112,12 +1113,30 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		},
 	}
 
+	pipelineCel := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pipeline-cel",
+			Annotations: map[string]string{
+				keys.OnCelExpression: `event == "pull_request"`,
+			},
+		},
+	}
+
 	pipelinePush := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-push",
 			Annotations: map[string]string{
 				keys.OnEvent:        "[push]",
 				keys.OnTargetBranch: "[main]",
+			},
+		},
+	}
+
+	pipelineOnComment := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pipeline-on-comment",
+			Annotations: map[string]string{
+				keys.OnComment: "^/hello-world",
 			},
 		},
 	}
@@ -1193,6 +1212,49 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 			wantErr:    false,
 			wantPrName: "pipeline-good",
+		},
+		{
+			name: "match-on-cel-expression",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{pipelineCel},
+				runevent: info.Event{
+					TriggerTarget: "pull_request",
+					EventType:     "pull_request",
+					BaseBranch:    "main",
+					Request: &info.Request{
+						Header: http.Header{},
+					},
+				},
+			},
+			wantErr:    false,
+			wantPrName: pipelineCel.GetName(),
+		},
+		{
+			name: "match-on-comment",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{pipelineGood, pipelineOnComment},
+				runevent: info.Event{
+					TriggerComment: "/hello-world",
+					TriggerTarget:  "pull_request",
+					EventType:      opscomments.OnCommentEventType.String(),
+					BaseBranch:     "main",
+				},
+			},
+			wantErr:    false,
+			wantPrName: pipelineOnComment.GetName(),
+		},
+		{
+			name: "no-match-on-the-comment-should-not-match-the-other-pruns",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{pipelineGood, pipelineOnComment},
+				runevent: info.Event{
+					TriggerComment: "good morning",
+					TriggerTarget:  "pull_request",
+					EventType:      opscomments.OnCommentEventType.String(),
+					BaseBranch:     "main",
+				},
+			},
+			wantErr: true,
 		},
 		{
 			name: "no-match-on-event",

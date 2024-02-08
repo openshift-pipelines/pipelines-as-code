@@ -57,6 +57,13 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: true,
 		},
 		{
+			name:       "bad/mergeRequest closed Event",
+			event:      sample.MREventAsJSON("closed", ""),
+			eventType:  gitlab.EventTypeMergeRequest,
+			isGL:       true,
+			processReq: false,
+		},
+		{
 			name:       "good/mergeRequest update Event with commit",
 			event:      sample.MREventAsJSON("update", `"oldrev": "123"`),
 			eventType:  gitlab.EventTypeMergeRequest,
@@ -71,11 +78,11 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: false,
 		},
 		{
-			name:       "bad/note event with no valid comment",
+			name:       "good/note event",
 			event:      sample.NoteEventAsJSON("abc"),
 			eventType:  gitlab.EventTypeNote,
 			isGL:       true,
-			processReq: false,
+			processReq: true,
 		},
 		{
 			name:       "bad/note Event with ok-to-test comment",
@@ -85,11 +92,11 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: true,
 		},
 		{
-			name:       "bad/issue comment Event with ok-to-test and some string",
+			name:       "good/issue comment Event with ok-to-test and some string",
 			event:      sample.NoteEventAsJSON("abc /ok-to-test"),
 			eventType:  gitlab.EventTypeNote,
 			isGL:       true,
-			processReq: false,
+			processReq: true,
 		},
 		{
 			name:       "good/issue comment Event with retest",

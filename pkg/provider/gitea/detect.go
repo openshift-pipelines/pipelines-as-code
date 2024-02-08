@@ -70,7 +70,7 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype
 				return triggertype.Cancel, ""
 			}
 			// this ignores the comment if it is not a PAC gitops comment and not return an error
-			return "", ""
+			return triggertype.Comment, ""
 		}
 		return "", "skip: not a PAC gitops comment"
 	}

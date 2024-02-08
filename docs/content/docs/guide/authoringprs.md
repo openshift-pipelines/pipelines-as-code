@@ -31,7 +31,7 @@ weight: 3
 
 | Variable            | Description                                                                                       | Example                             | Example Output               |
 |---------------------|---------------------------------------------------------------------------------------------------|-------------------------------------|------------------------------|
-| body                | The full payload body (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter)) | `{{body.pull_request.user.email }}` | <email@domain.com>             |
+| body                | The full payload body (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter)) | `{{body.pull_request.user.email }}` | <email@domain.com>           |
 | event_type          | The event type (eg: `pull_request` or `push`)                                                     | `{{event_type}}`                    | pull_request                 |
 | git_auth_secret     | The secret name auto generated with provider token to check out private repos.                    | `{{git_auth_secret}}`               | pac-gitauth-xkxkx            |
 | headers             | The request headers (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter))   | `{{headers['x-github-event']}}`     | push                         |
@@ -45,6 +45,7 @@ weight: 3
 | source_url          | The source repository URL from which the event come from (same as `repo_url` for push events).    | `{{source_url}}`                    | https:/github.com/repo/owner |
 | target_branch       | The branch name on which the event targets (same as `source_branch` for push events).             | `{{target_branch}}`                 | main                         |
 | target_namespace    | The target namespace where the Repository has matched and the PipelineRun will be created.        | `{{target_namespace}}`              | my-namespace                 |
+| trigger_comment     | The comment triggering the pipelinerun when using a [GitOps command]({{< relref "/docs/guide/running.md#gitops-command-on-pull-or-merge-request" >}}) (like `/test`, `/retest`)      | `{{trigger_comment}}`               | /merge-pr branch             |
 
 - For Pipelines-as-Code to process your `PipelineRun`, you must have either an
   embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML
@@ -169,6 +170,40 @@ pipelinesascode.tekton.dev/on-cel-expression: |
 You can find more information about the CEL language spec here :
 
 <https://github.com/google/cel-spec/blob/master/doc/langdef.md>
+
+### Matching a PipelineRun on a regexp in a comment
+
+{{< tech_preview "Matching PipelineRun on regexp in comments" >}}
+
+You can match a PipelineRun on a comment on a Pull Request with the annotation
+`pipelinesascode.tekton.dev/on-comment`.
+
+The comment is a regexp and if a newly created comment has this regexp it will
+automatically matches the PipelineRun and starts it.
+
+For example:
+
+```yaml
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "merge-pr"
+  annotations:
+    pipelinesascode.tekton.dev/on-comment: "^/merge-pr"
+```
+
+Will match the merge-pr PipelineRun when a comment on a pull request starts
+with `/merge-pr`
+
+You can then use the template variable `{{ trigger_comment }}` to get the
+actual comment and do some action based on for example the comment content.
+
+Note that the `on-comment` annotation will respect the `pull_request` [Policy]({{< relref "/docs/guide/policy" >}}) rule,
+so only users into the `pull_request` policy will be able to trigger the
+PipelineRun.
+
+> *NOTE*: The `on-comment` annotation is only supported on GitHub, Gitea and GitLab providers
 
 ### Matching PipelineRun by path change
 
