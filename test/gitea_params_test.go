@@ -249,7 +249,7 @@ my email is a true beauty and like groot, I AM pac`
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	time.Sleep(5 * time.Second)
@@ -338,7 +338,7 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 	time.Sleep(5 * time.Second)
 
@@ -385,7 +385,7 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 	time.Sleep(5 * time.Second)
 

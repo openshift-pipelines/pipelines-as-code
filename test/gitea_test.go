@@ -295,7 +295,7 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	_, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	time.Sleep(15 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
@@ -511,7 +511,7 @@ func TestGiteaCancelRun(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	_, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.Error(t, err, "pipelinerun has failed")
 
 	tgitea.CheckIfPipelineRunsCancelled(t, topts)
@@ -694,7 +694,7 @@ func TestGiteaPushToTagGreedy(t *testing.T) {
 		MinNumberStatus: 0,
 		PollTimeout:     twait.DefaultTimeout,
 	}
-	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 }
 
@@ -750,7 +750,7 @@ func TestGiteaClusterTasks(t *testing.T) {
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       topts.PullRequest.Head.Sha,
 	}
-	err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	topts.CheckForStatus = "success"

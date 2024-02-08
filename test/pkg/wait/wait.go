@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	corev1 "k8s.io/api/core/v1"
@@ -36,14 +37,14 @@ func UntilMinPRAppeared(ctx context.Context, clients clients.Clients, opts Opts,
 	})
 }
 
-func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts Opts) error {
+func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts Opts) (*pacv1alpha1.Repository, error) {
 	ctx, cancel := context.WithTimeout(ctx, opts.PollTimeout)
 	defer cancel()
-	return kubeinteraction.PollImmediateWithContext(ctx, opts.PollTimeout, func() (bool, error) {
+	var repo *pacv1alpha1.Repository
+	return repo, kubeinteraction.PollImmediateWithContext(ctx, opts.PollTimeout, func() (bool, error) {
 		clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace)
-		r, err := clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Get(ctx, opts.RepoName,
-			metav1.GetOptions{})
-		if err != nil {
+		var err error
+		if repo, err = clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(opts.Namespace).Get(ctx, opts.RepoName, metav1.GetOptions{}); err != nil {
 			return true, err
 		}
 
@@ -60,9 +61,9 @@ func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts O
 			}
 		}
 
-		clients.Log.Infof("Still waiting for repository status to be updated: %d/%d", len(r.Status), opts.MinNumberStatus)
+		clients.Log.Infof("Still waiting for repository status to be updated: %d/%d", len(repo.Status), opts.MinNumberStatus)
 		time.Sleep(2 * time.Second)
-		return len(r.Status) >= opts.MinNumberStatus, nil
+		return len(repo.Status) >= opts.MinNumberStatus, nil
 	})
 }
 

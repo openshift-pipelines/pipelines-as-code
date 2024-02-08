@@ -3,6 +3,7 @@ package wait
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -39,7 +40,7 @@ func Succeeded(ctx context.Context, t *testing.T, runcnx *params.Run, opts optio
 		PollTimeout:     DefaultTimeout,
 		TargetSHA:       sopt.SHA,
 	}
-	err := UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+	_, err := UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
@@ -52,7 +53,12 @@ func Succeeded(ctx context.Context, t *testing.T, runcnx *params.Run, opts optio
 		assert.Equal(t, sopt.SHA, *laststatus.SHA)
 		assert.Equal(t, sopt.SHA, filepath.Base(*laststatus.SHAURL))
 	}
-	assert.Equal(t, sopt.Title, *laststatus.Title)
+	laststatustitle := strings.TrimSpace(*laststatus.Title)
+	if sopt.Title != "" {
+		assert.Equal(t, sopt.Title, laststatustitle)
+	} else {
+		assert.Assert(t, *laststatus.Title != "")
+	}
 	assert.Assert(t, *laststatus.LogURL != "")
 
 	pr, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(sopt.TargetNS).Get(ctx, laststatus.PipelineRunName, v1.GetOptions{})
@@ -71,7 +77,6 @@ func Succeeded(ctx context.Context, t *testing.T, runcnx *params.Run, opts optio
 		assert.Equal(t, sopt.SHA, pr.Annotations[keys.SHA])
 		assert.Equal(t, sopt.SHA, filepath.Base(pr.Annotations[keys.ShaURL]))
 	}
-	assert.Equal(t, sopt.Title, pr.Annotations[keys.ShaTitle])
-
+	assert.Equal(t, laststatustitle, strings.TrimSpace(pr.Annotations[keys.ShaTitle]))
 	runcnx.Clients.Log.Infof("Success, number of status %d has been matched", sopt.NumberofPRMatch)
 }

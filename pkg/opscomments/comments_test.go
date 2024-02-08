@@ -145,7 +145,7 @@ func TestSetEventTypeTestPipelineRun(t *testing.T) {
 			wantTestPr: "prname",
 		},
 		{
-			name:       "no-ops-commenttest event type",
+			name:       "test single event type",
 			comment:    "/test prname",
 			wantType:   TestSingleCommentEventType.String(),
 			wantTestPr: "prname",

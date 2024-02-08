@@ -78,7 +78,17 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	prNumber, err := tgithub.PRCreate(ctx, runcnx, ghcnx, opts.Organization,
 		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), logmsg)
 	assert.NilError(t, err)
-	defer tgithub.TearDown(ctx, t, runcnx, ghcnx, prNumber, targetRefName, targetNS, opts)
+	g := tgithub.PRTest{
+		Cnx:             runcnx,
+		Options:         opts,
+		Provider:        ghcnx,
+		TargetNamespace: targetNS,
+		TargetRefName:   targetRefName,
+		PRNumber:        prNumber,
+		SHA:             sha,
+		Logger:          runcnx.Clients.Log,
+	}
+	defer g.TearDown(ctx, t)
 
 	runcnx.Clients.Log.Info("waiting to let controller process the event")
 	time.Sleep(5 * time.Second)
