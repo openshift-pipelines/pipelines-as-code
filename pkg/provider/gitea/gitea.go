@@ -170,15 +170,16 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 	if _, _, err := v.Client.CreateStatus(event.Organization, event.Repository, event.SHA, gStatus); err != nil {
 		return err
 	}
-	if event.EventType == triggertype.OkToTest.String() || event.EventType == triggertype.Retest.String() ||
-		event.EventType == triggertype.Cancel.String() {
-		event.EventType = triggertype.PullRequest.String()
+	eventType := event.EventType
+	if eventType == triggertype.OkToTest.String() || eventType == triggertype.Retest.String() ||
+		eventType == triggertype.Cancel.String() {
+		eventType = triggertype.PullRequest.String()
 	}
-	if opscomments.IsAnyOpsEventType(event.EventType) {
-		event.EventType = triggertype.PullRequest.String()
+	if opscomments.IsAnyOpsEventType(eventType) {
+		eventType = triggertype.PullRequest.String()
 	}
 
-	if status.Text != "" && (event.EventType == triggertype.PullRequest.String() || event.TriggerTarget == triggertype.PullRequest) {
+	if status.Text != "" && (eventType == triggertype.PullRequest.String() || event.TriggerTarget == triggertype.PullRequest) {
 		status.Text = strings.ReplaceAll(strings.TrimSpace(status.Text), "<br>", "\n")
 		_, _, err := v.Client.CreateIssueComment(event.Organization, event.Repository,
 			int64(event.PullRequestNumber), gitea.CreateIssueCommentOption{

@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
@@ -63,6 +64,7 @@ func buildEventFromPipelineRun(pr *tektonv1.PipelineRun) *info.Event {
 	event.Organization = repo
 	event.Repository = org
 	event.EventType = prAnno[keys.EventType]
+	event.TriggerTarget = triggertype.StringToType(prAnno[keys.EventType])
 	event.BaseBranch = prAnno[keys.Branch]
 	event.SHA = prAnno[keys.SHA]
 

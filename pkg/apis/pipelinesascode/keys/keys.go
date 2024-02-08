@@ -47,6 +47,7 @@ const (
 	GitAuthSecret   = pipelinesascode.GroupName + "/git-auth-secret"
 	CheckRunID      = pipelinesascode.GroupName + "/check-run-id"
 	OnEvent         = pipelinesascode.GroupName + "/on-event"
+	OnComment       = pipelinesascode.GroupName + "/on-comment"
 	OnTargetBranch  = pipelinesascode.GroupName + "/on-target-branch"
 	OnCelExpression = pipelinesascode.GroupName + "/on-cel-expression"
 	TargetNamespace = pipelinesascode.GroupName + "/target-namespace"

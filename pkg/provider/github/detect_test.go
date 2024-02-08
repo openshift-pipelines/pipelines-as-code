@@ -93,7 +93,7 @@ func TestProvider_Detect(t *testing.T) {
 			},
 			eventType:  "issue_comment",
 			isGH:       true,
-			processReq: false,
+			processReq: true,
 		},
 		{
 			name: "issue comment Event with no valid comment",
@@ -112,7 +112,7 @@ func TestProvider_Detect(t *testing.T) {
 			},
 			eventType:  "issue_comment",
 			isGH:       true,
-			processReq: false,
+			processReq: true,
 		},
 		{
 			name: "issue comment Event with ok-to-test comment",

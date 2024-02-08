@@ -49,6 +49,11 @@ func TestIsAnyOpsEventType(t *testing.T) {
 			want:      true,
 		},
 		{
+			name:      "OnCommentEventType",
+			eventType: OnCommentEventType.String(),
+			want:      true,
+		},
+		{
 			name:      "NoOpsCommentEventType",
 			eventType: NoOpsCommentEventType.String(),
 			want:      false,

@@ -59,6 +59,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.TriggerTarget = triggertype.PullRequest
 		processedEvent.SourceProjectID = gitEvent.ObjectAttributes.SourceProjectID
 		processedEvent.TargetProjectID = gitEvent.Project.ID
+		processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
 	case *gitlab.TagEvent:
 		lastCommitIdx := len(gitEvent.Commits) - 1
 		processedEvent.Sender = gitEvent.UserUsername
@@ -79,6 +80,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		v.userID = gitEvent.UserID
 		processedEvent.SourceProjectID = gitEvent.ProjectID
 		processedEvent.TargetProjectID = gitEvent.ProjectID
+		processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
 	case *gitlab.PushEvent:
 		if len(gitEvent.Commits) == 0 {
 			return nil, fmt.Errorf("no commits attached to this push event")
@@ -102,6 +104,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		v.userID = gitEvent.UserID
 		processedEvent.SourceProjectID = gitEvent.ProjectID
 		processedEvent.TargetProjectID = gitEvent.ProjectID
+		processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
 	case *gitlab.MergeCommentEvent:
 		processedEvent.Sender = gitEvent.User.Username
 		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
@@ -116,7 +119,6 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.HeadURL = gitEvent.MergeRequest.Source.WebURL
 
 		opscomments.SetEventTypeAndTargetPR(processedEvent, gitEvent.ObjectAttributes.Note)
-
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
 		processedEvent.TriggerTarget = triggertype.PullRequest

@@ -438,6 +438,61 @@ func TestGiteaPolicyAllowedOwnerFiles(t *testing.T) {
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, fmt.Sprintf("%s / %s", settings.PACApplicationNameDefaultValue, generatename), false)
 }
 
+// TestGiteaPolicyOnComment tests that on-comments annotation respect the pull_requests policy
+func TestGiteaPolicyOnComment(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		OnOrg:                true,
+		SkipEventsCheck:      true,
+		CheckForNumberStatus: 2,
+		TargetEvent:          triggertype.PullRequest.String(),
+		Settings: &v1alpha1.Settings{
+			Policy: &v1alpha1.Policy{
+				PullRequest: []string{"pull_requester"},
+			},
+		},
+		YAMLFiles: map[string]string{".tekton/pr.yaml": "testdata/pipelinerun-on-comment-annotation.yaml"},
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	adminCnx := topts.GiteaCNX
+	topts.ParamsRun.Clients.Log.Infof("Repo CRD %s has been created with Policy: %+v", topts.TargetRefName, topts.Settings.Policy)
+	orgName := "org-" + topts.TargetRefName
+	topts.Opts.Organization = orgName
+
+	// create normal team on org and add user normal onto it
+	normalTeam, err := tgitea.CreateTeam(topts, orgName, "normal")
+	assert.NilError(t, err)
+	normalUserNamePasswd := fmt.Sprintf("normal-%s", topts.TargetRefName)
+	normalUserCnx, normalUser, err := tgitea.CreateGiteaUserSecondCnx(topts, normalUserNamePasswd, normalUserNamePasswd)
+	assert.NilError(t, err)
+	_, err = topts.GiteaCNX.Client.AddTeamMember(normalTeam.ID, normalUser.UserName)
+	assert.NilError(t, err)
+	topts.ParamsRun.Clients.Log.Infof("User %s has been added to team %s", normalUser.UserName, normalTeam.Name)
+	tgitea.CreateForkPullRequest(t, topts, normalUserCnx, "")
+
+	topts.GiteaCNX = normalUserCnx
+	tgitea.PostCommentOnPullRequest(t, topts, "/hello-world")
+	topts.CheckForStatus = "Skipped"
+	topts.CheckForNumberStatus = 1
+	topts.Regexp = regexp.MustCompile(`.*Pipelines as Code CI is skipping this commit.*`)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, settings.PACApplicationNameDefaultValue, false)
+
+	topts.GiteaCNX = adminCnx
+	pullRequesterTeam, err := tgitea.CreateTeam(topts, orgName, "pull_requester")
+	assert.NilError(t, err)
+	pullRequesterUserNamePasswd := fmt.Sprintf("pullRequester-%s", topts.TargetRefName)
+	pullRequesterUserCnx, pullRequesterUser, err := tgitea.CreateGiteaUserSecondCnx(topts, pullRequesterUserNamePasswd, pullRequesterUserNamePasswd)
+	assert.NilError(t, err)
+	_, err = topts.GiteaCNX.Client.AddTeamMember(pullRequesterTeam.ID, pullRequesterUser.UserName)
+	assert.NilError(t, err)
+	topts.ParamsRun.Clients.Log.Infof("User %s has been added to team %s", pullRequesterUser.UserName, pullRequesterTeam.Name)
+	topts.GiteaCNX = pullRequesterUserCnx
+	tgitea.PostCommentOnPullRequest(t, topts, "/hello-world")
+	topts.Regexp = successRegexp
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -run TestGiteaPush ."
 // End:

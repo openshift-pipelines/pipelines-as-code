@@ -30,6 +30,7 @@ var (
 	TestSingleCommentEventType   = EventType("test-comment")
 	RetestSingleCommentEventType = EventType("retest-comment")
 	RetestAllCommentEventType    = EventType("retest-all-comment")
+	OnCommentEventType           = EventType("on-comment")
 	CancelCommentSingleEventType = EventType("cancel-comment")
 	CancelCommentAllEventType    = EventType("cancel-all-comment")
 	OkToTestCommentEventType     = EventType("ok-to-test-comment")
@@ -75,6 +76,7 @@ func SetEventTypeAndTargetPR(event *info.Event, comment string) {
 		event.TargetCancelPipelineRun = GetPipelineRunFromCancelComment(comment)
 	}
 	event.EventType = commentType.String()
+	event.TriggerComment = comment
 }
 
 func IsOkToTestComment(comment string) bool {
@@ -92,7 +94,8 @@ func IsAnyOpsEventType(eventType string) bool {
 		eventType == RetestSingleCommentEventType.String() ||
 		eventType == CancelCommentSingleEventType.String() ||
 		eventType == CancelCommentAllEventType.String() ||
-		eventType == OkToTestCommentEventType.String()
+		eventType == OkToTestCommentEventType.String() ||
+		eventType == OnCommentEventType.String()
 }
 
 func GetPipelineRunFromTestComment(comment string) string {

@@ -76,6 +76,7 @@ data:
     REVERSE_PROXY_TRUSTED_PROXIES = *
     INTERNAL_TOKEN                = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYmYiOjE2NTI3MTU2MTR9.oOW1-fGDSz0X2mrThNUwpw8uioEnwh1GcgAbZsHuQ4g
     PASSWORD_HASH_ALGO            = pbkdf2
+    MIN_PASSWORD_LENGTH           = 3
 
     [service]
     DISABLE_REGISTRATION              = false
@@ -157,7 +158,11 @@ spec:
             - name: GITEA_URL
               value: VAR_GITEA_URL
           command:
-            ["bash", "-xvec", "rm -rf /home/gitea/conf;cp -av /configmap /home/gitea/conf;rungitea"]
+            [
+              "bash",
+              "-xvec",
+              "rm -rf /home/gitea/conf;cp -av /configmap /home/gitea/conf;rungitea",
+            ]
           ports:
             - containerPort: 3000
           volumeMounts:

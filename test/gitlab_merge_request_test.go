@@ -5,9 +5,12 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"regexp"
 	"testing"
 
+	"github.com/google/go-github/v56/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -16,9 +19,11 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
 	clientGitlab "github.com/xanzy/go-gitlab"
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -76,7 +81,6 @@ func TestGitlabMergeRequest(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Send another Push to make an update and make sure we react to it
-	// this used to be not working
 	entries, err = payload.GetEntries(map[string]string{
 		"hello-world.yaml": "testdata/pipelinerun.yaml",
 	}, targetNS, projectinfo.DefaultBranch,
@@ -126,6 +130,91 @@ func TestGitlabMergeRequest(t *testing.T) {
 	}
 	// we get 2 PRS initially, 2 prs from the push update and 2 prs from the /retest == 6
 	assert.Equal(t, 6, successCommentsPost)
+}
+
+func TestGitlabOnComment(t *testing.T) {
+	triggerComment := "/hello-world"
+	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+	ctx := context.Background()
+	runcnx, opts, glprovider, err := tgitlab.Setup(ctx)
+	assert.NilError(t, err)
+	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Info("Testing Gitlab on Comment matches")
+
+	projectinfo, resp, err := glprovider.Client.Projects.GetProject(opts.ProjectID, nil)
+	assert.NilError(t, err)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+	}
+
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS, nil)
+	assert.NilError(t, err)
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun.yaml": "testdata/pipelinerun-on-comment-annotation.yaml",
+	}, targetNS, projectinfo.DefaultBranch,
+		triggertype.PullRequest.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	gitCloneURL, err := scm.MakeGitCloneURL(projectinfo.WebURL, opts.UserName, opts.Password)
+	assert.NilError(t, err)
+	scmOpts := &scm.Opts{
+		GitURL:        gitCloneURL,
+		Log:           runcnx.Clients.Log,
+		WebURL:        projectinfo.WebURL,
+		TargetRefName: targetRefName,
+		BaseRefName:   projectinfo.DefaultBranch,
+	}
+	scm.PushFilesToRefGit(t, scmOpts, entries)
+
+	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
+	mrTitle := "TestMergeRequest - " + targetRefName
+	mrID, err := tgitlab.CreateMR(glprovider.Client, opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Infof("MergeRequest %s/-/merge_requests/%d has been created", projectinfo.WebURL, mrID)
+	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
+
+	note, _, err := glprovider.Client.Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
+		Body: github.String(triggerComment),
+	})
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Infof("Note %s/-/merge_requests/%d/notes/%d has been created", projectinfo.WebURL, mrID, note.ID)
+
+	sopt := wait.SuccessOpt{
+		OnEvent:         opscomments.OnCommentEventType.String(),
+		TargetNS:        targetNS,
+		NumberofPRMatch: 1,
+		Title:           "Committing files from test on " + targetRefName,
+	}
+	wait.Succeeded(ctx, t, runcnx, opts, sopt)
+
+	// get pull request info
+	mr, _, err := glprovider.Client.MergeRequests.GetMergeRequest(opts.ProjectID, mrID, nil)
+	assert.NilError(t, err)
+
+	waitOpts := twait.Opts{
+		RepoName:        targetNS,
+		Namespace:       targetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       mr.SHA,
+	}
+	repo, err := twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
+	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
+	lastPrName := repo.Status[len(repo.Status)-1].PipelineRunName
+
+	err = twait.RegexpMatchingInPodLog(
+		context.Background(),
+		runcnx,
+		targetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName),
+		"step-task",
+		*regexp.MustCompile(triggerComment),
+		2)
 }
 
 // Local Variables:

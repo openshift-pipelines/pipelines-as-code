@@ -77,7 +77,7 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype
 				return triggertype.Cancel, ""
 			}
 		}
-		return "", "comment: not a PAC gitops pull request comment"
+		return triggertype.Comment, ""
 	case *github.CheckSuiteEvent:
 		if event.GetAction() == "rerequested" && event.GetCheckSuite() != nil {
 			return triggertype.CheckSuiteRerequested, ""

@@ -42,7 +42,9 @@ func (p *Policy) checkAllowed(ctx context.Context, tType triggertype.Trigger) (R
 	// NOTE: This make /retest /ok-to-test /test bound to the same policy, which is fine from a security standpoint but maybe we want to refine this in the future.
 	case triggertype.OkToTest, triggertype.Retest:
 		sType = settings.Policy.OkToTest
-	case triggertype.PullRequest:
+	// apply the same policy for PullRequest and comment
+	// we don't support comments on PRs yet but if we do on the future we will need our own policy
+	case triggertype.PullRequest, triggertype.Comment:
 		sType = settings.Policy.PullRequest
 		// NOTE: not supported yet, will imp if it gets requested and reasonable to implement
 	case triggertype.Push, triggertype.Cancel, triggertype.CheckSuiteRerequested, triggertype.CheckRunRerequested, triggertype.Incoming:

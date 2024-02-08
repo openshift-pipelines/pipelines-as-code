@@ -139,7 +139,7 @@ func TestProviderDetect(t *testing.T) {
 			processEvent: true,
 		},
 		{
-			name: "bad/issue comment",
+			name: "good/random issue comment",
 			args: args{
 				req: &http.Request{
 					Header: http.Header{
@@ -149,7 +149,7 @@ func TestProviderDetect(t *testing.T) {
 				payload: `{"action": "created", "comment":{"body": "YOYO/ok-to-test"}, "issue":{"pull_request": {"merged": false}, "state": "open"}}`,
 			},
 			isGitea:      true,
-			processEvent: false,
+			processEvent: true,
 		},
 		{
 			name: "bad/event not supported",

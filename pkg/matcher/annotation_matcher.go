@@ -10,6 +10,7 @@ import (
 	"github.com/google/cel-go/common/types"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -115,7 +116,7 @@ func getTargetBranch(prun *tektonv1.PipelineRun, logger *zap.SugaredLogger, even
 	}
 
 	if targetEvent == "" || targetBranch == "" {
-		logger.Infof("skipping pipelinerun %s, no on-target-event or on-target-branch has been set in pipelinerun", prun.GetGenerateName())
+		logger.Infof("skipping pipelinerun %s, no on-target-event, on-target-branch or any other matching conditions has been met in the pipelinerun annotations", prun.GetGenerateName())
 		return false, "", "", nil
 	}
 	return true, targetEvent, targetBranch, nil
@@ -166,6 +167,23 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			}
 		}
 
+		if targetComment, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnComment]; ok {
+			re, err := regexp.Compile(targetComment)
+			if err != nil {
+				logger.Warnf("could not compile regexp %s from pipelineRun %s", targetComment, prun.GetGenerateName())
+				continue
+			}
+			if re.MatchString(event.TriggerComment) {
+				event.EventType = opscomments.OnCommentEventType.String()
+				logger.Infof("matched pipelinerun with name: %s on gitops comment: %q", prun.GetGenerateName(), event.TriggerComment)
+				matchedPRs = append(matchedPRs, prMatch)
+				continue
+			}
+		}
+		// if the event is a comment event, but we don't have any match from the keys.OnComment then skip the other evaluations
+		if event.EventType == opscomments.NoOpsCommentEventType.String() || event.EventType == opscomments.OnCommentEventType.String() {
+			continue
+		}
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnCelExpression]; ok {
 			out, err := celEvaluate(ctx, celExpr, event, vcx)
 			if err != nil {

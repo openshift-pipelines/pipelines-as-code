@@ -22,6 +22,7 @@ import (
 	tknpaclist "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/list"
 	tknpacresolve "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
@@ -758,6 +759,58 @@ func TestGiteaClusterTasks(t *testing.T) {
 
 	topts.CheckForStatus = "success"
 	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "", true)
+}
+
+// TestGiteaOnCommentAnnotation test custom annotations for gitops comment.
+func TestGiteaOnCommentAnnotation(t *testing.T) {
+	var err error
+	ctx := context.Background()
+	topts := &tgitea.TestOpts{
+		TargetRefName: names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"),
+	}
+	triggerComment := "/hello-world"
+	topts.TargetNS = topts.TargetRefName
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, err = tgitea.Setup(ctx)
+	assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
+	ctx, err = cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	assert.NilError(t, secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS, "pac-secret"))
+	topts.TargetEvent = triggertype.PullRequest.String()
+	topts.YAMLFiles = map[string]string{
+		".tekton/on-comment-match.yaml":   "testdata/pipelinerun-on-comment-annotation.yaml",
+		".tekton/pull-request-match.yaml": "testdata/pipelinerun.yaml",
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
+
+	tgitea.PostCommentOnPullRequest(t, topts, triggerComment)
+	// we have two status one for the pull request match and one on comment match from the comment sent
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+	}
+	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	tgitea.PostCommentOnPullRequest(t, topts, triggerComment)
+	waitOpts.MinNumberStatus = 3
+	// now we should have only 3 status, the last one is the on comment match from the comment sent
+	// but should not have matched the pull request ones
+	repo, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+	assert.Equal(t, len(repo.Status), waitOpts.MinNumberStatus, fmt.Sprintf("should have only %d status", waitOpts.MinNumberStatus))
+	assert.Equal(t, *repo.Status[len(repo.Status)-1].EventType, opscomments.OnCommentEventType.String(), "should have a on comment event type")
+
+	last := repo.Status[len(repo.Status)-1]
+	err = twait.RegexpMatchingInPodLog(context.Background(),
+		topts.ParamsRun,
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName), "step-task", *regexp.MustCompile(triggerComment), 2)
+	assert.NilError(t, err)
 }
 
 // Local Variables:
