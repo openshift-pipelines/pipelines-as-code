@@ -231,6 +231,7 @@ func TestGetTektonDir(t *testing.T) {
 		expectedString       string
 		provenance           string
 		filterMessageSnippet string
+		wantErr              string
 	}{
 		{
 			name: "test no subtree",
@@ -265,6 +266,17 @@ func TestGetTektonDir(t *testing.T) {
 			expectedString: "FROMSUBTREE",
 			treepath:       "testdata/tree/subdir",
 		},
+		{
+			name: "test with badly formatted yaml",
+			event: &info.Event{
+				Organization: "tekton",
+				Repository:   "cat",
+				SHA:          "123",
+			},
+			expectedString: "FROMSUBTREE",
+			treepath:       "testdata/tree/badyaml",
+			wantErr:        "error unmarshalling yaml file badyaml.yaml: error converting YAML to JSON: yaml: line 2: did not find expected key",
+		},
 	}
 	for _, tt := range testGetTektonDir {
 		t.Run(tt.name, func(t *testing.T) {
@@ -286,6 +298,11 @@ func TestGetTektonDir(t *testing.T) {
 			ghtesthelper.SetupGitTree(t, mux, tt.treepath, tt.event, false)
 
 			got, err := gvcs.GetTektonDir(ctx, tt.event, ".tekton", tt.provenance)
+			if tt.wantErr != "" {
+				assert.Assert(t, err != nil, "we should have get an error here")
+				assert.Equal(t, tt.wantErr, err.Error())
+				return
+			}
 			assert.NilError(t, err)
 			assert.Assert(t, strings.Contains(got, tt.expectedString), "expected %s, got %s", tt.expectedString, got)
 			if tt.filterMessageSnippet != "" {

@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
 )
 
 var _ provider.Interface = (*Provider)(nil)
@@ -255,6 +256,10 @@ func (v *Provider) concatAllYamlFiles(objects []bitbucket.RepositoryFile, event 
 			data, err := v.getBlob(event, revision, value.Path)
 			if err != nil {
 				return "", err
+			}
+			var i any
+			if err := yaml.Unmarshal([]byte(data), &i); err != nil {
+				return "", fmt.Errorf("error unmarshalling yaml file %s: %w", value.Path, err)
 			}
 
 			if allTemplates != "" && !strings.HasPrefix(data, "---") {

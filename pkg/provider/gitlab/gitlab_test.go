@@ -257,14 +257,14 @@ func TestGetTektonDir(t *testing.T) {
 		fields               fields
 		args                 args
 		wantStr              string
-		wantErr              bool
+		wantErr              string
 		wantClient           bool
 		prcontent            string
 		filterMessageSnippet string
 	}{
 		{
 			name:    "no client set",
-			wantErr: true,
+			wantErr: noClientErrStr,
 		},
 		{
 			name:       "not found, no err",
@@ -274,11 +274,15 @@ func TestGetTektonDir(t *testing.T) {
 		{
 			name:       "bad yaml",
 			wantClient: true,
-			args:       args{event: &info.Event{SHA: "abcd", HeadBranch: "main"}},
+			args: args{
+				event: &info.Event{SHA: "abcd", HeadBranch: "main"},
+				path:  ".tekton",
+			},
 			fields: fields{
 				sourceProjectID: 10,
 			},
-			prcontent: "bad yaml",
+			prcontent: "bad:\n- yaml\nfoo",
+			wantErr:   "error unmarshalling yaml file .tekton/subtree/pr.yaml: yaml: line 4: could not find expected ':'",
 		},
 		{
 			name:      "list tekton dir",
@@ -354,8 +358,9 @@ func TestGetTektonDir(t *testing.T) {
 			}
 
 			got, err := v.GetTektonDir(ctx, tt.args.event, tt.args.path, tt.args.provenance)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetTektonDir() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != "" {
+				assert.Assert(t, err != nil, "expected error %s, got %v", tt.wantErr, err)
+				assert.Equal(t, err.Error(), tt.wantErr)
 				return
 			}
 			if tt.wantStr != "" {

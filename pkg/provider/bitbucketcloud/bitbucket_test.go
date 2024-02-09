@@ -28,7 +28,7 @@ func TestGetTektonDir(t *testing.T) {
 		event                *info.Event
 		testDirPath          string
 		contentContains      string
-		wantErr              bool
+		wantErr              string
 		removeSuffix         bool
 		provenance           string
 		filterMessageSnippet string
@@ -55,6 +55,12 @@ func TestGetTektonDir(t *testing.T) {
 			contentContains: "kind: PipelineRun",
 		},
 		{
+			name:        "Bad yaml files in there",
+			event:       bbcloudtest.MakeEvent(nil),
+			testDirPath: "../../pipelineascode/testdata/bad_yaml/.tekton",
+			wantErr:     "error unmarshalling yaml file .tekton/badyaml.yaml: yaml: line 2: did not find expected key",
+		},
+		{
 			name:            "No yaml files in there",
 			event:           bbcloudtest.MakeEvent(nil),
 			testDirPath:     "../../pipelineascode/testdata/no_yaml/.tekton",
@@ -71,8 +77,9 @@ func TestGetTektonDir(t *testing.T) {
 			v := &Provider{Logger: fakelogger, Client: bbclient}
 			bbcloudtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.provenance)
 			content, err := v.GetTektonDir(ctx, tt.event, ".tekton", tt.provenance)
-			if tt.wantErr {
-				assert.Assert(t, err != nil, "GetTektonDir() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != "" {
+				assert.Assert(t, err != nil, "expected error %s, got %v", tt.wantErr, err)
+				assert.Equal(t, err.Error(), tt.wantErr)
 				return
 			}
 			if tt.contentContains == "" {

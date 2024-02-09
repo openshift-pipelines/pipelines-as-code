@@ -54,9 +54,9 @@ func (p *PacRun) Run(ctx context.Context) error {
 			Text:       fmt.Sprintf("There was an issue validating the commit: %q", err),
 			DetailsURL: p.run.Clients.ConsoleUI.URL(),
 		})
-		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("There was an error while processing the payload: %s", err))
+		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("an error occurred: %s", err))
 		if createStatusErr != nil {
-			p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
+			p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("cannot create status: %s: %s", err, createStatusErr))
 		}
 	}
 	if len(matchedPRs) == 0 {
