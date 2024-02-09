@@ -91,7 +91,7 @@ func checkStateAndEnqueue(impl *controller.Impl) func(obj interface{}) {
 }
 
 func ctrlOpts() func(impl *controller.Impl) controller.Options {
-	return func(impl *controller.Impl) controller.Options {
+	return func(_ *controller.Impl) controller.Options {
 		return controller.Options{
 			FinalizerName: pipelinesascode.GroupName,
 			PromoteFilterFunc: func(obj interface{}) bool {

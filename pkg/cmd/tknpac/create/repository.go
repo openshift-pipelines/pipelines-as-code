@@ -51,7 +51,7 @@ func repositoryCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command
 		Use:     "repository",
 		Aliases: []string{"repo"},
 		Short:   "Create a repository",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx := context.Background()
 			createOpts.IoStreams = ioStreams
 			createOpts.cliOpts = cli.NewCliOptions()

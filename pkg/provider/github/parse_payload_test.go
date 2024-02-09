@@ -513,14 +513,14 @@ func TestParsePayLoad(t *testing.T) {
 			}
 
 			for key, value := range tt.muxReplies {
-				mux.HandleFunc(key, func(rw http.ResponseWriter, r *http.Request) {
+				mux.HandleFunc(key, func(rw http.ResponseWriter, _ *http.Request) {
 					bjeez, _ := json.Marshal(value)
 					fmt.Fprint(rw, string(bjeez))
 				})
 			}
 			if tt.eventType == "commit_comment" {
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/branches/test1",
-					"owner", "reponame"), func(rw http.ResponseWriter, r *http.Request) {
+					"owner", "reponame"), func(rw http.ResponseWriter, _ *http.Request) {
 					_, err := fmt.Fprintf(rw, `{
 			"name": "test1",
 			"commit": {
@@ -530,7 +530,7 @@ func TestParsePayLoad(t *testing.T) {
 					assert.NilError(t, err)
 				})
 				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/branches/testnew",
-					"owner", "reponame"), func(rw http.ResponseWriter, r *http.Request) {
+					"owner", "reponame"), func(rw http.ResponseWriter, _ *http.Request) {
 					_, err := fmt.Fprintf(rw, `{
 			"name": "testnew",
 			"commit": {
@@ -539,8 +539,7 @@ func TestParsePayLoad(t *testing.T) {
 		}`)
 					assert.NilError(t, err)
 				})
-				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/branches/main",
-					"owner", "reponame"), func(rw http.ResponseWriter, r *http.Request) {
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/branches/main", "owner", "reponame"), func(rw http.ResponseWriter, _ *http.Request) {
 					_, err := fmt.Fprintf(rw, `{
 			"name": "main",
 			"commit": {
@@ -661,7 +660,7 @@ func TestAppTokenGeneration(t *testing.T) {
 		envs                map[string]string
 		resultBaseURL       string
 		checkInstallIDs     []int64
-		extraRepoInstallIds map[string]string
+		extraRepoInstallIDs map[string]string
 	}{
 		{
 			name:         "secret not found",
@@ -692,7 +691,7 @@ func TestAppTokenGeneration(t *testing.T) {
 			seedData:            vaildSecret,
 			nilClient:           false,
 			checkInstallIDs:     []int64{123},
-			extraRepoInstallIds: map[string]string{"another/one": "789", "andanother/two": "10112"},
+			extraRepoInstallIDs: map[string]string{"another/one": "789", "andanother/two": "10112"},
 		},
 		{
 			ctx:          ctxInvalidAppID,
@@ -713,7 +712,7 @@ func TestAppTokenGeneration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeghclient, mux, serverURL, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-			mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", testInstallationID), func(w http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", testInstallationID), func(w http.ResponseWriter, _ *http.Request) {
 				_, _ = fmt.Fprint(w, "{}")
 			})
 			envRemove := env.PatchAll(t, tt.envs)
@@ -764,14 +763,14 @@ func TestAppTokenGeneration(t *testing.T) {
 			if len(tt.checkInstallIDs) > 0 {
 				run.Info.Pac.SecretGHAppRepoScoped = true
 			}
-			if len(tt.extraRepoInstallIds) > 0 {
+			if len(tt.extraRepoInstallIDs) > 0 {
 				extras := ""
-				for name := range tt.extraRepoInstallIds {
+				for name := range tt.extraRepoInstallIDs {
 					split := strings.Split(name, "/")
-					mux.HandleFunc(fmt.Sprintf("/repos/%s/%s", split[0], split[1]), func(w http.ResponseWriter, r *http.Request) {
+					mux.HandleFunc(fmt.Sprintf("/repos/%s/%s", split[0], split[1]), func(w http.ResponseWriter, _ *http.Request) {
 						// i can't do a for name, iid and use iid, cause golang shadows the variable out of the for loop
 						// a bit stupid
-						sid := tt.extraRepoInstallIds[fmt.Sprintf("%s/%s", split[0], split[1])]
+						sid := tt.extraRepoInstallIDs[fmt.Sprintf("%s/%s", split[0], split[1])]
 						_, _ = fmt.Fprintf(w, `{"id": %s}`, sid)
 					})
 					extras += fmt.Sprintf("%s, ", name)
@@ -805,7 +804,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				}
 			}
 
-			for _, extraid := range tt.extraRepoInstallIds {
+			for _, extraid := range tt.extraRepoInstallIDs {
 				// checkInstallIDs and extraRepoInstallIds are merged and extraRepoInstallIds is after
 				found := false
 				extraIDInt, _ := strconv.ParseInt(extraid, 10, 64)
@@ -814,7 +813,7 @@ func TestAppTokenGeneration(t *testing.T) {
 						found = true
 					}
 				}
-				assert.Assert(t, found, "Could not find %s in %s", extraIDInt, tt.extraRepoInstallIds)
+				assert.Assert(t, found, "Could not find %s in %s", extraIDInt, tt.extraRepoInstallIDs)
 			}
 
 			assert.Assert(t, gprovider.Client != nil)

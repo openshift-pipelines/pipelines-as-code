@@ -93,13 +93,13 @@ func TestBBCreate(t *testing.T) {
 	io, _, _, _ := cli.IOTest()
 
 	// webhook created for repo pac/repo
-	mux.HandleFunc("/repositories/pac/repo/hooks", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/repositories/pac/repo/hooks", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = fmt.Fprint(w, `{"type": "ok"}`)
 	})
 
 	// webhook failed for repo pac/invalid
-	mux.HandleFunc("/repositories/pac/invalid/hooks", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/repositories/pac/invalid/hooks", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = fmt.Fprint(w, `{"type": "error"}`)
 	})

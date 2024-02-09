@@ -52,7 +52,7 @@ type Response struct {
 var _ adapter.Adapter = (*listener)(nil)
 
 func New(run *params.Run, k *kubeinteraction.Interaction) adapter.AdapterConstructor {
-	return func(ctx context.Context, processed adapter.EnvConfigAccessor, ceClient cloudevents.Client) adapter.Adapter {
+	return func(ctx context.Context, _ adapter.EnvConfigAccessor, _ cloudevents.Client) adapter.Adapter {
 		return &listener{
 			logger: logging.FromContext(ctx),
 			run:    run,

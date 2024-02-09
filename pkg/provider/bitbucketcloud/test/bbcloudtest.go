@@ -61,7 +61,7 @@ func MuxComments(t *testing.T, mux *http.ServeMux, event *info.Event, comments [
 	assert.Assert(t, ok)
 	prID := fmt.Sprintf("%d", pr.PullRequest.ID)
 	mux.HandleFunc("/repositories/"+event.Organization+"/"+event.Repository+"/pullrequests/"+prID+"/comments/",
-		func(rw http.ResponseWriter, r *http.Request) {
+		func(rw http.ResponseWriter, _ *http.Request) {
 			members := &types.Comments{
 				Values: comments,
 			}
@@ -74,7 +74,7 @@ func MuxComments(t *testing.T, mux *http.ServeMux, event *info.Event, comments [
 func MuxOrgMember(t *testing.T, mux *http.ServeMux, event *info.Event, members []types.Member) {
 	t.Helper()
 	mux.HandleFunc("/workspaces/"+event.Organization+"/members",
-		func(rw http.ResponseWriter, r *http.Request) {
+		func(rw http.ResponseWriter, _ *http.Request) {
 			members := &types.Members{
 				Values: members,
 			}
@@ -110,7 +110,7 @@ func MuxListDirFiles(t *testing.T, mux *http.ServeMux, event *info.Event, dirs m
 
 	for key, value := range dirs {
 		urlp := "/repositories/" + event.Organization + "/" + event.Repository + "/src/" + sha + "/" + key + "/"
-		mux.HandleFunc(urlp, func(rw http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc(urlp, func(rw http.ResponseWriter, _ *http.Request) {
 			dircontents := map[string][]bitbucket.RepositoryFile{
 				"values": value,
 			}
@@ -125,7 +125,7 @@ func MuxCommits(t *testing.T, mux *http.ServeMux, event *info.Event, commits []t
 	t.Helper()
 
 	path := fmt.Sprintf("/repositories/%s/%s/commits/%s", event.Organization, event.Repository, event.SHA)
-	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
 		dircontents := map[string][]types.Commit{
 			"values": commits,
 		}
@@ -138,7 +138,7 @@ func MuxRepoInfo(t *testing.T, mux *http.ServeMux, event *info.Event, repo *bitb
 	t.Helper()
 
 	path := fmt.Sprintf("/repositories/%s/%s", event.Organization, event.Repository)
-	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
 		b, _ := json.Marshal(repo)
 		fmt.Fprint(rw, string(b))
 	})

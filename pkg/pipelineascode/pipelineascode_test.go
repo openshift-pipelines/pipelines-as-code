@@ -44,7 +44,7 @@ const (
 )
 
 func replyString(mux *http.ServeMux, url, body string) {
-	mux.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = fmt.Fprint(w, body)
 	})
 }
@@ -75,7 +75,7 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 		jj)
 
 	if !noReplyOrgPublicMembers {
-		mux.HandleFunc("/orgs/"+runevent.Organization+"/members", func(rw http.ResponseWriter, r *http.Request) {
+		mux.HandleFunc("/orgs/"+runevent.Organization+"/members", func(rw http.ResponseWriter, _ *http.Request) {
 			_, _ = fmt.Fprintf(rw, `[{"login": "%s"}]`, runevent.Sender)
 		})
 	}
@@ -85,7 +85,7 @@ func testSetupCommonGhReplies(t *testing.T, mux *http.ServeMux, runevent info.Ev
 		`{"id": 26}`)
 
 	mux.HandleFunc(fmt.Sprintf("/repos/%s/%s/check-runs/26", runevent.Organization, runevent.Repository),
-		func(w http.ResponseWriter, r *http.Request) {
+		func(_ http.ResponseWriter, r *http.Request) {
 			body, _ := io.ReadAll(r.Body)
 			created := github.CreateCheckRunOptions{}
 			err := json.Unmarshal(body, &created)

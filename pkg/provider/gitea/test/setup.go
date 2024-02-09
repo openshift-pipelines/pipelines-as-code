@@ -28,7 +28,7 @@ func Setup(t *testing.T) (*gitea.Client, *http.ServeMux, func()) {
 		fmt.Fprintln(os.Stderr, "\tDid you accidentally use an absolute endpoint URL rather than relative?")
 		http.Error(w, "Client.BaseURL path prefix is not preserved in the request URL.", http.StatusInternalServerError)
 	})
-	mux.HandleFunc("/version", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/version", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintf(w, `{"version": "%s"}`, giteaMinVersion)
 	})
 	//

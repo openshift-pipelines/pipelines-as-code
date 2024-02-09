@@ -210,7 +210,7 @@ func TestScopeTokenToListOfRepos(t *testing.T) {
 
 			fakeghclient, mux, serverURL, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-			mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", installationID), func(w http.ResponseWriter, r *http.Request) {
+			mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", installationID), func(w http.ResponseWriter, _ *http.Request) {
 				_, _ = fmt.Fprintf(w, `{"token": "%s"}`, tempToken)
 			})
 
@@ -232,11 +232,11 @@ func TestScopeTokenToListOfRepos(t *testing.T) {
 				Run:    run,
 			}
 
-			extraRepoInstallIds := map[string]string{"owner/repo": "789", "owner1/repo1": "10112", "owner2/repo2": "112233"}
-			for v := range extraRepoInstallIds {
+			extraRepoInstallIDs := map[string]string{"owner/repo": "789", "owner1/repo1": "10112", "owner2/repo2": "112233"}
+			for v := range extraRepoInstallIDs {
 				split := strings.Split(v, "/")
-				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s", split[0], split[1]), func(w http.ResponseWriter, r *http.Request) {
-					sid := extraRepoInstallIds[fmt.Sprintf("%s/%s", split[0], split[1])]
+				mux.HandleFunc(fmt.Sprintf("/repos/%s/%s", split[0], split[1]), func(w http.ResponseWriter, _ *http.Request) {
+					sid := extraRepoInstallIDs[fmt.Sprintf("%s/%s", split[0], split[1])]
 					_, _ = fmt.Fprintf(w, `{"id": %s}`, sid)
 				})
 			}

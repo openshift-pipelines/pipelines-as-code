@@ -239,7 +239,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 
 	t.Setenv("PAC_GIT_PROVIDER_TOKEN_APIURL", serverURL+"/api/v3")
 
-	mux.HandleFunc("/installation/repositories", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/installation/repositories", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Authorization", "Bearer 12345")
 		w.Header().Set("Accept", "application/vnd.github+json")
 		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"},{"id":2,"html_url": "https://anotherrepo/that/would/failit"}]}`)
@@ -262,11 +262,11 @@ func Test_ListRepos(t *testing.T) {
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	defer teardown()
 
-	mux.HandleFunc("user/installations/1/repositories/2", func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("user/installations/1/repositories/2", func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(rw)
 	})
 
-	mux.HandleFunc("/installation/repositories", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/installation/repositories", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Authorization", "Bearer 12345")
 		w.Header().Set("Accept", "application/vnd.github+json")
 		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"}]}`)

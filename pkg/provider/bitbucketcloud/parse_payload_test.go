@@ -181,7 +181,7 @@ func TestParsePayload(t *testing.T) {
 		},
 		{
 			name:              "test comment",
-			expectedEventType: opscomments.TestCommentEventType.String(),
+			expectedEventType: opscomments.TestAllCommentEventType.String(),
 			payloadEvent:      bbcloudtest.MakePREvent("account", "sender", "sha", "/test"),
 			eventType:         "pullrequest:comment_created",
 			expectedAccountID: "account",
