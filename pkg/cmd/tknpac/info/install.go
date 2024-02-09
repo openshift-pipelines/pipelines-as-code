@@ -105,7 +105,7 @@ func installCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
 		Short: "Provides installation info for pipelines-as-code (admin only).",
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx := context.Background()
 			if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
 				return err

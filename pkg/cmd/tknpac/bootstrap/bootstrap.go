@@ -139,7 +139,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		Use:   "bootstrap",
 		Long:  "Bootstrap Pipelines as Code",
 		Short: "Bootstrap Pipelines as Code.",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx := context.Background()
 			opts.cliOpts = cli.NewCliOptions()
 			opts.ioStreams.SetColorEnabled(!opts.cliOpts.NoColoring)
@@ -193,7 +193,7 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		Use:   "github-app",
 		Long:  "A command helper to help you create the Pipelines as Code GitHub Application",
 		Short: "Create PAC GitHub Application",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx := context.Background()
 			opts.cliOpts = cli.NewCliOptions()
 			opts.ioStreams.SetColorEnabled(!opts.cliOpts.NoColoring)

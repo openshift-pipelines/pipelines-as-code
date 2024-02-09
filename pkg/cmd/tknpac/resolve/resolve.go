@@ -74,7 +74,7 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 		Use:   "resolve",
 		Long:  longhelp,
 		Short: "Resolve PipelineRun the same way its run on CI",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx := context.Background()
 
 			errc := run.Clients.NewClients(ctx, &run.Info)
@@ -268,7 +268,7 @@ func listAllYamls(paths []string) []string {
 			ret = append(ret, path)
 			continue
 		}
-		err := filepath.Walk(path, func(fname string, fi os.FileInfo, err error) error {
+		err := filepath.Walk(path, func(fname string, _ os.FileInfo, _ error) error {
 			if filepath.Ext(fname) == ".yaml" {
 				ret = append(ret, fname)
 			}

@@ -54,7 +54,7 @@ func MuxNotePost(t *testing.T, mux *http.ServeMux, projectNumber, mrID int, catc
 
 func MuxAllowUserID(mux *http.ServeMux, projectID, userID int) {
 	path := fmt.Sprintf("/projects/%d/members/all/%d", projectID, userID)
-	mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintf(rw, `{"id": %d}`, userID)
 	})
 }
@@ -96,7 +96,7 @@ func MuxDiscussionsNote(mux *http.ServeMux, pid, mrID int, author string, author
 }
 
 func MuxGetFile(mux *http.ServeMux, pid int, fname, content string) {
-	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/files/%s/raw", pid, fname), func(rw http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/files/%s/raw", pid, fname), func(rw http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(rw, content)
 	})
 }

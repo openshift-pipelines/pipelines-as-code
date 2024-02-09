@@ -58,7 +58,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		Use:     "generate",
 		Aliases: []string{"gen"},
 		Short:   "Generate PipelineRun",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx := context.Background()
 			gopt.CLIOpts = cli.NewCliOptions()
 			gopt.IOStreams.SetColorEnabled(!gopt.CLIOpts.NoColoring)

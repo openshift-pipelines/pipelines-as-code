@@ -14,7 +14,7 @@ func Command(ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: fmt.Sprintf("Print %s pac version", settings.TknBinaryName),
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Fprintln(ioStreams.Out, strings.TrimSpace(version.Version))
 		},
 		Annotations: map[string]string{

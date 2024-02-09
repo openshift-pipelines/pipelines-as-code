@@ -42,7 +42,7 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		Annotations: map[string]string{
 			"commandType": "main",
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			var err error
 			opts := cli.NewCliOptions()
 			opts.AllNameSpaces, err = cmd.Flags().GetBool(allNamespacesFlag)
@@ -84,7 +84,7 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		namespaceFlag, "n", "", "If present, the namespace scope for this CLI request")
 
 	_ = cmd.RegisterFlagCompletionFunc(namespaceFlag,
-		func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		func(_ *cobra.Command, args []string, _ string) ([]string, cobra.ShellCompDirective) {
 			return completion.BaseCompletion(namespaceFlag, args)
 		},
 	)

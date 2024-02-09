@@ -91,13 +91,13 @@ func TestGLCreate(t *testing.T) {
 	io, _, _, _ := cli.IOTest()
 
 	// webhook created
-	mux.HandleFunc("/projects/11/hooks", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/projects/11/hooks", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = fmt.Fprint(w, `{"status": "ok"}`)
 	})
 
 	// webhook failed
-	mux.HandleFunc("/projects/13/hooks", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/projects/13/hooks", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = fmt.Fprint(w, `{"status": "forbidden"}`)
 	})
