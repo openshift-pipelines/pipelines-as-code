@@ -18,6 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -36,6 +37,7 @@ const (
 </td></tr>
 {{- end }}
 </table>`
+	noClientErrStr = `no gitlab client has been initialized, exiting... (hint: did you forget setting a secret on your repo?)`
 )
 
 var _ provider.Interface = (*Provider)(nil)
@@ -247,13 +249,17 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 // concatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string.
 func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, runevent *info.Event) (string, error) {
 	var allTemplates string
-
 	for _, value := range objects {
 		if strings.HasSuffix(value.Name, ".yaml") ||
 			strings.HasSuffix(value.Name, ".yml") {
 			data, err := v.getObject(value.Path, runevent.HeadBranch, v.sourceProjectID)
 			if err != nil {
 				return "", err
+			}
+			// validate yaml
+			var i any
+			if err := yaml.Unmarshal(data, &i); err != nil {
+				return "", fmt.Errorf("error unmarshalling yaml file %s: %w", value.Path, err)
 			}
 			if allTemplates != "" && !strings.HasPrefix(string(data), "---") {
 				allTemplates += "---"
@@ -289,8 +295,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, pa
 
 func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error {
 	if v.Client == nil {
-		return fmt.Errorf("no gitlab client has been initialized, " +
-			"exiting... (hint: did you forget setting a secret on your repo?)")
+		return fmt.Errorf(noClientErrStr)
 	}
 
 	// if we don't have a SHA (ie: incoming-webhook) then get it from the branch

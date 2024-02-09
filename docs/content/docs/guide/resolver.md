@@ -4,16 +4,30 @@ weight: 2
 ---
 # Pipelines-as-Code resolver
 
-Pipelines-as-Code resolver ensures the PipelineRun you are running does not
-conflicts with others.
+The Pipelines-as-Code resolver ensures that the PipelineRun you are running
+doesn't conflict with others.
 
-If `Pipelines-as-Code` sees a PipelineRun with a reference to a `Task` or to a
-`Pipeline` in any YAML file located in the `.tekton/` directory it will
-automatically try to *resolves* it (see below) as a single PipelineRun with an
-embedded `PipelineSpec` to a `PipelineRun`.
+Pipelines-as-Code parses any files ending with a `.yaml` or `.yml` suffix in
+the `.tekton` directory and subdirectory at the root of your repository. It
+will automatically attempt to detect any [Tekton](https://tekton.dev) resources
+like `Pipeline`, `PipelineRun`, `Task`.
+
+When detecting a [PipelineRun](https://tekton.dev/docs/pipelines/pipelineruns/) it will try to *resolve*
+it as a single PipelineRun with an embedded PipelineSpec of the referenced
+[Task](https://tekton.dev/docs/pipelines/tasks/) or
+[Pipeline](https://tekton.dev/docs/pipelines/pipelines/). This embedding
+ensures that all dependencies required for execution are contained within a
+single PipelineRun at the time of execution on the cluster.
+
+{{< hint info >}}
+The `Pipelines-as-Code` resolver is a different concept than the [Tekton resolver](https://tekton.dev/docs/pipelines/resolution-getting-started/), both are compatible and you can have the Tekton resolver within Pipelines-as-Code PipelineRun.
+{{< /hint >}}
+
+In any case of errors in any YAML files, parsing will halt, and errors will be
+reported on both the Git provider interface and the event's Namespace stream.
 
 The resolver will then transform the Pipeline `Name` field to a `GenerateName`
-based on the Pipeline name as well.
+based on the Pipeline name to ensure each PipelineRun is unique.
 
 If you want to split your Pipeline and PipelineRun, you can store  the files in the
 `.tekton/` directory or its subdirectories. `Pipeline` and `Task` can as well be

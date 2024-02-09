@@ -150,6 +150,13 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		provenance = repo.Spec.Settings.PipelineRunProvenance
 	}
 	rawTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir, provenance)
+	if err != nil && strings.Contains(err.Error(), "error unmarshalling yaml file") {
+		// make the error a bit more friendly for users who don't know what marshalling or intricacies of the yaml parser works
+		errmsg := err.Error()
+		errmsg = strings.ReplaceAll(errmsg, " error converting YAML to JSON: yaml:", "")
+		errmsg = strings.ReplaceAll(errmsg, "unmarshalling", "while parsing the")
+		return nil, fmt.Errorf(errmsg)
+	}
 	if err != nil || rawTemplates == "" {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
 		if err != nil {
