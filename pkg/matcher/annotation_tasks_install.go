@@ -159,7 +159,7 @@ func (rt RemoteTasks) getRemote(ctx context.Context, uri string, fromHub bool, k
 		if !ok {
 			return "", fmt.Errorf("could not get details for catalog name: %s", "default")
 		}
-		rt.Logger.Infof("successfully fetched %s from default configured catalog HUB on URL: %s", uri, catalogValue.URL)
+		rt.Logger.Infof("successfully fetched %s %s from default configured catalog HUB on URL: %s", uri, kind, catalogValue.URL)
 		return data, nil
 	}
 	return "", fmt.Errorf(`cannot find "%s" anywhere`, uri)

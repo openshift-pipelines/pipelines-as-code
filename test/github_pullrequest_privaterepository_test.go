@@ -6,9 +6,13 @@ package test
 import (
 	"context"
 	"os"
+	"regexp"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	"gotest.tools/v3/assert"
 )
 
 func TestGithubPullRequestGitClone(t *testing.T) {
@@ -21,6 +25,11 @@ func TestGithubPullRequestGitClone(t *testing.T) {
 		YamlFiles: []string{"testdata/pipelinerun_git_clone_private.yaml"},
 	}
 	g.RunPullRequest(ctx, t)
+
+	ctx, err := cctx.GetControllerCtxInfo(ctx, g.Cnx)
+	assert.NilError(t, err)
+	assert.NilError(t, wait.RegexpMatchingInControllerLog(ctx, g.Cnx, *regexp.MustCompile(".*fetched git-clone task"),
+		10, "controller"), "Error while checking the logs of the pipelines-as-code controller pod")
 	defer g.TearDown(ctx, t)
 }
 
