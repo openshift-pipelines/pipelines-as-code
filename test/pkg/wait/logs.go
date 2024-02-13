@@ -27,7 +27,7 @@ func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg
 		}
 
 		if reg.MatchString(output) {
-			clients.Clients.Log.Infof("matched regexp %s in %s:%s labelSelector/pod %s for regexp: %s", reg.String(), labelselector, containerName)
+			clients.Clients.Log.Infof("matched regexp %s in %s:%s labelSelector/pod", reg.String(), labelselector, containerName)
 			return nil
 		}
 		time.Sleep(5 * time.Second)

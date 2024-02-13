@@ -109,8 +109,10 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 		ExpectEvents:   false,
 		CheckForStatus: "success",
 	}
-	_, f := tgitea.TestPR(t, topts)
+	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
+	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *regexp.MustCompile(
+		".*fetched git-clone task"), 10, "controller"))
 	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
 }
 
