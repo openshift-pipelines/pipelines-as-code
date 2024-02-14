@@ -79,7 +79,7 @@ func UntilPipelineRunCreated(ctx context.Context, clients clients.Clients, opts 
 			return true, err
 		}
 
-		clients.Log.Info("still waiting for pipelinerun to be created")
+		clients.Log.Infof("waiting for min number of %d pipelinerun matching selector sha=%s in namespace %s to be created: got %d", opts.MinNumberStatus, opts.TargetSHA, opts.Namespace, len(prs.Items))
 		return len(prs.Items) == opts.MinNumberStatus, nil
 	})
 }
