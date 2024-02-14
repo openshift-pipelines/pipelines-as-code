@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -207,7 +208,9 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	_, _, _ = v.Client.Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
 
 	// only add a note when we are on a MR
-	if event.EventType == triggertype.PullRequest.String() || event.EventType == "Merge_Request" || event.EventType == "Merge Request" {
+	if event.EventType == triggertype.PullRequest.String() ||
+		event.EventType == "Merge_Request" || event.EventType == "Merge Request" ||
+		opscomments.IsAnyOpsEventType(event.EventType) {
 		mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
 		_, _, err := v.Client.Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
 		return err

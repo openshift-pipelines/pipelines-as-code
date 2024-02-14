@@ -135,6 +135,20 @@ func TestCreateStatus(t *testing.T) {
 			},
 		},
 		{
+			name:       "gitops comments completed",
+			wantClient: true,
+			wantErr:    false,
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "completed",
+				},
+				event: &info.Event{
+					TriggerTarget: "Note",
+				},
+				postStr: "has completed",
+			},
+		},
+		{
 			name:       "completed with a details url",
 			wantClient: true,
 			wantErr:    false,
