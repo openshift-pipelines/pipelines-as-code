@@ -22,7 +22,6 @@ metadata:
     app.kubernetes.io/part-of: pipelines-as-code
     openshift.io/cluster-monitoring: "true"
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,7 +97,6 @@ rules:
       - update
       - watch
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -189,15 +187,14 @@ metadata:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
-- kind: ServiceAccount
-  name: pipelines-as-code-controller
-  namespace: pipelines-as-code
+  - kind: ServiceAccount
+    name: pipelines-as-code-controller
+    namespace: pipelines-as-code
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: pipeline-as-code-controller-clusterrole
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -294,15 +291,14 @@ metadata:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
-- kind: ServiceAccount
-  name: pipelines-as-code-watcher
-  namespace: pipelines-as-code
+  - kind: ServiceAccount
+    name: pipelines-as-code-watcher
+    namespace: pipelines-as-code
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: pipeline-as-code-watcher-clusterrole
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -406,15 +402,14 @@ metadata:
     app.kubernetes.io/instance: default
     app.kubernetes.io/part-of: pipelines-as-code
 subjects:
-- kind: ServiceAccount
-  name: pipelines-as-code-webhook
-  namespace: pipelines-as-code
+  - kind: ServiceAccount
+    name: pipelines-as-code-webhook
+    namespace: pipelines-as-code
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: pipeline-as-code-webhook-clusterrole
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -632,7 +627,6 @@ spec:
     shortNames:
       - repo
 ---
-
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -672,7 +666,6 @@ data:
   loglevel.pac-watcher: "info"
   loglevel.pipelines-as-code-webhook: "info"
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -823,7 +816,6 @@ metadata:
     app.kubernetes.io/version: "0.24.1"
     app.kubernetes.io/part-of: pipelines-as-code
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -864,7 +856,6 @@ metadata:
     app.kubernetes.io/version: "0.24.1"
     app.kubernetes.io/part-of: pipelines-as-code
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -905,7 +896,6 @@ webhooks:
     sideEffects: None
     name: validation.pipelinesascode.tekton.dev
 ---
-
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -958,6 +948,7 @@ data:
     # charge.  If metrics.backend-destination is not Stackdriver, this is
     # ignored.
     metrics.allow-stackdriver-custom-metrics: "false"
+
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1010,6 +1001,7 @@ data:
     # bucket will take care of the reconciling for the keys partitioned into
     # that bucket.
     buckets: "1"
+
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1062,6 +1054,7 @@ data:
     # bucket will take care of the reconciling for the keys partitioned into
     # that bucket.
     buckets: "1"
+
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1109,7 +1102,7 @@ spec:
       serviceAccountName: pipelines-as-code-controller
       containers:
         - name: pac-controller
-          image: "ghcr.io/openshift-pipelines/pipelines-as-code-controller:0.24.1"
+          image: "ghcr.io/openshift-pipelines/pipelines-as-code-controller:v0.24.1"
           imagePullPolicy: Always
           ports:
             - name: api
@@ -1169,10 +1162,10 @@ spec:
               readOnly: true
               name: tls
       volumes:
-      - name: tls
-        secret:
-          secretName: pipelines-as-code-tls-secret
-          optional: true
+        - name: tls
+          secret:
+            secretName: pipelines-as-code-tls-secret
+            optional: true
 # Copyright 2024 Red Hat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -1198,14 +1191,14 @@ metadata:
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   ports:
-  - name: http-listener
-    port: 8080
-    protocol: TCP
-    targetPort: 8080
-  - name: http-metrics
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
+    - name: http-listener
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    - name: http-metrics
+      port: 9090
+      protocol: TCP
+      targetPort: 9090
   selector:
     app.kubernetes.io/name: controller
     app.kubernetes.io/component: controller
@@ -1258,26 +1251,26 @@ spec:
       serviceAccountName: pipelines-as-code-watcher
       containers:
         - name: pac-watcher
-          image: "ghcr.io/openshift-pipelines/pipelines-as-code-watcher:0.24.1"
+          image: "ghcr.io/openshift-pipelines/pipelines-as-code-watcher:v0.24.1"
           imagePullPolicy: Always
           env:
-          - name: CONFIG_LOGGING_NAME
-            value: pac-config-logging
-          - name: SYSTEM_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: METRICS_DOMAIN
-            value: tekton.dev/pipelinesascode
-          - name: CONFIG_OBSERVABILITY_NAME
-            value: pipelines-as-code-config-observability
-          - name: CONFIG_LEADERELECTION_NAME
-            value: pac-watcher-config-leader-election
+            - name: CONFIG_LOGGING_NAME
+              value: pac-config-logging
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: METRICS_DOMAIN
+              value: tekton.dev/pipelinesascode
+            - name: CONFIG_OBSERVABILITY_NAME
+              value: pipelines-as-code-config-observability
+            - name: CONFIG_LEADERELECTION_NAME
+              value: pac-watcher-config-leader-election
           ports:
-          - name: probes
-            containerPort: 8080
-          - name: metrics
-            containerPort: 9090
+            - name: probes
+              containerPort: 8080
+            - name: metrics
+              containerPort: 9090
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -1324,10 +1317,10 @@ metadata:
     app: pipelines-as-code-watcher
 spec:
   ports:
-  - name: http-metrics
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
+    - name: http-metrics
+      port: 9090
+      protocol: TCP
+      targetPort: 9090
   selector:
     app.kubernetes.io/name: watcher
     app.kubernetes.io/component: watcher
@@ -1379,7 +1372,7 @@ spec:
       serviceAccountName: pipelines-as-code-webhook
       containers:
         - name: pac-webhook
-          image: "ghcr.io/openshift-pipelines/pipelines-as-code-webhook:0.24.1"
+          image: "ghcr.io/openshift-pipelines/pipelines-as-code-webhook:v0.24.1"
           env:
             - name: CONFIG_LOGGING_NAME
               value: pac-config-logging
