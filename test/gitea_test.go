@@ -43,7 +43,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var successRegexp = regexp.MustCompile(`^Pipelines as Code CI.*has.*successfully`)
+// successRegexp will match a success text paac comment,sometime it includes html tags so we need to consider that.
+var successRegexp = regexp.MustCompile(`.*Pipelines as Code CI.*has.*successfully.*validated your commit.*`)
 
 func TestGiteaPullRequestTaskAnnotations(t *testing.T) {
 	topts := &tgitea.TestOpts{

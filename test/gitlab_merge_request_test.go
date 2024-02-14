@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
@@ -50,8 +51,10 @@ func TestGitlabMergeRequest(t *testing.T) {
 
 	gitCloneURL, err := scm.MakeGitCloneURL(projectinfo.WebURL, opts.UserName, opts.Password)
 	assert.NilError(t, err)
+	commitTitle := "Committing files from test on " + targetRefName
 	scmOpts := &scm.Opts{
 		GitURL:        gitCloneURL,
+		CommitTitle:   commitTitle,
 		Log:           runcnx.Clients.Log,
 		WebURL:        projectinfo.WebURL,
 		TargetRefName: targetRefName,
@@ -97,6 +100,32 @@ func TestGitlabMergeRequest(t *testing.T) {
 	for i := 0; i < len(prsNew.Items); i++ {
 		assert.Equal(t, "Merge Request", prsNew.Items[i].Annotations[keys.EventType])
 	}
+
+	runcnx.Clients.Log.Infof("Sending /retest comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
+	_, _, err = glprovider.Client.Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
+		Body: clientGitlab.Ptr("/retest"),
+	})
+	assert.NilError(t, err)
+	sopt = wait.SuccessOpt{
+		Title:           commitTitle,
+		OnEvent:         opscomments.RetestAllCommentEventType.String(),
+		TargetNS:        targetNS,
+		NumberofPRMatch: 5, // this is the max we get in repos status
+		SHA:             "",
+	}
+	runcnx.Clients.Log.Info("Checking that PAC has posted successful comments for all PR that has been tested")
+	wait.Succeeded(ctx, t, runcnx, opts, sopt)
+
+	notes, _, err := glprovider.Client.Notes.ListMergeRequestNotes(opts.ProjectID, mrID, nil)
+	assert.NilError(t, err)
+	successCommentsPost := 0
+	for _, n := range notes {
+		if successRegexp.MatchString(n.Body) {
+			successCommentsPost++
+		}
+	}
+	// we get 2 PRS initially, 2 prs from the push update and 2 prs from the /retest == 6
+	assert.Equal(t, 6, successCommentsPost)
 }
 
 // Local Variables:

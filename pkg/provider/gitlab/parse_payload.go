@@ -17,9 +17,6 @@ import (
 func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
 	payload string,
 ) (*info.Event, error) {
-	// TODO: parse request to figure out which event
-	var processedEvent *info.Event
-
 	event := request.Header.Get("X-Gitlab-Event")
 	if event == "" {
 		return nil, fmt.Errorf("failed to find event type in request header")
@@ -32,9 +29,14 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 	}
 	_ = json.Unmarshal(payloadB, &eventInt)
 
+	// Remove the " Hook" suffix so looks better in status, and since we don't
+	// really use it anymore we good to do whatever we want with it for
+	// cosmetics.
+	processedEvent := info.NewEvent()
+	processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
+	processedEvent.Event = eventInt
 	switch gitEvent := eventInt.(type) {
 	case *gitlab.MergeEvent:
-		processedEvent = info.NewEvent()
 		// Organization:  event.GetRepo().GetOwner().GetLogin(),
 		processedEvent.Sender = gitEvent.User.Username
 		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
@@ -59,7 +61,6 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.TargetProjectID = gitEvent.Project.ID
 	case *gitlab.TagEvent:
 		lastCommitIdx := len(gitEvent.Commits) - 1
-		processedEvent = info.NewEvent()
 		processedEvent.Sender = gitEvent.UserUsername
 		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
 		processedEvent.URL = gitEvent.Project.WebURL
@@ -83,7 +84,6 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 			return nil, fmt.Errorf("no commits attached to this push event")
 		}
 		lastCommitIdx := len(gitEvent.Commits) - 1
-		processedEvent = info.NewEvent()
 		processedEvent.Sender = gitEvent.UserUsername
 		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
 		processedEvent.URL = gitEvent.Project.WebURL
@@ -103,7 +103,6 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.SourceProjectID = gitEvent.ProjectID
 		processedEvent.TargetProjectID = gitEvent.ProjectID
 	case *gitlab.MergeCommentEvent:
-		processedEvent = info.NewEvent()
 		processedEvent.Sender = gitEvent.User.Username
 		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
 		processedEvent.URL = gitEvent.Project.WebURL
@@ -131,13 +130,6 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 	default:
 		return nil, fmt.Errorf("event %s is not supported", event)
 	}
-
-	processedEvent.Event = eventInt
-
-	// Remove the " Hook" suffix so looks better in status, and since we don't
-	// really use it anymore we good to do whatever we want with it for
-	// cosmetics.
-	processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
 
 	v.repoURL = processedEvent.URL
 	return processedEvent, nil
