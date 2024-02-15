@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-github/v56/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/logs"
@@ -15,13 +16,13 @@ import (
 	"gotest.tools/v3/golden"
 )
 
-func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg regexp.Regexp, maxNumberOfLoop int, controllerName string) error {
+func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg regexp.Regexp, maxNumberOfLoop int, controllerName string, lines *int64) error {
 	labelselector := fmt.Sprintf("app.kubernetes.io/name=%s", controllerName)
 	containerName := "pac-controller"
 	ns := info.GetNS(ctx)
 	clients.Clients.Log.Infof("looking for regexp %s in %s for label %s container %s", reg.String(), ns, labelselector, containerName)
 	for i := 0; i <= maxNumberOfLoop; i++ {
-		output, err := tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), info.GetNS(ctx), labelselector, containerName)
+		output, err := tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), info.GetNS(ctx), labelselector, containerName, lines)
 		if err != nil {
 			return err
 		}
@@ -38,9 +39,9 @@ func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg
 func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labelselector, containerName string, reg regexp.Regexp, maxNumberOfLoop int) error {
 	var err error
 	output := ""
-	clients.Clients.Log.Infof("looking for regexp %s in %s:%s labelSelector/pod", reg.String(), labelselector, containerName)
+	clients.Clients.Log.Infof("looking for regexp %s in namespace: %s for label %s and container %s", reg.String(), ns, labelselector, containerName)
 	for i := 0; i <= maxNumberOfLoop; i++ {
-		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName)
+		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName, github.Int64(10))
 		if err != nil {
 			return err
 		}
@@ -61,7 +62,7 @@ func GoldenPodLog(ctx context.Context, t *testing.T, clients *params.Run, ns, la
 	var err error
 	for i := 0; i <= maxNumberOfLoop; i++ {
 		var output string
-		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName)
+		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName, github.Int64(10))
 		if err != nil {
 			time.Sleep(5 * time.Second)
 			continue

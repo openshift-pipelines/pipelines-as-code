@@ -19,10 +19,10 @@ func GetControllerLog(ctx context.Context, kclient corev1i.CoreV1Interface, labe
 		return "", err
 	}
 
-	return GetPodLog(ctx, kclient, ns, labelselector, containerName)
+	return GetPodLog(ctx, kclient, ns, labelselector, containerName, github.Int64(10))
 }
 
-func GetPodLog(ctx context.Context, kclient corev1i.CoreV1Interface, ns, labelselector, containerName string) (string, error) {
+func GetPodLog(ctx context.Context, kclient corev1i.CoreV1Interface, ns, labelselector, containerName string, lines *int64) (string, error) {
 	nsO, err := kclient.Namespaces().Get(ctx, ns, metav1.GetOptions{})
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func GetPodLog(ctx context.Context, kclient corev1i.CoreV1Interface, ns, labelse
 	// maybe one day there is going to be multiple controller containers and then we would need to handle it here
 	ios, err := kclient.Pods(nsO.GetName()).GetLogs(items.Items[0].GetName(), &v1.PodLogOptions{
 		Container: containerName,
-		TailLines: github.Int64(10),
+		TailLines: lines,
 	}).Stream(ctx)
 	if err != nil {
 		return "", err

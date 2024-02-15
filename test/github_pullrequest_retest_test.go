@@ -18,7 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubPullRequestRetest(t *testing.T) {
+func TestGithubSecondPullRequestRetest(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}

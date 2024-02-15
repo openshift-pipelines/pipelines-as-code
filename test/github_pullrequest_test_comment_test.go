@@ -98,4 +98,5 @@ func TestGithubSecondOnCommentAnnotation(t *testing.T) {
 		"step-task",
 		*regexp.MustCompile(triggerComment),
 		2)
+	assert.NilError(t, err)
 }
