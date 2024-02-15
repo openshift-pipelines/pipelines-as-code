@@ -113,8 +113,9 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 	}
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
-	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *regexp.MustCompile(
-		".*fetched git-clone task"), 10, "controller"))
+	reg := regexp.MustCompile(".*fetched git-clone task")
+	err := twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *reg, 10, "controller", github.Int64(20))
+	assert.NilError(t, err)
 	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
 }
 
@@ -131,7 +132,7 @@ func TestGiteaBadYaml(t *testing.T) {
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
 	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *regexp.MustCompile(
-		"pipelinerun.*has failed.*expected exactly one, got neither: spec.pipelineRef, spec.pipelineSpec"), 10, "controller"))
+		"pipelinerun.*has failed.*expected exactly one, got neither: spec.pipelineRef, spec.pipelineSpec"), 10, "controller", github.Int64(20)))
 }
 
 // don't test concurrency limit here, just parallel pipeline.
@@ -619,7 +620,7 @@ func TestGiteaBadLinkOfTask(t *testing.T) {
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
 	errre := regexp.MustCompile("There was an error starting the PipelineRun")
-	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller"))
+	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", github.Int64(20)))
 }
 
 // TestGiteaParamsOnRepoCR test gitea params on CR and its filters

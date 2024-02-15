@@ -18,7 +18,6 @@ import (
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
 	clientGitlab "github.com/xanzy/go-gitlab"
@@ -89,14 +88,14 @@ func TestGitlabMergeRequest(t *testing.T) {
 	scmOpts.BaseRefName = targetRefName
 	scm.PushFilesToRefGit(t, scmOpts, entries)
 
-	sopt := wait.SuccessOpt{
+	sopt := twait.SuccessOpt{
 		Title:           mrTitle,
 		OnEvent:         "Merge Request",
 		TargetNS:        targetNS,
 		NumberofPRMatch: 4,
 		SHA:             "",
 	}
-	wait.Succeeded(ctx, t, runcnx, opts, sopt)
+	twait.Succeeded(ctx, t, runcnx, opts, sopt)
 	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Assert(t, len(prsNew.Items) == 4)
@@ -110,7 +109,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 		Body: clientGitlab.Ptr("/retest"),
 	})
 	assert.NilError(t, err)
-	sopt = wait.SuccessOpt{
+	sopt = twait.SuccessOpt{
 		Title:           commitTitle,
 		OnEvent:         opscomments.RetestAllCommentEventType.String(),
 		TargetNS:        targetNS,
@@ -118,7 +117,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 		SHA:             "",
 	}
 	runcnx.Clients.Log.Info("Checking that PAC has posted successful comments for all PR that has been tested")
-	wait.Succeeded(ctx, t, runcnx, opts, sopt)
+	twait.Succeeded(ctx, t, runcnx, opts, sopt)
 
 	notes, _, err := glprovider.Client.Notes.ListMergeRequestNotes(opts.ProjectID, mrID, nil)
 	assert.NilError(t, err)
@@ -182,13 +181,13 @@ func TestGitlabOnComment(t *testing.T) {
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Note %s/-/merge_requests/%d/notes/%d has been created", projectinfo.WebURL, mrID, note.ID)
 
-	sopt := wait.SuccessOpt{
+	sopt := twait.SuccessOpt{
 		OnEvent:         opscomments.OnCommentEventType.String(),
 		TargetNS:        targetNS,
 		NumberofPRMatch: 1,
 		Title:           "Committing files from test on " + targetRefName,
 	}
-	wait.Succeeded(ctx, t, runcnx, opts, sopt)
+	twait.Succeeded(ctx, t, runcnx, opts, sopt)
 
 	// get pull request info
 	mr, _, err := glprovider.Client.MergeRequests.GetMergeRequest(opts.ProjectID, mrID, nil)
@@ -215,6 +214,7 @@ func TestGitlabOnComment(t *testing.T) {
 		"step-task",
 		*regexp.MustCompile(triggerComment),
 		2)
+	assert.NilError(t, err)
 }
 
 // Local Variables:

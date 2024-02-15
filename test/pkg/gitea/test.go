@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"code.gitea.io/sdk/gitea"
+	"github.com/google/go-github/v56/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -496,8 +497,11 @@ func GetStandardParams(t *testing.T, topts *TestOpts, eventType string) (repoURL
 			t.Fatalf("pipelinerun has not finished, something is fishy")
 		}
 	}
-	out, err := tlogs.GetPodLog(context.Background(), topts.ParamsRun.Clients.Kube.CoreV1(), topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s",
-		prs.Items[0].Name), "step-test-standard-params-value")
+	out, err := tlogs.GetPodLog(context.Background(),
+		topts.ParamsRun.Clients.Kube.CoreV1(),
+		topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s",
+			prs.Items[0].Name), "step-test-standard-params-value",
+		github.Int64(10))
 	assert.NilError(t, err)
 	assert.Assert(t, out != "")
 	out = strings.TrimSpace(out)
