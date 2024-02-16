@@ -961,6 +961,279 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "cel/match path by glob along with push event source_branch and target_branch info",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    ".tekton/push.yaml",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: `event == "push" && target_branch == "refs/heads/*" && source_branch == "refs/heads/*" && ".tekton/*yaml".pathChanged()`,
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					EventType:     "push",
+					BaseBranch:    "refs/heads/" + mainBranch,
+					HeadBranch:    mainBranch,
+					Organization:  "mylittle",
+					Repository:    "pony",
+					SHATitle:      "verifying push event",
+					SHA:           "shacommitinfo",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:       "cel/match path by glob along with pull_request event source_branch and target_branch info",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    ".tekton/test/base/test/push.yaml",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: `event == "pull_request" && target_branch == "refs/heads/*" && source_branch == "refs/heads/*" && (".tekton/?*/base/**".pathChanged())`,
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "pull_request",
+					EventType:     "pull_request",
+					BaseBranch:    "refs/heads/" + mainBranch,
+					HeadBranch:    mainBranch,
+					Organization:  "mylittle",
+					Repository:    "pony",
+					SHATitle:      "verifying push event",
+					SHA:           "shacommitinfo",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:       "cel/match path by glob along with target_branch and source_branch info",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: `target_branch == "refs/heads/*" && source_branch == "mainBranch"`,
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					EventType:     "push",
+					BaseBranch:    "refs/heads/" + mainBranch,
+					HeadBranch:    mainBranch,
+					Organization:  "mylittle",
+					Repository:    "pony",
+					SHATitle:      "verifying push event",
+					SHA:           "shacommitinfo",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:       "cel/match when path by glob is given",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    ".tekton/test/base/test/push.yaml",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: `event == "push" && target_branch == "refs/heads/*" && (".tekton/?*/base/**".pathChanged())`,
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					EventType:     "push",
+					BaseBranch:    "refs/heads/" + mainBranch,
+					HeadBranch:    mainBranch,
+					Organization:  "mylittle",
+					Repository:    "pony",
+					SHATitle:      "verifying push event",
+					SHA:           "shacommitinfo",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name: "cel/ no match when bad target_branch info is given",
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: `target_branch == "main"`,
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					EventType:     "push",
+					BaseBranch:    "refs/heads/" + mainBranch,
+					HeadBranch:    mainBranch,
+					Organization:  "mylittle",
+					Repository:    "pony",
+					SHATitle:      "verifying push event",
+					SHA:           "shacommitinfo",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "cel/ no match when invalid target_branch info is given",
+			args: annotationTestArgs{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnCelExpression: `target_branch == refs/heads/*`,
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:           targetURL,
+					TriggerTarget: "push",
+					EventType:     "push",
+					BaseBranch:    "refs/heads/" + mainBranch,
+					HeadBranch:    mainBranch,
+					Organization:  "mylittle",
+					Repository:    "pony",
+					SHATitle:      "verifying push event",
+					SHA:           "shacommitinfo",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

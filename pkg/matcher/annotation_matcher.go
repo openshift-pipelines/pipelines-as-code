@@ -245,12 +245,7 @@ func buildAvailableMatchingAnnotationErr(event *info.Event, pruns []*tektonv1.Pi
 			if !strings.HasPrefix(annotation, pipelinesascode.GroupName+"/on-") {
 				continue
 			}
-			errmsg += fmt.Sprintf(" %s: ", strings.Replace(annotation, pipelinesascode.GroupName+"/", "", 1))
-			if annotation == keys.OnCelExpression {
-				errmsg += "celexpression"
-			} else {
-				errmsg += value
-			}
+			errmsg += fmt.Sprintf(" %s: %s", strings.Replace(annotation, pipelinesascode.GroupName+"/", "", 1), value)
 			errmsg += ", "
 		}
 		errmsg = strings.TrimSuffix(errmsg, ", ")

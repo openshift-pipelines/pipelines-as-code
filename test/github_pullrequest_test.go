@@ -161,6 +161,16 @@ func TestGithubSecondTestExplicitelyNoMatchedPipelineRun(t *testing.T) {
 	twait.Succeeded(ctx, t, g.Cnx, g.Options, sopt)
 }
 
+func TestGithubPullRequestCELMatchOnBranchAndPatchChange(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:     "Github PullRequest test CEL match on branch and pathChange",
+		YamlFiles: []string{"testdata/pipelinerun-branch-match-cel-pullrequest.yaml"},
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -info TestGithubPullRequest$ ."
 // End:

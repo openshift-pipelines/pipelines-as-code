@@ -22,28 +22,58 @@ const (
 	reChangedFilesTags = `files\.`
 )
 
+func removeQuotes(s string) string {
+	var output string
+	if strings.HasPrefix(s, `"`) || strings.HasPrefix(s, `'`) {
+		// Get the quote character
+		quote := string(s[0])
+		sWithoutPrefix := strings.TrimPrefix(s, quote)
+		idx := strings.LastIndex(sWithoutPrefix, quote)
+		if idx != -1 {
+			output = sWithoutPrefix[:idx]
+		}
+	}
+	return output
+}
+
+// getBranchFromExpression function extracts the value associated with the provided branchKey.
+//
+// ex: Given an expression like target_branch == "main", getBranchFromExpression returns "main".
+func getBranchFromExpression(branchKey string) string {
+	parts := strings.Split(branchKey, "==")
+
+	var branch string
+	if len(parts) == 2 {
+		// Trim any leading or trailing white spaces from the value
+		branch = removeQuotes(strings.TrimSpace(parts[1]))
+	}
+	return branch
+}
+
 func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface) (ref.Val, error) {
 	eventTitle := event.PullRequestTitle
-	if event.TriggerTarget == triggertype.Push {
-		eventTitle = event.SHATitle
-		// For push event the target_branch & source_branch info coming from payload have refs/heads/
-		// but user may or mayn't provide refs/heads/ info while giving target_branch or source_branch in CEL expression
-		// ex:  pipelinesascode.tekton.dev/on-cel-expression: |
-		//        event == "push" && target_branch == "main" && "frontend/***".pathChanged()
-		// This logic will handle such case.
-		splittedValue := strings.Split(expr, "&&")
-		for i := range splittedValue {
-			if strings.Contains(splittedValue[i], "target_branch") {
-				if !strings.Contains(splittedValue[i], "refs/heads/") {
-					event.BaseBranch = strings.TrimPrefix(event.BaseBranch, "refs/heads/")
-				}
-			}
-			if strings.Contains(splittedValue[i], "source_branch") {
-				if !strings.Contains(splittedValue[i], "refs/heads/") {
-					event.HeadBranch = strings.TrimPrefix(event.HeadBranch, "refs/heads/")
-				}
+	var (
+		baseBranchValue string
+		headBranchValue string
+	)
+	splitValue := strings.Split(expr, "&&")
+	for i := range splitValue {
+		if strings.Contains(strings.TrimSpace(splitValue[i]), "target_branch") {
+			targetBranchValue := getBranchFromExpression(splitValue[i])
+			if branchMatch(targetBranchValue, event.BaseBranch) {
+				baseBranchValue = targetBranchValue
 			}
 		}
+		if strings.Contains(strings.TrimSpace(splitValue[i]), "source_branch") {
+			sourceBranchValue := getBranchFromExpression(splitValue[i])
+			if branchMatch(sourceBranchValue, event.HeadBranch) {
+				headBranchValue = sourceBranchValue
+			}
+		}
+	}
+
+	if event.TriggerTarget == triggertype.Push {
+		eventTitle = event.SHATitle
 	}
 
 	nbody, err := json.Marshal(event.Event)
@@ -73,8 +103,8 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 	data := map[string]interface{}{
 		"event":         event.TriggerTarget.String(),
 		"event_title":   eventTitle,
-		"target_branch": event.BaseBranch,
-		"source_branch": event.HeadBranch,
+		"target_branch": baseBranchValue,
+		"source_branch": headBranchValue,
 		"target_url":    event.BaseURL,
 		"source_url":    event.HeadURL,
 		"body":          jsonMap,

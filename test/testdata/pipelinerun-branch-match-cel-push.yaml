@@ -1,0 +1,19 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-cel-expression: >-
+      event == "\\ .TargetEvent //" &&  ( target_branch == "refs/heads/*" && source_branch == 'refs/heads/*' ) &&
+      ( ".tekton/*.yaml".pathChanged() )
+spec:
+  pipelineSpec:
+    tasks:
+      - name: cel-expression-test
+        taskSpec:
+          steps:
+            - name: test-branch-match-cel
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              command: ["/bin/echo", "HELLO MOTO"]

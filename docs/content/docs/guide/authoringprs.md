@@ -170,13 +170,26 @@ The fields available are :
 Compared to the simple "on-target" annotation matching, the CEL expression
 allows you to complex filtering and most importantly express negation.
 
-For example if I want to have a `PipelineRun` targeting a `pull_request` but
+For example
+
+- If I want to have a `PipelineRun` targeting a `pull_request` but
 not the `experimental` branch I would have :
 
-```yaml
-pipelinesascode.tekton.dev/on-cel-expression: |
-  event == "pull_request" && target_branch != experimental"
-```
+  ```yaml
+  pipelinesascode.tekton.dev/on-cel-expression: |
+    event == "pull_request" && target_branch != experimental"
+  ```
+
+- If I want to have a `PipelineRun` targeting a `pull_request`
+  for any branch I would have :
+
+  ```yaml
+  pipelinesascode.tekton.dev/on-cel-expression: |
+    event == "pull_request" && target_branch == "refs/heads/*" && source_branch == "refs/heads/*"
+  ```
+
+  > *NOTE*: Ensure that the supported value for branch references is in the format "refs/heads/*", "main", "*", "refs/tags/*" etc...
+  > Unsupported variations such as `"[refs/heads/]", "**refs/heads/", "%^&refs/heads/*" etc., are not valid.
 
 You can find more information about the CEL language spec here :
 

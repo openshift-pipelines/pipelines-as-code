@@ -64,3 +64,20 @@ func TestGithubPushRequestCELMatchOnTitle(t *testing.T) {
 		defer g.TearDown(ctx, t)
 	}
 }
+
+func TestGithubPushRequestCELMatchOnBranchAndPatchChange(t *testing.T) {
+	ctx := context.Background()
+	for _, onWebhook := range []bool{false, true} {
+		if onWebhook && os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
+			t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
+			continue
+		}
+		g := &tgithub.PRTest{
+			Label:     fmt.Sprintf("Github push request test CEL match on branch and pathChange onWebhook=%v", onWebhook),
+			YamlFiles: []string{"testdata/pipelinerun-branch-match-cel-push.yaml"},
+			Webhook:   onWebhook,
+		}
+		g.RunPushRequest(ctx, t)
+		defer g.TearDown(ctx, t)
+	}
+}
