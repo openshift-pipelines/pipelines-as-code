@@ -49,7 +49,7 @@ jobs:
       - uses: ko-build/setup-ko@v0.6
 
       - name: Install gosmee
-        uses: jaxxstorm/action-install-gh-release@v1.10.0
+        uses: jaxxstorm/action-install-gh-release@v1.11.0
         with:
           repo: chmouel/gosmee
 
