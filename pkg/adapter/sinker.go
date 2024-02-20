@@ -42,7 +42,6 @@ func (s *sinker) processEventPayload(ctx context.Context, request *http.Request)
 }
 
 func (s *sinker) processEvent(ctx context.Context, request *http.Request) error {
-	// TODO(chmouel): Add E2E Test for incoming test on GHE when #1518 is merged
 	if s.event.EventType == "incoming" {
 		if request.Header.Get("X-GitHub-Enterprise-Host") != "" {
 			s.event.Provider.URL = request.Header.Get("X-GitHub-Enterprise-Host")
