@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -33,7 +34,29 @@ func TestGithubAppIncoming(t *testing.T) {
 	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, entries)
+	verifyIncomingWebhook(t, randomedString, entries, false, false)
+}
+
+func TestGithubSecondIncoming(t *testing.T) {
+	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml", ".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	verifyIncomingWebhook(t, randomedString, entries, false, true)
+}
+
+func TestGithubWebhookIncoming(t *testing.T) {
+	randomedString := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun-incoming.yaml": "testdata/pipelinerun-incoming.yaml", ".tekton/pr.yaml": "testdata/pipelinerun.yaml",
+	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	verifyIncomingWebhook(t, randomedString, entries, true, false)
 }
 
 // TestGithubAppIncomingForDifferentEvent tests that a Pipelinerun with the incoming event
@@ -47,12 +70,12 @@ func TestGithubAppIncomingForDifferentEvent(t *testing.T) {
 	}, randomedString, randomedString, triggertype.PullRequest.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, entries)
+	verifyIncomingWebhook(t, randomedString, entries, false, false)
 }
 
-func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[string]string) {
+func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[string]string, onWebhook, onSecondController bool) {
 	ctx := context.Background()
-	ctx, runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false, false)
+	ctx, runcnx, opts, ghprovider, err := tgithub.Setup(ctx, onSecondController, onWebhook)
 	assert.NilError(t, err)
 	label := "GithubApp Incoming"
 	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", label, randomedString)
@@ -96,28 +119,34 @@ func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[stri
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to branch %s", sha, vref.GetURL())
 
-	url := fmt.Sprintf("%s/incoming?repository=%s&branch=%s&pipelinerun=%s&secret=%s", opts.ControllerURL,
+	incomingURL := fmt.Sprintf("%s/incoming?repository=%s&branch=%s&pipelinerun=%s&secret=%s", opts.ControllerURL,
 		randomedString, randomedString, "pipelinerun-incoming", incomingSecreteValue)
 	body := `{"params":{"the_best_superhero_is":"Superman"}}`
 	client := &http.Client{}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, incomingURL, strings.NewReader(body))
 	req.Header.Add("Content-Type", "application/json")
+	if onSecondController {
+		urlParse, _ := url.Parse(*ghprovider.APIURL)
+		req.Header.Add("X-GitHub-Enterprise-Host", urlParse.Host)
+	}
 	assert.NilError(t, err)
 	httpResp, err := client.Do(req)
 	assert.NilError(t, err)
 	defer httpResp.Body.Close()
-	runcnx.Clients.Log.Infof("Kicked off on incoming URL: %s", url)
+	runcnx.Clients.Log.Infof("Kicked off on incoming URL: %s", incomingURL)
 	assert.Assert(t, httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
 	// to re enable after debugging...
 	g := tgithub.PRTest{
-		Cnx:             runcnx,
-		Options:         opts,
-		Provider:        ghprovider,
-		TargetNamespace: randomedString,
-		TargetRefName:   targetRefName,
-		PRNumber:        -1,
-		SHA:             sha,
-		Logger:          runcnx.Clients.Log,
+		Cnx:              runcnx,
+		Options:          opts,
+		Provider:         ghprovider,
+		TargetNamespace:  randomedString,
+		TargetRefName:    targetRefName,
+		PRNumber:         -1,
+		SHA:              sha,
+		Logger:           runcnx.Clients.Log,
+		Webhook:          onWebhook,
+		SecondController: onSecondController,
 	}
 	defer g.TearDown(ctx, t)
 

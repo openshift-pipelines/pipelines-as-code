@@ -20,6 +20,7 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 	githubRepoOwnerGithubApp := os.Getenv("TEST_GITHUB_REPO_OWNER_GITHUBAPP")
 	githubRepoOwnerDirectWebhook := os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK")
 
+	// EL_URL mean CONTROLLER URL, it's called el_url because a long time ago pac was based on trigger
 	for _, value := range []string{
 		"EL_URL",
 		"GITHUB_API_URL",
@@ -36,11 +37,16 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 			"TEST_GITHUB_SECOND_API_URL",
 			"TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP",
 			"TEST_GITHUB_SECOND_TOKEN",
+			"TEST_GITHUB_SECOND_EL_URL",
 		} {
 			if env := os.Getenv(value); env == "" {
 				return ctx, nil, options.E2E{}, github.New(), fmt.Errorf("\"%s\" env variable is required for testing a second controller, cannot continue", value)
 			}
 		}
+	}
+	controllerURL := os.Getenv("TEST_EL_URL")
+	if controllerURL == "" {
+		return ctx, nil, options.E2E{}, github.New(), fmt.Errorf("TEST_EL_URL variable is required, cannot continue")
 	}
 
 	var split []string
@@ -61,6 +67,7 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 		githubURL = os.Getenv("TEST_GITHUB_SECOND_API_URL")
 		githubRepoOwnerGithubApp = os.Getenv("TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP")
 		githubToken = os.Getenv("TEST_GITHUB_SECOND_TOKEN")
+		controllerURL = os.Getenv("TEST_GITHUB_SECOND_EL_URL")
 		split = strings.Split(githubRepoOwnerGithubApp, "/")
 	}
 
@@ -69,12 +76,6 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 		return ctx, nil, options.E2E{}, github.New(), err
 	}
 	run.Info.Controller = info.GetControllerInfoFromEnvOrDefault()
-
-	controllerURL := os.Getenv("TEST_EL_URL")
-	if controllerURL == "" {
-		return ctx, nil, options.E2E{}, github.New(), fmt.Errorf("TEST_EL_URL variable is required, cannot continue")
-	}
-
 	e2eoptions := options.E2E{Organization: split[0], Repo: split[1], DirectWebhook: viaDirectWebhook, ControllerURL: controllerURL}
 	gprovider := github.New()
 	event := info.NewEvent()
