@@ -41,8 +41,10 @@ create_second_github_app_controller_on_ghe() {
 	./hack/second-controller.py \
 		--controller-image="ko" \
 		--smee-url="${test_github_second_smee_url}" \
+		--ingress-domain="paac-127-0-0-1.nip.io" \
 		--namespace="pipelines-as-code" \
-		ghe >/tmp/generated.yaml
+		ghe | tee /tmp/generated.yaml
+
 	ko apply -f /tmp/generated.yaml
 	kubectl delete secret -n pipelines-as-code ghe-secret || true
 	kubectl -n pipelines-as-code create secret generic ghe-secret \
@@ -92,6 +94,7 @@ run_e2e_tests() {
 	export TEST_GITHUB_TOKEN="${gh_apps_token}"
 
 	export TEST_GITHUB_SECOND_API_URL=ghe.pipelinesascode.com
+	export TEST_GITHUB_SECOND_EL_URL=http://ghe.paac-127-0-0-1.nip.io
 	export TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP=pipelines-as-code/e2e
 	# TODO: webhook repo for second github
 	# export TEST_GITHUB_SECOND_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
