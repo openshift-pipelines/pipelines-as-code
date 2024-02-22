@@ -176,11 +176,6 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	addCommonFlags(cmd, ioStreams)
 	addGithubAppFlag(cmd, opts)
 
-	cmd.PersistentFlags().BoolVar(&opts.forceInstall, "force-install", false, "whether we should force pac install even if it's already installed")
-	cmd.PersistentFlags().BoolVar(&opts.forceInstallGosmee, "force-gosmee", false, "force install gosmee on OpenShift if your cluster is not reachable from the internet")
-	cmd.PersistentFlags().BoolVar(&opts.skipInstall, "skip-install", false, "skip Pipelines as Code installation")
-	cmd.PersistentFlags().BoolVar(&opts.skipGithubAPP, "skip-github-app", false, "skip creating github application")
-
 	return cmd
 }
 
@@ -209,7 +204,7 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 			// installed but there is error for missing resources
 			if installed && !opts.forceInstall {
-				return err
+				return fmt.Errorf("pipelines as Code is already installed, please pass --force-install to override existing")
 			}
 
 			if !opts.forceGitHubApp {
@@ -249,8 +244,6 @@ func GithubApp(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	}
 	addCommonFlags(cmd, ioStreams)
 	addGithubAppFlag(cmd, opts)
-
-	cmd.PersistentFlags().StringVarP(&opts.targetNamespace, "namespace", "n", "", "target namespace where pac is installed")
 	return cmd
 }
 
@@ -318,6 +311,10 @@ func addGithubAppFlag(cmd *cobra.Command, opts *bootstrapOpts) {
 	cmd.PersistentFlags().StringVarP(&opts.providerType, "install-type", "t", defaultProviderType,
 		fmt.Sprintf("target install type, choices are: %s ", strings.Join(providerTargets, ", ")))
 	cmd.PersistentFlags().BoolVar(&opts.forceGitHubApp, "force-configure", false, "Whether we should override existing GitHub App")
+	cmd.PersistentFlags().BoolVar(&opts.forceInstall, "force-install", false, "whether we should force pac install even if it's already installed")
+	cmd.PersistentFlags().BoolVar(&opts.forceInstallGosmee, "force-gosmee", false, "force install gosmee on OpenShift if your cluster is not reachable from the internet")
+	cmd.PersistentFlags().BoolVar(&opts.skipInstall, "skip-install", false, "skip Pipelines as Code installation")
+	cmd.PersistentFlags().BoolVar(&opts.skipGithubAPP, "skip-github-app", false, "skip creating github application")
 }
 
 func addCommonFlags(cmd *cobra.Command, ioStreams *cli.IOStreams) {
