@@ -52,10 +52,11 @@ func TestDescribe(t *testing.T) {
 				currentNamespace: ns,
 				opts:             &describeOpts{},
 				pruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", ns, running, nil, map[string]string{
+					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
+						keys.Branch:    "tartanpion",
+						keys.EventType: "papayolo",
+					}, map[string]string{
 						keys.Repository: "test-run",
-						keys.Branch:     "tartanpion",
-						keys.EventType:  "papayolo",
 					}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{
@@ -89,9 +90,10 @@ func TestDescribe(t *testing.T) {
 				currentNamespace: ns,
 				opts:             &describeOpts{},
 				pruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", ns, running, nil, map[string]string{
+					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
+						keys.Branch: "tartanpion",
+					}, map[string]string{
 						keys.Repository: "test-run",
-						keys.Branch:     "tartanpion",
 					}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{},
@@ -105,13 +107,15 @@ func TestDescribe(t *testing.T) {
 				currentNamespace: ns,
 				opts:             &describeOpts{TargetPipelineRun: "running2"},
 				pruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", ns, running, nil, map[string]string{
+					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
+						keys.Branch: "tartanpion",
+					}, map[string]string{
 						keys.Repository: "test-run",
-						keys.Branch:     "tartanpion",
 					}, 30),
-					tektontest.MakePRCompletion(cw, "running2", ns, running, nil, map[string]string{
+					tektontest.MakePRCompletion(cw, "running2", ns, running, map[string]string{
+						keys.Branch: "vavaroom",
+					}, map[string]string{
 						keys.Repository: "test-run",
-						keys.Branch:     "vavaroom",
 					}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{},
@@ -125,13 +129,15 @@ func TestDescribe(t *testing.T) {
 				currentNamespace: ns,
 				opts:             &describeOpts{},
 				pruns: []*tektonv1.PipelineRun{
-					tektontest.MakePRCompletion(cw, "running", ns, running, nil, map[string]string{
+					tektontest.MakePRCompletion(cw, "running", ns, running, map[string]string{
+						keys.Branch: "tartanpion",
+					}, map[string]string{
 						keys.Repository: "test-run",
-						keys.Branch:     "tartanpion",
 					}, 30),
-					tektontest.MakePRCompletion(cw, "running2", ns, running, nil, map[string]string{
+					tektontest.MakePRCompletion(cw, "running2", ns, running, map[string]string{
+						keys.Branch: "vavaroom",
+					}, map[string]string{
 						keys.Repository: "test-run",
-						keys.Branch:     "vavaroom",
 					}, 30),
 				},
 				statuses: []v1alpha1.RepositoryRunStatus{},

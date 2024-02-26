@@ -195,7 +195,7 @@ func describe(ctx context.Context, cs *params.Run, clock clockwork.Clock, opts *
 			runTimeObj = append(runTimeObj, &events.Items[i])
 		}
 
-		// we do twice the prun list, but since it's behind a flag and not the default behavior, it's ok (i guess)
+		// we do twice the prun list, but since it's behind a flag and not the default behavior, it's ok (I guess)
 		label := keys.Repository + "=" + repository.Name
 		prs, err := cs.Clients.Tekton.TektonV1().PipelineRuns(repository.Namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: label,
