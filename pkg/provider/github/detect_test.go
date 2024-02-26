@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v56/github"
+	"github.com/google/go-github/v59/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
 )
@@ -193,7 +193,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "push event",
 			event: github.PushEvent{
-				Pusher: &github.User{ID: github.Int64(11)},
+				Pusher: &github.CommitAuthor{Name: github.String("user")},
 			},
 			eventType:  "push",
 			isGH:       true,

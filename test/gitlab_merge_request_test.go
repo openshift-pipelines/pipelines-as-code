@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/google/go-github/v56/github"
+	"github.com/google/go-github/v59/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -75,7 +75,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 
 	// updating labels to test if we skip them, this used to create multiple PRs
 	_, _, err = glprovider.Client.MergeRequests.UpdateMergeRequest(opts.ProjectID, mrID, &clientGitlab.UpdateMergeRequestOptions{
-		Labels: &clientGitlab.Labels{"hello-label"},
+		Labels: &clientGitlab.LabelOptions{"hello-label"},
 	})
 	assert.NilError(t, err)
 

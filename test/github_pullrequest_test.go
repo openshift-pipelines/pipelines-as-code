@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v56/github"
+	"github.com/google/go-github/v59/github"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"

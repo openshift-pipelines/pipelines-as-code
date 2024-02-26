@@ -8,6 +8,7 @@ message: Use '%s' rather than '%s'.
 action:
   name: replace
 swap:
+  "(?<!.-)javadocs?": Javadoc|API documentation|Java API documentation
   "(?<!/)var": VAR
   "(?<!Business )Resource Planner|(?<!Business Resource )Planner": Business Resource Planner
   "(?<!Microsoft )Azure": Microsoft Azure
@@ -17,6 +18,7 @@ swap:
   "(?<!Red Hat )OpenStack Platform|RHOS|RH-OSP": Red Hat OpenStack Platform
   "(?<!Red Hat JBoss )BRMS(?! engine)": inference engine
   "(?<!Red Hat JBoss )BRMS|BRM|(?<!Red Hat )JBoss BRMS": Red Hat JBoss BRMS
+  "(?<!T-)BC": Business Central
   "[dD]ay-0|day 0": Day 0
   "[dD]ay-1|day 1": Day 1
   "[dD]ay-2|day 2": Day 2
@@ -27,7 +29,7 @@ swap:
   "Kernel(?!-based Virtual Machine)": kernel
   "OCM|(?<!Red Hat OpenShift )Cluster Manager|(?<!Red Hat )OpenShift Cluster Manager|the OpenShift Cluster Manager": Red Hat OpenShift Cluster Manager
   "OD": Red Hat OpenShift Dedicated
-  "(?<!.-)javadocs?": Javadoc|API documentation|Java API documentation
+  "sub version|(?<!Apache )Subversion": sub-version
   '(?<!\.)IM': instant message
   '(?<!\.)yaml|Yaml': YAML
   '(?<!JBoss )EAP|(?<!Red Hat )JBoss(?!\sCommunity|\sBroker|\sClients|\sConsole|\sAMQ|\sData\sGrid|\sBRMS|\sBPMS|\sEnterprise\sApplication\sPlatform|\.org|\sInterconnect|\sEAP|\sBPM\sSuite)': JBoss EAP
@@ -54,18 +56,19 @@ swap:
   'Red\sHat\sVirtualization\sHypervisor|RHV\sHost|RHV-H': Red Hat Virtualization Host
   'RHVM|RHV-M|RHV\sManager': Red Hat Virtualization Manager
   'self-hosted\sengine\svirtual\smachine|engine\sVM': Manager virtual machine
-  "sub version|(?<!Apache )Subversion": sub-version
+  (?<!Ansible )Playbook: playbook
   Ansible playbook: Ansible Playbook
+  Ansible rulebook: Ansible Rulebook
   Appliance Console: Appliance console
-  Applix|ApplixWare: Applixware
   application stream|Application stream: Application Stream
+  Applix|ApplixWare: Applixware
   Appstream|appstream: AppStream repository
   asciidoctor|AsciiDoctor: Asciidoctor
   asciidoc|Asciidoc: AsciiDoc
   assertj|Assertj: AssertJ
   auto-link|AutoLink: autolink
+  AWS opt in Region: AWS opt-in Region
   basic authentication|Basic Authentication|basic auth|Basic auth|Basic Auth: Basic HTTP authentication|Basic authentication
-  "(?<!T-)BC": Business Central
   Bean: bean
   Bios: BIOS
   blue print|BluePrint: blueprint
@@ -128,7 +131,7 @@ swap:
   GDBTK: Insight
   gid|Gid: GID
   Gimp|gimp: GIMP
-  git|GIT: Git
+  GIT: Git
   Gnome|gnome: GNOME
   Gnu|gnu: GNU
   Gpl|gpl: GPL
@@ -184,6 +187,7 @@ swap:
   Lightweight Directory Access Protocol over Secure Socket Layer: LDAPS
   LINUX|linux: Linux
   live-backup group: master-slave group
+  Local Zone|LZ|local zone: AWS Local Zone
   Lun|lun: LUN
   master CA: IdM CA renewal server
   master server: IdM server and replicas
@@ -205,10 +209,10 @@ swap:
   ODF: Red Hat OpenShift Data Foundation
   OK button|okay|ok: OK
   Open InfiniBand|Infiniband: InfiniBand
+  Open Telemetry: OpenTelemetry (OTel)
   openid connect|Openid Connect: OpenID Connect
   openrewrite|Openrewrite|Open Rewrite: OpenRewrite
   Openshift online|OO: Red Hat OpenShift Online
-  Open Telemetry: OpenTelemetry (OTel)
   Operating Environment: operating environment
   Operator Hub|Operator hub|Operatorhub|operatorhub: OperatorHub
   Opex|Opex|OPEX|opEx: OpEx

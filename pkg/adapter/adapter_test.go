@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/google/go-github/v56/github"
+	"github.com/google/go-github/v59/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -83,7 +83,7 @@ func TestHandleEvent(t *testing.T) {
 	}
 
 	// valid push event
-	testEvent := github.PushEvent{Pusher: &github.User{ID: github.Int64(101)}}
+	testEvent := github.PushEvent{Pusher: &github.CommitAuthor{Name: github.String("user")}}
 	event, err := json.Marshal(testEvent)
 	assert.NilError(t, err)
 
@@ -184,7 +184,7 @@ func TestWhichProvider(t *testing.T) {
 				"X-GitHub-Delivery": {"abcd"},
 			},
 			event: github.PushEvent{
-				Pusher: &github.User{ID: github.Int64(123)},
+				Pusher: &github.CommitAuthor{Name: github.String("user")},
 			},
 		},
 		{
