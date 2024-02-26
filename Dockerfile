@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.20
+FROM registry.access.redhat.com/ubi9/go-toolset:1.20 as builder
 ARG BINARY_NAME=pipelines-as-code-controller
 COPY . /src
 WORKDIR /src
