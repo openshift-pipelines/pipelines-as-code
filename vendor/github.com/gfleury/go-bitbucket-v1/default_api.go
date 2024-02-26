@@ -1086,7 +1086,6 @@ Create a new repository. Requires an existing project in which this repository w
 @return
 */
 func (a *DefaultApiService) CreateRepository(projectKey string, repository Repository) (*APIResponse, error) {
-
 	localVarPostBody, err := json.Marshal(repository)
 	if err != nil {
 		return nil, err
@@ -2814,6 +2813,12 @@ func (a *DefaultApiService) FindUsersInGroup(localVarOptionals map[string]interf
 	if err := typeCheckParameter(localVarOptionals["filter"], "string", "filter"); err != nil {
 		return nil, err
 	}
+	if err := typeCheckParameter(localVarOptionals["limit"], "int", "limit"); err != nil {
+		return nil, err
+	}
+	if err := typeCheckParameter(localVarOptionals["start"], "int", "start"); err != nil {
+		return nil, err
+	}
 
 	if localVarTempParam, localVarOk := localVarOptionals["context"].(string); localVarOk {
 		localVarQueryParams.Add("context", parameterToString(localVarTempParam, ""))
@@ -2821,6 +2826,13 @@ func (a *DefaultApiService) FindUsersInGroup(localVarOptionals map[string]interf
 	if localVarTempParam, localVarOk := localVarOptionals["filter"].(string); localVarOk {
 		localVarQueryParams.Add("filter", parameterToString(localVarTempParam, ""))
 	}
+	if localVarTempParam, localVarOk := localVarOptionals["limit"].(int); localVarOk {
+		localVarQueryParams.Add("limit", parameterToString(localVarTempParam, ""))
+	}
+	if localVarTempParam, localVarOk := localVarOptionals["start"].(int); localVarOk {
+		localVarQueryParams.Add("start", parameterToString(localVarTempParam, ""))
+	}
+
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{"application/json"}
 
@@ -3297,7 +3309,6 @@ func (a *DefaultApiService) GetArchive(project, repository string, localVarOptio
 		apibasepath = "/api/1.0"
 	}
 
-	//localVarPath := a.client.cfg.BasePath + "/api/1.0/projects/{projectKey}/repos/{repositorySlug}/archive"
 	localVarPath := a.client.cfg.BasePath + apibasepath + "/projects/{projectKey}/repos/{repositorySlug}/archive"
 	localVarPath = strings.Replace(localVarPath, "{"+"projectKey"+"}", fmt.Sprintf("%v", project), -1)
 	localVarPath = strings.Replace(localVarPath, "{"+"repositorySlug"+"}", fmt.Sprintf("%v", repository), -1)

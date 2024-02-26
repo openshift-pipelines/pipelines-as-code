@@ -135,10 +135,12 @@ type Project struct {
 	ImportError                              string             `json:"import_error"`
 	CIDefaultGitDepth                        int                `json:"ci_default_git_depth"`
 	CIForwardDeploymentEnabled               bool               `json:"ci_forward_deployment_enabled"`
+	CIForwardDeploymentRollbackAllowed       bool               `json:"ci_forward_deployment_rollback_allowed"`
 	CISeperateCache                          bool               `json:"ci_separated_caches"`
 	CIJobTokenScopeEnabled                   bool               `json:"ci_job_token_scope_enabled"`
 	CIOptInJWT                               bool               `json:"ci_opt_in_jwt"`
 	CIAllowForkPipelinesToRunInParentProject bool               `json:"ci_allow_fork_pipelines_to_run_in_parent_project"`
+	CIRestrictPipelineCancellationRole       AccessControlValue `json:"ci_restrict_pipeline_cancellation_role"`
 	PublicJobs                               bool               `json:"public_jobs"`
 	BuildTimeout                             int                `json:"build_timeout"`
 	AutoCancelPendingPipelines               string             `json:"auto_cancel_pending_pipelines"`
@@ -165,6 +167,7 @@ type Project struct {
 	SecurityAndComplianceEnabled             bool               `json:"security_and_compliance_enabled"`
 	SecurityAndComplianceAccessLevel         AccessControlValue `json:"security_and_compliance_access_level"`
 	MergeRequestDefaultTargetSelf            bool               `json:"mr_default_target_self"`
+	ModelExperimentsAccessLevel              AccessControlValue `json:"model_experiments_access_level"`
 
 	// Deprecated: Use EmailsEnabled instead
 	EmailsDisabled bool `json:"emails_disabled"`
@@ -636,6 +639,7 @@ type CreateProjectOptions struct {
 	MergeTrainsEnabled                        *bool                                `url:"merge_trains_enabled,omitempty" json:"merge_trains_enabled,omitempty"`
 	Mirror                                    *bool                                `url:"mirror,omitempty" json:"mirror,omitempty"`
 	MirrorTriggerBuilds                       *bool                                `url:"mirror_trigger_builds,omitempty" json:"mirror_trigger_builds,omitempty"`
+	ModelExperimentsAccessLevel               *AccessControlValue                  `url:"model_experiments_access_level,omitempty" json:"model_experiments_access_level,omitempty"`
 	Name                                      *string                              `url:"name,omitempty" json:"name,omitempty"`
 	NamespaceID                               *int                                 `url:"namespace_id,omitempty" json:"namespace_id,omitempty"`
 	OnlyAllowMergeIfAllDiscussionsAreResolved *bool                                `url:"only_allow_merge_if_all_discussions_are_resolved,omitempty" json:"only_allow_merge_if_all_discussions_are_resolved,omitempty"`
@@ -839,7 +843,9 @@ type EditProjectOptions struct {
 	CIConfigPath                              *string                              `url:"ci_config_path,omitempty" json:"ci_config_path,omitempty"`
 	CIDefaultGitDepth                         *int                                 `url:"ci_default_git_depth,omitempty" json:"ci_default_git_depth,omitempty"`
 	CIForwardDeploymentEnabled                *bool                                `url:"ci_forward_deployment_enabled,omitempty" json:"ci_forward_deployment_enabled,omitempty"`
+	CIForwardDeploymentRollbackAllowed        *bool                                `url:"ci_forward_deployment_rollback_allowed,omitempty" json:"ci_forward_deployment_rollback_allowed,omitempty"`
 	CISeperateCache                           *bool                                `url:"ci_separated_caches,omitempty" json:"ci_separated_caches,omitempty"`
+	CIRestrictPipelineCancellationRole        *AccessControlValue                  `url:"ci_restrict_pipeline_cancellation_role,omitempty" json:"ci_restrict_pipeline_cancellation_role,omitempty"`
 	ContainerExpirationPolicyAttributes       *ContainerExpirationPolicyAttributes `url:"container_expiration_policy_attributes,omitempty" json:"container_expiration_policy_attributes,omitempty"`
 	ContainerRegistryAccessLevel              *AccessControlValue                  `url:"container_registry_access_level,omitempty" json:"container_registry_access_level,omitempty"`
 	DefaultBranch                             *string                              `url:"default_branch,omitempty" json:"default_branch,omitempty"`
@@ -866,6 +872,7 @@ type EditProjectOptions struct {
 	MirrorOverwritesDivergedBranches          *bool                                `url:"mirror_overwrites_diverged_branches,omitempty" json:"mirror_overwrites_diverged_branches,omitempty"`
 	MirrorTriggerBuilds                       *bool                                `url:"mirror_trigger_builds,omitempty" json:"mirror_trigger_builds,omitempty"`
 	MirrorUserID                              *int                                 `url:"mirror_user_id,omitempty" json:"mirror_user_id,omitempty"`
+	ModelExperimentsAccessLevel               *AccessControlValue                  `url:"model_experiments_access_level,omitempty" json:"model_experiments_access_level,omitempty"`
 	Name                                      *string                              `url:"name,omitempty" json:"name,omitempty"`
 	OnlyAllowMergeIfAllDiscussionsAreResolved *bool                                `url:"only_allow_merge_if_all_discussions_are_resolved,omitempty" json:"only_allow_merge_if_all_discussions_are_resolved,omitempty"`
 	OnlyAllowMergeIfPipelineSucceeds          *bool                                `url:"only_allow_merge_if_pipeline_succeeds,omitempty" json:"only_allow_merge_if_pipeline_succeeds,omitempty"`

@@ -31,6 +31,12 @@ func (s *Selection) EachWithBreak(f func(int, *Selection) bool) *Selection {
 // element in that selection starting at 0, and a *Selection that contains
 // only that element.
 func (s *Selection) Map(f func(int, *Selection) string) (result []string) {
+	return Map(s, f)
+}
+
+// Map is the generic version of Selection.Map, allowing any type to be
+// returned.
+func Map[E any](s *Selection, f func(int, *Selection) E) (result []E) {
 	for i, n := range s.Nodes {
 		result = append(result, f(i, newSingleSelection(n, s.document)))
 	}

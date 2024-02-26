@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v56/github"
+	"github.com/google/go-github/v59/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -235,7 +235,7 @@ func parseTS(headerTS string) (time.Time, error) {
 // but this gives a nice hint to the user into their namespace event of where
 // the issue was.
 func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.Clock) error {
-	rl, resp, err := v.Client.RateLimits(ctx)
+	rl, resp, err := v.Client.RateLimit.Get(ctx)
 	if resp.Header.Get("GitHub-Authentication-Token-Expiration") != "" {
 		ts, err := parseTS(resp.Header.Get("GitHub-Authentication-Token-Expiration"))
 		if err != nil {
