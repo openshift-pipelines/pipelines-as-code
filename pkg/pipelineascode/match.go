@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -294,16 +293,15 @@ func changeSecret(prs []*tektonv1.PipelineRun) error {
 	return nil
 }
 
-// checkNeedUpdate using regexp, try to match some pattern for some issue in PR
-// to let the user know they need to update. or otherwise we will fail.
-// checks are deprecated/removed to n+1 release of OSP.
-// each check should give a good error message on how to update.
-func (p *PacRun) checkNeedUpdate(tmpl string) (string, bool) {
-	// nolint: gosec
-	oldBasicAuthSecretName := `\W*secretName: "pac-git-basic-auth-{{repo_owner}}-{{repo_name}}"`
-	if matched, _ := regexp.MatchString(oldBasicAuthSecretName, tmpl); matched {
-		return `!Update needed! you have a old basic auth secret name, you need to modify your pipelinerun and change the string "secret: pac-git-basic-auth-{{repo_owner}}-{{repo_name}}" to "secret: {{ git_auth_secret }}"`, true
-	}
+// checkNeedUpdate checks if the template needs an update form the user, try to
+// match some patterns for some issues in a template to let the user know they need to
+// update.
+//
+// We otherwise fail with a descriptive error message to the user (check run
+// interface on as comment for other providers) on how to update.
+//
+// Checks are deprecated/removed to n+2 release of OSP.
+func (p *PacRun) checkNeedUpdate(_ string) (string, bool) {
 	return "", false
 }
 
