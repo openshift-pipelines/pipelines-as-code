@@ -44,7 +44,6 @@ func TestBuildEventFromPipelineRun(t *testing.T) {
 						keys.URLRepository: "repo",
 						keys.SHA:           "sha",
 						keys.EventType:     "push",
-						keys.Branch:        "branch",
 						keys.State:         kubeinteraction.StateStarted,
 						keys.PullRequest:   "1234",
 					},
