@@ -97,8 +97,15 @@ func inlineTasks(tasks []tektonv1.PipelineTask, ropt *Opts, types TektonTypes) (
 			if err != nil {
 				return nil, err
 			}
+			tmd := tektonv1.PipelineTaskMetadata{
+				Annotations: taskResolved.GetObjectMeta().GetAnnotations(),
+				Labels:      taskResolved.GetObjectMeta().GetLabels(),
+			}
 			task.TaskRef = nil
-			task.TaskSpec = &tektonv1.EmbeddedTask{TaskSpec: taskResolved.Spec}
+			task.TaskSpec = &tektonv1.EmbeddedTask{
+				TaskSpec: taskResolved.Spec,
+				Metadata: tmd,
+			}
 		}
 		pipelineTasks = append(pipelineTasks, task)
 	}
