@@ -482,3 +482,14 @@ func TestSkippingTask(t *testing.T) {
 	// Test case where taskName is not in skippedTasks
 	assert.Equal(t, skippingTask("task2", skippedTasks), false)
 }
+
+func TestTaskRunPassMetadataAnnotations(t *testing.T) {
+	resolved, _, err := readTDfile(t, "pipelinerun-pipelinespec-taskref-pass-annotations", false, true)
+	assert.NilError(t, err)
+	ma := resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Metadata.Annotations
+	assert.Equal(t, len(ma), 1)
+	assert.Equal(t, ma["random.annotation"], "THIS_SHOULD_BE_HERE")
+	ml := resolved.Spec.PipelineSpec.Tasks[0].TaskSpec.Metadata.Labels
+	assert.Equal(t, len(ml), 1)
+	assert.Equal(t, ml["the.nitpicker.is.called"], "vincent")
+}

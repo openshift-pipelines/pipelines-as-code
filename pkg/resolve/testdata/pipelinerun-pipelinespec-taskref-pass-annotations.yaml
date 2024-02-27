@@ -1,0 +1,24 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: pipeline1
+spec:
+  pipelineSpec:
+    tasks:
+      - name: hello1
+        taskRef:
+          name: task1
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: task1
+  annotations:
+    random.annotation: THIS_SHOULD_BE_HERE
+  labels:
+    the.nitpicker.is.called: vincent
+spec:
+  steps:
+    - name: task1
+      image: image1
