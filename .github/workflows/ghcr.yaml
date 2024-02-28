@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - "**.go"
+    branches:
+      - main
+      - nightly
 
 env:
   REGISTRY: ghcr.io
