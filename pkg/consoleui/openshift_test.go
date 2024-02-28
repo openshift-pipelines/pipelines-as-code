@@ -124,7 +124,7 @@ func TestOpenshiftConsoleURLs(t *testing.T) {
 	}
 	o := OpenshiftConsole{host: "fakeconsole"}
 	assert.Equal(t, o.URL(), "https://fakeconsole")
-	assert.Equal(t, o.DetailURL(pr), "https://fakeconsole/k8s/ns/theNS/tekton.dev~v1beta1~PipelineRun/pr")
-	assert.Equal(t, o.TaskLogURL(pr, trStatus), "https://fakeconsole/k8s/ns/theNS/tekton.dev~v1beta1~PipelineRun/pr/logs/task")
+	assert.Equal(t, o.DetailURL(pr), "https://fakeconsole/k8s/ns/theNS/tekton.dev~v1~PipelineRun/pr")
+	assert.Equal(t, o.TaskLogURL(pr, trStatus), "https://fakeconsole/k8s/ns/theNS/tekton.dev~v1~PipelineRun/pr/logs/task")
 	assert.Equal(t, o.NamespaceURL(pr), "https://fakeconsole/pipelines/ns/theNS/pipeline-runs")
 }
