@@ -1,9 +1,9 @@
-name: Create and publish a Docker multi-arch image to ghcr
+name: Create and publish a Docker multi-arch image with tag latest and stable to ghcr
 
 on:
   push:
-    tags:
-      - v*
+    branches:
+      - stable
 
 env:
   REGISTRY: ghcr.io
@@ -43,6 +43,9 @@ jobs:
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81
         with:
           images: ${{ env.REGISTRY }}/${{ env.CONTROLLER_IMAGE_NAME }}
+          tags: |
+            stable
+            latest
 
       - name: Build and push controller docker image
         uses: docker/build-push-action@v5.1.0
@@ -60,6 +63,9 @@ jobs:
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81
         with:
           images: ${{ env.REGISTRY }}/${{ env.WATCHER_IMAGE_NAME }}
+          tags: |
+            stable
+            latest
 
       - name: Build and push watcher docker image
         uses: docker/build-push-action@v5.1.0
@@ -77,6 +83,9 @@ jobs:
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81
         with:
           images: ${{ env.REGISTRY }}/${{ env.WEBHOOK_IMAGE_NAME }}
+          tags: |
+            stable
+            latest
 
       - name: Build and push webhook docker image
         uses: docker/build-push-action@v5.1.0
@@ -94,6 +103,9 @@ jobs:
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81
         with:
           images: ${{ env.REGISTRY }}/${{ env.TKN_PAC_IMAGE_NAME }}
+          tags: |
+            stable
+            latest
 
       - name: Build and push cli docker image
         uses: docker/build-push-action@v5.1.0
