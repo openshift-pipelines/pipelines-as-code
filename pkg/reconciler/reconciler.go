@@ -65,6 +65,26 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 		}
 	}
 
+	// queue pipelines which are in queued state and pending status
+	// if status is not pending, it could be canceled so let it be reported, even if state is queued
+	if state == kubeinteraction.StateQueued && pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
+		return r.queuePipelineRun(ctx, logger, pr)
+	}
+
+	if !pr.IsDone() {
+		return nil
+	}
+
+	// make sure we have the latest pipelinerun to reconcile, since there is something updating at the same time
+	lpr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("cannot get pipelineRun: %w", err)
+	}
+
+	if lpr.GetResourceVersion() != pr.GetResourceVersion() {
+		return nil
+	}
+
 	// If we have a controllerInfo annotation, then we need to get the
 	// configmap configuration for it
 	//
@@ -87,25 +107,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	}
 	ctx = info.StoreInfo(ctx, r.run.Info.Controller.Name, &r.run.Info)
 	ctx = info.StoreCurrentControllerName(ctx, r.run.Info.Controller.Name)
-
-	// queue pipelines which are in queued state and pending status
-	// if status is not pending, it could be canceled so let it be reported, even if state is queued
-	if state == kubeinteraction.StateQueued && pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
-		return r.queuePipelineRun(ctx, logger, pr)
-	}
-
-	if !pr.IsDone() {
-		return nil
-	}
-
-	// make sure we have the latest pipelinerun to reconcile, since there is something updating at the same time
-	lpr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(pr.GetNamespace()).Get(ctx, pr.GetName(), metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("cannot get pipelineRun: %w", err)
-	}
-	if lpr.GetResourceVersion() != pr.GetResourceVersion() {
-		return nil
-	}
 
 	logger = logger.With(
 		"pipeline-run", pr.GetName(),
