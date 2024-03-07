@@ -253,8 +253,11 @@ func buildAvailableMatchingAnnotationErr(event *info.Event, pruns []*tektonv1.Pi
 	}
 	errmsg = strings.TrimSpace(errmsg)
 	errmsg = strings.TrimSuffix(errmsg, ",")
-	errmsg = fmt.Sprintf("cannot match the event to any pipelineruns in the .tekton/ directory, payload target event is %s with source branch %s and target branch %s. %s",
-		event.EventType, event.HeadBranch, event.BaseBranch, errmsg)
+	nopsevent := ""
+	if event.EventType != opscomments.NoOpsCommentEventType.String() {
+		nopsevent = fmt.Sprintf(" payload target event is %s with", event.EventType)
+	}
+	errmsg = fmt.Sprintf("cannot match the event to any pipelineruns in the .tekton/ directory,%s source branch %s and target branch %s. %s", nopsevent, event.HeadBranch, event.BaseBranch, errmsg)
 	return errmsg
 }
 
