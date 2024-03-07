@@ -14,7 +14,7 @@ const (
 	openShiftConsoleNS                = "openshift-console"
 	openShiftConsoleRouteName         = "console"
 	openShiftPipelineNamespaceViewURL = "https://%s/pipelines/ns/%s/pipeline-runs"
-	openShiftPipelineDetailViewURL    = "https://%s/k8s/ns/%s/tekton.dev~v1beta1~PipelineRun/%s"
+	openShiftPipelineDetailViewURL    = "https://%s/k8s/ns/%s/tekton.dev~v1~PipelineRun/%s"
 	openShiftPipelineTaskLogURL       = "%s/logs/%s"
 	openShiftRouteGroup               = "route.openshift.io"
 	openShiftRouteVersion             = "v1"
