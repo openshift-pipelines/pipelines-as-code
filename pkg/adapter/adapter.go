@@ -101,14 +101,12 @@ func (l *listener) Start(ctx context.Context) error {
 func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		// we should fix this, this basically reads configmap on every request, is that supposed to be okay?
-		currentControllerName := info.GetCurrentControllerName(ctx)
 		if err := l.run.UpdatePACInfo(ctx); err != nil {
 			log.Fatalf("error getting config and setting from configmaps: %v", err)
 		}
 
 		ninfo := &info.Info{}
 		l.run.Info.DeepCopy(ninfo)
-		ctx = info.StoreInfo(ctx, currentControllerName, ninfo)
 
 		if request.Method != http.MethodPost {
 			l.writeResponse(response, http.StatusOK, "ok")
@@ -223,6 +221,7 @@ func (l listener) detectProvider(req *http.Request, reqBody string) (provider.In
 	}
 
 	gitHub := github.New()
+	gitHub.Run = l.run
 	isGH, processReq, logger, reason, err := gitHub.Detect(req, reqBody, &log)
 	if isGH {
 		return l.processRes(processReq, gitHub, logger, reason, err)

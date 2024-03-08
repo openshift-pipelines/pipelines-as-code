@@ -68,7 +68,7 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 	// so instead of having to specify their in Repo each time, they use a
 	// shared one from pac.
 	if p.event.InstallationID > 0 {
-		p.event.Provider.WebhookSecret, _ = GetCurrentNSWebhookSecret(ctx, p.k8int)
+		p.event.Provider.WebhookSecret, _ = GetCurrentNSWebhookSecret(ctx, p.k8int, p.run)
 	} else {
 		err := SecretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo, p.logger)
 		if err != nil {

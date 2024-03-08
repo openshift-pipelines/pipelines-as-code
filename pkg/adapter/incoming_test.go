@@ -655,11 +655,6 @@ func Test_listener_detectIncoming(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			ctx = info.StoreCurrentControllerName(ctx, "default")
-			ctx = info.StoreInfo(ctx, "default", &info.Info{
-				Controller: &info.ControllerInfo{
-					Secret: info.DefaultPipelinesAscodeSecretName,
-				},
-			})
 			ctx = info.StoreNS(ctx, testNamespace.GetName())
 			cs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
 			client := &params.Run{
@@ -667,7 +662,11 @@ func Test_listener_detectIncoming(t *testing.T) {
 					PipelineAsCode: cs.PipelineAsCode,
 					Kube:           cs.Kube,
 				},
-				Info: info.Info{},
+				Info: info.Info{
+					Controller: &info.ControllerInfo{
+						Secret: info.DefaultPipelinesAscodeSecretName,
+					},
+				},
 			}
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
@@ -681,6 +680,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 				kint:   kint,
 				event:  info.NewEvent(),
 			}
+
 			// make a new request
 			req := httptest.NewRequest(tt.args.method,
 				fmt.Sprintf("http://localhost%s?repository=%s&secret=%s&pipelinerun=%s&branch=%s", tt.args.queryURL,

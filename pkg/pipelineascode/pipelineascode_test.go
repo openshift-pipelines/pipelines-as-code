@@ -502,11 +502,6 @@ func TestRun(t *testing.T) {
 				secrets[info.DefaultPipelinesAscodeSecretName] = webhookSecret
 			}
 
-			ctx = info.StoreInfo(ctx, "default", &info.Info{
-				Controller: &info.ControllerInfo{
-					Secret: info.DefaultPipelinesAscodeSecretName,
-				},
-			})
 			if tt.repositories == nil {
 				tt.repositories = []*v1alpha1.Repository{
 					testnewrepo.NewRepo(repo),
@@ -552,6 +547,9 @@ func TestRun(t *testing.T) {
 							HubCatalogs:        &hubCatalogs,
 						},
 					},
+					Controller: &info.ControllerInfo{
+						Secret: info.DefaultPipelinesAscodeSecretName,
+					},
 				},
 			}
 			mac := hmac.New(sha256.New, []byte(payloadEncodedSecret))
@@ -586,7 +584,7 @@ func TestRun(t *testing.T) {
 
 			vcx := &ghprovider.Provider{
 				Client: fakeclient,
-				Run:    params.New(),
+				Run:    cs,
 				Token:  github.String("None"),
 				Logger: logger,
 			}
