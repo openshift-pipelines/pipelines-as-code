@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -30,18 +29,14 @@ func contains(s []string, e string) bool {
 	return false
 }
 
-func TestGithubPullRequestConcurrency(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
-
+func TestGithubSecondPullRequestConcurrency(t *testing.T) {
 	ctx := context.Background()
 	label := "Github PullRequest Concurrent"
 	numberOfPipelineRuns := 10
 	maxNumberOfConcurrentPipelineRuns := 3
 
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
-	_, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, false, false)
+	_, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, true, false)
 	assert.NilError(t, err)
 
 	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", label, targetNS)
