@@ -20,7 +20,6 @@ func GetControllerCtxInfo(ctx context.Context, run *params.Run) (context.Context
 	ctx = info.StoreNS(ctx, ns)
 	run.Info.Controller = info.GetControllerInfoFromEnvOrDefault()
 	run.Clients.Log.Infof("Pipelines as Code Controller: %+v", run.Info.Controller)
-	ctx = info.StoreInfo(ctx, run.Info.Controller.Name, &run.Info)
 	ctx = info.StoreCurrentControllerName(ctx, run.Info.Controller.Name)
 	return ctx, nil
 }

@@ -758,6 +758,7 @@ func TestAppTokenGeneration(t *testing.T) {
 					Pac: &info.PacOpts{
 						Settings: &settings.Settings{},
 					},
+					Controller: &info.ControllerInfo{Secret: secretName},
 				},
 			}
 
@@ -782,9 +783,6 @@ func TestAppTokenGeneration(t *testing.T) {
 			}
 
 			tt.ctx = info.StoreCurrentControllerName(tt.ctx, "default")
-			tt.ctx = info.StoreInfo(tt.ctx, "default", &info.Info{
-				Controller: &info.ControllerInfo{Secret: secretName},
-			})
 			tt.ctx = info.StoreNS(tt.ctx, tt.ctxNS)
 
 			_, err := gprovider.ParsePayload(tt.ctx, run, request, string(jeez))

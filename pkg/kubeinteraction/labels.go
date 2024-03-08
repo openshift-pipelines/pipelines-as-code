@@ -1,7 +1,6 @@
 package kubeinteraction
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/version"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -21,13 +21,13 @@ const (
 	StateFailed    = "failed"
 )
 
-func AddLabelsAndAnnotations(ctx context.Context, event *info.Event, pipelineRun *tektonv1.PipelineRun, repo *apipac.Repository, providerinfo *info.ProviderConfig) error {
+func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1.PipelineRun, repo *apipac.Repository, providerConfig *info.ProviderConfig, paramsRun *params.Run) error {
 	if event == nil {
 		return fmt.Errorf("event should not be nil")
 	}
-	// Add labels on the soon to be created pipelinerun so UI/CLI can easily
+	paramsinfo := paramsRun.Info
+	// Add labels on the soon-to-be created pipelinerun so UI/CLI can easily
 	// query them.
-	paramsinfo := info.GetInfo(ctx, info.GetCurrentControllerName(ctx))
 	labels := map[string]string{
 		// These keys are used in LabelSelector query so we are keeping in Labels as it is.
 		// But adding same keys to Annotations so UI/CLI can fetch the actual value instead of modified value
@@ -44,7 +44,7 @@ func AddLabelsAndAnnotations(ctx context.Context, event *info.Event, pipelineRun
 		// In PAC v0.20.x releases we will remove these keys from Labels
 		keys.Sender:      formatting.CleanValueKubernetes(event.Sender),
 		keys.Branch:      formatting.CleanValueKubernetes(event.BaseBranch),
-		keys.GitProvider: providerinfo.Name,
+		keys.GitProvider: providerConfig.Name,
 	}
 
 	annotations := map[string]string{
@@ -58,7 +58,7 @@ func AddLabelsAndAnnotations(ctx context.Context, event *info.Event, pipelineRun
 		keys.EventType:      event.EventType,
 		keys.Branch:         event.BaseBranch,
 		keys.Repository:     repo.GetName(),
-		keys.GitProvider:    providerinfo.Name,
+		keys.GitProvider:    providerConfig.Name,
 		keys.State:          StateStarted,
 		keys.ControllerInfo: fmt.Sprintf(`{"name":"%s","configmap":"%s","secret":"%s"}`, paramsinfo.Controller.Name, paramsinfo.Controller.Configmap, paramsinfo.Controller.Secret),
 	}
@@ -69,7 +69,7 @@ func AddLabelsAndAnnotations(ctx context.Context, event *info.Event, pipelineRun
 	}
 
 	// TODO: move to provider specific function
-	if providerinfo.Name == "github" || providerinfo.Name == "github-enterprise" {
+	if providerConfig.Name == "github" || providerConfig.Name == "github-enterprise" {
 		if event.InstallationID != -1 {
 			annotations[keys.InstallationID] = strconv.FormatInt(event.InstallationID, 10)
 		}

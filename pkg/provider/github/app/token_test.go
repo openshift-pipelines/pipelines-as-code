@@ -126,15 +126,10 @@ func Test_GenerateJWT(t *testing.T) {
 			}
 			ctx, _ := rtesting.SetupFakeContext(t)
 			ctx = info.StoreCurrentControllerName(ctx, "default")
-			name := ""
+			secretName := ""
 			if tt.secret != nil {
-				name = tt.secret.GetName()
+				secretName = tt.secret.GetName()
 			}
-			ctx = info.StoreInfo(ctx, "default", &info.Info{
-				Controller: &info.ControllerInfo{
-					Secret: name,
-				},
-			})
 
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 			run := &params.Run{
@@ -142,6 +137,11 @@ func Test_GenerateJWT(t *testing.T) {
 					Log:            logger,
 					PipelineAsCode: stdata.PipelineAsCode,
 					Kube:           stdata.Kube,
+				},
+				Info: info.Info{
+					Controller: &info.ControllerInfo{
+						Secret: secretName,
+					},
 				},
 			}
 
@@ -193,12 +193,10 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 			Pac: &info.PacOpts{
 				Settings: &settings.Settings{},
 			},
+			Controller: &info.ControllerInfo{Secret: validSecret.GetName()},
 		},
 	}
 	ctx = info.StoreCurrentControllerName(ctx, "default")
-	ctx = info.StoreInfo(ctx, "default", &info.Info{
-		Controller: &info.ControllerInfo{Secret: validSecret.GetName()},
-	})
 	ctx = info.StoreNS(ctx, testNamespace.GetName())
 
 	jwtToken, err := GenerateJWT(ctx, testNamespace.GetName(), run)
@@ -221,8 +219,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 		},
 	}
 
-	gprovider := &github.Provider{Client: fakeghclient, APIURL: &serverURL}
-
+	gprovider := &github.Provider{Client: fakeghclient, APIURL: &serverURL, Run: run}
 	mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", wantID), func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
 		w.Header().Set("Authorization", "Bearer "+jwtToken)

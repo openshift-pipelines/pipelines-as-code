@@ -81,6 +81,7 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 
 	e2eoptions := options.E2E{Organization: split[0], Repo: split[1], DirectWebhook: viaDirectWebhook, ControllerURL: controllerURL}
 	gprovider := github.New()
+	gprovider.Run = run
 	event := info.NewEvent()
 
 	if githubToken == "" && !viaDirectWebhook {

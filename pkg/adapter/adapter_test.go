@@ -41,12 +41,6 @@ func TestHandleEvent(t *testing.T) {
 	logger, _ := logger.GetLogger()
 
 	ctx = info.StoreCurrentControllerName(ctx, "default")
-	ctx = info.StoreInfo(ctx, "default", &info.Info{
-		Controller: &info.ControllerInfo{
-			Secret:    info.DefaultPipelinesAscodeSecretName,
-			Configmap: info.DefaultPipelinesAscodeConfigmapName,
-		},
-	})
 	ctx = info.StoreNS(ctx, "default")
 
 	emptys := &unstructured.Unstructured{}

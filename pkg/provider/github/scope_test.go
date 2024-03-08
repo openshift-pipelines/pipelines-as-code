@@ -197,15 +197,13 @@ func TestScopeTokenToListOfRepos(t *testing.T) {
 							SecretGHAppRepoScoped:            tt.secretGHAppRepoScopedKey,
 						},
 					},
+					Controller: &info.ControllerInfo{
+						Secret: info.DefaultPipelinesAscodeSecretName,
+					},
 				},
 			}
 
 			ctx = info.StoreCurrentControllerName(ctx, "default")
-			ctx = info.StoreInfo(ctx, "default", &info.Info{
-				Controller: &info.ControllerInfo{
-					Secret: info.DefaultPipelinesAscodeSecretName,
-				},
-			})
 			ctx = info.StoreNS(ctx, testNamespace.GetName())
 
 			fakeghclient, mux, serverURL, teardown := ghtesthelper.SetupGH()

@@ -42,7 +42,6 @@ func main() {
 	ctx = evadapter.WithConfiguratorOptions(ctx, []evadapter.ConfiguratorOption{copt})
 
 	ctx = info.StoreNS(ctx, ns)
-	ctx = info.StoreInfo(ctx, rinfo.Controller.Name, rinfo)
 	ctx = info.StoreCurrentControllerName(ctx, rinfo.Controller.Name)
 
 	ctx = context.WithValue(ctx, client.Key{}, run.Clients.Kube)

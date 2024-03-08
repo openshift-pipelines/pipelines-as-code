@@ -1005,11 +1005,6 @@ func TestCreateToken(t *testing.T) {
 	}
 	ctx = info.StoreNS(ctx, testNamespace.GetName())
 	ctx = info.StoreCurrentControllerName(ctx, "default")
-	ctx = info.StoreInfo(ctx, "default", &info.Info{
-		Controller: &info.ControllerInfo{
-			Secret: validSecret.GetName(),
-		},
-	})
 
 	tdata := testclient.Data{
 		Namespaces: []*corev1.Namespace{testNamespace},
@@ -1023,6 +1018,11 @@ func TestCreateToken(t *testing.T) {
 			Log:            logger,
 			PipelineAsCode: stdata.PipelineAsCode,
 			Kube:           stdata.Kube,
+		},
+		Info: info.Info{
+			Controller: &info.ControllerInfo{
+				Secret: validSecret.GetName(),
+			},
 		},
 	}
 

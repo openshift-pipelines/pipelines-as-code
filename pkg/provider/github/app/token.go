@@ -100,7 +100,9 @@ type JWTClaim struct {
 
 func GenerateJWT(ctx context.Context, ns string, run *params.Run) (string, error) {
 	// TODO: move this out of here
-	applicationID, privateKey, err := github.GetAppIDAndPrivateKey(ctx, ns, run.Clients.Kube)
+	gh := github.New()
+	gh.Run = run
+	applicationID, privateKey, err := gh.GetAppIDAndPrivateKey(ctx, ns, run.Clients.Kube)
 	if err != nil {
 		return "", err
 	}
