@@ -18,7 +18,7 @@ import (
 )
 
 func TestGithubMaxKeepRuns(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:     "Github MaxKeepRun config",
 		YamlFiles: []string{"testdata/pipelinerun-max-keep-run-1.yaml"},

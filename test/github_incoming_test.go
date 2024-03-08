@@ -134,7 +134,7 @@ func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[stri
 	assert.NilError(t, err)
 	defer httpResp.Body.Close()
 	runcnx.Clients.Log.Infof("Kicked off on incoming URL: %s", incomingURL)
-	assert.Assert(t, httpResp.StatusCode >= 200 && httpResp.StatusCode < 300)
+	assert.Assert(t, httpResp.StatusCode >= 200 && httpResp.StatusCode < 300, "http status Code should be %d", httpResp.StatusCode)
 	// to re enable after debugging...
 	g := tgithub.PRTest{
 		Cnx:              runcnx,

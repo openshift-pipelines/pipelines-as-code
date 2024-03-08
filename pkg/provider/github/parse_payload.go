@@ -24,9 +24,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func GetAppIDAndPrivateKey(ctx context.Context, ns string, kube kubernetes.Interface) (int64, []byte, error) {
-	controllerName := info.GetCurrentControllerName(ctx)
-	paramsinfo := info.GetInfo(ctx, controllerName)
+// GetAppIDAndPrivateKey retrieves the GitHub application ID and private key from a secret in the specified namespace.
+// It takes a context, namespace, and Kubernetes client as input parameters.
+// It returns the application ID (int64), private key ([]byte), and an error if any.
+func (v *Provider) GetAppIDAndPrivateKey(ctx context.Context, ns string, kube kubernetes.Interface) (int64, []byte, error) {
+	paramsinfo := &v.Run.Info
 	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, paramsinfo.Controller.Secret, v1.GetOptions{})
 	if err != nil {
 		return 0, []byte{}, fmt.Errorf("could not get the secret %s in ns %s: %w", paramsinfo.Controller.Secret, ns, err)
@@ -43,7 +45,7 @@ func GetAppIDAndPrivateKey(ctx context.Context, ns string, kube kubernetes.Inter
 }
 
 func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, gheURL string, installationID int64, ns string) (string, error) {
-	applicationID, privateKey, err := GetAppIDAndPrivateKey(ctx, ns, kube)
+	applicationID, privateKey, err := v.GetAppIDAndPrivateKey(ctx, ns, kube)
 	if err != nil {
 		return "", err
 	}

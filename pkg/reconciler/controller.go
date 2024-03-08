@@ -36,7 +36,6 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 		if err != nil {
 			log.Fatal("failed to init clients : ", err)
 		}
-		ctx = info.StoreInfo(ctx, ns, &run.Info)
 
 		kinteract, err := kubeinteraction.NewKubernetesInteraction(run)
 		if err != nil {

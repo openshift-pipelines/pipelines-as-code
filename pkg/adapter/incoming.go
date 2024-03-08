@@ -104,6 +104,7 @@ func (l *listener) detectIncoming(ctx context.Context, req *http.Request, payloa
 
 	if repo.Spec.GitProvider == nil || repo.Spec.GitProvider.Type == "" {
 		gh := github.New()
+		gh.Run = l.run
 		ns := info.GetNS(ctx)
 		enterpriseURL, token, installationID, err := app.GetAndUpdateInstallationID(ctx, req, l.run, repo, gh, ns)
 		if err != nil {

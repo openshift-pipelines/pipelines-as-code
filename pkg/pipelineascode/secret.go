@@ -90,12 +90,11 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 }
 
 // GetCurrentNSWebhookSecret get secret from namespace as stored on context.
-func GetCurrentNSWebhookSecret(ctx context.Context, k8int kubeinteraction.Interface) (string, error) {
+func GetCurrentNSWebhookSecret(ctx context.Context, k8int kubeinteraction.Interface, run *params.Run) (string, error) {
 	ns := info.GetNS(ctx)
-	paramsinfo := info.GetInfo(ctx, info.GetCurrentControllerName(ctx))
 	s, err := k8int.GetSecret(ctx, ktypes.GetSecretOpt{
 		Namespace: ns,
-		Name:      paramsinfo.Controller.Secret,
+		Name:      run.Info.Controller.Secret,
 		Key:       defaultPipelinesAscodeSecretWebhookSecretKey,
 	})
 	// a lot of people have problem with this secret, when encoding it to base64 which add a \n when we do :

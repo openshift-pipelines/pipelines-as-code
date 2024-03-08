@@ -160,17 +160,17 @@ func TestInfo(t *testing.T) {
 			if tt.secret != nil {
 				name = tt.secret.GetName()
 			}
-			ctx = info.StoreInfo(ctx, "default", &info.Info{
-				Controller: &info.ControllerInfo{
-					Secret: name,
-				},
-			})
 			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 			cs := &params.Run{
 				Clients: clients.Clients{
 					PipelineAsCode: stdata.PipelineAsCode,
 					Kube:           stdata.Kube,
 					HTTP:           *httpTestClient,
+				},
+				Info: info.Info{
+					Controller: &info.ControllerInfo{
+						Secret: name,
+					},
 				},
 			}
 

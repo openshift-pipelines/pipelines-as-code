@@ -31,6 +31,8 @@ func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogg
 	switch gitProvider {
 	case "github", "github-enterprise":
 		gh := github.New()
+		gh.Logger = logger
+		gh.Run = r.run
 		if event.InstallationID != 0 {
 			if err := gh.InitAppClient(ctx, r.run.Clients.Kube, event); err != nil {
 				return nil, nil, err

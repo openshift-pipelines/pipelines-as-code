@@ -105,7 +105,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	if err := r.run.UpdatePACInfo(ctx); err != nil {
 		return fmt.Errorf("failed to get information for controller config %v: %w", r.run.Info.Controller, err)
 	}
-	ctx = info.StoreInfo(ctx, r.run.Info.Controller.Name, &r.run.Info)
 	ctx = info.StoreCurrentControllerName(ctx, r.run.Info.Controller.Name)
 
 	logger = logger.With(
@@ -146,7 +145,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	r.run.Clients.ConsoleUI.SetParams(maptemplate)
 
 	if event.InstallationID > 0 {
-		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
+		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
 	} else {
 		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, provider.GetConfig(), event, repo, logger); err != nil {
 			return repo, fmt.Errorf("cannot get secret from repository: %w", err)
@@ -189,6 +188,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		if err != nil {
 			return repo, fmt.Errorf("cannot get pipeline: %w", err)
 		}
+
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
 			return repo, fmt.Errorf("failed to update status: %w", err)
 		}
@@ -203,7 +203,6 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	if err != nil {
 		return fmt.Errorf("cannot update state: %w", err)
 	}
-
 	p, event, err := r.detectProvider(ctx, logger, pr)
 	if err != nil {
 		logger.Error(err)
@@ -211,7 +210,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	}
 
 	if event.InstallationID > 0 {
-		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract)
+		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
 	} else {
 		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, p.GetConfig(), event, repo, logger); err != nil {
 			return fmt.Errorf("cannot get secret from repo: %w", err)

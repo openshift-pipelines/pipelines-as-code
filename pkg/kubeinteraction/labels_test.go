@@ -6,11 +6,11 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestAddLabelsAndAnnotations(t *testing.T) {
@@ -58,12 +58,12 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx, _ := rtesting.SetupFakeContext(t)
-			ctx = info.StoreCurrentControllerName(ctx, "default")
-			ctx = info.StoreInfo(ctx, "default", &info.Info{
-				Controller: tt.args.controllerInfo,
-			})
-			err := AddLabelsAndAnnotations(ctx, tt.args.event, tt.args.pipelineRun, tt.args.repo, &info.ProviderConfig{})
+			paramsRun := &params.Run{
+				Info: info.Info{
+					Controller: tt.args.controllerInfo,
+				},
+			}
+			err := AddLabelsAndAnnotations(tt.args.event, tt.args.pipelineRun, tt.args.repo, &info.ProviderConfig{}, paramsRun)
 			assert.NilError(t, err)
 			assert.Equal(t, tt.args.pipelineRun.Labels[keys.URLOrg], tt.args.event.Organization, "'%s' != %s",
 				tt.args.pipelineRun.Labels[keys.URLOrg], tt.args.event.Organization)
