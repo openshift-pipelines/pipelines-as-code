@@ -7,33 +7,20 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v56/github"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
 func TestGithubPullRequestConcurrency(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
-
 	ctx := context.Background()
 	label := "Github PullRequest Concurrent"
 	numberOfPipelineRuns := 10
@@ -91,41 +78,34 @@ func TestGithubPullRequestConcurrency(t *testing.T) {
 	}
 	assert.NilError(t, wait.UntilMinPRAppeared(ctx, runcnx.Clients, waitOpts, numberOfPipelineRuns))
 
-	runningChecks := 0
-	finishedArray := []string{}
-	for i := 0; i < 15; i++ {
-		checkruns, _, err := ghcnx.Client.Checks.ListCheckRunsForRef(ctx, opts.Organization, opts.Repo, targetRefName, &github.ListCheckRunsOptions{})
+	finished := false
+	maxLoop := 15
+	for i := 0; i < maxLoop; i++ {
+		unsuccessful := 0
+		prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 		assert.NilError(t, err)
-		if checkruns.Total == nil || *checkruns.Total < numberOfPipelineRuns {
-			t.Logf("Waiting for all checks to be created: %d/%d", *checkruns.Total, numberOfPipelineRuns)
-			time.Sleep(5 * time.Second)
-			continue
-		}
-		assert.Assert(t, *checkruns.Total >= numberOfPipelineRuns)
-		for _, checkrun := range checkruns.CheckRuns {
-			cname := checkrun.GetName()
-			switch {
-			case checkrun.GetStatus() != "completed" && checkrun.GetConclusion() != "success":
-				runcnx.Clients.Log.Infof("Waiting for CheckRun %s to be completed", cname)
-			case checkrun.GetStatus() == "running":
-				runningChecks++
-			default:
-				// check if cname is in finishedArray
-				if !contains(finishedArray, cname) {
-					runcnx.Clients.Log.Infof("PipelineRun %s has finished %d/%d",
-						cname, len(finishedArray), numberOfPipelineRuns)
-					finishedArray = append(finishedArray, cname)
+		for _, pr := range prs.Items {
+			if pr.Status.GetConditions() == nil {
+				unsuccessful++
+				continue
+			}
+			for _, condition := range pr.Status.GetConditions() {
+				if condition.Status == "Unknown" || condition.GetReason() == tektonv1.PipelineRunSpecStatusPending {
+					unsuccessful++
+					continue
 				}
 			}
 		}
-		if len(finishedArray) == numberOfPipelineRuns {
+		if unsuccessful == 0 {
+			runcnx.Clients.Log.Infof("the %d pipelineruns has successfully finished", numberOfPipelineRuns)
+			finished = true
 			break
 		}
-		if runningChecks > maxNumberOfConcurrentPipelineRuns {
-			runcnx.Clients.Log.Fatalf("Too many running checks %d our maxAmountOfConcurrentPRS == %d",
-				runningChecks, numberOfPipelineRuns)
-		}
-		// it's high so we limit our ratelimitation
-		time.Sleep(10 * time.Second)
+		runcnx.Clients.Log.Infof("number of unsuccessful PR %d out of %d, waiting 10s more, %d/%d", unsuccessful, numberOfPipelineRuns*2, i, maxLoop)
+		// it's high because it takes time to process on kind
+		time.Sleep(15 * time.Second)
+	}
+	if !finished {
+		t.Errorf("the %d pipelineruns has not successfully finished, some of them are still pending or it's abnormally slow to process the Q", numberOfPipelineRuns)
 	}
 }
