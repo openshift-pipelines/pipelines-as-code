@@ -537,14 +537,6 @@ func TestGithubGetCommitInfo(t *testing.T) {
 			wantErr:  "no github client has been initialized",
 			noclient: true,
 		},
-		{
-			name: "webhooks gitops comment",
-			event: &info.Event{
-				Organization:      "owner",
-				Repository:        "repository",
-				PullRequestNumber: 123,
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

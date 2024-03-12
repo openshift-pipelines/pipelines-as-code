@@ -235,7 +235,10 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		}
 		return v.handleCheckSuites(ctx, gitEvent)
 	case *github.IssueCommentEvent:
-		processedEvent, err = v.handleIssueCommentEvent(gitEvent)
+		if v.Client == nil {
+			return nil, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
+		}
+		processedEvent, err = v.handleIssueCommentEvent(ctx, gitEvent)
 		if err != nil {
 			return nil, err
 		}
@@ -353,13 +356,13 @@ func convertPullRequestURLtoNumber(pullRequest string) (int, error) {
 	return prNumber, nil
 }
 
-func (v *Provider) handleIssueCommentEvent(event *github.IssueCommentEvent) (*info.Event, error) {
+func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.IssueCommentEvent) (*info.Event, error) {
+	action := "recheck"
 	runevent := info.NewEvent()
 	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
 	runevent.Repository = event.GetRepo().GetName()
 	runevent.Sender = event.GetSender().GetLogin()
-	runevent.DefaultBranch = event.GetRepo().GetDefaultBranch()
-	runevent.URL = event.GetRepo().GetHTMLURL()
+	// Always set the trigger target as pull_request on issue comment events
 	runevent.TriggerTarget = triggertype.PullRequest
 	if !event.GetIssue().IsPullRequest() {
 		return info.NewEvent(), fmt.Errorf("issue comment is not coming from a pull_request")
@@ -374,8 +377,8 @@ func (v *Provider) handleIssueCommentEvent(event *github.IssueCommentEvent) (*in
 		return info.NewEvent(), err
 	}
 
-	v.Logger.Infof("gitops_comment: %s %s/%s#%d has been requested", runevent.EventType, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
-	return runevent, nil
+	v.Logger.Infof("issue_comment: pipelinerun %s on %s/%s#%d has been requested", action, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	return v.getPullRequest(ctx, runevent)
 }
 
 func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.CommitCommentEvent) (*info.Event, error) {
