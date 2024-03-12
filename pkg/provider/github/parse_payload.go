@@ -374,7 +374,9 @@ func (v *Provider) handleIssueCommentEvent(event *github.IssueCommentEvent) (*in
 		return info.NewEvent(), err
 	}
 
-	v.Logger.Infof("gitops_comment: %s %s/%s#%d has been requested", runevent.EventType, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	if runevent.EventType != opscomments.NoOpsCommentEventType.String() {
+		v.Logger.Infof("gitops_comment: %s %s/%s#%d has been requested", runevent.EventType, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	}
 	return runevent, nil
 }
 
