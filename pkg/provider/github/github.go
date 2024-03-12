@@ -341,21 +341,11 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
+	// if we don't have a sha we may have a branch (ie: incoming webhook) then
+	// use the branch as sha since github supports it
 	var commit *github.Commit
 	sha := runevent.SHA
-	// if we have pull request number but not sha then it's probably coming
-	// from a github webhook gitops command then we can pull some information
-	// out of it.
-	if sha == "" && runevent.PullRequestNumber != 0 {
-		var err error
-		if runevent, err = v.getPullRequest(ctx, runevent); err != nil {
-			return err
-		}
-	}
-
-	// if we don't have a sha we may have a branch (ie: incoming webhook,
-	// gitops comment on webhook) then grab the latest sha from the branch
-	if sha == "" && runevent.HeadBranch != "" {
+	if runevent.SHA == "" && runevent.HeadBranch != "" {
 		branchinfo, _, err := v.Client.Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, runevent.HeadBranch, 1)
 		if err != nil {
 			return err

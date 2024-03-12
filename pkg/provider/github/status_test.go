@@ -12,7 +12,6 @@ import (
 
 	"github.com/google/go-github/v59/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -397,15 +396,6 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 		EventType:         "pull_request",
 		PullRequestNumber: issuenumber,
 	}
-	goevent := &info.Event{
-		Event:             &github.PullRequestEvent{PullRequest: &github.PullRequest{Number: github.Int(issuenumber)}},
-		Organization:      "owner",
-		Repository:        "repository",
-		SHA:               "createStatusCommitSHA",
-		EventType:         opscomments.RetestSingleCommentEventType.String(),
-		PullRequestNumber: issuenumber,
-	}
-
 	tests := []struct {
 		name               string
 		event              *info.Event
@@ -439,17 +429,6 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 				Conclusion: "pending",
 			},
 			expectedConclusion: "pending",
-		},
-		{
-			name:  "retest single comment",
-			event: goevent,
-			status: provider.StatusOpts{
-				Status:     "completed",
-				Summary:    "We are",
-				Text:       "Finish",
-				Conclusion: "completed",
-			},
-			expectedConclusion: "completed",
 		},
 		{
 			name:  "pull_request status neutral",

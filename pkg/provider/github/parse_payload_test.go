@@ -138,6 +138,13 @@ func TestParsePayLoad(t *testing.T) {
 			payloadEventStruct: github.CheckRunEvent{Action: github.String("created")},
 		},
 		{
+			name:               "bad/issue comment retest only with github apps",
+			wantErrString:      "only supported with github apps",
+			eventType:          "issue_comment",
+			triggerTarget:      "pull_request",
+			payloadEventStruct: github.IssueCommentEvent{Action: github.String("created")},
+		},
+		{
 			name:               "bad/issue comment not coming from pull request",
 			eventType:          "issue_comment",
 			triggerTarget:      "pull_request",
@@ -174,6 +181,7 @@ func TestParsePayLoad(t *testing.T) {
 					},
 				},
 			},
+			shaRet: "samplePRsha",
 		},
 		{
 			// specific run from a check_suite
@@ -191,6 +199,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies: map[string]interface{}{"/repos/owner/reponame/pulls/54321": samplePR},
+			shaRet:     "samplePRsha",
 		},
 		// all checks in a check_suite
 		{
@@ -206,6 +215,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies: map[string]interface{}{"/repos/owner/reponame/pulls/54321": samplePR},
+			shaRet:     "samplePRsha",
 		},
 		{
 			name:          "good/rerequest on push",
@@ -221,6 +231,7 @@ func TestParsePayLoad(t *testing.T) {
 					},
 				},
 			},
+			shaRet: "headSHACheckSuite",
 		},
 		{
 			name:          "good/issue comment",
@@ -236,12 +247,14 @@ func TestParsePayLoad(t *testing.T) {
 				Repo: sampleRepo,
 			},
 			muxReplies: map[string]interface{}{"/repos/owner/reponame/pulls/666": samplePR},
+			shaRet:     "samplePRsha",
 		},
 		{
 			name:               "good/pull request",
 			eventType:          "pull_request",
 			triggerTarget:      "pull_request",
 			payloadEventStruct: samplePRevent,
+			shaRet:             "sampleHeadsha",
 		},
 		{
 			name:          "good/push",
@@ -254,6 +267,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 				HeadCommit: &github.HeadCommit{ID: github.String("SHAPush")},
 			},
+			shaRet: "SHAPush",
 		},
 		{
 			name:          "good/issue comment for retest",
@@ -272,6 +286,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:        map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePR},
+			shaRet:            "samplePRsha",
 			targetPipelinerun: "dummy",
 		},
 		{
@@ -291,6 +306,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies: map[string]interface{}{"/repos/owner/reponame/pulls/999": samplePR},
+			shaRet:     "samplePRsha",
 		},
 		{
 			name:          "good/issue comment for cancel a pr",
@@ -309,6 +325,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:              map[string]interface{}{"/repos/owner/reponame/pulls/888": samplePR},
+			shaRet:                  "samplePRsha",
 			targetCancelPipelinerun: "dummy",
 		},
 		{
@@ -332,6 +349,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:        map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePR},
+			shaRet:            "samplePRsha",
 			targetPipelinerun: "dummy",
 			wantedBranchName:  "main",
 		},
@@ -349,6 +367,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:       map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePR},
+			shaRet:           "samplePRsha",
 			wantedBranchName: "main",
 		},
 		{
@@ -365,6 +384,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/999": samplePR},
+			shaRet:                     "samplePRsha",
 			wantedBranchName:           "main",
 			isCancelPipelineRunEnabled: true,
 		},
@@ -382,6 +402,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/888": samplePR},
+			shaRet:                     "samplePRsha",
 			targetCancelPipelinerun:    "dummy",
 			wantedBranchName:           "main",
 			isCancelPipelineRunEnabled: true,
@@ -400,6 +421,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/7771": samplePR},
+			shaRet:                     "samplePRsha",
 			targetPipelinerun:          "dummy",
 			wantedBranchName:           "test1",
 			isCancelPipelineRunEnabled: false,
@@ -418,6 +440,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/9991": samplePR},
+			shaRet:                     "samplePRsha",
 			wantedBranchName:           "test1",
 			isCancelPipelineRunEnabled: true,
 		},
@@ -435,6 +458,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/8881": samplePR},
+			shaRet:                     "samplePRsha",
 			targetCancelPipelinerun:    "dummy",
 			wantedBranchName:           "test1",
 			isCancelPipelineRunEnabled: true,
@@ -453,6 +477,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:                 map[string]interface{}{"/repos/owner/reponame/pulls/8881": samplePR},
+			shaRet:                     "samplePRsha",
 			targetCancelPipelinerun:    "dummy",
 			wantedBranchName:           "test2",
 			isCancelPipelineRunEnabled: false,
@@ -472,6 +497,7 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			muxReplies:        map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePRAnother},
+			shaRet:            "samplePRshanew",
 			targetPipelinerun: "dummy",
 			wantedBranchName:  "main",
 			wantErrString:     "provided branch main does not contains sha samplePRshanew",
@@ -550,6 +576,7 @@ func TestParsePayLoad(t *testing.T) {
 			}
 			assert.NilError(t, err)
 			assert.Assert(t, ret != nil)
+			assert.Equal(t, tt.shaRet, ret.SHA)
 			if tt.eventType == "pull_request" {
 				assert.Equal(t, "my first PR", ret.PullRequestTitle)
 			}

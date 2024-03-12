@@ -27,7 +27,7 @@ func TestGithubPullRequest(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubSecondPullRequestController(t *testing.T) {
+func TestGithubPullRequestSecondController(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:            "Github Rerequest",
@@ -93,7 +93,7 @@ func TestGithubPullRequestWebhook(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubSecondPullRequestBadYaml(t *testing.T) {
+func TestGithubPullRequestSecondBadYaml(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
 		Label:            "Github Rerequest",
