@@ -85,11 +85,37 @@ func TestFilterRunningPipelineRunOnTargetTest(t *testing.T) {
 }
 
 func TestGetPipelineRunsFromRepo(t *testing.T) {
+	pullRequestEvent := &info.Event{
+		SHA:           "principale",
+		Organization:  "organizationes",
+		Repository:    "lagaffe",
+		URL:           "https://service/documentation",
+		HeadBranch:    "main",
+		BaseBranch:    "main",
+		Sender:        "fantasio",
+		EventType:     "pull_request",
+		TriggerTarget: "pull_request",
+	}
+	testExplicitNoMatchPREvent := &info.Event{
+		SHA:           "principale",
+		Organization:  "organizationes",
+		Repository:    "lagaffe",
+		URL:           "https://service/documentation",
+		HeadBranch:    "main",
+		BaseBranch:    "main",
+		Sender:        "fantasio",
+		TriggerTarget: "pull_request",
+		State: info.State{
+			TargetTestPipelineRun: "no-match",
+		},
+	}
+
 	tests := []struct {
 		name                  string
 		repositories          *v1alpha1.Repository
 		tektondir             string
 		expectedNumberOfPruns int
+		event                 *info.Event
 	}{
 		{
 			name: "more than one pipelinerun in .tekton dir",
@@ -102,6 +128,7 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 			},
 			tektondir:             "testdata/pull_request_multiplepipelineruns",
 			expectedNumberOfPruns: 2,
+			event:                 pullRequestEvent,
 		},
 		{
 			name: "single pipelinerun in .tekton dir",
@@ -114,6 +141,37 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 			},
 			tektondir:             "testdata/pull_request",
 			expectedNumberOfPruns: 1,
+			event:                 pullRequestEvent,
+		},
+		{
+			name: "no-match pipelineruns in .tekton dir, only matched should be returned",
+			repositories: &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testrepo",
+					Namespace: "test",
+				},
+				Spec: v1alpha1.RepositorySpec{},
+			},
+			// we have 3 PR in there 2 that has a match on pull request and 1 that is a no-matching
+			// matching those two that is matching here
+			tektondir:             "testdata/no-match",
+			expectedNumberOfPruns: 2,
+			event:                 pullRequestEvent,
+		},
+		{
+			name: "no-match pipelineruns in .tekton dir, only match the no-match",
+			repositories: &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testrepo",
+					Namespace: "test",
+				},
+				Spec: v1alpha1.RepositorySpec{},
+			},
+			// we have 3 PR in there 2 that has a match on pull request and 1 that is a no-matching
+			// matching that only one here
+			tektondir:             "testdata/no-match",
+			expectedNumberOfPruns: 1,
+			event:                 testExplicitNoMatchPREvent,
 		},
 	}
 	for _, tt := range tests {
@@ -124,19 +182,8 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 
-			runevent := &info.Event{
-				SHA:           "principale",
-				Organization:  "organizationes",
-				Repository:    "lagaffe",
-				URL:           "https://service/documentation",
-				HeadBranch:    "main",
-				BaseBranch:    "main",
-				Sender:        "fantasio",
-				EventType:     "pull_request",
-				TriggerTarget: "pull_request",
-			}
 			if tt.tektondir != "" {
-				ghtesthelper.SetupGitTree(t, mux, tt.tektondir, runevent, false)
+				ghtesthelper.SetupGitTree(t, mux, tt.tektondir, tt.event, false)
 			}
 
 			stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
@@ -165,7 +212,7 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 				Token:  github.String("None"),
 				Logger: logger,
 			}
-			p := NewPacs(runevent, vcx, cs, k8int, logger)
+			p := NewPacs(tt.event, vcx, cs, k8int, logger)
 			matchedPRs, err := p.getPipelineRunsFromRepo(ctx, tt.repositories)
 			assert.NilError(t, err)
 			matchedPRNames := []string{}

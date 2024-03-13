@@ -814,6 +814,82 @@ func TestGiteaOnCommentAnnotation(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+// TestGiteaTestPipelineRunExplicitelyWithTestComment will test a pipelinerun
+// even if it hasn't matched when we are doing a /test comment.
+func TestGiteaTestPipelineRunExplicitelyWithTestComment(t *testing.T) {
+	var err error
+	ctx := context.Background()
+	topts := &tgitea.TestOpts{
+		TargetRefName: names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"),
+	}
+	topts.TargetNS = topts.TargetRefName
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, err = tgitea.Setup(ctx)
+	assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
+	ctx, err = cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	assert.NilError(t, secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS, "pac-secret"))
+	topts.TargetEvent = triggertype.PullRequest.String()
+	topts.YAMLFiles = map[string]string{
+		".tekton/pr.yaml": "testdata/pipelinerun-nomatch.yaml",
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	tgitea.PostCommentOnPullRequest(t, topts, "/test no-match")
+	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+	}
+
+	repo, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+	assert.Equal(t, len(repo.Status), 1, "should have only 1 status")
+	assert.Equal(t, *repo.Status[0].EventType, opscomments.TestSingleCommentEventType.String(), "should have a test comment event in status")
+}
+
+func TestGiteaRetestAll(t *testing.T) {
+	var err error
+	ctx := context.Background()
+	topts := &tgitea.TestOpts{
+		TargetRefName: names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"),
+	}
+	topts.TargetNS = topts.TargetRefName
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, err = tgitea.Setup(ctx)
+	assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
+	ctx, err = cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	assert.NilError(t, secret.Create(ctx, topts.ParamsRun, map[string]string{"secret": "SHHHHHHH"}, topts.TargetNS, "pac-secret"))
+	topts.TargetEvent = triggertype.PullRequest.String()
+	topts.YAMLFiles = map[string]string{
+		".tekton/pr.yaml":      "testdata/pipelinerun.yaml",
+		".tekton/nomatch.yaml": "testdata/pipelinerun-nomatch.yaml",
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+	}
+
+	repo, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+	var rt bool
+	for _, status := range repo.Status {
+		if *status.EventType == opscomments.RetestAllCommentEventType.String() {
+			rt = true
+		}
+	}
+	assert.Assert(t, rt, "should have a retest all comment event in status")
+	assert.Equal(t, len(repo.Status), 2, "should have only 2 status")
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -run TestGiteaPush ."
 // End:

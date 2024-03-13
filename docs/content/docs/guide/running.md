@@ -114,14 +114,16 @@ entire suite of checks once again.
 
 ![github apps rerun check](/images/github-apps-rerun-checks.png)
 
-### GitOps command on pull or merge request
+## GitOps commands
 
-If you are targeting a push, pull or merge request you can use `GitOps` comment
-inside your pull request, to restart all or specific Pipelines.
+The GitOps commands are a way to trigger Pipelines-as-Code actions via comments
+on a `Pull Request` or comment on a `Push`ed commit.
 
-For example, you want to restart all your pipeline you can add a comment starting
-with `/retest` and all PipelineRun attached to that pull or merge request will be
-restarted :
+### GitOps commands on Pull Requests
+
+When you are on a Pull Request you may want to restart all your pipelineruns
+you can add a comment starting with `/retest` and all PipelineRuns attached to
+that pull request will be restarted :
 
 Example :
 
@@ -141,14 +143,11 @@ roses are red, violets are blue. pipeline are bound to flake by design.
 /test <pipelinerun-name>
 ```
 
-You can expose custom GitOps commands on `Pull Request` comment via the
-[on-comment]({{< relref "/docs/guide/authoringprs.md#matching-a-pipelinerun-on-a-regexp-in-a-comment" >}}) annotation.
+### GitOps commands on pushed commits
 
-### GitOps command on push request
-
-To trigger GitOps commands in response to a push request, you can include `GitOps`
-comments within your commit messages. These comments can be used to restart
-either all pipelines or specific ones. Here's how it works:
+If you want to trigger a GitOps command on a pushed commit, you can include the
+`GitOps` comments within your commit messages. These comments can be used to
+restart either all pipelines or specific ones. Here's how it works:
 
 For restarting all pipeline runs:
 
@@ -185,7 +184,7 @@ located, with the context of the **test** branch.
    3. `/retest <pipelinerun-name> branch:test`
    4. `/test <pipelinerun-name> branch:test`
 
-To add `GitOps` comments to a push request, follow these steps:
+To issue a `GitOps` comment on a pushed commit you can follow these steps:
 
 1. Go to your repository.
 2. Click on the **Commits** section.
@@ -196,12 +195,25 @@ To add `GitOps` comments to a push request, follow these steps:
 
 Please note that this feature is supported for the GitHub provider only.
 
-## Cancelling the PipelineRun
+### GitOps commands on non-matching PipelineRun
+
+The PipelineRun will be restarted regardless of the annotations if the comment
+`/test <pipelinerun-name>` or `/retest <pipelinerun-name>` is used . This let
+you have control of PipelineRuns that gets only triggered by a comment on the
+pull request.
+
+### Custom GitOps commands
+
+Using the [on-comment]({{< relref "/docs/guide/authoringprs.md#matching-a-pipelinerun-on-a-regexp-in-a-comment" >}}) annotation on your `PipelineRun` you can define custom GitOps commands that will be triggered by the comments on the pull request.
+
+See the [on-comment]({{< relref "/docs/guide/authoringprs.md#matching-a-pipelinerun-on-a-regexp-in-a-comment" >}}) guide for more information.
+
+## Cancelling a PipelineRun
 
 You can cancel a running PipelineRun by commenting on the PullRequest.
 
 For example if you want to cancel all your PipelinerRuns you can add a comment starting
-with `/cancel` and all PipelineRun attached to that pull or merge request will be cancelled.
+with `/cancel` and all PipelineRun attached to that pull request will be cancelled.
 
 Example :
 

@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/google/go-github/v59/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
 )
@@ -131,6 +133,32 @@ func TestGithubPullRequestSecondBadYaml(t *testing.T) {
 	// may be fragile if we change the application name, but life goes on if it fails and we fix the name if that happen
 	assert.Equal(t, res.CheckRuns[0].GetOutput().GetSummary(), "Pipelines as Code GHE has <b>failed</b>.")
 	golden.Assert(t, res.CheckRuns[0].GetOutput().GetText(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
+}
+
+func TestGithubSecondTestExplicitelyNoMatchedPipelineRun(t *testing.T) {
+	ctx := context.Background()
+	g := tgithub.PRTest{
+		Label:            "Github test implicit comment",
+		YamlFiles:        []string{"testdata/pipelinerun-nomatch.yaml"},
+		SecondController: true,
+		NoStatusCheck:    true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	g.Cnx.Clients.Log.Infof("Creating /test no-match on PullRequest")
+	_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.PRNumber,
+		&github.IssueComment{Body: github.String("/test no-match")})
+	assert.NilError(t, err)
+	sopt := twait.SuccessOpt{
+		Title:           fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, g.TargetNamespace),
+		OnEvent:         opscomments.TestSingleCommentEventType.String(),
+		TargetNS:        g.TargetNamespace,
+		NumberofPRMatch: len(g.YamlFiles),
+	}
+	twait.Succeeded(ctx, t, g.Cnx, g.Options, sopt)
 }
 
 // Local Variables:
