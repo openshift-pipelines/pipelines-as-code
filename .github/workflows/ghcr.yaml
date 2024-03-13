@@ -1,7 +1,10 @@
-name: Create and publish a Docker image to ghcr
+name: Create and publish a Docker image to ghcr on main and nightly
 
 on:
   push:
+    branches:
+      - main
+      - nightly
     paths:
       - "**.go"
 
