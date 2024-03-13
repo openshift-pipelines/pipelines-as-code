@@ -1,9 +1,10 @@
-name: Create and publish a Docker multi-arch image to ghcr
+name: Create and publish Docker multi-arch images to ghcr on release
 
 on:
   push:
-    tags:
-      - v*
+    branches:
+      - release-v*
+      - stable
 
 env:
   REGISTRY: ghcr.io
@@ -38,11 +39,24 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Fetch version from branch name
+        id: fetch-version
+        run: |
+          releaseBranchFormat='release-v'
+          if [[ ${{ github.ref_name }} == ${releaseBranchFormat}* ]]; then
+            echo "version=${${{ github.ref_name }}#*-}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract metadata (tags, labels) for Docker (Controller)
         id: meta
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81
         with:
           images: ${{ env.REGISTRY }}/${{ env.CONTROLLER_IMAGE_NAME }}
+          tags: |
+            ${{ steps.fetch-version.outputs.version }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'stable') }}
 
       - name: Build and push controller docker image
         uses: docker/build-push-action@v5.2.0
@@ -60,6 +74,9 @@ jobs:
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81
         with:
           images: ${{ env.REGISTRY }}/${{ env.WATCHER_IMAGE_NAME }}
+          tags: |
+            ${{ steps.fetch-version.outputs.version }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'stable') }}
 
       - name: Build and push watcher docker image
         uses: docker/build-push-action@v5.2.0
@@ -77,6 +94,9 @@ jobs:
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81
         with:
           images: ${{ env.REGISTRY }}/${{ env.WEBHOOK_IMAGE_NAME }}
+          tags: |
+            ${{ steps.fetch-version.outputs.version }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'stable') }}
 
       - name: Build and push webhook docker image
         uses: docker/build-push-action@v5.2.0
@@ -94,6 +114,9 @@ jobs:
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81
         with:
           images: ${{ env.REGISTRY }}/${{ env.TKN_PAC_IMAGE_NAME }}
+          tags: |
+            ${{ steps.fetch-version.outputs.version }}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'stable') }}
 
       - name: Build and push cli docker image
         uses: docker/build-push-action@v5.2.0
