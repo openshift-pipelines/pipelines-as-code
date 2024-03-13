@@ -182,11 +182,13 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	}
 
 	// Match the PipelineRun with annotation
-	matchedPRs, err := matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx)
-	if err != nil {
-		// Don't fail when you don't have a match between pipeline and annotations
-		p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
-		return nil, nil
+	var matchedPRs []matcher.Match
+	if p.event.TargetTestPipelineRun == "" {
+		if matchedPRs, err = matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx); err != nil {
+			// Don't fail when you don't have a match between pipeline and annotations
+			p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
+			return nil, nil
+		}
 	}
 
 	// if the event is a comment event, but we don't have any match from the keys.OnComment then do the ACL checks again
@@ -215,13 +217,15 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 
 	// finally resolve with fetching the remote tasks (if enabled)
 	if p.run.Info.Pac.RemoteTasks {
-		// only resolve on the matched pipelineruns
-		types.PipelineRuns = nil
-		for _, match := range matchedPRs {
-			for pr := range pipelineRuns {
-				if match.PipelineRun.GetName() == "" && match.PipelineRun.GetGenerateName() == pipelineRuns[pr].GenerateName ||
-					match.PipelineRun.GetName() != "" && match.PipelineRun.GetName() == pipelineRuns[pr].Name {
-					types.PipelineRuns = append(types.PipelineRuns, pipelineRuns[pr])
+		// only resolve on the matched pipelineruns if we don't do explicit /test of unmatched pipelineruns
+		if p.event.TargetTestPipelineRun == "" {
+			types.PipelineRuns = nil
+			for _, match := range matchedPRs {
+				for pr := range pipelineRuns {
+					if match.PipelineRun.GetName() == "" && match.PipelineRun.GetGenerateName() == pipelineRuns[pr].GenerateName ||
+						match.PipelineRun.GetName() != "" && match.PipelineRun.GetName() == pipelineRuns[pr].Name {
+						types.PipelineRuns = append(types.PipelineRuns, pipelineRuns[pr])
+					}
 				}
 			}
 		}
@@ -238,6 +242,14 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	err = changeSecret(pipelineRuns)
 	if err != nil {
 		return nil, err
+	}
+	// if we are doing explicit /test command then we only want to run the one that has matched the /test
+	if p.event.TargetTestPipelineRun != "" {
+		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryMatchedPipelineRun", fmt.Sprintf("explicit testing via /test of PipelineRun %s", p.event.TargetTestPipelineRun))
+		return []matcher.Match{{
+			PipelineRun: pipelineRuns[0],
+			Repo:        repo,
+		}}, nil
 	}
 	matchedPRs, err = matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx)
 	if err != nil {
