@@ -112,7 +112,7 @@ func TestGithubSecondPullRequestConcurrency(t *testing.T) {
 			finished = true
 			break
 		}
-		runcnx.Clients.Log.Infof("number of unsuccessful PR %d out of %d, waiting 10s more, %d/%d", unsuccessful, numberOfPipelineRuns*2, i, maxLoop)
+		runcnx.Clients.Log.Infof("number of unsuccessful PR %d out of %d, waiting 10s more, %d/%d", unsuccessful, numberOfPipelineRuns, i, maxLoop)
 		// it's high because it takes time to process on kind
 		time.Sleep(15 * time.Second)
 	}
