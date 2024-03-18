@@ -7,10 +7,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
@@ -21,12 +23,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubSecondPullRequestConcurrency(t *testing.T) {
+func TestGithubSecondPullRequestConcurrency1by1(t *testing.T) {
 	ctx := context.Background()
-	label := "Github PullRequest Concurrent"
+	label := "Github PullRequest Concurrent, sequentially one by one"
+	numberOfPipelineRuns := 5
+	maxNumberOfConcurrentPipelineRuns := 1
+	testGithubConcurrency(ctx, t, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns, label, true)
+}
+
+func TestGithubSecondPullRequestConcurrency3by3(t *testing.T) {
+	ctx := context.Background()
+	label := "Github PullRequest Concurrent three at time"
 	numberOfPipelineRuns := 10
 	maxNumberOfConcurrentPipelineRuns := 3
+	testGithubConcurrency(ctx, t, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns, label, false)
+}
 
+func testGithubConcurrency(ctx context.Context, t *testing.T, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns int, label string, checkOrdering bool) {
+	pipelineRunFileNamePrefix := "prlongrunnning-"
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	_, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, true, false)
 	assert.NilError(t, err)
@@ -48,7 +62,7 @@ func TestGithubSecondPullRequestConcurrency(t *testing.T) {
 
 	yamlFiles := map[string]string{}
 	for i := 1; i <= numberOfPipelineRuns; i++ {
-		yamlFiles[fmt.Sprintf(".tekton/prlongrunnning-%d.yaml", i)] = "testdata/pipelinerun_long_running.yaml"
+		yamlFiles[fmt.Sprintf(".tekton/%s%d.yaml", pipelineRunFileNamePrefix, i)] = "testdata/pipelinerun_long_running.yaml"
 	}
 
 	entries, err := payload.GetEntries(yamlFiles, targetNS, options.MainBranch, triggertype.PullRequest.String(), map[string]string{})
@@ -90,7 +104,7 @@ func TestGithubSecondPullRequestConcurrency(t *testing.T) {
 	assert.NilError(t, wait.UntilMinPRAppeared(ctx, runcnx.Clients, waitOpts, numberOfPipelineRuns))
 
 	finished := false
-	maxLoop := 15
+	maxLoop := 30
 	for i := 0; i < maxLoop; i++ {
 		unsuccessful := 0
 		prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
@@ -112,11 +126,23 @@ func TestGithubSecondPullRequestConcurrency(t *testing.T) {
 			finished = true
 			break
 		}
-		runcnx.Clients.Log.Infof("number of unsuccessful PR %d out of %d, waiting 10s more, %d/%d", unsuccessful, numberOfPipelineRuns, i, maxLoop)
+		runcnx.Clients.Log.Infof("number of unsuccessful PR %d out of %d, waiting 10s more in the waiting loop: %d/%d", unsuccessful, numberOfPipelineRuns, i, maxLoop)
 		// it's high because it takes time to process on kind
-		time.Sleep(15 * time.Second)
+		time.Sleep(10 * time.Second)
 	}
 	if !finished {
 		t.Errorf("the %d pipelineruns has not successfully finished, some of them are still pending or it's abnormally slow to process the Q", numberOfPipelineRuns)
+	}
+
+	// sort all the PR by when they have started
+	if checkOrdering {
+		prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+		assert.NilError(t, err)
+		sort.PipelineRunSortByStartTime(prs.Items)
+		for i := 0; i < numberOfPipelineRuns; i++ {
+			prExpectedName := fmt.Sprintf("%s%d", pipelineRunFileNamePrefix, len(prs.Items)-i)
+			prActualName := prs.Items[i].GetName()
+			assert.Assert(t, strings.HasPrefix(prActualName, prExpectedName), "prActualName: %s does not start with expected prefix %s, was is ordered properly at start time", prActualName, prExpectedName)
+		}
 	}
 }

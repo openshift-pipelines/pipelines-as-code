@@ -193,7 +193,9 @@ func (g *PRTest) TearDown(ctx context.Context, t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	repository.NSTearDown(ctx, t, g.Cnx, g.TargetNamespace)
+	if g.TargetNamespace != "" {
+		repository.NSTearDown(ctx, t, g.Cnx, g.TargetNamespace)
+	}
 	g.Logger.Infof("Deleting Ref %s", g.TargetRefName)
 	_, err := g.Provider.Client.Git.DeleteRef(ctx, g.Options.Organization, g.Options.Repo, g.TargetRefName)
 	assert.NilError(t, err)
