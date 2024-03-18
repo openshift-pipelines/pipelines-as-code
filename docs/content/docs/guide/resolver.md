@@ -250,8 +250,8 @@ For example if the user PipelineRun contains those annotations:
 kind: PipelineRun
 metadata:
   annotations:
-    pipelinesascode.tekton.dev/pipeline: "https://git.provider/raw/pipeline.yaml
-    pipelinesascode.tekton.dev/task: "./my-git-clone-task.yaml
+    pipelinesascode.tekton.dev/pipeline: "https://git.provider/raw/pipeline.yaml"
+    pipelinesascode.tekton.dev/task: "./my-git-clone-task.yaml"
 ```
 
 And the Pipeline referenced by the `pipelinesascode.tekton.dev/pipeline` annotation
@@ -266,7 +266,7 @@ metadata:
 
 In this case if the `my-git-clone-task.yaml` file in the root directory is a
 task named `git-clone` it will be used instead of the `git-clone` on the remote
-pipeline that is coming from the Tekon Hub.
+pipeline that is coming from the Tekton Hub.
 
 {{< hint info >}}
 Task overriding is only supported for tasks that are referenced by a `taskRef`
