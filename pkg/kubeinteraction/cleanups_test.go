@@ -84,6 +84,22 @@ func TestCleanupPipelines(t *testing.T) {
 			},
 		},
 		{
+			name: "cleanup-skip-pending",
+			args: args{
+				namespace:      ns,
+				repositoryName: cleanupRepoName,
+				maxKeep:        1,
+				kept:           1, // see my comment in code why only 1 is kept.
+				prunCurrent:    &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Labels: cleanupLabels, Annotations: cleanupAnnotations}},
+				pruns: []*tektonv1.PipelineRun{
+					tektontest.MakePRCompletion(clock, "pipeline-pending", ns, tektonv1.PipelineRunReasonPending.String(), nil, cleanupLabels, 10),
+					tektontest.MakePRCompletion(clock, "pipeline-toclean", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 30),
+					tektontest.MakePRCompletion(clock, "pipeline-tokeep", ns, tektonv1.PipelineRunReasonSuccessful.String(), nil, cleanupLabels, 20),
+				},
+				prunLatestInList: "pipeline-pending",
+			},
+		},
+		{
 			name: "cleanup with secrets",
 			args: args{
 				namespace:      ns,
