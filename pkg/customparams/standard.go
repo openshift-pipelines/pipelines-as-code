@@ -31,6 +31,7 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 		repoURL = p.event.CloneURL
 	}
 	changedFiles := p.getChangedFiles(ctx)
+	triggerCommentAsSingleLine := strings.ReplaceAll(p.event.TriggerComment, "\n", "\\n")
 
 	return map[string]string{
 			"revision":         p.event.SHA,
@@ -43,7 +44,7 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 			"sender":           strings.ToLower(p.event.Sender),
 			"target_namespace": p.repo.GetNamespace(),
 			"event_type":       p.event.EventType,
-			"trigger_comment":  p.event.TriggerComment,
+			"trigger_comment":  triggerCommentAsSingleLine,
 		}, map[string]interface{}{
 			"all":      changedFiles.All,
 			"added":    changedFiles.Added,

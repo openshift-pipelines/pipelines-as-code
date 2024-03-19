@@ -22,7 +22,7 @@ func TestMakeStandardParamsFromEvent(t *testing.T) {
 		Sender:         "SENDER",
 		URL:            "https://paris.com",
 		HeadURL:        "https://india.com",
-		TriggerComment: "/test me",
+		TriggerComment: "/test me\nHelp me obiwan kenobi",
 	}
 
 	result := map[string]string{
@@ -36,7 +36,7 @@ func TestMakeStandardParamsFromEvent(t *testing.T) {
 		"source_branch":    "foo",
 		"target_branch":    "main",
 		"target_namespace": "myns",
-		"trigger_comment":  "/test me",
+		"trigger_comment":  "/test me\\nHelp me obiwan kenobi",
 	}
 
 	repo := &v1alpha1.Repository{

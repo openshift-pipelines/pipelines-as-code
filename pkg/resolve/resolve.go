@@ -130,7 +130,7 @@ func ReadTektonTypes(ctx context.Context, log *zap.SugaredLogger, data string) (
 
 		obj, _, err := decoder.Decode([]byte(doc), nil, nil)
 		if err != nil {
-			log.Infof("Skipping document not looking like a kubernetes resources: %v", err)
+			log.Infof("skipping yaml document not looking like a kubernetes resources: %v", err)
 			continue
 		}
 		switch o := obj.(type) {
@@ -159,7 +159,7 @@ func ReadTektonTypes(ctx context.Context, log *zap.SugaredLogger, data string) (
 		case *tektonv1.Task:
 			types.Tasks = append(types.Tasks, o)
 		default:
-			log.Info("Skipping document not looking like a tekton resource we can Resolve.")
+			log.Info("skipping yaml document not looking like a tekton resource we can Resolve.")
 		}
 	}
 
