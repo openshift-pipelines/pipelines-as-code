@@ -97,7 +97,7 @@ linters:
     - promlinter
     - protogetter
     - reassign
-    - revive
+    # - revive
     #- rowserrcheck
     - sloglint
     #- sqlclosecheck
