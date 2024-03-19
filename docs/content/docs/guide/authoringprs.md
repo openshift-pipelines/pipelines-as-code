@@ -198,6 +198,11 @@ with `/merge-pr`
 
 You can then use the template variable `{{ trigger_comment }}` to get the
 actual comment and do some action based on for example the comment content.
+There is a restriction with the trigger_comment variable we modify it to
+replace the newline with a `\n` since the multi-line comment can cause a
+issue when replaced inside the yaml. It is up to you to replace it back to
+newline, for example with shell scripts you can use `echo -e` to expand the
+newline back.
 
 Note that the `on-comment` annotation will respect the `pull_request` [Policy]({{< relref "/docs/guide/policy" >}}) rule,
 so only users into the `pull_request` policy will be able to trigger the

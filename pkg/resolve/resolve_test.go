@@ -1,6 +1,7 @@
 package resolve
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -196,7 +197,7 @@ func TestNotTektonDocumentIgnore(t *testing.T) {
 	assert.NilError(t, err)
 	logs := log.TakeAll()
 	assert.Assert(t, len(logs) > 0)
-	assert.Assert(t, strings.HasPrefix(logs[0].Message, "Skipping"))
+	assert.Assert(t, strings.HasPrefix(logs[0].Message, "skipping yaml"), fmt.Sprintf("'%s'", logs[0].Message))
 	assert.Assert(t, resolved.Spec.PipelineSpec != nil)
 }
 
@@ -204,7 +205,7 @@ func TestNotKubernetesDocumentIgnore(t *testing.T) {
 	resolved, log, err := readTDfile(t, "not-a-kubernetes-yaml", false, true)
 	logs := log.TakeAll()
 	assert.Assert(t, len(logs) > 0)
-	assert.Assert(t, strings.HasPrefix(logs[0].Message, "Skipping"))
+	assert.Assert(t, strings.HasPrefix(logs[0].Message, "skipping yaml"), logs[0].Message)
 	assert.Assert(t, resolved.Spec.PipelineSpec != nil)
 	assert.NilError(t, err)
 	assert.Assert(t, resolved.Spec.PipelineSpec != nil)
