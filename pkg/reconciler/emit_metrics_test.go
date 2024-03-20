@@ -26,6 +26,15 @@ func TestEmitMetrics(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "provider is GitHub Enterprise App",
+			annotations: map[string]string{
+				keys.GitProvider:    "github-enterprise",
+				keys.EventType:      "pull_request",
+				keys.InstallationID: "123",
+			},
+			wantErr: false,
+		},
+		{
 			name: "provider is GitHub Webhook",
 			annotations: map[string]string{
 				keys.GitProvider: "github",
