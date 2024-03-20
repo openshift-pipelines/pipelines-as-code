@@ -33,7 +33,7 @@ func (k Interaction) CleanupPipelines(ctx context.Context, logger *zap.SugaredLo
 	for c, prun := range psort.PipelineRunSortByCompletionTime(pruns.Items) {
 		prReason := prun.GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason()
 		if prReason == tektonv1.PipelineRunReasonRunning.String() || prReason == tektonv1.PipelineRunReasonPending.String() {
-			logger.Infof("skipping cleaning PipelineRun %s since the conditions.reason is %s", prReason, prun.GetName())
+			logger.Infof("skipping cleaning PipelineRun %s since the conditions.reason is %s", prun.GetName(), prReason)
 			continue
 		}
 
