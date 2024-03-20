@@ -1,4 +1,7 @@
 issues:
+  exclude-dirs:
+    - vendor
+    - pkg/provider/gitea/structs
   exclude-rules:
     # Exclude some linters from running on tests files.
     - path: _test\.go
@@ -7,9 +10,6 @@ issues:
 run:
   build-tags:
     - e2e
-  skip-dirs:
-    - vendor
-    - pkg/provider/gitea/structs
 linters-settings:
   gocritic:
     disabled-checks:
