@@ -12,7 +12,7 @@ func (r *Reconciler) emitMetrics(pr *tektonv1.PipelineRun) error {
 	eventType := pr.GetAnnotations()[keys.EventType]
 
 	switch gitProvider {
-	case "github":
+	case "github", "github-enterprise":
 		if _, ok := pr.GetAnnotations()[keys.InstallationID]; ok {
 			gitProvider += "-app"
 		} else {
