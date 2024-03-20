@@ -156,10 +156,6 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		return repo, fmt.Errorf("cannot set client: %w", err)
 	}
 
-	if err := r.cleanupPipelineRuns(ctx, logger, repo, pr); err != nil {
-		return repo, fmt.Errorf("cannot clean prs: %w", err)
-	}
-
 	finalState := kubeinteraction.StateCompleted
 	newPr, err := r.postFinalStatus(ctx, logger, provider, event, pr)
 	if err != nil {
@@ -185,13 +181,16 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		key := strings.Split(next, "/")
 		pr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(key[0]).Get(ctx, key[1], metav1.GetOptions{})
 		if err != nil {
-			return repo, fmt.Errorf("cannot get pipeline: %w", err)
+			return repo, fmt.Errorf("cannot get pipeline for next in queue: %w", err)
 		}
 
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
 			return repo, fmt.Errorf("failed to update status: %w", err)
 		}
-		return repo, nil
+	}
+
+	if err := r.cleanupPipelineRuns(ctx, logger, repo, pr); err != nil {
+		return repo, fmt.Errorf("error cleaning pipelineruns: %w", err)
 	}
 
 	return repo, nil
@@ -276,7 +275,7 @@ func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.Sug
 	actionLog := state + " state"
 	patchedPR, err := action.PatchPipelineRun(ctx, logger, actionLog, r.run.Clients.Tekton, pr, mergePatch)
 	if err != nil {
-		return pr, err
+		return pr, fmt.Errorf("error patching the pipelinerun: %w", err)
 	}
 	return patchedPR, nil
 }
