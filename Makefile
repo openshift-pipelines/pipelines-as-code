@@ -84,7 +84,7 @@ lint-go: ## runs go linter on all go files
 	@$(GOLANGCI_LINT) run ./... --modules-download-mode=vendor \
 							--max-issues-per-linter=0 \
 							--max-same-issues=0 \
-							--deadline $(TIMEOUT_UNIT)
+							--timeout $(TIMEOUT_UNIT)
 
 .PHONY: lint-yaml
 lint-yaml: ${YAML_FILES} ## runs yamllint on all yaml files
@@ -143,7 +143,7 @@ fix-golangci-lint: ## run golangci-lint and fix on all go files
 	@$(GOLANGCI_LINT) run ./... --modules-download-mode=vendor \
 							--max-issues-per-linter=0 \
 							--max-same-issues=0 \
-							--deadline $(TIMEOUT_UNIT) \
+							--timeout $(TIMEOUT_UNIT) \
 							--fix
 	@[[ -n `git status --porcelain` ]] && { echo "Go files has been cleaned 🧹. Cleaned Files: ";git status --porcelain ;} || echo "Go files are clean ✨"
 
