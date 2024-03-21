@@ -27,6 +27,7 @@ func TestCleanupPipelines(t *testing.T) {
 	cleanupLabels := map[string]string{
 		keys.OriginalPRName: cleanupPRName,
 		keys.Repository:     cleanupRepoName,
+		keys.State:          StateCompleted,
 	}
 	// copy of cleanupLabels to be used in annotations
 	cleanupAnnotations := maps.Clone(cleanupLabels)
