@@ -128,7 +128,7 @@ filtering.
 
 If you have the `pipelinesascode.tekton.dev/on-cel-expression` annotation in
 your PipelineRun, the CEL expression will be used and the `on-target-branch` or
-`on-target-branch` annotations will be skipped.
+`on-event` annotations will be skipped.
 
 This example will match a `pull_request` event targeting the branch `main`
 coming from a branch called `wip`:
