@@ -168,6 +168,13 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	if err != nil {
 		return nil, err
 	}
+
+	if types.ValidationErrors != nil {
+		for k, v := range types.ValidationErrors {
+			kv := fmt.Sprintf("prun: %s tekton validation error: %s", k, v)
+			p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "PipelineRunValidationErrors", kv)
+		}
+	}
 	pipelineRuns := types.PipelineRuns
 	if len(pipelineRuns) == 0 {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
