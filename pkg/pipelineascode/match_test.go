@@ -8,6 +8,7 @@ import (
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -116,6 +117,7 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 		tektondir             string
 		expectedNumberOfPruns int
 		event                 *info.Event
+		logSnippet            string
 	}{
 		{
 			name: "more than one pipelinerun in .tekton dir",
@@ -142,6 +144,19 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 			tektondir:             "testdata/pull_request",
 			expectedNumberOfPruns: 1,
 			event:                 pullRequestEvent,
+		},
+		{
+			name: "invalid tekton pipelineruns in directory",
+			repositories: &v1alpha1.Repository{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "testrepo",
+					Namespace: "test",
+				},
+				Spec: v1alpha1.RepositorySpec{},
+			},
+			tektondir:  "testdata/invalid_tekton_yaml",
+			event:      pullRequestEvent,
+			logSnippet: `prun: bad-tekton-yaml tekton validation error: json: cannot unmarshal object into Go struct field PipelineSpec.spec.pipelineSpec.tasks of type []v1beta1.PipelineTask`,
 		},
 		{
 			name: "no-match pipelineruns in .tekton dir, only matched should be returned",
@@ -176,8 +191,8 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			observer, _ := zapobserver.New(zap.InfoLevel)
-			logger := zap.New(observer).Sugar()
+			observerCore, logCatcher := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observerCore).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
@@ -213,11 +228,15 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 				Logger: logger,
 			}
 			p := NewPacs(tt.event, vcx, cs, k8int, logger)
+			p.eventEmitter = events.NewEventEmitter(stdata.Kube, logger)
 			matchedPRs, err := p.getPipelineRunsFromRepo(ctx, tt.repositories)
 			assert.NilError(t, err)
 			matchedPRNames := []string{}
 			for i := range matchedPRs {
 				matchedPRNames = append(matchedPRNames, matchedPRs[i].PipelineRun.GetGenerateName())
+			}
+			if tt.logSnippet != "" {
+				assert.Assert(t, logCatcher.FilterMessageSnippet(tt.logSnippet).Len() > 0, logCatcher.All())
 			}
 			assert.Equal(t, len(matchedPRNames), tt.expectedNumberOfPruns)
 		})

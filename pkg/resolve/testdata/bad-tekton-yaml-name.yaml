@@ -1,0 +1,12 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: bad-name
+spec:
+  pipelineSpec:
+    tasks:
+      taskSpec:
+        steps:
+          - name: hello-moto
+            image: scratch
