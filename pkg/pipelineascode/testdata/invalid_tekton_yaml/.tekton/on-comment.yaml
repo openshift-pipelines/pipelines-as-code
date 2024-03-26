@@ -1,0 +1,18 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: bad-tekton-yaml
+  annotations:
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/task: ".tekton/remotetask.yaml"
+    pipelinesascode.tekton.dev/on-comment: "/make-me-a-sandwich"
+spec:
+  pipelineSpec:
+    tasks:
+      taskSpec:
+        steps:
+          - name: noop-task
+            image: registry.access.redhat.com/ubi9/ubi-micro
+            script: |
+              echo "make me a sandwich"
