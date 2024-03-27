@@ -17,7 +17,7 @@ import (
 
 // The following code has been take from kubectl get command
 // instead of importing all the dependencies, copying only the required part
-// https://github.com/kubernetes/kubernetes/blob/8e48df135318026d5f8a972a96a2ff665889568a/staging/src/k8s.io/kubectl/pkg/cmd/get/sorter.go#L151
+// https://github.com/kubernetes/kubernetes/blob/20d0ab7ae808aaddb1556c3c38ca0607663c50ac/staging/src/k8s.io/kubectl/pkg/cmd/get/sorter.go#L150
 
 // RuntimeSort is an implementation of the golang sort interface that knows how to sort
 // lists of runtime.Object.
@@ -56,7 +56,7 @@ func isLess(i, j reflect.Value) (bool, error) {
 		return i.Float() < j.Float(), nil
 	case reflect.String:
 		return sortorder.NaturalLess(i.String(), j.String()), nil
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return isLess(i.Elem(), j.Elem())
 	case reflect.Struct:
 		// sort metav1.Time
@@ -210,6 +210,8 @@ func (r *RuntimeSort) Less(i, j int) bool {
 }
 
 // OriginalPosition returns the starting (original) position of a particular index.
+// e.g. If OriginalPosition(0) returns 5 than the
+// item currently at position 0 was at position 5 in the original unsorted array.
 func (r *RuntimeSort) OriginalPosition(ix int) int {
 	if ix < 0 || ix > len(r.origPosition) {
 		return -1
@@ -227,5 +229,7 @@ func findJSONPathResults(parser *jsonpath.JSONPath, from runtime.Object) ([][]re
 // ByField sorts the runtime objects passed by the field.
 func ByField(field string, runTimeObj []runtime.Object) {
 	sorter := NewRuntimeSort(field, runTimeObj)
-	sort.Sort(sorter)
+	if len(runTimeObj) > 0 {
+		sort.Sort(sorter)
+	}
 }

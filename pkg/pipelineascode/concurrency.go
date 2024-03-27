@@ -43,9 +43,19 @@ func (c *ConcurrencyManager) GetExecutionOrder() (string, []*v1.PipelineRun) {
 		return "", nil
 	}
 
+	if len(c.pipelineRuns) == 0 {
+		return "", nil
+	}
+
 	runtimeObjs := []runtime.Object{}
 	for _, pr := range c.pipelineRuns {
-		runtimeObjs = append(runtimeObjs, pr)
+		if pr != nil && pr.Name != "" {
+			runtimeObjs = append(runtimeObjs, pr)
+		}
+	}
+
+	if len(runtimeObjs) == 0 {
+		return "", nil
 	}
 
 	// sort runs by name

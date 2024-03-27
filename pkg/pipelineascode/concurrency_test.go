@@ -29,3 +29,18 @@ func TestExecutionOrder(t *testing.T) {
 	assert.Equal(t, order, "test/abc,test/def,test/mno,test/pqr")
 	assert.Equal(t, len(runs), 4)
 }
+
+func TestExecutionOrder_SinglePRun(t *testing.T) {
+	cm := NewConcurrencyManager()
+
+	testNs := "test"
+	abcPR := &tektonv1.PipelineRun{ObjectMeta: metav1.ObjectMeta{Name: "abc", Namespace: testNs}}
+	cm.Enable()
+
+	// add pipelineRuns in random order
+	cm.AddPipelineRun(abcPR)
+
+	order, runs := cm.GetExecutionOrder()
+	assert.Equal(t, order, "test/abc")
+	assert.Equal(t, len(runs), 1)
+}
