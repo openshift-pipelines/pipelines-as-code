@@ -69,13 +69,13 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: false,
 		},
 		{
-			name: "invalid commit_comment Event",
+			name: "non standard commit_comment Event",
 			event: github.CommitCommentEvent{
 				Action: github.String("something"),
 			},
 			eventType:  "commit_comment",
 			isGH:       true,
-			processReq: false,
+			processReq: true,
 		},
 		{
 			name: "invalid check run Event",
