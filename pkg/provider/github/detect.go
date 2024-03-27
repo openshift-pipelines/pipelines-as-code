@@ -100,7 +100,7 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype
 				return triggertype.Cancel, ""
 			}
 		}
-		return "", fmt.Sprintf("commit_comment: unsupported action \"%s\"", event.GetAction())
+		return triggertype.Comment, ""
 	}
 	return "", fmt.Sprintf("github: event \"%v\" is not supported", ghEventType)
 }
