@@ -178,9 +178,10 @@ files.
 ## Matching a PipelineRun on a Regexp in a comment
 
 {{< tech_preview "Matching PipelineRun on regexp in comments" >}}
+{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
 
-You can match a PipelineRun on a comment on a Pull Request with the annotation
-`pipelinesascode.tekton.dev/on-comment`.
+You can match a PipelineRun on a comment on a Pull Request or a [Pushed Commit]({{< relref "/docs/guide/running.md#gitops-commands-on-pushed-commits">}})
+with the annotation `pipelinesascode.tekton.dev/on-comment`.
 
 The comment is a regexp and if a newly created comment has this regexp it will
 automatically match the PipelineRun and start it.
@@ -208,7 +209,13 @@ Note that the `on-comment` annotation will respect the `pull_request` [Policy]({
 so only users in the `pull_request` policy will be able to trigger the
 PipelineRun.
 
-> *NOTE*: The `on-comment` annotation is only supported on GitHub, Gitea, and GitLab providers
+{{< hint info >}}
+
+- The `on-comment` annotation is supported on `pull_request`. On  `push` events,
+it is only supported [when targeting the main branch without arguments]({{< relref
+"/docs/guide/gitops_commands.md#gitops-commands-on-pushed-commits" >}}).
+
+{{< /hint >}}
 
 ## Matching PipelineRun to a Pull Request labels
 
