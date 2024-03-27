@@ -176,12 +176,13 @@ and you have a `Pull Request` changing the files `.tekton/pipelinerun.yaml`,
 `on-path-change-ignore` annotation will ignore the `***.md` and `***.yaml`
 files.
 
-## Matching a PipelineRun on a regexp in a comment
+## Matching a PipelineRun with regexp on comments
 
 {{< tech_preview "Matching PipelineRun on regexp in comments" >}}
 
-You can match a PipelineRun on a comment on a Pull Request with the annotation
-`pipelinesascode.tekton.dev/on-comment`.
+You can match a PipelineRun on a comment on a Pull Request or a [Pushed
+Commit]({{< relref "/docs/guide/running.md#gitops-commands-on-pushed-commits"
+>}}) with the annotation `pipelinesascode.tekton.dev/on-comment`.
 
 The comment is a regexp and if a newly created comment has this regexp it will
 automatically match the PipelineRun and starts it.
@@ -209,7 +210,13 @@ Note that the `on-comment` annotation will respect the `pull_request` [Policy]({
 so only users into the `pull_request` policy will be able to trigger the
 PipelineRun.
 
-> *NOTE*: The `on-comment` annotation is only supported on GitHub, Gitea and GitLab providers
+{{< hint info >}}
+
+- The `on-comment` annotation is only supported on GitHub, Gitea and GitLab providers
+- The `on-comment` annotation is supported on `pull_request`. On  `push` events
+is only supported [when targeting the main branch without arguments]({{< relref
+"/docs/guide/gitops_commands.md#gitops-commands-on-pushed-commits" >}}).
+{{< /hint >}}
 
 ## Advanced event matching using CEL
 
