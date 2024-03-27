@@ -2,7 +2,9 @@ package matcher
 
 import (
 	"testing"
+	"time"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
@@ -12,16 +14,19 @@ import (
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 const (
-	mainBranch      = "mainBranch"
-	targetNamespace = "targetNamespace"
-	targetURL       = "https//nowhere.togo"
+	mainBranch            = "mainBranch"
+	targetNamespace       = "targetNamespace"
+	targetOldestNamespace = "targetOldestNamespace"
+	targetURL             = "https//nowhere.togo"
 )
 
 func Test_getRepoByCR(t *testing.T) {
+	cw := clockwork.NewFakeClock()
 	type args struct {
 		data     testclient.Data
 		runevent info.Event
@@ -42,6 +47,7 @@ func Test_getRepoByCR(t *testing.T) {
 								Name:             "test-good",
 								URL:              targetURL,
 								InstallNamespace: targetNamespace,
+								CreateTime:       metav1.Time{Time: cw.Now().Add(-1 * time.Minute)},
 							},
 						),
 					},
@@ -109,6 +115,34 @@ func Test_getRepoByCR(t *testing.T) {
 				},
 			},
 			wantTargetNS: targetNamespace,
+			wantErr:      false,
+		},
+		{
+			name: "test-multiple-match-get-oldest",
+			args: args{
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-new",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+								CreateTime:       metav1.Time{Time: cw.Now().Add(-1 * time.Minute)},
+							},
+						),
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-old",
+								URL:              targetURL,
+								InstallNamespace: targetOldestNamespace,
+								CreateTime:       metav1.Time{Time: cw.Now().Add(-5 * time.Minute)},
+							},
+						),
+					},
+				},
+				runevent: info.Event{URL: targetURL, BaseBranch: mainBranch, EventType: "pull_request"},
+			},
+			wantTargetNS: targetOldestNamespace,
 			wantErr:      false,
 		},
 		{
