@@ -193,7 +193,9 @@ To issue a `GitOps` comment on a pushed commit you can follow these steps:
 
 ![GitOps Commits For Comments](/images/gitops-comments-on-commit.png)
 
-Please note that this feature is supported for the GitHub provider only.
+{{< hint info >}}
+Please note that this feature is only supported when using the GitHub provider.
+{{< /hint >}}
 
 ### GitOps commands on non-matching PipelineRun
 
