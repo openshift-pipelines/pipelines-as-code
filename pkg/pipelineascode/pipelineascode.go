@@ -76,13 +76,13 @@ func (p *PacRun) Run(ctx context.Context) error {
 	p.run.Clients.ConsoleUI.SetParams(maptemplate)
 
 	var wg sync.WaitGroup
-	for _, match := range matchedPRs {
+	for i, match := range matchedPRs {
 		if match.Repo == nil {
 			match.Repo = repo
 		}
 		wg.Add(1)
 
-		go func(match matcher.Match) {
+		go func(match matcher.Match, i int) {
 			defer wg.Done()
 			pr, err := p.startPR(ctx, match)
 			if err != nil {
@@ -90,17 +90,18 @@ func (p *PacRun) Run(ctx context.Context) error {
 				errMsgM := fmt.Sprintf("There was an error creating the PipelineRun: <b>%s</b>\n\n%s", match.PipelineRun.GetGenerateName(), err.Error())
 				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", errMsg)
 				createStatusErr := p.vcx.CreateStatus(ctx, p.event, provider.StatusOpts{
-					Status:     "completed",
-					Conclusion: "failure",
-					Text:       errMsgM,
-					DetailsURL: p.run.Clients.ConsoleUI.URL(),
+					Status:                   "completed",
+					Conclusion:               "failure",
+					Text:                     errMsgM,
+					DetailsURL:               p.run.Clients.ConsoleUI.URL(),
+					InstanceCountForCheckRun: i,
 				})
 				if createStatusErr != nil {
 					p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
 				}
 			}
 			p.manager.AddPipelineRun(pr)
-		}(match)
+		}(match, i)
 	}
 	wg.Wait()
 
