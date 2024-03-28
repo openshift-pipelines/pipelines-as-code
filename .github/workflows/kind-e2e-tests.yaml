@@ -112,7 +112,7 @@ jobs:
           path: /tmp/logs
 
       - name: Report Status
-        if: github.event_name != 'pull_request'
+        if: ${{ always() && github.ref_name == 'main' }}
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
