@@ -24,28 +24,93 @@ const (
 	changedFilesTags = "files."
 )
 
+// evaluateBranchExpression function evaluates the branch expression for the given branch key from the provided expression.
+// Examples of expressions:
+//   - target_branch == "refs/heads*"
+//   - source_branch == "refs/heads*"
+//
+// If source_branch and target_branch contain anything other than "refs/heads*", the function won't perform any action.
+func evaluateBranchExpression(expression, branchKey string) bool {
+	env, err := cel.NewEnv(cel.Declarations(
+		decls.NewVar(branchKey, decls.String),
+	))
+	if err != nil {
+		return false
+	}
+
+	// Define data map with placeholder values.
+	data := map[string]interface{}{
+		branchKey: "refs/heads/*",
+	}
+
+	out, err := evaluateCELExpression(env, expression, data)
+	if err != nil {
+		return false
+	}
+	// Return evaluation result as bool.
+	if boolVal, ok := out.Value().(bool); ok {
+		return boolVal
+	}
+	return false
+}
+
+func handleBranchCondition(event *info.Event, data map[string]interface{}, splitExprData, branchKey, branchFromEvent string) {
+	// For push event the target_branch & source_branch info coming from payload have refs/heads/
+	// but user may or mayn't provide refs/heads/ info while giving target_branch or source_branch in CEL expression
+	// ex:  pipelinesascode.tekton.dev/on-cel-expression: |
+	//        event == "push" && target_branch == "main" && "frontend/***".pathChanged()
+	// This logic will handle such case.
+	if event.TriggerTarget == "push" {
+		if !strings.Contains(splitExprData, "refs/heads/") {
+			data[branchKey] = strings.TrimPrefix(branchFromEvent, "refs/heads/")
+		}
+	}
+	if evaluateBranchExpression(splitExprData, branchKey) {
+		data[branchKey] = "refs/heads/*"
+	}
+}
+
+// handleTargetAndSourceBranches ensures the matches of the target and source branch and update the map with correct values
+// It serves two primary purposes:
+//
+//  1. For push events, the target_branch & source_branch information from the payload have "refs/heads/" ,
+//     but users may or mayn't provide refs/heads/ prefix for target_branch or source_branch in the CEL expression.
+//     This logic handles such cases.
+//     For example:
+//     pipelinesascode.tekton.dev/on-cel-expression: |
+//     event == "push" && target_branch == "main" && "frontend/***".pathChanged()
+//
+//  2. For both push and pull_request events, if users specify target_branch and source_branch as "refs/heads/*",
+//     indicating acceptance of any branch, but the actual target_branch and source_branch values from the payload differ,
+//     it results in failure. Therefore, if users provide branch information as "refs/heads/*",
+//     the data map is updated accordingly as it indicates a positive scenario.
+//     For example:
+//
+//  1. pipelinesascode.tekton.dev/on-cel-expression: |
+//     ( event == "push" && target_branch == "refs/heads/*" && source_branch == "refs/heads/*" ) && "frontend/***".pathChanged()
+//
+//  2. pipelinesascode.tekton.dev/on-cel-expression: |
+//     event == "pull_request" && target_branch == "refs/heads/*" && source_branch == "refs/heads/*" && "frontend/***".pathChanged()
+
+func handleTargetAndSourceBranches(expr string, event *info.Event, data map[string]interface{}) {
+	splitFunc := func(c rune) bool {
+		return c == '&' || c == '(' || c == ')'
+	}
+	splittedValues := strings.FieldsFunc(expr, splitFunc)
+	for i := range splittedValues {
+		if strings.Contains(splittedValues[i], "target_branch") {
+			handleBranchCondition(event, data, splittedValues[i], "target_branch", event.BaseBranch)
+		}
+		if strings.Contains(splittedValues[i], "source_branch") {
+			handleBranchCondition(event, data, splittedValues[i], "source_branch", event.HeadBranch)
+		}
+	}
+}
+
 func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface) (ref.Val, error) {
 	eventTitle := event.PullRequestTitle
 	if event.TriggerTarget == triggertype.Push {
 		eventTitle = event.SHATitle
-		// For push event the target_branch & source_branch info coming from payload have refs/heads/
-		// but user may or mayn't provide refs/heads/ info while giving target_branch or source_branch in CEL expression
-		// ex:  pipelinesascode.tekton.dev/on-cel-expression: |
-		//        event == "push" && target_branch == "main" && "frontend/***".pathChanged()
-		// This logic will handle such case.
-		splittedValue := strings.Split(expr, "&&")
-		for i := range splittedValue {
-			if strings.Contains(splittedValue[i], "target_branch") {
-				if !strings.Contains(splittedValue[i], "refs/heads/") {
-					event.BaseBranch = strings.TrimPrefix(event.BaseBranch, "refs/heads/")
-				}
-			}
-			if strings.Contains(splittedValue[i], "source_branch") {
-				if !strings.Contains(splittedValue[i], "refs/heads/") {
-					event.HeadBranch = strings.TrimPrefix(event.HeadBranch, "refs/heads/")
-				}
-			}
-		}
 	}
 
 	nbody, err := json.Marshal(event.Event)
@@ -89,6 +154,7 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 			"renamed":  changedFiles.Renamed,
 		},
 	}
+	handleTargetAndSourceBranches(expr, event, data)
 	env, err := cel.NewEnv(
 		cel.Lib(celPac{vcx, ctx, event}),
 		cel.Declarations(
@@ -106,6 +172,10 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 		return nil, err
 	}
 
+	return evaluateCELExpression(env, expr, data)
+}
+
+func evaluateCELExpression(env *cel.Env, expr string, data map[string]interface{}) (ref.Val, error) {
 	parsed, issues := env.Parse(expr)
 	if issues != nil && issues.Err() != nil {
 		return nil, fmt.Errorf("failed to parse expression %#v: %w", expr, issues.Err())
@@ -147,6 +217,7 @@ func (t celPac) pathChanged(vals ref.Val) ref.Val {
 	for i := range changedFiles.All {
 		if v, ok := vals.Value().(string); ok {
 			g := glob.MustCompile(v)
+
 			if g.Match(changedFiles.All[i]) {
 				return types.Bool(true)
 			}
