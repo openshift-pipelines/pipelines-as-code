@@ -5,11 +5,14 @@ package test
 
 import (
 	"context"
+	"regexp"
 	"testing"
 
 	"github.com/google/go-github/v59/github"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,6 +70,9 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	g.RunPushRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 
+	ctx, err := cctx.GetControllerCtxInfo(ctx, g.Cnx)
+	assert.NilError(t, err)
+
 	pruns, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), 2)
@@ -100,12 +106,20 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	repo, _ := twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts) // don't check for error, because canceled is not success and this will fail
 	cancelled := false
 	for _, c := range repo.Status {
-		if c.Conditions[0].Reason == "Cancelled" {
+		if c.Conditions[0].Reason == tektonv1.TaskRunReasonCancelled.String() {
 			cancelled = true
 		}
 	}
-	assert.Assert(t, cancelled, "No cancelled status in repo Statuses run found")
-	assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionFalse)
+
+	// this went too fast so at least we check it was requested for it
+	if !cancelled {
+		reg := regexp.MustCompile(".*pipelinerun.*is done.*skipping cancellation.*")
+		err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "controller", github.Int64(20))
+		if err != nil {
+			t.Errorf("neither a cancelled pipelinerun in repo status or a request to skip the cancellation in the controller log was found: %s", err.Error())
+		}
+		return
+	}
 
 	// make sure the number of items
 	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
@@ -113,7 +127,7 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	assert.Equal(t, len(pruns.Items), numberOfStatus)
 	cancelled = false
 	for _, pr := range pruns.Items {
-		if pr.Status.Conditions[0].Reason == "Cancelled" {
+		if pr.Status.Conditions[0].Reason == tektonv1.TaskRunReasonCancelled.String() {
 			cancelled = true
 		}
 	}

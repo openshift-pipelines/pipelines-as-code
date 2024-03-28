@@ -22,7 +22,7 @@ func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg
 	ns := info.GetNS(ctx)
 	clients.Clients.Log.Infof("looking for regexp %s in %s for label %s container %s", reg.String(), ns, labelselector, containerName)
 	for i := 0; i <= maxNumberOfLoop; i++ {
-		output, err := tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), info.GetNS(ctx), labelselector, containerName, lines)
+		output, err := tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName, lines)
 		if err != nil {
 			return err
 		}
