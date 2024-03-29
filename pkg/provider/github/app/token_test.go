@@ -145,7 +145,8 @@ func Test_GenerateJWT(t *testing.T) {
 				},
 			}
 
-			token, err := GenerateJWT(ctx, tt.namespace.GetName(), run)
+			ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, tt.namespace.GetName())
+			token, err := ip.GenerateJWT(ctx)
 			if tt.wantErr {
 				assert.Assert(t, err != nil)
 				return
@@ -199,7 +200,8 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 	ctx = info.StoreCurrentControllerName(ctx, "default")
 	ctx = info.StoreNS(ctx, testNamespace.GetName())
 
-	jwtToken, err := GenerateJWT(ctx, testNamespace.GetName(), run)
+	ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")), run, &v1alpha1.Repository{}, &github.Provider{}, testNamespace.GetName())
+	jwtToken, err := ip.GenerateJWT(ctx)
 	assert.NilError(t, err)
 	req := httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader(""))
 	repo := &v1alpha1.Repository{
@@ -241,7 +243,8 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 		w.Header().Set("Accept", "application/vnd.github+json")
 		_, _ = fmt.Fprint(w, `{"total_count": 1,"repositories": [{"id":1,"html_url": "https://matched/by/incoming"},{"id":2,"html_url": "https://anotherrepo/that/would/failit"}]}`)
 	})
-	_, token, installationID, err := GetAndUpdateInstallationID(ctx, req, run, repo, gprovider, testNamespace.GetName())
+	ip = NewInstallation(req, run, repo, gprovider, testNamespace.GetName())
+	_, token, installationID, err := ip.GetAndUpdateInstallationID(ctx)
 	assert.NilError(t, err)
 	assert.Equal(t, installationID, int64(120))
 	assert.Equal(t, *gprovider.Token, wantToken)
@@ -288,7 +291,9 @@ func Test_ListRepos(t *testing.T) {
 
 	ctx, _ := rtesting.SetupFakeContext(t)
 	gprovider := &github.Provider{Client: fakeclient}
-	exist, err := listRepos(ctx, repo, gprovider)
+	ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")),
+		&params.Run{}, repo, gprovider, testNamespace.GetName())
+	exist, err := ip.listRepos(ctx)
 	assert.NilError(t, err)
 	assert.Equal(t, exist, true)
 }
