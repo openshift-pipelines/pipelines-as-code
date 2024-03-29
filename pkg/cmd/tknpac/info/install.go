@@ -64,7 +64,8 @@ func install(ctx context.Context, run *params.Run, ios *cli.IOStreams, apiURL st
 		return err
 	}
 	info := &InstallInfo{run: run, apiURL: apiURL}
-	if jwtToken, err := app.GenerateJWT(ctx, targetNs, info.run); err == nil {
+	ip := app.NewInstallation(nil, run, nil, nil, targetNs)
+	if jwtToken, err := ip.GenerateJWT(ctx); err == nil {
 		info.jwtToken = jwtToken
 		if err := info.get(ctx); err != nil {
 			return err

@@ -17,24 +17,47 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 )
 
-func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *params.Run, repo *v1alpha1.Repository, gh *github.Provider, ns string) (string, string, int64, error) {
+type Install struct {
+	request   *http.Request
+	run       *params.Run
+	repo      *v1alpha1.Repository
+	ghClient  *github.Provider
+	namespace string
+
+	repoList []string
+}
+
+func NewInstallation(req *http.Request, run *params.Run, repo *v1alpha1.Repository, gh *github.Provider, namespace string) *Install {
+	if req == nil {
+		req = &http.Request{}
+	}
+	return &Install{
+		request:   req,
+		run:       run,
+		repo:      repo,
+		ghClient:  gh,
+		namespace: namespace,
+	}
+}
+
+func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, string, int64, error) {
 	var (
 		enterpriseHost, token string
 		installationID        int64
 	)
-	jwtToken, err := GenerateJWT(ctx, ns, run)
+	jwtToken, err := ip.GenerateJWT(ctx)
 	if err != nil {
 		return "", "", 0, err
 	}
 
-	installationURL := *gh.APIURL + keys.InstallationURL
-	enterpriseHost = req.Header.Get("X-GitHub-Enterprise-Host")
+	installationURL := *ip.ghClient.APIURL + keys.InstallationURL
+	enterpriseHost = ip.request.Header.Get("X-GitHub-Enterprise-Host")
 	if enterpriseHost != "" {
 		// NOTE: Hopefully this works even when the ghe URL is on another host than the api URL
 		installationURL = "https://" + enterpriseHost + "/api/v3" + keys.InstallationURL
 	}
 
-	res, err := GetReponse(ctx, http.MethodGet, installationURL, jwtToken, run)
+	res, err := GetReponse(ctx, http.MethodGet, installationURL, jwtToken, ip.run)
 	if err != nil {
 		return "", "", 0, err
 	}
@@ -62,12 +85,12 @@ func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *par
 			return "", "", 0, fmt.Errorf("installation ID is nil")
 		}
 		if *installationData[i].ID != 0 {
-			token, err = gh.GetAppToken(ctx, run.Clients.Kube, enterpriseHost, *installationData[i].ID, ns)
+			token, err = ip.ghClient.GetAppToken(ctx, ip.run.Clients.Kube, enterpriseHost, *installationData[i].ID, ip.namespace)
 			if err != nil {
 				return "", "", 0, err
 			}
 		}
-		exist, err := listRepos(ctx, repo, gh)
+		exist, err := ip.listRepos(ctx)
 		if err != nil {
 			return "", "", 0, err
 		}
@@ -79,14 +102,17 @@ func GetAndUpdateInstallationID(ctx context.Context, req *http.Request, run *par
 	return enterpriseHost, token, installationID, nil
 }
 
-func listRepos(ctx context.Context, repo *v1alpha1.Repository, gh *github.Provider) (bool, error) {
-	repoList, err := github.ListRepos(ctx, gh)
-	if err != nil {
-		return false, err
+func (ip *Install) listRepos(ctx context.Context) (bool, error) {
+	if ip.repoList == nil {
+		var err error
+		ip.repoList, err = github.ListRepos(ctx, ip.ghClient)
+		if err != nil {
+			return false, err
+		}
 	}
-	for i := range repoList {
+	for i := range ip.repoList {
 		// If URL matches with repo spec url then we can break for loop
-		if repoList[i] == repo.Spec.URL {
+		if ip.repoList[i] == ip.repo.Spec.URL {
 			return true, nil
 		}
 	}
@@ -98,11 +124,11 @@ type JWTClaim struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(ctx context.Context, ns string, run *params.Run) (string, error) {
+func (ip *Install) GenerateJWT(ctx context.Context) (string, error) {
 	// TODO: move this out of here
 	gh := github.New()
-	gh.Run = run
-	applicationID, privateKey, err := gh.GetAppIDAndPrivateKey(ctx, ns, run.Clients.Kube)
+	gh.Run = ip.run
+	applicationID, privateKey, err := gh.GetAppIDAndPrivateKey(ctx, ip.namespace, ip.run.Clients.Kube)
 	if err != nil {
 		return "", err
 	}
