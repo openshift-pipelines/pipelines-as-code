@@ -10,6 +10,12 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v59/github"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/env"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	rtesting "knative.dev/pkg/reconciler/testing"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -17,11 +23,6 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
-	"gotest.tools/v3/assert"
-	"gotest.tools/v3/env"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 // script kiddies, don't get too excited, this has been randomly generated with random words.
@@ -149,7 +150,7 @@ func TestParsePayLoad(t *testing.T) {
 			eventType:          "issue_comment",
 			triggerTarget:      "pull_request",
 			githubClient:       true,
-			payloadEventStruct: github.IssueCommentEvent{Issue: &github.Issue{}},
+			payloadEventStruct: github.IssueCommentEvent{Action: github.String("created"), Issue: &github.Issue{}},
 			wantErrString:      "issue comment is not coming from a pull_request",
 		},
 		{
@@ -158,6 +159,7 @@ func TestParsePayLoad(t *testing.T) {
 			triggerTarget: "pull_request",
 			githubClient:  true,
 			payloadEventStruct: github.IssueCommentEvent{
+				Action: github.String("created"),
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
 						HTMLURL: github.String("/bad"),
@@ -234,11 +236,20 @@ func TestParsePayLoad(t *testing.T) {
 			shaRet: "headSHACheckSuite",
 		},
 		{
+			name:               "bad/issue_comment_not_from_created",
+			wantErrString:      "only newly created comment is supported, received: deleted",
+			payloadEventStruct: github.IssueCommentEvent{Action: github.String("deleted")},
+			eventType:          "issue_comment",
+			triggerTarget:      "pull_request",
+			githubClient:       true,
+		},
+		{
 			name:          "good/issue comment",
 			eventType:     "issue_comment",
 			triggerTarget: "pull_request",
 			githubClient:  true,
 			payloadEventStruct: github.IssueCommentEvent{
+				Action: github.String("created"),
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
 						HTMLURL: github.String("/666"),
@@ -275,6 +286,7 @@ func TestParsePayLoad(t *testing.T) {
 			triggerTarget: "pull_request",
 			githubClient:  true,
 			payloadEventStruct: github.IssueCommentEvent{
+				Action: github.String("created"),
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
 						HTMLURL: github.String("/777"),
@@ -295,6 +307,7 @@ func TestParsePayLoad(t *testing.T) {
 			triggerTarget: "pull_request",
 			githubClient:  true,
 			payloadEventStruct: github.IssueCommentEvent{
+				Action: github.String("created"),
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
 						HTMLURL: github.String("/999"),
@@ -314,6 +327,7 @@ func TestParsePayLoad(t *testing.T) {
 			triggerTarget: "pull_request",
 			githubClient:  true,
 			payloadEventStruct: github.IssueCommentEvent{
+				Action: github.String("created"),
 				Issue: &github.Issue{
 					PullRequestLinks: &github.PullRequestLinks{
 						HTMLURL: github.String("/888"),

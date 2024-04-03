@@ -11,17 +11,18 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bradleyfalzon/ghinstallation/v2"
+	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
 	oGitHub "github.com/google/go-github/v57/github"
 	"github.com/google/go-github/v59/github"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 // GetAppIDAndPrivateKey retrieves the GitHub application ID and private key from a secret in the specified namespace.
@@ -237,6 +238,9 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 	case *github.IssueCommentEvent:
 		if v.Client == nil {
 			return nil, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
+		}
+		if gitEvent.GetAction() != "created" {
+			return nil, fmt.Errorf("only newly created comment is supported, received: %s", gitEvent.GetAction())
 		}
 		processedEvent, err = v.handleIssueCommentEvent(ctx, gitEvent)
 		if err != nil {
