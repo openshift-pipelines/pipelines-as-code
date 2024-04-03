@@ -112,6 +112,10 @@ func TestApplyIncomingParams(t *testing.T) {
 
 func TestProcessTemplates(t *testing.T) {
 	ns := "there"
+	// event_type is a standard params and should override it from the command line
+	// foo is never set anywhere so will be skipped
+	// hello is a custom params and should be overridden as well with value
+	triggerCommentArgs := `/test foobar event_type=push foo="bar" hello="\"yolo\""`
 	tests := []struct {
 		name               string
 		event              *info.Event
@@ -240,6 +244,22 @@ func TestProcessTemplates(t *testing.T) {
 			repository: &v1alpha1.Repository{
 				Spec: v1alpha1.RepositorySpec{
 					Params: &[]v1alpha1.Params{},
+				},
+			},
+		},
+		{
+			name: "params/override params via gitops arguments",
+			expected: map[string]string{
+				"event_type":      "push",
+				"hello":           `"yolo"`,
+				"trigger_comment": triggerCommentArgs,
+			},
+			event: &info.Event{EventType: "pull_request", TriggerComment: triggerCommentArgs},
+			repository: &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{
+					Params: &[]v1alpha1.Params{
+						{Name: "hello", Value: "welcome"},
+					},
 				},
 			},
 		},

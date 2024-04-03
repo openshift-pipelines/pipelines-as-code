@@ -110,14 +110,21 @@ func GetPipelineRunFromCancelComment(comment string) string {
 }
 
 func getNameFromComment(typeOfComment, comment string) string {
-	splitTest := strings.Split(comment, typeOfComment)
+	splitTest := strings.Split(strings.TrimSpace(comment), typeOfComment)
 	if len(splitTest) < 2 {
 		return ""
 	}
 	// now get the first line
 	getFirstLine := strings.Split(splitTest[1], "\n")
+
+	// and the first argument
+	firstArg := strings.Split(getFirstLine[0], " ")
+	if len(firstArg) < 2 {
+		return ""
+	}
+
 	// trim spaces
-	return strings.TrimSpace(getFirstLine[0])
+	return strings.TrimSpace(firstArg[1])
 }
 
 func GetPipelineRunAndBranchNameFromTestComment(comment string) (string, string, error) {

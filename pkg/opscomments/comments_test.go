@@ -7,6 +7,47 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+func TestGetNameFromFunction(t *testing.T) {
+	tests := []struct {
+		name        string
+		comment     string
+		commentType string
+		expected    string
+		wantErr     bool
+	}{
+		{
+			name:        "get name from test comment",
+			comment:     "/test prname",
+			expected:    "prname",
+			commentType: testComment,
+		},
+		{
+			name:        "get name from test comment with args",
+			comment:     "/test prname foo=bar hello=moto",
+			expected:    "prname",
+			commentType: testComment,
+		},
+		{
+			name:        "get name from cancel comment",
+			comment:     "/cancel prname",
+			expected:    "prname",
+			commentType: cancelComment,
+		},
+		{
+			name:        "get name from retest comment",
+			comment:     "/retest prname",
+			expected:    "prname",
+			commentType: retestComment,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getNameFromComment(tt.commentType, tt.comment)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestIsAnyOpsEventType(t *testing.T) {
 	tests := []struct {
 		name      string
