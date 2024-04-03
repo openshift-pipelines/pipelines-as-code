@@ -5,16 +5,18 @@ import (
 	"fmt"
 
 	celTypes "github.com/google/cel-go/common/types"
+	"go.uber.org/zap"
+
 	apincoming "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/incoming"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	pacCel "github.com/openshift-pipelines/pipelines-as-code/pkg/cel"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	sectypes "github.com/openshift-pipelines/pipelines-as-code/pkg/secrets/types"
-	"go.uber.org/zap"
 )
 
 type CustomParams struct {
@@ -62,11 +64,20 @@ func (p *CustomParams) applyIncomingParams(ret map[string]string) map[string]str
 // matched true.
 func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, map[string]interface{}, error) {
 	stdParams, changedFiles := p.makeStandardParamsFromEvent(ctx)
+	ret, mapFilters, parsedFromComment := map[string]string{}, map[string]string{}, map[string]string{}
+	if p.event.TriggerComment != "" {
+		parsedFromComment = opscomments.ParseKeyValueArgs(p.event.TriggerComment)
+		for k, v := range parsedFromComment {
+			if _, ok := stdParams[k]; ok {
+				stdParams[k] = v
+			}
+		}
+	}
+
 	if p.repo.Spec.Params == nil {
 		return p.applyIncomingParams(stdParams), changedFiles, nil
 	}
-	ret := map[string]string{}
-	mapFilters := map[string]string{}
+
 	for index, value := range *p.repo.Spec.Params {
 		// if the name is empty we skip it
 		if value.Name == "" {
@@ -130,6 +141,13 @@ func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, map[st
 	for k, v := range stdParams {
 		// check if not already there
 		if _, ok := ret[k]; !ok && v != "" {
+			ret[k] = v
+		}
+	}
+
+	// overwrite stdParams with parsed ones from the trigger comment
+	for k, v := range parsedFromComment {
+		if _, ok := ret[k]; ok && v != "" {
 			ret[k] = v
 		}
 	}

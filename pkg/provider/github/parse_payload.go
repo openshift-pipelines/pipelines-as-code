@@ -100,7 +100,7 @@ func (v *Provider) parseEventType(request *http.Request, event *info.Event) erro
 	event.Provider.URL = request.Header.Get("X-GitHub-Enterprise-Host")
 
 	if event.EventType == "push" {
-		event.TriggerTarget = "push"
+		event.TriggerTarget = triggertype.Push
 	} else {
 		event.TriggerTarget = triggertype.PullRequest
 	}
@@ -397,6 +397,7 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 	runevent.BaseURL = runevent.HeadURL
 	runevent.EventType = "push"
 	runevent.TriggerTarget = "push"
+	runevent.TriggerComment = event.GetComment().GetBody()
 
 	// Set main as default branch to runevent.HeadBranch, runevent.BaseBranch
 	runevent.HeadBranch, runevent.BaseBranch = "main", "main"
