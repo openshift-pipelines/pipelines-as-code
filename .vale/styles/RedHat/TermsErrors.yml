@@ -21,7 +21,6 @@ swap:
   "(?<!self-)hosted engine|hosted-engine": self-hosted engine
   "[bB]asic [aA]uth": Basic HTTP authentication|Basic authentication
   "a lot(?: of)?": many|much
-  "AI": Assisted Installer
   "best of breed|best-of-breed": best in class
   "bottle neck|bottle-neck": bottleneck
   "Christian name|forename|first name": given name
@@ -98,7 +97,6 @@ swap:
   cancelling: canceling
   canned: preplanned|preconfigured|predefined
   cardreader: card reader
-  carry out: test|run
   case insensitive: not case-sensitive
   catalogue: catalog
   catastrophic error: unrecoverable error
@@ -295,6 +293,8 @@ swap:
   on the fly: dynamically|as needed|in real time|immediately
   on the other hand: however|alternatively|conversely
   openshit: OpenShift
+  opt into: opt in
+  opting into: opting in|opting in to
   organise: organize
   organised: organized
   organising: organizing

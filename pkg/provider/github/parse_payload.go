@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
-	oGitHub "github.com/google/go-github/v57/github"
-	"github.com/google/go-github/v59/github"
+	oGitHub "github.com/google/go-github/v60/github"
+	"github.com/google/go-github/v61/github"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 

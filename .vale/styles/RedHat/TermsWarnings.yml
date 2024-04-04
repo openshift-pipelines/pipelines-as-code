@@ -26,6 +26,7 @@ swap:
   bottom right: lower right
   bugfix: bug fix
   can not: cannot
+  carry out: test|run
   click on: click
   deselect: clear
   desired: needed|required
@@ -35,6 +36,7 @@ swap:
   downgrade: upgrade|fallback|fall back|rollback|roll back
   entitlement: repository|subscription
   execute: run|issue|start|enter
+  hamburger|kebab menu|kebab: more options icon|options icon
   he|she: you
   host name: hostname
   illegal: invalid|not allowed|incorrect

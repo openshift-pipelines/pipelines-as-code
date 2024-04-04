@@ -1,6 +1,6 @@
 ---
 extends: substitution
-message: '%s, rather than %s'
+message: "%s."
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/userreplacedvalues/
 level: suggestion
 scope: raw
