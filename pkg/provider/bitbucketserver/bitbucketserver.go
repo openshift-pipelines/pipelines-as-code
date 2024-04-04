@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v61/github"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"

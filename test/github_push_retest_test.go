@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v61/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"

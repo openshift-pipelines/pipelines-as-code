@@ -18,13 +18,15 @@ swap:
   "bottom(?:-)?right": lower right|lower-right
   "shell(?! prompt| script)": shell prompt
   "x64|x86-64|(?<!64-bit )x86": 64-bit x86|x86_64
+  '(?<!.*-|program )operator': Operator
+  '(?<!.*-|program )operators': Operators
   '(?<![\.\-])(?:zip|gzip|tar)(?! file| archive)': compress
   '(?<!\.)tar file': ".tar file"
   '(?<!\.)zip file': ".zip file"
-  above: later|previous|preceding
+  above: earlier|previous|preceding|before
   afterwards: afterward
   all caps: uppercase
-  below: earlier|later|following
+  below: after|later|following
   bottom left: lower left
   bottom right: lower right
   bugfix: bug fix

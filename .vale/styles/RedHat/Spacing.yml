@@ -6,5 +6,5 @@ message: "Keep one space between words in '%s'."
 nonword: true
 # source: https://docs.microsoft.com/en-us/style-guide/punctuation/periods
 tokens:
-  - "[a-z][.?!] {2,}[A-Z]"
-  - "[a-z][.?!][A-Z]"
+  - '\w+[.?!]\s{2,}[A-Z]\w+'
+  - '\w+[.?!][A-Z]\w+'
