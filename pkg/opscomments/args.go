@@ -8,6 +8,9 @@ import (
 // ParseKeyValueArgs will parse things like key=value key="value" key="value1 value2"
 // key="value1 \"value2\"" key=value1=value2.
 func ParseKeyValueArgs(input string) map[string]string {
+	if !strings.HasPrefix(input, "/") {
+		return nil
+	}
 	keyValueRegex := regexp.MustCompile(`(\w+)=(?:"([^"\\]*(?:\\.[^"\\]*)*)"|([^"'\s]+))`)
 	matches := keyValueRegex.FindAllStringSubmatch(input, -1)
 	keyValuePairs := make(map[string]string)

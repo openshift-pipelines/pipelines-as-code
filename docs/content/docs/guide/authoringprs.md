@@ -25,9 +25,27 @@ weight: 3
   [git-clone](https://github.com/tektoncd/catalog/blob/main/task/git-clone/)
   task from the [tektoncd/catalog](https://github.com/tektoncd/catalog).
 
-  To be able to specify the parameters of your commit and URL, Pipelines-as-Code
-  allows you to have those "dynamic" variables expanded. Those variables look
-  like this `{{ var }}` and those are the one you can use:
+- To be able to specify parameters of your commit and URL, Pipelines-as-Code
+  give you some “dynamic” variables that is defined according to the execution
+  of the events. Those variables look like this `{{ var }}` and can be used
+  anywhere in your template, see [below](#dynamic-variables) for the list of
+  available variables.
+
+- For Pipelines-as-Code to process your `PipelineRun`, you must have either an
+  embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML
+  file in the `.tekton` directory. The Pipeline object can include `TaskSpecs`,
+  which may be defined separately as Tasks in another YAML file in the same
+  directory. It's important to give each `PipelineRun` a unique name to avoid
+  conflicts. **PipelineRuns with duplicate names will never be matched**.
+
+## Dynamic variables
+
+Here is a list of al the dynamic variables available in Pipelines-as-Code. The
+one that would be the most important to you would probably be the `revision` and `repo_url`
+variables, they will give you the commit SHA and the repository URL that is
+getting tested. You usually use this with the
+[git-clone](https://hub.tekton.dev/tekton/task/git-clone) task to be able to
+checkout the code that is being tested.
 
 | Variable            | Description                                                                                       | Example                             | Example Output               |
 |---------------------|---------------------------------------------------------------------------------------------------|-------------------------------------|------------------------------|
@@ -46,13 +64,6 @@ weight: 3
 | target_branch       | The branch name on which the event targets (same as `source_branch` for push events).             | `{{target_branch}}`                 | main                         |
 | target_namespace    | The target namespace where the Repository has matched and the PipelineRun will be created.        | `{{target_namespace}}`              | my-namespace                 |
 | trigger_comment     | The comment triggering the pipelinerun when using a [GitOps command]({{< relref "/docs/guide/running.md#gitops-command-on-pull-or-merge-request" >}}) (like `/test`, `/retest`)      | `{{trigger_comment}}`               | /merge-pr branch             |
-
-- For Pipelines-as-Code to process your `PipelineRun`, you must have either an
-  embedded `PipelineSpec` or a separate `Pipeline` object that references a YAML
-  file in the `.tekton` directory. The Pipeline object can include `TaskSpecs`,
-  which may be defined separately as Tasks in another YAML file in the same
-  directory. It's important to give each `PipelineRun` a unique name to avoid
-  conflicts. **PipelineRuns with duplicate names will never be matched**.
 
 ## Matching an event to a PipelineRun
 
@@ -196,13 +207,9 @@ metadata:
 Will match the merge-pr PipelineRun when a comment on a pull request starts
 with `/merge-pr`
 
-You can then use the template variable `{{ trigger_comment }}` to get the
-actual comment and do some action based on for example the comment content.
-There is a restriction with the trigger_comment variable we modify it to
-replace the newline with a `\n` since the multi-line comment can cause a
-issue when replaced inside the yaml. It is up to you to replace it back to
-newline, for example with shell scripts you can use `echo -e` to expand the
-newline back.
+When the PipelineRun that has been triggered with the `on-comment` annotation
+gets started the template variable `{{ trigger_comment }}` get set. See the
+documentation [here]({{< relref "/docs/guide/gitops_commands/#accessing-the-comment-triggering-the-pipelinerun" >}})
 
 Note that the `on-comment` annotation will respect the `pull_request` [Policy]({{< relref "/docs/guide/policy" >}}) rule,
 so only users into the `pull_request` policy will be able to trigger the
