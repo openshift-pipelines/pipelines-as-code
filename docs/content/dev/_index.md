@@ -301,8 +301,8 @@ there. For example you will get this kind of error:
 - Check that the go version is updated to the latest RHEL version:
 
   ```shell
-  docker pull registry.access.redhat.com/ubi9/go-toolset
-  docker run registry.access.redhat.com/ubi9/go-toolset go version
+  docker pull golang
+  docker run golang go version
   ```
 
 - If this not the same as what we have in go.mod then you need to update the go.mod version. then you need to update for example here 1.20:
@@ -314,7 +314,7 @@ there. For example you will get this kind of error:
 - Grep for the image go-toolset everywhere with:
 
   ```shell
-  git grep ubi9/go-toolset
+  git grep golang:
   ```
 
   and change the old version to the new version
