@@ -105,9 +105,6 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 			log.Fatalf("error getting config and setting from configmaps: %v", err)
 		}
 
-		ninfo := &info.Info{}
-		l.run.Info.DeepCopy(ninfo)
-
 		if request.Method != http.MethodPost {
 			l.writeResponse(response, http.StatusOK, "ok")
 			return

@@ -13,10 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	PACConfigmapName = "pipelines-as-code"
-)
-
 type Run struct {
 	Clients clients.Clients
 	Info    info.Info

@@ -12,18 +12,12 @@ import (
 )
 
 const (
-	ApplicationNameKey = "application-name"
-	HubURLKey          = "hub-url"
-	HubCatalogNameKey  = "hub-catalog-name"
-	//nolint: gosec
-	MaxKeepRunUpperLimitKey               = "max-keep-run-upper-limit"
-	DefaultMaxKeepRunsKey                 = "default-max-keep-runs"
-	RemoteTasksKey                        = "remote-tasks"
-	BitbucketCloudCheckSourceIPKey        = "bitbucket-cloud-check-source-ip"
-	BitbucketCloudAdditionalSourceIPKey   = "bitbucket-cloud-additional-source-ip"
-	TektonDashboardURLKey                 = "tekton-dashboard-url"
-	AutoConfigureNewGitHubRepoKey         = "auto-configure-new-github-repo"
-	AutoConfigureRepoNamespaceTemplateKey = "auto-configure-repo-namespace-template"
+	PACApplicationNameDefaultValue = "Pipelines as Code CI"
+
+	HubURLKey                  = "hub-url"
+	HubCatalogNameKey          = "hub-catalog-name"
+	HubURLDefaultValue         = "https://api.hub.tekton.dev/v1"
+	HubCatalogNameDefaultValue = "tekton"
 
 	CustomConsoleNameKey         = "custom-console-name"
 	CustomConsoleURLKey          = "custom-console-url"
@@ -31,34 +25,7 @@ const (
 	CustomConsolePRTaskLogKey    = "custom-console-url-pr-tasklog"
 	CustomConsoleNamespaceURLKey = "custom-console-url-namespace"
 
-	SecretAutoCreateKey                          = "secret-auto-create"
-	secretAutoCreateDefaultValue                 = "true"
-	SecretGhAppTokenRepoScopedKey                = "secret-github-app-token-scoped" //nolint: gosec
-	secretGhAppTokenRepoScopedDefaultValue       = "true"
-	SecretGhAppTokenScopedExtraReposKey          = "secret-github-app-scope-extra-repos" //nolint: gosec
-	secretGhAppTokenScopedExtraReposDefaultValue = ""                                    //nolint: gosec
-
-	remoteTasksDefaultValue                 = "true"
-	bitbucketCloudCheckSourceIPDefaultValue = "true"
-	PACApplicationNameDefaultValue          = "Pipelines as Code CI"
-	HubURLDefaultValue                      = "https://api.hub.tekton.dev/v1"
-	HubCatalogNameDefaultValue              = "tekton"
-	AutoConfigureNewGitHubRepoDefaultValue  = "false"
-
-	ErrorLogSnippetKey   = "error-log-snippet"
-	errorLogSnippetValue = "true"
-
-	ErrorDetectionKey   = "error-detection-from-container-logs"
-	errorDetectionValue = "true"
-
-	ErrorDetectionNumberOfLinesKey   = "error-detection-max-number-of-lines"
-	errorDetectionNumberOfLinesValue = 50
-
-	ErrorDetectionSimpleRegexpKey   = "error-detection-simple-regexp"
-	errorDetectionSimpleRegexpValue = `^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+):([ ]*)?(?P<error>.*)`
-
-	RememberOKToTestKey   = "remember-ok-to-test"
-	rememberOKToTestValue = "true"
+	SecretGhAppTokenRepoScopedKey = "secret-github-app-token-scoped" //nolint: gosec
 )
 
 var (
