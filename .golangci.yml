@@ -15,7 +15,14 @@ linters-settings:
     disabled-checks:
       - unlambda
   errcheck:
-    exclude: .errcheck.txt
+    exclude-functions:
+      - (*github.com/tektoncd/pipeline/vendor/go.uber.org/zap.SugaredLogger).Sync
+      - flag.Set
+      - logger.Sync
+      - fmt.Fprintf
+      - fmt.Fprintln
+      - (io.Closer).Close
+      - updateConfigMap
   gofumpt:
     extra-rules: true
 linters:
