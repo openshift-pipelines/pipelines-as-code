@@ -77,9 +77,9 @@ func TestFilterRunningPipelineRunOnTargetTest(t *testing.T) {
 		},
 	}
 	ret := filterRunningPipelineRunOnTargetTest("", prs)
-	assert.Equal(t, prs[0].GetName(), ret[0].GetName())
+	assert.Assert(t, ret == nil)
 	ret = filterRunningPipelineRunOnTargetTest(testPipeline, prs)
-	assert.Equal(t, prs[0].GetName(), ret[0].GetName())
+	assert.Equal(t, prs[0].GetName(), ret.GetName())
 	prs = []*tektonv1.PipelineRun{}
 	ret = filterRunningPipelineRunOnTargetTest(testPipeline, prs)
 	assert.Assert(t, ret == nil)
