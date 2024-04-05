@@ -47,7 +47,7 @@ func getRemotes(ctx context.Context, rt *matcher.RemoteTasks, types TektonTypes)
 
 		for _, task := range remoteTasks {
 			if alreadySeen(remoteType.Tasks, task) {
-				rt.Logger.Infof("skipping duplicated task %s in annotations on pipelinerun %s", task.GetName(), pipelinerun.GetName())
+				rt.Logger.Debugf("skipping already fetched task %s in annotations on pipelinerun %s", task.GetName(), pipelinerun.GetName())
 				continue
 			}
 			remoteType.Tasks = append(remoteType.Tasks, task)
