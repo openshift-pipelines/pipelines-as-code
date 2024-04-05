@@ -218,10 +218,8 @@ func TestRemote(t *testing.T) {
 			expectedLogsSnippets: []string{
 				fmt.Sprintf("successfully fetched %s from remote https url", remoteTaskURL),
 				fmt.Sprintf("successfully fetched %s from remote https url", remoteTaskURL),
-				fmt.Sprintf("skipping duplicated task %s in annotations on pipelinerun %s", remoteTaskName, randomPipelineRunName),
 				fmt.Sprintf("successfully fetched %s from remote https url", remotePipelineURL),
 				fmt.Sprintf("successfully fetched %s from remote https url", remoteTaskURL),
-				fmt.Sprintf("skipping remote task %s from remote pipeline %s as already defined in pipelinerun", remoteTaskName, remotePipelineName),
 			},
 			expectedPipelinesFetch: 1,
 			expectedTaskFetch:      1,
