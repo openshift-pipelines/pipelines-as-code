@@ -74,7 +74,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "ParamsError",
 			fmt.Sprintf("error processing repository CR custom params: %s", err.Error()))
 	}
-	p.run.Clients.ConsoleUI().SetPacInfo(*p.run.Info.Pac)
+	p.run.Clients.ConsoleUI().SetPacInfo(p.pacInfo)
 	p.run.Clients.ConsoleUI().SetParams(maptemplate)
 
 	var wg sync.WaitGroup
@@ -129,7 +129,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	var gitAuthSecretName string
 
 	// Automatically create a secret with the token to be reused by git-clone task
-	if p.run.Info.Pac.SecretAutoCreation {
+	if p.pacInfo.SecretAutoCreation {
 		if annotation, ok := match.PipelineRun.GetAnnotations()[keys.GitAuthSecret]; ok {
 			gitAuthSecretName = annotation
 		} else {
@@ -223,7 +223,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	}
 
 	// update ownerRef of secret with pipelineRun, so that it gets cleanedUp with pipelineRun
-	if p.run.Info.Pac.SecretAutoCreation {
+	if p.pacInfo.SecretAutoCreation {
 		err := p.k8int.UpdateSecretWithOwnerRef(ctx, p.logger, pr.Namespace, gitAuthSecretName, pr)
 		if err != nil {
 			// we still return the created PR with error, and allow caller to decide what to do with the PR, and avoid

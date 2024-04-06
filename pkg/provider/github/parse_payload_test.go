@@ -567,17 +567,14 @@ func TestParsePayLoad(t *testing.T) {
 			gprovider := Provider{
 				Client: ghClient,
 				Logger: logger,
+				pacInfo: info.PacOpts{
+					Settings: &settings.Settings{},
+				},
 			}
 			request := &http.Request{Header: map[string][]string{}}
 			request.Header.Set("X-GitHub-Event", tt.eventType)
 
-			run := &params.Run{
-				Info: info.Info{
-					Pac: &info.PacOpts{
-						Settings: &settings.Settings{},
-					},
-				},
-			}
+			run := &params.Run{}
 			bjeez, _ := json.Marshal(tt.payloadEventStruct)
 			jeez := string(bjeez)
 			if tt.jeez != "" {
@@ -753,6 +750,9 @@ func TestAppTokenGeneration(t *testing.T) {
 			gprovider := Provider{
 				Logger: logger,
 				Client: fakeghclient,
+				pacInfo: info.PacOpts{
+					Settings: &settings.Settings{},
+				},
 			}
 			request := &http.Request{Header: map[string][]string{}}
 			request.Header.Set("X-GitHub-Event", "pull_request")
@@ -768,15 +768,12 @@ func TestAppTokenGeneration(t *testing.T) {
 				},
 
 				Info: info.Info{
-					Pac: &info.PacOpts{
-						Settings: &settings.Settings{},
-					},
 					Controller: &info.ControllerInfo{Secret: secretName},
 				},
 			}
 
 			if len(tt.checkInstallIDs) > 0 {
-				run.Info.Pac.SecretGHAppRepoScoped = true
+				gprovider.pacInfo.SecretGHAppRepoScoped = true
 			}
 			if len(tt.extraRepoInstallIDs) > 0 {
 				extras := ""
@@ -791,8 +788,8 @@ func TestAppTokenGeneration(t *testing.T) {
 					extras += fmt.Sprintf("%s, ", name)
 				}
 
-				run.Info.Pac.SecretGHAppRepoScoped = true
-				run.Info.Pac.SecretGhAppTokenScopedExtraRepos = extras
+				gprovider.pacInfo.SecretGHAppRepoScoped = true
+				gprovider.pacInfo.SecretGhAppTokenScopedExtraRepos = extras
 			}
 
 			tt.ctx = info.StoreCurrentControllerName(tt.ctx, "default")

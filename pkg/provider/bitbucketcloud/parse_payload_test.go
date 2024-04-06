@@ -211,26 +211,30 @@ func TestParsePayload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			v := &Provider{}
+			v := &Provider{
+				pacInfo: info.PacOpts{
+					Settings: &settings.Settings{
+						BitbucketCloudCheckSourceIP:      false,
+						BitbucketCloudAdditionalSourceIP: "",
+					},
+				},
+			}
 
 			req := &http.Request{Header: map[string][]string{}}
 			req.Header.Set("X-Event-Key", tt.eventType)
 			req.Header.Set("X-Forwarded-For", tt.sourceIP)
 
-			run := &params.Run{
-				Info: info.Info{
-					Pac: &info.PacOpts{
-						Settings: &settings.Settings{
-							BitbucketCloudCheckSourceIP:      false,
-							BitbucketCloudAdditionalSourceIP: "",
-						},
-					},
-				},
-			}
+			run := &params.Run{}
 
 			if tt.sourceIP != "" {
-				run.Info.Pac.BitbucketCloudCheckSourceIP = true
-				run.Info.Pac.BitbucketCloudAdditionalSourceIP = tt.additionalAllowedsourceIP
+				v = &Provider{
+					pacInfo: info.PacOpts{
+						Settings: &settings.Settings{
+							BitbucketCloudCheckSourceIP:      true,
+							BitbucketCloudAdditionalSourceIP: tt.additionalAllowedsourceIP,
+						},
+					},
+				}
 
 				httpTestClient := httptesthelper.MakeHTTPTestClient(tt.allowedConfig)
 				run.Clients.HTTP = *httpTestClient
