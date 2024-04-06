@@ -223,7 +223,7 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	}
 
 	// finally resolve with fetching the remote tasks (if enabled)
-	if p.run.Info.Pac.RemoteTasks {
+	if p.pacInfo.RemoteTasks {
 		// only resolve on the matched pipelineruns if we don't do explicit /test of unmatched pipelineruns
 		if p.event.TargetTestPipelineRun == "" {
 			types.PipelineRuns = nil

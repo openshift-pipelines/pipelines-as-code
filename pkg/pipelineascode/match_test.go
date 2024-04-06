@@ -40,7 +40,7 @@ func TestPacRun_checkNeedUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPacs(nil, nil, &params.Run{Clients: clients.Clients{}}, nil, nil)
+			p := NewPacs(nil, nil, &params.Run{Clients: clients.Clients{}}, info.PacOpts{}, nil, nil)
 			got, needupdate := p.checkNeedUpdate(tt.tmpl)
 			if tt.upgradeMessageSubstr != "" {
 				assert.Assert(t, strings.Contains(got, tt.upgradeMessageSubstr))
@@ -209,14 +209,6 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 					Kube:           stdata.Kube,
 					Tekton:         stdata.Pipeline,
 				},
-				Info: info.Info{
-					Pac: &info.PacOpts{
-						Settings: &settings.Settings{
-							SecretAutoCreation: true,
-							RemoteTasks:        true,
-						},
-					},
-				},
 			}
 			cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 			k8int := &kitesthelper.KinterfaceTest{
@@ -227,7 +219,14 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 				Token:  github.String("None"),
 				Logger: logger,
 			}
-			p := NewPacs(tt.event, vcx, cs, k8int, logger)
+
+			pacInfo := info.PacOpts{
+				Settings: &settings.Settings{
+					SecretAutoCreation: true,
+					RemoteTasks:        true,
+				},
+			}
+			p := NewPacs(tt.event, vcx, cs, pacInfo, k8int, logger)
 			p.eventEmitter = events.NewEventEmitter(stdata.Kube, logger)
 			matchedPRs, err := p.getPipelineRunsFromRepo(ctx, tt.repositories)
 			assert.NilError(t, err)
