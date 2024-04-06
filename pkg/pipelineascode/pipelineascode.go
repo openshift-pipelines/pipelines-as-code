@@ -73,6 +73,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "ParamsError",
 			fmt.Sprintf("error processing repository CR custom params: %s", err.Error()))
 	}
+	p.run.Clients.ConsoleUI().SetPacInfo(*p.run.Info.Pac)
 	p.run.Clients.ConsoleUI().SetParams(maptemplate)
 
 	var wg sync.WaitGroup

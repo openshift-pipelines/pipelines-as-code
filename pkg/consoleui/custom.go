@@ -15,26 +15,30 @@ import (
 )
 
 type CustomConsole struct {
-	Info   *info.Info
-	params map[string]string
+	params  map[string]string
+	pacInfo info.PacOpts
 }
 
 func (o *CustomConsole) SetParams(mt map[string]string) {
 	o.params = mt
 }
 
+func (o *CustomConsole) SetPacInfo(pacInfo info.PacOpts) {
+	o.pacInfo = pacInfo
+}
+
 func (o *CustomConsole) GetName() string {
-	if o.Info.Pac.CustomConsoleName == "" {
+	if o.pacInfo.CustomConsoleName == "" {
 		return "Not configured"
 	}
-	return o.Info.Pac.CustomConsoleName
+	return o.pacInfo.CustomConsoleName
 }
 
 func (o *CustomConsole) URL() string {
-	if o.Info.Pac.CustomConsoleURL == "" {
+	if o.pacInfo.CustomConsoleURL == "" {
 		return fmt.Sprintf("https://url.setting.%s.is.not.configured", settings.CustomConsoleURLKey)
 	}
-	return o.Info.Pac.CustomConsoleURL
+	return o.pacInfo.CustomConsoleURL
 }
 
 // generateURL will generate a URL from a template, trim some of the spaces and
@@ -56,7 +60,7 @@ func (o *CustomConsole) generateURL(urlTmpl string, dict map[string]string) stri
 }
 
 func (o *CustomConsole) DetailURL(pr *tektonv1.PipelineRun) string {
-	if o.Info.Pac.CustomConsolePRdetail == "" {
+	if o.pacInfo.CustomConsolePRdetail == "" {
 		return fmt.Sprintf("https://detailurl.setting.%s.is.not.configured", settings.CustomConsolePRDetailKey)
 	}
 	nm := o.params
@@ -67,11 +71,11 @@ func (o *CustomConsole) DetailURL(pr *tektonv1.PipelineRun) string {
 	}
 	nm["namespace"] = pr.GetNamespace()
 	nm["pr"] = pr.GetName()
-	return o.generateURL(o.Info.Pac.CustomConsolePRdetail, nm)
+	return o.generateURL(o.pacInfo.CustomConsolePRdetail, nm)
 }
 
 func (o *CustomConsole) NamespaceURL(pr *tektonv1.PipelineRun) string {
-	if o.Info.Pac.CustomConsoleNamespaceURL == "" {
+	if o.pacInfo.CustomConsoleNamespaceURL == "" {
 		return fmt.Sprintf("https://detailurl.setting.%s.is.not.configured", settings.CustomConsoleNamespaceURLKey)
 	}
 	nm := o.params
@@ -81,11 +85,11 @@ func (o *CustomConsole) NamespaceURL(pr *tektonv1.PipelineRun) string {
 		nm = make(map[string]string)
 	}
 	nm["namespace"] = pr.GetNamespace()
-	return o.generateURL(o.Info.Pac.CustomConsoleNamespaceURL, nm)
+	return o.generateURL(o.pacInfo.CustomConsoleNamespaceURL, nm)
 }
 
 func (o *CustomConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tektonv1.PipelineRunTaskRunStatus) string {
-	if o.Info.Pac.CustomConsolePRTaskLog == "" {
+	if o.pacInfo.CustomConsolePRTaskLog == "" {
 		return fmt.Sprintf("https://tasklogurl.setting.%s.is.not.configured", settings.CustomConsolePRTaskLogKey)
 	}
 	firstFailedStep := ""
@@ -108,7 +112,7 @@ func (o *CustomConsole) TaskLogURL(pr *tektonv1.PipelineRun, taskRunStatus *tekt
 	nm["task"] = taskRunStatus.PipelineTaskName
 	nm["pod"] = taskRunStatus.Status.PodName
 	nm["firstFailedStep"] = firstFailedStep
-	return o.generateURL(o.Info.Pac.CustomConsolePRTaskLog, nm)
+	return o.generateURL(o.pacInfo.CustomConsolePRTaskLog, nm)
 }
 
 func (o *CustomConsole) UI(_ context.Context, _ dynamic.Interface) error {

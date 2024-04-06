@@ -18,12 +18,16 @@ type Interface interface {
 	URL() string
 	GetName() string
 	SetParams(mt map[string]string)
+	SetPacInfo(info info.PacOpts)
 }
 
 type FallBackConsole struct{}
 
 func (f FallBackConsole) GetName() string {
 	return "Not configured"
+}
+
+func (f FallBackConsole) SetPacInfo(_ info.PacOpts) {
 }
 
 func (f FallBackConsole) DetailURL(_ *tektonv1.PipelineRun) string {
