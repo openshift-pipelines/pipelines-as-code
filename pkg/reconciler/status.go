@@ -43,7 +43,7 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 		SHA:             &event.SHA,
 		SHAURL:          &event.SHAURL,
 		Title:           &event.SHATitle,
-		LogURL:          github.String(r.run.Clients.ConsoleUI.DetailURL(pr)),
+		LogURL:          github.String(r.run.Clients.ConsoleUI().DetailURL(pr)),
 		EventType:       &event.EventType,
 		TargetBranch:    &refsanitized,
 	}
@@ -116,13 +116,13 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		taskStatusText = pr.Status.GetCondition(apis.ConditionSucceeded).Message
 	}
 
-	namespaceURL := r.run.Clients.ConsoleUI.NamespaceURL(pr)
-	consoleURL := r.run.Clients.ConsoleUI.DetailURL(pr)
+	namespaceURL := r.run.Clients.ConsoleUI().NamespaceURL(pr)
+	consoleURL := r.run.Clients.ConsoleUI().DetailURL(pr)
 	mt := formatting.MessageTemplate{
 		PipelineRunName: pr.GetName(),
 		Namespace:       pr.GetNamespace(),
 		NamespaceURL:    namespaceURL,
-		ConsoleName:     r.run.Clients.ConsoleUI.GetName(),
+		ConsoleName:     r.run.Clients.ConsoleUI().GetName(),
 		ConsoleURL:      consoleURL,
 		TknBinary:       settings.TknBinaryName,
 		TknBinaryURL:    settings.TknBinaryURL,
@@ -147,7 +147,7 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		Conclusion:              formatting.PipelineRunStatus(pr),
 		Text:                    tmplStatusText,
 		PipelineRunName:         pr.Name,
-		DetailsURL:              r.run.Clients.ConsoleUI.DetailURL(pr),
+		DetailsURL:              r.run.Clients.ConsoleUI().DetailURL(pr),
 		OriginalPipelineRunName: pr.GetAnnotations()[apipac.OriginalPRName],
 	}
 

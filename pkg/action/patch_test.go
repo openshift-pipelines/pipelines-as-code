@@ -34,9 +34,9 @@ func TestPatchPipelineRun(t *testing.T) {
 
 	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 	fakeClients := clients.Clients{
-		Tekton:    stdata.Pipeline,
-		ConsoleUI: &consoleui.TektonDashboard{BaseURL: "https://localhost.console"},
+		Tekton: stdata.Pipeline,
 	}
+	fakeClients.SetConsoleUI(&consoleui.TektonDashboard{BaseURL: "https://localhost.console"})
 
 	patchedPR, err := PatchPipelineRun(ctx, logger, "log URL", fakeClients.Tekton, testPR, getLogURLMergePatch(fakeClients, testPR))
 	assert.NilError(t, err)
@@ -47,7 +47,7 @@ func getLogURLMergePatch(clients clients.Clients, pr *pipelinev1.PipelineRun) ma
 	return map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"annotations": map[string]string{
-				keys.LogURL: clients.ConsoleUI.DetailURL(pr),
+				keys.LogURL: clients.ConsoleUI().DetailURL(pr),
 			},
 		},
 	}

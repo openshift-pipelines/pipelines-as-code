@@ -52,7 +52,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 			Status:     "completed",
 			Conclusion: "failure",
 			Text:       fmt.Sprintf("There was an issue validating the commit: %q", err),
-			DetailsURL: p.run.Clients.ConsoleUI.URL(),
+			DetailsURL: p.run.Clients.ConsoleUI().URL(),
 		})
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("an error occurred: %s", err))
 		if createStatusErr != nil {
@@ -73,7 +73,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "ParamsError",
 			fmt.Sprintf("error processing repository CR custom params: %s", err.Error()))
 	}
-	p.run.Clients.ConsoleUI.SetParams(maptemplate)
+	p.run.Clients.ConsoleUI().SetParams(maptemplate)
 
 	var wg sync.WaitGroup
 	for _, match := range matchedPRs {
@@ -93,7 +93,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 					Status:     "completed",
 					Conclusion: "failure",
 					Text:       errMsgM,
-					DetailsURL: p.run.Clients.ConsoleUI.URL(),
+					DetailsURL: p.run.Clients.ConsoleUI().URL(),
 				})
 				if createStatusErr != nil {
 					p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryCreateStatus", fmt.Sprintf("Cannot create status: %s: %s", err, createStatusErr))
@@ -173,11 +173,11 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	p.logger.Infof("pipelinerun %s has been created in namespace %s for SHA: %s Target Branch: %s",
 		pr.GetName(), match.Repo.GetNamespace(), p.event.SHA, p.event.BaseBranch)
 
-	consoleURL := p.run.Clients.ConsoleUI.DetailURL(pr)
+	consoleURL := p.run.Clients.ConsoleUI().DetailURL(pr)
 	mt := formatting.MessageTemplate{
 		PipelineRunName: pr.GetName(),
 		Namespace:       match.Repo.GetNamespace(),
-		ConsoleName:     p.run.Clients.ConsoleUI.GetName(),
+		ConsoleName:     p.run.Clients.ConsoleUI().GetName(),
 		ConsoleURL:      consoleURL,
 		TknBinary:       settings.TknBinaryName,
 		TknBinaryURL:    settings.TknBinaryURL,
@@ -236,7 +236,7 @@ func getLogURLMergePatch(clients clients.Clients, pr *tektonv1.PipelineRun) map[
 	return map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"annotations": map[string]string{
-				keys.LogURL: clients.ConsoleUI.DetailURL(pr),
+				keys.LogURL: clients.ConsoleUI().DetailURL(pr),
 			},
 		},
 	}

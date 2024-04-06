@@ -114,10 +114,10 @@ func TestLogs(t *testing.T) {
 				Clients: clients.Clients{
 					PipelineAsCode: stdata.PipelineAsCode,
 					Tekton:         stdata.Pipeline,
-					ConsoleUI:      consoleui.FallBackConsole{},
 				},
 				Info: info.Info{Kube: &info.KubeOpts{Namespace: tt.currentNamespace}},
 			}
+			cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 
 			tknPath, err := exec.LookPath("true")
 			assert.NilError(t, err)
