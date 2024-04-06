@@ -102,7 +102,7 @@ func (v *Provider) canIUseCheckrunID(checkrunid *int64) bool {
 func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	now := github.Timestamp{Time: time.Now()}
 	checkrunoption := github.CreateCheckRunOptions{
-		Name:       getCheckName(status, v.Run.Info.Pac),
+		Name:       getCheckName(status, &v.pacInfo),
 		HeadSHA:    runevent.SHA,
 		Status:     github.String("in_progress"),
 		DetailsURL: github.String(status.DetailsURL),
@@ -188,7 +188,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 	var err error
 	var checkRunID *int64
 	var found bool
-	pacopts := v.Run.Info.Pac
+	pacopts := &v.pacInfo
 
 	// check if pipelineRun has the label with checkRun-id
 	if statusOpts.PipelineRun != nil {
@@ -300,7 +300,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		State:       github.String(status.Conclusion),
 		TargetURL:   github.String(status.DetailsURL),
 		Description: github.String(status.Title),
-		Context:     github.String(getCheckName(status, v.Run.Info.Pac)),
+		Context:     github.String(getCheckName(status, &v.pacInfo)),
 		CreatedAt:   &github.Timestamp{Time: now},
 	}
 
@@ -358,7 +358,7 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statu
 	if statusOpts.OriginalPipelineRunName != "" {
 		onPr = "/" + statusOpts.OriginalPipelineRunName
 	}
-	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.Run.Info.Pac.ApplicationName, onPr, statusOpts.Summary)
+	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.pacInfo.ApplicationName, onPr, statusOpts.Summary)
 
 	// If we have an installationID which mean we have a github apps and we can use the checkRun API
 	if runevent.InstallationID > 0 {

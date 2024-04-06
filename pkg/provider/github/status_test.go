@@ -32,6 +32,11 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 	cnx := Provider{
 		Client: fakeclient,
 		Run:    params.New(),
+		pacInfo: info.PacOpts{
+			Settings: &settings.Settings{
+				ApplicationName: settings.PACApplicationNameDefaultValue,
+			},
+		},
 	}
 	defer teardown()
 	mux.HandleFunc("/repos/check/info/check-runs", func(w http.ResponseWriter, _ *http.Request) {
@@ -377,6 +382,11 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				Tekton: stdata.Pipeline,
 			}
 			gcvs.Run.Clients = fakeClients
+			gcvs.SetPacInfo(info.PacOpts{
+				Settings: &settings.Settings{
+					ApplicationName: settings.PACApplicationNameDefaultValue,
+				},
+			})
 			err := gcvs.CreateStatus(ctx, tt.args.runevent, status)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GithubProvider.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
@@ -460,6 +470,11 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 			provider := &Provider{
 				Client: fakeclient,
 				Run:    params.New(),
+				pacInfo: info.PacOpts{
+					Settings: &settings.Settings{
+						ApplicationName: settings.PACApplicationNameDefaultValue,
+					},
+				},
 			}
 
 			if err := provider.createStatusCommit(ctx, tt.event, tt.status); (err != nil) != tt.wantErr {

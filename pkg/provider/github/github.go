@@ -44,6 +44,7 @@ type Provider struct {
 	Client        *github.Client
 	Logger        *zap.SugaredLogger
 	Run           *params.Run
+	pacInfo       info.PacOpts
 	Token, APIURL *string
 	ApplicationID *int64
 	providerName  string
@@ -68,6 +69,10 @@ func New() *Provider {
 			mutex: &sync.Mutex{},
 		},
 	}
+}
+
+func (v *Provider) SetPacInfo(pacInfo info.PacOpts) {
+	v.pacInfo = pacInfo
 }
 
 // detectGHERawURL Detect if we have a raw URL in GHE.

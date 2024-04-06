@@ -582,12 +582,20 @@ func TestRun(t *testing.T) {
 				tt.runevent.InstallationID = 0
 			}
 
+			pacInfo := info.PacOpts{
+				Settings: &settings.Settings{
+					SecretAutoCreation: true,
+					RemoteTasks:        true,
+					HubCatalogs:        &hubCatalogs,
+				},
+			}
 			vcx := &ghprovider.Provider{
 				Client: fakeclient,
 				Run:    cs,
 				Token:  github.String("None"),
 				Logger: logger,
 			}
+			vcx.SetPacInfo(pacInfo)
 			p := NewPacs(&tt.runevent, vcx, cs, k8int, logger)
 			err := p.Run(ctx)
 

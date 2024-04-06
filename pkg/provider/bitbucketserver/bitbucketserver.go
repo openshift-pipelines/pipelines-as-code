@@ -29,12 +29,17 @@ type Provider struct {
 	Client                    *bbv1.APIClient
 	Logger                    *zap.SugaredLogger
 	run                       *params.Run
+	pacInfo                   info.PacOpts
 	baseURL                   string
 	defaultBranchLatestCommit string
 	pullRequestNumber         int
 	apiURL                    string
 	provenance                string
 	projectKey                string
+}
+
+func (v *Provider) SetPacInfo(pacInfo info.PacOpts) {
+	v.pacInfo = pacInfo
 }
 
 func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
@@ -101,7 +106,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		event.SHA,
 		bbv1.BuildStatus{
 			State:       statusOpts.Conclusion,
-			Name:        v.run.Info.Pac.ApplicationName,
+			Name:        v.pacInfo.ApplicationName,
 			Key:         key,
 			Description: statusOpts.Title,
 			Url:         detailsURL,
@@ -116,7 +121,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		onPr = "/" + statusOpts.OriginalPipelineRunName
 	}
 	bbcomment := bbv1.Comment{
-		Text: fmt.Sprintf("**%s%s** - %s\n\n%s", v.run.Info.Pac.ApplicationName, onPr,
+		Text: fmt.Sprintf("**%s%s** - %s\n\n%s", v.pacInfo.ApplicationName, onPr,
 			statusOpts.Title, statusOpts.Text),
 	}
 

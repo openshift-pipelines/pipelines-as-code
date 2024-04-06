@@ -46,6 +46,7 @@ var _ provider.Interface = (*Provider)(nil)
 type Provider struct {
 	Client           *gitea.Client
 	Logger           *zap.SugaredLogger
+	pacInfo          info.PacOpts
 	Token            *string
 	giteaInstanceURL string
 	// only exposed for e2e tests
@@ -53,6 +54,10 @@ type Provider struct {
 	repo         *v1alpha1.Repository
 	eventEmitter *events.EventEmitter
 	run          *params.Run
+}
+
+func (v *Provider) SetPacInfo(pacInfo info.PacOpts) {
+	v.pacInfo = pacInfo
 }
 
 // GetTaskURI TODO: Implement ME.
@@ -142,9 +147,9 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		onPr = fmt.Sprintf("/%s", statusOpts.PipelineRunName)
 	}
 	// gitea show weirdly the <br>
-	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.run.Info.Pac.ApplicationName, onPr, statusOpts.Summary)
+	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.pacInfo.ApplicationName, onPr, statusOpts.Summary)
 
-	return v.createStatusCommit(event, v.run.Info.Pac, statusOpts)
+	return v.createStatusCommit(event, &v.pacInfo, statusOpts)
 }
 
 func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {
