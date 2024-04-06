@@ -191,10 +191,10 @@ func TestList(t *testing.T) {
 				Clients: clients.Clients{
 					PipelineAsCode: stdata.PipelineAsCode,
 					Tekton:         stdata.Pipeline,
-					ConsoleUI:      consoleui.FallBackConsole{},
 				},
 				Info: info.Info{Kube: &info.KubeOpts{Namespace: tt.args.currentNamespace}},
 			}
+			cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 			io, out := newIOStream()
 			if err := list(ctx, cs, tt.args.opts, io,
 				cw, tt.args.selectors); (err != nil) != tt.wantErr {

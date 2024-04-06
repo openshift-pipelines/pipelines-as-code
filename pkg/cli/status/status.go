@@ -67,7 +67,7 @@ func MixLivePRandRepoStatus(ctx context.Context, cs *params.Run, repository pacv
 	for i := range prs.Items {
 		pr := prs.Items[i]
 		repositorystatus = RepositoryRunStatusRemoveSameSHA(repositorystatus, pr.GetAnnotations()[keys.SHA])
-		logurl := cs.Clients.ConsoleUI.DetailURL(&pr)
+		logurl := cs.Clients.ConsoleUI().DetailURL(&pr)
 		repositorystatus = append(repositorystatus, convertPrStatusToRepositoryStatus(ctx, cs, pr, logurl))
 	}
 	return sortrepostatus.RepositorySortRunStatus(repositorystatus)

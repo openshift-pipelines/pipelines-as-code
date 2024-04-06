@@ -120,7 +120,7 @@ func Root(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			// The only way to know the tekton dashboard url is if the user specify it because we are not supposed to have access to the configmap.
 			// so let the user specify a env variable to implicitly set tekton dashboard
 			if os.Getenv("TEKTON_DASHBOARD_URL") != "" {
-				run.Clients.ConsoleUI = &consoleui.TektonDashboard{BaseURL: os.Getenv("TEKTON_DASHBOARD_URL")}
+				run.Clients.SetConsoleUI(&consoleui.TektonDashboard{BaseURL: os.Getenv("TEKTON_DASHBOARD_URL")})
 			}
 
 			return describe(ctx, run, clock, opts, ioStreams, repoName)

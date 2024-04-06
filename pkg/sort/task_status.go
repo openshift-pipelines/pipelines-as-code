@@ -52,7 +52,7 @@ func TaskStatusTmpl(pr *tektonv1.PipelineRun, trStatus map[string]*tektonv1.Pipe
 
 	for _, taskrunStatus := range trStatus {
 		trl = append(trl, tkr{
-			taskLogURL:               runs.Clients.ConsoleUI.TaskLogURL(pr, taskrunStatus),
+			taskLogURL:               runs.Clients.ConsoleUI().TaskLogURL(pr, taskrunStatus),
 			PipelineRunTaskRunStatus: taskrunStatus,
 		})
 	}

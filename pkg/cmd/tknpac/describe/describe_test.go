@@ -484,11 +484,11 @@ func TestDescribe(t *testing.T) {
 				Clients: clients.Clients{
 					PipelineAsCode: stdata.PipelineAsCode,
 					Tekton:         stdata.Pipeline,
-					ConsoleUI:      consoleui.FallBackConsole{},
 					Kube:           stdata.Kube,
 				},
 				Info: info.Info{Kube: &info.KubeOpts{Namespace: tt.args.currentNamespace}},
 			}
+			cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 
 			io, out := tcli.NewIOStream()
 			if err := describe(

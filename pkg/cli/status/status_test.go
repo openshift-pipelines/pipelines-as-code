@@ -65,9 +65,9 @@ func TestMixLivePRandRepoStatus(t *testing.T) {
 		Clients: clients.Clients{
 			PipelineAsCode: stdata.PipelineAsCode,
 			Tekton:         stdata.Pipeline,
-			ConsoleUI:      consoleui.FallBackConsole{},
 		},
 	}
+	cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 
 	if runStatus := MixLivePRandRepoStatus(ctx, cs, repo1); len(runStatus) != 2 {
 		t.Errorf("got %d, want 2", len(runStatus))

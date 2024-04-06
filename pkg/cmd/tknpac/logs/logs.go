@@ -245,7 +245,7 @@ func log(ctx context.Context, lo *logOption) error {
 
 func showLogsWithWebConsole(lo *logOption, pr string) error {
 	if os.Getenv("PAC_TEKTON_DASHBOARD_URL") != "" {
-		lo.cs.Clients.ConsoleUI = &consoleui.TektonDashboard{BaseURL: os.Getenv("PAC_TEKTON_DASHBOARD_URL")}
+		lo.cs.Clients.SetConsoleUI(&consoleui.TektonDashboard{BaseURL: os.Getenv("PAC_TEKTON_DASHBOARD_URL")})
 	}
 
 	prObj := &tektonv1.PipelineRun{
@@ -254,7 +254,7 @@ func showLogsWithWebConsole(lo *logOption, pr string) error {
 			Namespace: lo.cs.Info.Kube.Namespace,
 		},
 	}
-	return browser.OpenWebBrowser(lo.cs.Clients.ConsoleUI.DetailURL(prObj))
+	return browser.OpenWebBrowser(lo.cs.Clients.ConsoleUI().DetailURL(prObj))
 }
 
 func showlogswithtkn(tknPath, pr, ns string) error {

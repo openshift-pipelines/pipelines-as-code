@@ -59,7 +59,7 @@ func TestPostFinalStatus(t *testing.T) {
 		Kube:   stdata.Kube,
 		Tekton: stdata.Pipeline,
 	}
-	run.Clients.ConsoleUI = consoleui.FallBackConsole{}
+	run.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 
 	r := &Reconciler{
 		run: run,

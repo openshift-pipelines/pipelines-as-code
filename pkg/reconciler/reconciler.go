@@ -142,7 +142,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		r.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "ParamsError",
 			fmt.Sprintf("error processing repository CR custom params: %s", err.Error()))
 	}
-	r.run.Clients.ConsoleUI.SetParams(maptemplate)
+	r.run.Clients.ConsoleUI().SetParams(maptemplate)
 
 	if event.InstallationID > 0 {
 		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
@@ -221,12 +221,12 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		return fmt.Errorf("cannot set client: %w", err)
 	}
 
-	consoleURL := r.run.Clients.ConsoleUI.DetailURL(pr)
+	consoleURL := r.run.Clients.ConsoleUI().DetailURL(pr)
 
 	mt := formatting.MessageTemplate{
 		PipelineRunName: pr.GetName(),
 		Namespace:       repo.GetNamespace(),
-		ConsoleName:     r.run.Clients.ConsoleUI.GetName(),
+		ConsoleName:     r.run.Clients.ConsoleUI().GetName(),
 		ConsoleURL:      consoleURL,
 		TknBinary:       settings.TknBinaryName,
 		TknBinaryURL:    settings.TknBinaryURL,

@@ -74,7 +74,7 @@ func TestStatusTmpl(t *testing.T) {
 				TaskStatusTMPL: tt.tmpl,
 			}
 			runs := params.New()
-			runs.Clients.ConsoleUI = consoleui.FallBackConsole{}
+			runs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 			pr := &tektonv1.PipelineRun{}
 			output, err := TaskStatusTmpl(pr, tt.prTaskRunStatus, runs, config)
 			if tt.wantErr {

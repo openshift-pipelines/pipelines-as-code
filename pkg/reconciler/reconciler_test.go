@@ -191,7 +191,6 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 						PipelineAsCode: stdata.PipelineAsCode,
 						Tekton:         stdata.Pipeline,
 						Kube:           stdata.Kube,
-						ConsoleUI:      consoleui.FallBackConsole{},
 					},
 					Info: info.Info{
 						Pac: &info.PacOpts{
@@ -216,6 +215,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 				},
 				metrics: metrics,
 			}
+			r.run.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 
 			event := buildEventFromPipelineRun(pr)
 			testSetupGHReplies(t, mux, event, tt.checkRunID, tt.finalStatus)

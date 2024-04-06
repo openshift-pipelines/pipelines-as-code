@@ -537,7 +537,6 @@ func TestRun(t *testing.T) {
 					Log:            logger,
 					Kube:           stdata.Kube,
 					Tekton:         stdata.Pipeline,
-					ConsoleUI:      consoleui.FallBackConsole{},
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
@@ -552,6 +551,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}
+			cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 			mac := hmac.New(sha256.New, []byte(payloadEncodedSecret))
 			payload := []byte(`{"iam": "batman"}`)
 			mac.Write(payload)
@@ -618,7 +618,7 @@ func TestRun(t *testing.T) {
 					}
 					logURL, ok := pr.Annotations[filepath.Join(apipac.GroupName, "log-url")]
 					assert.Assert(t, ok, "failed to find log-url label on pipelinerun: %s/%s", pr.GetNamespace(), pr.GetGenerateName())
-					assert.Equal(t, logURL, cs.Clients.ConsoleUI.DetailURL(&pr))
+					assert.Equal(t, logURL, cs.Clients.ConsoleUI().DetailURL(&pr))
 
 					if cs.Info.Pac.SecretAutoCreation {
 						secretName, ok := pr.GetAnnotations()[keys.GitAuthSecret]
@@ -637,9 +637,8 @@ func TestRun(t *testing.T) {
 
 func TestGetLogURLMergePatch(t *testing.T) {
 	con := consoleui.FallBackConsole{}
-	clients := clients.Clients{
-		ConsoleUI: con,
-	}
+	clients := clients.Clients{}
+	clients.SetConsoleUI(con)
 	pr := &pipelinev1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-pipeline-run",

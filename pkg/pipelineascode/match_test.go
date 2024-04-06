@@ -208,7 +208,6 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 					Log:            logger,
 					Kube:           stdata.Kube,
 					Tekton:         stdata.Pipeline,
-					ConsoleUI:      consoleui.FallBackConsole{},
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
@@ -219,6 +218,7 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 					},
 				},
 			}
+			cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 			k8int := &kitesthelper.KinterfaceTest{
 				ConsoleURL: "https://console.url",
 			}
