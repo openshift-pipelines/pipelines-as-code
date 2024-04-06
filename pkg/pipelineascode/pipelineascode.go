@@ -35,11 +35,12 @@ type PacRun struct {
 	logger       *zap.SugaredLogger
 	eventEmitter *events.EventEmitter
 	manager      *ConcurrencyManager
+	pacInfo      info.PacOpts
 }
 
-func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, k8int kubeinteraction.Interface, logger *zap.SugaredLogger) PacRun {
+func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, pacInfo info.PacOpts, k8int kubeinteraction.Interface, logger *zap.SugaredLogger) PacRun {
 	return PacRun{
-		event: event, run: run, vcx: vcx, k8int: k8int, logger: logger,
+		event: event, run: run, vcx: vcx, k8int: k8int, pacInfo: pacInfo, logger: logger,
 		eventEmitter: events.NewEventEmitter(run.Clients.Kube, logger),
 		manager:      NewConcurrencyManager(),
 	}

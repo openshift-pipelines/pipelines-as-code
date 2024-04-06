@@ -20,6 +20,7 @@ type sinker struct {
 	event   *info.Event
 	logger  *zap.SugaredLogger
 	payload []byte
+	pacInfo info.PacOpts
 }
 
 func (s *sinker) processEventPayload(ctx context.Context, request *http.Request) error {
@@ -53,6 +54,6 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request) error 
 		}
 	}
 
-	p := pipelineascode.NewPacs(s.event, s.vcx, s.run, s.kint, s.logger)
+	p := pipelineascode.NewPacs(s.event, s.vcx, s.run, s.pacInfo, s.kint, s.logger)
 	return p.Run(ctx)
 }

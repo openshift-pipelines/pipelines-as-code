@@ -177,6 +177,7 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 			event:   l.event,
 			logger:  logger,
 			payload: payload,
+			pacInfo: *l.run.Info.Pac,
 		}
 
 		// clone the request to use it further
