@@ -191,7 +191,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		}
 	}
 
-	if err := r.cleanupPipelineRuns(ctx, logger, repo, pr); err != nil {
+	if err := r.cleanupPipelineRuns(ctx, logger, *r.run.Info.Pac, repo, pr); err != nil {
 		return repo, fmt.Errorf("error cleaning pipelineruns: %w", err)
 	}
 

@@ -108,14 +108,14 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 	case *giteaStructs.IssueCommentPayload:
 		// if we don't need to check old comments, then on issue comment we
 		// need to check if comment have /ok-to-test and is from allowed user
-		if !v.run.Info.Pac.RememberOKToTest {
+		if !v.pacInfo.RememberOKToTest {
 			return v.aclAllowedOkToTestCurrentComment(ctx, revent, event.Comment.ID)
 		}
 		revent.URL = event.Issue.URL
 	case *giteaStructs.PullRequestPayload:
 		// if we don't need to check old comments, then on push event we don't need
 		// to check anything for the non-allowed user
-		if !v.run.Info.Pac.RememberOKToTest {
+		if !v.pacInfo.RememberOKToTest {
 			return false, nil
 		}
 		revent.URL = event.PullRequest.HTMLURL

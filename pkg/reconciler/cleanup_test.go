@@ -155,20 +155,18 @@ func TestCleanupPipelineRuns(t *testing.T) {
 			}
 
 			r := &Reconciler{
-				run: &params.Run{
-					Info: info.Info{
-						Pac: &info.PacOpts{
-							Settings: &settings.Settings{
-								MaxKeepRunsUpperLimit: tt.maxkeepruns,
-								DefaultMaxKeepRuns:    tt.defaultmaxkeepruns,
-							},
-						},
-					},
-				},
+				run:       &params.Run{},
 				kinteract: kint,
 			}
 
-			err := r.cleanupPipelineRuns(ctx, fakelogger, repo, tt.currentpr)
+			pacInfo := info.PacOpts{
+				Settings: &settings.Settings{
+					MaxKeepRunsUpperLimit: tt.maxkeepruns,
+					DefaultMaxKeepRuns:    tt.defaultmaxkeepruns,
+				},
+			}
+
+			err := r.cleanupPipelineRuns(ctx, fakelogger, pacInfo, repo, tt.currentpr)
 			assert.NilError(t, err)
 
 			plist, err := kint.Run.Clients.Tekton.TektonV1().PipelineRuns(tt.repoNs).List(

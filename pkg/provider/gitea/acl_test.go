@@ -287,13 +287,10 @@ func TestOkToTestComment(t *testing.T) {
 			gprovider := Provider{
 				Client: fakeclient,
 				Logger: logger,
-				run: &params.Run{
-					Info: info.Info{
-						Pac: &info.PacOpts{
-							Settings: &settings.Settings{
-								RememberOKToTest: tt.rememberOkToTest,
-							},
-						},
+				run:    &params.Run{},
+				pacInfo: info.PacOpts{
+					Settings: &settings.Settings{
+						RememberOKToTest: tt.rememberOkToTest,
 					},
 				},
 			}
