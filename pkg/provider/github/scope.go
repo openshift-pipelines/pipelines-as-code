@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, repo *v1alpha1.Repository, run *params.Run,
+func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, pacInfo info.PacOpts, repo *v1alpha1.Repository, run *params.Run,
 	event *info.Event, eventEmitter *events.EventEmitter, logger *zap.SugaredLogger,
 ) (string, error) {
 	var (
@@ -28,8 +28,8 @@ func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, repo *
 	repoListToScopeToken := []string{}
 
 	// This is a Global config to provide list of repos to scope token
-	if run.Info.Pac.SecretGhAppTokenScopedExtraRepos != "" {
-		for _, configValue := range strings.Split(run.Info.Pac.SecretGhAppTokenScopedExtraRepos, ",") {
+	if pacInfo.SecretGhAppTokenScopedExtraRepos != "" {
+		for _, configValue := range strings.Split(pacInfo.SecretGhAppTokenScopedExtraRepos, ",") {
 			configValueS := strings.TrimSpace(configValue)
 			if configValueS == "" {
 				continue
@@ -61,7 +61,7 @@ func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, repo *
 			repoListToScopeToken = append(repoListToScopeToken, repo.Spec.Settings.GithubAppTokenScopeRepos[i])
 		}
 		// When the global configuration is not set then check for secret-github-app-token-scoped key for the repo level configuration
-		if run.Info.Pac.SecretGHAppRepoScoped && run.Info.Pac.SecretGhAppTokenScopedExtraRepos == "" {
+		if pacInfo.SecretGHAppRepoScoped && pacInfo.SecretGhAppTokenScopedExtraRepos == "" {
 			msg := fmt.Sprintf(`failed to scope GitHub token as repo scoped key %s is enabled. Hint: update key %s from pipelines-as-code configmap to false`,
 				settings.SecretGhAppTokenRepoScopedKey, settings.SecretGhAppTokenRepoScopedKey)
 			eventEmitter.EmitMessage(nil, zap.ErrorLevel, "SecretGHAppTokenRepoScopeIsEnabled", msg)

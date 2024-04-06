@@ -99,7 +99,7 @@ is that what you want? make sure you use -n when generating the secret, eg: echo
 	}
 
 	if p.event.InstallationID > 0 {
-		token, err := github.ScopeTokenToListOfRepos(ctx, p.vcx, repo, p.run, p.event, p.eventEmitter, p.logger)
+		token, err := github.ScopeTokenToListOfRepos(ctx, p.vcx, p.pacInfo, repo, p.run, p.event, p.eventEmitter, p.logger)
 		if err != nil {
 			return nil, err
 		}

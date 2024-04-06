@@ -216,17 +216,18 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 				metrics: metrics,
 			}
 			r.run.Clients.SetConsoleUI(consoleui.FallBackConsole{})
-			vcx.SetPacInfo(info.PacOpts{
+			pacInfo := info.PacOpts{
 				Settings: &settings.Settings{
 					ErrorLogSnippet:    true,
 					SecretAutoCreation: true,
 				},
-			})
+			}
+			vcx.SetPacInfo(pacInfo)
 
 			event := buildEventFromPipelineRun(pr)
 			testSetupGHReplies(t, mux, event, tt.checkRunID, tt.finalStatus)
 
-			_, err = r.reportFinalStatus(ctx, fakelogger, event, pr, vcx)
+			_, err = r.reportFinalStatus(ctx, fakelogger, pacInfo, event, pr, vcx)
 			assert.NilError(t, err)
 
 			got, err := stdata.Pipeline.TektonV1().PipelineRuns(pr.Namespace).Get(ctx, pr.Name, metav1.GetOptions{})

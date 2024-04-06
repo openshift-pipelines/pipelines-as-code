@@ -131,10 +131,11 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 		var logger *zap.SugaredLogger
 
 		l.event = info.NewEvent()
+		pacInfo := l.run.Info.GetPacOpts()
 
 		// if repository auto configuration is enabled then check if its a valid event
-		if l.run.Info.Pac.AutoConfigureNewGitHubRepo {
-			detected, configuring, err := github.ConfigureRepository(ctx, l.run, request, string(payload), l.run.Info.Pac.AutoConfigureRepoNamespaceTemplate, l.logger)
+		if pacInfo.AutoConfigureNewGitHubRepo {
+			detected, configuring, err := github.ConfigureRepository(ctx, l.run, request, string(payload), pacInfo.AutoConfigureRepoNamespaceTemplate, l.logger)
 			if detected {
 				if configuring && err == nil {
 					l.writeResponse(response, http.StatusCreated, "configured")
@@ -168,7 +169,7 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 			return
 		}
 		// TODO: use Get a func to get pacopts
-		gitProvider.SetPacInfo(*l.run.Info.Pac)
+		gitProvider.SetPacInfo(pacInfo)
 
 		s := sinker{
 			run:     l.run,
@@ -177,7 +178,7 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 			event:   l.event,
 			logger:  logger,
 			payload: payload,
-			pacInfo: *l.run.Info.Pac,
+			pacInfo: pacInfo,
 		}
 
 		// clone the request to use it further

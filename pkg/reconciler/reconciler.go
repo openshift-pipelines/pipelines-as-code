@@ -114,15 +114,18 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	logger.Infof("pipelineRun %v/%v is done, reconciling to report status!  ", pr.GetNamespace(), pr.GetName())
 	r.eventEmitter.SetLogger(logger)
 
+	// use same pac opts across the reconciliation
+	pacInfo := r.run.Info.GetPacOpts()
+
 	detectedProvider, event, err := r.detectProvider(ctx, logger, pr)
 	if err != nil {
 		msg := fmt.Sprintf("detectProvider: %v", err)
 		r.eventEmitter.EmitMessage(nil, zap.ErrorLevel, "RepositoryDetectProvider", msg)
 		return nil
 	}
-	detectedProvider.SetPacInfo(*r.run.Info.Pac)
+	detectedProvider.SetPacInfo(pacInfo)
 
-	if repo, err := r.reportFinalStatus(ctx, logger, event, pr, detectedProvider); err != nil {
+	if repo, err := r.reportFinalStatus(ctx, logger, pacInfo, event, pr, detectedProvider); err != nil {
 		msg := fmt.Sprintf("report status: %v", err)
 		r.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryReportFinalStatus", msg)
 		return err
@@ -130,7 +133,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	return nil
 }
 
-func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, event *info.Event, pr *tektonv1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
+func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, pacInfo info.PacOpts, event *info.Event, pr *tektonv1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
 	repoName := pr.GetAnnotations()[keys.Repository]
 	repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
 	if err != nil {
@@ -159,7 +162,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	}
 
 	finalState := kubeinteraction.StateCompleted
-	newPr, err := r.postFinalStatus(ctx, logger, provider, event, pr)
+	newPr, err := r.postFinalStatus(ctx, logger, pacInfo, provider, event, pr)
 	if err != nil {
 		logger.Errorf("failed to post final status, moving on: %v", err)
 		finalState = kubeinteraction.StateFailed
@@ -191,7 +194,7 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		}
 	}
 
-	if err := r.cleanupPipelineRuns(ctx, logger, *r.run.Info.Pac, repo, pr); err != nil {
+	if err := r.cleanupPipelineRuns(ctx, logger, pacInfo, repo, pr); err != nil {
 		return repo, fmt.Errorf("error cleaning pipelineruns: %w", err)
 	}
 

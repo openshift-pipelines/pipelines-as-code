@@ -9,6 +9,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	tprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
@@ -64,6 +65,11 @@ func TestPostFinalStatus(t *testing.T) {
 	r := &Reconciler{
 		run: run,
 	}
-	_, err := r.postFinalStatus(ctx, fakelogger, vcx, info.NewEvent(), pr1)
+	pacInfo := info.PacOpts{
+		Settings: &settings.Settings{
+			ErrorLogSnippet: false,
+		},
+	}
+	_, err := r.postFinalStatus(ctx, fakelogger, pacInfo, vcx, info.NewEvent(), pr1)
 	assert.NilError(t, err)
 }

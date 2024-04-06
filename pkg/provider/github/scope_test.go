@@ -191,15 +191,16 @@ func TestScopeTokenToListOfRepos(t *testing.T) {
 					Kube:           stdata.Kube,
 				},
 				Info: info.Info{
-					Pac: &info.PacOpts{
-						Settings: &settings.Settings{
-							SecretGhAppTokenScopedExtraRepos: tt.repoListsByGlobalConf,
-							SecretGHAppRepoScoped:            tt.secretGHAppRepoScopedKey,
-						},
-					},
 					Controller: &info.ControllerInfo{
 						Secret: info.DefaultPipelinesAscodeSecretName,
 					},
+				},
+			}
+
+			pacInfo := &info.PacOpts{
+				Settings: &settings.Settings{
+					SecretGhAppTokenScopedExtraRepos: tt.repoListsByGlobalConf,
+					SecretGHAppRepoScoped:            tt.secretGHAppRepoScopedKey,
 				},
 			}
 
@@ -225,9 +226,10 @@ func TestScopeTokenToListOfRepos(t *testing.T) {
 			}
 
 			gvcs := &Provider{
-				Logger: logger,
-				Client: fakeghclient,
-				Run:    run,
+				Logger:  logger,
+				Client:  fakeghclient,
+				Run:     run,
+				pacInfo: *pacInfo,
 			}
 
 			extraRepoInstallIDs := map[string]string{"owner/repo": "789", "owner1/repo1": "10112", "owner2/repo2": "112233"}
@@ -239,7 +241,7 @@ func TestScopeTokenToListOfRepos(t *testing.T) {
 				})
 			}
 			eventEmitter := events.NewEventEmitter(run.Clients.Kube, logger)
-			token, err := ScopeTokenToListOfRepos(ctx, gvcs, tt.repository, run, info, eventEmitter, logger)
+			token, err := ScopeTokenToListOfRepos(ctx, gvcs, *pacInfo, tt.repository, run, info, eventEmitter, logger)
 			assert.Equal(t, token, tt.wantToken)
 			if err != nil {
 				assert.Equal(t, err.Error(), tt.wantError)

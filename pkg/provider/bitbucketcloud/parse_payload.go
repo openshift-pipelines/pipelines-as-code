@@ -27,7 +27,7 @@ func lastForwarderForIP(xff string) string {
 
 // checkFromPublicCloudIPS Grab public IP from public cloud and make sure we match it.
 func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run, sourceIP string) (bool, error) {
-	if !run.Info.Pac.BitbucketCloudCheckSourceIP {
+	if !v.pacInfo.BitbucketCloudCheckSourceIP {
 		return true, nil
 	}
 
@@ -48,7 +48,7 @@ func (v *Provider) checkFromPublicCloudIPS(ctx context.Context, run *params.Run,
 		return false, err
 	}
 
-	extraIPEnv := run.Info.Pac.BitbucketCloudAdditionalSourceIP
+	extraIPEnv := v.pacInfo.BitbucketCloudAdditionalSourceIP
 	if extraIPEnv != "" {
 		for _, value := range strings.Split(extraIPEnv, ",") {
 			if !strings.Contains(value, "/") {
