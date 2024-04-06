@@ -20,7 +20,7 @@ import (
 
 const defaultNsTemplate = "%v-pipelines"
 
-func ConfigureRepository(ctx context.Context, run *params.Run, req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, error) {
+func ConfigureRepository(ctx context.Context, run *params.Run, req *http.Request, payload, autoConfigureRepoNamespaceTemplate string, logger *zap.SugaredLogger) (bool, bool, error) {
 	// gitea set x-github-event too, so skip it for the gitea driver
 	if h := req.Header.Get("X-Gitea-Event-Type"); h != "" {
 		return false, false, nil
@@ -43,7 +43,7 @@ func ConfigureRepository(ctx context.Context, run *params.Run, req *http.Request
 	}
 
 	logger.Infof("github: configuring repository cr for repo: %v", repoEvent.Repo.GetHTMLURL())
-	if err := createRepository(ctx, run.Info.Pac.AutoConfigureRepoNamespaceTemplate, run.Clients, repoEvent, logger); err != nil {
+	if err := createRepository(ctx, autoConfigureRepoNamespaceTemplate, run.Clients, repoEvent, logger); err != nil {
 		logger.Errorf("failed repository creation: %v", err)
 		return true, true, err
 	}

@@ -180,11 +180,8 @@ func TestCreateStatus(t *testing.T) {
 				Client:            client,
 				pullRequestNumber: pullRequestNumber,
 				projectKey:        event.Organization,
-				run: &params.Run{
-					Info: info.Info{
-						Pac: &tt.pacOpts,
-					},
-				},
+				run:               &params.Run{},
+				pacInfo:           tt.pacOpts,
 			}
 			bbtest.MuxCreateAndTestCommitStatus(t, mux, event, tt.expectedDescSubstr, tt.status)
 			bbtest.MuxCreateComment(t, mux, event, tt.expectedCommentSubstr, pullRequestNumber)

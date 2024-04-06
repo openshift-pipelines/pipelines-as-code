@@ -30,6 +30,11 @@ type TestProviderImp struct {
 	WantDeletedFiles       []string
 	WantModifiedFiles      []string
 	WantRenamedFiles       []string
+	pacInfo                info.PacOpts
+}
+
+func (v *TestProviderImp) SetPacInfo(pacInfo info.PacOpts) {
+	v.pacInfo = pacInfo
 }
 
 func (v *TestProviderImp) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {

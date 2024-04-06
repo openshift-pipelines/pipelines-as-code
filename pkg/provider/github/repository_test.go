@@ -11,8 +11,6 @@ import (
 	"github.com/google/go-github/v59/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -118,13 +116,6 @@ func TestConfigureRepository(t *testing.T) {
 					PipelineAsCode: cs.PipelineAsCode,
 					Kube:           cs.Kube,
 				},
-				Info: info.Info{
-					Pac: &info.PacOpts{
-						Settings: &settings.Settings{
-							AutoConfigureRepoNamespaceTemplate: tt.nsTemplate,
-						},
-					},
-				},
 			}
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "URL", bytes.NewReader(tt.event))
 			if err != nil {
@@ -132,7 +123,7 @@ func TestConfigureRepository(t *testing.T) {
 			}
 			req.Header.Set("X-Github-Event", tt.eventType)
 
-			detected, configuring, err := ConfigureRepository(ctx, run, req, string(tt.event), logger)
+			detected, configuring, err := ConfigureRepository(ctx, run, req, string(tt.event), tt.nsTemplate, logger)
 			assert.Equal(t, detected, tt.detected)
 			assert.Equal(t, configuring, tt.configuring)
 

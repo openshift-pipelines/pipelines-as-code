@@ -134,7 +134,7 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 
 		// if repository auto configuration is enabled then check if its a valid event
 		if l.run.Info.Pac.AutoConfigureNewGitHubRepo {
-			detected, configuring, err := github.ConfigureRepository(ctx, l.run, request, string(payload), l.logger)
+			detected, configuring, err := github.ConfigureRepository(ctx, l.run, request, string(payload), l.run.Info.Pac.AutoConfigureRepoNamespaceTemplate, l.logger)
 			if detected {
 				if configuring && err == nil {
 					l.writeResponse(response, http.StatusCreated, "configured")
@@ -167,6 +167,8 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 			l.writeResponse(response, http.StatusOK, err.Error())
 			return
 		}
+		// TODO: use Get a func to get pacopts
+		gitProvider.SetPacInfo(*l.run.Info.Pac)
 
 		s := sinker{
 			run:     l.run,

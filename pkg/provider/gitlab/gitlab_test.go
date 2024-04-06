@@ -11,6 +11,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	"github.com/xanzy/go-gitlab"
@@ -170,6 +171,11 @@ func TestCreateStatus(t *testing.T) {
 			v := &Provider{
 				targetProjectID: tt.fields.targetProjectID,
 				run:             params.New(),
+				pacInfo: info.PacOpts{
+					Settings: &settings.Settings{
+						ApplicationName: settings.PACApplicationNameDefaultValue,
+					},
+				},
 			}
 			if tt.args.event == nil {
 				tt.args.event = info.NewEvent()

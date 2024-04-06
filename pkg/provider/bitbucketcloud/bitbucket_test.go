@@ -7,6 +7,7 @@ import (
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
@@ -296,6 +297,11 @@ func TestCreateStatus(t *testing.T) {
 			v := &Provider{
 				Client: bbclient,
 				run:    params.New(),
+				pacInfo: info.PacOpts{
+					Settings: &settings.Settings{
+						ApplicationName: settings.PACApplicationNameDefaultValue,
+					},
+				},
 			}
 			event := bbcloudtest.MakeEvent(nil)
 			event.EventType = "pull_request"

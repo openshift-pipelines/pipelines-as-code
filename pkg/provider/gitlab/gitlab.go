@@ -47,6 +47,7 @@ type Provider struct {
 	Client            *gitlab.Client
 	Logger            *zap.SugaredLogger
 	run               *params.Run
+	pacInfo           info.PacOpts
 	Token             *string
 	targetProjectID   int
 	sourceProjectID   int
@@ -54,6 +55,10 @@ type Provider struct {
 	pathWithNamespace string
 	repoURL           string
 	apiURL            string
+}
+
+func (v *Provider) SetPacInfo(pacInfo info.PacOpts) {
+	v.pacInfo = pacInfo
 }
 
 // GetTaskURI TODO: Implement me.
@@ -191,7 +196,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		onPr = "/" + statusOpts.OriginalPipelineRunName
 	}
 	body := fmt.Sprintf("**%s%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>",
-		v.run.Info.Pac.ApplicationName, onPr, statusOpts.Title, statusOpts.Text, detailsURL)
+		v.pacInfo.ApplicationName, onPr, statusOpts.Title, statusOpts.Text, detailsURL)
 
 	// in case we have access set the commit status, typically on MR from
 	// another users we won't have it but it would work on push or MR from a
@@ -200,7 +205,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	// if we have an error fallback to send a issue comment
 	opt := &gitlab.SetCommitStatusOptions{
 		State:       gitlab.BuildStateValue(statusOpts.Conclusion),
-		Name:        gitlab.Ptr(v.run.Info.Pac.ApplicationName),
+		Name:        gitlab.Ptr(v.pacInfo.ApplicationName),
 		TargetURL:   gitlab.Ptr(detailsURL),
 		Description: gitlab.Ptr(statusOpts.Title),
 	}

@@ -216,6 +216,12 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 				metrics: metrics,
 			}
 			r.run.Clients.SetConsoleUI(consoleui.FallBackConsole{})
+			vcx.SetPacInfo(info.PacOpts{
+				Settings: &settings.Settings{
+					ErrorLogSnippet:    true,
+					SecretAutoCreation: true,
+				},
+			})
 
 			event := buildEventFromPipelineRun(pr)
 			testSetupGHReplies(t, mux, event, tt.checkRunID, tt.finalStatus)
