@@ -40,6 +40,10 @@ type Clients struct {
 	consoleUI         consoleui.Interface
 }
 
+func (c *Clients) InitClients() {
+	c.consoleUIMutex = &sync.Mutex{}
+}
+
 func (c *Clients) GetURL(ctx context.Context, url string) ([]byte, error) {
 	nctx, cancel := context.WithTimeout(ctx, RequestMaxWaitTime)
 	defer cancel()

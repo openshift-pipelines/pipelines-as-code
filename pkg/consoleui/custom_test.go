@@ -20,7 +20,7 @@ func TestCustomGood(t *testing.T) {
 
 	c := CustomConsole{}
 	c.SetPacInfo(info.PacOpts{
-		Settings: &settings.Settings{
+		Settings: settings.Settings{
 			CustomConsoleName:      consoleName,
 			CustomConsoleURL:       consoleURL,
 			CustomConsolePRdetail:  consolePRdetail,
@@ -71,7 +71,7 @@ func TestCustomGood(t *testing.T) {
 	// test if we fallback properly
 	f := CustomConsole{}
 	f.SetPacInfo(info.PacOpts{
-		Settings: &settings.Settings{
+		Settings: settings.Settings{
 			CustomConsoleName:      consoleName,
 			CustomConsoleURL:       consoleURL,
 			CustomConsolePRdetail:  "{{ notthere}}",
@@ -84,7 +84,7 @@ func TestCustomGood(t *testing.T) {
 
 	o := CustomConsole{}
 	o.SetPacInfo(info.PacOpts{
-		Settings: &settings.Settings{
+		Settings: settings.Settings{
 			CustomConsoleName:         consoleName,
 			CustomConsoleURL:          consoleURL,
 			CustomConsolePRdetail:     "{{ notthere}}",
@@ -99,7 +99,7 @@ func TestCustomGood(t *testing.T) {
 
 func TestCustomBad(t *testing.T) {
 	c := CustomConsole{}
-	c.SetPacInfo(info.PacOpts{Settings: &settings.Settings{}})
+	c.SetPacInfo(info.PacOpts{Settings: settings.Settings{}})
 	pr := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns",

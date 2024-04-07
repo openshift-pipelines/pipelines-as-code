@@ -33,7 +33,7 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 		Client: fakeclient,
 		Run:    params.New(),
 		pacInfo: info.PacOpts{
-			Settings: &settings.Settings{
+			Settings: settings.Settings{
 				ApplicationName: settings.PACApplicationNameDefaultValue,
 			},
 		},
@@ -383,7 +383,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			}
 			gcvs.Run.Clients = fakeClients
 			gcvs.SetPacInfo(info.PacOpts{
-				Settings: &settings.Settings{
+				Settings: settings.Settings{
 					ApplicationName: settings.PACApplicationNameDefaultValue,
 				},
 			})
@@ -471,7 +471,7 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 				Client: fakeclient,
 				Run:    params.New(),
 				pacInfo: info.PacOpts{
-					Settings: &settings.Settings{
+					Settings: settings.Settings{
 						ApplicationName: settings.PACApplicationNameDefaultValue,
 					},
 				},
@@ -500,7 +500,7 @@ func TestGetCheckName(t *testing.T) {
 				status: provider.StatusOpts{
 					OriginalPipelineRunName: "HELLO",
 				},
-				pacopts: &info.PacOpts{Settings: &settings.Settings{ApplicationName: ""}},
+				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: ""}},
 			},
 			want: "HELLO",
 		},
@@ -510,7 +510,7 @@ func TestGetCheckName(t *testing.T) {
 				status: provider.StatusOpts{
 					OriginalPipelineRunName: "MOTO",
 				},
-				pacopts: &info.PacOpts{Settings: &settings.Settings{ApplicationName: "HELLO"}},
+				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: "HELLO"}},
 			},
 			want: "HELLO / MOTO",
 		},
@@ -520,7 +520,7 @@ func TestGetCheckName(t *testing.T) {
 				status: provider.StatusOpts{
 					OriginalPipelineRunName: "",
 				},
-				pacopts: &info.PacOpts{Settings: &settings.Settings{ApplicationName: "PAC"}},
+				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: "PAC"}},
 			},
 			want: "PAC",
 		},

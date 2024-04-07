@@ -221,7 +221,7 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 			}
 
 			pacInfo := info.PacOpts{
-				Settings: &settings.Settings{
+				Settings: settings.Settings{
 					SecretAutoCreation: true,
 					RemoteTasks:        true,
 				},

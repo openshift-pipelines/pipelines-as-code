@@ -289,7 +289,7 @@ func TestOkToTestComment(t *testing.T) {
 				Logger: logger,
 				run:    &params.Run{},
 				pacInfo: info.PacOpts{
-					Settings: &settings.Settings{
+					Settings: settings.Settings{
 						RememberOKToTest: tt.rememberOkToTest,
 					},
 				},

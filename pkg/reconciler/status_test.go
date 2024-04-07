@@ -66,7 +66,7 @@ func TestPostFinalStatus(t *testing.T) {
 		run: run,
 	}
 	pacInfo := info.PacOpts{
-		Settings: &settings.Settings{
+		Settings: settings.Settings{
 			ErrorLogSnippet: false,
 		},
 	}

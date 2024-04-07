@@ -194,7 +194,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 					},
 					Info: info.Info{
 						Pac: &info.PacOpts{
-							Settings: &settings.Settings{
+							Settings: settings.Settings{
 								ErrorLogSnippet:    true,
 								SecretAutoCreation: true,
 							},
@@ -217,7 +217,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			}
 			r.run.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 			pacInfo := info.PacOpts{
-				Settings: &settings.Settings{
+				Settings: settings.Settings{
 					ErrorLogSnippet:    true,
 					SecretAutoCreation: true,
 				},

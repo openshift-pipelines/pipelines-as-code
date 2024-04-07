@@ -192,7 +192,7 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 		},
 		Info: info.Info{
 			Pac: &info.PacOpts{
-				Settings: &settings.Settings{},
+				Settings: settings.Settings{},
 			},
 			Controller: &info.ControllerInfo{Secret: validSecret.GetName()},
 		},

@@ -63,7 +63,7 @@ func TestHandleEvent(t *testing.T) {
 			},
 			Info: info.Info{
 				Pac: &info.PacOpts{
-					Settings: &settings.Settings{
+					Settings: settings.Settings{
 						AutoConfigureNewGitHubRepo: false,
 					},
 				},
@@ -75,6 +75,8 @@ func TestHandleEvent(t *testing.T) {
 		},
 		logger: logger,
 	}
+	l.run.Clients.InitClients()
+	l.run.Info.InitInfo()
 
 	// valid push event
 	testEvent := github.PushEvent{Pusher: &github.CommitAuthor{Name: github.String("user")}}

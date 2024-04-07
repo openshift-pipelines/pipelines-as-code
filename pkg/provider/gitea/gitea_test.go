@@ -139,7 +139,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 				Client: fakeclient, // Set this to a valid client for the tests where wantErr is false
 				run:    run,
 				pacInfo: info.PacOpts{
-					Settings: &settings.Settings{
+					Settings: settings.Settings{
 						ApplicationName: settings.PACApplicationNameDefaultValue,
 					},
 				},
@@ -303,7 +303,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 		{
 			name: "success",
 			args: args{
-				pacopts: &info.PacOpts{Settings: &settings.Settings{
+				pacopts: &info.PacOpts{Settings: settings.Settings{
 					ApplicationName: "myapp",
 				}},
 				event: &info.Event{
@@ -326,7 +326,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 					Conclusion: "pending",
 					Title:      "Pipeline run for myapp has been triggered",
 				},
-				pacopts: &info.PacOpts{Settings: &settings.Settings{
+				pacopts: &info.PacOpts{Settings: settings.Settings{
 					ApplicationName: "myapp",
 				}},
 				event: &info.Event{
@@ -346,7 +346,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 					Status: "in_progress",
 					Title:  "Pipeline run for myapp has been triggered",
 				},
-				pacopts: &info.PacOpts{Settings: &settings.Settings{
+				pacopts: &info.PacOpts{Settings: settings.Settings{
 					ApplicationName: "myapp",
 				}},
 				event: &info.Event{
@@ -367,7 +367,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 					Title:      "Pipeline run for myapp has been triggered",
 					Text:       "time to get started",
 				},
-				pacopts: &info.PacOpts{Settings: &settings.Settings{
+				pacopts: &info.PacOpts{Settings: settings.Settings{
 					ApplicationName: "myapp",
 				}},
 				event: &info.Event{
@@ -389,7 +389,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 					Title:      "Pipeline run for myapp has been triggered",
 					Text:       "time to get started",
 				},
-				pacopts: &info.PacOpts{Settings: &settings.Settings{
+				pacopts: &info.PacOpts{Settings: settings.Settings{
 					ApplicationName: "myapp",
 				}},
 				event: &info.Event{
@@ -411,7 +411,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 					Title:      "Pipeline run for myapp has been triggered",
 					Text:       "time to get started",
 				},
-				pacopts: &info.PacOpts{Settings: &settings.Settings{
+				pacopts: &info.PacOpts{Settings: settings.Settings{
 					ApplicationName: "myapp",
 				}},
 				event: &info.Event{

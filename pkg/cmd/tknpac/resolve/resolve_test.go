@@ -55,7 +55,7 @@ func TestCommandFilenameSetProperly(t *testing.T) {
 			Kube:              stdata.Kube,
 			ClientInitialized: true,
 		},
-		Info: info.Info{Pac: &info.PacOpts{Settings: &settings.Settings{}}},
+		Info: info.Info{Pac: &info.PacOpts{Settings: settings.Settings{}}},
 	}
 	cmd := Command(cs, io)
 	e := bytes.NewBufferString("")

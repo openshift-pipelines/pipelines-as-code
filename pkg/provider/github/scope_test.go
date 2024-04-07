@@ -198,7 +198,7 @@ func TestScopeTokenToListOfRepos(t *testing.T) {
 			}
 
 			pacInfo := &info.PacOpts{
-				Settings: &settings.Settings{
+				Settings: settings.Settings{
 					SecretGhAppTokenScopedExtraRepos: tt.repoListsByGlobalConf,
 					SecretGHAppRepoScoped:            tt.secretGHAppRepoScopedKey,
 				},

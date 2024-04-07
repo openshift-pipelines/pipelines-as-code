@@ -76,7 +76,7 @@ func TestGetTektonDir(t *testing.T) {
 
 func TestCreateStatus(t *testing.T) {
 	pacopts := info.PacOpts{
-		Settings: &settings.Settings{
+		Settings: settings.Settings{
 			ApplicationName: "HELLO APP",
 		},
 	}

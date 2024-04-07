@@ -74,12 +74,7 @@ func (s *Settings) DeepCopy(out *Settings) {
 	*out = *s
 }
 
-var mutex = &sync.Mutex{}
-
 func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[string]string) error {
-	mutex.Lock()
-	defer mutex.Unlock()
-
 	setting.HubCatalogs = getHubCatalogs(logger, setting.HubCatalogs, config)
 
 	err := configutil.ValidateAndAssignValues(logger, config, setting, map[string]func(string) error{

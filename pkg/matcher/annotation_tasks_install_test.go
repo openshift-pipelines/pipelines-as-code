@@ -265,7 +265,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						Settings: &settings.Settings{
+						Settings: settings.Settings{
 							HubCatalogs: &hubCatalogs,
 						},
 					},
@@ -503,7 +503,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						Settings: &settings.Settings{
+						Settings: settings.Settings{
 							HubCatalogs: &hubCatalogs,
 						},
 					},

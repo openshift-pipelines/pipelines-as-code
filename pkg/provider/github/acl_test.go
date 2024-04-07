@@ -321,7 +321,7 @@ func TestOkToTestComment(t *testing.T) {
 				Settings: &v1alpha1.Settings{},
 			}}
 			pacopts := info.PacOpts{
-				Settings: &settings.Settings{
+				Settings: settings.Settings{
 					RememberOKToTest: tt.rememberOkToTest,
 				},
 			}
