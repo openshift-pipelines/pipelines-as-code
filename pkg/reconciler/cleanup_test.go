@@ -160,7 +160,7 @@ func TestCleanupPipelineRuns(t *testing.T) {
 			}
 
 			pacInfo := info.PacOpts{
-				Settings: &settings.Settings{
+				Settings: settings.Settings{
 					MaxKeepRunsUpperLimit: tt.maxkeepruns,
 					DefaultMaxKeepRuns:    tt.defaultmaxkeepruns,
 				},

@@ -213,7 +213,7 @@ func TestParsePayload(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			v := &Provider{
 				pacInfo: info.PacOpts{
-					Settings: &settings.Settings{
+					Settings: settings.Settings{
 						BitbucketCloudCheckSourceIP:      false,
 						BitbucketCloudAdditionalSourceIP: "",
 					},
@@ -229,7 +229,7 @@ func TestParsePayload(t *testing.T) {
 			if tt.sourceIP != "" {
 				v = &Provider{
 					pacInfo: info.PacOpts{
-						Settings: &settings.Settings{
+						Settings: settings.Settings{
 							BitbucketCloudCheckSourceIP:      true,
 							BitbucketCloudAdditionalSourceIP: tt.additionalAllowedsourceIP,
 						},

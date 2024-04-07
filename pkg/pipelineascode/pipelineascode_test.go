@@ -540,7 +540,7 @@ func TestRun(t *testing.T) {
 				},
 				Info: info.Info{
 					Pac: &info.PacOpts{
-						Settings: &settings.Settings{
+						Settings: settings.Settings{
 							SecretAutoCreation: true,
 							RemoteTasks:        true,
 							HubCatalogs:        &hubCatalogs,
@@ -583,7 +583,7 @@ func TestRun(t *testing.T) {
 			}
 
 			pacInfo := info.PacOpts{
-				Settings: &settings.Settings{
+				Settings: settings.Settings{
 					SecretAutoCreation: true,
 					RemoteTasks:        true,
 					HubCatalogs:        &hubCatalogs,

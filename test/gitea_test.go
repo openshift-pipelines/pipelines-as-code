@@ -458,7 +458,7 @@ func TestGiteaWithCLIGeneratePipeline(t *testing.T) {
 			envRemove := env.PatchAll(t, map[string]string{"PAC_PROVIDER_TOKEN": "NOWORRIESBEHAPPY"})
 			defer envRemove()
 			topts.ParamsRun.Info.Pac = &info.PacOpts{}
-			topts.ParamsRun.Info.Pac.Settings = &settings.Settings{}
+			topts.ParamsRun.Info.Pac.Settings = settings.Settings{}
 			_, err = tknpactest.ExecCommand(topts.ParamsRun, tknpacresolve.Command, "-f", ".tekton/pr.yaml", "-p", "revision=main")
 			assert.NilError(t, err)
 

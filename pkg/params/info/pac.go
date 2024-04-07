@@ -9,7 +9,7 @@ import (
 )
 
 type PacOpts struct {
-	*settings.Settings
+	settings.Settings
 	WebhookType        string
 	PayloadFile        string
 	TektonDashboardURL string

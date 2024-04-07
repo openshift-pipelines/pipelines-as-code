@@ -568,7 +568,7 @@ func TestParsePayLoad(t *testing.T) {
 				Client: ghClient,
 				Logger: logger,
 				pacInfo: info.PacOpts{
-					Settings: &settings.Settings{},
+					Settings: settings.Settings{},
 				},
 			}
 			request := &http.Request{Header: map[string][]string{}}
@@ -751,7 +751,7 @@ func TestAppTokenGeneration(t *testing.T) {
 				Logger: logger,
 				Client: fakeghclient,
 				pacInfo: info.PacOpts{
-					Settings: &settings.Settings{},
+					Settings: settings.Settings{},
 				},
 			}
 			request := &http.Request{Header: map[string][]string{}}

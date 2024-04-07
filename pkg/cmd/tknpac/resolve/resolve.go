@@ -104,7 +104,7 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 				return fmt.Errorf("you need to at least specify a file with -f")
 			}
 
-			if err := settings.ConfigToSettings(run.Clients.Log, run.Info.Pac.Settings, map[string]string{}); err != nil {
+			if err := settings.ConfigToSettings(run.Clients.Log, &run.Info.Pac.Settings, map[string]string{}); err != nil {
 				return err
 			}
 

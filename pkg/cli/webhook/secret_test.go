@@ -71,7 +71,7 @@ func TestWebHookSecret(t *testing.T) {
 			},
 			Info: info.Info{
 				Pac: &info.PacOpts{
-					Settings: &settings.Settings{
+					Settings: settings.Settings{
 						AutoConfigureNewGitHubRepo: false,
 					},
 				},

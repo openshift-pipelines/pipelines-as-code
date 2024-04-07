@@ -219,7 +219,7 @@ func TestGetTask(t *testing.T) {
 					HTTP: *httpTestClient,
 				},
 				Info: info.Info{Pac: &info.PacOpts{
-					Settings: &settings.Settings{
+					Settings: settings.Settings{
 						HubCatalogs: &hubCatalogs,
 					},
 				}},
