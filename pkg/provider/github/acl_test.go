@@ -320,7 +320,7 @@ func TestOkToTestComment(t *testing.T) {
 			repo := &v1alpha1.Repository{Spec: v1alpha1.RepositorySpec{
 				Settings: &v1alpha1.Settings{},
 			}}
-			pacopts := info.PacOpts{
+			pacopts := &info.PacOpts{
 				Settings: settings.Settings{
 					RememberOKToTest: tt.rememberOkToTest,
 				},

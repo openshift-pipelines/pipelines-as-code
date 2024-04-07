@@ -40,7 +40,7 @@ func TestPacRun_checkNeedUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPacs(nil, nil, &params.Run{Clients: clients.Clients{}}, info.PacOpts{}, nil, nil)
+			p := NewPacs(nil, nil, &params.Run{Clients: clients.Clients{}}, &info.PacOpts{}, nil, nil)
 			got, needupdate := p.checkNeedUpdate(tt.tmpl)
 			if tt.upgradeMessageSubstr != "" {
 				assert.Assert(t, strings.Contains(got, tt.upgradeMessageSubstr))
@@ -219,8 +219,7 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 				Token:  github.String("None"),
 				Logger: logger,
 			}
-
-			pacInfo := info.PacOpts{
+			pacInfo := &info.PacOpts{
 				Settings: settings.Settings{
 					SecretAutoCreation: true,
 					RemoteTasks:        true,

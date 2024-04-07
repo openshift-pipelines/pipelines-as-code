@@ -35,10 +35,10 @@ type PacRun struct {
 	logger       *zap.SugaredLogger
 	eventEmitter *events.EventEmitter
 	manager      *ConcurrencyManager
-	pacInfo      info.PacOpts
+	pacInfo      *info.PacOpts
 }
 
-func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, pacInfo info.PacOpts, k8int kubeinteraction.Interface, logger *zap.SugaredLogger) PacRun {
+func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, pacInfo *info.PacOpts, k8int kubeinteraction.Interface, logger *zap.SugaredLogger) PacRun {
 	return PacRun{
 		event: event, run: run, vcx: vcx, k8int: k8int, pacInfo: pacInfo, logger: logger,
 		eventEmitter: events.NewEventEmitter(run.Clients.Kube, logger),
@@ -74,7 +74,6 @@ func (p *PacRun) Run(ctx context.Context) error {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "ParamsError",
 			fmt.Sprintf("error processing repository CR custom params: %s", err.Error()))
 	}
-	p.run.Clients.ConsoleUI().SetPacInfo(p.pacInfo)
 	p.run.Clients.ConsoleUI().SetParams(maptemplate)
 
 	var wg sync.WaitGroup

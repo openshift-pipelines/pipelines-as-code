@@ -123,7 +123,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 		r.eventEmitter.EmitMessage(nil, zap.ErrorLevel, "RepositoryDetectProvider", msg)
 		return nil
 	}
-	detectedProvider.SetPacInfo(pacInfo)
+	detectedProvider.SetPacInfo(&pacInfo)
 
 	if repo, err := r.reportFinalStatus(ctx, logger, pacInfo, event, pr, detectedProvider); err != nil {
 		msg := fmt.Sprintf("report status: %v", err)

@@ -29,7 +29,7 @@ type Provider struct {
 	Client                    *bbv1.APIClient
 	Logger                    *zap.SugaredLogger
 	run                       *params.Run
-	pacInfo                   info.PacOpts
+	pacInfo                   *info.PacOpts
 	baseURL                   string
 	defaultBranchLatestCommit string
 	pullRequestNumber         int
@@ -38,7 +38,7 @@ type Provider struct {
 	projectKey                string
 }
 
-func (v *Provider) SetPacInfo(pacInfo info.PacOpts) {
+func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 

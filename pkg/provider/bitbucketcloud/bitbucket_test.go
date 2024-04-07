@@ -297,7 +297,7 @@ func TestCreateStatus(t *testing.T) {
 			v := &Provider{
 				Client: bbclient,
 				run:    params.New(),
-				pacInfo: info.PacOpts{
+				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{
 						ApplicationName: settings.PACApplicationNameDefaultValue,
 					},

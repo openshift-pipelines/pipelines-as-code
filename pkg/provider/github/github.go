@@ -44,7 +44,7 @@ type Provider struct {
 	Client        *github.Client
 	Logger        *zap.SugaredLogger
 	Run           *params.Run
-	pacInfo       info.PacOpts
+	pacInfo       *info.PacOpts
 	Token, APIURL *string
 	ApplicationID *int64
 	providerName  string
@@ -71,7 +71,7 @@ func New() *Provider {
 	}
 }
 
-func (v *Provider) SetPacInfo(pacInfo info.PacOpts) {
+func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 

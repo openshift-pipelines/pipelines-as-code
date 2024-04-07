@@ -30,27 +30,28 @@ func (r *Run) UpdatePACInfo(ctx context.Context) error {
 		return err
 	}
 
-	updatedSettings, err := r.Info.UpdatePacOpts(r.Clients.Log, cfg.Data)
+	updatedPacInfo, err := r.Info.UpdatePacOpts(r.Clients.Log, cfg.Data)
 	if err != nil {
 		return err
 	}
 
-	if updatedSettings.TektonDashboardURL != "" && updatedSettings.TektonDashboardURL != r.Clients.ConsoleUI().URL() {
-		r.Clients.Log.Infof("updating console url to: %s", updatedSettings.TektonDashboardURL)
-		r.Clients.SetConsoleUI(&consoleui.TektonDashboard{BaseURL: updatedSettings.TektonDashboardURL})
+	if updatedPacInfo.TektonDashboardURL != "" && updatedPacInfo.TektonDashboardURL != r.Clients.ConsoleUI().URL() {
+		r.Clients.Log.Infof("updating console url to: %s", updatedPacInfo.TektonDashboardURL)
+		r.Clients.SetConsoleUI(&consoleui.TektonDashboard{BaseURL: updatedPacInfo.TektonDashboardURL})
 	}
 	if os.Getenv("PAC_TEKTON_DASHBOARD_URL") != "" {
 		r.Clients.Log.Infof("using tekton dashboard url on: %s", os.Getenv("PAC_TEKTON_DASHBOARD_URL"))
 		r.Clients.SetConsoleUI(&consoleui.TektonDashboard{BaseURL: os.Getenv("PAC_TEKTON_DASHBOARD_URL")})
 	}
-	if updatedSettings.CustomConsoleURL != "" {
-		r.Clients.Log.Infof("updating console url to: %s", updatedSettings.CustomConsoleURL)
+	if updatedPacInfo.CustomConsoleURL != "" {
+		r.Clients.Log.Infof("updating console url to: %s", updatedPacInfo.CustomConsoleURL)
 		r.Clients.SetConsoleUI(&consoleui.CustomConsole{})
+		r.Clients.ConsoleUI().SetPacInfo(r.Info.GetPacOpts())
 	}
 
 	// This is the case when reverted settings for CustomConsole and TektonDashboard then URL should point to OpenshiftConsole for Openshift platform
-	if updatedSettings.CustomConsoleURL == "" &&
-		(updatedSettings.TektonDashboardURL == "" && os.Getenv("PAC_TEKTON_DASHBOARD_URL") == "") {
+	if updatedPacInfo.CustomConsoleURL == "" &&
+		(updatedPacInfo.TektonDashboardURL == "" && os.Getenv("PAC_TEKTON_DASHBOARD_URL") == "") {
 		r.Clients.SetConsoleUI(&consoleui.OpenshiftConsole{})
 		_ = r.Clients.ConsoleUI().UI(ctx, r.Clients.Dynamic)
 	}

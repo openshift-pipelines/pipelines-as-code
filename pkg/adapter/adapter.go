@@ -168,8 +168,7 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 			l.writeResponse(response, http.StatusOK, err.Error())
 			return
 		}
-		// TODO: use Get a func to get pacopts
-		gitProvider.SetPacInfo(pacInfo)
+		gitProvider.SetPacInfo(&pacInfo)
 
 		s := sinker{
 			run:     l.run,
@@ -178,7 +177,7 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 			event:   l.event,
 			logger:  logger,
 			payload: payload,
-			pacInfo: pacInfo,
+			pacInfo: &pacInfo,
 		}
 
 		// clone the request to use it further

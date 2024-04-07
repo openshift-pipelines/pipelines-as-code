@@ -582,7 +582,7 @@ func TestRun(t *testing.T) {
 				tt.runevent.InstallationID = 0
 			}
 
-			pacInfo := info.PacOpts{
+			pacInfo := &info.PacOpts{
 				Settings: settings.Settings{
 					SecretAutoCreation: true,
 					RemoteTasks:        true,

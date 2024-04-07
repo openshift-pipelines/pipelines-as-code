@@ -32,7 +32,7 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 	cnx := Provider{
 		Client: fakeclient,
 		Run:    params.New(),
-		pacInfo: info.PacOpts{
+		pacInfo: &info.PacOpts{
 			Settings: settings.Settings{
 				ApplicationName: settings.PACApplicationNameDefaultValue,
 			},
@@ -382,7 +382,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				Tekton: stdata.Pipeline,
 			}
 			gcvs.Run.Clients = fakeClients
-			gcvs.SetPacInfo(info.PacOpts{
+			gcvs.SetPacInfo(&info.PacOpts{
 				Settings: settings.Settings{
 					ApplicationName: settings.PACApplicationNameDefaultValue,
 				},
@@ -470,7 +470,7 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 			provider := &Provider{
 				Client: fakeclient,
 				Run:    params.New(),
-				pacInfo: info.PacOpts{
+				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{
 						ApplicationName: settings.PACApplicationNameDefaultValue,
 					},
