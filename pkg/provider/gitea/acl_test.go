@@ -288,7 +288,7 @@ func TestOkToTestComment(t *testing.T) {
 				Client: fakeclient,
 				Logger: logger,
 				run:    &params.Run{},
-				pacInfo: info.PacOpts{
+				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{
 						RememberOKToTest: tt.rememberOkToTest,
 					},

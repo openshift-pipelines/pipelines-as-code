@@ -30,10 +30,10 @@ type TestProviderImp struct {
 	WantDeletedFiles       []string
 	WantModifiedFiles      []string
 	WantRenamedFiles       []string
-	pacInfo                info.PacOpts
+	pacInfo                *info.PacOpts
 }
 
-func (v *TestProviderImp) SetPacInfo(pacInfo info.PacOpts) {
+func (v *TestProviderImp) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 

@@ -222,7 +222,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 					SecretAutoCreation: true,
 				},
 			}
-			vcx.SetPacInfo(pacInfo)
+			vcx.SetPacInfo(&pacInfo)
 
 			event := buildEventFromPipelineRun(pr)
 			testSetupGHReplies(t, mux, event, tt.checkRunID, tt.finalStatus)

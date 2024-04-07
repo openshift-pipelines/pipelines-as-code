@@ -369,7 +369,7 @@ func TestProcessTemplates(t *testing.T) {
 			if tt.event == nil {
 				tt.event = &info.Event{}
 			}
-			p := NewPacs(tt.event, nil, run, info.PacOpts{}, &kitesthelper.KinterfaceTest{GetSecretResult: tt.secretData}, nil)
+			p := NewPacs(tt.event, nil, run, &info.PacOpts{}, &kitesthelper.KinterfaceTest{GetSecretResult: tt.secretData}, nil)
 			p.logger = logger
 			stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
 			p.eventEmitter = events.NewEventEmitter(stdata.Kube, logger)

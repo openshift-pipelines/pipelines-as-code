@@ -138,7 +138,7 @@ func TestProvider_CreateStatus(t *testing.T) {
 			p := &Provider{
 				Client: fakeclient, // Set this to a valid client for the tests where wantErr is false
 				run:    run,
-				pacInfo: info.PacOpts{
+				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{
 						ApplicationName: settings.PACApplicationNameDefaultValue,
 					},

@@ -20,7 +20,7 @@ type sinker struct {
 	event   *info.Event
 	logger  *zap.SugaredLogger
 	payload []byte
-	pacInfo info.PacOpts
+	pacInfo *info.PacOpts
 }
 
 func (s *sinker) processEventPayload(ctx context.Context, request *http.Request) error {

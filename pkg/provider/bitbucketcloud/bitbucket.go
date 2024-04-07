@@ -26,7 +26,7 @@ type Provider struct {
 	Client        *bitbucket.Client
 	Logger        *zap.SugaredLogger
 	run           *params.Run
-	pacInfo       info.PacOpts
+	pacInfo       *info.PacOpts
 	Token, APIURL *string
 	Username      *string
 	provenance    string
@@ -42,7 +42,7 @@ func (v *Provider) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool,
 	return false, "", nil
 }
 
-func (v *Provider) SetPacInfo(pacInfo info.PacOpts) {
+func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 

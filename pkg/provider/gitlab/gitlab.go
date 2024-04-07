@@ -47,7 +47,7 @@ type Provider struct {
 	Client            *gitlab.Client
 	Logger            *zap.SugaredLogger
 	run               *params.Run
-	pacInfo           info.PacOpts
+	pacInfo           *info.PacOpts
 	Token             *string
 	targetProjectID   int
 	sourceProjectID   int
@@ -57,7 +57,7 @@ type Provider struct {
 	apiURL            string
 }
 
-func (v *Provider) SetPacInfo(pacInfo info.PacOpts) {
+func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 

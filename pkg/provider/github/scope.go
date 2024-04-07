@@ -17,7 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, pacInfo info.PacOpts, repo *v1alpha1.Repository, run *params.Run,
+func ScopeTokenToListOfRepos(ctx context.Context, vcx provider.Interface, pacInfo *info.PacOpts, repo *v1alpha1.Repository, run *params.Run,
 	event *info.Event, eventEmitter *events.EventEmitter, logger *zap.SugaredLogger,
 ) (string, error) {
 	var (

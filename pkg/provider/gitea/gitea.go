@@ -46,7 +46,7 @@ var _ provider.Interface = (*Provider)(nil)
 type Provider struct {
 	Client           *gitea.Client
 	Logger           *zap.SugaredLogger
-	pacInfo          info.PacOpts
+	pacInfo          *info.PacOpts
 	Token            *string
 	giteaInstanceURL string
 	// only exposed for e2e tests
@@ -56,7 +56,7 @@ type Provider struct {
 	run          *params.Run
 }
 
-func (v *Provider) SetPacInfo(pacInfo info.PacOpts) {
+func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 
@@ -149,7 +149,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	// gitea show weirdly the <br>
 	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.pacInfo.ApplicationName, onPr, statusOpts.Summary)
 
-	return v.createStatusCommit(event, &v.pacInfo, statusOpts)
+	return v.createStatusCommit(event, v.pacInfo, statusOpts)
 }
 
 func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, status provider.StatusOpts) error {

@@ -567,7 +567,7 @@ func TestParsePayLoad(t *testing.T) {
 			gprovider := Provider{
 				Client: ghClient,
 				Logger: logger,
-				pacInfo: info.PacOpts{
+				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{},
 				},
 			}
@@ -750,7 +750,7 @@ func TestAppTokenGeneration(t *testing.T) {
 			gprovider := Provider{
 				Logger: logger,
 				Client: fakeghclient,
-				pacInfo: info.PacOpts{
+				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{},
 				},
 			}
