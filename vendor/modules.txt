@@ -283,14 +283,20 @@ github.com/mattn/go-isatty
 # github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 ## explicit
 github.com/mgutz/ansi
-# github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
-## explicit; go 1.12
 # github.com/microsoft/azure-devops-go-api/azuredevops/v7 v7.1.0
 ## explicit; go 1.12
 github.com/microsoft/azure-devops-go-api/azuredevops/v7
 github.com/microsoft/azure-devops-go-api/azuredevops/v7/core
+github.com/microsoft/azure-devops-go-api/azuredevops/v7/delegatedauthorization
+github.com/microsoft/azure-devops-go-api/azuredevops/v7/forminput
 github.com/microsoft/azure-devops-go-api/azuredevops/v7/git
+github.com/microsoft/azure-devops-go-api/azuredevops/v7/identity
+github.com/microsoft/azure-devops-go-api/azuredevops/v7/notification
+github.com/microsoft/azure-devops-go-api/azuredevops/v7/operations
+github.com/microsoft/azure-devops-go-api/azuredevops/v7/policy
 github.com/microsoft/azure-devops-go-api/azuredevops/v7/servicehooks
+github.com/microsoft/azure-devops-go-api/azuredevops/v7/system
+github.com/microsoft/azure-devops-go-api/azuredevops/v7/webapi
 # github.com/mitchellh/mapstructure v1.5.0
 ## explicit; go 1.14
 github.com/mitchellh/mapstructure
