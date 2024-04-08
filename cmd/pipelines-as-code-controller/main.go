@@ -23,6 +23,7 @@ func main() {
 	ctx := signals.NewContext()
 	ns := system.Namespace()
 	run := params.New()
+	run.Info.InitInfo()
 	rinfo := &run.Info
 	rinfo.Controller = info.GetControllerInfoFromEnvOrDefault()
 	err := run.Clients.NewClients(ctx, rinfo)

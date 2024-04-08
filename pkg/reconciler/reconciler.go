@@ -125,7 +125,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	}
 	detectedProvider.SetPacInfo(&pacInfo)
 
-	if repo, err := r.reportFinalStatus(ctx, logger, pacInfo, event, pr, detectedProvider); err != nil {
+	if repo, err := r.reportFinalStatus(ctx, logger, &pacInfo, event, pr, detectedProvider); err != nil {
 		msg := fmt.Sprintf("report status: %v", err)
 		r.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryReportFinalStatus", msg)
 		return err
@@ -133,7 +133,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	return nil
 }
 
-func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, pacInfo info.PacOpts, event *info.Event, pr *tektonv1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
+func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredLogger, pacInfo *info.PacOpts, event *info.Event, pr *tektonv1.PipelineRun, provider provider.Interface) (*v1alpha1.Repository, error) {
 	repoName := pr.GetAnnotations()[keys.Repository]
 	repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
 	if err != nil {

@@ -96,7 +96,7 @@ func (r *Reconciler) getFailureSnippet(ctx context.Context, pr *tektonv1.Pipelin
 	return fmt.Sprintf("task <b>%s</b> has the status <b>\"%s\"</b>:\n<pre>%s</pre>", name, sortedTaskInfos[0].Reason, text)
 }
 
-func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLogger, pacInfo info.PacOpts, vcx provider.Interface, event *info.Event, createdPR *tektonv1.PipelineRun) (*tektonv1.PipelineRun, error) {
+func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLogger, pacInfo *info.PacOpts, vcx provider.Interface, event *info.Event, createdPR *tektonv1.PipelineRun) (*tektonv1.PipelineRun, error) {
 	pr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(createdPR.GetNamespace()).Get(
 		ctx, createdPR.GetName(), metav1.GetOptions{},
 	)

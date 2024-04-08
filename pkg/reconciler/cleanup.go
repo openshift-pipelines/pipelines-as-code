@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func (r *Reconciler) cleanupPipelineRuns(ctx context.Context, logger *zap.SugaredLogger, pacInfo info.PacOpts, repo *v1alpha1.Repository, pr *tektonv1.PipelineRun) error {
+func (r *Reconciler) cleanupPipelineRuns(ctx context.Context, logger *zap.SugaredLogger, pacInfo *info.PacOpts, repo *v1alpha1.Repository, pr *tektonv1.PipelineRun) error {
 	keepMaxPipeline, ok := pr.Annotations[keys.MaxKeepRuns]
 	if ok {
 		max, err := strconv.Atoi(keepMaxPipeline)

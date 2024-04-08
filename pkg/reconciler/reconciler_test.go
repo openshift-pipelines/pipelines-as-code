@@ -193,12 +193,6 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 						Kube:           stdata.Kube,
 					},
 					Info: info.Info{
-						Pac: &info.PacOpts{
-							Settings: settings.Settings{
-								ErrorLogSnippet:    true,
-								SecretAutoCreation: true,
-							},
-						},
 						Controller: &info.ControllerInfo{
 							Secret: secretName,
 						},
@@ -216,13 +210,13 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 				metrics: metrics,
 			}
 			r.run.Clients.SetConsoleUI(consoleui.FallBackConsole{})
-			pacInfo := info.PacOpts{
+			pacInfo := &info.PacOpts{
 				Settings: settings.Settings{
 					ErrorLogSnippet:    true,
 					SecretAutoCreation: true,
 				},
 			}
-			vcx.SetPacInfo(&pacInfo)
+			vcx.SetPacInfo(pacInfo)
 
 			event := buildEventFromPipelineRun(pr)
 			testSetupGHReplies(t, mux, event, tt.checkRunID, tt.finalStatus)

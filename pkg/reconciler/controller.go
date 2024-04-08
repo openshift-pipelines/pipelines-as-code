@@ -30,6 +30,7 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 
 		log := logging.FromContext(ctx)
 		run := params.New()
+		run.Info.InitInfo()
 		rinfo := &run.Info
 		rinfo.Controller = info.GetControllerInfoFromEnvOrDefault()
 		err := run.Clients.NewClients(ctx, rinfo)
