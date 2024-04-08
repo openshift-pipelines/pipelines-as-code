@@ -51,7 +51,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 
 		processedEvent.EventType = *genericEvent.EventType
 		processedEvent.Sender = pushEvent.PushedBy.DisplayName
-		processedEvent.Repository = pushEvent.Repository.Name
+		processedEvent.Repository = pushEvent.Repository.RemoteUrl
 		processedEvent.RepositoryId = pushEvent.Repository.Id
 		processedEvent.ProjectId = pushEvent.Repository.Project.Id
 		processedEvent.Organization = pushEvent.Repository.Project.Name
@@ -94,7 +94,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.HeadURL = fmt.Sprintf("%s?version=GB%s", remoteUrl, headBranch)
 
 		processedEvent.TriggerTarget = triggertype.PullRequest
-		processedEvent.Repository = prEvent.Repository.Name
+		processedEvent.Repository = prEvent.Repository.RemoteUrl
 		processedEvent.RepositoryId = prEvent.Repository.Id
 		processedEvent.ProjectId = prEvent.Repository.Project.Id
 		processedEvent.URL = prEvent.Repository.RemoteUrl

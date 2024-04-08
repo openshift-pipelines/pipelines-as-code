@@ -10,6 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/azuredevops"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
@@ -47,6 +48,8 @@ func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogg
 		provider = &bitbucketserver.Provider{}
 	case "gitea":
 		provider = &gitea.Provider{}
+	case "azuredevops":
+		provider = &azuredevops.Provider{}
 	default:
 		return nil, nil, fmt.Errorf("failed to detect provider for pipelinerun: %s : unknown provider", pr.GetName())
 	}
@@ -93,6 +96,14 @@ func buildEventFromPipelineRun(pr *tektonv1.PipelineRun) *info.Event {
 	}
 	if projectID, ok := prAnno[keys.TargetProjectID]; ok {
 		event.TargetProjectID, _ = strconv.Atoi(projectID)
+	}
+
+	// AzureDevops
+	if projectID, ok := prAnno[keys.ProjectId]; ok {
+		event.ProjectId = projectID
+	}
+	if repositoryID, ok := prAnno[keys.RepositoryId]; ok {
+		event.RepositoryId = repositoryID
 	}
 	return event
 }

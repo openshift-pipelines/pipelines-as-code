@@ -55,6 +55,8 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1.PipelineRu
 		keys.GitProvider:    providerConfig.Name,
 		keys.State:          StateStarted,
 		keys.ControllerInfo: fmt.Sprintf(`{"name":"%s","configmap":"%s","secret":"%s"}`, paramsinfo.Controller.Name, paramsinfo.Controller.Configmap, paramsinfo.Controller.Secret),
+		keys.RepositoryId:   event.RepositoryId,
+		keys.ProjectId:      event.ProjectId,
 	}
 
 	if event.PullRequestNumber != 0 {
@@ -78,6 +80,15 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1.PipelineRu
 	}
 	if event.TargetProjectID != 0 {
 		annotations[keys.TargetProjectID] = strconv.Itoa(event.TargetProjectID)
+	}
+
+	// Azure devops
+
+	if event.RepositoryId != "" {
+		annotations[keys.RepositoryId] = event.RepositoryId
+	}
+	if event.ProjectId != "" {
+		annotations[keys.ProjectId] = event.ProjectId
 	}
 
 	for k, v := range labels {

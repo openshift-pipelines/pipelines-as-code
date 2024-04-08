@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops/v7"
@@ -54,21 +53,16 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 		return fmt.Errorf("cannot set status on azuredevops no token or url set")
 	}
 
-	logger := log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-
 	var gitStatusState git.GitStatusState
 
-	logger.Println("statusOpts.Conclusion  ", statusOpts.Conclusion)
-	logger.Println("statusOpts.Status  ", statusOpts.Status)
-
 	switch statusOpts.Conclusion {
-	case "succeeded":
+	case "success":
 		statusOpts.Title = "Success"
-		statusOpts.Summary = "has <b>successfully</b> validated your commit."
+		statusOpts.Summary = "has successfully validated your commit."
 		gitStatusState = git.GitStatusStateValues.Succeeded
-	case "failed":
+	case "failure":
 		statusOpts.Title = "failure"
-		statusOpts.Summary = "has <b>failed</b>."
+		statusOpts.Summary = "has failed."
 		gitStatusState = git.GitStatusStateValues.Failed
 	case "pending":
 		statusOpts.Title = "Pending"
@@ -98,21 +92,21 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 	}
 	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.run.Info.Pac.ApplicationName, onPr, statusOpts.Summary)
 
-	logger.Println("statusOpts.Summary  ", statusOpts.Summary)
-
-	// Preparing the GitStatus object with the updated status
+	genreValue := "pipeline-as-code"
 	gitStatus := git.GitStatus{
 		State:       &gitStatusState,
-		TargetUrl:   &event.HeadURL,
+		TargetUrl:   &event.URL,
 		Description: &statusOpts.Summary,
 		Context: &git.GitStatusContext{
-			Name: &statusOpts.Title,
+			Name:  &statusOpts.Title,
+			Genre: &genreValue,
 		},
 	}
+
 	// Posting the status to Azure DevOps
 	if _, err := v.Client.CreateCommitStatus(ctx, git.CreateCommitStatusArgs{
-		Project:                 &event.Organization,
-		RepositoryId:            &event.Repository,
+		Project:                 &event.ProjectId,
+		RepositoryId:            &event.RepositoryId,
 		CommitId:                &event.SHA,
 		GitCommitStatusToCreate: &gitStatus,
 	}); err != nil {
@@ -132,7 +126,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
-	repository := event.Repository
+	RepositoryId := event.RepositoryId
 	projectId := event.ProjectId
 	sha := event.SHA
 
@@ -142,7 +136,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 
 			refName := fmt.Sprintf("refs/heads/%s", event.HeadBranch)
 			refs, err := v.Client.GetRefs(ctx, git.GetRefsArgs{
-				RepositoryId: &repository,
+				RepositoryId: &RepositoryId,
 				Filter:       &refName,
 				Project:      &projectId,
 			})
@@ -155,7 +149,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 			}
 		} else if event.PullRequestNumber != 0 {
 			pr, err := v.Client.GetPullRequest(ctx, git.GetPullRequestArgs{
-				RepositoryId:  &repository,
+				RepositoryId:  &RepositoryId,
 				PullRequestId: &event.PullRequestNumber,
 				Project:       &projectId,
 			})
@@ -170,7 +164,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 	if sha != "" {
 		commit, err := v.Client.GetCommit(ctx, git.GetCommitArgs{
 			CommitId:     &sha,
-			RepositoryId: &repository,
+			RepositoryId: &RepositoryId,
 			Project:      &projectId,
 		})
 		if err != nil {
