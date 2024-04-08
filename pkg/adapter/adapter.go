@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/version"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/azuredevops"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
@@ -247,6 +248,12 @@ func (l listener) detectProvider(req *http.Request, reqBody string) (provider.In
 	isBitCloud, processReq, logger, reason, err := bitCloud.Detect(req, reqBody, &log)
 	if isBitCloud {
 		return l.processRes(processReq, bitCloud, logger, reason, err)
+	}
+
+	ado := &azuredevops.Provider{}
+	isAdo, processReq, logger, reason, err := ado.Detect(req, reqBody, &log)
+	if isAdo {
+		return l.processRes(processReq, ado, logger, reason, err)
 	}
 
 	return l.processRes(false, nil, logger, "", fmt.Errorf("no supported Git provider has been detected"))
