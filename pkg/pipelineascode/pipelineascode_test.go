@@ -541,9 +541,7 @@ func TestRun(t *testing.T) {
 				Info: info.Info{
 					Pac: &info.PacOpts{
 						Settings: settings.Settings{
-							SecretAutoCreation: true,
-							RemoteTasks:        true,
-							HubCatalogs:        &hubCatalogs,
+							HubCatalogs: &hubCatalogs,
 						},
 					},
 					Controller: &info.ControllerInfo{
@@ -628,7 +626,7 @@ func TestRun(t *testing.T) {
 					assert.Assert(t, ok, "failed to find log-url label on pipelinerun: %s/%s", pr.GetNamespace(), pr.GetGenerateName())
 					assert.Equal(t, logURL, cs.Clients.ConsoleUI().DetailURL(&pr))
 
-					if cs.Info.Pac.SecretAutoCreation {
+					if pacInfo.SecretAutoCreation {
 						secretName, ok := pr.GetAnnotations()[keys.GitAuthSecret]
 						assert.Assert(t, ok, "Cannot find secret %s on annotations", secretName)
 					}

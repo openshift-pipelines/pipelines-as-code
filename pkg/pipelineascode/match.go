@@ -70,7 +70,7 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 	if p.event.InstallationID > 0 {
 		p.event.Provider.WebhookSecret, _ = GetCurrentNSWebhookSecret(ctx, p.k8int, p.run)
 	} else {
-		err := SecretFromRepository(ctx, p.run, p.k8int, p.vcx.GetConfig(), p.event, repo, p.logger)
+		err := SecretFromRepository(ctx, p.k8int, p.vcx.GetConfig(), p.event, repo, p.pacInfo.WebhookType, p.logger)
 		if err != nil {
 			return repo, err
 		}

@@ -20,7 +20,7 @@ const (
 )
 
 // SecretFromRepository grab the secret from the repository CRD.
-func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinteraction.Interface, config *info.ProviderConfig, event *info.Event, repo *apipac.Repository, logger *zap.SugaredLogger) error {
+func SecretFromRepository(ctx context.Context, k8int kubeinteraction.Interface, config *info.ProviderConfig, event *info.Event, repo *apipac.Repository, webhookType string, logger *zap.SugaredLogger) error {
 	var err error
 	if repo.Spec.GitProvider == nil {
 		return fmt.Errorf("failed to find git_provider details in repository spec: %v/%v", repo.Namespace, repo.Name)
@@ -65,7 +65,7 @@ func SecretFromRepository(ctx context.Context, cs *params.Run, k8int kubeinterac
 		gitProviderWebhookSecretKey = DefaultGitProviderWebhookSecretKey
 	}
 	logmsg := fmt.Sprintf("Using git provider %s: apiurl=%s user=%s token-secret=%s token-key=%s",
-		cs.Info.Pac.WebhookType,
+		webhookType,
 		repo.Spec.GitProvider.URL,
 		repo.Spec.GitProvider.User,
 		repo.Spec.GitProvider.Secret.Name,
