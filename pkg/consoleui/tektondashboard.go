@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"k8s.io/client-go/dynamic"
 )
@@ -40,7 +39,4 @@ func (t *TektonDashboard) UI(_ context.Context, _ dynamic.Interface) error {
 }
 
 func (t *TektonDashboard) SetParams(_ map[string]string) {
-}
-
-func (t *TektonDashboard) SetPacInfo(_ info.PacOpts) {
 }
