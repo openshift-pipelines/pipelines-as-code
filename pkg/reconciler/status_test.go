@@ -65,7 +65,7 @@ func TestPostFinalStatus(t *testing.T) {
 	r := &Reconciler{
 		run: run,
 	}
-	pacInfo := info.PacOpts{
+	pacInfo := &info.PacOpts{
 		Settings: settings.Settings{
 			ErrorLogSnippet: false,
 		},

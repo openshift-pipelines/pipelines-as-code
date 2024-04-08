@@ -159,7 +159,7 @@ func TestCleanupPipelineRuns(t *testing.T) {
 				kinteract: kint,
 			}
 
-			pacInfo := info.PacOpts{
+			pacInfo := &info.PacOpts{
 				Settings: settings.Settings{
 					MaxKeepRunsUpperLimit: tt.maxkeepruns,
 					DefaultMaxKeepRuns:    tt.defaultmaxkeepruns,
