@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,9 +27,6 @@ type OpenshiftConsole struct {
 }
 
 func (o *OpenshiftConsole) SetParams(_ map[string]string) {
-}
-
-func (o *OpenshiftConsole) SetPacInfo(_ info.PacOpts) {
 }
 
 func (o *OpenshiftConsole) GetName() string {

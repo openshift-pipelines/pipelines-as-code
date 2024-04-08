@@ -16,15 +16,15 @@ import (
 
 type CustomConsole struct {
 	params  map[string]string
-	pacInfo info.PacOpts
+	pacInfo *info.PacOpts
+}
+
+func NewCustomConsole(pacInfo *info.PacOpts) *CustomConsole {
+	return &CustomConsole{pacInfo: pacInfo}
 }
 
 func (o *CustomConsole) SetParams(mt map[string]string) {
 	o.params = mt
-}
-
-func (o *CustomConsole) SetPacInfo(pacInfo info.PacOpts) {
-	o.pacInfo = pacInfo
 }
 
 func (o *CustomConsole) GetName() string {

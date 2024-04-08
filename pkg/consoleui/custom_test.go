@@ -18,8 +18,7 @@ func TestCustomGood(t *testing.T) {
 	consolePRdetail := "https://mycorp.console/{{ namespace }}/{{ pr }}/params/{{ foo }}"
 	consolePRtasklog := "https://mycorp.console/{{ namespace }}/{{ pr }}/{{ task }}/{{ pod }}/{{ firstFailedStep }}/params/{{ foo }}/{{ nonewline }}"
 
-	c := CustomConsole{}
-	c.SetPacInfo(info.PacOpts{
+	c := NewCustomConsole(&info.PacOpts{
 		Settings: settings.Settings{
 			CustomConsoleName:      consoleName,
 			CustomConsoleURL:       consoleURL,
@@ -69,8 +68,7 @@ func TestCustomGood(t *testing.T) {
 	assert.Equal(t, c.TaskLogURL(pr, trStatus), "https://mycorp.console/ns/pr/task/pod/failure/params/bar/nonewline")
 
 	// test if we fallback properly
-	f := CustomConsole{}
-	f.SetPacInfo(info.PacOpts{
+	f := NewCustomConsole(&info.PacOpts{
 		Settings: settings.Settings{
 			CustomConsoleName:      consoleName,
 			CustomConsoleURL:       consoleURL,
@@ -82,8 +80,7 @@ func TestCustomGood(t *testing.T) {
 	assert.Assert(t, strings.Contains(c.DetailURL(pr), consoleURL))
 	assert.Assert(t, strings.Contains(c.TaskLogURL(pr, trStatus), consoleURL))
 
-	o := CustomConsole{}
-	o.SetPacInfo(info.PacOpts{
+	o := NewCustomConsole(&info.PacOpts{
 		Settings: settings.Settings{
 			CustomConsoleName:         consoleName,
 			CustomConsoleURL:          consoleURL,
@@ -98,8 +95,7 @@ func TestCustomGood(t *testing.T) {
 }
 
 func TestCustomBad(t *testing.T) {
-	c := CustomConsole{}
-	c.SetPacInfo(info.PacOpts{Settings: settings.Settings{}})
+	c := NewCustomConsole(&info.PacOpts{Settings: settings.Settings{}})
 	pr := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns",

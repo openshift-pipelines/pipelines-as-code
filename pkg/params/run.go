@@ -45,8 +45,8 @@ func (r *Run) UpdatePACInfo(ctx context.Context) error {
 	}
 	if updatedPacInfo.CustomConsoleURL != "" {
 		r.Clients.Log.Infof("updating console url to: %s", updatedPacInfo.CustomConsoleURL)
-		r.Clients.SetConsoleUI(&consoleui.CustomConsole{})
-		r.Clients.ConsoleUI().SetPacInfo(r.Info.GetPacOpts())
+		pacInfo := r.Info.GetPacOpts()
+		r.Clients.SetConsoleUI(consoleui.NewCustomConsole(&pacInfo))
 	}
 
 	// This is the case when reverted settings for CustomConsole and TektonDashboard then URL should point to OpenshiftConsole for Openshift platform
