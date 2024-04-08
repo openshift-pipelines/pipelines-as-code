@@ -206,21 +206,23 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	if err != nil {
 		return fmt.Errorf("cannot update state: %w", err)
 	}
-	p, event, err := r.detectProvider(ctx, logger, pr)
+	pacInfo := r.run.Info.GetPacOpts()
+	detectedProvider, event, err := r.detectProvider(ctx, logger, pr)
 	if err != nil {
 		logger.Error(err)
 		return nil
 	}
+	detectedProvider.SetPacInfo(&pacInfo)
 
 	if event.InstallationID > 0 {
 		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
 	} else {
-		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, p.GetConfig(), event, repo, logger); err != nil {
+		if err := pipelineascode.SecretFromRepository(ctx, r.run, r.kinteract, detectedProvider.GetConfig(), event, repo, logger); err != nil {
 			return fmt.Errorf("cannot get secret from repo: %w", err)
 		}
 	}
 
-	err = p.SetClient(ctx, r.run, event, repo, r.eventEmitter)
+	err = detectedProvider.SetClient(ctx, r.run, event, repo, r.eventEmitter)
 	if err != nil {
 		return fmt.Errorf("cannot set client: %w", err)
 	}
@@ -249,7 +251,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		OriginalPipelineRunName: pr.GetAnnotations()[keys.OriginalPRName],
 	}
 
-	if err := createStatusWithRetry(ctx, logger, p, event, status); err != nil {
+	if err := createStatusWithRetry(ctx, logger, detectedProvider, event, status); err != nil {
 		// if failed to report status for running state, let the pipelineRun continue,
 		// pipelineRun is already started so we will try again once it completes
 		logger.Errorf("failed to report status to running on provider continuing! error: %v", err)
