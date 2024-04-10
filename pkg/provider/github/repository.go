@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -20,7 +21,11 @@ import (
 
 const defaultNsTemplate = "%v-pipelines"
 
-func ConfigureRepository(ctx context.Context, run *params.Run, req *http.Request, payload, autoConfigureRepoNamespaceTemplate string, logger *zap.SugaredLogger) (bool, bool, error) {
+func ConfigureRepository(ctx context.Context, run *params.Run, req *http.Request, payload string, pacInfo *info.PacOpts, logger *zap.SugaredLogger) (bool, bool, error) {
+	// check if repo auto configuration is enabled
+	if !pacInfo.AutoConfigureNewGitHubRepo {
+		return false, false, nil
+	}
 	// gitea set x-github-event too, so skip it for the gitea driver
 	if h := req.Header.Get("X-Gitea-Event-Type"); h != "" {
 		return false, false, nil
@@ -43,7 +48,7 @@ func ConfigureRepository(ctx context.Context, run *params.Run, req *http.Request
 	}
 
 	logger.Infof("github: configuring repository cr for repo: %v", repoEvent.Repo.GetHTMLURL())
-	if err := createRepository(ctx, autoConfigureRepoNamespaceTemplate, run.Clients, repoEvent, logger); err != nil {
+	if err := createRepository(ctx, pacInfo.AutoConfigureRepoNamespaceTemplate, run.Clients, repoEvent, logger); err != nil {
 		logger.Errorf("failed repository creation: %v", err)
 		return true, true, err
 	}
