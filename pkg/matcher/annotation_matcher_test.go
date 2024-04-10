@@ -1964,3 +1964,46 @@ func TestGetTargetBranch(t *testing.T) {
 		})
 	}
 }
+
+func TestGetName(t *testing.T) {
+	tests := []struct {
+		name     string
+		prun     *tektonv1.PipelineRun
+		expected string
+	}{
+		{
+			name: "Test with name",
+			prun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-pipeline",
+				},
+			},
+			expected: "test-pipeline",
+		},
+		{
+			name: "Test with generateName",
+			prun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "test-pipeline-",
+				},
+			},
+			expected: "test-pipeline-",
+		},
+		{
+			name: "Test with generateName and name",
+			prun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:         "test-pipeline",
+					GenerateName: "generate-pipeline-",
+				},
+			},
+			expected: "generate-pipeline-",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			name := getName(tt.prun)
+			assert.Equal(t, tt.expected, name)
+		})
+	}
+}

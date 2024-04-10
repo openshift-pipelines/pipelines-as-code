@@ -128,6 +128,17 @@ type Match struct {
 	Config      map[string]string
 }
 
+// getName returns the name of the PipelineRun, if GenerateName is not set, it
+// returns the name generateName takes precedence over name since it will be
+// generated when applying the PipelineRun by the tekton controller.
+func getName(prun *tektonv1.PipelineRun) string {
+	name := prun.GetGenerateName()
+	if name == "" {
+		name = prun.GetName()
+	}
+	return name
+}
+
 func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger, pruns []*tektonv1.PipelineRun, cs *params.Run, event *info.Event, vcx provider.Interface) ([]Match, error) {
 	matchedPRs := []Match{}
 	infomsg := fmt.Sprintf("matching pipelineruns to event: URL=%s, target-branch=%s, source-branch=%s, target-event=%s",
@@ -149,14 +160,15 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			Config:      map[string]string{},
 		}
 
-		if event.TargetPipelineRun != "" && event.TargetPipelineRun == strings.TrimSuffix(prun.GetGenerateName(), "-") {
-			logger.Infof("matched target pipelinerun with name: %s, target pipelinerun: %s", prun.GetGenerateName(), event.TargetPipelineRun)
+		prName := getName(prun)
+		if event.TargetPipelineRun != "" && event.TargetPipelineRun == strings.TrimSuffix(prName, "-") {
+			logger.Infof("matched target pipelinerun with name: %s, target pipelinerun: %s", prName, event.TargetPipelineRun)
 			matchedPRs = append(matchedPRs, prMatch)
 			continue
 		}
 
 		if prun.GetObjectMeta().GetAnnotations() == nil {
-			logger.Warnf("PipelineRun %s does not have any annotations", prun.GetName())
+			logger.Debugf("PipelineRun %s does not have any annotations", prName)
 			continue
 		}
 
@@ -165,14 +177,10 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		}
 
 		if targetNS, ok := prun.GetObjectMeta().GetAnnotations()[keys.TargetNamespace]; ok {
-			name := prun.GetName()
-			if name == "" {
-				name = prun.GetGenerateName()
-			}
 			prMatch.Config["target-namespace"] = targetNS
 			prMatch.Repo, _ = MatchEventURLRepo(ctx, cs, event, targetNS)
 			if prMatch.Repo == nil {
-				logger.Warnf("could not find Repository CRD in branch %s, the pipelineRun %s has a label that explicitly targets it", targetNS, name)
+				logger.Warnf("could not find Repository CRD in branch %s, the pipelineRun %s has a label that explicitly targets it", targetNS, prName)
 				continue
 			}
 		}
@@ -180,12 +188,12 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		if targetComment, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnComment]; ok {
 			re, err := regexp.Compile(targetComment)
 			if err != nil {
-				logger.Warnf("could not compile regexp %s from pipelineRun %s", targetComment, prun.GetGenerateName())
+				logger.Warnf("could not compile regexp %s from pipelineRun %s", targetComment, prName)
 				continue
 			}
 			if re.MatchString(event.TriggerComment) {
 				event.EventType = opscomments.OnCommentEventType.String()
-				logger.Infof("matched pipelinerun with name: %s on gitops comment: %q", prun.GetGenerateName(), event.TriggerComment)
+				logger.Infof("matched pipelinerun with name: %s on gitops comment: %q", prName, event.TriggerComment)
 				matchedPRs = append(matchedPRs, prMatch)
 				continue
 			}
@@ -201,7 +209,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 				continue
 			}
 			if out != types.True {
-				logger.Warnf("CEL expression is not matching %s, skipping", prun.GetGenerateName())
+				logger.Infof("CEL expression for PipelineRun %s is not matching, skipping", prName)
 				continue
 			}
 			logger.Infof("CEL expression has been evaluated and matched")
@@ -217,7 +225,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			prMatch.Config["target-event"] = targetEvent
 		}
 
-		logger.Infof("matched pipelinerun with name: %s, annotation Config: %q", prun.GetGenerateName(), prMatch.Config)
+		logger.Infof("matched pipelinerun with name: %s, annotation Config: %q", prName, prMatch.Config)
 		matchedPRs = append(matchedPRs, prMatch)
 	}
 
@@ -231,10 +239,7 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 func buildAvailableMatchingAnnotationErr(event *info.Event, pruns []*tektonv1.PipelineRun) string {
 	errmsg := "available annotations of the PipelineRuns annotations in .tekton/ dir:"
 	for _, prun := range pruns {
-		name := prun.GetName()
-		if name == "" {
-			name = prun.GetGenerateName()
-		}
+		name := getName(prun)
 		errmsg += fmt.Sprintf(" [PipelineRun: %s, annotations:", name)
 		for annotation, value := range prun.GetAnnotations() {
 			if !strings.HasPrefix(annotation, pipelinesascode.GroupName+"/on-") {
