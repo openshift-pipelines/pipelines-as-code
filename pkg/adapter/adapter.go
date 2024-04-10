@@ -133,22 +133,19 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 		l.event = info.NewEvent()
 		pacInfo := l.run.Info.GetPacOpts()
 
-		// if repository auto configuration is enabled then check if its a valid event
-		if pacInfo.AutoConfigureNewGitHubRepo {
-			detected, configuring, err := github.ConfigureRepository(ctx, l.run, request, string(payload), pacInfo.AutoConfigureRepoNamespaceTemplate, l.logger)
-			if detected {
-				if configuring && err == nil {
-					l.writeResponse(response, http.StatusCreated, "configured")
-					return
-				}
-				if configuring && err != nil {
-					l.logger.Errorf("repository auto-configure has failed, err: %v", err)
-					l.writeResponse(response, http.StatusOK, "failed to configure")
-					return
-				}
-				l.writeResponse(response, http.StatusOK, "skipped event")
+		detected, configuring, err := github.ConfigureRepository(ctx, l.run, request, string(payload), &pacInfo, l.logger)
+		if detected {
+			if configuring && err == nil {
+				l.writeResponse(response, http.StatusCreated, "configured")
 				return
 			}
+			if configuring && err != nil {
+				l.logger.Errorf("repository auto-configure has failed, err: %v", err)
+				l.writeResponse(response, http.StatusOK, "failed to configure")
+				return
+			}
+			l.writeResponse(response, http.StatusOK, "skipped event")
+			return
 		}
 
 		isIncoming, targettedRepo, err := l.detectIncoming(ctx, request, payload)
