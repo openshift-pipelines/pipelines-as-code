@@ -248,7 +248,7 @@ need to go to this URL:
 
 ## Documentation when we are doing the Release Process
 
-- See here [release-process](./release-process.md)
+- See here [release-process]({{< relref "/dev/release-process.md" >}})
 
 ## How to update all dependencies in Pipelines-as-Code
 
