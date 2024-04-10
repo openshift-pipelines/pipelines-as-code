@@ -203,9 +203,9 @@ func (l listener) processRes(processEvent bool, provider provider.Interface, log
 	}
 
 	if skipReason != "" {
-		logger.Infof("skipping event: %s", skipReason)
+		logger.Debugf("skipping non supported event: %s", skipReason)
 	}
-	return nil, logger, fmt.Errorf("skipping event")
+	return nil, logger, fmt.Errorf("skipping non supported event")
 }
 
 func (l listener) detectProvider(req *http.Request, reqBody string) (provider.Interface, *zap.SugaredLogger, error) {
