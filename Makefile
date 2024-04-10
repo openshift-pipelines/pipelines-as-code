@@ -55,11 +55,12 @@ test-clean:  ## Clean testcache
 	@echo "Cleaning test cache"
 	@go clean -testcache
 .PHONY: $(TEST_UNIT_TARGETS) test test-unit
-test: test-clean test-unit ## Run test-unit
+test-no-cache: test-clean test-unit ## Run test-unit without caching
+test: test-unit ## Run test-unit
 test-unit: ## Run unit tests
 	@echo "Running unit tests..."
 	@set -o pipefail ; \
-		$(GO) test $(GO_TEST_FLAGS) -timeout $(TIMEOUT_UNIT) $(ARGS) ./... | { grep -v 'no test files'; true; }
+		$(GO) test $(GO_TEST_FLAGS) -timeout $(TIMEOUT_UNIT) $(ARGS) ./pkg/... | { grep -v 'no test files'; true; }
 
 .PHONY: test-e2e-cleanup
 test-e2e-cleanup: ## cleanup test e2e namespace/pr left open
