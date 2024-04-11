@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops/v7"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/git"
+	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/webapi"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
@@ -84,6 +86,8 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 
 	if statusOpts.Status == "in_progress" {
 		gitStatusState = git.GitStatusStateValues.Pending
+		statusOpts.Title = "In Progress"
+		statusOpts.Summary = "is in progress."
 	}
 
 	onPr := ""
@@ -91,28 +95,101 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 		onPr = fmt.Sprintf("/%s", statusOpts.PipelineRunName)
 	}
 	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.run.Info.Pac.ApplicationName, onPr, statusOpts.Summary)
+	genreValue := "PAC"
 
-	genreValue := "pipeline-as-code"
-	gitStatus := git.GitStatus{
-		State:       &gitStatusState,
+	switch event.EventType {
+	case "git.push":
+		gitStatus := git.GitStatus{
+			State:       &gitStatusState,
+			TargetUrl:   &event.URL,
+			Description: &statusOpts.Summary,
+			Context: &git.GitStatusContext{
+				Name:  &statusOpts.Title,
+				Genre: &genreValue,
+			},
+		}
+		commitStatusArgs := git.CreateCommitStatusArgs{
+			Project:                 &event.ProjectId,
+			RepositoryId:            &event.RepositoryId,
+			CommitId:                &event.SHA,
+			GitCommitStatusToCreate: &gitStatus,
+		}
+		if _, err := v.Client.CreateCommitStatus(ctx, commitStatusArgs); err != nil {
+			return fmt.Errorf("failed to create commit status: %v", err)
+		}
+	case "git.pullrequest.created":
+		gitPullRequestStatusArgs := git.GetPullRequestStatusesArgs{
+			PullRequestId: &event.PullRequestNumber,
+			Project:       &event.ProjectId,
+			RepositoryId:  &event.RepositoryId,
+		}
+
+		status, err := v.Client.GetPullRequestStatuses(ctx, gitPullRequestStatusArgs)
+		if err != nil {
+			return fmt.Errorf("failed to fetch pull request statuses: %v", err)
+		}
+
+		if status == nil || len(*status) == 0 {
+			_, err := createPRStatus(ctx, v, event, statusOpts, gitStatusState, genreValue)
+			if err != nil {
+				return err
+			}
+		} else {
+
+			statusid := (*status)[0].Id
+			path := "/" + strconv.Itoa(*statusid)
+
+			patchDocument := []webapi.JsonPatchOperation{
+				{
+					Op:    &webapi.OperationValues.Remove,
+					Path:  &path,
+					Value: nil,
+					From:  nil,
+				},
+			}
+
+			gitUpdatePullRequestStatus := git.UpdatePullRequestStatusesArgs{
+				PatchDocument: &patchDocument,
+				Project:       &event.ProjectId,
+				RepositoryId:  &event.RepositoryId,
+				PullRequestId: &event.PullRequestNumber,
+			}
+			if err := v.Client.UpdatePullRequestStatuses(ctx, gitUpdatePullRequestStatus); err != nil {
+				return fmt.Errorf("failed to update pull request status: %v", err)
+			}
+
+			_, err := createPRStatus(ctx, v, event, statusOpts, gitStatusState, genreValue)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func createPRStatus(ctx context.Context, v *Provider, event *info.Event, statusOpts provider.StatusOpts, gitStatusState git.GitStatusState, genreValue string) (bool, error) {
+	gitPullRequestStatus := git.GitPullRequestStatus{
+		Id:          &event.PullRequestNumber,
 		TargetUrl:   &event.URL,
 		Description: &statusOpts.Summary,
+		State:       &gitStatusState,
 		Context: &git.GitStatusContext{
 			Name:  &statusOpts.Title,
 			Genre: &genreValue,
 		},
 	}
 
-	// Posting the status to Azure DevOps
-	if _, err := v.Client.CreateCommitStatus(ctx, git.CreateCommitStatusArgs{
-		Project:                 &event.ProjectId,
-		RepositoryId:            &event.RepositoryId,
-		CommitId:                &event.SHA,
-		GitCommitStatusToCreate: &gitStatus,
-	}); err != nil {
-		return fmt.Errorf("failed to create commit status: %v", err)
+	prStatusArgs := git.CreatePullRequestStatusArgs{
+		PullRequestId: &event.PullRequestNumber,
+		Project:       &event.ProjectId,
+		RepositoryId:  &event.RepositoryId,
+		Status:        &gitPullRequestStatus,
 	}
-	return nil
+	if _, err := v.Client.CreatePullRequestStatus(ctx, prStatusArgs); err != nil {
+		return false, fmt.Errorf("failed to create pull request status: %v", err)
+	}
+	return true, nil
 }
 
 // CreateToken implements provider.Interface.
@@ -193,7 +270,6 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 	panic("unimplemented")
 }
 
-// GetFiles implements provider.Interface.
 func (v *Provider) GetFiles(ctx context.Context, event *info.Event) (changedfiles.ChangedFiles, error) {
 
 	filesChanged, err := v.Client.GetChanges(ctx, git.GetChangesArgs{
@@ -239,7 +315,6 @@ func (v *Provider) GetFiles(ctx context.Context, event *info.Event) (changedfile
 	return *changedFiles, nil
 }
 
-// GetTaskURI TODO: Implement ME.
 func (v *Provider) GetTaskURI(ctx context.Context, event *info.Event, uri string) (bool, string, error) {
 	return false, "", nil
 }
@@ -354,14 +429,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
 
-	// if event.Provider.URL == "" {
-	// 	return fmt.Errorf("no provider.url has been set in the repo crd")
-	// }
-
-	//TODO get organizationUrl from provider.url
-	organizationUrl := "https://dev.azure.com/ayeshaarshad"
-
-	// Create a connection to your organization
+	organizationUrl := event.Organization
 	connection := azuredevops.NewPatConnection(organizationUrl, event.Provider.Token)
 
 	ctx := context.Background()

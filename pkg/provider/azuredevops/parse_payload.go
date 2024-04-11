@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/servicehooks"
@@ -51,10 +52,17 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 
 		processedEvent.EventType = *genericEvent.EventType
 		processedEvent.Sender = pushEvent.PushedBy.DisplayName
+		baseURL, err := extractBaseURL(pushEvent.Repository.RemoteUrl)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return nil, fmt.Errorf("not able to extract organization url")
+		}
+		processedEvent.Organization = baseURL
+		fmt.Println("Base URL:", baseURL)
+
 		processedEvent.Repository = pushEvent.Repository.RemoteUrl
 		processedEvent.RepositoryId = pushEvent.Repository.Id
 		processedEvent.ProjectId = pushEvent.Repository.Project.Id
-		processedEvent.Organization = pushEvent.Repository.Project.Name
 		processedEvent.URL = pushEvent.Repository.RemoteUrl
 		processedEvent.DefaultBranch = pushEvent.Repository.DefaultBranch
 		processedEvent.TriggerTarget = triggertype.Push
@@ -62,7 +70,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.BaseURL = pushEvent.Repository.Url // or it could be remoteUrl or it could be other; need to verify
 		processedEvent.HeadURL = pushEvent.Repository.Url // or it could be remoteUrl or it could be othe; need to verify
 		if len(pushEvent.RefUpdates) > 0 {
-			branchName := pushEvent.RefUpdates[0].Name
+			branchName := ExtractBranchName(pushEvent.RefUpdates[0].Name)
 			processedEvent.BaseBranch = branchName
 			processedEvent.HeadBranch = branchName
 		}
@@ -82,22 +90,27 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 
 		// Extract branch names from the ref names
 		// Azure DevOps ref names are full references (refs/heads/branchName), so we'll extract the branch name
-		processedEvent.BaseBranch = prEvent.TargetRefName
-		processedEvent.HeadBranch = prEvent.SourceRefName
+		processedEvent.BaseBranch = ExtractBranchName(prEvent.TargetRefName)
+		processedEvent.HeadBranch = ExtractBranchName(prEvent.SourceRefName)
 		processedEvent.DefaultBranch = prEvent.Repository.DefaultBranch
 
 		// Constructing URLs
-		remoteUrl := prEvent.Repository.RemoteUrl
-		baseBranch := ExtractBranchName(prEvent.TargetRefName)
-		headBranch := ExtractBranchName(prEvent.SourceRefName)
-		processedEvent.BaseURL = fmt.Sprintf("%s?version=GB%s", remoteUrl, baseBranch)
-		processedEvent.HeadURL = fmt.Sprintf("%s?version=GB%s", remoteUrl, headBranch)
+		remoteUrl := *prEvent.Repository.WebUrl
+		processedEvent.BaseURL = fmt.Sprintf("%s?version=GB%s", remoteUrl, processedEvent.BaseBranch)
+		processedEvent.HeadURL = fmt.Sprintf("%s?version=GB%s", remoteUrl, processedEvent.HeadBranch)
 
 		processedEvent.TriggerTarget = triggertype.PullRequest
-		processedEvent.Repository = prEvent.Repository.RemoteUrl
+
+		baseURL, err := extractBaseURL(remoteUrl)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return nil, fmt.Errorf("not able to extract organization url")
+		}
+		processedEvent.Organization = baseURL
+		processedEvent.Repository = *prEvent.Repository.WebUrl
 		processedEvent.RepositoryId = prEvent.Repository.Id
 		processedEvent.ProjectId = prEvent.Repository.Project.Id
-		processedEvent.URL = prEvent.Repository.RemoteUrl
+		processedEvent.URL = *prEvent.Repository.WebUrl
 		processedEvent.Sender = prEvent.CreatedBy.DisplayName
 	default:
 		return nil, fmt.Errorf("event type %s is not supported", *genericEvent.EventType)
@@ -114,4 +127,13 @@ func ExtractBranchName(refName string) string {
 		return parts[len(parts)-1] // Get the last part which should be the branch name
 	}
 	return refName // Return as-is if the format is unexpected
+}
+
+func extractBaseURL(url string) (string, error) {
+	re := regexp.MustCompile(`^(https://dev\.azure\.com/[^/]+)`)
+	matches := re.FindStringSubmatch(url)
+	if len(matches) < 2 {
+		return "", fmt.Errorf("base URL could not be extracted")
+	}
+	return matches[1], nil
 }

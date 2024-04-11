@@ -11,9 +11,9 @@ func (v *Provider) CheckPolicyAllowing(context.Context, *info.Event, []string) (
 	panic("unimplemented")
 }
 
-// IsAllowed implements provider.Interface.
+// ToDo: implement this function
 func (v *Provider) IsAllowed(context.Context, *info.Event) (bool, error) {
-	panic("unimplemented")
+	return true, nil
 }
 
 // IsAllowedOwnersFile implements provider.Interface.

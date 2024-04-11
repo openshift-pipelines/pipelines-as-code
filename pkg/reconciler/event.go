@@ -99,11 +99,17 @@ func buildEventFromPipelineRun(pr *tektonv1.PipelineRun) *info.Event {
 	}
 
 	// AzureDevops
-	if projectID, ok := prAnno[keys.ProjectId]; ok {
-		event.ProjectId = projectID
+	if pr.GetAnnotations()[keys.GitProvider] == "azuredevops" {
+		if organizationID, ok := prAnno[keys.URLOrg]; ok {
+			event.Organization = organizationID
+		}
+		if projectID, ok := prAnno[keys.ProjectId]; ok {
+			event.ProjectId = projectID
+		}
+		if repositoryID, ok := prAnno[keys.RepositoryId]; ok {
+			event.RepositoryId = repositoryID
+		}
 	}
-	if repositoryID, ok := prAnno[keys.RepositoryId]; ok {
-		event.RepositoryId = repositoryID
-	}
+
 	return event
 }

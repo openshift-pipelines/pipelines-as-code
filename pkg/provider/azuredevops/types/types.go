@@ -7,21 +7,25 @@ import (
 type PullRequestEventResource struct {
 	Repository            Repository `json:"repository"`
 	PullRequestId         int        `json:"pullRequestId"`
+	CodeReviewId          int        `json:"codeReviewId,omitempty"`
 	Status                string     `json:"status"`
 	CreatedBy             User       `json:"createdBy"`
 	CreationDate          CustomTime `json:"creationDate"`
 	Title                 string     `json:"title"`
-	Description           string     `json:"description"`
+	Description           string     `json:"description,omitempty"`
 	SourceRefName         string     `json:"sourceRefName"`
 	TargetRefName         string     `json:"targetRefName"`
 	MergeStatus           string     `json:"mergeStatus"`
+	IsDraft               bool       `json:"isDraft,omitempty"`
 	MergeId               string     `json:"mergeId"`
 	LastMergeSourceCommit Commit     `json:"lastMergeSourceCommit"`
 	LastMergeTargetCommit Commit     `json:"lastMergeTargetCommit"`
-	LastMergeCommit       Commit     `json:"lastMergeCommit"`
+	LastMergeCommit       Commit     `json:"lastMergeCommit,omitempty"`
 	Reviewers             []User     `json:"reviewers"`
 	Url                   string     `json:"url"`
 	Links                 Links      `json:"_links"`
+	SupportsIterations    bool       `json:"supportsIterations,omitempty"`
+	ArtifactId            string     `json:"artifactId,omitempty"`
 }
 
 type PushEventResource struct {
@@ -35,11 +39,11 @@ type PushEventResource struct {
 }
 
 type Commit struct {
-	CommitId  string `json:"commitId"`
-	Author    User   `json:"author"`
-	Committer User   `json:"committer"`
-	Comment   string `json:"comment"`
-	Url       string `json:"url"`
+	CommitId  string `json:"commitId,omitempty"`
+	Author    User   `json:"author,omitempty"`
+	Committer User   `json:"committer,omitempty"`
+	Comment   string `json:"comment,omitempty"`
+	Url       string `json:"url,omitempty"`
 }
 
 type RefUpdate struct {
@@ -49,12 +53,17 @@ type RefUpdate struct {
 }
 
 type Repository struct {
-	Id            string  `json:"id"`
-	Name          string  `json:"name"`
-	Url           string  `json:"url"`
-	Project       Project `json:"project"`
-	DefaultBranch string  `json:"defaultBranch"`
-	RemoteUrl     string  `json:"remoteUrl"`
+	Id              string  `json:"id"`
+	Name            string  `json:"name"`
+	Url             string  `json:"url"`
+	Project         Project `json:"project"`
+	DefaultBranch   string  `json:"defaultBranch,omitempty"`
+	Size            *int    `json:"size,omitempty"`
+	RemoteUrl       string  `json:"remoteUrl"`
+	SshUrl          *string `json:"sshUrl,omitempty"`
+	WebUrl          *string `json:"webUrl,omitempty"`
+	IsDisabled      *bool   `json:"isDisabled,omitempty"`
+	IsInMaintenance *bool   `json:"isInMaintenance,omitempty"`
 }
 
 type Project struct {
@@ -62,18 +71,22 @@ type Project struct {
 	Name           string     `json:"name"`
 	Url            string     `json:"url"`
 	State          string     `json:"state"`
+	Revision       int        `json:"revision,omitempty"`
 	Visibility     string     `json:"visibility"`
 	LastUpdateTime CustomTime `json:"lastUpdateTime"`
 }
 
 type User struct {
-	Name        string     `json:"name"`
-	Email       string     `json:"email"`
-	Date        CustomTime `json:"date"`
-	DisplayName string     `json:"displayName,omitempty"` // Optional fields use "omitempty"
+	Name        string     `json:"name,omitempty"`
+	Email       string     `json:"email,omitempty"`
+	Date        CustomTime `json:"date,omitempty"`
+	DisplayName string     `json:"displayName,omitempty"`
+	Url         string     `json:"url,omitempty"`
+	Links       Links      `json:"_links,omitempty"`
 	Id          string     `json:"id,omitempty"`
 	UniqueName  string     `json:"uniqueName,omitempty"`
-	ImageUrl    string     `json:"imageUrl,omitempty"` // Added to represent user's image URL
+	ImageUrl    string     `json:"imageUrl,omitempty"`
+	Descriptor  string     `json:"descriptor,omitempty"`
 }
 
 type ResourceContainers struct {
@@ -87,8 +100,9 @@ type Container struct {
 }
 
 type Links struct {
-	Web      Href `json:"web"`
-	Statuses Href `json:"statuses"`
+	Web      Href `json:"web,omitempty"`
+	Statuses Href `json:"statuses,omitempty"`
+	Avatar   Href `json:"avatar,omitempty"`
 }
 
 type Href struct {
