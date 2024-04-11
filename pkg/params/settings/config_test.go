@@ -8,7 +8,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestConfigToSettings(t *testing.T) {
+func TestSyncConfig(t *testing.T) {
 	logger, _ := logger.GetLogger()
 
 	testCases := []struct {
@@ -139,7 +139,7 @@ func TestConfigToSettings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var test Settings
 
-			err := ConfigToSettings(logger, &test, tc.configMap)
+			err := SyncConfig(logger, &test, tc.configMap)
 
 			// set hub catalogs to nil to avoid comparison error
 			// test separately
@@ -156,4 +156,15 @@ func TestConfigToSettings(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDefaultSettings(t *testing.T) {
+	settings := DefaultSettings()
+	assert.Equal(t, settings.ApplicationName, "Pipelines as Code CI")
+
+	catalogValue, ok := settings.HubCatalogs.Load("default")
+	assert.Assert(t, ok)
+	catalog, ok := catalogValue.(HubCatalog)
+	assert.Assert(t, ok)
+	assert.Equal(t, catalog.ID, "default")
 }

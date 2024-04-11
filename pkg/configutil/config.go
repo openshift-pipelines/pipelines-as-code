@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func ValidateAndAssignValues(logger *zap.SugaredLogger, configData map[string]string, configStruct interface{}, customValidations map[string]func(string) error) error {
+func ValidateAndAssignValues(logger *zap.SugaredLogger, configData map[string]string, configStruct interface{}, customValidations map[string]func(string) error, logUpdates bool) error {
 	structValue := reflect.ValueOf(configStruct).Elem()
 	structType := reflect.TypeOf(configStruct).Elem()
 
@@ -49,7 +49,7 @@ func ValidateAndAssignValues(logger *zap.SugaredLogger, configData map[string]st
 				}
 			}
 			oldValue := structValue.FieldByName(fieldName).String()
-			if oldValue != fieldValue {
+			if oldValue != fieldValue && logUpdates {
 				logger.Infof("updating value for field %s: from '%s' to '%s'", fieldName, oldValue, fieldValue)
 			}
 			structValue.FieldByName(fieldName).SetString(fieldValue)
@@ -61,7 +61,7 @@ func ValidateAndAssignValues(logger *zap.SugaredLogger, configData map[string]st
 				continue
 			}
 			oldValue := structValue.FieldByName(fieldName).Bool()
-			if oldValue != boolValue {
+			if oldValue != boolValue && logUpdates {
 				logger.Infof("updating value for field %s: from '%v' to '%v'", fieldName, oldValue, boolValue)
 			}
 			structValue.FieldByName(fieldName).SetBool(boolValue)
@@ -79,7 +79,7 @@ func ValidateAndAssignValues(logger *zap.SugaredLogger, configData map[string]st
 				continue
 			}
 			oldValue := structValue.FieldByName(fieldName).Int()
-			if oldValue != intValue {
+			if oldValue != intValue && logUpdates {
 				logger.Infof("updating value for field %s: from '%d' to '%d'", fieldName, oldValue, intValue)
 			}
 			structValue.FieldByName(fieldName).SetInt(intValue)

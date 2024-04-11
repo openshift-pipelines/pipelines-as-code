@@ -95,7 +95,7 @@ func TestValidateAndAssignValues(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var test testStruct
 
-			err := ValidateAndAssignValues(logger, tc.configMap, &test, tc.customValidations)
+			err := ValidateAndAssignValues(logger, tc.configMap, &test, tc.customValidations, true)
 
 			if tc.expectedError != "" {
 				assert.ErrorContains(t, err, tc.expectedError)
