@@ -75,7 +75,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 			processedEvent.HeadBranch = branchName
 		}
 
-	case "git.pullrequest.created":
+	case "git.pullrequest.created", "git.pullrequest.updated":
 		var prEvent types.PullRequestEventResource
 		if err := json.Unmarshal(resourceBytes, &prEvent); err != nil {
 			return nil, fmt.Errorf("error unmarshalling pull request event resource: %v", err)

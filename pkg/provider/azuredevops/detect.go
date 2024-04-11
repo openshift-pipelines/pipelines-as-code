@@ -35,7 +35,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 
 	// Simplified switch, expand as needed based on the Azure DevOps events you handle
 	switch eventType {
-	case "git.push", "git.pullrequest.created":
+	case "git.push", "git.pullrequest.created", "git.pullrequest.updated":
 		return setLoggerAndProceed(true, "", nil)
 	default:
 		return setLoggerAndProceed(false, fmt.Sprintf("Unsupported event type: %s", eventType), nil)

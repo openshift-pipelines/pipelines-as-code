@@ -117,7 +117,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 		if _, err := v.Client.CreateCommitStatus(ctx, commitStatusArgs); err != nil {
 			return fmt.Errorf("failed to create commit status: %v", err)
 		}
-	case "git.pullrequest.created":
+	case "git.pullrequest.created", "git.pullrequest.updated":
 		gitPullRequestStatusArgs := git.GetPullRequestStatusesArgs{
 			PullRequestId: &event.PullRequestNumber,
 			Project:       &event.ProjectId,
