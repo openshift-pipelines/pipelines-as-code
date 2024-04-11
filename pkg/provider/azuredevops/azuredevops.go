@@ -22,23 +22,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	taskStatusTemplate = `
-<table>
-  <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
-
-{{- range $taskrun := .TaskRunList }}
-<tr>
-<td>{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}</td>
-<td>{{ formatDuration $taskrun.PipelineRunTaskRunStatus.Status.StartTime $taskrun.Status.CompletionTime }}</td><td>
-
-{{ $taskrun.ConsoleLogURL }}
-
-</td></tr>
-{{- end }}
-</table>`
-)
-
 var _ provider.Interface = (*Provider)(nil)
 
 type Provider struct {
@@ -49,7 +32,6 @@ type Provider struct {
 	run    *params.Run
 }
 
-// CreateStatus implements provider.Interface.
 func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts provider.StatusOpts) error {
 	if v.Client == nil {
 		return fmt.Errorf("cannot set status on azuredevops no token or url set")
@@ -130,45 +112,53 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 		}
 
 		if status == nil || len(*status) == 0 {
-			_, err := createPRStatus(ctx, v, event, statusOpts, gitStatusState, genreValue)
+			err := createPRStatus(ctx, v, event, statusOpts, gitStatusState, genreValue)
 			if err != nil {
 				return err
 			}
 		} else {
+			//azure UpdatePullRequestStatuses only Support remove, so first remove the old status and then updated with new one
 
-			statusid := (*status)[0].Id
-			path := "/" + strconv.Itoa(*statusid)
-
-			patchDocument := []webapi.JsonPatchOperation{
-				{
-					Op:    &webapi.OperationValues.Remove,
-					Path:  &path,
-					Value: nil,
-					From:  nil,
-				},
+			err := updatePRStatus(ctx, status, event, v)
+			if err != nil {
+				return err
 			}
 
-			gitUpdatePullRequestStatus := git.UpdatePullRequestStatusesArgs{
-				PatchDocument: &patchDocument,
-				Project:       &event.ProjectId,
-				RepositoryId:  &event.RepositoryId,
-				PullRequestId: &event.PullRequestNumber,
-			}
-			if err := v.Client.UpdatePullRequestStatuses(ctx, gitUpdatePullRequestStatus); err != nil {
-				return fmt.Errorf("failed to update pull request status: %v", err)
-			}
-
-			_, err := createPRStatus(ctx, v, event, statusOpts, gitStatusState, genreValue)
+			err = createPRStatus(ctx, v, event, statusOpts, gitStatusState, genreValue)
 			if err != nil {
 				return err
 			}
 		}
 	}
-
 	return nil
 }
 
-func createPRStatus(ctx context.Context, v *Provider, event *info.Event, statusOpts provider.StatusOpts, gitStatusState git.GitStatusState, genreValue string) (bool, error) {
+func updatePRStatus(ctx context.Context, status *[]git.GitPullRequestStatus, event *info.Event, v *Provider) error {
+	statusid := (*status)[0].Id
+	path := "/" + strconv.Itoa(*statusid)
+
+	patchDocument := []webapi.JsonPatchOperation{
+		{
+			Op:    &webapi.OperationValues.Remove,
+			Path:  &path,
+			Value: nil,
+			From:  nil,
+		},
+	}
+
+	gitUpdatePullRequestStatus := git.UpdatePullRequestStatusesArgs{
+		PatchDocument: &patchDocument,
+		Project:       &event.ProjectId,
+		RepositoryId:  &event.RepositoryId,
+		PullRequestId: &event.PullRequestNumber,
+	}
+	if err := v.Client.UpdatePullRequestStatuses(ctx, gitUpdatePullRequestStatus); err != nil {
+		return fmt.Errorf("failed to update pull request status: %v", err)
+	}
+	return nil
+}
+
+func createPRStatus(ctx context.Context, v *Provider, event *info.Event, statusOpts provider.StatusOpts, gitStatusState git.GitStatusState, genreValue string) error {
 	gitPullRequestStatus := git.GitPullRequestStatus{
 		Id:          &event.PullRequestNumber,
 		TargetUrl:   &event.URL,
@@ -187,14 +177,13 @@ func createPRStatus(ctx context.Context, v *Provider, event *info.Event, statusO
 		Status:        &gitPullRequestStatus,
 	}
 	if _, err := v.Client.CreatePullRequestStatus(ctx, prStatusArgs); err != nil {
-		return false, fmt.Errorf("failed to create pull request status: %v", err)
+		return fmt.Errorf("failed to create pull request status: %v", err)
 	}
-	return true, nil
+	return nil
 }
 
-// CreateToken implements provider.Interface.
 func (v *Provider) CreateToken(context.Context, []string, *info.Event) (string, error) {
-	panic("unimplemented")
+	return "", nil
 }
 
 func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
@@ -260,14 +249,13 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 
 func (v *Provider) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{
-		TaskStatusTMPL: taskStatusTemplate,
-		Name:           "azuredevops",
+		Name: "azuredevops",
 	}
 }
 
-// GetFileInsideRepo implements provider.Interface.
+// GetFileInsideRepo TODO: Implement ME.
 func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, target string) (string, error) {
-	panic("unimplemented")
+	return "", nil
 }
 
 func (v *Provider) GetFiles(ctx context.Context, event *info.Event) (changedfiles.ChangedFiles, error) {
@@ -315,6 +303,7 @@ func (v *Provider) GetFiles(ctx context.Context, event *info.Event) (changedfile
 	return *changedFiles, nil
 }
 
+// GetTaskURI TODO: Implement ME.
 func (v *Provider) GetTaskURI(ctx context.Context, event *info.Event, uri string) (bool, string, error) {
 	return false, "", nil
 }
@@ -400,7 +389,6 @@ func (v *Provider) concatAllYamlFiles(ctx context.Context, entries *[]git.GitTre
 	return allTemplates, nil
 }
 
-// getObject fetches the content of a file from an Azure DevOps repository.
 func (v *Provider) getObject(ctx context.Context, repositoryID string, projectId string, sha string) ([]byte, error) {
 	reader, err := v.Client.GetBlobContent(ctx, git.GetBlobContentArgs{
 		RepositoryId: &repositoryID,
@@ -421,7 +409,6 @@ func (v *Provider) getObject(ctx context.Context, repositoryID string, projectId
 	return content, nil
 }
 
-// SetClient implements provider.Interface.
 func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
 	var err error
 
@@ -447,12 +434,10 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 	return nil
 }
 
-// SetLogger implements provider.Interface.
 func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 	v.Logger = logger
 }
 
-// Validate implements provider.Interface.
 func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
 	return nil
 }
