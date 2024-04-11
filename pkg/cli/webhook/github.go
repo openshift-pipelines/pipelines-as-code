@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v61/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
@@ -137,11 +137,11 @@ func (gh *gitHubConfig) create(ctx context.Context) error {
 			triggertype.PullRequest.String(),
 			"push",
 		},
-		Config: map[string]interface{}{
-			"url":          gh.controllerURL,
-			"content_type": "json",
-			"insecure_ssl": "0",
-			"secret":       gh.webhookSecret,
+		Config: &github.HookConfig{
+			URL:         github.String(gh.controllerURL),
+			ContentType: github.String("json"),
+			InsecureSSL: github.String("0"),
+			Secret:      github.String(gh.webhookSecret),
 		},
 	}
 

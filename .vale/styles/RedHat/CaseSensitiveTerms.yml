@@ -2,16 +2,14 @@
 extends: substitution
 ignorecase: false
 level: error
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/casesensitiveterms/
-message: Use '%s' rather than '%s'.
-# source: "https://redhat-documentation.github.io/supplementary-style-guide/#glossary-terms-conventions"
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/casesensitiveterms/
+message: "Use '%s' rather than '%s'."
 action:
   name: replace
 swap:
   "(?<!.-)javadocs?": Javadoc|API documentation|Java API documentation
   "(?<!/)var": VAR
   "(?<!Business )Resource Planner|(?<!Business Resource )Planner": Business Resource Planner
-  "(?<!Microsoft )Azure": Microsoft Azure
   "(?<!Microsoft Azure )On-Demand Marketplace": Microsoft Azure On-Demand Marketplace
   "(?<!Red Hat )Customer Portal": Red Hat Customer Portal
   "(?<!Red Hat )JBoss Enterprise Application Platform": Red Hat JBoss Enterprise Application Platform
@@ -151,7 +149,7 @@ swap:
   Ignite|Fuse Ignite: Fuse Online|Red Hat Fuse Online|Syndesis
   ignition config: Ignition config
   IM: instant message
-  Image Builder: image builder
+  Image builder|Image Builder: Insights image builder|image builder
   INSTALL_DIR|installDir: FUSE_HOME
   Iops|IOPs: IOPS
   Ip: IP
@@ -178,7 +176,7 @@ swap:
   kjar|kJAR: KJAR
   knowledgebase: Knowledgebase
   ksession|knowledge session: KIE session
-  Kubelet: kubelet
+  Kubelet(?! Stats Receiver): kubelet
   kubernetes|k8s: Kubernetes
   kvm: KVM
   Lan|lan: LAN
@@ -314,7 +312,7 @@ swap:
   vnuma|VNUMA: vNUMA node
   vpn: VPN
   VS Code|VSCode|VisualStudioCode|VisualStudio Code: Visual Studio Code
-  VT-i|VT: Intel Virtualization Technology
+  VT(?!-d)|VT-i: Intel Virtualization Technology
   wan: WAN
   wca: WCA
   web-UI|webUI: web UI

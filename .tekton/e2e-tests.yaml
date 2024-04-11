@@ -41,7 +41,7 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: registry.access.redhat.com/ubi9/go-toolset:1.20
+            - image: golang:1.21
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -72,7 +72,7 @@ spec:
                    curl -X DELETE -F "file=golang-cache.tar.gz" http://uploader:8080/upload
 
             - name: e2e-tests
-              image: public.ecr.aws/docker/library/golang:1.18
+              image: golang:1.21
               env:
                 - name: TEST_GITHUB_API_URL
                   valueFrom:

@@ -3,7 +3,7 @@ extends: substitution
 ignorecase: true
 level: warning
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/hyphens/
-message: Use %s rather than '%s'.
+message: "Use %s rather than '%s'."
 action:
   name: replace
 # swap maps tokens in the form "bad: good"

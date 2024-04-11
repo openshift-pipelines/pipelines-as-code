@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v61/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
@@ -77,9 +77,9 @@ func TestFilterRunningPipelineRunOnTargetTest(t *testing.T) {
 		},
 	}
 	ret := filterRunningPipelineRunOnTargetTest("", prs)
-	assert.Equal(t, prs[0].GetName(), ret[0].GetName())
+	assert.Assert(t, ret == nil)
 	ret = filterRunningPipelineRunOnTargetTest(testPipeline, prs)
-	assert.Equal(t, prs[0].GetName(), ret[0].GetName())
+	assert.Equal(t, prs[0].GetName(), ret.GetName())
 	prs = []*tektonv1.PipelineRun{}
 	ret = filterRunningPipelineRunOnTargetTest(testPipeline, prs)
 	assert.Assert(t, ret == nil)

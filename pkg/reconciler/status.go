@@ -6,13 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v61/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1a1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	kstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction/status"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
@@ -142,7 +143,7 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 	}
 
 	status := provider.StatusOpts{
-		Status:                  "completed",
+		Status:                  pipelineascode.CompletedStatus,
 		PipelineRun:             pr,
 		Conclusion:              formatting.PipelineRunStatus(pr),
 		Text:                    tmplStatusText,

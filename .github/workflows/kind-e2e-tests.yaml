@@ -112,7 +112,7 @@ jobs:
           path: /tmp/logs
 
       - name: Report Status
-        if: ${{ always() && github.ref_name == 'main' }}
+        if: ${{ always() && github.ref_name == 'main' && github.event_name == 'schedule' }}
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
