@@ -14,6 +14,15 @@ type Info struct {
 	Controller *ControllerInfo
 }
 
+func NewInfo() Info {
+	return Info{
+		pacMutex:   &sync.Mutex{},
+		Pac:        NewPacOpts(),
+		Kube:       &KubeOpts{},
+		Controller: GetControllerInfoFromEnvOrDefault(),
+	}
+}
+
 func (i *Info) InitInfo() {
 	i.pacMutex = &sync.Mutex{}
 }
@@ -34,7 +43,7 @@ func (i *Info) UpdatePacOpts(logger *zap.SugaredLogger, configData map[string]st
 	i.pacMutex.Lock()
 	defer i.pacMutex.Unlock()
 
-	if err := settings.ConfigToSettings(logger, &i.Pac.Settings, configData); err != nil {
+	if err := settings.SyncConfig(logger, &i.Pac.Settings, configData); err != nil {
 		return nil, err
 	}
 	return &i.Pac.Settings, nil

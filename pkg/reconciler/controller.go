@@ -25,15 +25,11 @@ import (
 
 func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 	return func(ctx context.Context, _ configmap.Watcher) *controller.Impl {
-		ns := system.Namespace()
-		ctx = info.StoreNS(ctx, ns)
-
+		ctx = info.StoreNS(ctx, system.Namespace())
 		log := logging.FromContext(ctx)
+
 		run := params.New()
-		run.Info.InitInfo()
-		rinfo := &run.Info
-		rinfo.Controller = info.GetControllerInfoFromEnvOrDefault()
-		err := run.Clients.NewClients(ctx, rinfo)
+		err := run.Clients.NewClients(ctx, &run.Info)
 		if err != nil {
 			log.Fatal("failed to init clients : ", err)
 		}

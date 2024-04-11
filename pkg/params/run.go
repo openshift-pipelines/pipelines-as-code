@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -60,22 +58,7 @@ func (r *Run) UpdatePACInfo(ctx context.Context) error {
 }
 
 func New() *Run {
-	hubCatalog := &sync.Map{}
-	hubCatalog.Store("default", settings.HubCatalog{
-		ID:   "default",
-		Name: settings.HubCatalogNameDefaultValue,
-		URL:  settings.HubURLDefaultValue,
-	})
 	return &Run{
-		Info: info.Info{
-			Pac: &info.PacOpts{
-				Settings: settings.Settings{
-					ApplicationName: settings.PACApplicationNameDefaultValue,
-					HubCatalogs:     hubCatalog,
-				},
-			},
-			Kube:       &info.KubeOpts{},
-			Controller: &info.ControllerInfo{},
-		},
+		Info: info.NewInfo(),
 	}
 }

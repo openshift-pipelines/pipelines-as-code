@@ -74,7 +74,28 @@ func (s *Settings) DeepCopy(out *Settings) {
 	*out = *s
 }
 
-func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[string]string) error {
+func DefaultSettings() Settings {
+	newSettings := &Settings{}
+	hubCatalog := &sync.Map{}
+	hubCatalog.Store("default", HubCatalog{
+		ID:   "default",
+		Name: HubCatalogNameDefaultValue,
+		URL:  HubURLDefaultValue,
+	})
+	newSettings.HubCatalogs = hubCatalog
+
+	_ = configutil.ValidateAndAssignValues(nil, map[string]string{}, newSettings, map[string]func(string) error{
+		"ErrorDetectionSimpleRegexp": isValidRegex,
+		"TektonDashboardURL":         isValidURL,
+		"CustomConsoleURL":           isValidURL,
+		"CustomConsolePRTaskLog":     startWithHTTPorHTTPS,
+		"CustomConsolePRDetail":      startWithHTTPorHTTPS,
+	}, false)
+
+	return *newSettings
+}
+
+func SyncConfig(logger *zap.SugaredLogger, setting *Settings, config map[string]string) error {
 	setting.HubCatalogs = getHubCatalogs(logger, setting.HubCatalogs, config)
 
 	err := configutil.ValidateAndAssignValues(logger, config, setting, map[string]func(string) error{
@@ -83,7 +104,7 @@ func ConfigToSettings(logger *zap.SugaredLogger, setting *Settings, config map[s
 		"CustomConsoleURL":           isValidURL,
 		"CustomConsolePRTaskLog":     startWithHTTPorHTTPS,
 		"CustomConsolePRDetail":      startWithHTTPorHTTPS,
-	})
+	}, true)
 	if err != nil {
 		return fmt.Errorf("failed to validate and assign values: %w", err)
 	}
