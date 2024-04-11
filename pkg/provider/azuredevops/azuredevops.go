@@ -253,11 +253,6 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-// GetFileInsideRepo TODO: Implement ME.
-func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, target string) (string, error) {
-	return "", nil
-}
-
 func (v *Provider) GetFiles(ctx context.Context, event *info.Event) (changedfiles.ChangedFiles, error) {
 
 	filesChanged, err := v.Client.GetChanges(ctx, git.GetChangesArgs{
@@ -308,25 +303,72 @@ func (v *Provider) GetTaskURI(ctx context.Context, event *info.Event, uri string
 	return false, "", nil
 }
 
+func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, target string) (string, error) {
+	repositoryID := runevent.RepositoryId
+	ProjectId := runevent.ProjectId
+
+	version := runevent.SHA
+	versionType := git.GitVersionTypeValues.Commit
+	if target != "" {
+		version = runevent.BaseBranch
+		versionType = git.GitVersionTypeValues.Branch
+	}
+
+	gitVersionDescriptor := git.GitVersionDescriptor{
+		Version:     &version,
+		VersionType: &versionType,
+	}
+
+	reader, err := v.Client.GetItemContent(ctx, git.GetItemContentArgs{
+		RepositoryId:      &repositoryID,
+		Project:           &ProjectId,
+		Path:              &path,
+		VersionDescriptor: &gitVersionDescriptor,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer reader.Close()
+
+	// Read the content from the reader returned by GetBlobContent
+	content, err := io.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+
+	return string(content), nil
+
+}
+
 // GetTektonDir implements provider.Interface.
 func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path, provenance string) (string, error) {
 
 	repositoryID := runevent.RepositoryId
 	ProjectId := runevent.ProjectId
 	var version string
+	var versionType git.GitVersionType
 
 	if provenance == "default_branch" {
 		version = runevent.DefaultBranch
+		versionType = git.GitVersionTypeValues.Branch
 		v.Logger.Infof("Using Tekton definition from default branch: %s", version)
 	} else {
 		version = runevent.SHA
+		versionType = git.GitVersionTypeValues.Commit
 		v.Logger.Infof("Using Tekton definition from commit ID: %s", version)
 	}
+
+	gitVersionDescriptor := git.GitVersionDescriptor{
+		Version:     &version,
+		VersionType: &versionType,
+	}
+
 	// Check if the path exists and is a directory
 	item, err := v.Client.GetItem(ctx, git.GetItemArgs{
-		RepositoryId: &repositoryID,
-		Project:      &ProjectId,
-		Path:         &path,
+		RepositoryId:      &repositoryID,
+		Project:           &ProjectId,
+		Path:              &path,
+		VersionDescriptor: &gitVersionDescriptor,
 	})
 
 	if err != nil {
