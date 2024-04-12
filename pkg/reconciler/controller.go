@@ -39,9 +39,8 @@ func NewController() func(context.Context, configmap.Watcher) *controller.Impl {
 			log.Fatal("failed to init kinit client : ", err)
 		}
 
-		if err := run.UpdatePACInfo(ctx); err != nil {
-			log.Fatal("error from WatchConfigMapChanges from watcher reconciler : ", err)
-		}
+		// Start pac config syncer
+		go params.StartConfigSync(ctx, run)
 
 		pipelineRunInformer := tektonPipelineRunInformerv1.Get(ctx)
 		metrics, err := metrics.NewRecorder()

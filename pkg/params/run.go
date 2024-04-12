@@ -16,7 +16,7 @@ type Run struct {
 	Info    info.Info
 }
 
-func (r *Run) UpdatePACInfo(ctx context.Context) error {
+func (r *Run) UpdatePacConfig(ctx context.Context) error {
 	ns := info.GetNS(ctx)
 	if ns == "" {
 		return fmt.Errorf("failed to find namespace")
