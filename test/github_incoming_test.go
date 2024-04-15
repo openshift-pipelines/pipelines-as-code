@@ -169,10 +169,7 @@ func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[stri
 	}
 	assert.Assert(t, prName == "pipelinerun-incoming")
 
-	err = wait.RegexpMatchingInPodLog(context.Background(),
-		runcnx, randomedString,
-		"pipelinesascode.tekton.dev/event-type=incoming",
-		"step-task", *regexp.MustCompile(".*It's a Bird... It's a Plane... It's Superman"), 2)
+	err = wait.RegexpMatchingInPodLog(context.Background(), runcnx, randomedString, "pipelinesascode.tekton.dev/event-type=incoming", "step-task", *regexp.MustCompile(".*It's a Bird... It's a Plane... It's Superman"), "", 2)
 	assert.NilError(t, err, "Error while checking the logs of the pods")
 }
 

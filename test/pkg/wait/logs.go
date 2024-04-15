@@ -36,19 +36,31 @@ func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg
 	return fmt.Errorf("could not find a match using the labelSelector: %s in container %s for regexp: %s", labelselector, containerName, reg.String())
 }
 
-func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labelselector, containerName string, reg regexp.Regexp, maxNumberOfLoop int) error {
+func RegexpMatchingInPodLog(ctx context.Context, clients *params.Run, ns, labelselector, containerName string, reg regexp.Regexp, goldenFile string, maxNumberOfLoop int) error {
 	var err error
 	output := ""
-	clients.Clients.Log.Infof("looking for regexp %s in namespace: %s for label %s and container %s", reg.String(), ns, labelselector, containerName)
+	if goldenFile != "" {
+		goldenFile = strings.ReplaceAll(fmt.Sprintf("%s.golden", goldenFile), "/", "-")
+	}
+	if reg.String() != "" {
+		clients.Clients.Log.Infof("looking for regexp %s in namespace: %s for label %s and container %s", reg.String(), ns, labelselector, containerName)
+	} else {
+		clients.Clients.Log.Infof("looking for matching content of file %s in namespace: %s for label %s and container %s", goldenFile, ns, labelselector, containerName)
+	}
+
 	for i := 0; i <= maxNumberOfLoop; i++ {
 		output, err = tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName, github.Int64(10))
 		if err != nil {
 			return err
 		}
-
-		if reg.MatchString(output) {
-			clients.Clients.Log.Infof("matched regexp in labelSelector/container %s:%s",
-				labelselector, containerName)
+		if goldenFile != "" {
+			if golden.String(output, goldenFile)().Success() {
+				clients.Clients.Log.Infof("matched file content %s in labelSelector/container %s:%s", goldenFile, labelselector, containerName)
+				return nil
+			}
+		} else if reg.MatchString(output) {
+			clients.Clients.Log.Infof("matched regexp %s in labelSelector/container %s:%s",
+				reg.String(), labelselector, containerName)
 			return nil
 		}
 		time.Sleep(5 * time.Second)
