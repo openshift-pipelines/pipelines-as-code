@@ -187,13 +187,9 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, len(repo.Status) != 0)
 	assert.NilError(t,
-		twait.RegexpMatchingInPodLog(context.Background(),
-			topts.ParamsRun,
-			topts.TargetNS,
-			fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=params",
-				repo.Status[0].PipelineRunName),
-			"step-test-params-value", *regexp.MustCompile(
-				"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from a payload match\n{{ secret_nothere }}"), 2))
+		twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=params",
+			repo.Status[0].PipelineRunName), "step-test-params-value", *regexp.MustCompile(
+			"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from a payload match\n{{ secret_nothere }}"), "", 2))
 }
 
 // TestGiteaParamsBodyHeadersCEL Test that we can access the pull request body and headers in params
@@ -223,12 +219,8 @@ func TestGiteaParamsBodyHeadersCEL(t *testing.T) {
 	// check the output logs if the CEL body headers has expanded  properly
 	output := `Look mum I know that we are acting on a pull_request
 my email is a true beauty and like groot, I AM pac`
-	err = twait.RegexpMatchingInPodLog(context.Background(),
-		topts.ParamsRun,
-		topts.TargetNS,
-		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-pullrequest-params",
-			repo.Status[0].PipelineRunName),
-		"step-test-cel-params-value", *regexp.MustCompile(output), 2)
+	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-pullrequest-params",
+		repo.Status[0].PipelineRunName), "step-test-cel-params-value", *regexp.MustCompile(output), "", 2)
 	assert.NilError(t, err)
 
 	// Merge the pull request so we can generate a push event and wait that it is updated
@@ -266,12 +258,7 @@ my email is a true beauty and like groot, I AM pac`
 	// push matching the expanded CEL body and headers values
 	output = `Look mum I know that we are acting on a push
 my email is a true beauty and you can call me pacman`
-	err = twait.RegexpMatchingInPodLog(context.Background(),
-		topts.ParamsRun,
-		topts.TargetNS,
-		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-push-params",
-			sortedstatus[0].PipelineRunName),
-		"step-test-cel-params-value", *regexp.MustCompile(output), 2)
+	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=cel-push-params", sortedstatus[0].PipelineRunName), "step-test-cel-params-value", *regexp.MustCompile(output), "", 2)
 	assert.NilError(t, err)
 }
 

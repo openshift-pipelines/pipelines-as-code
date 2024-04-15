@@ -90,13 +90,6 @@ func TestGithubSecondOnCommentAnnotation(t *testing.T) {
 	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
 	lastPrName := repo.Status[len(repo.Status)-1].PipelineRunName
 
-	err = twait.RegexpMatchingInPodLog(
-		context.Background(),
-		g.Cnx,
-		g.TargetNamespace,
-		fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName),
-		"step-task",
-		*regexp.MustCompile(triggerComment),
-		2)
+	err = twait.RegexpMatchingInPodLog(context.Background(), g.Cnx, g.TargetNamespace, fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName), "step-task", *regexp.MustCompile(triggerComment), "", 2)
 	assert.NilError(t, err)
 }

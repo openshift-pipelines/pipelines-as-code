@@ -1,5 +1,4 @@
 //go:build e2e
-// +build e2e
 
 package test
 
@@ -11,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
@@ -55,6 +55,20 @@ func TestGiteaOnCommentAnnotation(t *testing.T) {
 	ctx := context.Background()
 	topts := &tgitea.TestOpts{
 		TargetRefName: names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"),
+		RepoCRParams: &[]v1alpha1.Params{
+			{
+				Name:  "custom1",
+				Value: "foo",
+			},
+			{
+				Name:  "custom2",
+				Value: "bar",
+			},
+			{
+				Name:  "custom3",
+				Value: "moto",
+			},
+		},
 	}
 	triggerComment := "/hello-world"
 	topts.TargetNS = topts.TargetRefName
@@ -94,10 +108,19 @@ func TestGiteaOnCommentAnnotation(t *testing.T) {
 	assert.Equal(t, *repo.Status[len(repo.Status)-1].EventType, opscomments.OnCommentEventType.String(), "should have a on comment event type")
 
 	last := repo.Status[len(repo.Status)-1]
-	err = twait.RegexpMatchingInPodLog(context.Background(),
-		topts.ParamsRun,
-		topts.TargetNS,
-		fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName), "step-task", *regexp.MustCompile(triggerComment), 2)
+	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName), "step-task", *regexp.MustCompile(triggerComment), "", 2)
+	assert.NilError(t, err)
+
+	tgitea.PostCommentOnPullRequest(t, topts, fmt.Sprintf(`%s revision=main custom1=thisone custom2="another one" custom3="a \"quote\""`, triggerComment))
+	waitOpts.MinNumberStatus = 4
+	repo, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+	assert.Equal(t, len(repo.Status), waitOpts.MinNumberStatus, fmt.Sprintf("should have only %d status", waitOpts.MinNumberStatus))
+	assert.Equal(t, *repo.Status[len(repo.Status)-1].EventType, opscomments.OnCommentEventType.String(), "should have a on comment event type")
+	// now we should have only 3 status, the last one is the on comment match with an argument redefining the revision which is a standard parameter
+
+	last = repo.Status[len(repo.Status)-1]
+	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName), "step-task", regexp.Regexp{}, t.Name(), 2)
 	assert.NilError(t, err)
 }
 
@@ -108,6 +131,12 @@ func TestGiteaTestPipelineRunExplicitelyWithTestComment(t *testing.T) {
 	ctx := context.Background()
 	topts := &tgitea.TestOpts{
 		TargetRefName: names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"),
+		RepoCRParams: &[]v1alpha1.Params{
+			{
+				Name:  "custom",
+				Value: "foo",
+			},
+		},
 	}
 	topts.TargetNS = topts.TargetRefName
 	topts.ParamsRun, topts.Opts, topts.GiteaCNX, err = tgitea.Setup(ctx)
@@ -124,7 +153,7 @@ func TestGiteaTestPipelineRunExplicitelyWithTestComment(t *testing.T) {
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
 	targetPrName := "no-match"
-	tgitea.PostCommentOnPullRequest(t, topts, "/test "+targetPrName)
+	tgitea.PostCommentOnPullRequest(t, topts, fmt.Sprintf("/test %s custom=awesome", targetPrName))
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 	waitOpts := twait.Opts{
 		RepoName:        topts.TargetNS,
@@ -139,6 +168,10 @@ func TestGiteaTestPipelineRunExplicitelyWithTestComment(t *testing.T) {
 	assert.Equal(t, *repo.Status[0].EventType, opscomments.TestSingleCommentEventType.String(), "should have a test comment event in status")
 	assert.Assert(t, strings.HasPrefix(repo.Status[0].PipelineRunName, targetPrName+"-"),
 		"we didn't target the proper pipelinerun, we tested: %s", repo.Status[0].PipelineRunName)
+
+	last := repo.Status[len(repo.Status)-1]
+	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName), "step-task", *regexp.MustCompile("custom is awesome"), "", 2)
+	assert.NilError(t, err)
 }
 
 func TestGiteaRetestAll(t *testing.T) {

@@ -14,4 +14,6 @@ spec:
           steps:
             - name: task
               image: registry.access.redhat.com/ubi9/ubi-micro
-              command: ["/bin/echo", "NO MATCH"]
+              script: |
+                echo "custom is {{ custom }}"
+                echo "NO MATCH"
