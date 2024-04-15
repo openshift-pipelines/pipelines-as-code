@@ -173,9 +173,9 @@ You can find more information about the CEL language spec here :
 
 ### Matching a PipelineRun on a regexp in a comment
 
-{{< tech_preview "Matching PipelineRun on regexp in comments" >}}
+{{< tech_preview "Matching PipelineRun with regexp on comments" >}}
 
-You can match a PipelineRun on a comment on a Pull Request with the annotation
+You can match a PipelineRun on a comment on a Pull Request or a [Pushed Commit]({{< relref "/docs/guide/running/#gitops-commands-on-pushed-commits" >}}) with the annotation
 `pipelinesascode.tekton.dev/on-comment`.
 
 The comment is a regexp and if a newly created comment has this regexp it will
