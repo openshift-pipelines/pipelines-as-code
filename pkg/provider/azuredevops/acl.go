@@ -9,12 +9,12 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
 
-// ToDo: implement this function
+// ToDo: implement this function.
 func (v *Provider) CheckPolicyAllowing(context.Context, *info.Event, []string) (bool, string) {
 	return false, ""
 }
 
-// ToDo: implement this function
+// ToDo: implement this function.
 func (v *Provider) IsAllowed(context.Context, *info.Event) (bool, error) {
 	return true, nil
 }

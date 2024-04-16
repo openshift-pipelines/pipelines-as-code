@@ -15,14 +15,11 @@ import (
 	types "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/azuredevops/types"
 )
 
-func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
-	payload string,
-) (*info.Event, error) {
-
+func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, _ *http.Request, payload string) (*info.Event, error) {
 	var genericEvent servicehooks.Event
 	err := json.Unmarshal([]byte(payload), &genericEvent)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling payload into Event: %v", err)
+		return nil, fmt.Errorf("error unmarshalling payload into Event: %w", err)
 	}
 
 	if genericEvent.EventType == nil {
@@ -34,7 +31,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 
 	resourceBytes, err := json.Marshal(genericEvent.Resource)
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling resource: %v", err)
+		return nil, fmt.Errorf("error marshalling resource: %w", err)
 	}
 
 	switch *genericEvent.EventType {
@@ -42,33 +39,31 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 
 		var pushEvent types.PushEventResource
 		if err := json.Unmarshal(resourceBytes, &pushEvent); err != nil {
-			return nil, fmt.Errorf("error unmarshalling push event resource: %v", err)
+			return nil, fmt.Errorf("error unmarshalling push event resource: %w", err)
 		}
 		if len(pushEvent.Commits) > 0 {
-			processedEvent.SHA = pushEvent.Commits[0].CommitId
-			processedEvent.SHAURL = pushEvent.Commits[0].Url
+			processedEvent.SHA = pushEvent.Commits[0].CommitID
+			processedEvent.SHAURL = pushEvent.Commits[0].URL
 			processedEvent.SHATitle = pushEvent.Commits[0].Comment
 		}
 
 		processedEvent.EventType = *genericEvent.EventType
 		processedEvent.Sender = pushEvent.PushedBy.DisplayName
-		baseURL, err := extractBaseURL(pushEvent.Repository.RemoteUrl)
+		baseURL, err := extractBaseURL(pushEvent.Repository.RemoteURL)
 		if err != nil {
-			fmt.Println("Error:", err)
 			return nil, fmt.Errorf("not able to extract organization url")
 		}
 		processedEvent.Organization = baseURL
-		fmt.Println("Base URL:", baseURL)
 
-		processedEvent.Repository = pushEvent.Repository.RemoteUrl
-		processedEvent.RepositoryId = pushEvent.Repository.Id
-		processedEvent.ProjectId = pushEvent.Repository.Project.Id
-		processedEvent.URL = pushEvent.Repository.RemoteUrl
+		processedEvent.Repository = pushEvent.Repository.RemoteURL
+		processedEvent.RepositoryID = pushEvent.Repository.ID
+		processedEvent.ProjectID = pushEvent.Repository.Project.ID
+		processedEvent.URL = pushEvent.Repository.RemoteURL
 		processedEvent.DefaultBranch = pushEvent.Repository.DefaultBranch
 		processedEvent.TriggerTarget = triggertype.Push
 		// Assuming the repository URL can serve as both BaseURL and HeadURL for viewing purposes
-		processedEvent.BaseURL = pushEvent.Repository.Url // or it could be remoteUrl or it could be other; need to verify
-		processedEvent.HeadURL = pushEvent.Repository.Url // or it could be remoteUrl or it could be other; need to verify
+		processedEvent.BaseURL = pushEvent.Repository.URL // or it could be remoteUrl or it could be other; need to verify
+		processedEvent.HeadURL = pushEvent.Repository.URL // or it could be remoteUrl or it could be other; need to verify
 		if len(pushEvent.RefUpdates) > 0 {
 			branchName := ExtractBranchName(pushEvent.RefUpdates[0].Name)
 			processedEvent.BaseBranch = branchName
@@ -78,14 +73,14 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 	case "git.pullrequest.created", "git.pullrequest.updated":
 		var prEvent types.PullRequestEventResource
 		if err := json.Unmarshal(resourceBytes, &prEvent); err != nil {
-			return nil, fmt.Errorf("error unmarshalling pull request event resource: %v", err)
+			return nil, fmt.Errorf("error unmarshalling pull request event resource: %w", err)
 		}
 
 		processedEvent.EventType = *genericEvent.EventType
-		processedEvent.PullRequestNumber = prEvent.PullRequestId
+		processedEvent.PullRequestNumber = prEvent.PullRequestID
 		processedEvent.PullRequestTitle = prEvent.Title
-		processedEvent.SHA = prEvent.LastMergeSourceCommit.CommitId
-		processedEvent.SHAURL = prEvent.LastMergeSourceCommit.Url
+		processedEvent.SHA = prEvent.LastMergeSourceCommit.CommitID
+		processedEvent.SHAURL = prEvent.LastMergeSourceCommit.URL
 		processedEvent.SHATitle = prEvent.LastMergeSourceCommit.Comment
 
 		// Extract branch names from the ref names
@@ -95,22 +90,21 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.DefaultBranch = prEvent.Repository.DefaultBranch
 
 		// Constructing URLs
-		remoteUrl := *prEvent.Repository.WebUrl
-		processedEvent.BaseURL = fmt.Sprintf("%s?version=GB%s", remoteUrl, processedEvent.BaseBranch)
-		processedEvent.HeadURL = fmt.Sprintf("%s?version=GB%s", remoteUrl, processedEvent.HeadBranch)
+		remoteURL := *prEvent.Repository.WebURL
+		processedEvent.BaseURL = fmt.Sprintf("%s?version=GB%s", remoteURL, processedEvent.BaseBranch)
+		processedEvent.HeadURL = fmt.Sprintf("%s?version=GB%s", remoteURL, processedEvent.HeadBranch)
 
 		processedEvent.TriggerTarget = triggertype.PullRequest
 
-		baseURL, err := extractBaseURL(remoteUrl)
+		baseURL, err := extractBaseURL(remoteURL)
 		if err != nil {
-			fmt.Println("Error:", err)
 			return nil, fmt.Errorf("not able to extract organization url")
 		}
 		processedEvent.Organization = baseURL
-		processedEvent.Repository = *prEvent.Repository.WebUrl
-		processedEvent.RepositoryId = prEvent.Repository.Id
-		processedEvent.ProjectId = prEvent.Repository.Project.Id
-		processedEvent.URL = *prEvent.Repository.WebUrl
+		processedEvent.Repository = *prEvent.Repository.WebURL
+		processedEvent.RepositoryID = prEvent.Repository.ID
+		processedEvent.ProjectID = prEvent.Repository.Project.ID
+		processedEvent.URL = *prEvent.Repository.WebURL
 		processedEvent.Sender = prEvent.CreatedBy.DisplayName
 	default:
 		return nil, fmt.Errorf("event type %s is not supported", *genericEvent.EventType)
@@ -120,7 +114,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 }
 
 // ExtractBranchName extracts the branch name from a full ref name.
-// E.g., "refs/heads/master" -> "master"
+// E.g., "refs/heads/master" -> "master".
 func ExtractBranchName(refName string) string {
 	parts := strings.Split(refName, "/")
 	if len(parts) > 2 {

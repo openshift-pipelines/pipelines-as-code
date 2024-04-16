@@ -6,8 +6,8 @@ import (
 
 type PullRequestEventResource struct {
 	Repository            Repository `json:"repository"`
-	PullRequestId         int        `json:"pullRequestId"`
-	CodeReviewId          int        `json:"codeReviewId,omitempty"`
+	PullRequestID         int        `json:"pullRequestId"`
+	CodeReviewID          int        `json:"codeReviewId,omitempty"`
 	Status                string     `json:"status"`
 	CreatedBy             User       `json:"createdBy"`
 	CreationDate          CustomTime `json:"creationDate"`
@@ -17,15 +17,15 @@ type PullRequestEventResource struct {
 	TargetRefName         string     `json:"targetRefName"`
 	MergeStatus           string     `json:"mergeStatus"`
 	IsDraft               bool       `json:"isDraft,omitempty"`
-	MergeId               string     `json:"mergeId"`
+	MergeID               string     `json:"mergeId"`
 	LastMergeSourceCommit Commit     `json:"lastMergeSourceCommit"`
 	LastMergeTargetCommit Commit     `json:"lastMergeTargetCommit"`
 	LastMergeCommit       Commit     `json:"lastMergeCommit,omitempty"`
 	Reviewers             []User     `json:"reviewers"`
-	Url                   string     `json:"url"`
+	URL                   string     `json:"url"`
 	Links                 Links      `json:"_links"`
 	SupportsIterations    bool       `json:"supportsIterations,omitempty"`
-	ArtifactId            string     `json:"artifactId,omitempty"`
+	ArtifactID            string     `json:"artifactId,omitempty"`
 }
 
 type PushEventResource struct {
@@ -33,43 +33,43 @@ type PushEventResource struct {
 	RefUpdates []RefUpdate `json:"refUpdates"`
 	Repository Repository  `json:"repository"`
 	PushedBy   User        `json:"pushedBy"`
-	PushId     int         `json:"pushId"`
+	PushID     int         `json:"pushId"`
 	Date       CustomTime  `json:"date"`
-	Url        string      `json:"url"`
+	URL        string      `json:"url"`
 }
 
 type Commit struct {
-	CommitId  string `json:"commitId,omitempty"`
+	CommitID  string `json:"commitId,omitempty"`
 	Author    User   `json:"author,omitempty"`
 	Committer User   `json:"committer,omitempty"`
 	Comment   string `json:"comment,omitempty"`
-	Url       string `json:"url,omitempty"`
+	URL       string `json:"url,omitempty"`
 }
 
 type RefUpdate struct {
 	Name        string `json:"name"`
-	OldObjectId string `json:"oldObjectId"`
-	NewObjectId string `json:"newObjectId"`
+	OldObjectID string `json:"oldObjectId"`
+	NewObjectID string `json:"newObjectId"`
 }
 
 type Repository struct {
-	Id              string  `json:"id"`
+	ID              string  `json:"id"`
 	Name            string  `json:"name"`
-	Url             string  `json:"url"`
+	URL             string  `json:"url"`
 	Project         Project `json:"project"`
 	DefaultBranch   string  `json:"defaultBranch,omitempty"`
 	Size            *int    `json:"size,omitempty"`
-	RemoteUrl       string  `json:"remoteUrl"`
-	SshUrl          *string `json:"sshUrl,omitempty"`
-	WebUrl          *string `json:"webUrl,omitempty"`
+	RemoteURL       string  `json:"remoteUrl"`
+	SSHURL          *string `json:"sshUrl,omitempty"`
+	WebURL          *string `json:"webUrl,omitempty"`
 	IsDisabled      *bool   `json:"isDisabled,omitempty"`
 	IsInMaintenance *bool   `json:"isInMaintenance,omitempty"`
 }
 
 type Project struct {
-	Id             string     `json:"id"`
+	ID             string     `json:"id"`
 	Name           string     `json:"name"`
-	Url            string     `json:"url"`
+	URL            string     `json:"url"`
 	State          string     `json:"state"`
 	Revision       int        `json:"revision,omitempty"`
 	Visibility     string     `json:"visibility"`
@@ -81,11 +81,11 @@ type User struct {
 	Email       string     `json:"email,omitempty"`
 	Date        CustomTime `json:"date,omitempty"`
 	DisplayName string     `json:"displayName,omitempty"`
-	Url         string     `json:"url,omitempty"`
+	URL         string     `json:"url,omitempty"`
 	Links       Links      `json:"_links,omitempty"`
-	Id          string     `json:"id,omitempty"`
+	ID          string     `json:"id,omitempty"`
 	UniqueName  string     `json:"uniqueName,omitempty"`
-	ImageUrl    string     `json:"imageUrl,omitempty"`
+	ImageURL    string     `json:"imageUrl,omitempty"`
 	Descriptor  string     `json:"descriptor,omitempty"`
 }
 
@@ -96,7 +96,7 @@ type ResourceContainers struct {
 }
 
 type Container struct {
-	Id string `json:"id"`
+	ID string `json:"id"`
 }
 
 type Links struct {

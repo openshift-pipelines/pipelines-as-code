@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 
@@ -91,24 +90,24 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 			},
 		}
 		commitStatusArgs := git.CreateCommitStatusArgs{
-			Project:                 &event.ProjectId,
-			RepositoryId:            &event.RepositoryId,
+			Project:                 &event.ProjectID,
+			RepositoryId:            &event.RepositoryID,
 			CommitId:                &event.SHA,
 			GitCommitStatusToCreate: &gitStatus,
 		}
 		if _, err := v.Client.CreateCommitStatus(ctx, commitStatusArgs); err != nil {
-			return fmt.Errorf("failed to create commit status: %v", err)
+			return fmt.Errorf("failed to create commit status: %w", err)
 		}
 	case "git.pullrequest.created", "git.pullrequest.updated":
 		gitPullRequestStatusArgs := git.GetPullRequestStatusesArgs{
 			PullRequestId: &event.PullRequestNumber,
-			Project:       &event.ProjectId,
-			RepositoryId:  &event.RepositoryId,
+			Project:       &event.ProjectID,
+			RepositoryId:  &event.RepositoryID,
 		}
 
 		status, err := v.Client.GetPullRequestStatuses(ctx, gitPullRequestStatusArgs)
 		if err != nil {
-			return fmt.Errorf("failed to fetch pull request statuses: %v", err)
+			return fmt.Errorf("failed to fetch pull request statuses: %w", err)
 		}
 
 		if status == nil || len(*status) == 0 {
@@ -117,7 +116,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 				return err
 			}
 		} else {
-			//azure UpdatePullRequestStatuses only Support remove, so first remove the old status and then updated with new one
+			// azure UpdatePullRequestStatuses only Support remove, so first remove the old status and then updated with new one
 
 			err := updatePRStatus(ctx, status, event, v)
 			if err != nil {
@@ -148,12 +147,12 @@ func updatePRStatus(ctx context.Context, status *[]git.GitPullRequestStatus, eve
 
 	gitUpdatePullRequestStatus := git.UpdatePullRequestStatusesArgs{
 		PatchDocument: &patchDocument,
-		Project:       &event.ProjectId,
-		RepositoryId:  &event.RepositoryId,
+		Project:       &event.ProjectID,
+		RepositoryId:  &event.RepositoryID,
 		PullRequestId: &event.PullRequestNumber,
 	}
 	if err := v.Client.UpdatePullRequestStatuses(ctx, gitUpdatePullRequestStatus); err != nil {
-		return fmt.Errorf("failed to update pull request status: %v", err)
+		return fmt.Errorf("failed to update pull request status: %w", err)
 	}
 	return nil
 }
@@ -172,12 +171,12 @@ func createPRStatus(ctx context.Context, v *Provider, event *info.Event, statusO
 
 	prStatusArgs := git.CreatePullRequestStatusArgs{
 		PullRequestId: &event.PullRequestNumber,
-		Project:       &event.ProjectId,
-		RepositoryId:  &event.RepositoryId,
+		Project:       &event.ProjectID,
+		RepositoryId:  &event.RepositoryID,
 		Status:        &gitPullRequestStatus,
 	}
 	if _, err := v.Client.CreatePullRequestStatus(ctx, prStatusArgs); err != nil {
-		return fmt.Errorf("failed to create pull request status: %v", err)
+		return fmt.Errorf("failed to create pull request status: %w", err)
 	}
 	return nil
 }
@@ -192,22 +191,21 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
-	RepositoryId := event.RepositoryId
-	projectId := event.ProjectId
+	RepositoryID := event.RepositoryID
+	projectID := event.ProjectID
 	sha := event.SHA
 
 	// If SHA is not provided, try to fetch it from the branch or pull request
 	if sha == "" {
 		if event.HeadBranch != "" {
-
 			refName := fmt.Sprintf("refs/heads/%s", event.HeadBranch)
 			refs, err := v.Client.GetRefs(ctx, git.GetRefsArgs{
-				RepositoryId: &RepositoryId,
+				RepositoryId: &RepositoryID,
 				Filter:       &refName,
-				Project:      &projectId,
+				Project:      &projectID,
 			})
 			if err != nil {
-				return fmt.Errorf("failed to get branch info: %v", err)
+				return fmt.Errorf("failed to get branch info: %w", err)
 			}
 			// Assuming refs is a pointer to a slice, we check its length like this:
 			if len(refs.Value) > 0 {
@@ -215,12 +213,12 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 			}
 		} else if event.PullRequestNumber != 0 {
 			pr, err := v.Client.GetPullRequest(ctx, git.GetPullRequestArgs{
-				RepositoryId:  &RepositoryId,
+				RepositoryId:  &RepositoryID,
 				PullRequestId: &event.PullRequestNumber,
-				Project:       &projectId,
+				Project:       &projectID,
 			})
 			if err != nil {
-				return fmt.Errorf("failed to get pull request: %v", err)
+				return fmt.Errorf("failed to get pull request: %w", err)
 			}
 			sha = *pr.LastMergeSourceCommit.CommitId
 			event.HeadBranch = *pr.SourceRefName
@@ -230,16 +228,15 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 	if sha != "" {
 		commit, err := v.Client.GetCommit(ctx, git.GetCommitArgs{
 			CommitId:     &sha,
-			RepositoryId: &RepositoryId,
-			Project:      &projectId,
+			RepositoryId: &RepositoryID,
+			Project:      &projectID,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to get commit: %v", err)
+			return fmt.Errorf("failed to get commit: %w", err)
 		}
 		event.SHAURL = *commit.RemoteUrl
 		event.SHATitle = strings.Split(*commit.Comment, "\n\n")[0]
 		event.SHA = *commit.CommitId
-
 	} else {
 		return fmt.Errorf("unable to determine commit SHA")
 	}
@@ -254,44 +251,41 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 }
 
 func (v *Provider) GetFiles(ctx context.Context, event *info.Event) (changedfiles.ChangedFiles, error) {
-
 	filesChanged, err := v.Client.GetChanges(ctx, git.GetChangesArgs{
-		RepositoryId: &event.RepositoryId,
+		RepositoryId: &event.RepositoryID,
 		CommitId:     &event.SHA,
 	})
-
 	if err != nil {
-		v.Logger.Errorf("Failed to get changes for commit %s: %v", &event.SHA, err)
+		v.Logger.Errorf("Failed to get changes for commit %s: %w", &event.SHA, err)
 	}
 
-	changesJson, err := json.Marshal(filesChanged.Changes)
+	changesJSON, err := json.Marshal(filesChanged.Changes)
 	if err != nil {
-		v.Logger.Errorf("Failed to marshal changes: %v", err)
+		v.Logger.Errorf("Failed to marshal changes: %w", err)
 		return changedfiles.ChangedFiles{}, err
 	}
 
 	var changes []types.Change
-	if err := json.Unmarshal(changesJson, &changes); err != nil {
-		log.Fatalf("JSON Unmarshal error: %v", err)
+	if err := json.Unmarshal(changesJSON, &changes); err != nil {
+		v.Logger.Errorf("JSON Unmarshal error: %w", err)
 	}
 
 	changedFiles := &changedfiles.ChangedFiles{}
 
 	for _, c := range changes {
-
 		switch c.ChangeType {
 		case "edit":
-			changedFiles.All = append(changedFiles.Added, c.Item.Path)
-			changedFiles.Modified = append(changedFiles.Added, c.Item.Path)
+			changedFiles.All = append(changedFiles.All, c.Item.Path)
+			changedFiles.Modified = append(changedFiles.Modified, c.Item.Path)
 		case "add":
-			changedFiles.All = append(changedFiles.Added, c.Item.Path)
+			changedFiles.All = append(changedFiles.All, c.Item.Path)
 			changedFiles.Added = append(changedFiles.Added, c.Item.Path)
 		case "delete":
-			changedFiles.All = append(changedFiles.Added, c.Item.Path)
-			changedFiles.Deleted = append(changedFiles.Added, c.Item.Path)
+			changedFiles.All = append(changedFiles.All, c.Item.Path)
+			changedFiles.Deleted = append(changedFiles.Deleted, c.Item.Path)
 		case "rename":
-			changedFiles.All = append(changedFiles.Added, c.Item.Path)
-			changedFiles.Renamed = append(changedFiles.Added, c.Item.Path)
+			changedFiles.All = append(changedFiles.All, c.Item.Path)
+			changedFiles.Renamed = append(changedFiles.Renamed, c.Item.Path)
 		}
 	}
 
@@ -299,13 +293,13 @@ func (v *Provider) GetFiles(ctx context.Context, event *info.Event) (changedfile
 }
 
 // GetTaskURI TODO: Implement ME.
-func (v *Provider) GetTaskURI(ctx context.Context, event *info.Event, uri string) (bool, string, error) {
+func (v *Provider) GetTaskURI(context.Context, *info.Event, string) (bool, string, error) {
 	return false, "", nil
 }
 
 func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, path, target string) (string, error) {
-	repositoryID := runevent.RepositoryId
-	ProjectId := runevent.ProjectId
+	repositoryID := runevent.RepositoryID
+	ProjectID := runevent.ProjectID
 
 	version := runevent.SHA
 	versionType := git.GitVersionTypeValues.Commit
@@ -321,7 +315,7 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 
 	reader, err := v.Client.GetItemContent(ctx, git.GetItemContentArgs{
 		RepositoryId:      &repositoryID,
-		Project:           &ProjectId,
+		Project:           &ProjectID,
 		Path:              &path,
 		VersionDescriptor: &gitVersionDescriptor,
 	})
@@ -337,14 +331,12 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 	}
 
 	return string(content), nil
-
 }
 
 // GetTektonDir implements provider.Interface.
 func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path, provenance string) (string, error) {
-
-	repositoryID := runevent.RepositoryId
-	ProjectId := runevent.ProjectId
+	repositoryID := runevent.RepositoryID
+	ProjectID := runevent.ProjectID
 	var version string
 	var versionType git.GitVersionType
 
@@ -366,13 +358,12 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 	// Check if the path exists and is a directory
 	item, err := v.Client.GetItem(ctx, git.GetItemArgs{
 		RepositoryId:      &repositoryID,
-		Project:           &ProjectId,
+		Project:           &ProjectID,
 		Path:              &path,
 		VersionDescriptor: &gitVersionDescriptor,
 	})
-
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch the item: %v", err)
+		return "", fmt.Errorf("failed to fetch the item: %w", err)
 	}
 
 	if item == nil {
@@ -382,37 +373,33 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 	// Get the SHA of the directory and fetch the tree
 	tree, err := v.Client.GetTree(ctx, git.GetTreeArgs{
 		RepositoryId: &repositoryID,
-		Project:      &ProjectId,
+		Project:      &ProjectID,
 		Sha1:         item.ObjectId,
 		Recursive:    toBoolPtr(true),
 	})
-
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch the tree: %v", err)
+		return "", fmt.Errorf("failed to fetch the tree: %w", err)
 	}
 
 	// Concatenate all YAML files found within the tree entries
-	result, err := v.concatAllYamlFiles(ctx, tree.TreeEntries, repositoryID, ProjectId)
+	result, err := v.concatAllYamlFiles(ctx, tree.TreeEntries, repositoryID, ProjectID)
 	if err != nil {
 		return "", err
 	}
 	return result, nil
-
 }
 
 func toBoolPtr(b bool) *bool {
 	return &b
 }
 
-func (v *Provider) concatAllYamlFiles(ctx context.Context, entries *[]git.GitTreeEntryRef, repositoryID string, projectId string) (string, error) {
+func (v *Provider) concatAllYamlFiles(ctx context.Context, entries *[]git.GitTreeEntryRef, repositoryID, projectID string) (string, error) {
 	var allTemplates string
 
 	for _, entry := range *entries {
 		if *entry.GitObjectType == git.GitObjectTypeValues.Blob && (strings.HasSuffix(*entry.RelativePath, ".yaml") || strings.HasSuffix(*entry.RelativePath, ".yml")) {
-
 			// Use the object ID (SHA) of the blob to fetch its content
-			data, err := v.getObject(ctx, repositoryID, projectId, *entry.ObjectId)
-
+			data, err := v.getObject(ctx, repositoryID, projectID, *entry.ObjectId)
 			if err != nil {
 				return "", err
 			}
@@ -431,10 +418,10 @@ func (v *Provider) concatAllYamlFiles(ctx context.Context, entries *[]git.GitTre
 	return allTemplates, nil
 }
 
-func (v *Provider) getObject(ctx context.Context, repositoryID string, projectId string, sha string) ([]byte, error) {
+func (v *Provider) getObject(ctx context.Context, repositoryID, projectID, sha string) ([]byte, error) {
 	reader, err := v.Client.GetBlobContent(ctx, git.GetBlobContentArgs{
 		RepositoryId: &repositoryID,
-		Project:      &projectId,
+		Project:      &projectID,
 		Sha1:         &sha,
 	})
 	if err != nil {
@@ -458,13 +445,10 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
 
-	organizationUrl := event.Organization
-	connection := azuredevops.NewPatConnection(organizationUrl, event.Provider.Token)
-
+	organizationURL := event.Organization
+	connection := azuredevops.NewPatConnection(organizationURL, event.Provider.Token)
 	ctx := context.Background()
-
 	v.Client, err = git.NewClient(ctx, connection)
-
 	if err != nil {
 		return err
 	}
@@ -480,6 +464,6 @@ func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 	v.Logger = logger
 }
 
-func (v *Provider) Validate(ctx context.Context, params *params.Run, event *info.Event) error {
+func (v *Provider) Validate(context.Context, *params.Run, *info.Event) error {
 	return nil
 }

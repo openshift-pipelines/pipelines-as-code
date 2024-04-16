@@ -63,9 +63,9 @@ type Event struct {
 	SourceProjectID int
 	TargetProjectID int
 
-	//AzureDevops
-	RepositoryId string
-	ProjectId    string
+	// AzureDevops
+	RepositoryID string
+	ProjectID    string
 }
 
 type State struct {

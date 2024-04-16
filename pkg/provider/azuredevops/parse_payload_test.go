@@ -130,6 +130,7 @@ func TestParsePayload(t *testing.T) {
 		})
 	}
 }
+
 func TestParsePayload_Errors(t *testing.T) {
 	tests := []struct {
 		name      string

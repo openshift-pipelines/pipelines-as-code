@@ -46,7 +46,7 @@ func (m *MockGitClient) CreateAnnotatedTag(ctx context.Context, args git.CreateA
 	return nil, nil
 }
 
-func Setup(t *testing.T) (*MockGitClient, *http.ServeMux, func()) {
+func Setup() (*MockGitClient, *http.ServeMux, func()) {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
 	tearDown := func() {
@@ -54,19 +54,19 @@ func Setup(t *testing.T) (*MockGitClient, *http.ServeMux, func()) {
 	}
 
 	mockClient := &MockGitClient{
-		createCommitStatus: func(ctx context.Context, args git.CreateCommitStatusArgs) (*git.GitStatus, error) {
+		createCommitStatus: func(context.Context, git.CreateCommitStatusArgs) (*git.GitStatus, error) {
 			return &git.GitStatus{}, nil
 		},
-		getPullRequestStatuses: func(ctx context.Context, args git.GetPullRequestStatusesArgs) (*[]git.GitPullRequestStatus, error) {
+		getPullRequestStatuses: func(context.Context, git.GetPullRequestStatusesArgs) (*[]git.GitPullRequestStatus, error) {
 			return &[]git.GitPullRequestStatus{}, nil
 		},
-		updatePullRequestStatus: func(ctx context.Context, args git.UpdatePullRequestStatusesArgs) error {
+		updatePullRequestStatus: func(context.Context, git.UpdatePullRequestStatusesArgs) error {
 			return nil
 		},
-		createPullRequestStatus: func(ctx context.Context, args git.CreatePullRequestStatusArgs) (*git.GitPullRequestStatus, error) {
+		createPullRequestStatus: func(context.Context, git.CreatePullRequestStatusArgs) (*git.GitPullRequestStatus, error) {
 			return &git.GitPullRequestStatus{}, nil
 		},
-		createAnnotatedTag: func(ctx context.Context, args git.CreateAnnotatedTagArgs) (*git.GitAnnotatedTag, error) {
+		createAnnotatedTag: func(context.Context, git.CreateAnnotatedTagArgs) (*git.GitAnnotatedTag, error) {
 			return &git.GitAnnotatedTag{}, nil
 		},
 	}
@@ -91,7 +91,7 @@ func getProvider(mockClient *MockGitClient) *Provider {
 }
 
 func TestCreateStatus(t *testing.T) {
-	mockClient, _, tearDown := Setup(t)
+	mockClient, _, tearDown := Setup()
 	defer tearDown()
 
 	ctx := context.Background()

@@ -103,11 +103,11 @@ func buildEventFromPipelineRun(pr *tektonv1.PipelineRun) *info.Event {
 		if organizationID, ok := prAnno[keys.URLOrg]; ok {
 			event.Organization = organizationID
 		}
-		if projectID, ok := prAnno[keys.ProjectId]; ok {
-			event.ProjectId = projectID
+		if projectID, ok := prAnno[keys.ProjectID]; ok {
+			event.ProjectID = projectID
 		}
-		if repositoryID, ok := prAnno[keys.RepositoryId]; ok {
-			event.RepositoryId = repositoryID
+		if repositoryID, ok := prAnno[keys.RepositoryID]; ok {
+			event.RepositoryID = repositoryID
 		}
 	}
 

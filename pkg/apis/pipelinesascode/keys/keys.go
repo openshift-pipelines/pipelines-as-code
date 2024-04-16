@@ -54,8 +54,8 @@ const (
 	MaxKeepRuns     = pipelinesascode.GroupName + "/max-keep-runs"
 	LogURL          = pipelinesascode.GroupName + "/log-url"
 	ExecutionOrder  = pipelinesascode.GroupName + "/execution-order"
-	ProjectId       = pipelinesascode.GroupName + "/project-id"
-	RepositoryId    = pipelinesascode.GroupName + "/repository-id"
+	ProjectID       = pipelinesascode.GroupName + "/project-id"
+	RepositoryID    = pipelinesascode.GroupName + "/repository-id"
 	// PublicGithubAPIURL default is "https://api.github.com" but it can be overridden by X-GitHub-Enterprise-Host header.
 	PublicGithubAPIURL = "https://api.github.com"
 	// InstallationURL gives us the Installation ID for the GitHub Application.

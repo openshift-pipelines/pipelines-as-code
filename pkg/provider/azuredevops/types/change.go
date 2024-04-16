@@ -1,11 +1,11 @@
 package azuredevops
 
 type Item struct {
-	CommitId         string `json:"commitId"`
+	CommitID         string `json:"commitId"`
 	GitObjectType    string `json:"gitObjectType"`
 	IsFolder         bool   `json:"isFolder"`
-	ObjectId         string `json:"objectId"`
-	OriginalObjectId string `json:"originalObjectId"`
+	ObjectID         string `json:"objectId"`
+	OriginalObjectID string `json:"originalObjectId"`
 	Path             string `json:"path"`
 	URL              string `json:"url"`
 }
