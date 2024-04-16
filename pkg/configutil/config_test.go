@@ -11,11 +11,12 @@ import (
 )
 
 type testStruct struct {
-	ApplicationName string `default:"app-app"      json:"application-name"`
-	BoolField       bool   `default:"true"         json:"bool-field"`
-	IntField        int    `default:"43"           json:"int-field"`
-	WithoutDefault  string `json:"without-default"`
-	IgnoredField    string
+	ApplicationName   string `default:"pac-app"          json:"application-name"`
+	BoolField         bool   `default:"true"             json:"bool-field"`
+	IntField          int    `default:"43"               json:"int-field"`
+	WithoutDefault    string `json:"without-default"`
+	WithoutDefaultInt int    `json:"without-default-int"`
+	IgnoredField      string
 }
 
 func TestValidateAndAssignValues(t *testing.T) {
@@ -32,7 +33,7 @@ func TestValidateAndAssignValues(t *testing.T) {
 			name:      "With all default values",
 			configMap: map[string]string{},
 			expectedStruct: testStruct{
-				ApplicationName: "app-app",
+				ApplicationName: "pac-app",
 				BoolField:       true,
 				IntField:        43,
 				WithoutDefault:  "",
@@ -108,4 +109,56 @@ func TestValidateAndAssignValues(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateAndAssignValuesCustomCase(t *testing.T) {
+	logger, _ := logger.GetLogger()
+	var test testStruct
+
+	customValidations := map[string]func(string) error{
+		"ApplicationName": func(s string) error {
+			if !strings.HasPrefix(s, "pac") {
+				return fmt.Errorf("name should start with pac")
+			}
+			return nil
+		},
+	}
+
+	configmap := map[string]string{
+		"application-name":    "pac-pac",
+		"without-default":     "random",
+		"without-default-int": "101",
+	}
+
+	// normal case where all values are valid
+	err := ValidateAndAssignValues(logger, configmap, &test, customValidations, true)
+	assert.NilError(t, err)
+
+	assert.Equal(t, test.ApplicationName, "pac-pac")
+	assert.Equal(t, test.WithoutDefault, "random")
+	assert.Equal(t, test.WithoutDefaultInt, 101)
+
+	// now remove fields from configmap and check if it uses default values
+	configmap = map[string]string{}
+
+	err = ValidateAndAssignValues(logger, configmap, &test, customValidations, true)
+	assert.NilError(t, err)
+
+	assert.Equal(t, test.ApplicationName, "pac-app")
+	assert.Equal(t, test.WithoutDefault, "")
+	assert.Equal(t, test.WithoutDefaultInt, 0)
+
+	// now set again
+	configmap = map[string]string{
+		"application-name":    "pac-app-pac",
+		"without-default":     "some-other-value",
+		"without-default-int": "999",
+	}
+
+	err = ValidateAndAssignValues(logger, configmap, &test, customValidations, true)
+	assert.NilError(t, err)
+
+	assert.Equal(t, test.ApplicationName, "pac-app-pac")
+	assert.Equal(t, test.WithoutDefault, "some-other-value")
+	assert.Equal(t, test.WithoutDefaultInt, 999)
 }
