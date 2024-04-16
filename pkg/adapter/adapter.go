@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -67,6 +66,10 @@ func (l *listener) Start(ctx context.Context) error {
 	if envAdapterPort != "" {
 		adapterPort = envAdapterPort
 	}
+
+	// Start pac config syncer
+	go params.StartConfigSync(ctx, l.run)
+
 	l.logger.Infof("Starting Pipelines as Code version: %s", strings.TrimSpace(version.Version))
 	mux := http.NewServeMux()
 
@@ -100,11 +103,6 @@ func (l *listener) Start(ctx context.Context) error {
 
 func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
-		// we should fix this, this basically reads configmap on every request, is that supposed to be okay?
-		if err := l.run.UpdatePACInfo(ctx); err != nil {
-			log.Fatalf("error getting config and setting from configmaps: %v", err)
-		}
-
 		if request.Method != http.MethodPost {
 			l.writeResponse(response, http.StatusOK, "ok")
 			return

@@ -102,9 +102,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	} else {
 		r.run.Info.Controller = info.GetControllerInfoFromEnvOrDefault()
 	}
-	if err := r.run.UpdatePACInfo(ctx); err != nil {
-		return fmt.Errorf("failed to get information for controller config %v: %w", r.run.Info.Controller, err)
-	}
+
 	ctx = info.StoreCurrentControllerName(ctx, r.run.Info.Controller.Name)
 
 	logger = logger.With(

@@ -31,10 +31,6 @@ func ValidateAndAssignValues(logger *zap.SugaredLogger, configData map[string]st
 		// If value is missing in ConfigMap, use default value from struct tag
 		if fieldValue == "" {
 			fieldValue = field.Tag.Get("default")
-			if fieldValue == "" {
-				// Skip field if default value is not provided
-				continue
-			}
 		}
 
 		fieldValueKind := field.Type.Kind()
@@ -42,7 +38,8 @@ func ValidateAndAssignValues(logger *zap.SugaredLogger, configData map[string]st
 		//nolint
 		switch fieldValueKind {
 		case reflect.String:
-			if validator, ok := customValidations[fieldName]; ok {
+			// if fieldvalue is empty, skip validation and set the field as empty string
+			if validator, ok := customValidations[fieldName]; ok && fieldValue != "" {
 				if err := validator(fieldValue); err != nil {
 					errors = append(errors, fmt.Errorf("custom validation failed for field %s: %w", fieldName, err))
 					continue
@@ -55,34 +52,42 @@ func ValidateAndAssignValues(logger *zap.SugaredLogger, configData map[string]st
 			structValue.FieldByName(fieldName).SetString(fieldValue)
 
 		case reflect.Bool:
-			boolValue, err := strconv.ParseBool(fieldValue)
+			// if fieldvalue is empty, set the field as false
+			if fieldValue == "" {
+				fieldValue = "false"
+			}
+			newValue, err := strconv.ParseBool(fieldValue)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("invalid value for bool field %s: %w", fieldName, err))
 				continue
 			}
 			oldValue := structValue.FieldByName(fieldName).Bool()
-			if oldValue != boolValue && logUpdates {
-				logger.Infof("updating value for field %s: from '%v' to '%v'", fieldName, oldValue, boolValue)
+			if oldValue != newValue && logUpdates {
+				logger.Infof("updating value for field %s: from '%v' to '%v'", fieldName, oldValue, newValue)
 			}
-			structValue.FieldByName(fieldName).SetBool(boolValue)
+			structValue.FieldByName(fieldName).SetBool(newValue)
 
 		case reflect.Int:
-			if validator, ok := customValidations[fieldName]; ok {
+			// if fieldvalue is empty, skip validation and set the field as 0
+			if validator, ok := customValidations[fieldName]; ok && fieldValue != "" {
 				if err := validator(fieldValue); err != nil {
 					errors = append(errors, fmt.Errorf("custom validation failed for field %s: %w", fieldName, err))
 					continue
 				}
 			}
-			intValue, err := strconv.ParseInt(fieldValue, 10, 64)
+			if fieldValue == "" {
+				fieldValue = "0"
+			}
+			newValue, err := strconv.ParseInt(fieldValue, 10, 64)
 			if err != nil {
 				errors = append(errors, fmt.Errorf("invalid value for int field %s: %w", fieldName, err))
 				continue
 			}
 			oldValue := structValue.FieldByName(fieldName).Int()
-			if oldValue != intValue && logUpdates {
-				logger.Infof("updating value for field %s: from '%d' to '%d'", fieldName, oldValue, intValue)
+			if oldValue != newValue && logUpdates {
+				logger.Infof("updating value for field %s: from '%d' to '%d'", fieldName, oldValue, newValue)
 			}
-			structValue.FieldByName(fieldName).SetInt(intValue)
+			structValue.FieldByName(fieldName).SetInt(newValue)
 
 		default:
 			// Skip unsupported field types

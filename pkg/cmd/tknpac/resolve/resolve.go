@@ -97,7 +97,7 @@ func Command(run *params.Run, streams *cli.IOStreams) *cobra.Command {
 				}
 			} else {
 				// it's OK  if pac is not installed, ignore the error
-				_ = run.UpdatePACInfo(ctx)
+				_ = run.UpdatePacConfig(ctx)
 			}
 
 			if len(filenames) == 0 {
