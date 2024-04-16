@@ -190,3 +190,50 @@ func TestParsePayload_Errors(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractBranchName(t *testing.T) {
+	tests := []struct {
+		name       string
+		refName    string
+		wantBranch string
+	}{
+		{"Standard ref name", "refs/heads/master", "master"},
+		{"Nested branch name", "refs/heads/feature/new-feature", "new-feature"},
+		{"Non-standard format", "master", "master"},
+		{"Empty ref name", "", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ExtractBranchName(tt.refName); got != tt.wantBranch {
+				t.Errorf("ExtractBranchName(%q) = %q, want %q", tt.refName, got, tt.wantBranch)
+			}
+		})
+	}
+}
+
+func TestExtractBaseURL(t *testing.T) {
+	tests := []struct {
+		name        string
+		url         string
+		wantBaseURL string
+		wantErr     bool
+	}{
+		{"Valid Azure URL", "https://dev.azure.com/exampleOrg/exampleProject", "https://dev.azure.com/exampleOrg", false},
+		{"Invalid Azure URL", "https://dev.azure.com/", "", true},
+		{"Non-Azure URL", "https://example.com", "", true},
+		{"Empty URL", "", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := extractBaseURL(tt.url)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("extractBaseURL(%q) expected error? %v, got error? %v", tt.url, tt.wantErr, err != nil)
+			}
+			if got != tt.wantBaseURL {
+				t.Errorf("extractBaseURL(%q) = %q, want %q", tt.url, got, tt.wantBaseURL)
+			}
+		})
+	}
+}

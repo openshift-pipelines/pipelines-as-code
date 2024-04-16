@@ -68,7 +68,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.TriggerTarget = triggertype.Push
 		// Assuming the repository URL can serve as both BaseURL and HeadURL for viewing purposes
 		processedEvent.BaseURL = pushEvent.Repository.Url // or it could be remoteUrl or it could be other; need to verify
-		processedEvent.HeadURL = pushEvent.Repository.Url // or it could be remoteUrl or it could be othe; need to verify
+		processedEvent.HeadURL = pushEvent.Repository.Url // or it could be remoteUrl or it could be other; need to verify
 		if len(pushEvent.RefUpdates) > 0 {
 			branchName := ExtractBranchName(pushEvent.RefUpdates[0].Name)
 			processedEvent.BaseBranch = branchName
