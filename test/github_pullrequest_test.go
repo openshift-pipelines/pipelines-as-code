@@ -129,7 +129,7 @@ func TestGithubPullRequestSecondBadYaml(t *testing.T) {
 		time.Sleep(5 * time.Second)
 	}
 	assert.Equal(t, len(res.CheckRuns), 1)
-	assert.Equal(t, res.CheckRuns[0].GetOutput().GetTitle(), "Failed")
+	assert.Equal(t, res.CheckRuns[0].GetOutput().GetTitle(), "pipelinerun start failure")
 	// may be fragile if we change the application name, but life goes on if it fails and we fix the name if that happen
 	assert.Equal(t, res.CheckRuns[0].GetOutput().GetSummary(), "Pipelines as Code GHE has <b>failed</b>.")
 	golden.Assert(t, res.CheckRuns[0].GetOutput().GetText(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
