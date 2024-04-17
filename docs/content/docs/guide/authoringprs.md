@@ -209,7 +209,7 @@ with `/merge-pr`
 
 When the PipelineRun that has been triggered with the `on-comment` annotation
 gets started the template variable `{{ trigger_comment }}` get set. See the
-documentation [here]({{< relref "/docs/guide/gitops_commands/#accessing-the-comment-triggering-the-pipelinerun" >}})
+documentation [here]({{< relref "/docs/guide/gitops_commands.md#accessing-the-comment-triggering-the-pipelinerun" >}})
 
 Note that the `on-comment` annotation will respect the `pull_request` [Policy]({{< relref "/docs/guide/policy" >}}) rule,
 so only users into the `pull_request` policy will be able to trigger the
