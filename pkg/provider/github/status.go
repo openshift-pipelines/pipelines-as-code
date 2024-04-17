@@ -92,7 +92,7 @@ func isFailedCheckrun(run *github.CheckRun) bool {
 	if run == nil || run.Output == nil {
 		return false
 	}
-	if run.Output.Title != nil && strings.Contains(*run.Output.Title, "Failed") &&
+	if run.Output.Title != nil && strings.Contains(*run.Output.Title, "pipelinerun start failure") &&
 		run.Output.Summary != nil &&
 		strings.Contains(*run.Output.Summary, "failed") {
 		return true
@@ -206,6 +206,8 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 	// when multiple pipelineruns fail. In such cases, generate only one checkrun ID,
 	// regardless of the number of failed pipelineruns.
 	if statusOpts.Title == "Failed" && statusOpts.PipelineRunName == "" {
+		// setting different title to handle multiple checkrun cases
+		statusOpts.Title = "pipelinerun start failure"
 		if statusOpts.InstanceCountForCheckRun >= 1 {
 			return nil
 		}
