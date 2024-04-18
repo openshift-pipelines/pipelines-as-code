@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
@@ -55,6 +56,14 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 		return nil, nil
 	}
 
+	secretNS := repo.GetNamespace()
+	if repo.Spec.GitProvider != nil && repo.Spec.GitProvider.Secret == nil && p.globalRepo.Spec.GitProvider != nil && p.globalRepo.Spec.GitProvider.Secret != nil {
+		secretNS = p.globalRepo.GetNamespace()
+	}
+	if p.globalRepo != nil {
+		repo.Spec.Merge(p.globalRepo.Spec)
+	}
+
 	p.logger = p.logger.With("namespace", repo.Namespace)
 	p.vcx.SetLogger(p.logger)
 	p.eventEmitter.SetLogger(p.logger)
@@ -70,9 +79,17 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 	if p.event.InstallationID > 0 {
 		p.event.Provider.WebhookSecret, _ = GetCurrentNSWebhookSecret(ctx, p.k8int, p.run)
 	} else {
-		err := SecretFromRepository(ctx, p.k8int, p.vcx.GetConfig(), p.event, repo, p.pacInfo.WebhookType, p.logger)
-		if err != nil {
-			return repo, err
+		scm := SecretFromRepository{
+			K8int:       p.k8int,
+			Config:      p.vcx.GetConfig(),
+			Event:       p.event,
+			Repo:        repo,
+			WebhookType: p.pacInfo.WebhookType,
+			Logger:      p.logger,
+			Namespace:   secretNS,
+		}
+		if err := scm.Get(ctx); err != nil {
+			return repo, fmt.Errorf("cannot get secret from repository: %w", err)
 		}
 	}
 

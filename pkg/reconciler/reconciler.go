@@ -21,13 +21,13 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/customparams"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
-	pipelinesascode "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
+	pacapi "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+	pac "github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sync"
 )
@@ -35,12 +35,14 @@ import (
 // Reconciler implements controller.Reconciler for PipelineRun resources.
 type Reconciler struct {
 	run               *params.Run
-	repoLister        pipelinesascode.RepositoryLister
+	repoLister        pacapi.RepositoryLister
 	pipelineRunLister tektonv1lister.PipelineRunLister
 	kinteract         kubeinteraction.Interface
 	qm                *sync.QueueManager
 	metrics           *metrics.Recorder
 	eventEmitter      *events.EventEmitter
+	globalRepo        *v1alpha1.Repository
+	secretNS          string
 }
 
 var (
@@ -138,6 +140,14 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 		return nil, fmt.Errorf("reportFinalStatus: %w", err)
 	}
 
+	r.secretNS = repo.GetNamespace()
+	if r.globalRepo, err = r.repoLister.Repositories(r.run.Info.Kube.Namespace).Get(r.run.Info.Controller.GlobalRepository); err == nil && r.globalRepo != nil {
+		if repo.Spec.GitProvider != nil && repo.Spec.GitProvider.Secret == nil && r.globalRepo.Spec.GitProvider != nil && r.globalRepo.Spec.GitProvider.Secret != nil {
+			r.secretNS = r.globalRepo.GetNamespace()
+		}
+		repo.Spec.Merge(r.globalRepo.Spec)
+	}
+
 	cp := customparams.NewCustomParams(event, repo, r.run, r.kinteract, r.eventEmitter, nil)
 	maptemplate, _, err := cp.GetParams(ctx)
 	if err != nil {
@@ -147,9 +157,18 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	r.run.Clients.ConsoleUI().SetParams(maptemplate)
 
 	if event.InstallationID > 0 {
-		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
+		event.Provider.WebhookSecret, _ = pac.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
 	} else {
-		if err := pipelineascode.SecretFromRepository(ctx, r.kinteract, provider.GetConfig(), event, repo, pacInfo.WebhookType, logger); err != nil {
+		secretFromRepo := pac.SecretFromRepository{
+			K8int:       r.kinteract,
+			Config:      provider.GetConfig(),
+			Event:       event,
+			Repo:        repo,
+			WebhookType: pacInfo.WebhookType,
+			Logger:      logger,
+			Namespace:   r.secretNS,
+		}
+		if err := secretFromRepo.Get(ctx); err != nil {
 			return repo, fmt.Errorf("cannot get secret from repository: %w", err)
 		}
 	}
@@ -213,10 +232,19 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	detectedProvider.SetPacInfo(&pacInfo)
 
 	if event.InstallationID > 0 {
-		event.Provider.WebhookSecret, _ = pipelineascode.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
+		event.Provider.WebhookSecret, _ = pac.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
 	} else {
-		if err := pipelineascode.SecretFromRepository(ctx, r.kinteract, detectedProvider.GetConfig(), event, repo, pacInfo.WebhookType, logger); err != nil {
-			return fmt.Errorf("cannot get secret from repo: %w", err)
+		secretFromRepo := pac.SecretFromRepository{
+			K8int:       r.kinteract,
+			Config:      detectedProvider.GetConfig(),
+			Event:       event,
+			Repo:        repo,
+			WebhookType: pacInfo.WebhookType,
+			Logger:      logger,
+			Namespace:   r.secretNS,
+		}
+		if err := secretFromRepo.Get(ctx); err != nil {
+			return fmt.Errorf("cannot get secret from repository: %w", err)
 		}
 	}
 

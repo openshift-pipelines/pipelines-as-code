@@ -1,0 +1,6 @@
+{{ event_type_match }}
+{{ secret value }}
+I come from the global params
+{{ no_match }}
+{{ filter_on_body }}
+{{ secret_nothere }}

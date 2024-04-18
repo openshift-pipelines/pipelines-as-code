@@ -79,10 +79,43 @@ type RepositorySpec struct {
 	Settings         *Settings    `json:"settings,omitempty"`
 }
 
+func (r *RepositorySpec) Merge(newRepo RepositorySpec) {
+	if newRepo.ConcurrencyLimit != nil && r.ConcurrencyLimit == nil {
+		r.ConcurrencyLimit = newRepo.ConcurrencyLimit
+	}
+	if newRepo.Settings != nil {
+		r.Settings.Merge(newRepo.Settings)
+	}
+	if r.GitProvider != nil && newRepo.GitProvider != nil {
+		r.GitProvider.Merge(newRepo.GitProvider)
+	}
+
+	// TODO(chmouel): maybe let it merges those between the user Repo Incomings and Params with the global ones?
+	// we need to gather feedback first with users to know what they want.
+	if newRepo.Incomings != nil && r.Incomings == nil {
+		r.Incomings = newRepo.Incomings
+	}
+	if newRepo.Params != nil && r.Params == nil {
+		r.Params = newRepo.Params
+	}
+}
+
 type Settings struct {
 	GithubAppTokenScopeRepos []string `json:"github_app_token_scope_repos,omitempty"`
 	PipelineRunProvenance    string   `json:"pipelinerun_provenance,omitempty"`
 	Policy                   *Policy  `json:"policy,omitempty"`
+}
+
+func (s *Settings) Merge(newSettings *Settings) {
+	if newSettings.PipelineRunProvenance != "" && s.PipelineRunProvenance == "" {
+		s.PipelineRunProvenance = newSettings.PipelineRunProvenance
+	}
+	if newSettings.Policy != nil && s.Policy == nil {
+		s.Policy = newSettings.Policy
+	}
+	if newSettings.GithubAppTokenScopeRepos != nil && s.GithubAppTokenScopeRepos == nil {
+		s.GithubAppTokenScopeRepos = newSettings.GithubAppTokenScopeRepos
+	}
 }
 
 type Policy struct {
@@ -110,6 +143,28 @@ type GitProvider struct {
 	Secret        *Secret `json:"secret,omitempty"`
 	WebhookSecret *Secret `json:"webhook_secret,omitempty"`
 	Type          string  `json:"type,omitempty"`
+}
+
+func (g *GitProvider) Merge(newGitProvider *GitProvider) {
+	// only merge of the same type
+	if newGitProvider.Type != "" && g.Type != "" && g.Type != newGitProvider.Type {
+		return
+	}
+	if newGitProvider.URL != "" && g.URL == "" {
+		g.URL = newGitProvider.URL
+	}
+	if newGitProvider.User != "" && g.User == "" {
+		g.User = newGitProvider.User
+	}
+	if newGitProvider.Type != "" && g.Type == "" {
+		g.Type = newGitProvider.Type
+	}
+	if newGitProvider.Secret != nil && g.Secret == nil {
+		g.Secret = newGitProvider.Secret
+	}
+	if newGitProvider.WebhookSecret != nil && g.WebhookSecret == nil {
+		g.WebhookSecret = newGitProvider.WebhookSecret
+	}
 }
 
 type Secret struct {

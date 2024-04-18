@@ -367,8 +367,8 @@ func TestGiteaWithCLI(t *testing.T) {
 
 	output, err = tknpactest.ExecCommand(topts.ParamsRun, tknpacdelete.Root, "-n", topts.TargetNS, "repository", topts.TargetNS, "--cascade")
 	assert.NilError(t, err)
-	expectedOutput := fmt.Sprintf("secret gitea-secret has been deleted\nrepository %s has been deleted\n", topts.TargetNS)
-	assert.Assert(t, output == expectedOutput, topts.TargetRefName, "delete command should have this output: %s received: %s", expectedOutput, output)
+	expectedOutput := fmt.Sprintf("secret %s has been deleted\nrepository %s has been deleted\n", topts.TargetNS, topts.TargetNS)
+	assert.Assert(t, output == expectedOutput, topts.TargetRefName, fmt.Sprintf("delete command should have this output: %s received: %s", expectedOutput, output))
 }
 
 func TestGiteaWithCLIGeneratePipeline(t *testing.T) {

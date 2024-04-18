@@ -40,7 +40,7 @@ func TestPacRun_checkNeedUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := NewPacs(nil, nil, &params.Run{Clients: clients.Clients{}}, &info.PacOpts{}, nil, nil)
+			p := NewPacs(nil, nil, &params.Run{Clients: clients.Clients{}}, &info.PacOpts{}, nil, nil, nil)
 			got, needupdate := p.checkNeedUpdate(tt.tmpl)
 			if tt.upgradeMessageSubstr != "" {
 				assert.Assert(t, strings.Contains(got, tt.upgradeMessageSubstr))
@@ -225,7 +225,7 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 					RemoteTasks:        true,
 				},
 			}
-			p := NewPacs(tt.event, vcx, cs, pacInfo, k8int, logger)
+			p := NewPacs(tt.event, vcx, cs, pacInfo, k8int, logger, nil)
 			p.eventEmitter = events.NewEventEmitter(stdata.Kube, logger)
 			matchedPRs, err := p.getPipelineRunsFromRepo(ctx, tt.repositories)
 			assert.NilError(t, err)

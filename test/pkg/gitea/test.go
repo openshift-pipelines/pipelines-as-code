@@ -42,6 +42,7 @@ type TestOpts struct {
 	YAMLFiles             map[string]string
 	ExtraArgs             map[string]string
 	RepoCRParams          *[]v1alpha1.Params
+	GlobalRepoCRParams    *[]v1alpha1.Params
 	CheckForStatus        string
 	TargetRefName         string
 	CheckForNumberStatus  int
@@ -110,15 +111,43 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 	topts.DefaultBranch = repoInfo.DefaultBranch
 	topts.GitHTMLURL = repoInfo.HTMLURL
 
+	topts.Token, err = CreateToken(topts)
+	assert.NilError(t, err)
+
+	gp := &v1alpha1.GitProvider{
+		Type: "gitea",
+		// caveat this assume gitea running on the same cluster, which
+		// we do and need for e2e tests but that may be changed somehow
+		URL:    topts.InternalGiteaURL,
+		Secret: &v1alpha1.Secret{Name: topts.TargetNS, Key: "token"},
+	}
+	spec := v1alpha1.RepositorySpec{
+		URL:              topts.GitHTMLURL,
+		ConcurrencyLimit: topts.ConcurrencyLimit,
+		Params:           topts.RepoCRParams,
+		Settings:         topts.Settings,
+	}
+	if topts.GlobalRepoCRParams == nil {
+		spec.GitProvider = gp
+	} else {
+		spec.GitProvider = &v1alpha1.GitProvider{Type: "gitea"}
+	}
+	assert.NilError(t, CreateCRD(ctx, topts, spec, false))
+
+	// we only test params for global repo settings for now we may change that if we want
+	if topts.GlobalRepoCRParams != nil {
+		spec := v1alpha1.RepositorySpec{
+			Params:      topts.GlobalRepoCRParams,
+			GitProvider: gp,
+		}
+		assert.NilError(t, CreateCRD(ctx, topts, spec, true))
+	}
+
 	cleanup := func() {
 		if os.Getenv("TEST_NOCLEANUP") != "true" {
 			defer TearDown(ctx, t, topts)
 		}
 	}
-	topts.Token, err = CreateToken(topts)
-	assert.NilError(t, err)
-
-	assert.NilError(t, CreateCRD(ctx, topts))
 
 	url, err := scm.MakeGitCloneURL(repoInfo.CloneURL, os.Getenv("TEST_GITEA_USERNAME"), os.Getenv("TEST_GITEA_PASSWORD"))
 	assert.NilError(t, err)

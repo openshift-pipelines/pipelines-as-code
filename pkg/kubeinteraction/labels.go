@@ -42,19 +42,20 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1.PipelineRu
 	}
 
 	annotations := map[string]string{
-		keys.ShaTitle:       event.SHATitle,
-		keys.ShaURL:         event.SHAURL,
-		keys.RepoURL:        event.URL,
-		keys.URLOrg:         event.Organization,
-		keys.URLRepository:  event.Repository,
-		keys.SHA:            event.SHA,
-		keys.Sender:         event.Sender,
-		keys.EventType:      event.EventType,
-		keys.Branch:         event.BaseBranch,
-		keys.Repository:     repo.GetName(),
-		keys.GitProvider:    providerConfig.Name,
-		keys.State:          StateStarted,
-		keys.ControllerInfo: fmt.Sprintf(`{"name":"%s","configmap":"%s","secret":"%s"}`, paramsinfo.Controller.Name, paramsinfo.Controller.Configmap, paramsinfo.Controller.Secret),
+		keys.ShaTitle:      event.SHATitle,
+		keys.ShaURL:        event.SHAURL,
+		keys.RepoURL:       event.URL,
+		keys.URLOrg:        event.Organization,
+		keys.URLRepository: event.Repository,
+		keys.SHA:           event.SHA,
+		keys.Sender:        event.Sender,
+		keys.EventType:     event.EventType,
+		keys.Branch:        event.BaseBranch,
+		keys.Repository:    repo.GetName(),
+		keys.GitProvider:   providerConfig.Name,
+		keys.State:         StateStarted,
+		keys.ControllerInfo: fmt.Sprintf(`{"name":"%s","configmap":"%s","secret":"%s", "gRepo": "%s"}`,
+			paramsinfo.Controller.Name, paramsinfo.Controller.Configmap, paramsinfo.Controller.Secret, paramsinfo.Controller.GlobalRepository),
 	}
 
 	if event.PullRequestNumber != 0 {

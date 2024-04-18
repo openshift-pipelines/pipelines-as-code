@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -14,13 +15,14 @@ import (
 )
 
 type sinker struct {
-	run     *params.Run
-	vcx     provider.Interface
-	kint    kubeinteraction.Interface
-	event   *info.Event
-	logger  *zap.SugaredLogger
-	payload []byte
-	pacInfo *info.PacOpts
+	run        *params.Run
+	vcx        provider.Interface
+	kint       kubeinteraction.Interface
+	event      *info.Event
+	logger     *zap.SugaredLogger
+	payload    []byte
+	pacInfo    *info.PacOpts
+	globalRepo *v1alpha1.Repository
 }
 
 func (s *sinker) processEventPayload(ctx context.Context, request *http.Request) error {
@@ -54,6 +56,6 @@ func (s *sinker) processEvent(ctx context.Context, request *http.Request) error 
 		}
 	}
 
-	p := pipelineascode.NewPacs(s.event, s.vcx, s.run, s.pacInfo, s.kint, s.logger)
+	p := pipelineascode.NewPacs(s.event, s.vcx, s.run, s.pacInfo, s.kint, s.logger, s.globalRepo)
 	return p.Run(ctx)
 }
