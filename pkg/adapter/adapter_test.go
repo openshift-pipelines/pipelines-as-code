@@ -9,12 +9,16 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v61/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
+	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
+	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,7 +42,7 @@ func TestHandleEvent(t *testing.T) {
 			},
 		},
 	})
-	logger, _ := logger.GetLogger()
+	logger, logCatcher := logger.GetLogger()
 
 	ctx = info.StoreCurrentControllerName(ctx, "default")
 	ctx = info.StoreNS(ctx, "default")
@@ -53,10 +57,38 @@ func TestHandleEvent(t *testing.T) {
 		},
 	})
 	dynClient := dynamicfake.NewSimpleDynamicClient(runtime.NewScheme(), emptys)
+	repositories := []*v1alpha1.Repository{
+		testnewrepo.NewRepo(
+			testnewrepo.RepoTestcreationOpts{
+				Name:             "pipelines-as-code",
+				URL:              "https://nowhere.com",
+				InstallNamespace: "pipelines-as-code",
+			},
+		),
+	}
+
+	tdata := testclient.Data{
+		Namespaces: []*corev1.Namespace{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "namespace",
+				},
+			},
+		},
+		Repositories: repositories,
+		PipelineRuns: []*pipelinev1.PipelineRun{
+			tektontest.MakePRStatus("namespace", "force-me", []pipelinev1.ChildStatusReference{
+				tektontest.MakeChildStatusReference("first"),
+				tektontest.MakeChildStatusReference("last"),
+				tektontest.MakeChildStatusReference("middle"),
+			}, nil),
+		},
+	}
+	stdata, _ := testclient.SeedTestData(t, ctx, tdata)
 	l := listener{
 		run: &params.Run{
 			Clients: clients.Clients{
-				PipelineAsCode: cs.PipelineAsCode,
+				PipelineAsCode: stdata.PipelineAsCode,
 				Log:            logger,
 				Kube:           cs.Kube,
 				Dynamic:        dynClient,
@@ -68,8 +100,13 @@ func TestHandleEvent(t *testing.T) {
 					},
 				},
 				Controller: &info.ControllerInfo{
-					Configmap: info.DefaultPipelinesAscodeConfigmapName,
-					Secret:    info.DefaultPipelinesAscodeSecretName,
+					Configmap:        info.DefaultPipelinesAscodeConfigmapName,
+					Secret:           info.DefaultPipelinesAscodeSecretName,
+					GlobalRepository: info.DefaultGlobalRepoName,
+				},
+				Kube: &info.KubeOpts{
+					// TODO: we should use a global for that
+					Namespace: "pipelines-as-code",
 				},
 			},
 		},
@@ -88,11 +125,12 @@ func TestHandleEvent(t *testing.T) {
 	assert.NilError(t, err)
 
 	tests := []struct {
-		name        string
-		event       []byte
-		eventType   string
-		requestType string
-		statusCode  int
+		name           string
+		event          []byte
+		eventType      string
+		requestType    string
+		statusCode     int
+		wantLogSnippet string
 	}{
 		{
 			name:        "get http call",
@@ -118,6 +156,14 @@ func TestHandleEvent(t *testing.T) {
 			eventType:   "push",
 			event:       event,
 			statusCode:  202,
+		},
+		{
+			name:           "detected global repository",
+			requestType:    "POST",
+			eventType:      "push",
+			event:          event,
+			statusCode:     202,
+			wantLogSnippet: "detected global repository settings named pipelines-as-code in namespace pipelines-as-code",
 		},
 		{
 			name:        "skip event",
@@ -155,6 +201,9 @@ func TestHandleEvent(t *testing.T) {
 			}
 			defer resp.Body.Close()
 
+			if tn.wantLogSnippet != "" {
+				assert.Assert(t, logCatcher.FilterMessageSnippet(tn.wantLogSnippet).Len() > 0, logCatcher.All())
+			}
 			if resp.StatusCode != tn.statusCode {
 				t.Fatalf("expected status code : %v but got %v ", tn.statusCode, resp.StatusCode)
 			}

@@ -5,6 +5,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,28 +23,46 @@ func CreateToken(topts *TestOpts) (string, error) {
 	return token.Token, nil
 }
 
-func CreateCRD(ctx context.Context, topts *TestOpts) error {
-	if err := secret.Create(ctx, topts.ParamsRun, map[string]string{"token": topts.Token}, topts.TargetNS, "gitea-secret"); err != nil {
-		return err
-	}
-	repository := &v1alpha1.Repository{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: topts.TargetNS,
-		},
-		Spec: v1alpha1.RepositorySpec{
-			URL: topts.GitHTMLURL,
-			GitProvider: &v1alpha1.GitProvider{
-				Type: "gitea",
-				// caveat this assume gitea running on the same cluster, which
-				// we do and need for e2e tests but that may be changed somehow
-				URL:    topts.InternalGiteaURL,
-				Secret: &v1alpha1.Secret{Name: "gitea-secret", Key: "token"},
-			},
-			ConcurrencyLimit: topts.ConcurrencyLimit,
-			Params:           topts.RepoCRParams,
-			Settings:         topts.Settings,
-		},
+func CreateCRD(ctx context.Context, topts *TestOpts, spec v1alpha1.RepositorySpec, isGlobal bool) error {
+	var ns string
+	if isGlobal {
+		ns = info.GetNS(ctx)
+	} else {
+		ns = topts.TargetNS
 	}
 
-	return pacrepo.CreateRepo(ctx, topts.TargetNS, topts.ParamsRun, repository)
+	if spec.GitProvider != nil && spec.GitProvider.Secret != nil {
+		secretName := spec.GitProvider.Secret.Name
+		if err := topts.ParamsRun.Clients.Kube.CoreV1().Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{}); err == nil {
+			if isGlobal {
+				topts.ParamsRun.Clients.Log.Infof("Secret global %s has been deleted in %s", secretName, ns)
+			} else {
+				topts.ParamsRun.Clients.Log.Infof("Secret %s has been deleted in %s", secretName, ns)
+			}
+		}
+		if isGlobal {
+			topts.ParamsRun.Clients.Log.Infof("Creating global secret %s for global repository in %s", secretName, ns)
+		}
+		if err := secret.Create(ctx, topts.ParamsRun, map[string]string{"token": topts.Token}, ns, secretName); err != nil {
+			return err
+		}
+	}
+
+	repository := &v1alpha1.Repository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: func() string {
+				if isGlobal {
+					return info.DefaultGlobalRepoName
+				}
+				return topts.TargetNS
+			}(),
+		},
+		Spec: spec,
+	}
+
+	if isGlobal {
+		_ = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(ns).Delete(ctx, repository.GetName(), metav1.DeleteOptions{})
+	}
+
+	return pacrepo.CreateRepo(ctx, ns, topts.ParamsRun, repository)
 }

@@ -106,7 +106,11 @@ func TestSecretFromRepository(t *testing.T) {
 				GetSecretResult: retsecret,
 			}
 			event := info.NewEvent()
-			err := SecretFromRepository(ctx, k8int, tt.providerconfig, event, tt.repo, tt.providerType, logger)
+			sfr := SecretFromRepository{
+				k8int, tt.providerconfig, event, tt.repo, tt.providerType, "namespace", logger,
+			}
+
+			err := sfr.Get(ctx)
 			assert.NilError(t, err)
 			logs := log.TakeAll()
 			assert.Equal(t, len(tt.logmatch), len(logs), "we didn't get the number of logging message: %+v", logs)
