@@ -164,7 +164,7 @@ func (v *Provider) getRaw(runevent *info.Event, revision, path string) (string, 
 	}
 	resp, err := v.Client.DefaultApi.GetRawContent(v.projectKey, runevent.Repository, path, localVarOptionals)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("cannot find %s inside the %s repository: %w", path, runevent.Repository, err)
 	}
 	return string(resp.Payload), nil
 }

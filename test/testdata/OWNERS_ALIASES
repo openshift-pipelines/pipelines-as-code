@@ -1,5 +1,6 @@
-approvers:
-  - approvers-alias
+aliases:
+  approvers-alias:
+    - \\ .Approver //
 
 # vim: ft=yaml
 # Local Variables:

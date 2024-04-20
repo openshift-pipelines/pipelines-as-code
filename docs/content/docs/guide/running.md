@@ -38,17 +38,24 @@ run a PipelineRun on CI:
 - The author of the pull request has permissions to push to branches inside the
   repository.
 
-- The author who initiated the pull request is identified in an `OWNERS` file
+- The author who initiated the pull request is identified in an `OWNERS` files
   found in the main directory of the branch that is set as the default branch
   on GitHub or your other service provider.
 
-  The OWNERS file need adheres to a specific format, similar to the Prow OWNERS
-  file format (available at <https://www.kubernetes.dev/docs/guide/owners/>),
-  with the exception that we do not yet support the use of `OWNERS_ALIASES`.
+  The OWNERS file adheres to a specific format, similar to the Prow OWNERS
+  file format (available at <https://www.kubernetes.dev/docs/guide/owners/>). We
+  support simple OWNERS configuration including `approvers` and `reviewers` lists
+  and they are treated equally in terms of permissions for executing a PipelineRun.
+  If the OWNERS file includes `filters` instead of a simple OWNERS configuration,
+  we only look for the everything matching `.*` filter and take the `approvers`
+  and `reviewers` lists from there. All other filters (matching specific files or
+  directories) are ignored.
 
-  When you include contributors in the `approvers` or `reviewers` sections,
-  Pipelines-as-Code enables those contributors to execute a PipelineRun listed
-  in the OWNERS file.
+  OWNERS_ALIASES is also supported and can be used for mapping of an alias name
+  to a list of usernames.
+
+  When you include contributors to the lists of `approvers` or `reviewers` in your
+  OWNERS files, Pipelines-as-Code enables those contributors to execute a PipelineRun.
 
   For instance, if the `approvers` section of your OWNERS file in the main or
   master branch of your repository appears as follows:

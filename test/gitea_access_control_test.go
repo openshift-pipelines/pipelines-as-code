@@ -408,7 +408,10 @@ func TestGiteaPolicyAllowedOwnerFiles(t *testing.T) {
 	allowedCnx, allowedUser, err := tgitea.CreateGiteaUserSecondCnx(topts, allowedUserNamePasswd, allowedUserNamePasswd)
 	assert.NilError(t, err)
 
-	prmap := map[string]string{"OWNERS": "testdata/OWNERS"}
+	prmap := map[string]string{
+		"OWNERS":         "testdata/OWNERS",
+		"OWNERS_ALIASES": "testdata/OWNERS_ALIASES",
+	}
 	entries, err := payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{
 		"Approver": allowedUser.UserName,
 	})
