@@ -33,7 +33,7 @@ There is a few things you can configure through the config map
   Having access to every repositories the app has access to is a problem when
   you install the `Pipelines-as-Code` application into an organization that has
   a mixed between public and private repositories where every users in the
-  organization is not trusted to have access to the private repositores. Since
+  organization is not trusted to have access to the private repositories. Since
   the scoping of the token only allow the user do operations and access on the
   repository where the payload come from, it will not be able to access the private repos.
 
@@ -44,10 +44,10 @@ There is a few things you can configure through the config map
 * `secret-github-app-scope-extra-repos`
 
   If you don't want to completely disable the scoping of the token, but still
-  wants some other repos available (as long you have installed the github app on
+  wants some other repos available (as long you have installed the GitHub app on
   it), then you can add an extra owner/repo here.
 
-  This let you able fetch remote url on github from extra private repositories
+  This let you able fetch remote url on GitHub from extra private repositories
   in an organisation if you need it.
 
   This only works when all the repos are added from the same installation IDs.
