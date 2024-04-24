@@ -202,7 +202,7 @@ Please note that this feature is supported for the GitHub provider only.
 
 When you issue a GitOps command, you can pass arguments to the command to
 redefine some the [standard]({{< relref "/docs/guide/authoringprs#dynamic-variables" >}})
-standard or [custom parameters]({{< relref "/docs/guide/customparams" >}})
+dynamic variables or the [custom parameters]({{< relref "/docs/guide/customparams" >}})
 
 For example you can do:
 
