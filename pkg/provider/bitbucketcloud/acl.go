@@ -3,6 +3,7 @@ package bitbucketcloud
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/mitchellh/mapstructure"
@@ -39,15 +40,26 @@ func (v *Provider) isWorkspaceMember(event *info.Event) (bool, error) {
 	return false, nil
 }
 
-// IsAllowedOwnersFile get the owner file from main branch and check if we have
-// explicitly allowed the user in there.
+// IsAllowedOwnersFile get the owner files (OWNERS, OWNERS_ALIASES) from main branch
+// and check if we have explicitly allowed the user in there.
 func (v *Provider) IsAllowedOwnersFile(ctx context.Context, event *info.Event) (bool, error) {
 	ownerContent, err := v.GetFileInsideRepo(ctx, event, "OWNERS", event.DefaultBranch)
 	if err != nil {
+		if strings.Contains(err.Error(), "cannot find") {
+			// no owner file, skipping
+			return false, nil
+		}
 		return false, err
 	}
+	// If there is OWNERS file, check for OWNERS_ALIASES
+	ownerAliasesContent, err := v.GetFileInsideRepo(ctx, event, "OWNERS_ALIASES", event.DefaultBranch)
+	if err != nil {
+		if !strings.Contains(err.Error(), "cannot find") {
+			return false, err
+		}
+	}
 
-	return acl.UserInOwnerFile(ownerContent, event.AccountID)
+	return acl.UserInOwnerFile(ownerContent, ownerAliasesContent, event.AccountID)
 }
 
 func (v *Provider) checkMember(ctx context.Context, event *info.Event) (bool, error) {

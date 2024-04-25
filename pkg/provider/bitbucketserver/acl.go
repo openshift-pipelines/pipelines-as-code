@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/mitchellh/mapstructure"
@@ -27,15 +28,21 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, erro
 	return v.checkOkToTestCommentFromApprovedMember(ctx, event)
 }
 
-// IsAllowedOwnersFile get the owner file from main branch and check if we have
-// explicitly allowed the user in there.
+// IsAllowedOwnersFile get the owner files (OWNERS, OWNERS_ALIASES) from main branch
+// and check if we have explicitly allowed the user in there.
 func (v *Provider) IsAllowedOwnersFile(ctx context.Context, event *info.Event) (bool, error) {
 	ownerContent, err := v.GetFileInsideRepo(ctx, event, "OWNERS", event.DefaultBranch)
 	if err != nil {
 		return false, err
 	}
+	ownerAliasesContent, err := v.GetFileInsideRepo(ctx, event, "OWNERS_ALIASES", event.DefaultBranch)
+	if err != nil {
+		if !strings.Contains(err.Error(), "cannot find") {
+			return false, err
+		}
+	}
 
-	return acl.UserInOwnerFile(ownerContent, event.AccountID)
+	return acl.UserInOwnerFile(ownerContent, ownerAliasesContent, event.AccountID)
 }
 
 func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, event *info.Event) (bool, error) {

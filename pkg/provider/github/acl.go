@@ -46,8 +46,8 @@ func (v *Provider) CheckPolicyAllowing(ctx context.Context, event *info.Event, a
 	return false, fmt.Sprintf("user: %s is not a member of any of the allowed teams: %v", event.Sender, allowedTeams)
 }
 
-// IsAllowedOwnersFile gets the owner file from main branch and check if we have
-// explicitly allowed the user in there.
+// IsAllowedOwnersFile get the owner files (OWNERS, OWNERS_ALIASES) from main branch
+// and check if we have explicitly allowed the user in there.
 func (v *Provider) IsAllowedOwnersFile(ctx context.Context, event *info.Event) (bool, error) {
 	ownerContent, err := v.getFileFromDefaultBranch(ctx, "OWNERS", event)
 	if err != nil {
@@ -57,8 +57,15 @@ func (v *Provider) IsAllowedOwnersFile(ctx context.Context, event *info.Event) (
 		}
 		return false, err
 	}
+	// If there is OWNERS file, check for OWNERS_ALIASES
+	ownerAliasesContent, err := v.getFileFromDefaultBranch(ctx, "OWNERS_ALIASES", event)
+	if err != nil {
+		if !strings.Contains(err.Error(), "cannot find") {
+			return false, err
+		}
+	}
 
-	return acl.UserInOwnerFile(ownerContent, event.Sender)
+	return acl.UserInOwnerFile(ownerContent, ownerAliasesContent, event.Sender)
 }
 
 func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
