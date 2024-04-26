@@ -3,6 +3,7 @@ package git
 import (
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -36,6 +37,10 @@ func TestGetGitInfo(t *testing.T) {
 			want: Info{
 				URL: "https://github.com/chmouel/demo",
 			},
+		},
+		{
+			name:         "Get git info no github url",
+			remoteTarget: "origin",
 		},
 		{
 			name:         "Get git info remove .git suffix",
@@ -94,14 +99,19 @@ func TestGetGitInfo(t *testing.T) {
 			_, err = RunGit(gitDir, "config", "--local", "user.name", "Mister Ze Foo")
 			assert.NilError(t, err)
 
-			_, err = RunGit(gitDir, "remote", "add", tt.remoteTarget, tt.gitURL)
-			assert.NilError(t, err)
+			if tt.gitURL != "" {
+				_, err = RunGit(gitDir, "remote", "add", tt.remoteTarget, tt.gitURL)
+				assert.NilError(t, err)
+			}
 			_, err = RunGit(gitDir, "commit", "--allow-empty", "-m", "Empty Commit")
 			assert.NilError(t, err)
 			if tt.want.Branch != "" {
 				_, _ = RunGit(gitDir, "checkout", "-b", tt.want.Branch)
 			}
 			gitinfo := GetGitInfo(gitDir)
+			if tt.gitURL == "" {
+				assert.Assert(t, strings.HasPrefix(gitinfo.URL, "/"))
+			}
 			if tt.want.URL != "" {
 				assert.Equal(t, gitinfo.URL, tt.want.URL)
 			}
