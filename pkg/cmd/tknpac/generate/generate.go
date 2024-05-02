@@ -92,7 +92,7 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().StringVar(&gopt.Event.BaseBranch, "branch", "",
-		"The target branch of the repository  event to handle (eg: main, nightly)")
+		"The target branch for the PipelineRun to handle (eg: main, nightly)")
 	cmd.PersistentFlags().StringVar(&gopt.Event.EventType, "event-type", "",
 		"The event type of the repository event to handle (eg: pull_request, push)")
 	cmd.PersistentFlags().StringVar(&gopt.pipelineRunName, "pipeline-name", "",
