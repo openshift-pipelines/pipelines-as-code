@@ -20,20 +20,7 @@ spec:
       - name: repo_url
       - name: revision
     tasks:
-      - name: fetch
-        params:
-          - name: url
-            value: $(params.repo_url)
-          - name: revision
-            value: $(params.revision)
-        taskRef:
-          name: git-clone
-        workspaces:
-          - name: output
-            workspace: source
       - name: unit
-        runAfter:
-          - fetch
         workspaces:
           - name: source
             workspace: source
@@ -41,28 +28,34 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: golang:1.21
-              name: get-cache
-              workingDir: $(workspaces.source.path)
-              env:
-                - name: GOCACHE
-                  value: $(workspaces.source.path)/go-build-cache/cache
-                - name: GOMODCACHE
-                  value: $(workspaces.source.path)/go-build-cache/mod
-                - name: GOLANGCILINT_CACHE
-                  value: $(workspaces.source.path)/go-build-cache/golangci-cache
-              script: |
-                #!/usr/bin/env bash
-                set -ex
-                mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
-                cd $(dirname ${GOCACHE})
-                curl -fsI http://uploader:8080/golang-cache.tar.gz || {
-                    echo "no cache found"
-                    exit 0
-                }
-                echo "Getting cache"
-                curl http://uploader:8080/golang-cache.tar.gz|tar -z -x -f- || \
-                   curl -X DELETE -F "file=golang-cache.tar.gz" http://uploader:8080/upload
+            - name: fetch-repo
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/tektoncd/catalog/main/stepaction/git-clone/0.1/git-clone.yaml
+              params:
+                - name: output-path
+                  value: $(workspaces.source.path)
+                - name: url
+                  value: "$(params.repo_url)"
+                - name: revision
+                  value: "$(params.revision)"
+            - name: cache-fetch
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/openshift-pipelines/tekton-caches/main/tekton/cache-fetch.yaml
+              params:
+                - name: patterns
+                  value: ["**go.mod", "**go.sum"]
+                - name: source
+                  value: oci://image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/cache-go:{{hash}}
+                - name: cachePath
+                  value: $(workspaces.source.path)/go-build-cache
+                - name: workingdir
+                  value: $(workspaces.source.path)
             - name: unittest
               image: golang:1.21
               workingDir: $(workspaces.source.path)
@@ -74,18 +67,8 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 make test \
-                    GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
-      - name: codecov
-        runAfter:
-          - unit
-        workspaces:
-          - name: source
-            workspace: source
-        taskSpec:
-          workspaces:
-            - name: source
-          steps:
-            - name: codecov-run
+                    GO_TEST_FLAGS="-v -coverprofile=coverage.txt -covermode=atomic"
+            - name: codecov
               # Has everything we need in there and we already fetched it!
               image: golang:1.21
               workingDir: $(workspaces.source.path)
@@ -98,19 +81,15 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                curl -Os https://uploader.codecov.io/v0.1.0_4653/linux/codecov
-                chmod +x ./codecov
+                ARCH=aarch64
                 git config --global --add safe.directory $(workspaces.source.path)
                 git fetch -a --tags
+                url=$(curl -s https://uploader.codecov.io/${ARCH}/latest|grep 'http.*codecov"'|sed 's/.*"https/https/;s/".*//')
+                curl -LOs $url
+                chmod +x ./codecov
                 ./codecov -C {{revision}} -v
-
-      - name: upload-release-yaml
-        runAfter:
-          - fetch
-        taskSpec:
-          steps:
-            - image: registry.access.redhat.com/ubi9/python-311
-              name: release
+            - name: upload-release
+              image: registry.access.redhat.com/ubi9/python-311
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
@@ -144,11 +123,6 @@ spec:
                 git push --force https://git:$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }}/ nightly:nightly
                 set -x
                 git checkout -
-          workspaces:
-            - name: source
-        workspaces:
-          - name: source
-            workspace: source
     workspaces:
       - name: source
     finally:
@@ -162,10 +136,4 @@ spec:
             value: "true"
   workspaces:
     - name: source
-      volumeClaimTemplate:
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 5Gi
+      emptyDir: {}
