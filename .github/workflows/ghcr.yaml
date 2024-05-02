@@ -61,6 +61,7 @@ jobs:
           cache-to: type=gha,mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
 
       - name: Extract metadata (tags, labels) for Docker (Watcher)
         id: meta-watcher
@@ -79,6 +80,7 @@ jobs:
           cache-to: type=gha,mode=max
           tags: ${{ steps.meta-watcher.outputs.tags }}
           labels: ${{ steps.meta-watcher.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
 
       - name: Extract metadata (tags, labels) for Docker (Webhook)
         id: meta-webhook
@@ -97,6 +99,7 @@ jobs:
           cache-to: type=gha,mode=max
           tags: ${{ steps.meta-webhook.outputs.tags }}
           labels: ${{ steps.meta-webhook.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
 
       - name: Extract metadata (tags, labels) for tkn-pac
         id: meta-cli
@@ -115,3 +118,4 @@ jobs:
           cache-to: type=gha,mode=max
           tags: ${{ steps.meta-cli.outputs.tags }}
           labels: ${{ steps.meta-cli.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
