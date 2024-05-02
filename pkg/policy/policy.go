@@ -28,6 +28,7 @@ type Policy struct {
 	EventEmitter *events.EventEmitter
 }
 
+// checkAllowed checks if the policy is set and allows the event to be processed.
 func (p *Policy) checkAllowed(ctx context.Context, tType triggertype.Trigger) (Result, string) {
 	if p.Repository == nil {
 		return ResultNotSet, ""
