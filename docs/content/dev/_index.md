@@ -354,6 +354,12 @@ need to have on your system:
 - [pass](https://www.passwordstore.org/) - For getting/storing secrets
 - [gosmee](https://github.com/chmouel/gosmee) - For replaying webhooks
 
+## Target architecture
+
+- We target arm64 and amd64, the dogfooding is on arm64, so we need to make
+sure that all jobs and docker images used in the .tekton PipelineRuns are built
+for arm64.
+
 # Links
 
 - [Jira Backlog](https://issues.redhat.com/browse/SRVKP-2144?jql=component%20%3D%20%22Pipeline%20as%20Code%22%20%20AND%20status%20!%3D%20Done)

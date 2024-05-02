@@ -110,12 +110,12 @@ spec:
                 set -eux
                 git config --global --add safe.directory $(workspaces.source.path)
                 git fetch -a --tags
-                curl -Os https://uploader.codecov.io/v0.1.0_4653/linux/codecov
+                url=$(curl -s https://uploader.codecov.io/aarch64/latest|grep 'http.*codecov"'|sed 's/.*"https/https/;s/".*//')
+                curl -LOs $url
                 chmod +x ./codecov
                 ./codecov -P $GITHUB_PULL_REQUEST_ID -C {{revision}}
             - name: lint
-              # golangci-lint has not tagged their image for 1.40.0 yet so using latest for now until we can pin it
-              image: mirror.gcr.io/golangci/golangci-lint:latest
+              image: golangci/golangci-lint:latest
               workingDir: $(workspaces.source.path)
               env:
                 - name: GOCACHE
@@ -131,7 +131,6 @@ spec:
         workspaces:
           - name: source
             workspace: source
-
       - name: savecache
         runAfter:
           - go-ninja-go

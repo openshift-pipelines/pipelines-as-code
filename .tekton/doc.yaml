@@ -40,7 +40,7 @@ spec:
             - name: source
           steps:
             - name: hugo-gen
-              image: registry.access.redhat.com/ubi9/python-311  # using this image since it has git and curl and python
+              image: registry.access.redhat.com/ubi9/python-311 # using this image since it has git and curl and python
               workingDir: $(workspaces.source.path)
               env:
                 - name: UPLOADER_PUBLIC_URL
@@ -50,7 +50,7 @@ spec:
                       key: "public_url"
               script: |
                 version=$(curl -s https://api.github.com/repos/gohugoio/hugo/releases/latest|python -c 'import sys, json;dico=json.load(sys.stdin);print(dico["tag_name"])')
-                curl --fail-early -sL https://github.com/gohugoio/hugo/releases/download/${version}/hugo_extended_${version/v/}_Linux-64bit.tar.gz -o-|tar -x -z -v -f- hugo
+                curl --fail-early -sL https://github.com/gohugoio/hugo/releases/download/${version}/hugo_extended_${version/v/}_linux-arm64.tar.gz -o-|tar -x -z -v -f- hugo
                 git config --global --add safe.directory $(workspaces.source.path)
                 cd docs
                 sed -i '1acanonifyURLs = true' config.toml
