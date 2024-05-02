@@ -10,8 +10,8 @@ func Root(clients *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:          "info",
 		Aliases:      []string{},
-		Short:        "Add Information",
-		Long:         `Information about your Pipelines as Code installation`,
+		Short:        "Show installation information",
+		Long:         `Show status and information about your Pipelines as Code installation`,
 		SilenceUsage: true,
 		Annotations: map[string]string{
 			"commandType": "main",
