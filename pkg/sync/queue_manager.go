@@ -51,8 +51,12 @@ func (qm *QueueManager) getSemaphore(repo *v1alpha1.Repository) (Semaphore, erro
 		return sema, nil
 	}
 
-	// create a new semaphore
-	qm.queueMap[repoKey] = newSemaphore(repoKey, *repo.Spec.ConcurrencyLimit)
+	// create a new semaphore; can't assume callers have checked that ConcurrencyLimit is set
+	limit := 0
+	if repo.Spec.ConcurrencyLimit != nil {
+		limit = *repo.Spec.ConcurrencyLimit
+	}
+	qm.queueMap[repoKey] = newSemaphore(repoKey, limit)
 
 	return qm.queueMap[repoKey], nil
 }
@@ -89,6 +93,13 @@ func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string)
 		if sema.addToQueue(pr, time.Now()) {
 			qm.logger.Infof("added pipelineRun (%s) to queue for repository (%s)", pr, repoKey(repo))
 		}
+	}
+
+	// it is possible something besides PAC set the PipelineRun to Pending; if concurrency limit has not
+	// been set, return all the pending PipelineRuns; also, if the limit is zero, that also means do not throttle,
+	// so we return all the PipelinesRuns, the for loop below skips that case as well
+	if repo.Spec.ConcurrencyLimit == nil || *repo.Spec.ConcurrencyLimit == 0 {
+		return sema.getCurrentPending(), nil
 	}
 
 	acquiredList := []string{}
