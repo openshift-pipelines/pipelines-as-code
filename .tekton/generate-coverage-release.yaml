@@ -84,8 +84,8 @@ spec:
                 ARCH=aarch64
                 git config --global --add safe.directory $(workspaces.source.path)
                 git fetch -a --tags
-                url=$(curl -s https://uploader.codecov.io/${ARCH}/latest|grep 'http.*codecov"'|sed 's/.*"https/https/;s/".*//')
-                curl -LOs $url
+                version=$(curl -s https://uploader.codecov.io/${ARCH}/latest| sed -n '/full_version/ { s/.*full_version...//;s/".*//;p; }')
+                curl -LOs https://uploader.codecov.io/${version}/${ARCH}/codecov
                 chmod +x ./codecov
                 ./codecov -C {{revision}} -v
             - name: upload-release
