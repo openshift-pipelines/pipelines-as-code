@@ -19,9 +19,7 @@ import (
 )
 
 const (
-	// Utilizing this regex, the GetFiles function will be selectively executed exclusively when the "file."
-	// property is specified within the CEL expression.
-	changedFilesTags = "files."
+	reChangedFilesTags = `files\.`
 )
 
 func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provider.Interface) (ref.Val, error) {
@@ -62,7 +60,7 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 		headerMap[strings.ToLower(k)] = v[0]
 	}
 
-	r := regexp.MustCompile(changedFilesTags)
+	r := regexp.MustCompile(reChangedFilesTags)
 	changedFiles := changedfiles.ChangedFiles{}
 
 	if r.MatchString(expr) {
