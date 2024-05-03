@@ -127,13 +127,11 @@ Pipelines](https://github.com/tektoncd/pipeline/blob/main/docs/pipelines.md#addi
 This allows you to execute a set of tasks at the end of a
 pipeline run, regardless of whether it succeeds or fails.
 
-Here is an example of a task sending a [Slack](https://slack.com) message on failures or successes:
+As an example, you can [refer](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/.tekton/generate-coverage-release.yaml#L128) to the coverage generation PipelineRun in the
+`.tekton` directory of the Pipelines-as-Code repository, it uses the [finally
+task with the guard
+feature](https://tekton.dev/docs/pipelines/pipelines/#guard-finally-task-execution-using-when-expressions)
+to send a notification to Slack if there is any failure in the pipelinerun. See
+it in action here:
 
-<https://github.com/chmouel/tekton-slack-task-status>
-
-As an example, you can refer to the push pipeline in the Pipelines-as-Code
-repository, which sends a Slack message if there are any failures while
-generating artifacts on every push. The relevant section of the pipeline can be
-found here:
-
-<https://github.com/openshift-pipelines/pipelines-as-code/blob/7b41cc3f769af40a84b7ead41c6f037637e95070/.tekton/push.yaml#L116>
+<https://github.com/openshift-pipelines/pipelines-as-code/blob/main/.tekton/generate-coverage-release.yaml#L128>
