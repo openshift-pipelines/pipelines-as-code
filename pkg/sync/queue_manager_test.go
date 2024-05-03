@@ -4,6 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"knative.dev/pkg/apis"
+
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -14,8 +17,31 @@ import (
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func TestSomeoneElseSetPendingWithNoConcurrencyLimit(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewQueueManager(logger)
+	repo := newTestRepo(1)
+	// unset concurrency limit
+	repo.Spec.ConcurrencyLimit = nil
+
+	pr := newTestPR("first", time.Now(), nil, nil)
+	// set to pending
+	pr.Status.Conditions = duckv1.Conditions{
+		{
+			Type:   apis.ConditionSucceeded,
+			Reason: v1beta1.PipelineRunReasonPending.String(),
+		},
+	}
+	started, err := qm.AddListToQueue(repo, []string{getQueueKey(pr)})
+	assert.NilError(t, err)
+	assert.Equal(t, len(started), 1)
+}
 
 func TestNewQueueManagerForList(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
@@ -24,7 +50,7 @@ func TestNewQueueManagerForList(t *testing.T) {
 	qm := NewQueueManager(logger)
 
 	// repository for which pipelineRun are created
-	repo := newTestRepo("test", 1)
+	repo := newTestRepo(1)
 
 	// first pipelineRun
 	prFirst := newTestPR("first", time.Now(), nil, nil)
@@ -80,7 +106,7 @@ func TestNewQueueManagerReListing(t *testing.T) {
 	qm := NewQueueManager(logger)
 
 	// repository for which pipelineRun are created
-	repo := newTestRepo("test", 2)
+	repo := newTestRepo(2)
 
 	prFirst := newTestPR("first", time.Now(), nil, nil)
 	prSecond := newTestPR("second", time.Now().Add(1*time.Second), nil, nil)
@@ -120,10 +146,10 @@ func TestNewQueueManagerReListing(t *testing.T) {
 	assert.Equal(t, len(qm.QueuedPipelineRuns(repo)), 4)
 }
 
-func newTestRepo(name string, limit int) *v1alpha1.Repository {
+func newTestRepo(limit int) *v1alpha1.Repository {
 	return &v1alpha1.Repository{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "test",
 			Namespace: "test-ns",
 		},
 		Spec: v1alpha1.RepositorySpec{
@@ -162,7 +188,7 @@ func TestQueueManager_InitQueues(t *testing.T) {
 		keys.State: kubeinteraction.StateQueued,
 	}
 
-	repo := newTestRepo("test", 1)
+	repo := newTestRepo(1)
 
 	queuedAnnotations := map[string]string{
 		keys.ExecutionOrder: "test-ns/first,test-ns/second,test-ns/third",
