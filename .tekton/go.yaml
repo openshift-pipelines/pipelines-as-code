@@ -89,12 +89,12 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
+                ARCH=aarch64
                 git config --global --add safe.directory $(workspaces.source.path)
                 git fetch -a --tags
-                version=$(curl -s https://uploader.codecov.io/aarch64/latest| sed -n '/full_version/ { s/.*full_version...//;s/".*//;p; }')
-                curl -LOs https://uploader.codecov.io/${version}/aarch64/codecov
+                curl -LOs https://uploader.codecov.io/v0.7.3/aarch64/codecov
                 chmod +x ./codecov
-                ./codecov -P $GITHUB_PULL_REQUEST_ID -C {{revision}}
+                ./codecov -P $GITHUB_PULL_REQUEST_ID -C {{revision}} -v
             - name: lint
               image: golangci/golangci-lint:latest
               workingDir: $(workspaces.source.path)
