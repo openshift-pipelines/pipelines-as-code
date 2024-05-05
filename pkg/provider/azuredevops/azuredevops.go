@@ -455,7 +455,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 	if err != nil {
 		return err
 	}
-	v.CoreClient, err = core.NewClient(ctx, v.connection)
+	v.CoreClient, err = core.NewClient(ctx, connection)
 	if err != nil {
 		return err
 	}

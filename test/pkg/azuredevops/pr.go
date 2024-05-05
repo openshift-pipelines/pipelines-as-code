@@ -23,7 +23,7 @@ func MakePR(ctx context.Context, t *testing.T, azProvider azprovider.Provider, o
 	assert.NilError(t, err)
 	fileContent := entries[".tekton/pipelinerun.yaml"]
 
-	gitClient := azProvider.Client
+	gitClient := azProvider.GitClient
 	filter := "heads/main"
 
 	// Create a new branch from the default branch

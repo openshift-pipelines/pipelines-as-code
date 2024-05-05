@@ -88,7 +88,7 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, azProvider 
 	runcnx.Clients.Log.Infof("Abandoning PR #%d", prID)
 
 	// Update the pull request to abandon it
-	_, err := azProvider.Client.UpdatePullRequest(ctx, git.UpdatePullRequestArgs{
+	_, err := azProvider.GitClient.UpdatePullRequest(ctx, git.UpdatePullRequestArgs{
 		GitPullRequestToUpdate: &prUpdate,
 		RepositoryId:           &opts.ProjectName,
 		PullRequestId:          prID,
@@ -106,7 +106,7 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, azProvider 
 	}
 
 	refUpdates := []git.GitRefUpdate{refUpdate}
-	_, err = azProvider.Client.UpdateRefs(ctx, git.UpdateRefsArgs{
+	_, err = azProvider.GitClient.UpdateRefs(ctx, git.UpdateRefsArgs{
 		RefUpdates:   &refUpdates,
 		RepositoryId: &opts.ProjectName,
 		Project:      &opts.ProjectName,
