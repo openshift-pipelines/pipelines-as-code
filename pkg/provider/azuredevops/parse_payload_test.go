@@ -228,7 +228,7 @@ func TestExtractBaseURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := extractBaseURL(tt.url)
+			got, err := ExtractBaseURL(tt.url)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("extractBaseURL(%q) expected error? %v, got error? %v", tt.url, tt.wantErr, err != nil)
 			}

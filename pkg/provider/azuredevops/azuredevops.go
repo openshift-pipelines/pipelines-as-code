@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops/v7"
+	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/core"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/git"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/webapi"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -24,15 +25,17 @@ import (
 var _ provider.Interface = (*Provider)(nil)
 
 type Provider struct {
-	Client git.Client
-	ctx    context.Context
-	Logger *zap.SugaredLogger
-	Token  *string
-	run    *params.Run
+	GitClient  git.Client
+	CoreClient core.Client
+	ctx        context.Context
+	Logger     *zap.SugaredLogger
+	Token      *string
+	run        *params.Run
+	connection *azuredevops.Connection
 }
 
 func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts provider.StatusOpts) error {
-	if v.Client == nil {
+	if v.GitClient == nil {
 		return fmt.Errorf("cannot set status on azuredevops no token or url set")
 	}
 
@@ -95,7 +98,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 			CommitId:                &event.SHA,
 			GitCommitStatusToCreate: &gitStatus,
 		}
-		if _, err := v.Client.CreateCommitStatus(ctx, commitStatusArgs); err != nil {
+		if _, err := v.GitClient.CreateCommitStatus(ctx, commitStatusArgs); err != nil {
 			return fmt.Errorf("failed to create commit status: %w", err)
 		}
 	case "git.pullrequest.created", "git.pullrequest.updated":
@@ -105,7 +108,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 			RepositoryId:  &event.RepositoryID,
 		}
 
-		status, err := v.Client.GetPullRequestStatuses(ctx, gitPullRequestStatusArgs)
+		status, err := v.GitClient.GetPullRequestStatuses(ctx, gitPullRequestStatusArgs)
 		if err != nil {
 			return fmt.Errorf("failed to fetch pull request statuses: %w", err)
 		}
@@ -151,7 +154,7 @@ func updatePRStatus(ctx context.Context, status *[]git.GitPullRequestStatus, eve
 		RepositoryId:  &event.RepositoryID,
 		PullRequestId: &event.PullRequestNumber,
 	}
-	if err := v.Client.UpdatePullRequestStatuses(ctx, gitUpdatePullRequestStatus); err != nil {
+	if err := v.GitClient.UpdatePullRequestStatuses(ctx, gitUpdatePullRequestStatus); err != nil {
 		return fmt.Errorf("failed to update pull request status: %w", err)
 	}
 	return nil
@@ -175,7 +178,7 @@ func createPRStatus(ctx context.Context, v *Provider, event *info.Event, statusO
 		RepositoryId:  &event.RepositoryID,
 		Status:        &gitPullRequestStatus,
 	}
-	if _, err := v.Client.CreatePullRequestStatus(ctx, prStatusArgs); err != nil {
+	if _, err := v.GitClient.CreatePullRequestStatus(ctx, prStatusArgs); err != nil {
 		return fmt.Errorf("failed to create pull request status: %w", err)
 	}
 	return nil
@@ -186,7 +189,7 @@ func (v *Provider) CreateToken(context.Context, []string, *info.Event) (string, 
 }
 
 func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
-	if v.Client == nil {
+	if v.GitClient == nil {
 		return fmt.Errorf("no Azure DevOps client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
@@ -199,7 +202,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 	if sha == "" {
 		if event.HeadBranch != "" {
 			refName := fmt.Sprintf("refs/heads/%s", event.HeadBranch)
-			refs, err := v.Client.GetRefs(ctx, git.GetRefsArgs{
+			refs, err := v.GitClient.GetRefs(ctx, git.GetRefsArgs{
 				RepositoryId: &RepositoryID,
 				Filter:       &refName,
 				Project:      &projectID,
@@ -212,7 +215,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 				sha = *refs.Value[0].ObjectId
 			}
 		} else if event.PullRequestNumber != 0 {
-			pr, err := v.Client.GetPullRequest(ctx, git.GetPullRequestArgs{
+			pr, err := v.GitClient.GetPullRequest(ctx, git.GetPullRequestArgs{
 				RepositoryId:  &RepositoryID,
 				PullRequestId: &event.PullRequestNumber,
 				Project:       &projectID,
@@ -226,7 +229,7 @@ func (v *Provider) GetCommitInfo(ctx context.Context, event *info.Event) error {
 		}
 	}
 	if sha != "" {
-		commit, err := v.Client.GetCommit(ctx, git.GetCommitArgs{
+		commit, err := v.GitClient.GetCommit(ctx, git.GetCommitArgs{
 			CommitId:     &sha,
 			RepositoryId: &RepositoryID,
 			Project:      &projectID,
@@ -251,7 +254,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 }
 
 func (v *Provider) GetFiles(ctx context.Context, event *info.Event) (changedfiles.ChangedFiles, error) {
-	filesChanged, err := v.Client.GetChanges(ctx, git.GetChangesArgs{
+	filesChanged, err := v.GitClient.GetChanges(ctx, git.GetChangesArgs{
 		RepositoryId: &event.RepositoryID,
 		CommitId:     &event.SHA,
 	})
@@ -313,7 +316,7 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 		VersionType: &versionType,
 	}
 
-	reader, err := v.Client.GetItemContent(ctx, git.GetItemContentArgs{
+	reader, err := v.GitClient.GetItemContent(ctx, git.GetItemContentArgs{
 		RepositoryId:      &repositoryID,
 		Project:           &ProjectID,
 		Path:              &path,
@@ -356,7 +359,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 	}
 
 	// Check if the path exists and is a directory
-	item, err := v.Client.GetItem(ctx, git.GetItemArgs{
+	item, err := v.GitClient.GetItem(ctx, git.GetItemArgs{
 		RepositoryId:      &repositoryID,
 		Project:           &ProjectID,
 		Path:              &path,
@@ -371,7 +374,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 	}
 
 	// Get the SHA of the directory and fetch the tree
-	tree, err := v.Client.GetTree(ctx, git.GetTreeArgs{
+	tree, err := v.GitClient.GetTree(ctx, git.GetTreeArgs{
 		RepositoryId: &repositoryID,
 		Project:      &ProjectID,
 		Sha1:         item.ObjectId,
@@ -419,7 +422,7 @@ func (v *Provider) concatAllYamlFiles(ctx context.Context, entries *[]git.GitTre
 }
 
 func (v *Provider) getObject(ctx context.Context, repositoryID, projectID, sha string) ([]byte, error) {
-	reader, err := v.Client.GetBlobContent(ctx, git.GetBlobContentArgs{
+	reader, err := v.GitClient.GetBlobContent(ctx, git.GetBlobContentArgs{
 		RepositoryId: &repositoryID,
 		Project:      &projectID,
 		Sha1:         &sha,
@@ -448,14 +451,18 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 	organizationURL := event.Organization
 	connection := azuredevops.NewPatConnection(organizationURL, event.Provider.Token)
 	ctx := context.Background()
-	v.Client, err = git.NewClient(ctx, connection)
+	v.GitClient, err = git.NewClient(ctx, connection)
 	if err != nil {
 		return err
 	}
-
+	v.CoreClient, err = core.NewClient(ctx, v.connection)
+	if err != nil {
+		return err
+	}
 	v.Token = &event.Provider.Token
 	v.run = run
 	v.ctx = ctx
+	v.connection = connection
 
 	return nil
 }

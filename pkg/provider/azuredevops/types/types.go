@@ -4,6 +4,11 @@ import (
 	"time"
 )
 
+type PullRequestCommentEventResource struct {
+	Comment     Comment                  `json:"comment"`
+	PullRequest PullRequestEventResource `json:"pullRequest"`
+}
+
 type PullRequestEventResource struct {
 	Repository            Repository `json:"repository"`
 	PullRequestID         int        `json:"pullRequestId"`
@@ -36,6 +41,19 @@ type PushEventResource struct {
 	PushID     int         `json:"pushId"`
 	Date       CustomTime  `json:"date"`
 	URL        string      `json:"url"`
+}
+
+type Comment struct {
+	ID                     int      `json:"id"`
+	ParentCommentID        int      `json:"parentCommentId"`
+	Author                 User     `json:"author"`
+	Content                string   `json:"content"`
+	PublishedDate          string   `json:"publishedDate"`
+	LastUpdatedDate        string   `json:"lastUpdatedDate"`
+	LastContentUpdatedDate string   `json:"lastContentUpdatedDate"`
+	CommentType            string   `json:"commentType"`
+	UsersLiked             []string `json:"usersLiked,omitempty"`
+	Links                  Links    `json:"_links"`
 }
 
 type Commit struct {

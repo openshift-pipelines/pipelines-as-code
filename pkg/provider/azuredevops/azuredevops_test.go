@@ -1,82 +1,28 @@
 package azuredevops
 
 import (
-	"context"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
-	"github.com/microsoft/azure-devops-go-api/azuredevops/v7/git"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	statusOpts "github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	statusOpts "github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/azuredevops/test"
+	"go.uber.org/zap"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
-type MockGitClient struct {
-	git.Client              // Embedding git.Client for future-proofing against new methods
-	createCommitStatus      func(ctx context.Context, args git.CreateCommitStatusArgs) (*git.GitStatus, error)
-	getPullRequestStatuses  func(ctx context.Context, args git.GetPullRequestStatusesArgs) (*[]git.GitPullRequestStatus, error)
-	updatePullRequestStatus func(ctx context.Context, args git.UpdatePullRequestStatusesArgs) error
-	createPullRequestStatus func(ctx context.Context, args git.CreatePullRequestStatusArgs) (*git.GitPullRequestStatus, error)
-	createAnnotatedTag      func(ctx context.Context, args git.CreateAnnotatedTagArgs) (*git.GitAnnotatedTag, error)
-}
+func TestCreateStatus(t *testing.T) {
+	mockGit, mockCore, _, _, tearDown := test.Setup()
+	defer tearDown()
 
-func (m *MockGitClient) CreateCommitStatus(ctx context.Context, args git.CreateCommitStatusArgs) (*git.GitStatus, error) {
-	return m.createCommitStatus(ctx, args)
-}
-
-func (m *MockGitClient) GetPullRequestStatuses(ctx context.Context, args git.GetPullRequestStatusesArgs) (*[]git.GitPullRequestStatus, error) {
-	return m.getPullRequestStatuses(ctx, args)
-}
-
-func (m *MockGitClient) UpdatePullRequestStatuses(ctx context.Context, args git.UpdatePullRequestStatusesArgs) error {
-	return m.updatePullRequestStatus(ctx, args)
-}
-
-func (m *MockGitClient) CreatePullRequestStatus(ctx context.Context, args git.CreatePullRequestStatusArgs) (*git.GitPullRequestStatus, error) {
-	return m.createPullRequestStatus(ctx, args)
-}
-
-func (m *MockGitClient) CreateAnnotatedTag(ctx context.Context, args git.CreateAnnotatedTagArgs) (*git.GitAnnotatedTag, error) {
-	if m.createAnnotatedTag != nil {
-		return m.createAnnotatedTag(ctx, args)
-	}
-	return nil, nil
-}
-
-func Setup() (*MockGitClient, *http.ServeMux, func()) {
-	mux := http.NewServeMux()
-	server := httptest.NewServer(mux)
-	tearDown := func() {
-		server.Close()
-	}
-
-	mockClient := &MockGitClient{
-		createCommitStatus: func(context.Context, git.CreateCommitStatusArgs) (*git.GitStatus, error) {
-			return &git.GitStatus{}, nil
-		},
-		getPullRequestStatuses: func(context.Context, git.GetPullRequestStatusesArgs) (*[]git.GitPullRequestStatus, error) {
-			return &[]git.GitPullRequestStatus{}, nil
-		},
-		updatePullRequestStatus: func(context.Context, git.UpdatePullRequestStatusesArgs) error {
-			return nil
-		},
-		createPullRequestStatus: func(context.Context, git.CreatePullRequestStatusArgs) (*git.GitPullRequestStatus, error) {
-			return &git.GitPullRequestStatus{}, nil
-		},
-		createAnnotatedTag: func(context.Context, git.CreateAnnotatedTagArgs) (*git.GitAnnotatedTag, error) {
-			return &git.GitAnnotatedTag{}, nil
-		},
-	}
-
-	return mockClient, mux, tearDown
-}
-
-func getProvider(mockClient *MockGitClient) *Provider {
-	provider := &Provider{
-		Client: mockClient,
+	logger := zap.NewExample().Sugar()
+	defer logger.Sync()
+	ctx, _ := rtesting.SetupFakeContext(t)
+	provider := Provider{
+		GitClient:  mockGit,
+		CoreClient: mockCore,
+		Logger:     logger,
 		run: &params.Run{
 			Info: info.Info{
 				Pac: &info.PacOpts{
@@ -87,16 +33,6 @@ func getProvider(mockClient *MockGitClient) *Provider {
 			},
 		},
 	}
-	return provider
-}
-
-func TestCreateStatus(t *testing.T) {
-	mockClient, _, tearDown := Setup()
-	defer tearDown()
-
-	ctx := context.Background()
-
-	provider := getProvider(mockClient)
 
 	testCases := []struct {
 		name        string
