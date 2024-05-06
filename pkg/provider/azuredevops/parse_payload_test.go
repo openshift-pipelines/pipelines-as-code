@@ -11,7 +11,6 @@ import (
 )
 
 func TestParsePayload(t *testing.T) {
-	// Mock request setup
 	mockRequest := &http.Request{}
 
 	// Mock context
@@ -115,7 +114,7 @@ func TestParsePayload(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := Provider{} // Assuming this is your Azure DevOps provider
+			v := Provider{}
 			run := &params.Run{}
 
 			gotEvent, err := v.ParsePayload(ctx, run, mockRequest, tt.payload)
@@ -126,7 +125,6 @@ func TestParsePayload(t *testing.T) {
 
 			assert.Equal(t, tt.wantEvent.EventType, gotEvent.EventType)
 			assert.Equal(t, tt.wantEvent.SHA, gotEvent.SHA)
-			// Add more assertions as needed
 		})
 	}
 }

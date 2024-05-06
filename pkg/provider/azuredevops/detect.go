@@ -38,7 +38,6 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 	normalizedEventType := strings.ReplaceAll(*event.EventType, "-", ".")
 	if strings.Contains(normalizedEventType, eventType) {
 		logger = logger.With("provider", "azuredevops", "event-type", eventType)
-		// Simplified switch, expand as needed based on the Azure DevOps events you handle
 		switch eventType {
 		case "git.push", "git.pullrequest.created", "git.pullrequest.updated", "git.pullrequest.comment":
 			return setLoggerAndProceed(true, "", nil)

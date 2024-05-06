@@ -77,7 +77,7 @@ func (m *MockCoreClient) GetTeamMembersWithExtendedProperties(ctx context.Contex
 
 	var teamMembers []webapi.TeamMember
 	for _, memberID := range members {
-		identityID := memberID // Simplifying identity ID use case
+		identityID := memberID
 		teamMembers = append(teamMembers, webapi.TeamMember{
 			Identity: &webapi.IdentityRef{Id: &identityID},
 		})

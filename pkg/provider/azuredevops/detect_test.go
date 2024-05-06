@@ -15,7 +15,6 @@ func TestProvider_Detect(t *testing.T) {
 	gitPush := "git.push"
 	gitPRCreated := "git.pullrequest.created"
 	gitPRUpdated := "git.pullrequest.updated"
-	// Define more event types as needed
 
 	tests := []struct {
 		name          string
@@ -80,7 +79,7 @@ func TestProvider_Detect(t *testing.T) {
 			header.Set("X-Azure-DevOps-EventType", tt.eventType)
 			req := &http.Request{Header: header}
 
-			v := Provider{} // Assuming Provider is your Azure DevOps provider struct
+			v := Provider{}
 			isADO, processReq, _, reason, err := v.Detect(req, string(payload), logger)
 
 			if tt.wantErr {

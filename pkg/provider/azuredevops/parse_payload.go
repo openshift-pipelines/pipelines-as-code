@@ -30,7 +30,6 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, req *http.Requ
 	processedEvent := info.NewEvent()
 
 	processedEvent.EventType = req.Header.Get("X-Azure-DevOps-EventType")
-	// processedEvent.EventType = *genericEvent.EventType
 
 	resourceBytes, err := json.Marshal(genericEvent.Resource)
 	if err != nil {
@@ -63,7 +62,6 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, req *http.Requ
 		processedEvent.URL = pushEvent.Repository.RemoteURL
 		processedEvent.DefaultBranch = pushEvent.Repository.DefaultBranch
 		processedEvent.TriggerTarget = triggertype.Push
-		// Assuming the repository URL can serve as both BaseURL and HeadURL for viewing purposes
 		processedEvent.BaseURL = pushEvent.Repository.URL
 		processedEvent.HeadURL = pushEvent.Repository.URL
 		if len(pushEvent.RefUpdates) > 0 {
@@ -84,19 +82,12 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, req *http.Requ
 		processedEvent.SHAURL = prEvent.LastMergeSourceCommit.URL
 		processedEvent.SHATitle = prEvent.LastMergeSourceCommit.Comment
 
-		// Extract branch names from the ref names
-		// Azure DevOps ref names are full references (refs/heads/branchName), so we'll extract the branch name
 		processedEvent.BaseBranch = ExtractBranchName(prEvent.TargetRefName)
 		processedEvent.HeadBranch = ExtractBranchName(prEvent.SourceRefName)
 		processedEvent.DefaultBranch = prEvent.Repository.DefaultBranch
 
-		// Constructing URLs
-		remoteURL := *prEvent.Repository.WebURL
-		// processedEvent.BaseURL = fmt.Sprintf("%s?version=GB%s", remoteURL, processedEvent.BaseBranch)
-		// processedEvent.HeadURL = fmt.Sprintf("%s?version=GB%s", remoteURL, processedEvent.HeadBranch)
-
 		processedEvent.TriggerTarget = triggertype.PullRequest
-
+		remoteURL := *prEvent.Repository.WebURL
 		baseURL, err := ExtractBaseURL(remoteURL)
 		if err != nil {
 			return nil, fmt.Errorf("not able to extract organization url")
