@@ -92,8 +92,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, req *http.Requ
 
 		// Constructing URLs
 		remoteURL := *prEvent.Repository.WebURL
-		processedEvent.BaseURL = fmt.Sprintf("%s?version=GB%s", remoteURL, processedEvent.BaseBranch)
-		processedEvent.HeadURL = fmt.Sprintf("%s?version=GB%s", remoteURL, processedEvent.HeadBranch)
+		// processedEvent.BaseURL = fmt.Sprintf("%s?version=GB%s", remoteURL, processedEvent.BaseBranch)
+		// processedEvent.HeadURL = fmt.Sprintf("%s?version=GB%s", remoteURL, processedEvent.HeadBranch)
 
 		processedEvent.TriggerTarget = triggertype.PullRequest
 
