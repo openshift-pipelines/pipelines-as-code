@@ -49,9 +49,10 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 					},
 				},
 				controllerInfo: &info.ControllerInfo{
-					Name:      "controller",
-					Configmap: "configmap",
-					Secret:    "secret",
+					Name:             "controller",
+					Configmap:        "configmap",
+					Secret:           "secret",
+					GlobalRepository: "repo",
 				},
 			},
 		},
@@ -71,7 +72,7 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 				tt.args.pipelineRun.Annotations[keys.URLOrg], tt.args.event.Organization)
 			assert.Equal(t, tt.args.pipelineRun.Annotations[keys.ShaURL], tt.args.event.SHAURL)
 			assert.Equal(t, tt.args.pipelineRun.Annotations[keys.ControllerInfo],
-				fmt.Sprintf(`{"name":"%s","configmap":"%s","secret":"%s"}`, tt.args.controllerInfo.Name, tt.args.controllerInfo.Configmap, tt.args.controllerInfo.Secret))
+				fmt.Sprintf(`{"name":"%s","configmap":"%s","secret":"%s", "gRepo": "%s"}`, tt.args.controllerInfo.Name, tt.args.controllerInfo.Configmap, tt.args.controllerInfo.Secret, tt.args.controllerInfo.GlobalRepository))
 		})
 	}
 }

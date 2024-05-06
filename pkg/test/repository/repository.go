@@ -19,6 +19,7 @@ type RepoTestcreationOpts struct {
 	CreateTime        metav1.Time
 	RepoStatus        []v1alpha1.RepositoryRunStatus
 	ConcurrencyLimit  int
+	Settings          *v1alpha1.Settings
 }
 
 func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
@@ -67,7 +68,8 @@ func NewRepo(opts RepoTestcreationOpts) *v1alpha1.Repository {
 			CreationTimestamp: opts.CreateTime,
 		},
 		Spec: v1alpha1.RepositorySpec{
-			URL: opts.URL,
+			URL:      opts.URL,
+			Settings: opts.Settings,
 		},
 		Status: opts.RepoStatus,
 	}

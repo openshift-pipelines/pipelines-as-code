@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func CreateProvider(ctx context.Context, giteaURL, user, password string) (gitea.Provider, error) {
@@ -82,8 +83,20 @@ func TearDown(ctx context.Context, t *testing.T, topts *TestOpts) {
 	repository.NSTearDown(ctx, t, topts.ParamsRun, topts.TargetNS)
 	_, err := topts.GiteaCNX.Client.DeleteRepo(topts.Opts.Organization, topts.TargetNS)
 	if err != nil {
-		t.Logf("Error deleting repo %s/%s: %s", topts.Opts.Organization, topts.TargetNS, err)
+		t.Logf("Error deleting gitea repo %s/%s: %s", topts.Opts.Organization, topts.TargetNS, err)
 	} else {
-		t.Logf("Deleted repo %s/%s", topts.Opts.Organization, topts.TargetNS)
+		t.Logf("Deleted gitea repo %s/%s", topts.Opts.Organization, topts.TargetNS)
+	}
+	ns := info.GetNS(ctx)
+	if topts.GlobalRepoCRParams != nil {
+		_ = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(ns).Delete(ctx, info.DefaultGlobalRepoName, metav1.DeleteOptions{})
+		if err != nil {
+			t.Logf("Error deleting repo cr %s in ns %s: %+v", info.DefaultGlobalRepoName, ns, err)
+		} else {
+			t.Logf("Deleted repo CR %s in ns %s", info.DefaultGlobalRepoName, ns)
+		}
+		if err := topts.ParamsRun.Clients.Kube.CoreV1().Secrets(ns).Delete(ctx, topts.TargetNS, metav1.DeleteOptions{}); err == nil {
+			topts.ParamsRun.Clients.Log.Infof("Secret global %s has been deleted in %s", topts.TargetNS, ns)
+		}
 	}
 }

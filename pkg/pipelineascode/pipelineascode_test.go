@@ -594,7 +594,7 @@ func TestRun(t *testing.T) {
 				Logger: logger,
 			}
 			vcx.SetPacInfo(pacInfo)
-			p := NewPacs(&tt.runevent, vcx, cs, pacInfo, k8int, logger)
+			p := NewPacs(&tt.runevent, vcx, cs, pacInfo, k8int, logger, nil)
 			err := p.Run(ctx)
 
 			if tt.wantErr != "" {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -22,6 +23,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing/pkg/adapter/v2"
 	"knative.dev/pkg/logging"
 )
@@ -131,6 +133,15 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 		l.event = info.NewEvent()
 		pacInfo := l.run.Info.GetPacOpts()
 
+		globalRepo, err := l.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(l.run.Info.Kube.Namespace).Get(
+			ctx, l.run.Info.Controller.GlobalRepository, metav1.GetOptions{},
+		)
+		if err == nil && globalRepo != nil {
+			l.logger.Infof("detected global repository settings named %s in namespace %s", l.run.Info.Controller.GlobalRepository, l.run.Info.Kube.Namespace)
+		} else {
+			globalRepo = &v1alpha1.Repository{}
+		}
+
 		detected, configuring, err := github.ConfigureRepository(ctx, l.run, request, string(payload), &pacInfo, l.logger)
 		if detected {
 			if configuring && err == nil {
@@ -166,13 +177,14 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 		gitProvider.SetPacInfo(&pacInfo)
 
 		s := sinker{
-			run:     l.run,
-			vcx:     gitProvider,
-			kint:    l.kint,
-			event:   l.event,
-			logger:  logger,
-			payload: payload,
-			pacInfo: &pacInfo,
+			run:        l.run,
+			vcx:        gitProvider,
+			kint:       l.kint,
+			event:      l.event,
+			logger:     logger,
+			payload:    payload,
+			pacInfo:    &pacInfo,
+			globalRepo: globalRepo,
 		}
 
 		// clone the request to use it further

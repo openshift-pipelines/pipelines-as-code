@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/customparams"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
@@ -41,11 +42,12 @@ type PacRun struct {
 	eventEmitter *events.EventEmitter
 	manager      *ConcurrencyManager
 	pacInfo      *info.PacOpts
+	globalRepo   *v1alpha1.Repository
 }
 
-func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, pacInfo *info.PacOpts, k8int kubeinteraction.Interface, logger *zap.SugaredLogger) PacRun {
+func NewPacs(event *info.Event, vcx provider.Interface, run *params.Run, pacInfo *info.PacOpts, k8int kubeinteraction.Interface, logger *zap.SugaredLogger, globalRepo *v1alpha1.Repository) PacRun {
 	return PacRun{
-		event: event, run: run, vcx: vcx, k8int: k8int, pacInfo: pacInfo, logger: logger,
+		event: event, run: run, vcx: vcx, k8int: k8int, pacInfo: pacInfo, logger: logger, globalRepo: globalRepo,
 		eventEmitter: events.NewEventEmitter(run.Clients.Kube, logger),
 		manager:      NewConcurrencyManager(),
 	}

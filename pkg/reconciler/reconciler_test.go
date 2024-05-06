@@ -193,6 +193,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 						Kube:           stdata.Kube,
 					},
 					Info: info.Info{
+						Kube: &info.KubeOpts{},
 						Controller: &info.ControllerInfo{
 							Secret: secretName,
 						},

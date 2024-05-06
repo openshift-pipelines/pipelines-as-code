@@ -6,6 +6,7 @@ package test
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -13,6 +14,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
@@ -117,6 +119,132 @@ func TestGiteaParamsOnRepoCRWithCustomConsole(t *testing.T) {
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 	topts.Regexp = regexp.MustCompile(`(?m).*https://url/log/myconsole`)
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
+}
+
+func TestGiteaGlobalRepoParams(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		CheckForStatus:  "success",
+		SkipEventsCheck: true,
+		TargetEvent:     triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/params.yaml",
+		},
+		GlobalRepoCRParams: &[]v1alpha1.Params{
+			{
+				Name:  "no_filter",
+				Value: "I come from the global params",
+			},
+		},
+	}
+	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	topts.TargetNS = topts.TargetRefName
+	ctx := context.Background()
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
+	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+	ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+	}
+	repo, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+	last := repo.Status[len(repo.Status)-1]
+	err = twait.RegexpMatchingInPodLog(
+		context.Background(),
+		topts.ParamsRun,
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName),
+		"step-test-params-value",
+		regexp.Regexp{},
+		t.Name(),
+		2,
+	)
+	assert.NilError(t, err)
+}
+
+// TestGiteaGlobalRepoUseLocalDef will test when having params from the global
+// and local repository or gitprovider secret on both it uses the local first.
+func TestGiteaGlobalRepoUseLocalDef(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		CheckForStatus:  "success",
+		SkipEventsCheck: true,
+		TargetEvent:     triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/params.yaml",
+		},
+		RepoCRParams: &[]v1alpha1.Params{
+			{
+				Name:  "no_filter",
+				Value: "I come from the local params",
+			},
+		},
+	}
+	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	topts.TargetNS = topts.TargetRefName
+	ctx := context.Background()
+
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
+	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+	ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+
+	globalNs := info.GetNS(ctx)
+	err = tgitea.CreateCRD(ctx, topts,
+		v1alpha1.RepositorySpec{
+			GitProvider: &v1alpha1.GitProvider{
+				Secret: &v1alpha1.Secret{
+					Name: "notreallyhere",
+				},
+			},
+			Params: &[]v1alpha1.Params{
+				{
+					Name:  "no_filter",
+					Value: "I come from the global params",
+				},
+			},
+		},
+		true)
+	assert.NilError(t, err)
+
+	defer (func() {
+		if os.Getenv("TEST_NOCLEANUP") != "true" {
+			topts.ParamsRun.Clients.Log.Infof("Cleaning up global repo %s in %s", info.DefaultGlobalRepoName, globalNs)
+			_ = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(globalNs).Delete(
+				context.Background(), info.DefaultGlobalRepoName, metav1.DeleteOptions{})
+		}
+	})()
+
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+	}
+	repo, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+	last := repo.Status[len(repo.Status)-1]
+	err = twait.RegexpMatchingInPodLog(
+		context.Background(),
+		topts.ParamsRun,
+		topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName),
+		"step-test-params-value",
+		regexp.Regexp{},
+		t.Name(),
+		2,
+	)
+	assert.NilError(t, err)
 }
 
 func TestGiteaParamsOnRepoCR(t *testing.T) {
