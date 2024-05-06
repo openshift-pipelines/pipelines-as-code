@@ -5,7 +5,7 @@ metadata:
   name: linters
   annotations:
     pipelinesascode.tekton.dev/on-event: "[push, pull_request]"
-    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-target-branch: "[*]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/task: "[git-clone]"
 spec:
@@ -62,11 +62,11 @@ spec:
             - name: source
           steps:
             - name: codespell
-              image: ghcr.io/codespell-project/actions-codespell/stable:v2
+              image: registry.access.redhat.com/ubi9/python-311
               workingDir: $(workspaces.source.path)
               script: |
+                pip3 install codespell
                 codespell -d docs/content pkg test
-
       - name: shellcheck
         displayName: "Shell scripts linter"
         runAfter:
@@ -79,7 +79,7 @@ spec:
             - name: source
           steps:
             - name: shellcheck
-              image: pipelinecomponents/shellcheck
+              image: koalaman/shellcheck-alpine
               workingDir: $(workspaces.source.path)
               script: |
                 shellcheck $(find hack/ -type f -regex ".*sh" -print)
@@ -95,11 +95,12 @@ spec:
             - name: source
           steps:
             - name: gitlint
-              image: jorisroovers/gitlint
+              image: registry.access.redhat.com/ubi9/python-311
               workingDir: $(workspaces.source.path)
               script: |
-                git config --global --add safe.directory /workspace/source
+                git config --global --add safe.directory $(workspaces.source.path)
                 git log -1 --format=format:%s |grep -E -q '^Merge branch' && exit 0
+                pip3 install gitlint
                 gitlint --commit "$(git log --format=format:%H --no-merges -1)" --ignore "Merge branch"
       - name: yamllint
         generateName: "YAML Linter"
@@ -110,7 +111,7 @@ spec:
             - name: source
           steps:
             - name: yaml-lint
-              image: quay.io/mhutter/yamllint
+              image: cytopia/yamllint
               workingDir: $(workspaces.source.path)
               script: |
                 set -x
@@ -128,7 +129,7 @@ spec:
             - name: source
           steps:
             - name: ruff
-              image: pipelinecomponents/ruff
+              image: salixtein/ruff
               workingDir: $(workspaces.source.path)
               script: |
                 set -euxo pipefail
@@ -149,7 +150,7 @@ spec:
             - name: source
           steps:
             - name: markdown-lint
-              image: quay.io/thegeeklab/markdownlint-cli
+              image: thegeeklab/markdownlint-cli
               workingDir: $(workspaces.source.path)
               script: |
                 markdownlint $(find . -type f -regex ".*md"  -not -regex '^./vendor/.*' -not -regex "^./docs/themes/.*" -not -regex './.vale/.*' -not -regex "^./.git/.*" -print)
@@ -166,11 +167,19 @@ spec:
             - name: source
           steps:
             - name: markdown-lint
-              image: quay.io/eclipse/che-docs
+              image: registry.access.redhat.com/ubi9/python-311
               workingDir: $(workspaces.source.path)
+              env:
+                - name: HUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "nightly-ci-github-hub-token"
+                      key: "hub-token"
               script: |
+                version=$(curl -H "Authorization: Bearer ${HUB_TOKEN}" -L -s https://api.github.com/repos/errata-ai/vale/releases/latest|python -c 'import sys, json;dico=json.load(sys.stdin);print(dico["tag_name"])')
+                curl -H "Authorization: Bearer ${HUB_TOKEN}" -L https://github.com/errata-ai/vale/releases/download/${version}/vale_${version/v}_Linux_arm64.tar.gz|tar -xz -C /tmp/ -f- vale
                 export NO_COLOR=1
-                vale docs/content --minAlertLevel=error --output=line
+                /tmp/vale docs/content --minAlertLevel=error --output=line
         workspaces:
           - name: source
             workspace: source

@@ -4,7 +4,6 @@ kind: PipelineRun
 metadata:
   name: push-generate-coverage-releaseyaml
   annotations:
-    pipelinesascode.tekton.dev/task-1: "https://raw.githubusercontent.com/chmouel/tekton-slack-task-status/main/tekton-slack-task-status.yaml"  # send slack message on failure
     pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/on-cel-expression: |
@@ -20,20 +19,7 @@ spec:
       - name: repo_url
       - name: revision
     tasks:
-      - name: fetch
-        params:
-          - name: url
-            value: $(params.repo_url)
-          - name: revision
-            value: $(params.revision)
-        taskRef:
-          name: git-clone
-        workspaces:
-          - name: output
-            workspace: source
       - name: unit
-        runAfter:
-          - fetch
         workspaces:
           - name: source
             workspace: source
@@ -41,30 +27,36 @@ spec:
           workspaces:
             - name: source
           steps:
-            - image: registry.access.redhat.com/ubi9/go-toolset@sha256:310fbbc9b2a6af87d730e244d5b20a1836df3ae295c290ffec2d4ef6a53a33f8
-              name: get-cache
-              workingDir: $(workspaces.source.path)
-              env:
-                - name: GOCACHE
-                  value: $(workspaces.source.path)/go-build-cache/cache
-                - name: GOMODCACHE
-                  value: $(workspaces.source.path)/go-build-cache/mod
-                - name: GOLANGCILINT_CACHE
-                  value: $(workspaces.source.path)/go-build-cache/golangci-cache
-              script: |
-                #!/usr/bin/env bash
-                set -ex
-                mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
-                cd $(dirname ${GOCACHE})
-                curl -fsI http://uploader:8080/golang-cache.tar.gz || {
-                    echo "no cache found"
-                    exit 0
-                }
-                echo "Getting cache"
-                curl http://uploader:8080/golang-cache.tar.gz|tar -z -x -f- || \
-                   curl -X DELETE -F "file=golang-cache.tar.gz" http://uploader:8080/upload
+            - name: fetch-repo
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/tektoncd/catalog/main/stepaction/git-clone/0.1/git-clone.yaml
+              params:
+                - name: output-path
+                  value: $(workspaces.source.path)
+                - name: url
+                  value: "$(params.repo_url)"
+                - name: revision
+                  value: "$(params.revision)"
+            - name: cache-fetch
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/openshift-pipelines/tekton-caches/main/tekton/cache-fetch.yaml
+              params:
+                - name: patterns
+                  value: ["**go.mod", "**go.sum"]
+                - name: source
+                  value: oci://image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/cache-go:{{hash}}
+                - name: cachePath
+                  value: $(workspaces.source.path)/go-build-cache
+                - name: workingdir
+                  value: $(workspaces.source.path)
             - name: unittest
-              image: registry.access.redhat.com/ubi9/go-toolset@sha256:310fbbc9b2a6af87d730e244d5b20a1836df3ae295c290ffec2d4ef6a53a33f8
+              image: golang:1.21
               workingDir: $(workspaces.source.path)
               env:
                 - name: GOCACHE
@@ -74,20 +66,10 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 make test \
-                    GO_TEST_FLAGS="-v -race -coverprofile=coverage.txt -covermode=atomic"
-      - name: codecov
-        runAfter:
-          - unit
-        workspaces:
-          - name: source
-            workspace: source
-        taskSpec:
-          workspaces:
-            - name: source
-          steps:
-            - name: codecov-run
+                    GO_TEST_FLAGS="-v -coverprofile=coverage.txt -covermode=atomic"
+            - name: codecov
               # Has everything we need in there and we already fetched it!
-              image: registry.access.redhat.com/ubi9/go-toolset@sha256:310fbbc9b2a6af87d730e244d5b20a1836df3ae295c290ffec2d4ef6a53a33f8
+              image: golang:1.21
               workingDir: $(workspaces.source.path)
               env:
                 - name: CODECOV_TOKEN
@@ -98,19 +80,14 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
-                curl -Os https://uploader.codecov.io/v0.1.0_4653/linux/codecov
-                chmod +x ./codecov
+                ARCH=aarch64
                 git config --global --add safe.directory $(workspaces.source.path)
                 git fetch -a --tags
+                curl -LOs https://uploader.codecov.io/v0.7.3/aarch64/codecov
+                chmod +x ./codecov
                 ./codecov -C {{revision}} -v
-
-      - name: upload-release-yaml
-        runAfter:
-          - fetch
-        taskSpec:
-          steps:
-            - image: registry.access.redhat.com/ubi9/python-311
-              name: release
+            - name: upload-release
+              image: golang:1.21
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
@@ -144,28 +121,120 @@ spec:
                 git push --force https://git:$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }}/ nightly:nightly
                 set -x
                 git checkout -
-          workspaces:
-            - name: source
-        workspaces:
-          - name: source
-            workspace: source
     workspaces:
       - name: source
     finally:
       - name: finally
-        taskRef:
-          name: send-slack-notification
         params:
-          - name: log_url
-            value: "https://console-openshift-console.apps.psipac.ospqa.com"
-          - name: openshift
-            value: "true"
+          - name: pipelineRun
+            value: "$(context.pipelineRun.name)"
+          - name: namespace
+            value: "$(context.pipelineRun.namespace)"
+          - name: cluster_url
+            value: "console-openshift-console.apps.paac.openshift-pipelines.devcluster.openshift.com"
+          - name: image_url
+            value: "https://github.com/osp-pac.png"
+        when:
+          - input: $(tasks.status)
+            operator: in
+            values: ["Failed"]
+        # Todo Convert to a StepAction
+        taskSpec:
+          params:
+            - name: pipelineRun
+            - name: namespace
+            - name: cluster_url
+            - name: image_url
+          steps:
+            - image: golang:1.21
+              name: send-slack-notification
+              env:
+                - name: SLACK_WEBHOOK_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: slack-webhook-url
+                      key: hook_url
+                - name: PIPELINERUN
+                  value: "$(params.pipelineRun)"
+                - name: NAMESPACE
+                  value: "$(params.namespace)"
+                - name: CLUSTER_URL
+                  value: "$(params.cluster_url)"
+                - name: IMAGE_URL
+                  value: "$(params.image_url)"
+              script: |
+                #!/usr/bin/env bash
+                set -eux
+                haikus=(
+                  "Broken dreams guide us onward, through darkness, toward brighter dawns. Shattered hopes reveal lessons hidden in the night's embrace."
+                  "Through shattered glass, hope dances; sun rises on shattered dreams. In the silence of failure, whispers of wisdom find their way."
+                  "Failure's embrace teaches wisdom, and stars find their glow again. Lost in the abyss of defeat, the soul learns to rise anew."
+                  "In loss, find lessons hidden; dreams still rise, hope anew. Amidst the wreckage of despair, new beginnings quietly take root."
+                  "Night falls heavy on dreams, yet the dawn shines through scars. In the darkness, seeds of resilience sprout, reaching for the light."
+                  "Shattered dreams leave wisdom's mark; hearts mend beneath night's stars. Beneath the weight of sorrow, strength emerges, unbroken and resilient."
+                  "Dreams may falter and fall, but hope finds its own path. In the echoes of failure, new dreams are born, stronger than before."
+                  "Lessons from failure shine, dreams forge through shadows of loss. In the crucible of adversity, diamonds of resilience are formed."
+                  "Dark nights cradle broken dreams; the dawn carries new hopes. Through the veil of despair, rays of hope break through, illuminating the path forward."
+                  "Through every fall, lessons linger, lifting hearts toward brighter skies. In the tapestry of failure, threads of wisdom weave a path to success."
+                  "Tekton flows with code, GitHub repository holds, success and failure dance."
+                  "Failure whispers soft, lessons learned in the shadows, success rises bright."
+                  "YAML scripts guide paths, debugging shines through the dark, code finds peace in relief."
+                  "GitHub's open arms, community of code thrives, success celebrated."
+                  "Code weaves through pipelines, Tekton's flowchart leads the way, towards victory's embrace."
+                  "In the silence of failure, code finds solace in lessons, success blooms anew."
+                  "GitHub's branches spread wide, code's evolution takes flight, failure fuels growth's fire."
+                  "Debugging's gentle touch, unravels code's mysteries, relief found in clarity."
+                  "Tekton's pipeline sings, orchestrating code's journey, towards success's horizon."
+                  "YAML's structured grace, code's instructions clear and crisp, debugging with ease."
+                  "GitHub's pull request filed, code's collaboration thrives, success a shared dream."
+                  "Code walks the tightrope, between failure and success, finding balance in the journey."
+                  "Tekton's orchestra, code's symphony in motion, success the grand finale."
+                  "In the labyrinth of code, debugging lights the path, relief found in solutions."
+                  "GitHub's issue tracked, code's challenges met with grace, success on the horizon."
+                  "Code's melody plays, Tekton's rhythm guides the flow, harmony in code."
+                  "Failure's gentle touch, code learns from mistakes of old, success born from ashes."
+                  "GitHub's pulse beats strong, code's heartbeat in every line, success in collaboration."
+                  "Code's journey unfolds, Tekton's map leads the way, success waits at journey's end."
+                  "Failure's silver thread, woven through the fabric of code, success's tapestry."
+                  "GitHub's beacon shines, guiding code through stormy seas, success on the horizon."
+                  "Code's dance in the dark, Tekton's light leads the way, success in the shadows."
+                  "Failure's gentle rain, nourishes code's growth within, success blooms in its wake."
+                  "GitHub's symphony, code's harmonious chorus, success in collaboration."
+                  "Code's path winds and turns, Tekton's compass points the way, success's destination."
+                  "Failure's silent voice, whispers secrets of growth to code, success's guiding light."
+                  "GitHub's steady hand, code's ship in the stormy sea, success on the horizon."
+                  "Code's silent journey, Tekton's guide through the unknown, success found in silence."
+                  "Failure's gentle touch, code's path to growth revealed, success's bright beacon."
+                  "GitHub's open door, welcomes code with open arms, success in community."
+                )
+                haikus_len=${#haikus[@]}
+                random_index=$((RANDOM % haikus_len))
+                haiku="${haikus[random_index]}"
+                json=$(cat <<EOF
+                {
+                "text": "PipelineRun *$PIPELINERUN* has failed",
+                "attachments": [
+                  {
+                    "blocks": [
+                      {
+                        "type": "section",
+                        "text": {
+                          "type": "mrkdwn",
+                          "text": "See <https://${CLUSTER_URL}/k8s/ns/${NAMESPACE}/tekton.dev~v1~PipelineRun/${PIPELINERUN}|OpenShift Console> for more details\n\n_${haiku}_"
+                        },
+                        "accessory": {
+                          "type": "image",
+                          "image_url": "${IMAGE_URL}",
+                          "alt_text": "From tekton with love"
+                        }
+                      }
+                    ]
+                  }
+                ]
+                }
+                EOF
+                )
+                curl -X POST -H 'Content-type: application/json' --data "${json}" $SLACK_WEBHOOK_URL
   workspaces:
     - name: source
-      volumeClaimTemplate:
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 5Gi
+      emptyDir: {}

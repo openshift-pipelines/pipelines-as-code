@@ -19,60 +19,43 @@ spec:
       - name: repo_url
       - name: revision
     tasks:
-      - name: fetchit
-        params:
-          - name: url
-            value: $(params.repo_url)
-          - name: revision
-            value: $(params.revision)
-        taskRef:
-          name: git-clone
-        workspaces:
-          - name: output
-            workspace: source
-
-      - name: go-ninja-go
-        runAfter:
-          - fetchit
+      - name: go
         taskSpec:
           workspaces:
             - name: source
           steps:
-            - image: registry.access.redhat.com/ubi9/go-toolset@sha256:310fbbc9b2a6af87d730e244d5b20a1836df3ae295c290ffec2d4ef6a53a33f8
-              env:
-                - name: GOCACHE
-                  value: $(workspaces.source.path)/go-build-cache/cache
-                - name: GOMODCACHE
-                  value: $(workspaces.source.path)/go-build-cache/mod
-                - name: GOLANGCILINT_CACHE
-                  value: $(workspaces.source.path)/go-build-cache/golangci-cache
-                - name: UPLOADER_UPLOAD_CREDENTIALS
-                  valueFrom:
-                    secretKeyRef:
-                      name: "uploader-upload-credentials"
-                      key: "credentials"
-              name: get-cache
-              workingDir: $(workspaces.source.path)
-              script: |
-                #!/usr/bin/env bash
-                set -eux
-                git config --global --add safe.directory $(workspaces.source.path)
-                mkdir -p ${GOCACHE} ${GOMODCACHE} ${GOLANGCILINT_CACHE}
-                cd $(dirname ${GOCACHE})
-
-                curl -fsI http://uploader:8080/golang-cache.tar.gz || {
-                    echo "no cache found"
-                    exit 0
-                }
-
-                echo "Getting cache"
-                curl -u ${UPLOADER_UPLOAD_CREDENTIALS} http://uploader:8080/golang-cache.tar.gz|tar -z -x -f- || \
-                   curl -X DELETE -F "file=golang-cache.tar.gz" http://uploader:8080/upload
-
+            - name: fetch-repo
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/tektoncd/catalog/main/stepaction/git-clone/0.1/git-clone.yaml
+              params:
+                - name: output-path
+                  value: $(workspaces.source.path)
+                - name: url
+                  value: "$(params.repo_url)"
+                - name: revision
+                  value: "$(params.revision)"
+            - name: cache-fetch
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/openshift-pipelines/tekton-caches/main/tekton/cache-fetch.yaml
+              params:
+                - name: patterns
+                  value: ["**go.mod", "**go.sum"]
+                - name: source
+                  value: oci://image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/cache-go:{{hash}}
+                - name: cachePath
+                  value: $(workspaces.source.path)/go-build-cache
+                - name: workingdir
+                  value: $(workspaces.source.path)
             - name: unittest
               # we get bumped out when usingh the official image with docker.io
               # ratelimit so workaround this.
-              image: registry.access.redhat.com/ubi9/go-toolset@sha256:310fbbc9b2a6af87d730e244d5b20a1836df3ae295c290ffec2d4ef6a53a33f8
+              image: golang:1.21
               env:
                 - name: GOCACHE
                   value: $(workspaces.source.path)/go-build-cache/cache
@@ -87,9 +70,7 @@ spec:
                 make test
 
             - name: coverage
-              # we get bumped out when usingh the official image with docker.io
-              # ratelimit so workaround this.
-              image: registry.access.redhat.com/ubi9/go-toolset@sha256:310fbbc9b2a6af87d730e244d5b20a1836df3ae295c290ffec2d4ef6a53a33f8
+              image: golang:1.21
               env:
                 - name: CODECOV_TOKEN
                   valueFrom:
@@ -108,14 +89,14 @@ spec:
               script: |
                 #!/usr/bin/env bash
                 set -eux
+                ARCH=aarch64
                 git config --global --add safe.directory $(workspaces.source.path)
                 git fetch -a --tags
-                curl -Os https://uploader.codecov.io/v0.1.0_4653/linux/codecov
+                curl -LOs https://uploader.codecov.io/v0.7.3/aarch64/codecov
                 chmod +x ./codecov
-                ./codecov -P $GITHUB_PULL_REQUEST_ID -C {{revision}}
+                ./codecov -P $GITHUB_PULL_REQUEST_ID -C {{revision}} -v
             - name: lint
-              # pin for v0.24.x release newest fails without bunch of changes we don't want to backport
-              image: golangci/golangci-lint:v1.55
+              image: golangci/golangci-lint:latest
               workingDir: $(workspaces.source.path)
               env:
                 - name: GOCACHE
@@ -128,57 +109,28 @@ spec:
                 #!/usr/bin/env bash
                 set -eux
                 make lint-go
+            - name: cache-upload
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/openshift-pipelines/tekton-caches/main/tekton/cache-upload.yaml
+              params:
+                - name: patterns
+                  value: ["**go.mod", "**go.sum"]
+                - name: target
+                  value: oci://image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/cache-go:{{hash}}
+                - name: cachePath
+                  value: $(workspaces.source.path)/go-build-cache
+                - name: workingdir
+                  value: $(workspaces.source.path)
+                - name: force-cache-upload
+                  value: "false"
         workspaces:
           - name: source
             workspace: source
-
-      - name: savecache
-        runAfter:
-          - go-ninja-go
-        workspaces:
-          - name: source
-            workspace: source
-        taskSpec:
-          workspaces:
-            - name: source
-          steps:
-            - name: save-cache
-              # Has everything we need in there and we already fetched it!
-              image: registry.access.redhat.com/ubi9/python-311
-              workingDir: $(workspaces.source.path)
-              env:
-                - name: UPLOADER_UPLOAD_CREDENTIALS
-                  valueFrom:
-                    secretKeyRef:
-                      name: "uploader-upload-credentials"
-                      key: "credentials"
-              script: |
-                #!/usr/bin/env bash
-                set -eux
-                curl -o/dev/null -u ${UPLOADER_UPLOAD_CREDENTIALS}  -s -f -X POST -F path=test -F file=@/etc/motd  http://uploader:8080/upload || {
-                    echo "No cache server found"
-                    exit 0
-                }
-
-                lm="$(curl -fsI http://uploader:8080/golang-cache.tar.gz|sed -En '/Last-Modified/ { s/Last-Modified:\s*//;p;}')"
-                if [[ -n ${lm} ]];then
-                    expired=$(python -c "import datetime, sys;print(datetime.datetime.now() > datetime.datetime.strptime(sys.argv[1].strip(), '%a, %d %b %Y %X %Z') + datetime.timedelta(days=1))" "${lm}")
-                    [[ ${expired} == "False" ]] && {
-                      echo "Cache is younger than a day"
-                      exit
-                    }
-                fi
-
-                cd $(workspaces.source.path)/go-build-cache
-                tar czf - . |curl -u ${UPLOADER_UPLOAD_CREDENTIALS} -# -L -f -F path=golang-cache.tar.gz -X POST -F "file=@-" http://uploader:8080/upload
     workspaces:
       - name: source
   workspaces:
     - name: source
-      volumeClaimTemplate:
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 5Gi
+      emptyDir: {}
