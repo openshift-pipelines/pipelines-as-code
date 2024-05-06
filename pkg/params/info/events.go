@@ -62,6 +62,10 @@ type Event struct {
 	// Gitlab
 	SourceProjectID int
 	TargetProjectID int
+
+	// AzureDevops
+	RepositoryID string
+	ProjectID    string
 }
 
 type State struct {

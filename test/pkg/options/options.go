@@ -8,6 +8,7 @@ type E2E struct {
 	Concurrency        int
 	UserName           string
 	Password           string
+	ProjectName        string
 }
 
 var (
