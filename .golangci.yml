@@ -7,6 +7,9 @@ issues:
     - path: _test\.go
       linters:
         - gosec
+    # hopefully we can remove this when https://github.com/golangci/golangci-lint/issues/4697 is fixed
+    - path: pkg/resolve/resolve.go
+      text: "don't use `init` function"
 run:
   build-tags:
     - e2e
