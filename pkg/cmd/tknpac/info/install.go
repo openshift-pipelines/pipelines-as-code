@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"text/tabwriter"
 	"text/template"
 
@@ -31,7 +33,7 @@ type InstallInfo struct {
 var infoTemplate string
 
 func (g *InstallInfo) hookConfig(ctx context.Context) error {
-	resp, err := app.GetReponse(ctx, "GET", fmt.Sprintf("%s/app/hook/config", g.apiURL), g.jwtToken, g.run)
+	resp, err := GetResponse(ctx, "GET", fmt.Sprintf("%s/app/hook/config", g.apiURL), g.jwtToken, g.run)
 	if err != nil {
 		return err
 	}
@@ -45,7 +47,7 @@ func (g *InstallInfo) hookConfig(ctx context.Context) error {
 }
 
 func (g *InstallInfo) get(ctx context.Context) error {
-	resp, err := app.GetReponse(ctx, "GET", fmt.Sprintf("%s/app", g.apiURL), g.jwtToken, g.run)
+	resp, err := GetResponse(ctx, "GET", fmt.Sprintf("%s/app", g.apiURL), g.jwtToken, g.run)
 	if err != nil {
 		return err
 	}
@@ -120,4 +122,22 @@ func installCommand(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	// add params for enteprise github
 	cmd.PersistentFlags().StringVarP(&apiURL, "github-api-url", "", "https://api.github.com", "Github API URL")
 	return cmd
+}
+
+func GetResponse(ctx context.Context, method, urlData, jwtToken string, run *params.Run) (*http.Response, error) {
+	rawurl, err := url.Parse(urlData)
+	if err != nil {
+		return nil, err
+	}
+
+	newreq, err := http.NewRequestWithContext(ctx, method, rawurl.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	newreq.Header = map[string][]string{
+		"Accept":        {"application/vnd.github+json"},
+		"Authorization": {fmt.Sprintf("Bearer %s", jwtToken)},
+	}
+	res, err := run.Clients.HTTP.Do(newreq)
+	return res, err
 }

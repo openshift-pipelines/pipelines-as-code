@@ -18,7 +18,7 @@ import (
 func (v *Provider) CheckPolicyAllowing(ctx context.Context, event *info.Event, allowedTeams []string) (bool, string) {
 	for _, team := range allowedTeams {
 		// TODO: caching
-		opt := github.ListOptions{PerPage: v.paginedNumber}
+		opt := github.ListOptions{PerPage: v.PaginedNumber}
 		for {
 			members, resp, err := v.Client.Teams.ListTeamMembersBySlug(ctx, event.Organization, team, &github.TeamListTeamMembersOptions{ListOptions: opt})
 			if resp.StatusCode == http.StatusNotFound {
@@ -254,7 +254,7 @@ func (v *Provider) checkPullRequestForSameURL(ctx context.Context, runevent *inf
 // only get the one that the user sets as public 🤷.
 func (v *Provider) checkSenderOrgMembership(ctx context.Context, runevent *info.Event) (bool, error) {
 	opt := &github.ListMembersOptions{
-		ListOptions: github.ListOptions{PerPage: v.paginedNumber},
+		ListOptions: github.ListOptions{PerPage: v.PaginedNumber},
 	}
 
 	for {
@@ -310,7 +310,7 @@ func (v *Provider) GetStringPullRequestComment(ctx context.Context, runevent *in
 	}
 
 	opt := &github.IssueListCommentsOptions{
-		ListOptions: github.ListOptions{PerPage: v.paginedNumber},
+		ListOptions: github.ListOptions{PerPage: v.PaginedNumber},
 	}
 	for {
 		comments, resp, err := v.Client.Issues.ListComments(ctx, runevent.Organization, runevent.Repository,

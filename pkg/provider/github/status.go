@@ -45,7 +45,7 @@ func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
 }
 
 func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
-	opt := github.ListOptions{PerPage: v.paginedNumber}
+	opt := github.ListOptions{PerPage: v.PaginedNumber}
 	for {
 		res, resp, err := v.Client.Checks.ListCheckRunsForRef(ctx, runevent.Organization, runevent.Repository,
 			runevent.SHA, &github.ListCheckRunsOptions{
