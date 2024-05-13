@@ -52,7 +52,7 @@ type Provider struct {
 	RepositoryIDs []int64
 	repo          *v1alpha1.Repository
 	eventEmitter  *events.EventEmitter
-	paginedNumber int
+	PaginedNumber int
 	skippedRun
 }
 
@@ -64,7 +64,7 @@ type skippedRun struct {
 func New() *Provider {
 	return &Provider{
 		APIURL:        github.String(keys.PublicGithubAPIURL),
-		paginedNumber: defaultPaginedNumber,
+		PaginedNumber: defaultPaginedNumber,
 		skippedRun: skippedRun{
 			mutex: &sync.Mutex{},
 		},
@@ -190,7 +190,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func makeClient(ctx context.Context, apiURL, token string) (*github.Client, string, *string) {
+func MakeClient(ctx context.Context, apiURL, token string) (*github.Client, string, *string) {
 	var client *github.Client
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
@@ -270,7 +270,7 @@ func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.
 }
 
 func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, repo *v1alpha1.Repository, eventsEmitter *events.EventEmitter) error {
-	client, providerName, apiURL := makeClient(ctx, event.Provider.URL, event.Provider.Token)
+	client, providerName, apiURL := MakeClient(ctx, event.Provider.URL, event.Provider.Token)
 	v.providerName = providerName
 	v.Run = run
 	v.repo = repo
@@ -457,7 +457,7 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 // GetFiles get a files from pull request.
 func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
 	if runevent.TriggerTarget == triggertype.PullRequest {
-		opt := &github.ListOptions{PerPage: v.paginedNumber}
+		opt := &github.ListOptions{PerPage: v.PaginedNumber}
 		changedFiles := changedfiles.ChangedFiles{}
 		for {
 			repoCommit, resp, err := v.Client.PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, opt)
@@ -534,7 +534,7 @@ func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
-	opt := &github.ListOptions{PerPage: v.paginedNumber}
+	opt := &github.ListOptions{PerPage: v.PaginedNumber}
 	repoURLs := []string{}
 	for {
 		repoList, resp, err := v.Client.Apps.ListRepos(ctx, opt)
