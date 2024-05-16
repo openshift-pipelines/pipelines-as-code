@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/google/go-github/v61/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -58,6 +59,14 @@ func TestGithubPushRequestGitOpsCommentRetest(t *testing.T) {
 	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), 4)
+
+	for i := range pruns.Items {
+		sData, err := g.Cnx.Clients.Kube.CoreV1().Secrets(g.TargetNamespace).Get(ctx, pruns.Items[i].GetAnnotations()[keys.GitAuthSecret], metav1.GetOptions{})
+		assert.NilError(t, err)
+		assert.Assert(t, string(sData.Data["git-provider-token"]) != "")
+		assert.Assert(t, string(sData.Data[".git-credentials"]) != "")
+		assert.Assert(t, string(sData.Data[".gitconfig"]) != "")
+	}
 }
 
 func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {

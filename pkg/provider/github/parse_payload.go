@@ -14,15 +14,14 @@ import (
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
 	oGitHub "github.com/google/go-github/v60/github"
 	"github.com/google/go-github/v61/github"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 // GetAppIDAndPrivateKey retrieves the GitHub application ID and private key from a secret in the specified namespace.
@@ -30,7 +29,7 @@ import (
 // It returns the application ID (int64), private key ([]byte), and an error if any.
 func (v *Provider) GetAppIDAndPrivateKey(ctx context.Context, ns string, kube kubernetes.Interface) (int64, []byte, error) {
 	paramsinfo := &v.Run.Info
-	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, paramsinfo.Controller.Secret, v1.GetOptions{})
+	secret, err := kube.CoreV1().Secrets(ns).Get(ctx, paramsinfo.Controller.Secret, metav1.GetOptions{})
 	if err != nil {
 		return 0, []byte{}, fmt.Errorf("could not get the secret %s in ns %s: %w", paramsinfo.Controller.Secret, ns, err)
 	}
@@ -250,7 +249,10 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		if v.Client == nil {
 			return nil, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
 		}
-		return v.handleCommitCommentEvent(ctx, gitEvent)
+		processedEvent, err = v.handleCommitCommentEvent(ctx, gitEvent)
+		if err != nil {
+			return nil, err
+		}
 	case *github.PushEvent:
 		processedEvent.Organization = gitEvent.GetRepo().GetOwner().GetLogin()
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
@@ -293,7 +295,10 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		return nil, errors.New("this event is not supported")
 	}
 
-	processedEvent.TriggerTarget = event.TriggerTarget
+	// check before overriding the value for TriggerTarget
+	if processedEvent.TriggerTarget == "" {
+		processedEvent.TriggerTarget = event.TriggerTarget
+	}
 	processedEvent.Provider.Token = event.Provider.Token
 
 	return processedEvent, nil
