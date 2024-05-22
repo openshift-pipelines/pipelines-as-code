@@ -63,11 +63,6 @@ func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 
-// GetTaskURI TODO: Implement me.
-func (v *Provider) GetTaskURI(_ context.Context, _ *info.Event, _ string) (bool, string, error) {
-	return false, "", nil
-}
-
 // CheckPolicyAllowing TODO: Implement ME.
 func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
 	return false, ""
@@ -253,7 +248,7 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 	}
 
 	objects, resp, err := v.Client.Repositories.ListTree(v.sourceProjectID, opt)
-	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return "", nil
 	}
 	if err != nil {
