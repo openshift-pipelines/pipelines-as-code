@@ -139,13 +139,15 @@ will fetch the task directly from that remote URL :
   pipelinesascode.tekton.dev/task: "[https://remote.url/task.yaml]"
 ```
 
-### Remote HTTP URL from a private GitHub repository
+### Remote HTTP URL from a private repository
 
-If you are using `GitHub` and If the remote task URL uses the same host as where
-the repository CRD is, Pipelines-as-Code will use the  GitHub token and fetch the URL using the
-GitHub API.
+If you are using the `GitHub` or the `GitLab` provider and If the remote task
+URL uses the same host as where the repository CRD is, Pipelines-as-Code will
+use the  provided token to fetch the URL using the GitHub or GitLab API.
 
-For example if you have a repository URL looking like this :
+#### GitHub
+
+When using the GitHub provider if you have a repository URL looking like this :
 
 <https://github.com/organization/repository>
 
@@ -153,7 +155,7 @@ and the remote HTTP URLs is a referenced GitHub "blob" URL:
 
 <https://github.com/organization/repository/blob/mainbranch/path/file>
 
-if the remote HTTP URL has a slash (/) in the branch name you will need to HTML
+If the remote HTTP URL has a slash (/) in the branch name you will need to HTML
 encode with the `%2F` character, example:
 
 <https://github.com/organization/repository/blob/feature%2Fmainbranch/path/file>
@@ -168,6 +170,18 @@ public repositories on any organization where the personal token is allowed.
 There is settings you can set in the Pipelines-as-Code `Configmap` to control that behaviour, see the
 `secret-github-app-token-scoped` and `secret-github-app-scope-extra-repos` settings in the
 [settings documentation](/docs/install/settings).
+
+#### GitLab
+
+This same applies to `GitLab` URL as directly copied from `GitLab` UI like this:
+
+<https://gitlab.com/organization/repository/-/blob/mainbranch/path/file>
+
+or `GitLab` raw URL like this:
+
+<https://gitlab.com/organization/repository/-/raw/mainbranch/path/file>
+
+The GitLab token as provider in the Repository CR will be used to fetch the file.
 
 ### Tasks or Pipelines inside the repository
 
