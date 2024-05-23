@@ -102,7 +102,7 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 	return enterpriseHost, token, installationID, nil
 }
 
-// matchRepos matching github repositories to its installation IDs
+// matchRepos matching github repositories to its installation IDs.
 func (ip *Install) matchRepos(ctx context.Context) (bool, error) {
 	installationRepoList, err := github.ListRepos(ctx, ip.ghClient)
 	if err != nil {
