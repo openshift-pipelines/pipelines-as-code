@@ -157,7 +157,7 @@ $ tkn pac webhook add -n project-pipelines
 ? Do you want me to use it? Yes
 ? Please enter the secret to configure the webhook for payload validation (default: TXArbGNDHTXU):  TXArbGNDHTXU
 ✓ Webhook has been created on your repository
-🔑 Secret repositories-project has been updated with webhook secert in the project-pipelines namespace.
+🔑 Secret repositories-project has been updated with webhook secret in the project-pipelines namespace.
 
 ```
 

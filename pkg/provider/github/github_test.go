@@ -802,7 +802,7 @@ func TestGetFiles(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			provider := &Provider{
 				Client:        fakeclient,
-				paginedNumber: 1,
+				PaginedNumber: 1,
 			}
 			changedFiles, err := provider.GetFiles(ctx, tt.event)
 			assert.NilError(t, err, nil)
@@ -973,7 +973,7 @@ func TestListRepos(t *testing.T) {
 	})
 
 	ctx, _ := rtesting.SetupFakeContext(t)
-	provider := &Provider{Client: fakeclient, paginedNumber: 1}
+	provider := &Provider{Client: fakeclient, PaginedNumber: 1}
 	data, err := ListRepos(ctx, provider)
 	assert.NilError(t, err)
 	assert.Equal(t, data[0], "https://matched/by/incoming")

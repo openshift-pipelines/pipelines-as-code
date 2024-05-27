@@ -92,7 +92,7 @@ func TestCheckPolicyAllowing(t *testing.T) {
 				Client:        fakeclient,
 				repo:          repo,
 				Logger:        logger,
-				paginedNumber: 1,
+				PaginedNumber: 1,
 			}
 
 			gotAllowed, gotReason := gprovider.CheckPolicyAllowing(ctx, event, tt.allowedTeams)
@@ -329,7 +329,7 @@ func TestOkToTestComment(t *testing.T) {
 				Client:        fakeclient,
 				repo:          repo,
 				Logger:        logger,
-				paginedNumber: 1,
+				PaginedNumber: 1,
 				Run:           &params.Run{},
 				pacInfo:       pacopts,
 			}
@@ -405,7 +405,7 @@ func TestAclCheckAll(t *testing.T) {
 	gprovider := Provider{
 		Client:        fakeclient,
 		Logger:        logger,
-		paginedNumber: 1,
+		PaginedNumber: 1,
 	}
 
 	tests := []struct {

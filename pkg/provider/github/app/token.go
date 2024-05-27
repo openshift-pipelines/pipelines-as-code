@@ -2,19 +2,16 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	gt "github.com/google/go-github/v61/github"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
+	"knative.dev/pkg/logging"
 )
 
 type Install struct {
@@ -50,31 +47,27 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 		return "", "", 0, err
 	}
 
-	installationURL := *ip.ghClient.APIURL + keys.InstallationURL
+	apiURL := *ip.ghClient.APIURL
 	enterpriseHost = ip.request.Header.Get("X-GitHub-Enterprise-Host")
 	if enterpriseHost != "" {
 		// NOTE: Hopefully this works even when the ghe URL is on another host than the api URL
-		installationURL = "https://" + enterpriseHost + "/api/v3" + keys.InstallationURL
+		apiURL = "https://" + enterpriseHost + "/api/v3"
 	}
 
-	res, err := GetReponse(ctx, http.MethodGet, installationURL, jwtToken, ip.run)
-	if err != nil {
-		return "", "", 0, err
-	}
-
-	if res.StatusCode >= 300 {
-		return "", "", 0, fmt.Errorf("Non-OK HTTP status while getting installation URL: %s : %d", installationURL, res.StatusCode)
-	}
-
-	defer res.Body.Close()
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
-		return "", "", 0, err
-	}
-
-	installationData := []gt.Installation{}
-	if err = json.Unmarshal(data, &installationData); err != nil {
-		return "", "", 0, err
+	logger := logging.FromContext(ctx)
+	opt := &gt.ListOptions{PerPage: ip.ghClient.PaginedNumber}
+	client, _, _ := github.MakeClient(ctx, apiURL, jwtToken)
+	installationData := []*gt.Installation{}
+	for {
+		installationSet, resp, err := client.Apps.ListInstallations(ctx, opt)
+		if err != nil {
+			return "", "", 0, err
+		}
+		installationData = append(installationData, installationSet...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
 	}
 
 	/* each installationID can have list of repository
@@ -86,11 +79,18 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 		}
 		if *installationData[i].ID != 0 {
 			token, err = ip.ghClient.GetAppToken(ctx, ip.run.Clients.Kube, enterpriseHost, *installationData[i].ID, ip.namespace)
+			// While looping on the list of installations, there could be cases where we can't
+			// obtain a token for installation. In a test I did for GitHub App with ~400
+			// installations, there were 3 failing consistently with:
+			// "could not refresh installation id XXX's token: received non 2xx response status "403 Forbidden".
+			// If there is a matching installation after the failure, we miss it. So instead of
+			// failing, we just log the error and continue. Token is "".
 			if err != nil {
-				return "", "", 0, err
+				logger.Warn(err)
+				continue
 			}
 		}
-		exist, err := ip.listRepos(ctx)
+		exist, err := ip.matchRepos(ctx)
 		if err != nil {
 			return "", "", 0, err
 		}
@@ -102,17 +102,16 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 	return enterpriseHost, token, installationID, nil
 }
 
-func (ip *Install) listRepos(ctx context.Context) (bool, error) {
-	if ip.repoList == nil {
-		var err error
-		ip.repoList, err = github.ListRepos(ctx, ip.ghClient)
-		if err != nil {
-			return false, err
-		}
+// matchRepos matching github repositories to its installation IDs.
+func (ip *Install) matchRepos(ctx context.Context) (bool, error) {
+	installationRepoList, err := github.ListRepos(ctx, ip.ghClient)
+	if err != nil {
+		return false, err
 	}
-	for i := range ip.repoList {
+	ip.repoList = append(ip.repoList, installationRepoList...)
+	for i := range installationRepoList {
 		// If URL matches with repo spec url then we can break for loop
-		if ip.repoList[i] == ip.repo.Spec.URL {
+		if installationRepoList[i] == ip.repo.Spec.URL {
 			return true, nil
 		}
 	}
@@ -156,22 +155,4 @@ func (ip *Install) GenerateJWT(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to sign private key: %w", err)
 	}
 	return tokenString, nil
-}
-
-func GetReponse(ctx context.Context, method, urlData, jwtToken string, run *params.Run) (*http.Response, error) {
-	rawurl, err := url.Parse(urlData)
-	if err != nil {
-		return nil, err
-	}
-
-	newreq, err := http.NewRequestWithContext(ctx, method, rawurl.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	newreq.Header = map[string][]string{
-		"Accept":        {"application/vnd.github+json"},
-		"Authorization": {fmt.Sprintf("Bearer %s", jwtToken)},
-	}
-	res, err := run.Clients.HTTP.Do(newreq)
-	return res, err
 }
