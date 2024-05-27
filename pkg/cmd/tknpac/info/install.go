@@ -75,7 +75,7 @@ func install(ctx context.Context, run *params.Run, ios *cli.IOStreams, apiURL st
 	}
 	repos, err := run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories("").List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return fmt.Errorf("cannot list alll repo on cluster, check your rights and that paac is installed: %w", err)
+		return fmt.Errorf("cannot list all repo on cluster, check your rights and that paac is installed: %w", err)
 	}
 	reposItems := &repos.Items
 	args := struct {

@@ -69,11 +69,11 @@ func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event) error {
 	token := event.Request.Header.Get("X-Gitlab-Token")
 	if event.Provider.WebhookSecret == "" && token != "" {
-		return fmt.Errorf("gitlab failed validaton: failed to find webhook secret")
+		return fmt.Errorf("gitlab failed validation: failed to find webhook secret")
 	}
 
 	if subtle.ConstantTimeCompare([]byte(event.Provider.WebhookSecret), []byte(token)) == 0 {
-		return fmt.Errorf("gitlab failed validaton: event's secret doesn't match with webhook secret")
+		return fmt.Errorf("gitlab failed validation: event's secret doesn't match with webhook secret")
 	}
 	return nil
 }
