@@ -196,7 +196,7 @@ $ tkn pac webhook add -n repo-pipelines
 ? Do you want me to use it? Yes
 ? Please enter the secret to configure the webhook for payload validation (default: AeHdHTJVfAeH):  AeHdHTJVfAeH
 ✓ Webhook has been created on repository owner/repo
-🔑 Secret owner-repo has been updated with webhook secert in the repo-pipelines namespace.
+🔑 Secret owner-repo has been updated with webhook secret in the repo-pipelines namespace.
 
 ```
 

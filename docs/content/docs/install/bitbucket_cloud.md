@@ -174,7 +174,7 @@ $ tkn pac webhook add -n repo-pipelines
 👀 I have detected a controller url: https://pipelines-as-code-controller-openshift-pipelines.apps.awscl2.aws.ospqa.com
 ? Do you want me to use it? Yes
 ✓ Webhook has been created on repository workspace/repo
-🔑 Secret workspace-repo has been updated with webhook secert in the repo-pipelines namespace.
+🔑 Secret workspace-repo has been updated with webhook secret in the repo-pipelines namespace.
 
 ```
 
