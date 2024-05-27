@@ -40,7 +40,7 @@ func (w *Options) updateWebhookSecret(ctx context.Context, response *response) e
 		return err
 	}
 
-	fmt.Fprintf(w.IOStreams.Out, "🔑 Secret %s has been updated with webhook secert in the %s namespace.\n", w.SecretName, w.RepositoryNamespace)
+	fmt.Fprintf(w.IOStreams.Out, "🔑 Secret %s has been updated with webhook secret in the %s namespace.\n", w.SecretName, w.RepositoryNamespace)
 	return nil
 }
 
