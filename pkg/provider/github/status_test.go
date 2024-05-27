@@ -105,7 +105,7 @@ func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 
 	cnx := &Provider{
 		Client:        client,
-		paginedNumber: 1,
+		PaginedNumber: 1,
 	}
 	event := &info.Event{
 		Organization: "owner",

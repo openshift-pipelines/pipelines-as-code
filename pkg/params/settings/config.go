@@ -40,6 +40,8 @@ type HubCatalog struct {
 	URL  string
 }
 
+// if there is a change performed on the default value,
+// update the same on "config/302-pac-configmap.yaml".
 type Settings struct {
 	ApplicationName                    string `default:"Pipelines as Code CI" json:"application-name"`
 	HubCatalogs                        *sync.Map
@@ -59,7 +61,7 @@ type Settings struct {
 	ErrorLogSnippet             bool   `default:"true"                                                                          json:"error-log-snippet"`
 	ErrorDetection              bool   `default:"true"                                                                          json:"error-detection-from-container-logs"`
 	ErrorDetectionNumberOfLines int    `default:"50"                                                                            json:"error-detection-max-number-of-lines"`
-	ErrorDetectionSimpleRegexp  string `default:"^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+):([ ]*)?(?P<error>.*)" json:"error-detection-simple-regexp"`
+	ErrorDetectionSimpleRegexp  string `default:"^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)" json:"error-detection-simple-regexp"`
 
 	CustomConsoleName         string `json:"custom-console-name"`
 	CustomConsoleURL          string `json:"custom-console-url"`

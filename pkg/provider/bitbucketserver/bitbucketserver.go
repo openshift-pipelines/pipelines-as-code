@@ -58,7 +58,7 @@ func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event) error {
 	signature := event.Request.Header.Get("X-Hub-Signature")
 	if event.Provider.WebhookSecret == "" && signature != "" {
-		return fmt.Errorf("bitbucket-server failed validaton: failed to find webhook secret")
+		return fmt.Errorf("bitbucket-server failed validation: failed to find webhook secret")
 	}
 	return github.ValidateSignature(signature, event.Request.Payload, []byte(event.Provider.WebhookSecret))
 }
