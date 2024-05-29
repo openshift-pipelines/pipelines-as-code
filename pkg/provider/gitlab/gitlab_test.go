@@ -472,14 +472,16 @@ func TestValidate(t *testing.T) {
 
 func TestGetFiles(t *testing.T) {
 	tests := []struct {
-		name                   string
-		event                  *info.Event
-		mrchanges              *gitlab.MergeRequest
-		pushChanges            []*gitlab.Diff
-		wantAddedFilesCount    int
-		wantDeletedFilesCount  int
-		wantModifiedFilesCount int
-		wantRenamedFilesCount  int
+		name                             string
+		event                            *info.Event
+		mrchanges                        *gitlab.MergeRequest
+		pushChanges                      []*gitlab.Diff
+		wantAddedFilesCount              int
+		wantDeletedFilesCount            int
+		wantModifiedFilesCount           int
+		wantRenamedFilesCount            int
+		sourceProjectID, targetProjectID int
+		wantError                        bool
 	}{
 		{
 			name: "pull-request",
@@ -512,6 +514,41 @@ func TestGetFiles(t *testing.T) {
 			wantDeletedFilesCount:  1,
 			wantModifiedFilesCount: 1,
 			wantRenamedFilesCount:  1,
+			targetProjectID:        10,
+		},
+		{
+			name: "pull-request with wrong project ID",
+			event: &info.Event{
+				TriggerTarget:     "pull_request",
+				Organization:      "pullrequestowner",
+				Repository:        "pullrequestrepository",
+				PullRequestNumber: 10,
+			},
+			mrchanges: &gitlab.MergeRequest{
+				Changes: []*gitlab.MergeRequestDiff{
+					{
+						NewPath: "modified.yaml",
+					},
+					{
+						NewPath: "added.doc",
+						NewFile: true,
+					},
+					{
+						NewPath:     "removed.yaml",
+						DeletedFile: true,
+					},
+					{
+						NewPath:     "renamed.doc",
+						RenamedFile: true,
+					},
+				},
+			},
+			wantAddedFilesCount:    0,
+			wantDeletedFilesCount:  0,
+			wantModifiedFilesCount: 0,
+			wantRenamedFilesCount:  0,
+			targetProjectID:        12,
+			wantError:              true,
 		},
 		{
 			name: "push",
@@ -542,6 +579,7 @@ func TestGetFiles(t *testing.T) {
 			wantDeletedFilesCount:  1,
 			wantModifiedFilesCount: 1,
 			wantRenamedFilesCount:  1,
+			sourceProjectID:        0,
 		},
 	}
 	for _, tt := range tests {
@@ -569,7 +607,7 @@ func TestGetFiles(t *testing.T) {
 				},
 			}
 			if tt.event.TriggerTarget == "pull_request" {
-				mux.HandleFunc(fmt.Sprintf("/projects/0/merge_requests/%d/changes",
+				mux.HandleFunc(fmt.Sprintf("/projects/10/merge_requests/%d/changes",
 					tt.event.PullRequestNumber), func(rw http.ResponseWriter, _ *http.Request) {
 					jeez, err := json.Marshal(mergeFileChanges)
 					assert.NilError(t, err)
@@ -602,9 +640,11 @@ func TestGetFiles(t *testing.T) {
 					})
 			}
 
-			providerInfo := &Provider{Client: fakeclient}
+			providerInfo := &Provider{Client: fakeclient, sourceProjectID: tt.sourceProjectID, targetProjectID: tt.targetProjectID}
 			changedFiles, err := providerInfo.GetFiles(ctx, tt.event)
-			assert.NilError(t, err, nil)
+			if tt.wantError != true {
+				assert.NilError(t, err, nil)
+			}
 			assert.Equal(t, tt.wantAddedFilesCount, len(changedFiles.Added))
 			assert.Equal(t, tt.wantDeletedFilesCount, len(changedFiles.Deleted))
 			assert.Equal(t, tt.wantModifiedFilesCount, len(changedFiles.Modified))

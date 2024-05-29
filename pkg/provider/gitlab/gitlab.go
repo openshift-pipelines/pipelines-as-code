@@ -55,6 +55,8 @@ type Provider struct {
 	pathWithNamespace string
 	repoURL           string
 	apiURL            string
+	eventEmitter      *events.EventEmitter
+	repo              *v1alpha1.Repository
 }
 
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
@@ -109,7 +111,7 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
+func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.Event, repo *v1alpha1.Repository, eventsEmitter *events.EventEmitter) error {
 	var err error
 	if runevent.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
@@ -157,6 +159,8 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 		runevent.DefaultBranch = projectinfo.DefaultBranch
 	}
 	v.run = run
+	v.eventEmitter = eventsEmitter
+	v.repo = repo
 
 	return nil
 }
@@ -198,19 +202,24 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	body := fmt.Sprintf("**%s%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>",
 		v.pacInfo.ApplicationName, onPr, statusOpts.Title, statusOpts.Text, detailsURL)
 
-	// in case we have access set the commit status, typically on MR from
-	// another users we won't have it but it would work on push or MR from a
-	// branch on the same repo or if token somehow can have access by other
-	// means.
-	// if we have an error fallback to send a issue comment
 	opt := &gitlab.SetCommitStatusOptions{
 		State:       gitlab.BuildStateValue(statusOpts.Conclusion),
 		Name:        gitlab.Ptr(v.pacInfo.ApplicationName),
 		TargetURL:   gitlab.Ptr(detailsURL),
 		Description: gitlab.Ptr(statusOpts.Title),
 	}
-	//nolint: dogsled
-	_, _, _ = v.Client.Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt)
+
+	// In case we have access, set the status. Typically, on a Merge Request (MR)
+	// from a fork in an upstream repository, the token needs to have write access
+	// to the fork repository in order to create a status. However, the token set on the
+	// Repository CR usually doesn't have such broad access, preventing from creating
+	// a status comment on it.
+	// This would work on a push or an MR from a branch within the same repo.
+	// Ignoring errors because of the write access issues,
+	if _, _, err := v.Client.Commits.SetCommitStatus(event.SourceProjectID, event.SHA, opt); err != nil {
+		v.eventEmitter.EmitMessage(v.repo, zap.ErrorLevel, "FailedToSetCommitStatus",
+			"cannot set status with the GitLab token because of: "+err.Error())
+	}
 
 	// only add a note when we are on a MR
 	if event.EventType == triggertype.PullRequest.String() ||
@@ -328,7 +337,7 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 	}
 	if runevent.TriggerTarget == triggertype.PullRequest {
 		//nolint: staticcheck
-		mrchanges, _, err := v.Client.MergeRequests.GetMergeRequestChanges(v.sourceProjectID, runevent.PullRequestNumber, &gitlab.GetMergeRequestChangesOptions{})
+		mrchanges, _, err := v.Client.MergeRequests.GetMergeRequestChanges(v.targetProjectID, runevent.PullRequestNumber, &gitlab.GetMergeRequestChangesOptions{})
 		if err != nil {
 			return changedfiles.ChangedFiles{}, err
 		}
