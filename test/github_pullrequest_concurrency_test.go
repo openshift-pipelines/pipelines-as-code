@@ -28,7 +28,7 @@ func TestGithubSecondPullRequestConcurrency1by1(t *testing.T) {
 	label := "Github PullRequest Concurrent, sequentially one by one"
 	numberOfPipelineRuns := 5
 	maxNumberOfConcurrentPipelineRuns := 1
-	testGithubConcurrency(ctx, t, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns, label, true)
+	testGithubConcurrency(ctx, t, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns, label, true, map[string]string{})
 }
 
 func TestGithubSecondPullRequestConcurrency3by3(t *testing.T) {
@@ -36,10 +36,20 @@ func TestGithubSecondPullRequestConcurrency3by3(t *testing.T) {
 	label := "Github PullRequest Concurrent three at time"
 	numberOfPipelineRuns := 10
 	maxNumberOfConcurrentPipelineRuns := 3
-	testGithubConcurrency(ctx, t, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns, label, false)
+	testGithubConcurrency(ctx, t, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns, label, false, map[string]string{})
 }
 
-func testGithubConcurrency(ctx context.Context, t *testing.T, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns int, label string, checkOrdering bool) {
+func TestGithubSecondPullRequestConcurrency1by1WithError(t *testing.T) {
+	ctx := context.Background()
+	label := "Github PullRequest Concurrent, sequentially one by one with one bad apple"
+	numberOfPipelineRuns := 1
+	maxNumberOfConcurrentPipelineRuns := 1
+	testGithubConcurrency(ctx, t, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns, label, true, map[string]string{
+		".tekton/00-bad-apple.yaml": "testdata/failures/bad-runafter-task.yaml",
+	})
+}
+
+func testGithubConcurrency(ctx context.Context, t *testing.T, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns int, label string, checkOrdering bool, yamlFiles map[string]string) {
 	pipelineRunFileNamePrefix := "prlongrunnning-"
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	_, runcnx, opts, ghcnx, err := tgithub.Setup(ctx, true, false)
@@ -60,7 +70,6 @@ func testGithubConcurrency(ctx context.Context, t *testing.T, maxNumberOfConcurr
 	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
 	assert.NilError(t, err)
 
-	yamlFiles := map[string]string{}
 	for i := 1; i <= numberOfPipelineRuns; i++ {
 		yamlFiles[fmt.Sprintf(".tekton/%s%d.yaml", pipelineRunFileNamePrefix, i)] = "testdata/pipelinerun_long_running.yaml"
 	}
