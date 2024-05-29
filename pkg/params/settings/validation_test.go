@@ -55,7 +55,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "invalid check source ip value",
 			config: map[string]string{
-				BitbucketCloudCheckSourceIPKey: "tru",
+				BitbucketCloudCheckSourceIPKey: "ncntru",
 			},
 			wantErr: "invalid value for key bitbucket-cloud-check-source-ip, acceptable values: true or false",
 		},
