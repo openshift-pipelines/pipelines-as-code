@@ -17,6 +17,7 @@ func (p *CustomParams) getChangedFiles(ctx context.Context) changedfiles.Changed
 	changedFiles, err := p.vcx.GetFiles(ctx, p.event)
 	if err != nil {
 		p.eventEmitter.EmitMessage(p.repo, zap.ErrorLevel, "ParamsError", fmt.Sprintf("error getting changed files: %s", err.Error()))
+		return changedfiles.ChangedFiles{}
 	}
 	changedFiles.RemoveDuplicates()
 	return changedFiles
