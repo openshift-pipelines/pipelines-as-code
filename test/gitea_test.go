@@ -595,8 +595,7 @@ func TestGiteaBadLinkOfTask(t *testing.T) {
 	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", github.Int64(20)))
 }
 
-// TestGiteaParamsOnRepoCR test gitea params on CR and its filters
-
+// TestGiteaProvenance will test the provenance feature of the pipeline run if we check from the default branch (ie main).
 func TestGiteaProvenance(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		SkipEventsCheck:       true,
