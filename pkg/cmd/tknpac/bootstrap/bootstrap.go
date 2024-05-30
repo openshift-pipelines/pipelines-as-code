@@ -60,8 +60,12 @@ const indexTmpl = `
 <body>
   <form method="post" action="%s/settings/apps/new">
   <input type="submit" value="Create your GitHub APP"></input>
-  <input type="hidden" name="manifest" value='%s'"/>
+  <input type="hidden" name="manifest" id="manifest"/>
   </form>
+  <script>
+   input = document.getElementById("manifest")
+   input.value = JSON.stringify(%s)
+  </script>
 </body>
 </html>
 `
