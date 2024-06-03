@@ -819,6 +819,7 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 		expHeaderSet   bool
 		apiNotEnabled  bool
 		wantLogSnippet string
+		report500      bool
 	}{
 		{
 			name:         "remaining scim calls",
@@ -849,6 +850,11 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 			wantSubErr: "token is ratelimited",
 		},
 		{
+			name:       "api error",
+			wantSubErr: "error making request to the GitHub API checking rate limit",
+			report500:  true,
+		},
+		{
 			name:           "not enabled",
 			apiNotEnabled:  true,
 			wantLogSnippet: "skipping checking",
@@ -862,6 +868,10 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 
 			if !tt.apiNotEnabled {
 				mux.HandleFunc("/rate_limit", func(rw http.ResponseWriter, r *http.Request) {
+					if tt.report500 {
+						rw.WriteHeader(http.StatusInternalServerError)
+						return
+					}
 					s := &github.RateLimits{
 						SCIM: &github.Rate{
 							Remaining: tt.remaining,
