@@ -19,14 +19,12 @@ func TestCustomGood(t *testing.T) {
 	consolePRtasklog := "https://mycorp.console/{{ namespace }}/{{ pr }}/{{ task }}/{{ pod }}/{{ firstFailedStep }}/params/{{ foo }}/{{ nonewline }}"
 
 	c := CustomConsole{
-		Info: &info.Info{
-			Pac: &info.PacOpts{
-				Settings: &settings.Settings{
-					CustomConsoleName:      consoleName,
-					CustomConsoleURL:       consoleURL,
-					CustomConsolePRdetail:  consolePRdetail,
-					CustomConsolePRTaskLog: consolePRtasklog,
-				},
+		PacInfo: &info.PacOpts{
+			Settings: &settings.Settings{
+				CustomConsoleName:      consoleName,
+				CustomConsoleURL:       consoleURL,
+				CustomConsolePRdetail:  consolePRdetail,
+				CustomConsolePRTaskLog: consolePRtasklog,
 			},
 		},
 	}
@@ -73,14 +71,12 @@ func TestCustomGood(t *testing.T) {
 
 	// test if we fallback properly
 	f := CustomConsole{
-		Info: &info.Info{
-			Pac: &info.PacOpts{
-				Settings: &settings.Settings{
-					CustomConsoleName:      consoleName,
-					CustomConsoleURL:       consoleURL,
-					CustomConsolePRdetail:  "{{ notthere}}",
-					CustomConsolePRTaskLog: "{{ notthere}}",
-				},
+		PacInfo: &info.PacOpts{
+			Settings: &settings.Settings{
+				CustomConsoleName:      consoleName,
+				CustomConsoleURL:       consoleURL,
+				CustomConsolePRdetail:  "{{ notthere}}",
+				CustomConsolePRTaskLog: "{{ notthere}}",
 			},
 		},
 	}
@@ -89,15 +85,13 @@ func TestCustomGood(t *testing.T) {
 	assert.Assert(t, strings.Contains(c.TaskLogURL(pr, trStatus), consoleURL))
 
 	o := CustomConsole{
-		Info: &info.Info{
-			Pac: &info.PacOpts{
-				Settings: &settings.Settings{
-					CustomConsoleName:         consoleName,
-					CustomConsoleURL:          consoleURL,
-					CustomConsolePRdetail:     "{{ notthere}}",
-					CustomConsolePRTaskLog:    "{{ notthere}}",
-					CustomConsoleNamespaceURL: "https://mycorp.console/{{ namespace }}",
-				},
+		PacInfo: &info.PacOpts{
+			Settings: &settings.Settings{
+				CustomConsoleName:         consoleName,
+				CustomConsoleURL:          consoleURL,
+				CustomConsolePRdetail:     "{{ notthere}}",
+				CustomConsolePRTaskLog:    "{{ notthere}}",
+				CustomConsoleNamespaceURL: "https://mycorp.console/{{ namespace }}",
 			},
 		},
 	}
@@ -108,10 +102,8 @@ func TestCustomGood(t *testing.T) {
 
 func TestCustomBad(t *testing.T) {
 	c := CustomConsole{
-		Info: &info.Info{
-			Pac: &info.PacOpts{
-				Settings: &settings.Settings{},
-			},
+		PacInfo: &info.PacOpts{
+			Settings: &settings.Settings{},
 		},
 	}
 	pr := &tektonv1.PipelineRun{
