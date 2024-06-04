@@ -9,11 +9,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -168,6 +172,13 @@ func TestCreateStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
+			logger, _ := logger.GetLogger()
+			stdata, _ := testclient.SeedTestData(t, ctx, testclient.Data{})
+			run := &params.Run{
+				Clients: clients.Clients{
+					Kube: stdata.Kube,
+				},
+			}
 			v := &Provider{
 				targetProjectID: tt.fields.targetProjectID,
 				run:             params.New(),
@@ -176,6 +187,7 @@ func TestCreateStatus(t *testing.T) {
 						ApplicationName: settings.PACApplicationNameDefaultValue,
 					},
 				},
+				eventEmitter: events.NewEventEmitter(run.Clients.Kube, logger),
 			}
 			if tt.args.event == nil {
 				tt.args.event = info.NewEvent()
