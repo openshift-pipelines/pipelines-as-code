@@ -234,6 +234,14 @@ func parseTS(headerTS string) (time.Time, error) {
 // the issue was.
 func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.Clock) error {
 	rl, resp, err := v.Client.RateLimits(ctx)
+	if resp.StatusCode == http.StatusNotFound {
+		v.Logger.Info("skipping checking if token has expired, rate_limit api is not enabled on token")
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("error making request to the GitHub API checking rate limit: %w", err)
+	}
 	if resp.Header.Get("GitHub-Authentication-Token-Expiration") != "" {
 		ts, err := parseTS(resp.Header.Get("GitHub-Authentication-Token-Expiration"))
 		if err != nil {
@@ -244,16 +252,6 @@ func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.
 			errm := fmt.Sprintf("token has expired at %s", resp.TokenExpiration.Format(time.RFC1123))
 			return fmt.Errorf(errm)
 		}
-	}
-
-	if resp.StatusCode == http.StatusNotFound {
-		v.Logger.Info("skipping checking if token has expired, rate_limit api is not enabled on token")
-		return nil
-	}
-
-	// some other error happened that is not rate limited related
-	if err != nil {
-		return fmt.Errorf("error using token to access API: %w", err)
 	}
 
 	if rl.SCIM.Remaining == 0 {
@@ -273,6 +271,9 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	// from unittesting.
 	if v.Client == nil {
 		v.Client = client
+	}
+	if v.Client == nil {
+		return fmt.Errorf("no github client has been initialized")
 	}
 
 	v.APIURL = apiURL
