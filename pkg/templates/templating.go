@@ -9,7 +9,7 @@ import (
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/traits"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	customparams "github.com/openshift-pipelines/pipelines-as-code/pkg/cel"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cel"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -29,7 +29,7 @@ var (
 // The function first checks if the key in the placeholder has a prefix of
 // "body", "headers", or "files". If it does and both `rawEvent` and `headers`
 // are not nil, it attempts to retrieve the value for the key using the
-// `customparams.CelValue` function and returns the corresponding string
+// `cel.Value` function and returns the corresponding string
 // representation. If the key does not have any of the mentioned prefixes, the
 // function checks if the key exists in the `dico` map. If it does, the
 // function replaces the placeholder with the corresponding value from the
@@ -59,7 +59,7 @@ func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEv
 				for k, v := range headers {
 					headerMap[k] = v[0]
 				}
-				val, err := customparams.CelValue(key, rawEvent, headerMap, map[string]string{}, changedFiles)
+				val, err := cel.Value(key, rawEvent, headerMap, map[string]string{}, changedFiles)
 				if err != nil {
 					return s
 				}
