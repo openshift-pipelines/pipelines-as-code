@@ -39,7 +39,7 @@ require (
 	gotest.tools/v3 v3.5.1
 	k8s.io/api v0.29.3
 	k8s.io/apimachinery v0.29.3
-	k8s.io/client-go v1.5.2
+	k8s.io/client-go v0.29.3
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
 	knative.dev/eventing v0.40.3
 	knative.dev/pkg v0.0.0-20240404013351-5d4af76051e4
@@ -52,10 +52,7 @@ require (
 )
 
 replace (
-	k8s.io/api => k8s.io/api v0.26.7
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.28.3
-	k8s.io/apimachinery => k8s.io/apimachinery v0.26.7
-	k8s.io/client-go => k8s.io/client-go v0.26.7
 	k8s.io/code-generator => k8s.io/code-generator v0.26.7
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230515203736-54b630e78af5
 	knative.dev/eventing => knative.dev/eventing v0.39.0
