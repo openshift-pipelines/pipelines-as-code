@@ -29,7 +29,7 @@ func NewCustomConsole(pacInfo *info.PacOpts) *CustomConsole {
 
 func (o *CustomConsole) GetName() string {
 	if o.pacInfo.CustomConsoleName == "" {
-		return "Not configured"
+		return fmt.Sprintf("https://url.setting.%s.is.not.configured", settings.CustomConsoleNameKey)
 	}
 	return o.pacInfo.CustomConsoleName
 }

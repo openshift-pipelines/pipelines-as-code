@@ -43,7 +43,7 @@ func (i *Info) UpdatePacOpts(logger *zap.SugaredLogger, configData map[string]st
 	i.pacMutex.Lock()
 	defer i.pacMutex.Unlock()
 
-	if err := settings.SyncConfig(logger, &i.Pac.Settings, configData); err != nil {
+	if err := settings.SyncConfig(logger, &i.Pac.Settings, configData, settings.DefaultValidators()); err != nil {
 		return nil, err
 	}
 	return &i.Pac.Settings, nil

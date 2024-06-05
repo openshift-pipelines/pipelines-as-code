@@ -35,9 +35,9 @@ var (
 )
 
 type HubCatalog struct {
-	ID   string
-	Name string
-	URL  string
+	Index string
+	Name  string
+	URL   string
 }
 
 // if there is a change performed on the default value,
@@ -80,33 +80,31 @@ func DefaultSettings() Settings {
 	newSettings := &Settings{}
 	hubCatalog := &sync.Map{}
 	hubCatalog.Store("default", HubCatalog{
-		ID:   "default",
-		Name: HubCatalogNameDefaultValue,
-		URL:  HubURLDefaultValue,
+		Index: "default",
+		Name:  HubCatalogNameDefaultValue,
+		URL:   HubURLDefaultValue,
 	})
 	newSettings.HubCatalogs = hubCatalog
 
-	_ = configutil.ValidateAndAssignValues(nil, map[string]string{}, newSettings, map[string]func(string) error{
-		"ErrorDetectionSimpleRegexp": isValidRegex,
-		"TektonDashboardURL":         isValidURL,
-		"CustomConsoleURL":           isValidURL,
-		"CustomConsolePRTaskLog":     startWithHTTPorHTTPS,
-		"CustomConsolePRDetail":      startWithHTTPorHTTPS,
-	}, false)
+	_ = configutil.ValidateAndAssignValues(nil, map[string]string{}, newSettings, map[string]func(string) error{}, false)
 
 	return *newSettings
 }
 
-func SyncConfig(logger *zap.SugaredLogger, setting *Settings, config map[string]string) error {
-	setting.HubCatalogs = getHubCatalogs(logger, setting.HubCatalogs, config)
-
-	err := configutil.ValidateAndAssignValues(logger, config, setting, map[string]func(string) error{
+func DefaultValidators() map[string]func(string) error {
+	return map[string]func(string) error{
 		"ErrorDetectionSimpleRegexp": isValidRegex,
 		"TektonDashboardURL":         isValidURL,
 		"CustomConsoleURL":           isValidURL,
 		"CustomConsolePRTaskLog":     startWithHTTPorHTTPS,
 		"CustomConsolePRDetail":      startWithHTTPorHTTPS,
-	}, true)
+	}
+}
+
+func SyncConfig(logger *zap.SugaredLogger, setting *Settings, config map[string]string, validators map[string]func(string) error) error {
+	setting.HubCatalogs = getHubCatalogs(logger, setting.HubCatalogs, config)
+
+	err := configutil.ValidateAndAssignValues(logger, config, setting, validators, true)
 	if err != nil {
 		return fmt.Errorf("failed to validate and assign values: %w", err)
 	}

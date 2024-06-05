@@ -139,7 +139,7 @@ func TestSyncConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var test Settings
 
-			err := SyncConfig(logger, &test, tc.configMap)
+			err := SyncConfig(logger, &test, tc.configMap, DefaultValidators())
 
 			// set hub catalogs to nil to avoid comparison error
 			// test separately
@@ -166,5 +166,5 @@ func TestDefaultSettings(t *testing.T) {
 	assert.Assert(t, ok)
 	catalog, ok := catalogValue.(HubCatalog)
 	assert.Assert(t, ok)
-	assert.Equal(t, catalog.ID, "default")
+	assert.Equal(t, catalog.Index, "default")
 }
