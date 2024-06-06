@@ -21,7 +21,4 @@
 {{- range $repo := .Repos }}
  - {{ $repo.GetNamespace }}	{{ $repo.Spec.URL }}
 {{- end  }}
-{{- else  }}
-
-{{.CS.Bold "No repos CR installed on Cluster" }}
 {{- end  }}

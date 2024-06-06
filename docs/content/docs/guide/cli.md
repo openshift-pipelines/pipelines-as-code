@@ -337,19 +337,24 @@ There is no clean-up of the secret after the run.
 
 ### Installation Info
 
-The command tkn pac info provides information about your Pipelines-as-Code
-installation, including the location and version. You can also view an overview
-of all Repositories CR created on the cluster and their associated URLs.
+The `tkn pac info` command provides information about your Pipelines-as-Code
+installation, including its location and version.
 
-If your have your installation set-up with a [GitHub App](../../install/github_apps),
-you will be able to the see details of the installed application along with
-other relevant information like the URL endpoint configured for your GitHub APP.
-By default, this will display information from the public GitHub API, but you
-can specify a custom GitHub API URL using the `--github-api-url` argument.
+By default, it displays the version of the Pipelines-as-Code controller and the
+namespace where Pipelines-as-Code is installed. This information is accessible
+to all users on the cluster through a special ConfigMap named
+`pipelines-as-code-info`. This ConfigMap has broad read access in the namespace
+where Pipelines-as-Code is installed.
 
-It's important to note that only administrators with permission to read the
-`pipelines-as-code-secret` secret and list all Repository CR on the cluster are
-authorized to access this command.
+If you are a cluster admin, you can also view an overview of all created
+Repositories CR on the cluster, along with their associated URLs.
+
+As an admin, if your installation is set up with a [GitHub
+App](../../install/github_apps), you can see the details of the installed
+application and other relevant information, such as the URL endpoint configured
+for your GitHub App. By default, this will display information from the public
+GitHub API, but you can specify a custom GitHub API URL using the
+`--github-api-url` argument.
 
 {{< /details >}}
 
