@@ -53,6 +53,7 @@ exceptions:
   - FireWire
   - FreeRADIUS
   - GbE
+  - GBps
   - GiB
   - GitHub
   - GitLab
@@ -84,6 +85,7 @@ exceptions:
   - JBoss
   - JetBrains
   - JUnit
+  - kBps
   - KiB
   - LangTags
   - LGPLv
@@ -95,6 +97,7 @@ exceptions:
   - LiquidIO
   - ManageIQ
   - MariaDB
+  - MBps
   - MegaRAID
   - MiB
   - MicroProfile
@@ -119,8 +122,8 @@ exceptions:
   - OpenID
   - OpenIPMI
   - OpenJDK
-  - OpenRewrite
   - OpenRAN
+  - OpenRewrite
   - OpenSCAP
   - OpenShift
   - OpenSSH
@@ -163,6 +166,7 @@ exceptions:
   - STMicroelectronics
   - SuperLU
   - SysV
+  - TBps
   - TiB
   - TuneD
   - TypeScript
@@ -172,6 +176,7 @@ exceptions:
   - vHost
   - VMware
   - vSphere
+  - vSwitch
   - WebAuthn
   - WebSocket
   - WireGuard

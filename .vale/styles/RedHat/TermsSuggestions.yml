@@ -9,7 +9,7 @@ action:
 swap:
   "(?<!,| in| on| at| to| for| from| of| with| without| against) which": ", which| that"
   "(?<!.-)jar": compress|archive
-  "(?<![Bb]y) using": by using|that uses
+  "(?<![Bb]y |not |are |to |about |[Ww]hen )using": by using|that uses
   ", that": ", which| that"
   "[Bb]are metal(?= clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| machines?| media| nodes?| provisioning| servers?| workers?)": bare-metal
   "[Bb]are-metal(?! clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| machines?| media| nodes?| provisioning| servers?| workers?)": bare metal
@@ -45,6 +45,7 @@ swap:
   launch: start|open
   legacy: existing|traditional|established|classic|earlier|previous
   once: after|when
+  on-premise: on-site|in-house
   refer to: see
   segfault: segmentation fault
   spawn: create

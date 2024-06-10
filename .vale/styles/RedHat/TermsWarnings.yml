@@ -18,6 +18,7 @@ swap:
   '\b(?:ie)': that is
   'I(?!/O)': you
   'is updatable|are updatable': can be updated|can be changed
+  "(?<!the |the Red Hat )Hybrid Cloud Console|(?<!the )Red Hat Hybrid Cloud Console|(?<!the |Red Hat |Hybrid )Cloud Console|the Cloud Console": the Red Hat Hybrid Cloud Console|the Hybrid Cloud Console
   all caps: uppercase
   architected: designed
   as well as(?! per): and
