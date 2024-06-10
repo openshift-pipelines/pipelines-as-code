@@ -20,6 +20,7 @@ spec:
       - name: revision
     tasks:
       - name: fetchit
+        displayName: "Fetch git repository"
         params:
           - name: url
             value: $(params.repo_url)
@@ -103,7 +104,7 @@ spec:
                 pip3 install gitlint
                 gitlint --commit "$(git log --format=format:%H --no-merges -1)" --ignore "Merge branch"
       - name: yamllint
-        generateName: "YAML Linter"
+        displayName: "YAML Linter"
         runAfter:
           - generate-release-yaml
         taskSpec:
@@ -121,7 +122,7 @@ spec:
             workspace: source
 
       - name: ruff
-        generateName: "Python Linter (ruff)"
+        displayName: "Python Linter (ruff)"
         runAfter:
           - fetchit
         taskSpec:
@@ -142,7 +143,7 @@ spec:
             workspace: source
 
       - name: markdownlint
-        generateName: "Markdown Linter"
+        displayName: "Markdown Linter"
         runAfter:
           - fetchit
         taskSpec:
@@ -159,14 +160,14 @@ spec:
             workspace: source
 
       - name: vale
-        generateName: "Spelling and Grammar"
+        displayName: "Spelling and Grammar"
         runAfter:
           - fetchit
         taskSpec:
           workspaces:
             - name: source
           steps:
-            - name: markdown-lint
+            - name: vale-lint
               image: registry.access.redhat.com/ubi9/python-311
               workingDir: $(workspaces.source.path)
               env:
@@ -177,9 +178,38 @@ spec:
                       key: "hub-token"
               script: |
                 version=$(curl -H "Authorization: Bearer ${HUB_TOKEN}" -L -s https://api.github.com/repos/errata-ai/vale/releases/latest|python -c 'import sys, json;dico=json.load(sys.stdin);print(dico["tag_name"])')
-                curl -H "Authorization: Bearer ${HUB_TOKEN}" -L https://github.com/errata-ai/vale/releases/download/${version}/vale_${version/v}_Linux_arm64.tar.gz|tar -xz -C /tmp/ -f- vale
+                curl -sH "Authorization: Bearer ${HUB_TOKEN}" -L https://github.com/errata-ai/vale/releases/download/${version}/vale_${version/v}_Linux_arm64.tar.gz|tar -xz -C /tmp/ -f- vale
                 export NO_COLOR=1
                 /tmp/vale docs/content --minAlertLevel=error --output=line
+        workspaces:
+          - name: source
+            workspace: source
+      - name: goreleaser-check
+        displayName: "Goreleaser Check"
+        runAfter:
+          - fetchit
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: goreleaser-check
+              image: registry.access.redhat.com/ubi9/python-311
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: HUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "nightly-ci-github-hub-token"
+                      key: "hub-token"
+              script: |
+                set -euo pipefail
+                git config --global --add safe.directory $(workspaces.source.path)
+                project="goreleaser"
+                repo="goreleaser/goreleaser"
+                version=$(curl -H "Authorization: Bearer ${HUB_TOKEN}" -L -s https://api.github.com/repos/${repo}/releases/latest|python -c 'import sys, json;dico=json.load(sys.stdin);print(dico["tag_name"])')
+                curl -sH "Authorization: Bearer ${HUB_TOKEN}" -L https://github.com/${repo}/releases/download/${version}/${project}_Linux_arm64.tar.gz|tar -xz -C /tmp/ -f- ${project}
+                export NO_COLOR=1
+                /tmp/goreleaser check
         workspaces:
           - name: source
             workspace: source
