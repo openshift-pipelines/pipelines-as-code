@@ -5,6 +5,8 @@ metadata:
   name: "no-match"
   annotations:
     pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-event: "[incoming]"
+    pipelinesascode.tekton.dev/on-target-branch: "[non-existent]"
 spec:
   pipelineSpec:
     tasks:
