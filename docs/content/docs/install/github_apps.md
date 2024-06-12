@@ -31,7 +31,7 @@ Alternatively, you could set up manually by following the steps [here](./#setup-
   * **GitHub Application Name**: `OpenShift Pipelines`
   * **Homepage URL**: *[OpenShift Console URL]*
   * **Webhook URL**: *[the Pipelines-as-Code route or ingress URL as copied in the previous section]*
-  * **Webhook secret**: *[an arbitrary secret, you can generate one with `openssl rand -hex 20`]*
+  * **Webhook secret**: *[an arbitrary secret, you can generate one with `head -c 30 /dev/random | base64`]*
 
 * Select the following repository permissions:
   * **Checks**: `Read & Write`

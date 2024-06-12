@@ -29,7 +29,7 @@ recreate it.
 * Add a Secret or generate a random one with :
 
 ```shell
-  openssl rand -hex 20
+  head -c 30 /dev/random | base64
 ```
 
 * Set the payload URL to Pipelines-as-Code public URL. On OpenShift, you can get the

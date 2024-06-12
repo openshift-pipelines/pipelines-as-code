@@ -78,7 +78,7 @@ $ tkn pac create repo
   * Add a secret or generate a random one with this command  :
 
     ```shell
-    openssl rand -hex 20
+    head -c 30 /dev/random | base64
     ```
 
   * [Refer to this screenshot](/images/gitlab-add-webhook.png) on how to configure the Webhook.
