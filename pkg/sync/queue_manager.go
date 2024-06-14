@@ -66,7 +66,11 @@ func repoKey(repo *v1alpha1.Repository) string {
 }
 
 func (qm *QueueManager) checkAndUpdateSemaphoreSize(repo *v1alpha1.Repository, semaphore Semaphore) error {
-	limit := *repo.Spec.ConcurrencyLimit
+	// can't assume callers have checked that ConcurrencyLimit is set
+	limit := 0
+	if repo.Spec.ConcurrencyLimit != nil {
+		limit = *repo.Spec.ConcurrencyLimit
+	}
 	if limit != semaphore.getLimit() {
 		if semaphore.resize(limit) {
 			return nil
