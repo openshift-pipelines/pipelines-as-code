@@ -486,7 +486,7 @@ func TestGetFiles(t *testing.T) {
 	tests := []struct {
 		name                             string
 		event                            *info.Event
-		mrchanges                        *gitlab.MergeRequest
+		mrchanges                        []*gitlab.MergeRequestDiff
 		pushChanges                      []*gitlab.Diff
 		wantAddedFilesCount              int
 		wantDeletedFilesCount            int
@@ -503,23 +503,21 @@ func TestGetFiles(t *testing.T) {
 				Repository:        "pullrequestrepository",
 				PullRequestNumber: 10,
 			},
-			mrchanges: &gitlab.MergeRequest{
-				Changes: []*gitlab.MergeRequestDiff{
-					{
-						NewPath: "modified.yaml",
-					},
-					{
-						NewPath: "added.doc",
-						NewFile: true,
-					},
-					{
-						NewPath:     "removed.yaml",
-						DeletedFile: true,
-					},
-					{
-						NewPath:     "renamed.doc",
-						RenamedFile: true,
-					},
+			mrchanges: []*gitlab.MergeRequestDiff{
+				{
+					NewPath: "modified.yaml",
+				},
+				{
+					NewPath: "added.doc",
+					NewFile: true,
+				},
+				{
+					NewPath:     "removed.yaml",
+					DeletedFile: true,
+				},
+				{
+					NewPath:     "renamed.doc",
+					RenamedFile: true,
 				},
 			},
 			wantAddedFilesCount:    1,
@@ -536,23 +534,21 @@ func TestGetFiles(t *testing.T) {
 				Repository:        "pullrequestrepository",
 				PullRequestNumber: 10,
 			},
-			mrchanges: &gitlab.MergeRequest{
-				Changes: []*gitlab.MergeRequestDiff{
-					{
-						NewPath: "modified.yaml",
-					},
-					{
-						NewPath: "added.doc",
-						NewFile: true,
-					},
-					{
-						NewPath:     "removed.yaml",
-						DeletedFile: true,
-					},
-					{
-						NewPath:     "renamed.doc",
-						RenamedFile: true,
-					},
+			mrchanges: []*gitlab.MergeRequestDiff{
+				{
+					NewPath: "modified.yaml",
+				},
+				{
+					NewPath: "added.doc",
+					NewFile: true,
+				},
+				{
+					NewPath:     "removed.yaml",
+					DeletedFile: true,
+				},
+				{
+					NewPath:     "renamed.doc",
+					RenamedFile: true,
 				},
 			},
 			wantAddedFilesCount:    0,
@@ -599,27 +595,25 @@ func TestGetFiles(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			fakeclient, mux, teardown := thelp.Setup(t)
 			defer teardown()
-			mergeFileChanges := &gitlab.MergeRequest{
-				Changes: []*gitlab.MergeRequestDiff{
-					{
-						NewPath: "modified.yaml",
-					},
-					{
-						NewPath: "added.doc",
-						NewFile: true,
-					},
-					{
-						NewPath:     "removed.yaml",
-						DeletedFile: true,
-					},
-					{
-						NewPath:     "renamed.doc",
-						RenamedFile: true,
-					},
+			mergeFileChanges := []*gitlab.MergeRequestDiff{
+				{
+					NewPath: "modified.yaml",
+				},
+				{
+					NewPath: "added.doc",
+					NewFile: true,
+				},
+				{
+					NewPath:     "removed.yaml",
+					DeletedFile: true,
+				},
+				{
+					NewPath:     "renamed.doc",
+					RenamedFile: true,
 				},
 			}
 			if tt.event.TriggerTarget == "pull_request" {
-				mux.HandleFunc(fmt.Sprintf("/projects/10/merge_requests/%d/changes",
+				mux.HandleFunc(fmt.Sprintf("/projects/10/merge_requests/%d/diffs",
 					tt.event.PullRequestNumber), func(rw http.ResponseWriter, _ *http.Request) {
 					jeez, err := json.Marshal(mergeFileChanges)
 					assert.NilError(t, err)
@@ -664,7 +658,7 @@ func TestGetFiles(t *testing.T) {
 
 			if tt.event.TriggerTarget == "pull_request" {
 				for i := range changedFiles.All {
-					assert.Equal(t, tt.mrchanges.Changes[i].NewPath, changedFiles.All[i])
+					assert.Equal(t, tt.mrchanges[i].NewPath, changedFiles.All[i])
 				}
 			}
 			if tt.event.TriggerTarget == "push" {

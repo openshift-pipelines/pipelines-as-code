@@ -1021,7 +1021,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				Token:  github.String("None"),
 			}
 			if len(tt.args.fileChanged) > 0 {
-				commitFiles := &gitlab.MergeRequest{}
+				commitFiles := []*gitlab.MergeRequestDiff{}
 				pushFileChanges := []*gitlab.Diff{}
 				if tt.args.runevent.TriggerTarget == "push" {
 					for _, v := range tt.args.fileChanged {
@@ -1040,14 +1040,14 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 					})
 				} else {
 					for _, v := range tt.args.fileChanged {
-						commitFiles.Changes = append(commitFiles.Changes, &gitlab.MergeRequestDiff{
+						commitFiles = append(commitFiles, &gitlab.MergeRequestDiff{
 							NewPath:     v.FileName,
 							RenamedFile: v.RenamedFile,
 							DeletedFile: v.DeletedFile,
 							NewFile:     v.NewFile,
 						})
 					}
-					url := fmt.Sprintf("/projects/0/merge_requests/%d/changes", tt.args.runevent.PullRequestNumber)
+					url := fmt.Sprintf("/projects/0/merge_requests/%d/diffs", tt.args.runevent.PullRequestNumber)
 					glMux.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
 						jeez, err := json.Marshal(commitFiles)
 						assert.NilError(t, err)
