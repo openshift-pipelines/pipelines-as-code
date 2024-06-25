@@ -129,15 +129,14 @@ spec:
           workspaces:
             - name: source
           steps:
-            - name: ruff
-              image: salixtein/ruff
+            - name: ruff-lint
+              image: ghcr.io/astral-sh/ruff
               workingDir: $(workspaces.source.path)
-              script: |
-                set -euxo pipefail
-                echo "Linting Python files"
-                ruff check $(find . -type f -name '*.py')
-                echo "Checking Python files are formatted"
-                ruff format --check $(find . -type f -name '*.py')
+              args: ["check", "$(workspaces.source.path)"]
+            - name: ruff-format
+              image: ghcr.io/astral-sh/ruff
+              workingDir: $(workspaces.source.path)
+              args: ["format", "$(workspaces.source.path)", "--check"]
         workspaces:
           - name: source
             workspace: source
