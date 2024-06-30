@@ -20,15 +20,15 @@ func TestGetTask(t *testing.T) {
 	var hubCatalogs sync.Map
 	hubCatalogs.Store(
 		"default", settings.HubCatalog{
-			ID:   "default",
-			URL:  testHubURL,
-			Name: testCatalogHubName,
+			Index: "default",
+			URL:   testHubURL,
+			Name:  testCatalogHubName,
 		})
 	hubCatalogs.Store(
 		"anotherHub", settings.HubCatalog{
-			ID:   "anotherHub",
-			URL:  testHubURL,
-			Name: testCatalogHubName,
+			Index: "1",
+			URL:   testHubURL,
+			Name:  testCatalogHubName,
 		})
 	tests := []struct {
 		name        string

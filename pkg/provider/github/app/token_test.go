@@ -159,6 +159,7 @@ func Test_GenerateJWT(t *testing.T) {
 	}
 }
 
+// Test_GetAndUpdateInstallationID tests we properly obtain the list of repos for a GitHub App and find a matching repo.
 func Test_GetAndUpdateInstallationID(t *testing.T) {
 	tdata := testclient.Data{
 		Namespaces: []*corev1.Namespace{testNamespace},

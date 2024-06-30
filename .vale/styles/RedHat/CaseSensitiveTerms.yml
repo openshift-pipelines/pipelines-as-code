@@ -11,7 +11,6 @@ swap:
   "(?<!/)var": VAR
   "(?<!Business )Resource Planner|(?<!Business Resource )Planner": Business Resource Planner
   "(?<!Microsoft Azure )On-Demand Marketplace": Microsoft Azure On-Demand Marketplace
-  "(?<!Red Hat )Customer Portal": Red Hat Customer Portal
   "(?<!Red Hat )JBoss Enterprise Application Platform": Red Hat JBoss Enterprise Application Platform
   "(?<!Red Hat )OpenStack Platform|RHOS|RH-OSP": Red Hat OpenStack Platform
   "(?<!Red Hat JBoss )BRMS(?! engine)": inference engine
@@ -24,7 +23,7 @@ swap:
   "DM(?![ -]Multipath)|directory manager": Directory Manager
   "JBoss Broker|Red Hat Broker|The AMQ Broker": AMQ Broker
   "JBoss Console|Red Hat Console": AMQ Console
-  "Kernel(?!-based Virtual Machine)": kernel
+  "Kernel(?!-based Virtual Machine| Module Management)": kernel
   "OCM|(?<!Red Hat OpenShift )Cluster Manager|(?<!Red Hat )OpenShift Cluster Manager|the OpenShift Cluster Manager": Red Hat OpenShift Cluster Manager
   "OD": Red Hat OpenShift Dedicated
   "sub version|(?<!Apache )Subversion": sub-version
@@ -93,6 +92,7 @@ swap:
   configuration map: config map
   Content view|content view: Content View
   control key|ctrl: Ctrl
+  CP|RHCP|customer portal: Customer Portal|Red Hat Customer Portal
   crush map|crushmap: CRUSH map
   csv: CSV
   CygMon|cygmon|CYGMON: Cygmon
@@ -218,13 +218,13 @@ swap:
   Organization administrator|Org Admin|org admin: Organization Administrator
   OS|Operating System: operating system
   Overcloud: overcloud
+  P-PC|PPC64: PowerPC
   Podman desktop: Podman Desktop
   podman: Podman
   popup|Pop-up: pop-up
   Posix|posix: POSIX
   Postscript: PostScript
   Powershell|powershell: PowerShell
-  PPC|P-PC|PPC64: PowerPC
   Ppp|ppp: PPP
   prom|Prom: PROM
   proof key for code exchange: Proof Key for Code Exchange

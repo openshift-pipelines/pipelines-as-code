@@ -1,8 +1,8 @@
 ---
 extends: substitution
-ignorecase: true
+ignorecase: false
 level: warning
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/donotuse/
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/donotuseterms/
 message: "%s"
 swap:
   # Start each error message with "Do not use ..."

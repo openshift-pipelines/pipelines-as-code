@@ -117,6 +117,15 @@ collect_logs() {
 	kubectl get repositories.pipelinesascode.tekton.dev -A -o yaml >/tmp/logs/pac-repositories.yaml
 	kubectl get configmap -n pipelines-as-code -o yaml >/tmp/logs/pac-configmap
 	kubectl get events -A >/tmp/logs/events
+
+	allNamespaces=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}')
+	for ns in ${allNamespaces}; do
+		mkdir -p /tmp/logs/ns/${ns}
+		for type in pods pipelineruns repositories configmap; do
+			kubectl get ${type} -n ${ns} -o yaml >/tmp/logs/ns/${ns}/${type}.yaml
+		done
+		kubectl -n ${ns} get events >/tmp/logs/ns/${ns}/events
+	done
 }
 
 help() {
