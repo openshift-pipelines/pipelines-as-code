@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"go.uber.org/zap"
 )
 
@@ -44,7 +45,7 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 			"source_url":       p.event.HeadURL,
 			"sender":           strings.ToLower(p.event.Sender),
 			"target_namespace": p.repo.GetNamespace(),
-			"event_type":       p.event.EventType,
+			"event_type":       opscomments.EventTypeBackwardCompat(p.eventEmitter, p.repo, p.event.EventType),
 			"trigger_comment":  triggerCommentAsSingleLine,
 		}, map[string]interface{}{
 			"all":      changedFiles.All,
