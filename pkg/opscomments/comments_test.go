@@ -3,9 +3,60 @@ package opscomments
 import (
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func TestLabelsBackwardCompat(t *testing.T) {
+	testCases := []struct {
+		name     string
+		label    string
+		expected string
+	}{
+		{
+			name:     "OnCommentEventType",
+			label:    OnCommentEventType.String(),
+			expected: OnCommentEventType.String(),
+		},
+		{
+			name:     "RetestAllCommentEventType",
+			label:    RetestAllCommentEventType.String(),
+			expected: triggertype.PullRequest.String(),
+		},
+		{
+			name:     "OtherLabel",
+			label:    "OtherLabel",
+			expected: "OtherLabel",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+			ctx, _ := rtesting.SetupFakeContext(t)
+
+			sampleRepo := testnewrepo.NewRepo(testnewrepo.RepoTestcreationOpts{
+				Name:             "test-repo-already-installed",
+				InstallNamespace: "namespace",
+				URL:              "https://pac.test/already/installed",
+			})
+			tdata := testclient.Data{Repositories: []*v1alpha1.Repository{sampleRepo}}
+			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
+			eventEmitter := events.NewEventEmitter(stdata.Kube, logger)
+			result := EventTypeBackwardCompat(eventEmitter, sampleRepo, tc.label)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
 
 func TestGetNameFromFunction(t *testing.T) {
 	tests := []struct {
