@@ -5,7 +5,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"go.uber.org/zap"
 )
 
 var (
@@ -85,6 +89,26 @@ func IsOkToTestComment(comment string) bool {
 
 func IsCancelComment(comment string) bool {
 	return cancelAllRegex.MatchString(comment) || cancelSingleRegex.MatchString(comment)
+}
+
+// EventTypeBackwardCompat handle the backward compatibility we need to keep until
+// we have done the deprecated notice
+//
+// 2024-07-01 chmouel
+//
+//	set anyOpsComments to pull_request see https://issues.redhat.com/browse/SRVKP-5775
+//	we keep on-comment to the "on-comment" type
+func EventTypeBackwardCompat(eventEmitter *events.EventEmitter, repo *v1alpha1.Repository, label string) string {
+	if label == OnCommentEventType.String() {
+		return label
+	}
+	if IsAnyOpsEventType(label) {
+		eventEmitter.EmitMessage(repo, zap.WarnLevel, "DeprecatedOpsComment",
+			fmt.Sprintf("the %s event type is deprecated, this will be changed to %s in the future",
+				label, triggertype.PullRequest.String()))
+		return triggertype.PullRequest.String()
+	}
+	return label
 }
 
 func IsAnyOpsEventType(eventType string) bool {

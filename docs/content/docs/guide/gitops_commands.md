@@ -227,3 +227,35 @@ There is different format that can get accepted, which let you pass values with 
 * key="another \"value\" defined"
 * key="another
   value with newline"
+
+## Event Type Annotation and dynamic variables
+
+The `pipeline.tekton.dev/event-type` annotation indicates the type of GitOps
+command that has triggered the PipelineRun.
+
+Here are the possible event types:
+
+* `test-all-comment` : The event is a single `/test` that would test every matched pipelinerun.
+* `test-comment` : The event is a `/test <PipelineRun>` comment that would test a specific PipelineRun.
+* `retest-all-comment` : The event is a single `/retest` that would retest every matched pipelinerun.
+* `retest-comment` : The event is a `/retest <PipelineRun>` that would retest a specific PipelineRun.
+* `on-comment`: The event is coming from a  custom comment that would trigger a PipelineRun.
+* `cancel-all-comment` : The event is a single `/cancel` that would cancel every matched pipelinerun.
+* `cancel-comment` : The event is a `/cancel <PipelineRun>` that would cancel a specific PipelineRun.
+* `ok-to-test-comment` : The event is a `/ok-to-test` that would allow running the CI for a unauthorized user.
+
+When using the `{{ event_type }}` [dynamic variable]({{< relref "/docs/guide/authoringprs.md#dynamic-variables" >}}) for the following event types:
+
+* `test-all-comment`
+* `test-comment`
+* `retest-all-comment`
+* `retest-comment`
+* `cancel-all-comment`
+* `ok-to-test-comment`
+
+The dynamic variable will return `pull_request` as the event type instead of the specific
+categorized GitOps command type. This is to handle backward compatibility with
+previous release for users relying on this dynamic variable.
+
+This currently only issue a warning in the repository matched namespace but then deprecated and changed to return
+the specific event type.

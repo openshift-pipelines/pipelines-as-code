@@ -50,7 +50,7 @@ checkout the code that is being tested.
 | Variable            | Description                                                                                       | Example                             | Example Output               |
 |---------------------|---------------------------------------------------------------------------------------------------|-------------------------------------|------------------------------|
 | body                | The full payload body (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter)) | `{{body.pull_request.user.email }}` | <email@domain.com>           |
-| event_type          | The event type (eg: `pull_request` or `push`)                                                     | `{{event_type}}`                    | pull_request                 |
+| event_type          | The event type (eg: `pull_request` or `push`)                                                     | `{{event_type}}`                    | pull_request          (see the note for Gitops Comments [here]({{< relref "/docs/guide/gitops_commands.md#event-type-annotation-and-dynamic-variables" >}}) )     |
 | git_auth_secret     | The secret name auto generated with provider token to check out private repos.                    | `{{git_auth_secret}}`               | pac-gitauth-xkxkx            |
 | headers             | The request headers (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter))   | `{{headers['x-github-event']}}`     | push                         |
 | pull_request_number | The pull or merge request number, only defined when we are in a `pull_request` event type.        | `{{pull_request_number}}`           | 1                            |
