@@ -2,6 +2,7 @@ package tknpac
 
 import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/auth"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/bootstrap"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/completion"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/create"
@@ -44,5 +45,6 @@ func Root(clients *params.Run) *cobra.Command {
 	cmd.AddCommand(bootstrap.Command(clients, ioStreams))
 	cmd.AddCommand(generate.Command(clients, ioStreams))
 	cmd.AddCommand(webhook.Root(clients, ioStreams))
+	cmd.AddCommand(auth.Root(clients, ioStreams))
 	return cmd
 }
