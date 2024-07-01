@@ -27,6 +27,14 @@ func loginCommand(_ *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			var err error
 			cs := ioStreams.ColorScheme()
 
+			if provider != "github" && provider != "gitlab" && provider != "bitbucket" {
+				return fmt.Errorf("provide is invalid must amongst these three [github, gitlab, bitbucket]")
+			}
+
+			if provider != "github" {
+				return fmt.Errorf("feature is in under development, at the moment only github is supported")	
+			}
+
 			hosts := []string{"Github.com", "Github Enterprise Server"}
 			authModes := []string{"Login with web browser", "Paste an authentication token"}
 			hostname, authMode, err = questions(hosts, authModes)
