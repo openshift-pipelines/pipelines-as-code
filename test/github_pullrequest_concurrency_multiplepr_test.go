@@ -137,7 +137,11 @@ func TestGithubSecondPullRequestConcurrencyMultiplePR(t *testing.T) {
 
 	prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
 	assert.NilError(t, err)
-	assert.Equal(t, len(prs.Items), allPipelinesRunAfterCleanUp, "we should have had %d kept after cleanup, we got %d", allPipelinesRunAfterCleanUp, len(prs.Items))
+	allPipelineRunsNamesAndStatus := []string{}
+	for _, pr := range prs.Items {
+		allPipelineRunsNamesAndStatus = append(allPipelineRunsNamesAndStatus, fmt.Sprintf("%s %s", pr.Name, pr.Status.GetConditions()))
+	}
+	assert.Equal(t, len(prs.Items), allPipelinesRunAfterCleanUp, "we should have had %d kept after cleanup, we got %d: %v", allPipelinesRunAfterCleanUp, len(prs.Items), allPipelineRunsNamesAndStatus)
 
 	runcnx.Clients.Log.Infof("success: number of cleaned PR is %d we expected to have %d after the cleanup", len(prs.Items), allPipelinesRunAfterCleanUp)
 

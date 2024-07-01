@@ -102,7 +102,7 @@ func TestCustomBad(t *testing.T) {
 			Name:      "pr",
 		},
 	}
-	assert.Assert(t, strings.Contains(c.GetName(), "Not configured"))
+	assert.Assert(t, strings.Contains(c.GetName(), "is.not.configured"))
 	assert.Assert(t, strings.Contains(c.URL(), "is.not.configured"))
 	assert.Assert(t, strings.Contains(c.DetailURL(pr), "is.not.configured"))
 	assert.Assert(t, strings.Contains(c.TaskLogURL(pr, nil), "is.not.configured"))
