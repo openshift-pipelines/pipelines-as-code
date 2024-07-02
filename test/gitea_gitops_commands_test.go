@@ -206,7 +206,8 @@ func TestGiteaRetestAll(t *testing.T) {
 	assert.NilError(t, err)
 	var rt bool
 	for _, status := range repo.Status {
-		if *status.EventType == opscomments.RetestAllCommentEventType.String() {
+		// TODO(chmouel): Revert back to opscomments.RetestAllCommentEventType.String(), as pull_request now due of https://issues.redhat.com/browse/SRVKP-5775
+		if *status.EventType == triggertype.PullRequest.String() {
 			rt = true
 		}
 	}
