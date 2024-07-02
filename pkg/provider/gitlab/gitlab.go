@@ -331,14 +331,13 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	if runevent.TriggerTarget == triggertype.PullRequest {
-		//nolint: staticcheck
-		mrchanges, _, err := v.Client.MergeRequests.GetMergeRequestChanges(v.targetProjectID, runevent.PullRequestNumber, &gitlab.GetMergeRequestChangesOptions{})
+		mrchanges, _, err := v.Client.MergeRequests.ListMergeRequestDiffs(v.targetProjectID, runevent.PullRequestNumber, &gitlab.ListMergeRequestDiffsOptions{})
 		if err != nil {
 			return changedfiles.ChangedFiles{}, err
 		}
 
 		changedFiles := changedfiles.ChangedFiles{}
-		for _, change := range mrchanges.Changes {
+		for _, change := range mrchanges {
 			changedFiles.All = append(changedFiles.All, change.NewPath)
 			if change.NewFile {
 				changedFiles.Added = append(changedFiles.Added, change.NewPath)
