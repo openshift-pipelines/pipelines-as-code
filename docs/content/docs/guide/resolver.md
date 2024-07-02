@@ -128,7 +128,7 @@ pipelinesascode.tekton.dev/task: "[anothercatalog://curl]" # this will install c
 There is no fallback to the default Tekton Hub if the custom Tekton Hub does not
 have the task referenced it will fail.
 
-There is no support for custom hub from the CLI on the `tkn pac resolver` command.
+There is no support for custom hub from the CLI on the `tkn pac resolve` command.
 
 ### Remote HTTP URL
 
