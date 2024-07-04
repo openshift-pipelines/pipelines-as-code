@@ -215,6 +215,23 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		}
 	}
 
+	// if Pipelinesruns are zero and comment is /ok-to-test
+	// update Github PR UI and skip below checks
+	if opscomments.IsOkToTestComment(p.event.TriggerComment) && len(matchedPRs) == 0 {
+		msg := "There is no matching Pipelinerun for this PR."
+		status := provider.StatusOpts{
+			Status:     CompletedStatus,
+			Title:      "Succeeded",
+			Conclusion: "success",
+			Text:       msg,
+			DetailsURL: p.event.URL,
+		}
+		if err := p.vcx.CreateStatus(ctx, p.event, status); err != nil {
+			return matchedPRs, fmt.Errorf("failed to run create status:: %w", err)
+		}
+		return matchedPRs, nil
+	}
+
 	// if the event is a comment event, but we don't have any match from the keys.OnComment then do the ACL checks again
 	// we skipped previously so we can get the match from the event to the pipelineruns
 	if p.event.EventType == opscomments.NoOpsCommentEventType.String() || p.event.EventType == opscomments.OnCommentEventType.String() {
