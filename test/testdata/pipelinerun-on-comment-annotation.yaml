@@ -20,6 +20,7 @@ spec:
                 cat <<EOF
                 {{ trigger_comment }}
                 EOF
+                echo "The event is {{ event_type }}"
                 echo "The revision is {{ revision }}"
                 echo "The custom1 value is {{ custom1 }}"
                 echo "The custom2 value is {{ custom2 }}"

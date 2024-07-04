@@ -87,9 +87,14 @@ func TestGithubSecondOnCommentAnnotation(t *testing.T) {
 	repo, err := twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts)
 	assert.NilError(t, err)
 	g.Cnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
-	assert.Assert(t, repo.Status[len(repo.Status)-1].Conditions[0].Status == corev1.ConditionTrue)
+	assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionTrue)
+	assert.Equal(t, *repo.Status[len(repo.Status)-1].EventType, opscomments.OnCommentEventType.String())
 	lastPrName := repo.Status[len(repo.Status)-1].PipelineRunName
 
 	err = twait.RegexpMatchingInPodLog(context.Background(), g.Cnx, g.TargetNamespace, fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName), "step-task", *regexp.MustCompile(triggerComment), "", 2)
+	assert.NilError(t, err)
+
+	err = twait.RegexpMatchingInPodLog(context.Background(), g.Cnx, g.TargetNamespace, fmt.Sprintf("tekton.dev/pipelineRun=%s", lastPrName), "step-task", *regexp.MustCompile(fmt.Sprintf(
+		"The event is %s", opscomments.OnCommentEventType.String())), "", 2)
 	assert.NilError(t, err)
 }

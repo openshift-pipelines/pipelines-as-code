@@ -178,6 +178,25 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		p.event.AccountID = ""
 	}
 
+	// NOTE(chmouel): Initially, matching is performed here to accurately
+	// expand dynamic matching in events. This expansion is crucial for
+	// applying dynamic variables, such as setting the `event_type` to
+	// `on-comment` when matching a git provider's issue comment event with a
+	// comment in an annotation. Although matching occurs three times within
+	// this loop, which might seem inefficient, it's essential to maintain
+	// current functionality without introducing potential errors or behavior
+	// changes. Refactoring for optimization could lead to significant
+	// challenges in tracking down issues. Despite the repetition, the
+	// performance impact is minimal, involving only a loop and a few
+	// conditions.
+	if p.event.TargetTestPipelineRun == "" {
+		rtypes, err := resolve.ReadTektonTypes(ctx, p.logger, rawTemplates)
+		if err != nil {
+			return nil, err
+		}
+		// Don't fail or do anything if we don't have a match yet, we will do it properly later in this function
+		_, _ = matcher.MatchPipelinerunByAnnotation(ctx, p.logger, rtypes.PipelineRuns, p.run, p.event, p.vcx)
+	}
 	// Replace those {{var}} placeholders user has in her template to the run.Info variable
 	allTemplates := p.makeTemplate(ctx, repo, rawTemplates)
 
