@@ -236,6 +236,8 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 	return nil, fmt.Errorf(buildAvailableMatchingAnnotationErr(event, pruns))
 }
 
+// buildAvailableMatchingAnnotationErr builds the error message with available
+// annotations of the PipelineRuns.
 func buildAvailableMatchingAnnotationErr(event *info.Event, pruns []*tektonv1.PipelineRun) string {
 	errmsg := "available annotations of the PipelineRuns annotations in .tekton/ dir:"
 	for _, prun := range pruns {
