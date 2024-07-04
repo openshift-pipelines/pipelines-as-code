@@ -86,6 +86,27 @@ func TestGenerateTemplate(t *testing.T) {
 			regenerateTemplate: true,
 		},
 		{
+			name: "pull request python poetry",
+			askStubs: func(as *prompt.AskStubber) {
+				as.StubOneDefault() // pull_request
+				as.StubOne("")      // default as main
+			},
+			addExtraFilesInRepo: map[string]string{
+				"poetry.lock": "hello",
+			},
+			checkGeneratedFile: ".tekton/pull-request.yaml",
+			checkRegInGeneratedFile: []*regexp.Regexp{
+				regexp.MustCompile("name: python-pull-request"),
+				regexp.MustCompile(".*on-event.*pull_request"),
+				regexp.MustCompile(".*test our Python project"),
+				regexp.MustCompile("- name: pylint"),
+			},
+			gitinfo: git.Info{
+				URL: "https://hello/python",
+			},
+			regenerateTemplate: true,
+		},
+		{
 			name: "pull request golang",
 			askStubs: func(as *prompt.AskStubber) {
 				as.StubOneDefault() // pull_request
