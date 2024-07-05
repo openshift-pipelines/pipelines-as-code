@@ -118,6 +118,21 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
 }
 
+func TestGiteaStepActions(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		Regexp:      successRegexp,
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pipelinerun-stepaction.yaml": "testdata/pipelinerun-stepactions.yaml",
+		},
+		ExpectEvents:   false,
+		CheckForStatus: "success",
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
+}
+
 // TestGiteaBadYaml we can't check pr status but this shows up in the
 // controller, so let's dig ourself in there....  TargetNS is a random string, so
 // it can only success if it matches it.
