@@ -86,7 +86,7 @@ jobs:
            "${{ secrets.TEST_GITHUB_SECOND_TOKEN }}" \
            "${{ secrets.GITLAB_TOKEN }}"
 
-      - name: Run E2E Tests on pull_request
+      - name: Run E2E Tests on nightly
         if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         run: |
           export NIGHTLY_E2E_TEST="true"
