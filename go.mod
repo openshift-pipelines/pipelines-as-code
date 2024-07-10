@@ -9,6 +9,8 @@ require (
 	code.gitea.io/sdk/gitea v0.18.0
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/bradleyfalzon/ghinstallation/v2 v2.10.0
+	github.com/cli/cli/v2 v2.46.0
+	github.com/cli/oauth v1.0.1
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/fvbommel/sortorder v1.1.0
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20240131155556-0b41d7863037
@@ -27,10 +29,11 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tektoncd/pipeline v0.62.1
 	github.com/xanzy/go-gitlab v0.101.0
+	github.com/zalando/go-keyring v0.2.5
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8
@@ -48,7 +51,35 @@ require (
 	sigs.k8s.io/yaml v1.4.0
 )
 
-require github.com/coreos/go-oidc/v3 v3.9.0 // indirect
+require (
+	github.com/MakeNowJust/heredoc v1.0.0 // indirect
+	github.com/alessio/shellescape v1.4.2 // indirect
+	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
+	github.com/briandowns/spinner v1.18.1 // indirect
+	github.com/charmbracelet/lipgloss v0.10.1-0.20240413172830-d0be07ea6b9c // indirect
+	github.com/charmbracelet/x/exp/term v0.0.0-20240425164147-ba2a9512b05f // indirect
+	github.com/cli/browser v1.3.0 // indirect
+	github.com/cli/go-gh/v2 v2.9.0 // indirect
+	github.com/cli/safeexec v1.0.1 // indirect
+	github.com/cli/shurcooL-graphql v0.0.4 // indirect
+	github.com/coreos/go-oidc/v3 v3.9.0 // indirect
+	github.com/danieljoos/wincred v1.2.1 // indirect
+	github.com/fatih/color v1.16.0 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
+	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
+	github.com/henvic/httpretty v0.1.3 // indirect
+	github.com/itchyny/gojq v0.12.15 // indirect
+	github.com/itchyny/timefmt-go v0.1.5 // indirect
+	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/mattn/go-runewidth v0.0.15 // indirect
+	github.com/muesli/reflow v0.3.0 // indirect
+	github.com/muesli/termenv v0.15.2 // indirect
+	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/shurcooL/githubv4 v0.0.0-20230704064427-599ae7bbf278 // indirect
+	github.com/shurcooL/graphql v0.0.0-20230722043721-ed46e5a46466 // indirect
+	github.com/thlib/go-timezone-local v0.0.0-20210907160436-ef149e42d28e // indirect
+)
 
 replace (
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230515203736-54b630e78af5
@@ -86,6 +117,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic v0.7.0 // indirect
 	github.com/google/gnostic-models v0.6.9-0.20230804172637-c7be7c783f49 // indirect
+	github.com/google/go-containerregistry v0.19.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
