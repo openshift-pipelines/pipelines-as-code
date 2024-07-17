@@ -36,24 +36,17 @@ var (
 	oauthClientSecret = "f38d05e5dcfa672ed0dd36ad81b98e263c68bab3"
 )
 
-func RunAuthFlow(oauthHost string, ioStreams *cli.IOStreams, notice string, additionalScopes []string, isInteractive bool) (string, string, error) {
+func RunAuthFlow(oauthHost string, ioStreams *cli.IOStreams, notice string, additionalScopes []string, isInteractive, openBrowser bool) (string, error) {
 	w := ioStreams.ErrOut
 	cs := ioStreams.ColorScheme()
 
 	httpClient := &http.Client{}
-	// debugEnabled, debugValue := utils.IsDebugEnabled()
-	// if debugEnabled {
-	// 	logTraffic := strings.Contains(debugValue, "api")
-	// 	httpClient.Transport = verboseLog(IO.ErrOut, logTraffic, IO.ColorEnabled())(httpClient.Transport)
-	// }
 
 	scopes := []string{"repo", "read:org", "gist"}
 	scopes = append(scopes, additionalScopes...)
 
 	callbackURI := "http://127.0.0.1/callback"
 	if IsEnterprise(oauthHost) {
-		// the OAuth app on Enterprise hosts is still registered with a legacy callback URL
-		// see https://github.com/cli/cli/pull/222, https://github.com/cli/cli/pull/650
 		callbackURI = "http://localhost/"
 	}
 
@@ -84,10 +77,13 @@ func RunAuthFlow(oauthHost string, ioStreams *cli.IOStreams, notice string, addi
 			fmt.Fprintf(w, "%s to open %s in your browser... ", cs.Bold("Press Enter"), oauthHost)
 			_ = waitForEnter(ioStreams.In)
 
-			if err := browser.OpenWebBrowser(authURL); err != nil {
-				fmt.Fprintf(w, "%s Failed opening a web browser at %s\n", cs.Red("!"), authURL)
-				fmt.Fprintf(w, "  %s\n", err)
-				fmt.Fprint(w, "  Please try entering the URL in your browser manually\n")
+			// if it is not a test
+			if openBrowser {
+				if err := browser.OpenWebBrowser(authURL); err != nil {
+					fmt.Fprintf(w, "%s Failed opening a web browser at %s\n", cs.Red("!"), authURL)
+					fmt.Fprintf(w, "  %s\n", err)
+					fmt.Fprint(w, "  Please try entering the URL in your browser manually\n")
+				}
 			}
 			return nil
 		},
@@ -103,15 +99,10 @@ func RunAuthFlow(oauthHost string, ioStreams *cli.IOStreams, notice string, addi
 
 	token, err := flow.DetectFlow()
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	userLogin, err := getViewer(oauthHost, token.Token, ioStreams.ErrOut)
-	if err != nil {
-		return "", "", err
-	}
-
-	return token.Token, userLogin, nil
+	return token.Token, nil
 }
 
 func waitForEnter(r io.Reader) error {
@@ -128,7 +119,7 @@ func (c cfg) ActiveToken(_ string) (string, string) {
 	return c.token, "oauth_token"
 }
 
-func getViewer(hostname, token string, logWriter io.Writer) (string, error) {
+func GetViewer(hostname, token string, logWriter io.Writer) (string, error) {
 	opts := api.HTTPClientOptions{
 		Config: cfg{token: token},
 		Log:    logWriter,

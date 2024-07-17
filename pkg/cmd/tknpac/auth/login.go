@@ -58,7 +58,7 @@ func loginCommand(_ *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 				authMode = authModes[1]
 			}
 
-			if hostname == strings.ToLower(hosts[0]) {
+			if strings.EqualFold(hostname, hosts[0]) {
 				hostname = defaultGithubHostname
 			} else {
 				hostname, err = askForEnterpriseHostName()
@@ -68,10 +68,16 @@ func loginCommand(_ *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 			}
 
 			if authMode == authModes[0] {
-				authToken, username, err = RunAuthFlow(hostname, ioStreams, "", []string{}, true)
+				authToken, err = RunAuthFlow(hostname, ioStreams, "", []string{}, true, true)
 				if err != nil {
 					return fmt.Errorf("failed to authenticate via web browser: %w", err)
 				}
+
+				username, err = GetViewer(hostname, authToken, ioStreams.ErrOut)
+				if err != nil {
+					return fmt.Errorf("failed to get user name from github: %w", err)
+				}
+
 				fmt.Fprintf(ioStreams.ErrOut, "%s Authentication complete for user %s.\n", cs.SuccessIcon(), cs.GreenBold(username))
 			} else {
 				minimumScopes := []string{"repo", "read:org"}
