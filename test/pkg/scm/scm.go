@@ -17,13 +17,14 @@ import (
 )
 
 type Opts struct {
-	GitURL        string
-	TargetRefName string
-	BaseRefName   string
-	WebURL        string
-	Log           *zap.SugaredLogger
-	CommitTitle   string
-	PushForce     bool
+	GitURL             string
+	TargetRefName      string
+	BaseRefName        string
+	WebURL             string
+	Log                *zap.SugaredLogger
+	CommitTitle        string
+	PushForce          bool
+	NoCheckOutFromBase bool
 }
 
 type FileChange struct {
@@ -93,7 +94,14 @@ func PushFilesToRefGit(t *testing.T, opts *Opts, entries map[string]string) {
 	if strings.HasPrefix(opts.TargetRefName, "refs/tags") {
 		_, err = git.RunGit(path, "reset", "--hard", "origin/"+opts.BaseRefName)
 	} else {
-		_, err = git.RunGit(path, "checkout", "-B", opts.TargetRefName, "origin/"+opts.BaseRefName)
+		if opts.NoCheckOutFromBase {
+			// Create a new branch without the base reference,
+			// which can be helpful for testing when you only want to add specific requested files
+			_, err = git.RunGit(path, "checkout", "-B", opts.TargetRefName)
+		} else {
+			// checkout new branch from base branch
+			_, err = git.RunGit(path, "checkout", "-B", opts.TargetRefName, "origin/"+opts.BaseRefName)
+		}
 	}
 	assert.NilError(t, err)
 

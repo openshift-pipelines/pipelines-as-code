@@ -83,7 +83,7 @@ func (r *RepositorySpec) Merge(newRepo RepositorySpec) {
 	if newRepo.ConcurrencyLimit != nil && r.ConcurrencyLimit == nil {
 		r.ConcurrencyLimit = newRepo.ConcurrencyLimit
 	}
-	if newRepo.Settings != nil {
+	if newRepo.Settings != nil && r.Settings != nil {
 		r.Settings.Merge(newRepo.Settings)
 	}
 	if r.GitProvider != nil && newRepo.GitProvider != nil {
