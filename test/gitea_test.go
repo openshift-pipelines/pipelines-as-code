@@ -605,7 +605,7 @@ func TestGiteaProvenanceForDefaultBranch(t *testing.T) {
 		Settings:              &v1alpha1.Settings{PipelineRunProvenance: "default_branch"},
 		NoPullRequestCreation: true,
 	}
-	verifyProvinance(t, topts, "HELLOMOTO", "step-task")
+	verifyProvinance(t, topts, "HELLOMOTO", "step-task", false)
 }
 
 // TestGiteaProvenanceForSource tests the provenance feature of the PipelineRun.
@@ -617,7 +617,7 @@ func TestGiteaProvenanceForSource(t *testing.T) {
 		Settings:              &v1alpha1.Settings{PipelineRunProvenance: "source"},
 		NoPullRequestCreation: true,
 	}
-	verifyProvinance(t, topts, "testing provenance for source", "step-source-provenance-test")
+	verifyProvinance(t, topts, "testing provenance for source", "step-source-provenance-test", false)
 }
 
 // TestGiteaGlobalRepoProvenanceForDefaultBranch tests the provenance feature of the PipelineRun.
@@ -632,38 +632,55 @@ func TestGiteaGlobalRepoProvenanceForDefaultBranch(t *testing.T) {
 		Settings:              &v1alpha1.Settings{},
 	}
 
-	ctx := context.Background()
-	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
-	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
-	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
-	topts.TargetNS = topts.TargetRefName
-	ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
-	assert.NilError(t, err)
-	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
-
-	globalNs := info.GetNS(ctx)
-	err = tgitea.CreateCRD(ctx, topts,
-		v1alpha1.RepositorySpec{
-			Settings: &v1alpha1.Settings{
-				PipelineRunProvenance: "default_branch",
-			},
-		},
-		true)
-	assert.NilError(t, err)
-
-	defer (func() {
-		if os.Getenv("TEST_NOCLEANUP") != "true" {
-			topts.ParamsRun.Clients.Log.Infof("Cleaning up global repo %s in %s", info.DefaultGlobalRepoName, globalNs)
-			err = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(globalNs).Delete(
-				context.Background(), info.DefaultGlobalRepoName, metav1.DeleteOptions{})
-			assert.NilError(t, err)
-		}
-	})()
-
-	verifyProvinance(t, topts, "HELLOMOTO", "step-task")
+	verifyProvinance(t, topts, "HELLOMOTO", "step-task", true)
 }
 
-func verifyProvinance(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cName string) {
+// TestGiteaGlobalAndLocalRepoProvenance verifies the provenance feature of the PipelineRun,
+// ensuring that when provenance is configured at both the global and local repository levels,
+// the local repository settings take precedence. This end-to-end test confirms that behavior.
+func TestGiteaGlobalAndLocalRepoProvenance(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		SkipEventsCheck:       true,
+		TargetEvent:           triggertype.PullRequest.String(),
+		NoPullRequestCreation: true,
+		Settings: &v1alpha1.Settings{
+			PipelineRunProvenance: "source",
+		},
+	}
+
+	verifyProvinance(t, topts, "testing provenance for source", "step-source-provenance-test", true)
+}
+
+func verifyProvinance(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cName string, isGlobal bool) {
+	if isGlobal {
+		ctx := context.Background()
+		topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
+		assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+		topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+		topts.TargetNS = topts.TargetRefName
+		ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+		assert.NilError(t, err)
+		assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+
+		globalNs := info.GetNS(ctx)
+		err = tgitea.CreateCRD(ctx, topts,
+			v1alpha1.RepositorySpec{
+				Settings: &v1alpha1.Settings{
+					PipelineRunProvenance: "default_branch",
+				},
+			},
+			isGlobal)
+		assert.NilError(t, err)
+
+		defer (func() {
+			if os.Getenv("TEST_NOCLEANUP") != "true" {
+				topts.ParamsRun.Clients.Log.Infof("Cleaning up global repo %s in %s", info.DefaultGlobalRepoName, globalNs)
+				err = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(globalNs).Delete(
+					context.Background(), info.DefaultGlobalRepoName, metav1.DeleteOptions{})
+				assert.NilError(t, err)
+			}
+		})()
+	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
 	targetRef := topts.TargetRefName
