@@ -233,6 +233,17 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		return matchedPRs, nil
 	}
 
+	// check whether user is repository owner or  not
+	allowed, err := vcx.IsAllowed(ctx, event)
+	if err != nil {
+		return matchedPRs, err
+	}
+
+	// check if trigger comment is /ok-to-test comment and user is an authorized user
+	if allowed && opscomments.IsOkToTestComment(event.TriggerComment) {
+		return matchedPRs, nil
+	}
+
 	return nil, fmt.Errorf(buildAvailableMatchingAnnotationErr(event, pruns))
 }
 
