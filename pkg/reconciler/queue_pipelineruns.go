@@ -34,6 +34,14 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 		return fmt.Errorf("updateError: %w", err)
 	}
 
+	// find global repository if set
+	globalRepo, err := r.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(r.run.Info.Kube.Namespace).Get(
+		ctx, r.run.Info.Controller.GlobalRepository, metav1.GetOptions{},
+	)
+	if err == nil && globalRepo != nil {
+		repo.Spec.Merge(globalRepo.Spec)
+	}
+
 	// if concurrency was set and later removed or changed to zero
 	// then remove pipelineRun from Queue and update pending state to running
 	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit == 0 {
@@ -55,10 +63,14 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 		pr, err = r.run.Clients.Tekton.TektonV1().PipelineRuns(nsName[0]).Get(ctx, nsName[1], metav1.GetOptions{})
 		if err != nil {
 			logger.Info("failed to get pr with namespace and name: ", nsName[0], nsName[1])
-			return err
+			// No need to return any error from here because, acquired might have more than one item
+			// and if error is returned remaining items in acquired list will be left in queued state
+			// and as they are popped off from semaphore in QueueManager.AddListToQueue func they won't
+			// be processed in ReconcileKind func.
 		}
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-			return fmt.Errorf("failed to update pipelineRun to in_progress: %w", err)
+			logger.Infof("failed to update pipelineRun to in_progress: %w", err)
+			// same here as above comment.
 		}
 	}
 	return nil
