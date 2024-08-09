@@ -720,6 +720,110 @@ func verifyProvinance(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cNam
 	assert.NilError(t, err)
 }
 
+// TestGiteaGlobalRepoConcurrencyLimit tests the concurrency_limit feature of the PipelineRun.
+// It fetches the PipelineRun definition from the default branch of the repository
+// as configured on the git platform (e.g., main).
+// In this test, the concurrency_limit is enabled using a global repository instead of a local repository.
+func TestGiteaGlobalRepoConcurrencyLimit(t *testing.T) {
+	numPipelines := 5
+	yamlFiles := map[string]string{}
+	for i := 0; i < numPipelines; i++ {
+		yamlFiles[fmt.Sprintf(".tekton/pr%d.yaml", i)] = "testdata/pipelinerun.yaml"
+	}
+	topts := &tgitea.TestOpts{
+		SkipEventsCheck:       true,
+		TargetEvent:           triggertype.PullRequest.String(),
+		NoPullRequestCreation: true,
+		YAMLFiles:             yamlFiles,
+		CheckForNumberStatus:  numPipelines,
+		ExpectEvents:          false,
+	}
+
+	verifyConcurrency(t, topts, "HELLOMOTO", "step-task")
+}
+
+// TestGiteaGlobalAndLocalRepoCurrencyLimit verifies the concurrency_limit feature of the PipelineRun,
+// ensuring that when concurrency_limit is defined in both global and local repository,
+// the local repository limit takes precedence. This end-to-end test confirms that behavior.
+func TestGiteaGlobalAndLocalRepoConcurrencyLimit(t *testing.T) {
+	numPipelines := 5
+	yamlFiles := map[string]string{}
+	for i := 0; i < numPipelines; i++ {
+		yamlFiles[fmt.Sprintf(".tekton/pr%d.yaml", i)] = "testdata/pipelinerun.yaml"
+	}
+	topts := &tgitea.TestOpts{
+		SkipEventsCheck:       true,
+		TargetEvent:           triggertype.PullRequest.String(),
+		NoPullRequestCreation: true,
+		YAMLFiles:             yamlFiles,
+		CheckForNumberStatus:  numPipelines,
+		ConcurrencyLimit:      github.Int(3),
+		ExpectEvents:          false,
+	}
+
+	verifyConcurrency(t, topts, "HELLOMOTO", "step-task")
+}
+
+func verifyConcurrency(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cName string) {
+	ctx := context.Background()
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
+	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	topts.TargetNS = topts.TargetRefName
+	ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	globalNs, _, err := params.GetInstallLocation(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	ctx = info.StoreNS(ctx, globalNs)
+
+	err = tgitea.CreateCRD(ctx, topts,
+		v1alpha1.RepositorySpec{
+			ConcurrencyLimit: github.Int(2),
+		},
+		true)
+	assert.NilError(t, err)
+
+	defer (func() {
+		if os.Getenv("TEST_NOCLEANUP") != "true" {
+			topts.ParamsRun.Clients.Log.Infof("Cleaning up global repo %s in %s", info.DefaultGlobalRepoName, globalNs)
+			err = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(globalNs).Delete(
+				context.Background(), info.DefaultGlobalRepoName, metav1.DeleteOptions{})
+			assert.NilError(t, err)
+		}
+	})()
+
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	targetRef := topts.TargetRefName
+	entries, err := payload.GetEntries(topts.YAMLFiles, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
+	assert.NilError(t, err)
+	// topts.TargetRefName = topts.DefaultBranch
+
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.TargetRefName,
+		BaseRefName:   topts.DefaultBranch,
+	}
+	scm.PushFilesToRefGit(t, scmOpts, entries)
+
+	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, targetRef, gitea.CreatePullRequestOption{
+		Title: "Test Pull Request - " + targetRef,
+		Head:  targetRef,
+		Base:  options.MainBranch,
+	})
+	assert.NilError(t, err)
+	topts.PullRequest = pr
+	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
+	topts.CheckForStatus = "success"
+	tgitea.WaitForStatus(t, topts, "heads/"+targetRef, "", false)
+	// check the output of the PipelineRun logs
+	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, "pipelinesascode.tekton.dev/event-type=pull_request", cName, *regexp.MustCompile(expectedOutput), "", 2)
+	assert.NilError(t, err)
+}
+
 func TestGiteaPushToTagGreedy(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		SkipEventsCheck:       true,
