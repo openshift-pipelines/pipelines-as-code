@@ -21,8 +21,14 @@ spec:
   tasks:
     - name: bundled
       taskRef:
-        name: foo
-        bundle: reg.io/ruben/barichello@sha256:2e3a44c27dbdd5f9a6d859ac9dabdbbf54dc26bc43f9293778a934e210fdcf5d
+        resolver: bundles
+        params:
+          - name: bundle
+            value: reg.io/ruben/barichello@sha256:2e3a44c27dbdd5f9a6d859ac9dabdbbf54dc26bc43f9293778a934e210fdcf5d
+          - name: name
+            value: foo
+          - name: kind
+            value: Task
   steps:
     - name: first-step
       image: image
