@@ -70,7 +70,7 @@ func (v *verifier) Verify(pKey crypto.PublicKey, algo Algorithm) error {
 	if err == nil {
 		return v.macVerify(m, pKey)
 	}
-	return fmt.Errorf("no crypto implementation available for %q", algo)
+	return fmt.Errorf("no crypto implementation available for %q: %s", algo, err)
 }
 
 func (v *verifier) macVerify(m macer, pKey crypto.PublicKey) error {

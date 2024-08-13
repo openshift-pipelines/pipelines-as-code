@@ -1,10 +1,9 @@
 // Copyright 2019 The Gitea Authors. All rights reserved.
-// Use of this source code is governed by a MIT-style
-// license that can be found in the LICENSE file.
+// SPDX-License-Identifier: MIT
 
 package structs
 
-// VisibleType defines the visibility (Organization only)
+// VisibleType defines the visibility of user and org
 type VisibleType int
 
 const (
@@ -14,11 +13,11 @@ const (
 	// VisibleTypeLimited Visible for every connected user
 	VisibleTypeLimited
 
-	// VisibleTypePrivate Visible only for organization's members
+	// VisibleTypePrivate Visible only for self or admin user
 	VisibleTypePrivate
 )
 
-// VisibilityModes is a map of org Visibility types
+// VisibilityModes is a map of Visibility types
 var VisibilityModes = map[string]VisibleType{
 	"public":  VisibleTypePublic,
 	"limited": VisibleTypeLimited,
@@ -55,5 +54,5 @@ func ExtractKeysFromMapString(in map[string]VisibleType) (keys []string) {
 	for k := range in {
 		keys = append(keys, k)
 	}
-	return
+	return keys
 }
