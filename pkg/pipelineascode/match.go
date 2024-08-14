@@ -13,7 +13,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/secrets"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/templates"
@@ -155,7 +154,7 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		errmsg := err.Error()
 		errmsg = strings.ReplaceAll(errmsg, " error converting YAML to JSON: yaml:", "")
 		errmsg = strings.ReplaceAll(errmsg, "unmarshalling", "while parsing the")
-		return nil, fmt.Errorf(errmsg)
+		return nil, fmt.Errorf("%s", errmsg)
 	}
 	if err != nil || rawTemplates == "" {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
@@ -170,7 +169,7 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 	// "raw" pipelinerun string
 	if msg, needUpdate := p.checkNeedUpdate(rawTemplates); needUpdate {
 		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryNeedUpdate", msg)
-		return nil, fmt.Errorf(msg)
+		return nil, fmt.Errorf("%s", msg)
 	}
 
 	// This is for bitbucket

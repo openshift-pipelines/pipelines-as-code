@@ -14,16 +14,16 @@ import (
 func (r *Reconciler) cleanupPipelineRuns(ctx context.Context, logger *zap.SugaredLogger, pacInfo *info.PacOpts, repo *v1alpha1.Repository, pr *tektonv1.PipelineRun) error {
 	keepMaxPipeline, ok := pr.Annotations[keys.MaxKeepRuns]
 	if ok {
-		max, err := strconv.Atoi(keepMaxPipeline)
+		maxVal, err := strconv.Atoi(keepMaxPipeline)
 		if err != nil {
 			return err
 		}
 		// if annotation value is more than max limit defined in config then use from config
-		if pacInfo.MaxKeepRunsUpperLimit > 0 && max > pacInfo.MaxKeepRunsUpperLimit {
-			logger.Infof("max-keep-run value in annotation (%v) is more than max-keep-run-upper-limit (%v), so using upper-limit", max, pacInfo.MaxKeepRunsUpperLimit)
-			max = pacInfo.MaxKeepRunsUpperLimit
+		if pacInfo.MaxKeepRunsUpperLimit > 0 && maxVal > pacInfo.MaxKeepRunsUpperLimit {
+			logger.Infof("max-keep-run value in annotation (%v) is more than max-keep-run-upper-limit (%v), so using upper-limit", maxVal, pacInfo.MaxKeepRunsUpperLimit)
+			maxVal = pacInfo.MaxKeepRunsUpperLimit
 		}
-		err = r.kinteract.CleanupPipelines(ctx, logger, repo, pr, max)
+		err = r.kinteract.CleanupPipelines(ctx, logger, repo, pr, maxVal)
 		if err != nil {
 			return err
 		}
@@ -32,9 +32,9 @@ func (r *Reconciler) cleanupPipelineRuns(ctx context.Context, logger *zap.Sugare
 
 	// if annotation is not defined but default max-keep-run value is defined then use that
 	if pacInfo.DefaultMaxKeepRuns > 0 {
-		max := pacInfo.DefaultMaxKeepRuns
+		maxVal := pacInfo.DefaultMaxKeepRuns
 
-		err := r.kinteract.CleanupPipelines(ctx, logger, repo, pr, max)
+		err := r.kinteract.CleanupPipelines(ctx, logger, repo, pr, maxVal)
 		if err != nil {
 			return err
 		}
