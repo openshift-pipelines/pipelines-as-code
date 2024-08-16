@@ -1,6 +1,5 @@
 // Copyright 2016 The Gogs Authors. All rights reserved.
-// Use of this source code is governed by a MIT-style
-// license that can be found in the LICENSE file.
+// SPDX-License-Identifier: MIT
 
 package structs
 
@@ -17,6 +16,10 @@ type Milestone struct {
 	OpenIssues   int       `json:"open_issues"`
 	ClosedIssues int       `json:"closed_issues"`
 	// swagger:strfmt date-time
+	Created time.Time `json:"created_at"`
+	// swagger:strfmt date-time
+	Updated *time.Time `json:"updated_at"`
+	// swagger:strfmt date-time
 	Closed *time.Time `json:"closed_at"`
 	// swagger:strfmt date-time
 	Deadline *time.Time `json:"due_on"`
@@ -28,6 +31,8 @@ type CreateMilestoneOption struct {
 	Description string `json:"description"`
 	// swagger:strfmt date-time
 	Deadline *time.Time `json:"due_on"`
+	// enum: open,closed
+	State string `json:"state"`
 }
 
 // EditMilestoneOption options for editing a milestone

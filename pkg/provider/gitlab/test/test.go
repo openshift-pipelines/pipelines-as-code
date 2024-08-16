@@ -63,14 +63,14 @@ func MuxListTektonDir(_ *testing.T, mux *http.ServeMux, pid int, ref, prs string
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/tree", pid), func(rw http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("ref") == ref {
 			fmt.Fprintf(rw, `[
-			{"name": "pac.yaml", "path": ".tekton/subtree/pr.yaml"},
-			{"name": "random.yaml", "path": ".tekton/random.yaml"}
+			{"name": "pac.yaml", "path": "pr.yaml"},
+			{"name": "random.yaml", "path": "random.yaml"}
 			]`)
 		}
 	})
 
-	MuxGetFile(mux, pid, ".tekton/subtree/pr.yaml", prs)
-	MuxGetFile(mux, pid, ".tekton/random.yaml", `foo:bar`)
+	MuxGetFile(mux, pid, "pr.yaml", prs)
+	MuxGetFile(mux, pid, "random.yaml", `foo:bar`)
 }
 
 func MuxDiscussionsNote(mux *http.ServeMux, pid, mrID int, author string, authorID int, notecontent string) {

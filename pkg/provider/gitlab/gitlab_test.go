@@ -314,7 +314,7 @@ func TestGetTektonDir(t *testing.T) {
 				sourceProjectID: 10,
 			},
 			prcontent: "bad:\n- yaml\nfoo",
-			wantErr:   "error unmarshalling yaml file .tekton/subtree/pr.yaml: yaml: line 4: could not find expected ':'",
+			wantErr:   "error unmarshalling yaml file pr.yaml: yaml: line 4: could not find expected ':'",
 		},
 		{
 			name:      "list tekton dir",
@@ -420,7 +420,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 		Client:          client,
 	}
 	thelp.MuxListTektonDir(t, mux, v.sourceProjectID, event.HeadBranch, content)
-	got, err := v.GetFileInsideRepo(ctx, event, ".tekton/subtree/pr.yaml", "")
+	got, err := v.GetFileInsideRepo(ctx, event, "pr.yaml", "")
 	assert.NilError(t, err)
 	assert.Equal(t, content, got)
 

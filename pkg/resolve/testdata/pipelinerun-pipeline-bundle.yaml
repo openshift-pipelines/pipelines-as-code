@@ -5,5 +5,9 @@ metadata:
   name: pr-bundle
 spec:
   pipelineRef:
-    bundle: quay.io/hello/moto
-    name: pipeline-test1
+    resolver: bundles
+    params:
+      - name: bundle
+        value: quay.io/hello/moto
+      - name: name
+        value: pipeline-test1
