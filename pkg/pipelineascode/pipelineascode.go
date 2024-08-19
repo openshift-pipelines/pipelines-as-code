@@ -88,6 +88,13 @@ func (p *PacRun) Run(ctx context.Context) error {
 		if match.Repo == nil {
 			match.Repo = repo
 		}
+
+		// After matchRepo func fetched repo from k8s api repo is updated and
+		// need to merge global repo again
+		if p.globalRepo != nil {
+			match.Repo.Spec.Merge(p.globalRepo.Spec)
+		}
+
 		wg.Add(1)
 
 		go func(match matcher.Match, i int) {

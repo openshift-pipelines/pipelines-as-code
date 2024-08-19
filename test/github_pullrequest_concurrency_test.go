@@ -7,15 +7,22 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/go-github/v61/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/tektoncd/pipeline/pkg/names"
@@ -49,6 +56,33 @@ func TestGithubSecondPullRequestConcurrency1by1WithError(t *testing.T) {
 	})
 }
 
+func TestGithubGlobalRepoConcurrencyLimit(t *testing.T) {
+	label := "Github PullRequest Concurrent Two at a Time Set by Global Repo"
+	// in this test we don't set `concurrency_limit` in local repo as our goal
+	// here is to verify `concurrency_limit` for global repository.
+	localRepoMaxConcurrentRuns := -1
+	testGlobalRepoConcurrency(t, label, localRepoMaxConcurrentRuns)
+}
+
+func TestGithubGlobalAndLocalRepoConcurrencyLimit(t *testing.T) {
+	label := "Github PullRequest Concurrent Three at a Time Set by Local Repo"
+	testGlobalRepoConcurrency(t, label /* localRepoMaxConcurrentRuns */, 3)
+}
+
+func testGlobalRepoConcurrency(t *testing.T, label string, localRepoMaxConcurrentRuns int) {
+	ctx := context.Background()
+	// create global repo
+	ctx, globalNS, runcnx, err := createGlobalRepo(ctx)
+	assert.NilError(t, err)
+	defer (func() {
+		err = cleanUpGlobalRepo(runcnx, globalNS)
+		assert.NilError(t, err)
+	})()
+
+	numberOfPipelineRuns := 10
+	testGithubConcurrency(ctx, t, localRepoMaxConcurrentRuns, numberOfPipelineRuns, label, false, map[string]string{})
+}
+
 func testGithubConcurrency(ctx context.Context, t *testing.T, maxNumberOfConcurrentPipelineRuns, numberOfPipelineRuns int, label string, checkOrdering bool, yamlFiles map[string]string) {
 	pipelineRunFileNamePrefix := "prlongrunnning-"
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
@@ -65,7 +99,9 @@ func testGithubConcurrency(ctx context.Context, t *testing.T, maxNumberOfConcurr
 	}
 
 	// set concurrency
-	opts.Concurrency = maxNumberOfConcurrentPipelineRuns
+	if maxNumberOfConcurrentPipelineRuns >= 0 {
+		opts.Concurrency = maxNumberOfConcurrentPipelineRuns
+	}
 
 	err = tgithub.CreateCRD(ctx, t, repoinfo, runcnx, opts, targetNS)
 	assert.NilError(t, err)
@@ -154,4 +190,42 @@ func testGithubConcurrency(ctx context.Context, t *testing.T, maxNumberOfConcurr
 			assert.Assert(t, strings.HasPrefix(prActualName, prExpectedName), "prActualName: %s does not start with expected prefix %s, was is ordered properly at start time", prActualName, prExpectedName)
 		}
 	}
+}
+
+func createGlobalRepo(ctx context.Context) (context.Context, string, *params.Run, error) {
+	runcnx := params.New()
+	if err := runcnx.Clients.NewClients(ctx, &runcnx.Info); err != nil {
+		return ctx, "", nil, err
+	}
+
+	ctx, err := cctx.GetControllerCtxInfo(ctx, runcnx)
+	if err != nil {
+		return ctx, "", nil, err
+	}
+
+	globalNS := info.GetNS(ctx)
+
+	repo := &v1alpha1.Repository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: info.DefaultGlobalRepoName,
+		},
+		Spec: v1alpha1.RepositorySpec{
+			ConcurrencyLimit: github.Int(2),
+		},
+	}
+
+	if err := repository.CreateRepo(ctx, globalNS, runcnx, repo); err != nil {
+		return ctx, "", nil, err
+	}
+
+	return ctx, globalNS, runcnx, nil
+}
+
+func cleanUpGlobalRepo(runcnx *params.Run, globalNS string) error {
+	if os.Getenv("TEST_NOCLEANUP") != "true" {
+		runcnx.Clients.Log.Infof("Cleaning up global repo %s in %s", info.DefaultGlobalRepoName, globalNS)
+		return runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(globalNS).Delete(
+			context.Background(), info.DefaultGlobalRepoName, metav1.DeleteOptions{})
+	}
+	return nil
 }
