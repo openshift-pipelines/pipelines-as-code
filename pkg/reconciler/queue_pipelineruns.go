@@ -34,6 +34,12 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 		return fmt.Errorf("updateError: %w", err)
 	}
 
+	// merge local repo with global repo here in order to derive settings from global
+	// for further concurrency and other operations.
+	if r.globalRepo, err = r.repoLister.Repositories(r.run.Info.Kube.Namespace).Get(r.run.Info.Controller.GlobalRepository); err == nil && r.globalRepo != nil {
+		repo.Spec.Merge(r.globalRepo.Spec)
+	}
+
 	// if concurrency was set and later removed or changed to zero
 	// then remove pipelineRun from Queue and update pending state to running
 	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit == 0 {
