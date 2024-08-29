@@ -54,6 +54,7 @@ spec:
               containerPort: 9090
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
