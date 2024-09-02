@@ -66,7 +66,7 @@ func getAnnotationValues(annotation string) ([]string, error) {
 	annotation = strings.TrimSpace(annotation)
 	match := re.MatchString(annotation)
 	if !match {
-		return nil, fmt.Errorf("annotations in pipeline are in wrong format: %s", annotation)
+		return nil, fmt.Errorf("annotations value have the wrong format: %s", annotation)
 	}
 
 	// if it's not an array then it would be a single string

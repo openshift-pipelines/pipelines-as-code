@@ -190,7 +190,7 @@ func TestPipelineRunRemoteTaskNotPacAnnotations(t *testing.T) {
 
 func TestPipelineRunRemoteTaskBadPacAnnotations(t *testing.T) {
 	_, _, err := readTDfile(t, "pipelinerun-pipeline-task-bad-pac-annotation", false, true)
-	assert.ErrorContains(t, err, "annotations in pipeline are in wrong format")
+	assert.ErrorContains(t, err, "error getting remote task from pipelinerun annotations: annotations value have the wrong format")
 }
 
 func TestNotTektonDocumentIgnore(t *testing.T) {
