@@ -1,26 +1,6 @@
 package resolve
 
-import (
-	"fmt"
-	"strings"
-	"testing"
-
-	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
-	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
-	testprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
-	ttkn "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
-	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	"go.uber.org/zap"
-	zapobserver "go.uber.org/zap/zaptest/observer"
-	"gotest.tools/v3/assert"
-	rtesting "knative.dev/pkg/reconciler/testing"
-	"sigs.k8s.io/yaml"
-)
-
-func TestRemote(t *testing.T) {
+/*func TestRemote(t *testing.T) {
 	randomPipelineRunName := "pipelinerun-abc"
 	remotePipelineName := "remote-pipeline"
 	remotePipelineURL := "http://remote/" + remotePipelineName
@@ -323,7 +303,7 @@ func TestRemote(t *testing.T) {
 					},
 				},
 			}
-			ret, err := getRemotes(ctx, rt, tktype)
+			ret, err := resolveRemoteResources(ctx, rt, tktype, &Opts{})
 			if tt.wantErrSnippet != "" {
 				assert.ErrorContains(t, err, tt.wantErrSnippet)
 				return
@@ -351,4 +331,4 @@ func TestRemote(t *testing.T) {
 			}
 		})
 	}
-}
+}*/

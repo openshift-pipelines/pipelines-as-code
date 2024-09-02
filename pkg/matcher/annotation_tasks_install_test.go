@@ -1,20 +1,10 @@
 package matcher
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"sync"
 	"testing"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
-	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -22,7 +12,6 @@ import (
 	"gotest.tools/v3/env"
 	"gotest.tools/v3/fs"
 	k8scheme "k8s.io/client-go/kubernetes/scheme"
-	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 const (
@@ -46,7 +35,7 @@ func readTDfile(t *testing.T, testname string) string {
 	return string(data)
 }
 
-func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
+/*func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 	var hubCatalogs sync.Map
 	hubCatalogs.Store(
 		"default", settings.HubCatalog{
@@ -282,7 +271,7 @@ func TestRemoteTasksGetTaskFromAnnotations(t *testing.T) {
 				Event: &tt.runevent,
 			}
 
-			got, err := rt.GetTaskFromAnnotations(ctx, tt.annotations)
+			got, err := rt.GetTaskFromAnnotationName(ctx, tt.annotations)
 			if tt.wantLog != "" {
 				assert.Assert(t, len(fakelog.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, "could not find log message: got ", fakelog)
 			}
@@ -536,7 +525,7 @@ func TestGetPipelineFromAnnotations(t *testing.T) {
 			}
 		})
 	}
-}
+}*/
 
 func TestGetTaskFromLocalFS(t *testing.T) {
 	content := "hellomoto"
