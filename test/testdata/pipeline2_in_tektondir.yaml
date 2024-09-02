@@ -1,0 +1,19 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline2-in-tekton-dir
+spec:
+  tasks:
+    - name: task-spec
+      taskSpec:
+        steps:
+          - name: task-spec
+            image: registry.access.redhat.com/ubi9/ubi-micro
+            script: |
+              echo "Hello from taskSpec"
+              exit 0
+
+    - name: task-no-annotation
+      taskRef:
+        name: task-no-annotation

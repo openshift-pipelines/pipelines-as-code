@@ -181,60 +181,54 @@ func grabValuesFromAnnotations(annotations map[string]string, annotationReg stri
 	return ret, nil
 }
 
-// GetTaskFromAnnotations Get task remotely if they are on Annotations.
-func (rt RemoteTasks) GetTaskFromAnnotations(ctx context.Context, annotations map[string]string) ([]*tektonv1.Task, error) {
-	ret := []*tektonv1.Task{}
-	tasks, err := grabValuesFromAnnotations(annotations, taskAnnotationsRegexp)
-	if err != nil {
-		return nil, err
-	}
-	for _, v := range tasks {
-		data, err := rt.getRemote(ctx, v, true, "task")
-		if err != nil {
-			return nil, fmt.Errorf("error getting remote task \"%s\": %w", v, err)
-		}
-		if data == "" {
-			return nil, fmt.Errorf("could not get remote task \"%s\": returning empty", v)
-		}
-
-		task, err := rt.convertTotask(ctx, v, data)
-		if err != nil {
-			return nil, err
-		}
-		ret = append(ret, task)
-	}
-	return ret, nil
+func GrabTasksFromAnnotations(annotations map[string]string) ([]string, error) {
+	return grabValuesFromAnnotations(annotations, taskAnnotationsRegexp)
 }
 
-// GetPipelineFromAnnotations Get pipeline remotely if they are on Annotations
-// TODO: merge in a generic between the two.
-func (rt RemoteTasks) GetPipelineFromAnnotations(ctx context.Context, annotations map[string]string) (*tektonv1.Pipeline, error) {
-	ret := []*tektonv1.Pipeline{}
+func GrabPipelineFromAnnotations(annotations map[string]string) (string, error) {
 	pipelinesAnnotation, err := grabValuesFromAnnotations(annotations, pipelineAnnotationsRegexp)
+	if err != nil {
+		return "", err
+	}
+	if len(pipelinesAnnotation) > 1 {
+		return "", fmt.Errorf("only one pipeline is allowed on remote resolution, we have received multiple of them: %+v", pipelinesAnnotation)
+	}
+	if len(pipelinesAnnotation) == 0 {
+		return "", nil
+	}
+	return pipelinesAnnotation[0], nil
+}
+
+func (rt RemoteTasks) GetTaskFromAnnotationName(ctx context.Context, name string) (*tektonv1.Task, error) {
+	data, err := rt.getRemote(ctx, name, true, "task")
+	if err != nil {
+		return nil, fmt.Errorf("error getting remote task \"%s\": %w", name, err)
+	}
+	if data == "" {
+		return nil, fmt.Errorf("could not get remote task \"%s\": returning empty", name)
+	}
+
+	task, err := rt.convertTotask(ctx, name, data)
 	if err != nil {
 		return nil, err
 	}
-	if len(pipelinesAnnotation) > 1 {
-		return nil, fmt.Errorf("only one pipeline is allowed on remote resolution, we have received multiple of them: %+v", pipelinesAnnotation)
+	return task, nil
+}
+
+func (rt RemoteTasks) GetPipelineFromAnnotationName(ctx context.Context, name string) (*tektonv1.Pipeline, error) {
+	data, err := rt.getRemote(ctx, name, true, "pipeline")
+	if err != nil {
+		return nil, fmt.Errorf("error getting remote pipeline \"%s\": %w", name, err)
 	}
-	if len(pipelinesAnnotation) == 0 {
-		return nil, nil
+	if data == "" {
+		return nil, fmt.Errorf("could not get remote pipeline \"%s\": returning empty", name)
 	}
-	for _, v := range pipelinesAnnotation {
-		data, err := rt.getRemote(ctx, v, true, "pipeline")
-		if err != nil {
-			return nil, fmt.Errorf("error getting remote pipeline %s: %w", v, err)
-		}
-		if data == "" {
-			return nil, fmt.Errorf("could not get remote pipeline \"%s\": returning empty", v)
-		}
-		pipeline, err := rt.convertToPipeline(ctx, v, data)
-		if err != nil {
-			return nil, err
-		}
-		ret = append(ret, pipeline)
+
+	pipeline, err := rt.convertToPipeline(ctx, name, data)
+	if err != nil {
+		return nil, err
 	}
-	return ret[0], nil
+	return pipeline, nil
 }
 
 // getFileFromLocalFS get task locally if file exist

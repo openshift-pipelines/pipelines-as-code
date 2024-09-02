@@ -65,6 +65,21 @@ func TestGiteaPullRequestTaskAnnotations(t *testing.T) {
 	defer f()
 }
 
+func TestGiteaPullRequestTaskAnnotationsSameTaskDifferentVersion(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		Regexp:      successRegexp,
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr1.yaml": "testdata/pipelinerun-with-yq-3.yaml",
+			".tekton/pr2.yaml": "testdata/pipelinerun-with-yq-4.yaml",
+		},
+		CheckForNumberStatus: 2,
+		CheckForStatus:       "success",
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+}
+
 func TestGiteaUseDisplayName(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		Regexp:      regexp.MustCompile(`.*The Task name is Task.*`),
@@ -88,6 +103,27 @@ func TestGiteaPullRequestPipelineAnnotations(t *testing.T) {
 		TargetEvent: triggertype.PullRequest.String(),
 		YAMLFiles: map[string]string{
 			".tekton/pr.yaml": "testdata/pipelinerun_remote_pipeline_annotations.yaml",
+		},
+		ExpectEvents:   false,
+		CheckForStatus: "success",
+		ExtraArgs: map[string]string{
+			"RemoteTaskURL":  options.RemoteTaskURL,
+			"RemoteTaskName": options.RemoteTaskName,
+		},
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+}
+
+func TestGiteaPullRequestResolvePipelineOnlyAssociatedWithPipelineRunFilterted(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		Regexp:      successRegexp,
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr1.yaml":       "testdata/pipelinerun1_remote_task_annotations.yaml",
+			".tekton/pr2.yaml":       "testdata/pipelinerun2_remote_task_annotations.yaml",
+			".tekton/pipeline1.yaml": "testdata/pipeline1_in_tektondir.yaml",
+			".tekton/pipeline2.yaml": "testdata/pipeline2_in_tektondir.yaml",
 		},
 		ExpectEvents:   false,
 		CheckForStatus: "success",
@@ -622,6 +658,26 @@ func TestGiteaBadLinkOfTask(t *testing.T) {
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
 	errre := regexp.MustCompile("There was an error starting the PipelineRun")
+	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", github.Int64(20)))
+}
+
+// TestGiteaPipelineRunWithSameName checks that we fail properly with the error from the
+// tekton pipelines controller. We check on the UI interface that we display
+// and inside the pac controller.
+func TestGiteaPipelineRunWithSameName(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr1.yaml": "testdata/failures/pipelinerun_same_name_on_pull.yaml",
+			".tekton/pr2.yaml": "testdata/failures/pipelinerun_same_name_on_push.yaml",
+		},
+		CheckForStatus: "failure",
+		ExpectEvents:   true,
+		Regexp:         regexp.MustCompile(".*found multiple pipelinerun in .tekton with the same name*"),
+	}
+	ctx, f := tgitea.TestPR(t, topts)
+	defer f()
+	errre := regexp.MustCompile("found multiple pipelinerun in .tekton with the same name")
 	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", github.Int64(20)))
 }
 
