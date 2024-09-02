@@ -1,0 +1,63 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: yq-pipeline-run-4
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-target-branch: "[\\ .TargetBranch //]"
+    pipelinesascode.tekton.dev/on-event: "[\\ .TargetEvent //]"
+    pipelinesascode.tekton.dev/task: "git-clone"
+    pipelinesascode.tekton.dev/task-1: "[yq:0.4]"
+spec:
+  pipelineSpec:
+    params:
+      - name: new-image-sha
+        description: example of a value to use
+        default: "123"
+    workspaces:
+      - name: source
+    tasks:
+      - name: fetch-repository
+        taskRef:
+          name: git-clone
+        workspaces:
+          - name: output
+            workspace: source
+        params:
+          - name: url
+            value: https://github.com/GijsvanDulmen/yq-task-test
+          - name: revision
+            value: "main"
+          - name: subdirectory
+            value: ""
+          - name: deleteExisting
+            value: "true"
+      - name: yq-replace
+        taskRef:
+          name: yq
+        runAfter:
+          - fetch-repository
+        workspaces:
+          - name: source
+            workspace: source
+        params:
+          - name: SCRIPT
+            value: |
+              for var in "./helm/values.yaml" "./helm/values-development.yaml"
+                do
+                    /usr/bin/yq eval -i '.image="012345my-new-image-sha"' "$var"
+                done
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi
+  taskRunSpecs:
+    - pipelineTaskName: yq-replace
+      taskPodTemplate:
+        securityContext:
+          runAsUser: 0
