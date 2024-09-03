@@ -134,6 +134,21 @@ func TestGiteaBadYaml(t *testing.T) {
 		"pipelinerun.*has failed.*expected exactly one, got neither: spec.pipelineRef, spec.pipelineSpec"), 10, "controller", github.Int64(20)))
 }
 
+// TestGiteaInvalidSpecValues tests invalid field values of a PipelinRun and ensures that these
+// validation errors are reported on UI.
+func TestGiteaInvalidSpecValues(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent:    triggertype.PullRequest.String(),
+		YAMLFiles:      map[string]string{".tekton/pr-bad-format.yaml": "testdata/failures/invalid-timeouts-values-pipelinerun.yaml"},
+		CheckForStatus: "failure",
+		ExpectEvents:   true,
+		Regexp:         regexp.MustCompile(options.InvalidYamlErrorPattern),
+	}
+
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+}
+
 // don't test concurrency limit here, just parallel pipeline.
 func TestGiteaMultiplesParallelPipelines(t *testing.T) {
 	maxParallel := 10
