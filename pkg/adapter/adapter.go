@@ -30,6 +30,11 @@ import (
 
 const globalAdapterPort = "8080"
 
+// For incoming webhook requests and GitHub Apps with many installations the handler takes long
+// e.g GitHub App with ~400 installations, it takes ~180s. For OpenShift deployments this also
+// requires matching timeout on the pipelines-as-code-controller route (default is 30s).
+const httpTimeoutHandler = 600 * time.Second
+
 type envConfig struct {
 	adapter.EnvConfig
 }
@@ -87,7 +92,7 @@ func (l *listener) Start(ctx context.Context) error {
 	srv := &http.Server{
 		Addr: ":" + adapterPort,
 		Handler: http.TimeoutHandler(mux,
-			10*time.Second, "Listener Timeout!\n"),
+			httpTimeoutHandler, "Listener Timeout!\n"),
 	}
 
 	enabled, tlsCertFile, tlsKeyFile := l.isTLSEnabled()
