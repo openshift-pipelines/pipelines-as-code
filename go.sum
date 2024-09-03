@@ -1155,8 +1155,8 @@ github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXl
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/stvp/go-udp-testing v0.0.0-20201019212854-469649b16807/go.mod h1:7jxmlfBCDBXRzr0eAQJ48XC1hBu1np4CS5+cHEYfwpc=
-github.com/tektoncd/pipeline v0.62.1 h1:l+EvRCrLqTHuHwas+C4bRP6jzln8E1J9I7tnfwmWfJQ=
-github.com/tektoncd/pipeline v0.62.1/go.mod h1:cYPH4n3X8t39arNMhgyU7swyv3hVeWToz1yYDRzTLT8=
+github.com/tektoncd/pipeline v0.62.3 h1:hR6UKjwzChW+MNG41yjfTKiVW9xet8jbJS59tsIY7bc=
+github.com/tektoncd/pipeline v0.62.3/go.mod h1:cYPH4n3X8t39arNMhgyU7swyv3hVeWToz1yYDRzTLT8=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/xanzy/go-gitlab v0.101.0 h1:qRgvX8DNE19zRugB6rnnZMZ5ubhITSKPLNWEyc6UIPg=
