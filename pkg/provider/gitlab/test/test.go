@@ -59,6 +59,13 @@ func MuxAllowUserID(mux *http.ServeMux, projectID, userID int) {
 	})
 }
 
+func MuxDisallowUserID(mux *http.ServeMux, projectID, userID int) {
+	path := fmt.Sprintf("/projects/%d/members/all/%d", projectID, userID)
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(rw, `{}`)
+	})
+}
+
 func MuxListTektonDir(_ *testing.T, mux *http.ServeMux, pid int, ref, prs string) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/tree", pid), func(rw http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("ref") == ref {
@@ -71,6 +78,13 @@ func MuxListTektonDir(_ *testing.T, mux *http.ServeMux, pid int, ref, prs string
 
 	MuxGetFile(mux, pid, "pr.yaml", prs)
 	MuxGetFile(mux, pid, "random.yaml", `foo:bar`)
+}
+
+func MuxDiscussionsNoteEmpty(mux *http.ServeMux, pid, mrID int) {
+	path := fmt.Sprintf("/projects/%d/merge_requests/%d/discussions", pid, mrID)
+	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(rw, `[]`)
+	})
 }
 
 func MuxDiscussionsNote(mux *http.ServeMux, pid, mrID int, author string, authorID int, notecontent string) {

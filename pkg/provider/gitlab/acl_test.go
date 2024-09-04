@@ -104,6 +104,8 @@ func TestIsAllowed(t *testing.T) {
 				v.Client = client
 				if tt.allowMemberID != 0 {
 					thelp.MuxAllowUserID(mux, tt.fields.targetProjectID, tt.allowMemberID)
+				} else {
+					thelp.MuxDisallowUserID(mux, tt.fields.targetProjectID, tt.allowMemberID)
 				}
 				if tt.ownerFile != "" {
 					thelp.MuxGetFile(mux, tt.fields.targetProjectID, "OWNERS", tt.ownerFile)
@@ -111,6 +113,8 @@ func TestIsAllowed(t *testing.T) {
 				if tt.commentContent != "" {
 					thelp.MuxDiscussionsNote(mux, tt.fields.targetProjectID,
 						tt.args.event.PullRequestNumber, tt.commentAuthor, tt.commentAuthorID, tt.commentContent)
+				} else {
+					thelp.MuxDiscussionsNoteEmpty(mux, tt.fields.targetProjectID, tt.args.event.PullRequestNumber)
 				}
 
 				defer tearDown()
