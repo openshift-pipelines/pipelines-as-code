@@ -190,6 +190,7 @@ swap:
   re-direct: redirect
   re-edit: reedit
   re-examine: reexamine
+  re-register: reregister
   re-synchronize: resynchronize
   recreate: re-create
   reenable: re-enable

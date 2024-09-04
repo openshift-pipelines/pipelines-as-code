@@ -4,15 +4,13 @@ ignorecase: false
 level: suggestion
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/termssuggestions/
 message: "Depending on the context, consider using '%s' rather than '%s'."
+scope: sentence
 action:
   name: replace
 swap:
-  "(?<!,| in| on| at| to| for| from| of| with| without| against) which": ", which| that"
+  "(?<!, | in | on | at | to | for | from | of | with | without | against )which": "that|, which"
+  ", that": "that|, which"
   "(?<!.-)jar": compress|archive
-  "(?<![Bb]y |not |are |to |about |[Ww]hen )using": by using|that uses
-  ", that": ", which| that"
-  "[Bb]are metal(?= clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| machines?| media| nodes?| provisioning| servers?| workers?)": bare-metal
-  "[Bb]are-metal(?! clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| machines?| media| nodes?| provisioning| servers?| workers?)": bare metal
   "[Nn]avigate": click|select|browse|go to
   "bottom(?:-)?left": lower left|lower-left
   "bottom(?:-)?right": lower right|lower-right
@@ -30,11 +28,11 @@ swap:
   bottom left: lower left
   bottom right: lower right
   bugfix: bug fix
-  can not: cannot
   choose: select
   componentization: component-based development|component model|component architecture|shared components
   componentize: develop components|divide into components|re-engineer into reusable software components
   consumes: uses
+  distro: distribution
   drag and drop: drag
   executable(?! program| routine| files?): executable program
   frontend: front end|front-end
