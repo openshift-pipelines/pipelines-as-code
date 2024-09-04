@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"code.gitea.io/sdk/gitea"
-	"github.com/google/go-github/v61/github"
+	"github.com/google/go-github/v64/github"
 	pacapi "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tknpacdelete "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/deleterepo"

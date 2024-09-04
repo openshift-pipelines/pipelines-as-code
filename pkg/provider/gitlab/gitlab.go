@@ -264,7 +264,7 @@ func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, runevent *info
 	for _, value := range objects {
 		if strings.HasSuffix(value.Name, ".yaml") ||
 			strings.HasSuffix(value.Name, ".yml") {
-			data, err := v.getObject(value.Path, runevent.HeadBranch, v.sourceProjectID)
+			data, _, err := v.getObject(value.Path, runevent.HeadBranch, v.sourceProjectID)
 			if err != nil {
 				return "", err
 			}
@@ -283,22 +283,22 @@ func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, runevent *info
 	return allTemplates, nil
 }
 
-func (v *Provider) getObject(fname, branch string, pid int) ([]byte, error) {
+func (v *Provider) getObject(fname, branch string, pid int) ([]byte, *gitlab.Response, error) {
 	opt := &gitlab.GetRawFileOptions{
 		Ref: gitlab.Ptr(branch),
 	}
 	file, resp, err := v.Client.RepositoryFiles.GetRawFile(pid, fname, opt)
 	if err != nil {
-		return []byte{}, fmt.Errorf("failed to get filename from api %s dir: %w", fname, err)
+		return []byte{}, resp, fmt.Errorf("failed to get filename from api %s dir: %w", fname, err)
 	}
 	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
-		return []byte{}, nil
+		return []byte{}, resp, nil
 	}
-	return file, nil
+	return file, resp, nil
 }
 
 func (v *Provider) GetFileInsideRepo(_ context.Context, runevent *info.Event, path, _ string) (string, error) {
-	getobj, err := v.getObject(path, runevent.HeadBranch, v.sourceProjectID)
+	getobj, _, err := v.getObject(path, runevent.HeadBranch, v.sourceProjectID)
 	if err != nil {
 		return "", err
 	}
@@ -313,7 +313,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, runevent *info.Event) error 
 	// if we don't have a SHA (ie: incoming-webhook) then get it from the branch
 	// and populate in the runevent.
 	if runevent.SHA == "" && runevent.HeadBranch != "" {
-		branchinfo, _, err := v.Client.Commits.GetCommit(v.sourceProjectID, runevent.HeadBranch)
+		branchinfo, _, err := v.Client.Commits.GetCommit(v.sourceProjectID, runevent.HeadBranch, &gitlab.GetCommitOptions{})
 		if err != nil {
 			return err
 		}

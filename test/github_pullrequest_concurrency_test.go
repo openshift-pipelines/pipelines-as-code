@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v61/github"
+	"github.com/google/go-github/v64/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"

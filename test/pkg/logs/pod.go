@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/google/go-github/v61/github"
+	"github.com/google/go-github/v64/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

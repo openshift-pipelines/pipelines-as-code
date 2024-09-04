@@ -3,7 +3,7 @@ package gitlab
 import (
 	"context"
 	"fmt"
-	"strings"
+	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -13,13 +13,13 @@ import (
 // IsAllowedOwnersFile get the owner files (OWNERS, OWNERS_ALIASES) from main branch
 // and check if we have explicitly allowed the user in there.
 func (v *Provider) IsAllowedOwnersFile(_ context.Context, event *info.Event) (bool, error) {
-	ownerContent, _ := v.getObject("OWNERS", event.DefaultBranch, v.targetProjectID)
+	ownerContent, _, _ := v.getObject("OWNERS", event.DefaultBranch, v.targetProjectID)
 	if string(ownerContent) == "" {
 		return false, nil
 	}
 	// OWNERS_ALIASES file existence is not required, if we get "not found" continue
-	ownerAliasesContent, err := v.getObject("OWNERS_ALIASES", event.DefaultBranch, v.targetProjectID)
-	if !strings.Contains(err.Error(), "not found") {
+	ownerAliasesContent, resp, err := v.getObject("OWNERS_ALIASES", event.DefaultBranch, v.targetProjectID)
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
 		return false, err
 	}
 	allowed, _ := acl.UserInOwnerFile(string(ownerContent), string(ownerAliasesContent), event.Sender)
@@ -28,7 +28,7 @@ func (v *Provider) IsAllowedOwnersFile(_ context.Context, event *info.Event) (bo
 
 func (v *Provider) checkMembership(ctx context.Context, event *info.Event, userid int) bool {
 	member, _, err := v.Client.ProjectMembers.GetInheritedProjectMember(v.targetProjectID, userid)
-	if err == nil && member.ID == userid {
+	if err == nil && member.ID != 0 && member.ID == userid {
 		return true
 	}
 
@@ -40,7 +40,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 	var nextPage int
 	opt := &gitlab.ListMergeRequestDiscussionsOptions{Page: page}
 	discussions, resp, err := v.Client.Discussions.ListMergeRequestDiscussions(v.targetProjectID, event.PullRequestNumber, opt)
-	if err != nil {
+	if err != nil || len(discussions) == 0 {
 		return false, err
 	}
 	if resp.NextPage != 0 {
