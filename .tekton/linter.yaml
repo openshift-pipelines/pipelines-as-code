@@ -41,7 +41,7 @@ spec:
             - name: source
           steps:
             - name: gen-yaml
-              image: registry.access.redhat.com/ubi9/python-311
+              image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
               script: |
                 set -x
@@ -63,7 +63,7 @@ spec:
             - name: source
           steps:
             - name: codespell
-              image: registry.access.redhat.com/ubi9/python-311
+              image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
               script: |
                 pip3 install codespell
@@ -96,7 +96,7 @@ spec:
             - name: source
           steps:
             - name: gitlint
-              image: registry.access.redhat.com/ubi9/python-311
+              image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
               script: |
                 git config --global --add safe.directory $(workspaces.source.path)
@@ -167,7 +167,7 @@ spec:
             - name: source
           steps:
             - name: vale-lint
-              image: registry.access.redhat.com/ubi9/python-311
+              image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
@@ -192,7 +192,7 @@ spec:
             - name: source
           steps:
             - name: goreleaser-check
-              image: registry.access.redhat.com/ubi9/python-311
+              image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
               env:
                 - name: HUB_TOKEN
