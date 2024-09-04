@@ -23,16 +23,16 @@ swap:
   "DM(?![ -]Multipath)|directory manager": Directory Manager
   "JBoss Broker|Red Hat Broker|The AMQ Broker": AMQ Broker
   "JBoss Console|Red Hat Console": AMQ Console
-  "Kernel(?!-based Virtual Machine| Module Management)": kernel
+  "Kernel(?!-based Virtual Machine| Module Management| parameters| arguments| packet filtering)": kernel
   "OCM|(?<!Red Hat OpenShift )Cluster Manager|(?<!Red Hat )OpenShift Cluster Manager|the OpenShift Cluster Manager": Red Hat OpenShift Cluster Manager
   "OD": Red Hat OpenShift Dedicated
   "sub version|(?<!Apache )Subversion": sub-version
   '(?<!\.)IM': instant message
-  '(?<!\.)yaml|Yaml': YAML
+  '(?<!\.)yaml(?!-patch)|Yaml': YAML
   '(?<!JBoss )EAP|(?<!Red Hat )JBoss(?!\sCommunity|\sBroker|\sClients|\sConsole|\sAMQ|\sData\sGrid|\sBRMS|\sBPMS|\sEnterprise\sApplication\sPlatform|\.org|\sInterconnect|\sEAP|\sBPM\sSuite)': JBoss EAP
   '(?<!Realtime )Decision\sServer': Realtime Decision Server
   '[nN]odejs|[nN]ode\.JS|node\.js': Node.js
-  '\s\.Net Core|\s\.Net|\s\.NET\sCore|dotNet': .NET
+  'dotNet': .NET
   'A-MQ(?!\sBroker|\sClient|\sConsole|\sInterconnect)': AMQ
   'A-MQ\sBroker': AMQ Broker
   'A-MQ\sClients': AMQ Clients
@@ -87,10 +87,10 @@ swap:
   classic mode: GNOME Classic
   CloudForms Management Engine|CFME: Red Hat CloudForms|Red Hat CloudForms Appliance
   command prompt: shell prompt|Command Prompt (Windows product)
-  Composite Content view|composite content view|Composite View|composite view: Composite Content View
+  Composite Content view|Composite Content Ciew|Composite View|composite view: composite content view
   configmap: config map
   configuration map: config map
-  Content view|content view: Content View
+  Content view|Content View: content view
   control key|ctrl: Ctrl
   CP|RHCP|customer portal: Customer Portal|Red Hat Customer Portal
   crush map|crushmap: CRUSH map
@@ -243,12 +243,11 @@ swap:
   RAW: raw
   Red Hat JBoss Data Grid|JDG: Red Hat Data Grid
   Red Hat JBoss EAP: Red Hat JBoss Enterprise Application Platform
-  Red Hat Network Satellite server: Red Hat Network Satellite Server
-  Red Hat Proxy: Red Hat Network Proxy Server
   Red Hat Satellite Capsule server: Red Hat Satellite Capsule Server
   Red Hat Satellite server: Red Hat Satellite Server
   Red Hat satellite: Red Hat Satellite
   Redboot|Red Boot: RedBoot
+  RedFish: Redfish
   redis: Redis
   RESTEASY|resteasy|Resteasy: RESTEasy
   RHDS: Red Hat Directory Server
@@ -288,7 +287,7 @@ swap:
   StartX: startx
   STI|source to image: Source-to-Image (S2I)
   SU: su
-  Subscription manifest: Subscription Manifest
+  Subscription Manifest: subscription manifest
   Sys V|System V: SysV
   system D|system D|SystemD|system d: systemd
   Technology preview|technology preview: Technology Preview

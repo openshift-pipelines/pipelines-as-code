@@ -126,6 +126,8 @@ exceptions:
   - PPP
   - PROM
   - PTP
+  - PV
+  - PVC
   - PXE
   - QCOW2
   - QEMU

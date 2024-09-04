@@ -8,7 +8,7 @@ message: "Avoid contractions. Use '%s' rather than '%s.'"
 action:
   name: replace
 swap:
-  "aren't": is not
+  "aren't": are not
   "can't": cannot
   "couldn't": could not
   "didn't": did not

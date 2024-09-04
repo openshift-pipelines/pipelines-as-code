@@ -19,6 +19,8 @@ swap:
   "(?<!Mozilla )Thunderbird": Mozilla Thunderbird
   "(?<!pseudo-)ops": operations
   "(?<!self-)hosted engine|hosted-engine": self-hosted engine
+  "bare metal( clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| instances?| machines?| media| nodes?| provisioning| servers?| workers?)": bare-metal$1
+  "bare-metal(?! clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| instances?| machines?| media| nodes?| provisioning| servers?| workers?)": bare metal
   "[bB]asic [aA]uth": Basic HTTP authentication|Basic authentication
   "a lot(?: of)?": many|much
   "best of breed|best-of-breed": best in class
@@ -34,7 +36,6 @@ swap:
   "top(?:-)?left": upper left|upper right|upper-left|upper-right
   "top(?:-)?right": upper left|upper right|upper-left|upper-right
   "UPI": user-provisioned infrastructure
-  "w/(?!o) ": "with "
   "w/o": without
   '(?<!IBM\s)S\/390|S90|S\s390': IBM S/390
   'backwards?\scompatible': compatible with earlier versions
@@ -142,7 +143,7 @@ swap:
   cyber threat: cyberthreat
   cyberresilience: cyber resilience
   data base: database
-  datacenter|data-center|data centre|datacentre: data center
+  (?<!vCenter )datacenter|data-center|data centre|datacentre: data center
   datafile: data file
   dataflow: data flow
   datamart: data mart
@@ -302,6 +303,7 @@ swap:
   pain point: challenge|concern|difficulty|issue
   parent task: parent process
   parent/child: parent-child
+  peer-pod: peer pod
   passive broker: slave broker
   pathname: path name
   PCOMM: Personal Communications

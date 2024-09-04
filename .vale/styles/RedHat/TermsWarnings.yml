@@ -12,7 +12,7 @@ swap:
   "bottom(?:-)?left": lower left|lower-left
   "bottom(?:-)?right": lower right|lower-right
   "non-English(?!-language?)": in languages other than English|non-English-language
-  '(?<!.-)like': such as
+  '(?<!.-|acts? |performs? |behaves? |operates? |functions? |reacts? |moves? |looks? |feels? |works? |runs? |advances? |shifts? )like': such as
   '(?<!\/)etc(?!\/)': and so on
   '\b(?:eg)': for example
   '\b(?:ie)': that is
@@ -20,13 +20,16 @@ swap:
   'is updatable|are updatable': can be updated|can be changed
   "(?<!the |the Red Hat )Hybrid Cloud Console|(?<!the )Red Hat Hybrid Cloud Console|(?<!the |Red Hat |Hybrid )Cloud Console|the Cloud Console": the Red Hat Hybrid Cloud Console|the Hybrid Cloud Console
   all caps: uppercase
+  appears: is displayed
   architected: designed
   as well as(?! per): and
   BIOS: firmware
   bottom left: lower left
   bottom right: lower right
   bugfix: bug fix
+  call up: call
   can not: cannot
+  carry on: continue
   carry out: test|run
   click on: click
   deselect: clear
@@ -37,6 +40,7 @@ swap:
   downgrade: upgrade|fallback|fall back|rollback|roll back
   entitlement: repository|subscription
   execute: run|issue|start|enter
+  find out: discover
   hamburger|kebab menu|kebab: more options icon|options icon
   he|she: you
   host name: hostname
@@ -54,11 +58,14 @@ swap:
   opt into|opting into: opt in
   preload: preinstall
   preloaded: preinstalled
+  print out: print
   right double-click: double right-click
   sane: accurate|valid|verified
   shift-click: press Shift and click
   spawn: create
   start up: start
+  speed up: accelerate
+  speeds up: accelerates
   switch on: turn on
   tap on: tap
   tarball: tar file

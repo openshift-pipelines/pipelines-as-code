@@ -184,3 +184,10 @@ tokens:
   - woven
   - written
   - wrung
+exceptions:
+  - deprecated
+  - displayed
+  - imported
+  - supported
+  - tested
+  - trusted
