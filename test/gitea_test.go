@@ -735,6 +735,46 @@ func verifyProvinance(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cNam
 	assert.NilError(t, err)
 }
 
+// TestGiteaGlobalRepoConcurrencyLimit tests the concurrency_limit feature of the PipelineRun.
+// It fetches the PipelineRun definition from the default branch of the repository
+// as configured on the git platform (e.g., main).
+// In this test, the concurrency_limit is enabled using a global repository instead of a local repository.
+func TestGiteaGlobalRepoConcurrencyLimit(t *testing.T) {
+	numPipelines := 10
+	yamlFiles := map[string]string{}
+	for i := 0; i < numPipelines; i++ {
+		yamlFiles[fmt.Sprintf(".tekton/pr%d.yaml", i)] = "testdata/pipelinerun.yaml"
+	}
+	topts := &tgitea.TestOpts{
+		TargetEvent:          triggertype.PullRequest.String(),
+		YAMLFiles:            yamlFiles,
+		CheckForNumberStatus: numPipelines,
+		CheckForStatus:       "success",
+	}
+
+	tgitea.VerifyConcurrency(t, topts, github.Int(2))
+}
+
+// TestGiteaGlobalAndLocalRepoConcurrencyLimit verifies the concurrency_limit feature of the PipelineRun,
+// ensuring that when concurrency_limit is defined in both global and local repository,
+// the local repository limit takes precedence. This end-to-end test confirms that behavior.
+func TestGiteaGlobalAndLocalRepoConcurrencyLimit(t *testing.T) {
+	numPipelines := 10
+	yamlFiles := map[string]string{}
+	for i := 0; i < numPipelines; i++ {
+		yamlFiles[fmt.Sprintf(".tekton/pr%d.yaml", i)] = "testdata/pipelinerun.yaml"
+	}
+	topts := &tgitea.TestOpts{
+		TargetEvent:          triggertype.PullRequest.String(),
+		YAMLFiles:            yamlFiles,
+		CheckForNumberStatus: numPipelines,
+		ConcurrencyLimit:     github.Int(3),
+		CheckForStatus:       "success",
+	}
+
+	tgitea.VerifyConcurrency(t, topts, github.Int(2))
+}
+
 func TestGiteaPushToTagGreedy(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		SkipEventsCheck:       true,

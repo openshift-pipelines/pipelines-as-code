@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tlogs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/logs"
@@ -545,4 +546,38 @@ func GetStandardParams(t *testing.T, topts *TestOpts, eventType string) (repoURL
 	targetBranch = strings.TrimPrefix(outputDataForPR[3], "\n")
 
 	return repoURL, sourceURL, sourceBranch, targetBranch
+}
+
+func VerifyConcurrency(t *testing.T, topts *TestOpts, globalRepoConcurrencyLimit *int) {
+	t.Helper()
+	ctx := context.Background()
+	topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = Setup(ctx)
+	assert.NilError(t, topts.ParamsRun.Clients.NewClients(ctx, &topts.ParamsRun.Info))
+	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+	topts.TargetNS = topts.TargetRefName
+	ctx, err := cctx.GetControllerCtxInfo(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	globalNs, _, err := params.GetInstallLocation(ctx, topts.ParamsRun)
+	assert.NilError(t, err)
+	ctx = info.StoreNS(ctx, globalNs)
+
+	err = CreateCRD(ctx, topts,
+		v1alpha1.RepositorySpec{
+			ConcurrencyLimit: globalRepoConcurrencyLimit,
+		},
+		true)
+	assert.NilError(t, err)
+
+	defer (func() {
+		if os.Getenv("TEST_NOCLEANUP") != "true" {
+			topts.ParamsRun.Clients.Log.Infof("Cleaning up global repo %s in %s", info.DefaultGlobalRepoName, globalNs)
+			err = topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(globalNs).Delete(
+				context.Background(), info.DefaultGlobalRepoName, metav1.DeleteOptions{})
+			assert.NilError(t, err)
+		}
+	})()
+
+	_, f := TestPR(t, topts)
+	defer f()
 }
