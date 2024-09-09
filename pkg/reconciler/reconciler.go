@@ -234,6 +234,12 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 	if event.InstallationID > 0 {
 		event.Provider.WebhookSecret, _ = pac.GetCurrentNSWebhookSecret(ctx, r.kinteract, r.run)
 	} else {
+		// secretNS is needed when git provider is other than Github.
+		secretNS := repo.GetNamespace()
+		if repo.Spec.GitProvider != nil && repo.Spec.GitProvider.Secret == nil && r.globalRepo != nil && r.globalRepo.Spec.GitProvider != nil && r.globalRepo.Spec.GitProvider.Secret != nil {
+			secretNS = r.globalRepo.GetNamespace()
+		}
+
 		secretFromRepo := pac.SecretFromRepository{
 			K8int:       r.kinteract,
 			Config:      detectedProvider.GetConfig(),
@@ -241,7 +247,7 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 			Repo:        repo,
 			WebhookType: pacInfo.WebhookType,
 			Logger:      logger,
-			Namespace:   r.secretNS,
+			Namespace:   secretNS,
 		}
 		if err := secretFromRepo.Get(ctx); err != nil {
 			return fmt.Errorf("cannot get secret from repository: %w", err)
