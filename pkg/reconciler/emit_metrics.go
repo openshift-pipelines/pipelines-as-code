@@ -10,6 +10,7 @@ import (
 func (r *Reconciler) emitMetrics(pr *tektonv1.PipelineRun) error {
 	gitProvider := pr.GetAnnotations()[keys.GitProvider]
 	eventType := pr.GetAnnotations()[keys.EventType]
+	repository := pr.GetAnnotations()[keys.Repository]
 
 	switch gitProvider {
 	case "github", "github-enterprise":
@@ -24,5 +25,5 @@ func (r *Reconciler) emitMetrics(pr *tektonv1.PipelineRun) error {
 		return fmt.Errorf("no supported Git provider")
 	}
 
-	return r.metrics.Count(gitProvider, eventType)
+	return r.metrics.Count(gitProvider, eventType, pr.GetNamespace(), repository)
 }

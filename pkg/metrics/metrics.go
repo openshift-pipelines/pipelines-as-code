@@ -20,6 +20,8 @@ type Recorder struct {
 	initialized     bool
 	provider        tag.Key
 	eventType       tag.Key
+	namespace       tag.Key
+	repository      tag.Key
 	ReportingPeriod time.Duration
 }
 
@@ -45,12 +47,24 @@ func NewRecorder() (*Recorder, error) {
 	}
 	r.eventType = eventType
 
+	namespace, err := tag.NewKey("namespace")
+	if err != nil {
+		return nil, err
+	}
+	r.namespace = namespace
+
+	repository, err := tag.NewKey("repository")
+	if err != nil {
+		return nil, err
+	}
+	r.repository = repository
+
 	err = view.Register(
 		&view.View{
 			Description: prCount.Description(),
 			Measure:     prCount,
 			Aggregation: view.Count(),
-			TagKeys:     []tag.Key{r.provider, r.eventType},
+			TagKeys:     []tag.Key{r.provider, r.eventType, r.namespace, r.repository},
 		},
 	)
 	if err != nil {
@@ -62,7 +76,7 @@ func NewRecorder() (*Recorder, error) {
 }
 
 // Count logs number of times a pipelinerun is ran for a provider.
-func (r *Recorder) Count(provider, event string) error {
+func (r *Recorder) Count(provider, event, namespace, repository string) error {
 	if !r.initialized {
 		return fmt.Errorf(
 			"ignoring the metrics recording for pipeline runs,  failed to initialize the metrics recorder")
@@ -72,6 +86,8 @@ func (r *Recorder) Count(provider, event string) error {
 		context.Background(),
 		tag.Insert(r.provider, provider),
 		tag.Insert(r.eventType, event),
+		tag.Insert(r.namespace, namespace),
+		tag.Insert(r.repository, repository),
 	)
 	if err != nil {
 		return err
