@@ -231,7 +231,7 @@ We use hugo, if you want to preview your change, you need to install
 [hugo](https://gohugo.io) and do a :
 
 ```shell
-make docs-dev
+make dev-docs
 ```
 
 this will start a hugo server with live preview of the docs on :
