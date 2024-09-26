@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	// foo
 	clients := params.New()
 	pac := tknpac.Root(clients)
 
