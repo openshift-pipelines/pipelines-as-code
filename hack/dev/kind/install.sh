@@ -128,18 +128,26 @@ function install_tekton() {
   kubectl apply --filename https://storage.googleapis.com/tekton-releases/dashboard/latest/release.yaml >/dev/null
   i=0
   echo -n "Waiting for tekton pipeline to come up: "
-  tt=pipelines
-  while true; do
-    [[ ${i} == 120 ]] && exit 1
-    ep=$(kubectl get ep -n tekton-pipelines tekton-${tt}-webhook -o jsonpath='{.subsets[*].addresses[*].ip}')
-    [[ -n ${ep} ]] && break
-    sleep 2
-    i=$((i + 1))
+  for tt in webhook controller; do
+    while true; do
+      [[ ${i} == 120 ]] && exit 1
+      ep=$(kubectl get ep -n tekton-pipelines tekton-pipelines-$tt -o jsonpath='{.subsets[*].addresses[*].ip}')
+      [[ -n ${ep} ]] && break
+      sleep 2
+      i=$((i + 1))
+    done
   done
   echo "done."
 
-  echo "Enable step actions feature flag"
-  kubectl patch configmap -n tekton-pipelines --type merge -p '{"data":{"enable-step-actions": "true"}}' feature-flags
+  maxloop=5
+  loop=0
+  while true; do
+    [[ ${loop} == "${maxloop}" ]] && exit 1
+    echo "Enable step actions feature flag"
+    kubectl patch configmap -n tekton-pipelines --type merge -p '{"data":{"enable-step-actions": "true"}}' feature-flags && break
+    sleep 2
+    loop=$((loop + 1))
+  done
   echo "Installing Dashboard Ingress"
   sed -e "s,%DOMAIN_NAME%,${DOMAIN_NAME}," ingress-dashboard.yaml | kubectl apply -f-
 }
