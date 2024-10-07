@@ -19,6 +19,10 @@ var prDurationCount = stats.Float64("pipelines_as_code_pipelinerun_duration_seco
 	"number of seconds all pipelineruns completed in by pipelines as code",
 	stats.UnitDimensionless)
 
+var runningPRCount = stats.Float64("pipelines_as_code_running_pipelineruns_count",
+	"number of running pipeline runs by pipelines as code",
+	stats.UnitDimensionless)
+
 // Recorder holds keys for metrics.
 type Recorder struct {
 	initialized     bool
@@ -90,6 +94,12 @@ func NewRecorder() (*Recorder, error) {
 			Aggregation: view.Sum(),
 			TagKeys:     []tag.Key{r.namespace, r.repository, r.status, r.reason},
 		},
+		&view.View{
+			Description: runningPRCount.Description(),
+			Measure:     runningPRCount,
+			Aggregation: view.LastValue(),
+			TagKeys:     []tag.Key{r.provider, r.eventType, r.namespace, r.repository},
+		},
 	)
 	if err != nil {
 		r.initialized = false
@@ -103,7 +113,7 @@ func NewRecorder() (*Recorder, error) {
 func (r *Recorder) Count(provider, event, namespace, repository string) error {
 	if !r.initialized {
 		return fmt.Errorf(
-			"ignoring the metrics recording for pipeline runs,  failed to initialize the metrics recorder")
+			"ignoring the metrics recording for pipelineruns, failed to initialize the metrics recorder")
 	}
 
 	ctx, err := tag.New(
@@ -140,5 +150,27 @@ func (r *Recorder) CountPRDuration(namespace, repository, status, reason string,
 	}
 
 	metrics.Record(ctx, prDurationCount.M(duration.Seconds()))
+	return nil
+}
+
+// CountRunningPRs emits the number of running pipelineruns for a repository and namespace.
+func (r *Recorder) CountRunningPRs(provider, event, namespace, repository string, runningPRs float64) error {
+	if !r.initialized {
+		return fmt.Errorf(
+			"ignoring the metrics recording for pipelineruns, failed to initialize the metrics recorder")
+	}
+
+	ctx, err := tag.New(
+		context.Background(),
+		tag.Insert(r.provider, provider),
+		tag.Insert(r.eventType, event),
+		tag.Insert(r.namespace, namespace),
+		tag.Insert(r.repository, repository),
+	)
+	if err != nil {
+		return err
+	}
+
+	metrics.Record(ctx, runningPRCount.M(runningPRs))
 	return nil
 }

@@ -180,6 +180,10 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 			}
 			stdata, informers := testclient.SeedTestData(t, ctx, testData)
 
+			// needs to unregister because this test call NewRecorder func
+			// which registers metrics and causes `already registered metric` error
+			// in other metric tests.
+			unregisterMetrics()
 			metrics, err := metrics.NewRecorder()
 			assert.NilError(t, err)
 

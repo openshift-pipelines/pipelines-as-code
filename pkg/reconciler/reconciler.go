@@ -11,6 +11,7 @@ import (
 	tektonv1lister "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
@@ -52,6 +53,15 @@ var (
 
 // ReconcileKind is the main entry point for reconciling PipelineRun resources.
 func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun) pkgreconciler.Event {
+	prl, err := r.pipelineRunLister.List(labels.Everything())
+	if err != nil {
+		return err
+	}
+
+	if err := r.emitRunningPipelineRunsMetric(prl); err != nil {
+		return err
+	}
+
 	ctx = info.StoreNS(ctx, system.Namespace())
 	logger := logging.FromContext(ctx).With("namespace", pr.GetNamespace())
 	// if pipelineRun is in completed or failed state then return
@@ -317,4 +327,19 @@ func (r *Reconciler) updatePipelineRunState(ctx context.Context, logger *zap.Sug
 		return pr, fmt.Errorf("error patching the pipelinerun: %w", err)
 	}
 	return patchedPR, nil
+}
+
+func (r *Reconciler) emitRunningPipelineRunsMetric(prl []*tektonv1.PipelineRun) error {
+	gitProvider := prl[0].GetAnnotations()[keys.GitProvider]
+	eventType := prl[0].GetAnnotations()[keys.EventType]
+	repository := prl[0].GetAnnotations()[keys.Repository]
+
+	runningPRs := 0
+	for _, pr := range prl {
+		if !pr.IsDone() {
+			runningPRs++
+		}
+	}
+
+	return r.metrics.CountRunningPRs(gitProvider, eventType, prl[0].GetNamespace(), repository, float64(runningPRs))
 }
