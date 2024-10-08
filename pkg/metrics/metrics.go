@@ -15,6 +15,10 @@ var prCount = stats.Float64("pipelines_as_code_pipelinerun_count",
 	"number of pipeline runs by pipelines as code",
 	stats.UnitDimensionless)
 
+var prDurationCount = stats.Float64("pipelines_as_code_pipelinerun_duration_seconds_sum",
+	"number of seconds all pipelineruns completed in by pipelines as code",
+	stats.UnitDimensionless)
+
 // Recorder holds keys for metrics.
 type Recorder struct {
 	initialized     bool
@@ -22,6 +26,8 @@ type Recorder struct {
 	eventType       tag.Key
 	namespace       tag.Key
 	repository      tag.Key
+	status          tag.Key
+	reason          tag.Key
 	ReportingPeriod time.Duration
 }
 
@@ -59,12 +65,30 @@ func NewRecorder() (*Recorder, error) {
 	}
 	r.repository = repository
 
+	status, err := tag.NewKey("status")
+	if err != nil {
+		return nil, err
+	}
+	r.status = status
+
+	reason, err := tag.NewKey("reason")
+	if err != nil {
+		return nil, err
+	}
+	r.reason = reason
+
 	err = view.Register(
 		&view.View{
 			Description: prCount.Description(),
 			Measure:     prCount,
 			Aggregation: view.Count(),
 			TagKeys:     []tag.Key{r.provider, r.eventType, r.namespace, r.repository},
+		},
+		&view.View{
+			Description: prDurationCount.Description(),
+			Measure:     prDurationCount,
+			Aggregation: view.Sum(),
+			TagKeys:     []tag.Key{r.namespace, r.repository, r.status, r.reason},
 		},
 	)
 	if err != nil {
@@ -94,5 +118,27 @@ func (r *Recorder) Count(provider, event, namespace, repository string) error {
 	}
 
 	metrics.Record(ctx, prCount.M(1))
+	return nil
+}
+
+// CountPRDuration collects duration taken by a pipelinerun in seconds accumulate them in prDurationCount.
+func (r *Recorder) CountPRDuration(namespace, repository, status, reason string, duration time.Duration) error {
+	if !r.initialized {
+		return fmt.Errorf(
+			"ignoring the metrics recording for pipelineruns, failed to initialize the metrics recorder")
+	}
+
+	ctx, err := tag.New(
+		context.Background(),
+		tag.Insert(r.namespace, namespace),
+		tag.Insert(r.repository, repository),
+		tag.Insert(r.status, status),
+		tag.Insert(r.reason, reason),
+	)
+	if err != nil {
+		return err
+	}
+
+	metrics.Record(ctx, prDurationCount.M(duration.Seconds()))
 	return nil
 }
