@@ -37,11 +37,16 @@ func NewInstallation(req *http.Request, run *params.Run, repo *v1alpha1.Reposito
 	}
 }
 
+// GetAndUpdateInstallationID retrieves and updates the installation ID for the GitHub App.
+// It generates a JWT token, lists all installations, and matches repositories to their installation IDs.
+// If a matching repository is found, it returns the enterprise host, token, and installation ID.
 func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, string, int64, error) {
 	var (
 		enterpriseHost, token string
 		installationID        int64
 	)
+
+	// Generate a JWT token for authentication
 	jwtToken, err := ip.GenerateJWT(ctx)
 	if err != nil {
 		return "", "", 0, err
@@ -50,7 +55,7 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 	apiURL := *ip.ghClient.APIURL
 	enterpriseHost = ip.request.Header.Get("X-GitHub-Enterprise-Host")
 	if enterpriseHost != "" {
-		// NOTE: Hopefully this works even when the ghe URL is on another host than the api URL
+		// NOTE: Hopefully this works even when the GHE URL is on another host than the API URL
 		apiURL = "https://" + enterpriseHost + "/api/v3"
 	}
 
@@ -58,6 +63,8 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 	opt := &gt.ListOptions{PerPage: ip.ghClient.PaginedNumber}
 	client, _, _ := github.MakeClient(ctx, apiURL, jwtToken)
 	installationData := []*gt.Installation{}
+
+	// List all installations
 	for {
 		installationSet, resp, err := client.Apps.ListInstallations(ctx, opt)
 		if err != nil {
@@ -70,9 +77,7 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 		opt.Page = resp.NextPage
 	}
 
-	/* each installationID can have list of repository
-	ref: https://docs.github.com/en/developers/apps/building-github-apps/authenticating-with-github-apps#authenticating-as-an-installation ,
-	     https://docs.github.com/en/rest/apps/installations?apiVersion=2022-11-28#list-repositories-accessible-to-the-app-installation */
+	// Iterate through each installation to find a matching repository
 	for i := range installationData {
 		if installationData[i].ID == nil {
 			return "", "", 0, fmt.Errorf("installation ID is nil")
@@ -102,7 +107,9 @@ func (ip *Install) GetAndUpdateInstallationID(ctx context.Context) (string, stri
 	return enterpriseHost, token, installationID, nil
 }
 
-// matchRepos matching github repositories to its installation IDs.
+// matchRepos matches GitHub repositories to their installation IDs.
+// It lists all repositories accessible to the app installation and checks if
+// any match the repository URL in the spec.
 func (ip *Install) matchRepos(ctx context.Context) (bool, error) {
 	installationRepoList, err := github.ListRepos(ctx, ip.ghClient)
 	if err != nil {
@@ -110,7 +117,7 @@ func (ip *Install) matchRepos(ctx context.Context) (bool, error) {
 	}
 	ip.repoList = append(ip.repoList, installationRepoList...)
 	for i := range installationRepoList {
-		// If URL matches with repo spec url then we can break for loop
+		// If URL matches with repo spec URL then we can break the loop
 		if installationRepoList[i] == ip.repo.Spec.URL {
 			return true, nil
 		}
@@ -118,11 +125,14 @@ func (ip *Install) matchRepos(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
+// JWTClaim represents the JWT claims for the GitHub App.
 type JWTClaim struct {
 	Issuer int64 `json:"iss"`
 	jwt.RegisteredClaims
 }
 
+// GenerateJWT generates a JWT token for the GitHub App.
+// It retrieves the application ID and private key, sets the claims, and signs the token.
 func (ip *Install) GenerateJWT(ctx context.Context) (string, error) {
 	// TODO: move this out of here
 	gh := github.New()
