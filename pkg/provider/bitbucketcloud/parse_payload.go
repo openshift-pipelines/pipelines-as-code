@@ -136,7 +136,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 			opscomments.SetEventTypeAndTargetPR(processedEvent, e.Comment.Content.Raw)
 		}
 		processedEvent.Organization = e.Repository.Workspace.Slug
-		processedEvent.Repository = e.Repository.Name
+		processedEvent.Repository = strings.Split(e.Repository.FullName, "/")[1]
 		processedEvent.SHA = e.PullRequest.Source.Commit.Hash
 		processedEvent.URL = e.Repository.Links.HTML.HRef
 		processedEvent.BaseBranch = e.PullRequest.Destination.Branch.Name
@@ -152,7 +152,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.TriggerTarget = "push"
 		processedEvent.EventType = "push"
 		processedEvent.Organization = e.Repository.Workspace.Slug
-		processedEvent.Repository = e.Repository.Name
+		processedEvent.Repository = strings.Split(e.Repository.FullName, "/")[1]
 		processedEvent.SHA = e.Push.Changes[0].New.Target.Hash
 		processedEvent.URL = e.Repository.Links.HTML.HRef
 		processedEvent.HeadBranch = e.Push.Changes[0].Old.Name

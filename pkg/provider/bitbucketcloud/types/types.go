@@ -7,6 +7,7 @@ type Workspace struct {
 type Repository struct {
 	Workspace Workspace `json:"workspace"`
 	Name      string    `json:"name"`
+	FullName  string    `json:"full_name"`
 	Links     Links     `json:"links"`
 }
 
