@@ -86,7 +86,7 @@ func TestCountPipelineRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metricstest.Unregister("pipelines_as_code_pipelinerun_count")
+			unregisterMetrics()
 			m, err := metrics.NewRecorder()
 			assert.NilError(t, err)
 			r := &Reconciler{
@@ -224,7 +224,7 @@ func TestCalculatePipelineRunDuration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metricstest.Unregister("pipelines_as_code_pipelinerun_duration_seconds_sum")
+			unregisterMetrics()
 			m, err := metrics.NewRecorder()
 			assert.NilError(t, err)
 			r := &Reconciler{
@@ -261,4 +261,57 @@ func TestCalculatePipelineRunDuration(t *testing.T) {
 			metricstest.CheckSumData(t, "pipelines_as_code_pipelinerun_duration_seconds_sum", tt.tags, duration.Seconds())
 		})
 	}
+}
+
+func TestCountRunningPRs(t *testing.T) {
+	annotations := map[string]string{
+		keys.GitProvider: "github",
+		keys.EventType:   "pull_request",
+		keys.Repository:  "pac-repo",
+	}
+	var prl []*tektonv1.PipelineRun
+	pr := &tektonv1.PipelineRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:   "pac-ns",
+			Annotations: annotations,
+		},
+		Status: tektonv1.PipelineRunStatus{
+			Status: duckv1.Status{Conditions: []apis.Condition{
+				{
+					Type:   apis.ConditionReady,
+					Status: corev1.ConditionTrue,
+					Reason: tektonv1.PipelineRunReasonRunning.String(),
+				},
+			}},
+		},
+	}
+
+	numberOfRunningPRs := 10
+	for i := 0; i < numberOfRunningPRs; i++ {
+		prl = append(prl, pr)
+	}
+
+	unregisterMetrics()
+	m, err := metrics.NewRecorder()
+	assert.NilError(t, err)
+	r := &Reconciler{
+		metrics: m,
+	}
+
+	err = r.metrics.EmitRunningPRsMetrics(prl)
+	assert.NilError(t, err)
+	tags := map[string]string{
+		"namespace":  "pac-ns",
+		"repository": "pac-repo",
+	}
+	metricstest.CheckLastValueData(t, "pipelines_as_code_running_pipelineruns_count", tags, float64(numberOfRunningPRs))
+}
+
+func unregisterMetrics() {
+	metricstest.Unregister("pipelines_as_code_pipelinerun_count",
+		"pipelines_as_code_pipelinerun_duration_seconds_sum",
+		"pipelines_as_code_running_pipelineruns_count")
+
+	// have to reset sync.Once to allow recreation of Recorder.
+	metrics.ResetRecorder()
 }
