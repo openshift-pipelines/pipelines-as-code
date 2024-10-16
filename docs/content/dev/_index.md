@@ -231,7 +231,7 @@ We use hugo, if you want to preview your change, you need to install
 [hugo](https://gohugo.io) and do a :
 
 ```shell
-make docs-dev
+make dev-docs
 ```
 
 this will start a hugo server with live preview of the docs on :
@@ -276,6 +276,7 @@ to the tektoncd/pipeline version.
 
   ```shell
   find -name '*.go'|xargs sed -i 's,github.com/google/go-github/v56,github.com/google/go-github/v59,'
+  ```
 
 - This will update everything, sometime the library ghinstallation is not
 updated with the new version, so you will need to keep the old version kept in
