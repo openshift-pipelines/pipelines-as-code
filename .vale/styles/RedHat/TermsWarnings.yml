@@ -41,7 +41,7 @@ swap:
   entitlement: repository|subscription
   execute: run|issue|start|enter
   find out: discover
-  hamburger|kebab menu|kebab: more options icon|options icon
+  hamburger|kebab menu|kebab|vertical ellipsis: more options icon|options icon
   he|she: you
   host name: hostname
   illegal: invalid|not allowed|incorrect
