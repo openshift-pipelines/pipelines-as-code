@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Helper script for GitHub Actions CI, used from e2e tests.
-set -eufo pipefail
+set -exufo pipefail
 
 create_pac_github_app_secret() {
   local app_private_key="${1}"
@@ -35,10 +35,10 @@ create_second_github_app_controller_on_ghe() {
   local test_github_second_private_key="${2}"
   local test_github_second_webhook_secret="${3}"
 
-  if hash -v apt >/dev/null 2>&1; then
+  if [[ -n "$(type -p apt)" ]]; then
     apt update &&
       apt install -y python3-yaml
-  elif hash -v dnf >/dev/null 2>&1; then
+  elif [[ -n "$(type -p dnf)" ]]; then
     dnf install -y python3-pyyaml
   else
     # TODO(chmouel): setup a virtualenvironment instead
