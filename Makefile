@@ -14,7 +14,7 @@ GO_TEST_FLAGS +=
 SHELL := bash
 TOPDIR := $(shell git rev-parse --show-toplevel)
 TMPDIR := $(TOPDIR)/tmp
-HUGO_BIN := $(TMPDIR)/hugo
+HUGO_BIN := $(TMPDIR)/hugo/hugo
 PY_FILES := $(shell find . -type f -regex ".*\.py" -print)
 SH_FILES := $(shell find hack/ -type f -regex ".*\.sh" -print)
 YAML_FILES := $(shell find . -not -regex '^./vendor/.*' -type f -regex ".*y[a]ml" -print)
@@ -195,7 +195,7 @@ generated: update-golden fumpt ## generate all files that needs to be generated
 
 .PHONY: download-hugo
 download-hugo: 
-	@./hack/download-hugo.sh $(HUGO_VERSION) $(TMPDIR)
+	./hack/download-hugo.sh $(HUGO_VERSION) $(TMPDIR)/hugo
 	
 .PHONY: clean
 clean: ## clean build artifacts
