@@ -40,7 +40,7 @@ spec:
             - name: source
           steps:
             - name: hugo-gen
-              image: registry.access.redhat.com/ubi9/python-312
+              image: golang:1.22
               workingDir: $(workspaces.source.path)
               env:
                 - name: UPLOADER_PUBLIC_URL
@@ -49,13 +49,18 @@ spec:
                       name: "uploader-upload-credentials"
                       key: "public_url"
               script: |
-                version=$(curl -s https://api.github.com/repos/gohugoio/hugo/releases/latest|python -c 'import sys, json;dico=json.load(sys.stdin);print(dico["tag_name"])')
-                curl --fail-early -sL https://github.com/gohugoio/hugo/releases/download/${version}/hugo_extended_${version/v/}_linux-arm64.tar.gz -o-|tar -x -z -v -f- hugo
+                #!/usr/bin/env bash
+                set -xeuo pipefail
                 git config --global --add safe.directory $(workspaces.source.path)
-                cd docs
+                make download-hugo
+                hugobin=$(git rev-parse --show-toplevel)/tmp/hugo
+                [[ -x ${hugobin} ]] || {
+                  echo "Hugo was not downloaded properly" && exit 1
+                }
+                cd $(git rev-parse --show-toplevel)/docs
                 sed -i '1acanonifyURLs = true' config.toml
                 url="${UPLOADER_PUBLIC_URL}/docs/{{ pull_request_number }}"
-                ../hugo --gc --minify -d {{ pull_request_number }} -b ${url}
+                ${hugobin} --gc --minify -d {{ pull_request_number }} -b ${url}
                 echo "Preview URL: ${url}"
             - name: upload-to-static-server
               # it has curl and we already pulled it
