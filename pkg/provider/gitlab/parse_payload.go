@@ -61,6 +61,12 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.TargetProjectID = gitEvent.Project.ID
 		processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
 	case *gitlab.TagEvent:
+		// GitLab sends same event for both Tag creation and deletion i.e. "Tag Push Hook".
+		// if gitEvent.After is containing all zeros and gitEvent.CheckoutSHA is empty
+		// it is Delete "Tag Push Hook".
+		if isZeroSHA(gitEvent.After) && gitEvent.CheckoutSHA == "" {
+			return nil, fmt.Errorf("event Delete %s is not supported", event)
+		}
 		lastCommitIdx := len(gitEvent.Commits) - 1
 		processedEvent.Sender = gitEvent.UserUsername
 		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
@@ -135,4 +141,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 
 	v.repoURL = processedEvent.URL
 	return processedEvent, nil
+}
+
+func isZeroSHA(sha string) bool {
+	return sha == "0000000000000000000000000000000000000000"
 }

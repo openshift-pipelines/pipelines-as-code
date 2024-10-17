@@ -82,6 +82,8 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, glprovider 
 	}
 	repository.NSTearDown(ctx, t, runcnx, targetNS)
 	runcnx.Clients.Log.Infof("Deleting Ref %s", ref)
-	_, err := glprovider.Client.Branches.DeleteBranch(projectid, ref)
-	assert.NilError(t, err)
+	if ref != "" {
+		_, err := glprovider.Client.Branches.DeleteBranch(projectid, ref)
+		assert.NilError(t, err)
+	}
 }
