@@ -14,3 +14,4 @@ You can configure these exporters by referring to the [observability configurati
 |------------------------------------------------------|---------|--------------------------------------------------------------------|
 | `pipelines_as_code_pipelinerun_count`                | Counter | Number of pipelineruns created by pipelines-as-code                |
 | `pipelines_as_code_pipelinerun_duration_seconds_sum` | Counter | Number of seconds all pipelineruns have taken in pipelines-as-code |
+| `pipelines_as_code_running_pipelineruns_count`       | Gauge   | Number of running pipelineruns in pipelines-as-code                |
