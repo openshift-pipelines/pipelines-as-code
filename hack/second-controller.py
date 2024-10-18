@@ -134,6 +134,7 @@ with open("config/400-controller.yaml", "r", encoding="utf-8") as f:
     )
     for container in controller["spec"]["template"]["spec"]["containers"]:
         if container["name"] == "pac-controller":
+            container["name"] = args.label + "-controller"
             if args.controller_image and args.controller_image != "ko":
                 container["image"] = args.controller_image
             for env in container["env"]:
