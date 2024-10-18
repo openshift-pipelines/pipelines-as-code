@@ -72,8 +72,9 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, glprovider 
 		runcnx.Clients.Log.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
 		return
 	}
-	runcnx.Clients.Log.Infof("Closing PR %d", mrNumber)
+
 	if mrNumber != -1 {
+		runcnx.Clients.Log.Infof("Closing PR %d", mrNumber)
 		_, _, err := glprovider.Client.MergeRequests.UpdateMergeRequest(projectid, mrNumber,
 			&gitlab2.UpdateMergeRequestOptions{StateEvent: gitlab2.Ptr("close")})
 		if err != nil {
@@ -81,7 +82,14 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, glprovider 
 		}
 	}
 	repository.NSTearDown(ctx, t, runcnx, targetNS)
-	runcnx.Clients.Log.Infof("Deleting Ref %s", ref)
-	_, err := glprovider.Client.Branches.DeleteBranch(projectid, ref)
-	assert.NilError(t, err)
+	if ref != "" {
+		runcnx.Clients.Log.Infof("Deleting Ref %s", ref)
+		_, err := glprovider.Client.Branches.DeleteBranch(projectid, ref)
+		assert.NilError(t, err)
+	}
+}
+
+// CleanTag a wrapper function on DeleteTag to ignore errors in cleaning.
+func CleanTag(client *gitlab2.Client, pid int, tagName string) {
+	_ = DeleteTag(client, pid, tagName)
 }
