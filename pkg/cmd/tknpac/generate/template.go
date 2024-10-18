@@ -89,6 +89,9 @@ func (o *Opts) genTmpl() (*bytes.Buffer, error) {
 	tmplB, _ := io.ReadAll(embedfile)
 
 	prName := filepath.Base(o.GitInfo.URL)
+	if prName == "." {
+		prName = filepath.Base(o.Event.URL)
+	}
 
 	// if eventType has both the events [push, pull_request] then skip
 	// adding it to pipelinerun name
