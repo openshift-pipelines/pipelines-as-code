@@ -80,6 +80,20 @@ func (s *prioritySemaphore) removeFromQueue(key string) {
 	s.pending.remove(key)
 }
 
+func (s *prioritySemaphore) addToPendingQueue(key string, creationTime time.Time) bool {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if _, ok := s.running[key]; ok {
+		return false
+	}
+	if s.pending.isPending(key) {
+		return false
+	}
+	s.pending.add(key, creationTime.UnixNano())
+	return true
+}
+
 func (s *prioritySemaphore) acquireLatest() string {
 	s.lock.Lock()
 	defer s.lock.Unlock()
