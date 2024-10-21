@@ -38,9 +38,33 @@ func TestSomeoneElseSetPendingWithNoConcurrencyLimit(t *testing.T) {
 			Reason: v1beta1.PipelineRunReasonPending.String(),
 		},
 	}
-	started, err := qm.AddListToQueue(repo, []string{getQueueKey(pr)})
+	started, err := qm.AddListToRunningQueue(repo, []string{getQueueKey(pr)})
 	assert.NilError(t, err)
 	assert.Equal(t, len(started), 1)
+}
+
+func TestAddToPendingQueueDirectly(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	qm := NewQueueManager(logger)
+	repo := newTestRepo(1)
+	// unset concurrency limit
+	repo.Spec.ConcurrencyLimit = nil
+
+	pr := newTestPR("first", time.Now(), nil, nil)
+	// set to pending
+	pr.Status.Conditions = duckv1.Conditions{
+		{
+			Type:   apis.ConditionSucceeded,
+			Reason: v1beta1.PipelineRunReasonPending.String(),
+		},
+	}
+	err := qm.AddToPendingQueue(repo, []string{getQueueKey(pr)})
+	assert.NilError(t, err)
+
+	sema := qm.queueMap[repoKey(repo)]
+	assert.Equal(t, len(sema.getCurrentPending()), 1)
 }
 
 func TestNewQueueManagerForList(t *testing.T) {
@@ -56,7 +80,7 @@ func TestNewQueueManagerForList(t *testing.T) {
 	prFirst := newTestPR("first", time.Now(), nil, nil)
 
 	// added to queue, as there is only one should start
-	started, err := qm.AddListToQueue(repo, []string{getQueueKey(prFirst)})
+	started, err := qm.AddListToRunningQueue(repo, []string{getQueueKey(prFirst)})
 	assert.NilError(t, err)
 	assert.Equal(t, len(started), 1)
 
@@ -68,7 +92,7 @@ func TestNewQueueManagerForList(t *testing.T) {
 	prSecond := newTestPR("second", time.Now().Add(1*time.Second), nil, nil)
 	prThird := newTestPR("third", time.Now().Add(7*time.Second), nil, nil)
 
-	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prSecond), getQueueKey(prThird)})
+	started, err = qm.AddListToRunningQueue(repo, []string{getQueueKey(prSecond), getQueueKey(prThird)})
 	assert.NilError(t, err)
 	assert.Equal(t, len(started), 1)
 	// as per the list, 2nd must be started
@@ -78,7 +102,7 @@ func TestNewQueueManagerForList(t *testing.T) {
 	prFourth := newTestPR("fourth", time.Now().Add(5*time.Second), nil, nil)
 	prFifth := newTestPR("fifth", time.Now().Add(4*time.Second), nil, nil)
 
-	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prFourth), getQueueKey(prFifth)})
+	started, err = qm.AddListToRunningQueue(repo, []string{getQueueKey(prFourth), getQueueKey(prFifth)})
 	assert.NilError(t, err)
 	assert.Equal(t, len(started), 0)
 
@@ -92,7 +116,7 @@ func TestNewQueueManagerForList(t *testing.T) {
 	prSeventh := newTestPR("seventh", time.Now().Add(5*time.Second), nil, nil)
 	prEight := newTestPR("eight", time.Now().Add(4*time.Second), nil, nil)
 
-	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prSixth), getQueueKey(prSeventh), getQueueKey(prEight)})
+	started, err = qm.AddListToRunningQueue(repo, []string{getQueueKey(prSixth), getQueueKey(prSeventh), getQueueKey(prEight)})
 	assert.NilError(t, err)
 	// third is running, but limit is changed now, so one more should be moved to running
 	assert.Equal(t, len(started), 1)
@@ -113,18 +137,18 @@ func TestNewQueueManagerReListing(t *testing.T) {
 	prThird := newTestPR("third", time.Now().Add(7*time.Second), nil, nil)
 
 	// added to queue, as there is only one should start
-	started, err := qm.AddListToQueue(repo, []string{getQueueKey(prFirst), getQueueKey(prSecond), getQueueKey(prThird)})
+	started, err := qm.AddListToRunningQueue(repo, []string{getQueueKey(prFirst), getQueueKey(prSecond), getQueueKey(prThird)})
 	assert.NilError(t, err)
 	assert.Equal(t, len(started), 2)
 
 	// if first is running and other pipelineRuns are reconciling
 	// then adding again shouldn't have any effect
-	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prFirst), getQueueKey(prSecond), getQueueKey(prThird)})
+	started, err = qm.AddListToRunningQueue(repo, []string{getQueueKey(prFirst), getQueueKey(prSecond), getQueueKey(prThird)})
 	assert.NilError(t, err)
 	assert.Equal(t, len(started), 0)
 
 	// again
-	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prFirst), getQueueKey(prSecond), getQueueKey(prThird)})
+	started, err = qm.AddListToRunningQueue(repo, []string{getQueueKey(prFirst), getQueueKey(prSecond), getQueueKey(prThird)})
 	assert.NilError(t, err)
 	assert.Equal(t, len(started), 0)
 
@@ -138,7 +162,7 @@ func TestNewQueueManagerReListing(t *testing.T) {
 	prFifth := newTestPR("fifth", time.Now().Add(1*time.Second), nil, nil)
 	prSixths := newTestPR("sixth", time.Now().Add(7*time.Second), nil, nil)
 
-	started, err = qm.AddListToQueue(repo, []string{getQueueKey(prFourth), getQueueKey(prFifth), getQueueKey(prSixths)})
+	started, err = qm.AddListToRunningQueue(repo, []string{getQueueKey(prFourth), getQueueKey(prFifth), getQueueKey(prSixths)})
 	assert.NilError(t, err)
 	assert.Equal(t, len(started), 0)
 

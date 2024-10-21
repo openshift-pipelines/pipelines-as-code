@@ -76,11 +76,11 @@ func (qm *QueueManager) checkAndUpdateSemaphoreSize(repo *v1alpha1.Repository, s
 	return nil
 }
 
-// AddListToQueue adds the pipelineRun to the waiting queue of the repository
+// AddListToRunningQueue adds the pipelineRun to the waiting queue of the repository
 // and if it is at the top and ready to run which means currently running pipelineRun < limit
 // then move it to running queue
 // This adds the pipelineRuns in the same order as in the list.
-func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string) ([]string, error) {
+func (qm *QueueManager) AddListToRunningQueue(repo *v1alpha1.Repository, list []string) ([]string, error) {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
@@ -91,7 +91,7 @@ func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string)
 
 	for _, pr := range list {
 		if sema.addToQueue(pr, time.Now()) {
-			qm.logger.Infof("added pipelineRun (%s) to queue for repository (%s)", pr, repoKey(repo))
+			qm.logger.Infof("added pipelineRun (%s) to running queue for repository (%s)", pr, repoKey(repo))
 		}
 	}
 
@@ -112,6 +112,23 @@ func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string)
 	}
 
 	return acquiredList, nil
+}
+
+func (qm *QueueManager) AddToPendingQueue(repo *v1alpha1.Repository, list []string) error {
+	qm.lock.Lock()
+	defer qm.lock.Unlock()
+
+	sema, err := qm.getSemaphore(repo)
+	if err != nil {
+		return err
+	}
+
+	for _, pr := range list {
+		if sema.addToPendingQueue(pr, time.Now()) {
+			qm.logger.Infof("added pipelineRun (%s) to pending queue for repository (%s)", pr, repoKey(repo))
+		}
+	}
+	return nil
 }
 
 // RemoveFromQueue removes the pipelineRun from the queues of the repository
@@ -178,7 +195,7 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 				return nil
 			}
 			orderedList := strings.Split(order, ",")
-			_, err = qm.AddListToQueue(&repo, orderedList)
+			_, err = qm.AddListToRunningQueue(&repo, orderedList)
 			if err != nil {
 				qm.logger.Error("failed to init queue for repo: ", repo.GetName())
 			}
@@ -204,8 +221,7 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 			}
 			orderedList := strings.Split(order, ",")
 
-			_, err = qm.AddListToQueue(&repo, orderedList)
-			if err != nil {
+			if err := qm.AddToPendingQueue(&repo, orderedList); err != nil {
 				qm.logger.Error("failed to init queue for repo: ", repo.GetName())
 			}
 		}
