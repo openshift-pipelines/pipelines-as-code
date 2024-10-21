@@ -51,7 +51,7 @@ func (r *Reconciler) queuePipelineRun(ctx context.Context, logger *zap.SugaredLo
 	}
 
 	orderedList := strings.Split(order, ",")
-	acquired, err := r.qm.AddListToQueue(repo, orderedList)
+	acquired, err := r.qm.AddListToRunningQueue(repo, orderedList)
 	if err != nil {
 		return fmt.Errorf("failed to add to queue: %s: %w", pr.GetName(), err)
 	}
