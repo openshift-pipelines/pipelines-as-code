@@ -75,6 +75,7 @@ type PushRequestEvent struct {
 type ChangeType struct {
 	Name   string
 	Target Commit
+	Type   string
 }
 
 type Change struct {
