@@ -240,7 +240,8 @@ func MakePREvent(accountid, nickname, sha, comment string) types.PullRequestEven
 			Workspace: types.Workspace{
 				Slug: "organization",
 			},
-			Name: "repo",
+			Name:     "repo",
+			FullName: "organization/repo",
 			Links: types.Links{
 				HTML: types.HTMLLink{
 					HRef: "https://notgh.org/organization/repo",
@@ -315,7 +316,8 @@ func MakePushEvent(accountid, nickname, sha string) types.PushRequestEvent {
 			Workspace: types.Workspace{
 				Slug: "org",
 			},
-			Name: "repo",
+			Name:     "repo",
+			FullName: "org/repo",
 			Links: types.Links{
 				HTML: types.HTMLLink{
 					HRef: "https://vavar/repo/org",
