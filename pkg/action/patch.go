@@ -24,7 +24,7 @@ func PatchPipelineRun(ctx context.Context, logger *zap.SugaredLogger, whatPatchi
 	doubleRetry.Duration *= 2
 	doubleRetry.Factor *= 2
 	doubleRetry.Jitter *= 2
-	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+	err := retry.RetryOnConflict(doubleRetry, func() error {
 		patch, err := json.Marshal(mergePatch)
 		if err != nil {
 			return err
