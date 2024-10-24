@@ -67,6 +67,13 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		if isZeroSHA(gitEvent.After) && gitEvent.CheckoutSHA == "" {
 			return nil, fmt.Errorf("event Delete %s is not supported", event)
 		}
+
+		// sometime in gitlab tag push event contains no commit
+		// in this case we're not supposed to process the event.
+		if len(gitEvent.Commits) == 0 {
+			return nil, fmt.Errorf("no commits attached to this %s event", event)
+		}
+
 		lastCommitIdx := len(gitEvent.Commits) - 1
 		processedEvent.Sender = gitEvent.UserUsername
 		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
