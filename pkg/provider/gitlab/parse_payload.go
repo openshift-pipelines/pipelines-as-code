@@ -117,8 +117,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.URL = gitEvent.Project.WebURL
 		processedEvent.SHA = gitEvent.MergeRequest.LastCommit.ID
 		processedEvent.SHAURL = gitEvent.MergeRequest.LastCommit.URL
-		// TODO: change this back to Title when we get this pr available merged https://github.com/xanzy/go-gitlab/pull/1406/files
-		processedEvent.SHATitle = gitEvent.MergeRequest.LastCommit.Message
+		processedEvent.SHATitle = gitEvent.MergeRequest.LastCommit.Title
 		processedEvent.BaseBranch = gitEvent.MergeRequest.TargetBranch
 		processedEvent.HeadBranch = gitEvent.MergeRequest.SourceBranch
 		processedEvent.BaseURL = gitEvent.MergeRequest.Target.WebURL
