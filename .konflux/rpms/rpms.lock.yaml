@@ -1,0 +1,572 @@
+---
+lockfileVersion: 1
+lockfileVendor: redhat
+arches:
+- arch: aarch64
+  packages:
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/a/alternatives-1.24-1.el9.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 42015
+    checksum: sha256:f0d59ca77b2ad1d21d4070e4113e814c658a0525c79a02679aa67b8964eecf68
+    name: alternatives
+    evr: 1.24-1.el9
+    sourcerpm: chkconfig-1.24-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/c/chkconfig-1.24-1.el9.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 187203
+    checksum: sha256:202cd8fc3508f9b99472d9e38fa3a953abd125a04924e9bc1d96c54772fdff64
+    name: chkconfig
+    evr: 1.24-1.el9
+    sourcerpm: chkconfig-1.24-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/c/cyrus-sasl-lib-2.1.27-21.el9.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 779811
+    checksum: sha256:80e27ed2f946663ec408e6a861407b3692b77898333c10d399409c208e977603
+    name: cyrus-sasl-lib
+    evr: 2.1.27-21.el9
+    sourcerpm: cyrus-sasl-2.1.27-21.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/g/gdbm-libs-1.19-4.el9.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 56951
+    checksum: sha256:7a9a3a5353c7a5ed94bf7be45a3ac7117d34d343765e8760252d38d45f082d11
+    name: gdbm-libs
+    evr: 1:1.19-4.el9
+    sourcerpm: gdbm-1.19-4.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/g/glibc-2.34-100.el9_4.4.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 1807264
+    checksum: sha256:5cfa27d2cf523ca88c1c3a9c421e65593edfe8818bc890cafa4cc4393db61d3f
+    name: glibc
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/g/glibc-common-2.34-100.el9_4.4.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 303509
+    checksum: sha256:e66a3fe284e02ad5011c072ba0123c50fe05f13a35b41b53f31a4ea9718f8910
+    name: glibc-common
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/g/glibc-minimal-langpack-2.34-100.el9_4.4.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 21093
+    checksum: sha256:b76ac4acb689e60455358cc4b49cfdc4aa2df9c8b8f76f2727c7025a51bc915f
+    name: glibc-minimal-langpack
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/l/libselinux-3.6-1.el9.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 89274
+    checksum: sha256:969634cbd245356e33f3b1790ae6b752a88a59f1b4544a4bc6ee44f1e00ae43e
+    name: libselinux
+    evr: 3.6-1.el9
+    sourcerpm: libselinux-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/l/libsemanage-3.6-1.el9.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 121632
+    checksum: sha256:4bb8f0696394b6ba83392434d829d31f3bb5b8099124bbc8452dd38002e481dd
+    name: libsemanage
+    evr: 3.6-1.el9
+    sourcerpm: libsemanage-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/l/libsepol-3.6-1.el9.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 327415
+    checksum: sha256:786dfb8754d37f0ed7af299adef1d3f928240369fc680c337c16caa13b352f42
+    name: libsepol
+    evr: 3.6-1.el9
+    sourcerpm: libsepol-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/l/libxcrypt-4.4.18-3.el9.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 127655
+    checksum: sha256:f05030123425a5033bcca3f260313cafc199bc7bca57e9fb13c335bd087c35a7
+    name: libxcrypt
+    evr: 4.4.18-3.el9
+    sourcerpm: libxcrypt-4.4.18-3.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/os/Packages/s/shadow-utils-4.9-8.el9.aarch64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 1247147
+    checksum: sha256:c41b14018cb679b44ca03856e7ccd1ebf4dd9afa5bfa20c1d43b2bb4b8912b81
+    name: shadow-utils
+    evr: 2:4.9-8.el9
+    sourcerpm: shadow-utils-4.9-8.el9.src.rpm
+  source:
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/c/chkconfig-1.24-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 212273
+    checksum: sha256:db3cbc78eead1a755e6340b678669f1f1e94e888a072f6c8407876cd087cd77f
+    name: chkconfig
+    evr: 1.24-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/c/cyrus-sasl-2.1.27-21.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 4030574
+    checksum: sha256:e46ec9eefa07147569cecd7e2377c37db8380243672f7ed5c744e47341923048
+    name: cyrus-sasl
+    evr: 2.1.27-21.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/g/gdbm-1.19-4.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 983208
+    checksum: sha256:42b39811b826263ecb11bcb556b7d8e9619947eb4f5ac6fca5bfa80969bea275
+    name: gdbm
+    evr: 1:1.19-4.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/g/glibc-2.34-100.el9_4.4.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 18626628
+    checksum: sha256:609d4863fbcbcc09c71823c7b05065d719529c7500836bda2bc760b3f16d09f7
+    name: glibc
+    evr: 2.34-100.el9_4.4
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/l/libselinux-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 268594
+    checksum: sha256:cc4ad1925bfe7cbdf29ec71bf7fd743017f05a92ae1fa94d9b0814fe3cf557a6
+    name: libselinux
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/l/libsemanage-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 216930
+    checksum: sha256:166c3fa12c547c6ff90575323b1aa9cf3c40d0eceb238a0fe79d76b575b6c606
+    name: libsemanage
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/l/libsepol-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 536787
+    checksum: sha256:7bfa43d2f251d1a55d212f3ddd34ee0c2333a88f3c183d5b1752fc30758ae8ac
+    name: libsepol
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/l/libxcrypt-4.4.18-3.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 543970
+    checksum: sha256:d18f72eb41ecd0370e2e47f1dc5774be54e9ff3b4dd333578017666c7c488f40
+    name: libxcrypt
+    evr: 4.4.18-3.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/aarch64/baseos/source/SRPMS/Packages/s/shadow-utils-4.9-8.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 1715148
+    checksum: sha256:fabc62a489698a54d137929cf3d8796783650dcfc5e65d370e175a8ee21682d9
+    name: shadow-utils
+    evr: 2:4.9-8.el9
+  module_metadata: []
+- arch: ppc64le
+  packages:
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/a/alternatives-1.24-1.el9.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 44255
+    checksum: sha256:673bd86cc2a654ff33af956066fabf66f6aa4f575199b4800291a15d00ffcd40
+    name: alternatives
+    evr: 1.24-1.el9
+    sourcerpm: chkconfig-1.24-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/c/chkconfig-1.24-1.el9.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 191856
+    checksum: sha256:404a8217b61d73a2eefbe9a3ca1ada5ce31d2e839cf9a9b8667018ee3396f6ce
+    name: chkconfig
+    evr: 1.24-1.el9
+    sourcerpm: chkconfig-1.24-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/c/cyrus-sasl-lib-2.1.27-21.el9.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 887955
+    checksum: sha256:982a47af9468cba2e570cf771fdf56bb9abb206fb6fcd2c7ce1ac55b031f08e1
+    name: cyrus-sasl-lib
+    evr: 2.1.27-21.el9
+    sourcerpm: cyrus-sasl-2.1.27-21.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/g/gdbm-libs-1.19-4.el9.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 61389
+    checksum: sha256:80cb831b4f86e37b62ad7bcbfe4bdfb16836f49145339df10b46233c9b0f2cbc
+    name: gdbm-libs
+    evr: 1:1.19-4.el9
+    sourcerpm: gdbm-1.19-4.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/g/glibc-2.34-100.el9_4.4.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 2874694
+    checksum: sha256:fd04199bc1c75ddb1240d47e9774ff9244cf062967f09869b31f23a507e1b31a
+    name: glibc
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/g/glibc-common-2.34-100.el9_4.4.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 330808
+    checksum: sha256:b3830968f88fedf1ccb305b9c4e3114375ce507e922706533adc6a139af174d5
+    name: glibc-common
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/g/glibc-minimal-langpack-2.34-100.el9_4.4.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 21117
+    checksum: sha256:78cd48dbb416848a042aa515efb8a2a3d062ef2c20a0c9ce217f67c696de33d4
+    name: glibc-minimal-langpack
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/l/libselinux-3.6-1.el9.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 102476
+    checksum: sha256:7d1ffbea3db731b0ed48c7fa25a441972fcf5d3dcd3127f1b0557008bfbd765b
+    name: libselinux
+    evr: 3.6-1.el9
+    sourcerpm: libselinux-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/l/libsemanage-3.6-1.el9.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 136734
+    checksum: sha256:79ee78a2a79dc72e2dd817411a965ff4622abb2bc5ede06265a0546e8f15fa36
+    name: libsemanage
+    evr: 3.6-1.el9
+    sourcerpm: libsemanage-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/l/libsepol-3.6-1.el9.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 375969
+    checksum: sha256:86c10bdc94f16b1ee2323278fb47bf7fd063d48c80dc6121e13bb203d2111f45
+    name: libsepol
+    evr: 3.6-1.el9
+    sourcerpm: libsepol-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/l/libxcrypt-4.4.18-3.el9.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 136063
+    checksum: sha256:c0bc93eea8ae33a88c33d7f4ac290a7c4fb844e591fb69a55e50dca8df8fbbff
+    name: libxcrypt
+    evr: 4.4.18-3.el9
+    sourcerpm: libxcrypt-4.4.18-3.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/os/Packages/s/shadow-utils-4.9-8.el9.ppc64le.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 1274918
+    checksum: sha256:637266e899e1f40c6d809fff026a26b7326cedb96aca7158ac92916800ffb78c
+    name: shadow-utils
+    evr: 2:4.9-8.el9
+    sourcerpm: shadow-utils-4.9-8.el9.src.rpm
+  source:
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/c/chkconfig-1.24-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 212273
+    checksum: sha256:db3cbc78eead1a755e6340b678669f1f1e94e888a072f6c8407876cd087cd77f
+    name: chkconfig
+    evr: 1.24-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/c/cyrus-sasl-2.1.27-21.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 4030574
+    checksum: sha256:e46ec9eefa07147569cecd7e2377c37db8380243672f7ed5c744e47341923048
+    name: cyrus-sasl
+    evr: 2.1.27-21.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/g/gdbm-1.19-4.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 983208
+    checksum: sha256:42b39811b826263ecb11bcb556b7d8e9619947eb4f5ac6fca5bfa80969bea275
+    name: gdbm
+    evr: 1:1.19-4.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/g/glibc-2.34-100.el9_4.4.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 18626628
+    checksum: sha256:609d4863fbcbcc09c71823c7b05065d719529c7500836bda2bc760b3f16d09f7
+    name: glibc
+    evr: 2.34-100.el9_4.4
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/l/libselinux-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 268594
+    checksum: sha256:cc4ad1925bfe7cbdf29ec71bf7fd743017f05a92ae1fa94d9b0814fe3cf557a6
+    name: libselinux
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/l/libsemanage-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 216930
+    checksum: sha256:166c3fa12c547c6ff90575323b1aa9cf3c40d0eceb238a0fe79d76b575b6c606
+    name: libsemanage
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/l/libsepol-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 536787
+    checksum: sha256:7bfa43d2f251d1a55d212f3ddd34ee0c2333a88f3c183d5b1752fc30758ae8ac
+    name: libsepol
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/l/libxcrypt-4.4.18-3.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 543970
+    checksum: sha256:d18f72eb41ecd0370e2e47f1dc5774be54e9ff3b4dd333578017666c7c488f40
+    name: libxcrypt
+    evr: 4.4.18-3.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/ppc64le/baseos/source/SRPMS/Packages/s/shadow-utils-4.9-8.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 1715148
+    checksum: sha256:fabc62a489698a54d137929cf3d8796783650dcfc5e65d370e175a8ee21682d9
+    name: shadow-utils
+    evr: 2:4.9-8.el9
+  module_metadata: []
+- arch: s390x
+  packages:
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/a/alternatives-1.24-1.el9.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 42484
+    checksum: sha256:4f243d687fa146e786c01d791f405ca49df37f811c9c999abd113d6a3fc3e676
+    name: alternatives
+    evr: 1.24-1.el9
+    sourcerpm: chkconfig-1.24-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/c/chkconfig-1.24-1.el9.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 186648
+    checksum: sha256:46804546f4c8bfca819e200a38d83e21cf0306f987a0cee596e555e56dc047e8
+    name: chkconfig
+    evr: 1.24-1.el9
+    sourcerpm: chkconfig-1.24-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/c/cyrus-sasl-lib-2.1.27-21.el9.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 768894
+    checksum: sha256:5b055f6e29c9f4ee02070820b23477b48fc93ed451d110e72b48ec9881cf99c3
+    name: cyrus-sasl-lib
+    evr: 2.1.27-21.el9
+    sourcerpm: cyrus-sasl-2.1.27-21.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/g/gdbm-libs-1.19-4.el9.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 57459
+    checksum: sha256:fb0146ee86076019daa5a9fce4e4a769fa4b952d562489ef01bbe681c4122dcd
+    name: gdbm-libs
+    evr: 1:1.19-4.el9
+    sourcerpm: gdbm-1.19-4.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/g/glibc-2.34-100.el9_4.4.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 1783506
+    checksum: sha256:a15d925a1bdca01efe6eb1d23d07226ad625873ce81bcc030dbc4ffabfb4ecef
+    name: glibc
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/g/glibc-common-2.34-100.el9_4.4.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 317686
+    checksum: sha256:2460e113c1c44e8153fb148d698c195b0a989b1b18f1522df90e3ab2985c7411
+    name: glibc-common
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/g/glibc-minimal-langpack-2.34-100.el9_4.4.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 21101
+    checksum: sha256:f3eb7d8d45139f7bc58f4221732f1197f907a1fc6e15be42821920ba4502f532
+    name: glibc-minimal-langpack
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/l/libselinux-3.6-1.el9.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 89569
+    checksum: sha256:4afa2aece77081d31eb06bf348fb6a268d6c27242ceb3e11c7a07bebbdf1b397
+    name: libselinux
+    evr: 3.6-1.el9
+    sourcerpm: libselinux-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/l/libsemanage-3.6-1.el9.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 120792
+    checksum: sha256:f20d55c2b978d43105770d2e68b64252de6aff4ce0ce53c886dd88c8dcf959ab
+    name: libsemanage
+    evr: 3.6-1.el9
+    sourcerpm: libsemanage-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/l/libsepol-3.6-1.el9.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 320888
+    checksum: sha256:99ffab92c6ecee1e09b331792d819733ecbfbc282e2e2197f2b479e2c4de1329
+    name: libsepol
+    evr: 3.6-1.el9
+    sourcerpm: libsepol-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/l/libxcrypt-4.4.18-3.el9.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 125532
+    checksum: sha256:c5b89459884f858b3527c879cda2b0576fa27b7e1e5005a98f2cab573291f979
+    name: libxcrypt
+    evr: 4.4.18-3.el9
+    sourcerpm: libxcrypt-4.4.18-3.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/os/Packages/s/shadow-utils-4.9-8.el9.s390x.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 1249535
+    checksum: sha256:6a57bd64114c07e6d066b78f8141ad7d1a1df9950e25f61d8c0ad557a880549a
+    name: shadow-utils
+    evr: 2:4.9-8.el9
+    sourcerpm: shadow-utils-4.9-8.el9.src.rpm
+  source:
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/c/chkconfig-1.24-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 212273
+    checksum: sha256:db3cbc78eead1a755e6340b678669f1f1e94e888a072f6c8407876cd087cd77f
+    name: chkconfig
+    evr: 1.24-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/c/cyrus-sasl-2.1.27-21.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 4030574
+    checksum: sha256:e46ec9eefa07147569cecd7e2377c37db8380243672f7ed5c744e47341923048
+    name: cyrus-sasl
+    evr: 2.1.27-21.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/g/gdbm-1.19-4.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 983208
+    checksum: sha256:42b39811b826263ecb11bcb556b7d8e9619947eb4f5ac6fca5bfa80969bea275
+    name: gdbm
+    evr: 1:1.19-4.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/g/glibc-2.34-100.el9_4.4.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 18626628
+    checksum: sha256:609d4863fbcbcc09c71823c7b05065d719529c7500836bda2bc760b3f16d09f7
+    name: glibc
+    evr: 2.34-100.el9_4.4
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/l/libselinux-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 268594
+    checksum: sha256:cc4ad1925bfe7cbdf29ec71bf7fd743017f05a92ae1fa94d9b0814fe3cf557a6
+    name: libselinux
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/l/libsemanage-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 216930
+    checksum: sha256:166c3fa12c547c6ff90575323b1aa9cf3c40d0eceb238a0fe79d76b575b6c606
+    name: libsemanage
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/l/libsepol-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 536787
+    checksum: sha256:7bfa43d2f251d1a55d212f3ddd34ee0c2333a88f3c183d5b1752fc30758ae8ac
+    name: libsepol
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/l/libxcrypt-4.4.18-3.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 543970
+    checksum: sha256:d18f72eb41ecd0370e2e47f1dc5774be54e9ff3b4dd333578017666c7c488f40
+    name: libxcrypt
+    evr: 4.4.18-3.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/s390x/baseos/source/SRPMS/Packages/s/shadow-utils-4.9-8.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 1715148
+    checksum: sha256:fabc62a489698a54d137929cf3d8796783650dcfc5e65d370e175a8ee21682d9
+    name: shadow-utils
+    evr: 2:4.9-8.el9
+  module_metadata: []
+- arch: x86_64
+  packages:
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/a/alternatives-1.24-1.el9.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 42811
+    checksum: sha256:028dddfb128ca1c02772d698f2a2beded1f366795345ccca9b67561e154ff6ef
+    name: alternatives
+    evr: 1.24-1.el9
+    sourcerpm: chkconfig-1.24-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/c/chkconfig-1.24-1.el9.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 187033
+    checksum: sha256:5bd35b0221861304f34593c75d08a9fc4535a2be0e9812e7c4ab8b836ee847e0
+    name: chkconfig
+    evr: 1.24-1.el9
+    sourcerpm: chkconfig-1.24-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/c/cyrus-sasl-lib-2.1.27-21.el9.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 792070
+    checksum: sha256:d92f2383e68062b9ded78afa8814f18d84fee98e09781f541169627272ce85cf
+    name: cyrus-sasl-lib
+    evr: 2.1.27-21.el9
+    sourcerpm: cyrus-sasl-2.1.27-21.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/g/gdbm-libs-1.19-4.el9.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 57163
+    checksum: sha256:01ee08215db321154bdf46600fc37b2d44b77831728b1db7d114a784494f1f18
+    name: gdbm-libs
+    evr: 1:1.19-4.el9
+    sourcerpm: gdbm-1.19-4.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/g/glibc-2.34-100.el9_4.4.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 2066882
+    checksum: sha256:f2ab157525ff3ab2d4e6fa0d77fa58e0d6174a167a6c378d9302f146926f6bdb
+    name: glibc
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/g/glibc-common-2.34-100.el9_4.4.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 314113
+    checksum: sha256:85f9311225af5fdd235f23b63f243058aeee9b65b14c55a2d9bbdd1409de8970
+    name: glibc-common
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/g/glibc-minimal-langpack-2.34-100.el9_4.4.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 21129
+    checksum: sha256:1e85eceb7b60d23c1f9f93373e3a03d1938fe8362ff5dca9889226984149570c
+    name: glibc-minimal-langpack
+    evr: 2.34-100.el9_4.4
+    sourcerpm: glibc-2.34-100.el9_4.4.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/l/libselinux-3.6-1.el9.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 89946
+    checksum: sha256:13689218202fab6f3ec8f3ed88bc2f279377eced3ba6b95daff7b8f5f71eea6e
+    name: libselinux
+    evr: 3.6-1.el9
+    sourcerpm: libselinux-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/l/libsemanage-3.6-1.el9.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 123547
+    checksum: sha256:3eccd09fc7a14c1e6ecd7909028d5598427f502b1ddaec1f48f64e6f7cc4c8f9
+    name: libsemanage
+    evr: 3.6-1.el9
+    sourcerpm: libsemanage-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/l/libsepol-3.6-1.el9.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 339336
+    checksum: sha256:bd28318adcee4e2124d612bcb349156ca88991b3b6151c0f9cd5e3865d67da8d
+    name: libsepol
+    evr: 3.6-1.el9
+    sourcerpm: libsepol-3.6-1.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/l/libxcrypt-4.4.18-3.el9.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 122599
+    checksum: sha256:a50bb26a28ee7e6379c86b5b91285299b71569fa87ea968d800a56090b7a179d
+    name: libxcrypt
+    evr: 4.4.18-3.el9
+    sourcerpm: libxcrypt-4.4.18-3.el9.src.rpm
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/os/Packages/s/shadow-utils-4.9-8.el9.x86_64.rpm
+    repoid: ubi-9-baseos-rpms
+    size: 1256248
+    checksum: sha256:ec392070aa79e9a39517f5452a4863cd7075493fae3205465c5489db1fe33dea
+    name: shadow-utils
+    evr: 2:4.9-8.el9
+    sourcerpm: shadow-utils-4.9-8.el9.src.rpm
+  source:
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/c/chkconfig-1.24-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 212273
+    checksum: sha256:db3cbc78eead1a755e6340b678669f1f1e94e888a072f6c8407876cd087cd77f
+    name: chkconfig
+    evr: 1.24-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/c/cyrus-sasl-2.1.27-21.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 4030574
+    checksum: sha256:e46ec9eefa07147569cecd7e2377c37db8380243672f7ed5c744e47341923048
+    name: cyrus-sasl
+    evr: 2.1.27-21.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/g/gdbm-1.19-4.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 983208
+    checksum: sha256:42b39811b826263ecb11bcb556b7d8e9619947eb4f5ac6fca5bfa80969bea275
+    name: gdbm
+    evr: 1:1.19-4.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/g/glibc-2.34-100.el9_4.4.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 18626628
+    checksum: sha256:609d4863fbcbcc09c71823c7b05065d719529c7500836bda2bc760b3f16d09f7
+    name: glibc
+    evr: 2.34-100.el9_4.4
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/l/libselinux-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 268594
+    checksum: sha256:cc4ad1925bfe7cbdf29ec71bf7fd743017f05a92ae1fa94d9b0814fe3cf557a6
+    name: libselinux
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/l/libsemanage-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 216930
+    checksum: sha256:166c3fa12c547c6ff90575323b1aa9cf3c40d0eceb238a0fe79d76b575b6c606
+    name: libsemanage
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/l/libsepol-3.6-1.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 536787
+    checksum: sha256:7bfa43d2f251d1a55d212f3ddd34ee0c2333a88f3c183d5b1752fc30758ae8ac
+    name: libsepol
+    evr: 3.6-1.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/l/libxcrypt-4.4.18-3.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 543970
+    checksum: sha256:d18f72eb41ecd0370e2e47f1dc5774be54e9ff3b4dd333578017666c7c488f40
+    name: libxcrypt
+    evr: 4.4.18-3.el9
+  - url: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/x86_64/baseos/source/SRPMS/Packages/s/shadow-utils-4.9-8.el9.src.rpm
+    repoid: ubi-9-baseos-source
+    size: 1715148
+    checksum: sha256:fabc62a489698a54d137929cf3d8796783650dcfc5e65d370e175a8ee21682d9
+    name: shadow-utils
+    evr: 2:4.9-8.el9
+  module_metadata: []
