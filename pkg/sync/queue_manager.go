@@ -160,6 +160,35 @@ func getQueueKey(run *tektonv1.PipelineRun) string {
 	return fmt.Sprintf("%s/%s", run.Namespace, run.Name)
 }
 
+// FilterPipelineRunByState filters the given list of PipelineRun names to only include those
+// that are in a "queued" state and have a pending status. It retrieves the PipelineRun objects
+// from the Tekton API and checks their annotations and status to determine if they should be included.
+//
+// Returns A list of PipelineRun names that are in a "queued" state and have a pending status.
+func FilterPipelineRunByState(ctx context.Context, tekton versioned2.Interface, orderList []string, wantedStatus, wantedState string) []string {
+	orderedList := []string{}
+	for _, prName := range orderList {
+		prKey := strings.Split(prName, "/")
+		pr, err := tekton.TektonV1().PipelineRuns(prKey[0]).Get(ctx, prKey[1], v1.GetOptions{})
+		if err != nil {
+			continue
+		}
+
+		state, exist := pr.GetAnnotations()[keys.State]
+		if !exist {
+			continue
+		}
+
+		if state == wantedState {
+			if wantedStatus != "" && pr.Spec.Status != tektonv1.PipelineRunSpecStatus(wantedStatus) {
+				continue
+			}
+			orderedList = append(orderedList, prName)
+		}
+	}
+	return orderedList
+}
+
 // InitQueues rebuild all the queues for all repository if concurrency is defined before
 // reconciler started reconciling them.
 func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interface, pac versioned.Interface) error {
@@ -194,7 +223,8 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 				// if the pipelineRun doesn't have order label then wait
 				return nil
 			}
-			orderedList := strings.Split(order, ",")
+			orderedList := FilterPipelineRunByState(ctx, tekton, strings.Split(order, ","), "", kubeinteraction.StateStarted)
+
 			_, err = qm.AddListToRunningQueue(&repo, orderedList)
 			if err != nil {
 				qm.logger.Error("failed to init queue for repo: ", repo.GetName())
@@ -219,8 +249,7 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 				// if the pipelineRun doesn't have order label then wait
 				return nil
 			}
-			orderedList := strings.Split(order, ",")
-
+			orderedList := FilterPipelineRunByState(ctx, tekton, strings.Split(order, ","), tektonv1.PipelineRunSpecStatusPending, kubeinteraction.StateQueued)
 			if err := qm.AddToPendingQueue(&repo, orderedList); err != nil {
 				qm.logger.Error("failed to init queue for repo: ", repo.GetName())
 			}
