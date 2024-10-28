@@ -45,7 +45,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, pr *tektonv1.PipelineRun)
 			repo.Spec.Merge(r.globalRepo.Spec)
 		}
 		logger = logger.With("namespace", repo.Namespace)
-		next := r.qm.RemoveFromQueue(repo, pr)
+		next := r.qm.RemoveAndTakeItemFromQueue(repo, pr)
 		if next != "" {
 			key := strings.Split(next, "/")
 			pr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(key[0]).Get(ctx, key[1], metav1.GetOptions{})
@@ -54,7 +54,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, pr *tektonv1.PipelineRun)
 			}
 			if err := r.
 				updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-				logger.Error("failed to update status: ", err)
+				logger.Errorf("failed to update status: %w", err)
 				return err
 			}
 			return nil

@@ -38,7 +38,7 @@ type Reconciler struct {
 	repoLister        pacapi.RepositoryLister
 	pipelineRunLister tektonv1lister.PipelineRunLister
 	kinteract         kubeinteraction.Interface
-	qm                *sync.QueueManager
+	qm                sync.QueueManagerInterface
 	metrics           *metrics.Recorder
 	eventEmitter      *events.EventEmitter
 	globalRepo        *v1alpha1.Repository
@@ -198,17 +198,24 @@ func (r *Reconciler) reportFinalStatus(ctx context.Context, logger *zap.SugaredL
 	}
 
 	// remove pipelineRun from Queue and start the next one
-	next := r.qm.RemoveFromQueue(repo, pr)
-	if next != "" {
+	for {
+		next := r.qm.RemoveAndTakeItemFromQueue(repo, pr)
+		if next == "" {
+			break
+		}
 		key := strings.Split(next, "/")
 		pr, err := r.run.Clients.Tekton.TektonV1().PipelineRuns(key[0]).Get(ctx, key[1], metav1.GetOptions{})
 		if err != nil {
-			return repo, fmt.Errorf("cannot get pipeline for next in queue: %w", err)
+			logger.Errorf("cannot get pipeline for next in queue: %w", err)
+			continue
 		}
 
 		if err := r.updatePipelineRunToInProgress(ctx, logger, repo, pr); err != nil {
-			return repo, fmt.Errorf("failed to update status: %w", err)
+			logger.Errorf("failed to update status: %w", err)
+			_ = r.qm.RemoveFromQueue(sync.RepoKey(repo), sync.PrKey(pr))
+			continue
 		}
+		break
 	}
 
 	if err := r.cleanupPipelineRuns(ctx, logger, pacInfo, repo, pr); err != nil {
