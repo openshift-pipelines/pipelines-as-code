@@ -68,11 +68,22 @@ func MuxDisallowUserID(mux *http.ServeMux, projectID, userID int) {
 
 func MuxListTektonDir(_ *testing.T, mux *http.ServeMux, pid int, ref, prs string) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/tree", pid), func(rw http.ResponseWriter, r *http.Request) {
-		if r.URL.Query().Get("ref") == ref {
-			fmt.Fprintf(rw, `[
-			{"name": "pac.yaml", "path": "pr.yaml"},
-			{"name": "random.yaml", "path": "random.yaml"}
-			]`)
+		if r.URL.Query().Get("pagination") == "keyset" {
+			if r.URL.Query().Get("ref") == ref {
+				if r.URL.Query().Get("page_token") != "page2" {
+					// Provide a response header pointing to page 2
+					rw.Header().Set("Link", fmt.Sprintf("<%s/projects/%d/repository/tree?ref=%s&page_token=page2>; rel=\"next\"", defaultAPIURL, pid, ref))
+					// .. and serve page 1
+					fmt.Fprintf(rw, `[
+					{"name": "random.yaml", "path": "random.yaml"}
+					]`)
+				} else {
+					// Serve page 2
+					fmt.Fprintf(rw, `[
+					{"name": "pac.yaml", "path": "pr.yaml"}
+					]`)
+				}
+			}
 		}
 	})
 
