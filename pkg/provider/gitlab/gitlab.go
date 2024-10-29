@@ -245,17 +245,40 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 		Path:      gitlab.Ptr(path),
 		Ref:       gitlab.Ptr(revision),
 		Recursive: gitlab.Ptr(true),
+		ListOptions: gitlab.ListOptions{
+			OrderBy:    "id",
+			Pagination: "keyset",
+			PerPage:    20,
+			Sort:       "asc",
+		},
 	}
 
-	objects, resp, err := v.Client.Repositories.ListTree(v.sourceProjectID, opt)
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		return "", nil
-	}
-	if err != nil {
-		return "", fmt.Errorf("failed to list %s dir: %w", path, err)
+	options := []gitlab.RequestOptionFunc{}
+	nodes := []*gitlab.TreeNode{}
+
+	for {
+		objects, resp, err := v.Client.Repositories.ListTree(v.sourceProjectID, opt, options...)
+		if err != nil {
+			return "", fmt.Errorf("failed to list %s dir: %w", path, err)
+		}
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return "", nil
+		}
+
+		nodes = append(nodes, objects...)
+
+		// Exit the loop when we've seen all pages.
+		if resp.NextLink == "" {
+			break
+		}
+
+		// Otherwise, set param to query the next page
+		options = []gitlab.RequestOptionFunc{
+			gitlab.WithKeysetPaginationParameters(resp.NextLink),
+		}
 	}
 
-	return v.concatAllYamlFiles(objects, event)
+	return v.concatAllYamlFiles(nodes, event)
 }
 
 // concatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string.
