@@ -10,9 +10,9 @@ type EventActor struct {
 }
 
 type PullRequestEvent struct {
-	Actor      EventActor
-	PulRequest bbv1.PullRequest `json:"pullRequest"`
-	Comment    bbv1.Comment     `json:"comment"`
+	Actor       EventActor
+	PullRequest bbv1.PullRequest `json:"pullRequest"`
+	Comment     bbv1.Comment     `json:"comment"`
 }
 
 type PushRequestEventChange struct {

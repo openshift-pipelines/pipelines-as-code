@@ -105,7 +105,7 @@ func MakeEvent(event *info.Event) *info.Event {
 	}
 	if rev.Event == nil {
 		rev.Event = &types.PullRequestEvent{
-			PulRequest: bbv1.PullRequest{ID: 666},
+			PullRequest: bbv1.PullRequest{ID: 666},
 		}
 	}
 	return rev
@@ -270,7 +270,7 @@ func MakePREvent(event *info.Event, comment string) *types.PullRequestEvent {
 
 	pr := &types.PullRequestEvent{
 		Actor: types.EventActor{ID: iii, Name: event.Sender},
-		PulRequest: bbv1.PullRequest{
+		PullRequest: bbv1.PullRequest{
 			ToRef: bbv1.PullRequestRef{
 				Repository: bbv1.Repository{
 					Project: &bbv1.Project{Key: event.Organization},
