@@ -72,23 +72,23 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 			}
 		}
 		// TODO: It's Really not an OWNER but a PROJECT
-		processedEvent.Organization = e.PulRequest.ToRef.Repository.Project.Key
-		processedEvent.Repository = e.PulRequest.ToRef.Repository.Name
-		processedEvent.SHA = e.PulRequest.FromRef.LatestCommit
-		processedEvent.PullRequestNumber = e.PulRequest.ID
-		processedEvent.URL = e.PulRequest.ToRef.Repository.Links.Self[0].Href
-		processedEvent.BaseBranch = e.PulRequest.ToRef.DisplayID
-		processedEvent.HeadBranch = e.PulRequest.FromRef.DisplayID
-		processedEvent.BaseURL = e.PulRequest.ToRef.Repository.Links.Self[0].Href
-		processedEvent.HeadURL = e.PulRequest.FromRef.Repository.Links.Self[0].Href
+		processedEvent.Organization = e.PullRequest.ToRef.Repository.Project.Key
+		processedEvent.Repository = e.PullRequest.ToRef.Repository.Name
+		processedEvent.SHA = e.PullRequest.FromRef.LatestCommit
+		processedEvent.PullRequestNumber = e.PullRequest.ID
+		processedEvent.URL = e.PullRequest.ToRef.Repository.Links.Self[0].Href
+		processedEvent.BaseBranch = e.PullRequest.ToRef.DisplayID
+		processedEvent.HeadBranch = e.PullRequest.FromRef.DisplayID
+		processedEvent.BaseURL = e.PullRequest.ToRef.Repository.Links.Self[0].Href
+		processedEvent.HeadURL = e.PullRequest.FromRef.Repository.Links.Self[0].Href
 		processedEvent.AccountID = fmt.Sprintf("%d", e.Actor.ID)
 		processedEvent.Sender = e.Actor.Name
-		for _, value := range e.PulRequest.FromRef.Repository.Links.Clone {
+		for _, value := range e.PullRequest.FromRef.Repository.Links.Clone {
 			if value.Name == "http" {
 				processedEvent.CloneURL = value.Href
 			}
 		}
-		v.pullRequestNumber = e.PulRequest.ID
+		v.pullRequestNumber = e.PullRequest.ID
 	case *types.PushRequestEvent:
 		processedEvent.Event = "push"
 		processedEvent.TriggerTarget = "push"
