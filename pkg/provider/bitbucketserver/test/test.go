@@ -271,6 +271,7 @@ func MakePREvent(event *info.Event, comment string) *types.PullRequestEvent {
 	pr := &types.PullRequestEvent{
 		Actor: types.EventActor{ID: iii, Name: event.Sender},
 		PullRequest: bbv1.PullRequest{
+			ID: 1,
 			ToRef: bbv1.PullRequestRef{
 				Repository: bbv1.Repository{
 					Project: &bbv1.Project{Key: event.Organization},
