@@ -9,9 +9,308 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	bbv1test "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/test"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
+
+func TestCheckValidPayload(t *testing.T) {
+	tests := []struct {
+		name          string
+		wantErrString string
+		payloadEvent  types.PullRequestEvent
+	}{
+		{
+			name: "missing project",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{},
+					},
+				},
+			},
+			wantErrString: "bitbucket project is nil",
+		},
+		{
+			name: "empty project key",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Project: &bbv1.Project{},
+						},
+					},
+				},
+			},
+			wantErrString: "bitbucket project key is empty",
+		},
+		{
+			name: "empty repository name",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Project: &bbv1.Project{
+								Key: "PROJ",
+							},
+						},
+					},
+				},
+			},
+			wantErrString: "bitbucket toRef repository name is empty",
+		},
+		{
+			name: "missing latest commit",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					FromRef: bbv1.PullRequestRef{},
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
+					},
+				},
+			},
+			wantErrString: "bitbucket fromRef latest commit is empty",
+		},
+		{
+			name: "zero pull request ID",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
+					},
+					FromRef: bbv1.PullRequestRef{
+						LatestCommit: "abcd",
+					},
+				},
+			},
+			wantErrString: "bitbucket pull request ID is zero",
+		},
+		{
+			name: "missing repository links",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
+					},
+					FromRef: bbv1.PullRequestRef{
+						LatestCommit: "abcd",
+					},
+					ID: 1,
+				},
+			},
+			wantErrString: "bitbucket toRef repository links are nil or empty",
+		},
+		{
+			name: "empty toRef display ID",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
+								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
+					},
+					FromRef: bbv1.PullRequestRef{
+						LatestCommit: "abcd",
+					},
+					ID: 1,
+				},
+			},
+			wantErrString: "bitbucket toRef display ID is empty",
+		},
+		{
+			name: "empty fromRef display ID",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
+								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+								Links: bbv1.Links{
+									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								},
+							},
+						},
+						DisplayID: "main",
+					},
+					FromRef: bbv1.PullRequestRef{LatestCommit: "latet"},
+					ID:      1,
+				},
+			},
+			wantErrString: "bitbucket fromRef display ID is empty",
+		},
+		{
+			name: "missing fromRef repository links",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
+								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+								Links: bbv1.Links{
+									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								},
+							},
+						},
+						DisplayID: "main",
+					},
+					FromRef: bbv1.PullRequestRef{
+						DisplayID:    "feature",
+						LatestCommit: "abcd",
+					},
+					ID: 1,
+				},
+			},
+			wantErrString: "bitbucket fromRef repository links are nil or empty",
+		},
+		{
+			name: "zero actor ID",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
+								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key: "PROJ",
+
+								Links: bbv1.Links{
+									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								},
+							},
+						},
+						DisplayID: "main",
+					},
+					FromRef: bbv1.PullRequestRef{
+						DisplayID:    "feature",
+						LatestCommit: "abcd",
+						Repository: bbv1.Repository{
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
+								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Name: "dest",
+						},
+					},
+					ID: 1,
+				},
+				Actor: types.EventActor{},
+			},
+			wantErrString: "bitbucket actor ID is zero",
+		},
+		{
+			name: "empty actor name",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
+								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+								Links: bbv1.Links{
+									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								},
+							},
+						},
+						DisplayID: "main",
+					},
+					FromRef: bbv1.PullRequestRef{
+						DisplayID:    "feature",
+						LatestCommit: "abcd",
+						Repository: bbv1.Repository{
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
+								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Name: "dest",
+						},
+					},
+					ID: 1,
+				},
+				Actor: types.EventActor{
+					ID: 1,
+				},
+			},
+			wantErrString: "bitbucket actor name is empty",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := checkValidPayload(&tt.payloadEvent)
+			if tt.wantErrString != "" {
+				assert.ErrorContains(t, err, tt.wantErrString)
+				return
+			}
+			assert.NilError(t, err)
+		})
+	}
+}
 
 func TestParsePayload(t *testing.T) {
 	ev1 := &info.Event{

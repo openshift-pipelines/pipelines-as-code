@@ -15,6 +15,55 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
 )
 
+// checkValidPayload checks if the payload is valid.
+func checkValidPayload(e *types.PullRequestEvent) error {
+	if e.PullRequest.ToRef.Repository.Project == nil {
+		return fmt.Errorf("bitbucket project is nil")
+	}
+	if e.PullRequest.ToRef.Repository.Project.Key == "" {
+		return fmt.Errorf("bitbucket project key is empty")
+	}
+	if e.PullRequest.ToRef.Repository.Name == "" {
+		return fmt.Errorf("bitbucket toRef repository name is empty")
+	}
+
+	if e.PullRequest.ToRef.Repository.Project == nil {
+		return fmt.Errorf("bitbucket toRef project is nil")
+	}
+	if e.PullRequest.ToRef.Repository.Project.Key == "" {
+		return fmt.Errorf("bitbucket toRef project key is empty")
+	}
+	if e.PullRequest.ToRef.Repository.Name == "" {
+		return fmt.Errorf("bitbucket toRef repository name is empty")
+	}
+	if e.PullRequest.FromRef.LatestCommit == "" {
+		return fmt.Errorf("bitbucket fromRef latest commit is empty")
+	}
+	if e.PullRequest.ID == 0 {
+		return fmt.Errorf("bitbucket pull request ID is zero")
+	}
+
+	if e.PullRequest.ToRef.Repository.Links == nil || len(e.PullRequest.ToRef.Repository.Links.Self) == 0 {
+		return fmt.Errorf("bitbucket toRef repository links are nil or empty")
+	}
+	if e.PullRequest.ToRef.DisplayID == "" {
+		return fmt.Errorf("bitbucket toRef display ID is empty")
+	}
+	if e.PullRequest.FromRef.DisplayID == "" {
+		return fmt.Errorf("bitbucket fromRef display ID is empty")
+	}
+	if e.PullRequest.FromRef.Repository.Links == nil || len(e.PullRequest.FromRef.Repository.Links.Self) == 0 {
+		return fmt.Errorf("bitbucket fromRef repository links are nil or empty")
+	}
+	if e.Actor.ID == 0 {
+		return fmt.Errorf("bitbucket actor ID is zero")
+	}
+	if e.Actor.Name == "" {
+		return fmt.Errorf("bitbucket actor name is empty")
+	}
+	return nil
+}
+
 // sanitizeEventURL returns the URL to the event without the /browse.
 func sanitizeEventURL(eventURL string) string {
 	if strings.HasSuffix(eventURL, "/browse") {
@@ -71,6 +120,11 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 				processedEvent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(e.Comment.Text)
 			}
 		}
+
+		if err := checkValidPayload(e); err != nil {
+			return nil, err
+		}
+
 		// TODO: It's Really not an OWNER but a PROJECT
 		processedEvent.Organization = e.PullRequest.ToRef.Repository.Project.Key
 		processedEvent.Repository = e.PullRequest.ToRef.Repository.Name
