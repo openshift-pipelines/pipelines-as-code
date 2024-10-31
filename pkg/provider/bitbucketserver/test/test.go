@@ -25,7 +25,7 @@ var (
 	buildAPIURL   = "/build-status/1.0"
 )
 
-func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *http.ServeMux, func()) {
+func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *http.ServeMux, func(), string) {
 	mux := http.NewServeMux()
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(defaultAPIURL+"/", http.StripPrefix(defaultAPIURL, mux))
@@ -49,7 +49,7 @@ func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *http.ServeMux, 
 	cfg := bbv1.NewConfiguration(server.URL)
 	cfg.HTTPClient = server.Client()
 	client := bbv1.NewAPIClient(ctx, cfg)
-	return client, mux, tearDown
+	return client, mux, tearDown, server.URL
 }
 
 func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expectedCommentSubstr string, prID int) {
