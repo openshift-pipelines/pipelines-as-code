@@ -3,6 +3,7 @@ package bitbucketserver
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -215,13 +216,13 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path,
 
 func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
 	if event.Provider.User == "" {
-		return fmt.Errorf("no provider.user has been set in the repo crd")
+		return fmt.Errorf("no spec.git_provider.user has been set in the repo crd")
 	}
 	if event.Provider.Token == "" {
-		return fmt.Errorf("no provider.secret has been set in the repo crd")
+		return fmt.Errorf("no spec.git_provider.secret has been set in the repo crd")
 	}
 	if event.Provider.URL == "" {
-		return fmt.Errorf("no provider.url has been set in the repo crd")
+		return fmt.Errorf("no spec.git_provider.url has been set in the repo crd")
 	}
 
 	// make sure we have /rest at the end of the url
@@ -237,8 +238,17 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 
 	ctx = context.WithValue(ctx, bbv1.ContextBasicAuth, basicAuth)
 	cfg := bbv1.NewConfiguration(event.Provider.URL)
-	v.Client = bbv1.NewAPIClient(ctx, cfg)
+	if v.Client == nil {
+		v.Client = bbv1.NewAPIClient(ctx, cfg)
+	}
 	v.run = run
+	resp, err := v.Client.DefaultApi.GetUser(event.Provider.User)
+	if resp.Response != nil && resp.StatusCode == http.StatusUnauthorized {
+		return fmt.Errorf("cannot get user %s with token: %w", event.Provider.User, err)
+	}
+	if err != nil {
+		return fmt.Errorf("cannot get user %s: %w", event.Provider.User, err)
+	}
 
 	return nil
 }
