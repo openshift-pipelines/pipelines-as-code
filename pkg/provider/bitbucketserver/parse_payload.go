@@ -18,16 +18,6 @@ import (
 // checkValidPayload checks if the payload is valid.
 func checkValidPayload(e *types.PullRequestEvent) error {
 	if e.PullRequest.ToRef.Repository.Project == nil {
-		return fmt.Errorf("bitbucket project is nil")
-	}
-	if e.PullRequest.ToRef.Repository.Project.Key == "" {
-		return fmt.Errorf("bitbucket project key is empty")
-	}
-	if e.PullRequest.ToRef.Repository.Name == "" {
-		return fmt.Errorf("bitbucket toRef repository name is empty")
-	}
-
-	if e.PullRequest.ToRef.Repository.Project == nil {
 		return fmt.Errorf("bitbucket toRef project is nil")
 	}
 	if e.PullRequest.ToRef.Repository.Project.Key == "" {
@@ -35,6 +25,19 @@ func checkValidPayload(e *types.PullRequestEvent) error {
 	}
 	if e.PullRequest.ToRef.Repository.Name == "" {
 		return fmt.Errorf("bitbucket toRef repository name is empty")
+	}
+	if e.PullRequest.ToRef.LatestCommit == "" {
+		return fmt.Errorf("bitbucket toRef latest commit is empty")
+	}
+
+	if e.PullRequest.FromRef.Repository.Project == nil {
+		return fmt.Errorf("bitbucket fromRef project is nil")
+	}
+	if e.PullRequest.FromRef.Repository.Project.Key == "" {
+		return fmt.Errorf("bitbucket fromRef project key is empty")
+	}
+	if e.PullRequest.FromRef.Repository.Name == "" {
+		return fmt.Errorf("bitbucket fromRef repository name is empty")
 	}
 	if e.PullRequest.FromRef.LatestCommit == "" {
 		return fmt.Errorf("bitbucket fromRef latest commit is empty")
