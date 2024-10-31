@@ -287,12 +287,15 @@ func MakePREvent(event *info.Event, comment string) *types.PullRequestEvent {
 						},
 					},
 				},
-				DisplayID: "base",
+				DisplayID:    "base",
+				LatestCommit: "abcd",
 			},
 			FromRef: bbv1.PullRequestRef{
 				DisplayID:    "head",
 				LatestCommit: event.SHA,
 				Repository: bbv1.Repository{
+					Project: &bbv1.Project{Key: event.Organization},
+					Name:    event.Repository,
 					Links: &struct {
 						Clone []bbv1.CloneLink `json:"clone,omitempty"`
 						Self  []bbv1.SelfLink  `json:"self,omitempty"`
