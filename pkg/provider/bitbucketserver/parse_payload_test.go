@@ -21,7 +21,7 @@ func TestCheckValidPayload(t *testing.T) {
 		payloadEvent  types.PullRequestEvent
 	}{
 		{
-			name: "missing project",
+			name: "missing toRef.project",
 			payloadEvent: types.PullRequestEvent{
 				PullRequest: bbv1.PullRequest{
 					ToRef: bbv1.PullRequestRef{
@@ -29,10 +29,10 @@ func TestCheckValidPayload(t *testing.T) {
 					},
 				},
 			},
-			wantErrString: "bitbucket project is nil",
+			wantErrString: "bitbucket toRef project is nil",
 		},
 		{
-			name: "empty project key",
+			name: "empty toRef.project.key",
 			payloadEvent: types.PullRequestEvent{
 				PullRequest: bbv1.PullRequest{
 					ToRef: bbv1.PullRequestRef{
@@ -42,10 +42,10 @@ func TestCheckValidPayload(t *testing.T) {
 					},
 				},
 			},
-			wantErrString: "bitbucket project key is empty",
+			wantErrString: "bitbucket toRef project key is empty",
 		},
 		{
-			name: "empty repository name",
+			name: "empty toRef.repositoryName",
 			payloadEvent: types.PullRequestEvent{
 				PullRequest: bbv1.PullRequest{
 					ToRef: bbv1.PullRequestRef{
@@ -60,11 +60,107 @@ func TestCheckValidPayload(t *testing.T) {
 			wantErrString: "bitbucket toRef repository name is empty",
 		},
 		{
-			name: "missing latest commit",
+			name: "missing toRef.latestCommit",
 			payloadEvent: types.PullRequestEvent{
 				PullRequest: bbv1.PullRequest{
 					FromRef: bbv1.PullRequestRef{},
 					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
+					},
+				},
+			},
+			wantErrString: "bitbucket toRef latest commit is empty",
+		},
+		{
+			name: "missing fromRef.project",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
+						LatestCommit: "abcd",
+					},
+					FromRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{},
+					},
+				},
+			},
+			wantErrString: "bitbucket fromRef project is nil",
+		},
+		{
+			name: "empty fromRef.projectKey",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
+						LatestCommit: "abcd",
+					},
+					FromRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Project: &bbv1.Project{},
+						},
+					},
+				},
+			},
+			wantErrString: "bitbucket fromRef project key is empty",
+		},
+		{
+			name: "empty fromRef.repositoryName",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
+						LatestCommit: "abcd",
+					},
+					FromRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Project: &bbv1.Project{
+								Key: "PROJ",
+							},
+						},
+					},
+				},
+			},
+			wantErrString: "bitbucket fromRef repository name is empty",
+		},
+		{
+			name: "missing fromRef.latestCommit",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
+						LatestCommit: "abcd",
+					},
+					FromRef: bbv1.PullRequestRef{
 						Repository: bbv1.Repository{
 							Name: "repo",
 							Project: &bbv1.Project{
@@ -89,8 +185,16 @@ func TestCheckValidPayload(t *testing.T) {
 								Name: "repo",
 							},
 						},
+						LatestCommit: "abcd",
 					},
 					FromRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
 						LatestCommit: "abcd",
 					},
 				},
@@ -109,8 +213,16 @@ func TestCheckValidPayload(t *testing.T) {
 								Name: "repo",
 							},
 						},
+						LatestCommit: "abcd",
 					},
 					FromRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
 						LatestCommit: "abcd",
 					},
 					ID: 1,
@@ -137,8 +249,16 @@ func TestCheckValidPayload(t *testing.T) {
 								Name: "repo",
 							},
 						},
+						LatestCommit: "abcd",
 					},
 					FromRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
 						LatestCommit: "abcd",
 					},
 					ID: 1,
@@ -168,10 +288,20 @@ func TestCheckValidPayload(t *testing.T) {
 								},
 							},
 						},
-						DisplayID: "main",
+						DisplayID:    "main",
+						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{LatestCommit: "latet"},
-					ID:      1,
+					FromRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
+						LatestCommit: "abcd",
+					},
+					ID: 1,
 				},
 			},
 			wantErrString: "bitbucket fromRef display ID is empty",
@@ -198,9 +328,17 @@ func TestCheckValidPayload(t *testing.T) {
 								},
 							},
 						},
-						DisplayID: "main",
+						DisplayID:    "main",
+						LatestCommit: "abcd",
 					},
 					FromRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+						},
 						DisplayID:    "feature",
 						LatestCommit: "abcd",
 					},
@@ -231,12 +369,17 @@ func TestCheckValidPayload(t *testing.T) {
 								},
 							},
 						},
-						DisplayID: "main",
+						DisplayID:    "main",
+						LatestCommit: "abcd",
 					},
 					FromRef: bbv1.PullRequestRef{
 						DisplayID:    "feature",
 						LatestCommit: "abcd",
 						Repository: bbv1.Repository{
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
 							Links: &struct {
 								Clone []bbv1.CloneLink `json:"clone,omitempty"`
 								Self  []bbv1.SelfLink  `json:"self,omitempty"`
@@ -275,12 +418,17 @@ func TestCheckValidPayload(t *testing.T) {
 								},
 							},
 						},
-						DisplayID: "main",
+						DisplayID:    "main",
+						LatestCommit: "abcd",
 					},
 					FromRef: bbv1.PullRequestRef{
 						DisplayID:    "feature",
 						LatestCommit: "abcd",
 						Repository: bbv1.Repository{
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
 							Links: &struct {
 								Clone []bbv1.CloneLink `json:"clone,omitempty"`
 								Self  []bbv1.SelfLink  `json:"self,omitempty"`
