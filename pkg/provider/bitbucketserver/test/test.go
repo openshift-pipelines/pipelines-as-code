@@ -285,6 +285,7 @@ func MakePREvent(event *info.Event, comment string) *types.PullRequestEvent {
 								Href: event.URL,
 							},
 						},
+						Clone: []bbv1.CloneLink{{Href: event.URL}},
 					},
 				},
 				DisplayID:    "base",
