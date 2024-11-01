@@ -348,6 +348,101 @@ func TestCheckValidPayload(t *testing.T) {
 			wantErrString: "bitbucket fromRef repository links are nil or empty",
 		},
 		{
+			name: "empty toRef repository clone links",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key: "PROJ",
+
+								Links: bbv1.Links{
+									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								},
+							},
+						},
+						DisplayID:    "main",
+						LatestCommit: "abcd",
+					},
+					FromRef: bbv1.PullRequestRef{
+						DisplayID:    "feature",
+						LatestCommit: "abcd",
+						Repository: bbv1.Repository{
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Name: "dest",
+						},
+					},
+					ID: 1,
+				},
+				Actor: types.EventActor{},
+			},
+			wantErrString: "bitbucket toRef repository clone links are empty",
+		},
+		{
+			name: "empty fromRef repository clone links",
+			payloadEvent: types.PullRequestEvent{
+				PullRequest: bbv1.PullRequest{
+					ToRef: bbv1.PullRequestRef{
+						Repository: bbv1.Repository{
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
+								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Name: "repo",
+							Project: &bbv1.Project{
+								Key: "PROJ",
+
+								Links: bbv1.Links{
+									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								},
+							},
+						},
+						DisplayID:    "main",
+						LatestCommit: "abcd",
+					},
+					FromRef: bbv1.PullRequestRef{
+						DisplayID:    "feature",
+						LatestCommit: "abcd",
+						Repository: bbv1.Repository{
+							Project: &bbv1.Project{
+								Key:  "PROJ",
+								Name: "repo",
+							},
+							Links: &struct {
+								Clone []bbv1.CloneLink `json:"clone,omitempty"`
+								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+							}{
+								Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+							},
+							Name: "dest",
+						},
+					},
+					ID: 1,
+				},
+				Actor: types.EventActor{},
+			},
+			wantErrString: "bitbucket fromRef repository clone links are empty",
+		},
+		{
 			name: "zero actor ID",
 			payloadEvent: types.PullRequestEvent{
 				PullRequest: bbv1.PullRequest{

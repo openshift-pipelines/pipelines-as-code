@@ -58,6 +58,13 @@ func checkValidPayload(e *types.PullRequestEvent) error {
 	if e.PullRequest.FromRef.Repository.Links == nil || len(e.PullRequest.FromRef.Repository.Links.Self) == 0 {
 		return fmt.Errorf("bitbucket fromRef repository links are nil or empty")
 	}
+	if len(e.PullRequest.ToRef.Repository.Links.Clone) == 0 {
+		return fmt.Errorf("bitbucket toRef repository clone links are empty")
+	}
+	if len(e.PullRequest.FromRef.Repository.Links.Clone) == 0 {
+		return fmt.Errorf("bitbucket fromRef repository clone links are empty")
+	}
+
 	if e.Actor.ID == 0 {
 		return fmt.Errorf("bitbucket actor ID is zero")
 	}
