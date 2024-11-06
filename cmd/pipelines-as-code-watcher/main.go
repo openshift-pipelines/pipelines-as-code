@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/reconciler"
@@ -56,9 +57,16 @@ func main() {
 	if cfg.Burst == 0 {
 		cfg.Burst = rest.DefaultBurst
 	}
+
 	// multiply by no of controllers being created
 	cfg.QPS = 5 * cfg.QPS
 	cfg.Burst = 5 * cfg.Burst
 	ctx := signals.NewContext()
+	if val, ok := os.LookupEnv("PAC_DISABLE_HA"); ok {
+		if strings.ToLower(val) == "true" {
+			ctx = sharedmain.WithHADisabled(ctx)
+		}
+	}
+
 	sharedmain.MainWithConfig(ctx, "pac-watcher", cfg, reconciler.NewController())
 }
