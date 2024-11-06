@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/google/go-github/v64/github"
+	"github.com/google/go-github/v66/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"

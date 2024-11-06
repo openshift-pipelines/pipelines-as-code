@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v64/github"
+	"github.com/google/go-github/v66/github"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
 	corev1 "k8s.io/api/core/v1"

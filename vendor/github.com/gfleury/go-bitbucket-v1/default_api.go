@@ -3503,6 +3503,9 @@ func (a *DefaultApiService) GetBranches(project, repository string, localVarOpti
 	if err := typeCheckParameter(localVarOptionals["start"], "int", "start"); err != nil {
 		return nil, err
 	}
+	if err := typeCheckParameter(localVarOptionals["boostMatches"], "bool", "boostMatches"); err != nil {
+		return nil, err
+	}
 
 	if localVarTempParam, localVarOk := localVarOptionals["limit"].(int); localVarOk {
 		localVarQueryParams.Add("limit", parameterToString(localVarTempParam, ""))
@@ -3521,6 +3524,9 @@ func (a *DefaultApiService) GetBranches(project, repository string, localVarOpti
 	}
 	if localVarTempParam, localVarOk := localVarOptionals["orderBy"].(string); localVarOk {
 		localVarQueryParams.Add("orderBy", parameterToString(localVarTempParam, ""))
+	}
+	if localVarTempParam, localVarOk := localVarOptionals["boostMatches"].(bool); localVarOk {
+		localVarQueryParams.Add("boostMatches", parameterToString(localVarTempParam, ""))
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{"application/json"}
@@ -13241,6 +13247,89 @@ func (a *DefaultApiService) UpdateComment_46(projectKey, repositorySlug string, 
 		localVarFileName   string
 		localVarFileBytes  []byte
 	)
+
+	// create path and map variables
+	localVarPath := a.client.cfg.BasePath + "/api/1.0/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}"
+	localVarPath = strings.Replace(localVarPath, "{"+"projectKey"+"}", fmt.Sprintf("%v", projectKey), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"repositorySlug"+"}", fmt.Sprintf("%v", repositorySlug), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"pullRequestId"+"}", fmt.Sprintf("%v", pullRequestID), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"commentId"+"}", fmt.Sprintf("%v", commentId), -1)
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{"application/json"}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	r, err := a.client.prepareRequest(a.client.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, localVarFileName, localVarFileBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(r)
+	if err != nil || localVarHTTPResponse == nil {
+		return NewAPIResponseWithError(localVarHTTPResponse, nil, err)
+	}
+	defer localVarHTTPResponse.Body.Close()
+	if localVarHTTPResponse.StatusCode >= 300 {
+		bodyBytes, _ := io.ReadAll(localVarHTTPResponse.Body)
+		return NewAPIResponseWithError(localVarHTTPResponse, bodyBytes, reportError("Status: %v, Body: %s", localVarHTTPResponse.Status, bodyBytes))
+	}
+
+	return NewBitbucketAPIResponse(localVarHTTPResponse)
+}
+
+// UpdatePullRequestComment updates a PR comment.
+//
+// Only the user who created a comment may update it.
+// The supplied JSON object must contain a version field that must match the server's version of the comment
+// or the update will fail. To determine the current version of the comment, the comment should be fetched from the server
+// prior to the update (look for the  version attribute in the returned JSON structure).
+//
+// The content of the message can be updated by setting the UpdatePullRequestCommentRequest.Text attribute.
+//
+// Comments can be converted to tasks by setting the UpdatePullRequestCommentRequest.Severity attribute to 'BLOCKER':
+// {
+// "severity": "BLOCKER"
+// }
+// Tasks can be converted to comments by setting the 'severity' attribute to 'NORMAL':
+// {
+// "severity": "NORMAL"
+// }
+// Resolve a task.
+// Tasks can be resolved by setting the 'state' attribute to 'RESOLVED':
+// {
+// "state": "RESOLVED"
+// }
+//
+// The authenticated user must have REPO_READ permission for the repository that this pull request  targets to call this resource.
+func (a *DefaultApiService) UpdatePullRequestComment(projectKey, repositorySlug string, pullRequestID, commentId int, updateCommentRequest UpdatePullRequestCommentRequest) (*APIResponse, error) {
+	var (
+		localVarHTTPMethod = strings.ToUpper("Put")
+		localVarPostBody   interface{}
+		localVarFileName   string
+		localVarFileBytes  []byte
+	)
+
+	localVarPostBody, err := json.Marshal(updateCommentRequest)
+	if err != nil {
+		return nil, err
+	}
 
 	// create path and map variables
 	localVarPath := a.client.cfg.BasePath + "/api/1.0/projects/{projectKey}/repos/{repositorySlug}/pull-requests/{pullRequestId}/comments/{commentId}"
