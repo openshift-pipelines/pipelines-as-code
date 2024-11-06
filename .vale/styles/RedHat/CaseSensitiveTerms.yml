@@ -269,7 +269,7 @@ swap:
   Shadow utilities: shadow utilities
   Smallrye: SmallRye
   smart NIC|Smart-NIC: SmartNIC
-  Smart State|smart state|Smart state|Smartstate|Analysis: SmartState analysis
+  Smart State|smart state|Smart state|Smartstate Analysis: SmartState analysis
   socks: SOCKS
   SoftIRQ: softirq
   software collection|Software collection: Software Collection
@@ -323,3 +323,5 @@ swap:
   xplat-cli|x-plat-cli|xplat cli|x-plat cli|X-PLAT CLI|X-PLAT-CLI|XPLAT-CLI|XPLAT CLI: Microsoft Azure Cross-Platform Command-Line Interface
   Xp|xp: XP
   Xterm: xterm
+  Y-Stream|Y [Ss]?tream: y-stream
+  Z-Stream|Z [Ss]?tream: z-stream
