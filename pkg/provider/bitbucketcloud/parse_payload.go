@@ -155,16 +155,13 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 		processedEvent.Repository = e.Repository.Name
 		processedEvent.SHA = e.Push.Changes[0].New.Target.Hash
 		processedEvent.URL = e.Repository.Links.HTML.HRef
+		processedEvent.HeadBranch = e.Push.Changes[0].Old.Name
+		processedEvent.BaseURL = e.Push.Changes[0].New.Target.Links.HTML.HRef
+		processedEvent.HeadURL = e.Push.Changes[0].Old.Target.Links.HTML.HRef
 		if e.Push.Changes[0].New.Type == "tag" {
 			processedEvent.BaseBranch = fmt.Sprintf("refs/tags/%s", e.Push.Changes[0].New.Name)
-			processedEvent.HeadBranch = fmt.Sprintf("refs/tags/%s", e.Push.Changes[0].New.Name)
-			processedEvent.BaseURL = e.Push.Changes[0].New.Target.Links.HTML.HRef
-			processedEvent.HeadURL = e.Push.Changes[0].New.Target.Links.HTML.HRef
 		} else {
 			processedEvent.BaseBranch = e.Push.Changes[0].New.Name
-			processedEvent.HeadBranch = e.Push.Changes[0].Old.Name
-			processedEvent.BaseURL = e.Push.Changes[0].New.Target.Links.HTML.HRef
-			processedEvent.HeadURL = e.Push.Changes[0].Old.Target.Links.HTML.HRef
 		}
 		processedEvent.AccountID = e.Actor.AccountID
 		processedEvent.Sender = e.Actor.Nickname

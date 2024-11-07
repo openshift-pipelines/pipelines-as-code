@@ -25,6 +25,7 @@ func TestParsePayload(t *testing.T) {
 		expectedEventType         string
 		expectedAccountID         string
 		expectedSHA               string
+		expectedRef               string
 		eventType                 string
 		sourceIP                  string
 		allowedConfig             map[string]map[string]string
@@ -34,10 +35,21 @@ func TestParsePayload(t *testing.T) {
 	}{
 		{
 			name:              "parse push request",
-			payloadEvent:      bbcloudtest.MakePushEvent("PushAccountID", "Barbie", "slighlyhashed"),
+			payloadEvent:      bbcloudtest.MakePushEvent("PushAccountID", "Barbie", "slighlyhashed", "branch"),
 			expectedSender:    "Barbie",
 			expectedAccountID: "PushAccountID",
 			expectedSHA:       "slighlyhashed",
+			expectedRef:       "mychange",
+			eventType:         "repo:push",
+			expectedEventType: triggertype.Push.String(),
+		},
+		{
+			name:              "parse push tag",
+			payloadEvent:      bbcloudtest.MakePushEvent("PushAccountID", "Barbie", "slighlyhashed", "tag"),
+			expectedSender:    "Barbie",
+			expectedAccountID: "PushAccountID",
+			expectedSHA:       "slighlyhashed",
+			expectedRef:       "refs/tags/mychange",
 			eventType:         "repo:push",
 			expectedEventType: triggertype.Push.String(),
 		},
@@ -253,6 +265,10 @@ func TestParsePayload(t *testing.T) {
 			assert.Equal(t, tt.expectedSender, got.Sender)
 			assert.Equal(t, tt.expectedSHA, got.SHA, "%s != %s", tt.expectedSHA, got.SHA)
 			assert.Equal(t, tt.expectedEventType, got.EventType, "%s != %s", tt.expectedEventType, got.EventType)
+
+			if tt.expectedRef != "" {
+				assert.Equal(t, tt.expectedRef, got.BaseBranch, tt.expectedRef, got.BaseBranch)
+			}
 			if tt.targetPipelinerun != "" {
 				assert.Equal(t, tt.targetPipelinerun, got.TargetTestPipelineRun, tt.targetPipelinerun, got.TargetTestPipelineRun)
 			}
