@@ -136,6 +136,7 @@ func (r *RepoOptions) generateTemplate(gopt *generate.Opts) error {
 	// defaulting the values for repo create command
 	gopt.Event.EventType = "pull_request, push"
 	gopt.Event.BaseBranch = "main"
+	gopt.Event.URL = r.Event.URL
 
 	return generate.Generate(gopt, false)
 }

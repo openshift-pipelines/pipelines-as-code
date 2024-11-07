@@ -14,33 +14,50 @@ spec:
       value: "{{repo_url}}"
     - name: revision
       value: "{{revision}}"
+    - name: hugo_version
+      value: "0.96.0"
   pipelineSpec:
     params:
       - name: repo_url
       - name: revision
+      - name: hugo_version
     tasks:
-      - name: fetchit
-        params:
-          - name: url
-            value: $(params.repo_url)
-          - name: revision
-            value: $(params.revision)
-          - name: depth
-            value: "1000000"
-        taskRef:
-          name: git-clone
-        workspaces:
-          - name: output
-            workspace: source
       - name: build-doc
-        runAfter:
-          - fetchit
         taskSpec:
           workspaces:
             - name: source
           steps:
+            - name: fetch-repo
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/tektoncd/catalog/main/stepaction/git-clone/0.1/git-clone.yaml
+              params:
+                - name: output-path
+                  value: $(workspaces.source.path)
+                - name: url
+                  value: "$(params.repo_url)"
+                - name: revision
+                  value: "$(params.revision)"
+            - name: cache-fetch
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/openshift-pipelines/tekton-caches/main/tekton/cache-fetch.yaml
+              params:
+                - name: patterns
+                  value: ["$(workspaces.source.path)/README.md"]
+                - name: source
+                  value: oci://image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/cache-hugo:v$(params.hugo_version)
+                - name: cachePath
+                  value: $(workspaces.source.path)/tmp/hugo
+                - name: workingdir
+                  value: $(workspaces.source.path)
+
             - name: hugo-gen
-              image: registry.access.redhat.com/ubi9/python-312
+              image: golang:1.22
               workingDir: $(workspaces.source.path)
               env:
                 - name: UPLOADER_PUBLIC_URL
@@ -49,13 +66,18 @@ spec:
                       name: "uploader-upload-credentials"
                       key: "public_url"
               script: |
-                version=$(curl -s https://api.github.com/repos/gohugoio/hugo/releases/latest|python -c 'import sys, json;dico=json.load(sys.stdin);print(dico["tag_name"])')
-                curl --fail-early -sL https://github.com/gohugoio/hugo/releases/download/${version}/hugo_extended_${version/v/}_linux-arm64.tar.gz -o-|tar -x -z -v -f- hugo
+                #!/usr/bin/env bash
+                set -xeuo pipefail
                 git config --global --add safe.directory $(workspaces.source.path)
-                cd docs
+                make download-hugo HUGO_VERSION=$(params.hugo_version)
+                hugobin=$(git rev-parse --show-toplevel)/tmp/hugo/hugo
+                [[ -x ${hugobin} ]] || {
+                  echo "Hugo was not downloaded properly" && exit 1
+                }
+                cd $(git rev-parse --show-toplevel)/docs
                 sed -i '1acanonifyURLs = true' config.toml
                 url="${UPLOADER_PUBLIC_URL}/docs/{{ pull_request_number }}"
-                ../hugo --gc --minify -d {{ pull_request_number }} -b ${url}
+                ${hugobin} --gc --minify -d {{ pull_request_number }} -b ${url}
                 echo "Preview URL: ${url}"
             - name: upload-to-static-server
               # it has curl and we already pulled it
@@ -85,7 +107,23 @@ spec:
                 set +x
                 curl -H "Authorization: Bearer ${HUB_TOKEN}" -H 'Accept: application/vnd.github.v3+json' -X POST https://api.github.com/repos/{{repo_owner}}/{{repo_name}}/statuses/{{revision}} -d \
                                                             "{\"state\": \"success\", \"target_url\": \"${UPLOADER_PUBLIC_URL}/docs/{{ pull_request_number }}\", \"description\": \"Generated with brio.\", \"context\": \"Pipelines as Code Preview URL\"}"
-
+            - name: cache-upload
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/openshift-pipelines/tekton-caches/main/tekton/cache-upload.yaml
+              params:
+                - name: patterns
+                  value: ["$(workspaces.source.path)/README.md"]
+                - name: target
+                  value: oci://image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/cache-hugo:v$(params.hugo_version)
+                - name: cachePath
+                  value: $(workspaces.source.path)/tmp/hugo
+                - name: workingdir
+                  value: $(workspaces.source.path)
+                - name: force-cache-upload
+                  value: "false"
         workspaces:
           - name: source
             workspace: source
@@ -93,10 +131,4 @@ spec:
       - name: source
   workspaces:
     - name: source
-      volumeClaimTemplate:
-        spec:
-          accessModes:
-            - ReadWriteOnce
-          resources:
-            requests:
-              storage: 3Gi
+      emptyDir: {}

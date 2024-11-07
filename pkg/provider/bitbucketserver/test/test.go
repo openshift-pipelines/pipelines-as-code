@@ -25,7 +25,7 @@ var (
 	buildAPIURL   = "/build-status/1.0"
 )
 
-func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *http.ServeMux, func()) {
+func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *http.ServeMux, func(), string) {
 	mux := http.NewServeMux()
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(defaultAPIURL+"/", http.StripPrefix(defaultAPIURL, mux))
@@ -49,7 +49,7 @@ func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *http.ServeMux, 
 	cfg := bbv1.NewConfiguration(server.URL)
 	cfg.HTTPClient = server.Client()
 	client := bbv1.NewAPIClient(ctx, cfg)
-	return client, mux, tearDown
+	return client, mux, tearDown, server.URL
 }
 
 func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expectedCommentSubstr string, prID int) {
@@ -105,7 +105,7 @@ func MakeEvent(event *info.Event) *info.Event {
 	}
 	if rev.Event == nil {
 		rev.Event = &types.PullRequestEvent{
-			PulRequest: bbv1.PullRequest{ID: 666},
+			PullRequest: bbv1.PullRequest{ID: 666},
 		}
 	}
 	return rev
@@ -270,7 +270,8 @@ func MakePREvent(event *info.Event, comment string) *types.PullRequestEvent {
 
 	pr := &types.PullRequestEvent{
 		Actor: types.EventActor{ID: iii, Name: event.Sender},
-		PulRequest: bbv1.PullRequest{
+		PullRequest: bbv1.PullRequest{
+			ID: 1,
 			ToRef: bbv1.PullRequestRef{
 				Repository: bbv1.Repository{
 					Project: &bbv1.Project{Key: event.Organization},
@@ -284,14 +285,18 @@ func MakePREvent(event *info.Event, comment string) *types.PullRequestEvent {
 								Href: event.URL,
 							},
 						},
+						Clone: []bbv1.CloneLink{{Href: event.URL}},
 					},
 				},
-				DisplayID: "base",
+				DisplayID:    "base",
+				LatestCommit: "abcd",
 			},
 			FromRef: bbv1.PullRequestRef{
 				DisplayID:    "head",
 				LatestCommit: event.SHA,
 				Repository: bbv1.Repository{
+					Project: &bbv1.Project{Key: event.Organization},
+					Name:    event.Repository,
 					Links: &struct {
 						Clone []bbv1.CloneLink `json:"clone,omitempty"`
 						Self  []bbv1.SelfLink  `json:"self,omitempty"`

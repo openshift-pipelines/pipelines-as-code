@@ -76,11 +76,11 @@ func (qm *QueueManager) checkAndUpdateSemaphoreSize(repo *v1alpha1.Repository, s
 	return nil
 }
 
-// AddListToQueue adds the pipelineRun to the waiting queue of the repository
+// AddListToRunningQueue adds the pipelineRun to the waiting queue of the repository
 // and if it is at the top and ready to run which means currently running pipelineRun < limit
 // then move it to running queue
 // This adds the pipelineRuns in the same order as in the list.
-func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string) ([]string, error) {
+func (qm *QueueManager) AddListToRunningQueue(repo *v1alpha1.Repository, list []string) ([]string, error) {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
@@ -91,7 +91,7 @@ func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string)
 
 	for _, pr := range list {
 		if sema.addToQueue(pr, time.Now()) {
-			qm.logger.Infof("added pipelineRun (%s) to queue for repository (%s)", pr, repoKey(repo))
+			qm.logger.Infof("added pipelineRun (%s) to running queue for repository (%s)", pr, repoKey(repo))
 		}
 	}
 
@@ -112,6 +112,23 @@ func (qm *QueueManager) AddListToQueue(repo *v1alpha1.Repository, list []string)
 	}
 
 	return acquiredList, nil
+}
+
+func (qm *QueueManager) AddToPendingQueue(repo *v1alpha1.Repository, list []string) error {
+	qm.lock.Lock()
+	defer qm.lock.Unlock()
+
+	sema, err := qm.getSemaphore(repo)
+	if err != nil {
+		return err
+	}
+
+	for _, pr := range list {
+		if sema.addToPendingQueue(pr, time.Now()) {
+			qm.logger.Infof("added pipelineRun (%s) to pending queue for repository (%s)", pr, repoKey(repo))
+		}
+	}
+	return nil
 }
 
 // RemoveFromQueue removes the pipelineRun from the queues of the repository
@@ -141,6 +158,35 @@ func (qm *QueueManager) RemoveFromQueue(repo *v1alpha1.Repository, run *tektonv1
 
 func getQueueKey(run *tektonv1.PipelineRun) string {
 	return fmt.Sprintf("%s/%s", run.Namespace, run.Name)
+}
+
+// FilterPipelineRunByState filters the given list of PipelineRun names to only include those
+// that are in a "queued" state and have a pending status. It retrieves the PipelineRun objects
+// from the Tekton API and checks their annotations and status to determine if they should be included.
+//
+// Returns A list of PipelineRun names that are in a "queued" state and have a pending status.
+func FilterPipelineRunByState(ctx context.Context, tekton versioned2.Interface, orderList []string, wantedStatus, wantedState string) []string {
+	orderedList := []string{}
+	for _, prName := range orderList {
+		prKey := strings.Split(prName, "/")
+		pr, err := tekton.TektonV1().PipelineRuns(prKey[0]).Get(ctx, prKey[1], v1.GetOptions{})
+		if err != nil {
+			continue
+		}
+
+		state, exist := pr.GetAnnotations()[keys.State]
+		if !exist {
+			continue
+		}
+
+		if state == wantedState {
+			if wantedStatus != "" && pr.Spec.Status != tektonv1.PipelineRunSpecStatus(wantedStatus) {
+				continue
+			}
+			orderedList = append(orderedList, prName)
+		}
+	}
+	return orderedList
 }
 
 // InitQueues rebuild all the queues for all repository if concurrency is defined before
@@ -177,8 +223,9 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 				// if the pipelineRun doesn't have order label then wait
 				return nil
 			}
-			orderedList := strings.Split(order, ",")
-			_, err = qm.AddListToQueue(&repo, orderedList)
+			orderedList := FilterPipelineRunByState(ctx, tekton, strings.Split(order, ","), "", kubeinteraction.StateStarted)
+
+			_, err = qm.AddListToRunningQueue(&repo, orderedList)
 			if err != nil {
 				qm.logger.Error("failed to init queue for repo: ", repo.GetName())
 			}
@@ -202,10 +249,8 @@ func (qm *QueueManager) InitQueues(ctx context.Context, tekton versioned2.Interf
 				// if the pipelineRun doesn't have order label then wait
 				return nil
 			}
-			orderedList := strings.Split(order, ",")
-
-			_, err = qm.AddListToQueue(&repo, orderedList)
-			if err != nil {
+			orderedList := FilterPipelineRunByState(ctx, tekton, strings.Split(order, ","), tektonv1.PipelineRunSpecStatusPending, kubeinteraction.StateQueued)
+			if err := qm.AddToPendingQueue(&repo, orderedList); err != nil {
 				qm.logger.Error("failed to init queue for repo: ", repo.GetName())
 			}
 		}

@@ -245,17 +245,40 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 		Path:      gitlab.Ptr(path),
 		Ref:       gitlab.Ptr(revision),
 		Recursive: gitlab.Ptr(true),
+		ListOptions: gitlab.ListOptions{
+			OrderBy:    "id",
+			Pagination: "keyset",
+			PerPage:    20,
+			Sort:       "asc",
+		},
 	}
 
-	objects, resp, err := v.Client.Repositories.ListTree(v.sourceProjectID, opt)
-	if resp != nil && resp.StatusCode == http.StatusNotFound {
-		return "", nil
-	}
-	if err != nil {
-		return "", fmt.Errorf("failed to list %s dir: %w", path, err)
+	options := []gitlab.RequestOptionFunc{}
+	nodes := []*gitlab.TreeNode{}
+
+	for {
+		objects, resp, err := v.Client.Repositories.ListTree(v.sourceProjectID, opt, options...)
+		if err != nil {
+			return "", fmt.Errorf("failed to list %s dir: %w", path, err)
+		}
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return "", nil
+		}
+
+		nodes = append(nodes, objects...)
+
+		// Exit the loop when we've seen all pages.
+		if resp.NextLink == "" {
+			break
+		}
+
+		// Otherwise, set param to query the next page
+		options = []gitlab.RequestOptionFunc{
+			gitlab.WithKeysetPaginationParameters(resp.NextLink),
+		}
 	}
 
-	return v.concatAllYamlFiles(objects, event)
+	return v.concatAllYamlFiles(nodes, event)
 }
 
 // concatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string.
@@ -331,25 +354,47 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 	if runevent.TriggerTarget == triggertype.PullRequest {
-		mrchanges, _, err := v.Client.MergeRequests.ListMergeRequestDiffs(v.targetProjectID, runevent.PullRequestNumber, &gitlab.ListMergeRequestDiffsOptions{})
-		if err != nil {
-			return changedfiles.ChangedFiles{}, err
+		opt := &gitlab.ListMergeRequestDiffsOptions{
+			ListOptions: gitlab.ListOptions{
+				OrderBy:    "id",
+				Pagination: "keyset",
+				PerPage:    20,
+				Sort:       "asc",
+			},
 		}
-
+		options := []gitlab.RequestOptionFunc{}
 		changedFiles := changedfiles.ChangedFiles{}
-		for _, change := range mrchanges {
-			changedFiles.All = append(changedFiles.All, change.NewPath)
-			if change.NewFile {
-				changedFiles.Added = append(changedFiles.Added, change.NewPath)
+
+		for {
+			mrchanges, resp, err := v.Client.MergeRequests.ListMergeRequestDiffs(v.targetProjectID, runevent.PullRequestNumber, opt, options...)
+			if err != nil {
+				return changedfiles.ChangedFiles{}, err
 			}
-			if change.DeletedFile {
-				changedFiles.Deleted = append(changedFiles.Deleted, change.NewPath)
+
+			for _, change := range mrchanges {
+				changedFiles.All = append(changedFiles.All, change.NewPath)
+				if change.NewFile {
+					changedFiles.Added = append(changedFiles.Added, change.NewPath)
+				}
+				if change.DeletedFile {
+					changedFiles.Deleted = append(changedFiles.Deleted, change.NewPath)
+				}
+				if !change.RenamedFile && !change.DeletedFile && !change.NewFile {
+					changedFiles.Modified = append(changedFiles.Modified, change.NewPath)
+				}
+				if change.RenamedFile {
+					changedFiles.Renamed = append(changedFiles.Renamed, change.NewPath)
+				}
 			}
-			if !change.RenamedFile && !change.DeletedFile && !change.NewFile {
-				changedFiles.Modified = append(changedFiles.Modified, change.NewPath)
+
+			// Exit the loop when we've seen all pages.
+			if resp.NextLink == "" {
+				break
 			}
-			if change.RenamedFile {
-				changedFiles.Renamed = append(changedFiles.Renamed, change.NewPath)
+
+			// Otherwise, set param to query the next page
+			options = []gitlab.RequestOptionFunc{
+				gitlab.WithKeysetPaginationParameters(resp.NextLink),
 			}
 		}
 		return changedFiles, nil
