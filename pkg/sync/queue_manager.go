@@ -42,7 +42,7 @@ func NewQueueManager(logger *zap.SugaredLogger) *QueueManager {
 // Semaphore: nothing but a waiting and a running queue for a repository
 // with limit deciding how many should be running at a time.
 func (qm *QueueManager) getSemaphore(repo *v1alpha1.Repository) (Semaphore, error) {
-	repoKey := repoKey(repo)
+	repoKey := RepoKey(repo)
 
 	if sema, found := qm.queueMap[repoKey]; found {
 		if err := qm.checkAndUpdateSemaphoreSize(repo, sema); err != nil {
@@ -59,10 +59,6 @@ func (qm *QueueManager) getSemaphore(repo *v1alpha1.Repository) (Semaphore, erro
 	qm.queueMap[repoKey] = newSemaphore(repoKey, limit)
 
 	return qm.queueMap[repoKey], nil
-}
-
-func repoKey(repo *v1alpha1.Repository) string {
-	return fmt.Sprintf("%s/%s", repo.Namespace, repo.Name)
 }
 
 func (qm *QueueManager) checkAndUpdateSemaphoreSize(repo *v1alpha1.Repository, semaphore Semaphore) error {
@@ -91,7 +87,7 @@ func (qm *QueueManager) AddListToRunningQueue(repo *v1alpha1.Repository, list []
 
 	for _, pr := range list {
 		if sema.addToQueue(pr, time.Now()) {
-			qm.logger.Infof("added pipelineRun (%s) to running queue for repository (%s)", pr, repoKey(repo))
+			qm.logger.Infof("added pipelineRun (%s) to running queue for repository (%s)", pr, RepoKey(repo))
 		}
 	}
 
@@ -106,7 +102,7 @@ func (qm *QueueManager) AddListToRunningQueue(repo *v1alpha1.Repository, list []
 	for i := 0; i < *repo.Spec.ConcurrencyLimit; i++ {
 		acquired := sema.acquireLatest()
 		if acquired != "" {
-			qm.logger.Infof("moved (%s) to running for repository (%s)", acquired, repoKey(repo))
+			qm.logger.Infof("moved (%s) to running for repository (%s)", acquired, RepoKey(repo))
 			acquiredList = append(acquiredList, acquired)
 		}
 	}
@@ -125,29 +121,37 @@ func (qm *QueueManager) AddToPendingQueue(repo *v1alpha1.Repository, list []stri
 
 	for _, pr := range list {
 		if sema.addToPendingQueue(pr, time.Now()) {
-			qm.logger.Infof("added pipelineRun (%s) to pending queue for repository (%s)", pr, repoKey(repo))
+			qm.logger.Infof("added pipelineRun (%s) to pending queue for repository (%s)", pr, RepoKey(repo))
 		}
 	}
 	return nil
 }
 
-// RemoveFromQueue removes the pipelineRun from the queues of the repository
-// It also start the next one which is on top of the waiting queue and return its name
-// if started or returns "".
-func (qm *QueueManager) RemoveFromQueue(repo *v1alpha1.Repository, run *tektonv1.PipelineRun) string {
+func (qm *QueueManager) RemoveFromQueue(repoKey, prKey string) bool {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
-	repoKey := repoKey(repo)
+	sema, found := qm.queueMap[repoKey]
+	if !found {
+		return false
+	}
+
+	sema.release(prKey)
+	sema.removeFromQueue(prKey)
+	qm.logger.Infof("removed (%s) for repository (%s)", prKey, repoKey)
+	return true
+}
+
+func (qm *QueueManager) RemoveAndTakeItemFromQueue(repo *v1alpha1.Repository, run *tektonv1.PipelineRun) string {
+	repoKey := RepoKey(repo)
+	prKey := PrKey(run)
+	if !qm.RemoveFromQueue(repoKey, prKey) {
+		return ""
+	}
 	sema, found := qm.queueMap[repoKey]
 	if !found {
 		return ""
 	}
-
-	qKey := getQueueKey(run)
-	sema.release(qKey)
-	sema.removeFromQueue(qKey)
-	qm.logger.Infof("removed (%s) for repository (%s)", qKey, repoKey)
 
 	if next := sema.acquireLatest(); next != "" {
 		qm.logger.Infof("moved (%s) to running for repository (%s)", next, repoKey)
@@ -156,11 +160,7 @@ func (qm *QueueManager) RemoveFromQueue(repo *v1alpha1.Repository, run *tektonv1
 	return ""
 }
 
-func getQueueKey(run *tektonv1.PipelineRun) string {
-	return fmt.Sprintf("%s/%s", run.Namespace, run.Name)
-}
-
-// FilterPipelineRunByState filters the given list of PipelineRun names to only include those
+// FilterPipelineRunByInProgress filters the given list of PipelineRun names to only include those
 // that are in a "queued" state and have a pending status. It retrieves the PipelineRun objects
 // from the Tekton API and checks their annotations and status to determine if they should be included.
 //
@@ -263,7 +263,7 @@ func (qm *QueueManager) RemoveRepository(repo *v1alpha1.Repository) {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
-	repoKey := repoKey(repo)
+	repoKey := RepoKey(repo)
 	delete(qm.queueMap, repoKey)
 }
 
@@ -271,7 +271,7 @@ func (qm *QueueManager) QueuedPipelineRuns(repo *v1alpha1.Repository) []string {
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
-	repoKey := repoKey(repo)
+	repoKey := RepoKey(repo)
 	if sema, ok := qm.queueMap[repoKey]; ok {
 		return sema.getCurrentPending()
 	}
@@ -282,7 +282,7 @@ func (qm *QueueManager) RunningPipelineRuns(repo *v1alpha1.Repository) []string 
 	qm.lock.Lock()
 	defer qm.lock.Unlock()
 
-	repoKey := repoKey(repo)
+	repoKey := RepoKey(repo)
 	if sema, ok := qm.queueMap[repoKey]; ok {
 		return sema.getCurrentRunning()
 	}
