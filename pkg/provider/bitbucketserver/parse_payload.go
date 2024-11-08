@@ -129,6 +129,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 				processedEvent.CancelPipelineRuns = true
 				processedEvent.TargetCancelPipelineRun = provider.GetPipelineRunFromCancelComment(e.Comment.Text)
 			}
+			processedEvent.TriggerComment = e.Comment.Text
 		}
 
 		if err := checkValidPayload(e); err != nil {
