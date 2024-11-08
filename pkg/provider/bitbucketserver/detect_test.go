@@ -37,7 +37,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "push event",
 			event: types.PushRequestEvent{
-				Actor: types.EventActor{
+				Actor: bbv1.UserWithLinks{
 					ID: 111,
 				},
 				Repository: bbv1.Repository{},
@@ -69,7 +69,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "retest comment",
 			event: types.PullRequestEvent{
-				Comment: bbv1.Comment{Text: "/retest"},
+				Comment: bbv1.ActivityComment{Text: "/retest"},
 			},
 			eventType:  "pr:comment:added",
 			isBS:       true,
@@ -78,7 +78,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "random comment",
 			event: types.PullRequestEvent{
-				Comment: bbv1.Comment{Text: "random string, ignore me :)"},
+				Comment: bbv1.ActivityComment{Text: "random string, ignore me :)"},
 			},
 			eventType:  "pr:comment:added",
 			isBS:       true,
@@ -87,7 +87,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "ok-to-test comment",
 			event: types.PullRequestEvent{
-				Comment: bbv1.Comment{Text: "/ok-to-test"},
+				Comment: bbv1.ActivityComment{Text: "/ok-to-test"},
 			},
 			eventType:  "pr:comment:added",
 			isBS:       true,
@@ -96,7 +96,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "cancel comment",
 			event: types.PullRequestEvent{
-				Comment: bbv1.Comment{Text: "/cancel"},
+				Comment: bbv1.ActivityComment{Text: "/cancel"},
 			},
 			eventType:  "pr:comment:added",
 			isBS:       true,
@@ -105,7 +105,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "cancel a pipelinerun comment",
 			event: types.PullRequestEvent{
-				Comment: bbv1.Comment{Text: "/cancel dummy"},
+				Comment: bbv1.ActivityComment{Text: "/cancel dummy"},
 			},
 			eventType:  "pr:comment:added",
 			isBS:       true,
