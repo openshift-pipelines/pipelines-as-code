@@ -49,13 +49,13 @@ func (pq *priorityQueue) peek() *item {
 	return pq.items[0]
 }
 
-func (pq priorityQueue) Len() int { return len(pq.items) }
+func (pq *priorityQueue) Len() int { return len(pq.items) }
 
-func (pq priorityQueue) Less(i, j int) bool {
+func (pq *priorityQueue) Less(i, j int) bool {
 	return pq.items[i].priority < pq.items[j].priority
 }
 
-func (pq priorityQueue) Swap(i, j int) {
+func (pq *priorityQueue) Swap(i, j int) {
 	pq.items[i], pq.items[j] = pq.items[j], pq.items[i]
 	pq.items[i].index = i
 	pq.items[j].index = j

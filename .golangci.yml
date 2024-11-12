@@ -30,6 +30,8 @@ linters-settings:
     extra-rules: true
 linters:
   enable:
+    - recvcheck
+    - iface
     - asasalint
     - asciicheck
     - bidichk

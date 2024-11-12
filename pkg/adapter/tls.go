@@ -13,7 +13,7 @@ const tlsMountPath = "/etc/pipelines-as-code/tls"
 
 // isTLSEnabled validates if tls secret exist and if the required fields are defined
 // this is used to enable tls on the listener.
-func (l listener) isTLSEnabled() (bool, string, string) {
+func (l *listener) isTLSEnabled() (bool, string, string) {
 	tlsSecret := os.Getenv("TLS_SECRET_NAME")
 	tlsKey := os.Getenv("TLS_KEY")
 	tlsCert := os.Getenv("TLS_CERT")

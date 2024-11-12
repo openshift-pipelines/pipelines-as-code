@@ -108,7 +108,7 @@ func (l *listener) Start(ctx context.Context) error {
 	return nil
 }
 
-func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
+func (l *listener) handleEvent(ctx context.Context) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodPost {
 			l.writeResponse(response, http.StatusOK, "ok")
@@ -206,7 +206,7 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 	}
 }
 
-func (l listener) processRes(processEvent bool, provider provider.Interface, logger *zap.SugaredLogger, skipReason string, err error) (provider.Interface, *zap.SugaredLogger, error) {
+func (l *listener) processRes(processEvent bool, provider provider.Interface, logger *zap.SugaredLogger, skipReason string, err error) (provider.Interface, *zap.SugaredLogger, error) {
 	if processEvent {
 		provider.SetLogger(logger)
 		return provider, logger, nil
@@ -223,7 +223,7 @@ func (l listener) processRes(processEvent bool, provider provider.Interface, log
 	return nil, logger, fmt.Errorf("skipping non supported event")
 }
 
-func (l listener) detectProvider(req *http.Request, reqBody string) (provider.Interface, *zap.SugaredLogger, error) {
+func (l *listener) detectProvider(req *http.Request, reqBody string) (provider.Interface, *zap.SugaredLogger, error) {
 	log := *l.logger
 
 	// payload validation
@@ -267,7 +267,7 @@ func (l listener) detectProvider(req *http.Request, reqBody string) (provider.In
 	return l.processRes(false, nil, logger, "", fmt.Errorf("no supported Git provider has been detected"))
 }
 
-func (l listener) writeResponse(response http.ResponseWriter, statusCode int, message string) {
+func (l *listener) writeResponse(response http.ResponseWriter, statusCode int, message string) {
 	response.WriteHeader(statusCode)
 	response.Header().Set("Content-Type", "application/json")
 	body := Response{
