@@ -37,6 +37,7 @@ func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Re
 	if err != nil {
 		return nil, repo, err
 	}
+
 	return matchedPRs, repo, nil
 }
 

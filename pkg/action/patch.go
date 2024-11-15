@@ -13,6 +13,23 @@ import (
 	"k8s.io/client-go/util/retry"
 )
 
+// PatchPipelineRun patches a Tekton PipelineRun resource with the provided merge patch.
+// It retries the patch operation on conflict, doubling the default retry parameters.
+//
+// Parameters:
+// - ctx: The context for the patch operation.
+// - logger: A SugaredLogger instance for logging information.
+// - whatPatching: A string describing what is being patched, used for logging purposes.
+// - tekton: A Tekton client interface for interacting with Tekton resources.
+// - pr: The PipelineRun resource to be patched. If nil, the function returns nil.
+// - mergePatch: A map representing the JSON merge patch to apply to the PipelineRun.
+//
+// Returns:
+// - *tektonv1.PipelineRun: The patched PipelineRun resource, or the original PipelineRun if an error occurs.
+// - error: An error if the patch operation fails after retries, or nil if successful.
+//
+// The function doubles the default retry parameters (steps, duration, factor, jitter) to handle conflicts more robustly.
+// If the patch operation fails after retries, the original PipelineRun is returned along with the error.
 func PatchPipelineRun(ctx context.Context, logger *zap.SugaredLogger, whatPatching string, tekton versioned.Interface, pr *tektonv1.PipelineRun, mergePatch map[string]interface{}) (*tektonv1.PipelineRun, error) {
 	if pr == nil {
 		return nil, nil
