@@ -249,6 +249,15 @@ github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.1.0
 ## explicit; go 1.18
 github.com/inconshreveable/mousetrap
+# github.com/jenkins-x/go-scm v1.14.53
+## explicit; go 1.22.3
+github.com/jenkins-x/go-scm/pkg/hmac
+github.com/jenkins-x/go-scm/scm
+github.com/jenkins-x/go-scm/scm/driver/internal/null
+github.com/jenkins-x/go-scm/scm/driver/stash
+github.com/jenkins-x/go-scm/scm/labels
+github.com/jenkins-x/go-scm/scm/transport/internal
+github.com/jenkins-x/go-scm/scm/transport/oauth2
 # github.com/jonboulle/clockwork v0.4.0
 ## explicit; go 1.15
 github.com/jonboulle/clockwork
