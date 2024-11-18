@@ -104,6 +104,32 @@ or on OpenShift using the OpenShift Console.
 Pipelines-as-Code will post a URL in the Checks tab for GitHub apps to let you
 click on it and follow the pipeline execution directly there.
 
+## Cancelling
+
+### Cancelling in-progress PipelineRuns
+
+{{< tech_preview "Cancelling in progress PipelineRuns" >}}
+
+You can choose to cancel a PipelineRun that is currently in progress. This can
+be done by adding the annotation `pipelinesascode.tekton.dev/cancel-in-progress:
+"true"` in the PipelineRun definition.
+
+This feature only works if the PipelineRun is in progress. If the PipelineRun
+has already completed or has been cancelled, it will be skipped. (For persistent
+settings, refer to the [max-keep-run annotation]({{< relref
+"/docs/guide/cleanups.md" >}}) instead.)
+
+The cancellation occurs after the latest PipelineRun has been successfully
+created and started. This annotation cannot be used to ensure that only one
+PipelineRun is active at any time.
+
+Currently, `cancel-in-progress` cannot be used in conjunction with [concurrency
+limit]({{< relref "/docs/guide/repositorycrd.md#concurrency" >}}).
+
+### Cancelling a PipelineRun with a GitOps command
+
+See [here]({{< relref "/docs/guide/gitops_commands.md#cancelling-a-pipelinerun" >}})
+
 ## Restarting the PipelineRun
 
 You can restart a PipelineRun without having to send a new commit to

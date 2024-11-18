@@ -24,6 +24,66 @@ var cancelMergePatch = map[string]interface{}{
 	},
 }
 
+// cancelInProgress cancels all PipelineRuns associated with a given repository and pull request,
+// except for the one that triggered the cancellation. It first checks if the cancellation is in progress
+// and if the repository has a concurrency limit. If a concurrency limit is set, it returns an error as
+// cancellation is not supported with concurrency limits. It then retrieves the original pull request name
+// from the annotations and lists all PipelineRuns with matching labels. For each PipelineRun that is not
+// already done, cancelled, or gracefully stopped, it patches the PipelineRun to cancel it.
+func (p *PacRun) cancelInProgress(ctx context.Context, matchPR *tektonv1.PipelineRun, repo *v1alpha1.Repository) error {
+	if matchPR == nil {
+		return nil
+	}
+	if key, ok := matchPR.GetAnnotations()[keys.CancelInProgress]; !ok || key != "true" {
+		return nil
+	}
+
+	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit > 0 {
+		return fmt.Errorf("cancel in progress is not supported with concurrency limit")
+	}
+
+	prName, ok := matchPR.GetAnnotations()[keys.OriginalPRName]
+	if !ok {
+		return nil
+	}
+	labelSelector := getLabelSelector(map[string]string{
+		keys.URLRepository:  formatting.CleanValueKubernetes(p.event.Repository),
+		keys.OriginalPRName: prName,
+	})
+
+	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(matchPR.GetNamespace()).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list pipelineRuns : %w", err)
+	}
+	var wg sync.WaitGroup
+	for _, pr := range prs.Items {
+		if pr.GetName() == matchPR.GetName() {
+			continue
+		}
+		if pr.IsDone() {
+			continue
+		}
+		if pr.IsCancelled() || pr.IsGracefullyCancelled() || pr.IsGracefullyStopped() {
+			continue
+		}
+
+		p.logger.Infof("cancel-in-progress: cancelling pipelinerun %v/%v", pr.GetNamespace(), pr.GetName())
+		wg.Add(1)
+		go func(ctx context.Context, pr tektonv1.PipelineRun) {
+			defer wg.Done()
+			if _, err := action.PatchPipelineRun(ctx, p.logger, "cancel patch", p.run.Clients.Tekton, &pr, cancelMergePatch); err != nil {
+				errMsg := fmt.Sprintf("failed to cancel pipelineRun %s/%s: %s", pr.GetNamespace(), pr.GetName(), err.Error())
+				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", errMsg)
+			}
+		}(ctx, pr)
+	}
+	wg.Wait()
+
+	return nil
+}
+
 func (p *PacRun) cancelPipelineRuns(ctx context.Context, repo *v1alpha1.Repository) error {
 	labelSelector := getLabelSelector(map[string]string{
 		keys.URLRepository: formatting.CleanValueKubernetes(p.event.Repository),

@@ -26,6 +26,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/sort"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tknpactest "github.com/openshift-pipelines/pipelines-as-code/test/pkg/cli"
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitea"
@@ -41,6 +42,7 @@ import (
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 // successRegexp will match a success text paac comment,sometime it includes html tags so we need to consider that.
@@ -374,6 +376,31 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 	assert.NilError(t, err)
 
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
+}
+
+func TestGiteaConfigCancelInProgress(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-cancel-in-progress.yaml",
+		},
+		CheckForStatus: "",
+		ExpectEvents:   false,
+		Regexp:         nil,
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	// wait a bit that the pipelinerun had created
+	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+
+	time.Sleep(5 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+
+	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+	assert.NilError(t, err)
+
+	sort.PipelineRunSortByStartTime(prs.Items)
+	assert.Equal(t, len(prs.Items), 2, "should have 2 pipelineruns, but we have: %d", len(prs.Items))
+	assert.Equal(t, prs.Items[1].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "oldest pr should have been cancelled")
 }
 
 func TestGiteaPush(t *testing.T) {
