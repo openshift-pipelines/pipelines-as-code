@@ -377,11 +377,11 @@ The expression are CEL expressions so you can as well make some conditional:
 if the PR is open the condition then return `true` and the shell script see this
 as a valid boolean.
 
-Headers from the payload body can be accessed from the `headers` keyword, for
-example
+Headers from the payload body can be accessed from the `headers` keyword, note that headers are case sensitive,
+for example this will show the GitHub event type for a GitHub event:
 
 ```yaml
-{{ headers['x-github-event'] }}
+{{ headers['X-Github-Event'] }}
 ```
 
 and then you can do the same conditional or access as described above for the `body` keyword.
