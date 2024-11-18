@@ -223,6 +223,46 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 			}
 			prMatch.Config["target-branch"] = targetBranch
 			prMatch.Config["target-event"] = targetEvent
+
+			if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnPathChange]; ok {
+				changedFiles, err := vcx.GetFiles(ctx, event)
+				if err != nil {
+					logger.Errorf("error getting changed files: %v", err)
+					continue
+				}
+				// // TODO(chmou): we use the matchOnAnnotation function, it's
+				// really made to match git branches but we can still use it for
+				// our own path changes. we may split up if needed to refine.
+				matched, err := matchOnAnnotation(key, changedFiles.All, true)
+				if err != nil {
+					return matchedPRs, err
+				}
+				if !matched {
+					continue
+				}
+				logger.Infof("Matched pipelinerun with name: %s, annotation PathChange: %q", prName, key)
+				prMatch.Config["path-change"] = key
+			}
+
+			if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnPathChangeIgnore]; ok {
+				changedFiles, err := vcx.GetFiles(ctx, event)
+				if err != nil {
+					logger.Errorf("error getting changed files: %v", err)
+					continue
+				}
+				// // TODO(chmou): we use the matchOnAnnotation function, it's
+				// really made to match git branches but we can still use it for
+				// our own path changes. we may split up if needed to refine.
+				matched, err := matchOnAnnotation(key, changedFiles.All, true)
+				if err != nil {
+					return matchedPRs, err
+				}
+				if matched {
+					logger.Infof("Skipping pipelinerun with name: %s, annotation PathChangeIgnore: %q", prName, key)
+					continue
+				}
+				prMatch.Config["path-change-ignore"] = key
+			}
 		}
 
 		logger.Infof("matched pipelinerun with name: %s, annotation Config: %q", prName, prMatch.Config)
