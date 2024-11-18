@@ -612,6 +612,69 @@ func TestGiteaConcurrencyOrderedExecution(t *testing.T) {
 	time.Sleep(time.Second * 10)
 }
 
+func TestGiteaOnPathChange(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml":       "testdata/pipelinerun-on-path-change.yaml",
+			"doc/foo/bar/README.md": "README.md",
+		},
+		CheckForStatus: "success",
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+}
+
+// TestGiteaOnPathChangeIgnore will test that pipelinerun is not triggered when
+// a path is ignored but all other will do.
+func TestGiteaOnPathChangeIgnore(t *testing.T) {
+	// This should trigger a pipelinerun since we ignore the path
+	// on-path-change-ignore: "[doc/foo/***.md]"
+	// and we create a file doc/bar/README.md
+	topts := &tgitea.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr2.yaml":  "testdata/pipelinerun-on-path-change-ignore.yaml",
+			"doc/bar/README.md": "README.md",
+		},
+		CheckForStatus:       "success",
+		CheckForNumberStatus: 1,
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
+	// This should not trigger a pipelinerun since we have
+	// on-path-change-ignore: "[doc/foo/***.md]"
+	// and the file doc/foo/README.md is created
+	topts2 := &tgitea.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr2.yaml":  "testdata/pipelinerun-on-path-change-ignore.yaml",
+			"doc/foo/README.md": "README.md",
+		},
+		CheckForNumberStatus: 0,
+	}
+	_, f2 := tgitea.TestPR(t, topts2)
+	defer f2()
+}
+
+// TestGiteaOnPathChangeAndOnPathChangeIgnore will test that
+// on-path-change and on-path-change-ignore both work together.
+func TestGiteaOnPathChangeAndOnPathChangeIgnore(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml":       "testdata/pipelinerun-on-path-change.yaml",
+			".tekton/pr2.yaml":      "testdata/pipelinerun-on-path-change-and-ignore.yaml",
+			"doc/foo/bar/README.md": "README.md",
+		},
+		CheckForStatus:       "success",
+		CheckForNumberStatus: 1,
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+}
+
 func TestGiteaErrorSnippet(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		TargetEvent: triggertype.PullRequest.String(),

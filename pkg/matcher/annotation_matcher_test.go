@@ -140,6 +140,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				},
 			},
 		},
+
 		{
 			name:       "cel/match source/target",
 			wantPRName: pipelineTargetNSName,
@@ -499,6 +500,279 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 							Annotations: map[string]string{
 								keys.OnCelExpression: "\".tekton/pull_request.yaml\"." +
 									"pathChanged()",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:    "ignored/on-path-change-ignore/include and ignore path",
+			wantLog: "Skipping pipelinerun with name: pipeline-target-ns",
+			wantErr: true,
+			args: annotationTestArgs{
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    "doc/generated/gen.md",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnTargetBranch:     mainBranch,
+								keys.OnEvent:            "[pull_request]",
+								keys.OnPathChange:       "[doc/***]",
+								keys.OnPathChangeIgnore: "[doc/generated/*]",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:       "match/on-path-change-ignore/include and ignore path",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    "doc/added.md",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnTargetBranch:     mainBranch,
+								keys.OnEvent:            "[pull_request]",
+								keys.OnPathChange:       "[doc/***]",
+								keys.OnPathChangeIgnore: "[doc/generated/*]",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:       "match/on-path-change-ignore/ignore path",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    ".tekton/pull_request.yaml",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnTargetBranch:     mainBranch,
+								keys.OnEvent:            "[pull_request]",
+								keys.OnPathChangeIgnore: "[doc/*md]",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:       "match/on-path-change/match path by glob",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    ".tekton/pull_request.yaml",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnTargetBranch: mainBranch,
+								keys.OnEvent:        "[pull_request]",
+								keys.OnPathChange:   "[.tekton/*yaml]",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{
+			name:    "error/match/on-path-change/match path no match event",
+			wantErr: true,
+			args: annotationTestArgs{
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    ".tekton/pull_request.yaml",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnTargetBranch: mainBranch,
+								keys.OnEvent:        "[push]",
+								keys.OnPathChange:   "[.tekton/*yaml]",
 							},
 						},
 					},
@@ -1080,6 +1354,10 @@ func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.
 		client, &tt.args.runevent, vcx,
 	)
 
+	if tt.wantLog != "" {
+		assert.Assert(t, log.FilterMessage(tt.wantLog) != nil, "We didn't get the expected log message")
+	}
+
 	if tt.wantErr {
 		assert.Assert(t, err != nil, "We should have get an error")
 	}
@@ -1095,9 +1373,6 @@ func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.
 	}
 	if tt.wantPRName != "" {
 		assert.Assert(t, tt.wantPRName == matches[0].PipelineRun.GetName())
-	}
-	if tt.wantLog != "" {
-		assert.Assert(t, log.FilterMessage(tt.wantLog) != nil, "We didn't get the expected log message")
 	}
 }
 
