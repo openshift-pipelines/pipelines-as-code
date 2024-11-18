@@ -8,9 +8,11 @@ require (
 	code.gitea.io/gitea v1.22.1
 	code.gitea.io/sdk/gitea v0.19.0
 	github.com/AlecAivazis/survey/v2 v2.3.7
+	github.com/antihax/optional v1.0.0
 	github.com/bradleyfalzon/ghinstallation/v2 v2.11.0
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/fvbommel/sortorder v1.1.0
+	github.com/gdasson/bitbucketv1go v1.0.0
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20240822132758-a3031aa024b4
 	github.com/gobwas/glob v0.2.3
 	github.com/google/cel-go v0.21.0
