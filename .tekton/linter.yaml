@@ -99,6 +99,17 @@ spec:
               image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
               script: |
+                set -x
+                if [[ "{{ headers['X-Github-Event'] }}" == "" ]]; then
+                  echo "Not a GitHub event, skipping gitlint"
+                  exit 0
+                fi
+
+                if [[ "{{ headers['X-Github-Event'] }}" != "pull_request" ]]; then
+                  echo "Not a pull request, skipping gitlint"
+                  exit 0
+                fi
+
                 git config --global --add safe.directory $(workspaces.source.path)
                 git log -1 --format=format:%s |grep -E -q '^Merge branch' && exit 0
                 pip3 install gitlint
