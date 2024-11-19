@@ -85,7 +85,15 @@ provider events target the branch `main` and it's coming from a `[pull_request]`
 Multiple target branch can be specified separated by comma, i.e:
 
 ```yaml
-[main, release-nightly]
+pipelinesascode.tekton.dev/on-target-branch: [main, release-nightly]
+```
+
+If you want to match a branch that has a comma (,) in its name you can html escape entity
+`&#44;` as comma, for example if you want to match main and the branch
+called `release,nightly` you can do this:
+
+```yaml
+pipelinesascode.tekton.dev/on-target-branch: [main, release&#44;nightly]
 ```
 
 You can match on `pull_request` events as above, and you can as well match
@@ -140,7 +148,9 @@ To trigger a `PipelineRun` based on specific path changes in an event, use the
 annotation `pipelinesascode.tekton.dev/on-path-change`.
 
 Multiple paths can be specified, separated by commas. The first glob matching
-the files changes in the PR will trigger the `PipelineRun`.
+the files changes in the PR will trigger the `PipelineRun`. If you want to match
+a file or path that has a comma you can html escape it with the `&#44;` html
+entity.
 
 You still need to specify the event type and target branch. If you have a [CEL
 expression](#matching-pipelinerun-by-path-change) the `on-path-change`

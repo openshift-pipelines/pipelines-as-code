@@ -71,13 +71,15 @@ func getAnnotationValues(annotation string) ([]string, error) {
 
 	// if it's not an array then it would be a single string
 	if !strings.HasPrefix(annotation, "[") {
-		return []string{annotation}, nil
+		// replace &#44; with comma so users can have comma in the annotation
+		annot := strings.ReplaceAll(annotation, "&#44;", ",")
+		return []string{annot}, nil
 	}
 
 	// Split all tasks by comma and make sure to trim spaces in there
 	split := strings.Split(re.FindStringSubmatch(annotation)[1], ",")
 	for i := range split {
-		split[i] = strings.TrimSpace(split[i])
+		split[i] = strings.TrimSpace(strings.ReplaceAll(split[i], "&#44;", ","))
 	}
 
 	if split[0] == "" {
