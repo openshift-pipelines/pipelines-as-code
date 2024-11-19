@@ -32,6 +32,7 @@ import (
 )
 
 type TestOpts struct {
+	TargetRepoName        string
 	StatusOnlyLatest      bool
 	OnOrg                 bool
 	NoPullRequestCreation bool
@@ -102,10 +103,20 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 	if topts.TargetRefName == "" {
 		topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
 		topts.TargetNS = topts.TargetRefName
-		assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
+	}
+	if err := pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun); err != nil {
+		t.Logf("error creating namespace %s: %v", topts.TargetNS, err)
 	}
 
-	repoInfo, err := CreateGiteaRepo(topts.GiteaCNX.Client, topts.Opts.Organization, topts.TargetRefName, hookURL, topts.OnOrg, topts.ParamsRun.Clients.Log)
+	if topts.TargetRepoName == "" {
+		topts.TargetRepoName = topts.TargetRefName
+	}
+
+	if topts.DefaultBranch == "" {
+		topts.DefaultBranch = options.MainBranch
+	}
+
+	repoInfo, err := CreateGiteaRepo(topts.GiteaCNX.Client, topts.Opts.Organization, topts.TargetRepoName, topts.DefaultBranch, hookURL, topts.OnOrg, topts.ParamsRun.Clients.Log)
 	assert.NilError(t, err)
 	topts.Opts.Repo = repoInfo.Name
 	topts.Opts.Organization = repoInfo.Owner.UserName
@@ -179,7 +190,7 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 		if topts.PullRequest, _, err = topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, repoInfo.Name, gitea.CreatePullRequestOption{
 			Title: "Test Pull Request - " + topts.TargetRefName,
 			Head:  topts.TargetRefName,
-			Base:  options.MainBranch,
+			Base:  topts.DefaultBranch,
 		}); err == nil {
 			break
 		}
@@ -256,8 +267,11 @@ func NewPR(t *testing.T, topts *TestOpts) func() {
 		topts.TargetNS = topts.TargetRefName
 		assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, topts.ParamsRun))
 	}
+	if topts.TargetRepoName == "" {
+		topts.TargetRepoName = topts.TargetRefName
+	}
 
-	repoInfo, err := GetGiteaRepo(topts.GiteaCNX.Client, topts.Opts.Organization, topts.TargetRefName, topts.ParamsRun.Clients.Log)
+	repoInfo, err := GetGiteaRepo(topts.GiteaCNX.Client, topts.Opts.Organization, topts.TargetRepoName, topts.ParamsRun.Clients.Log)
 	assert.NilError(t, err)
 	topts.Opts.Repo = repoInfo.Name
 	topts.Opts.Organization = repoInfo.Owner.UserName

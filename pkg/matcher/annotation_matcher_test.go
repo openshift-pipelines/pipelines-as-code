@@ -527,6 +527,116 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				},
 			},
 		},
+		{ //nolint:dupl
+			name:       "match/on-path-change-ignore/with commas",
+			wantLog:    "Skipping pipelinerun with name: pipeline-target-ns",
+			wantPRName: pipelineTargetNSName,
+			args: annotationTestArgs{
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    "doc/gen,foo,bar.md",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnTargetBranch: mainBranch,
+								keys.OnEvent:        "[pull_request]",
+								keys.OnPathChange:   "[doc/gen&#44;*]",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
+		{ //nolint:dupl
+			name:    "ignored/on-path-change-ignore/no path change",
+			wantLog: "Skipping pipelinerun with name: pipeline-target-ns",
+			wantErr: true,
+			args: annotationTestArgs{
+				fileChanged: []struct {
+					FileName    string
+					Status      string
+					NewFile     bool
+					RenamedFile bool
+					DeletedFile bool
+				}{
+					{
+						FileName:    "foo/generated/gen.md",
+						Status:      "added",
+						NewFile:     true,
+						RenamedFile: false,
+						DeletedFile: false,
+					},
+				},
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: pipelineTargetNSName,
+							Annotations: map[string]string{
+								keys.OnTargetBranch: mainBranch,
+								keys.OnEvent:        "[pull_request]",
+								keys.OnPathChange:   "[doc/***]",
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               targetURL,
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        mainBranch,
+					HeadBranch:        "unittests",
+					PullRequestNumber: 1000,
+					Organization:      "mylittle",
+					Repository:        "pony",
+				},
+				data: testclient.Data{
+					Repositories: []*v1alpha1.Repository{
+						testnewrepo.NewRepo(
+							testnewrepo.RepoTestcreationOpts{
+								Name:             "test-good",
+								URL:              targetURL,
+								InstallNamespace: targetNamespace,
+							},
+						),
+					},
+				},
+			},
+		},
 		{
 			name:    "ignored/on-path-change-ignore/include and ignore path",
 			wantLog: "Skipping pipelinerun with name: pipeline-target-ns",
@@ -1789,6 +1899,22 @@ func Test_getAnnotationValues(t *testing.T) {
 				annotation: "[foo]",
 			},
 			want:    []string{"foo"},
+			wantErr: false,
+		},
+		{
+			name: "get-annotation-string-html-encoded-comma-list",
+			args: args{
+				annotation: "[foo&#44;,bar]",
+			},
+			want:    []string{"foo,", "bar"},
+			wantErr: false,
+		},
+		{
+			name: "get-annotation-string-html-encoded-comma",
+			args: args{
+				annotation: "foo&#44;bar",
+			},
+			want:    []string{"foo,bar"},
 			wantErr: false,
 		},
 		{

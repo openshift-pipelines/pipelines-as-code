@@ -680,6 +680,19 @@ func TestGiteaOnPathChange(t *testing.T) {
 	defer f()
 }
 
+func TestGiteaBranchWithComma(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent:   triggertype.PullRequest.String(),
+		DefaultBranch: "branch,with,comma",
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-target-branch-with-comma.yaml",
+		},
+		CheckForStatus: "success",
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+}
+
 // TestGiteaOnPathChangeIgnore will test that pipelinerun is not triggered when
 // a path is ignored but all other will do.
 func TestGiteaOnPathChangeIgnore(t *testing.T) {
