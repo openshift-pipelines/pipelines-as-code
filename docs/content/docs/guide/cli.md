@@ -358,6 +358,53 @@ GitHub API, but you can specify a custom GitHub API URL using the
 
 {{< /details >}}
 
+{{< details "tkn pac info globing" >}}
+
+### Test globing pattern
+
+The `tkn pac info globbing` command allows you to test glob patterns to see if
+they match, for example, when using the `on-patch-change` annotation.
+
+Here how it works, this example:
+
+```bash
+tkn pac info globbing 'docs/***/*.md'
+```
+
+will match all markdown files in the docs directory and its subdirectories if
+present in the current directory.
+
+By default, it tests the glob pattern against the current directory unless you
+specify the `-d` or `--dir` flag to test against a different directory.
+
+The first argument is the glob pattern to test (you will be prompted for it if
+you don't provide one) as specified by the [glob
+library](https://github.com/gobwas/glob?tab=readme-ov-file#example).
+
+If you want to test against a string to test other annotation that uses globbing
+patterns (like `on-target-branch` annotation) you can use the `-s` or `--string`
+flag.
+
+For example this will test if the globbing expression `refs/heads/*` matches
+`refs/heads/main`:
+
+```bash
+tkn pac info globbing -s "refs/heads/main" "refs/heads/*"
+```
+
+#### Example
+
+```bash
+tkn pac info globbing 'docs/***/*.md'
+```
+
+This will match all markdown files in the docs directory and its subdirectories if
+present in the current directory.
+
+You can specify a different directory than the current one by using the -d/--dir flag.
+
+{{< /details >}}
+
 ## Screenshot
 
 ![tkn-plug-in](/images/tkn-pac-cli.png)
