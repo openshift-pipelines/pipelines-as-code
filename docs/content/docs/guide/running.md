@@ -114,17 +114,23 @@ You can choose to cancel a PipelineRun that is currently in progress. This can
 be done by adding the annotation `pipelinesascode.tekton.dev/cancel-in-progress:
 "true"` in the PipelineRun definition.
 
-This feature only works if the PipelineRun is in progress. If the PipelineRun
-has already completed or has been cancelled, it will be skipped. (For persistent
-settings, refer to the [max-keep-run annotation]({{< relref
-"/docs/guide/cleanups.md" >}}) instead.)
+This feature is effective only when the `PipelineRun` is in progress. If the
+`PipelineRun` has already completed or been cancelled, the cancellation will
+have no effect. (see the [max-keep-run annotation]({{< relref
+"/docs/guide/cleanups.md" >}}) instead to clean old `PipelineRuns`.)
 
-The cancellation occurs after the latest PipelineRun has been successfully
-created and started. This annotation cannot be used to ensure that only one
-PipelineRun is active at any time.
+The cancellation only applies to `PipelineRuns` within the scope of the current
+`PullRequest` or the targeted branch for Push events. For example, if two
+`PullRequests` each have a `PipelineRun` with the same name and the
+cancel-in-progress annotation, only the `PipelineRun` in the specific PullRequest
+will be cancelled. This prevents interference between separate PullRequests.
 
-Currently, `cancel-in-progress` cannot be used in conjunction with [concurrency
-limit]({{< relref "/docs/guide/repositorycrd.md#concurrency" >}}).
+The cancellation of the older `PipelineRuns` will be executed only after the
+latest `PipelineRun` has been created and started successfully. This annotation
+cannot guarantee that only one `PipelineRun` will be active at any given time.
+
+Currently, `cancel-in-progress` cannot be used in conjunction with the [concurrency
+limit]({{< relref "/docs/guide/repositorycrd.md#concurrency" >}}) setting.
 
 ### Cancelling a PipelineRun with a GitOps command
 

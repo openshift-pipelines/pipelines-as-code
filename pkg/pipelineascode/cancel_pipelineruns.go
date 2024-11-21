@@ -6,16 +6,17 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
+
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 )
 
 var cancelMergePatch = map[string]interface{}{
@@ -38,19 +39,25 @@ func (p *PacRun) cancelInProgress(ctx context.Context, matchPR *tektonv1.Pipelin
 		return nil
 	}
 
-	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit > 0 {
-		return fmt.Errorf("cancel in progress is not supported with concurrency limit")
-	}
-
 	prName, ok := matchPR.GetAnnotations()[keys.OriginalPRName]
 	if !ok {
 		return nil
 	}
-	labelSelector := getLabelSelector(map[string]string{
+
+	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit > 0 {
+		return fmt.Errorf("cancel in progress is not supported with concurrency limit")
+	}
+
+	labelMap := map[string]string{
 		keys.URLRepository:  formatting.CleanValueKubernetes(p.event.Repository),
 		keys.OriginalPRName: prName,
-	})
-
+		keys.EventType:      p.event.TriggerTarget.String(),
+	}
+	if p.event.TriggerTarget == triggertype.PullRequest {
+		labelMap[keys.PullRequest] = strconv.Itoa(p.event.PullRequestNumber)
+	}
+	labelSelector := getLabelSelector(labelMap)
+	p.run.Clients.Log.Infof("cancel-in-progress: selecting pipelineRuns to cancel with labels: %v", labelSelector)
 	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(matchPR.GetNamespace()).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
@@ -62,10 +69,27 @@ func (p *PacRun) cancelInProgress(ctx context.Context, matchPR *tektonv1.Pipelin
 		if pr.GetName() == matchPR.GetName() {
 			continue
 		}
+		if sourceBranch, ok := pr.GetAnnotations()[keys.SourceBranch]; ok {
+			// NOTE(chmouel): Every PR has their own branch and so is every push to different branch
+			// it means we only cancel pipelinerun of the same name that runs to
+			// the unique branch. Note: HeadBranch is the branch from where the PR
+			// comes from in git jargon.
+			if sourceBranch != p.event.HeadBranch {
+				p.logger.Infof("cancel-in-progress: skipping pipelinerun %v/%v as it is not from the same branch, annotation source-branch: %s event headbranch: %s", pr.GetNamespace(), pr.GetName(), sourceBranch, p.event.HeadBranch)
+				continue
+			}
+		}
+
+		if pr.IsPending() {
+			p.logger.Infof("cancel-in-progress: skipping pipelinerun %v/%v as it is pending", pr.GetNamespace(), pr.GetName())
+		}
+
 		if pr.IsDone() {
+			p.logger.Infof("cancel-in-progress: skipping pipelinerun %v/%v as it is done", pr.GetNamespace(), pr.GetName())
 			continue
 		}
 		if pr.IsCancelled() || pr.IsGracefullyCancelled() || pr.IsGracefullyStopped() {
+			p.logger.Infof("cancel-in-progress: skipping pipelinerun %v/%v as it is already in %v state", pr.GetNamespace(), pr.GetName(), pr.Spec.Status)
 			continue
 		}
 

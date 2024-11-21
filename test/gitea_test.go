@@ -378,29 +378,69 @@ func TestGiteaConfigMaxKeepRun(t *testing.T) {
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
 }
 
+// TestGiteaConfigCancelInProgress will test the pipelinerun annotation
+// `pipelinesascode.tekton.dev/cancel-in-progress: "true", it will first start
+// one Pull Request which will run a PipelineRun and then send a /retest which
+// should cancel the in progress one.
+// It will create a new branch and push a new Pull Request with a PipelineRun of
+// the same name of the first PR and make sure PipelineRun of the same name only
+// acts on the same Pull Request and not on the one of the others.
 func TestGiteaConfigCancelInProgress(t *testing.T) {
+	prmap := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun-cancel-in-progress.yaml"}
 	topts := &tgitea.TestOpts{
-		TargetEvent: triggertype.PullRequest.String(),
-		YAMLFiles: map[string]string{
-			".tekton/pr.yaml": "testdata/pipelinerun-cancel-in-progress.yaml",
-		},
+		TargetEvent:    triggertype.PullRequest.String(),
+		YAMLFiles:      prmap,
 		CheckForStatus: "",
 		ExpectEvents:   false,
 		Regexp:         nil,
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
+
+	time.Sleep(3 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+
 	// wait a bit that the pipelinerun had created
 	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
 
-	time.Sleep(5 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+	time.Sleep(2 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+
+	targetRef := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("cancel-in-progress")
+	entries, err := payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
+	assert.NilError(t, err)
+	topts.TargetRefName = topts.DefaultBranch
+	scmOpts := &scm.Opts{
+		GitURL:             topts.GitCloneURL,
+		Log:                topts.ParamsRun.Clients.Log,
+		WebURL:             topts.GitHTMLURL,
+		TargetRefName:      targetRef,
+		BaseRefName:        topts.DefaultBranch,
+		NoCheckOutFromBase: true,
+	}
+	scm.PushFilesToRefGit(t, scmOpts, entries)
+
+	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, topts.Opts.Repo, gitea.CreatePullRequestOption{
+		Title: "Test Pull Request - " + targetRef,
+		Head:  targetRef,
+		Base:  topts.DefaultBranch,
+	})
+	assert.NilError(t, err)
+	topts.PullRequest = pr
+	topts.ParamsRun.Clients.Log.Infof("PullRequest %s has been created", pr.HTMLURL)
+	topts.CheckForStatus = "success"
+	tgitea.WaitForStatus(t, topts, "heads/"+targetRef, "", false)
 
 	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 
 	sort.PipelineRunSortByStartTime(prs.Items)
-	assert.Equal(t, len(prs.Items), 2, "should have 2 pipelineruns, but we have: %d", len(prs.Items))
-	assert.Equal(t, prs.Items[1].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "oldest pr should have been cancelled")
+	assert.Equal(t, len(prs.Items), 3, "should have 2 pipelineruns, but we have: %d", len(prs.Items))
+	cancelledPr := 0
+	for _, pr := range prs.Items {
+		if pr.GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason() == "Cancelled" {
+			cancelledPr++
+		}
+	}
+	assert.Equal(t, cancelledPr, 1, "only one pr should have been canceled")
 }
 
 func TestGiteaPush(t *testing.T) {
@@ -781,7 +821,7 @@ func TestGiteaProvenanceForDefaultBranch(t *testing.T) {
 		Settings:              &v1alpha1.Settings{PipelineRunProvenance: "default_branch"},
 		NoPullRequestCreation: true,
 	}
-	verifyProvinance(t, topts, "HELLOMOTO", "step-task", false)
+	verifyProvenance(t, topts, "HELLOMOTO", "step-task", false)
 }
 
 // TestGiteaProvenanceForSource tests the provenance feature of the PipelineRun.
@@ -793,7 +833,7 @@ func TestGiteaProvenanceForSource(t *testing.T) {
 		Settings:              &v1alpha1.Settings{PipelineRunProvenance: "source"},
 		NoPullRequestCreation: true,
 	}
-	verifyProvinance(t, topts, "testing provenance for source", "step-source-provenance-test", false)
+	verifyProvenance(t, topts, "testing provenance for source", "step-source-provenance-test", false)
 }
 
 // TestGiteaGlobalRepoProvenanceForDefaultBranch tests the provenance feature of the PipelineRun.
@@ -808,7 +848,7 @@ func TestGiteaGlobalRepoProvenanceForDefaultBranch(t *testing.T) {
 		Settings:              &v1alpha1.Settings{},
 	}
 
-	verifyProvinance(t, topts, "HELLOMOTO", "step-task", true)
+	verifyProvenance(t, topts, "HELLOMOTO", "step-task", true)
 }
 
 // TestGiteaGlobalAndLocalRepoProvenance verifies the provenance feature of the PipelineRun,
@@ -824,10 +864,10 @@ func TestGiteaGlobalAndLocalRepoProvenance(t *testing.T) {
 		},
 	}
 
-	verifyProvinance(t, topts, "testing provenance for source", "step-source-provenance-test", true)
+	verifyProvenance(t, topts, "testing provenance for source", "step-source-provenance-test", true)
 }
 
-func verifyProvinance(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cName string, isGlobal bool) {
+func verifyProvenance(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cName string, isGlobal bool) {
 	if isGlobal {
 		ctx := context.Background()
 		topts.ParamsRun, topts.Opts, topts.GiteaCNX, _ = tgitea.Setup(ctx)
