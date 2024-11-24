@@ -108,7 +108,9 @@ jobs:
       - name: Collect logs
         if: ${{ always() }}
         run: |
-          ./hack/gh-workflow-ci.sh collect_logs
+          ./hack/gh-workflow-ci.sh collect_logs \
+          "${{ secrets.TEST_GITEA_SMEEURL }}" \
+          "${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}"
 
       - name: Upload artifacts
         if: ${{ always() }}

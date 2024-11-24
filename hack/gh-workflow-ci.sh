@@ -125,6 +125,8 @@ run_e2e_tests() {
 }
 
 collect_logs() {
+  test_gitea_smee_url="${1}"
+  github_ghe_smee_url="${2}"
   mkdir -p /tmp/logs
   kind export logs /tmp/logs
   [[ -d /tmp/gosmee-replay ]] && cp -a /tmp/gosmee-replay /tmp/logs/
@@ -141,6 +143,11 @@ collect_logs() {
       kubectl get ${type} -n ${ns} -o yaml >/tmp/logs/ns/${ns}/${type}.yaml
     done
     kubectl -n ${ns} get events >/tmp/logs/ns/${ns}/events
+  done
+
+  for url in "${test_gitea_smee_url}" "${github_ghe_smee_url}"; do
+    # shellcheck disable=SC2038
+    find /tmp/logs -type f -exec grep -l "${url}" {} \; | xargs -r sed -i "s|${url}|SMEE_URL|g"
   done
 }
 
@@ -175,7 +182,7 @@ run_e2e_tests)
   run_e2e_tests "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}"
   ;;
 collect_logs)
-  collect_logs
+  collect_logs "${2}" "${3}"
   ;;
 help)
   help
