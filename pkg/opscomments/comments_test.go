@@ -1,7 +1,13 @@
 package opscomments
 
 import (
+	"strings"
 	"testing"
+
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
+	"gotest.tools/v3/assert"
+	rtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
@@ -9,10 +15,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
-	"go.uber.org/zap"
-	zapobserver "go.uber.org/zap/zaptest/observer"
-	"gotest.tools/v3/assert"
-	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestLabelsBackwardCompat(t *testing.T) {
@@ -726,4 +728,8 @@ func TestGetPipelineRunAndBranchNameFromCancelComment(t *testing.T) {
 			assert.Equal(t, tt.prName, prName)
 		})
 	}
+}
+
+func TestAnyOpsKubeLabelInSelector(t *testing.T) {
+	assert.Assert(t, strings.Contains(AnyOpsKubeLabelInSelector(), RetestSingleCommentEventType.String()))
 }
