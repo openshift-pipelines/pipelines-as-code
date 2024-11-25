@@ -5,11 +5,12 @@ import (
 	"regexp"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
-	"go.uber.org/zap"
 )
 
 var (
@@ -120,6 +121,20 @@ func IsAnyOpsEventType(eventType string) bool {
 		eventType == CancelCommentAllEventType.String() ||
 		eventType == OkToTestCommentEventType.String() ||
 		eventType == OnCommentEventType.String()
+}
+
+// AnyOpsKubeLabelInSelector will output a Kubernetes label out of all possible
+// CommentEvent Type for selection.
+func AnyOpsKubeLabelInSelector() string {
+	return fmt.Sprintf("%s,%s,%s,%s,%s,%s,%s,%s",
+		TestSingleCommentEventType.String(),
+		TestAllCommentEventType.String(),
+		RetestAllCommentEventType.String(),
+		RetestSingleCommentEventType.String(),
+		CancelCommentSingleEventType.String(),
+		CancelCommentAllEventType.String(),
+		OkToTestCommentEventType.String(),
+		OnCommentEventType.String())
 }
 
 func GetPipelineRunFromTestComment(comment string) string {

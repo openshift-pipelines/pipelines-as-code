@@ -14,6 +14,14 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-github/v66/github"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/names"
+	yaml "gopkg.in/yaml.v2"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/env"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+
 	pacapi "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	tknpacdelete "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/deleterepo"
@@ -36,13 +44,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	"github.com/tektoncd/pipeline/pkg/names"
-	"gopkg.in/yaml.v2"
-	"gotest.tools/v3/assert"
-	"gotest.tools/v3/env"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
 )
 
 // successRegexp will match a success text paac comment,sometime it includes html tags so we need to consider that.
@@ -441,6 +442,20 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 		}
 	}
 	assert.Equal(t, cancelledPr, 1, "only one pr should have been canceled")
+
+	// Test that cancelling works with /retest
+	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+	topts.ParamsRun.Clients.Log.Info("Waiting 10 seconds before a new retest")
+	time.Sleep(10 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+	tgitea.PostCommentOnPullRequest(t, topts, "/retest")
+	tgitea.WaitForStatus(t, topts, "heads/"+targetRef, "", false)
+
+	for _, pr := range prs.Items {
+		if pr.GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason() == "Cancelled" {
+			cancelledPr++
+		}
+	}
+	assert.Equal(t, cancelledPr, 2, "tweo pr should have been canceled")
 }
 
 func TestGiteaPush(t *testing.T) {

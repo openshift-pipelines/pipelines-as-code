@@ -19,6 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -492,7 +493,7 @@ func TestCancelInProgress(t *testing.T) {
 			},
 		},
 		{
-			name: "cancel in progress",
+			name: "match/cancel in progress",
 			event: &info.Event{
 				Repository:        "foo",
 				SHA:               "foosha",
@@ -537,7 +538,58 @@ func TestCancelInProgress(t *testing.T) {
 			wantLog: "cancel-in-progress: cancelling pipelinerun foo/",
 		},
 		{
-			name: "cancel in progress exclude not belonging to same push branch",
+			name: "match/cancel in progress from /retest",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				HeadBranch:        "head",
+				EventType:         string(triggertype.PullRequest),
+				TriggerTarget:     triggertype.PullRequest,
+				PullRequestNumber: pullReqNumber,
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo",
+						Namespace: "foo",
+						Labels:    fooRepoLabels,
+						Annotations: map[string]string{
+							keys.CancelInProgress: "true",
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-1",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:    strconv.Itoa(pullReqNumber),
+							keys.EventType:      string(opscomments.RetestAllCommentEventType),
+						},
+						Annotations: map[string]string{
+							keys.CancelInProgress: "true", keys.OriginalPRName: "pr-foo",
+							keys.Repository:   "foo",
+							keys.SourceBranch: "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			repo: fooRepo,
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-1": true,
+			},
+			wantLog: "cancel-in-progress: cancelling pipelinerun foo/pr-foo-1",
+		},
+		{
+			name: "match/cancel in progress exclude not belonging to same push branch",
 			event: &info.Event{
 				Repository:    "foo",
 				SHA:           "foosha",
@@ -609,7 +661,7 @@ func TestCancelInProgress(t *testing.T) {
 			wantLog: "skipping pipelinerun foo/pr-foo-1 as it is not from the same branch",
 		},
 		{
-			name: "cancel in progress exclude not belonging to same pr",
+			name: "match/cancel in progress exclude not belonging to same pr",
 			event: &info.Event{
 				Repository:        "foo",
 				SHA:               "foosha",
@@ -684,9 +736,8 @@ func TestCancelInProgress(t *testing.T) {
 			},
 			wantLog: "cancel-in-progress: cancelling pipelinerun foo/",
 		},
-
 		{
-			name: "cancel in progress with concurrency limit",
+			name: "skip/cancel in progress with concurrency limit",
 			event: &info.Event{
 				Repository: "foo",
 				SHA:        "foosha",
