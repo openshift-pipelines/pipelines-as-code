@@ -272,6 +272,17 @@ pipelinesascode.tekton.dev/on-cel-expression: |
   event == "pull_request" && target_branch != experimental"
 ```
 
+## Matching a PipelineRun on a regexp in CEL language
+
+In CEL expression, you can match a field name using a regular expression.
+For example, you want to trigger a `PipelineRun` when event is `pull_request` and the `source_branch` name contains the substring `feat/`.
+you can use the following expression:
+
+```yaml
+pipelinesascode.tekton.dev/on-cel-expression: |
+  event == "pull_request" && source_branch.matches(".*feat/.*")
+```
+
 You can find more information about the CEL language spec here :
 
 <https://github.com/google/cel-spec/blob/master/doc/langdef.md>
@@ -284,7 +295,7 @@ You can match a PipelineRun on a comment on a Pull Request with the annotation
 `pipelinesascode.tekton.dev/on-comment`.
 
 The comment is a regexp and if a newly created comment has this regexp it will
-automatically matches the PipelineRun and starts it.
+automatically match the PipelineRun and starts it.
 
 For example:
 
