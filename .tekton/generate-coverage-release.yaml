@@ -6,6 +6,7 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/cancel-in-progress: "true"
     pipelinesascode.tekton.dev/on-cel-expression: |
       event == "push" && target_branch == "main" && ("***/*.go".pathChanged() || "config/***".pathChanged() || ".tekton/generate-coverage-release.yaml".pathChanged())
 spec:
