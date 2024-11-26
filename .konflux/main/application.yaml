@@ -3,6 +3,6 @@
 apiVersion: appstudio.redhat.com/v1alpha1
 kind: Application
 metadata:
-  name: pipelines-as-code-main
+  name: pac-downstream-main
 spec:
-  displayName: pipelines-as-code main
+  displayName: pac-downstream main

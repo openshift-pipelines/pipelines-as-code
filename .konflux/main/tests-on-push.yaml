@@ -3,9 +3,9 @@
 apiVersion: appstudio.redhat.com/v1beta2
 kind: IntegrationTestScenario
 metadata:
-  name: pipelines-as-code-main-enterprise-contract-push
+  name: pac-downstream-main-enterprise-contract-push
 spec:
-  application: pipelines-as-code-main
+  application: pac-downstream-main
   contexts:
     - description: Application testing
       name: push

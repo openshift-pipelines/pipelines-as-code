@@ -5,14 +5,14 @@ kind: Component
 metadata:
   annotations:
     build.appstudio.openshift.io/pipeline: '{"name":"docker-build-multi-platform-oci-ta","bundle":"latest"}'
-  name: pipelines-as-code-main-webhook
+  name: pac-downstream-main-webhook
 spec:
   componentName: webhook
-  application: pipelines-as-code-main
+  application: pac-downstream-main
   build-nudges-ref:
   - operator-main-bundle
   source:
     git:
-      url: https://github.com/openshift-pipelines/pipelines-as-code
+      url: https://github.com/openshift-pipelines/pac-downstream
       dockerfileUrl: .konflux/dockerfiles/webhook.Dockerfile
       revision: main

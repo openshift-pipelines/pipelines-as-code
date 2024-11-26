@@ -3,13 +3,13 @@
 apiVersion: appstudio.redhat.com/v1alpha1
 kind: ImageRepository
 metadata:
-  name: pipelines-as-code-main-controller
+  name: pac-downstream-main-controller
   annotations:
     image-controller.appstudio.redhat.com/update-component-image: "true"
   labels:
-    appstudio.redhat.com/component: pipelines-as-code-main-controller
-    appstudio.redhat.com/application: pipelines-as-code-main
+    appstudio.redhat.com/component: pac-downstream-main-controller
+    appstudio.redhat.com/application: pac-downstream-main
 spec:
   image:
-   name: pipelines-as-code-main/controller
+   name: pac-downstream-main/controller
    visibility: public
