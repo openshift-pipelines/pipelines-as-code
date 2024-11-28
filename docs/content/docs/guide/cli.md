@@ -358,9 +358,9 @@ GitHub API, but you can specify a custom GitHub API URL using the
 
 {{< /details >}}
 
-{{< details "tkn pac info globing" >}}
+{{< details "tkn pac info globbing" >}}
 
-### Test globing pattern
+### Test globbing pattern
 
 The `tkn pac info globbing` command allows you to test glob patterns to see if
 they match, for example, when using the `on-patch-change` annotation.
