@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ExecCommandNoRun setup a cobra command for running with params run and
+// ExecCommand setup a cobra command for running with params run and
 // custom iostream.
 func ExecCommand(runcnx *params.Run, cmd func(*params.Run, *cli.IOStreams) *cobra.Command, args ...string) (string, error) {
 	bufout := new(bytes.Buffer)

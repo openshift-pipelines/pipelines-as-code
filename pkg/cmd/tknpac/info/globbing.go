@@ -76,15 +76,20 @@ func globbingCommand(ioStreams *cli.IOStreams) *cobra.Command {
 				}
 			}
 
+			matched := false
 			g := glob.MustCompile(expression)
 			err := filepath.WalkDir(dir, func(path string, _ fs.DirEntry, _ error) error {
 				// remove the dir prefix with a regexp
 				p := strings.TrimPrefix(path, dir+"/")
 				if g.Match(p) {
+					matched = true
 					fmt.Fprintf(ioStreams.Out, "%s\n", p)
 				}
 				return nil
 			})
+			if err == nil && !matched {
+				return fmt.Errorf("no files matched the expression %s", expression)
+			}
 			return err
 		},
 		Annotations: map[string]string{

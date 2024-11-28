@@ -164,7 +164,7 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
     pipelinesascode.tekton.dev/on-event: "[pull_request]"
-    pipelinesascode.tekton.dev/on-path-change: "[docs/***.md, manual/***.rst]"
+    pipelinesascode.tekton.dev/on-path-change: "[docs/**.md, manual/**.rst]"
 ```
 
 This configuration will match and trigger the `PipelineRun` named
@@ -177,6 +177,16 @@ The patterns used are [glob](https://en.wikipedia.org/wiki/Glob_(programming))
 patterns, not regexp. Here are some
 [examples](https://github.com/gobwas/glob?tab=readme-ov-file#example) from the
 library used for matching.
+
+The `tkn pac` cli has a handy [globbing command]({{< relref "/docs/guide/cli.md#test-globbing-pattern" >}})
+to test the glob pattern matching:
+
+```bash
+tkn pac info globbing "[PATTERN]"
+```
+
+will match the files with `[PATTERN]` in the current directory.
+
 {{< /hint >}}
 
 ### Matching a PipelineRun by Ignoring Specific Path Changes
@@ -191,8 +201,8 @@ You still need to specify the event type and target branch. If you have a [CEL
 expression](#matching-pipelinerun-by-path-change) the `on-path-change-ignore`
 annotation will be ignored
 
-This example triggers a `PipelineRun` when there are no changes in the `docs`
-directory:
+This PipelineRun will run when there are changes outside the docs
+folder:
 
 ```yaml
 metadata:
@@ -335,11 +345,11 @@ PipelineRun.
 ### Matching PipelineRun by path change
 
 > *NOTE*: `Pipelines-as-Code` supports two ways to match files changed in a particular event. The `.pathChanged` suffix function supports [glob
-pattern](https://github.com/ganbarodigital/go_glob#what-does-a-glob-pattern-look-like) and does not support different types of "changes" i.e. added, modified, deleted and so on. The other option is to use the `files.` property (`files.all`, `files.added`, `files.deleted`, `files.modified`, `files.renamed`) which can target specific types of changed files and supports using CEL expressions i.e. `files.all.exists(x, x.matches('renamed.go'))`.
+pattern](https://github.com/gobwas/glob#example) and does not support different types of "changes" i.e. added, modified, deleted and so on. The other option is to use the `files.` property (`files.all`, `files.added`, `files.deleted`, `files.modified`, `files.renamed`) which can target specific types of changed files and supports using CEL expressions i.e. `files.all.exists(x, x.matches('renamed.go'))`.
 
 If you want to have a PipelineRun running only if a path has
 changed you can use the `.pathChanged` suffix function with a [glob
-pattern](https://github.com/ganbarodigital/go_glob#what-does-a-glob-pattern-look-like). Here
+pattern](https://github.com/gobwas/glob#example). Here
 is a concrete example matching every markdown files (as files who has the `.md`
 suffix) in the `docs` directory :
 

@@ -17,7 +17,7 @@ func TestGlobbing(t *testing.T) {
 	tests := []struct {
 		name    string
 		pattern string
-		wantErr bool
+		wantErr string
 		files   []string
 		str     string
 	}{
@@ -31,17 +31,33 @@ func TestGlobbing(t *testing.T) {
 			},
 		},
 		{
+			name:    "not matched/File Globbing",
+			pattern: "***/*.el",
+			files: []string{
+				"README.md",
+				"docs/blah.md",
+				"hello/moto.md",
+			},
+			wantErr: "no files matched",
+		},
+		{
 			name:    "String Pattern",
 			pattern: "refs/*/release-*",
 			str:     "refs/heads/release-foo",
+		},
+		{
+			name:    "not matched/String Pattern",
+			pattern: "blah/*/release-*",
+			str:     "refs/heads/release-foo",
+			wantErr: "has not matched",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.str != "" {
 				output, err := tknpactest.ExecCommandNoRun(globbingCommand, "-s", tt.str, tt.pattern)
-				if tt.wantErr {
-					assert.Assert(t, tt.wantErr, err != nil, "wantErr: %v, got: %v", tt.wantErr, err)
+				if tt.wantErr != "" {
+					assert.ErrorContains(t, err, tt.wantErr, "error: %v", err)
 					return
 				}
 				golden.Assert(t, output, strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
@@ -58,6 +74,10 @@ func TestGlobbing(t *testing.T) {
 				f.Close()
 			}
 			output, err := tknpactest.ExecCommandNoRun(globbingCommand, "-d", tmpdir.Path(), tt.pattern)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr, "error: %v", err)
+				return
+			}
 			assert.NilError(t, err)
 			golden.Assert(t, output, strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
 		})
