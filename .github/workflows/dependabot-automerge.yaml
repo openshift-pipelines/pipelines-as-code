@@ -7,4 +7,3 @@ jobs:
       - uses: ahmadnassri/action-dependabot-auto-merge@v2
         with:
           github-token: ${{ secrets.GH_TOKEN }}
-          update_type: all
