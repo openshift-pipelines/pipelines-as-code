@@ -32,7 +32,7 @@ func TestGetTektonDir(t *testing.T) {
 		path            string
 		testDirPath     string
 		contentContains string
-		wantErr         bool
+		wantErr         string
 		removeSuffix    bool
 	}{
 		{
@@ -49,6 +49,13 @@ func TestGetTektonDir(t *testing.T) {
 			testDirPath:     "./",
 			contentContains: "",
 		},
+		{
+			name:        "Badly formatted yaml",
+			event:       bbtest.MakeEvent(nil),
+			path:        ".tekton",
+			testDirPath: "../../pipelineascode/testdata/bad_yaml/.tekton",
+			wantErr:     "error unmarshalling yaml file .tekton/badyaml.yaml: error converting YAML to JSON: yaml: line 2: did not find expected key",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -60,15 +67,12 @@ func TestGetTektonDir(t *testing.T) {
 			v := &Provider{Logger: logger, baseURL: tURL, Client: client, projectKey: tt.event.Organization}
 			bbtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path)
 			content, err := v.GetTektonDir(ctx, tt.event, tt.path, "")
-			if tt.wantErr {
-				assert.Assert(t, err != nil,
-					"GetTektonDir() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr != "" {
+				assert.Assert(t, err != nil, "we should have get an error here")
+				assert.ErrorContains(t, err, tt.wantErr)
 				return
 			}
-			if tt.contentContains == "" {
-				assert.Equal(t, content, "")
-				return
-			}
+			assert.NilError(t, err)
 			assert.Assert(t, strings.Contains(content, tt.contentContains), "content %s doesn't have %s", content, tt.contentContains)
 		})
 	}
