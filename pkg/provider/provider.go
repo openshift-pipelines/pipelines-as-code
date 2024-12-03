@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 var (
@@ -122,4 +124,12 @@ func CompareHostOfURLS(uri1, uri2 string) bool {
 		return false
 	}
 	return u1.Host == u2.Host
+}
+
+func ValidateYaml(content []byte, filename string) error {
+	var validYaml any
+	if err := yaml.Unmarshal(content, &validYaml); err != nil {
+		return fmt.Errorf("error unmarshalling yaml file %s: %w", filename, err)
+	}
+	return nil
 }

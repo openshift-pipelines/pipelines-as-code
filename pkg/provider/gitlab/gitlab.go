@@ -19,7 +19,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/xanzy/go-gitlab"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v2"
 )
 
 const (
@@ -291,10 +290,8 @@ func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, runevent *info
 			if err != nil {
 				return "", err
 			}
-			// validate yaml
-			var i any
-			if err := yaml.Unmarshal(data, &i); err != nil {
-				return "", fmt.Errorf("error unmarshalling yaml file %s: %w", value.Path, err)
+			if err := provider.ValidateYaml(data, value.Path); err != nil {
+				return "", err
 			}
 			if allTemplates != "" && !strings.HasPrefix(string(data), "---") {
 				allTemplates += "---"

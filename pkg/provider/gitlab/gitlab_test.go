@@ -314,7 +314,7 @@ func TestGetTektonDir(t *testing.T) {
 				sourceProjectID: 10,
 			},
 			prcontent: "bad:\n- yaml\nfoo",
-			wantErr:   "error unmarshalling yaml file pr.yaml: yaml: line 4: could not find expected ':'",
+			wantErr:   "error unmarshalling yaml file pr.yaml: error converting YAML to JSON: yaml: line 4: could not find expected ':'",
 		},
 		{
 			name:      "list tekton dir",

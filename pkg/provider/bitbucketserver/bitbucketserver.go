@@ -18,7 +18,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 const taskStatusTemplate = `
@@ -151,9 +150,8 @@ func (v *Provider) concatAllYamlFiles(objects []string, runevent *info.Event) (s
 				return "", err
 			}
 
-			var validYaml any
-			if err := yaml.Unmarshal([]byte(data), &validYaml); err != nil {
-				return "", fmt.Errorf("error unmarshalling yaml file %s: %w", value, err)
+			if err := provider.ValidateYaml([]byte(data), value); err != nil {
+				return "", err
 			}
 
 			if allTemplates != "" && !strings.HasPrefix(data, "---") {
