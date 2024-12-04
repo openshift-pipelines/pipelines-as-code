@@ -2,11 +2,13 @@ package gitea
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -21,6 +23,7 @@ import (
 	tgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea/test"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
+	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
@@ -467,6 +470,58 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 			if err := v.createStatusCommit(tt.args.event, tt.args.pacopts, tt.args.status); (err != nil) != tt.wantErr {
 				t.Errorf("Provider.createStatusCommit() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func TestGetTektonDir(t *testing.T) {
+	testGetTektonDir := []struct {
+		treepath             string
+		event                *info.Event
+		name                 string
+		expectedString       string
+		provenance           string
+		filterMessageSnippet string
+		wantErr              string
+	}{
+		{
+			name: "test with badly formatted yaml",
+			event: &info.Event{
+				Organization: "tekton",
+				Repository:   "cat",
+				SHA:          "123",
+			},
+			treepath: "testdata/tree/badyaml",
+			wantErr:  "error unmarshalling yaml file badyaml.yaml: error converting YAML to JSON: yaml: line 2: did not find expected key",
+		},
+	}
+	for _, tt := range testGetTektonDir {
+		t.Run(tt.name, func(t *testing.T) {
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			fakelogger := zap.New(observer).Sugar()
+			ctx, _ := rtesting.SetupFakeContext(t)
+			fakeclient, mux, teardown := tgitea.Setup(t)
+			defer teardown()
+			gvcs := Provider{
+				Client: fakeclient,
+				Logger: fakelogger,
+			}
+			if tt.provenance == "default_branch" {
+				tt.event.SHA = tt.event.DefaultBranch
+			} else {
+				shaDir := fmt.Sprintf("%x", sha256.Sum256([]byte(tt.treepath)))
+				tt.event.SHA = shaDir
+			}
+
+			tgitea.SetupGitTree(t, mux, tt.treepath, tt.event, false)
+			got, err := gvcs.GetTektonDir(ctx, tt.event, ".tekton", tt.provenance)
+			if tt.wantErr != "" {
+				assert.Assert(t, err != nil, "we should have get an error here")
+				assert.Equal(t, tt.wantErr, err.Error())
+				return
+			}
+			assert.NilError(t, err)
+			assert.Assert(t, strings.Contains(got, tt.expectedString), "expected %s, got %s", tt.expectedString, got)
 		})
 	}
 }
