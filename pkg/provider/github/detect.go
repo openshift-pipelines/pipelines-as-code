@@ -11,6 +11,11 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	pullRequestOpenSyncEvent = []string{"opened", "synchronize", "synchronized", "reopened"}
+	pullRequestLabelEvent    = []string{"labeled"}
+)
+
 // Detect processes event and detect if it is a github event, whether to process or reject it
 // returns (if is a GH event, whether to process or reject, error if any occurred).
 func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
@@ -40,7 +45,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 	}
 
 	_ = json.Unmarshal([]byte(payload), &eventInt)
-	eType, errReason := detectTriggerTypeFromPayload(eventType, eventInt)
+	eType, errReason := v.detectTriggerTypeFromPayload(eventType, eventInt)
 	if eType != "" {
 		return setLoggerAndProceed(true, "", nil)
 	}
@@ -51,7 +56,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 // detectTriggerTypeFromPayload will detect the event type from the payload,
 // filtering out the events that are not supported.
 // first arg will get the event type and the second one will get an error string explaining why it's not supported.
-func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype.Trigger, string) {
+func (v *Provider) detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype.Trigger, string) {
 	switch event := eventInt.(type) {
 	case *github.PushEvent:
 		if event.GetPusher() != nil {
@@ -59,7 +64,7 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype
 		}
 		return "", "no pusher in payload"
 	case *github.PullRequestEvent:
-		if provider.Valid(event.GetAction(), []string{"opened", "synchronize", "synchronized", "reopened"}) {
+		if provider.Valid(event.GetAction(), pullRequestOpenSyncEvent) || provider.Valid(event.GetAction(), pullRequestLabelEvent) {
 			return triggertype.PullRequest, ""
 		}
 		return "", fmt.Sprintf("pull_request: unsupported action \"%s\"", event.GetAction())
