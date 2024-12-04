@@ -46,8 +46,6 @@ func gitPushPullRetry(t *testing.T, opts *Opts, path string) {
 		}
 		if _, err = git.RunGit(path, "push", "origin", pushForce, opts.TargetRefName); err == nil {
 			opts.Log.Infof("Pushed files to repo %s branch %s", opts.WebURL, opts.TargetRefName)
-			// trying to avoid the multiple events at the time of creation we have a sync
-			time.Sleep(5 * time.Second)
 			return
 		}
 		if strings.Contains(err.Error(), "non-fast-forward") {
