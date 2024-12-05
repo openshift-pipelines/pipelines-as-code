@@ -169,7 +169,7 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 		State:       state,
 		TargetURL:   status.DetailsURL,
 		Description: status.Title,
-		Context:     getCheckName(status, pacopts),
+		Context:     provider.GetCheckName(status, pacopts),
 	}
 	if _, _, err := v.Client.CreateStatus(event.Organization, event.Repository, event.SHA, gStatus); err != nil {
 		return err
@@ -195,17 +195,6 @@ func (v *Provider) createStatusCommit(event *info.Event, pacopts *info.PacOpts, 
 		}
 	}
 	return nil
-}
-
-// TODO: move to common since used in github and here.
-func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
-	if pacopts.ApplicationName != "" {
-		if status.OriginalPipelineRunName == "" {
-			return pacopts.ApplicationName
-		}
-		return fmt.Sprintf("%s / %s", pacopts.ApplicationName, status.OriginalPipelineRunName)
-	}
-	return status.OriginalPipelineRunName
 }
 
 func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, provenance string) (string, error) {

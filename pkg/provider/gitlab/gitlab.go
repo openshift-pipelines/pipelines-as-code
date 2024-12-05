@@ -196,11 +196,13 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	body := fmt.Sprintf("**%s%s** has %s\n\n%s\n\n<small>Full log available [here](%s)</small>",
 		v.pacInfo.ApplicationName, onPr, statusOpts.Title, statusOpts.Text, detailsURL)
 
+	contextName := provider.GetCheckName(statusOpts, v.pacInfo)
 	opt := &gitlab.SetCommitStatusOptions{
 		State:       gitlab.BuildStateValue(statusOpts.Conclusion),
-		Name:        gitlab.Ptr(v.pacInfo.ApplicationName),
+		Name:        gitlab.Ptr(contextName),
 		TargetURL:   gitlab.Ptr(detailsURL),
 		Description: gitlab.Ptr(statusOpts.Title),
+		Context:     gitlab.Ptr(contextName),
 	}
 
 	// In case we have access, set the status. Typically, on a Merge Request (MR)
