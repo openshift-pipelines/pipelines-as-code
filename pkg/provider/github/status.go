@@ -34,16 +34,6 @@ const taskStatusTemplate = `
 {{- end }}
 </table>`
 
-func getCheckName(status provider.StatusOpts, pacopts *info.PacOpts) string {
-	if pacopts.ApplicationName != "" {
-		if status.OriginalPipelineRunName == "" {
-			return pacopts.ApplicationName
-		}
-		return fmt.Sprintf("%s / %s", pacopts.ApplicationName, status.OriginalPipelineRunName)
-	}
-	return status.OriginalPipelineRunName
-}
-
 func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	opt := github.ListOptions{PerPage: v.PaginedNumber}
 	for {
@@ -114,7 +104,7 @@ func (v *Provider) canIUseCheckrunID(checkrunid *int64) bool {
 func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	now := github.Timestamp{Time: time.Now()}
 	checkrunoption := github.CreateCheckRunOptions{
-		Name:       getCheckName(status, v.pacInfo),
+		Name:       provider.GetCheckName(status, v.pacInfo),
 		HeadSHA:    runevent.SHA,
 		Status:     github.String("in_progress"),
 		DetailsURL: github.String(status.DetailsURL),
@@ -254,7 +244,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 	checkRunOutput.Text = github.String(text)
 
 	opts := github.UpdateCheckRunOptions{
-		Name:   getCheckName(statusOpts, pacopts),
+		Name:   provider.GetCheckName(statusOpts, pacopts),
 		Status: github.String(statusOpts.Status),
 		Output: checkRunOutput,
 	}
@@ -323,7 +313,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		State:       github.String(status.Conclusion),
 		TargetURL:   github.String(status.DetailsURL),
 		Description: github.String(status.Title),
-		Context:     github.String(getCheckName(status, v.pacInfo)),
+		Context:     github.String(provider.GetCheckName(status, v.pacInfo)),
 		CreatedAt:   &github.Timestamp{Time: now},
 	}
 

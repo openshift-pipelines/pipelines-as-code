@@ -3,6 +3,8 @@ package provider
 import (
 	"testing"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"gotest.tools/v3/assert"
 )
 
@@ -491,6 +493,56 @@ func TestCompareHostOfURLS(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := CompareHostOfURLS(tt.url1, tt.url2)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetCheckName(t *testing.T) {
+	type args struct {
+		status  StatusOpts
+		pacopts *info.PacOpts
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "no application name",
+			args: args{
+				status: StatusOpts{
+					OriginalPipelineRunName: "HELLO",
+				},
+				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: ""}},
+			},
+			want: "HELLO",
+		},
+		{
+			name: "application and pipelinerun name",
+			args: args{
+				status: StatusOpts{
+					OriginalPipelineRunName: "MOTO",
+				},
+				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: "HELLO"}},
+			},
+			want: "HELLO / MOTO",
+		},
+		{
+			name: "application no pipelinerun name",
+			args: args{
+				status: StatusOpts{
+					OriginalPipelineRunName: "",
+				},
+				pacopts: &info.PacOpts{Settings: settings.Settings{ApplicationName: "PAC"}},
+			},
+			want: "PAC",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GetCheckName(tt.args.status, tt.args.pacopts); got != tt.want {
+				t.Errorf("GetCheckName() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
