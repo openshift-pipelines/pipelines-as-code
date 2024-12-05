@@ -92,6 +92,9 @@ func getAnnotationValues(annotation string) ([]string, error) {
 func getTargetBranch(prun *tektonv1.PipelineRun, event *info.Event) (bool, string, string, error) {
 	var targetEvent, targetBranch string
 	if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnEvent]; ok {
+		if key == "[]" {
+			return false, "", "", fmt.Errorf("annotation %s is empty", keys.OnEvent)
+		}
 		targetEvents := []string{event.TriggerTarget.String()}
 		if event.EventType == triggertype.Incoming.String() {
 			// if we have a incoming event, we want to match pipelineruns on both incoming and push
@@ -107,6 +110,9 @@ func getTargetBranch(prun *tektonv1.PipelineRun, event *info.Event) (bool, strin
 		}
 	}
 	if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnTargetBranch]; ok {
+		if key == "[]" {
+			return false, "", "", fmt.Errorf("annotation %s is empty", keys.OnTargetBranch)
+		}
 		targetEvents := []string{event.BaseBranch}
 		matched, err := matchOnAnnotation(key, targetEvents, true)
 		targetBranch = key
