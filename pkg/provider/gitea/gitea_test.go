@@ -492,7 +492,7 @@ func TestGetTektonDir(t *testing.T) {
 				SHA:          "123",
 			},
 			treepath: "testdata/tree/badyaml",
-			wantErr:  "error unmarshalling yaml file badyaml.yaml: error converting YAML to JSON: yaml: line 2: did not find expected key",
+			wantErr:  "error unmarshalling yaml file badyaml.yaml: yaml: line 2: did not find expected key",
 		},
 	}
 	for _, tt := range testGetTektonDir {
@@ -517,7 +517,7 @@ func TestGetTektonDir(t *testing.T) {
 			got, err := gvcs.GetTektonDir(ctx, tt.event, ".tekton", tt.provenance)
 			if tt.wantErr != "" {
 				assert.Assert(t, err != nil, "we should have get an error here")
-				assert.Equal(t, tt.wantErr, err.Error())
+				assert.ErrorContains(t, err, tt.wantErr)
 				return
 			}
 			assert.NilError(t, err)

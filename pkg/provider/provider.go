@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/util/yaml"
+	"gopkg.in/yaml.v2"
 )
 
 var (

@@ -54,7 +54,7 @@ func TestGetTektonDir(t *testing.T) {
 			event:       bbtest.MakeEvent(nil),
 			path:        ".tekton",
 			testDirPath: "../../pipelineascode/testdata/bad_yaml/.tekton",
-			wantErr:     "error unmarshalling yaml file .tekton/badyaml.yaml: error converting YAML to JSON: yaml: line 2: did not find expected key",
+			wantErr:     "error unmarshalling yaml file .tekton/badyaml.yaml: yaml: line 2: did not find expected key",
 		},
 	}
 	for _, tt := range tests {

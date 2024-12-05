@@ -314,7 +314,7 @@ func TestGetTektonDir(t *testing.T) {
 				sourceProjectID: 10,
 			},
 			prcontent: "bad:\n- yaml\nfoo",
-			wantErr:   "error unmarshalling yaml file pr.yaml: error converting YAML to JSON: yaml: line 4: could not find expected ':'",
+			wantErr:   "error unmarshalling yaml file pr.yaml: yaml: line 4: could not find expected ':'",
 		},
 		{
 			name:      "list tekton dir",
@@ -392,7 +392,7 @@ func TestGetTektonDir(t *testing.T) {
 			got, err := v.GetTektonDir(ctx, tt.args.event, tt.args.path, tt.args.provenance)
 			if tt.wantErr != "" {
 				assert.Assert(t, err != nil, "expected error %s, got %v", tt.wantErr, err)
-				assert.Equal(t, err.Error(), tt.wantErr)
+				assert.ErrorContains(t, err, tt.wantErr)
 				return
 			}
 			if tt.wantStr != "" {
