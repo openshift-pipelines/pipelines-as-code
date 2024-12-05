@@ -2295,6 +2295,7 @@ func TestGetTargetBranch(t *testing.T) {
 		expectedMatch  bool
 		expectedEvent  string
 		expectedBranch string
+		expectedError  string
 	}{
 		{
 			name: "Test with pull_request event",
@@ -2353,11 +2354,50 @@ func TestGetTargetBranch(t *testing.T) {
 			expectedEvent:  "",
 			expectedBranch: "",
 		},
+		{
+			name: "Test empty array onEvent",
+			prun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						keys.OnEvent:        "[]",
+						keys.OnTargetBranch: "main",
+					},
+				},
+			},
+			event: &info.Event{
+				TriggerTarget: triggertype.PullRequest,
+				EventType:     "pull_request",
+				BaseBranch:    "main",
+			},
+			expectedError: fmt.Sprintf("annotation %s is empty", keys.OnEvent),
+		},
+		{
+			name: "Test empty array onTargetBranch",
+			prun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						keys.OnEvent:        "pull_request",
+						keys.OnTargetBranch: "[]",
+					},
+				},
+			},
+			event: &info.Event{
+				TriggerTarget: triggertype.PullRequest,
+				EventType:     "pull_request",
+				BaseBranch:    "main",
+			},
+			expectedError: fmt.Sprintf("annotation %s is empty", keys.OnTargetBranch),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			matched, targetEvent, targetBranch, err := getTargetBranch(tt.prun, tt.event)
+			if tt.expectedError != "" {
+				assert.Assert(t, err != nil)
+				assert.Error(t, err, tt.expectedError, err.Error())
+				return
+			}
 			assert.NilError(t, err)
 			assert.Equal(t, tt.expectedMatch, matched)
 			assert.Equal(t, tt.expectedEvent, targetEvent)
