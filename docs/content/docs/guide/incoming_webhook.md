@@ -88,7 +88,9 @@ stringData:
 After setting this up, you will be able to start the PipelineRun with a POST
 request sent to the controller URL appended with /incoming. The request
 includes the very-secure-shared-secret, the repository name (repo), the target
-branch (main), and the PipelineRun name (or the generateName if used) (target_pipelinerun).
+branch (main), and the PipelineRun name.
+
+You can use the `generateName` field as the PipelineRun name but you will need to make sure to specify the hyphen (-) at the end.
 
 As an example here is a curl snippet starting the PipelineRun:
 
