@@ -2190,7 +2190,7 @@ func TestMatchRunningPipelineRunForIncomingWebhook(t *testing.T) {
 			name: "return matched pipelinerun for matching pipelinerun generateName",
 			runevent: info.Event{
 				EventType:         "incoming",
-				TargetPipelineRun: "pr1",
+				TargetPipelineRun: "pr1-",
 			},
 			pruns: []*tektonv1.PipelineRun{
 				{
