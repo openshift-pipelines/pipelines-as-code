@@ -217,7 +217,6 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryCannotLocatePipelineRun", msg)
 		return nil, nil
 	}
-
 	pipelineRuns, err = resolve.MetadataResolve(pipelineRuns)
 	if err != nil && len(pipelineRuns) == 0 {
 		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "FailedToResolvePipelineRunMetadata", err.Error())
