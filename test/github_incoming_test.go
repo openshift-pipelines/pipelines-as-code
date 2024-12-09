@@ -34,7 +34,7 @@ func TestGithubAppIncoming(t *testing.T) {
 	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, entries, false, false)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, false, false)
 }
 
 func TestGithubSecondIncoming(t *testing.T) {
@@ -45,7 +45,7 @@ func TestGithubSecondIncoming(t *testing.T) {
 	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, entries, false, true)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, false, true)
 }
 
 func TestGithubWebhookIncoming(t *testing.T) {
@@ -56,7 +56,7 @@ func TestGithubWebhookIncoming(t *testing.T) {
 	}, randomedString, randomedString, triggertype.Incoming.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, entries, true, false)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming", entries, true, false)
 }
 
 // TestGithubAppIncomingForDifferentEvent tests that a Pipelinerun with the incoming event
@@ -70,10 +70,10 @@ func TestGithubAppIncomingForDifferentEvent(t *testing.T) {
 	}, randomedString, randomedString, triggertype.PullRequest.String(), map[string]string{})
 	assert.NilError(t, err)
 
-	verifyIncomingWebhook(t, randomedString, entries, false, false)
+	verifyIncomingWebhook(t, randomedString, "pipelinerun-incoming-", entries, false, false)
 }
 
-func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[string]string, onWebhook, onSecondController bool) {
+func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string, entries map[string]string, onWebhook, onSecondController bool) {
 	ctx := context.Background()
 	ctx, runcnx, opts, ghprovider, err := tgithub.Setup(ctx, onSecondController, onWebhook)
 	assert.NilError(t, err)
@@ -120,7 +120,7 @@ func verifyIncomingWebhook(t *testing.T, randomedString string, entries map[stri
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to branch %s", sha, vref.GetURL())
 
 	incomingURL := fmt.Sprintf("%s/incoming?repository=%s&branch=%s&pipelinerun=%s&secret=%s", opts.ControllerURL,
-		randomedString, randomedString, "pipelinerun-incoming", incomingSecreteValue)
+		randomedString, randomedString, pipelinerunName, incomingSecreteValue)
 	body := `{"params":{"the_best_superhero_is":"Superman"}}`
 	client := &http.Client{}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, incomingURL, strings.NewReader(body))
