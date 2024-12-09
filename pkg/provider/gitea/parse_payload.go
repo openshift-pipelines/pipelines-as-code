@@ -50,6 +50,9 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.Repository = gitEvent.Repository.Name
 		processedEvent.TriggerTarget = triggertype.PullRequest
 		processedEvent.EventType = triggertype.PullRequest.String()
+		for _, label := range gitEvent.PullRequest.Labels {
+			processedEvent.PullRequestLabel = append(processedEvent.PullRequestLabel, label.Name)
+		}
 	case *giteaStructs.PushPayload:
 		processedEvent = info.NewEvent()
 		processedEvent.SHA = gitEvent.HeadCommit.ID

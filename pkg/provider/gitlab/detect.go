@@ -37,12 +37,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 
 	switch gitEvent := eventInt.(type) {
 	case *gitlab.MergeEvent:
-		// on a MR Update only react when there is Oldrev set, since this means
-		// there is a Push of commit in there
-		if gitEvent.ObjectAttributes.Action == "update" && gitEvent.ObjectAttributes.OldRev != "" {
-			return setLoggerAndProceed(true, "", nil)
-		}
-		if provider.Valid(gitEvent.ObjectAttributes.Action, []string{"open", "reopen"}) {
+		if provider.Valid(gitEvent.ObjectAttributes.Action, []string{"open", "reopen", "update"}) {
 			return setLoggerAndProceed(true, "", nil)
 		}
 		return setLoggerAndProceed(false, fmt.Sprintf("not a merge event we care about: \"%s\"",

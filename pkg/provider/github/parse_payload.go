@@ -291,6 +291,9 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		v.RepositoryIDs = []int64{
 			gitEvent.GetPullRequest().GetBase().GetRepo().GetID(),
 		}
+		for _, label := range gitEvent.GetPullRequest().Labels {
+			processedEvent.PullRequestLabel = append(processedEvent.PullRequestLabel, label.GetName())
+		}
 	default:
 		return nil, errors.New("this event is not supported")
 	}

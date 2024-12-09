@@ -759,6 +759,45 @@ func TestGiteaErrorSnippet(t *testing.T) {
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
+func TestGiteaOnPullRequestLabels(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent: triggertype.PullRequest.String(),
+		YAMLFiles: map[string]string{
+			".tekton/pr.yaml": "testdata/pipelinerun-on-label.yaml",
+		},
+		ExpectEvents:         false,
+		CheckForNumberStatus: 0,
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
+	tgitea.AddLabelToIssue(t, topts, "bug")
+
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetNS,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1, // 1 means 2 🙃
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       topts.PullRequest.Head.Sha,
+	}
+	_, err := twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	topts.CheckForStatus = "success"
+	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "", true)
+
+	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+	assert.NilError(t, err)
+
+	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
+
+	repo, err := topts.ParamsRun.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(topts.TargetNS).Get(context.Background(), topts.TargetNS, metav1.GetOptions{})
+	assert.NilError(t, err)
+	twait.GoldenPodLog(context.Background(), t, topts.ParamsRun, topts.TargetNS,
+		fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=task", repo.Status[0].PipelineRunName),
+		"step-success", strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"), 2)
+}
+
 func TestGiteaErrorSnippetWithSecret(t *testing.T) {
 	var err error
 	ctx := context.Background()

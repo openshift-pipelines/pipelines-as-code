@@ -60,6 +60,10 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.SourceProjectID = gitEvent.ObjectAttributes.SourceProjectID
 		processedEvent.TargetProjectID = gitEvent.Project.ID
 		processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
+
+		for _, label := range gitEvent.Labels {
+			processedEvent.PullRequestLabel = append(processedEvent.PullRequestLabel, label.Title)
+		}
 	case *gitlab.TagEvent:
 		// GitLab sends same event for both Tag creation and deletion i.e. "Tag Push Hook".
 		// if gitEvent.After is containing all zeros and gitEvent.CheckoutSHA is empty
