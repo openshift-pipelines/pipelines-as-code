@@ -155,7 +155,6 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		}
 		v.pullRequestNumber = e.PullRequest.ID
 	case *types.PushRequestEvent:
-		processedEvent.Event = "push"
 		processedEvent.TriggerTarget = "push"
 		processedEvent.Organization = e.Repository.Project.Key
 		processedEvent.Repository = e.Repository.Slug
