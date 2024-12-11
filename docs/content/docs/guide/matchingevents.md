@@ -176,7 +176,7 @@ and you have a `Pull Request` changing the files `.tekton/pipelinerun.yaml`,
 `on-path-change-ignore` annotation will ignore the `***.md` and `***.yaml`
 files.
 
-## Matching a PipelineRun on a regexp in a comment
+## Matching a PipelineRun on a Regexp in a comment
 
 {{< tech_preview "Matching PipelineRun on regexp in comments" >}}
 
@@ -210,6 +210,44 @@ so only users into the `pull_request` policy will be able to trigger the
 PipelineRun.
 
 > *NOTE*: The `on-comment` annotation is only supported on GitHub, Gitea and GitLab providers
+
+## Matching PipelineRun to a Pull Request labels
+
+{{< tech_preview "Matching PipelineRun to a Pull-Request label" >}}
+
+Using the annotation `pipelinesascode.tekton.dev/on-label`, you can match a
+PipelineRun to a Pull Request label. For example, if you want to match the
+PipelineRun `bugs` whenever a Pull Request has the label `bug` or `defect`, you
+can use this annotation:
+
+```yaml
+metadata:
+  name: match-bugs-or-defect
+  annotations:
+    pipelinesascode.tekton.dev/on-label: [bug, defect]
+```
+
+- The `on-label` annotation respects the `pull_request` [Policy]({{< relref
+  "/docs/guide/policy" >}}) rules.
+- This annotation is currently supported only on GitHub, Gitea, and GitLab
+  providers. Bitbucket Cloud and Bitbucket Server do not support adding labels
+  to Pull Requests.
+- When you add a label to a Pull Request, the corresponding PipelineRun is
+  triggered immediately, and no other PipelineRun matching the same Pull Request
+  will be activated.
+- If you update the Pull Request by sending a new commit, the PipelineRun
+  with a matching `on-label` annotation will be triggered again if the label is
+  still present.
+- You can access the `Pull Request` labels with the [dynamic variable]({{<
+  relref "/docs/guide/authoringprs#dynamic-variables" >}}) `{{ pull_request_labels }}`.
+  The labels are separated by a Unix newline `\n`.
+  For example with a shell script you can do this to print them:
+
+  ```bash
+   for i in $(echo -e "{{ pull_request_labels }}");do
+   echo $i
+   done
+  ```
 
 ## Advanced event matching using CEL
 
@@ -366,7 +404,7 @@ or close/open the pull request.
 
 {{< /hint >}}
 
-### Matching PipelineRun on request header
+### Matching a PipelineRun to a request header
 
 You can do some further filtering on the headers as passed by the Git provider
 with the CEL variable `headers`.

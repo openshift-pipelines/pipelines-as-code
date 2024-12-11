@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 )
 
 func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
@@ -50,6 +51,12 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.Repository = gitEvent.Repository.Name
 		processedEvent.TriggerTarget = triggertype.PullRequest
 		processedEvent.EventType = triggertype.PullRequest.String()
+		if provider.Valid(string(gitEvent.Action), []string{pullRequestLabelUpdated}) {
+			processedEvent.EventType = string(triggertype.LabelUpdate)
+		}
+		for _, label := range gitEvent.PullRequest.Labels {
+			processedEvent.PullRequestLabel = append(processedEvent.PullRequestLabel, label.Name)
+		}
 	case *giteaStructs.PushPayload:
 		processedEvent = info.NewEvent()
 		processedEvent.SHA = gitEvent.HeadCommit.ID

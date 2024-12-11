@@ -78,7 +78,7 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, erro
 	}
 
 	// Try to detect a policy rule allowing this
-	tType, _ := detectTriggerTypeFromPayload("", event.Event)
+	tType, _ := v.detectTriggerTypeFromPayload("", event.Event)
 	policyAllowed, policyReason := aclPolicy.IsAllowed(ctx, tType)
 
 	switch policyAllowed {

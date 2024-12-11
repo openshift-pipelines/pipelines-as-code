@@ -39,9 +39,10 @@ type Event struct {
 	SHAURL        string // pretty URL for web browsing for UIs (cli/web)
 	SHATitle      string // commit title for UIs
 
-	PullRequestNumber int    // Pull or Merge Request number
-	PullRequestTitle  string // Title of the pull Request
-	TriggerComment    string // The comment triggering the pipelinerun when using on-comment annotation
+	PullRequestNumber int      // Pull or Merge Request number
+	PullRequestTitle  string   // Title of the pull Request
+	PullRequestLabel  []string // Labels of the pull Request
+	TriggerComment    string   // The comment triggering the pipelinerun when using on-comment annotation
 
 	// TODO: move forge specifics to each driver
 	// Github

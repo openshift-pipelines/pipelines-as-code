@@ -153,7 +153,12 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		event.URL,
 		event.BaseBranch,
 		event.HeadBranch,
-		event.TriggerTarget)
+		event.TriggerTarget,
+	)
+
+	if len(event.PullRequestLabel) > 0 {
+		infomsg += fmt.Sprintf(", labels=%s", strings.Join(event.PullRequestLabel, "|"))
+	}
 
 	if event.EventType == triggertype.Incoming.String() {
 		infomsg = fmt.Sprintf("%s, target-pipelinerun=%s", infomsg, event.TargetPipelineRun)
@@ -248,8 +253,23 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 				if !matched {
 					continue
 				}
-				logger.Infof("Matched pipelinerun with name: %s, annotation PathChange: %q", prName, key)
+				logger.Infof("matched PipelineRun with name: %s, annotation PathChange: %q", prName, key)
 				prMatch.Config["path-change"] = key
+			}
+
+			if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnLabel]; ok {
+				matched, err := matchOnAnnotation(key, event.PullRequestLabel, false)
+				if err != nil {
+					return matchedPRs, err
+				}
+				if !matched {
+					continue
+				}
+				logger.Infof("matched PipelineRun with name: %s, annotation Label: %q", prName, key)
+				prMatch.Config["label"] = key
+			} else if event.EventType == string(triggertype.LabelUpdate) {
+				logger.Infof("label update event, PipelineRun %s does not have a on-label for any of those labels: %s", prName, strings.Join(event.PullRequestLabel, "|"))
+				continue
 			}
 
 			if key, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnPathChangeIgnore]; ok {
@@ -326,6 +346,7 @@ func matchOnAnnotation(annotations string, eventType []string, branchMatching bo
 			if v == e {
 				gotit = v
 			}
+
 			if branchMatching && branchMatch(v, e) {
 				gotit = v
 			}

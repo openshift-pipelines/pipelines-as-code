@@ -11,6 +11,11 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	pullRequestOpenSyncEvent = []string{"opened", "synchronize", "synchronized", "reopened"}
+	pullRequestLabelUpdated  = "label_updated"
+)
+
 // Detect processes event and detect if it is a gitea event, whether to process or reject it
 // returns (if is a Gitea event, whether to process or reject, logger with event metadata,, error if any occurred).
 func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
@@ -51,11 +56,10 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype
 		}
 		return "", "invalid payload: no pusher in event"
 	case *giteaStructs.PullRequestPayload:
-		if provider.Valid(string(event.Action), []string{"opened", "synchronize", "synchronized", "reopened"}) {
+		if provider.Valid(string(event.Action), append(pullRequestOpenSyncEvent, pullRequestLabelUpdated)) {
 			return triggertype.PullRequest, ""
 		}
 		return "", fmt.Sprintf("pull_request: unsupported action \"%s\"", event.Action)
-
 	case *giteaStructs.IssueCommentPayload:
 		if event.Action == "created" &&
 			event.Issue.PullRequest != nil &&
