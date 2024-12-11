@@ -120,12 +120,12 @@ grep "string" /tmp/comment
 ## Custom GitOps commands
 
 Using the [on-comment]({{< relref
-"/docs/guide/authoringprs.md#matching-a-pipelinerun-on-a-regexp-in-a-comment"
+"/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regexp-in-a-comment"
 >}}) annotation on your `PipelineRun` you can define custom GitOps commands that
 will be triggered by the comments on the pull request.
 
 See the [on-comment]({{< relref
-"/docs/guide/authoringprs.md#matching-a-pipelinerun-on-a-regexp-in-a-comment"
+"/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regexp-in-a-comment"
 >}}) guide for more detailed information.
 
 ## Cancelling a PipelineRun
