@@ -344,12 +344,8 @@ func MatchRunningPipelineRunForIncomingWebhook(eventType, incomingPipelineRun st
 	}
 
 	for _, pr := range prs {
-		// check incomingPipelineRun with pr name
-		if incomingPipelineRun == pr.GetName() {
-			return []*tektonv1.PipelineRun{pr}
-		}
-		// check incomingPipelineRun with pr generateName
-		if incomingPipelineRun == strings.TrimSuffix(pr.GetGenerateName(), "-") {
+		// check incomingPipelineRun with pr name or generateName
+		if incomingPipelineRun == pr.GetName() || incomingPipelineRun == pr.GetGenerateName() {
 			return []*tektonv1.PipelineRun{pr}
 		}
 	}
