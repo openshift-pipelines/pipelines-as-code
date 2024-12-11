@@ -40,6 +40,8 @@ const (
 	noClientErrStr = `no gitlab client has been initialized, exiting... (hint: did you forget setting a secret on your repo?)`
 )
 
+var anyMergeRequestEventType = []string{"Merge Request", "MergeRequest"}
+
 var _ provider.Interface = (*Provider)(nil)
 
 type Provider struct {
@@ -217,10 +219,12 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 			"cannot set status with the GitLab token because of: "+err.Error())
 	}
 
+	eventType := triggertype.IsPullRequestType(event.EventType)
+	if opscomments.IsAnyOpsEventType(eventType.String()) {
+		eventType = triggertype.PullRequest
+	}
 	// only add a note when we are on a MR
-	if event.EventType == triggertype.PullRequest.String() ||
-		event.EventType == "Merge_Request" || event.EventType == "Merge Request" ||
-		opscomments.IsAnyOpsEventType(event.EventType) {
+	if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
 		mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
 		_, _, err := v.Client.Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
 		return err
