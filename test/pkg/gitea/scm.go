@@ -134,6 +134,7 @@ func CreateGiteaRepo(giteaClient *gitea.Client, user, name, defaultBranch, hookU
 			Name:          name,
 			Description:   "This is a repo it's a wonderful thing",
 			AutoInit:      true,
+			IssueLabels:   "Default",
 			DefaultBranch: defaultBranch,
 		})
 	}

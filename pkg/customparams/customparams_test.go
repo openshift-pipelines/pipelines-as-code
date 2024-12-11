@@ -156,6 +156,7 @@ func TestProcessTemplates(t *testing.T) {
 				"target_branch":         "",
 				"target_namespace":      "",
 				"trigger_comment":       "",
+				"pull_request_labels":   "",
 			},
 			repository: &v1alpha1.Repository{
 				Spec: v1alpha1.RepositorySpec{},

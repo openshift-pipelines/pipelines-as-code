@@ -132,7 +132,7 @@ func TestCalculatePipelineRunDuration(t *testing.T) {
 			conditionType:  apis.ConditionSucceeded,
 			status:         corev1.ConditionTrue,
 			reason:         tektonv1.PipelineRunReasonSuccessful.String(),
-			completionTime: metav1.NewTime(startTime.Time.Add(time.Minute)),
+			completionTime: metav1.NewTime(startTime.Add(time.Minute)),
 			tags: map[string]string{
 				"namespace":  "pac-ns",
 				"reason":     tektonv1.PipelineRunReasonSuccessful.String(),
@@ -148,7 +148,7 @@ func TestCalculatePipelineRunDuration(t *testing.T) {
 			conditionType:  apis.ConditionSucceeded,
 			status:         corev1.ConditionTrue,
 			reason:         tektonv1.PipelineRunReasonCompleted.String(),
-			completionTime: metav1.NewTime(startTime.Time.Add(time.Minute)),
+			completionTime: metav1.NewTime(startTime.Add(time.Minute)),
 			tags: map[string]string{
 				"namespace":  "pac-ns",
 				"reason":     tektonv1.PipelineRunReasonCompleted.String(),
@@ -164,7 +164,7 @@ func TestCalculatePipelineRunDuration(t *testing.T) {
 			conditionType:  apis.ConditionSucceeded,
 			status:         corev1.ConditionFalse,
 			reason:         tektonv1.PipelineRunReasonFailed.String(),
-			completionTime: metav1.NewTime(startTime.Time.Add(2 * time.Minute)),
+			completionTime: metav1.NewTime(startTime.Add(2 * time.Minute)),
 			tags: map[string]string{
 				"namespace":  "pac-ns",
 				"reason":     tektonv1.PipelineRunReasonFailed.String(),
@@ -180,7 +180,7 @@ func TestCalculatePipelineRunDuration(t *testing.T) {
 			conditionType:  apis.ConditionSucceeded,
 			status:         corev1.ConditionFalse,
 			reason:         tektonv1.PipelineRunReasonCancelled.String(),
-			completionTime: metav1.NewTime(startTime.Time.Add(2 * time.Second)),
+			completionTime: metav1.NewTime(startTime.Add(2 * time.Second)),
 			tags: map[string]string{
 				"namespace":  "pac-ns",
 				"reason":     tektonv1.PipelineRunReasonCancelled.String(),
@@ -196,7 +196,7 @@ func TestCalculatePipelineRunDuration(t *testing.T) {
 			conditionType:  apis.ConditionSucceeded,
 			status:         corev1.ConditionFalse,
 			reason:         tektonv1.PipelineRunReasonTimedOut.String(),
-			completionTime: metav1.NewTime(startTime.Time.Add(10 * time.Minute)),
+			completionTime: metav1.NewTime(startTime.Add(10 * time.Minute)),
 			tags: map[string]string{
 				"namespace":  "pac-ns",
 				"reason":     tektonv1.PipelineRunReasonTimedOut.String(),
@@ -212,7 +212,7 @@ func TestCalculatePipelineRunDuration(t *testing.T) {
 			conditionType:  apis.ConditionSucceeded,
 			status:         corev1.ConditionFalse,
 			reason:         tektonv1.PipelineRunReasonCouldntGetPipeline.String(),
-			completionTime: metav1.NewTime(startTime.Time.Add(time.Second)),
+			completionTime: metav1.NewTime(startTime.Add(time.Second)),
 			tags: map[string]string{
 				"namespace":  "pac-ns",
 				"reason":     tektonv1.PipelineRunReasonCouldntGetPipeline.String(),

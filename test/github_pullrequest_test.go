@@ -17,6 +17,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 
@@ -71,6 +73,62 @@ func TestGithubPullRequestMatchOnCEL(t *testing.T) {
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
+}
+
+func TestGithubPullRequestOnLabel(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:         "Github On Label",
+		YamlFiles:     []string{"testdata/pipelinerun-on-label.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	// wait a bit that GitHub processed or we will get double events
+	time.Sleep(5 * time.Second)
+
+	g.Cnx.Clients.Log.Infof("Creating a label bug on PullRequest")
+	_, _, err := g.Provider.Client.Issues.AddLabelsToIssue(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.PRNumber,
+		[]string{"bug"})
+	assert.NilError(t, err)
+
+	sopt := twait.SuccessOpt{
+		Title:           g.CommitTitle,
+		OnEvent:         triggertype.LabelUpdate.String(),
+		TargetNS:        g.TargetNamespace,
+		NumberofPRMatch: len(g.YamlFiles),
+		SHA:             g.SHA,
+	}
+	twait.Succeeded(ctx, t, g.Cnx, g.Options, sopt)
+
+	opt := github.ListOptions{}
+	res := &github.ListCheckRunsResults{}
+	resp := &github.Response{}
+	counter := 0
+	for {
+		res, resp, err = g.Provider.Client.Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
+			AppID:       g.Provider.ApplicationID,
+			ListOptions: opt,
+		})
+		assert.NilError(t, err)
+		assert.Equal(t, resp.StatusCode, 200)
+		if len(res.CheckRuns) > 0 {
+			break
+		}
+		g.Cnx.Clients.Log.Infof("Waiting for the check run to be created")
+		if counter > 10 {
+			t.Errorf("Check run not created after 10 tries")
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
+	assert.Equal(t, len(res.CheckRuns), 1)
+	expected := fmt.Sprintf("%s / %s", settings.PACApplicationNameDefaultValue, "pipelinerun-on-label-")
+	checkName := res.CheckRuns[0].GetName()
+	assert.Assert(t, strings.HasPrefix(checkName, expected), "checkName %s != expected %s", checkName, expected)
 }
 
 func TestGithubPullRequestCELMatchOnTitle(t *testing.T) {

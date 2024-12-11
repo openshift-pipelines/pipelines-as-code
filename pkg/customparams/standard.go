@@ -34,19 +34,21 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 	}
 	changedFiles := p.getChangedFiles(ctx)
 	triggerCommentAsSingleLine := strings.ReplaceAll(p.event.TriggerComment, "\n", "\\n")
+	pullRequestLabels := strings.Join(p.event.PullRequestLabel, "\\n")
 
 	return map[string]string{
-			"revision":         p.event.SHA,
-			"repo_url":         repoURL,
-			"repo_owner":       strings.ToLower(p.event.Organization),
-			"repo_name":        strings.ToLower(p.event.Repository),
-			"target_branch":    formatting.SanitizeBranch(p.event.BaseBranch),
-			"source_branch":    formatting.SanitizeBranch(p.event.HeadBranch),
-			"source_url":       p.event.HeadURL,
-			"sender":           strings.ToLower(p.event.Sender),
-			"target_namespace": p.repo.GetNamespace(),
-			"event_type":       opscomments.EventTypeBackwardCompat(p.eventEmitter, p.repo, p.event.EventType),
-			"trigger_comment":  triggerCommentAsSingleLine,
+			"revision":            p.event.SHA,
+			"repo_url":            repoURL,
+			"repo_owner":          strings.ToLower(p.event.Organization),
+			"repo_name":           strings.ToLower(p.event.Repository),
+			"target_branch":       formatting.SanitizeBranch(p.event.BaseBranch),
+			"source_branch":       formatting.SanitizeBranch(p.event.HeadBranch),
+			"source_url":          p.event.HeadURL,
+			"sender":              strings.ToLower(p.event.Sender),
+			"target_namespace":    p.repo.GetNamespace(),
+			"event_type":          opscomments.EventTypeBackwardCompat(p.eventEmitter, p.repo, p.event.EventType),
+			"trigger_comment":     triggerCommentAsSingleLine,
+			"pull_request_labels": pullRequestLabels,
 		}, map[string]interface{}{
 			"all":      changedFiles.All,
 			"added":    changedFiles.Added,

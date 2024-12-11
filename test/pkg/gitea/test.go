@@ -72,6 +72,22 @@ func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
 	assert.NilError(t, err)
 }
 
+func AddLabelToIssue(t *testing.T, topt *TestOpts, label string) {
+	var targetID int64
+	allLabels, _, err := topt.GiteaCNX.Client.ListRepoLabels(topt.Opts.Organization, topt.Opts.Repo, gitea.ListLabelsOptions{})
+	assert.NilError(t, err)
+	for _, l := range allLabels {
+		if l.Name == label {
+			targetID = l.ID
+		}
+	}
+
+	opt := gitea.IssueLabelsOption{Labels: []int64{targetID}}
+	_, _, err = topt.GiteaCNX.Client.AddIssueLabels(topt.Opts.Organization, topt.Opts.Repo, topt.PullRequest.Index, opt)
+	assert.NilError(t, err)
+	topt.ParamsRun.Clients.Log.Infof("Added label \"%s\" to %s", label, topt.PullRequest.HTMLURL)
+}
+
 // TestPR will test the pull request event and grab comments from the PR.
 func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 	ctx := context.Background()

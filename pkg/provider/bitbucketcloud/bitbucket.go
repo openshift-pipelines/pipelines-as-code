@@ -112,8 +112,11 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts
 	if err != nil {
 		return err
 	}
+
+	eventType := triggertype.IsPullRequestType(event.EventType)
 	if statusopts.Conclusion != "STOPPED" && statusopts.Status == "completed" &&
-		statusopts.Text != "" && event.EventType == triggertype.PullRequest.String() {
+		statusopts.Text != "" &&
+		(eventType == triggertype.PullRequest || event.TriggerTarget == triggertype.PullRequest) {
 		onPr := ""
 		if statusopts.OriginalPipelineRunName != "" {
 			onPr = "/" + statusopts.OriginalPipelineRunName

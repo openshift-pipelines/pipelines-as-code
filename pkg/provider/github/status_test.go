@@ -169,12 +169,12 @@ func TestGetExistingPendingApprovalCheckRunID(t *testing.T) {
 					"id": %v,
 					"external_id": "%s",
 					"output": {
-						"title": "Pending approval, needs /ok-to-test",
+						"title": "%s",
 						"summary": "My CI is waiting for approval"
 					}
 				}
 			]
-		}`, chosenID, chosenOne)
+		}`, chosenID, chosenOne, pendingApproval)
 	})
 
 	id, err := cnx.getExistingCheckRunID(ctx, event, provider.StatusOpts{

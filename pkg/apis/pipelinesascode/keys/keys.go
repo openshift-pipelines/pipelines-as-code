@@ -52,6 +52,7 @@ const (
 	OnComment          = pipelinesascode.GroupName + "/on-comment"
 	OnTargetBranch     = pipelinesascode.GroupName + "/on-target-branch"
 	OnPathChange       = pipelinesascode.GroupName + "/on-path-change"
+	OnLabel            = pipelinesascode.GroupName + "/on-label"
 	OnPathChangeIgnore = pipelinesascode.GroupName + "/on-path-change-ignore"
 	OnCelExpression    = pipelinesascode.GroupName + "/on-cel-expression"
 	TargetNamespace    = pipelinesascode.GroupName + "/target-namespace"
