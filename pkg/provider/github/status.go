@@ -328,8 +328,8 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 	if opscomments.IsAnyOpsEventType(eventType.String()) {
 		eventType = triggertype.PullRequest
 	}
-	if (status.Status == "completed" ||
-		(status.Status == "queued" && status.Title == pendingApproval)) &&
+
+	if (status.Status == "completed" || (status.Status == "queued" && status.Title == pendingApproval)) &&
 		status.Text != "" && eventType == triggertype.PullRequest {
 		_, _, err = v.Client.Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
 			runevent.PullRequestNumber,

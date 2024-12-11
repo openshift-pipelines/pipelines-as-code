@@ -214,6 +214,7 @@ PipelineRun.
 ## Matching PipelineRun to a Pull Request labels
 
 {{< tech_preview "Matching PipelineRun to a Pull-Request label" >}}
+{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
 
 Using the annotation `pipelinesascode.tekton.dev/on-label`, you can match a
 PipelineRun to a Pull Request label. For example, if you want to match the
