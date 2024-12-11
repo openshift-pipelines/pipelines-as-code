@@ -65,6 +65,11 @@ func main() {
 	if val, ok := os.LookupEnv("PAC_DISABLE_HA"); ok {
 		if strings.ToLower(val) == "true" {
 			ctx = sharedmain.WithHADisabled(ctx)
+		}
+	}
+
+	if val, ok := os.LookupEnv("PAC_DISABLE_HEALTH_PROBE"); ok {
+		if strings.ToLower(val) == "true" {
 			ctx = sharedmain.WithHealthProbesDisabled(ctx)
 		}
 	}
