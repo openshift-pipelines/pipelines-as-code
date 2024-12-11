@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	kstatus "github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction/status"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -321,7 +322,13 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		runevent.Organization, runevent.Repository, runevent.SHA, ghstatus); err != nil {
 		return err
 	}
-	if (status.Status == "completed" || (status.Status == "queued" && status.Title == "Pending approval")) && status.Text != "" && runevent.EventType == triggertype.PullRequest.String() {
+	eventType := triggertype.IsPullRequestType(runevent.EventType)
+	if opscomments.IsAnyOpsEventType(eventType.String()) {
+		eventType = triggertype.PullRequest
+	}
+	if (status.Status == "completed" ||
+		(status.Status == "queued" && status.Title == "Pending approval")) &&
+		status.Text != "" && eventType == triggertype.PullRequest {
 		_, _, err = v.Client.Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
 			runevent.PullRequestNumber,
 			&github.IssueComment{

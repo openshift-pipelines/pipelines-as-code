@@ -27,6 +27,7 @@ const (
 	EventTypePullRequest         whEventType = "pull_request"
 	EventTypePullRequestApproved whEventType = "pull_request_approved"
 	EventTypePullRequestRejected whEventType = "pull_request_rejected"
+	EventTypePullRequestLabel    whEventType = "pull_request_label"
 	EventTypePullRequestComment  whEventType = "pull_request_comment"
 	EventTypePullRequestSync     whEventType = "pull_request_sync"
 )
@@ -51,7 +52,7 @@ func parseWebhook(eventType whEventType, payload []byte) (event interface{}, err
 		event = &giteaStructs.ReleasePayload{}
 	case EventTypePullRequestComment:
 		event = &giteaStructs.IssueCommentPayload{}
-	case EventTypePullRequest, EventTypePullRequestApproved, EventTypePullRequestSync, EventTypePullRequestRejected:
+	case EventTypePullRequest, EventTypePullRequestApproved, EventTypePullRequestSync, EventTypePullRequestRejected, EventTypePullRequestLabel:
 		event = &giteaStructs.PullRequestPayload{}
 	default:
 		return nil, fmt.Errorf("unexpected event type: %s", eventType)
