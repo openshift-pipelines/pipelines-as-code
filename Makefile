@@ -197,6 +197,11 @@ generated: update-golden fumpt ## generate all files that needs to be generated
 .PHONY: download-hugo
 download-hugo: 
 	./hack/download-hugo.sh $(HUGO_VERSION) $(TMPDIR)/hugo
+
+.PHONY: gitlint
+gitlint: ## Run gitlint
+	@gitlint --commit "`git log --format=format:%H --no-merges -1`" --ignore "Merge branch"
+
 	
 .PHONY: clean
 clean: ## clean build artifacts
