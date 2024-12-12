@@ -4,6 +4,16 @@ type (
 	Trigger string
 )
 
+// IsPullRequestType all Triggertype that are actually a pull request.
+func IsPullRequestType(s string) Trigger {
+	eventType := s
+	switch s {
+	case PullRequest.String(), OkToTest.String(), Retest.String(), Cancel.String(), LabelUpdate.String():
+		eventType = PullRequest.String()
+	}
+	return Trigger(eventType)
+}
+
 func (t Trigger) String() string {
 	return string(t)
 }
@@ -37,6 +47,7 @@ const (
 	Retest                Trigger = "retest"
 	Push                  Trigger = "push"
 	PullRequest           Trigger = "pull_request"
+	LabelUpdate           Trigger = "label_update"
 	Cancel                Trigger = "cancel"
 	CheckSuiteRerequested Trigger = "check-suite-rerequested"
 	CheckRunRerequested   Trigger = "check-run-rerequested"

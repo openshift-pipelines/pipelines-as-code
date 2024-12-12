@@ -34,6 +34,7 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 	}
 	changedFiles := p.getChangedFiles(ctx)
 	triggerCommentAsSingleLine := strings.ReplaceAll(p.event.TriggerComment, "\n", "\\n")
+	pullRequestLabels := strings.Join(p.event.PullRequestLabel, "\\n")
 
 	return map[string]string{
 			"revision":         p.event.SHA,
@@ -47,6 +48,7 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 			"target_namespace": p.repo.GetNamespace(),
 			"event_type":       opscomments.EventTypeBackwardCompat(p.eventEmitter, p.repo, p.event.EventType),
 			"trigger_comment":  triggerCommentAsSingleLine,
+			"labels":           pullRequestLabels,
 		}, map[string]interface{}{
 			"all":      changedFiles.All,
 			"added":    changedFiles.Added,

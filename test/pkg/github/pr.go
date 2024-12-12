@@ -118,6 +118,7 @@ type PRTest struct {
 	PRNumber        int
 	SHA             string
 	Logger          *zap.SugaredLogger
+	CommitTitle     string
 }
 
 func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
@@ -127,12 +128,12 @@ func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 	assert.NilError(t, err)
 	g.Logger = runcnx.Clients.Log
 
-	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, targetNS)
-	g.Logger.Info(logmsg)
+	g.CommitTitle = fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, targetNS)
+	g.Logger.Info(g.CommitTitle)
 
 	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
-	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
@@ -151,17 +152,17 @@ func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, vref, err := PushFilesToRef(ctx, ghcnx.Client, logmsg, repoinfo.GetDefaultBranch(), targetRefName,
+	sha, vref, err := PushFilesToRef(ctx, ghcnx.Client, g.CommitTitle, repoinfo.GetDefaultBranch(), targetRefName,
 		opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
 	g.Logger.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
 	number, err := PRCreate(ctx, runcnx, ghcnx, opts.Organization,
-		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), logmsg)
+		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), g.CommitTitle)
 	assert.NilError(t, err)
 
 	if !g.NoStatusCheck {
 		sopt := wait.SuccessOpt{
-			Title:           logmsg,
+			Title:           g.CommitTitle,
 			OnEvent:         triggertype.PullRequest.String(),
 			TargetNS:        targetNS,
 			NumberofPRMatch: len(g.YamlFiles),
