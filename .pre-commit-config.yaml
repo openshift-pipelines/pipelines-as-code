@@ -13,10 +13,6 @@ repos:
       - id: check-vcs-permalinks
       - id: detect-private-key
         exclude: ".*_test.go"
-  - repo: https://github.com/jorisroovers/gitlint
-    rev: v0.19.1
-    hooks:
-      - id: gitlint
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
@@ -49,4 +45,10 @@ repos:
         entry: "shellcheck"
         language: system
         types: [shell]
+      - id: gitlint
+        name: "Gitlint"
+        entry: "make"
+        language: system
+        types: [text]
+        args: ["gitlint"]
 # TODO: add a lint-sh when we have the errors fix
