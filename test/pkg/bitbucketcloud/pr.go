@@ -7,38 +7,36 @@ import (
 	"github.com/ktrysmt/go-bitbucket"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/fs"
 )
 
-func MakePR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Run, bcrepo *bitbucket.Repository, opts options.E2E, title, targetNS, targetRefName string) (*types.PullRequest, *bitbucket.RepositoryBranch) {
+func MakePR(t *testing.T, bprovider bitbucketcloud.Provider, runcnx *params.Run, bcrepo *bitbucket.Repository, opts options.E2E, title, targetRefName string,
+	entries map[string]string,
+) (*types.PullRequest, *bitbucket.RepositoryBranch) {
 	commitAuthor := "OpenShift Pipelines E2E test"
 	commitEmail := "e2e-pipelines@redhat.com"
 
-	entries, err := payload.GetEntries(
-		map[string]string{".tekton/pipelinerun.yaml": "testdata/pipelinerun.yaml"},
-		targetNS, options.MainBranch, triggertype.PullRequest.String(), map[string]string{})
-	assert.NilError(t, err)
-	tmpfile := fs.NewFile(t, "pipelinerun", fs.WithContent(entries[".tekton/pipelinerun.yaml"]))
-	defer tmpfile.Remove()
+	bbfiles := []bitbucket.File{}
+	for k, v := range entries {
+		tmpfile := fs.NewFile(t, "pipelinerun", fs.WithContent(v))
+		defer tmpfile.Remove()
+		bbfiles = append(bbfiles, bitbucket.File{
+			Name: k,
+			Path: tmpfile.Path(),
+		})
+	}
 
-	err = bprovider.Client.Workspaces.Repositories.Repository.WriteFileBlob(&bitbucket.RepositoryBlobWriteOptions{
+	err := bprovider.Client.Workspaces.Repositories.Repository.WriteFileBlob(&bitbucket.RepositoryBlobWriteOptions{
 		Owner:    opts.Organization,
 		RepoSlug: opts.Repo,
-		Files: []bitbucket.File{
-			{
-				Name: ".tekton/sub/dir/pr.yaml",
-				Path: tmpfile.Path(),
-			},
-		},
-		Message: title,
-		Branch:  targetRefName,
-		Author:  fmt.Sprintf("%s <%s>", commitAuthor, commitEmail),
+		Files:    bbfiles,
+		Message:  title,
+		Branch:   targetRefName,
+		Author:   fmt.Sprintf("%s <%s>", commitAuthor, commitEmail),
 	})
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Using repo %s branch %s", bcrepo.Full_name, targetRefName)

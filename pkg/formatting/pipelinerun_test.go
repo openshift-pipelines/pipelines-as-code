@@ -6,6 +6,7 @@ import (
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/apis"
 	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
@@ -24,6 +25,23 @@ func TestPipelineRunStatus(t *testing.T) {
 								Status:  corev1.ConditionTrue,
 								Reason:  tektonv1.PipelineRunReasonSuccessful.String(),
 								Message: "Completed",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "cancelled",
+			pr: &tektonv1.PipelineRun{
+				Status: tektonv1.PipelineRunStatus{
+					Status: knativeduckv1.Status{
+						Conditions: knativeduckv1.Conditions{
+							{
+								Status:  corev1.ConditionTrue,
+								Reason:  tektonv1.PipelineRunSpecStatusCancelled,
+								Message: "Cancelled",
+								Type:    apis.ConditionSucceeded,
 							},
 						},
 					},

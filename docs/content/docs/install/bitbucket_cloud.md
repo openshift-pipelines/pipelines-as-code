@@ -26,9 +26,8 @@ Check these boxes to add the permissions to the token:
 
 - Webhooks: `Read and write`
 
-{{< hint info >}}
-[Refer to this screenshot](/images/bitbucket-cloud-create-secrete.png) to verify you have properly configured the app password.
-{{< /hint >}}
+[Refer to this screenshot](/images/bitbucket-cloud-create-secrete.png) to verify
+you have properly configured the app password.
 
 Keep the generated token noted somewhere, or otherwise you will have to recreate it.
 
@@ -85,19 +84,21 @@ $ tkn pac create repo
 
   - The individual events to select are :
     - Repository -> Push
+    - Repository -> Updated
+    - Repository -> Commit comment created
     - Pull Request -> Created
     - Pull Request -> Updated
+    - Pull Request -> Merged
+    - Pull Request -> Declined
     - Pull Request -> Comment created
+    - Pull Request -> Comment updated
 
-    {{< hint info >}}
-    [Refer to this screenshot](/images/bitbucket-cloud-create-webhook.png) to verify you have properly configured the webhook.
-    {{< /hint >}}
+[Refer to this screenshot](/images/bitbucket-cloud-create-webhook.png) to verify you have properly configured the webhook.
 
-  - Click on **Save**.
+- Click on **Save**.
 
 - You can now create a [`Repository CRD`](/docs/guide/repositorycrd).
   It will have:
-
   - A **Username** (i.e: your Bitbucket username).
   - A reference to a Kubernetes **Secret** containing the App Password as generated previously for Pipelines-as-Code operations.
 
