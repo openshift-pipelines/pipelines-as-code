@@ -61,6 +61,7 @@ type TestOpts struct {
 	ExpectEvents          bool
 	InternalGiteaURL      string
 	Token                 string
+	SHA                   string
 	FileChanges           []scm.FileChange
 }
 
@@ -199,7 +200,7 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 		TargetRefName: topts.TargetRefName,
 		BaseRefName:   topts.DefaultBranch,
 	}
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	topts.SHA = scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	topts.ParamsRun.Clients.Log.Infof("Creating PullRequest")
 	for i := 0; i < 5; i++ {
