@@ -68,7 +68,7 @@ func gitPushPullRetry(t *testing.T, opts *Opts, path string) {
 	}
 }
 
-func PushFilesToRefGit(t *testing.T, opts *Opts, entries map[string]string) {
+func PushFilesToRefGit(t *testing.T, opts *Opts, entries map[string]string) string {
 	tmpdir := fs.NewDir(t, t.Name())
 	defer (func() {
 		if os.Getenv("TEST_NOCLEANUP") == "" {
@@ -125,7 +125,12 @@ func PushFilesToRefGit(t *testing.T, opts *Opts, entries map[string]string) {
 		assert.NilError(t, err)
 	}
 
+	// get sha
+	sha, err := git.RunGit(path, "rev-parse", "HEAD")
+	assert.NilError(t, err)
+
 	gitPushPullRetry(t, opts, path)
+	return sha
 }
 
 func ChangeFilesRefGit(t *testing.T, opts *Opts, fileChanges []FileChange) {

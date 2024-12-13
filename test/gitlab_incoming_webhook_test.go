@@ -76,7 +76,7 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 		BaseRefName:   projectinfo.DefaultBranch,
 		CommitTitle:   title,
 	}
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", randomedString)
 
 	url := fmt.Sprintf("%s/incoming?repository=%s&branch=%s&pipelinerun=%s&secret=%s", opts.ControllerURL,
