@@ -71,7 +71,7 @@ var (
 	}
 )
 
-func TestCancelPipelinerun(t *testing.T) {
+func TestCancelPipelinerunOpsComment(t *testing.T) {
 	observer, _ := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	tests := []struct {
@@ -300,7 +300,7 @@ func TestCancelPipelinerun(t *testing.T) {
 				},
 			}
 			pac := NewPacs(tt.event, nil, cs, &info.PacOpts{}, nil, logger, nil)
-			err := pac.cancelPipelineRuns(ctx, tt.repo)
+			err := pac.cancelPipelineRunsOpsComment(ctx, tt.repo)
 			assert.NilError(t, err)
 
 			got, err := cs.Clients.Tekton.TektonV1().PipelineRuns("foo").List(ctx, metav1.ListOptions{})
@@ -318,7 +318,7 @@ func TestCancelPipelinerun(t *testing.T) {
 	}
 }
 
-func TestCancelInProgress(t *testing.T) {
+func TestCancelInProgressMatchingPR(t *testing.T) {
 	observer, catcher := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	tests := []struct {
@@ -789,7 +789,7 @@ func TestCancelInProgress(t *testing.T) {
 			if len(tt.pipelineRuns) > 0 {
 				firstPr = tt.pipelineRuns[0]
 			}
-			err := pac.cancelInProgress(ctx, firstPr, tt.repo)
+			err := pac.cancelInProgressMatchingPR(ctx, firstPr, tt.repo)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return
@@ -813,6 +813,94 @@ func TestCancelInProgress(t *testing.T) {
 
 			if tt.wantLog != "" {
 				assert.Assert(t, len(catcher.FilterMessageSnippet(tt.wantLog).TakeAll()) > 0, fmt.Sprintf("could not find log message: got %+v", catcher.TakeAll()))
+			}
+		})
+	}
+}
+
+func TestCancelAllInProgressBelongingToPullRequest(t *testing.T) {
+	observer, _ := zapobserver.New(zap.InfoLevel)
+	logger := zap.New(observer).Sugar()
+
+	tests := []struct {
+		name                  string
+		event                 *info.Event
+		repo                  *v1alpha1.Repository
+		pipelineRuns          []*pipelinev1.PipelineRun
+		cancelledPipelineRuns map[string]bool
+	}{
+		{
+			name: "cancel all in progress PipelineRuns",
+			event: &info.Event{
+				Repository:        "foo",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: pullReqNumber,
+			},
+			repo: fooRepo,
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-1",
+						Namespace: "foo",
+						Labels:    fooRepoLabels,
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-2",
+						Namespace: "foo",
+						Labels:    fooRepoLabels,
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-1": true,
+				"pr-foo-2": true,
+			},
+		},
+		{
+			name: "no PipelineRuns to cancel",
+			event: &info.Event{
+				Repository:        "foo",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: pullReqNumber,
+			},
+			repo:                  fooRepo,
+			pipelineRuns:          []*pipelinev1.PipelineRun{},
+			cancelledPipelineRuns: map[string]bool{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+
+			tdata := testclient.Data{
+				PipelineRuns: tt.pipelineRuns,
+			}
+			stdata, _ := testclient.SeedTestData(t, ctx, tdata)
+			cs := &params.Run{
+				Clients: clients.Clients{
+					Log:    logger,
+					Tekton: stdata.Pipeline,
+					Kube:   stdata.Kube,
+				},
+			}
+			pac := NewPacs(tt.event, nil, cs, &info.PacOpts{}, nil, logger, nil)
+			err := pac.cancelAllInProgressBelongingToPullRequest(ctx, tt.repo)
+			assert.NilError(t, err)
+
+			got, err := cs.Clients.Tekton.TektonV1().PipelineRuns("foo").List(ctx, metav1.ListOptions{})
+			assert.NilError(t, err)
+
+			for _, pr := range got.Items {
+				if _, ok := tt.cancelledPipelineRuns[pr.Name]; ok {
+					assert.Equal(t, string(pr.Spec.Status), pipelinev1.PipelineRunSpecStatusCancelledRunFinally)
+				} else {
+					assert.Assert(t, string(pr.Spec.Status) != pipelinev1.PipelineRunSpecStatusCancelledRunFinally)
+				}
 			}
 		})
 	}

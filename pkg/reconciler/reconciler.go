@@ -73,7 +73,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 		return r.queuePipelineRun(ctx, logger, pr)
 	}
 
-	if !pr.IsDone() {
+	if !pr.IsDone() && !pr.IsCancelled() {
 		return nil
 	}
 

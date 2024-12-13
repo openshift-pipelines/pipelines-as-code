@@ -423,13 +423,13 @@ func TestGiteaPolicyAllowedOwnerFiles(t *testing.T) {
 		BaseRefName:   topts.DefaultBranch,
 	}
 	// push OWNERS file to main
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 	scmOpts.TargetRefName = targetRef
 
 	newyamlFiles := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"}
 	newEntries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
 	assert.NilError(t, err)
-	scm.PushFilesToRefGit(t, scmOpts, newEntries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, newEntries)
 
 	npr := tgitea.CreateForkPullRequest(t, topts, allowedCnx, "")
 	waitOpts := twait.Opts{

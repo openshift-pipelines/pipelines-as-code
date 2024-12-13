@@ -36,7 +36,8 @@ const (
 	OkToTest              Trigger = "ok-to-test"
 	Retest                Trigger = "retest"
 	Push                  Trigger = "push"
-	PullRequest           Trigger = "pull_request"
+	PullRequest           Trigger = "pull_request" // it's should be "pull_request_opened_updated" but let's keep it simple.
+	PullRequestClosed     Trigger = "pull_request_closed"
 	Cancel                Trigger = "cancel"
 	CheckSuiteRerequested Trigger = "check-suite-rerequested"
 	CheckRunRerequested   Trigger = "check-run-rerequested"

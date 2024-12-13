@@ -42,7 +42,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 		if gitEvent.ObjectAttributes.Action == "update" && gitEvent.ObjectAttributes.OldRev != "" {
 			return setLoggerAndProceed(true, "", nil)
 		}
-		if provider.Valid(gitEvent.ObjectAttributes.Action, []string{"open", "reopen"}) {
+		if provider.Valid(gitEvent.ObjectAttributes.Action, []string{"open", "reopen", "close"}) {
 			return setLoggerAndProceed(true, "", nil)
 		}
 		return setLoggerAndProceed(false, fmt.Sprintf("not a merge event we care about: \"%s\"",

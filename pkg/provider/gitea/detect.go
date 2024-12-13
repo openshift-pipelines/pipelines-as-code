@@ -51,7 +51,7 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype
 		}
 		return "", "invalid payload: no pusher in event"
 	case *giteaStructs.PullRequestPayload:
-		if provider.Valid(string(event.Action), []string{"opened", "synchronize", "synchronized", "reopened"}) {
+		if provider.Valid(string(event.Action), []string{"opened", "synchronize", "synchronized", "reopened", "closed"}) {
 			return triggertype.PullRequest, ""
 		}
 		return "", fmt.Sprintf("pull_request: unsupported action \"%s\"", event.Action)
