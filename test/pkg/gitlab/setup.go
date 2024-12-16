@@ -12,7 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
-	gitlab2 "github.com/xanzy/go-gitlab"
+	gitlab2 "gitlab.com/gitlab-org/api/client-go"
 	"gotest.tools/v3/assert"
 )
 

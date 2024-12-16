@@ -122,6 +122,7 @@ type Client struct {
 	Commits                      *CommitsService
 	ContainerRegistry            *ContainerRegistryService
 	CustomAttribute              *CustomAttributesService
+	DependencyListExport         *DependencyListExportService
 	DeployKeys                   *DeployKeysService
 	DeployTokens                 *DeployTokensService
 	DeploymentMergeRequests      *DeploymentMergeRequestsService
@@ -195,6 +196,7 @@ type Client struct {
 	ProjectFeatureFlags          *ProjectFeatureFlagService
 	ProjectImportExport          *ProjectImportExportService
 	ProjectIterations            *ProjectIterationsService
+	ProjectMarkdownUploads       *ProjectMarkdownUploadsService
 	ProjectMembers               *ProjectMembersService
 	ProjectMirrors               *ProjectMirrorService
 	ProjectRepositoryStorageMove *ProjectRepositoryStorageMoveService
@@ -360,6 +362,7 @@ func newClient(options ...ClientOptionFunc) (*Client, error) {
 	c.Commits = &CommitsService{client: c}
 	c.ContainerRegistry = &ContainerRegistryService{client: c}
 	c.CustomAttribute = &CustomAttributesService{client: c}
+	c.DependencyListExport = &DependencyListExportService{client: c}
 	c.DeployKeys = &DeployKeysService{client: c}
 	c.DeployTokens = &DeployTokensService{client: c}
 	c.DeploymentMergeRequests = &DeploymentMergeRequestsService{client: c}
@@ -433,6 +436,7 @@ func newClient(options ...ClientOptionFunc) (*Client, error) {
 	c.ProjectFeatureFlags = &ProjectFeatureFlagService{client: c}
 	c.ProjectImportExport = &ProjectImportExportService{client: c}
 	c.ProjectIterations = &ProjectIterationsService{client: c}
+	c.ProjectMarkdownUploads = &ProjectMarkdownUploadsService{client: c}
 	c.ProjectMembers = &ProjectMembersService{client: c}
 	c.ProjectMirrors = &ProjectMirrorService{client: c}
 	c.ProjectRepositoryStorageMove = &ProjectRepositoryStorageMoveService{client: c}

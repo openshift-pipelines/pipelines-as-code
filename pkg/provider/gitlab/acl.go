@@ -7,7 +7,7 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 // IsAllowedOwnersFile get the owner files (OWNERS, OWNERS_ALIASES) from main branch

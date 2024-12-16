@@ -7,7 +7,7 @@ import (
 
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"gotest.tools/v3/assert"
 )
 

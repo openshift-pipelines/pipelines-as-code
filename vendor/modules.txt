@@ -416,12 +416,12 @@ github.com/tektoncd/pipeline/pkg/substitution
 # github.com/x448/float16 v0.8.4
 ## explicit; go 1.11
 github.com/x448/float16
-# github.com/xanzy/go-gitlab v0.113.0
-## explicit; go 1.19
-github.com/xanzy/go-gitlab
 # github.com/xlzd/gotp v0.1.0
 ## explicit; go 1.17
 github.com/xlzd/gotp
+# gitlab.com/gitlab-org/api/client-go v0.116.0
+## explicit; go 1.19
+gitlab.com/gitlab-org/api/client-go
 # go.opencensus.io v0.24.0
 ## explicit; go 1.13
 go.opencensus.io
