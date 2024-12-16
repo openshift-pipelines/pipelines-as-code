@@ -31,7 +31,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tektoncd/pipeline v0.65.1
-	github.com/xanzy/go-gitlab v0.113.0
+	gitlab.com/gitlab-org/api/client-go v0.116.0
 	go.opencensus.io v0.24.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c

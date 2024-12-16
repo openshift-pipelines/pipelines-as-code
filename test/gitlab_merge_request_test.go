@@ -20,7 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
-	clientGitlab "github.com/xanzy/go-gitlab"
+	clientGitlab "gitlab.com/gitlab-org/api/client-go"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -4,15 +4,16 @@ We want to make contributing to this project as easy as possible.
 
 ## Reporting Issues
 
-If you have an issue, please report it on the [issue tracker](https://github.com/xanzy/go-gitlab/issues).
+If you have an issue, please report it on the
+[issue tracker](https://gitlab.com/gitlab-org/api/client-go/-/issues).
 
-When you are up for writing a PR to solve the issue you encountered, it's not
-needed to first open a separate issue. In that case only opening a PR with a
+When you are up for writing a MR to solve the issue you encountered, it's not
+needed to first open a separate issue. In that case only opening a MR with a
 description of the issue you are trying to solve is just fine.
 
 ## Contributing Code
 
-Pull requests are always welcome. When in doubt if your contribution fits within
+Merge requests are always welcome. When in doubt if your contribution fits within
 the rest of the project, feel free to first open an issue to discuss your idea.
 
 This is not needed when fixing a bug or adding an enhancement, as long as the
@@ -26,20 +27,20 @@ We try to follow the Go best practices, where it makes sense, and use
 As a general rule of thumb we prefer to keep line width for comments below 80
 chars and for code (where possible and sensible) below 100 chars.
 
-Before making a PR, please look at the rest this package and try to make sure
+Before making a MR, please look at the rest this package and try to make sure
 your contribution is consistent with the rest of the coding style.
 
-New struct field or methods should be placed (as much as possible) in the same
+New `struct` fields or methods should be placed (as much as possible) in the same
 order as the ordering used in the public API docs. The idea is that this makes it
 easier to find things.
 
-### Setting up your local development environment to Contribute to `go-gitlab`
+### Setting up your local development environment to contribute
 
-1. [Fork](https://github.com/xanzy/go-gitlab/fork), then clone the repository.
+1. [Fork](https://gitlab.com/gitlab-org/api/client-go), then clone the repository.
    ```sh
-   git clone https://github.com/<your-username>/go-gitlab.git
+   git clone https://gitlab.com/<your-username>/client-go.git
    # or via ssh
-   git clone git@github.com:<your-username>/go-gitlab.git
+   git clone git@gitlab.com:<your-username>/client-go.git
    ```
 1. Install dependencies:
    ```sh
@@ -50,4 +51,4 @@ easier to find things.
    ```sh
    make test && make fmt
    ```
-1. Open up your pull request
+1. Open up your merge request

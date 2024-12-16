@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli/prompt"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type gitLabConfig struct {

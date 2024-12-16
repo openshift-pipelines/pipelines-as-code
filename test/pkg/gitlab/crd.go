@@ -8,7 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	pacrepo "github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/secret"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

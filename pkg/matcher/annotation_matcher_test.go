@@ -27,7 +27,7 @@ import (
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
