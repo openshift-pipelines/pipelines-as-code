@@ -15,6 +15,7 @@ import (
 	"github.com/google/go-github/v66/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
@@ -210,6 +211,46 @@ func TestGithubSecondTestExplicitelyNoMatchedPipelineRun(t *testing.T) {
 		NumberofPRMatch: len(g.YamlFiles),
 	}
 	twait.Succeeded(ctx, t, g.Cnx, g.Options, sopt)
+}
+
+func TestGithubSecondCancelInProgress(t *testing.T) {
+	ctx := context.Background()
+	g := tgithub.PRTest{
+		Label:            "Github test implicit comment",
+		YamlFiles:        []string{"testdata/pipelinerun-cancel-in-progress.yaml"},
+		SecondController: true,
+		NoStatusCheck:    true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	g.Cnx.Clients.Log.Infof("Creating /retest on PullRequest")
+	_, _, err := g.Provider.Client.Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
+		&github.IssueComment{Body: github.String("/retest")})
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
+	}
+	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be canceled")
+	time.Sleep(10 * time.Second)
+
+	res, resp, err := g.Provider.Client.Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
+		AppID:       g.Provider.ApplicationID,
+		ListOptions: github.ListOptions{},
+	})
+	assert.NilError(t, err)
+	assert.Equal(t, resp.StatusCode, 200)
+
+	assert.Equal(t, res.CheckRuns[0].GetConclusion(), "cancelled")
 }
 
 // Local Variables:
