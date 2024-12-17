@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2038
 # Helper script for GitHub Actions CI, used from e2e tests.
 set -exufo pipefail
 
@@ -146,9 +147,23 @@ collect_logs() {
   done
 
   for url in "${test_gitea_smee_url}" "${github_ghe_smee_url}"; do
-    # shellcheck disable=SC2038
     find /tmp/logs -type f -exec grep -l "${url}" {} \; | xargs -r sed -i "s|${url}|SMEE_URL|g"
   done
+
+  detect_panic
+}
+
+detect_panic() {
+  # shellcheck disable=SC2016
+  (find /tmp/logs/ -type f -regex '.*/pipelines-as-code.*/[0-9]\.log$' | xargs -r sed -n '/stderr F panic:.*/,$p') >/tmp/panic.log
+  if [[ -s /tmp/panic.log ]]; then
+    set +x
+    echo "=====================  PANIC DETECTED ====================="
+    echo "**********************************************************************"
+    cat /tmp/panic.log
+    echo "**********************************************************************"
+    exit 1
+  fi
 }
 
 help() {
