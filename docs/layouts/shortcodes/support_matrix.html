@@ -1,0 +1,49 @@
+{{ $gitlabSupported := .Get "gitlab" }} {{ $githubAppSupported := .Get
+"github_app" }} {{ $githubWebhookSupported := .Get "github_webhook" }} {{
+$giteaSupported := .Get "gitea" }} {{ $gitlabSupported := .Get "gitlab" }} {{
+$bitbucketCloudSupported := .Get "bitbucket_cloud" }} {{
+$bitbucketServerSupported := .Get "bitbucket_server" }}
+
+<blockquote class="book-hint warning">
+  <p>This feature is supported on the following providers</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Git Provider</th>
+        <th>Supported</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>GitHub App</td>
+        <td>{{ if eq $githubAppSupported "true" }}✅️{{ else }}❌️{{ end }}</td>
+      </tr>
+      <tr>
+        <td>GitHub Webhook</td>
+        <td>
+          {{ if eq $githubWebhookSupported "true" }}✅️{{ else }}❌️{{ end }}
+        </td>
+      </tr>
+      <tr>
+        <td>Gitea</td>
+        <td>{{ if eq $giteaSupported "true" }}✅️{{ else }}❌️{{ end }}</td>
+      </tr>
+      <tr>
+        <td>GitLab</td>
+        <td>{{ if eq $gitlabSupported "true" }}✅️{{ else }}❌️{{ end }}</td>
+      </tr>
+      <tr>
+        <td>Bitbucket Cloud</td>
+        <td>
+          {{ if eq $bitbucketCloudSupported "true" }}✅️{{ else }}❌️{{ end }}
+        </td>
+      </tr>
+      <tr>
+        <td>Bitbucket Server</td>
+        <td>
+          {{ if eq $bitbucketServerSupported "true" }}✅️{{ else }}❌️{{ end }}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</blockquote>
