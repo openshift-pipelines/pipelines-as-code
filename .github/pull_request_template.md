@@ -18,3 +18,14 @@ your descriptive commit message(s)! -->
 - [ ] 🎁 If feasible, please check if an end-to-end test can be added. See [README](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/README.md) for more details.
 
 - [ ] 🔎 If there's any flakiness in the CI tests, don't necessarily ignore it. It's better to address the issue before merging, or provide a valid reason to bypass it if fixing isn't possible (e.g., token rate limitations).
+
+- If you are adding a provider feature, please fill up the following details which provider this feature supports:
+
+  - [ ] GitHub
+  - [ ] GitHub Webhook
+  - [ ] Gitea
+  - [ ] Gitlab
+  - [ ] Bitbucket Cloud
+  - [ ] Bitbucket Server/DC
+
+  (make sure to update the documentation accordingly)

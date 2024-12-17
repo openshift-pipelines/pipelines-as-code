@@ -9,6 +9,8 @@ Pipelines-as-Code uses policies to control which actions can be performed by
 users who belong to specific teams within an organization, as defined on GitHub
 or other supported Git providers (currently GitHub and Gitea).
 
+{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="false" bitbucket_cloud="false" bitbucket_server="false" >}}
+
 ## Supported Actions
 
 * `pull_request` - This action triggers the CI in Pipelines-as-Code. Specifying
