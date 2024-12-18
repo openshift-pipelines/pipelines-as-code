@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        provider: [githubgitlab, others]
+        provider: [providers, gitea_others]
     env:
       KO_DOCKER_REPO: localhost:5000
       CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
