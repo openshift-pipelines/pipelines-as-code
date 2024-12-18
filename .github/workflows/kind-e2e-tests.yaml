@@ -18,7 +18,7 @@ on:
 jobs:
   e2e-tests:
     concurrency:
-      group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+      group: ${{ github.workflow }}-${{ matrix.provider }}-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     name: e2e tests
     runs-on: ubuntu-latest
@@ -81,7 +81,7 @@ jobs:
       - name: Run E2E Tests on pull_request
         if: ${{ github.event_name != 'schedule' }}
         run: |
-          ./hack/gh-workflow-ci.sh run_e2e_tests
+          ./hack/gh-workflow-ci.sh run_e2e_tests \
            ${{ matrix.provider }} \
            "${{ secrets.BITBUCKET_CLOUD_TOKEN }}" \
            "${{ secrets.WEBHOOK_SECRET }}" \
@@ -98,7 +98,7 @@ jobs:
         if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
         run: |
           export NIGHTLY_E2E_TEST="true"
-          ./hack/gh-workflow-ci.sh run_e2e_tests
+          ./hack/gh-workflow-ci.sh run_e2e_tests \
            ${{ matrix.provider }} \
            "${{ secrets.BITBUCKET_CLOUD_TOKEN }}" \
            "${{ secrets.WEBHOOK_SECRET }}" \
