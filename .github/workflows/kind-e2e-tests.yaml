@@ -122,7 +122,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: logs
+          name: logs-e2e-tests-${{ matrix.provider }}
           path: /tmp/logs
 
       - name: Report Status

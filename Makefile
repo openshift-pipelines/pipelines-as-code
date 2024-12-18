@@ -73,8 +73,8 @@ test-e2e-cleanup: ## cleanup test e2e namespace/pr left open
 
 .PHONY: test-e2e
 test-e2e:  test-e2e-cleanup ## run e2e tests
-	@env GODEBUG=asynctimerchan=1 \
-		go test $(GO_TEST_FLAGS) -timeout $(TIMEOUT_E2E)  -failfast -count=1 -tags=e2e $(GO_TEST_FLAGS) ./test
+	env GODEBUG=asynctimerchan=1 \
+		go test -timeout $(TIMEOUT_E2E)  -failfast -count=1 -tags=e2e -v $(GO_TEST_FLAGS) ./test
 
 .PHONY: html-coverage
 html-coverage: ## generate html coverage
