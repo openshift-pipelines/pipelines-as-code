@@ -254,6 +254,9 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 			return nil, err
 		}
 	case *github.PushEvent:
+		if gitEvent.GetRepo() == nil {
+			return nil, errors.New("error parsing payload the repository should not be nil")
+		}
 		processedEvent.Organization = gitEvent.GetRepo().GetOwner().GetLogin()
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
 		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
@@ -274,6 +277,9 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		processedEvent.HeadURL = processedEvent.BaseURL // in push events Head URL is the same as BaseURL
 	case *github.PullRequestEvent:
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
+		if gitEvent.GetRepo() == nil {
+			return nil, errors.New("error parsing payload the repository should not be nil")
+		}
 		processedEvent.Organization = gitEvent.GetRepo().Owner.GetLogin()
 		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
 		processedEvent.SHA = gitEvent.GetPullRequest().Head.GetSHA()
@@ -306,6 +312,9 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 
 func (v *Provider) handleReRequestEvent(ctx context.Context, event *github.CheckRunEvent) (*info.Event, error) {
 	runevent := info.NewEvent()
+	if event.GetRepo() == nil {
+		return nil, errors.New("error parsing payload the repository should not be nil")
+	}
 	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
 	runevent.Repository = event.GetRepo().GetName()
 	runevent.URL = event.GetRepo().GetHTMLURL()
@@ -331,6 +340,9 @@ func (v *Provider) handleReRequestEvent(ctx context.Context, event *github.Check
 
 func (v *Provider) handleCheckSuites(ctx context.Context, event *github.CheckSuiteEvent) (*info.Event, error) {
 	runevent := info.NewEvent()
+	if event.GetRepo() == nil {
+		return nil, errors.New("error parsing payload the repository should not be nil")
+	}
 	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
 	runevent.Repository = event.GetRepo().GetName()
 	runevent.URL = event.GetRepo().GetHTMLURL()
@@ -393,6 +405,9 @@ func (v *Provider) handleIssueCommentEvent(ctx context.Context, event *github.Is
 func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.CommitCommentEvent) (*info.Event, error) {
 	action := "push"
 	runevent := info.NewEvent()
+	if event.GetRepo() == nil {
+		return nil, errors.New("error parsing payload the repository should not be nil")
+	}
 	runevent.Organization = event.GetRepo().GetOwner().GetLogin()
 	runevent.Repository = event.GetRepo().GetName()
 	runevent.Sender = event.GetSender().GetLogin()

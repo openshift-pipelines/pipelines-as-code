@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
@@ -88,6 +89,9 @@ var samplePRAnother = github.PullRequest{
 }
 
 func TestParsePayLoad(t *testing.T) {
+	samplePRNoRepo := samplePRevent
+	samplePRNoRepo.Repo = nil
+
 	tests := []struct {
 		name                       string
 		wantErrString              string
@@ -184,6 +188,20 @@ func TestParsePayLoad(t *testing.T) {
 				},
 			},
 			shaRet: "samplePRsha",
+		},
+		{
+			name:               "bad/pull request",
+			eventType:          "pull_request",
+			triggerTarget:      triggertype.PullRequest.String(),
+			payloadEventStruct: samplePRNoRepo,
+			wantErrString:      "error parsing payload the repository should not be nil",
+		},
+		{
+			name:               "bad/push",
+			eventType:          "push",
+			triggerTarget:      triggertype.Push.String(),
+			payloadEventStruct: github.PushEvent{},
+			wantErrString:      "error parsing payload the repository should not be nil",
 		},
 		{
 			// specific run from a check_suite
