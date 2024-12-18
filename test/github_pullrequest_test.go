@@ -13,10 +13,13 @@ import (
 	"time"
 
 	"github.com/google/go-github/v66/github"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
-	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
+
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -224,13 +227,25 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 
+	g.Cnx.Clients.Log.Infof("Waiting for one pipelinerun to be created")
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
+	}
+	err := twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+	time.Sleep(10 * time.Second)
+
 	g.Cnx.Clients.Log.Infof("Creating /retest on PullRequest")
-	_, _, err := g.Provider.Client.Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
+	_, _, err = g.Provider.Client.Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
 		&github.IssueComment{Body: github.String("/retest")})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
-	waitOpts := twait.Opts{
+	waitOpts = twait.Opts{
 		RepoName:        g.TargetNamespace,
 		Namespace:       g.TargetNamespace,
 		MinNumberStatus: 2,
@@ -241,18 +256,31 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be canceled")
-	time.Sleep(10 * time.Second)
 
-	res, resp, err := g.Provider.Client.Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
-		AppID:       g.Provider.ApplicationID,
-		ListOptions: github.ListOptions{},
-	})
-	assert.NilError(t, err)
-	assert.Equal(t, resp.StatusCode, 200)
+	i := 0
+	foundCancelled := false
+	for i < 10 {
+		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+		})
+		assert.NilError(t, err)
 
-	assert.Equal(t, res.CheckRuns[0].GetConclusion(), "cancelled")
+		for _, pr := range prs.Items {
+			if pr.GetStatusCondition() == nil {
+				continue
+			}
+			if pr.Status.Conditions[0].Reason == "Cancelled" {
+				g.Cnx.Clients.Log.Infof("PipelineRun %s has been canceled", pr.Name)
+				foundCancelled = true
+				break
+			}
+		}
+		if foundCancelled {
+			break
+		}
+
+		time.Sleep(5 * time.Second)
+		i++
+	}
+	assert.Assert(t, foundCancelled, "No Pipelines has been found cancedl in NS %s", g.TargetNamespace)
 }
-
-// Local Variables:
-// compile-command: "go test -tags=e2e -v -info TestGithubPullRequest$ ."
-// End:
