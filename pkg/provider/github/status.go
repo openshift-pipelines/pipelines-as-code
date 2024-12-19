@@ -321,7 +321,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		runevent.Organization, runevent.Repository, runevent.SHA, ghstatus); err != nil {
 		return err
 	}
-	if (status.Status == "completed" || (status.Status == "queued" && status.Title == "Pending approval")) && status.Text != "" && runevent.EventType == triggertype.PullRequest.String() {
+	if (status.Status == "completed" || (status.Status == "queued" && status.Title == "Pending approval, needs /ok-to-test")) && status.Text != "" && runevent.EventType == triggertype.PullRequest.String() {
 		_, _, err = v.Client.Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
 			runevent.PullRequestNumber,
 			&github.IssueComment{
