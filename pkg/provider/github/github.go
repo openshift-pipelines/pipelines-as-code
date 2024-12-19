@@ -446,6 +446,10 @@ func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*i
 		runevent.EventType = triggertype.PullRequest.String()
 	}
 
+	for _, label := range pr.Labels {
+		runevent.PullRequestLabel = append(runevent.PullRequestLabel, label.GetName())
+	}
+
 	v.RepositoryIDs = []int64{
 		pr.GetBase().GetRepo().GetID(),
 	}

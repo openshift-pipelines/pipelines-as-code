@@ -1577,16 +1577,57 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		args       args
 		wantErr    bool
 		wantPrName string
-		wantLog    string
+		wantLog    []string
 	}{
 		{
 			name: "good-match-with-only-one",
 			args: args{
-				pruns:    []*tektonv1.PipelineRun{pipelineGood},
-				runevent: info.Event{TriggerTarget: "pull_request", EventType: "pull_request", BaseBranch: "main"},
+				pruns: []*tektonv1.PipelineRun{pipelineGood},
+				runevent: info.Event{
+					URL:               "https://hello/moto",
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					HeadBranch:        "source",
+					BaseBranch:        "main",
+					PullRequestNumber: 10,
+				},
 			},
 			wantErr:    false,
 			wantPrName: "pipeline-good",
+			wantLog:    []string{"matching pipelineruns to event: URL=https://hello/moto, target-branch=main, source-branch=source, target-event=pull_request, pull-request=10"},
+		},
+		{
+			name: "good-match-on-label",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "pipeline-label",
+							Annotations: map[string]string{
+								keys.OnEvent:        "[pull_request]",
+								keys.OnTargetBranch: "[main]",
+								keys.OnLabel:        "[bug]",
+							},
+						},
+					},
+					pipelineGood,
+				},
+				runevent: info.Event{
+					URL:               "https://hello/moto",
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					HeadBranch:        "source",
+					BaseBranch:        "main",
+					PullRequestNumber: 10,
+					PullRequestLabel:  []string{"bug", "documentation"},
+				},
+			},
+			wantErr:    false,
+			wantPrName: "pipeline-label",
+			wantLog: []string{
+				"matching pipelineruns to event: URL=https://hello/moto, target-branch=main, source-branch=source, target-event=pull_request, labels=bug|documentation, pull-request=10",
+				`matched PipelineRun with name: pipeline-label, annotation Label: "[bug]"`,
+			},
 		},
 		{
 			name: "first-one-match-with-two-good-ones",
@@ -1612,6 +1653,37 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 			wantErr:    false,
 			wantPrName: pipelineCel.GetName(),
+		},
+		{
+			name: "no-match-on-label",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "pipeline-label",
+							Annotations: map[string]string{
+								keys.OnEvent:        "[pull_request]",
+								keys.OnTargetBranch: "[main]",
+								keys.OnLabel:        "[bug]",
+							},
+						},
+					},
+					pipelineGood,
+				},
+				runevent: info.Event{
+					URL:               "https://hello/moto",
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					HeadBranch:        "source",
+					BaseBranch:        "main",
+					PullRequestNumber: 10,
+					PullRequestLabel:  []string{"documentation"},
+				},
+			},
+			wantErr: false,
+			wantLog: []string{
+				"matching pipelineruns to event: URL=https://hello/moto, target-branch=main, source-branch=source, target-event=pull_request, labels=documentation, pull-request=10",
+			},
 		},
 		{
 			name: "match-on-comment",
@@ -1866,10 +1938,18 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				assert.Assert(t, matches[0].PipelineRun.GetName() == tt.wantPrName, "Pipelinerun hasn't been matched: %+v",
 					matches[0].PipelineRun.GetName(), tt.wantPrName)
 			}
-			if tt.wantLog != "" {
-				logmsg := log.TakeAll()
-				assert.Assert(t, len(logmsg) > 0, "We didn't get any log message")
-				assert.Assert(t, strings.Contains(logmsg[0].Message, tt.wantLog), logmsg[0].Message, tt.wantLog)
+			if len(tt.wantLog) > 0 {
+				assert.Assert(t, log.Len() > 0, "We didn't get any log message")
+				all := log.TakeAll()
+				for _, wantLog := range tt.wantLog {
+					matched := false
+					for _, entry := range all {
+						if entry.Message == wantLog {
+							matched = true
+						}
+					}
+					assert.Assert(t, matched, "We didn't get the expected log message: %s\n%s", wantLog, all)
+				}
 			}
 		})
 	}
@@ -2297,6 +2377,25 @@ func TestGetTargetBranch(t *testing.T) {
 		expectedBranch string
 		expectedError  string
 	}{
+		{
+			name: "Test with pull_request event",
+			prun: &tektonv1.PipelineRun{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						keys.OnEvent:        "pull_request",
+						keys.OnTargetBranch: "main",
+					},
+				},
+			},
+			event: &info.Event{
+				TriggerTarget: triggertype.PullRequest,
+				EventType:     triggertype.PullRequest.String(),
+				BaseBranch:    "main",
+			},
+			expectedMatch:  true,
+			expectedEvent:  "pull_request",
+			expectedBranch: "main",
+		},
 		{
 			name: "Test with pull_request event",
 			prun: &tektonv1.PipelineRun{

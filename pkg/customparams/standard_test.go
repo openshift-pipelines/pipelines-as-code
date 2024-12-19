@@ -13,30 +13,32 @@ import (
 
 func TestMakeStandardParamsFromEvent(t *testing.T) {
 	event := &info.Event{
-		SHA:            "1234567890",
-		Organization:   "Org",
-		Repository:     "Repo",
-		BaseBranch:     "main",
-		HeadBranch:     "foo",
-		EventType:      "pull_request",
-		Sender:         "SENDER",
-		URL:            "https://paris.com",
-		HeadURL:        "https://india.com",
-		TriggerComment: "/test me\nHelp me obiwan kenobi",
+		SHA:              "1234567890",
+		Organization:     "Org",
+		Repository:       "Repo",
+		BaseBranch:       "main",
+		HeadBranch:       "foo",
+		EventType:        "pull_request",
+		Sender:           "SENDER",
+		URL:              "https://paris.com",
+		HeadURL:          "https://india.com",
+		TriggerComment:   "/test me\nHelp me obiwan kenobi",
+		PullRequestLabel: []string{"bugs", "enhancements"},
 	}
 
 	result := map[string]string{
-		"event_type":       "pull_request",
-		"repo_name":        "repo",
-		"repo_owner":       "org",
-		"repo_url":         "https://paris.com",
-		"source_url":       "https://india.com",
-		"revision":         "1234567890",
-		"sender":           "sender",
-		"source_branch":    "foo",
-		"target_branch":    "main",
-		"target_namespace": "myns",
-		"trigger_comment":  "/test me\\nHelp me obiwan kenobi",
+		"event_type":          "pull_request",
+		"repo_name":           "repo",
+		"repo_owner":          "org",
+		"repo_url":            "https://paris.com",
+		"source_url":          "https://india.com",
+		"revision":            "1234567890",
+		"sender":              "sender",
+		"source_branch":       "foo",
+		"target_branch":       "main",
+		"target_namespace":    "myns",
+		"trigger_comment":     "/test me\\nHelp me obiwan kenobi",
+		"pull_request_labels": "bugs\\nenhancements",
 	}
 
 	repo := &v1alpha1.Repository{
