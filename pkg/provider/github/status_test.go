@@ -169,7 +169,7 @@ func TestGetExistingPendingApprovalCheckRunID(t *testing.T) {
 					"id": %v,
 					"external_id": "%s",
 					"output": {
-						"title": "Pending approval",
+						"title": "Pending approval, needs /ok-to-test",
 						"summary": "My CI is waiting for approval"
 					}
 				}
@@ -414,7 +414,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
                                 "status": "queued",
                                 "conclusion": "pending", 
 								"output": {
-									"title": "Pending approval",
+									"title": "Pending approval, needs /ok-to-test",
 									"summary": "My CI is waiting for approval"
 								}
 							}
