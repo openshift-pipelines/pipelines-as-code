@@ -59,6 +59,9 @@ func detectTriggerTypeFromPayload(ghEventType string, eventInt any) (triggertype
 		}
 		return "", "no pusher in payload"
 	case *github.PullRequestEvent:
+		if event.GetAction() == "closed" {
+			return triggertype.PullRequestClosed, ""
+		}
 		if provider.Valid(event.GetAction(), []string{"opened", "synchronize", "synchronized", "reopened"}) {
 			return triggertype.PullRequest, ""
 		}
