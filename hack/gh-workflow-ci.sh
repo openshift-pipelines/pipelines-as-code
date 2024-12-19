@@ -37,8 +37,8 @@ create_second_github_app_controller_on_ghe() {
   local test_github_second_webhook_secret="${3}"
 
   if [[ -n "$(type -p apt)" ]]; then
-    apt update &&
-      apt install -y python3-yaml
+   sudo apt update &&
+      sudo apt install -y python3-yaml
   elif [[ -n "$(type -p dnf)" ]]; then
     dnf install -y python3-pyyaml
   else
@@ -96,8 +96,6 @@ run_e2e_tests() {
   export TEST_GITHUB_PRIVATE_TASK_URL="https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml"
   export TEST_GITHUB_PRIVATE_TASK_NAME="task-remote"
 
-  export GO_TEST_FLAGS="-v -race -failfast"
-
   export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0
   export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=cboudjna/pac-e2e-tests
   export TEST_BITBUCKET_CLOUD_TOKEN=${bitbucket_cloud_token}
@@ -142,7 +140,7 @@ run_e2e_tests() {
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
   # shellcheck disable=SC2001
-  GO_TEST_FLAGS="-run \"$(echo "${tests[*]}" | sed 's/ /|/g')\"" make test-e2e
+  make test-e2e GO_TEST_FLAGS="-run \"$(echo "${tests[*]}" | sed 's/ /|/g')\"" 
 }
 
 collect_logs() {
