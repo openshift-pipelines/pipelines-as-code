@@ -37,7 +37,7 @@ create_second_github_app_controller_on_ghe() {
   local test_github_second_webhook_secret="${3}"
 
   if [[ -n "$(type -p apt)" ]]; then
-   sudo apt update &&
+    sudo apt update &&
       sudo apt install -y python3-yaml
   elif [[ -n "$(type -p dnf)" ]]; then
     dnf install -y python3-pyyaml
@@ -140,7 +140,7 @@ run_e2e_tests() {
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
   # shellcheck disable=SC2001
-  make test-e2e GO_TEST_FLAGS="-run \"$(echo "${tests[*]}" | sed 's/ /|/g')\"" 
+  make test-e2e GO_TEST_FLAGS="-run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
 }
 
 collect_logs() {
@@ -173,7 +173,7 @@ collect_logs() {
 
 detect_panic() {
   # shellcheck disable=SC2016
-  (find /tmp/logs/ -type f -regex '.*/pipelines-as-code.*/[0-9]\.log$' | xargs -r sed -n '/stderr F panic:.*/,$p') >/tmp/panic.log
+  (find /tmp/logs/ -type f -regex '.*/pipelines-as-code.*/[0-9]\.log$' | xargs -r sed -n '/stderr F panic:.*/,$p' | head -n 80) >/tmp/panic.log
   if [[ -s /tmp/panic.log ]]; then
     set +x
     echo "=====================  PANIC DETECTED ====================="
