@@ -43,14 +43,15 @@ func StringToType(s string) Trigger {
 }
 
 const (
-	OkToTest              Trigger = "ok-to-test"
-	Retest                Trigger = "retest"
-	Push                  Trigger = "push"
-	PullRequest           Trigger = "pull_request"
-	LabelUpdate           Trigger = "label_update"
 	Cancel                Trigger = "cancel"
-	CheckSuiteRerequested Trigger = "check-suite-rerequested"
 	CheckRunRerequested   Trigger = "check-run-rerequested"
-	Incoming              Trigger = "incoming"
+	CheckSuiteRerequested Trigger = "check-suite-rerequested"
 	Comment               Trigger = "comment"
+	Incoming              Trigger = "incoming"
+	LabelUpdate           Trigger = "label_update"
+	OkToTest              Trigger = "ok-to-test"
+	PullRequestClosed     Trigger = "pull_request_closed"
+	PullRequest           Trigger = "pull_request" // it's should be "pull_request_opened_updated" but let's keep it simple.
+	Push                  Trigger = "push"
+	Retest                Trigger = "retest"
 )

@@ -69,6 +69,9 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		for _, label := range gitEvent.Labels {
 			processedEvent.PullRequestLabel = append(processedEvent.PullRequestLabel, label.Title)
 		}
+		if gitEvent.ObjectAttributes.Action == "close" {
+			processedEvent.TriggerTarget = triggertype.PullRequestClosed
+		}
 	case *gitlab.TagEvent:
 		// GitLab sends same event for both Tag creation and deletion i.e. "Tag Push Hook".
 		// if gitEvent.After is containing all zeros and gitEvent.CheckoutSHA is empty
