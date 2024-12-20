@@ -10,6 +10,12 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	pullRequestsClosed         = []string{"pullrequest:closed", "pullrequest:fulfilled", "pullrequest:rejected"}
+	pullRequestsCreated        = []string{"pullrequest:created", "pullrequest:updated"}
+	pullRequestsCommentCreated = []string{"pullrequest:comment_created"}
+)
+
 func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	isBitCloud := false
 	reqHeader := req.Header
@@ -37,10 +43,15 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 
 	switch e := eventInt.(type) {
 	case *types.PullRequestEvent:
-		if provider.Valid(event, []string{"pullrequest:created", "pullrequest:updated"}) {
+		if provider.Valid(event, pullRequestsClosed) {
 			return setLoggerAndProceed(true, "", nil)
 		}
-		if provider.Valid(event, []string{"pullrequest:comment_created"}) {
+
+		if provider.Valid(event, pullRequestsCreated) {
+			return setLoggerAndProceed(true, "", nil)
+		}
+
+		if provider.Valid(event, pullRequestsCommentCreated) {
 			if provider.IsTestRetestComment(e.Comment.Content.Raw) {
 				return setLoggerAndProceed(true, "", nil)
 			}
