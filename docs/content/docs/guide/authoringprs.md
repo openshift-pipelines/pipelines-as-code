@@ -5,9 +5,9 @@ weight: 3
 
 # Authoring PipelineRuns in `.tekton/` directory
 
-- Pipelines-as-Code will always try to be as close to the tekton template as
-  possible. Usually you will write your template and save them with a `.yaml`
-  extension and Pipelines-as-Code will run them.
+- Pipelines-as-Code will always try to be as close to the Tekton template as
+  possible. Usually, you will write your template and save them with a `.yaml`
+  extension, and Pipelines-as-Code will run them.
 
 - The `.tekton` directory must be at the top level of the repo.
   You can reference YAML files in other repos using remote URLs
@@ -16,17 +16,17 @@ weight: 3
   the `.tekton` directory.
 
 - Using its [resolver](../resolver/) Pipelines-as-Code will try to bundle the
-  PipelineRun with all its Task as a single PipelineRun with no external
+  PipelineRun with all its Tasks as a single PipelineRun with no external
   dependencies.
 
-- Inside your pipeline you need to be able to check out the commit as
-  received from the webhook by checking it out the repository from that ref. Most of the time
+- Inside your pipeline, you need to be able to check out the commit as
+  received from the webhook by checking out the repository from that ref. Most of the time
   you want to reuse the
   [git-clone](https://github.com/tektoncd/catalog/blob/main/task/git-clone/)
   task from the [tektoncd/catalog](https://github.com/tektoncd/catalog).
 
 - To be able to specify parameters of your commit and URL, Pipelines-as-Code
-  give you some “dynamic” variables that is defined according to the execution
+  gives you some “dynamic” variables that are defined according to the execution
   of the events. Those variables look like this `{{ var }}` and can be used
   anywhere in your template, see [below](#dynamic-variables) for the list of
   available variables.
@@ -40,30 +40,30 @@ weight: 3
 
 ## Dynamic variables
 
-Here is a list of al the dynamic variables available in Pipelines-as-Code. The
+Here is a list of all the dynamic variables available in Pipelines-as-Code. The
 one that would be the most important to you would probably be the `revision` and `repo_url`
 variables, they will give you the commit SHA and the repository URL that is
 getting tested. You usually use this with the
 [git-clone](https://hub.tekton.dev/tekton/task/git-clone) task to be able to
-checkout the code that is being tested.
+check out the code that is being tested.
 
 | Variable            | Description                                                                                                                                                                     | Example                             | Example Output                                                                                                                                                |
 |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | body                | The full payload body (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter))                                                                               | `{{body.pull_request.user.email }}` | <email@domain.com>                                                                                                                                            |
-| event_type          | The event type (eg: `pull_request` or `push`)                                                                                                                                   | `{{event_type}}`                    | pull_request          (see the note for Gitops Comments [here]({{< relref "/docs/guide/gitops_commands.md#event-type-annotation-and-dynamic-variables" >}}) ) |
-| git_auth_secret     | The secret name auto generated with provider token to check out private repos.                                                                                                  | `{{git_auth_secret}}`               | pac-gitauth-xkxkx                                                                                                                                             |
+| event_type          | The event type (eg: `pull_request` or `push`)                                                                                                                                   | `{{event_type}}`                    | pull_request          (see the note for GitOps Comments [here]({{< relref "/docs/guide/gitops_commands.md#event-type-annotation-and-dynamic-variables" >}}) ) |
+| git_auth_secret     | The secret name auto-generated with provider token to check out private repos.                                                                                                  | `{{git_auth_secret}}`               | pac-gitauth-xkxkx                                                                                                                                             |
 | headers             | The request headers (see [below](#using-the-body-and-headers-in-a-pipelines-as-code-parameter))                                                                                 | `{{headers['x-github-event']}}`     | push                                                                                                                                                          |
 | pull_request_number | The pull or merge request number, only defined when we are in a `pull_request` event type.                                                                                      | `{{pull_request_number}}`           | 1                                                                                                                                                             |
 | repo_name           | The repository name.                                                                                                                                                            | `{{repo_name}}`                     | pipelines-as-code                                                                                                                                             |
 | repo_owner          | The repository owner.                                                                                                                                                           | `{{repo_owner}}`                    | openshift-pipelines                                                                                                                                           |
 | repo_url            | The repository full URL.                                                                                                                                                        | `{{repo_url}}`                      | https:/github.com/repo/owner                                                                                                                                  |
 | revision            | The commit full sha revision.                                                                                                                                                   | `{{revision}}`                      | 1234567890abcdef                                                                                                                                              |
-| sender              | The sender username (or accountid on some providers) of the commit.                                                                                                             | `{{sender}}`                        | johndoe                                                                                                                                                       |
-| source_branch       | The branch name where the event come from.                                                                                                                                      | `{{source_branch}}`                 | main                                                                                                                                                          |
-| source_url          | The source repository URL from which the event come from (same as `repo_url` for push events).                                                                                  | `{{source_url}}`                    | https:/github.com/repo/owner                                                                                                                                  |
+| sender              | The sender username (or account ID on some providers) of the commit.                                                                                                             | `{{sender}}`                        | johndoe                                                                                                                                                       |
+| source_branch       | The branch name where the event comes from.                                                                                                                                      | `{{source_branch}}`                 | main                                                                                                                                                          |
+| source_url          | The source repository URL from which the event comes from (same as `repo_url` for push events).                                                                                  | `{{source_url}}`                    | https:/github.com/repo/owner                                                                                                                                  |
 | target_branch       | The branch name on which the event targets (same as `source_branch` for push events).                                                                                           | `{{target_branch}}`                 | main                                                                                                                                                          |
 | target_namespace    | The target namespace where the Repository has matched and the PipelineRun will be created.                                                                                      | `{{target_namespace}}`              | my-namespace                                                                                                                                                  |
-| trigger_comment     | The comment triggering the pipelinerun when using a [GitOps command]({{< relref "/docs/guide/running.md#gitops-command-on-pull-or-merge-request" >}}) (like `/test`, `/retest`) | `{{trigger_comment}}`               | /merge-pr branch                                                                                                                                              |
+| trigger_comment     | The comment triggering the PipelineRun when using a [GitOps command]({{< relref "/docs/guide/running.md#gitops-command-on-pull-or-merge-request" >}}) (like `/test`, `/retest`) | `{{trigger_comment}}`               | /merge-pr branch                                                                                                                                              |
 | pull_request_labels | The labels of the pull request separated by a newline                                                                                                                           | `{{pull_request_labels}}`           | bugs\nenhancement                                                                                                                                             |
 
 ## Matching an event to a PipelineRun
@@ -71,7 +71,7 @@ checkout the code that is being tested.
 Each `PipelineRun` can match different Git provider events through some special
 annotations on the `PipelineRun`.
 
-For example when you have these metadatas in
+For example, when you have these metadata in
 your `PipelineRun`:
 
 ```yaml
@@ -82,20 +82,20 @@ annotations:
   pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-`Pipelines-as-Code` will match the pipelinerun `pipeline-pr-main` if the Git
+`Pipelines-as-Code` will match the PipelineRun `pipeline-pr-main` if the Git
 provider events target the branch `main` and it's coming from a `[pull_request]`
 
-There is many ways to match an event to a PipelineRun, head over to this patch
-[page]({{< relref "/docs/guide/matchingevents.md" >}}) for a more details.
+There are many ways to match an event to a PipelineRun, head over to this patch
+[page]({{< relref "/docs/guide/matchingevents.md" >}}) for more details.
 
 ## Using the body and headers in a Pipelines-as-Code parameter
 
-Pipelines-as-Code let you access the full body and headers of the request as a CEL expression.
+Pipelines-as-Code lets you access the full body and headers of the request as a CEL expression.
 
 This allows you to go beyond the standard variables and even play with multiple
-conditions and variable to output values.
+conditions and variables to output values.
 
-For example if you want to get the title of the Pull Request in your PipelineRun you can simply access it like this:
+For example, if you want to get the title of the Pull Request in your PipelineRun you can simply access it like this:
 
 ```go
 {{ body.pull_request.title }}
@@ -104,7 +104,7 @@ For example if you want to get the title of the Pull Request in your PipelineRun
 You can then get creative and for example mix the variable inside a python
 script to evaluate the json.
 
-This task for example is using python and will check the labels on the PR,
+This task, for example, is using python and will check the labels on the PR,
 `exit 0` if it has the label called 'bug' on the pull request or `exit 1` if it
 doesn't:
 
@@ -125,7 +125,7 @@ taskSpec:
         exit(1)
 ```
 
-The expression are CEL expressions so you can as well make some conditional:
+The expressions are CEL expressions so you can as well make some conditional:
 
 ```yaml
 - name: bash
@@ -136,11 +136,11 @@ The expression are CEL expressions so you can as well make some conditional:
     fi
 ```
 
-if the PR is open the condition then return `true` and the shell script see this
+if the PR is open the condition then returns `true` and the shell script sees this
 as a valid boolean.
 
-Headers from the payload body can be accessed from the `headers` keyword, note that headers are case sensitive,
-for example this will show the GitHub event type for a GitHub event:
+Headers from the payload body can be accessed from the `headers` keyword, note that headers are case-sensitive,
+for example, this will show the GitHub event type for a GitHub event:
 
 ```yaml
 {{ headers['X-Github-Event'] }}
@@ -153,10 +153,10 @@ and then you can do the same conditional or access as described above for the `b
 You can use the temporary installation token that is generated by Pipelines as
 Code from the GitHub App to access the GitHub API.
 
-The token value is stored into the temporary git-auth secret as generated for [private
+The token value is stored in the temporary git-auth secret as generated for [private
 repositories](../privaterepo/) in the key `git-provider-token`.
 
-As an example if you want to add a comment to your pull request, you can use the
+As an example, if you want to add a comment to your pull request, you can use the
 [github-add-comment](https://hub.tekton.dev/tekton/task/github-add-comment)
 task from the [Tekton Hub](https://hub.tekton.dev)
 using a [pipelines as code annotation](../resolver/#remote-http-url):
@@ -187,7 +187,7 @@ tasks:
 Since we are using the dynamic variables we are able to reuse this on any
 PullRequest from any repositories.
 
-and for completeness, here is another example how to set the GITHUB_TOKEN
+and for completeness, here is another example of how to set the GITHUB_TOKEN
 environment variable on a task step:
 
 ```yaml
@@ -202,8 +202,8 @@ env:
 {{< hint info >}}
 
 - On GitHub apps the generated installation token [will be available for 8 hours](https://docs.github.com/en/developers/apps/building-github-apps/refreshing-user-to-server-access-tokens)
-- On GitHub apps the token is scoped to the repository the event (payload) come
-  from unless [configured](/docs/install/settings#pipelines-as-code-configuration-settings) it differently on cluster.
+- On GitHub apps the token is scoped to the repository the event (payload) comes
+  from unless [configured](/docs/install/settings#pipelines-as-code-configuration-settings) differently on the cluster.
 
 {{< /hint >}}
 

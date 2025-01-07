@@ -11,14 +11,14 @@ The Repository CR serves the following purposes:
 - Referencing an API secret, username, or API URL if necessary for Git provider
   platforms that require it (e.g., when using webhooks instead of the GitHub
   application).
-- Providing the last `PipelineRun`statuses for the repository (5 by default).
-- Let you declare [custom parameters]({{< relref "/docs/guide/customparams" >}})
-  within the `PipelineRun`that can be expanded based on certain filters.
+- Providing the last `PipelineRun` statuses for the repository (5 by default).
+- Letting you declare [custom parameters]({{< relref "/docs/guide/customparams" >}})
+  within the `PipelineRun` that can be expanded based on certain filters.
 
 The process involves creating a Repository CR inside the target namespace
 my-pipeline-ci, using the tkn pac CLI or another method.
 
-For example, this will create a Repo CR for the github repository
+For example, this will create a Repo CR for the GitHub repository
 <https://github.com/linda/project>
 
 ```yaml
@@ -32,13 +32,13 @@ spec:
 EOF
 ```
 
-With this configuration when an event from the `linda/project` repository
+With this configuration, when an event from the `linda/project` repository
 occurs, Pipelines-as-Code will know it needs to be handled and begin checking
 out the contents of linda/project to match with the PipelineRun in the .tekton/
 directory.
 
 If the `PipelineRun` matches via its annotations the event, for example on a
-specific branch and event like a `push` or `pull_request`. It will start the
+specific branch and event like a `push` or `pull_request`, it will start the
 `PipelineRun` where the `Repository` CR has been created. You can only start the
 `PipelineRun` in the namespace where the Repository CR is located.
 
@@ -49,9 +49,9 @@ to explicitly target a specific namespace. However, a Repository CRD must still
 be created in that namespace for it to be matched.
 
 This annotation helps prevent bad actors on a cluster from hijacking
-PipelineRun execution to a namespace they don't have access to. It let the user
+PipelineRun execution to a namespace they don't have access to. It lets the user
 specify the ownership of a repo matching the access of a specific namespace on
-a cluster
+a cluster.
 
 To use this feature, add the following annotation to the pipeline:
 
@@ -74,14 +74,14 @@ unless you use the `target-namespace` annotation.
 
 ### PipelineRun definition provenance
 
-By default on a `Push` or a `Pull Request`, Pipelines-as-Code will fetch the
-PipelineRun definition from the branch of where the event has been triggered.
+By default, on a `Push` or a `Pull Request`, Pipelines-as-Code will fetch the
+PipelineRun definition from the branch where the event has been triggered.
 
 This behavior can be changed by setting the setting `pipelinerun_provenance`.
-The setting currently accept two values:
+The setting currently accepts two values:
 
 - `source`: The default behavior, the PipelineRun definition will be fetched
-  from the branch of where the event has been triggered.
+  from the branch where the event has been triggered.
 - `default_branch`: The PipelineRun definition will be fetched from the default
   branch of the repository as configured on the git platform. For example
   `main`, `master`, or `trunk`.
@@ -105,10 +105,10 @@ spec:
 ```
 
 {{< hint info >}}
-Letting the user specify the provenance of the PipelineRun definition to default
+Letting the user specify the provenance of the PipelineRun definition to the default
 branch is another layer of security. It ensures that only the one who has the
-right to merge commit to the default branch can change the PipelineRun and have
-access to the infrastrucutre.
+right to merge commits to the default branch can change the PipelineRun and have
+access to the infrastructure.
 {{< /hint >}}
 
 ## Concurrency
@@ -120,8 +120,7 @@ spec:
   concurrency_limit: <number>
 ```
 
-If there is multiple PipelineRuns matching the event, the PipelineRuns
-that match the event will always be started in alphabetical order.
+When multiple PipelineRuns match the event, they will be started in alphabetical order.
 
 Example:
 
@@ -135,17 +134,17 @@ while the rest will be queued.
 
 By default, the GitHub token that Pipelines-as-Code generates is scoped only to the repository where the payload comes from.
 However, in some cases, the developer team might want the token to allow control over additional repositories.
-For example, there might be a CI repository where the `.tekton/pr.yaml` file and source payload might be located, however the build process defined in `pr.yaml` might fetch tasks from a separate private CD repository.
+For example, there might be a CI repository where the `.tekton/pr.yaml` file and source payload might be located, however, the build process defined in `pr.yaml` might fetch tasks from a separate private CD repository.
 
 You can extend the scope of the GitHub token in two ways:
 
 - _Global configuration_: extend the GitHub token to a list of repositories in different namespaces and admin have access to set this configuration.
 
 - _Repository level configuration_: extend the GitHub token to a list of repositories that exist in the same namespace as the original repository
-and both admin, non-admin have access to set this configuration.
+and both admin and non-admin have access to set this configuration.
 
 {{< hint info >}}
-when using a GitHub webhook, the scoping of the token is what you set when creating your [fine grained personal access token](https://github.blog/2022-10-18-introducing-fine-grained-personal-access-tokens-for-github/#creating-personal-access-tokens).
+When using a GitHub webhook, the scoping of the token is what you set when creating your [fine-grained personal access token](https://github.blog/2022-10-18-introducing-fine-grained-personal-access-tokens-for-github/#creating-personal-access-tokens).
 {{</ hint >}}
 
 Prerequisite
@@ -155,7 +154,7 @@ This setting enables the scoping of the GitHub token to private and public repos
 
 ### Scoping the GitHub token using Global configuration
 
-You can use the global configuration to use as a list of repositories used from any Repository CR in any namespaces.
+You can use the global configuration to use as a list of repositories used from any Repository CR in any namespace.
 
 To set the global configuration, in the `pipelines-as-code` configmap, set the `secret-github-app-scope-extra-repos` key, as in the following example:
 
@@ -195,7 +194,7 @@ The scope of the generated GitHub token is extended to the `owner/project` and `
 
 **Note:**
 
-If any of the repositories does not exist in the namespace, the scoping of the GitHub token fails with an error message as in the following example:
+If any of the repositories do not exist in the namespace, the scoping of the GitHub token fails with an error message as in the following example:
 
 ```console
 failed to scope GitHub token as repo owner1/project1 does not exist in namespace test-repo
@@ -282,5 +281,5 @@ and the scoping fails for the repository level configuration because the reposit
   In this example, if the `owner5/project5` repository is not under the `test-repo` namespace, scoping of the GitHub token fails with the following error message:
 
   ```yaml
-  failed to scope github token as repo owner5/project5 does not exist in namespace test-repo
+  failed to scope GitHub token as repo owner5/project5 does not exist in namespace test-repo
   ```

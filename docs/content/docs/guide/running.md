@@ -12,9 +12,9 @@ that are annotated with the appropriate event type.
 
 {{< hint info >}}
 The PipelineRuns definitions are fetched from the `.tekton` directory at the
-root of you repository from where the event come from, this is unless you have
+root of your repository from where the event comes from, this is unless you have
 configured the [provenance from the default
-branch](../repositorycrd/#pipelinerun-definition-provenance) on you Repository
+branch](../repositorycrd/#pipelinerun-definition-provenance) on your Repository
 CR.
 {{< /hint >}}
 
@@ -38,9 +38,8 @@ run a PipelineRun on CI:
 - The author of the pull request has permissions to push to branches inside the
   repository.
 
-- The author who initiated the pull request is identified in an `OWNERS` files
-  found in the main directory of the branch that is set as the default branch
-  on GitHub or your other service provider.
+- The author of the pull request is listed in the `OWNERS` file located in the main
+  directory of the default branch on GitHub or your other service provider.
 
   The OWNERS file adheres to a specific format, similar to the Prow OWNERS
   file format (available at <https://www.kubernetes.dev/docs/guide/owners/>). We

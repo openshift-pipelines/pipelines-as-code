@@ -9,7 +9,7 @@ This guide will walk you through the process of getting started with Pipelines-a
 
 This will start with the installation of Pipelines-as-Code on your cluster, then
 the creation of a GitHub Application, the creation of a Repository CR to specify
-which repository you want to use with Pipelines-as-Code, olnd finally we are
+which repository you want to use with Pipelines-as-Code, and finally, we are
 going to create a simple Pull Request to test that configuration and see how the
 Pipelines-as-Code flow looks like.
 
@@ -28,8 +28,7 @@ by default.
 You can also install it manually by applying the YAML files to your cluster or
 use `tkn pac bootstrap` to do it for you.
 
-The `tkn pac bootstrap` command lets you getting started quickly to try out
-Pipelines-as-Code.
+The `tkn pac bootstrap` command helps you start using Pipelines-as-Code quickly.
 
 If you are running Pipelines-as-Code in production, you should consider installing
 using a GitOps tool like [OpenShift
@@ -37,7 +36,7 @@ GitOps](https://www.openshift.com/learn/topics/gitops/) or
 [ArgoCD](https://argoproj.github.io/argo-cd/) following the manual installation
 instructions.
 
-This guide use `tkn pac bootstrap` to get you started.
+This guide uses `tkn pac bootstrap` to get you started.
 
 {{< hint info >}}
 Note: this assumes using the public GitHub instance, if you are using GitHub
@@ -180,7 +179,7 @@ to provide some helpful defaults for the next commands we will execute.
 
 {{< hint info >}}
 A Repository CR is how you configure Pipelines-as-Code. A CR or Custom
-Resourceis a Kubernetes object that is not part of the core Kubernetes API. It's
+Resource is a Kubernetes object that is not part of the core Kubernetes API. It's
 a way to extend Kubernetes with new objects. In this case, we are using a CR to
 specify which Repository URL (among other [settings]({{< relref
 "/docs/guide/repositorycrd.md" >}})) we want to use with Pipelines-as-Code and
@@ -193,9 +192,7 @@ You are now ready to create a Repository CR with the command:
 tkn pac create repository
 ```
 
-The command try to be smart and helpful, and as soon you are launching it will have
-detected the git information of the current repository and ask you if you
-want to use those values.
+The command tries to be smart and helpful. It detects the git information of the current repository and allows you to keep or change the values.
 
 ```console
 ? Enter the Git repository url (default: https://github.com/chmouel/pac-demo):
@@ -228,7 +225,7 @@ customized tailored for the Go programming language (ie: it will add the
 [golangci-lint](https://hub.tekton.dev/tekton/task/golangci-lint) linter as a
 task to your PipelineRun).
 
-Feel free to open the file `.tekton/pipelinerun.yaml` and inspect what is
+Feel free to open the file `.tekton/pipelinerun.yaml` and inspect what it
 does. The file has plenty of comments to help you understand how it works.
 
 ## Creating a Pull Request
@@ -256,7 +253,7 @@ We assume you have already set-up your system to be able to push to GitHub. If t
 {{< /hint >}}
 
 When the branch is pushed you can start creating a new Pull Request by going to
-the URL (make sure yourusername is replace with your username)
+the URL (make sure yourusername is replaced with your username)
 <https://github.com/yourusername/pac-demo/pull/new/tektonci>
 
 As soon as you create the Pull Request you will see that Pipelines-as-Code has
@@ -317,7 +314,7 @@ triggered again and this time has succeeded:
 
 ## Conclusion
 
-Congratulations! You have now successfully setup Pipelines-as-Code for running
+Congratulations! You have now successfully set up Pipelines-as-Code for running
 Continuous Integration on your repository. Now, you can freely proceed to
 [customize]({{< relref "/docs/guide/authoringprs.md" >}}) your `.tekton/pipelinerun.yaml` file as per your preferences and
 include additional tasks as needed.

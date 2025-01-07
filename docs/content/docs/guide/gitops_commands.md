@@ -1,83 +1,68 @@
 ---
-title: Gitops Commands
+title: GitOps Commands
 weight: 5.1
 ---
-# GitOps commands
+# GitOps Commands
 
-Pipelines-as-Code support the concept of `GitOps commands` a way to have the
-users issue a special command on a comment of a Pull Request or a Pushed Commit
-to control `Pipelines-as-Code`.
+Pipelines-as-Code supports the concept of `GitOps commands`, which allow users to issue special commands in a comment on a Pull Request or a pushed commit to control `Pipelines-as-Code`.
 
-The advantage of using a `Gitops command` is to get a journal of all the
-execution of your Pipeline directly on your Pull request near your code.
+The advantage of using a `GitOps command` is that it provides a journal of all the executions of your pipeline directly on your Pull Request, near your code.
 
-## GitOps commands on Pull Requests
+## GitOps Commands on Pull Requests
 
-For example when you are on a Pull Request you may want to restart all your
-pipelineruns, to do so you can add a comment on your pull request starting with
-`/retest` and all PipelineRuns attached to that pull request will be restarted :
+For example, when you are on a Pull Request, you may want to restart all your PipelineRuns. To do so, you can add a comment on your Pull Request starting with `/retest`, and all PipelineRuns attached to that Pull Request will be restarted.
 
-Example :
+Example:
 
 ```text
-Thanks for contributing, This is a much needed bugfix, and we love it ❤️ The
-failure is not with your PR but seems to be an infra issue.
+Thanks for contributing. This is a much-needed bugfix, and we love it ❤️ The
+failure is not with your PR but seems to be an infrastructure issue.
 
 /retest
 ```
 
-If you have multiple `PipelineRun` and you want to target a specific
-`PipelineRun` you can use the `/test` and the specific PipelineRun as a comment
-to restart it, example:
+If you have multiple `PipelineRun` and you want to target a specific `PipelineRun`, you can use the `/test` command followed by the specific PipelineRun name to restart it. Example:
 
 ```text
-roses are red, violets are blue. pipeline are bound to flake by design.
+Roses are red, violets are blue. Pipelines are bound to flake by design.
 
 /test <pipelinerun-name>
 ```
 
-## GitOps commands on pushed commits
+## GitOps Commands on Pushed Commits
 
-If you want to trigger a GitOps command on a pushed commit, you can include the
-`GitOps` comments within your commit messages. These comments can be used to
-restart either all pipelines or specific ones. Here's how it works:
+If you want to trigger a GitOps command on a pushed commit, you can include the `GitOps` comments within your commit messages. These comments can be used to restart either all pipelines or specific ones. Here's how it works:
 
 For restarting all pipeline runs:
 
 1. Use `/retest` or `/test` within your commit message.
 
 For restarting a specific pipeline run:
-2. Use `/retest <pipelinerun-name>` or `/test <pipelinerun-name>` within your
-commit message. Replace `<pipelinerun-name>` with the specific name of the
-pipeline run you want to restart.
+2. Use `/retest <pipelinerun-name>` or `/test <pipelinerun-name>` within your commit message. Replace `<pipelinerun-name>` with the specific name of the pipeline run you want to restart.
 
 **Note:**
 
-When executing `GitOps` commands on a commit that exists in multiple branches
-within a push request, the branch with the latest commit will be used.
+When executing `GitOps` commands on a commit that exists in multiple branches within a push request, the branch with the latest commit will be used.
 
 This means:
 
-1. If a user specifies commands like `/retest` or `/test` without any argument
-in a comment on a branch, the test will automatically be performed on the **main** branch.
+1. If a user specifies commands like `/retest` or `/test` without any argument in a comment on a branch, the test will automatically be performed on the **main** branch.
 
-   Examples :
+   Examples:
    1. `/retest`
    2. `/test`
    3. `/retest <pipelinerun-name>`
    4. `/test <pipelinerun-name>`
 
-2. If the user includes a branch specification such as `/retest branch:test` or
-`/test branch:test`, the test will be executed on the commit where the comment is
-located, with the context of the **test** branch.
+2. If the user includes a branch specification such as `/retest branch:test` or `/test branch:test`, the test will be executed on the commit where the comment is located, with the context of the **test** branch.
 
-   Examples :
+   Examples:
    1. `/retest branch:test`
    2. `/test branch:test`
    3. `/retest <pipelinerun-name> branch:test`
    4. `/test <pipelinerun-name> branch:test`
 
-To issue a `GitOps` comment on a pushed commit you can follow these steps:
+To issue a `GitOps` comment on a pushed commit, you can follow these steps:
 
 1. Go to your repository.
 2. Click on the **Commits** section.
@@ -88,27 +73,19 @@ To issue a `GitOps` comment on a pushed commit you can follow these steps:
 
 Please note that this feature is supported for the GitHub provider only.
 
-## GitOps commands on non-matching PipelineRun
+## GitOps Commands on Non-Matching PipelineRun
 
-The PipelineRun will be restarted regardless of the annotations if the comment
-`/test <pipelinerun-name>` or `/retest <pipelinerun-name>` is used . This let
-you have control of PipelineRuns that gets only triggered by a comment on the
-pull request.
+The PipelineRun will be restarted regardless of the annotations if the comment `/test <pipelinerun-name>` or `/retest <pipelinerun-name>` is used. This allows you to have control of PipelineRuns that get only triggered by a comment on the Pull Request.
 
-## Accessing the comment triggering the PipelineRun
+## Accessing the Comment Triggering the PipelineRun
 
-When you trigger a PipelineRun via a Gitops Command, the template variable `{{
-trigger_comment }}` get set to the actual comment that triggered it.
+When you trigger a PipelineRun via a GitOps Command, the template variable `{{ trigger_comment }}` is set to the actual comment that triggered it.
 
-You can then do some action based on for example the comment content with a
-shell script or others.
+You can then perform actions based on the comment content with a shell script or other methods.
 
-There is a restriction with the `trigger_comment` variable, we modify it to
-replace the newline with a `\n` since the multi-line comment can cause a issue
-when replaced inside the yaml.
+There is a restriction with the `trigger_comment` variable: we modify it to replace newlines with `\n` since multi-line comments can cause issues when replaced inside the YAML.
 
-It is up to you to replace it back with newlines, for example with shell scripts
-you can use `echo -e` to expand the newline back.
+It is up to you to replace it back with newlines. For example, with shell scripts, you can use `echo -e` to expand the newline back.
 
 Example of a shell script:
 
@@ -117,76 +94,64 @@ echo -e "{{ trigger_comment }}" > /tmp/comment
 grep "string" /tmp/comment
 ```
 
-## Custom GitOps commands
+## Custom GitOps Commands
 
-Using the [on-comment]({{< relref
-"/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regexp-in-a-comment"
->}}) annotation on your `PipelineRun` you can define custom GitOps commands that
-will be triggered by the comments on the pull request.
+Using the [on-comment]({{< relref "/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regexp-in-a-comment" >}}) annotation on your `PipelineRun`, you can define custom GitOps commands that will be triggered by comments on the Pull Request.
 
-See the [on-comment]({{< relref
-"/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regexp-in-a-comment"
->}}) guide for more detailed information.
+See the [on-comment]({{< relref "/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regexp-in-a-comment" >}}) guide for more detailed information.
 
 ## Cancelling a PipelineRun
 
-You can cancel a running PipelineRun by commenting on the PullRequest.
+You can cancel a running PipelineRun by commenting on the Pull Request.
 
-For example if you want to cancel all your PipelinerRuns you can add a comment starting
-with `/cancel` and all PipelineRun attached to that pull request will be cancelled.
+For example, if you want to cancel all your PipelineRuns, you can add a comment starting with `/cancel`, and all PipelineRuns attached to that Pull Request will be cancelled.
 
-Example :
+Example:
 
 ```text
-It seems the infra is down, so cancelling the pipelineruns.
+It seems the infrastructure is down, so cancelling the PipelineRuns.
 
 /cancel
 ```
 
-If you have multiple `PipelineRun` and you want to target a specific
-`PipelineRun` you can use the `/cancel` comment with the PipelineRun name
+If you have multiple `PipelineRun` and you want to target a specific `PipelineRun`, you can use the `/cancel` comment with the PipelineRun name.
 
-Example :
+Example:
 
 ```text
-roses are red, violets are blue. why to run the pipeline when the infra is down.
+Roses are red, violets are blue. Why run the pipeline when the infrastructure is down.
 
 /cancel <pipelinerun-name>
 ```
 
-On GitHub App the status of the Pipeline will be set to `cancelled`.
+In the GitHub App, the status of the Pipeline will be set to `cancelled`.
 
-![pipelinerun canceled](/images/pr-cancel.png)
+![PipelineRun Canceled](/images/pr-cancel.png)
 
-### Cancelling the PipelineRun on push request
+### Cancelling the PipelineRun on Push Request
 
-You can cancel a running PipelineRun by commenting on the commit.
-Here's how you can do it.
+You can cancel a running PipelineRun by commenting on the commit. Here's how you can do it.
 
-Example :
+Example:
 
-1. Use `/cancel` to cancel all PipeineRuns.
-2. Use `/cancel <pipelinerun-name>` to cancel a specific PipeineRun
+1. Use `/cancel` to cancel all PipelineRuns.
+2. Use `/cancel <pipelinerun-name>` to cancel a specific PipelineRun.
 
 **Note:**
 
-When executing `GitOps` comments on a commit that exists in multiple branches
-within a push request, the branch with the latest commit will be used.
+When executing `GitOps` comments on a commit that exists in multiple branches within a push request, the branch with the latest commit will be used.
 
 This means:
 
-1. If a user specifies commands like `/cancel`
-without any argument in a comment on a branch,
-it will automatically target the **main** branch.
+1. If a user specifies commands like `/cancel` without any argument in a comment on a branch, it will automatically target the **main** branch.
 
-   Examples :
+   Examples:
    1. `/cancel`
    2. `/cancel <pipelinerun-name>`
 
-2. If the user issues a command like `/cancel branch:test`,
-it will target the commit where the comment was made but use the **test** branch.
+2. If the user issues a command like `/cancel branch:test`, it will target the commit where the comment was made but use the **test** branch.
 
-   Examples :
+   Examples:
    1. `/cancel branch:test`
    2. `/cancel <pipelinerun-name> branch:test`
 
@@ -196,31 +161,27 @@ In the GitHub App, the status of the Pipeline will be set to `cancelled`.
 
 Please note that this feature is supported for the GitHub provider only.
 
-## Passing parameters to GitOps commands as argument
+## Passing Parameters to GitOps Commands as Arguments
 
-{{< tech_preview "Passing parameters to GitOps commands as argument" >}}
+{{< tech_preview "Passing parameters to GitOps commands as arguments" >}}
 
-When you issue a GitOps command, you can pass arguments to the command to
-redefine some the [standard]({{< relref "/docs/guide/authoringprs#dynamic-variables" >}})
-dynamic variables or the [custom parameters]({{< relref "/docs/guide/customparams" >}})
+When you issue a GitOps command, you can pass arguments to the command to redefine some of the [standard]({{< relref "/docs/guide/authoringprs#dynamic-variables" >}}) dynamic variables or the [custom parameters]({{< relref "/docs/guide/customparams" >}}).
 
-For example you can do:
+For example, you can do:
 
 ```text
 /test pipelinerun1 key=value
 ```
 
-and the custom parameter `key` if defined as custom parameter will be defined to `value`
+and the custom parameter `key`, if defined as a custom parameter, will be set to `value`.
 
-If the comment does not start with a `/` it will not be parsed.
+If the comment does not start with a `/`, it will not be parsed.
 
-You can only override parameters from the standard or when set as custom
-parameters, you cannot pass arbitrary parameters that hasn't been defined
-previously.
+You can only override parameters from the standard or when set as custom parameters; you cannot pass arbitrary parameters that haven't been defined previously.
 
-You can pass those `key=value` anywhere in your comment and it will be parsed.
+You can pass those `key=value` pairs anywhere in your comment, and they will be parsed.
 
-There is different format that can get accepted, which let you pass values with space or newlines:
+There are different formats that can be accepted, allowing you to pass values with spaces or newlines:
 
 * key=value
 * key="a value"
@@ -228,21 +189,20 @@ There is different format that can get accepted, which let you pass values with 
 * key="another
   value with newline"
 
-## Event Type Annotation and dynamic variables
+## Event Type Annotation and Dynamic Variables
 
-The `pipeline.tekton.dev/event-type` annotation indicates the type of GitOps
-command that has triggered the PipelineRun.
+The `pipeline.tekton.dev/event-type` annotation indicates the type of GitOps command that has triggered the PipelineRun.
 
 Here are the possible event types:
 
-* `test-all-comment` : The event is a single `/test` that would test every matched pipelinerun.
-* `test-comment` : The event is a `/test <PipelineRun>` comment that would test a specific PipelineRun.
-* `retest-all-comment` : The event is a single `/retest` that would retest every matched pipelinerun.
-* `retest-comment` : The event is a `/retest <PipelineRun>` that would retest a specific PipelineRun.
-* `on-comment`: The event is coming from a  custom comment that would trigger a PipelineRun.
-* `cancel-all-comment` : The event is a single `/cancel` that would cancel every matched pipelinerun.
-* `cancel-comment` : The event is a `/cancel <PipelineRun>` that would cancel a specific PipelineRun.
-* `ok-to-test-comment` : The event is a `/ok-to-test` that would allow running the CI for a unauthorized user.
+* `test-all-comment`: The event is a single `/test` that would test every matched PipelineRun.
+* `test-comment`: The event is a `/test <PipelineRun>` comment that would test a specific PipelineRun.
+* `retest-all-comment`: The event is a single `/retest` that would retest every matched PipelineRun.
+* `retest-comment`: The event is a `/retest <PipelineRun>` that would retest a specific PipelineRun.
+* `on-comment`: The event is coming from a custom comment that would trigger a PipelineRun.
+* `cancel-all-comment`: The event is a single `/cancel` that would cancel every matched PipelineRun.
+* `cancel-comment`: The event is a `/cancel <PipelineRun>` that would cancel a specific PipelineRun.
+* `ok-to-test-comment`: The event is a `/ok-to-test` that would allow running the CI for an unauthorized user.
 
 When using the `{{ event_type }}` [dynamic variable]({{< relref "/docs/guide/authoringprs.md#dynamic-variables" >}}) for the following event types:
 
@@ -253,9 +213,6 @@ When using the `{{ event_type }}` [dynamic variable]({{< relref "/docs/guide/aut
 * `cancel-all-comment`
 * `ok-to-test-comment`
 
-The dynamic variable will return `pull_request` as the event type instead of the specific
-categorized GitOps command type. This is to handle backward compatibility with
-previous release for users relying on this dynamic variable.
+The dynamic variable will return `pull_request` as the event type instead of the specific categorized GitOps command type. This is to handle backward compatibility with previous releases for users relying on this dynamic variable.
 
-This currently only issue a warning in the repository matched namespace but then deprecated and changed to return
-the specific event type.
+This currently only issues a warning in the repository matched namespace but will then be deprecated and changed to return the specific event type.
