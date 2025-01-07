@@ -8,7 +8,7 @@ weight: 3
 A `PipelineRun` can be matched to a Git provider event by using specific
 annotations in the `PipelineRun` metadata.
 
-For example when you have these metadata in your `PipelineRun`:
+For example, when you have these as metadata in your `PipelineRun`:
 
 ```yaml
 metadata:
@@ -18,7 +18,7 @@ annotations:
   pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-`Pipelines-as-Code` will match the pipelinerun `pipeline-pr-main` if the Git
+`Pipelines-as-Code` will match the PipelineRun `pipeline-pr-main` if the Git
 provider events target the branch `main` and it's coming from a `[pull_request]`
 
 Multiple target branches can be specified, separated by commas, e.g.:
@@ -27,11 +27,11 @@ Multiple target branches can be specified, separated by commas, e.g.:
 pipelinesascode.tekton.dev/on-target-branch: [main, release-nightly]
 ```
 
-You can match on `pull_request` events as above, and you can as well match
-pipelineRuns on `push` events to a repository
+You can match on `pull_request` events as above, and you can also match
+PipelineRuns on `push` events to a repository.
 
-For example this will match the pipeline when there is a push to a commit in the
-`main` branch :
+For example, this will match the pipeline when there is a push to a commit in the
+`main` branch:
 
 ```yaml
 metadata:
@@ -41,11 +41,11 @@ metadata:
     pipelinesascode.tekton.dev/on-event: "[push]"
 ```
 
-You can specify the full refs like `refs/heads/main` or the shortref like
-`main`. You can also specify globs, for example `refs/heads/*` will match any
+You can specify the full refs like `refs/heads/main` or the short ref like
+`main`. You can also specify globs, for example, `refs/heads/*` will match any
 target branch or `refs/tags/1.*` will match all the tags starting from `1.`.
 
-A full example for a push of a tag :
+A full example for a push of a tag:
 
 ```yaml
 metadata:
@@ -58,12 +58,11 @@ annotations:
 This will match the pipeline `pipeline-push-on-1.0-tags` when you push the 1.0
 tags into your repository.
 
-Matching annotations are currently required; otherwise `Pipelines-as-Code` will not
+Matching annotations are currently required; otherwise, `Pipelines-as-Code` will not
 match your `PipelineRun`.
 
-If there are multiple pipelinerun matching an event, it will run all of them in
-parallel and posting the results to the provider as soon the PipelineRun
-finishes.
+When multiple PipelineRuns match an event, it will run them in parallel
+and post the results to the provider as soon as the PipelineRun finishes.
 
 {{< hint info >}}
 Payload matching only occurs for events that `Pipelines-as-Code` supports, such as
@@ -79,12 +78,12 @@ annotation `pipelinesascode.tekton.dev/on-path-change`.
 
 Multiple paths can be specified, separated by commas. The first glob matching
 the files changes in the PR will trigger the `PipelineRun`. If you want to match
-a file or path that has a comma you can html escape it with the `&#44;` html
+a file or path that has a comma, you can HTML escape it with the `&#44;` HTML
 entity.
 
 You still need to specify the event type and target branch. If you have a [CEL
 expression](#matching-pipelinerun-by-path-change) the `on-path-change`
-annotation will be ignored
+annotation will be ignored.
 
 Example:
 
@@ -104,7 +103,7 @@ its subdirectories) or files with a `.rst` suffix in the `manual` directory.
 
 {{< hint info >}}
 The patterns used are [glob](https://en.wikipedia.org/wiki/Glob_(programming))
-patterns, not regexp. Here are some
+patterns, not regex. Here are some
 [examples](https://github.com/gobwas/glob?tab=readme-ov-file#example) from the
 library used for matching.
 
@@ -129,7 +128,7 @@ a `PipelineRun` when the specified paths have not changed.
 
 You still need to specify the event type and target branch. If you have a [CEL
 expression](#matching-pipelinerun-by-path-change) the `on-path-change-ignore`
-annotation will be ignored
+annotation will be ignored.
 
 This PipelineRun will run when there are changes outside the docs
 folder:
@@ -160,7 +159,7 @@ This configuration triggers the `PipelineRun` when there are changes in the
 `docs` directory but not in the `docs/generated` directory.
 
 The `on-path-change-ignore` annotation will always take precedence over the
-`on-path-change` annotation, It means if you have these annotations:
+`on-path-change` annotation. It means if you have these annotations:
 
 ```yaml
 metadata:
@@ -184,7 +183,7 @@ You can match a PipelineRun on a comment on a Pull Request with the annotation
 `pipelinesascode.tekton.dev/on-comment`.
 
 The comment is a regexp and if a newly created comment has this regexp it will
-automatically match the PipelineRun and starts it.
+automatically match the PipelineRun and start it.
 
 For example:
 
@@ -202,14 +201,14 @@ This will match the merge-pr `PipelineRun` when a comment on a pull request
 starts with `/merge-pr`.
 
 When the PipelineRun that has been triggered with the `on-comment` annotation
-gets started the template variable `{{ trigger_comment }}` get set. See the
+gets started, the template variable `{{ trigger_comment }}` gets set. See the
 documentation [here]({{< relref "/docs/guide/gitops_commands.md#accessing-the-comment-triggering-the-pipelinerun" >}})
 
 Note that the `on-comment` annotation will respect the `pull_request` [Policy]({{< relref "/docs/guide/policy" >}}) rule,
-so only users into the `pull_request` policy will be able to trigger the
+so only users in the `pull_request` policy will be able to trigger the
 PipelineRun.
 
-> *NOTE*: The `on-comment` annotation is only supported on GitHub, Gitea and GitLab providers
+> *NOTE*: The `on-comment` annotation is only supported on GitHub, Gitea, and GitLab providers
 
 ## Matching PipelineRun to a Pull Request labels
 
@@ -242,7 +241,7 @@ metadata:
 - You can access the `Pull Request` labels with the [dynamic variable]({{<
   relref "/docs/guide/authoringprs#dynamic-variables" >}}) `{{ pull_request_labels }}`.
   The labels are separated by a Unix newline `\n`.
-  For example with a shell script you can do this to print them:
+  For example, with a shell script, you can do this to print them:
 
   ```bash
    for i in $(echo -e "{{ pull_request_labels }}");do
@@ -253,7 +252,7 @@ metadata:
 ## Advanced event matching using CEL
 
 If you need to do some advanced matching, `Pipelines-as-Code` supports CEL
-expression to do advanced filtering on the specific event you need to be matched.
+expressions to do advanced filtering on the specific event you need to be matched.
 
 If you have the `pipelinesascode.tekton.dev/on-cel-expression` annotation in
 your PipelineRun, the CEL expression will be used and the `on-target-branch` or
@@ -267,7 +266,7 @@ pipelinesascode.tekton.dev/on-cel-expression: |
   event == "pull_request" && target_branch == "main" && source_branch == "wip"
 ```
 
-The fields available are :
+The fields available are:
 
 | **Field**         | **Description**                                                                                                                  |
 |-------------------|----------------------------------------------------------------------------------------------------------------------------------|
@@ -282,10 +281,10 @@ The fields available are :
 | `.pathChanged`    | A suffix function to a string that can be a glob of a path to check if changed. (Supported only for `GitHub` and `Gitlab` providers.) |
 | `files`           | The list of files that changed in the event (`all`, `added`, `deleted`, `modified`, and `renamed`). Example: `files.all` or `files.deleted`. For pull requests, every file belonging to the pull request will be listed. |
 
-CEL expressions lets you do more complex filtering compared to the simple `on-target` annotation matching and enable more advanced scenarios.
+CEL expressions let you do more complex filtering compared to the simple `on-target` annotation matching and enable more advanced scenarios.
 
-For example if I want to have a `PipelineRun` targeting a `pull_request` but
-not the `experimental` branch you could have :
+For example, if I want to have a `PipelineRun` targeting a `pull_request` but
+not the `experimental` branch you could have:
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
@@ -293,7 +292,7 @@ pipelinesascode.tekton.dev/on-cel-expression: |
 ```
 
 {{< hint info >}}
-You can find more information about the CEL language spec here :
+You can find more information about the CEL language spec here:
 
 <https://github.com/google/cel-spec/blob/master/doc/langdef.md>
 {{< /hint >}}
@@ -301,7 +300,7 @@ You can find more information about the CEL language spec here :
 ### Matching a PipelineRun to a branch with a regexp
 
 In a CEL expression, you can match a field name using a regular expression. For
-example if you want to trigger a `PipelineRun` for the`pull_request` event and
+example, if you want to trigger a `PipelineRun` for the`pull_request` event and
 the `source_branch` name containing the substring `feat/`.  you can use the
 following expression:
 
@@ -318,15 +317,15 @@ pattern](https://github.com/gobwas/glob#example) and does not support different 
 If you want to have a PipelineRun running only if a path has
 changed you can use the `.pathChanged` suffix function with a [glob
 pattern](https://github.com/gobwas/glob#example). Here
-is a concrete example matching every markdown files (as files who has the `.md`
-suffix) in the `docs` directory :
+is a concrete example matching every markdown file (as files that have the `.md`
+suffix) in the `docs` directory:
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
   event == "pull_request" && "docs/*.md".pathChanged()
 ```
 
-This example will match any changed file (added, modified, removed or renamed) that was in the `tmp` directory:
+This example will match any changed file (added, modified, removed, or renamed) that was in the `tmp` directory:
 
 ```yaml
     pipelinesascode.tekton.dev/on-cel-expression: |
@@ -347,9 +346,9 @@ This example will match modified files with the name of test.go:
       files.modified.exists(x, x.matches('test.go'))
 ```
 
-### Matching PipelineRun to a event (commit, pull_request) title
+### Matching PipelineRun to an event (commit, pull_request) title
 
-This example will match all pull request starting with the title `[DOWNSTREAM]`:
+This example will match all pull requests starting with the title `[DOWNSTREAM]`:
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
@@ -357,7 +356,7 @@ pipelinesascode.tekton.dev/on-cel-expression: |
 ```
 
 The event title will be the pull request title on `pull_request` and the
-commit title on `push`
+commit title on `push`.
 
 ### Matching PipelineRun on body payload
 
@@ -367,7 +366,7 @@ The payload body as passed by the Git provider is available in the CEL
 variable as `body` and you can use this expression to do any filtering on
 anything the Git provider is sending over:
 
-For example this expression when run on GitHub:
+For example, this expression when run on GitHub:
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
@@ -377,8 +376,8 @@ pipelinesascode.tekton.dev/on-cel-expression: |
 ```
 
 will only match if the pull request is targeting the `main` branch, the author
-of the pull request is called `superuser` and the action is `synchronize` (ie:
-an update occurred on a pull request)
+of the pull request is called `superuser` and the action is `synchronize` (i.e.:
+an update occurred on a pull request).
 
 {{< hint info >}}
 When matching the body payload in a Pull Request, the GitOps comments such as
@@ -390,7 +389,7 @@ payload.
 Consequently, when a pull request event occurs, like opening or updating a pull
 request, the CEL body payload may not align with the defined specifications.
 
-To be able to retest your Pull Request when using a CEL on bod payload,
+To be able to retest your Pull Request when using a CEL on body payload,
 you can make a dummy update to the Pull Request by sending a new SHA with this
 git command:
 
@@ -412,18 +411,18 @@ with the CEL variable `headers`.
 
 The headers are available as a list and are always in lower case.
 
-For example this is how to make sure the event is a pull_request on [GitHub](https://docs.github.com/en/webhooks/webhook-events-and-payloads#delivery-headers):
+For example, this is how to make sure the event is a pull_request on [GitHub](https://docs.github.com/en/webhooks/webhook-events-and-payloads#delivery-headers):
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
   headers['x-github-event'] == "pull_request"
 ```
 
-## Matching a PipelineRun to a branch with comma
+## Matching a PipelineRun to a branch with a comma
 
 If you want to match multiple branches but one branch has a comma in there you
-will not be able to match it. In that case you can use the html escape entity
-`&#44;` as comma in the name of the branch, for example if you want to match
+will not be able to match it. In that case, you can use the HTML escape entity
+`&#44;` as a comma in the name of the branch, for example, if you want to match
 main and the branch called `release,nightly` you can do this:
 
 ```yaml

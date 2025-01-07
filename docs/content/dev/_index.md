@@ -16,29 +16,29 @@ It uses kind under docker. You start it with:
 make dev
 ```
 
-When it finished you will have the following installed in your kind cluster:
+When it finishes, you will have the following installed in your kind cluster:
 
 - Kind Cluster deployment
 - Internal registry to push to from `ko`
-- A ingress controller with nginx for routing.
-- Tekton and Dashboard installed with a ingress route.
+- An ingress controller with nginx for routing.
+- Tekton and Dashboard installed with an ingress route.
 - Pipelines as code deployed from your repo with ko.
-- Gitea service running locally so you can run your E2E tests that targets gitea (the most comprehensive ones)
+- Gitea service running locally so you can run the E2E tests against it (Gitea has the most comprehensive set of tests).
 
-By default it will try to install from
-$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code, if you want to
-override it you can set the `PAC_DIRS` environment variable.
+By default, it will try to install from
+$GOPATH/src/github.com/openshift-pipelines/pipelines-as-code. To override it,
+set the `PAC_DIRS` environment variable.
 
-- It will deploy under the nip.io domain reflector, the URL will be :
+- It will deploy under the nip.io domain reflector, the URL will be:
 
   - <http://controller.paac-127-0-0-1.nip.io>
   - <http://dashboard.paac-127-0-0-1.nip.io>
 
-- You will need to create secret yourself, if you have the [pass cli](https://www.passwordstore.org/)
-  installed you can point to a folder which contains : github-application-id github-private-key webhook.secret
-  As configured from your GitHub application. Configure `PAC_PASS_SECRET_FOLDER`
+- You will need to create the secret yourself. If you have the [pass cli](https://www.passwordstore.org/)
+  installed, you can point to a folder that contains: github-application-id, github-private-key, webhook.secret
+  as configured from your GitHub application. Set the `PAC_PASS_SECRET_FOLDER`
   environment variable to point to it.
-  For example :
+  For example:
 
   ```shell
   pass insert github-app/github-application-id
@@ -46,7 +46,7 @@ override it you can set the `PAC_DIRS` environment variable.
   pass insert -m github-app/github-private-key
   ```
 
-- If you need to redeploy your pac install (and only pac) you can do :
+- If you need to redeploy your pac install (and only pac), you can do:
 
   ```shell
   ./hack/dev/kind/install.sh -p
@@ -58,16 +58,16 @@ override it you can set the `PAC_DIRS` environment variable.
   make rdev
   ```
 
-  or you can do this directly with ko :
+  or you can do this directly with ko:
 
   ```shell
   env KO_DOCKER_REPO=localhost:5000 ko apply -f ${1:-"config"} -B
   ```
 
 - more flags: `-b` to only do the kind creation+nginx+docker image, `-r` to
-  install from latest stable release (override with env variable `PAC_RELEASE`)
-  instead of ko. `-c` will only do the pac configuration (ie: creation of
-  secrets/ingress etc..)
+  install from the latest stable release (override with the env variable `PAC_RELEASE`)
+  instead of ko. `-c` will only do the pac configuration (i.e., creation of
+  secrets/ingress, etc..)
 
 - see the [install.sh](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/hack/dev/kind/install.sh) -h for all flags
 
@@ -114,8 +114,8 @@ stringData:
   webhook: "" # make sure it's empty when you set this up on the interface and here
 ```
 
-There is some gotchas with the webhook validation secret, Pipelines-as-Code
-detect a Gitea install and let the user set a empty webhook secret (by default
+There are some gotchas with the webhook validation secret. Pipelines-as-Code
+detects a Gitea install and lets the user set an empty webhook secret (by default
 it's enforced).
 
 The `install.sh` script will by default spin up a new instance of GITEA to play
@@ -124,26 +124,26 @@ with and run the Gitea E2E tests.
 You will need to create a Hook URL generated from <https://hook.pipelinesascode.com/new>
 into the environment variable `TEST_GITEA_SMEEURL`.
 
-The defaults are :
+The defaults are:
 
 - URL: <https://localhost:3000/>
 - Admin Username: pac
 - Admin Password: pac
 
-The E2E tests will automatically create repo using the admin username for each tests.
+The E2E tests will automatically create a repo using the admin username for each test.
 
 ## Debugging E2E
 
-As long you have the secrets setup you should be able to run the e2e tests properly.
-Gitea are the easiest to run (since they are self contained), for the other you
-will need to setup some environment variables.
+As long as you have the secrets set up, you should be able to run the e2e tests properly.
+Gitea is the easiest to run (since they are self-contained). For the rest,
+you will need to set up some environment variables.
 
 See the [e2e on kind
 workflow](https://github.com/openshift-pipelines/pipelines-as-code/blob/8f990bf5f348f6529deaa3693257907b42287a35/.github/workflows/kind-e2e-tests.yaml#L90)
-for all the variables set by provider.
+for all the variables set by the provider.
 
-By default the E2E tests cleanups after themselves if you want to keep the
-PR/MR opens and the namespace where the test has been created you can set the
+By default, the E2E tests clean up after themselves. If you want to keep the
+PR/MR open and the namespace where the test has been created, you can set the
 `TEST_NOCLEANUP` environment variable to `true`.
 
 ## Debugging controller
@@ -154,31 +154,31 @@ to your locally installed controller (this can be either run on your debugger or
 inside kind).
 
 An option of gosmee is to save the replay to a directory with `--saveDir
-/tmp/save`. If go to that directory a shell script will be created to replay
+/tmp/save`. If you go to that directory, a shell script will be created to replay
 the request that was sent directly to the controller without having to go through
 another push.
 
-Use [snazy](https://github.com/chmouel/snazy) to watch the logs, it support pac
+Use [snazy](https://github.com/chmouel/snazy) to watch the logs. It supports pac
 by adding some context like which GitHub provider.
 
 ![snazy screenshot](/images/pac-snazy.png)
 
 ## Using the Makefile targets
 
-Several target in the Makefile is available, if you need to run them
+Several targets are available in the Makefile if you want to run them
 manually. You can list all the makefile targets with:
 
 ```shell
 make help
 ```
 
-For example to test and lint the go files :
+For example, to test and lint the go files:
 
 ```shell
 make test lint-go
 ```
 
-If you add a CLI command with help you will need to regenerate the golden files :
+If you add a CLI command with help, you will need to regenerate the golden files:
 
 ```shell
 make update-golden
@@ -190,27 +190,27 @@ We are using several tools to verify that pipelines-as-code is up to a good
 coding and documentation standard. We use pre-commit tools to ensure before you
 send your PR that the commit is valid.
 
-First you need to install pre-commit:
+First, you need to install pre-commit:
 
 <https://pre-commit.com/>
 
-It should be available as package on Fedora and Brew or install it with `pip`.
+It should be available as a package on Fedora and Brew or install it with `pip`.
 
-When you have it installed add the hook to your repo by doing :
+Once installed, add the hook to your repo by doing:
 
 ```shell
 pre-commit install
 ```
 
-This will run several `hooks` on the files that has been changed before you
+This will run several `hooks` on the files that have been changed before you
 _push_ to your remote branch. If you need to skip the verification (for whatever
-reason), you can do :
+reason), you can do:
 
 ```shell
 git push --no-verify
 ```
 
-or you can disable individual hook with the `SKIP` variable:
+or you can disable an individual hook with the `SKIP` variable:
 
 ```shell
 SKIP=lint-md git push
@@ -240,10 +240,10 @@ generated) and start the Hugo server with a live preview of the docs on:
 
 <https://localhost:1313>
 
-When we push the release, the docs gets rebuilt automatically by CloudFare pages.
+When we push the release, the docs get rebuilt automatically by CloudFare pages.
 
-By default the website <https://pipelinesascode.com> only contains the "stable"
-documentation. If you want to preview the dev documentation as from `main` you
+By default, the website <https://pipelinesascode.com> only contains the "stable"
+documentation. If you want to preview the dev documentation as from `main`, you
 need to go to this URL:
 
 <https://main.pipelines-as-code.pages.dev>
@@ -259,12 +259,12 @@ major version.
 
 ### Go Modules
 
-Unless if we that's not possible we try to update all dependencies to the
-latest version as long it's compatible with the Pipeline version as shipped by
+Unless that's not possible, we try to update all dependencies to the
+latest version as long as it's compatible with the Pipeline version as shipped by
 OpenShift Pipelines Operator (which should be conservative).
 
-Every time you do a go modules update check if we can remove the `replace`
-clause that pins a dependency to a specific version/commit or match the replace
+Every time you update the Go modules, check if you can remove the `replace`
+clause which pins a dependency to a specific version/commit or match the replace
 to the tektoncd/pipeline version.
 
 - Update all go modules:
@@ -274,8 +274,8 @@ to the tektoncd/pipeline version.
   make vendor
   ```
 
-- Go to <https://github.com/google/go-github> and note the latest go version for example: v59
-- Open a file that use the go-github library (ie: pkg/provider/github/detect.go) and check the old version, for example: v56
+- Go to <https://github.com/google/go-github> and note the latest go version, for example: v59
+- Open a file that uses the go-github library (i.e., pkg/provider/github/detect.go) and check the old version, for example: v56
 
 - Run this sed command:
 
@@ -283,9 +283,9 @@ to the tektoncd/pipeline version.
   find -name '*.go'|xargs sed -i 's,github.com/google/go-github/v56,github.com/google/go-github/v59,'
   ```
 
-- This will update everything, sometime the library ghinstallation is not
+- This will update everything. Sometimes the library ghinstallation is not
 updated with the new version, so you will need to keep the old version kept in
-there. For example you will get this kind of error:
+there. For example, you will get this kind of error:
 
   ```text
   pkg/provider/github/parse_payload.go:56:33: cannot use &github.InstallationTokenOptions{…} (value of type *"github.com/google/go-github/v59/github".InstallationTokenOptions) as *"github.com/google/go-github/v57/github".InstallationTokenOptions value in assignment
@@ -297,10 +297,10 @@ there. For example you will get this kind of error:
   make allbinaries test lint
   ```
 
-- Some structs needs to be updated, some of them are going to fail on
-  deprecated, so you will need to figure how to update them. Don't be lazy and avoid the
-  update with a nolint or a pin to a dep you only delay the inevitable until
-  the problem come back and hit you harder.
+- Some structs need to be updated. Some of them are going to fail as
+  deprecated, so you will need to figure out how to update them. Don't be lazy and avoid the
+  update with a nolint or a pin to a dep. You only delay the inevitable until
+  the problem comes back and hits you harder.
 
 ### Go version
 
@@ -311,7 +311,7 @@ there. For example you will get this kind of error:
   docker run golang go version
   ```
 
-- If this not the same as what we have in go.mod then you need to update the go.mod version. then you need to update for example here 1.20:
+- If this is not the same as what we have in go.mod, then you need to update the go.mod version. Then you need to update, for example, here 1.20:
 
   ```shell
   go mod tidy -go=1.20
@@ -340,7 +340,7 @@ there. For example you will get this kind of error:
 
 ## Tools that are useful
 
-Several tools are used on CI and in `pre-commit`, the non exhaustive list you
+Several tools are used in CI and `pre-commit`. The non-exhaustive list you
 need to have on your system:
 
 - [golangci-lint](https://github.com/golangci/golangci-lint) - For golang lint
@@ -362,8 +362,8 @@ need to have on your system:
 
 ## Target architecture
 
-- We target arm64 and amd64, the dogfooding is on arm64, so we need to make
-sure that all jobs and docker images used in the .tekton PipelineRuns are built
+- We target arm64 and amd64. The dogfooding is on arm64, so we need to ensure
+that all jobs and docker images used in the .tekton PipelineRuns are built
 for arm64.
 
 # Links
