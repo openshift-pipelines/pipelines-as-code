@@ -254,6 +254,8 @@ func TestSetClientDetectAPIURL(t *testing.T) {
 	assert.ErrorContains(t, err, "no git_provider.secret has been set")
 
 	event.Provider.Token = "hello"
+	event.TargetProjectID = 10
+	event.SourceProjectID = 10
 
 	v.repoURL, event.URL, event.Provider.URL = "", "", ""
 	event.URL = fmt.Sprintf("%s/hello-this-is-me-ze/project", fakehost)
