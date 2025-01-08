@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
@@ -60,11 +59,8 @@ func buildEventFromPipelineRun(pr *tektonv1.PipelineRun) *info.Event {
 	prAnno := pr.GetAnnotations()
 
 	event.URL = prAnno[keys.RepoURL]
-	// it's safer to get repo, org from repo.url since we have to remove the / and other chars in labels which drops
-	// the SubPath that gitlab is using.
-	repo, org, _ := formatting.GetRepoOwnerSplitted(event.URL)
-	event.Organization = repo
-	event.Repository = org
+	event.Organization = prAnno[keys.URLOrg]
+	event.Repository = prAnno[keys.URLRepository]
 	event.EventType = prAnno[keys.EventType]
 	event.TriggerTarget = triggertype.StringToType(prAnno[keys.EventType])
 	event.BaseBranch = prAnno[keys.Branch]
