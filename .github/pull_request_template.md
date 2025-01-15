@@ -1,31 +1,32 @@
 # Changes <!-- 🎉🎉🎉 Thank you for the PR!!! 🎉🎉🎉 -->
 
-<!-- Describe your changes here- ideally you can get that description straight from
-your descriptive commit message(s)! -->
+<!-- Describe your changes here- ideally you can get that description straight from your descriptive commit message(s)! -->
 
 # Submitter Checklist
 
-- [ ] 📝 Please ensure your commit message is clear and informative. For guidance on crafting effective commit messages, refer to the How to write a git commit message guide. We prefer the commit message to be included in the PR body itself rather than a link to an external website (ie: Jira ticket).
+- [ ] 📝 Ensure your commit message is clear and informative. Refer to the How to write a git commit message guide. Include the commit message in the PR body rather than linking to an external site (e.g., Jira ticket).
 
-- [ ] ♽ Before submitting a PR, run make test lint to avoid unnecessary CI processing. For an even more efficient workflow, consider installing [pre-commit](https://pre-commit.com/) and running pre-commit install in the root of this repository.
+- [ ] ♽ Run make test lint before submitting a PR to avoid unnecessary CI processing. Consider installing [pre-commit](https://pre-commit.com/) and running pre-commit install in the repository root for an efficient workflow.
 
-- [ ] ✨ We use linters to maintain clean and consistent code. Please ensure you've run make lint before submitting a PR. Some linters offer a --fix mode, which can be executed with the command make fix-linters (ensure [markdownlint](https://github.com/DavidAnson/markdownlint) and [golangci-lint](https://github.com/golangci/golangci-lint) tools are installed first).
+- [ ] ✨ We use linters to maintain clean and consistent code. Run make lint before submitting a PR. Some linters offer a --fix mode, executable with make fix-linters (ensure [markdownlint](https://github.com/DavidAnson/markdownlint) and [golangci-lint](https://github.com/golangci/golangci-lint) are installed).
 
-- [ ] 📖 If you're introducing a user-facing feature or changing existing behavior, please ensure it's properly documented.
+- [ ] 📖 Document any user-facing features or changes in behavior.
 
-- [ ] 🧪 While 100% coverage isn't a requirement, we encourage unit tests for any code changes where possible.
+- [ ] 🧪 While 100% coverage isn't required, we encourage unit tests for code changes where possible.
 
-- [ ] 🎁 If feasible, please check if an end-to-end test can be added. See [README](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/README.md) for more details.
+- [ ] 🎁 If feasible, add an end-to-end test. See [README](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/README.md) for details.
 
-- [ ] 🔎 If there's any flakiness in the CI tests, don't necessarily ignore it. It's better to address the issue before merging, or provide a valid reason to bypass it if fixing isn't possible (e.g., token rate limitations).
+- [ ] 🔎 Address any CI test flakiness before merging, or provide a valid reason to bypass it (e.g., token rate limitations).
 
-- If you are adding a provider feature, please fill up the following details which provider this feature supports:
+- If adding a provider feature, fill in the following details:
 
-  - [ ] GitHub
-  - [ ] GitHub Webhook
-  - [ ] Gitea
-  - [ ] Gitlab
-  - [ ] Bitbucket Cloud
-  - [ ] Bitbucket Server/DC
+| Git Provider     | Supported |
+|------------------|-----------|
+| GitHub App       | ✅️        |
+| GitHub Webhook   | ❌️        |
+| Gitea            | ❌️        |
+| GitLab           | ❌️        |
+| Bitbucket Cloud  | ❌️        |
+| Bitbucket Server | ❌️        |
 
-  (make sure to update the documentation accordingly)
+  (update the documentation accordingly)
