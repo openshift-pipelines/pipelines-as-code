@@ -9,9 +9,7 @@ import sys
 import tempfile
 import time
 
-
 import requests
-
 
 GITEA_USER = os.environ.get("GITEA_USER", "pac")
 GITEA_PASSWORD = os.environ.get("GITEA_PASSWORD", "pac")
@@ -250,7 +248,7 @@ metadata:
 spec:
   port:
     targetPort: http-listener
-  { tls_mode }
+  {tls_mode}
   to:
     kind: Service
     name: gitea
