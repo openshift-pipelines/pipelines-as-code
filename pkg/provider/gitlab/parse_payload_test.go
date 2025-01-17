@@ -72,7 +72,7 @@ func TestParsePayload(t *testing.T) {
 			want: &info.Event{
 				EventType:     "Merge Request",
 				TriggerTarget: "pull_request",
-				Organization:  "hello-this-is-me-ze",
+				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
 			},
 		},
@@ -93,7 +93,7 @@ func TestParsePayload(t *testing.T) {
 			want: &info.Event{
 				EventType:     "Push",
 				TriggerTarget: "push",
-				Organization:  "hello-this-is-me-ze",
+				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
 			},
 		},
@@ -106,7 +106,7 @@ func TestParsePayload(t *testing.T) {
 			want: &info.Event{
 				EventType:     "Tag Push",
 				TriggerTarget: "push",
-				Organization:  "hello-this-is-me-ze",
+				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
 			},
 		},
@@ -119,7 +119,7 @@ func TestParsePayload(t *testing.T) {
 			want: &info.Event{
 				EventType:     opscomments.NoOpsCommentEventType.String(),
 				TriggerTarget: "pull_request",
-				Organization:  "hello-this-is-me-ze",
+				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
 			},
 		},
@@ -132,7 +132,7 @@ func TestParsePayload(t *testing.T) {
 			want: &info.Event{
 				EventType:     opscomments.TestSingleCommentEventType.String(),
 				TriggerTarget: "pull_request",
-				Organization:  "hello-this-is-me-ze",
+				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
 				State:         info.State{TargetTestPipelineRun: "dummy"},
 			},
@@ -146,7 +146,7 @@ func TestParsePayload(t *testing.T) {
 			want: &info.Event{
 				EventType:     opscomments.CancelCommentAllEventType.String(),
 				TriggerTarget: "pull_request",
-				Organization:  "hello-this-is-me-ze",
+				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
 			},
 		},
@@ -159,7 +159,7 @@ func TestParsePayload(t *testing.T) {
 			want: &info.Event{
 				EventType:     opscomments.CancelCommentSingleEventType.String(),
 				TriggerTarget: "pull_request",
-				Organization:  "hello-this-is-me-ze",
+				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
 				State:         info.State{TargetCancelPipelineRun: "dummy"},
 			},

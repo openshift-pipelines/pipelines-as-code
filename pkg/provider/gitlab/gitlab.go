@@ -95,7 +95,6 @@ func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event)
 // stuff.
 func getOrgRepo(pathWithNamespace string) (string, string) {
 	org := filepath.Dir(pathWithNamespace)
-	org = strings.ReplaceAll(org, "/", "-")
 	return org, filepath.Base(pathWithNamespace)
 }
 

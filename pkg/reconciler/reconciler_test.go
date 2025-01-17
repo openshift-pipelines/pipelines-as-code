@@ -134,6 +134,8 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 				keys.Repository:     pr.GetName(),
 				keys.OriginalPRName: pr.GetName(),
 				keys.CheckRunID:     tt.checkRunID,
+				keys.URLOrg:         "random",
+				keys.URLRepository:  "app",
 			}
 			pr.Labels = map[string]string{
 				keys.Repository: pr.GetName(),
