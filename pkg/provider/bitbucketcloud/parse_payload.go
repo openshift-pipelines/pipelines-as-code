@@ -78,13 +78,11 @@ func parsePayloadType(event, rawPayload string) (interface{}, error) {
 
 	var localEvent string
 	if strings.HasPrefix(event, "pullrequest:") {
-		if !provider.Valid(event, []string{
-			"pullrequest:created", "pullrequest:updated", "pullrequest:comment_created",
-		}) {
+		if !provider.Valid(event, PullRequestAllEvents) {
 			return nil, fmt.Errorf("event %s is not supported", event)
 		}
 		localEvent = triggertype.PullRequest.String()
-	} else if event == "repo:push" {
+	} else if provider.Valid(event, pushRepo) {
 		localEvent = "push"
 	}
 
@@ -125,15 +123,17 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	}
 
 	processedEvent.Event = eventInt
-
 	switch e := eventInt.(type) {
 	case *types.PullRequestEvent:
-		if provider.Valid(event, []string{"pullrequest:created", "pullrequest:updated"}) {
-			processedEvent.TriggerTarget = triggertype.PullRequest
+		processedEvent.TriggerTarget = triggertype.PullRequest
+		switch {
+		case provider.Valid(event, pullRequestsCreated):
 			processedEvent.EventType = triggertype.PullRequest.String()
-		} else if provider.Valid(event, []string{"pullrequest:comment_created"}) {
-			processedEvent.TriggerTarget = triggertype.PullRequest
+		case provider.Valid(event, pullRequestsCommentCreated):
 			opscomments.SetEventTypeAndTargetPR(processedEvent, e.Comment.Content.Raw)
+		case provider.Valid(event, pullRequestsClosed):
+			processedEvent.EventType = string(triggertype.PullRequestClosed)
+			processedEvent.TriggerTarget = triggertype.PullRequestClosed
 		}
 		processedEvent.Organization = e.Repository.Workspace.Slug
 		processedEvent.Repository = strings.Split(e.Repository.FullName, "/")[1]

@@ -108,6 +108,7 @@ click on it and follow the pipeline execution directly there.
 ### Cancelling in-progress PipelineRuns
 
 {{< tech_preview "Cancelling in progress PipelineRuns" >}}
+{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="true" bitbucket_server="false" >}}
 
 You can choose to cancel a PipelineRun that is currently in progress. This can
 be done by adding the annotation `pipelinesascode.tekton.dev/cancel-in-progress:
@@ -124,9 +125,12 @@ The cancellation only applies to `PipelineRuns` within the scope of the current
 cancel-in-progress annotation, only the `PipelineRun` in the specific PullRequest
 will be cancelled. This prevents interference between separate PullRequests.
 
-The cancellation of the older `PipelineRuns` will be executed only after the
-latest `PipelineRun` has been created and started successfully. This annotation
-cannot guarantee that only one `PipelineRun` will be active at any given time.
+Older `PipelineRuns` are canceled only after the latest `PipelineRun` is
+successfully created and started. This annotation does not guarantee that only
+one `PipelineRun` will be active at a time.
+
+If a `PipelineRun` is in progress and the Pull Request is closed or declined,
+the `PipelineRun` will be canceled.
 
 Currently, `cancel-in-progress` cannot be used in conjunction with the [concurrency
 limit]({{< relref "/docs/guide/repositorycrd.md#concurrency" >}}) setting.

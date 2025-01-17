@@ -13,19 +13,19 @@ import (
 	"time"
 
 	"github.com/google/go-github/v66/github"
+	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
+	"gotest.tools/v3/golden"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
-
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
-	"gotest.tools/v3/assert"
-	"gotest.tools/v3/assert/cmp"
-	"gotest.tools/v3/golden"
 )
 
 func TestGithubPullRequest(t *testing.T) {
@@ -277,7 +277,7 @@ func TestGithubSecondTestExplicitelyNoMatchedPipelineRun(t *testing.T) {
 func TestGithubSecondCancelInProgress(t *testing.T) {
 	ctx := context.Background()
 	g := tgithub.PRTest{
-		Label:            "Github test implicit comment",
+		Label:            "Github cancel in progress",
 		YamlFiles:        []string{"testdata/pipelinerun-cancel-in-progress.yaml"},
 		SecondController: true,
 		NoStatusCheck:    true,
@@ -342,3 +342,56 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 	}
 	assert.Assert(t, foundCancelled, "No Pipelines has been found cancedl in NS %s", g.TargetNamespace)
 }
+
+func TestGithubSecondCancelInProgressPRClosed(t *testing.T) {
+	ctx := context.Background()
+	g := tgithub.PRTest{
+		Label:            "Github cancel in progress while pr is closed",
+		YamlFiles:        []string{"testdata/pipelinerun-cancel-in-progress.yaml"},
+		SecondController: true,
+		NoStatusCheck:    true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
+	}
+	err := twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Closing the PullRequest")
+	_, _, err = g.Provider.Client.PullRequests.Edit(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber, &github.PullRequest{
+		State: github.String("closed"),
+	})
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be canceled")
+	time.Sleep(10 * time.Second)
+
+	g.Cnx.Clients.Log.Infof("Checking that the pipelinerun has been canceled")
+
+	prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(context.Background(), metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
+
+	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been canceled")
+
+	res, resp, err := g.Provider.Client.Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
+		AppID:       g.Provider.ApplicationID,
+		ListOptions: github.ListOptions{},
+	})
+	assert.NilError(t, err)
+	assert.Equal(t, resp.StatusCode, 200)
+
+	assert.Equal(t, res.CheckRuns[0].GetConclusion(), "cancelled")
+}
+
+// Local Variables:
+// compile-command: "go test -tags=e2e -v -info TestGithubPullRequest$ ."
+// End:

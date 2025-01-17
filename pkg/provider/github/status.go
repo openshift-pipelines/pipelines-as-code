@@ -366,6 +366,9 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statu
 			// for unauthorized user set title as Pending approval
 			statusOpts.Summary = "is waiting for approval."
 		}
+	case "cancelled":
+		statusOpts.Title = "Cancelled"
+		statusOpts.Summary = "has been <b>cancelled</b>."
 	case "neutral":
 		statusOpts.Title = "Unknown"
 		statusOpts.Summary = "doesn't know what happened with this commit."

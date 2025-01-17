@@ -53,7 +53,7 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, bitbucketcloud.Provid
 	return run, e2eoptions, bbc, nil
 }
 
-func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, bprovider bitbucketcloud.Provider, opts options.E2E, prNumber int, ref, targetNS string) {
+func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, bprovider bitbucketcloud.Provider, opts options.E2E, prNumber int, ref, targetNS string, noerror bool) {
 	if os.Getenv("TEST_NOCLEANUP") == "true" {
 		runcnx.Clients.Log.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
 		return
@@ -64,7 +64,11 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, bprovider b
 		Owner:    opts.Organization,
 		RepoSlug: opts.Repo,
 	})
-	assert.NilError(t, err)
+	if noerror {
+		runcnx.Clients.Log.Infof("Error closing PR #%d: %v", prNumber, err)
+	} else {
+		assert.NilError(t, err)
+	}
 	runcnx.Clients.Log.Infof("Deleting ref %s", ref)
 	err = bprovider.Client.Repositories.Repository.DeleteBranch(
 		&bitbucket.RepositoryBranchDeleteOptions{
@@ -73,7 +77,11 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, bprovider b
 			RefName:  ref,
 		},
 	)
-	assert.NilError(t, err)
+	if noerror {
+		runcnx.Clients.Log.Infof("Error closing PR #%d: %v", prNumber, err)
+	} else {
+		assert.NilError(t, err)
+	}
 
 	repository.NSTearDown(ctx, t, runcnx, targetNS)
 }

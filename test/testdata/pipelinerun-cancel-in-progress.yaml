@@ -17,4 +17,4 @@ spec:
             - name: task
               image: registry.access.redhat.com/ubi9/ubi-micro
               script: |
-                sleep 60
+                sleep 120

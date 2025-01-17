@@ -271,7 +271,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	entries := map[string]string{".tekton/pr.yaml": processed}
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	processed, err = payload.ApplyTemplate("testdata/pipelinerun-alt.yaml", map[string]string{
 		"TargetNamespace": topts.TargetNS,
@@ -282,7 +282,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	entries = map[string]string{".tekton/pr.yaml": processed}
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	// loop until we get the status
 	gotPipelineRunPending := false
@@ -341,7 +341,7 @@ func TestGiteaRetestAfterPush(t *testing.T) {
 		BaseRefName:   topts.DefaultBranch,
 		PushForce:     true,
 	}
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 	topts.CheckForStatus = "success"
 	tgitea.WaitForStatus(t, topts, "heads/"+topts.TargetRefName, "", false)
 }
@@ -417,7 +417,7 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 		BaseRefName:        topts.DefaultBranch,
 		NoCheckOutFromBase: true,
 	}
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, topts.Opts.Repo, gitea.CreatePullRequestOption{
 		Title: "Test Pull Request - " + targetRef,
@@ -456,6 +456,45 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 		}
 	}
 	assert.Equal(t, cancelledPr, 2, "tweo pr should have been canceled")
+}
+
+func TestGiteaConfigCancelInProgressAfterPRClosed(t *testing.T) {
+	prmap := map[string]string{".tekton/pr.yaml": "testdata/pipelinerun-cancel-in-progress.yaml"}
+	topts := &tgitea.TestOpts{
+		TargetEvent:    triggertype.PullRequest.String(),
+		YAMLFiles:      prmap,
+		CheckForStatus: "",
+		ExpectEvents:   false,
+		Regexp:         nil,
+	}
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+
+	time.Sleep(3 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+	waitOpts := twait.Opts{
+		RepoName:        topts.TargetRefName,
+		Namespace:       topts.TargetNS,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       topts.SHA,
+	}
+	err := twait.UntilPipelineRunCreated(context.Background(), topts.ParamsRun.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	closed := gitea.StateClosed
+	_, _, err = topts.GiteaCNX.Client.EditPullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index, gitea.EditPullRequestOption{
+		State: &closed,
+	})
+	assert.NilError(t, err)
+
+	topts.ParamsRun.Clients.Log.Info("Waiting 10 seconds to check things has been canceled")
+	time.Sleep(10 * time.Second) // “Evil does not sleep. It waits.” - Galadriel
+
+	prs, err := topts.ParamsRun.Clients.Tekton.TektonV1().PipelineRuns(topts.TargetNS).List(context.Background(), metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
+
+	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been canceled")
 }
 
 func TestGiteaPush(t *testing.T) {
@@ -985,12 +1024,12 @@ func verifyProvenance(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cNam
 		BaseRefName:        topts.DefaultBranch,
 		NoCheckOutFromBase: true,
 	}
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 	prmap = map[string]string{".tekton/notgonnatobetested.yaml": "testdata/pipelinerun-provenance-test.yaml"}
 	entries, err = payload.GetEntries(prmap, topts.TargetNS, topts.DefaultBranch, topts.TargetEvent, map[string]string{})
 	assert.NilError(t, err)
 	scmOpts.TargetRefName = targetRef
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, targetRef, gitea.CreatePullRequestOption{
 		Title: "Test Pull Request - " + targetRef,
@@ -1068,10 +1107,10 @@ func TestGiteaPushToTagGreedy(t *testing.T) {
 		TargetRefName: topts.DefaultBranch,
 		BaseRefName:   topts.DefaultBranch,
 	}
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	scmOpts.TargetRefName = "refs/tags/v1.0.0"
-	scm.PushFilesToRefGit(t, scmOpts, map[string]string{"README.md": "hello new version from tag"})
+	_ = scm.PushFilesToRefGit(t, scmOpts, map[string]string{"README.md": "hello new version from tag"})
 	waitOpts := twait.Opts{
 		RepoName:  topts.TargetNS,
 		Namespace: topts.TargetNS,
