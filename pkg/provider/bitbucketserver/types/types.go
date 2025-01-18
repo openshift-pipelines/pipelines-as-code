@@ -22,9 +22,18 @@ type PullRequestEvent struct {
 	PreviousComment string `json:"previousComment"`
 }
 
+type Ref struct {
+	ID        string `json:"id"`
+	DisplayID string `json:"displayId"`
+	Type      string `json:"type"`
+}
+
 type PushRequestEventChange struct {
-	ToHash string `json:"toHash"`
-	RefID  string `json:"refId"`
+	Ref      Ref    `json:"ref"`
+	FromHash string `json:"fromHash"`
+	ToHash   string `json:"toHash"`
+	RefID    string `json:"refId"`
+	Type     string `json:"type"`
 }
 
 type PushRequestEvent struct {
