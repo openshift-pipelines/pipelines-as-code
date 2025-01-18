@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 package test
 
 import (
@@ -29,22 +26,21 @@ func TestBitbucketServerPullRequest(t *testing.T) {
 	runcnx.Clients.Log.Infof("Repository %s has been created", repo.Name)
 	defer tbbs.TearDownNs(ctx, t, runcnx, targetNS)
 
-	title := "TestPullRequest - " + targetNS
 	numberOfFiles := 5
 	files := map[string]string{}
 	for i := range numberOfFiles {
-		files[fmt.Sprintf("pipelinerun-%d.yaml", i)] = "testdata/pipelinerun.yaml"
+		files[fmt.Sprintf(".tekton/pipelinerun-%d.yaml", i)] = "testdata/pipelinerun.yaml"
 	}
 
-	pr := tbbs.CreatePR(ctx, t, client, runcnx, bitbucketWSOwner, files, title, targetNS)
+	pr := tbbs.CreatePR(ctx, t, client, runcnx, opts, repo, files, bitbucketWSOwner, targetNS)
 	runcnx.Clients.Log.Infof("Pull Request with title '%s' is created", pr.Title)
-	defer tbbs.TearDownBranch(ctx, t, runcnx, client, pr.Number, bitbucketWSOwner, targetNS)
+	defer tbbs.TearDown(ctx, t, runcnx, client, pr.Number, bitbucketWSOwner, targetNS)
 
 	successOpts := wait.SuccessOpt{
 		TargetNS:        targetNS,
 		OnEvent:         triggertype.PullRequest.String(),
-		NumberofPRMatch: 5,
-		MinNumberStatus: 5,
+		NumberofPRMatch: numberOfFiles,
+		MinNumberStatus: numberOfFiles,
 	}
 	wait.Succeeded(ctx, t, runcnx, opts, successOpts)
 }

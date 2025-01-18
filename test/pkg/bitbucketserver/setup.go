@@ -42,6 +42,8 @@ func Setup(ctx context.Context) (context.Context, *params.Run, options.E2E, *scm
 	e2eoptions := options.E2E{
 		Organization: split[0],
 		Repo:         split[1],
+		UserName:     bitbucketServerUser,
+		Password:     bitbucketServerToken,
 	}
 
 	event := info.NewEvent()
@@ -78,7 +80,7 @@ func TearDownNs(ctx context.Context, t *testing.T, runcnx *params.Run, targetNS 
 	repository.NSTearDown(ctx, t, runcnx, targetNS)
 }
 
-func TearDownBranch(ctx context.Context, t *testing.T, runcnx *params.Run, client *scm.Client, prID int, orgAndRepo, ref string) {
+func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, client *scm.Client, prID int, orgAndRepo, ref string) {
 	if os.Getenv("TEST_NOCLEANUP") == "true" {
 		runcnx.Clients.Log.Infof("Not cleaning up and closing PR since TEST_NOCLEANUP is set")
 		return

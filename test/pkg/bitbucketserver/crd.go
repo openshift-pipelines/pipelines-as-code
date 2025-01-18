@@ -54,7 +54,7 @@ func CreateCRD(ctx context.Context, t *testing.T, client *scm.Client, run *param
 	}
 
 	err = pacrepo.CreateRepo(ctx, targetNS, run, repository)
-	assert.NilError(t, err)
+	assert.NilError(t, err, "error creating PipelinesAsCode Repository CR: %v", err)
 
 	return repo
 }
