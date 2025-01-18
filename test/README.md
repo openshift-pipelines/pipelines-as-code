@@ -41,8 +41,8 @@ and search for **installation** which looks something like below
 - `TEST_GITHUB_REPO_OWNER_WEBHOOK` - A repository/owner github repo that is configured with github webhooks and
 this repo should differ from the one which is configured as part of `TEST_GITHUB_REPO_OWNER_GITHUBAPP` env.
 - `TEST_BITBUCKET_CLOUD_API_URL` - Bitbucket Cloud Api URL: probably: `https://api.bitbucket.org/2.0`
-- `TEST_BITBUCKET_CLOUD_USER` - Bitbucket Cloud user
-- `TEST_BITBUCKET_CLOUD_E2E_REPOSITORY` - Bitbucket Cloud repository (ie: `project/repo`)
+- `TEST_BITBUCKET_CLOUD_USER` - Bitbucket Cloud Username (you can get from "Personal Bitbucket settings" in UI)
+- `TEST_BITBUCKET_CLOUD_E2E_REPOSITORY` - Bitbucket Cloud repository (i.e. `project/repo`)
 - `TEST_BITBUCKET_CLOUD_TOKEN` - Bitbucket Cloud token
 - `TEST_GITLAB_API_URL` - Gitlab API URL i.e: `https://gitlab.com`
 - `TEST_GITLAB_PROJECT_ID` - Gitlab project ID (you can get it in the repo details/settings)
@@ -52,6 +52,11 @@ this repo should differ from the one which is configured as part of `TEST_GITHUB
 - `TEST_GITEA_PASSWORD` - set password as **pac**
 - `TEST_GITEA_USERNAME` - set username as **pac**
 - `TEST_GITEA_REPO_OWNER` - set repo owner as **pac/pac**
+- `TEST_BITBUCKET_SERVER_USER` - Bitbucket Server Username
+- `TEST_BITBUCKET_SERVER_TOKEN` - Bitbucket Server token
+- `TEST_BITBUCKET_SERVER_E2E_REPOSITORY` - Bitbucket Server repository (i.e. `project/repo`)
+- `TEST_BITBUCKET_SERVER_API_URL` - URL where your Bitbucket Server instance is running.
+- `TEST_BITBUCKET_SERVER_WEBHOOK_SECRET` - Webhook secret
 
 You don't need to configure all of those if you restrict running your e2e tests to a subset.
 
