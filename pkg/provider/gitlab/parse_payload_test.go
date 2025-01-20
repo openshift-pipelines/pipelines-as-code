@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"gotest.tools/v3/assert"
@@ -72,6 +73,19 @@ func TestParsePayload(t *testing.T) {
 			want: &info.Event{
 				EventType:     "Merge Request",
 				TriggerTarget: "pull_request",
+				Organization:  "hello/this/is/me/ze",
+				Repository:    "project",
+			},
+		},
+		{
+			name: "merge event closed",
+			args: args{
+				event:   gitlab.EventTypeMergeRequest,
+				payload: sample.MREventAsJSON("close", ""),
+			},
+			want: &info.Event{
+				EventType:     "Merge Request",
+				TriggerTarget: triggertype.PullRequestClosed,
 				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
 			},

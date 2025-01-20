@@ -40,7 +40,7 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - uses: ko-build/setup-ko@v0.7
+      - uses: ko-build/setup-ko@v0.8
 
       - name: Install gosmee
         uses: jaxxstorm/action-install-gh-release@v1.14.0

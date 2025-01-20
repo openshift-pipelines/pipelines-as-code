@@ -264,7 +264,7 @@ func PushToPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider,
 		TargetRefName: topts.TargetRefName,
 		BaseRefName:   topts.DefaultBranch,
 	}
-	scm.PushFilesToRefGit(t, scmOpts, entries)
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 }
 
 func CreateAccess(topts *TestOpts, touser, accessMode string) error {

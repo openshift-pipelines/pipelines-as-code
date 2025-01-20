@@ -341,7 +341,7 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 
 	//nolint:exhaustive // we don't need to handle all cases
 	switch runevent.TriggerTarget {
-	case triggertype.PullRequest:
+	case triggertype.PullRequest, triggertype.PullRequestClosed:
 		opt := gitea.ListPullRequestFilesOptions{ListOptions: gitea.ListOptions{Page: 1, PageSize: 50}}
 		shouldGetNextPage := false
 		for {

@@ -183,7 +183,7 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 
 	// this went too fast so at least we check it was requested for it
 	if !cancelled {
-		reg := regexp.MustCompile(".*pipelinerun.*is done.*skipping cancellation.*")
+		reg := regexp.MustCompile(".*pipelinerun.*skipping cancelling pipelinerun.*on-push.*already done.*")
 		err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "controller", github.Int64(20))
 		if err != nil {
 			t.Errorf("neither a cancelled pipelinerun in repo status or a request to skip the cancellation in the controller log was found: %s", err.Error())

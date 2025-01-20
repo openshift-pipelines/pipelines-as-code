@@ -13,13 +13,14 @@ import (
 
 func TestProvider_Detect(t *testing.T) {
 	tests := []struct {
-		name          string
-		wantErrString string
-		isBC          bool
-		processReq    bool
-		event         interface{}
-		eventType     string
-		wantReason    string
+		name           string
+		wantErrString  string
+		isBC           bool
+		processReq     bool
+		event          interface{}
+		eventType      string
+		wantReason     string
+		wantLogSnippet string
 	}{
 		{
 			name:       "not a bitbucket cloud Event",
@@ -28,10 +29,11 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: false,
 		},
 		{
-			name:       "invalid bitbucket cloud Event",
-			eventType:  "validator",
-			isBC:       false,
-			processReq: false,
+			name:           "invalid bitbucket cloud Event",
+			eventType:      "validator",
+			isBC:           false,
+			processReq:     false,
+			wantLogSnippet: "skip processing event",
 		},
 		{
 			event: types.PushRequestEvent{
@@ -132,8 +134,8 @@ func TestProvider_Detect(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bprovider := Provider{}
-			logger, _ := logger.GetLogger()
+			logger, logCatcher := logger.GetLogger()
+			bprovider := Provider{Logger: logger}
 
 			jeez, err := json.Marshal(tt.event)
 			if err != nil {
@@ -155,6 +157,10 @@ func TestProvider_Detect(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Equal(t, tt.isBC, isBS)
 			assert.Equal(t, tt.processReq, processReq)
+
+			if tt.wantLogSnippet != "" {
+				assert.Assert(t, logCatcher.FilterMessageSnippet(tt.wantLogSnippet).Len() > 0, logCatcher.All())
+			}
 		})
 	}
 }
