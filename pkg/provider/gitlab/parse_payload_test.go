@@ -86,7 +86,7 @@ func TestParsePayload(t *testing.T) {
 			want: &info.Event{
 				EventType:     "Merge Request",
 				TriggerTarget: triggertype.PullRequestClosed,
-				Organization:  "hello-this-is-me-ze",
+				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
 			},
 		},
