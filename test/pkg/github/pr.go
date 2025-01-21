@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"go.uber.org/zap"
@@ -72,7 +73,7 @@ func PushFilesToRef(ctx context.Context, client *ghlib.Client, commitMessage, ba
 		},
 	}, &ghlib.CreateCommitOptions{})
 	if err != nil {
-		return "", nil, err
+		return "", nil, fmt.Errorf("error creating commit: %w", err)
 	}
 
 	ref := &ghlib.Reference{
@@ -83,9 +84,8 @@ func PushFilesToRef(ctx context.Context, client *ghlib.Client, commitMessage, ba
 	}
 	vref, _, err := client.Git.CreateRef(ctx, owner, repo, ref)
 	if err != nil {
-		return "", nil, err
+		return "", nil, fmt.Errorf("error creating ref: %w", err)
 	}
-
 	return commit.GetSHA(), vref, nil
 }
 
@@ -155,6 +155,7 @@ func (g *PRTest) RunPullRequest(ctx context.Context, t *testing.T) {
 	sha, vref, err := PushFilesToRef(ctx, ghcnx.Client, g.CommitTitle, repoinfo.GetDefaultBranch(), targetRefName,
 		opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
+
 	g.Logger.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
 	number, err := PRCreate(ctx, runcnx, ghcnx, opts.Organization,
 		opts.Repo, targetRefName, repoinfo.GetDefaultBranch(), g.CommitTitle)
@@ -197,14 +198,21 @@ func (g *PRTest) TearDown(ctx context.Context, t *testing.T) {
 	if g.TargetNamespace != "" {
 		repository.NSTearDown(ctx, t, g.Cnx, g.TargetNamespace)
 	}
-	g.Logger.Infof("Deleting Ref %s", g.TargetRefName)
-	_, err := g.Provider.Client.Git.DeleteRef(ctx, g.Options.Organization, g.Options.Repo, g.TargetRefName)
-	assert.NilError(t, err)
+	if g.TargetRefName != options.MainBranch {
+		branch := fmt.Sprintf("heads/%s", filepath.Base(g.TargetRefName))
+		g.Logger.Infof("Deleting Ref %s", branch)
+		_, err := g.Provider.Client.Git.DeleteRef(ctx, g.Options.Organization, g.Options.Repo, branch)
+		assert.NilError(t, err)
+	}
 }
 
 func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-push")
-	targetBranch := targetNS
+
+	targetBranch := g.TargetRefName
+	if targetBranch == "" {
+		targetBranch = targetNS
+	}
 	targetEvent := "push"
 	ctx, runcnx, opts, ghcnx, err := Setup(ctx, g.SecondController, g.Webhook)
 	assert.NilError(t, err)
@@ -235,19 +243,34 @@ func (g *PRTest) RunPushRequest(ctx context.Context, t *testing.T) {
 		targetNS, targetBranch, targetEvent, map[string]string{})
 	assert.NilError(t, err)
 
-	targetRefName := fmt.Sprintf("refs/heads/%s", targetBranch)
-	sha, vref, err := PushFilesToRef(ctx, ghcnx.Client, logmsg, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
-	g.Logger.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
+	targetRefName := targetBranch
+	cloneURL, err := scm.MakeGitCloneURL(repoinfo.GetCloneURL(), "git", *ghcnx.Token)
+	assert.NilError(t, err)
+	scmOpts := scm.Opts{
+		GitURL:        cloneURL,
+		TargetRefName: targetRefName,
+		BaseRefName:   repoinfo.GetDefaultBranch(),
+		WebURL:        repoinfo.GetHTMLURL(),
+		Log:           runcnx.Clients.Log,
+		CommitTitle:   logmsg,
+	}
+	scm.PushFilesToRefGit(t, &scmOpts, entries)
+	branch, _, err := ghcnx.Client.Repositories.GetBranch(ctx, opts.Organization, opts.Repo, targetBranch, 1)
+	assert.NilError(t, err)
+	sha := branch.GetCommit().GetSHA()
+	g.Logger.Infof("Commit %s has been created and pushed to %s in branch %s", sha, branch.GetCommit().GetHTMLURL(), branch.GetName())
 	assert.NilError(t, err)
 
-	sopt := wait.SuccessOpt{
-		Title:           logmsg,
-		OnEvent:         triggertype.Push.String(),
-		TargetNS:        targetNS,
-		NumberofPRMatch: len(g.YamlFiles),
-		SHA:             sha,
+	if !g.NoStatusCheck {
+		sopt := wait.SuccessOpt{
+			Title:           logmsg,
+			OnEvent:         triggertype.Push.String(),
+			TargetNS:        targetNS,
+			NumberofPRMatch: len(g.YamlFiles),
+			SHA:             sha,
+		}
+		wait.Succeeded(ctx, t, runcnx, opts, sopt)
 	}
-	wait.Succeeded(ctx, t, runcnx, opts, sopt)
 
 	g.Cnx = runcnx
 	g.Options = opts
