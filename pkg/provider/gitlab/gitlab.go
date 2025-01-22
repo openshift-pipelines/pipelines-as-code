@@ -138,6 +138,15 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	}
 	v.Token = &runevent.Provider.Token
 
+	// In a scenario where the source repository is forked and a merge request (MR) is created on the upstream
+	// repository, runevent.SourceProjectID will not be 0 when SetClient is called from the pac-watcher code.
+	// This is because, in the controller, SourceProjectID is set in the annotation of the pull request,
+	// and runevent.SourceProjectID is set before SetClient is called. Therefore, we need to take
+	// the ID from runevent.SourceProjectID.
+	if runevent.SourceProjectID > 0 {
+		v.sourceProjectID = runevent.SourceProjectID
+	}
+
 	// if we don't have sourceProjectID (ie: incoming-webhook) then try to set
 	// it ASAP if we can.
 	if v.sourceProjectID == 0 && runevent.Organization != "" && runevent.Repository != "" {
