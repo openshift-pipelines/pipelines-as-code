@@ -14,6 +14,8 @@ import (
 	"testing"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
+	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/stash"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
@@ -21,11 +23,11 @@ import (
 )
 
 var (
-	defaultAPIURL = "/api/1.0"
-	buildAPIURL   = "/build-status/1.0"
+	defaultAPIURL = "/rest/api/1.0"
+	buildAPIURL   = "/rest/build-status/1.0"
 )
 
-func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *http.ServeMux, func(), string) {
+func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *scm.Client, *http.ServeMux, func(), string) {
 	mux := http.NewServeMux()
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(defaultAPIURL+"/", http.StripPrefix(defaultAPIURL, mux))
@@ -46,10 +48,13 @@ func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *http.ServeMux, 
 		server.Close()
 	}
 
-	cfg := bbv1.NewConfiguration(server.URL)
+	cfg := bbv1.NewConfiguration(server.URL + "/rest")
 	cfg.HTTPClient = server.Client()
 	client := bbv1.NewAPIClient(ctx, cfg)
-	return client, mux, tearDown, server.URL
+
+	scmClient, _ := stash.New(server.URL)
+	scmClient.Client = server.Client()
+	return client, scmClient, mux, tearDown, server.URL
 }
 
 func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expectedCommentSubstr string, prID int) {
