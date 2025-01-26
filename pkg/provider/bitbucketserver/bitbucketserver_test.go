@@ -62,7 +62,7 @@ func TestGetTektonDir(t *testing.T) {
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
-			client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			client, _, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
 			defer tearDown()
 			v := &Provider{Logger: logger, baseURL: tURL, Client: client, projectKey: tt.event.Organization}
 			bbtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path)
@@ -172,7 +172,7 @@ func TestCreateStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			client, _, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
 			defer tearDown()
 			if tt.nilClient {
 				client = nil
@@ -234,7 +234,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			client, _, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
 			defer tearDown()
 			v := &Provider{Client: client, baseURL: tURL, defaultBranchLatestCommit: "1234", projectKey: tt.event.Organization}
 			bbtest.MuxFiles(t, mux, tt.event, tt.targetbranch, filepath.Dir(tt.path), tt.filescontents)
@@ -307,7 +307,7 @@ func TestSetClient(t *testing.T) {
 				_, _ = w.Write([]byte(`{"errors": [{"message": "Internal Server Error"}]}`))
 			},
 			apiURL:        "https://foo.bar/rest",
-			wantErrSubstr: "cannot get user foo: Status: 500",
+			wantErrSubstr: "cannot get user foo: Internal Server Error",
 		},
 		{
 			name: "good/url append /rest",
@@ -327,12 +327,12 @@ func TestSetClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			_, client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
 			defer tearDown()
 			if tt.muxUser != nil {
 				mux.HandleFunc("/users/foo", tt.muxUser)
 			}
-			v := &Provider{Client: bbclient, baseURL: tURL}
+			v := &Provider{ScmClient: client, baseURL: tURL}
 			err := v.SetClient(ctx, nil, tt.opts, nil, nil)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
@@ -370,7 +370,7 @@ func TestGetCommitInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			bbclient, _, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
 			bbtest.MuxCommitInfo(t, mux, tt.event, tt.commit)
 			bbtest.MuxDefaultBranch(t, mux, tt.event, tt.defaultBranch, tt.latestCommit)
 			defer tearDown()
@@ -452,6 +452,92 @@ func TestValidate(t *testing.T) {
 			if err := v.Validate(context.TODO(), nil, event); (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func TestRemoveLastSegment(t *testing.T) {
+	testCases := []struct {
+		name        string
+		inputURL    string
+		expectedURL string
+	}{
+		{
+			name:        "empty path",
+			inputURL:    "http://example.com",
+			expectedURL: "http://example.com",
+		},
+		{
+			name:        "root path",
+			inputURL:    "http://example.com/",
+			expectedURL: "http://example.com/",
+		},
+		{
+			name:        "single segment path",
+			inputURL:    "http://example.com/api",
+			expectedURL: "http://example.com/",
+		},
+		{
+			name:        "single segment path with trailing slash",
+			inputURL:    "http://example.com/api/",
+			expectedURL: "http://example.com/api", // Note: Original implementation removes trailing slash segment if it's the last one
+		},
+		{
+			name:        "multiple segments path",
+			inputURL:    "http://example.com/api/v1/users",
+			expectedURL: "http://example.com/api/v1",
+		},
+		{
+			name:        "multiple segments path with trailing slash",
+			inputURL:    "http://example.com/api/v1/users/",
+			expectedURL: "http://example.com/api/v1/users", // Note: Original implementation removes trailing slash segment if it's the last one
+		},
+		{
+			name:        "path with query parameters",
+			inputURL:    "http://example.com/api/v1/users?param=value",
+			expectedURL: "http://example.com/api/v1?param=value",
+		},
+		{
+			name:        "path with fragment",
+			inputURL:    "http://example.com/api/v1/users#fragment",
+			expectedURL: "http://example.com/api/v1#fragment",
+		},
+		{
+			name:        "path with query parameters and fragment",
+			inputURL:    "http://example.com/api/v1/users?param=value#fragment",
+			expectedURL: "http://example.com/api/v1?param=value#fragment",
+		},
+		{
+			name:        "https URL",
+			inputURL:    "https://example.com/api/v1/users",
+			expectedURL: "https://example.com/api/v1",
+		},
+		{
+			name:        "no host, just path",
+			inputURL:    "/api/v1/users",
+			expectedURL: "/api/v1",
+		},
+		{
+			name:        "just root path",
+			inputURL:    "/",
+			expectedURL: "/",
+		},
+		{
+			name:        "empty string",
+			inputURL:    "",
+			expectedURL: "", // Behavior for empty string input might be debatable, but based on the logic, it becomes "/"
+		},
+		{
+			name:        "path with double slashes",
+			inputURL:    "http://example.com/api//v1/users", // Double slashes in path
+			expectedURL: "http://example.com/api//v1",       // Double slashes are preserved by net/url and strings.Split
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actualURL := removeLastSegment(tc.inputURL)
+			assert.Equal(t, actualURL, tc.expectedURL)
 		})
 	}
 }

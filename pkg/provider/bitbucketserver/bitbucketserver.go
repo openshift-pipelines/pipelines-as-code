@@ -4,11 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/google/go-github/v66/github"
+	"github.com/jenkins-x/go-scm/scm"
+	"github.com/jenkins-x/go-scm/scm/driver/stash"
+	"github.com/jenkins-x/go-scm/scm/transport/oauth2"
 	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
@@ -27,7 +31,8 @@ const taskStatusTemplate = `
 var _ provider.Interface = (*Provider)(nil)
 
 type Provider struct {
-	Client                    *bbv1.APIClient
+	Client                    *bbv1.APIClient // temporarily keeping it after the refactor finishes, will be removed
+	ScmClient                 *scm.Client
 	Logger                    *zap.SugaredLogger
 	run                       *params.Run
 	pacInfo                   *info.PacOpts
@@ -218,6 +223,25 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path,
 	return ret, err
 }
 
+func removeLastSegment(urlStr string) string {
+	u, _ := url.Parse(urlStr)
+	segments := strings.Split(u.Path, "/")
+	switch {
+	case len(segments) > 1:
+		segments = segments[:len(segments)-1]
+	case (len(segments) == 1 && segments[0] != "") || u.Path == "/":
+		segments = []string{""}
+	}
+
+	newPath := strings.Join(segments, "/")
+	if newPath == "" && strings.HasPrefix(u.Path, "/") {
+		newPath = "/" // Ensure root path is correctly represented as "/"
+	}
+
+	u.Path = newPath
+	return u.String()
+}
+
 func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
 	if event.Provider.User == "" {
 		return fmt.Errorf("no spec.git_provider.user has been set in the repo crd")
@@ -245,9 +269,26 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	if v.Client == nil {
 		v.Client = bbv1.NewAPIClient(ctx, cfg)
 	}
+
+	if v.ScmClient == nil {
+		client, err := stash.New(removeLastSegment(event.Provider.URL)) // remove `/rest` from url
+		if err != nil {
+			return err
+		}
+		client.Client = &http.Client{
+			Transport: &oauth2.Transport{
+				Source: oauth2.StaticTokenSource(
+					&scm.Token{
+						Token: event.Provider.Token,
+					},
+				),
+			},
+		}
+		v.ScmClient = client
+	}
 	v.run = run
-	resp, err := v.Client.DefaultApi.GetUser(event.Provider.User)
-	if resp.Response != nil && resp.StatusCode == http.StatusUnauthorized {
+	_, resp, err := v.ScmClient.Users.FindLogin(ctx, event.Provider.User)
+	if resp != nil && resp.Status == http.StatusUnauthorized {
 		return fmt.Errorf("cannot get user %s with token: %w", event.Provider.User, err)
 	}
 	if err != nil {
