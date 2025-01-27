@@ -327,6 +327,9 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 			if pr.GetStatusCondition() == nil {
 				continue
 			}
+			if len(pr.Status.Conditions) == 0 {
+				continue
+			}
 			if pr.Status.Conditions[0].Reason == "Cancelled" {
 				g.Cnx.Clients.Log.Infof("PipelineRun %s has been canceled", pr.Name)
 				foundCancelled = true
