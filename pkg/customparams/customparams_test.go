@@ -265,6 +265,22 @@ func TestProcessTemplates(t *testing.T) {
 			},
 		},
 		{
+			name: "params/override params with no value via gitops arguments",
+			expected: map[string]string{
+				"event_type":      "push",
+				"hello":           `"yolo"`,
+				"trigger_comment": triggerCommentArgs,
+			},
+			event: &info.Event{EventType: "pull_request", TriggerComment: triggerCommentArgs},
+			repository: &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{
+					Params: &[]v1alpha1.Params{
+						{Name: "hello"},
+					},
+				},
+			},
+		},
+		{
 			name:               "params/skip with no name",
 			expectedLogSnippet: "no name has been set in params[0] of repo",
 			repository: &v1alpha1.Repository{
@@ -272,6 +288,19 @@ func TestProcessTemplates(t *testing.T) {
 					Params: &[]v1alpha1.Params{
 						{
 							Value: "batman",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:     "params/skip with no value",
+			expected: map[string]string{},
+			repository: &v1alpha1.Repository{
+				Spec: v1alpha1.RepositorySpec{
+					Params: &[]v1alpha1.Params{
+						{
+							Name: "empty-param",
 						},
 					},
 				},
