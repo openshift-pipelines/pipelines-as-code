@@ -23,4 +23,5 @@ spec:
                 echo "The event is {{ event_type }}"
                 echo "The custom1 value is {{ custom1 }}"
                 echo "The custom2 value is {{ custom2 }}"
-                echo "The custom3 value is {{ custom3 }}"
+                echo "The custom_no_initial_value value is {{ custom_no_initial_value }}"
+                echo "The custom_never_value value is {{ custom_never_value }}"

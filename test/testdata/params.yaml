@@ -22,3 +22,4 @@ spec:
                 echo "{{ no_match }}"
                 echo "{{ filter_on_body }}"
                 echo "{{ secret_nothere }}"
+                echo "{{ no_initial_value }}"
