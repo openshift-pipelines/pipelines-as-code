@@ -1,6 +1,7 @@
 The comment is:
-/hello-world\n\n revision=main custom1=thisone custom2="another one" custom3="a \"quote\""
+/hello-world\n\n revision=main custom1=thisone custom2="another one" custom_no_initial_value="a \"quote\""
 The event is on-comment
 The custom1 value is thisone
 The custom2 value is another one
-The custom3 value is a quote
+The custom_no_initial_value value is a quote
+The custom_never_value value is {{ custom_never_value }}

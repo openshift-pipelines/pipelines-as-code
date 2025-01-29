@@ -294,6 +294,9 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 					Key:  "unknowsecret",
 				},
 			},
+			{
+				Name: "no_initial_value",
+			},
 		},
 	}
 	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
@@ -317,7 +320,7 @@ func TestGiteaParamsOnRepoCR(t *testing.T) {
 	assert.NilError(t,
 		twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s,tekton.dev/pipelineTask=params",
 			repo.Status[0].PipelineRunName), "step-test-params-value", *regexp.MustCompile(
-			"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from a payload match\n{{ secret_nothere }}"), "", 2))
+			"I am the most Kawaī params\nSHHHHHHH\nFollow me on my ig #nofilter\n{{ no_match }}\nHey I show up from a payload match\n{{ secret_nothere }}\n{{ no_initial_value }}"), "", 2))
 }
 
 // TestGiteaParamsBodyHeadersCEL Test that we can access the pull request body and headers in params
