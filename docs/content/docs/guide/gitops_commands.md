@@ -29,6 +29,12 @@ Roses are red, violets are blue. Pipelines are bound to flake by design.
 /test <pipelinerun-name>
 ```
 
+{{< hint info >}}
+
+Please be aware that GitOps commands such as `/test` and others will not function on closed Pull Requests or Merge Requests.  
+
+{{< /hint >}}
+
 ## GitOps Commands on Pushed Commits
 
 If you want to trigger a GitOps command on a pushed commit, you can include the `GitOps` comments within your commit messages. These comments can be used to restart either all pipelines or specific ones. Here's how it works:
