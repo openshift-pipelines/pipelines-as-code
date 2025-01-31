@@ -116,7 +116,7 @@ a comprehensive documentation on how to use and configure Pipeline As Code.
 We ❤️ our contributors!
 
 If you want to help and contribute to the `pipelines-as-code` project, you can
-see the documentation here to get started: <https://pipelinesascode.com/dev/>
+see the documentation here to get started: <https://pipelinesascode.com/docs/dev/>
 (and thank you).
 
 ## Getting in touch

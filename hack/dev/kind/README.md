@@ -1,3 +1,3 @@
 # Usage
 
-See <https://pipelinesascode.com/dev/> for how to use it.
+See <https://pipelinesascode.com/docs/dev/> for how to use it.
