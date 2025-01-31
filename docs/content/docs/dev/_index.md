@@ -1,5 +1,6 @@
 ---
 title: Developer Resources
+weight: 15
 ---
 
 # How to get started developing for the Pipelines-as-Code project
@@ -253,7 +254,7 @@ major version.
 
 ## Documentation when we are doing the Release Process
 
-- See here [release-process]({{< relref "/dev/release-process.md" >}})
+- See here [release-process]({{< relref "/docs/dev/release-process.md" >}})
 
 ## How to update all dependencies in Pipelines-as-Code
 
