@@ -370,8 +370,10 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statu
 		statusOpts.Title = "Cancelled"
 		statusOpts.Summary = "has been <b>cancelled</b>."
 	case "neutral":
-		statusOpts.Title = "Unknown"
-		statusOpts.Summary = "doesn't know what happened with this commit."
+		if statusOpts.Title == "" {
+			statusOpts.Title = "Unknown"
+		}
+		statusOpts.Summary = "<b>Completed</b>"
 	}
 
 	if statusOpts.Status == "in_progress" {
