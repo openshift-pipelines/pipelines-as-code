@@ -32,6 +32,7 @@ const (
 	queuedStatus      = "queued"
 	failureConclusion = "failure"
 	pendingConclusion = "pending"
+	neutralConclusion = "neutral"
 )
 
 type PacRun struct {

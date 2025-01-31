@@ -229,6 +229,15 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		if matchedPRs, err = matcher.MatchPipelinerunByAnnotation(ctx, p.logger, pipelineRuns, p.run, p.event, p.vcx); err != nil {
 			// Don't fail when you don't have a match between pipeline and annotations
 			p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryNoMatch", err.Error())
+			// In a scenario where an external user submits a pull request and the repository owner uses the
+			// GitOps command `/ok-to-test` to trigger CI, but no matching pull request is found,
+			// a neutral check-run will be created on the pull request to indicate that no PipelineRun was triggered
+			if p.event.EventType == opscomments.OkToTestCommentEventType.String() && len(matchedPRs) == 0 {
+				err = p.createNeutralStatus(ctx)
+				if err != nil {
+					p.eventEmitter.EmitMessage(nil, zap.WarnLevel, "RepositoryCreateStatus", err.Error())
+				}
+			}
 			return nil, nil
 		}
 	}
@@ -385,4 +394,19 @@ func (p *PacRun) checkAccessOrErrror(ctx context.Context, repo *v1alpha1.Reposit
 		return false, fmt.Errorf("failed to run create status, user is not allowed to run the CI:: %w", err)
 	}
 	return false, nil
+}
+
+func (p *PacRun) createNeutralStatus(ctx context.Context) error {
+	status := provider.StatusOpts{
+		Status:     CompletedStatus,
+		Title:      "No PipelineRun matched",
+		Text:       fmt.Sprintf("No matching PipelineRun found for the '%s' event in Pipelines as Code. Please ensure that PipelineRun is configured for '%s' event.", p.event.TriggerTarget.String(), p.event.TriggerTarget.String()),
+		Conclusion: neutralConclusion,
+		DetailsURL: p.event.URL,
+	}
+	if err := p.vcx.CreateStatus(ctx, p.event, status); err != nil {
+		return fmt.Errorf("failed to run create status, user is not allowed to run the CI:: %w", err)
+	}
+
+	return nil
 }
