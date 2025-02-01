@@ -75,6 +75,7 @@ func TestParsePayload(t *testing.T) {
 				TriggerTarget: "pull_request",
 				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
+				SHATitle:      "commit it",
 			},
 		},
 		{

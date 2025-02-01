@@ -85,7 +85,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	sopt := twait.SuccessOpt{
-		Title:           mrTitle,
+		Title:           commitTitle,
 		OnEvent:         "Merge Request",
 		TargetNS:        targetNS,
 		NumberofPRMatch: 4,
