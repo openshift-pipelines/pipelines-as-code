@@ -326,6 +326,13 @@ func TestGetPipelineRunAndBranchNameFromTestComment(t *testing.T) {
 			wantError:  false,
 		},
 		{
+			name:       "branch name contains /test",
+			comment:    "/test abc-01-pr abc \n branch:chore/test",
+			prName:     "abc-01-pr",
+			branchName: "chore/test",
+			wantError:  false,
+		},
+		{
 			name:      "different word other than branch for retest command",
 			comment:   "/retest invalidname:nightly",
 			wantError: true,
@@ -340,6 +347,13 @@ func TestGetPipelineRunAndBranchNameFromTestComment(t *testing.T) {
 			comment:   "/test abc-01-pr",
 			prName:    "abc-01-pr",
 			wantError: false,
+		},
+		{
+			name:       "test a pipeline with key value",
+			comment:    "/test abc-01-pr key=value",
+			prName:     "abc-01-pr",
+			branchName: "",
+			wantError:  false,
 		},
 		{
 			name:      "string before retest command",
