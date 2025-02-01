@@ -83,11 +83,13 @@ func GetPipelineRunAndBranchNameFromCancelComment(comment string) (string, strin
 // by /test, /retest or /cancel to return branch name and pipelinerun name.
 func getPipelineRunAndBranchNameFromComment(typeOfComment, comment string) (string, string, error) {
 	var prName, branchName string
-	splitTest := strings.Split(comment, typeOfComment)
+	// avoid parsing error due to branch name contains /test, /retest or /cancel,
+	// here only split the first keyword and not split the later keywords.
+	splitTest := strings.SplitN(comment, typeOfComment, 2)
 
 	// after the split get the second part of the typeOfComment (/test, /retest or /cancel)
 	// as second part can be branch name or pipelinerun name and branch name
-	// ex: /test branch:nightly, /test prname branch:nightly
+	// ex: /test branch:nightly, /test prname branch:nightly, /test prname branch:nightly key=value
 	if splitTest[1] != "" && strings.Contains(splitTest[1], ":") {
 		branchData := strings.Split(splitTest[1], ":")
 
@@ -108,7 +110,8 @@ func getPipelineRunAndBranchNameFromComment(typeOfComment, comment string) (stri
 		// ex: /test prname
 		getFirstLine := strings.Split(splitTest[1], "\n")
 		// trim spaces
-		prName = strings.TrimSpace(getFirstLine[0])
+		// adapt for the comment contains the key=value pair
+		prName = strings.Split(strings.TrimSpace(getFirstLine[0]), " ")[0]
 	}
 	return prName, branchName, nil
 }
