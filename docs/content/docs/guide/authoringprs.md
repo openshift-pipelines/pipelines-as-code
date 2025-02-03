@@ -66,6 +66,39 @@ check out the code that is being tested.
 | trigger_comment     | The comment triggering the PipelineRun when using a [GitOps command]({{< relref "/docs/guide/running.md#gitops-command-on-pull-or-merge-request" >}}) (like `/test`, `/retest`) | `{{trigger_comment}}`               | /merge-pr branch                                                                                                                                              |
 | pull_request_labels | The labels of the pull request separated by a newline                                                                                                                           | `{{pull_request_labels}}`           | bugs\nenhancement                                                                                                                                             |
 
+### Defining Parameters with Object Values in YAML
+
+When working with YAML, particularly when defining parameters, you might encounter situations where you need to pass an object or a dynamic variable (e.g., `{{ body }}`) as the value of a parameter. However, YAML's validation rules prevent such values from being defined inline.
+
+For instance, if you attempt to define a parameter like this:
+
+```yaml
+spec:
+  params:
+    - name: body
+      value: {{ body }}  # This will result in a YAML validation error
+  pipelineSpec:
+    tasks:
+```
+
+You will encounter a YAML validation error because objects or multiline strings cannot be placed inline. To resolve this issue and ensure your YAML is correctly validated, you should define the value in block format instead of inline. Here’s an example:
+
+```yaml
+spec:
+  params:
+    - name: body
+      value: |
+        {{ body }}
+    # Alternatively, use '>' to specify that the value will be in block format
+    - name: pull_request
+      value: >
+        {{ body.pull_request }}
+  pipelineSpec:
+    tasks:
+```
+
+By using the block format, you can avoid validation errors and ensure that your YAML is properly structured.
+
 ## Matching an event to a PipelineRun
 
 Each `PipelineRun` can match different Git provider events through some special
