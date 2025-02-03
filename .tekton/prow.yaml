@@ -66,10 +66,12 @@ spec:
 
                 if command == "assign":
                     API_URL = f"{API_BASE}/assignees"
+                    values = [value.lstrip('@') for value in values]
                     data = {"assignees": values}
                     response = make_request("POST", API_URL, data)
                 elif command == "unassign":
                     API_URL = f"{API_BASE}/assignees"
+                    values = [value.lstrip('@') for value in values]
                     data = {"assignees": values}
                     response = make_request("DELETE", API_URL, data)
                 elif command == "label":
