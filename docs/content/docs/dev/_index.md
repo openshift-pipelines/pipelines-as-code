@@ -1,5 +1,5 @@
 ---
-title: Developer Resources
+title: Contributor Resources
 weight: 15
 ---
 
