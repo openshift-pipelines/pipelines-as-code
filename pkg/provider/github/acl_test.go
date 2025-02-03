@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -121,7 +121,7 @@ func TestOkToTestComment(t *testing.T) {
 				Event: &github.IssueCommentEvent{
 					Issue: &github.Issue{
 						PullRequestLinks: &github.PullRequestLinks{
-							HTMLURL: github.String("http://url.com/owner/repo/1"),
+							HTMLURL: github.Ptr("http://url.com/owner/repo/1"),
 						},
 					},
 				},
@@ -139,7 +139,7 @@ func TestOkToTestComment(t *testing.T) {
 				EventType:    "issue_comment",
 				Event: &github.PullRequestEvent{
 					PullRequest: &github.PullRequest{
-						HTMLURL: github.String("http://url.com/owner/repo/1"),
+						HTMLURL: github.Ptr("http://url.com/owner/repo/1"),
 					},
 				},
 			},
@@ -156,7 +156,7 @@ func TestOkToTestComment(t *testing.T) {
 				EventType:    "issue_comment",
 				Event: &github.CheckRunEvent{
 					CheckRun: &github.CheckRun{
-						HTMLURL: github.String("http://url.com/owner/repo/1"),
+						HTMLURL: github.Ptr("http://url.com/owner/repo/1"),
 					},
 				},
 			},
@@ -174,7 +174,7 @@ func TestOkToTestComment(t *testing.T) {
 				Event: &github.IssueCommentEvent{
 					Issue: &github.Issue{
 						PullRequestLinks: &github.PullRequestLinks{
-							HTMLURL: github.String("http://url.com/owner/repo/1"),
+							HTMLURL: github.Ptr("http://url.com/owner/repo/1"),
 						},
 					},
 				},
@@ -193,7 +193,7 @@ func TestOkToTestComment(t *testing.T) {
 				Event: &github.IssueCommentEvent{
 					Issue: &github.Issue{
 						PullRequestLinks: &github.PullRequestLinks{
-							HTMLURL: github.String("http://url.com/owner/repo/1"),
+							HTMLURL: github.Ptr("http://url.com/owner/repo/1"),
 						},
 					},
 				},
@@ -212,7 +212,7 @@ func TestOkToTestComment(t *testing.T) {
 				Event: &github.IssueCommentEvent{
 					Issue: &github.Issue{
 						PullRequestLinks: &github.PullRequestLinks{
-							HTMLURL: github.String("http://url.com/owner/repo/1"),
+							HTMLURL: github.Ptr("http://url.com/owner/repo/1"),
 						},
 					},
 				},
@@ -230,7 +230,7 @@ func TestOkToTestComment(t *testing.T) {
 				EventType:    "issue_comment",
 				Event: &github.PullRequestEvent{
 					PullRequest: &github.PullRequest{
-						HTMLURL: github.String("http://url.com/owner/repo/1"),
+						HTMLURL: github.Ptr("http://url.com/owner/repo/1"),
 					},
 				},
 			},
@@ -247,7 +247,7 @@ func TestOkToTestComment(t *testing.T) {
 				EventType:    "issue_comment",
 				Event: &github.CheckRunEvent{
 					CheckRun: &github.CheckRun{
-						HTMLURL: github.String("http://url.com/owner/repo/1"),
+						HTMLURL: github.Ptr("http://url.com/owner/repo/1"),
 					},
 				},
 			},
@@ -265,7 +265,7 @@ func TestOkToTestComment(t *testing.T) {
 				Event: &github.IssueCommentEvent{
 					Issue: &github.Issue{
 						PullRequestLinks: &github.PullRequestLinks{
-							HTMLURL: github.String("http://url.com/owner/repo/1"),
+							HTMLURL: github.Ptr("http://url.com/owner/repo/1"),
 						},
 					},
 				},
@@ -284,7 +284,7 @@ func TestOkToTestComment(t *testing.T) {
 				Event: &github.IssueCommentEvent{
 					Issue: &github.Issue{
 						PullRequestLinks: &github.PullRequestLinks{
-							HTMLURL: github.String("http://url.com/owner/repo/1"),
+							HTMLURL: github.Ptr("http://url.com/owner/repo/1"),
 						},
 					},
 				},
@@ -485,6 +485,7 @@ func TestAclCheckAll(t *testing.T) {
 }
 
 func TestIfPullRequestIsForSameRepoWithoutFork(t *testing.T) {
+	iddd := int64(1234)
 	tests := []struct {
 		name              string
 		event             *info.Event
@@ -503,18 +504,18 @@ func TestIfPullRequestIsForSameRepoWithoutFork(t *testing.T) {
 				PullRequestNumber: 1,
 			},
 			pullRequest: &github.PullRequest{
-				ID:     github.Int64(1234),
-				Number: github.Int(1),
+				ID:     &iddd,
+				Number: github.Ptr(1),
 				Head: &github.PullRequestBranch{
-					Ref: github.String("main"),
+					Ref: github.Ptr("main"),
 					Repo: &github.Repository{
-						CloneURL: github.String("http://org.com/owner/repo"),
+						CloneURL: github.Ptr("http://org.com/owner/repo"),
 					},
 				},
 				Base: &github.PullRequestBranch{
-					Ref: github.String("dependabot"),
+					Ref: github.Ptr("dependabot"),
 					Repo: &github.Repository{
-						CloneURL: github.String("http://org.com/owner/repo"),
+						CloneURL: github.Ptr("http://org.com/owner/repo"),
 					},
 				},
 			},
@@ -530,18 +531,18 @@ func TestIfPullRequestIsForSameRepoWithoutFork(t *testing.T) {
 				PullRequestNumber: 2,
 			},
 			pullRequest: &github.PullRequest{
-				ID:     github.Int64(1234),
-				Number: github.Int(1),
+				ID:     &iddd,
+				Number: github.Ptr(1),
 				Head: &github.PullRequestBranch{
-					Ref: github.String("main"),
+					Ref: github.Ptr("main"),
 					Repo: &github.Repository{
-						CloneURL: github.String("http://org.com/owner/repo"),
+						CloneURL: github.Ptr("http://org.com/owner/repo"),
 					},
 				},
 				Base: &github.PullRequestBranch{
-					Ref: github.String("dependabot"),
+					Ref: github.Ptr("dependabot"),
 					Repo: &github.Repository{
-						CloneURL: github.String("http://org.com/owner/repo"),
+						CloneURL: github.Ptr("http://org.com/owner/repo"),
 					},
 				},
 			},
@@ -557,18 +558,18 @@ func TestIfPullRequestIsForSameRepoWithoutFork(t *testing.T) {
 				PullRequestNumber: 1,
 			},
 			pullRequest: &github.PullRequest{
-				ID:     github.Int64(1234),
-				Number: github.Int(1),
+				ID:     &iddd,
+				Number: github.Ptr(1),
 				Head: &github.PullRequestBranch{
-					Ref: github.String("main"),
+					Ref: github.Ptr("main"),
 					Repo: &github.Repository{
-						CloneURL: github.String("http://org.com/owner/repo"),
+						CloneURL: github.Ptr("http://org.com/owner/repo"),
 					},
 				},
 				Base: &github.PullRequestBranch{
-					Ref: github.String("dependabot"),
+					Ref: github.Ptr("dependabot"),
 					Repo: &github.Repository{
-						CloneURL: github.String("http://org.com/owner/repo1"),
+						CloneURL: github.Ptr("http://org.com/owner/repo1"),
 					},
 				},
 			},

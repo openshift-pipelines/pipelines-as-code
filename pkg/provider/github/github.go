@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -62,7 +62,7 @@ type skippedRun struct {
 
 func New() *Provider {
 	return &Provider{
-		APIURL:        github.String(keys.PublicGithubAPIURL),
+		APIURL:        github.Ptr(keys.PublicGithubAPIURL),
 		PaginedNumber: defaultPaginedNumber,
 		skippedRun: skippedRun{
 			mutex: &sync.Mutex{},
@@ -212,7 +212,7 @@ func MakeClient(ctx context.Context, apiURL, token string) (*github.Client, stri
 		apiURL = client.BaseURL.String()
 	}
 
-	return client, providerName, github.String(apiURL)
+	return client, providerName, github.Ptr(apiURL)
 }
 
 func parseTS(headerTS string) (time.Time, error) {

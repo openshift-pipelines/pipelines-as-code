@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -36,7 +36,7 @@ func TestGithubSecondPullRequestRetest(t *testing.T) {
 	_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.String("/retest")})
+		&github.IssueComment{Body: github.Ptr("/retest")})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Wait for the second repository update to be updated")
@@ -100,7 +100,7 @@ func TestGithubPullRequestGitOpsComments(t *testing.T) {
 				_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
 					g.Options.Organization,
 					g.Options.Repo, g.PRNumber,
-					&github.IssueComment{Body: github.String("/test pr-gitops-comment")})
+					&github.IssueComment{Body: github.Ptr("/test pr-gitops-comment")})
 				assert.NilError(t, err)
 				err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
 				assert.NilError(t, err)
@@ -109,7 +109,7 @@ func TestGithubPullRequestGitOpsComments(t *testing.T) {
 			_, _, err = g.Provider.Client.Issues.CreateComment(ctx,
 				g.Options.Organization,
 				g.Options.Repo, g.PRNumber,
-				&github.IssueComment{Body: github.String(tt.comment)})
+				&github.IssueComment{Body: github.Ptr(tt.comment)})
 			assert.NilError(t, err)
 
 			g.Cnx.Clients.Log.Info("Waiting for Repository to be updated")

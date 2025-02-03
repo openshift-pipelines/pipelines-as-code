@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	ghlib "github.com/google/go-github/v66/github"
+	ghlib "github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
@@ -94,7 +94,7 @@ func PRCreate(ctx context.Context, cs *params.Run, ghcnx *ghprovider.Provider, o
 		Title: &title,
 		Head:  &targetRef,
 		Base:  &defaultBranch,
-		Body:  ghlib.String("Add a new PR for testing"),
+		Body:  ghlib.Ptr("Add a new PR for testing"),
 	})
 	if err != nil {
 		return -1, err

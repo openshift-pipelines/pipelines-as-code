@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -109,9 +109,9 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 	checkrunoption := github.CreateCheckRunOptions{
 		Name:       provider.GetCheckName(status, v.pacInfo),
 		HeadSHA:    runevent.SHA,
-		Status:     github.String("in_progress"),
-		DetailsURL: github.String(status.DetailsURL),
-		ExternalID: github.String(status.PipelineRunName),
+		Status:     github.Ptr("in_progress"),
+		DetailsURL: github.Ptr(status.DetailsURL),
+		ExternalID: github.Ptr(status.PipelineRunName),
 		StartedAt:  &now,
 	}
 
@@ -176,11 +176,11 @@ func (v *Provider) getFailuresMessageAsAnnotations(ctx context.Context, pr *tekt
 				continue
 			}
 			annotations = append(annotations, &github.CheckRunAnnotation{
-				Path:            github.String(filename),
-				StartLine:       github.Int(ilinenumber),
-				EndLine:         github.Int(ilinenumber),
-				AnnotationLevel: github.String("failure"),
-				Message:         github.String(errmsg),
+				Path:            github.Ptr(filename),
+				StartLine:       github.Ptr(ilinenumber),
+				EndLine:         github.Ptr(ilinenumber),
+				AnnotationLevel: github.Ptr("failure"),
+				Message:         github.Ptr(errmsg),
 			})
 		}
 	}
@@ -215,7 +215,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 			if err != nil {
 				return fmt.Errorf("api error: cannot convert checkrunid")
 			}
-			checkRunID = github.Int64(int64(checkID))
+			checkRunID = github.Ptr(int64(checkID))
 		}
 	}
 	if !found {
@@ -244,15 +244,15 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 		}
 	}
 
-	checkRunOutput.Text = github.String(text)
+	checkRunOutput.Text = github.Ptr(text)
 
 	opts := github.UpdateCheckRunOptions{
 		Name:   provider.GetCheckName(statusOpts, pacopts),
-		Status: github.String(statusOpts.Status),
+		Status: github.Ptr(statusOpts.Status),
 		Output: checkRunOutput,
 	}
 	if statusOpts.PipelineRunName != "" {
-		opts.ExternalID = github.String(statusOpts.PipelineRunName)
+		opts.ExternalID = github.Ptr(statusOpts.PipelineRunName)
 	}
 	if statusOpts.DetailsURL != "" {
 		opts.DetailsURL = &statusOpts.DetailsURL
@@ -264,7 +264,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 		opts.Conclusion = &statusOpts.Conclusion
 	}
 	if isPipelineRunCancelledOrStopped(statusOpts.PipelineRun) {
-		opts.Conclusion = github.String("cancelled")
+		opts.Conclusion = github.Ptr("cancelled")
 	}
 
 	_, _, err = v.Client.Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *checkRunID, opts)
@@ -313,10 +313,10 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 	}
 
 	ghstatus := &github.RepoStatus{
-		State:       github.String(status.Conclusion),
-		TargetURL:   github.String(status.DetailsURL),
-		Description: github.String(status.Title),
-		Context:     github.String(provider.GetCheckName(status, v.pacInfo)),
+		State:       github.Ptr(status.Conclusion),
+		TargetURL:   github.Ptr(status.DetailsURL),
+		Description: github.Ptr(status.Title),
+		Context:     github.Ptr(provider.GetCheckName(status, v.pacInfo)),
 		CreatedAt:   &github.Timestamp{Time: now},
 	}
 
@@ -334,7 +334,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		_, _, err = v.Client.Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
 			runevent.PullRequestNumber,
 			&github.IssueComment{
-				Body: github.String(fmt.Sprintf("%s<br>%s", status.Summary, status.Text)),
+				Body: github.Ptr(fmt.Sprintf("%s<br>%s", status.Summary, status.Text)),
 			},
 		)
 		if err != nil {

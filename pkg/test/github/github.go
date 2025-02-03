@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"gotest.tools/v3/assert"
 )
@@ -116,8 +116,8 @@ func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Even
 					assert.NilError(t, err)
 					// encode content as base64
 					blob := &github.Blob{
-						SHA:     github.String(chosenf.sha),
-						Content: github.String(base64.StdEncoding.EncodeToString(s)),
+						SHA:     github.Ptr(chosenf.sha),
+						Content: github.Ptr(base64.StdEncoding.EncodeToString(s)),
 					}
 					b, err := json.Marshal(blob)
 					assert.NilError(t, err)
@@ -125,10 +125,10 @@ func SetupGitTree(t *testing.T, mux *http.ServeMux, dir string, event *info.Even
 				})
 		}
 		entries = append(entries, &github.TreeEntry{
-			Path: github.String(strings.TrimPrefix(f.name, dir+"/")),
-			Mode: github.String(mode),
-			Type: github.String(etype),
-			SHA:  github.String(f.sha),
+			Path: github.Ptr(strings.TrimPrefix(f.name, dir+"/")),
+			Mode: github.Ptr(mode),
+			Type: github.Ptr(etype),
+			SHA:  github.Ptr(f.sha),
 		})
 	}
 	u := fmt.Sprintf("/repos/%v/%v/git/trees/%v", event.Organization, event.Repository, event.SHA)

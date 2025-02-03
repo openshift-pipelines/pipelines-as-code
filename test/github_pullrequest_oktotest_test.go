@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
@@ -51,16 +51,16 @@ func TestGithubPullRequestOkToTest(t *testing.T) {
 	assert.NilError(t, err)
 	event := github.IssueCommentEvent{
 		Comment: &github.IssueComment{
-			Body: github.String(`/ok-to-test`),
+			Body: github.Ptr(`/ok-to-test`),
 		},
 		Installation: &github.Installation{
 			ID: &installID,
 		},
-		Action: github.String("created"),
+		Action: github.Ptr("created"),
 		Issue: &github.Issue{
-			State: github.String("open"),
+			State: github.Ptr("open"),
 			PullRequestLinks: &github.PullRequestLinks{
-				HTMLURL: github.String(fmt.Sprintf("%s/%s/pull/%d",
+				HTMLURL: github.Ptr(fmt.Sprintf("%s/%s/pull/%d",
 					os.Getenv("TEST_GITHUB_API_URL"),
 					os.Getenv("TEST_GITHUB_REPO_OWNER"), g.PRNumber)),
 			},

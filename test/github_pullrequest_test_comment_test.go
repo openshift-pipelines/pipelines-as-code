@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -35,7 +35,7 @@ func TestGithubPullRequestTest(t *testing.T) {
 	_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.String("/test pipeline")})
+		&github.IssueComment{Body: github.Ptr("/test pipeline")})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Wait for the second repository update to be updated")
@@ -67,7 +67,7 @@ func TestGithubSecondOnCommentAnnotation(t *testing.T) {
 
 	g.Cnx.Clients.Log.Infof("Creating %s custom comment on PullRequest", triggerComment)
 	_, _, err := g.Provider.Client.Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.String(triggerComment)})
+		&github.IssueComment{Body: github.Ptr(triggerComment)})
 	assert.NilError(t, err)
 	sopt := twait.SuccessOpt{
 		Title:           fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, g.TargetNamespace),

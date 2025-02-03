@@ -13,7 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -171,7 +171,7 @@ func TestRun(t *testing.T) {
 			runevent: info.Event{
 				Event: &github.PullRequestEvent{
 					PullRequest: &github.PullRequest{
-						Number: github.Int(666),
+						Number: github.Ptr(666),
 					},
 				},
 				SHA:               "fromwebhook",
@@ -195,7 +195,7 @@ func TestRun(t *testing.T) {
 			runevent: info.Event{
 				Event: &github.PullRequestEvent{
 					PullRequest: &github.PullRequest{
-						Number: github.Int(666),
+						Number: github.Ptr(666),
 					},
 				},
 				SHA:               "fromwebhook",
@@ -219,7 +219,7 @@ func TestRun(t *testing.T) {
 			runevent: info.Event{
 				Event: &github.PullRequestEvent{
 					PullRequest: &github.PullRequest{
-						Number: github.Int(666),
+						Number: github.Ptr(666),
 					},
 				},
 				SHA:               "fromwebhook",
@@ -244,7 +244,7 @@ func TestRun(t *testing.T) {
 			runevent: info.Event{
 				Event: &github.PullRequestEvent{
 					PullRequest: &github.PullRequest{
-						Number: github.Int(666),
+						Number: github.Ptr(666),
 					},
 				},
 				SHA:               "fromwebhook",
@@ -268,7 +268,7 @@ func TestRun(t *testing.T) {
 			runevent: info.Event{
 				Event: &github.PullRequestEvent{
 					PullRequest: &github.PullRequest{
-						Number: github.Int(666),
+						Number: github.Ptr(666),
 					},
 				},
 				SHA:               "fromwebhook",
@@ -295,7 +295,7 @@ func TestRun(t *testing.T) {
 			runevent: info.Event{
 				Event: &github.PullRequestEvent{
 					PullRequest: &github.PullRequest{
-						Number: github.Int(666),
+						Number: github.Ptr(666),
 					},
 				},
 				SHA:               "fromwebhook",
@@ -590,7 +590,7 @@ func TestRun(t *testing.T) {
 			vcx := &ghprovider.Provider{
 				Client: fakeclient,
 				Run:    cs,
-				Token:  github.String("None"),
+				Token:  github.Ptr("None"),
 				Logger: logger,
 			}
 			vcx.SetPacInfo(pacInfo)

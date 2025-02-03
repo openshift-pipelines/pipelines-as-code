@@ -4,7 +4,7 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
@@ -46,11 +46,11 @@ func convertPrStatusToRepositoryStatus(ctx context.Context, cs *params.Run, pr t
 		PipelineRunName:    pr.GetName(),
 		CollectedTaskInfos: &failurereasons,
 		StartTime:          pr.Status.StartTime,
-		SHA:                github.String(prSHA),
-		SHAURL:             github.String(pr.GetAnnotations()[keys.ShaURL]),
-		Title:              github.String(pr.GetAnnotations()[keys.ShaTitle]),
-		TargetBranch:       github.String(pr.GetAnnotations()[keys.Branch]),
-		EventType:          github.String(pr.GetAnnotations()[keys.EventType]),
+		SHA:                github.Ptr(prSHA),
+		SHAURL:             github.Ptr(pr.GetAnnotations()[keys.ShaURL]),
+		Title:              github.Ptr(pr.GetAnnotations()[keys.ShaTitle]),
+		TargetBranch:       github.Ptr(pr.GetAnnotations()[keys.Branch]),
+		EventType:          github.Ptr(pr.GetAnnotations()[keys.EventType]),
 	}
 }
 

@@ -11,7 +11,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"gotest.tools/v3/assert"
 )
 
@@ -53,7 +53,7 @@ func TestSkippedEvent(t *testing.T) {
 	ctx := context.TODO()
 
 	event := github.PullRequestEvent{
-		Action: github.String("closed"),
+		Action: github.Ptr("closed"),
 	}
 	eventType := "pull_request"
 

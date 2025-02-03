@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/google/go-github/v64/github"
+	"github.com/google/go-github/v68/github"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -760,7 +760,7 @@ func TestCancelInProgressMatchingPR(t *testing.T) {
 				},
 				Spec: v1alpha1.RepositorySpec{
 					URL:              "https://github.com/fooorg/foo",
-					ConcurrencyLimit: github.Int(1),
+					ConcurrencyLimit: github.Ptr(1),
 				},
 			},
 			cancelledPipelineRuns: map[string]bool{},

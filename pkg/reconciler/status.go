@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1a1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
@@ -44,7 +44,7 @@ func (r *Reconciler) updateRepoRunStatus(ctx context.Context, logger *zap.Sugare
 		SHA:             &event.SHA,
 		SHAURL:          &event.SHAURL,
 		Title:           &event.SHATitle,
-		LogURL:          github.String(r.run.Clients.ConsoleUI().DetailURL(pr)),
+		LogURL:          github.Ptr(r.run.Clients.ConsoleUI().DetailURL(pr)),
 		EventType:       &event.EventType,
 		TargetBranch:    &refsanitized,
 	}

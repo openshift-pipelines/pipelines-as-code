@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"code.gitea.io/sdk/gitea"
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
 	pgitea "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
@@ -199,7 +199,7 @@ func CreateGiteaUser(giteaClient *gitea.Client, username, password string) (*git
 		Username:           username,
 		Email:              username + "@redhat.com",
 		Password:           password,
-		MustChangePassword: github.Bool(false),
+		MustChangePassword: github.Ptr(false),
 		Visibility:         &visibility,
 	}
 	newuser, _, err := giteaClient.AdminCreateUser(opts)
