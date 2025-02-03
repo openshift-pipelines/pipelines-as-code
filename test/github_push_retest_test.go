@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
@@ -42,7 +42,7 @@ func TestGithubPushRequestGitOpsCommentOnComment(t *testing.T) {
 	_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.SHA,
-		&github.RepositoryComment{Body: github.String(opsComment)})
+		&github.RepositoryComment{Body: github.Ptr(opsComment)})
 	assert.NilError(t, err)
 
 	waitOpts := twait.Opts{
@@ -98,7 +98,7 @@ func TestGithubPushRequestGitOpsCommentRetest(t *testing.T) {
 	_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.SHA,
-		&github.RepositoryComment{Body: github.String(comment)})
+		&github.RepositoryComment{Body: github.Ptr(comment)})
 	assert.NilError(t, err)
 
 	waitOpts := twait.Opts{
@@ -151,7 +151,7 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.SHA,
-		&github.RepositoryComment{Body: github.String("/test pipelinerun-on-push branch:" + g.TargetNamespace)})
+		&github.RepositoryComment{Body: github.Ptr("/test pipelinerun-on-push branch:" + g.TargetNamespace)})
 	assert.NilError(t, err)
 	numberOfStatus := 3
 	waitOpts := twait.Opts{
@@ -169,7 +169,7 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.SHA,
-		&github.RepositoryComment{Body: github.String(comment)})
+		&github.RepositoryComment{Body: github.Ptr(comment)})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Waiting for Repository to be updated still to %d since it has been canceled", numberOfStatus)
@@ -183,8 +183,9 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 
 	// this went too fast so at least we check it was requested for it
 	if !cancelled {
+		numLines := int64(20)
 		reg := regexp.MustCompile(".*pipelinerun.*skipping cancelling pipelinerun.*on-push.*already done.*")
-		err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "controller", github.Int64(20))
+		err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 10, "controller", &numLines)
 		if err != nil {
 			t.Errorf("neither a cancelled pipelinerun in repo status or a request to skip the cancellation in the controller log was found: %s", err.Error())
 		}

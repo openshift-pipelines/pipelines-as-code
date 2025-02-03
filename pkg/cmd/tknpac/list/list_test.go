@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	pacv1alpha1 "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -74,10 +74,10 @@ func TestList(t *testing.T) {
 				PipelineRunName: "pipelinerun1",
 				StartTime:       &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
 				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
-				SHA:             github.String(repoNamespace1SHA),
-				SHAURL:          github.String("https://somewhereandnowhere/1"),
-				Title:           github.String("A title"),
-				LogURL:          github.String("https://help.me.obiwan.kenobi/1"),
+				SHA:             github.Ptr(repoNamespace1SHA),
+				SHAURL:          github.Ptr("https://somewhereandnowhere/1"),
+				Title:           github.Ptr("A title"),
+				LogURL:          github.Ptr("https://help.me.obiwan.kenobi/1"),
 			},
 		},
 	}
@@ -101,10 +101,10 @@ func TestList(t *testing.T) {
 				PipelineRunName: "pipelinerun2",
 				StartTime:       &metav1.Time{Time: cw.Now().Add(-16 * time.Minute)},
 				CompletionTime:  &metav1.Time{Time: cw.Now().Add(-15 * time.Minute)},
-				SHA:             github.String("SHA"),
-				SHAURL:          github.String("https://somewhereandnowhere/2"),
-				Title:           github.String("A title"),
-				LogURL:          github.String("https://help.me.obiwan.kenobi"),
+				SHA:             github.Ptr("SHA"),
+				SHAURL:          github.Ptr("https://somewhereandnowhere/2"),
+				Title:           github.Ptr("A title"),
+				LogURL:          github.Ptr("https://help.me.obiwan.kenobi"),
 			},
 		},
 	}

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -1354,7 +1354,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			defer teardown()
 			vcx := &ghprovider.Provider{
 				Client: fakeclient,
-				Token:  github.String("None"),
+				Token:  github.Ptr("None"),
 			}
 			if tt.args.runevent.Request == nil {
 				tt.args.runevent.Request = &info.Request{Header: http.Header{}, Payload: nil}
@@ -1363,8 +1363,8 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 				commitFiles := []*github.CommitFile{}
 				for _, v := range tt.args.fileChanged {
 					commitFiles = append(commitFiles, &github.CommitFile{
-						Filename: github.String(v.FileName),
-						Status:   github.String(v.Status),
+						Filename: github.Ptr(v.FileName),
+						Status:   github.Ptr(v.Status),
 					})
 				}
 				if tt.args.runevent.TriggerTarget == "push" {
@@ -1402,7 +1402,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			defer glTeardown()
 			glVcx := &glprovider.Provider{
 				Client: glFakeClient,
-				Token:  github.String("None"),
+				Token:  github.Ptr("None"),
 			}
 			if len(tt.args.fileChanged) > 0 {
 				commitFiles := []*gitlab.MergeRequestDiff{}

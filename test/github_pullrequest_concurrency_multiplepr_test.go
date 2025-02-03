@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/random"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
@@ -101,7 +101,7 @@ func TestGithubSecondPullRequestConcurrencyMultiplePR(t *testing.T) {
 			_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
 				g.Options.Organization,
 				g.Options.Repo, g.PRNumber,
-				&github.IssueComment{Body: github.String("/retest")})
+				&github.IssueComment{Body: github.Ptr("/retest")})
 			assert.NilError(t, err)
 		}
 	}

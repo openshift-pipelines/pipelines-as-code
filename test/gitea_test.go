@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"code.gitea.io/sdk/gitea"
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/names"
 	yaml "gopkg.in/yaml.v2"
@@ -152,7 +152,8 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
 	reg := regexp.MustCompile(".*fetched git-clone task")
-	err := twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *reg, 10, "controller", github.Int64(20))
+	maxLines := int64(20)
+	err := twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *reg, 10, "controller", &maxLines)
 	assert.NilError(t, err)
 	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
 }
@@ -184,8 +185,9 @@ func TestGiteaBadYaml(t *testing.T) {
 
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
+	maxLines := int64(20)
 	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *regexp.MustCompile(
-		"pipelinerun.*has failed.*expected exactly one, got neither: spec.pipelineRef, spec.pipelineSpec"), 10, "controller", github.Int64(20)))
+		"pipelinerun.*has failed.*expected exactly one, got neither: spec.pipelineRef, spec.pipelineSpec"), 10, "controller", &maxLines))
 }
 
 // TestGiteaInvalidSpecValues tests invalid field values of a PipelinRun and ensures that these
@@ -235,7 +237,7 @@ func TestGiteaConcurrencyExclusivenessMultiplePipelines(t *testing.T) {
 		YAMLFiles:            yamlFiles,
 		CheckForStatus:       "success",
 		CheckForNumberStatus: numPipelines,
-		ConcurrencyLimit:     github.Int(1),
+		ConcurrencyLimit:     github.Ptr(1),
 		ExpectEvents:         false,
 	}
 	_, f := tgitea.TestPR(t, topts)
@@ -249,7 +251,7 @@ func TestGiteaConcurrencyExclusivenessMultipleRuns(t *testing.T) {
 		TargetEvent:          triggertype.PullRequest.String(),
 		YAMLFiles:            map[string]string{".tekton/pr.yaml": "testdata/pipelinerun.yaml"},
 		CheckForNumberStatus: numPipelines,
-		ConcurrencyLimit:     github.Int(1),
+		ConcurrencyLimit:     github.Ptr(1),
 		ExpectEvents:         false,
 	}
 	_, f := tgitea.TestPR(t, topts)
@@ -690,7 +692,7 @@ func TestGiteaConcurrencyOrderedExecution(t *testing.T) {
 		},
 		CheckForStatus:       "success",
 		CheckForNumberStatus: 3,
-		ConcurrencyLimit:     github.Int(1),
+		ConcurrencyLimit:     github.Ptr(1),
 		ExpectEvents:         false,
 	}
 	_, f := tgitea.TestPR(t, topts)
@@ -899,7 +901,8 @@ func TestGiteaBadLinkOfTask(t *testing.T) {
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
 	errre := regexp.MustCompile("There was an error starting the PipelineRun")
-	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", github.Int64(20)))
+	maxLines := int64(20)
+	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines))
 }
 
 // TestGiteaPipelineRunWithSameName checks that we fail properly with the error from the
@@ -919,7 +922,8 @@ func TestGiteaPipelineRunWithSameName(t *testing.T) {
 	ctx, f := tgitea.TestPR(t, topts)
 	defer f()
 	errre := regexp.MustCompile("found multiple pipelinerun in .tekton with the same name")
-	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", github.Int64(20)))
+	maxLines := int64(20)
+	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *errre, 10, "controller", &maxLines))
 }
 
 // TestGiteaProvenanceForDefaultBranch tests the provenance feature of the PipelineRun.
@@ -1064,7 +1068,7 @@ func TestGiteaGlobalRepoConcurrencyLimit(t *testing.T) {
 		CheckForStatus:       "success",
 	}
 
-	tgitea.VerifyConcurrency(t, topts, github.Int(2))
+	tgitea.VerifyConcurrency(t, topts, github.Ptr(2))
 }
 
 // TestGiteaGlobalAndLocalRepoConcurrencyLimit verifies the concurrency_limit feature of the PipelineRun,
@@ -1080,11 +1084,11 @@ func TestGiteaGlobalAndLocalRepoConcurrencyLimit(t *testing.T) {
 		TargetEvent:          triggertype.PullRequest.String(),
 		YAMLFiles:            yamlFiles,
 		CheckForNumberStatus: numPipelines,
-		ConcurrencyLimit:     github.Int(3),
+		ConcurrencyLimit:     github.Ptr(3),
 		CheckForStatus:       "success",
 	}
 
-	tgitea.VerifyConcurrency(t, topts, github.Int(2))
+	tgitea.VerifyConcurrency(t, topts, github.Ptr(2))
 }
 
 func TestGiteaPushToTagGreedy(t *testing.T) {

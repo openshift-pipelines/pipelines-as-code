@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -25,12 +25,12 @@ func makeRepoStatus(prname, sha, conditionReason string, cw clockwork.FakeClock,
 		PipelineRunName: prname,
 		StartTime:       &metav1.Time{Time: cw.Now().Add(started)},
 		CompletionTime:  &metav1.Time{Time: cw.Now().Add(completed)},
-		SHA:             github.String(sha),
-		SHAURL:          github.String("https://anurl.com/repo/owner/commit/SHA"),
-		Title:           github.String("A title"),
-		EventType:       github.String("pull_request"),
-		TargetBranch:    github.String("TargetBranch"),
-		LogURL:          github.String("https://help.me.obiwan.kenobi"),
+		SHA:             github.Ptr(sha),
+		SHAURL:          github.Ptr("https://anurl.com/repo/owner/commit/SHA"),
+		Title:           github.Ptr("A title"),
+		EventType:       github.Ptr("pull_request"),
+		TargetBranch:    github.Ptr("TargetBranch"),
+		LogURL:          github.Ptr("https://help.me.obiwan.kenobi"),
 	}
 }
 

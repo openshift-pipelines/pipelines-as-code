@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 	"gotest.tools/v3/golden"
@@ -224,7 +224,7 @@ func TestGithubPullRequestInvalidSpecValues(t *testing.T) {
 	for {
 		res, resp, err = g.Provider.Client.Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
 			AppID:       g.Provider.ApplicationID,
-			Status:      github.String("completed"),
+			Status:      github.Ptr("completed"),
 			ListOptions: opt,
 		})
 		assert.NilError(t, err)
@@ -263,7 +263,7 @@ func TestGithubSecondTestExplicitelyNoMatchedPipelineRun(t *testing.T) {
 	_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.String("/test no-match")})
+		&github.IssueComment{Body: github.Ptr("/test no-match")})
 	assert.NilError(t, err)
 	sopt := twait.SuccessOpt{
 		Title:           fmt.Sprintf("Testing %s with Github APPS integration on %s", g.Label, g.TargetNamespace),
@@ -299,7 +299,7 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 
 	g.Cnx.Clients.Log.Infof("Creating /retest on PullRequest")
 	_, _, err = g.Provider.Client.Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.String("/retest")})
+		&github.IssueComment{Body: github.Ptr("/retest")})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
@@ -370,7 +370,7 @@ func TestGithubSecondCancelInProgressPRClosed(t *testing.T) {
 
 	g.Cnx.Clients.Log.Infof("Closing the PullRequest")
 	_, _, err = g.Provider.Client.PullRequests.Edit(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber, &github.PullRequest{
-		State: github.String("closed"),
+		State: github.Ptr("closed"),
 	})
 	assert.NilError(t, err)
 
