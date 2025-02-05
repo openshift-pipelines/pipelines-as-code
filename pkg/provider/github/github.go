@@ -600,5 +600,5 @@ func (v *Provider) isBranchContainsCommit(ctx context.Context, runevent *info.Ev
 	if branchInfo.Commit.GetSHA() == runevent.SHA {
 		return nil
 	}
-	return fmt.Errorf("provided branch %s does not contains sha %s", branchName, runevent.SHA)
+	return fmt.Errorf("provided SHA %s is not the HEAD commit of the branch %s", runevent.SHA, branchName)
 }
