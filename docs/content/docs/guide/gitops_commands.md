@@ -46,13 +46,15 @@ For restarting all pipeline runs:
 For restarting a specific pipeline run:
 2. Use `/retest <pipelinerun-name>` or `/test <pipelinerun-name>` within your commit message. Replace `<pipelinerun-name>` with the specific name of the pipeline run you want to restart.
 
+The GitOps command triggers a PipelineRun only on the latest commit (HEAD) of the branch and does not work on older commits.
+
 **Note:**
 
 When executing `GitOps` commands on a commit that exists in multiple branches within a push request, the branch with the latest commit will be used.
 
 This means:
 
-1. If a user specifies commands like `/retest` or `/test` without any argument in a comment on a branch, the test will automatically be performed on the **main** branch.
+1. When a user comments with commands like `/retest` or `/test` on a branch without specifying a branch name, the test will automatically run on the **default branch** (e.g. main, master) of the repository.
 
    Examples:
    1. `/retest`
