@@ -51,7 +51,7 @@ func (s *pullService) List(ctx context.Context, repo string, opts *scm.PullReque
 
 func (s *pullService) ListChanges(ctx context.Context, repo string, number int, opts *scm.ListOptions) ([]*scm.Change, *scm.Response, error) {
 	namespace, name := scm.Split(repo)
-	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/changes", namespace, name, number)
+	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/changes?%s", namespace, name, number, encodeListOptions(opts))
 	out := new(diffstats)
 	res, err := s.client.do(ctx, "GET", path, nil, out)
 	if !out.pagination.LastPage.Bool {
