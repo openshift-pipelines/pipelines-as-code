@@ -1,0 +1,50 @@
+name: Create and publish a Docker image to ghcr on main and nightly with ko
+
+on:
+  push:
+    paths:
+      - "**.go"
+      - "**.yaml"
+  pull_request:
+    paths:
+      - "**.go"
+      - "**.yaml"
+env:
+  PLATFORMS: linux/amd64,linux/arm64,linux/ppc64le
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - uses: ko-build/setup-ko@v0.8
+
+      - name: Build and push images
+        shell: bash
+        run: |
+          set -x
+          releaseBranchFormat='release-v'
+          if [[ ${{ github.ref_name }} == ${releaseBranchFormat}* ]]; then
+            tag="${${{ github.ref_name }}#*-}" 
+          else
+            tag=$(echo ${{ github.ref_name }}|sed 's,/merge,,')
+          fi
+
+          for image in ./cmd/*;do
+            ko build -B -t "${tag}" --platform="${{ env.PLATFORMS }}" "${image}"
+          done
