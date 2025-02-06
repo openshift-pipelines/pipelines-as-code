@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euf
 
-export TARGET_REPO_CONTROLLER=${TARGET_REPO_CONTROLLER:-ghcr.io/openshift-pipelines/pipelines-as-code-controller}
-export TARGET_REPO_WATCHER=${TARGET_REPO_WATCHER:-ghcr.io/openshift-pipelines/pipelines-as-code-watcher}
-export TARGET_REPO_WEBHOOK=${TARGET_REPO_WEBHOOK:-ghcr.io/openshift-pipelines/pipelines-as-code-webhook}
+export TARGET_REPO_CONTROLLER=${TARGET_REPO_CONTROLLER:-ghcr.io/openshift-pipelines/pipelines-as-code/pipelines-as-code/pipelines-as-code/pipelines-as-code/pipelines-as-code-controller}
+export TARGET_REPO_WATCHER=${TARGET_REPO_WATCHER:-ghcr.io/openshift-pipelines/pipelines-as-code/pipelines-as-code/pipelines-as-code/pipelines-as-code/pipelines-as-code-watcher}
+export TARGET_REPO_WEBHOOK=${TARGET_REPO_WEBHOOK:-ghcr.io/openshift-pipelines/pipelines-as-code/pipelines-as-code/pipelines-as-code/pipelines-as-code/pipelines-as-code-webhook}
 export TARGET_BRANCH=${TARGET_BRANCH:-main}
 export TARGET_NAMESPACE=${TARGET_NAMESPACE:-pipelines-as-code}
 export TARGET_OPENSHIFT=${TARGET_OPENSHIFT:-""}
