@@ -88,7 +88,7 @@ func detectGHERawURL(event *info.Event, taskHost string) bool {
 func splitGithubURL(event *info.Event, uri string) (string, string, string, string, error) {
 	pURL, err := url.Parse(uri)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("URL %s does not seem to be a proper provider url: %w", uri, err)
+		return "", "", "", "", fmt.Errorf("URL %s is not a valid provider URL: %w", uri, err)
 	}
 	path := pURL.Path
 	if pURL.RawPath != "" {
@@ -111,7 +111,7 @@ func splitGithubURL(event *info.Event, uri string) (string, string, string, stri
 		spRef = split[4]
 		spPath = strings.Join(split[5:], "/")
 	default:
-		return "", "", "", "", fmt.Errorf("cannot recognize task as a Github URL to fetch: %s", uri)
+		return "", "", "", "", fmt.Errorf("cannot recognize task as a GitHub URL to fetch: %s", uri)
 	}
 	// url decode the org, repo, ref and path
 	if spRef, err = url.QueryUnescape(spRef); err != nil {
@@ -261,7 +261,7 @@ func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.
 	}
 
 	if rl.SCIM.Remaining == 0 {
-		return fmt.Errorf("token is ratelimited, it will be available again at %s", rl.SCIM.Reset.Format(time.RFC1123))
+		return fmt.Errorf("api rate limit exceeded. Access will be restored at %s", rl.SCIM.Reset.Format(time.RFC1123))
 	}
 	return nil
 }
