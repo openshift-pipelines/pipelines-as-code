@@ -334,7 +334,80 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 	}
 }
 
-func (v *Provider) GetFiles(_ context.Context, _ *info.Event) (changedfiles.ChangedFiles, error) {
+func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
+	limit := 100
+	OrgAndRepo := fmt.Sprintf("%s/%s", runevent.Organization, runevent.Repository)
+	if runevent.TriggerTarget == triggertype.PullRequest {
+		opts := &scm.ListOptions{Page: 1, Size: limit}
+		changedFiles := changedfiles.ChangedFiles{}
+		for {
+			changes, _, err := v.ScmClient.PullRequests.ListChanges(ctx, OrgAndRepo, runevent.PullRequestNumber, opts)
+			if err != nil {
+				return changedfiles.ChangedFiles{}, fmt.Errorf("failed to list changes for pull request: %w", err)
+			}
+
+			for _, c := range changes {
+				changedFiles.All = append(changedFiles.All, c.Path)
+				if c.Added {
+					changedFiles.Added = append(changedFiles.Added, c.Path)
+				}
+				if c.Modified {
+					changedFiles.Modified = append(changedFiles.Modified, c.Path)
+				}
+				if c.Renamed {
+					changedFiles.Renamed = append(changedFiles.Renamed, c.Path)
+				}
+				if c.Deleted {
+					changedFiles.Deleted = append(changedFiles.Deleted, c.Path)
+				}
+			}
+
+			// In the Jenkins-x/go-scm package, the `isLastPage` field is not available, and the value of
+			// `response.Page.Last` is set to `0`. Therefore, to determine if there are more items to fetch,
+			// we can check if the length of the currently fetched items is less than the specified limit.
+			// If the length is less than the limit, it indicates that there are no more items to retrieve.
+			if len(changes) < limit {
+				break
+			}
+
+			opts.Page++
+		}
+		return changedFiles, nil
+	}
+
+	if runevent.TriggerTarget == triggertype.Push {
+		opts := &scm.ListOptions{Page: 1, Size: limit}
+		changedFiles := changedfiles.ChangedFiles{}
+		for {
+			changes, _, err := v.ScmClient.Git.ListChanges(ctx, OrgAndRepo, runevent.SHA, opts)
+			if err != nil {
+				return changedfiles.ChangedFiles{}, fmt.Errorf("failed to list changes for commit %s: %w", runevent.SHA, err)
+			}
+
+			for _, c := range changes {
+				changedFiles.All = append(changedFiles.All, c.Path)
+				if c.Added {
+					changedFiles.Added = append(changedFiles.Added, c.Path)
+				}
+				if c.Modified {
+					changedFiles.Modified = append(changedFiles.Modified, c.Path)
+				}
+				if c.Renamed {
+					changedFiles.Renamed = append(changedFiles.Renamed, c.Path)
+				}
+				if c.Deleted {
+					changedFiles.Deleted = append(changedFiles.Deleted, c.Path)
+				}
+			}
+
+			if len(changes) < limit {
+				break
+			}
+
+			opts.Page++
+		}
+		return changedFiles, nil
+	}
 	return changedfiles.ChangedFiles{}, nil
 }
 
