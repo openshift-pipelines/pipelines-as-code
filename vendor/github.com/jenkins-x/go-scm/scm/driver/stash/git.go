@@ -153,6 +153,14 @@ func (s *gitService) CompareCommits(ctx context.Context, repo, ref1, ref2 string
 	return convertDiffstats(out), res, err
 }
 
+func (s *gitService) GetDefaultBranch(ctx context.Context, repo string) (*scm.Reference, *scm.Response, error) {
+	namespace, name := scm.Split(repo)
+	branch := new(branch)
+	pathBranch := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/branches/default", namespace, name)
+	resp, err := s.client.do(ctx, "GET", pathBranch, nil, branch)
+	return convertBranch(branch), resp, err
+}
+
 type deleteRefInput struct {
 	DryRun   bool   `json:"dryRun,omitempty"`
 	EndPoint string `json:"endPoint,omitempty"`
