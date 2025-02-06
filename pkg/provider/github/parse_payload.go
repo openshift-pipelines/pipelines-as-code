@@ -429,8 +429,9 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 	runevent.TriggerTarget = triggertype.Push
 	opscomments.SetEventTypeAndTargetPR(runevent, event.GetComment().GetBody())
 
-	// Set main as default branch to runevent.HeadBranch, runevent.BaseBranch
-	runevent.HeadBranch, runevent.BaseBranch = "main", "main"
+	defaultBranch := event.GetRepo().GetDefaultBranch()
+	// Set Event.Repository.DefaultBranch as default branch to runevent.HeadBranch, runevent.BaseBranch
+	runevent.HeadBranch, runevent.BaseBranch = defaultBranch, defaultBranch
 	var (
 		branchName string
 		prName     string
