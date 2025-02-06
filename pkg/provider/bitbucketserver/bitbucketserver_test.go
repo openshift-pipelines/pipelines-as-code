@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"hash"
 	"net/http"
@@ -13,12 +14,14 @@ import (
 	"strings"
 	"testing"
 
-	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/test"
+
+	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -538,6 +541,165 @@ func TestRemoveLastSegment(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			actualURL := removeLastSegment(tc.inputURL)
 			assert.Equal(t, actualURL, tc.expectedURL)
+		})
+	}
+}
+
+func TestGetFiles(t *testing.T) {
+	pushEvent := &info.Event{
+		SHA:           "IAMSHA123",
+		Organization:  "pac",
+		Repository:    "test",
+		TriggerTarget: triggertype.Push,
+	}
+	prEvent := &info.Event{
+		Organization:      "pac",
+		Repository:        "test",
+		TriggerTarget:     triggertype.PullRequest,
+		PullRequestNumber: 1,
+	}
+
+	pushFiles := []*bbtest.DiffStat{
+		{
+			Path: bbtest.DiffPath{ToString: "added.md"},
+			Type: "ADD",
+		},
+		{
+			Path: bbtest.DiffPath{ToString: "modified.txt"},
+			Type: "MODIFY",
+		},
+		{
+			Path: bbtest.DiffPath{ToString: "renamed.yaml"},
+			Type: "MOVE",
+		},
+		{
+			Path: bbtest.DiffPath{ToString: "deleted.go"},
+			Type: "DELETE",
+		},
+	}
+
+	pullRequestFiles := []*bbtest.DiffStat{
+		{
+			Path: bbtest.DiffPath{ToString: "added.go"},
+			Type: "ADD",
+		},
+		{
+			Path: bbtest.DiffPath{ToString: "modified.yaml"},
+			Type: "MODIFY",
+		},
+		{
+			Path: bbtest.DiffPath{ToString: "renamed.txt"},
+			Type: "MOVE",
+		},
+		{
+			Path: bbtest.DiffPath{ToString: "deleted.md"},
+			Type: "DELETE",
+		},
+	}
+
+	tests := []struct {
+		name                   string
+		event                  *info.Event
+		changeFiles            []*bbtest.DiffStat
+		wantAddedFilesCount    int
+		wantDeletedFilesCount  int
+		wantModifiedFilesCount int
+		wantRenamedFilesCount  int
+		wantError              bool
+		errMsg                 string
+	}{
+		{
+			name:                   "good/push event",
+			event:                  pushEvent,
+			changeFiles:            pushFiles,
+			wantAddedFilesCount:    1,
+			wantDeletedFilesCount:  1,
+			wantModifiedFilesCount: 1,
+			wantRenamedFilesCount:  1,
+		},
+		{
+			name:                   "bad/push event",
+			event:                  pushEvent,
+			wantAddedFilesCount:    0,
+			wantDeletedFilesCount:  0,
+			wantModifiedFilesCount: 0,
+			wantRenamedFilesCount:  0,
+			wantError:              true,
+			errMsg:                 "failed to list changes for commit IAMSHA123: not Authorized",
+		},
+		{
+			name:                   "good/pull_request event",
+			event:                  prEvent,
+			changeFiles:            pullRequestFiles,
+			wantAddedFilesCount:    1,
+			wantDeletedFilesCount:  1,
+			wantModifiedFilesCount: 1,
+			wantRenamedFilesCount:  1,
+		},
+		{
+			name:                   "bad/pull_request event",
+			event:                  prEvent,
+			wantAddedFilesCount:    0,
+			wantDeletedFilesCount:  0,
+			wantModifiedFilesCount: 0,
+			wantRenamedFilesCount:  0,
+			wantError:              true,
+			errMsg:                 "failed to list changes for pull request: not Authorized",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			_, client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			defer tearDown()
+
+			stats := &bbtest.DiffStats{
+				Values: tt.changeFiles,
+			}
+
+			if tt.event.TriggerTarget == triggertype.Push {
+				mux.HandleFunc("/projects/pac/repos/test/commits/IAMSHA123/changes", func(w http.ResponseWriter, _ *http.Request) {
+					if tt.wantError {
+						w.WriteHeader(http.StatusUnauthorized)
+					} else {
+						b, _ := json.Marshal(stats)
+						fmt.Fprint(w, string(b))
+					}
+				})
+			}
+			if tt.event.TriggerTarget == triggertype.PullRequest {
+				mux.HandleFunc("/projects/pac/repos/test/pull-requests/1/changes", func(w http.ResponseWriter, _ *http.Request) {
+					if tt.wantError {
+						w.WriteHeader(http.StatusUnauthorized)
+					} else {
+						b, _ := json.Marshal(stats)
+						fmt.Fprint(w, string(b))
+					}
+				})
+			}
+			v := &Provider{ScmClient: client, baseURL: tURL}
+			changedFiles, err := v.GetFiles(ctx, tt.event)
+			if tt.wantError {
+				assert.Equal(t, err.Error(), tt.errMsg)
+				return
+			}
+			assert.NilError(t, err, nil)
+			assert.Equal(t, tt.wantAddedFilesCount, len(changedFiles.Added))
+			assert.Equal(t, tt.wantDeletedFilesCount, len(changedFiles.Deleted))
+			assert.Equal(t, tt.wantModifiedFilesCount, len(changedFiles.Modified))
+			assert.Equal(t, tt.wantRenamedFilesCount, len(changedFiles.Renamed))
+
+			if tt.event.TriggerTarget == triggertype.Push {
+				for i := range changedFiles.All {
+					assert.Equal(t, tt.changeFiles[i].Path.ToString, changedFiles.All[i])
+				}
+			}
+
+			if tt.event.TriggerTarget == triggertype.PullRequest {
+				for i := range changedFiles.All {
+					assert.Equal(t, tt.changeFiles[i].Path.ToString, changedFiles.All[i])
+				}
+			}
 		})
 	}
 }

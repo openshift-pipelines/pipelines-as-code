@@ -1,0 +1,18 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-cel-expression: >-
+      event == "\\ .TargetEvent //" && target_branch == "\\ .TargetBranch //" && ".tekton/***".pathChanged()
+spec:
+  pipelineSpec:
+    tasks:
+      - name: path-changed-task
+        taskSpec:
+          steps:
+            - name: test-changed-files-params-push
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              command: ["/bin/echo", "HELLOMOTO"]
