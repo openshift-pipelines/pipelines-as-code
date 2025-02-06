@@ -48,7 +48,7 @@ var sampleRepo = &github.Repository{
 		Login: github.Ptr("owner"),
 	},
 	Name:          github.Ptr("reponame"),
-	DefaultBranch: github.Ptr("defaultbranch"),
+	DefaultBranch: github.Ptr("main"),
 	HTMLURL:       github.Ptr("https://github.com/owner/repo"),
 }
 
