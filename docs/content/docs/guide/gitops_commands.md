@@ -70,6 +70,9 @@ This means:
    3. `/retest <pipelinerun-name> branch:test`
    4. `/test <pipelinerun-name> branch:test`
 
+Please note that the `/ok-to-test` command does not work on pushed commits, as it is specifically intended for pull requests to manage authorization. Since only authorized users are allowed to send `GitOps` commands on pushed commits,
+there is no need to use the `ok-to-test` command in this context.
+
 To issue a `GitOps` comment on a pushed commit, you can follow these steps:
 
 1. Go to your repository.

@@ -295,6 +295,19 @@ func TestProvider_Detect(t *testing.T) {
 			isGH:       true,
 			processReq: true,
 		},
+		{
+			name: "commit comment Event with /ok-to-test being ignore as GitOps command on pushed commits",
+			event: github.CommitCommentEvent{
+				Action: github.Ptr("created"),
+				Installation: &github.Installation{
+					ID: &idd,
+				},
+				Comment: &github.RepositoryComment{Body: github.Ptr("/ok-to-test")},
+			},
+			eventType:  "commit_comment",
+			isGH:       true,
+			processReq: true,
+		},
 	}
 
 	for _, tt := range tests {
