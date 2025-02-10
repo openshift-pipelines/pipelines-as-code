@@ -35,7 +35,7 @@ const taskStatusTemplate = `
 {{- end }}
 </table>`
 
-const pendingApproval = "Pending approval, needs /ok-to-test"
+const pendingApproval = "Pending approval, waiting for an /ok-to-test"
 
 func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	opt := github.ListOptions{PerPage: v.PaginedNumber}
