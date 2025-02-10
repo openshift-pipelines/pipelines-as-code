@@ -465,6 +465,24 @@ func TestRun(t *testing.T) {
 			finalStatusText:          "PipelineRun has no taskruns",
 			expectedNumberofCleanups: 10,
 		},
+		{
+			name: "Do not allow unauthorized user to run CI on pushed commit",
+			runevent: info.Event{
+				SHA:           "principale",
+				Organization:  "organizationes",
+				Repository:    "lagaffe",
+				URL:           "https://service/documentation",
+				HeadBranch:    "main",
+				BaseBranch:    "main",
+				Sender:        "fantasio",
+				EventType:     "test-all-comment",
+				TriggerTarget: "push",
+			},
+			tektondir:                    "testdata/push_branch",
+			finalStatus:                  "failure",
+			finalStatusText:              "User fantasio is not allowed to trigger CI by GitOps comment on push commit in this repo.",
+			skipReplyingOrgPublicMembers: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
