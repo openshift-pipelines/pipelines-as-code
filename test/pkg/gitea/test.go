@@ -404,7 +404,7 @@ func WaitForStatus(t *testing.T, topts *TestOpts, ref, forcontext string, onlyla
 		}
 		for _, cstatus := range statuses {
 			if topts.CheckForStatus == "Skipped" {
-				if strings.HasSuffix(cstatus.Description, "Pending approval, needs /ok-to-test") {
+				if strings.HasSuffix(cstatus.Description, "Pending approval, waiting for an /ok-to-test") {
 					numstatus++
 					break
 				}

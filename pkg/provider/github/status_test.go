@@ -414,7 +414,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
                                 "status": "queued",
                                 "conclusion": "pending", 
 								"output": {
-									"title": "Pending approval, needs /ok-to-test",
+									"title": "Pending approval, waiting for an /ok-to-test",
 									"summary": "My CI is waiting for approval"
 								}
 							}

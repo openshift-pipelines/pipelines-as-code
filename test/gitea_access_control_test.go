@@ -142,7 +142,7 @@ func TestGiteaPolicyOkToTestRetest(t *testing.T) {
 	topts.GiteaCNX = normalUserCnx
 	tgitea.PostCommentOnPullRequest(t, topts, okToTestComment)
 	topts.CheckForStatus = "Skipped"
-	topts.Regexp = regexp.MustCompile(fmt.Sprintf(".*User %s is not allowed to trigger CI via pull_request on this repo.", normalUser.UserName))
+	topts.Regexp = regexp.MustCompile(fmt.Sprintf(".*User %s is not allowed to trigger CI via pull_request in this repo.", normalUser.UserName))
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 
 	topts.ParamsRun.Clients.Log.Infof("Sending a /retest comment as a user not belonging to an allowed team in Repo CR policy but part of the organization")
