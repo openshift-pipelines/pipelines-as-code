@@ -1520,7 +1520,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pipeline-on-comment",
 			Annotations: map[string]string{
-				keys.OnComment: "^/hello-world",
+				keys.OnComment: "^/hello-world$",
 			},
 		},
 	}
@@ -1690,7 +1690,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			args: args{
 				pruns: []*tektonv1.PipelineRun{pipelineGood, pipelineOnComment},
 				runevent: info.Event{
-					TriggerComment: "/hello-world",
+					TriggerComment: "   /hello-world   \r\n",
 					TriggerTarget:  "pull_request",
 					EventType:      opscomments.OnCommentEventType.String(),
 					BaseBranch:     "main",

@@ -175,18 +175,26 @@ and you have a `Pull Request` changing the files `.tekton/pipelinerun.yaml`,
 `on-path-change-ignore` annotation will ignore the `***.md` and `***.yaml`
 files.
 
-## Matching a PipelineRun on a Regexp in a comment
+## Matching a PipelineRun on a Regex in a comment
 
-{{< tech_preview "Matching PipelineRun on regexp in comments" >}}
+{{< tech_preview "Matching PipelineRun on regex in comments" >}}
 {{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
 
-You can match a PipelineRun on a comment on a Pull Request or a [Pushed Commit]({{< relref "/docs/guide/running.md#gitops-commands-on-pushed-commits">}})
-with the annotation `pipelinesascode.tekton.dev/on-comment`.
+You can trigger a PipelineRun based on a comment on a Pull Request or a [Pushed
+Commit]({{< relref
+"/docs/guide/running.md#gitops-commands-on-pushed-commits">}}) using the
+annotation `pipelinesascode.tekton.dev/on-comment`.
 
-The comment is a regexp and if a newly created comment has this regexp it will
-automatically match the PipelineRun and start it.
+The comment is treated as a regular expression (regex). The spaces and newlines
+are stripped at the beginning or the end of the comment before matching so `^`
+will match the beginning of the comment and `$` will match the end of the
+comment without newlines or space.
 
-For example:
+If a new comment on a Pull Request matches the specified regex, the PipelineRun
+will be triggered and started. This only applies to newly created comments;
+updates or edits to existing comments will not trigger the PipelineRun.
+
+Example:
 
 ```yaml
 ---
@@ -198,23 +206,23 @@ metadata:
     pipelinesascode.tekton.dev/on-comment: "^/merge-pr"
 ```
 
-This will match the merge-pr `PipelineRun` when a comment on a pull request
+This will trigger the merge-pr PipelineRun when a comment on a pull request
 starts with `/merge-pr`.
 
-When the PipelineRun that has been triggered with the `on-comment` annotation
-gets started, the template variable `{{ trigger_comment }}` gets set. See the
-documentation [here]({{< relref "/docs/guide/gitops_commands.md#accessing-the-comment-triggering-the-pipelinerun" >}})
+When a PipelineRun is getting triggered by the `on-comment` annotation starts,
+the template variable {{ trigger_comment }} is set. For more details, refer to
+the [documentation]({{< relref
+"/docs/guide/gitops_commands.md#accessing-the-comment-triggering-the-pipelinerun"
+>}}).
 
-Note that the `on-comment` annotation will respect the `pull_request` [Policy]({{< relref "/docs/guide/policy" >}}) rule,
-so only users in the `pull_request` policy will be able to trigger the
-PipelineRun.
+Note that the on-comment annotation adheres to the pull_request [Policy]({{<
+relref "/docs/guide/policy" >}}) rule. Only users specified in the pull_request
+policy will be able to trigger the PipelineRun.
 
 {{< hint info >}}
-
-- The `on-comment` annotation is supported on `pull_request`. On  `push` events,
-it is only supported [when targeting the main branch without arguments]({{< relref
-"/docs/guide/gitops_commands.md#gitops-commands-on-pushed-commits" >}}).
-
+The on-comment annotation is supported for pull_request events. For push events,
+it is only supported [when targeting the main branch without arguments]({{<
+relref "/docs/guide/gitops_commands.md#gitops-commands-on-pushed-commits" >}}).
 {{< /hint >}}
 
 ## Matching PipelineRun to a Pull Request labels
@@ -304,7 +312,7 @@ You can find more information about the CEL language spec here:
 <https://github.com/google/cel-spec/blob/master/doc/langdef.md>
 {{< /hint >}}
 
-### Matching a PipelineRun to a branch with a regexp
+### Matching a PipelineRun to a branch with a regex
 
 In a CEL expression, you can match a field name using a regular expression. For
 example, if you want to trigger a `PipelineRun` for the`pull_request` event and
