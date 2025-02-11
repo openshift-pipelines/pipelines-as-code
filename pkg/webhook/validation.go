@@ -2,6 +2,8 @@ package webhook
 
 import (
 	"context"
+	"net/url"
+	"os"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	pac "github.com/openshift-pipelines/pipelines-as-code/pkg/generated/listers/pipelinesascode/v1alpha1"
@@ -25,6 +27,22 @@ func (ac *reconciler) Admit(_ context.Context, request *v1.AdmissionRequest) *v1
 	repo := v1alpha1.Repository{}
 	if _, _, err := universalDeserializer.Decode(raw, nil, &repo); err != nil {
 		return webhook.MakeErrorStatus("validation failed: %v", err)
+	}
+
+	// Check that if we have a URL set only for non global repository which can be set as empty.
+	if repo.GetNamespace() != os.Getenv("SYSTEM_NAMESPACE") {
+		if repo.Spec.URL == "" {
+			return webhook.MakeErrorStatus("URL must be set")
+		}
+
+		parsed, err := url.Parse(repo.Spec.URL)
+		if err != nil {
+			return webhook.MakeErrorStatus("invalid URL format: %v", err)
+		}
+
+		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+			return webhook.MakeErrorStatus("URL scheme must be http or https")
+		}
 	}
 
 	exist, err := checkIfRepoExist(ac.pacLister, &repo, "")

@@ -15,14 +15,19 @@ The Repository CR serves the following purposes:
 - Letting you declare [custom parameters]({{< relref "/docs/guide/customparams" >}})
   within the `PipelineRun` that can be expanded based on certain filters.
 
-The process involves creating a Repository CR inside the target namespace
-my-pipeline-ci, using the tkn pac CLI or another method.
+To configure Pipelines-as-Code, a Repository CR must be created within the
+user's namespace, for example `project-repository`, where their CI will run.
 
-For example, this will create a Repo CR for the GitHub repository
-<https://github.com/linda/project>
+Keep in mind that creating a Repository CR in the namespace where
+Pipelines-as-Code is deployed is not supported (for example
+`openshift-pipelines` or `pipelines-as-code` namespace).
+
+You can create the Repository CR using the [tkn pac]({{< relref
+"/docs/guide/cli.md" >}}) CLI and its `tkn pac create repository` command or by
+applying a YAML file with kubectl:
 
 ```yaml
-cat <<EOF|kubectl create -n my-pipeline-ci -f-
+cat <<EOF|kubectl create -n project-repository -f-
 apiVersion: "pipelinesascode.tekton.dev/v1alpha1"
 kind: Repository
 metadata:
@@ -41,6 +46,20 @@ If the `PipelineRun` matches via its annotations the event, for example on a
 specific branch and event like a `push` or `pull_request`, it will start the
 `PipelineRun` where the `Repository` CR has been created. You can only start the
 `PipelineRun` in the namespace where the Repository CR is located.
+
+{{< hint info >}}
+Pipelines-as-Code uses a Kubernetes Mutating Admission Webhook to enforce a
+single Repository CRD per URL in the cluster and to ensure that URLs are valid
+and non-empty.
+
+Disabling this webhook is not supported and may pose a security risk in
+clusters with untrusted users, as it could allow one user to hijack another's
+private repository and gain unauthorized control over it.
+
+If the webhook were disabled, multiple Repository CRDs could be created for the
+same URL. In this case, only the first created CRD would be recognized unless
+the user specifies the `target-namespace` annotation in their PipelineRun.
+{{< /hint >}}
 
 ## Setting PipelineRun definition source
 
@@ -62,15 +81,6 @@ pipelinesascode.tekton.dev/target-namespace: "mynamespace"
 Pipelines-as-Code will then only match the repository in the mynamespace
 namespace instead of trying to match it from all available repositories on the
 cluster.
-
-{{< hint info >}}
-Pipelines-as-Code installs a Kubernetes Mutating Admission Webhook to ensure
-that only one Repository CRD is created per URL on a cluster.
-
-If you disable this webhook, multiple Repository CRDs can be created for the
-same URL. However, only the oldest created Repository CRD will be matched,
-unless you use the `target-namespace` annotation.
-{{< /hint >}}
 
 ### PipelineRun definition provenance
 
