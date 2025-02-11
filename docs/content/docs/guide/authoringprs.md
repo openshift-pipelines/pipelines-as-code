@@ -87,7 +87,7 @@ You will encounter a YAML validation error because objects or multiline strings 
 spec:
   params:
     - name: body
-      value: |
+      value: |-
         {{ body }}
     # Alternatively, use '>' to specify that the value will be in block format
     - name: pull_request
