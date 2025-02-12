@@ -65,8 +65,10 @@ func TestGiteaOnCommentAnnotation(t *testing.T) {
 				Value: "bar",
 			},
 			{
-				Name:  "custom3",
-				Value: "moto",
+				Name: "custom_no_initial_value",
+			},
+			{
+				Name: "custom_never_value",
 			},
 		},
 	}
@@ -111,7 +113,7 @@ func TestGiteaOnCommentAnnotation(t *testing.T) {
 	err = twait.RegexpMatchingInPodLog(context.Background(), topts.ParamsRun, topts.TargetNS, fmt.Sprintf("tekton.dev/pipelineRun=%s", last.PipelineRunName), "step-task", *regexp.MustCompile(triggerComment), "", 2)
 	assert.NilError(t, err)
 
-	tgitea.PostCommentOnPullRequest(t, topts, fmt.Sprintf(`%s revision=main custom1=thisone custom2="another one" custom3="a \"quote\""`, triggerComment))
+	tgitea.PostCommentOnPullRequest(t, topts, fmt.Sprintf(`%s revision=main custom1=thisone custom2="another one" custom_no_initial_value="a \"quote\""`, triggerComment))
 	waitOpts.MinNumberStatus = 4
 	repo, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)

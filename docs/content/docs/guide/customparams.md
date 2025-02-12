@@ -45,11 +45,25 @@ spec:
         key: companyname
 ```
 
+Lastly, if no default value makes sense for a custom param, it can be defined
+without a value:
+
+```yaml
+spec:
+  params:
+    - name: start_time
+```
+
+If the custom parameter is not defined with any value, it is only expanded
+if a value is supplied via [a GitOps command]({{< relref "/docs/guide/gitops_commands#passing-parameters-to-gitops-commands-as-arguments" >}}).
+
 {{< hint info >}}
 
 - If you have a `value` and a `secret_ref` defined, the `value` will be used.
-- If you don't have a `value` or a `secret_ref`, the parameter will not be
-  parsed, and it will be shown as `{{ param }}` in the `PipelineRun`.
+- If you don't have a `value` or a `secret_ref`, and the parameter is not
+  [overridden by a GitOps command]({{< relref "/docs/guide/gitops_commands#passing-parameters-to-gitops-commands-as-arguments" >}}),
+  the parameter will not be parsed, and it will be shown as `{{ param }}` in
+  the `PipelineRun`.
 - If you don't have a `name` in the `params`, the parameter will not be parsed.
 - If you have multiple `params` with the same `name`, the last one will be used.
 {{< /hint >}}
