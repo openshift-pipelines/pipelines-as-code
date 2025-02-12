@@ -366,6 +366,8 @@ need to have on your system:
 - We target arm64 and amd64. The dogfooding is on arm64, so we need to ensure
 that all jobs and docker images used in the .tekton PipelineRuns are built
 for arm64.
+- A GitHub action is using [ko](https://ko.build/) to build the amd64 and arm64 images whenever there is
+a push to a branch or for a release.
 
 # Links
 
