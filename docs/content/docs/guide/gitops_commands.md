@@ -102,9 +102,9 @@ grep "string" /tmp/comment
 
 ## Custom GitOps Commands
 
-Using the [on-comment]({{< relref "/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regexp-in-a-comment" >}}) annotation on your `PipelineRun`, you can define custom GitOps commands that will be triggered by comments on the Pull Request.
+Using the [on-comment]({{< relref "/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regex-in-a-comment" >}}) annotation on your `PipelineRun`, you can define custom GitOps commands that will be triggered by comments on the Pull Request.
 
-See the [on-comment]({{< relref "/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regexp-in-a-comment" >}}) guide for more detailed information.
+See the [on-comment]({{< relref "/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regex-in-a-comment" >}}) guide for more detailed information.
 
 For a complete example, you can see how Pipelines-as-Code's own repo implemented some prow comments via the `on-comment` annotation:
 

@@ -204,7 +204,10 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 				logger.Warnf("could not compile regexp %s from pipelineRun %s", targetComment, prName)
 				continue
 			}
-			if re.MatchString(event.TriggerComment) {
+
+			strippedComment := strings.TrimSpace(
+				strings.TrimPrefix(strings.TrimSuffix(event.TriggerComment, "\r\n"), "\r\n"))
+			if re.MatchString(strippedComment) {
 				event.EventType = opscomments.OnCommentEventType.String()
 				logger.Infof("matched pipelinerun with name: %s on gitops comment: %q", prName, event.TriggerComment)
 				matchedPRs = append(matchedPRs, prMatch)
