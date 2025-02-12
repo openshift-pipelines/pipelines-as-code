@@ -539,7 +539,7 @@ func TestParsePayLoad(t *testing.T) {
 			shaRet:            "samplePRshanew",
 			targetPipelinerun: "dummy",
 			wantedBranchName:  "main",
-			wantErrString:     "provided branch main does not contains sha samplePRshanew",
+			wantErrString:     "provided SHA samplePRshanew is not the HEAD commit of the branch main",
 		},
 	}
 	for _, tt := range tests {
