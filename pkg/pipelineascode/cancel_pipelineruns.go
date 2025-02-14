@@ -16,7 +16,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 )
 
@@ -87,9 +86,6 @@ func (p *PacRun) cancelInProgressMatchingPR(ctx context.Context, matchPR *tekton
 		labelMap[keys.PullRequest] = strconv.Itoa(p.event.PullRequestNumber)
 	}
 	labelSelector := getLabelSelector(labelMap)
-	if p.event.TriggerTarget == triggertype.PullRequest {
-		labelSelector += fmt.Sprintf(",%s in (pull_request, %s)", keys.EventType, opscomments.AnyOpsKubeLabelInSelector())
-	}
 	p.run.Clients.Log.Infof("cancel-in-progress: selecting pipelineRuns to cancel with labels: %v", labelSelector)
 	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(matchPR.GetNamespace()).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
