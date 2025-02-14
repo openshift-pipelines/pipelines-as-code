@@ -41,14 +41,12 @@ jobs:
           set -x
           releaseBranchFormat='release-v'
           if [[ ${{ github.ref_name }} == ${releaseBranchFormat}* ]]; then
-            tag="${${{ github.ref_name }}#*-}" 
+            tag=v$(echo ${{ github.ref_name }}|sed "s,${releaseBranchFormat},,")
           elif [[ ${{ github.ref }} == refs/pull/* ]]; then
             tag=pr-$(echo ${{ github.ref }} | cut -c11-|sed 's,/merge,,')
           else
             tag=$(echo ${{ github.ref_name }}|sed 's,/merge,,')
           fi
-
-
           for image in ./cmd/*;do
             ko build -B -t "${tag}" --platform="${{ env.PLATFORMS }}" "${image}"
           done
