@@ -33,7 +33,7 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 		repoURL = p.event.CloneURL
 	}
 	changedFiles := p.getChangedFiles(ctx)
-	triggerCommentAsSingleLine := strings.ReplaceAll(p.event.TriggerComment, "\n", "\\n")
+	triggerCommentAsSingleLine := strings.ReplaceAll(strings.ReplaceAll(p.event.TriggerComment, "\r\n", "\\n"), "\n", "\\n")
 	pullRequestLabels := strings.Join(p.event.PullRequestLabel, "\\n")
 
 	return map[string]string{

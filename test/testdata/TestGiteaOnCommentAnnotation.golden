@@ -1,7 +1,6 @@
 The comment is:
-/hello-world revision=main custom1=thisone custom2="another one" custom3="a \"quote\""
+/hello-world\n\n revision=main custom1=thisone custom2="another one" custom3="a \"quote\""
 The event is on-comment
-The revision is main
 The custom1 value is thisone
 The custom2 value is another one
 The custom3 value is a quote
