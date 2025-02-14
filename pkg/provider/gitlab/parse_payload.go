@@ -97,7 +97,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.BaseBranch = gitEvent.Ref
 		processedEvent.HeadURL = gitEvent.Project.WebURL
 		processedEvent.BaseURL = processedEvent.HeadURL
-		processedEvent.TriggerTarget = "push"
+		processedEvent.TriggerTarget = triggertype.Push
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
 		v.targetProjectID = gitEvent.ProjectID
@@ -121,7 +121,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		processedEvent.BaseBranch = gitEvent.Ref
 		processedEvent.HeadURL = gitEvent.Project.WebURL
 		processedEvent.BaseURL = processedEvent.HeadURL
-		processedEvent.TriggerTarget = "push"
+		processedEvent.TriggerTarget = triggertype.Push
 		v.pathWithNamespace = gitEvent.Project.PathWithNamespace
 		processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
 		v.targetProjectID = gitEvent.ProjectID

@@ -34,8 +34,57 @@ type FileChange struct {
 	NewContent string
 }
 
+// initializeGitClone initializes git's configuration, clones a given repository, and sets up the given branch.
+// Returns the repository path, a cleanup function which should be deferred, and an error, if any occurred.
+func initializeGit(t *testing.T, opts *Opts) (string, func(), error) {
+	tmpdir := fs.NewDir(t, t.Name())
+	fixPwd := env.ChangeWorkingDir(t, tmpdir.Path())
+	cleanupFunc := func() {
+		fixPwd()
+		if os.Getenv("TEST_NOCLEANUP") == "" {
+			tmpdir.Remove()
+		}
+	}
+	path := tmpdir.Path()
+
+	var err error
+
+	if _, err = git.RunGit(path, "init"); err != nil {
+		return "", func() {}, err
+	}
+	if _, err = git.RunGit(path, "config", "user.name", "OpenShift Pipelines E2E test"); err != nil {
+		return "", func() {}, err
+	}
+	if _, err = git.RunGit(path, "config", "user.email", "e2e-pipeline@redhat.com"); err != nil {
+		return "", func() {}, err
+	}
+
+	if _, err = git.RunGit(path, "remote", "add", "-f", "origin", opts.GitURL); err != nil {
+		return "", func() {}, err
+	}
+
+	if _, err = git.RunGit(path, "fetch", "-a", "origin"); err != nil {
+		return "", func() {}, err
+	}
+
+	if strings.HasPrefix(opts.TargetRefName, "refs/tags") {
+		_, err = git.RunGit(path, "reset", "--hard", "origin/"+opts.BaseRefName)
+	} else {
+		if opts.NoCheckOutFromBase {
+			// Create a new branch without the base reference,
+			// which can be helpful for testing when you only want to add specific requested files
+			_, err = git.RunGit(path, "checkout", "-B", opts.TargetRefName)
+		} else {
+			// checkout new branch from base branch
+			_, err = git.RunGit(path, "checkout", "-B", opts.TargetRefName, "origin/"+opts.BaseRefName)
+		}
+	}
+	return path, cleanupFunc, err
+}
+
 // gitPushPullRetry tries to push the files to the repo, if it fails it will try to rebase and push again.
-func gitPushPullRetry(t *testing.T, opts *Opts, path string) {
+// Returns the sha of the commit pushed.
+func gitPushPullRetry(t *testing.T, opts *Opts, path string) string {
 	// use a loop to try multiple times in case of error
 	var err error
 	count := 0
@@ -48,7 +97,12 @@ func gitPushPullRetry(t *testing.T, opts *Opts, path string) {
 			opts.Log.Infof("Pushed files to repo %s branch %s", opts.WebURL, opts.TargetRefName)
 			// trying to avoid the multiple events at the time of creation we have a sync
 			time.Sleep(5 * time.Second)
-			return
+
+			// get sha
+			sha, err := git.RunGit(path, "rev-parse", "HEAD")
+			assert.NilError(t, err)
+
+			return sha
 		}
 		if strings.Contains(err.Error(), "non-fast-forward") {
 			_, err = git.RunGit(path, "fetch", "-a", "origin")
@@ -69,40 +123,8 @@ func gitPushPullRetry(t *testing.T, opts *Opts, path string) {
 }
 
 func PushFilesToRefGit(t *testing.T, opts *Opts, entries map[string]string) string {
-	tmpdir := fs.NewDir(t, t.Name())
-	defer (func() {
-		if os.Getenv("TEST_NOCLEANUP") == "" {
-			tmpdir.Remove()
-		}
-	})()
-	defer env.ChangeWorkingDir(t, tmpdir.Path())()
-	path := tmpdir.Path()
-	_, err := git.RunGit(path, "init")
-	assert.NilError(t, err)
-
-	_, err = git.RunGit(path, "config", "user.name", "OpenShift Pipelines E2E test")
-	assert.NilError(t, err)
-	_, err = git.RunGit(path, "config", "user.email", "e2e-pipeline@redhat.com")
-	assert.NilError(t, err)
-
-	_, err = git.RunGit(path, "remote", "add", "-f", "origin", opts.GitURL)
-	assert.NilError(t, err)
-
-	_, err = git.RunGit(path, "fetch", "-a", "origin")
-	assert.NilError(t, err)
-
-	if strings.HasPrefix(opts.TargetRefName, "refs/tags") {
-		_, err = git.RunGit(path, "reset", "--hard", "origin/"+opts.BaseRefName)
-	} else {
-		if opts.NoCheckOutFromBase {
-			// Create a new branch without the base reference,
-			// which can be helpful for testing when you only want to add specific requested files
-			_, err = git.RunGit(path, "checkout", "-B", opts.TargetRefName)
-		} else {
-			// checkout new branch from base branch
-			_, err = git.RunGit(path, "checkout", "-B", opts.TargetRefName, "origin/"+opts.BaseRefName)
-		}
-	}
+	path, cleanupFunc, err := initializeGit(t, opts)
+	defer cleanupFunc()
 	assert.NilError(t, err)
 
 	for filename, content := range entries {
@@ -125,42 +147,12 @@ func PushFilesToRefGit(t *testing.T, opts *Opts, entries map[string]string) stri
 		assert.NilError(t, err)
 	}
 
-	// get sha
-	sha, err := git.RunGit(path, "rev-parse", "HEAD")
-	assert.NilError(t, err)
-
-	gitPushPullRetry(t, opts, path)
-	return sha
+	return gitPushPullRetry(t, opts, path)
 }
 
 func ChangeFilesRefGit(t *testing.T, opts *Opts, fileChanges []FileChange) {
-	tmpdir := fs.NewDir(t, t.Name())
-	defer (func() {
-		if os.Getenv("TEST_NOCLEANUP") == "" {
-			tmpdir.Remove()
-		}
-	})()
-	defer env.ChangeWorkingDir(t, tmpdir.Path())()
-	path := tmpdir.Path()
-	_, err := git.RunGit(path, "init")
-	assert.NilError(t, err)
-
-	_, err = git.RunGit(path, "config", "user.name", "OpenShift Pipelines E2E test")
-	assert.NilError(t, err)
-	_, err = git.RunGit(path, "config", "user.email", "e2e-pipeline@redhat.com")
-	assert.NilError(t, err)
-
-	_, err = git.RunGit(path, "remote", "add", "-f", "origin", opts.GitURL)
-	assert.NilError(t, err)
-
-	_, err = git.RunGit(path, "fetch", "-a", "origin")
-	assert.NilError(t, err)
-
-	if strings.HasPrefix(opts.TargetRefName, "refs/tags") {
-		_, err = git.RunGit(path, "reset", "--hard", "origin/"+opts.BaseRefName)
-	} else {
-		_, err = git.RunGit(path, "checkout", "-B", opts.TargetRefName, "origin/"+opts.BaseRefName)
-	}
+	path, cleanupFunc, err := initializeGit(t, opts)
+	defer cleanupFunc()
 	assert.NilError(t, err)
 
 	for _, fileChange := range fileChanges {
