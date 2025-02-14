@@ -31,7 +31,7 @@ Roses are red, violets are blue. Pipelines are bound to flake by design.
 
 {{< hint info >}}
 
-Please be aware that GitOps commands such as `/test` and others will not function on closed Pull Requests or Merge Requests.  
+Please be aware that GitOps commands such as `/test` and others will not function on closed Pull Requests or Merge Requests.
 
 {{< /hint >}}
 
@@ -87,20 +87,44 @@ The PipelineRun will be restarted regardless of the annotations if the comment `
 
 ## Accessing the Comment Triggering the PipelineRun
 
-When you trigger a PipelineRun via a GitOps Command, the template variable `{{ trigger_comment }}` is set to the actual comment that triggered it.
+When you trigger a PipelineRun via a GitOps Command, the template variable `{{
+trigger_comment }}` is set to the actual comment that triggered it.
 
-You can then perform actions based on the comment content with a shell script or other methods.
+You can then perform actions based on the comment content with a shell script
+or other methods.
 
-There is a restriction with the `trigger_comment` variable: we modify it to replace newlines with `\n` since multi-line comments can cause issues when replaced inside the YAML.
+Expanding `{{ trigger_comment }}` in YAML can break parsing if the comment
+contains newlines. For example, a GitHub comment like:
 
-It is up to you to replace it back with newlines. For example, with shell scripts, you can use `echo -e` to expand the newline back.
+```console
+/help
 
-Example of a shell script:
+This is a test.
+```
+
+Expands to:
+
+```yaml
+params:
+  - name: trigger_comment
+    value: "/help
+
+This is a test."
+```
+
+The empty line makes the YAML invalid. To prevent this, we replace `\r\n` with
+`\n` to ensure proper formatting.
+
+You can restore the newlines in your task as needed.
+
+For example, in a shell script, use `echo -e` to expand `\n` back into actual newlines:
 
 ```shell
 echo -e "{{ trigger_comment }}" > /tmp/comment
-grep "string" /tmp/comment
+grep "/help" /tmp/comment # will output only /help
 ```
+
+This ensures the comment is correctly formatted when processed.
 
 ## Custom GitOps Commands
 
