@@ -71,44 +71,48 @@ func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEv
 					if v, ok := val.Value().(string); ok {
 						b = []byte(v)
 					}
-				case types.Bytes:
+
+				case types.Bytes, types.Double, types.Int:
 					raw, err = val.ConvertToNative(structType)
 					if err == nil {
-						b, err = raw.(*structpb.Value).MarshalJSON()
-						if err != nil {
-							b = []byte{}
+						if structVal, ok := raw.(*structpb.Value); ok {
+							b, err = structVal.MarshalJSON()
+							if err != nil {
+								b = []byte{}
+							}
 						}
 					}
-				case types.Double, types.Int:
-					raw, err = val.ConvertToNative(structType)
-					if err == nil {
-						b, err = raw.(*structpb.Value).MarshalJSON()
-						if err != nil {
-							b = []byte{}
-						}
-					}
+
 				case traits.Lister:
 					raw, err = val.ConvertToNative(listType)
 					if err == nil {
-						s, err := protojson.Marshal(raw.(proto.Message))
-						if err == nil {
-							b = s
+						if msg, ok := raw.(proto.Message); ok {
+							b, err = protojson.Marshal(msg)
+							if err != nil {
+								b = []byte{}
+							}
 						}
 					}
+
 				case traits.Mapper:
 					raw, err = val.ConvertToNative(mapType)
 					if err == nil {
-						s, err := protojson.Marshal(raw.(proto.Message))
-						if err == nil {
-							b = s
+						if msg, ok := raw.(proto.Message); ok {
+							b, err = protojson.Marshal(msg)
+							if err != nil {
+								b = []byte{}
+							}
 						}
 					}
+
 				case types.Bool:
 					raw, err = val.ConvertToNative(structType)
 					if err == nil {
-						b, err = json.Marshal(raw.(*structpb.Value).GetBoolValue())
-						if err != nil {
-							b = []byte{}
+						if structVal, ok := raw.(*structpb.Value); ok {
+							b, err = json.Marshal(structVal.GetBoolValue())
+							if err != nil {
+								b = []byte{}
+							}
 						}
 					}
 
