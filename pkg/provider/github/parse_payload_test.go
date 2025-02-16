@@ -145,7 +145,7 @@ func TestParsePayLoad(t *testing.T) {
 		},
 		{
 			name:               "bad/issue comment retest only with github apps",
-			wantErrString:      "only supported with github apps",
+			wantErrString:      "no github client has been initialized",
 			eventType:          "issue_comment",
 			triggerTarget:      "pull_request",
 			payloadEventStruct: github.IssueCommentEvent{Action: github.Ptr("created")},
@@ -369,10 +369,37 @@ func TestParsePayLoad(t *testing.T) {
 		},
 		{
 			name:               "bad/commit comment retest only with github apps",
-			wantErrString:      "only supported with github apps",
+			wantErrString:      "no github client has been initialized",
 			eventType:          "commit_comment",
 			triggerTarget:      "push",
 			payloadEventStruct: github.CommitCommentEvent{Action: github.Ptr("created")},
+		},
+		{
+			name:               "bad/commit comment for event has no repository reference",
+			wantErrString:      "error parsing payload the repository should not be nil",
+			eventType:          "commit_comment",
+			triggerTarget:      "push",
+			githubClient:       true,
+			payloadEventStruct: github.CommitCommentEvent{},
+		},
+		{
+			name:          "bad/commit comment for /test command does not contain branch keyword",
+			wantErrString: "the GitOps comment dummy rbanch does not contain a branch word",
+			eventType:     "commit_comment",
+			triggerTarget: "push",
+			githubClient:  true,
+			payloadEventStruct: github.CommitCommentEvent{
+				Repo: sampleRepo,
+				Comment: &github.RepositoryComment{
+					CommitID: github.Ptr("samplePRsha"),
+					HTMLURL:  github.Ptr("/777"),
+					Body:     github.Ptr("/test dummy rbanch:test"), // rbanch is wrong word for branch 🙂
+				},
+			},
+			muxReplies:        map[string]interface{}{"/repos/owner/reponame/pulls/777": samplePR},
+			shaRet:            "samplePRsha",
+			targetPipelinerun: "dummy",
+			wantedBranchName:  "main",
 		},
 		{
 			name:          "good/commit comment for retest a pr",

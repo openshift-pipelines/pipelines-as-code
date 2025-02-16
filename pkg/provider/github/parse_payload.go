@@ -235,7 +235,8 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		return v.handleCheckSuites(ctx, gitEvent)
 	case *github.IssueCommentEvent:
 		if v.Client == nil {
-			return nil, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
+			return nil, fmt.Errorf("no github client has been initialized, " +
+				"exiting... (hint: did you forget setting a secret on your repo?)")
 		}
 		if gitEvent.GetAction() != "created" {
 			return nil, fmt.Errorf("only newly created comment is supported, received: %s", gitEvent.GetAction())
@@ -246,7 +247,8 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		}
 	case *github.CommitCommentEvent:
 		if v.Client == nil {
-			return nil, fmt.Errorf("gitops style comments operation is only supported with github apps integration")
+			return nil, fmt.Errorf("no github client has been initialized, " +
+				"exiting... (hint: did you forget setting a secret on your repo?)")
 		}
 		processedEvent, err = v.handleCommitCommentEvent(ctx, gitEvent)
 		if err != nil {
