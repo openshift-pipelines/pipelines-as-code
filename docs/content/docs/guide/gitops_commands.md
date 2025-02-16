@@ -132,9 +132,14 @@ Using the [on-comment]({{< relref "/docs/guide/matchingevents.md#matching-a-pipe
 
 See the [on-comment]({{< relref "/docs/guide/matchingevents.md#matching-a-pipelinerun-on-a-regex-in-a-comment" >}}) guide for more detailed information.
 
-For a complete example, you can see how Pipelines-as-Code's own repo implemented some prow comments via the `on-comment` annotation:
+The `on-comment` annotation offers a powerful and flexible way to build a
+GitOps command system, letting you trigger specific actions based on comments
+made on a Pull Request.
 
-<https://github.com/openshift-pipelines/pipelines-as-code/blob/main/.tekton/prow.yaml>
+For a practical example, check out the related project
+[pac-boussole](https://github.com/openshift-pipelines/pac-boussole), which
+utilizes the `on-comment` annotation to create a PipelineRun experience similar
+to [Prow](https://docs.prow.k8s.io/).
 
 ## Cancelling a PipelineRun
 
