@@ -303,7 +303,7 @@ not the `experimental` branch you could have:
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
-  event == "pull_request" && target_branch != experimental"
+  event == "pull_request" && target_branch != "experimental"
 ```
 
 {{< hint info >}}
@@ -385,9 +385,9 @@ For example, this expression when run on GitHub:
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
-  body.pull_request.base.ref == "main" &&
-    body.pull_request.user.login == "superuser" &&
-    body.action == "synchronize"
+  "{{ body.pull_request.base.ref }}" == "main" &&
+    "{{ body.pull_request.user.login }}" == "superuser" &&
+    "{{ body.action }}" == "synchronize"
 ```
 
 will only match if the pull request is targeting the `main` branch, the author
@@ -430,7 +430,7 @@ For example, this is how to make sure the event is a pull_request on [GitHub](ht
 
 ```yaml
 pipelinesascode.tekton.dev/on-cel-expression: |
-  headers['x-github-event'] == "pull_request"
+  "{{ headers['x-github-event'] }}" == "pull_request"
 ```
 
 ## Matching a PipelineRun to a branch with a comma
