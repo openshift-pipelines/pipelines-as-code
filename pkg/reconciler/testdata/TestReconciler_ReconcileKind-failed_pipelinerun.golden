@@ -8,7 +8,7 @@
 <table>
   <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
 <tr>
-<td>❌ Failed</td>
+<td>🔴 Failed</td>
 <td>-25 minutes</td><td>
 
 [task1](https://dashboard.is.not.configured)

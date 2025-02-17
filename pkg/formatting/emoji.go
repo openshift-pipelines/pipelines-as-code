@@ -18,15 +18,19 @@ func formatCondition(c knative1.Conditions, skipemoji bool) string {
 
 	switch c[0].Status {
 	case corev1.ConditionFalse:
-		emoji = "❌"
+		emoji = "🔴"
 		status = "Failed"
 	case corev1.ConditionTrue:
-		emoji = "✅"
+		emoji = "🟢"
 		status = "Succeeded"
 	case corev1.ConditionUnknown:
-		emoji = "🏃"
+		emoji = "🟡"
 		status = "Running"
+	default:
+		emoji = "🔄"
+		status = "Pending"
 	}
+
 	if !skipemoji {
 		status = fmt.Sprintf("%s %s", emoji, status)
 	}
