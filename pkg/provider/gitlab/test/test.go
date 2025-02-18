@@ -66,8 +66,12 @@ func MuxDisallowUserID(mux *http.ServeMux, projectID, userID int) {
 	})
 }
 
-func MuxListTektonDir(_ *testing.T, mux *http.ServeMux, pid int, ref, prs string) {
+func MuxListTektonDir(_ *testing.T, mux *http.ServeMux, pid int, ref, prs string, wantTreeAPIErr, wantFilesAPIErr bool) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/tree", pid), func(rw http.ResponseWriter, r *http.Request) {
+		if wantTreeAPIErr {
+			rw.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		if r.URL.Query().Get("pagination") == "keyset" {
 			if r.URL.Query().Get("ref") == ref {
 				if r.URL.Query().Get("page_token") != "page2" {
@@ -87,8 +91,8 @@ func MuxListTektonDir(_ *testing.T, mux *http.ServeMux, pid int, ref, prs string
 		}
 	})
 
-	MuxGetFile(mux, pid, "pr.yaml", prs)
-	MuxGetFile(mux, pid, "random.yaml", `foo:bar`)
+	MuxGetFile(mux, pid, "pr.yaml", prs, wantFilesAPIErr)
+	MuxGetFile(mux, pid, "random.yaml", `foo:bar`, wantTreeAPIErr)
 }
 
 func MuxDiscussionsNoteEmpty(mux *http.ServeMux, pid, mrID int) {
@@ -120,8 +124,12 @@ func MuxDiscussionsNote(mux *http.ServeMux, pid, mrID int, author string, author
 	})
 }
 
-func MuxGetFile(mux *http.ServeMux, pid int, fname, content string) {
+func MuxGetFile(mux *http.ServeMux, pid int, fname, content string, wantErr bool) {
 	mux.HandleFunc(fmt.Sprintf("/projects/%d/repository/files/%s/raw", pid, fname), func(rw http.ResponseWriter, _ *http.Request) {
+		if wantErr {
+			rw.WriteHeader(http.StatusUnauthorized)
+			return
+		}
 		fmt.Fprint(rw, content)
 	})
 }
