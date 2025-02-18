@@ -451,15 +451,15 @@ func (s *repositoryService) CreateStatus(ctx context.Context, repo, ref string, 
 		State: convertFromState(input.State),
 		Key:   input.Label,
 		Name:  input.Label,
-		URL:   input.Target,
+		URL:   input.Link,
 		Desc:  input.Desc,
 	}
 	res, err := s.client.do(ctx, "POST", path, in, nil)
 	return &scm.Status{
-		State:  input.State,
-		Label:  input.Label,
-		Desc:   input.Desc,
-		Target: input.Target,
+		State: input.State,
+		Label: input.Label,
+		Desc:  input.Desc,
+		Link:  input.Link,
 	}, res, err
 }
 

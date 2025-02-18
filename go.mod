@@ -18,7 +18,7 @@ require (
 	github.com/google/go-github/scrape v0.0.0-20250130204427-cbe65f01498a
 	github.com/google/go-github/v68 v68.0.0
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
-	github.com/jenkins-x/go-scm v1.14.55
+	github.com/jenkins-x/go-scm v1.14.56
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/juju/ansiterm v1.0.0
 	github.com/ktrysmt/go-bitbucket v0.9.81
