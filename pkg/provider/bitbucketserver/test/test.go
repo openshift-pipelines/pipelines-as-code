@@ -116,7 +116,7 @@ func MakeEvent(event *info.Event) *info.Event {
 	return rev
 }
 
-func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir, targetDirName string) {
+func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir, targetDirName string, wantDirErr, wantFilesErr bool) {
 	files, err := os.ReadDir(testDir)
 	if err != nil {
 		// no error just disappointed
@@ -137,8 +137,8 @@ func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir,
 		filecontents[path] = string(content)
 	}
 
-	MuxListDir(t, mux, event, targetDirName, filenames)
-	MuxFiles(t, mux, event, event.HeadBranch, targetDirName, filecontents)
+	MuxListDir(t, mux, event, targetDirName, filenames, wantDirErr)
+	MuxFiles(t, mux, event, event.HeadBranch, targetDirName, filecontents, wantFilesErr)
 }
 
 func MuxCommitInfo(t *testing.T, mux *http.ServeMux, event *info.Event, commit bbv1.Commit) {
@@ -164,10 +164,13 @@ func MuxDefaultBranch(t *testing.T, mux *http.ServeMux, event *info.Event, defau
 	})
 }
 
-func MuxFiles(_ *testing.T, mux *http.ServeMux, event *info.Event, _, targetDirName string, filescontents map[string]string) {
+func MuxFiles(_ *testing.T, mux *http.ServeMux, event *info.Event, _, targetDirName string, filescontents map[string]string, wantErr bool) {
 	for filename := range filescontents {
 		path := fmt.Sprintf("/projects/%s/repos/%s/raw/%s", event.Organization, event.Repository, filename)
 		mux.HandleFunc(path, func(rw http.ResponseWriter, r *http.Request) {
+			if wantErr {
+				rw.WriteHeader(http.StatusUnauthorized)
+			}
 			// delete everything until the targetDirName in string this is
 			// fragile, so we do the filepath.Base if we can't mark by targetDirName
 			s := r.URL.Path[strings.LastIndex(r.URL.Path, targetDirName):]
@@ -179,26 +182,21 @@ func MuxFiles(_ *testing.T, mux *http.ServeMux, event *info.Event, _, targetDirN
 	}
 }
 
-func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, path string, files []string) {
+func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, path string, files []string, wantErr bool) {
 	url := fmt.Sprintf("/projects/%s/repos/%s/files/%s", event.Organization, event.Repository, path)
-	mux.HandleFunc(url, func(rw http.ResponseWriter, r *http.Request) {
-		pagedfiles := files[0 : len(files)/2]
-		isLastPage := false
-		nextPageStart := 1
-		start := 0
-		if r.URL.Query().Get("start") != "" {
-			pagedfiles = files[len(files)/2:]
-			isLastPage = true
-			nextPageStart = 0
-			start = 1
+	mux.HandleFunc(url, func(rw http.ResponseWriter, _ *http.Request) {
+		if wantErr {
+			rw.WriteHeader(http.StatusUnauthorized)
 		}
 
+		// as pagination of jenkins-x/go-scm is not like previous one
+		// it doesn't work as it did with previous lib.
 		resp := map[string]interface{}{
-			"start":         start,
-			"isLastPage":    isLastPage,
-			"values":        pagedfiles,
-			"size":          len(files) / 2,
-			"nextPageStart": nextPageStart,
+			"start":         0,
+			"isLastPage":    true,
+			"values":        files,
+			"size":          len(files),
+			"nextPageStart": 0,
 		}
 		b, err := json.Marshal(resp)
 		assert.NilError(t, err)
