@@ -27,6 +27,7 @@ import (
 const taskStatusTemplate = `
 {{range $taskrun := .TaskRunList }}* **{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}**  {{ $taskrun.ConsoleLogURL }} *{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}*
 {{ end }}`
+const apiResponseLimit = 100
 
 var _ provider.Interface = (*Provider)(nil)
 
@@ -145,12 +146,14 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	return nil
 }
 
-func (v *Provider) concatAllYamlFiles(objects []string, runevent *info.Event) (string, error) {
+func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []string, sha string, runevent *info.Event) (string, error) {
 	var allTemplates string
 	for _, value := range objects {
 		if strings.HasSuffix(value, ".yaml") ||
 			strings.HasSuffix(value, ".yml") {
-			data, err := v.getRaw(runevent, runevent.SHA, value)
+			// if sha is empty string then it fetches raw file from
+			// default branch which we can use for PAC provenance.
+			data, err := v.getRaw(ctx, runevent, sha, value)
 			if err != nil {
 				return "", err
 			}
@@ -168,58 +171,58 @@ func (v *Provider) concatAllYamlFiles(objects []string, runevent *info.Event) (s
 	return allTemplates, nil
 }
 
-func (v *Provider) getRaw(runevent *info.Event, revision, path string) (string, error) {
-	localVarOptionals := map[string]interface{}{
-		"at": revision,
-	}
-	resp, err := v.Client.DefaultApi.GetRawContent(v.projectKey, runevent.Repository, path, localVarOptionals)
+func (v *Provider) getRaw(ctx context.Context, runevent *info.Event, revision, path string) (string, error) {
+	repo := fmt.Sprintf("%s/%s", runevent.Organization, runevent.Repository)
+	content, _, err := v.ScmClient.Contents.Find(ctx, repo, path, revision)
 	if err != nil {
 		return "", fmt.Errorf("cannot find %s inside the %s repository: %w", path, runevent.Repository, err)
 	}
-	return string(resp.Payload), nil
+	return string(content.Data), nil
 }
 
-func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, provenance string) (string, error) {
+func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path, provenance string) (string, error) {
 	v.provenance = provenance
-	allValues, err := paginate(func(nextPage int) (*bbv1.APIResponse, error) {
-		// according to the docs, if no at parameters is specified it will default to the default branch
-		// cf: https://docs.atlassian.com/bitbucket-server/rest/4.1.0/bitbucket-rest.html#idp2425664
-		localVarOptionals := map[string]interface{}{}
-		if v.provenance == "source" {
-			localVarOptionals = map[string]interface{}{"at": event.SHA}
-			v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", event.SHA)
-		} else {
-			v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
+	at := ""
+	if v.provenance == "source" {
+		at = event.SHA
+		v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", event.SHA)
+	} else {
+		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
+	}
+
+	orgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
+	var fileEntries []*scm.FileEntry
+	opts := &scm.ListOptions{Page: 1, Size: apiResponseLimit}
+	for {
+		entries, _, err := v.ScmClient.Contents.List(ctx, orgAndRepo, path, at, opts)
+		if err != nil {
+			return "", fmt.Errorf("cannot list content of %s directory: %w", path, err)
 		}
-		if nextPage != 0 {
-			localVarOptionals["start"] = nextPage
+		fileEntries = append(fileEntries, entries...)
+
+		if len(entries) < apiResponseLimit {
+			break
 		}
-		return v.Client.DefaultApi.StreamFiles_42(v.projectKey, event.Repository, path, localVarOptionals)
-	})
-	if err != nil {
-		return "", err
+
+		opts.Page++
 	}
 
 	fpathTmpl := []string{}
-	for _, value := range allValues {
-		vs, ok := value.(string)
-		if !ok {
-			return "", fmt.Errorf("cannot get a string out of %s", value)
-		}
-		fpathTmpl = append(fpathTmpl, filepath.Join(path, vs))
+	for _, e := range fileEntries {
+		fpathTmpl = append(fpathTmpl, filepath.Join(path, e.Path))
 	}
 
-	return v.concatAllYamlFiles(fpathTmpl, event)
+	return v.concatAllYamlFiles(ctx, fpathTmpl, at, event)
 }
 
-func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path, targetBranch string) (string, error) {
+func (v *Provider) GetFileInsideRepo(ctx context.Context, event *info.Event, path, targetBranch string) (string, error) {
 	branch := event.SHA
 	// TODO: this may be buggy? we need to figure out how to get the fromSource ref
 	if targetBranch == event.DefaultBranch {
 		branch = v.defaultBranchLatestCommit
 	}
 
-	ret, err := v.getRaw(event, branch, path)
+	ret, err := v.getRaw(ctx, event, branch, path)
 	return ret, err
 }
 
@@ -335,10 +338,9 @@ func (v *Provider) GetConfig() *info.ProviderConfig {
 }
 
 func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedfiles.ChangedFiles, error) {
-	limit := 100
 	OrgAndRepo := fmt.Sprintf("%s/%s", runevent.Organization, runevent.Repository)
 	if runevent.TriggerTarget == triggertype.PullRequest {
-		opts := &scm.ListOptions{Page: 1, Size: limit}
+		opts := &scm.ListOptions{Page: 1, Size: apiResponseLimit}
 		changedFiles := changedfiles.ChangedFiles{}
 		for {
 			changes, _, err := v.ScmClient.PullRequests.ListChanges(ctx, OrgAndRepo, runevent.PullRequestNumber, opts)
@@ -366,7 +368,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 			// `response.Page.Last` is set to `0`. Therefore, to determine if there are more items to fetch,
 			// we can check if the length of the currently fetched items is less than the specified limit.
 			// If the length is less than the limit, it indicates that there are no more items to retrieve.
-			if len(changes) < limit {
+			if len(changes) < apiResponseLimit {
 				break
 			}
 
@@ -376,7 +378,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 	}
 
 	if runevent.TriggerTarget == triggertype.Push {
-		opts := &scm.ListOptions{Page: 1, Size: limit}
+		opts := &scm.ListOptions{Page: 1, Size: apiResponseLimit}
 		changedFiles := changedfiles.ChangedFiles{}
 		for {
 			changes, _, err := v.ScmClient.Git.ListChanges(ctx, OrgAndRepo, runevent.SHA, opts)
@@ -400,7 +402,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 				}
 			}
 
-			if len(changes) < limit {
+			if len(changes) < apiResponseLimit {
 				break
 			}
 

@@ -203,16 +203,17 @@ func TestIsAllowed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, _, mux, tearDown, tURL := bbv1test.SetupBBServerClient(ctx)
+			bbclient, scmClient, mux, tearDown, tURL := bbv1test.SetupBBServerClient(ctx)
 			defer tearDown()
 			bbv1test.MuxProjectMemberShip(t, mux, tt.event, tt.fields.projectMembers)
 			bbv1test.MuxRepoMemberShip(t, mux, tt.event, tt.fields.repoMembers)
 			bbv1test.MuxPullRequestActivities(t, mux, tt.event, tt.fields.pullRequestNumber, tt.fields.activities)
-			bbv1test.MuxFiles(t, mux, tt.event, tt.fields.defaultBranchLatestCommit, "", tt.fields.filescontents)
+			bbv1test.MuxFiles(t, mux, tt.event, tt.fields.defaultBranchLatestCommit, "", tt.fields.filescontents, false)
 
 			v := &Provider{
 				baseURL:                   tURL,
 				Client:                    bbclient,
+				ScmClient:                 scmClient,
 				defaultBranchLatestCommit: tt.fields.defaultBranchLatestCommit,
 				pullRequestNumber:         tt.fields.pullRequestNumber,
 				projectKey:                tt.event.Organization,

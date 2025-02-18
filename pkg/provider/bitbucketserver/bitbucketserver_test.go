@@ -35,29 +35,47 @@ func TestGetTektonDir(t *testing.T) {
 		path            string
 		testDirPath     string
 		contentContains string
+		wantDirAPIErr   bool
+		wantFilesAPIErr bool
 		wantErr         string
 		removeSuffix    bool
 	}{
 		{
-			name:            "Get Tekton Directory",
+			name:            "good/get tekton directory",
 			event:           bbtest.MakeEvent(nil),
 			path:            ".tekton",
 			testDirPath:     "../../pipelineascode/testdata/pull_request/.tekton",
 			contentContains: "kind: PipelineRun",
 		},
 		{
-			name:            "No yaml files in there",
+			name:            "bad/no yaml files in there",
 			event:           bbtest.MakeEvent(nil),
 			path:            ".tekton",
 			testDirPath:     "./",
 			contentContains: "",
 		},
 		{
-			name:        "Badly formatted yaml",
+			name:        "bad/badly formatted yaml",
 			event:       bbtest.MakeEvent(nil),
 			path:        ".tekton",
 			testDirPath: "../../pipelineascode/testdata/bad_yaml/.tekton",
 			wantErr:     "error unmarshalling yaml file .tekton/badyaml.yaml: yaml: line 2: did not find expected key",
+		},
+		{
+			name:          "bad/get dir api error",
+			event:         bbtest.MakeEvent(nil),
+			path:          ".tekton",
+			testDirPath:   "../../pipelineascode/testdata/pull_request/.tekton",
+			wantDirAPIErr: true,
+			wantErr:       "cannot list content of .tekton directory: not Authorized",
+		},
+		{
+			name:            "bad/get files api error",
+			event:           bbtest.MakeEvent(nil),
+			path:            ".tekton",
+			testDirPath:     "../../pipelineascode/testdata/pull_request/.tekton",
+			wantFilesAPIErr: true,
+			wantErr:         "cannot find .tekton/pipeline.yaml inside the repo repository: not Authorized",
 		},
 	}
 	for _, tt := range tests {
@@ -65,10 +83,10 @@ func TestGetTektonDir(t *testing.T) {
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
-			client, _, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			_, client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
 			defer tearDown()
-			v := &Provider{Logger: logger, baseURL: tURL, Client: client, projectKey: tt.event.Organization}
-			bbtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path)
+			v := &Provider{Logger: logger, baseURL: tURL, ScmClient: client, projectKey: tt.event.Organization}
+			bbtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path, tt.wantDirAPIErr, tt.wantFilesAPIErr)
 			content, err := v.GetTektonDir(ctx, tt.event, tt.path, "")
 			if tt.wantErr != "" {
 				assert.Assert(t, err != nil, "we should have get an error here")
@@ -206,7 +224,7 @@ func TestCreateStatus(t *testing.T) {
 func TestGetFileInsideRepo(t *testing.T) {
 	tests := []struct {
 		name          string
-		wantErr       bool
+		wantErr       string
 		event         *info.Event
 		path          string
 		targetbranch  string
@@ -233,15 +251,30 @@ func TestGetFileInsideRepo(t *testing.T) {
 			},
 			targetbranch: "yolo",
 		},
+		{
+			name:         "bad/get files api error",
+			event:        bbtest.MakeEvent(&info.Event{DefaultBranch: "yolo"}),
+			path:         "foo/file.txt",
+			assertOutput: "hello moto",
+			filescontents: map[string]string{
+				"foo/file.txt": "hello moto",
+			},
+			targetbranch: "yolo",
+			wantErr:      "cannot find foo/file.txt inside the repo repository: not Authorized",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			client, _, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			_, client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
 			defer tearDown()
-			v := &Provider{Client: client, baseURL: tURL, defaultBranchLatestCommit: "1234", projectKey: tt.event.Organization}
-			bbtest.MuxFiles(t, mux, tt.event, tt.targetbranch, filepath.Dir(tt.path), tt.filescontents)
+			v := &Provider{ScmClient: client, baseURL: tURL, defaultBranchLatestCommit: "1234", projectKey: tt.event.Organization}
+			bbtest.MuxFiles(t, mux, tt.event, tt.targetbranch, filepath.Dir(tt.path), tt.filescontents, tt.wantErr != "")
 			fc, err := v.GetFileInsideRepo(ctx, tt.event, tt.path, tt.targetbranch)
+			if tt.wantErr != "" {
+				assert.Equal(t, err.Error(), tt.wantErr)
+				return
+			}
 			assert.NilError(t, err)
 			assert.Equal(t, tt.assertOutput, fc)
 		})
