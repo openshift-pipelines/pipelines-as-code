@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/setup"
 	"gotest.tools/v3/assert"
 )
 
@@ -22,12 +23,10 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, bitbucketcloud.Provid
 	bitbucketWSOwner := os.Getenv("TEST_BITBUCKET_CLOUD_E2E_REPOSITORY")
 	bitbucketCloudAPIURL := os.Getenv("TEST_BITBUCKET_CLOUD_API_URL")
 
-	for _, value := range []string{
+	if err := setup.RequireEnvs(
 		"BITBUCKET_CLOUD_TOKEN", "BITBUCKET_CLOUD_E2E_REPOSITORY", "BITBUCKET_CLOUD_API_URL",
-	} {
-		if env := os.Getenv("TEST_" + value); env == "" {
-			return nil, options.E2E{}, bitbucketcloud.Provider{}, fmt.Errorf("\"TEST_%s\" env variable is required, skipping", value)
-		}
+	); err != nil {
+		return nil, options.E2E{}, bitbucketcloud.Provider{}, err
 	}
 
 	split := strings.Split(bitbucketWSOwner, "/")

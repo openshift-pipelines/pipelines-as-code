@@ -2,7 +2,6 @@ package bitbucketserver
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/setup"
 
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/stash"
@@ -25,12 +25,14 @@ func Setup(ctx context.Context) (context.Context, *params.Run, options.E2E, *scm
 	bitbucketWSOwner := os.Getenv("TEST_BITBUCKET_SERVER_E2E_REPOSITORY")
 	bitbucketServerAPIURL := os.Getenv("TEST_BITBUCKET_SERVER_API_URL")
 
-	for _, value := range []string{
-		"BITBUCKET_SERVER_USER", "BITBUCKET_SERVER_TOKEN", "BITBUCKET_SERVER_E2E_REPOSITORY", "BITBUCKET_SERVER_API_URL", "BITBUCKET_SERVER_WEBHOOK_SECRET",
-	} {
-		if env := os.Getenv("TEST_" + value); env == "" {
-			return ctx, nil, options.E2E{}, nil, fmt.Errorf("\"TEST_%s\" env variable is required, skipping", value)
-		}
+	if err := setup.RequireEnvs(
+		"TEST_BITBUCKET_SERVER_USER",
+		"TEST_BITBUCKET_SERVER_TOKEN",
+		"TEST_BITBUCKET_SERVER_E2E_REPOSITORY",
+		"TEST_BITBUCKET_SERVER_API_URL",
+		"TEST_BITBUCKET_SERVER_WEBHOOK_SECRET",
+	); err != nil {
+		return ctx, nil, options.E2E{}, nil, err
 	}
 
 	split := strings.Split(bitbucketWSOwner, "/")
