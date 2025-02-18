@@ -24,9 +24,10 @@ export KUBECONFIG=${HOME}/.kube/config.${KIND_CLUSTER_NAME}
 export TARGET=kubernetes
 export DOMAIN_NAME=paac-127-0-0-1.nip.io
 
-if [ -z "${TEST_GITEA_SMEEURL}" ]; then
+if [ -z "${TEST_GITEA_SMEEURL:-}" ]; then
   echo "You should forward the URL via smee, create a URL in there by going to https://hook.pipelinesascode.com"
-  echo "set it up as environement variable in the 'TEST_GITEA_SMEEURL=https://hook.pipelinesascode.com/XXXXXXXX' variable"
+  echo "set it up as environement variable in the \`TEST_GITEA_SMEEURL=https://hook.pipelinesascode.com/XXXXXXXX\` variable"
+  echo "Alternatively, use command: \`TEST_GITEA_SMEEURL=\$(curl https://hook.pipelinesascode.com -o=/dev/null -sw '%{redirect_url}')\`"
   exit 1
 fi
 if ! builtin type -p kind &>/dev/null; then
