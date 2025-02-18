@@ -31,7 +31,7 @@ bringing it directly to [Tekton](https://tekton.dev/) and [OpenShift Pipelines](
 - 📦 **Efficient Config Retrieval** – Uses GitHub blobs & objects API to fetch configs.
 - 🔐 **Access Control** – Manage via GitHub orgs or Prow-style [`OWNER`](https://www.kubernetes.dev/docs/guide/owners/) files.
 - 🛠️ **`tkn-pac` CLI Plugin** – Easily manage Pipelines-as-Code repositories.
-- 🌍 **Multi-Git Support** – Works with GitHub (via Github App & Webhook), GitLab, Bitbucket Data Center & Cloud via webhooks.
+- 🌍 **Multi-Git Support** – Works with GitHub (via GitHub App & Webhook), GitLab, Gitea, Bitbucket Data Center & Cloud via webhooks.
 
 Head over to the Documentation for the full feature list and detailed guides:
 
