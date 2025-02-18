@@ -194,13 +194,57 @@ func TestGiteaStepActions(t *testing.T) {
 	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
 }
 
+// TestGiteaBadYamlReportingOnPR makes sure that we can catch a bad yaml file
+// and report on PR, we only do updates and not creating a new comment all the
+// time.
+func TestGiteaBadYamlReportingOnPR(t *testing.T) {
+	topts := &tgitea.TestOpts{
+		TargetEvent:  triggertype.PullRequest.String(),
+		YAMLFiles:    map[string]string{".tekton/pr-bad-validation.yaml": "testdata/failures/pipeline-validation.yaml"},
+		ExpectEvents: true,
+	}
+
+	_, f := tgitea.TestPR(t, topts)
+	defer f()
+	topts.Regexp = regexp.MustCompile(`.*bad-valid | .json: cannot unmarshal array into Go struct field PipelineRunSpec.spec.pipelineSpec of type v1.PipelineSpec.*`)
+	tgitea.WaitForPullRequestCommentMatch(t, topts)
+
+	comments, _, err := topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(comments), 1, "should have only one comment")
+
+	// sending a second time the comment should have been updated
+	scmOpts := &scm.Opts{
+		GitURL:        topts.GitCloneURL,
+		Log:           topts.ParamsRun.Clients.Log,
+		WebURL:        topts.GitHTMLURL,
+		TargetRefName: topts.TargetRefName,
+		BaseRefName:   topts.DefaultBranch,
+		PushForce:     true,
+	}
+	processed, err := payload.ApplyTemplate("testdata/failures/pipeline-validation.yaml", map[string]string{
+		"TargetNamespace": topts.TargetNS,
+		"TargetBranch":    topts.DefaultBranch,
+		"TargetEvent":     topts.TargetEvent,
+		"PipelineName":    "pr-a-second-time",
+		"Command":         "sleep 10",
+	})
+	assert.NilError(t, err)
+	entries := map[string]string{".tekton/pr-bad-validation.yaml": processed}
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
+
+	comments, _, err = topts.GiteaCNX.Client().ListRepoIssueComments(topts.PullRequest.Base.Repository.Owner.UserName, topts.PullRequest.Base.Repository.Name, gitea.ListIssueCommentOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, len(comments), 1, "should have only one comment")
+}
+
 // TestGiteaBadYaml we can't check pr status but this shows up in the
 // controller, so let's dig ourself in there....  TargetNS is a random string, so
 // it can only success if it matches it.
-func TestGiteaBadYaml(t *testing.T) {
+func TestGiteaBadYamlValidation(t *testing.T) {
 	topts := &tgitea.TestOpts{
 		TargetEvent:  triggertype.PullRequest.String(),
-		YAMLFiles:    map[string]string{".tekton/pr-bad-format.yaml": "testdata/failures/pipeline_bad_format.yaml"},
+		YAMLFiles:    map[string]string{".tekton/pr-bad-format.yaml": "testdata/failures/bad-yaml.yaml"},
 		ExpectEvents: true,
 	}
 
@@ -208,7 +252,8 @@ func TestGiteaBadYaml(t *testing.T) {
 	defer f()
 	maxLines := int64(20)
 	assert.NilError(t, twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *regexp.MustCompile(
-		"pipelinerun.*has failed.*expected exactly one, got neither: spec.pipelineRef, spec.pipelineSpec"), 10, "controller", &maxLines))
+		"cannot read the PipelineRun: pr-bad-format.yaml, error: line 3: could not find expected ':'"),
+		10, "controller", &maxLines))
 }
 
 // TestGiteaInvalidSpecValues tests invalid field values of a PipelinRun and ensures that these

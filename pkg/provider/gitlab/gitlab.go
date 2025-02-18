@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -80,6 +81,45 @@ func (v *Provider) SetGitLabClient(client *gitlab.Client) {
 
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
+}
+
+func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, updateMarker string) error {
+	if v.gitlabClient == nil {
+		return fmt.Errorf("no gitlab client has been initialized")
+	}
+
+	if event.PullRequestNumber == 0 {
+		return fmt.Errorf("create comment only works on merge requests")
+	}
+
+	// List comments of the merge request
+	if updateMarker != "" {
+		comments, _, err := v.Client().Notes.ListMergeRequestNotes(v.sourceProjectID, event.PullRequestNumber, &gitlab.ListMergeRequestNotesOptions{
+			ListOptions: gitlab.ListOptions{
+				Page:    1,
+				PerPage: 100,
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		re := regexp.MustCompile(updateMarker)
+		for _, comment := range comments {
+			if re.MatchString(comment.Body) {
+				_, _, err := v.Client().Notes.UpdateMergeRequestNote(v.sourceProjectID, event.PullRequestNumber, comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
+					Body: &commit,
+				})
+				return err
+			}
+		}
+	}
+
+	_, _, err := v.Client().Notes.CreateMergeRequestNote(v.sourceProjectID, event.PullRequestNumber, &gitlab.CreateMergeRequestNoteOptions{
+		Body: &commit,
+	})
+
+	return err
 }
 
 // CheckPolicyAllowing TODO: Implement ME.

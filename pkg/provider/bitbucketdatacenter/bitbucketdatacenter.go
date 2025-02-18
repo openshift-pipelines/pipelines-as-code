@@ -74,6 +74,10 @@ func (v *Provider) SetScmClient(client *scm.Client) {
 	v.scmClient = client
 }
 
+func (v *Provider) CreateComment(_ context.Context, _ *info.Event, _, _ string) error {
+	return nil
+}
+
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
