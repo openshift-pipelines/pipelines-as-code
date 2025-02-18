@@ -291,16 +291,16 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 		}
 	}
 
-	return v.concatAllYamlFiles(nodes, event)
+	return v.concatAllYamlFiles(nodes, revision)
 }
 
 // concatAllYamlFiles concat all yaml files from a directory as one big multi document yaml string.
-func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, runevent *info.Event) (string, error) {
+func (v *Provider) concatAllYamlFiles(objects []*gitlab.TreeNode, revision string) (string, error) {
 	var allTemplates string
 	for _, value := range objects {
 		if strings.HasSuffix(value.Name, ".yaml") ||
 			strings.HasSuffix(value.Name, ".yml") {
-			data, _, err := v.getObject(value.Path, runevent.HeadBranch, v.sourceProjectID)
+			data, _, err := v.getObject(value.Path, revision, v.sourceProjectID)
 			if err != nil {
 				return "", err
 			}

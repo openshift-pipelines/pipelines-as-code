@@ -292,6 +292,8 @@ func TestGetTektonDir(t *testing.T) {
 		args                 args
 		wantStr              string
 		wantErr              string
+		wantTreeAPIErr       bool
+		wantFilesAPIErr      bool
 		wantClient           bool
 		prcontent            string
 		filterMessageSnippet string
@@ -365,6 +367,38 @@ func TestGetTektonDir(t *testing.T) {
 			wantClient: true,
 			wantStr:    "kind: PipelineRun",
 		},
+		{
+			name:      "list tekton dir tree api call error",
+			prcontent: strings.TrimPrefix(string(samplePR), "---"),
+			args: args{
+				path: ".tekton",
+				event: &info.Event{
+					HeadBranch: "main",
+				},
+			},
+			fields: fields{
+				sourceProjectID: 100,
+			},
+			wantClient:     true,
+			wantTreeAPIErr: true,
+			wantErr:        "failed to list .tekton dir",
+		},
+		{
+			name:      "get file raw api call error",
+			prcontent: strings.TrimPrefix(string(samplePR), "---"),
+			args: args{
+				path: ".tekton",
+				event: &info.Event{
+					HeadBranch: "main",
+				},
+			},
+			fields: fields{
+				sourceProjectID: 100,
+			},
+			wantClient:      true,
+			wantFilesAPIErr: true,
+			wantErr:         "failed to get filename from api pr.yaml dir",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -386,7 +420,7 @@ func TestGetTektonDir(t *testing.T) {
 					muxbranch = tt.args.event.DefaultBranch
 				}
 				if tt.args.path != "" && tt.prcontent != "" {
-					thelp.MuxListTektonDir(t, mux, tt.fields.sourceProjectID, muxbranch, tt.prcontent)
+					thelp.MuxListTektonDir(t, mux, tt.fields.sourceProjectID, muxbranch, tt.prcontent, tt.wantTreeAPIErr, tt.wantFilesAPIErr)
 				}
 				defer tearDown()
 			}
@@ -421,7 +455,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 		sourceProjectID: 10,
 		Client:          client,
 	}
-	thelp.MuxListTektonDir(t, mux, v.sourceProjectID, event.HeadBranch, content)
+	thelp.MuxListTektonDir(t, mux, v.sourceProjectID, event.HeadBranch, content, false, false)
 	got, err := v.GetFileInsideRepo(ctx, event, "pr.yaml", "")
 	assert.NilError(t, err)
 	assert.Equal(t, content, got)
