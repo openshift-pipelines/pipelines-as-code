@@ -108,7 +108,7 @@ func TestIsAllowed(t *testing.T) {
 					thelp.MuxDisallowUserID(mux, tt.fields.targetProjectID, tt.allowMemberID)
 				}
 				if tt.ownerFile != "" {
-					thelp.MuxGetFile(mux, tt.fields.targetProjectID, "OWNERS", tt.ownerFile)
+					thelp.MuxGetFile(mux, tt.fields.targetProjectID, "OWNERS", tt.ownerFile, false)
 				}
 				if tt.commentContent != "" {
 					thelp.MuxDiscussionsNote(mux, tt.fields.targetProjectID,
