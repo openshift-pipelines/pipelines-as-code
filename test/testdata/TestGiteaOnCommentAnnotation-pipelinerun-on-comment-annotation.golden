@@ -3,4 +3,5 @@ The comment is:
 The event is on-comment
 The custom1 value is foo
 The custom2 value is bar
-The custom3 value is moto
+The custom_no_initial_value value is {{ custom_no_initial_value }}
+The custom_never_value value is {{ custom_never_value }}
