@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	pullRequestOpenSyncEvent = []string{"opened", "synchronize", "synchronized", "reopened"}
+	pullRequestOpenSyncEvent = []string{"opened", "synchronize", "synchronized", "reopened", "ready_for_review"}
 	pullRequestLabelEvent    = []string{"labeled"}
 )
 

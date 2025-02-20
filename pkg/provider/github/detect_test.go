@@ -210,6 +210,15 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: true,
 		},
 		{
+			name: "pull request event converted from draft to active",
+			event: github.PullRequestEvent{
+				Action: github.Ptr("ready_for_review"),
+			},
+			eventType:  "pull_request",
+			isGH:       true,
+			processReq: true,
+		},
+		{
 			name: "pull request event not supported action",
 			event: github.PullRequestEvent{
 				Action: github.Ptr("deleted"),
