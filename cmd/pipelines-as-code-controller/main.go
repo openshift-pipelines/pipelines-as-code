@@ -39,7 +39,6 @@ func main() {
 	loggerConfiguratorOpt := evadapter.WithLoggerConfiguratorConfigMapName(logging.ConfigMapName())
 	loggerConfigurator := evadapter.NewLoggerConfiguratorFromConfigMap(PACControllerLogKey, loggerConfiguratorOpt)
 	copt := evadapter.WithLoggerConfigurator(loggerConfigurator)
-	// put logger configurator to ctx
 	ctx = evadapter.WithConfiguratorOptions(ctx, []evadapter.ConfiguratorOption{copt})
 
 	ctx = info.StoreNS(ctx, system.Namespace())
