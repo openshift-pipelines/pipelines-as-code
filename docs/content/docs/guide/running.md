@@ -24,7 +24,7 @@ For example, if a PipelineRun has this annotation:
 pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-it will be automatically triggered and executed when a user with appropriate permissions submits a Pull Request. See ACL Permissions for running on a event below.
+it will be automatically triggered and executed when a user with appropriate permissions submits a Pull Request. See ACL Permissions for triggering PipelineRuns below.
 
 When using GitHub as a provider, Pipelines-as-Code runs on draft Pull Requests by default. However, you can prevent pipelines from triggering on draft Pull Requests by using the following annotation:
 
@@ -40,7 +40,7 @@ Repo CR that matches one of the repositories in a URL on a repository that
 belongs to the organization where the GitHub App has been installed. Otherwise,
 Pipelines-as-Code will not be triggered.
 
-## ACL Permissions for running on a event
+## ACL Permissions for triggering PipelineRuns
 
 The rules for determining whether a submitter is allowed to run a PipelineRun
 on CI are as follows. Any of the following conditions will allow a submitter to
