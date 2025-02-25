@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v69/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/cli"
@@ -13,7 +13,7 @@ import (
 	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-func makeRepoStatus(prname, sha, conditionReason string, cw clockwork.FakeClock, started, completed time.Duration) v1alpha1.RepositoryRunStatus {
+func makeRepoStatus(prname, sha, conditionReason string, cw *clockwork.FakeClock, started, completed time.Duration) v1alpha1.RepositoryRunStatus {
 	return v1alpha1.RepositoryRunStatus{
 		Status: knativeduckv1.Status{
 			Conditions: []knativeapis.Condition{

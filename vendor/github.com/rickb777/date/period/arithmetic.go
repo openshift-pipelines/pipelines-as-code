@@ -39,8 +39,13 @@ func (period Period) AddTo(t time.Time) (time.Time, bool) {
 	wholeDays := (period.days % 10) == 0
 
 	if wholeYears && wholeMonths && wholeDays {
-		// in this case, time.AddDate provides an exact solution
+		// in this case, time.AddDate(...).Add(...) provides an exact solution
 		stE3 := totalSecondsE3(period)
+		if period.years == 0 && period.months == 0 && period.days == 0 {
+			// AddDate (below) normalises its result, so we don't call it unless needed
+			return t.Add(stE3 * time.Millisecond), true
+		}
+
 		t1 := t.AddDate(int(period.years/10), int(period.months/10), int(period.days/10))
 		return t1.Add(stE3 * time.Millisecond), true
 	}

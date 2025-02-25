@@ -48,6 +48,8 @@ type Environment struct {
 	ClusterAgent        *Agent      `json:"cluster_agent"`
 	KubernetesNamespace string      `json:"kubernetes_namespace"`
 	FluxResourcePath    string      `json:"flux_resource_path"`
+	AutoStopAt          *time.Time  `json:"auto_stop_at"`
+	AutoStopSetting     string      `json:"auto_stop_setting"`
 }
 
 func (env Environment) String() string {
@@ -128,6 +130,7 @@ type CreateEnvironmentOptions struct {
 	ClusterAgentID      *int    `url:"cluster_agent_id,omitempty" json:"cluster_agent_id,omitempty"`
 	KubernetesNamespace *string `url:"kubernetes_namespace,omitempty" json:"kubernetes_namespace,omitempty"`
 	FluxResourcePath    *string `url:"flux_resource_path,omitempty" json:"flux_resource_path,omitempty"`
+	AutoStopSetting     *string `url:"auto_stop_setting,omitempty" json:"auto_stop_setting,omitempty"`
 }
 
 // CreateEnvironment adds an environment to a project. This is an idempotent
@@ -170,6 +173,7 @@ type EditEnvironmentOptions struct {
 	ClusterAgentID      *int    `url:"cluster_agent_id,omitempty" json:"cluster_agent_id,omitempty"`
 	KubernetesNamespace *string `url:"kubernetes_namespace,omitempty" json:"kubernetes_namespace,omitempty"`
 	FluxResourcePath    *string `url:"flux_resource_path,omitempty" json:"flux_resource_path,omitempty"`
+	AutoStopSetting     *string `url:"auto_stop_setting,omitempty" json:"auto_stop_setting,omitempty"`
 }
 
 // EditEnvironment updates a project team environment to a specified access level..

@@ -70,31 +70,37 @@ type Group struct {
 	RunnersToken                    string                     `json:"runners_token"`
 	SharedProjects                  []*Project                 `json:"shared_projects"`
 	SharedRunnersSetting            SharedRunnersSettingValue  `json:"shared_runners_setting"`
-	SharedWithGroups                []struct {
-		GroupID          int      `json:"group_id"`
-		GroupName        string   `json:"group_name"`
-		GroupFullPath    string   `json:"group_full_path"`
-		GroupAccessLevel int      `json:"group_access_level"`
-		ExpiresAt        *ISOTime `json:"expires_at"`
-	} `json:"shared_with_groups"`
-	LDAPCN                         string             `json:"ldap_cn"`
-	LDAPAccess                     AccessLevelValue   `json:"ldap_access"`
-	LDAPGroupLinks                 []*LDAPGroupLink   `json:"ldap_group_links"`
-	SAMLGroupLinks                 []*SAMLGroupLink   `json:"saml_group_links"`
-	SharedRunnersMinutesLimit      int                `json:"shared_runners_minutes_limit"`
-	ExtraSharedRunnersMinutesLimit int                `json:"extra_shared_runners_minutes_limit"`
-	PreventForkingOutsideGroup     bool               `json:"prevent_forking_outside_group"`
-	MarkedForDeletionOn            *ISOTime           `json:"marked_for_deletion_on"`
-	CreatedAt                      *time.Time         `json:"created_at"`
-	IPRestrictionRanges            string             `json:"ip_restriction_ranges"`
-	AllowedEmailDomainsList        string             `json:"allowed_email_domains_list"`
-	WikiAccessLevel                AccessControlValue `json:"wiki_access_level"`
+	SharedWithGroups                []SharedWithGroup          `json:"shared_with_groups"`
+	LDAPCN                          string                     `json:"ldap_cn"`
+	LDAPAccess                      AccessLevelValue           `json:"ldap_access"`
+	LDAPGroupLinks                  []*LDAPGroupLink           `json:"ldap_group_links"`
+	SAMLGroupLinks                  []*SAMLGroupLink           `json:"saml_group_links"`
+	SharedRunnersMinutesLimit       int                        `json:"shared_runners_minutes_limit"`
+	ExtraSharedRunnersMinutesLimit  int                        `json:"extra_shared_runners_minutes_limit"`
+	PreventForkingOutsideGroup      bool                       `json:"prevent_forking_outside_group"`
+	MarkedForDeletionOn             *ISOTime                   `json:"marked_for_deletion_on"`
+	CreatedAt                       *time.Time                 `json:"created_at"`
+	IPRestrictionRanges             string                     `json:"ip_restriction_ranges"`
+	AllowedEmailDomainsList         string                     `json:"allowed_email_domains_list"`
+	WikiAccessLevel                 AccessControlValue         `json:"wiki_access_level"`
 
 	// Deprecated: Use EmailsEnabled instead
 	EmailsDisabled bool `json:"emails_disabled"`
 
 	// Deprecated: Use DefaultBranchProtectionDefaults instead
 	DefaultBranchProtection int `json:"default_branch_protection"`
+}
+
+// SharedWithGroup represents a GitLab group shared with a group.
+//
+// GitLab API docs: https://docs.gitlab.com/ee/api/groups.html
+type SharedWithGroup struct {
+	GroupID          int      `json:"group_id"`
+	GroupName        string   `json:"group_name"`
+	GroupFullPath    string   `json:"group_full_path"`
+	GroupAccessLevel int      `json:"group_access_level"`
+	ExpiresAt        *ISOTime `json:"expires_at"`
+	MemberRoleID     int      `json:"member_role_id"`
 }
 
 // BranchProtectionDefaults represents default Git protected branch permissions.
@@ -979,9 +985,10 @@ func (s *GroupsService) DeleteGroupSAMLLink(gid interface{}, samlGroupName strin
 // GitLab API docs:
 // https://docs.gitlab.com/ee/api/groups.html#share-groups-with-groups
 type ShareGroupWithGroupOptions struct {
-	GroupID     *int              `url:"group_id,omitempty" json:"group_id,omitempty"`
-	GroupAccess *AccessLevelValue `url:"group_access,omitempty" json:"group_access,omitempty"`
-	ExpiresAt   *ISOTime          `url:"expires_at,omitempty" json:"expires_at,omitempty"`
+	GroupID      *int              `url:"group_id,omitempty" json:"group_id,omitempty"`
+	GroupAccess  *AccessLevelValue `url:"group_access,omitempty" json:"group_access,omitempty"`
+	ExpiresAt    *ISOTime          `url:"expires_at,omitempty" json:"expires_at,omitempty"`
+	MemberRoleID *int              `url:"member_role_id,omitempty" json:"member_role_id,omitempty"`
 }
 
 // ShareGroupWithGroup shares a group with another group.

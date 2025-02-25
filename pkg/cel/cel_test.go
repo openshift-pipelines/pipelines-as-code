@@ -4,18 +4,19 @@ import (
 	"testing"
 
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/checker/decls"
+	"github.com/google/cel-go/common/decls"
+	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	"gotest.tools/v3/assert"
 )
 
 func TestCelEvaluate(t *testing.T) {
 	env, _ := cel.NewEnv(
-		cel.Declarations(
-			decls.NewVar("key", decls.String),
+		cel.VariableDecls(
+			decls.NewVariable("key", types.StringType),
 		),
 	)
-	data := map[string]interface{}{"key": "value"}
+	data := map[string]any{"key": "value"}
 
 	// Test a valid expression
 	val, err := evaluate("key == 'value'", env, data)
@@ -28,10 +29,10 @@ func TestCelEvaluate(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
-	body := map[string]interface{}{"key": "value"}
+	body := map[string]any{"key": "value"}
 	headers := map[string]string{"header": "value"}
 	pacParams := map[string]string{"param": "value"}
-	changedFiles := map[string]interface{}{"file": "value"}
+	changedFiles := map[string]any{"file": "value"}
 
 	// Test a valid query
 	val, err := Value("body.key == 'value'", body, headers, pacParams, changedFiles)

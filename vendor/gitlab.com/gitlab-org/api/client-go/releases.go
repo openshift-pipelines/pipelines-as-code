@@ -49,19 +49,22 @@ type Release struct {
 		AvatarURL string `json:"avatar_url"`
 		WebURL    string `json:"web_url"`
 	} `json:"author"`
-	Commit          Commit `json:"commit"`
-	UpcomingRelease bool   `json:"upcoming_release"`
-	CommitPath      string `json:"commit_path"`
-	TagPath         string `json:"tag_path"`
+	Commit          Commit              `json:"commit"`
+	Milestones      []*ReleaseMilestone `json:"milestones"`
+	UpcomingRelease bool                `json:"upcoming_release"`
+	CommitPath      string              `json:"commit_path"`
+	TagPath         string              `json:"tag_path"`
 	Assets          struct {
 		Count   int `json:"count"`
 		Sources []struct {
 			Format string `json:"format"`
 			URL    string `json:"url"`
 		} `json:"sources"`
-		Links []*ReleaseLink `json:"links"`
+		Links            []*ReleaseLink `json:"links"`
+		EvidenceFilePath string         `json:"evidence_file_path"`
 	} `json:"assets"`
-	Links struct {
+	Evidences []*ReleaseEvidence `json:"evidences"`
+	Links     struct {
 		ClosedIssueURL     string `json:"closed_issues_url"`
 		ClosedMergeRequest string `json:"closed_merge_requests_url"`
 		EditURL            string `json:"edit_url"`
@@ -70,6 +73,45 @@ type Release struct {
 		OpenedMergeRequest string `json:"opened_merge_requests_url"`
 		Self               string `json:"self"`
 	} `json:"_links"`
+}
+
+// ReleaseMilestone represents a project release milestone.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/ee/api/releases/index.html#list-releases
+type ReleaseMilestone struct {
+	ID          int                         `json:"id"`
+	IID         int                         `json:"iid"`
+	ProjectID   int                         `json:"project_id"`
+	Title       string                      `json:"title"`
+	Description string                      `json:"description"`
+	State       string                      `json:"state"`
+	CreatedAt   *time.Time                  `json:"created_at"`
+	UpdatedAt   *time.Time                  `json:"updated_at"`
+	DueDate     *ISOTime                    `json:"due_date"`
+	StartDate   *ISOTime                    `json:"start_date"`
+	WebURL      string                      `json:"web_url"`
+	IssueStats  *ReleaseMilestoneIssueStats `json:"issue_stats"`
+}
+
+// ReleaseMilestoneIssueStats represents a project release milestone's
+// related issues statistics.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/ee/api/releases/index.html#list-releases
+type ReleaseMilestoneIssueStats struct {
+	Total  int `json:"total"`
+	Closed int `json:"closed"`
+}
+
+// ReleaseEvidence represents a project release's evidence.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/ee/api/releases/index.html#list-releases
+type ReleaseEvidence struct {
+	SHA         string     `json:"sha"`
+	Filepath    string     `json:"filepath"`
+	CollectedAt *time.Time `json:"collected_at"`
 }
 
 // ListReleasesOptions represents ListReleases() options.

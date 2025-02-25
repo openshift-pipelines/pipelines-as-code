@@ -17,6 +17,7 @@
 package gitlab
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -136,6 +137,7 @@ type Project struct {
 	ImportStatus                             string                                      `json:"import_status"`
 	ImportError                              string                                      `json:"import_error"`
 	CIDefaultGitDepth                        int                                         `json:"ci_default_git_depth"`
+	CIDeletePipelinesInSeconds               int                                         `json:"ci_delete_pipelines_in_seconds,omitempty"`
 	CIForwardDeploymentEnabled               bool                                        `json:"ci_forward_deployment_enabled"`
 	CIForwardDeploymentRollbackAllowed       bool                                        `json:"ci_forward_deployment_rollback_allowed"`
 	CISeperateCache                          bool                                        `json:"ci_separated_caches"`
@@ -851,6 +853,7 @@ type EditProjectOptions struct {
 	BuildsAccessLevel                         *AccessControlValue                          `url:"builds_access_level,omitempty" json:"builds_access_level,omitempty"`
 	CIConfigPath                              *string                                      `url:"ci_config_path,omitempty" json:"ci_config_path,omitempty"`
 	CIDefaultGitDepth                         *int                                         `url:"ci_default_git_depth,omitempty" json:"ci_default_git_depth,omitempty"`
+	CIDeletePipelinesInSeconds                *int                                         `url:"ci_delete_pipelines_in_seconds,omitempty" json:"ci_delete_pipelines_in_seconds,omitempty"`
 	CIForwardDeploymentEnabled                *bool                                        `url:"ci_forward_deployment_enabled,omitempty" json:"ci_forward_deployment_enabled,omitempty"`
 	CIForwardDeploymentRollbackAllowed        *bool                                        `url:"ci_forward_deployment_rollback_allowed,omitempty" json:"ci_forward_deployment_rollback_allowed,omitempty"`
 	CISeperateCache                           *bool                                        `url:"ci_separated_caches,omitempty" json:"ci_separated_caches,omitempty"`
@@ -1237,23 +1240,6 @@ func (s *ProjectsService) DeleteSharedProjectFromGroup(pid interface{}, groupID 
 	return s.client.Do(req, nil)
 }
 
-// ProjectMember represents a project member.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/members.html#list-all-members-of-a-group-or-project
-type ProjectMember struct {
-	ID          int              `json:"id"`
-	Username    string           `json:"username"`
-	Email       string           `json:"email"`
-	Name        string           `json:"name"`
-	State       string           `json:"state"`
-	CreatedAt   *time.Time       `json:"created_at"`
-	ExpiresAt   *ISOTime         `json:"expires_at"`
-	AccessLevel AccessLevelValue `json:"access_level"`
-	WebURL      string           `json:"web_url"`
-	AvatarURL   string           `json:"avatar_url"`
-}
-
 // HookCustomHeader represents a project or group hook custom header
 // Note: "Key" is returned from the Get operation, but "Value" is not
 // The List operation doesn't return any headers at all for Projects,
@@ -1618,7 +1604,11 @@ type ProjectFile struct {
 
 // UploadFile uploads a file.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/projects.html#upload-a-file
+// Deprecated: UploadFile is deprecated and will be removed in a future release.
+// Use [ProjectMarkdownUploadsService.UploadProjectMarkdown] instead for uploading
+// markdown files to a project.
+//
+// GitLab API docs: https://docs.gitlab.com/ee/api/project_markdown_uploads.html#upload-a-file
 func (s *ProjectsService) UploadFile(pid interface{}, content io.Reader, filename string, options ...RequestOptionFunc) (*ProjectFile, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -1679,6 +1669,31 @@ func (s *ProjectsService) UploadAvatar(pid interface{}, avatar io.Reader, filena
 	}
 
 	return p, resp, nil
+}
+
+// DownloadAvatar downloads an avatar.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/ee/api/projects.html#download-a-project-avatar
+func (s *ProjectsService) DownloadAvatar(pid interface{}, options ...RequestOptionFunc) (*bytes.Reader, *Response, error) {
+	project, err := parseID(pid)
+	if err != nil {
+		return nil, nil, err
+	}
+	u := fmt.Sprintf("projects/%s/avatar", PathEscape(project))
+
+	req, err := s.client.NewRequest(http.MethodGet, u, nil, options)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	avatar := new(bytes.Buffer)
+	resp, err := s.client.Do(req, avatar)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return bytes.NewReader(avatar.Bytes()), resp, err
 }
 
 // ListProjectForks gets a list of project forks.

@@ -30,7 +30,7 @@ type BroadcastMessagesService struct {
 	client *Client
 }
 
-// BroadcastMessage represents a GitLab issue board.
+// BroadcastMessage represents a GitLab broadcast message.
 //
 // GitLab API docs:
 // https://docs.gitlab.com/ee/api/broadcast_messages.html#get-all-broadcast-messages
@@ -45,6 +45,7 @@ type BroadcastMessage struct {
 	TargetPath         string             `json:"target_path"`
 	BroadcastType      string             `json:"broadcast_type"`
 	Dismissable        bool               `json:"dismissable"`
+	Theme              string             `json:"theme"`
 
 	// Deprecated: This parameter was removed in GitLab 15.6.
 	Color string `json:"color"`
@@ -111,6 +112,7 @@ type CreateBroadcastMessageOptions struct {
 	TargetPath         *string            `url:"target_path,omitempty" json:"target_path,omitempty"`
 	BroadcastType      *string            `url:"broadcast_type,omitempty" json:"broadcast_type,omitempty"`
 	Dismissable        *bool              `url:"dismissable,omitempty" json:"dismissable,omitempty"`
+	Theme              *string            `url:"theme,omitempty" json:"theme,omitempty"`
 
 	// Deprecated: This parameter was removed in GitLab 15.6.
 	Color *string `url:"color,omitempty" json:"color,omitempty"`
@@ -149,6 +151,7 @@ type UpdateBroadcastMessageOptions struct {
 	TargetPath         *string            `url:"target_path,omitempty" json:"target_path,omitempty"`
 	BroadcastType      *string            `url:"broadcast_type,omitempty" json:"broadcast_type,omitempty"`
 	Dismissable        *bool              `url:"dismissable,omitempty" json:"dismissable,omitempty"`
+	Theme              *string            `url:"theme,omitempty" json:"theme,omitempty"`
 
 	// Deprecated: This parameter was removed in GitLab 15.6.
 	Color *string `url:"color,omitempty" json:"color,omitempty"`

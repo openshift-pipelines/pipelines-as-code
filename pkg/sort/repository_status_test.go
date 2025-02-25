@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func makeRepositoryRunStatus(clock clockwork.FakeClock, prName string, timeshift int) v1alpha1.RepositoryRunStatus {
+func makeRepositoryRunStatus(clock *clockwork.FakeClock, prName string, timeshift int) v1alpha1.RepositoryRunStatus {
 	starttime := time.Duration((timeshift - 5*-1) * int(time.Minute))
 	endtime := time.Duration((timeshift * -1) * int(time.Minute))
 

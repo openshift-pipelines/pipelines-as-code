@@ -9,7 +9,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/checker/decls"
+	"github.com/google/cel-go/common/decls"
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
@@ -50,7 +50,7 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 	if err != nil {
 		return nil, err
 	}
-	var jsonMap map[string]interface{}
+	var jsonMap map[string]any
 	err = json.Unmarshal(nbody, &jsonMap)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 		}
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"event":         event.TriggerTarget.String(),
 		"event_title":   eventTitle,
 		"target_branch": event.BaseBranch,
@@ -79,7 +79,7 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 		"source_url":    event.HeadURL,
 		"body":          jsonMap,
 		"headers":       headerMap,
-		"files": map[string]interface{}{
+		"files": map[string]any{
 			"all":      changedFiles.All,
 			"added":    changedFiles.Added,
 			"deleted":  changedFiles.Deleted,
@@ -89,16 +89,16 @@ func celEvaluate(ctx context.Context, expr string, event *info.Event, vcx provid
 	}
 	env, err := cel.NewEnv(
 		cel.Lib(celPac{vcx, ctx, event}),
-		cel.Declarations(
-			decls.NewVar("event", decls.String),
-			decls.NewVar("headers", decls.NewMapType(decls.String, decls.Dyn)),
-			decls.NewVar("body", decls.NewMapType(decls.String, decls.Dyn)),
-			decls.NewVar("event_title", decls.String),
-			decls.NewVar("target_branch", decls.String),
-			decls.NewVar("source_branch", decls.String),
-			decls.NewVar("target_url", decls.String),
-			decls.NewVar("source_url", decls.String),
-			decls.NewVar("files", decls.NewMapType(decls.String, decls.Dyn)),
+		cel.VariableDecls(
+			decls.NewVariable("event", types.StringType),
+			decls.NewVariable("headers", types.NewMapType(types.StringType, types.DynType)),
+			decls.NewVariable("body", types.NewMapType(types.StringType, types.DynType)),
+			decls.NewVariable("event_title", types.StringType),
+			decls.NewVariable("target_branch", types.StringType),
+			decls.NewVariable("source_branch", types.StringType),
+			decls.NewVariable("target_url", types.StringType),
+			decls.NewVariable("source_url", types.StringType),
+			decls.NewVariable("files", types.NewMapType(types.StringType, types.DynType)),
 		))
 	if err != nil {
 		return nil, err
