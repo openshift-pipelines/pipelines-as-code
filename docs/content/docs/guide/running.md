@@ -24,9 +24,7 @@ For example, if a PipelineRun has this annotation:
 pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-When a Pull Request is created, the PipelineRun will be automatically triggered
-and executed, provided that the person who submitted it has the appropriate
-permissions (see below).
+it will be automatically triggered and executed when a user with appropriate permissions submits a Pull Request. See ACL Permissions for running on a event below.
 
 When using GitHub as a provider, Pipelines-as-Code will not run on draft Pull Requests until
 you set the Pull Request as ready for review.
