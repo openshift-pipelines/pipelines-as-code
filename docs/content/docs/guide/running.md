@@ -24,8 +24,20 @@ For example, if a PipelineRun has this annotation:
 pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-it will be matched when a pull request is created and run on the cluster, as
-long as the submitter is allowed to run it.
+When a Pull Request is created, the PipelineRun will be automatically triggered
+and executed, provided that the person who submitted it has the appropriate
+permissions (see below).
+
+When using GitHub as a provider, Pipelines-as-Code will not run on draft Pull Requests until
+you set the Pull Request as ready for review.
+
+And if you are using the GitHub provider with GitHub Apps and have installed it
+on an organization, Pipelines-as-Code will only be triggered if it detects a
+Repo CR that matches one of the repositories in a URL on a repository that
+belongs to the organization where the GitHub App has been installed. Otherwise,
+Pipelines-as-Code will not be triggered.
+
+## ACL Permissions for running on a event
 
 The rules for determining whether a submitter is allowed to run a PipelineRun
 on CI are as follows. Any of the following conditions will allow a submitter to
@@ -45,14 +57,6 @@ run a PipelineRun on CI:
 If the pull request author does not have the necessary permissions to run a
 PipelineRun, another user who does have the necessary permissions can comment
 `/ok-to-test` on the pull request to run the PipelineRun.
-
-{{< hint info >}}
-If you are using the GitHub Apps and have installed it on an organization,
-Pipelines-as-Code will only be triggered if it detects a Repo CR that matches
-one of the repositories in a URL on a repository that belongs to the
-organization where the GitHub App has been installed. Otherwise, Pipelines as
-Code will not be triggered.
-{{< /hint >}}
 
 ## OWNERS file
 
