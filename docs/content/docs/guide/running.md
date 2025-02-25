@@ -28,9 +28,9 @@ it will be automatically triggered and executed when a user with appropriate per
 
 When using GitHub as a provider, Pipelines-as-Code runs on draft Pull Requests by default. However, you can prevent pipelines from triggering on draft Pull Requests by using the following annotation:
 
-\```yaml
+```yaml
 pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && !body.pull_request.draft
-\```
+```
 
 With this configuration, your pipeline will only be triggered when the Pull Request is converted to "Ready for Review." For additional examples, see [Advanced event matching using CEL](https://pipelinesascode.com/docs/guide/matchingevents/#advanced-event-matching-using-cel).
 
