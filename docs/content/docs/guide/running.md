@@ -26,8 +26,13 @@ pipelinesascode.tekton.dev/on-event: "[pull_request]"
 
 it will be automatically triggered and executed when a user with appropriate permissions submits a Pull Request. See ACL Permissions for running on a event below.
 
-When using GitHub as a provider, Pipelines-as-Code will not run on draft Pull Requests until
-you set the Pull Request as ready for review.
+When using GitHub as a provider, Pipelines-as-Code runs on draft Pull Requests by default. However, you can prevent pipelines from triggering on draft Pull Requests by using the following annotation:
+
+\```yaml
+pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && !body.pull_request.draft
+\```
+
+With this configuration, your pipeline will only be triggered when the Pull Request is converted to "Ready for Review." For additional examples, see [Advanced event matching using CEL](https://pipelinesascode.com/docs/guide/matchingevents/#advanced-event-matching-using-cel).
 
 And if you are using the GitHub provider with GitHub Apps and have installed it
 on an organization, Pipelines-as-Code will only be triggered if it detects a
