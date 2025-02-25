@@ -124,7 +124,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 				}
 			}
 			p.manager.AddPipelineRun(pr)
-			if err := p.cancelInProgressMatchingPR(ctx, pr, repo); err != nil {
+			if err := p.cancelInProgressExceptMatchingPR(ctx, pr, repo); err != nil {
 				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", fmt.Sprintf("error cancelling in progress pipelineRuns: %s", err))
 			}
 		}(match, i)

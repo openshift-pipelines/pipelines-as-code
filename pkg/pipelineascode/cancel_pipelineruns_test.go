@@ -789,7 +789,7 @@ func TestCancelInProgressMatchingPR(t *testing.T) {
 			if len(tt.pipelineRuns) > 0 {
 				firstPr = tt.pipelineRuns[0]
 			}
-			err := pac.cancelInProgressMatchingPR(ctx, firstPr, tt.repo)
+			err := pac.cancelInProgressExceptMatchingPR(ctx, firstPr, tt.repo)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return
