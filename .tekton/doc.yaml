@@ -58,7 +58,7 @@ spec:
                   value: $(workspaces.source.path)
 
             - name: hugo-gen
-              image: golang:1.22
+              image: golang:1.23
               workingDir: $(workspaces.source.path)
               env:
                 - name: UPLOADER_PUBLIC_URL

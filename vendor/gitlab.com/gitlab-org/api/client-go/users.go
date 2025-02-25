@@ -56,6 +56,7 @@ type BasicUser struct {
 	Username  string     `json:"username"`
 	Name      string     `json:"name"`
 	State     string     `json:"state"`
+	Locked    bool       `json:"locked"`
 	CreatedAt *time.Time `json:"created_at"`
 	AvatarURL string     `json:"avatar_url"`
 	WebURL    string     `json:"web_url"`
@@ -119,6 +120,7 @@ type User struct {
 	CustomAttributes               []*CustomAttribute `json:"custom_attributes"`
 	NamespaceID                    int                `json:"namespace_id"`
 	Locked                         bool               `json:"locked"`
+	CreatedBy                      *BasicUser         `json:"created_by"`
 }
 
 // UserIdentity represents a user identity.
@@ -494,23 +496,24 @@ func (s *UsersService) GetUserAssociationsCount(user int, options ...RequestOpti
 
 // SSHKey represents a SSH key.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/users.html#list-ssh-keys
+// GitLab API docs: https://docs.gitlab.com/ee/api/user_keys.html#list-all-ssh-keys
 type SSHKey struct {
 	ID        int        `json:"id"`
 	Title     string     `json:"title"`
 	Key       string     `json:"key"`
 	CreatedAt *time.Time `json:"created_at"`
 	ExpiresAt *time.Time `json:"expires_at"`
+	UsageType string     `json:"usage_type"`
 }
 
 // ListSSHKeysOptions represents the available ListSSHKeys options.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/users.html#list-ssh-keys
+// GitLab API docs: https://docs.gitlab.com/ee/api/user_keys.html#list-all-ssh-keys
 type ListSSHKeysOptions ListOptions
 
 // ListSSHKeys gets a list of currently authenticated user's SSH keys.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/users.html#list-ssh-keys
+// GitLab API docs: https://docs.gitlab.com/ee/api/user_keys.html#list-all-ssh-keys
 func (s *UsersService) ListSSHKeys(opt *ListSSHKeysOptions, options ...RequestOptionFunc) ([]*SSHKey, *Response, error) {
 	req, err := s.client.NewRequest(http.MethodGet, "user/keys", opt, options)
 	if err != nil {
@@ -599,16 +602,17 @@ func (s *UsersService) GetSSHKeyForUser(user int, key int, options ...RequestOpt
 
 // AddSSHKeyOptions represents the available AddSSHKey() options.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/users.html#add-ssh-key
+// GitLab API docs: https://docs.gitlab.com/ee/api/user_keys.html#add-an-ssh-key
 type AddSSHKeyOptions struct {
 	Title     *string  `url:"title,omitempty" json:"title,omitempty"`
 	Key       *string  `url:"key,omitempty" json:"key,omitempty"`
 	ExpiresAt *ISOTime `url:"expires_at,omitempty" json:"expires_at,omitempty"`
+	UsageType *string  `url:"usage_type,omitempty" json:"usage_type,omitempty"`
 }
 
 // AddSSHKey creates a new key owned by the currently authenticated user.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/users.html#add-ssh-key
+// GitLab API docs: https://docs.gitlab.com/ee/api/user_keys.html#add-an-ssh-key
 func (s *UsersService) AddSSHKey(opt *AddSSHKeyOptions, options ...RequestOptionFunc) (*SSHKey, *Response, error) {
 	req, err := s.client.NewRequest(http.MethodPost, "user/keys", opt, options)
 	if err != nil {
@@ -627,7 +631,7 @@ func (s *UsersService) AddSSHKey(opt *AddSSHKeyOptions, options ...RequestOption
 // AddSSHKeyForUser creates new key owned by specified user. Available only for
 // admin.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/users.html#add-ssh-key-for-user
+// GitLab API docs: https://docs.gitlab.com/ee/api/user_keys.html#add-an-ssh-key-for-a-user
 func (s *UsersService) AddSSHKeyForUser(user int, opt *AddSSHKeyOptions, options ...RequestOptionFunc) (*SSHKey, *Response, error) {
 	u := fmt.Sprintf("users/%d/keys", user)
 
@@ -1337,17 +1341,18 @@ func (s *UsersService) RevokeImpersonationToken(user, token int, options ...Requ
 // CreatePersonalAccessToken() options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/users.html#create-a-personal-access-token
+// https://docs.gitlab.com/api/user_tokens/#create-a-personal-access-token-for-a-user
 type CreatePersonalAccessTokenOptions struct {
-	Name      *string   `url:"name,omitempty" json:"name,omitempty"`
-	ExpiresAt *ISOTime  `url:"expires_at,omitempty" json:"expires_at,omitempty"`
-	Scopes    *[]string `url:"scopes,omitempty" json:"scopes,omitempty"`
+	Name        *string   `url:"name,omitempty" json:"name,omitempty"`
+	Description *string   `url:"description,omitempty" json:"description,omitempty"`
+	ExpiresAt   *ISOTime  `url:"expires_at,omitempty" json:"expires_at,omitempty"`
+	Scopes      *[]string `url:"scopes,omitempty" json:"scopes,omitempty"`
 }
 
 // CreatePersonalAccessToken creates a personal access token.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/users.html#create-a-personal-access-token
+// https://docs.gitlab.com/api/user_tokens/#create-a-personal-access-token-for-a-user
 func (s *UsersService) CreatePersonalAccessToken(user int, opt *CreatePersonalAccessTokenOptions, options ...RequestOptionFunc) (*PersonalAccessToken, *Response, error) {
 	u := fmt.Sprintf("users/%d/personal_access_tokens", user)
 
@@ -1369,17 +1374,18 @@ func (s *UsersService) CreatePersonalAccessToken(user int, opt *CreatePersonalAc
 // CreatePersonalAccessTokenForCurrentUser() options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/users.html#create-a-personal-access-token-with-limited-scopes-for-the-currently-authenticated-user
+// https://docs.gitlab.com/api/user_tokens/#create-a-personal-access-token
 type CreatePersonalAccessTokenForCurrentUserOptions struct {
-	Name      *string   `url:"name,omitempty" json:"name,omitempty"`
-	Scopes    *[]string `url:"scopes,omitempty" json:"scopes,omitempty"`
-	ExpiresAt *ISOTime  `url:"expires_at,omitempty" json:"expires_at,omitempty"`
+	Name        *string   `url:"name,omitempty" json:"name,omitempty"`
+	Description *string   `url:"description,omitempty" json:"description,omitempty"`
+	Scopes      *[]string `url:"scopes,omitempty" json:"scopes,omitempty"`
+	ExpiresAt   *ISOTime  `url:"expires_at,omitempty" json:"expires_at,omitempty"`
 }
 
 // CreatePersonalAccessTokenForCurrentUser creates a personal access token with limited scopes for the currently authenticated user.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/users.html#create-a-personal-access-token-with-limited-scopes-for-the-currently-authenticated-user
+// https://docs.gitlab.com/api/user_tokens/#create-a-personal-access-token
 func (s *UsersService) CreatePersonalAccessTokenForCurrentUser(opt *CreatePersonalAccessTokenForCurrentUserOptions, options ...RequestOptionFunc) (*PersonalAccessToken, *Response, error) {
 	u := "user/personal_access_tokens"
 
@@ -1553,13 +1559,13 @@ func (s *UsersService) CreateUserRunner(opts *CreateUserRunnerOptions, options .
 	return r, resp, nil
 }
 
-
 // CreateServiceAccountUserOptions represents the available CreateServiceAccountUser() options.
 //
 // GitLab API docs: https://docs.gitlab.com/ee/api/user_service_accounts.html#create-a-service-account-user
 type CreateServiceAccountUserOptions struct {
 	Name     *string `url:"name,omitempty" json:"name,omitempty"`
 	Username *string `url:"username,omitempty" json:"username,omitempty"`
+	Email    *string `url:"email,omitempty" json:"email,omitempty"`
 }
 
 // CreateServiceAccountUser creates a new service account user.

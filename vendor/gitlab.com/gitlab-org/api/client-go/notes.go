@@ -25,30 +25,24 @@ import (
 // NotesService handles communication with the notes related methods
 // of the GitLab API.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/notes.html
+// GitLab API docs:
+// https://docs.gitlab.com/api/notes/
 type NotesService struct {
 	client *Client
 }
 
 // Note represents a GitLab note.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/notes.html
+// GitLab API docs:
+// https://docs.gitlab.com/api/notes/
 type Note struct {
-	ID         int           `json:"id"`
-	Type       NoteTypeValue `json:"type"`
-	Body       string        `json:"body"`
-	Attachment string        `json:"attachment"`
-	Title      string        `json:"title"`
-	FileName   string        `json:"file_name"`
-	Author     struct {
-		ID        int    `json:"id"`
-		Username  string `json:"username"`
-		Email     string `json:"email"`
-		Name      string `json:"name"`
-		State     string `json:"state"`
-		AvatarURL string `json:"avatar_url"`
-		WebURL    string `json:"web_url"`
-	} `json:"author"`
+	ID           int           `json:"id"`
+	Type         NoteTypeValue `json:"type"`
+	Body         string        `json:"body"`
+	Attachment   string        `json:"attachment"`
+	Title        string        `json:"title"`
+	FileName     string        `json:"file_name"`
+	Author       NoteAuthor    `json:"author"`
 	System       bool          `json:"system"`
 	CreatedAt    *time.Time    `json:"created_at"`
 	UpdatedAt    *time.Time    `json:"updated_at"`
@@ -73,6 +67,17 @@ type Note struct {
 	} `json:"resolved_by"`
 	Confidential bool `json:"confidential"`
 	Internal     bool `json:"internal"`
+}
+
+// NoteAuthor represents the author of a note.
+type NoteAuthor struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	State     string `json:"state"`
+	AvatarURL string `json:"avatar_url"`
+	WebURL    string `json:"web_url"`
 }
 
 // NotePosition represents the position attributes of a note.
@@ -109,7 +114,7 @@ func (n Note) String() string {
 // ListIssueNotesOptions represents the available ListIssueNotes() options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#list-project-issue-notes
+// https://docs.gitlab.com/api/notes/#list-project-issue-notes
 type ListIssueNotesOptions struct {
 	ListOptions
 	OrderBy *string `url:"order_by,omitempty" json:"order_by,omitempty"`
@@ -119,7 +124,7 @@ type ListIssueNotesOptions struct {
 // ListIssueNotes gets a list of all notes for a single issue.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#list-project-issue-notes
+// https://docs.gitlab.com/api/notes/#list-project-issue-notes
 func (s *NotesService) ListIssueNotes(pid interface{}, issue int, opt *ListIssueNotesOptions, options ...RequestOptionFunc) ([]*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -144,7 +149,7 @@ func (s *NotesService) ListIssueNotes(pid interface{}, issue int, opt *ListIssue
 // GetIssueNote returns a single note for a specific project issue.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#get-single-issue-note
+// https://docs.gitlab.com/api/notes/#get-single-issue-note
 func (s *NotesService) GetIssueNote(pid interface{}, issue, note int, options ...RequestOptionFunc) (*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -170,16 +175,17 @@ func (s *NotesService) GetIssueNote(pid interface{}, issue, note int, options ..
 // options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#create-new-issue-note
+// https://docs.gitlab.com/api/notes/#create-new-issue-note
 type CreateIssueNoteOptions struct {
 	Body      *string    `url:"body,omitempty" json:"body,omitempty"`
 	CreatedAt *time.Time `url:"created_at,omitempty" json:"created_at,omitempty"`
+	Internal  *bool      `url:"internal,omitempty" json:"internal,omitempty"`
 }
 
 // CreateIssueNote creates a new note to a single project issue.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#create-new-issue-note
+// https://docs.gitlab.com/api/notes/#create-new-issue-note
 func (s *NotesService) CreateIssueNote(pid interface{}, issue int, opt *CreateIssueNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -205,7 +211,7 @@ func (s *NotesService) CreateIssueNote(pid interface{}, issue int, opt *CreateIs
 // options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#modify-existing-issue-note
+// https://docs.gitlab.com/api/notes/#modify-existing-issue-note
 type UpdateIssueNoteOptions struct {
 	Body *string `url:"body,omitempty" json:"body,omitempty"`
 }
@@ -213,7 +219,7 @@ type UpdateIssueNoteOptions struct {
 // UpdateIssueNote modifies existing note of an issue.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#modify-existing-issue-note
+// https://docs.gitlab.com/api/notes/#modify-existing-issue-note
 func (s *NotesService) UpdateIssueNote(pid interface{}, issue, note int, opt *UpdateIssueNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -238,7 +244,7 @@ func (s *NotesService) UpdateIssueNote(pid interface{}, issue, note int, opt *Up
 // DeleteIssueNote deletes an existing note of an issue.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#delete-an-issue-note
+// https://docs.gitlab.com/api/notes/#delete-an-issue-note
 func (s *NotesService) DeleteIssueNote(pid interface{}, issue, note int, options ...RequestOptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -257,7 +263,7 @@ func (s *NotesService) DeleteIssueNote(pid interface{}, issue, note int, options
 // ListSnippetNotesOptions represents the available ListSnippetNotes() options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#list-all-snippet-notes
+// https://docs.gitlab.com/api/notes/#list-all-snippet-notes
 type ListSnippetNotesOptions struct {
 	ListOptions
 	OrderBy *string `url:"order_by,omitempty" json:"order_by,omitempty"`
@@ -268,7 +274,7 @@ type ListSnippetNotesOptions struct {
 // notes are comments users can post to a snippet.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#list-all-snippet-notes
+// https://docs.gitlab.com/api/notes/#list-all-snippet-notes
 func (s *NotesService) ListSnippetNotes(pid interface{}, snippet int, opt *ListSnippetNotesOptions, options ...RequestOptionFunc) ([]*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -293,7 +299,7 @@ func (s *NotesService) ListSnippetNotes(pid interface{}, snippet int, opt *ListS
 // GetSnippetNote returns a single note for a given snippet.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#get-single-snippet-note
+// https://docs.gitlab.com/api/notes/#get-single-snippet-note
 func (s *NotesService) GetSnippetNote(pid interface{}, snippet, note int, options ...RequestOptionFunc) (*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -319,16 +325,17 @@ func (s *NotesService) GetSnippetNote(pid interface{}, snippet, note int, option
 // options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#create-new-snippet-note
+// https://docs.gitlab.com/api/notes/#create-new-snippet-note
 type CreateSnippetNoteOptions struct {
-	Body *string `url:"body,omitempty" json:"body,omitempty"`
+	Body      *string    `url:"body,omitempty" json:"body,omitempty"`
+	CreatedAt *time.Time `url:"created_at,omitempty" json:"created_at,omitempty"`
 }
 
 // CreateSnippetNote creates a new note for a single snippet. Snippet notes are
 // comments users can post to a snippet.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#create-new-snippet-note
+// https://docs.gitlab.com/api/notes/#create-new-snippet-note
 func (s *NotesService) CreateSnippetNote(pid interface{}, snippet int, opt *CreateSnippetNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -354,7 +361,7 @@ func (s *NotesService) CreateSnippetNote(pid interface{}, snippet int, opt *Crea
 // options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#modify-existing-snippet-note
+// https://docs.gitlab.com/api/notes/#modify-existing-snippet-note
 type UpdateSnippetNoteOptions struct {
 	Body *string `url:"body,omitempty" json:"body,omitempty"`
 }
@@ -362,7 +369,7 @@ type UpdateSnippetNoteOptions struct {
 // UpdateSnippetNote modifies existing note of a snippet.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#modify-existing-snippet-note
+// https://docs.gitlab.com/api/notes/#modify-existing-snippet-note
 func (s *NotesService) UpdateSnippetNote(pid interface{}, snippet, note int, opt *UpdateSnippetNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -387,7 +394,7 @@ func (s *NotesService) UpdateSnippetNote(pid interface{}, snippet, note int, opt
 // DeleteSnippetNote deletes an existing note of a snippet.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#delete-a-snippet-note
+// https://docs.gitlab.com/api/notes/#delete-a-snippet-note
 func (s *NotesService) DeleteSnippetNote(pid interface{}, snippet, note int, options ...RequestOptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -407,7 +414,7 @@ func (s *NotesService) DeleteSnippetNote(pid interface{}, snippet, note int, opt
 // options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#list-all-merge-request-notes
+// https://docs.gitlab.com/api/notes/#list-all-merge-request-notes
 type ListMergeRequestNotesOptions struct {
 	ListOptions
 	OrderBy *string `url:"order_by,omitempty" json:"order_by,omitempty"`
@@ -417,7 +424,7 @@ type ListMergeRequestNotesOptions struct {
 // ListMergeRequestNotes gets a list of all notes for a single merge request.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#list-all-merge-request-notes
+// https://docs.gitlab.com/api/notes/#list-all-merge-request-notes
 func (s *NotesService) ListMergeRequestNotes(pid interface{}, mergeRequest int, opt *ListMergeRequestNotesOptions, options ...RequestOptionFunc) ([]*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -442,7 +449,7 @@ func (s *NotesService) ListMergeRequestNotes(pid interface{}, mergeRequest int, 
 // GetMergeRequestNote returns a single note for a given merge request.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#get-single-merge-request-note
+// https://docs.gitlab.com/api/notes/#get-single-merge-request-note
 func (s *NotesService) GetMergeRequestNote(pid interface{}, mergeRequest, note int, options ...RequestOptionFunc) (*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -468,15 +475,18 @@ func (s *NotesService) GetMergeRequestNote(pid interface{}, mergeRequest, note i
 // CreateMergeRequestNote() options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#create-new-merge-request-note
+// https://docs.gitlab.com/api/notes/#create-new-merge-request-note
 type CreateMergeRequestNoteOptions struct {
-	Body *string `url:"body,omitempty" json:"body,omitempty"`
+	Body                    *string    `url:"body,omitempty" json:"body,omitempty"`
+	CreatedAt               *time.Time `url:"created_at,omitempty" json:"created_at,omitempty"`
+	Internal                *bool      `url:"internal,omitempty" json:"internal,omitempty"`
+	MergeRequestDiffHeadSHA *string    `url:"merge_request_diff_head_sha,omitempty" json:"merge_request_diff_head_sha,omitempty"`
 }
 
 // CreateMergeRequestNote creates a new note for a single merge request.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#create-new-merge-request-note
+// https://docs.gitlab.com/api/notes/#create-new-merge-request-note
 func (s *NotesService) CreateMergeRequestNote(pid interface{}, mergeRequest int, opt *CreateMergeRequestNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -502,7 +512,7 @@ func (s *NotesService) CreateMergeRequestNote(pid interface{}, mergeRequest int,
 // UpdateMergeRequestNote() options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#modify-existing-merge-request-note
+// https://docs.gitlab.com/api/notes/#modify-existing-merge-request-note
 type UpdateMergeRequestNoteOptions struct {
 	Body *string `url:"body,omitempty" json:"body,omitempty"`
 }
@@ -510,7 +520,7 @@ type UpdateMergeRequestNoteOptions struct {
 // UpdateMergeRequestNote modifies existing note of a merge request.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#modify-existing-merge-request-note
+// https://docs.gitlab.com/api/notes/#modify-existing-merge-request-note
 func (s *NotesService) UpdateMergeRequestNote(pid interface{}, mergeRequest, note int, opt *UpdateMergeRequestNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -535,7 +545,7 @@ func (s *NotesService) UpdateMergeRequestNote(pid interface{}, mergeRequest, not
 // DeleteMergeRequestNote deletes an existing note of a merge request.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#delete-a-merge-request-note
+// https://docs.gitlab.com/api/notes/#delete-a-merge-request-note
 func (s *NotesService) DeleteMergeRequestNote(pid interface{}, mergeRequest, note int, options ...RequestOptionFunc) (*Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
@@ -553,9 +563,10 @@ func (s *NotesService) DeleteMergeRequestNote(pid interface{}, mergeRequest, not
 }
 
 // ListEpicNotesOptions represents the available ListEpicNotes() options.
+// Deprecated: use Work Items API instead.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#list-all-epic-notes
+// https://docs.gitlab.com/api/notes/#list-all-epic-notes
 type ListEpicNotesOptions struct {
 	ListOptions
 	OrderBy *string `url:"order_by,omitempty" json:"order_by,omitempty"`
@@ -563,9 +574,10 @@ type ListEpicNotesOptions struct {
 }
 
 // ListEpicNotes gets a list of all notes for a single epic.
+// Deprecated: use Work Items API instead.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#list-all-epic-notes
+// https://docs.gitlab.com/api/notes/#list-all-epic-notes
 func (s *NotesService) ListEpicNotes(gid interface{}, epic int, opt *ListEpicNotesOptions, options ...RequestOptionFunc) ([]*Note, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -588,9 +600,10 @@ func (s *NotesService) ListEpicNotes(gid interface{}, epic int, opt *ListEpicNot
 }
 
 // GetEpicNote returns a single note for an epic.
+// Deprecated: use Work Items API instead.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#get-single-epic-note
+// https://docs.gitlab.com/api/notes/#get-single-epic-note
 func (s *NotesService) GetEpicNote(gid interface{}, epic, note int, options ...RequestOptionFunc) (*Note, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -613,17 +626,19 @@ func (s *NotesService) GetEpicNote(gid interface{}, epic, note int, options ...R
 }
 
 // CreateEpicNoteOptions represents the available CreateEpicNote() options.
+// Deprecated: use Work Items API instead.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#create-new-epic-note
+// https://docs.gitlab.com/api/notes/#create-new-epic-note
 type CreateEpicNoteOptions struct {
 	Body *string `url:"body,omitempty" json:"body,omitempty"`
 }
 
 // CreateEpicNote creates a new note for a single merge request.
+// Deprecated: use Work Items API instead.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#create-new-epic-note
+// https://docs.gitlab.com/api/notes/#create-new-epic-note
 func (s *NotesService) CreateEpicNote(gid interface{}, epic int, opt *CreateEpicNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -646,16 +661,18 @@ func (s *NotesService) CreateEpicNote(gid interface{}, epic int, opt *CreateEpic
 }
 
 // UpdateEpicNoteOptions represents the available UpdateEpicNote() options.
+// Deprecated: use Work Items API instead.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/notes.html#modify-existing-epic-note
+// https://docs.gitlab.com/api/notes/#modify-existing-epic-note
 type UpdateEpicNoteOptions struct {
 	Body *string `url:"body,omitempty" json:"body,omitempty"`
 }
 
 // UpdateEpicNote modifies existing note of an epic.
+// Deprecated: use Work Items API instead.
 //
-// https://docs.gitlab.com/ee/api/notes.html#modify-existing-epic-note
+// https://docs.gitlab.com/api/notes/#modify-existing-epic-note
 func (s *NotesService) UpdateEpicNote(gid interface{}, epic, note int, opt *UpdateEpicNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -678,8 +695,9 @@ func (s *NotesService) UpdateEpicNote(gid interface{}, epic, note int, opt *Upda
 }
 
 // DeleteEpicNote deletes an existing note of a merge request.
+// Deprecated: use Work Items API instead.
 //
-// https://docs.gitlab.com/ee/api/notes.html#delete-an-epic-note
+// https://docs.gitlab.com/api/notes/#delete-an-epic-note
 func (s *NotesService) DeleteEpicNote(gid interface{}, epic, note int, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(gid)
 	if err != nil {

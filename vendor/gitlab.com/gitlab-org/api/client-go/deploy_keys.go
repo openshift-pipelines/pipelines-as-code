@@ -62,12 +62,14 @@ func (k DeployKeyProject) String() string {
 
 // ProjectDeployKey represents a GitLab project deploy key.
 type ProjectDeployKey struct {
-	ID        int        `json:"id"`
-	Title     string     `json:"title"`
-	Key       string     `json:"key"`
-	CreatedAt *time.Time `json:"created_at"`
-	CanPush   bool       `json:"can_push"`
-	ExpiresAt *time.Time `json:"expires_at"`
+	ID                int        `json:"id"`
+	Title             string     `json:"title"`
+	Key               string     `json:"key"`
+	Fingerprint       string     `json:"fingerprint"`
+	FingerprintSHA256 string     `json:"fingerprint_sha256"`
+	CreatedAt         *time.Time `json:"created_at"`
+	CanPush           bool       `json:"can_push"`
+	ExpiresAt         *time.Time `json:"expires_at"`
 }
 
 func (k ProjectDeployKey) String() string {

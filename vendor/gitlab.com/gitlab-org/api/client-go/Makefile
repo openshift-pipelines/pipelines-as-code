@@ -6,6 +6,8 @@ help: ## Display this help
 
 ##@ Development
 
+reviewable: setup fmt lint test ## Run before committing.
+
 fmt: ## Format code
 	@gofumpt -l -w .
 

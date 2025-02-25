@@ -5,11 +5,12 @@ import (
 	"fmt"
 
 	"github.com/google/cel-go/cel"
-	"github.com/google/cel-go/checker/decls"
+	"github.com/google/cel-go/common/decls"
+	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
 )
 
-func evaluate(expr string, env *cel.Env, data map[string]interface{}) (ref.Val, error) {
+func evaluate(expr string, env *cel.Env, data map[string]any) (ref.Val, error) {
 	parsed, issues := env.Parse(expr)
 	if issues != nil && issues.Err() != nil {
 		return nil, fmt.Errorf("failed to parse expression %#v: %w", expr, issues.Err())
@@ -35,25 +36,25 @@ func evaluate(expr string, env *cel.Env, data map[string]interface{}) (ref.Val, 
 
 // Value evaluates a CEL expression with the given body, headers and
 // / pacParams, it will output a Cel value or an error if selectedjm.
-func Value(query string, body any, headers, pacParams map[string]string, changedFiles map[string]interface{}) (ref.Val, error) {
-	// Marshal/Unmarshal the body to a map[string]interface{} so we can access it from the CEL
+func Value(query string, body any, headers, pacParams map[string]string, changedFiles map[string]any) (ref.Val, error) {
+	// Marshal/Unmarshal the body to a map[string]any so we can access it from the CEL
 	nbody, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
-	var jsonMap map[string]interface{}
+	var jsonMap map[string]any
 	err = json.Unmarshal(nbody, &jsonMap)
 	if err != nil {
 		return nil, err
 	}
 
-	mapStrDyn := decls.NewMapType(decls.String, decls.Dyn)
+	mapStrDyn := types.NewMapType(types.StringType, types.DynType)
 	celDec, _ := cel.NewEnv(
-		cel.Declarations(
-			decls.NewVar("body", mapStrDyn),
-			decls.NewVar("headers", mapStrDyn),
-			decls.NewVar("pac", mapStrDyn),
-			decls.NewVar("files", mapStrDyn),
+		cel.VariableDecls(
+			decls.NewVariable("body", mapStrDyn),
+			decls.NewVariable("headers", mapStrDyn),
+			decls.NewVariable("pac", mapStrDyn),
+			decls.NewVariable("files", mapStrDyn),
 		))
 	val, err := evaluate(query, celDec, map[string]any{
 		"body":    jsonMap,

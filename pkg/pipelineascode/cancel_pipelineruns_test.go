@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v69/github"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"

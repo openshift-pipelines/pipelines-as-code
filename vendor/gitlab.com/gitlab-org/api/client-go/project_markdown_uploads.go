@@ -65,24 +65,25 @@ func (m ProjectMarkdownUpload) String() string {
 //
 // GitLab docs:
 // https://docs.gitlab.com/ee/api/project_markdown_uploads.html#upload-a-file
-func (s *ProjectMarkdownUploadsService) UploadProjectMarkdown(pid interface{}, content io.Reader, options ...RequestOptionFunc) (*ProjectMarkdownUploadedFile, *Response, error) {
+func (s *ProjectMarkdownUploadsService) UploadProjectMarkdown(pid interface{}, content io.Reader, filename string, options ...RequestOptionFunc) (*ProjectMarkdownUploadedFile, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, nil, err
 	}
 	u := fmt.Sprintf("projects/%s/uploads", PathEscape(project))
 
-	// We need to create the request as a GET request to make sure the options
-	// are set correctly. After the request is created we will overwrite both
-	// the method and the body.
-	req, err := s.client.NewRequest(http.MethodPost, u, nil, options)
+	req, err := s.client.UploadRequest(
+		http.MethodPost,
+		u,
+		content,
+		filename,
+		UploadFile,
+		nil,
+		options,
+	)
 	if err != nil {
 		return nil, nil, err
 	}
-
-	// Overwrite the method and body.
-	req.Method = http.MethodPost
-	req.SetBody(content)
 
 	f := new(ProjectMarkdownUploadedFile)
 	resp, err := s.client.Do(req, f)

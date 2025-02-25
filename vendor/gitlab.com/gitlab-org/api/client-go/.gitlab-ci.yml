@@ -5,26 +5,27 @@ workflow:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_REF_PROTECTED == "true"
 
+include:
+  - component: ${CI_SERVER_FQDN}/gitlab-org/components/danger-review/danger-review@2.0.0
+    inputs:
+      job_stage: lint
+      job_allow_failure: true
+
 stages:
   - lint
   - test
   - deploy
 
-.go-versions:
+.go:versions:
   parallel:
     matrix:
       - GOLANG_IMAGE_VERSION:
         - '1.22'
         - '1.23'
+        - '1.24'
 
 .go:base:
-  tags:
-    - saas-linux-large-amd64
-
-# From: https://docs.gitlab.com/ee/ci/caching/#cache-go-dependencies
-.go-cache:
-  extends:
-    - .go:base
+  # From: https://docs.gitlab.com/ee/ci/caching/#cache-go-dependencies
   variables:
     GOPATH: $CI_PROJECT_DIR/.go
     GOLANGCI_LINT_CACHE: $CI_PROJECT_DIR/.golangci-lint
@@ -37,15 +38,34 @@ stages:
     key:
       files:
         - go.sum
+  # We want to speed up CI a bit.
+  # Community contributors are recommended to use the Community fork
+  # which has access to this runners.
+  # For other forks to free tier namespaces this might fail,
+  # which is a good reminder to use the Community fork and not
+  # to accidentally burn to personal compute minutes.
+  tags:
+    - saas-linux-large-amd64
+  # We only need to run Go-related jobs when actual Go files changed
+  # or when running either on the default branch or for a tag.
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: $CI_COMMIT_TAG
+    - changes:
+        - '**/*.go'
+        - testdata/**
+        - go.mod
+        - go.sum
+        - .gitlab-ci.yml
 
 golangci-lint:
   extends:
-    - .go-cache
+    - .go:base
   stage: lint
   needs: []
   variables:
     REPORT_FILENAME: 'gl-code-quality-report.json'
-  image: golangci/golangci-lint:v1.62.0
+  image: golangci/golangci-lint:v1.64.5
   script:
     - golangci-lint run --print-issued-lines=false --out-format code-climate:$REPORT_FILENAME,line-number
   artifacts:
@@ -56,8 +76,8 @@ golangci-lint:
 
 tests:unit:
   extends:
-    - .go-cache
-    - .go-versions
+    - .go:base
+    - .go:versions
   stage: test
   needs: []
   image: golang:$GOLANG_IMAGE_VERSION
@@ -89,7 +109,7 @@ tests:unit:
 generate-release-notes:
   stage: deploy
   needs: []
-  image: alpine:3.20.3
+  image: alpine:3.21.3
   before_script:
     - apk add --update jq curl git
   script:
@@ -113,6 +133,8 @@ release:
   rules:
     - if: $CI_COMMIT_TAG
   needs:
+    - golangci-lint
+    - tests:unit
     - job: generate-release-notes
       artifacts: true
   image: registry.gitlab.com/gitlab-org/release-cli:latest

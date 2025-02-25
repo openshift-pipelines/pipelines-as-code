@@ -15,7 +15,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	httptesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/http"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/provider"
-	testifyassert "github.com/stretchr/testify/assert"
 	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -105,14 +104,26 @@ func TestGrabTasksFromAnnotation(t *testing.T) {
 			annotations: map[string]string{
 				keys.Task: "[http://remote.task",
 			},
-			expected: []string{},
+			expected: nil,
 			wantErr:  "annotations in pipeline are in wrong format: [http://remote.task",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			output, err := GrabTasksFromAnnotations(tt.annotations)
-			testifyassert.ElementsMatch(t, tt.expected, output)
+
+			for _, task := range output {
+				// check if we have the task inside the expected list
+				found := false
+				for _, expectedTask := range tt.expected {
+					if task == expectedTask {
+						found = true
+					}
+				}
+				assert.Assert(t, found, "We should have found the task %v in the expected list", task)
+			}
+			assert.Equal(t, len(tt.expected), len(output), "We should have the same number of tasks")
+
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr, "We should have get an error with %v but we didn't", tt.wantErr)
 			}

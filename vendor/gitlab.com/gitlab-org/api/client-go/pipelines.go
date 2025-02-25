@@ -142,6 +142,7 @@ type PipelineInfo struct {
 	Source    string     `json:"source"`
 	Ref       string     `json:"ref"`
 	SHA       string     `json:"sha"`
+	Name      string     `json:"name"`
 	WebURL    string     `json:"web_url"`
 	UpdatedAt *time.Time `json:"updated_at"`
 	CreatedAt *time.Time `json:"created_at"`

@@ -42,7 +42,7 @@ projects, _, err := git.Projects.ListProjects(opt)
 
 ### Examples
 
-The [examples](https://gitlab.com/gitlab-org/api/client-go/tree/master/examples) directory
+The [examples](/examples) directory
 contains a couple for clear examples, of which one is partially listed here as well:
 
 ```go
@@ -92,7 +92,7 @@ For complete usage of go-gitlab, see the full [package docs](https://godoc.org/g
 ## Contributing
 
 Contributions are always welcome. For more information, check out the
-[contributing guide](https://gitlab.com/gitlab-org/api/client-go/-/blob/main/CONTRIBUTING.md).
+[contributing guide](/CONTRIBUTING.md).
 
 ## Maintenance
 

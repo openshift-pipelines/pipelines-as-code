@@ -713,6 +713,7 @@ const (
 	NoOneProjectCreation      ProjectCreationLevelValue = "noone"
 	MaintainerProjectCreation ProjectCreationLevelValue = "maintainer"
 	DeveloperProjectCreation  ProjectCreationLevelValue = "developer"
+	OwnerProjectCreation      ProjectCreationLevelValue = "owner"
 )
 
 // ProjectCreationLevel is a helper routine that allocates a new ProjectCreationLevelValue
