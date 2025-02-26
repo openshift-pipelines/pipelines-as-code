@@ -530,7 +530,6 @@ func TestGiteaPush(t *testing.T) {
 }
 
 func TestGiteaWithCLI(t *testing.T) {
-	t.Parallel()
 	topts := &tgitea.TestOpts{
 		Regexp:      successRegexp,
 		TargetEvent: "pull_request, push",

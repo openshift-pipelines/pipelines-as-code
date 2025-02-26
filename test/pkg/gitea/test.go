@@ -93,6 +93,7 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 	ctx := context.Background()
 	if topts.ParamsRun == nil {
 		runcnx, opts, giteacnx, err := Setup(ctx)
+		runcnx.Clients.Log = runcnx.Clients.Log.With("test", t.Name())
 		assert.NilError(t, err, fmt.Errorf("cannot do gitea setup: %w", err))
 		topts.GiteaCNX = giteacnx
 		topts.ParamsRun = runcnx
@@ -126,6 +127,7 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 
 	if topts.TargetRepoName == "" {
 		topts.TargetRepoName = topts.TargetRefName
+		t.Parallel()
 	}
 
 	if topts.DefaultBranch == "" {
