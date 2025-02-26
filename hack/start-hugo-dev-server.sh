@@ -28,7 +28,7 @@ fi
 # build time may vary, and if the default port is in use another port
 # is selected, we use a named pipe to listen for hugo to start and
 # extract the chosen host+port to open
-HUGO_OUTPUT_FIFO=$(mktemp)
+HUGO_OUTPUT_FIFO=$(mktemp --suffix "pac-dev-docs")
 test -e "${HUGO_OUTPUT_FIFO}" && rm "${HUGO_OUTPUT_FIFO}"
 mkfifo "${HUGO_OUTPUT_FIFO}"
 
@@ -51,4 +51,4 @@ function listen_and_open() {
 listen_and_open &
 
 set -x
-exec "${HUGO_BIN}" "${@}" | tee > "${HUGO_OUTPUT_FIFO}"
+exec "${HUGO_BIN}" "${@}" | tee "${HUGO_OUTPUT_FIFO}"
