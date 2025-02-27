@@ -65,8 +65,15 @@ When multiple PipelineRuns match an event, it will run them in parallel
 and post the results to the provider as soon as the PipelineRun finishes.
 
 {{< hint info >}}
-Payload matching only occurs for events that `Pipelines-as-Code` supports, such as
-when a `Pull Request` is opened, updated, or when a branch receives a `Push`.
+
+* Payload matching happens only for events supported by `Pipelines-as-Code`,
+such as when a `Pull Request` is opened, updated, or when a branch receives a
+`Push`.
+
+* Typically, you need both `on-target-branch` and `on-event` annotations to
+match, except when using [CEL expressions](#advanced-event-matching-using-cel)
+or [matching based on a
+comment](#matching-a-pipelinerun-on-a-regex-in-a-comment).
 {{< /hint >}}
 
 ## Matching a PipelineRun to Specific Path Changes
@@ -239,21 +246,27 @@ can use this annotation:
 metadata:
   name: match-bugs-or-defect
   annotations:
-    pipelinesascode.tekton.dev/on-label: [bug, defect]
+    pipelinesascode.tekton.dev/on-label: "[bug, defect]"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/on-event: "[pull_request]"
 ```
 
-- The `on-label` annotation respects the `pull_request` [Policy]({{< relref
+* The `on-label` annotation respects the `pull_request` [Policy]({{< relref
   "/docs/guide/policy" >}}) rules.
-- This annotation is currently supported only on GitHub, Gitea, and GitLab
+* The `on-target-branch` is still needed to match the Pull Request event on the
+  targeted branch.
+* The `on-event` is still needed to match the Pull Request event on the
+  proper targeted event.
+* This annotation is currently supported only on GitHub, Gitea, and GitLab
   providers. Bitbucket Cloud and Bitbucket Server do not support adding labels
   to Pull Requests.
-- When you add a label to a Pull Request, the corresponding PipelineRun is
+* When you add a label to a Pull Request, the corresponding PipelineRun is
   triggered immediately, and no other PipelineRun matching the same Pull Request
   will be activated.
-- If you update the Pull Request by sending a new commit, the PipelineRun
+* If you update the Pull Request by sending a new commit, the PipelineRun
   with a matching `on-label` annotation will be triggered again if the label is
   still present.
-- You can access the `Pull Request` labels with the [dynamic variable]({{<
+* You can access the `Pull Request` labels with the [dynamic variable]({{<
   relref "/docs/guide/authoringprs#dynamic-variables" >}}) `{{ pull_request_labels }}`.
   The labels are separated by a Unix newline `\n`.
   For example, with a shell script, you can do this to print them:
