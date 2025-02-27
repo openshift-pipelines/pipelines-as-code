@@ -23,6 +23,8 @@ spec:
       value: "{{ git_auth_secret }}"
     - name: comment_sender
       value: "{{ sender }}"
+    - name: merge_method
+      value: "squash"
   #
   # Optional parameters (value is the default):
   #
@@ -44,8 +46,5 @@ spec:
   # - name: lgtm_review_event
   #   value: "APPROVE"
   #
-  # The merge method to use. Can be one of: merge, squash, rebase
-  # - name: merge_method
-  #   value: "rebase"
   pipelineRef:
     name: boussole
