@@ -23,14 +23,14 @@ metadata:
     app.kubernetes.io/part-of: pipelines-as-code
 spec:
   ports:
-  - name: http-listener
-    port: 8080
-    protocol: TCP
-    targetPort: 8080
-  - name: http-metrics
-    port: 9090
-    protocol: TCP
-    targetPort: 9090
+    - name: http-listener
+      port: 8080
+      protocol: TCP
+      targetPort: 8082
+    - name: http-metrics
+      port: 9090
+      protocol: TCP
+      targetPort: 9090
   selector:
     app.kubernetes.io/name: controller
     app.kubernetes.io/component: controller

@@ -49,7 +49,7 @@ spec:
           imagePullPolicy: Always
           ports:
             - name: api
-              containerPort: 8080
+              containerPort: 8082
             - name: metrics
               containerPort: 9090
           securityContext:
@@ -106,7 +106,7 @@ spec:
               readOnly: true
               name: tls
       volumes:
-      - name: tls
-        secret:
-          secretName: pipelines-as-code-tls-secret
-          optional: true
+        - name: tls
+          secret:
+            secretName: pipelines-as-code-tls-secret
+            optional: true

@@ -29,7 +29,7 @@ import (
 	"knative.dev/pkg/system"
 )
 
-const globalAdapterPort = "8080"
+const globalAdapterPort = "8082"
 
 // For incoming webhook requests and GitHub Apps with many installations the handler takes long
 // e.g GitHub App with ~400 installations, it takes ~180s. For OpenShift deployments this also
