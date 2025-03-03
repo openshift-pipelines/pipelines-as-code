@@ -606,11 +606,11 @@ func TestRun(t *testing.T) {
 				},
 			}
 			vcx := &ghprovider.Provider{
-				Client: fakeclient,
 				Run:    cs,
 				Token:  github.Ptr("None"),
 				Logger: logger,
 			}
+			vcx.SetGithubClient(fakeclient)
 			vcx.SetPacInfo(pacInfo)
 			p := NewPacs(&tt.runevent, vcx, cs, pacInfo, k8int, logger, nil)
 			err := p.Run(ctx)

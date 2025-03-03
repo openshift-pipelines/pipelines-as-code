@@ -1351,9 +1351,9 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			fakeclient, mux, ghTestServerURL, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			vcx := &ghprovider.Provider{
-				Client: fakeclient,
-				Token:  github.Ptr("None"),
+				Token: github.Ptr("None"),
 			}
+			vcx.SetGithubClient(fakeclient)
 			if tt.args.runevent.Request == nil {
 				tt.args.runevent.Request = &info.Request{Header: http.Header{}, Payload: nil}
 			}

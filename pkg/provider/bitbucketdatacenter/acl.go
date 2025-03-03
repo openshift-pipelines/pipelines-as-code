@@ -53,7 +53,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 		}
 		// will replace this API call with jenkins-x/go-scm after my PR on go-scm is merged
 		// https://github.com/jenkins-x/go-scm/pull/494
-		return v.Client.DefaultApi.GetActivities(v.projectKey, event.Repository, v.pullRequestNumber, localVarOptionals)
+		return v.Client().DefaultApi.GetActivities(v.projectKey, event.Repository, v.pullRequestNumber, localVarOptionals)
 	})
 	if err != nil {
 		return false, err
@@ -96,7 +96,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 
 func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool, error) {
 	// Get permissions from project
-	allowed, _, err := v.ScmClient.Organizations.IsMember(ctx, event.Organization, event.Sender)
+	allowed, _, err := v.ScmClient().Organizations.IsMember(ctx, event.Organization, event.Sender)
 	if err != nil {
 		return false, err
 	}
@@ -106,7 +106,7 @@ func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool
 
 	orgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
 	// Get permissions from repo
-	allowed, _, err = v.ScmClient.Repositories.IsCollaborator(ctx, orgAndRepo, event.Sender)
+	allowed, _, err = v.ScmClient().Repositories.IsCollaborator(ctx, orgAndRepo, event.Sender)
 	if err != nil {
 		return false, err
 	}

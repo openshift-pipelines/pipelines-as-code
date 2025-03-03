@@ -85,7 +85,7 @@ func TestGetTektonDir(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			_, client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient(ctx)
 			defer tearDown()
-			v := &Provider{Logger: logger, baseURL: tURL, ScmClient: client, projectKey: tt.event.Organization}
+			v := &Provider{Logger: logger, baseURL: tURL, scmClient: client, projectKey: tt.event.Organization}
 			bbtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path, tt.wantDirAPIErr, tt.wantFilesAPIErr)
 			content, err := v.GetTektonDir(ctx, tt.event, tt.path, "")
 			if tt.wantErr != "" {
@@ -203,7 +203,7 @@ func TestCreateStatus(t *testing.T) {
 			event.Provider.Token = "token"
 			v := &Provider{
 				baseURL:           tURL,
-				ScmClient:         client,
+				scmClient:         client,
 				pullRequestNumber: pullRequestNumber,
 				projectKey:        event.Organization,
 				run:               &params.Run{},
@@ -268,7 +268,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			_, client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient(ctx)
 			defer tearDown()
-			v := &Provider{ScmClient: client, baseURL: tURL, defaultBranchLatestCommit: "1234", projectKey: tt.event.Organization}
+			v := &Provider{scmClient: client, baseURL: tURL, defaultBranchLatestCommit: "1234", projectKey: tt.event.Organization}
 			bbtest.MuxFiles(t, mux, tt.event, tt.targetbranch, filepath.Dir(tt.path), tt.filescontents, tt.wantErr != "")
 			fc, err := v.GetFileInsideRepo(ctx, tt.event, tt.path, tt.targetbranch)
 			if tt.wantErr != "" {
@@ -368,7 +368,7 @@ func TestSetClient(t *testing.T) {
 			if tt.muxUser != nil {
 				mux.HandleFunc("/users/foo", tt.muxUser)
 			}
-			v := &Provider{ScmClient: client, baseURL: tURL}
+			v := &Provider{scmClient: client, baseURL: tURL}
 			err := v.SetClient(ctx, nil, tt.opts, nil, nil)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
@@ -410,7 +410,7 @@ func TestGetCommitInfo(t *testing.T) {
 			bbtest.MuxCommitInfo(t, mux, tt.event, tt.commit)
 			bbtest.MuxDefaultBranch(t, mux, tt.event, tt.defaultBranch, tt.latestCommit)
 			defer tearDown()
-			v := &Provider{ScmClient: scmClient, baseURL: tURL, projectKey: tt.event.Organization}
+			v := &Provider{scmClient: scmClient, baseURL: tURL, projectKey: tt.event.Organization}
 			err := v.GetCommitInfo(ctx, tt.event)
 			assert.NilError(t, err)
 			assert.Equal(t, tt.defaultBranch, tt.event.DefaultBranch)
@@ -710,7 +710,7 @@ func TestGetFiles(t *testing.T) {
 					}
 				})
 			}
-			v := &Provider{ScmClient: client, baseURL: tURL}
+			v := &Provider{scmClient: client, baseURL: tURL}
 			changedFiles, err := v.GetFiles(ctx, tt.event)
 			if tt.wantError {
 				assert.Equal(t, err.Error(), tt.errMsg)

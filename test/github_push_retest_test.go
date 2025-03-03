@@ -39,7 +39,7 @@ func TestGithubPushRequestGitOpsCommentOnComment(t *testing.T) {
 	assert.Equal(t, len(pruns.Items), 0)
 
 	g.Cnx.Clients.Log.Infof("Running ops comment %s as Push comment", opsComment)
-	_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
+	_, _, err = g.Provider.Client().Repositories.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.SHA,
 		&github.RepositoryComment{Body: github.Ptr(opsComment)})
@@ -95,7 +95,7 @@ func TestGithubPushRequestGitOpsCommentRetest(t *testing.T) {
 	assert.Equal(t, len(pruns.Items), 2)
 
 	g.Cnx.Clients.Log.Infof("%s on Push Request", comment)
-	_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
+	_, _, err = g.Provider.Client().Repositories.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.SHA,
 		&github.RepositoryComment{Body: github.Ptr(comment)})
@@ -148,7 +148,7 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 	assert.Equal(t, len(pruns.Items), 2)
 
 	g.Cnx.Clients.Log.Info("/test pipelinerun-on-push on Push Request before canceling")
-	_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
+	_, _, err = g.Provider.Client().Repositories.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.SHA,
 		&github.RepositoryComment{Body: github.Ptr("/test pipelinerun-on-push branch:" + g.TargetNamespace)})
@@ -166,7 +166,7 @@ func TestGithubPushRequestGitOpsCommentCancel(t *testing.T) {
 
 	comment := "/cancel pipelinerun-on-push branch:" + g.TargetNamespace
 	g.Cnx.Clients.Log.Infof("%s on Push Request", comment)
-	_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
+	_, _, err = g.Provider.Client().Repositories.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.SHA,
 		&github.RepositoryComment{Body: github.Ptr(comment)})

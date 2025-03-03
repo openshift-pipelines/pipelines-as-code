@@ -43,7 +43,7 @@ const taskStatusTemplate = `
 func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	opt := github.ListOptions{PerPage: v.PaginedNumber}
 	for {
-		res, resp, err := v.Client.Checks.ListCheckRunsForRef(ctx, runevent.Organization, runevent.Repository,
+		res, resp, err := v.Client().Checks.ListCheckRunsForRef(ctx, runevent.Organization, runevent.Repository,
 			runevent.SHA, &github.ListCheckRunsOptions{
 				AppID:       v.ApplicationID,
 				ListOptions: opt,
@@ -118,7 +118,7 @@ func (v *Provider) createCheckRunStatus(ctx context.Context, runevent *info.Even
 		StartedAt:  &now,
 	}
 
-	checkRun, _, err := v.Client.Checks.CreateCheckRun(ctx, runevent.Organization, runevent.Repository, checkrunoption)
+	checkRun, _, err := v.Client().Checks.CreateCheckRun(ctx, runevent.Organization, runevent.Repository, checkrunoption)
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func (v *Provider) getOrUpdateCheckRunStatus(ctx context.Context, runevent *info
 		opts.Conclusion = github.Ptr("cancelled")
 	}
 
-	_, _, err = v.Client.Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *checkRunID, opts)
+	_, _, err = v.Client().Checks.UpdateCheckRun(ctx, runevent.Organization, runevent.Repository, *checkRunID, opts)
 	return err
 }
 
@@ -323,7 +323,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 		CreatedAt:   &github.Timestamp{Time: now},
 	}
 
-	if _, _, err := v.Client.Repositories.CreateStatus(ctx,
+	if _, _, err := v.Client().Repositories.CreateStatus(ctx,
 		runevent.Organization, runevent.Repository, runevent.SHA, ghstatus); err != nil {
 		return err
 	}
@@ -334,7 +334,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 
 	if (status.Status == "completed" || (status.Status == "queued" && status.Title == pendingApproval)) &&
 		status.Text != "" && eventType == triggertype.PullRequest {
-		_, _, err = v.Client.Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
+		_, _, err = v.Client().Issues.CreateComment(ctx, runevent.Organization, runevent.Repository,
 			runevent.PullRequestNumber,
 			&github.IssueComment{
 				Body: github.Ptr(fmt.Sprintf("%s<br>%s", status.Summary, status.Text)),
@@ -349,7 +349,7 @@ func (v *Provider) createStatusCommit(ctx context.Context, runevent *info.Event,
 }
 
 func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statusOpts provider.StatusOpts) error {
-	if v.Client == nil {
+	if v.ghClient == nil {
 		return fmt.Errorf("cannot set status on github no token or url set")
 	}
 
