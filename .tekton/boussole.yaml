@@ -4,7 +4,7 @@ metadata:
   name: boussole
   annotations:
     pipelinesascode.tekton.dev/pipeline: "https://raw.githubusercontent.com/openshift-pipelines/pac-boussole/main/pipeline-boussole.yaml"
-    pipelinesascode.tekton.dev/on-comment: "^/(help|rebase|lgtm|(cherry-pick|assign|merge|unassign|label|unlabel)[ ].*)"
+    pipelinesascode.tekton.dev/on-comment: "^/(help|rebase|lgtm|cherry-pick|assign|merge|unassign|label|unlabel)"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
 spec:
   params:
@@ -23,8 +23,8 @@ spec:
       value: "{{ git_auth_secret }}"
     - name: comment_sender
       value: "{{ sender }}"
-    - name: merge_method
-      value: "squash"
+  # - name: merge_method
+  #   value: "squash"
   #
   # Optional parameters (value is the default):
   #
