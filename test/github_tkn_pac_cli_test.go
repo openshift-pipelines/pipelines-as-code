@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -27,9 +26,6 @@ import (
 )
 
 func TestGithubPacCli(t *testing.T) {
-	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
-		t.Skip("Skipping test since only enabled for nightly")
-	}
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	ctx, runcnx, opts, ghprovider, err := tgithub.Setup(ctx, false, false)
@@ -52,7 +48,7 @@ spec:
         taskSpec:
           steps:
             - name: task
-              image: gcr.io/google-containers/busybox
+              image: registry.access.redhat.com/ubi9/ubi-micro
               command: ["/bin/echo", "HELLOMOTO"]
 `, targetNS, options.MainBranch, triggertype.PullRequest.String()),
 	}
@@ -113,7 +109,7 @@ spec:
 	waitOpts := twait.Opts{
 		RepoName:        targetNS,
 		Namespace:       targetNS,
-		MinNumberStatus: 0,
+		MinNumberStatus: 1,
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       sha,
 	}
