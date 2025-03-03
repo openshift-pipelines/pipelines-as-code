@@ -27,7 +27,7 @@ func (v *Provider) IsAllowedOwnersFile(_ context.Context, event *info.Event) (bo
 }
 
 func (v *Provider) checkMembership(ctx context.Context, event *info.Event, userid int) bool {
-	member, _, err := v.Client.ProjectMembers.GetInheritedProjectMember(v.targetProjectID, userid)
+	member, _, err := v.Client().ProjectMembers.GetInheritedProjectMember(v.targetProjectID, userid)
 	if err == nil && member.ID != 0 && member.ID == userid {
 		return true
 	}
@@ -39,7 +39,7 @@ func (v *Provider) checkMembership(ctx context.Context, event *info.Event, useri
 func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, event *info.Event, page int) (bool, error) {
 	var nextPage int
 	opt := &gitlab.ListMergeRequestDiscussionsOptions{Page: page}
-	discussions, resp, err := v.Client.Discussions.ListMergeRequestDiscussions(v.targetProjectID, event.PullRequestNumber, opt)
+	discussions, resp, err := v.Client().Discussions.ListMergeRequestDiscussions(v.targetProjectID, event.PullRequestNumber, opt)
 	if err != nil || len(discussions) == 0 {
 		return false, err
 	}
@@ -72,7 +72,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 }
 
 func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
-	if v.Client == nil {
+	if v.gitlabClient == nil {
 		return false, fmt.Errorf("no github client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}

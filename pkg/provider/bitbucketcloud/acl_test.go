@@ -179,7 +179,7 @@ func TestIsAllowed(t *testing.T) {
 			bbcloudtest.MuxComments(t, mux, tt.event, tt.fields.comments)
 			bbcloudtest.MuxFiles(t, mux, tt.event, tt.fields.filescontents, "")
 
-			v := &Provider{Client: bbclient}
+			v := &Provider{bbClient: bbclient}
 			got, err := v.IsAllowed(ctx, tt.event)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Provider.IsAllowed() error = %v, wantErr %v", err, tt.wantErr)

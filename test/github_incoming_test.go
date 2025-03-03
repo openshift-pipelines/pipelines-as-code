@@ -81,7 +81,7 @@ func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string,
 	logmsg := fmt.Sprintf("Testing %s with Github APPS integration on %s", label, randomedString)
 	runcnx.Clients.Log.Info(logmsg)
 
-	repoinfo, resp, err := ghprovider.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
+	repoinfo, resp, err := ghprovider.Client().Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -110,7 +110,7 @@ func verifyIncomingWebhook(t *testing.T, randomedString, pipelinerunName string,
 	targetRefName := fmt.Sprintf("refs/heads/%s", randomedString)
 
 	title := "TestGithubAppIncoming - " + randomedString
-	sha, vref, err := tgithub.PushFilesToRef(ctx, ghprovider.Client, title,
+	sha, vref, err := tgithub.PushFilesToRef(ctx, ghprovider.Client(), title,
 		repoinfo.GetDefaultBranch(),
 		targetRefName,
 		opts.Organization,

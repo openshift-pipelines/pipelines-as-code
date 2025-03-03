@@ -38,7 +38,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Info("Testing with Gitlab")
 
-	projectinfo, resp, err := glprovider.Client.Projects.GetProject(opts.ProjectID, nil)
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -71,7 +71,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
 	mrTitle := "TestMergeRequest - " + targetRefName
-	mrID, err := tgitlab.CreateMR(glprovider.Client, opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
+	mrID, err := tgitlab.CreateMR(glprovider.Client(), opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("MergeRequest %s/-/merge_requests/%d has been created", projectinfo.WebURL, mrID)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
@@ -102,7 +102,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 	}
 
 	runcnx.Clients.Log.Infof("Sending /retest comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
-	_, _, err = glprovider.Client.Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
+	_, _, err = glprovider.Client().Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
 		Body: clientGitlab.Ptr("/retest"),
 	})
 	assert.NilError(t, err)
@@ -117,7 +117,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 	runcnx.Clients.Log.Info("Checking that PAC has posted successful comments for all PR that has been tested")
 	twait.Succeeded(ctx, t, runcnx, opts, sopt)
 
-	notes, _, err := glprovider.Client.Notes.ListMergeRequestNotes(opts.ProjectID, mrID, nil)
+	notes, _, err := glprovider.Client().Notes.ListMergeRequestNotes(opts.ProjectID, mrID, nil)
 	assert.NilError(t, err)
 	successCommentsPost := 0
 	for _, n := range notes {
@@ -139,7 +139,7 @@ func TestGitlabOnLabel(t *testing.T) {
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Info("Testing with Gitlab")
 
-	projectinfo, resp, err := glprovider.Client.Projects.GetProject(opts.ProjectID, nil)
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -169,7 +169,7 @@ func TestGitlabOnLabel(t *testing.T) {
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
 
 	mrTitle := "TestMergeRequest - " + targetRefName
-	mrID, err := tgitlab.CreateMR(glprovider.Client, opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
+	mrID, err := tgitlab.CreateMR(glprovider.Client(), opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("MergeRequest %s/-/merge_requests/%d has been created", projectinfo.WebURL, mrID)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
@@ -181,7 +181,7 @@ func TestGitlabOnLabel(t *testing.T) {
 	assert.Assert(t, len(prsNew.Items) == 0)
 
 	// now add a Label
-	mr, _, err := glprovider.Client.MergeRequests.UpdateMergeRequest(opts.ProjectID, mrID, &clientGitlab.UpdateMergeRequestOptions{
+	mr, _, err := glprovider.Client().MergeRequests.UpdateMergeRequest(opts.ProjectID, mrID, &clientGitlab.UpdateMergeRequestOptions{
 		Labels: &clientGitlab.LabelOptions{"bug"},
 	})
 	assert.NilError(t, err)
@@ -209,7 +209,7 @@ func TestGitlabOnComment(t *testing.T) {
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Info("Testing Gitlab on Comment matches")
 
-	projectinfo, resp, err := glprovider.Client.Projects.GetProject(opts.ProjectID, nil)
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -238,12 +238,12 @@ func TestGitlabOnComment(t *testing.T) {
 
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
 	mrTitle := "TestMergeRequest - " + targetRefName
-	mrID, err := tgitlab.CreateMR(glprovider.Client, opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
+	mrID, err := tgitlab.CreateMR(glprovider.Client(), opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("MergeRequest %s/-/merge_requests/%d has been created", projectinfo.WebURL, mrID)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
 
-	note, _, err := glprovider.Client.Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
+	note, _, err := glprovider.Client().Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
 		Body: github.Ptr(triggerComment),
 	})
 	assert.NilError(t, err)
@@ -258,7 +258,7 @@ func TestGitlabOnComment(t *testing.T) {
 	twait.Succeeded(ctx, t, runcnx, opts, sopt)
 
 	// get pull request info
-	mr, _, err := glprovider.Client.MergeRequests.GetMergeRequest(opts.ProjectID, mrID, nil)
+	mr, _, err := glprovider.Client().MergeRequests.GetMergeRequest(opts.ProjectID, mrID, nil)
 	assert.NilError(t, err)
 
 	waitOpts := twait.Opts{
@@ -286,7 +286,7 @@ func TestGitlabCancelInProgressOnChange(t *testing.T) {
 	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Info("Testing Gitlab cancel in progress on pr close")
-	projectinfo, resp, err := glprovider.Client.Projects.GetProject(opts.ProjectID, nil)
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -316,7 +316,7 @@ func TestGitlabCancelInProgressOnChange(t *testing.T) {
 
 	oldSha := scm.PushFilesToRefGit(t, scmOpts, entries)
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
-	mrID, err := tgitlab.CreateMR(glprovider.Client, opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
+	mrID, err := tgitlab.CreateMR(glprovider.Client(), opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("MergeRequest %s/-/merge_requests/%d has been created", projectinfo.WebURL, mrID)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
@@ -371,7 +371,7 @@ func TestGitlabCancelInProgressOnPRClose(t *testing.T) {
 	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Info("Testing Gitlab cancel in progress on pr close")
-	projectinfo, resp, err := glprovider.Client.Projects.GetProject(opts.ProjectID, nil)
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -401,7 +401,7 @@ func TestGitlabCancelInProgressOnPRClose(t *testing.T) {
 
 	sha := scm.PushFilesToRefGit(t, scmOpts, entries)
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
-	mrID, err := tgitlab.CreateMR(glprovider.Client, opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
+	mrID, err := tgitlab.CreateMR(glprovider.Client(), opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("MergeRequest %s/-/merge_requests/%d has been created", projectinfo.WebURL, mrID)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
@@ -416,7 +416,7 @@ func TestGitlabCancelInProgressOnPRClose(t *testing.T) {
 	}
 	err = twait.UntilPipelineRunCreated(ctx, runcnx.Clients, waitOpts)
 	assert.NilError(t, err)
-	_, _, err = glprovider.Client.MergeRequests.UpdateMergeRequest(opts.ProjectID, mrID, &clientGitlab.UpdateMergeRequestOptions{
+	_, _, err = glprovider.Client().MergeRequests.UpdateMergeRequest(opts.ProjectID, mrID, &clientGitlab.UpdateMergeRequestOptions{
 		StateEvent: clientGitlab.Ptr("close"),
 	})
 	assert.NilError(t, err)
@@ -446,7 +446,7 @@ func TestGitlabIssueGitopsComment(t *testing.T) {
 	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Info("Testing Gitlabs test/retest comments")
-	projectinfo, resp, err := glprovider.Client.Projects.GetProject(opts.ProjectID, nil)
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -477,12 +477,12 @@ func TestGitlabIssueGitopsComment(t *testing.T) {
 	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
-	mrID, err := tgitlab.CreateMR(glprovider.Client, opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
+	mrID, err := tgitlab.CreateMR(glprovider.Client(), opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("MergeRequest %s/-/merge_requests/%d has been created", projectinfo.WebURL, mrID)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
 
-	_, _, err = glprovider.Client.Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
+	_, _, err = glprovider.Client().Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
 		Body: clientGitlab.Ptr("/test no-match"),
 	})
 	assert.NilError(t, err)

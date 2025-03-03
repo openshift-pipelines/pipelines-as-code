@@ -228,7 +228,7 @@ func TestCreateStatus(t *testing.T) {
 
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.Client = client
+				v.SetGitlabClient(client)
 				defer tearDown()
 				thelp.MuxNotePost(t, mux, v.targetProjectID, tt.args.event.PullRequestNumber, tt.args.postStr)
 			}
@@ -243,7 +243,7 @@ func TestCreateStatus(t *testing.T) {
 func TestGetCommitInfo(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	client, _, tearDown := thelp.Setup(t)
-	v := &Provider{Client: client}
+	v := &Provider{gitlabClient: client}
 
 	defer tearDown()
 	assert.NilError(t, v.GetCommitInfo(ctx, info.NewEvent()))
@@ -265,7 +265,7 @@ func TestSetClient(t *testing.T) {
 
 	client, _, tearDown := thelp.Setup(t)
 	defer tearDown()
-	vv := &Provider{Client: client}
+	vv := &Provider{gitlabClient: client}
 	err := vv.SetClient(ctx, nil, &info.Event{
 		Provider: &info.Provider{
 			Token: "hello",
@@ -378,7 +378,7 @@ func TestSetClientDetectAPIURL(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Setup specific to this test case
 			v := &Provider{
-				Client:            mockClient, // Use the shared mock client
+				gitlabClient:      mockClient, // Use the shared mock client
 				repoURL:           tc.repoURL,
 				pathWithNamespace: tc.pathWithNamespace,
 			}
@@ -405,7 +405,7 @@ func TestSetClientDetectAPIURL(t *testing.T) {
 				// Only check the resulting apiURL if no error was expected
 				assert.Equal(t, tc.expectedAPIURL, v.apiURL)
 				// Optionally, check if the client was actually set (if no error)
-				assert.Assert(t, v.Client != nil)
+				assert.Assert(t, v.Client() != nil)
 				assert.Assert(t, v.Token != nil && *v.Token == tc.providerToken)
 			}
 		})
@@ -553,7 +553,7 @@ func TestGetTektonDir(t *testing.T) {
 			}
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.Client = client
+				v.SetGitlabClient(client)
 				muxbranch := tt.args.event.HeadBranch
 				if tt.args.provenance == "default_branch" {
 					muxbranch = tt.args.event.DefaultBranch
@@ -592,7 +592,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 	}
 	v := Provider{
 		sourceProjectID: 10,
-		Client:          client,
+		gitlabClient:    client,
 	}
 	thelp.MuxListTektonDir(t, mux, v.sourceProjectID, event.HeadBranch, content, false, false)
 	got, err := v.GetFileInsideRepo(ctx, event, "pr.yaml", "")
@@ -821,7 +821,7 @@ func TestGetFiles(t *testing.T) {
 					})
 			}
 
-			providerInfo := &Provider{Client: fakeclient, sourceProjectID: tt.sourceProjectID, targetProjectID: tt.targetProjectID}
+			providerInfo := &Provider{gitlabClient: fakeclient, sourceProjectID: tt.sourceProjectID, targetProjectID: tt.targetProjectID}
 			changedFiles, err := providerInfo.GetFiles(ctx, tt.event)
 			if tt.wantError != true {
 				assert.NilError(t, err, nil)
@@ -895,7 +895,7 @@ func TestIsHeadCommitOfBranch(t *testing.T) {
 			defer teardown()
 			glProvider := &Provider{sourceProjectID: 1}
 			if tt.wantClient {
-				glProvider.Client = fakeclient
+				glProvider.SetGitlabClient(fakeclient)
 				mux.HandleFunc("/projects/1/repository/branches/cool-branch",
 					func(rw http.ResponseWriter, _ *http.Request) {
 						if tt.errStatusCode != 0 {

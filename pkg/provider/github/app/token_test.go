@@ -226,7 +226,8 @@ func Test_GetAndUpdateInstallationID(t *testing.T) {
 		},
 	}
 
-	gprovider := &github.Provider{Client: fakeghclient, APIURL: &serverURL, Run: run}
+	gprovider := &github.Provider{APIURL: &serverURL, Run: run}
+	gprovider.SetGithubClient(fakeghclient)
 	mux.HandleFunc(fmt.Sprintf("/app/installations/%d/access_tokens", wantID), func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
 		w.Header().Set("Authorization", "Bearer "+jwtToken)
@@ -295,7 +296,8 @@ func Test_ListRepos(t *testing.T) {
 	}
 
 	ctx, _ := rtesting.SetupFakeContext(t)
-	gprovider := &github.Provider{Client: fakeclient}
+	gprovider := &github.Provider{}
+	gprovider.SetGithubClient(fakeclient)
 	ip := NewInstallation(httptest.NewRequest(http.MethodGet, "http://localhost", strings.NewReader("")),
 		&params.Run{}, repo, gprovider, testNamespace.GetName())
 	exist, err := ip.matchRepos(ctx)

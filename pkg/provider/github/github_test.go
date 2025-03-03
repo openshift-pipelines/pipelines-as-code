@@ -72,7 +72,7 @@ func TestGetTaskURI(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-			provider := &Provider{Client: fakeclient}
+			provider := &Provider{ghClient: fakeclient}
 			event := info.NewEvent()
 			event.HeadBranch = "main"
 			event.URL = tt.eventURL
@@ -286,8 +286,8 @@ func TestGetTektonDir(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			gvcs := Provider{
-				Client: fakeclient,
-				Logger: fakelogger,
+				ghClient: fakeclient,
+				Logger:   fakelogger,
 			}
 			if tt.provenance == "default_branch" {
 				tt.event.SHA = tt.event.DefaultBranch
@@ -374,7 +374,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			gvcs := Provider{
-				Client: fakeclient,
+				ghClient: fakeclient,
 			}
 			for s, f := range tt.rets {
 				mux.HandleFunc(s, f)
@@ -438,7 +438,7 @@ func TestCheckSenderOrgMembership(t *testing.T) {
 			defer teardown()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gprovider := Provider{
-				Client: fakeclient,
+				ghClient: fakeclient,
 			}
 			mux.HandleFunc(fmt.Sprintf("/orgs/%s/members", tt.runevent.Organization), func(rw http.ResponseWriter, _ *http.Request) {
 				fmt.Fprint(rw, tt.apiReturn)
@@ -483,7 +483,7 @@ func TestGetStringPullRequestComment(t *testing.T) {
 			defer teardown()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gprovider := Provider{
-				Client: fakeclient,
+				ghClient: fakeclient,
 			}
 			mux.HandleFunc(fmt.Sprintf("/repos/issues/%s/comments", filepath.Base(tt.runevent.URL)), func(rw http.ResponseWriter, _ *http.Request) {
 				fmt.Fprint(rw, tt.apiReturn)
@@ -551,7 +551,7 @@ func TestGithubGetCommitInfo(t *testing.T) {
 				fmt.Fprintf(rw, `{"html_url": "%s", "message": "%s"}`, tt.shaurl, tt.shatitle)
 			})
 			ctx, _ := rtesting.SetupFakeContext(t)
-			provider := &Provider{Client: fakeclient}
+			provider := &Provider{ghClient: fakeclient}
 			if tt.noclient {
 				provider = &Provider{}
 			}
@@ -596,11 +596,11 @@ func TestGithubSetClient(t *testing.T) {
 			err := v.SetClient(ctx, nil, tt.event, nil, nil)
 			assert.NilError(t, err)
 			assert.Equal(t, tt.expectedURL, *v.APIURL)
-			assert.Equal(t, "https", v.Client.BaseURL.Scheme)
+			assert.Equal(t, "https", v.Client().BaseURL.Scheme)
 			if tt.isGHE {
-				assert.Equal(t, "/api/v3/", v.Client.BaseURL.Path)
+				assert.Equal(t, "/api/v3/", v.Client().BaseURL.Path)
 			} else {
-				assert.Equal(t, "/", v.Client.BaseURL.Path)
+				assert.Equal(t, "/", v.Client().BaseURL.Path)
 			}
 		})
 	}
@@ -801,7 +801,7 @@ func TestGetFiles(t *testing.T) {
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			provider := &Provider{
-				Client:        fakeclient,
+				ghClient:      fakeclient,
 				PaginedNumber: 1,
 			}
 			changedFiles, err := provider.GetFiles(ctx, tt.event)
@@ -908,8 +908,8 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 			}
 			defer teardown()
 			v := &Provider{
-				Client: fakeclient,
-				Logger: logger,
+				ghClient: fakeclient,
+				Logger:   logger,
 			}
 			err := v.checkWebhookSecretValidity(ctx, cw)
 			if tt.wantSubErr != "" {
@@ -983,7 +983,7 @@ func TestListRepos(t *testing.T) {
 	})
 
 	ctx, _ := rtesting.SetupFakeContext(t)
-	provider := &Provider{Client: fakeclient, PaginedNumber: 1}
+	provider := &Provider{ghClient: fakeclient, PaginedNumber: 1}
 	data, err := ListRepos(ctx, provider)
 	assert.NilError(t, err)
 	assert.Equal(t, data[0], "https://matched/by/incoming")
@@ -1078,7 +1078,7 @@ func TestCreateToken(t *testing.T) {
 		})
 	}
 
-	provider := &Provider{Client: fakeclient}
+	provider := &Provider{ghClient: fakeclient}
 	provider.Run = run
 	_, err := provider.CreateToken(ctx, urlData, info)
 	assert.Assert(t, len(provider.RepositoryIDs) == 2, "found repositoryIDs are %d which is less than expected", len(provider.RepositoryIDs))
@@ -1124,7 +1124,7 @@ func TestIsHeadCommitOfBranch(t *testing.T) {
 			})
 
 			ctx, _ := rtesting.SetupFakeContext(t)
-			provider := &Provider{Client: fakeclient}
+			provider := &Provider{ghClient: fakeclient}
 			err := provider.isHeadCommitOfBranch(ctx, runEvent, "test1")
 			assert.Equal(t, err != nil, tt.wantErr)
 		})

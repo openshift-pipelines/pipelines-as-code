@@ -27,7 +27,7 @@ func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, erro
 }
 
 func (v *Provider) isWorkspaceMember(event *info.Event) (bool, error) {
-	members, err := v.Client.Workspaces.Members(event.Organization)
+	members, err := v.Client().Workspaces.Members(event.Organization)
 	if err != nil {
 		return false, err
 	}
@@ -83,7 +83,7 @@ func (v *Provider) checkMember(ctx context.Context, event *info.Event) (bool, er
 }
 
 func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, event *info.Event) (bool, error) {
-	commentsIntf, err := v.Client.Repositories.PullRequests.GetComments(&bitbucket.PullRequestsOptions{
+	commentsIntf, err := v.Client().Repositories.PullRequests.GetComments(&bitbucket.PullRequestsOptions{
 		Owner:    event.Organization,
 		RepoSlug: event.Repository,
 		ID:       strconv.Itoa(event.PullRequestNumber),

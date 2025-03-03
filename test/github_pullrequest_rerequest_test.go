@@ -34,7 +34,7 @@ func TestGithubPullRerequest(t *testing.T) {
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 
-	repoinfo, resp, err := g.Provider.Client.Repositories.Get(ctx, g.Options.Organization, g.Options.Repo)
+	repoinfo, resp, err := g.Provider.Client().Repositories.Get(ctx, g.Options.Organization, g.Options.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", g.Options.Organization, g.Options.Repo)

@@ -19,7 +19,7 @@ import (
 )
 
 func CreateCRD(ctx context.Context, t *testing.T, bprovider bitbucketcloud.Provider, run *params.Run, opts options.E2E, targetNS string) *bitbucket.Repository {
-	repo, err := bprovider.Client.Workspaces.Repositories.Repository.Get(
+	repo, err := bprovider.Client().Workspaces.Repositories.Repository.Get(
 		&bitbucket.RepositoryOptions{
 			Owner:    opts.Organization,
 			RepoSlug: opts.Repo,

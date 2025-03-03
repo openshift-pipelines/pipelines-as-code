@@ -173,7 +173,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 
 func (v *Provider) initGitlabClient(ctx context.Context, event *info.Event) (*info.Event, error) {
 	// This is to ensure the base URL of the client is not reinitialized during tests.
-	if v.Client != nil {
+	if v.gitlabClient != nil {
 		return event, nil
 	}
 
