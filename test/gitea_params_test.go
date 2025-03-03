@@ -47,7 +47,7 @@ func TestGiteaParamsStandardCheckForPushAndPullEvent(t *testing.T) {
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
-	merged, resp, err := topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+	merged, resp, err := topts.GiteaCNX.Client().MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
 		gitea.MergePullRequestOption{
 			Title: "Merged with Panache",
 			Style: "merge",
@@ -355,7 +355,7 @@ my email is a true beauty and like groot, I AM pac`
 	assert.NilError(t, err)
 
 	// Merge the pull request so we can generate a push event and wait that it is updated
-	merged, resp, err := topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+	merged, resp, err := topts.GiteaCNX.Client().MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
 		gitea.MergePullRequestOption{
 			Title: "Merged with Panache",
 			Style: "merge",
@@ -439,7 +439,7 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 	// ======================================================================================================================
 	// Merge the pull request so we can generate a push event and wait that it is updated
 	// ======================================================================================================================
-	merged, resp, err := topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+	merged, resp, err := topts.GiteaCNX.Client().MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
 		gitea.MergePullRequestOption{
 			Title: "Merged with Panache",
 			Style: "merge",
@@ -486,7 +486,7 @@ func TestGiteaParamsChangedFilesCEL(t *testing.T) {
 	// ======================================================================================================================
 	// Merge the pull request so we can generate a second push event and wait that it is updated
 	// ======================================================================================================================
-	merged, resp, err = topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+	merged, resp, err = topts.GiteaCNX.Client().MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
 		gitea.MergePullRequestOption{
 			Title: "Merged with Panache",
 			Style: "merge",

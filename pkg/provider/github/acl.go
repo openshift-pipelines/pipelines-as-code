@@ -20,7 +20,7 @@ func (v *Provider) CheckPolicyAllowing(ctx context.Context, event *info.Event, a
 		// TODO: caching
 		opt := github.ListOptions{PerPage: v.PaginedNumber}
 		for {
-			members, resp, err := v.Client.Teams.ListTeamMembersBySlug(ctx, event.Organization, team, &github.TeamListTeamMembersOptions{ListOptions: opt})
+			members, resp, err := v.Client().Teams.ListTeamMembersBySlug(ctx, event.Organization, team, &github.TeamListTeamMembersOptions{ListOptions: opt})
 			if resp.StatusCode == http.StatusNotFound {
 				// we explicitly disallow the policy when the team is not found
 				// maybe we should ignore it instead? i'd rather keep this explicit
@@ -169,7 +169,7 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 // aclAllowedOkToTestCurrentEvent only check if this is issue comment event
 // have /ok-to-test regex and sender is allowed.
 func (v *Provider) aclAllowedOkToTestCurrentComment(ctx context.Context, revent *info.Event, id int64) (bool, error) {
-	comment, _, err := v.Client.Issues.GetComment(ctx, revent.Organization, revent.Repository, id)
+	comment, _, err := v.Client().Issues.GetComment(ctx, revent.Organization, revent.Repository, id)
 	if err != nil {
 		return false, err
 	}
@@ -235,7 +235,7 @@ func (v *Provider) aclCheckAll(ctx context.Context, rev *info.Event) (bool, erro
 //
 //	ex: dependabot, *[bot] etc...
 func (v *Provider) checkPullRequestForSameURL(ctx context.Context, runevent *info.Event) (bool, error) {
-	pr, resp, err := v.Client.PullRequests.Get(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	pr, resp, err := v.Client().PullRequests.Get(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	if err != nil {
 		return false, err
 	}
@@ -258,7 +258,7 @@ func (v *Provider) checkSenderOrgMembership(ctx context.Context, runevent *info.
 	}
 
 	for {
-		users, resp, err := v.Client.Organizations.ListMembers(ctx, runevent.Organization, opt)
+		users, resp, err := v.Client().Organizations.ListMembers(ctx, runevent.Organization, opt)
 		// If we are 404 it means we are checking a repo owner and not a org so let's bail out with grace
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return false, nil
@@ -282,7 +282,7 @@ func (v *Provider) checkSenderOrgMembership(ctx context.Context, runevent *info.
 
 // checkSenderRepoMembership check if user is allowed to run CI.
 func (v *Provider) checkSenderRepoMembership(ctx context.Context, runevent *info.Event) (bool, error) {
-	isCollab, _, err := v.Client.Repositories.IsCollaborator(ctx,
+	isCollab, _, err := v.Client().Repositories.IsCollaborator(ctx,
 		runevent.Organization,
 		runevent.Repository,
 		runevent.Sender)
@@ -313,7 +313,7 @@ func (v *Provider) GetStringPullRequestComment(ctx context.Context, runevent *in
 		ListOptions: github.ListOptions{PerPage: v.PaginedNumber},
 	}
 	for {
-		comments, resp, err := v.Client.Issues.ListComments(ctx, runevent.Organization, runevent.Repository,
+		comments, resp, err := v.Client().Issues.ListComments(ctx, runevent.Organization, runevent.Repository,
 			prNumber, opt)
 		if err != nil {
 			return nil, err

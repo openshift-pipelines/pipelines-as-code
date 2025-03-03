@@ -46,7 +46,7 @@ func TestGithubSecondPullRequestConcurrencyMultiplePR(t *testing.T) {
 	runcnx.Clients.Log.Infof("Starting %d pipelineruns, (numberOfPullRequest=%d*numberOfPipelineRuns=%d) + (numberOfPullRequest=%d*numberOfRetests=%d*numberOfPipelineRuns=%d) Should end after clean up (maxKeepRun=%d) with %d",
 		allPipelinesRunsCnt, numberOfPullRequest, numberOfPipelineRuns, numberOfPullRequest, numberOfRetests, numberOfPipelineRuns, maxKeepRun, allPipelinesRunAfterCleanUp)
 
-	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
+	repoinfo, resp, err := ghcnx.Client().Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -74,7 +74,7 @@ func TestGithubSecondPullRequestConcurrencyMultiplePR(t *testing.T) {
 		targetRefName := fmt.Sprintf("refs/heads/%s",
 			names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-		sha, vref, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, logmsg, repoinfo.GetDefaultBranch(), targetRefName,
+		sha, vref, err := tgithub.PushFilesToRef(ctx, ghcnx.Client(), logmsg, repoinfo.GetDefaultBranch(), targetRefName,
 			opts.Organization, opts.Repo, entries)
 		assert.NilError(t, err)
 		runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
@@ -98,7 +98,7 @@ func TestGithubSecondPullRequestConcurrencyMultiplePR(t *testing.T) {
 	// send some retest to spice things up on concurrency and test the maxKeepRun
 	for i := 0; i < numberOfRetests; i++ {
 		for _, g := range allPullRequests {
-			_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
+			_, _, err := g.Provider.Client().Issues.CreateComment(ctx,
 				g.Options.Organization,
 				g.Options.Repo, g.PRNumber,
 				&github.IssueComment{Body: github.Ptr("/retest")})
