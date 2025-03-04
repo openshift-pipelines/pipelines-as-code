@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -18,6 +19,7 @@ import (
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
+
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
@@ -166,6 +168,36 @@ func TestCreateStatus(t *testing.T) {
 					TriggerTarget: "pull_request",
 				},
 				postStr: "https://url.com",
+			},
+		},
+		{
+			name:       "pending conclusion for gitops command on pushed commit",
+			wantClient: true,
+			wantErr:    false,
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "pending",
+				},
+				event: &info.Event{
+					TriggerTarget: "push",
+					EventType:     opscomments.TestAllCommentEventType.String(),
+				},
+				postStr: "",
+			},
+		},
+		{
+			name:       "completed conclusion for gitops command on pushed commit",
+			wantClient: true,
+			wantErr:    false,
+			args: args{
+				statusOpts: provider.StatusOpts{
+					Conclusion: "completed",
+				},
+				event: &info.Event{
+					TriggerTarget: "push",
+					EventType:     opscomments.RetestAllCommentEventType.String(),
+				},
+				postStr: "has completed",
 			},
 		},
 	}
@@ -702,6 +734,78 @@ func TestGetFiles(t *testing.T) {
 					assert.Equal(t, tt.pushChanges[i].NewPath, changedFiles.All[i])
 				}
 			}
+		})
+	}
+}
+
+func TestIsHeadCommitOfBranch(t *testing.T) {
+	tests := []struct {
+		name          string
+		event         *info.Event
+		branchName    string
+		wantClient    bool
+		errStatusCode int
+		ErrMsg        string
+	}{
+		{
+			name:       "bad/client is not initialized",
+			wantClient: false,
+			ErrMsg:     "no gitlab client has been initialized",
+		},
+		{
+			name:          "bad/user is not authorized",
+			wantClient:    true,
+			branchName:    "cool-branch",
+			errStatusCode: http.StatusUnauthorized,
+			ErrMsg:        "401",
+		},
+		{
+			name:          "bad/branch doesn't exist",
+			wantClient:    true,
+			branchName:    "wrong-branch",
+			errStatusCode: http.StatusNotFound,
+			ErrMsg:        "404",
+		},
+		{
+			name:       "bad/SHA is not HEAD of the branch",
+			wantClient: true,
+			event:      &info.Event{SHA: "IAmNotHEAD"},
+			branchName: "cool-branch",
+			ErrMsg:     "provided SHA IAmNotHEAD is not the HEAD commit of the branch cool-branch",
+		},
+		{
+			name:       "good/SHA is HEAD commit",
+			wantClient: true,
+			event:      &info.Event{SHA: "IAmHEAD321"},
+			branchName: "cool-branch",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, _ = rtesting.SetupFakeContext(t)
+			fakeclient, mux, teardown := thelp.Setup(t)
+			defer teardown()
+			glProvider := &Provider{sourceProjectID: 1}
+			if tt.wantClient {
+				glProvider.Client = fakeclient
+				mux.HandleFunc("/projects/1/repository/branches/cool-branch",
+					func(rw http.ResponseWriter, _ *http.Request) {
+						if tt.errStatusCode != 0 {
+							rw.WriteHeader(tt.errStatusCode)
+							return
+						}
+						branch := &gitlab.Branch{Name: "cool-branch", Commit: &gitlab.Commit{ID: "IAmHEAD321"}}
+						bytes, _ := json.Marshal(branch)
+						_, _ = rw.Write(bytes)
+					})
+			}
+			err := glProvider.isHeadCommitOfBranch(tt.event, tt.branchName)
+			if tt.ErrMsg != "" {
+				assert.ErrorContains(t, err, tt.ErrMsg)
+				return
+			}
+			assert.NilError(t, err)
 		})
 	}
 }

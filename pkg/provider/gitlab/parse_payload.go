@@ -7,14 +7,20 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/pipelineascode"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+
 	gitlab "gitlab.com/gitlab-org/api/client-go"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.Request,
+func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *http.Request,
 	payload string,
 ) (*info.Event, error) {
 	event := request.Header.Get("X-Gitlab-Event")
@@ -153,11 +159,147 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		v.userID = gitEvent.User.ID
 		processedEvent.SourceProjectID = gitEvent.MergeRequest.SourceProjectID
 		processedEvent.TargetProjectID = gitEvent.MergeRequest.TargetProjectID
+	case *gitlab.CommitCommentEvent:
+		// need run in fetching repository
+		v.run = run
+		return v.handleCommitCommentEvent(ctx, gitEvent)
 	default:
 		return nil, fmt.Errorf("event %s is not supported", event)
 	}
 
 	v.repoURL = processedEvent.URL
+	return processedEvent, nil
+}
+
+func (v *Provider) initGitlabClient(ctx context.Context, event *info.Event) (*info.Event, error) {
+	// This is to ensure the base URL of the client is not reinitialized during tests.
+	if v.Client != nil {
+		return event, nil
+	}
+
+	// need repo here to get secret info and create gitlab api client
+	repo, err := matcher.MatchEventURLRepo(ctx, v.run, event, "")
+	if err != nil {
+		return event, err
+	}
+
+	if repo == nil {
+		return event, fmt.Errorf("cannot find a repository match for %s", event.URL)
+	}
+
+	// should check global repository for secrets
+	secretNS := repo.GetNamespace()
+	globalRepo, err := v.run.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(v.run.Info.Kube.Namespace).Get(
+		ctx, v.run.Info.Controller.GlobalRepository, metav1.GetOptions{},
+	)
+	if err == nil && globalRepo != nil {
+		if repo.Spec.GitProvider != nil && repo.Spec.GitProvider.Secret == nil && globalRepo.Spec.GitProvider != nil && globalRepo.Spec.GitProvider.Secret != nil {
+			secretNS = globalRepo.GetNamespace()
+		}
+		repo.Spec.Merge(globalRepo.Spec)
+	}
+
+	kubeInterface, err := kubeinteraction.NewKubernetesInteraction(v.run)
+	if err != nil {
+		return event, err
+	}
+
+	scm := pipelineascode.SecretFromRepository{
+		K8int:       kubeInterface,
+		Config:      v.GetConfig(),
+		Event:       event,
+		Repo:        repo,
+		WebhookType: v.pacInfo.WebhookType,
+		Logger:      v.Logger,
+		Namespace:   secretNS,
+	}
+	if err := scm.Get(ctx); err != nil {
+		return event, fmt.Errorf("cannot get secret from repository: %w", err)
+	}
+
+	err = v.SetClient(ctx, v.run, event, repo, v.eventEmitter)
+	if err != nil {
+		return event, err
+	}
+	return event, nil
+}
+
+func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *gitlab.CommitCommentEvent) (*info.Event, error) {
+	action := "trigger"
+	processedEvent := info.NewEvent()
+	if event.Repository == nil {
+		return nil, fmt.Errorf("error parse_payload: the repository in event payload must not be nil")
+	}
+	// since comment is made on pushed commit, SourceProjectID and TargetProjectID will be equal.
+	v.sourceProjectID = event.ProjectID
+	v.targetProjectID = event.ProjectID
+	processedEvent.SourceProjectID = v.sourceProjectID
+	processedEvent.TargetProjectID = v.targetProjectID
+	v.userID = event.User.ID
+	v.pathWithNamespace = event.Project.PathWithNamespace
+	processedEvent.Organization, processedEvent.Repository = getOrgRepo(v.pathWithNamespace)
+	processedEvent.Sender = event.User.Username
+	processedEvent.Provider.User = processedEvent.Sender
+	processedEvent.URL = event.Project.WebURL
+	processedEvent.SHA = event.ObjectAttributes.CommitID
+	processedEvent.SHATitle = event.Commit.Title
+	processedEvent.HeadURL = processedEvent.URL
+	processedEvent.BaseURL = processedEvent.URL
+	processedEvent.TriggerTarget = triggertype.Push
+	opscomments.SetEventTypeAndTargetPR(processedEvent, event.ObjectAttributes.Note)
+	// Set Head and Base branch to default_branch of the repo as this comment is made on
+	// a pushed commit.
+	defaultBranch := event.Project.DefaultBranch
+	processedEvent.HeadBranch, processedEvent.BaseBranch = defaultBranch, defaultBranch
+	processedEvent.DefaultBranch = defaultBranch
+
+	var (
+		branchName string
+		prName     string
+		err        error
+	)
+
+	// get PipelineRun name from comment if it does contain e.g. `/test pr7`
+	if provider.IsTestRetestComment(event.ObjectAttributes.Note) {
+		prName, branchName, err = opscomments.GetPipelineRunAndBranchNameFromTestComment(event.ObjectAttributes.Note)
+		if err != nil {
+			return processedEvent, err
+		}
+		processedEvent.TargetTestPipelineRun = prName
+	}
+
+	if provider.IsCancelComment(event.ObjectAttributes.Note) {
+		action = "cancellation"
+		prName, branchName, err = opscomments.GetPipelineRunAndBranchNameFromCancelComment(event.ObjectAttributes.Note)
+		if err != nil {
+			return processedEvent, err
+		}
+		processedEvent.CancelPipelineRuns = true
+		processedEvent.TargetCancelPipelineRun = prName
+	}
+
+	if branchName == "" {
+		branchName = processedEvent.HeadBranch
+	}
+
+	// since we're going to make an API call to ensure that the commit is HEAD of the branch
+	// therefore we need to initialize GitLab client here
+	processedEvent, err = v.initGitlabClient(ctx, processedEvent)
+	if err != nil {
+		return processedEvent, err
+	}
+
+	// check if the commit on which comment is made, is HEAD commit of the branch
+	if err := v.isHeadCommitOfBranch(processedEvent, branchName); err != nil {
+		if provider.IsCancelComment(event.ObjectAttributes.Note) {
+			processedEvent.CancelPipelineRuns = false
+		}
+		return processedEvent, err
+	}
+
+	processedEvent.HeadBranch = branchName
+	processedEvent.BaseBranch = branchName
+	v.Logger.Infof("gitlab commit_comment: pipelinerun %s has been requested on %s/%s#%s", action, processedEvent.Organization, processedEvent.Repository, processedEvent.SHA)
 	return processedEvent, nil
 }
 

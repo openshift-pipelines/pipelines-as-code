@@ -142,8 +142,8 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	// repository, runevent.SourceProjectID will not be 0 when SetClient is called from the pac-watcher code.
 	// This is because, in the controller, SourceProjectID is set in the annotation of the pull request,
 	// and runevent.SourceProjectID is set before SetClient is called. Therefore, we need to take
-	// the ID from runevent.SourceProjectID.
-	if runevent.SourceProjectID > 0 {
+	// the ID from runevent.SourceProjectID when v.sourceProject is 0 (nil).
+	if v.sourceProjectID == 0 && runevent.SourceProjectID > 0 {
 		v.sourceProjectID = runevent.SourceProjectID
 	}
 
@@ -228,7 +228,9 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	}
 
 	eventType := triggertype.IsPullRequestType(event.EventType)
-	if opscomments.IsAnyOpsEventType(eventType.String()) {
+	// When a GitOps command is sent on a pushed commit, it mistakenly treats it as a pull_request
+	// and attempts to create a note, but notes are not intended for pushed commits.
+	if event.TriggerTarget == triggertype.PullRequest && opscomments.IsAnyOpsEventType(event.EventType) {
 		eventType = triggertype.PullRequest
 	}
 	// only add a note when we are on a MR
@@ -439,4 +441,22 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
+}
+
+// isHeadCommitOfBranch validates that branch exists and the SHA is HEAD commit of the branch.
+func (v *Provider) isHeadCommitOfBranch(runevent *info.Event, branchName string) error {
+	if v.Client == nil {
+		return fmt.Errorf("no gitlab client has been initialized, " +
+			"exiting... (hint: did you forget setting a secret on your repo?)")
+	}
+	branch, _, err := v.Client.Branches.GetBranch(v.sourceProjectID, branchName)
+	if err != nil {
+		return err
+	}
+
+	if branch.Commit.ID == runevent.SHA {
+		return nil
+	}
+
+	return fmt.Errorf("provided SHA %s is not the HEAD commit of the branch %s", runevent.SHA, branchName)
 }

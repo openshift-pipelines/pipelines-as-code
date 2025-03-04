@@ -466,7 +466,7 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 	}
 
 	// Check if the specified branch contains the commit
-	if err = v.isBranchContainsCommit(ctx, runevent, branchName); err != nil {
+	if err = v.isHeadCommitOfBranch(ctx, runevent, branchName); err != nil {
 		if provider.IsCancelComment(event.GetComment().GetBody()) {
 			runevent.CancelPipelineRuns = false
 		}
@@ -476,6 +476,6 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *github.C
 	runevent.HeadBranch = branchName
 	runevent.BaseBranch = branchName
 
-	v.Logger.Infof("commit_comment: pipelinerun %s on %s/%s#%s has been requested", action, runevent.Organization, runevent.Repository, runevent.SHA)
+	v.Logger.Infof("github commit_comment: pipelinerun %s on %s/%s#%s has been requested", action, runevent.Organization, runevent.Repository, runevent.SHA)
 	return runevent, nil
 }
