@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
 	"go.uber.org/zap"
 )
 
@@ -41,9 +42,17 @@ type Provider struct {
 	apiURL                    string
 	provenance                string
 	projectKey                string
+	repo                      *v1alpha1.Repository
+	triggerEvent              string
 }
 
-func (v Provider) Client() *bbv1.APIClient {
+func (v *Provider) Client() *bbv1.APIClient {
+	providerMetrics.RecordAPIUsage(
+		v.Logger,
+		"bitbucketcloud",
+		v.triggerEvent,
+		v.repo,
+	)
 	return v.bbClient
 }
 
@@ -52,6 +61,12 @@ func (v *Provider) SetBitBucketClient(client *bbv1.APIClient) {
 }
 
 func (v Provider) ScmClient() *scm.Client {
+	providerMetrics.RecordAPIUsage(
+		v.Logger,
+		"bitbucketcloud",
+		v.triggerEvent,
+		v.repo,
+	)
 	return v.scmClient
 }
 
@@ -272,7 +287,7 @@ func removeLastSegment(urlStr string) string {
 	return u.String()
 }
 
-func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
+func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, repo *v1alpha1.Repository, _ *events.EventEmitter) error {
 	if event.Provider.User == "" {
 		return fmt.Errorf("no spec.git_provider.user has been set in the repo crd")
 	}
@@ -317,6 +332,8 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 		v.scmClient = client
 	}
 	v.run = run
+	v.repo = repo
+	v.triggerEvent = event.EventType
 	_, resp, err := v.ScmClient().Users.FindLogin(ctx, event.Provider.User)
 	if resp != nil && resp.Status == http.StatusUnauthorized {
 		return fmt.Errorf("cannot get user %s with token: %w", event.Provider.User, err)

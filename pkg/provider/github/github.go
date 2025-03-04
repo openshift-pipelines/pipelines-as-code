@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"k8s.io/client-go/kubernetes"
@@ -54,6 +55,7 @@ type Provider struct {
 	PaginedNumber int
 	userType      string // The type of user i.e bot or not
 	skippedRun
+	triggerEvent string
 }
 
 type skippedRun struct {
@@ -71,7 +73,13 @@ func New() *Provider {
 	}
 }
 
-func (v Provider) Client() *github.Client {
+func (v *Provider) Client() *github.Client {
+	providerMetrics.RecordAPIUsage(
+		v.Logger,
+		v.providerName,
+		v.triggerEvent,
+		v.repo,
+	)
 	return v.ghClient
 }
 
@@ -281,6 +289,7 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	v.Run = run
 	v.repo = repo
 	v.eventEmitter = eventsEmitter
+	v.triggerEvent = event.EventType
 
 	// check that the Client is not already set, so we don't override our fakeclient
 	// from unittesting.

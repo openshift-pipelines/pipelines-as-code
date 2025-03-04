@@ -30,6 +30,12 @@ var runningPRCount = stats.Float64("pipelines_as_code_running_pipelineruns_count
 	"number of running pipelineruns by pipelines as code",
 	stats.UnitDimensionless)
 
+var gitProviderAPIRequestCount = stats.Int64(
+	"pipelines_as_code_git_provider_api_request_count",
+	"number of API requests from pipelines as code to git providers",
+	stats.UnitDimensionless,
+)
+
 // Recorder holds keys for metrics.
 type Recorder struct {
 	initialized     bool
@@ -61,36 +67,42 @@ func NewRecorder() (*Recorder, error) {
 
 		provider, errRegistering := tag.NewKey("provider")
 		if errRegistering != nil {
+			ErrRegistering = errRegistering
 			return
 		}
 		R.provider = provider
 
 		eventType, errRegistering := tag.NewKey("event-type")
 		if errRegistering != nil {
+			ErrRegistering = errRegistering
 			return
 		}
 		R.eventType = eventType
 
 		namespace, errRegistering := tag.NewKey("namespace")
 		if errRegistering != nil {
+			ErrRegistering = errRegistering
 			return
 		}
 		R.namespace = namespace
 
 		repository, errRegistering := tag.NewKey("repository")
 		if errRegistering != nil {
+			ErrRegistering = errRegistering
 			return
 		}
 		R.repository = repository
 
 		status, errRegistering := tag.NewKey("status")
 		if errRegistering != nil {
+			ErrRegistering = errRegistering
 			return
 		}
 		R.status = status
 
 		reason, errRegistering := tag.NewKey("reason")
 		if errRegistering != nil {
+			ErrRegistering = errRegistering
 			return
 		}
 		R.reason = reason
@@ -116,11 +128,18 @@ func NewRecorder() (*Recorder, error) {
 				Aggregation: view.LastValue(),
 				TagKeys:     []tag.Key{R.namespace, R.repository},
 			}
+			gitProviderAPIRequestView = &view.View{
+				Description: gitProviderAPIRequestCount.Description(),
+				Measure:     gitProviderAPIRequestCount,
+				Aggregation: view.Count(),
+				TagKeys:     []tag.Key{R.provider, R.eventType, R.namespace, R.repository},
+			}
 		)
 
-		view.Unregister(prCountView, prDurationView, runningPRView)
-		errRegistering = view.Register(prCountView, prDurationView, runningPRView)
+		view.Unregister(prCountView, prDurationView, runningPRView, gitProviderAPIRequestView)
+		errRegistering = view.Register(prCountView, prDurationView, runningPRView, gitProviderAPIRequestView)
 		if errRegistering != nil {
+			ErrRegistering = errRegistering
 			R.initialized = false
 			return
 		}
@@ -129,11 +148,18 @@ func NewRecorder() (*Recorder, error) {
 	return R, ErrRegistering
 }
 
-// Count logs number of times a pipelinerun is ran for a provider.
-func (r *Recorder) Count(provider, event, namespace, repository string) error {
+func (r Recorder) assertInitialized() error {
 	if !r.initialized {
 		return fmt.Errorf(
 			"ignoring the metrics recording for pipelineruns, failed to initialize the metrics recorder")
+	}
+	return nil
+}
+
+// Count logs number of times a pipelinerun is ran for a provider.
+func (r *Recorder) Count(provider, event, namespace, repository string) error {
+	if err := r.assertInitialized(); err != nil {
+		return err
 	}
 
 	ctx, err := tag.New(
@@ -153,9 +179,8 @@ func (r *Recorder) Count(provider, event, namespace, repository string) error {
 
 // CountPRDuration collects duration taken by a pipelinerun in seconds accumulate them in prDurationCount.
 func (r *Recorder) CountPRDuration(namespace, repository, status, reason string, duration time.Duration) error {
-	if !r.initialized {
-		return fmt.Errorf(
-			"ignoring the metrics recording for pipelineruns, failed to initialize the metrics recorder")
+	if err := r.assertInitialized(); err != nil {
+		return err
 	}
 
 	ctx, err := tag.New(
@@ -175,9 +200,8 @@ func (r *Recorder) CountPRDuration(namespace, repository, status, reason string,
 
 // RunningPipelineRuns emits the number of running PipelineRuns for a repository and namespace.
 func (r *Recorder) RunningPipelineRuns(namespace, repository string, runningPRs float64) error {
-	if !r.initialized {
-		return fmt.Errorf(
-			"ignoring the metrics recording for pipelineruns, failed to initialize the metrics recorder")
+	if err := r.assertInitialized(); err != nil {
+		return err
 	}
 
 	ctx, err := tag.New(
@@ -264,6 +288,26 @@ func (r *Recorder) ReportRunningPipelineRuns(ctx context.Context, lister listers
 			}
 		}
 	}
+}
+
+func (r *Recorder) ReportGitProviderAPIUsage(provider, event, namespace, repository string) error {
+	if err := r.assertInitialized(); err != nil {
+		return err
+	}
+
+	ctx, err := tag.New(
+		context.Background(),
+		tag.Insert(r.provider, provider),
+		tag.Insert(r.eventType, event),
+		tag.Insert(r.namespace, namespace),
+		tag.Insert(r.repository, repository),
+	)
+	if err != nil {
+		return err
+	}
+
+	metrics.Record(ctx, gitProviderAPIRequestCount.M(1))
+	return nil
 }
 
 func ResetRecorder() {
