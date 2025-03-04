@@ -102,7 +102,7 @@ func TestCountPipelineRun(t *testing.T) {
 			metricstest.AssertNoMetric(t, "pipelines_as_code_pipelinerun_count")
 
 			if err = r.countPipelineRun(pr); (err != nil) != tt.wantErr {
-				t.Errorf("countPipelineRun() error = %v, wantErr %v", err != nil, tt.wantErr)
+				t.Errorf("countPipelineRun() error = %v, wantErr %v. error: %v", err != nil, tt.wantErr, err)
 			}
 
 			if !tt.wantErr {
@@ -308,9 +308,12 @@ func TestCountRunningPRs(t *testing.T) {
 }
 
 func unregisterMetrics() {
-	metricstest.Unregister("pipelines_as_code_pipelinerun_count",
+	metricstest.Unregister(
+		"pipelines_as_code_pipelinerun_count",
 		"pipelines_as_code_pipelinerun_duration_seconds_sum",
-		"pipelines_as_code_running_pipelineruns_count")
+		"pipelines_as_code_running_pipelineruns_count",
+		"pipelines_as_code_git_provider_api_request_count",
+	)
 
 	// have to reset sync.Once to allow recreation of Recorder.
 	metrics.ResetRecorder()

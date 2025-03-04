@@ -19,6 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
 	"go.uber.org/zap"
 )
 
@@ -53,9 +54,18 @@ type Provider struct {
 	repo         *v1alpha1.Repository
 	eventEmitter *events.EventEmitter
 	run          *params.Run
+	triggerEvent string
 }
 
-func (v Provider) Client() *gitea.Client {
+func (v *Provider) Client() *gitea.Client {
+	providerMetrics.RecordAPIUsage(
+		v.Logger,
+		// URL used instead of "gitea" to differentiate in the case of a CI cluster which
+		// serves multiple Gitea instances
+		v.giteaInstanceURL,
+		v.triggerEvent,
+		v.repo,
+	)
 	return v.giteaClient
 }
 
@@ -118,6 +128,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	v.eventEmitter = emitter
 	v.repo = repo
 	v.run = run
+	v.triggerEvent = runevent.EventType
 	return nil
 }
 

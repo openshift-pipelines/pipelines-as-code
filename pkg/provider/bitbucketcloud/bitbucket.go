@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
 	"go.uber.org/zap"
 )
 
@@ -31,9 +32,16 @@ type Provider struct {
 	provenance    string
 	eventEmitter  *events.EventEmitter
 	repo          *v1alpha1.Repository
+	triggerEvent  string
 }
 
-func (v Provider) Client() *bitbucket.Client {
+func (v *Provider) Client() *bitbucket.Client {
+	providerMetrics.RecordAPIUsage(
+		v.Logger,
+		"bitbucketcloud",
+		v.triggerEvent,
+		v.repo,
+	)
 	return v.bbClient
 }
 
@@ -196,6 +204,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 	v.run = run
 	v.eventEmitter = eventEmitter
 	v.repo = repo
+	v.triggerEvent = event.EventType
 	return nil
 }
 

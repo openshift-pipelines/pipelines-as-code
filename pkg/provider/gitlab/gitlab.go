@@ -17,6 +17,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
 )
@@ -58,9 +59,18 @@ type Provider struct {
 	apiURL            string
 	eventEmitter      *events.EventEmitter
 	repo              *v1alpha1.Repository
+	triggerEvent      string
 }
 
-func (v Provider) Client() *gitlab.Client {
+func (v *Provider) Client() *gitlab.Client {
+	providerMetrics.RecordAPIUsage(
+		v.Logger,
+		// URL used instead of "gitlab" to differentiate in the case of a CI cluster which
+		// serves multiple Gitlab instances
+		v.apiURL,
+		v.triggerEvent,
+		v.repo,
+	)
 	return v.gitlabClient
 }
 
@@ -177,6 +187,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	v.run = run
 	v.eventEmitter = eventsEmitter
 	v.repo = repo
+	v.triggerEvent = runevent.EventType
 
 	return nil
 }

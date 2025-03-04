@@ -20,6 +20,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -31,6 +32,8 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/metrics/metricstest"
+	_ "knative.dev/pkg/metrics/testing"
 	"knative.dev/pkg/ptr"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -232,6 +235,7 @@ func TestGetTektonDir(t *testing.T) {
 		provenance           string
 		filterMessageSnippet string
 		wantErr              string
+		expectedGHApiCalls   int64
 	}{
 		{
 			name: "test no subtree",
@@ -243,6 +247,10 @@ func TestGetTektonDir(t *testing.T) {
 			expectedString:       "PipelineRun",
 			treepath:             "testdata/tree/simple",
 			filterMessageSnippet: "Using PipelineRun definition from source pull request tekton/cat#0",
+			// 1. Get Repo root objects
+			// 2. Get Tekton Dir objects
+			// 3/4. Get object content for each object (pipelinerun.yaml, pipeline.yaml)
+			expectedGHApiCalls: 4,
 		},
 		{
 			name: "test provenance default_branch ",
@@ -255,6 +263,10 @@ func TestGetTektonDir(t *testing.T) {
 			treepath:             "testdata/tree/defaultbranch",
 			provenance:           "default_branch",
 			filterMessageSnippet: "Using PipelineRun definition from default_branch: main",
+			// 1. Get Repo root objects
+			// 2. Get Tekton Dir objects
+			// 3/4. Get object content for each object (pipelinerun.yaml, pipeline.yaml)
+			expectedGHApiCalls: 4,
 		},
 		{
 			name: "test with subtree",
@@ -265,6 +277,10 @@ func TestGetTektonDir(t *testing.T) {
 			},
 			expectedString: "FROMSUBTREE",
 			treepath:       "testdata/tree/subdir",
+			// 1. Get Repo root objects
+			// 2. Get Tekton Dir objects
+			// 3-5. Get object content for each object (foo/bar/pipeline.yaml)
+			expectedGHApiCalls: 3,
 		},
 		{
 			name: "test with badly formatted yaml",
@@ -276,19 +292,64 @@ func TestGetTektonDir(t *testing.T) {
 			expectedString: "FROMSUBTREE",
 			treepath:       "testdata/tree/badyaml",
 			wantErr:        "error unmarshalling yaml file badyaml.yaml: yaml: line 2: did not find expected key",
+			// 1. Get Repo root objects
+			// 2. Get Tekton Dir objects
+			// 3. Get object content for object (badyaml.yaml)
+			expectedGHApiCalls: 3,
+		},
+		{
+			name: "test no tekton directory",
+			event: &info.Event{
+				Organization: "tekton",
+				Repository:   "cat",
+				SHA:          "123",
+			},
+			expectedString:       "",
+			treepath:             "testdata/tree/notektondir",
+			filterMessageSnippet: "Using PipelineRun definition from source pull request tekton/cat#0",
+			// 1. Get Repo root objects
+			// _. No tekton dir to fetch
+			expectedGHApiCalls: 1,
+		},
+		{
+			name: "test tekton directory path is file",
+			event: &info.Event{
+				Organization: "tekton",
+				Repository:   "cat",
+				SHA:          "123",
+			},
+			treepath: "testdata/tree/tektondirisfile",
+			wantErr:  ".tekton has been found but is not a directory",
+			// 1. Get Repo root objects
+			// _. Tekton dir is file, no directory to fetch
+			expectedGHApiCalls: 1,
 		},
 	}
 	for _, tt := range testGetTektonDir {
 		t.Run(tt.name, func(t *testing.T) {
+			resetMetrics()
 			observer, exporter := zapobserver.New(zap.InfoLevel)
 			fakelogger := zap.New(observer).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			gvcs := Provider{
-				ghClient: fakeclient,
-				Logger:   fakelogger,
+				ghClient:     fakeclient,
+				providerName: "github",
+				Logger:       fakelogger,
 			}
+
+			defer func() {
+				if !t.Failed() {
+					metricstest.CheckCountData(
+						t,
+						"pipelines_as_code_git_provider_api_request_count",
+						map[string]string{"provider": "github"},
+						tt.expectedGHApiCalls,
+					)
+				}
+			}()
+
 			if tt.provenance == "default_branch" {
 				tt.event.SHA = tt.event.DefaultBranch
 			} else {
@@ -304,7 +365,15 @@ func TestGetTektonDir(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
-			assert.Assert(t, strings.Contains(got, tt.expectedString), "expected %s, got %s", tt.expectedString, got)
+
+			var gotMatch bool
+			if tt.expectedString == "" {
+				gotMatch = got == tt.expectedString
+			} else {
+				gotMatch = strings.Contains(got, tt.expectedString)
+			}
+
+			assert.Assert(t, gotMatch, "expected %s, got %s", tt.expectedString, got)
 			if tt.filterMessageSnippet != "" {
 				gotcha := exporter.FilterMessageSnippet(tt.filterMessageSnippet)
 				assert.Assert(t, gotcha.Len() > 0, "expected to find %s in logs, found %v", tt.filterMessageSnippet, exporter.All())
@@ -1129,4 +1198,16 @@ func TestIsHeadCommitOfBranch(t *testing.T) {
 			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}
+}
+
+func resetMetrics() {
+	metricstest.Unregister(
+		"pipelines_as_code_pipelinerun_count",
+		"pipelines_as_code_pipelinerun_duration_seconds_sum",
+		"pipelines_as_code_running_pipelineruns_count",
+		"pipelines_as_code_git_provider_api_request_count",
+	)
+
+	// have to reset sync.Once to allow recreation of Recorder.
+	metrics.ResetRecorder()
 }
