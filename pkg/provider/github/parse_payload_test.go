@@ -530,7 +530,7 @@ func TestParsePayLoad(t *testing.T) {
 			isCancelPipelineRunEnabled: true,
 		},
 		{
-			name:          "good/commit comment for cancel a pr with invalid branch name",
+			name:          "bad/commit comment for cancel a pr with invalid branch name",
 			eventType:     "commit_comment",
 			triggerTarget: "push",
 			githubClient:  true,
@@ -550,7 +550,7 @@ func TestParsePayLoad(t *testing.T) {
 			wantErrString:              "404 Not Found",
 		},
 		{
-			name:          "commit comment to retest a pr with a SHA that does not exist in the main branch",
+			name:          "commit comment to retest a pr with a SHA is not HEAD commit of the main branch",
 			eventType:     "commit_comment",
 			triggerTarget: "push",
 			githubClient:  true,

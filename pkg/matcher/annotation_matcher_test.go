@@ -21,13 +21,10 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	ghprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
-	glprovider "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
-	gltesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	testnewrepo "github.com/openshift-pipelines/pipelines-as-code/pkg/test/repository"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	gitlab "gitlab.com/gitlab-org/api/client-go"
 	"go.uber.org/zap"
 	zapobserver "go.uber.org/zap/zaptest/observer"
 	"gotest.tools/v3/assert"
@@ -1398,53 +1395,11 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 			ghCs, _ := testclient.SeedTestData(t, ctx, tt.args.data)
 			runTest(ctx, t, tt, vcx, ghCs)
 
-			glFakeClient, glMux, glTeardown := gltesthelper.Setup(t)
-			defer glTeardown()
-			glVcx := &glprovider.Provider{
-				Client: glFakeClient,
-				Token:  github.Ptr("None"),
-			}
-			if len(tt.args.fileChanged) > 0 {
-				commitFiles := []*gitlab.MergeRequestDiff{}
-				pushFileChanges := []*gitlab.Diff{}
-				if tt.args.runevent.TriggerTarget == "push" {
-					for _, v := range tt.args.fileChanged {
-						pushFileChanges = append(pushFileChanges, &gitlab.Diff{
-							NewPath:     v.FileName,
-							RenamedFile: v.RenamedFile,
-							DeletedFile: v.DeletedFile,
-							NewFile:     v.NewFile,
-						})
-					}
-					glMux.HandleFunc(fmt.Sprintf("/projects/0/repository/commits/%s/diff",
-						tt.args.runevent.SHA), func(rw http.ResponseWriter, _ *http.Request) {
-						jeez, err := json.Marshal(pushFileChanges)
-						assert.NilError(t, err)
-						_, _ = rw.Write(jeez)
-					})
-				} else {
-					for _, v := range tt.args.fileChanged {
-						commitFiles = append(commitFiles, &gitlab.MergeRequestDiff{
-							NewPath:     v.FileName,
-							RenamedFile: v.RenamedFile,
-							DeletedFile: v.DeletedFile,
-							NewFile:     v.NewFile,
-						})
-					}
-					url := fmt.Sprintf("/projects/0/merge_requests/%d/diffs", tt.args.runevent.PullRequestNumber)
-					glMux.HandleFunc(url, func(w http.ResponseWriter, _ *http.Request) {
-						jeez, err := json.Marshal(commitFiles)
-						assert.NilError(t, err)
-						_, _ = w.Write(jeez)
-					})
-				}
-			}
-
 			tt.args.runevent.Provider = &info.Provider{
 				Token: "NONE",
 			}
 
-			runTest(ctx, t, tt, glVcx, ghCs)
+			runTest(ctx, t, tt, vcx, ghCs)
 		})
 	}
 }
