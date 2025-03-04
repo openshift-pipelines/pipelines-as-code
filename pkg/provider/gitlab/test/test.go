@@ -247,3 +247,31 @@ func (t TEvent) MREventAsJSON(action, extraStuff string) string {
 		t.BaseURL,
 		t.HeadURL, extraStuff)
 }
+
+func (t TEvent) CommitNoteEventAsJSON(comment, action, repository string) string {
+	//nolint:misspell
+	return fmt.Sprintf(`{
+	"object_kind": "note",
+	"event_type": "note",
+    "object_attributes": {
+	    "commit_id": "%s",
+        "noteable_type": "Commit",
+	    "note": "%s",
+	    "action": "%s"
+    },
+    "user": {
+	    "id": %d,
+        "username": "%s"
+    },
+	"project_id": %d,
+    "project": {
+        "default_branch": "%s",
+        "web_url": "%s",
+        "path_with_namespace": "%s"
+    },
+    "repository": %s,
+    "commit": {
+        "title": "test title"
+    }
+}`, t.SHA, comment, action, t.UserID, t.Username, t.SourceProjectID, t.DefaultBranch, t.URL, t.PathWithNameSpace, repository)
+}
