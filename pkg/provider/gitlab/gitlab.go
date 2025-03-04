@@ -12,6 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -47,6 +48,7 @@ var _ provider.Interface = (*Provider)(nil)
 type Provider struct {
 	gitlabClient      *gitlab.Client
 	Logger            *zap.SugaredLogger
+	metrics           *metrics.Recorder
 	run               *params.Run
 	pacInfo           *info.PacOpts
 	Token             *string
@@ -58,14 +60,38 @@ type Provider struct {
 	apiURL            string
 	eventEmitter      *events.EventEmitter
 	repo              *v1alpha1.Repository
+	triggerEvent      string
 }
 
 func (v Provider) Client() *gitlab.Client {
+	v.recordAPIUsageMetrics()
 	return v.gitlabClient
 }
 
 func (v *Provider) SetGitlabClient(client *gitlab.Client) {
 	v.gitlabClient = client
+}
+
+func (v *Provider) recordAPIUsageMetrics() {
+	if v.metrics == nil {
+		m, err := metrics.NewRecorder()
+		if err != nil {
+			v.Logger.Errorf("Error initializing gitlab metrics recorder: %v", err)
+			return
+		}
+		v.metrics = m
+	}
+
+	name := ""
+	namespace := ""
+	if v.repo != nil {
+		name = v.repo.Name
+		namespace = v.repo.Namespace
+	}
+
+	if err := v.metrics.ReportGitProviderAPIUsage(v.apiURL, v.triggerEvent, namespace, name); err != nil {
+		v.Logger.Errorf("Error reporting git API usage metrics: %v", err)
+	}
 }
 
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
@@ -173,6 +199,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	v.run = run
 	v.eventEmitter = eventsEmitter
 	v.repo = repo
+	v.triggerEvent = runevent.EventType
 
 	return nil
 }

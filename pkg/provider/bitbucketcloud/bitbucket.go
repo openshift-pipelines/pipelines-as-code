@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -24,15 +25,41 @@ var _ provider.Interface = (*Provider)(nil)
 type Provider struct {
 	bbClient      *bitbucket.Client
 	Logger        *zap.SugaredLogger
+	metrics       *metrics.Recorder
 	run           *params.Run
 	pacInfo       *info.PacOpts
 	Token, APIURL *string
 	Username      *string
 	provenance    string
+	repo          *v1alpha1.Repository
+	triggerEvent  string
 }
 
 func (v Provider) Client() *bitbucket.Client {
+	v.recordAPIUsageMetrics()
 	return v.bbClient
+}
+
+func (v *Provider) recordAPIUsageMetrics() {
+	if v.metrics == nil {
+		m, err := metrics.NewRecorder()
+		if err != nil {
+			v.Logger.Errorf("Error initializing bitbucketcloud metrics recorder: %v", err)
+			return
+		}
+		v.metrics = m
+	}
+
+	name := ""
+	namespace := ""
+	if v.repo != nil {
+		name = v.repo.Name
+		namespace = v.repo.Namespace
+	}
+
+	if err := v.metrics.ReportGitProviderAPIUsage("bitbucketcloud", v.triggerEvent, namespace, name); err != nil {
+		v.Logger.Errorf("Error reporting git API usage metrics: %v", err)
+	}
 }
 
 // CheckPolicyAllowing TODO: Implement ME.
@@ -180,7 +207,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path,
 	return v.getBlob(event, revision, path)
 }
 
-func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
+func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Event, repo *v1alpha1.Repository, _ *events.EventEmitter) error {
 	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
@@ -191,6 +218,8 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 	v.Token = &event.Provider.Token
 	v.Username = &event.Provider.User
 	v.run = run
+	v.repo = repo
+	v.triggerEvent = event.EventType
 	return nil
 }
 

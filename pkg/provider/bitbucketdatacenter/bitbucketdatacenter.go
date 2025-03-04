@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -34,6 +35,7 @@ type Provider struct {
 	bbClient                  *bbv1.APIClient // temporarily keeping it after the refactor finishes, will be removed
 	scmClient                 *scm.Client
 	Logger                    *zap.SugaredLogger
+	metrics                   *metrics.Recorder
 	run                       *params.Run
 	pacInfo                   *info.PacOpts
 	baseURL                   string
@@ -42,9 +44,12 @@ type Provider struct {
 	apiURL                    string
 	provenance                string
 	projectKey                string
+	repo                      *v1alpha1.Repository
+	triggerEvent              string
 }
 
 func (v Provider) Client() *bbv1.APIClient {
+	v.recordAPIUsageMetrics()
 	return v.bbClient
 }
 
@@ -53,11 +58,34 @@ func (v *Provider) SetBitBucketClient(client *bbv1.APIClient) {
 }
 
 func (v Provider) ScmClient() *scm.Client {
+	v.recordAPIUsageMetrics()
 	return v.scmClient
 }
 
 func (v *Provider) SetScmClient(client *scm.Client) {
 	v.scmClient = client
+}
+
+func (v *Provider) recordAPIUsageMetrics() {
+	if v.metrics == nil {
+		m, err := metrics.NewRecorder()
+		if err != nil {
+			v.Logger.Errorf("Error initializing bitbucketserver metrics recorder: %v", err)
+			return
+		}
+		v.metrics = m
+	}
+
+	name := ""
+	namespace := ""
+	if v.repo != nil {
+		name = v.repo.Name
+		namespace = v.repo.Namespace
+	}
+
+	if err := v.metrics.ReportGitProviderAPIUsage("bitbucketserver", v.triggerEvent, namespace, name); err != nil {
+		v.Logger.Errorf("Error reporting git API usage metrics: %v", err)
+	}
 }
 
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
@@ -273,7 +301,7 @@ func removeLastSegment(urlStr string) string {
 	return u.String()
 }
 
-func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
+func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, repo *v1alpha1.Repository, _ *events.EventEmitter) error {
 	if event.Provider.User == "" {
 		return fmt.Errorf("no spec.git_provider.user has been set in the repo crd")
 	}
@@ -318,6 +346,8 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 		v.scmClient = client
 	}
 	v.run = run
+	v.repo = repo
+	v.triggerEvent = event.EventType
 	_, resp, err := v.ScmClient().Users.FindLogin(ctx, event.Provider.User)
 	if resp != nil && resp.Status == http.StatusUnauthorized {
 		return fmt.Errorf("cannot get user %s with token: %w", event.Provider.User, err)

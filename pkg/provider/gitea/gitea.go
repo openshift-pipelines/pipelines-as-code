@@ -14,6 +14,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -45,6 +46,7 @@ var _ provider.Interface = (*Provider)(nil)
 type Provider struct {
 	giteaClient      *gitea.Client
 	Logger           *zap.SugaredLogger
+	metrics          *metrics.Recorder
 	pacInfo          *info.PacOpts
 	Token            *string
 	giteaInstanceURL string
@@ -53,14 +55,38 @@ type Provider struct {
 	repo         *v1alpha1.Repository
 	eventEmitter *events.EventEmitter
 	run          *params.Run
+	triggerEvent string
 }
 
 func (v Provider) Client() *gitea.Client {
+	v.recordAPIUsageMetrics()
 	return v.giteaClient
 }
 
 func (v *Provider) SetGiteaClient(client *gitea.Client) {
 	v.giteaClient = client
+}
+
+func (v *Provider) recordAPIUsageMetrics() {
+	if v.metrics == nil {
+		m, err := metrics.NewRecorder()
+		if err != nil {
+			v.Logger.Errorf("Error initializing gitea metrics recorder: %v", err)
+			return
+		}
+		v.metrics = m
+	}
+
+	name := ""
+	namespace := ""
+	if v.repo != nil {
+		name = v.repo.Name
+		namespace = v.repo.Namespace
+	}
+
+	if err := v.metrics.ReportGitProviderAPIUsage(v.giteaInstanceURL, v.triggerEvent, namespace, name); err != nil {
+		v.Logger.Errorf("Error reporting git API usage metrics: %v", err)
+	}
 }
 
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
@@ -118,6 +144,7 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	v.eventEmitter = emitter
 	v.repo = repo
 	v.run = run
+	v.triggerEvent = runevent.EventType
 	return nil
 }
 

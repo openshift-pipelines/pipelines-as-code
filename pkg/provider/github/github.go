@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -41,6 +42,7 @@ var _ provider.Interface = (*Provider)(nil)
 
 type Provider struct {
 	ghClient      *github.Client
+	metrics       *metrics.Recorder
 	Logger        *zap.SugaredLogger
 	Run           *params.Run
 	pacInfo       *info.PacOpts
@@ -54,6 +56,7 @@ type Provider struct {
 	PaginedNumber int
 	userType      string // The type of user i.e bot or not
 	skippedRun
+	triggerEvent string
 }
 
 type skippedRun struct {
@@ -71,7 +74,8 @@ func New() *Provider {
 	}
 }
 
-func (v Provider) Client() *github.Client {
+func (v *Provider) Client() *github.Client {
+	v.recordAPIUsageMetrics()
 	return v.ghClient
 }
 
@@ -81,6 +85,28 @@ func (v *Provider) SetGithubClient(client *github.Client) {
 
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
+}
+
+func (v *Provider) recordAPIUsageMetrics() {
+	if v.metrics == nil {
+		m, err := metrics.NewRecorder()
+		if err != nil {
+			v.Logger.Errorf("Error initializing github metrics recorder: %v", err)
+			return
+		}
+		v.metrics = m
+	}
+
+	name := ""
+	namespace := ""
+	if v.repo != nil {
+		name = v.repo.Name
+		namespace = v.repo.Namespace
+	}
+
+	if err := v.metrics.ReportGitProviderAPIUsage(v.providerName, v.triggerEvent, namespace, name); err != nil {
+		v.Logger.Errorf("Error reporting git API usage metrics: %v", err)
+	}
 }
 
 // detectGHERawURL Detect if we have a raw URL in GHE.
@@ -281,6 +307,7 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	v.Run = run
 	v.repo = repo
 	v.eventEmitter = eventsEmitter
+	v.triggerEvent = event.EventType
 
 	// check that the Client is not already set, so we don't override our fakeclient
 	// from unittesting.
