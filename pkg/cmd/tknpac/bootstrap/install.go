@@ -101,6 +101,9 @@ func getDashboardURL(ctx context.Context, opts *bootstrapOpts, run *params.Run) 
 	if err := prompt.SurveyAskOne(qs, &answer); err != nil {
 		return err
 	}
+	if answer == "" {
+		return nil
+	}
 	if _, err := url.ParseRequestURI(answer); err != nil {
 		return fmt.Errorf("invalid url: %w", err)
 	}
