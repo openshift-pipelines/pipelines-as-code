@@ -106,7 +106,7 @@ func TestParsePayload(t *testing.T) {
 				payload: sample.PushEventAsJSON(true),
 			},
 			want: &info.Event{
-				EventType:     "Push",
+				EventType:     "push",
 				TriggerTarget: "push",
 				Organization:  "hello/this/is/me/ze",
 				Repository:    "project",
