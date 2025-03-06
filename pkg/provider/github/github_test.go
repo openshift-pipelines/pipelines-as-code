@@ -1087,7 +1087,7 @@ func TestCreateToken(t *testing.T) {
 	}
 }
 
-func TestGetBranch(t *testing.T) {
+func TestIsHeadCommitOfBranch(t *testing.T) {
 	tests := []struct {
 		name       string
 		sha        string
@@ -1125,7 +1125,7 @@ func TestGetBranch(t *testing.T) {
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			provider := &Provider{Client: fakeclient}
-			err := provider.isBranchContainsCommit(ctx, runEvent, "test1")
+			err := provider.isHeadCommitOfBranch(ctx, runEvent, "test1")
 			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}

@@ -10,8 +10,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// Detect processes event and detect if it is a gitlab event, whether to process or reject it
-// returns (if is a GL event, whether to process or reject, logger with event metadata,, error if any occurred).
+// Detect detects events and validates if it is a valid gitlab event Pipelines as Code supports and
+// decides whether to process or reject it.
+// returns a boolean value whether to process or reject, logger with event metadata, and error if any occurred.
 func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
 	isGL := false
 	event := req.Header.Get("X-Gitlab-Event")
@@ -58,6 +59,19 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 			return setLoggerAndProceed(true, "", nil)
 		}
 		return setLoggerAndProceed(false, "comments on closed merge requests is not supported", nil)
+	case *gitlab.CommitCommentEvent:
+		comment := gitEvent.ObjectAttributes.Note
+		if gitEvent.ObjectAttributes.Action == gitlab.CommentEventActionCreate {
+			if provider.IsTestRetestComment(comment) || provider.IsCancelComment(comment) {
+				return setLoggerAndProceed(true, "", nil)
+			}
+			// truncate comment to make logs readable
+			if len(comment) > 50 {
+				comment = comment[:50] + "..."
+			}
+			return setLoggerAndProceed(false, fmt.Sprintf("gitlab: commit_comment: unsupported GitOps comment \"%s\" on pushed commits", comment), nil)
+		}
+		return setLoggerAndProceed(false, fmt.Sprintf("gitlab: commit_comment: unsupported action \"%s\" with comment \"%s\"", gitEvent.ObjectAttributes.Action, comment), nil)
 	default:
 		return setLoggerAndProceed(false, "", fmt.Errorf("gitlab: event \"%s\" is not supported", event))
 	}

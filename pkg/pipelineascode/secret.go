@@ -29,7 +29,7 @@ type SecretFromRepository struct {
 	Logger      *zap.SugaredLogger
 }
 
-// SecretFromRepository grab the secret from the repository CRD.
+// Get grab the secret from the repository CRD.
 func (s *SecretFromRepository) Get(ctx context.Context) error {
 	var err error
 	if s.Repo.Spec.GitProvider == nil {

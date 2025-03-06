@@ -586,8 +586,8 @@ func uniqueRepositoryID(repoIDs []int64, id int64) []int64 {
 	return r
 }
 
-// isBranchContainsCommit checks whether provided branch has sha or not.
-func (v *Provider) isBranchContainsCommit(ctx context.Context, runevent *info.Event, branchName string) error {
+// isHeadCommitOfBranch checks whether provided branch is valid or not and SHA is HEAD commit of the branch.
+func (v *Provider) isHeadCommitOfBranch(ctx context.Context, runevent *info.Event, branchName string) error {
 	if v.Client == nil {
 		return fmt.Errorf("no github client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
