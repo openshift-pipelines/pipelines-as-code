@@ -52,40 +52,47 @@ run a PipelineRun on CI:
   owns the repository.
 - The author of the pull request has permissions to push to branches inside the
   repository.
-
 - The author of the pull request is listed in the `OWNERS` file located in the main
   directory of the default branch on GitHub or your other service provider.
 (see below for the OWNERS file format).
 
-If the author of the pull request does not have the necessary permissions to run a
-PipelineRun, another user who does have the permissions can comment
-`/ok-to-test` on the pull request to trigger the PipelineRuns.
+If an unauthorized user attempts to trigger a PipelineRun through the creation
+of a Pull Request or by any other means, Pipelines-as-Code will block the
+execution and post a `'Pending'` status check. This check will inform the user
+that they lack the necessary permissions. Only authorized users can initiate the
+PipelineRun by commenting `/ok-to-test` on the pull request.
+
+GitHub bot users, identified through the GitHub API, are generally exempt from
+the `Pending` status check that would otherwise block a pull request. This
+means the status check is silently ignored for bots unless they have been
+explicitly authorized (using [OWNERS](#owners-file) file,
+[Policy]({{< relref "/docs/guide/policy" >}}) or other means).
 
 ## OWNERS file
 
 The `OWNERS` file follows a specific format similar to the Prow `OWNERS` file
 format (detailed at <https://www.kubernetes.dev/docs/guide/owners/>). We
 support a basic `OWNERS` configuration with `approvers` and `reviewers` lists,
-both of which have equal permissions for executing a `PipelineRun`.  
+both of which have equal permissions for executing a `PipelineRun`.
 
 If the `OWNERS` file uses `filters` instead of a simple configuration, we only
 consider the `.*` filter and extract the `approvers` and `reviewers` lists from
-it. Any other filters targeting specific files or directories are ignored.  
+it. Any other filters targeting specific files or directories are ignored.
 
 Additionally, `OWNERS_ALIASES` is supported and allows mapping alias names to
-lists of usernames.  
+lists of usernames.
 
 Including contributors in the `approvers` or `reviewers` lists within your
 `OWNERS` file grants them the ability to execute a `PipelineRun` via
-Pipelines-as-Code.  
+Pipelines-as-Code.
 
 For example, if your repository’s `main` or `master` branch contains the
-following `approvers` section:  
+following `approvers` section:
 
 ```yaml
 approvers:
   - approved
-```  
+```
 
 The user with the username `"approved"` will have the necessary
 permissions.
