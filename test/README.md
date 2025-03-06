@@ -76,6 +76,11 @@ You can specify only a subsets of test to run with :
 
 same goes for `TestGitlab` or other methods.
 
+If you need to update the golden files in the e2e test you add the flag
+`-test.update-golden=true` to the go test command line to update the golden
+files. Run it at first if the test output is supposed to change (or on a new
+test) and then run without to make sure it comply.
+
 ## Running nightly tests
 
 Some tests are set as nightly which mean not run on every PR, because exposing rate limitation often.
