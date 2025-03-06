@@ -52,6 +52,7 @@ type Provider struct {
 	repo          *v1alpha1.Repository
 	eventEmitter  *events.EventEmitter
 	PaginedNumber int
+	userType      string // The type of user i.e bot or not
 	skippedRun
 }
 
