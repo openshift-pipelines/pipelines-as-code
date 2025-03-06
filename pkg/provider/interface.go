@@ -24,6 +24,7 @@ type StatusOpts struct {
 	Summary                  string
 	Title                    string
 	InstanceCountForCheckRun int
+	AccessDenied             bool
 }
 
 type Interface interface {
