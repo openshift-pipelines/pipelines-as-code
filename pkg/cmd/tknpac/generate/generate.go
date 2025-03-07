@@ -197,24 +197,27 @@ func generatefileName(eventType string) string {
 // directory.
 func (o *Opts) samplePipeline(recreateTemplate bool) error {
 	cs := o.IOStreams.ColorScheme()
-	var relpath, fpath string
+	var relpath, fpath, dirPath string
 
 	if o.FileName != "" {
 		fpath = o.FileName
 		relpath = fpath
+		dirPath = filepath.Dir(fpath)
 	} else {
 		fname := generatefileName(o.Event.EventType)
 		fpath = filepath.Join(o.GitInfo.TopLevelPath, ".tekton", fname)
 		relpath, _ = filepath.Rel(o.GitInfo.TopLevelPath, fpath)
-		if _, err := os.Stat(filepath.Join(o.GitInfo.TopLevelPath, ".tekton")); os.IsNotExist(err) {
-			if err := os.MkdirAll(filepath.Join(o.GitInfo.TopLevelPath, ".tekton"), 0o755); err != nil {
-				return err
-			}
-			fmt.Fprintf(o.IOStreams.Out, "%s Directory %s has been created.\n",
-				cs.InfoIcon(),
-				cs.Bold(".tekton"),
-			)
+		dirPath = filepath.Join(o.GitInfo.TopLevelPath, ".tekton")
+	}
+
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		if err := os.MkdirAll(dirPath, 0o755); err != nil {
+			return err
 		}
+		fmt.Fprintf(o.IOStreams.Out, "%s Directory %s has been created.\n",
+			cs.InfoIcon(),
+			cs.Bold(dirPath),
+		)
 	}
 
 	if _, err := os.Stat(fpath); !os.IsNotExist(err) && !o.overwrite {
