@@ -206,15 +206,16 @@ func (o *Opts) samplePipeline(recreateTemplate bool) error {
 		fname := generatefileName(o.Event.EventType)
 		fpath = filepath.Join(o.GitInfo.TopLevelPath, ".tekton", fname)
 		relpath, _ = filepath.Rel(o.GitInfo.TopLevelPath, fpath)
-		if _, err := os.Stat(filepath.Join(o.GitInfo.TopLevelPath, ".tekton")); os.IsNotExist(err) {
-			if err := os.MkdirAll(filepath.Join(o.GitInfo.TopLevelPath, ".tekton"), 0o755); err != nil {
-				return err
-			}
-			fmt.Fprintf(o.IOStreams.Out, "%s Directory %s has been created.\n",
-				cs.InfoIcon(),
-				cs.Bold(".tekton"),
-			)
+	}
+
+	if _, err := os.Stat(filepath.Join(o.GitInfo.TopLevelPath, ".tekton")); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Join(o.GitInfo.TopLevelPath, ".tekton"), 0o755); err != nil {
+			return err
 		}
+		fmt.Fprintf(o.IOStreams.Out, "%s Directory %s has been created.\n",
+			cs.InfoIcon(),
+			cs.Bold(".tekton"),
+		)
 	}
 
 	if _, err := os.Stat(fpath); !os.IsNotExist(err) && !o.overwrite {
