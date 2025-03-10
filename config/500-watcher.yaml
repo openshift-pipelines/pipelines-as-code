@@ -60,6 +60,8 @@ spec:
             value: pipelines-as-code-config-observability
           - name: CONFIG_LEADERELECTION_NAME
             value: pac-watcher-config-leader-election
+          - name: KUBERNETES_MIN_VERSION
+            value: "v1.28.0"
           ports:
           - name: probes
             containerPort: 8080

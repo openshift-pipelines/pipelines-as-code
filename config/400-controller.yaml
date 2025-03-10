@@ -101,6 +101,8 @@ spec:
               value: "pipelines-as-code-secret"
             - name: PAC_CONTROLLER_CONFIGMAP
               value: "pipelines-as-code"
+            - name: KUBERNETES_MIN_VERSION
+              value: "v1.28.0"
           volumeMounts:
             - mountPath: "/etc/pipelines-as-code/tls"
               readOnly: true

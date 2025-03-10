@@ -129,7 +129,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		v.userID = gitEvent.UserID
 		processedEvent.SourceProjectID = gitEvent.ProjectID
 		processedEvent.TargetProjectID = gitEvent.ProjectID
-		processedEvent.EventType = strings.ReplaceAll(event, " Hook", "")
+		processedEvent.EventType = strings.ToLower(strings.ReplaceAll(event, " Hook", ""))
 	case *gitlab.MergeCommentEvent:
 		processedEvent.Sender = gitEvent.User.Username
 		processedEvent.DefaultBranch = gitEvent.Project.DefaultBranch
