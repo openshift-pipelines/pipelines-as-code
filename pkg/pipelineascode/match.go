@@ -322,7 +322,7 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		}
 	}
 
-	err = changeSecret(pipelineRuns)
+	err = p.changePipelineRun(ctx, repo, pipelineRuns)
 	if err != nil {
 		return nil, err
 	}
@@ -357,12 +357,13 @@ func filterRunningPipelineRunOnTargetTest(testPipeline string, prs []*tektonv1.P
 	return nil
 }
 
-// changeSecret we need to go in each pipelinerun,
-// change the secret template variable with a random one as generated from GetBasicAuthSecretName
-// and store in the annotations so we can create one delete after.
-func changeSecret(prs []*tektonv1.PipelineRun) error {
-	for k, p := range prs {
-		b, err := json.Marshal(p)
+// changePipelineRun go over each pipelineruns and modify things into it.
+//
+// - the secret template variable with a random one as generated from GetBasicAuthSecretName
+// - the template variable with the one from the event (this includes the remote pipeline that has template variables).
+func (p *PacRun) changePipelineRun(ctx context.Context, repo *v1alpha1.Repository, prs []*tektonv1.PipelineRun) error {
+	for k, pr := range prs {
+		b, err := json.Marshal(pr)
 		if err != nil {
 			return err
 		}
@@ -371,6 +372,7 @@ func changeSecret(prs []*tektonv1.PipelineRun) error {
 		processed := templates.ReplacePlaceHoldersVariables(string(b), map[string]string{
 			"git_auth_secret": name,
 		}, nil, nil, map[string]any{})
+		processed = p.makeTemplate(ctx, repo, processed)
 
 		var np *tektonv1.PipelineRun
 		err = json.Unmarshal([]byte(processed), &np)
@@ -382,6 +384,7 @@ func changeSecret(prs []*tektonv1.PipelineRun) error {
 			np.Annotations = map[string]string{}
 		}
 		np.Annotations[apipac.GitAuthSecret] = name
+
 		prs[k] = np
 	}
 	return nil
