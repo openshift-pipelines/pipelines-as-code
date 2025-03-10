@@ -153,7 +153,7 @@ func TestGiteaPullRequestPrivateRepository(t *testing.T) {
 	defer f()
 	reg := regexp.MustCompile(".*fetched git-clone task")
 	maxLines := int64(20)
-	err := twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *reg, 10, "controller", &maxLines)
+	err := twait.RegexpMatchingInControllerLog(ctx, topts.ParamsRun, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)
 	tgitea.WaitForSecretDeletion(t, topts, topts.TargetRefName)
 }
