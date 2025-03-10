@@ -37,6 +37,8 @@ Please be aware that GitOps commands such as `/test` and others will not functio
 
 ## GitOps Commands on Pushed Commits
 
+{{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
+
 If you want to trigger a GitOps command on a pushed commit, you can include the `GitOps` comments within your commit messages. These comments can be used to restart either all pipelines or specific ones. Here's how it works:
 
 For restarting all pipeline runs:
@@ -72,6 +74,18 @@ This means:
 
 Please note that the `/ok-to-test` command does not work on pushed commits, as it is specifically intended for pull requests to manage authorization. Since only authorized users are allowed to send `GitOps` commands on pushed commits,
 there is no need to use the `ok-to-test` command in this context.
+
+For example, when executing a GitOps command like `/test test-pr branch:test` on a pushed commit, verify that the `test-pr` is on the test branch in your repository and includes the `on-event` and `on-target-branch` annotations as demonstrated below:
+
+```yaml
+kind: PipelineRun
+metadata:
+  name: "test-pr"
+  annotations:
+    pipelinesascode.tekton.dev/on-target-branch: "[test]"
+    pipelinesascode.tekton.dev/on-event: "[push]"
+spec:
+```
 
 To issue a `GitOps` comment on a pushed commit, you can follow these steps:
 

@@ -44,7 +44,7 @@ spec:
                 resolver: http
                 params:
                   - name: url
-                    value: https://raw.githubusercontent.com/openshift-pipelines/tekton-caches/main/tekton/cache-fetch.yaml
+                    value: https://raw.githubusercontent.com/chmouel/tekton-caches/refs/heads/chmouel-images/tekton/cache-fetch.yaml
               params:
                 - name: patterns
                   value: ["**go.mod", "**go.sum"]
@@ -116,7 +116,7 @@ spec:
                 resolver: http
                 params:
                   - name: url
-                    value: https://raw.githubusercontent.com/openshift-pipelines/tekton-caches/main/tekton/cache-upload.yaml
+                    value: https://raw.githubusercontent.com/chmouel/tekton-caches/refs/heads/chmouel-images/tekton/cache-upload.yaml
               params:
                 - name: patterns
                   value: ["**go.mod", "**go.sum"]

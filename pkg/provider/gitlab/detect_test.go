@@ -11,6 +11,8 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+const largeComment = "/Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s"
+
 func TestProvider_Detect(t *testing.T) {
 	sample := thelp.TEvent{
 		Username:          "foo",
@@ -123,6 +125,51 @@ func TestProvider_Detect(t *testing.T) {
 			name:       "good/tag event",
 			event:      sample.PushEventAsJSON(true),
 			eventType:  gitlab.EventTypeTagPush,
+			isGL:       true,
+			processReq: true,
+		},
+		{
+			name:       "bad/commit comment unsupported action",
+			event:      sample.CommitNoteEventAsJSON("/test", "update", "null"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: false,
+			wantReason: "gitlab: commit_comment: unsupported action \"update\" with comment \"/test\"",
+		},
+		{
+			name:       "bad/commit comment unsupported gitops command",
+			event:      sample.CommitNoteEventAsJSON("/merge", "create", "null"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: false,
+			wantReason: "gitlab: commit_comment: unsupported GitOps comment \"/merge\"",
+		},
+		{
+			name:       "bad/commit comment unsupported large comment",
+			event:      sample.CommitNoteEventAsJSON(largeComment, "create", "null"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: false,
+			wantReason: "gitlab: commit_comment: unsupported GitOps comment \"/Lorem Ipsum is simply dummy text of the printing ...\"",
+		},
+		{
+			name:       "good/commit comment /test command",
+			event:      sample.CommitNoteEventAsJSON("/test", "create", "null"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: true,
+		},
+		{
+			name:       "good/commit comment /retest command",
+			event:      sample.CommitNoteEventAsJSON("/retest", "create", "null"),
+			eventType:  gitlab.EventTypeNote,
+			isGL:       true,
+			processReq: true,
+		},
+		{
+			name:       "good/commit comment /cancel command",
+			event:      sample.CommitNoteEventAsJSON("/cancel", "create", "null"),
+			eventType:  gitlab.EventTypeNote,
 			isGL:       true,
 			processReq: true,
 		},

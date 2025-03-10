@@ -72,6 +72,7 @@ func buildEventFromPipelineRun(pr *tektonv1.PipelineRun) *info.Event {
 	prNumber := prAnno[keys.PullRequest]
 	if prNumber != "" {
 		event.PullRequestNumber, _ = strconv.Atoi(prNumber)
+		event.TriggerTarget = triggertype.PullRequest
 	}
 
 	// GitHub
