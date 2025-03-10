@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"fmt"

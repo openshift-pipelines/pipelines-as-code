@@ -27,7 +27,7 @@ const (
 
 // MakeBasicAuthSecret Make a secret for git-clone basic-auth workspace.
 func MakeBasicAuthSecret(runevent *info.Event, secretName string) (*corev1.Secret, error) {
-	// Bitbucket Server have a different Clone URL than it's Repository URL, so we
+	// Bitbucket Data Center have a different Clone URL than it's Repository URL, so we
 	// have to separate them
 	cloneURL := runevent.URL
 	if runevent.CloneURL != "" {
@@ -44,7 +44,7 @@ func MakeBasicAuthSecret(runevent *info.Event, secretName string) (*corev1.Secre
 		gitUser = runevent.Provider.User
 	}
 
-	// Bitbucket server token have / into it, so unless we quote the URL them it's
+	// Bitbucket Data Center token have / into it, so unless we quote the URL them it's
 	// impossible to use it🤡
 	//
 	// It supposed not working on GitHub according to

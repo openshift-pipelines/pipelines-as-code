@@ -34,7 +34,7 @@ func (r *Reconciler) countPipelineRun(pr *tektonv1.PipelineRun) error {
 		} else {
 			gitProvider += "-webhook"
 		}
-	case "gitlab", "gitea", "bitbucket-cloud", "bitbucket-server":
+	case "gitlab", "gitea", "bitbucket-cloud", "bitbucket-datacenter":
 		gitProvider += "-webhook"
 	default:
 		return fmt.Errorf("no supported Git provider")
