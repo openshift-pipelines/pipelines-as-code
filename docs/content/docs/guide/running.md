@@ -61,6 +61,9 @@ If the author of the pull request does not have the necessary permissions to run
 PipelineRun, another user who does have the permissions can comment
 `/ok-to-test` on the pull request to trigger the PipelineRuns.
 
+Welcome to the jungle where you can run your pipelines with the power of the
+`/ok-to-test` command!
+
 ## OWNERS file
 
 The `OWNERS` file follows a specific format similar to the Prow `OWNERS` file
