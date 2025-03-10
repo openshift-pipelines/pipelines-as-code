@@ -56,8 +56,8 @@ type Event struct {
 	AccountID string
 
 	// TODO: move out inside the provider
-	// Bitbucket Server
-	CloneURL string // bitbucket server has a different url for cloning the repo than normal public html url
+	// Bitbucket Data Center
+	CloneURL string // bitbucket data center has a different url for cloning the repo than normal public html url
 	Provider *Provider
 
 	// Gitlab

@@ -13,7 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github/app"
@@ -164,7 +164,7 @@ func (l *listener) processIncoming(targetRepo *v1alpha1.Repository) (provider.In
 		case "bitbucket-cloud":
 			provider = &bitbucketcloud.Provider{}
 		case "bitbucket-server":
-			provider = &bitbucketserver.Provider{}
+			provider = &bitbucketdatacenter.Provider{}
 		default:
 			return l.processRes(false, nil, l.logger.With("namespace", targetRepo.Namespace), "", fmt.Errorf("no supported Git provider has been detected"))
 		}

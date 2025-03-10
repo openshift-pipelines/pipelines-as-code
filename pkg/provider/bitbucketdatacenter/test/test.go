@@ -18,7 +18,7 @@ import (
 	"github.com/jenkins-x/go-scm/scm/driver/stash"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
 	"gotest.tools/v3/assert"
 )
 
@@ -27,7 +27,7 @@ var (
 	buildAPIURL   = "/rest/build-status/1.0"
 )
 
-func SetupBBServerClient(ctx context.Context) (*bbv1.APIClient, *scm.Client, *http.ServeMux, func(), string) {
+func SetupBBDataCenterClient(ctx context.Context) (*bbv1.APIClient, *scm.Client, *http.ServeMux, func(), string) {
 	mux := http.NewServeMux()
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(defaultAPIURL+"/", http.StripPrefix(defaultAPIURL, mux))

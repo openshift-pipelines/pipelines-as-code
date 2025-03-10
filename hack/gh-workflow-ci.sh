@@ -196,7 +196,7 @@ help() {
   create_second_github_app_controller_on_ghe <test_github_second_smee_url> <test_github_second_private_key> <test_github_second_webhook_secret>
     Create the second controller on GHE
 
-  run_e2e_tests <target> <bitbucket_cloud_token> <webhook_secret> <test_gitea_smeeurl> <installation_id> <gh_apps_token> <test_github_second_token> <gitlab_token> <bitbucket_server_token> <bitbucket_server_api_url> <bitbucket_server_webhook_secret>
+  run_e2e_tests <target> <bitbucket_cloud_token> <webhook_secret> <test_gitea_smeeurl> <installation_id> <gh_apps_token> <test_github_second_token> <gitlab_token> <bitbucket_datacenter_token> <bitbucket_datacenter_api_url> <bitbucket_datacenter_webhook_secret>
     Run the e2e tests
 
   collect_logs

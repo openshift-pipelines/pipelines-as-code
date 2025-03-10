@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func CreatePR(ctx context.Context, t *testing.T, client *goscm.Client, runcnx *p
 	title := "TestPullRequest - " + targetNS
 	prOpts := &goscm.PullRequestInput{
 		Title: title,
-		Body:  "Test PAC on bitbucket server",
+		Body:  "Test PAC on bitbucket data center",
 		Head:  targetNS,
 		Base:  "main",
 	}

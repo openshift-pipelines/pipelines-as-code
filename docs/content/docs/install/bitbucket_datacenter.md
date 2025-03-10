@@ -1,11 +1,11 @@
 ---
-title: Bitbucket Server
+title: Bitbucket Data Center
 weight: 15
 ---
-# Install Pipelines-As-Code on Bitbucket Server
+# Install Pipelines-As-Code on Bitbucket Data Center
 
 Pipelines-As-Code has a full support of [Bitbucket
-Server](https://www.atlassian.com/software/bitbucket/enterprise).
+Data Center](https://www.atlassian.com/software/bitbucket/enterprise).
 
 After following the [installation](/docs/install/installation):
 
@@ -39,7 +39,7 @@ recreate it.
   echo https://$(oc get route -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.spec.host}')
   ```
 
-* [Refer to this screenshot](/images/bitbucket-server-create-webhook.png) on
+* [Refer to this screenshot](/images/bitbucket-datacenter-create-webhook.png) on
   which events to handle on the Webhook. The individual events to select are :
 
   * Repository -> Push
@@ -51,7 +51,7 @@ recreate it.
   * Create a secret with personal token in the `target-namespace`
 
   ```shell
-  kubectl -n target-namespace create secret generic bitbucket-server-webhook-config \
+  kubectl -n target-namespace create secret generic bitbucket-datacenter-webhook-config \
     --from-literal provider.token="TOKEN_AS_GENERATED_PREVIOUSLY" \
     --from-literal webhook.secret="SECRET_AS_SET_IN_WEBHOOK_CONFIGURATION"
   ```
@@ -70,16 +70,16 @@ recreate it.
   spec:
     url: "https://bitbucket.com/workspace/repo"
     git_provider:
-      # make sure you have the right bitbucket server api url without the
+      # make sure you have the right bitbucket data center api url without the
       # /api/v1.0 usually the # default install will have a /rest suffix
-      url: "https://bitbucket.server.api.url/rest"
+      url: "https://bitbucket.datacenter.api.url/rest"
       user: "your-bitbucket-username"
       secret:
-        name: "bitbucket-server-webhook-config"
+        name: "bitbucket-datacenter-webhook-config"
         # Set this if you have a different key in your secret
         # key: "provider.token"
       webhook_secret:
-        name: "bitbucket-server-webhook-config"
+        name: "bitbucket-datacenter-webhook-config"
         # Set this if you have a different key for your secret
         # key: "webhook.secret"
 ```
@@ -90,7 +90,7 @@ recreate it.
   Pipelines as code always assumes it will be the same namespace as where the
   repository has been created.
 
-* `tkn-pac create` and `bootstrap` is not supported on Bitbucket Server.
+* `tkn-pac create` and `bootstrap` is not supported on Bitbucket Data Center.
 
 {{< hint danger >}}
 

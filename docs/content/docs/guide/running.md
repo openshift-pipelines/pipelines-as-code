@@ -120,7 +120,7 @@ click on it and follow the pipeline execution directly there.
 ### Cancelling in-progress PipelineRuns
 
 {{< tech_preview "Cancelling in progress PipelineRuns" >}}
-{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="true" bitbucket_server="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="true" bitbucket_datacenter="false" >}}
 
 You can choose to cancel a PipelineRun that is currently in progress. This can
 be done by adding the annotation `pipelinesascode.tekton.dev/cancel-in-progress:
