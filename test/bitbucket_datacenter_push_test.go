@@ -7,11 +7,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"regexp"
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
-	tbbs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/bitbucketserver"
+	tbbs "github.com/openshift-pipelines/pipelines-as-code/test/pkg/bitbucketdatacenter"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
@@ -20,7 +19,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestBitbucketServerDynamicVariables(t *testing.T) {
+func TestBitbucketDataCenterCELPathChangeOnPush(t *testing.T) {
 	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
 	ctx := context.Background()
 	bitbucketWSOwner := os.Getenv("TEST_BITBUCKET_SERVER_E2E_REPOSITORY")
@@ -32,30 +31,30 @@ func TestBitbucketServerDynamicVariables(t *testing.T) {
 	runcnx.Clients.Log.Infof("Repository %s has been created", repo.Name)
 	defer tbbs.TearDownNs(ctx, t, runcnx, targetNS)
 
-	branch, _, err := client.Git.CreateRef(ctx, bitbucketWSOwner, targetNS, "refs/heads/main")
-	assert.NilError(t, err)
-	runcnx.Clients.Log.Infof("Branch %s has been created", branch.Name)
-
 	files := map[string]string{
-		".tekton/pipelinerun.yaml": "testdata/pipelinerun-dynamic-vars.yaml",
+		".tekton/pipelinerun.yaml": "testdata/pipelinerun-cel-path-changed.yaml",
 	}
 
-	files, err = payload.GetEntries(files, targetNS, targetNS, triggertype.Push.String(), map[string]string{})
+	mainBranchRef := "refs/heads/main"
+	branch, resp, err := client.Git.CreateRef(ctx, bitbucketWSOwner, targetNS, mainBranchRef)
+	assert.NilError(t, err, "error creating branch: http status code: %d : %v", resp.Status, err)
+	runcnx.Clients.Log.Infof("Branch %s has been created", branch.Name)
+	defer tbbs.TearDown(ctx, t, runcnx, client, -1, bitbucketWSOwner, branch.Name)
+
+	files, err = payload.GetEntries(files, targetNS, branch.Name, triggertype.Push.String(), map[string]string{})
 	assert.NilError(t, err)
 	gitCloneURL, err := scm.MakeGitCloneURL(repo.Clone, opts.UserName, opts.Password)
 	assert.NilError(t, err)
-
-	commitMsg := fmt.Sprintf("commit %s", targetNS)
 	scmOpts := &scm.Opts{
 		GitURL:        gitCloneURL,
 		Log:           runcnx.Clients.Log,
 		WebURL:        repo.Clone,
 		TargetRefName: targetNS,
 		BaseRefName:   repo.Branch,
-		CommitTitle:   commitMsg,
+		CommitTitle:   fmt.Sprintf("commit %s", targetNS),
 	}
 	scm.PushFilesToRefGit(t, scmOpts, files)
-	runcnx.Clients.Log.Infof("Files has been pushed to branch %s", targetNS)
+	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetNS)
 
 	successOpts := wait.SuccessOpt{
 		TargetNS:        targetNS,
@@ -64,8 +63,4 @@ func TestBitbucketServerDynamicVariables(t *testing.T) {
 		MinNumberStatus: 1,
 	}
 	wait.Succeeded(ctx, t, runcnx, opts, successOpts)
-
-	reg := *regexp.MustCompile(fmt.Sprintf("event: repo:refs_changed, refId: refs/heads/%s, message: %s", targetNS, commitMsg))
-	err = wait.RegexpMatchingInPodLog(ctx, runcnx, targetNS, "pipelinesascode.tekton.dev/original-prname=pipelinerun-dynamic-vars", "step-task", reg, "", 2)
-	assert.NilError(t, err)
 }

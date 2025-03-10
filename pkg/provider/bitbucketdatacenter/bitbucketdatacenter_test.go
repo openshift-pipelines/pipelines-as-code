@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	bbtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/test"
+	bbtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/test"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"go.uber.org/zap"
@@ -83,7 +83,7 @@ func TestGetTektonDir(t *testing.T) {
 			observer, _ := zapobserver.New(zap.InfoLevel)
 			logger := zap.New(observer).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
-			_, client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			_, client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient(ctx)
 			defer tearDown()
 			v := &Provider{Logger: logger, baseURL: tURL, ScmClient: client, projectKey: tt.event.Organization}
 			bbtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.path, tt.wantDirAPIErr, tt.wantFilesAPIErr)
@@ -193,7 +193,7 @@ func TestCreateStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			client, _, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			client, _, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient(ctx)
 			defer tearDown()
 			if tt.nilClient {
 				client = nil
@@ -266,7 +266,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			_, client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			_, client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient(ctx)
 			defer tearDown()
 			v := &Provider{ScmClient: client, baseURL: tURL, defaultBranchLatestCommit: "1234", projectKey: tt.event.Organization}
 			bbtest.MuxFiles(t, mux, tt.event, tt.targetbranch, filepath.Dir(tt.path), tt.filescontents, tt.wantErr != "")
@@ -363,7 +363,7 @@ func TestSetClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			_, client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			_, client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient(ctx)
 			defer tearDown()
 			if tt.muxUser != nil {
 				mux.HandleFunc("/users/foo", tt.muxUser)
@@ -406,7 +406,7 @@ func TestGetCommitInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, _, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			bbclient, _, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient(ctx)
 			bbtest.MuxCommitInfo(t, mux, tt.event, tt.commit)
 			bbtest.MuxDefaultBranch(t, mux, tt.event, tt.defaultBranch, tt.latestCommit)
 			defer tearDown()
@@ -683,7 +683,7 @@ func TestGetFiles(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			_, client, mux, tearDown, tURL := bbtest.SetupBBServerClient(ctx)
+			_, client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient(ctx)
 			defer tearDown()
 
 			stats := &bbtest.DiffStats{

@@ -20,13 +20,13 @@
 
 - If adding a provider feature, fill in the following details:
 
-| Git Provider     | Supported |
-|------------------|-----------|
-| GitHub App       | ✅️        |
-| GitHub Webhook   | ❌️        |
-| Gitea            | ❌️        |
-| GitLab           | ❌️        |
-| Bitbucket Cloud  | ❌️        |
-| Bitbucket Server | ❌️        |
+| Git Provider          | Supported |
+|-----------------------|-----------|
+| GitHub App            | ✅️        |
+| GitHub Webhook        | ❌️        |
+| Gitea                 | ❌️        |
+| GitLab                | ❌️        |
+| Bitbucket Cloud       | ❌️        |
+| Bitbucket Data Center | ❌️        |
 
   (update the documentation accordingly)

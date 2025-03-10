@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"context"
@@ -20,10 +20,10 @@ import (
 )
 
 func Setup(ctx context.Context) (context.Context, *params.Run, options.E2E, *scm.Client, error) {
-	bitbucketServerUser := os.Getenv("TEST_BITBUCKET_SERVER_USER")
-	bitbucketServerToken := os.Getenv("TEST_BITBUCKET_SERVER_TOKEN")
+	bitbucketDataCenterUser := os.Getenv("TEST_BITBUCKET_SERVER_USER")
+	bitbucketDataCenterToken := os.Getenv("TEST_BITBUCKET_SERVER_TOKEN")
 	bitbucketWSOwner := os.Getenv("TEST_BITBUCKET_SERVER_E2E_REPOSITORY")
-	bitbucketServerAPIURL := os.Getenv("TEST_BITBUCKET_SERVER_API_URL")
+	bitbucketDataCenterAPIURL := os.Getenv("TEST_BITBUCKET_SERVER_API_URL")
 
 	if err := setup.RequireEnvs(
 		"TEST_BITBUCKET_SERVER_USER",
@@ -44,18 +44,18 @@ func Setup(ctx context.Context) (context.Context, *params.Run, options.E2E, *scm
 	e2eoptions := options.E2E{
 		Organization: split[0],
 		Repo:         split[1],
-		UserName:     bitbucketServerUser,
-		Password:     bitbucketServerToken,
+		UserName:     bitbucketDataCenterUser,
+		Password:     bitbucketDataCenterToken,
 	}
 
 	event := info.NewEvent()
 	event.Provider = &info.Provider{
-		Token: bitbucketServerToken,
-		URL:   bitbucketServerAPIURL,
-		User:  bitbucketServerUser,
+		Token: bitbucketDataCenterToken,
+		URL:   bitbucketDataCenterAPIURL,
+		User:  bitbucketDataCenterUser,
 	}
 
-	client, err := stash.New(bitbucketServerAPIURL)
+	client, err := stash.New(bitbucketDataCenterAPIURL)
 	if err != nil {
 		return ctx, nil, options.E2E{}, nil, err
 	}
@@ -64,7 +64,7 @@ func Setup(ctx context.Context) (context.Context, *params.Run, options.E2E, *scm
 		Transport: &oauth2.Transport{
 			Source: oauth2.StaticTokenSource(
 				&scm.Token{
-					Token: bitbucketServerToken,
+					Token: bitbucketDataCenterToken,
 				},
 			),
 		},

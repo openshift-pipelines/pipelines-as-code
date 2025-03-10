@@ -27,7 +27,7 @@ func (p *CustomParams) getChangedFiles(ctx context.Context) changedfiles.Changed
 // makeStandardParamsFromEvent will create a map of standard params out of the event.
 func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[string]string, map[string]interface{}) {
 	repoURL := p.event.URL
-	// On bitbucket server you are have a special url for checking it out, they
+	// On bitbucket data center you are have a special url for checking it out, they
 	// seemed to fix it in 2.0 but i guess we have to live with this until then.
 	if p.event.CloneURL != "" {
 		repoURL = p.event.CloneURL
