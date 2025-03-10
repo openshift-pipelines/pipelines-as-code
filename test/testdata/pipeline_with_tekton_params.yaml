@@ -1,0 +1,19 @@
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: pipeline-with-tekton-params
+spec:
+  params:
+    - name: foo
+      type: string
+      default: "{{ repo_name }}"
+  tasks:
+    - name: task
+      taskSpec:
+        steps:
+          - name: task
+            image: registry.access.redhat.com/ubi9/ubi-micro
+            script: |
+              echo "Hello $(params.foo)"
+              exit 0
