@@ -57,9 +57,9 @@ run a PipelineRun on CI:
   directory of the default branch on GitHub or your other service provider.
 (see below for the OWNERS file format).
 
-If the pull request author does not have the necessary permissions to run a
-PipelineRun, another user who does have the necessary permissions can comment
-`/ok-to-test` on the pull request to run the PipelineRun.
+If the author of the pull request does not have the necessary permissions to run a
+PipelineRun, another user who does have the permissions can comment
+`/ok-to-test` on the pull request to trigger the PipelineRuns.
 
 ## OWNERS file
 
