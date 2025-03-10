@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"encoding/json"
@@ -6,14 +6,14 @@ import (
 	"net/http"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
 	"go.uber.org/zap"
 )
 
-// Detect processes event and detect if it is a bitbucket server event, whether to process or reject it
-// returns (if is a bitbucket server event, whether to process or reject, error if any occurred).
+// Detect processes event and detect if it is a bitbucket data center event, whether to process or reject it
+// returns (if is a bitbucket data center event, whether to process or reject, error if any occurred).
 func (v *Provider) Detect(req *http.Request, payload string, logger *zap.SugaredLogger) (bool, bool, *zap.SugaredLogger, string, error) {
-	isBitServer := false
+	isBitDataCenter := false
 	event := req.Header.Get("X-Event-Key")
 	if event == "" {
 		return false, false, logger, "", nil
@@ -24,14 +24,14 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 		return false, false, logger, "", err
 	}
 
-	// it is a Bitbucket server event
-	isBitServer = true
+	// it is a Bitbucket data center event
+	isBitDataCenter = true
 
 	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger, string,
 		error,
 	) {
-		logger = logger.With("provider", "bitbucket-server", "event-id", req.Header.Get("X-Request-Id"))
-		return isBitServer, processEvent, logger, reason, err
+		logger = logger.With("provider", "bitbucket-datacenter", "event-id", req.Header.Get("X-Request-Id"))
+		return isBitDataCenter, processEvent, logger, reason, err
 	}
 
 	_ = json.Unmarshal([]byte(payload), &eventPayload)
@@ -63,6 +63,6 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 		return setLoggerAndProceed(false, fmt.Sprintf("not an event we support: \"%s\"", event), nil)
 
 	default:
-		return setLoggerAndProceed(false, "", fmt.Errorf("bitbucket-server: event \"%s\" is not supported", event))
+		return setLoggerAndProceed(false, "", fmt.Errorf("bitbucket-datacenter: event \"%s\" is not supported", event))
 	}
 }

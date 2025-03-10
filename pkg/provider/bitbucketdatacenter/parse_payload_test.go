@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"encoding/json"
@@ -8,8 +8,8 @@ import (
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	bbv1test "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/test"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
+	bbv1test "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/test"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )

@@ -45,7 +45,7 @@ tracking using a Git workflow.
 
 - Git events Filtering and support for separate pipelines for each event
 
-- GitLab, Bitbucket Server, Bitbucket Cloud and GitHub Webhook support.
+- GitLab, Bitbucket Data Center, Bitbucket Cloud and GitHub Webhook support.
 
 - `tkn-pac` plug-in for Tekton CLI for managing pipelines-as-code repositories and bootstrapping.
 

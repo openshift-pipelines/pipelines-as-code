@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-	bbv1test "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/test"
+	bbv1test "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/test"
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -203,7 +203,7 @@ func TestIsAllowed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			bbclient, scmClient, mux, tearDown, tURL := bbv1test.SetupBBServerClient(ctx)
+			bbclient, scmClient, mux, tearDown, tURL := bbv1test.SetupBBDataCenterClient(ctx)
 			defer tearDown()
 			bbv1test.MuxProjectMemberShip(t, mux, tt.event, tt.fields.projectMembers)
 			bbv1test.MuxRepoMemberShip(t, mux, tt.event, tt.fields.repoMembers)
@@ -225,7 +225,7 @@ func TestIsAllowed(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
-			assert.Equal(t, tt.isAllowed, got, "BitbucketServer.IsAllowed() = %v, want %v", got, tt.isAllowed)
+			assert.Equal(t, tt.isAllowed, got, "BitbucketDataCenter.IsAllowed() = %v, want %v", got, tt.isAllowed)
 		})
 	}
 }

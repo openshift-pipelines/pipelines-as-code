@@ -135,7 +135,7 @@ $ tkn pac create repo
   Pipelines as code always assumes that it will be in the same namespace where the
   `Repository` has been created.
 
-- The `tkn pac create` and `tkn pac bootstrap` commands are not supported on Bitbucket Server.
+- The `tkn pac create` and `tkn pac bootstrap` commands are not supported on Bitbucket Data Center.
 
 {{< hint info >}}
 You can only reference a user by the `ACCOUNT_ID` in a owner file. For reason see here:

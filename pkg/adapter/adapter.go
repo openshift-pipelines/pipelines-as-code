@@ -18,7 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/version"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
@@ -250,7 +250,7 @@ func (l listener) detectProvider(req *http.Request, reqBody string) (provider.In
 		return l.processRes(processReq, zegitea, logger, reason, err)
 	}
 
-	bitServer := &bitbucketserver.Provider{}
+	bitServer := &bitbucketdatacenter.Provider{}
 	isBitServer, processReq, logger, reason, err := bitServer.Detect(req, reqBody, &log)
 	if isBitServer {
 		return l.processRes(processReq, bitServer, logger, reason, err)

@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
 )
@@ -23,13 +23,13 @@ func TestProvider_Detect(t *testing.T) {
 		wantReason    string
 	}{
 		{
-			name:       "not a bitbucket server Event",
+			name:       "not a bitbucket data center Event",
 			eventType:  "",
 			isBS:       false,
 			processReq: false,
 		},
 		{
-			name:       "invalid bitbucket server Event",
+			name:       "invalid bitbucket data center Event",
 			eventType:  "validator",
 			isBS:       false,
 			processReq: false,
