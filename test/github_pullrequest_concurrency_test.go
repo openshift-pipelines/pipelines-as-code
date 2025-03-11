@@ -219,7 +219,7 @@ func testGithubConcurrency(ctx context.Context, t *testing.T, g tgithub.PRTest, 
 		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
 		assert.NilError(t, err)
 		sort.PipelineRunSortByStartTime(prs.Items)
-		for i := 0; i < numberOfPipelineRuns; i++ {
+		for i := range make([]int, numberOfPipelineRuns) {
 			prExpectedName := fmt.Sprintf("%s%d", pipelineRunFileNamePrefix, len(prs.Items)-i)
 			prActualName := prs.Items[i].GetName()
 			assert.Assert(t, strings.HasPrefix(prActualName, prExpectedName), "prActualName: %s does not start with expected prefix %s, was is ordered properly at start time", prActualName, prExpectedName)
@@ -230,7 +230,7 @@ func testGithubConcurrency(ctx context.Context, t *testing.T, g tgithub.PRTest, 
 func waitForPipelineRunsHasStarted(ctx context.Context, t *testing.T, g tgithub.PRTest, numberOfPipelineRuns int) {
 	finished := false
 	maxLoop := 30
-	for i := 0; i < maxLoop; i++ {
+	for i := range make([]int, maxLoop) {
 		unsuccessful := 0
 		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
 		assert.NilError(t, err)
@@ -256,6 +256,11 @@ func waitForPipelineRunsHasStarted(ctx context.Context, t *testing.T, g tgithub.
 		time.Sleep(10 * time.Second)
 	}
 	if !finished {
+		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+		assert.NilError(t, err)
+		for _, pr := range prs.Items {
+			t.Logf("PipelineRun %s has conditions: %v", pr.GetName(), pr.Status.Conditions)
+		}
 		t.Errorf("the %d pipelineruns has not successfully finished, some of them are still pending or it's abnormally slow to process the Q", numberOfPipelineRuns)
 	}
 }
