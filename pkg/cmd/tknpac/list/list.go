@@ -163,6 +163,10 @@ func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *
 		repoStatuses = append(repoStatuses, rs)
 	}
 
+	if len(repoStatuses) == 0 {
+		return fmt.Errorf("no repo found")
+	}
+
 	w := ansiterm.NewTabWriter(ioStreams.Out, 0, 5, 3, ' ', tabwriter.TabIndent)
 	colorScheme := ioStreams.ColorScheme()
 	data := struct {
