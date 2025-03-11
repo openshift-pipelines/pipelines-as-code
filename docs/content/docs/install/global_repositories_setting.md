@@ -102,7 +102,7 @@ means a repository configured using [GitHub webhooks]({{< relref "/docs/install/
 - gitlab
 - gitea
 - bitbucket-cloud
-- bitbucket-server
+- bitbucket-datacenter
 
 The global repository settings for the Git provider can currently only
 reference one type of provider on a cluster. The user would need to specify

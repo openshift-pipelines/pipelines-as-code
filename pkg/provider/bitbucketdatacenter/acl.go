@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"context"
@@ -153,7 +153,7 @@ func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool
 		return true, nil
 	}
 
-	// Check if sender (which in bitbucket-server mean the accountID) is inside the Owner file
+	// Check if sender (which in bitbucket-datacenter mean the accountID) is inside the Owner file
 	// in the 'main' branch Silently ignore error, which should be fine it
 	// probably means the OWNERS file is not created. If we had another error
 	// (ie: like API) we probably would have hit it already.

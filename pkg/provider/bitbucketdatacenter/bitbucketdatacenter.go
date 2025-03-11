@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"context"
@@ -65,7 +65,7 @@ func (v *Provider) SetLogger(logger *zap.SugaredLogger) {
 func (v *Provider) Validate(_ context.Context, _ *params.Run, event *info.Event) error {
 	signature := event.Request.Header.Get("X-Hub-Signature")
 	if event.Provider.WebhookSecret == "" && signature != "" {
-		return fmt.Errorf("bitbucket-server failed validation: failed to find webhook secret")
+		return fmt.Errorf("bitbucket-datacenter failed validation: failed to find webhook secret")
 	}
 	return github.ValidateSignature(signature, event.Request.Payload, []byte(event.Provider.WebhookSecret))
 }
@@ -333,7 +333,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 func (v *Provider) GetConfig() *info.ProviderConfig {
 	return &info.ProviderConfig{
 		TaskStatusTMPL: taskStatusTemplate,
-		Name:           "bitbucket-server",
+		Name:           "bitbucket-datacenter",
 	}
 }
 

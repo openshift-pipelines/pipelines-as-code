@@ -10,7 +10,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitea"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab"
@@ -42,8 +42,8 @@ func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogg
 		provider = &gitlab.Provider{}
 	case "bitbucket-cloud":
 		provider = &bitbucketcloud.Provider{}
-	case "bitbucket-server":
-		provider = &bitbucketserver.Provider{}
+	case "bitbucket-datacenter":
+		provider = &bitbucketdatacenter.Provider{}
 	case "gitea":
 		provider = &gitea.Provider{}
 	default:

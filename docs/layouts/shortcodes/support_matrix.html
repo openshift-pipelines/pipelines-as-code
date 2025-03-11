@@ -2,7 +2,7 @@
 "github_app" }} {{ $githubWebhookSupported := .Get "github_webhook" }} {{
 $giteaSupported := .Get "gitea" }} {{ $gitlabSupported := .Get "gitlab" }} {{
 $bitbucketCloudSupported := .Get "bitbucket_cloud" }} {{
-$bitbucketServerSupported := .Get "bitbucket_server" }}
+$bitbucketDataCenterSupported := .Get "bitbucket_datacenter" }}
 
 <blockquote class="book-hint warning">
   <p>This feature is supported on the following providers</p>
@@ -39,9 +39,9 @@ $bitbucketServerSupported := .Get "bitbucket_server" }}
         </td>
       </tr>
       <tr>
-        <td>Bitbucket Server</td>
+        <td>Bitbucket Data Center</td>
         <td>
-          {{ if eq $bitbucketServerSupported "true" }}✅️{{ else }}❌️{{ end }}
+          {{ if eq $bitbucketDataCenterSupported "true" }}✅️{{ else }}❌️{{ end }}
         </td>
       </tr>
     </tbody>
