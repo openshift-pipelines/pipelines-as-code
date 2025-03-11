@@ -192,8 +192,13 @@ download-hugo: ## Download hugo software
 
 .PHONY: dev-docs
 dev-docs: download-hugo ## preview live your docs with hugo
-	@echo "Starting hugo development server"
-	./hack/start-hugo-dev-server.sh $(HUGO_BIN) server -s docs/
+	@$(HUGO_BIN) server -s docs/ &
+	@echo "Sleeping for 2s....";sleep 2 ; \
+	if type -p xdg-open 2>/dev/null >/dev/null; then \
+		xdg-open http://localhost:1313; \
+	elif type -p open 2>/dev/null >/dev/null; then \
+		open http://localhost:1313; \
+	fi
 
 ##@ Misc
 

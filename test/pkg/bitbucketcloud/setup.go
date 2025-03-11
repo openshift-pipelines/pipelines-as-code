@@ -24,7 +24,10 @@ func Setup(ctx context.Context) (*params.Run, options.E2E, bitbucketcloud.Provid
 	bitbucketCloudAPIURL := os.Getenv("TEST_BITBUCKET_CLOUD_API_URL")
 
 	if err := setup.RequireEnvs(
-		"BITBUCKET_CLOUD_TOKEN", "BITBUCKET_CLOUD_E2E_REPOSITORY", "BITBUCKET_CLOUD_API_URL",
+		"TEST_BITBUCKET_CLOUD_USER",
+		"TEST_BITBUCKET_CLOUD_TOKEN",
+		"TEST_BITBUCKET_CLOUD_E2E_REPOSITORY",
+		"TEST_BITBUCKET_CLOUD_API_URL",
 	); err != nil {
 		return nil, options.E2E{}, bitbucketcloud.Provider{}, err
 	}
