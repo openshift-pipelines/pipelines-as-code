@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketserver/types"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
 )
 
 // checkValidPayload checks if the payload is valid.
@@ -182,7 +182,7 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 	processedEvent.URL = sanitizeEventURL(processedEvent.URL)
 
 	// TODO: is this the right way? I guess i have no way to know what is the
-	// baseURL of a server unless there is something in the API?
+	// baseURL of a bitbucket data center unless there is something in the API?
 	// remove everything after /project in the URL to get the basePath
 	pURL, err := url.Parse(processedEvent.URL)
 	if err != nil {
@@ -194,8 +194,8 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 }
 
 func parsePayloadType(event string) (interface{}, error) {
-	// bitbucket server event type has `pr:` prefix for pull request
-	// but in case of push event it is `repo:` prefix for both bitbucket server
+	// bitbucket data center event type has `pr:` prefix for pull request
+	// but in case of push event it is `repo:` prefix for both bitbucket data center
 	// and cloud, so we check the event name directly
 	var localEvent string
 	if strings.HasPrefix(event, "pr:") {

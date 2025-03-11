@@ -1,4 +1,4 @@
-package bitbucketserver
+package bitbucketdatacenter
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func CreateCRD(ctx context.Context, t *testing.T, client *scm.Client, run *param
 	apiURL, _ := os.LookupEnv("TEST_BITBUCKET_SERVER_API_URL")
 	apiUser, _ := os.LookupEnv("TEST_BITBUCKET_SERVER_USER")
 	webhookSecret := os.Getenv("TEST_BITBUCKET_SERVER_WEBHOOK_SECRET")
-	secretName := "bitbucket-server-webhook-config"
+	secretName := "bitbucket-datacenter-webhook-config" // #nosec G101
 	err = secret.Create(ctx, run, map[string]string{
 		"provider.token": token,
 		"webhook.secret": webhookSecret,

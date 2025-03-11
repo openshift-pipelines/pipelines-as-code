@@ -57,9 +57,9 @@ run a PipelineRun on CI:
   directory of the default branch on GitHub or your other service provider.
 (see below for the OWNERS file format).
 
-If the pull request author does not have the necessary permissions to run a
-PipelineRun, another user who does have the necessary permissions can comment
-`/ok-to-test` on the pull request to run the PipelineRun.
+If the author of the pull request does not have the necessary permissions to run a
+PipelineRun, another user who does have the permissions can comment
+`/ok-to-test` on the pull request to trigger the PipelineRuns.
 
 ## OWNERS file
 
@@ -120,7 +120,7 @@ click on it and follow the pipeline execution directly there.
 ### Cancelling in-progress PipelineRuns
 
 {{< tech_preview "Cancelling in progress PipelineRuns" >}}
-{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="true" bitbucket_server="false" >}}
+{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="true" bitbucket_datacenter="false" >}}
 
 You can choose to cancel a PipelineRun that is currently in progress. This can
 be done by adding the annotation `pipelinesascode.tekton.dev/cancel-in-progress:

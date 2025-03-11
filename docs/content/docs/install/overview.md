@@ -35,5 +35,5 @@ preferences the preferred install method is the GitHub Application method.
 * [GitHub Application](/docs/install/github_apps).
 * [GitHub Webhook](/docs/install/github_webhook)
 * [GitLab](/docs/install/gitlab)
-* [Bitbucket Server](/docs/install/bitbucket_server)
+* [Bitbucket Data Center](/docs/install/bitbucket_datacenter)
 * [Bitbucket Cloud](/docs/install/bitbucket_cloud)

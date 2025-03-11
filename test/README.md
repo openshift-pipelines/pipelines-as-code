@@ -52,10 +52,10 @@ this repo should differ from the one which is configured as part of `TEST_GITHUB
 - `TEST_GITEA_PASSWORD` - set password as **pac**
 - `TEST_GITEA_USERNAME` - set username as **pac**
 - `TEST_GITEA_REPO_OWNER` - set repo owner as **pac/pac**
-- `TEST_BITBUCKET_SERVER_USER` - Bitbucket Server Username
-- `TEST_BITBUCKET_SERVER_TOKEN` - Bitbucket Server token
-- `TEST_BITBUCKET_SERVER_E2E_REPOSITORY` - Bitbucket Server repository (i.e. `project/repo`)
-- `TEST_BITBUCKET_SERVER_API_URL` - URL where your Bitbucket Server instance is running.
+- `TEST_BITBUCKET_SERVER_USER` - Bitbucket Data Center Username
+- `TEST_BITBUCKET_SERVER_TOKEN` - Bitbucket Data Center token
+- `TEST_BITBUCKET_SERVER_E2E_REPOSITORY` - Bitbucket Data Center repository (i.e. `project/repo`)
+- `TEST_BITBUCKET_SERVER_API_URL` - URL where your Bitbucket Data Center instance is running.
 - `TEST_BITBUCKET_SERVER_WEBHOOK_SECRET` - Webhook secret
 
 You don't need to configure all of those if you restrict running your e2e tests to a subset.
