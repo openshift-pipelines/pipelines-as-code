@@ -20,6 +20,11 @@ import (
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 )
 
+const (
+	botType         = "Bot"
+	pendingApproval = "Pending approval, waiting for an /ok-to-test"
+)
+
 const taskStatusTemplate = `
 <table>
   <tr><th>Status</th><th>Duration</th><th>Name</th></tr>
@@ -34,8 +39,6 @@ const taskStatusTemplate = `
 </td></tr>
 {{- end }}
 </table>`
-
-const pendingApproval = "Pending approval, waiting for an /ok-to-test"
 
 func (v *Provider) getExistingCheckRunID(ctx context.Context, runevent *info.Event, status provider.StatusOpts) (*int64, error) {
 	opt := github.ListOptions{PerPage: v.PaginedNumber}
@@ -350,6 +353,11 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statu
 		return fmt.Errorf("cannot set status on github no token or url set")
 	}
 
+	// If the request comes from a bot user, skip setting the status and just log the event silently
+	if statusOpts.AccessDenied && v.userType == botType {
+		return nil
+	}
+
 	switch statusOpts.Conclusion {
 	case "success":
 		statusOpts.Title = "Success"
@@ -386,7 +394,6 @@ func (v *Provider) CreateStatus(ctx context.Context, runevent *info.Event, statu
 		onPr = "/" + statusOpts.OriginalPipelineRunName
 	}
 	statusOpts.Summary = fmt.Sprintf("%s%s %s", v.pacInfo.ApplicationName, onPr, statusOpts.Summary)
-
 	// If we have an installationID which mean we have a github apps and we can use the checkRun API
 	if runevent.InstallationID > 0 {
 		return v.getOrUpdateCheckRunStatus(ctx, runevent, statusOpts)
