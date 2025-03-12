@@ -18,7 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGithubSecondPullRequestRetest(t *testing.T) {
+func TestGithubSecondPullRequestGitopsCommentRetest(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
 	}
@@ -56,13 +56,15 @@ func TestGithubSecondPullRequestRetest(t *testing.T) {
 	assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionTrue)
 }
 
-// TestGithubPullRequestGitOpsComments tests GitOps comments /test, /retest and /cancel commands.
-func TestGithubPullRequestGitOpsComments(t *testing.T) {
+// TestGithubSecondPullRequestRetest tests the retest functionality of a GitHub pull request.
+// It sets up a pull request, triggers a retest comment, waits for the repository to be updated,
+// and verifies that the repository status is set to succeeded and the correct number of PipelineRuns are created.
+func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "Github PullRequest GitOps Comments test",
+		Label:            "Github PullRequest Cancel",
 		YamlFiles:        []string{"testdata/pipelinerun.yaml", "testdata/pipelinerun-gitops.yaml"},
-		SecondController: false,
+		SecondController: true,
 	}
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
@@ -71,65 +73,67 @@ func TestGithubPullRequestGitOpsComments(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(pruns.Items), 2)
 
-	tests := []struct {
-		name, comment string
-		prNum         int
-	}{
-		{
-			name:    "Retest",
-			comment: "/retest pr-gitops-comment",
-			prNum:   3,
-		},
-		{
-			name:    "Test and Cancel PipelineRun",
-			comment: "/cancel pr-gitops-comment",
-			prNum:   4,
-		},
+	g.Cnx.Clients.Log.Info("/test pr-gitops-comment on Pull Request before canceling")
+	_, _, err = g.Provider.Client.Issues.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo,
+		g.PRNumber,
+		&github.IssueComment{Body: github.Ptr("/test pr-gitops-comment")},
+	)
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 3,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			waitOpts := twait.Opts{
-				RepoName:        g.TargetNamespace,
-				Namespace:       g.TargetNamespace,
-				MinNumberStatus: tt.prNum,
-				PollTimeout:     twait.DefaultTimeout,
-				TargetSHA:       g.SHA,
-			}
-			if tt.comment == "/cancel pr-gitops-comment" {
-				g.Cnx.Clients.Log.Info("/test pr-gitops-comment on Pull Request before canceling")
-				_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
-					g.Options.Organization,
-					g.Options.Repo, g.PRNumber,
-					&github.IssueComment{Body: github.Ptr("/test pr-gitops-comment")})
-				assert.NilError(t, err)
-				err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
-				assert.NilError(t, err)
-			}
-			g.Cnx.Clients.Log.Infof("%s on Pull Request", tt.comment)
-			_, _, err = g.Provider.Client.Issues.CreateComment(ctx,
-				g.Options.Organization,
-				g.Options.Repo, g.PRNumber,
-				&github.IssueComment{Body: github.Ptr(tt.comment)})
-			assert.NilError(t, err)
+	assert.NilError(t, err)
+	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
 
-			g.Cnx.Clients.Log.Info("Waiting for Repository to be updated")
-			_, err = twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts)
-			assert.NilError(t, err)
+	g.Cnx.Clients.Log.Infof("/cancel pr-gitops-comment on Pull Request")
+	_, _, err = g.Provider.Client.Issues.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.PRNumber,
+		&github.IssueComment{Body: github.Ptr("/cancel pr-gitops-comment")})
+	assert.NilError(t, err)
 
-			g.Cnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
-			repo, err := g.Cnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(g.TargetNamespace).Get(ctx, g.TargetNamespace, metav1.GetOptions{})
-			assert.NilError(t, err)
-			if tt.comment == "/cancel pr-gitops-comment" {
-				assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionFalse)
-			} else {
-				assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionTrue)
-			}
-
-			pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
-			})
-			assert.NilError(t, err)
-			assert.Equal(t, len(pruns.Items), tt.prNum)
-		})
+	waitOpts = twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 3,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
 	}
+	g.Cnx.Clients.Log.Info("Waiting for Repository to be updated")
+	_, err = twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
+	repo, err := g.Cnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(g.TargetNamespace).Get(ctx, g.TargetNamespace, metav1.GetOptions{})
+	assert.NilError(t, err)
+	assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionFalse)
+
+	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
+	})
+	assert.NilError(t, err)
+	assert.Equal(t, len(pruns.Items), 3)
+
+	// go over all pruns check that at least one is canceled and the other two are succeeded
+	canceledCount := 0
+	succeededCount := 0
+	for _, prun := range pruns.Items {
+		for _, condition := range prun.Status.Conditions {
+			if condition.Type == "Succeeded" {
+				if condition.Status == corev1.ConditionFalse {
+					canceledCount++
+				} else if condition.Status == corev1.ConditionTrue {
+					succeededCount++
+				}
+			}
+		}
+	}
+	assert.Equal(t, canceledCount, 1, "should have one canceled PipelineRun")
+	assert.Equal(t, succeededCount, 2, "should have two succeeded PipelineRuns")
 }
