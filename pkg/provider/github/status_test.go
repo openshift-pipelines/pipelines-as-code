@@ -248,6 +248,8 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 		titleSubstr        string
 		nilCompletedAtDate bool
 		githubApps         bool
+		accessDenied       bool
+		isBot              bool
 	}
 	tests := []struct {
 		name                 string
@@ -335,6 +337,36 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "failure from bot",
+			args: args{
+				runevent:     runEvent,
+				status:       "completed",
+				conclusion:   "failure",
+				text:         "Nay",
+				detailsURL:   "https://cireport.com",
+				titleSubstr:  "Failed",
+				githubApps:   true,
+				accessDenied: true,
+				isBot:        true,
+			},
+			wantErr: false,
+		},
+		{
+			name: "success from bot",
+			args: args{
+				runevent:    runEvent,
+				status:      "completed",
+				conclusion:  "failure",
+				text:        "Nay",
+				detailsURL:  "https://cireport.com",
+				titleSubstr: "Failed",
+				githubApps:  true,
+				isBot:       true,
+			},
+			wantErr: false,
+			want:    &github.CheckRun{ID: &resultid},
+		},
+		{
 			name: "skipped",
 			args: args{
 				runevent:    runEvent,
@@ -378,14 +410,18 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			gcvs.Client = fakeclient
 			gcvs.Logger, _ = logger.GetLogger()
 			gcvs.Run = params.New()
+			if tt.args.isBot {
+				gcvs.userType = "Bot"
+			}
 
+			checkRunCreated := false
 			mux.HandleFunc("/repos/check/run/statuses/sha", func(_ http.ResponseWriter, _ *http.Request) {})
 			mux.HandleFunc(fmt.Sprintf("/repos/check/run/check-runs/%d", checkrunid), func(rw http.ResponseWriter, r *http.Request) {
 				bit, _ := io.ReadAll(r.Body)
 				checkRun := &github.CheckRun{}
 				err := json.Unmarshal(bit, checkRun)
 				assert.NilError(t, err)
-
+				checkRunCreated = true
 				if tt.args.nilCompletedAtDate {
 					// I guess that's the way you check for an undefined year,
 					// or maybe i don't understand fully how go works😅
@@ -402,6 +438,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				_, err = fmt.Fprintf(rw, `{"id": %d}`, resultid)
 				assert.NilError(t, err)
 			})
+
 			if tt.addExistingCheckruns {
 				tt.args.runevent.SHA = "sha"
 				mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", tt.args.runevent.Organization, tt.args.runevent.Repository, tt.args.runevent.SHA), func(w http.ResponseWriter, _ *http.Request) {
@@ -430,6 +467,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 				Conclusion:      tt.args.conclusion,
 				Text:            tt.args.text,
 				DetailsURL:      tt.args.detailsURL,
+				AccessDenied:    tt.args.accessDenied,
 			}
 			if tt.pr != nil {
 				status.PipelineRun = tt.pr
@@ -467,6 +505,14 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 			err := gcvs.CreateStatus(ctx, tt.args.runevent, status)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GithubProvider.CreateStatus() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.want == nil && checkRunCreated {
+				t.Errorf("Check run should have not be created for this test")
+				return
+			}
+			if tt.want != nil && !checkRunCreated {
+				t.Errorf("Check run should have been created for this test")
 				return
 			}
 		})
