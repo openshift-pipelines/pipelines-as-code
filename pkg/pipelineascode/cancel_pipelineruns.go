@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 )
 
@@ -27,14 +28,13 @@ var cancelMergePatch = map[string]interface{}{
 	},
 }
 
-// cancelInProgressPipelineRunsForRepository cancels all in-progress PipelineRuns
-// that are selected by the given labelSelectorMap and for which the matchFunc returns true.
-func (p *PacRun) cancelInProgressPipelineRunsForRepository(ctx context.Context, repo *v1alpha1.Repository, labelSelectorMap map[string]string, matchFunc matchingCond) error {
-	labelSelectorMap[keys.URLRepository] = formatting.CleanValueKubernetes(p.event.Repository)
-
-	labelSelector := getLabelSelector(labelSelectorMap)
-	p.run.Clients.Log.Infof("cancel-in-progress: selecting pipelineRuns to cancel with labels: %v", labelSelector)
-
+// cancelAllInProgressBelongingToPullRequest cancels all in-progress PipelineRuns
+// that belong to a specific pull request in the given repository.
+func (p *PacRun) cancelAllInProgressBelongingToPullRequest(ctx context.Context, repo *v1alpha1.Repository) error {
+	labelSelector := getLabelSelector(map[string]string{
+		keys.URLRepository: formatting.CleanValueKubernetes(p.event.Repository),
+		keys.PullRequest:   strconv.Itoa(int(p.event.PullRequestNumber)),
+	})
 	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(repo.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
@@ -49,29 +49,20 @@ func (p *PacRun) cancelInProgressPipelineRunsForRepository(ctx context.Context, 
 		return nil
 	}
 
-	p.cancelPipelineRuns(ctx, prs, repo, matchFunc)
+	p.cancelPipelineRuns(ctx, prs, repo, func(_ tektonv1.PipelineRun) bool {
+		return true
+	})
 
 	return nil
 }
 
-// cancelAllInProgressBelongingToPullRequest cancels all in-progress PipelineRuns
-// which are associated with the event's Pull Request.
-func (p *PacRun) cancelAllInProgressBelongingToPullRequest(ctx context.Context, repo *v1alpha1.Repository) error {
-	return p.cancelInProgressPipelineRunsForRepository(
-		ctx,
-		repo,
-		map[string]string{keys.PullRequest: strconv.Itoa(int(p.event.PullRequestNumber))},
-		func(_ tektonv1.PipelineRun) bool { return true },
-	)
-}
-
-// cancelInProgressExceptMatchingPR cancels all PipelineRuns associated with a given repository and pull request,
+// cancelInProgressMatchingPR cancels all PipelineRuns associated with a given repository and pull request,
 // except for the one that triggered the cancellation. It first checks if the cancellation is in progress
 // and if the repository has a concurrency limit. If a concurrency limit is set, it returns an error as
 // cancellation is not supported with concurrency limits. It then retrieves the original pull request name
 // from the annotations and lists all PipelineRuns with matching labels. For each PipelineRun that is not
 // already done, cancelled, or gracefully stopped, it patches the PipelineRun to cancel it.
-func (p *PacRun) cancelInProgressExceptMatchingPR(ctx context.Context, matchPR *tektonv1.PipelineRun, repo *v1alpha1.Repository) error {
+func (p *PacRun) cancelInProgressMatchingPR(ctx context.Context, matchPR *tektonv1.PipelineRun, repo *v1alpha1.Repository) error {
 	if matchPR == nil {
 		return nil
 	}
@@ -89,46 +80,71 @@ func (p *PacRun) cancelInProgressExceptMatchingPR(ctx context.Context, matchPR *
 	}
 
 	labelMap := map[string]string{
+		keys.URLRepository:  formatting.CleanValueKubernetes(p.event.Repository),
 		keys.OriginalPRName: prName,
 	}
 	if p.event.TriggerTarget == triggertype.PullRequest {
 		labelMap[keys.PullRequest] = strconv.Itoa(p.event.PullRequestNumber)
 	}
-	return p.cancelInProgressPipelineRunsForRepository(
-		ctx,
-		repo,
-		labelMap,
-		func(pr tektonv1.PipelineRun) bool {
-			// skip our own for cancellation
-			if sourceBranch, ok := pr.GetAnnotations()[keys.SourceBranch]; ok {
-				// NOTE(chmouel): Every PR has their own branch and so is every push to different branch
-				// it means we only cancel pipelinerun of the same name that runs to
-				// the unique branch. Note: HeadBranch is the branch from where the PR
-				// comes from in git jargon.
-				if sourceBranch != p.event.HeadBranch {
-					p.logger.Infof("cancel-in-progress: skipping pipelinerun %v/%v as it is not from the same branch, annotation source-branch: %s event headbranch: %s", pr.GetNamespace(), pr.GetName(), sourceBranch, p.event.HeadBranch)
-					return false
-				}
-			}
+	labelSelector := getLabelSelector(labelMap)
+	if p.event.TriggerTarget == triggertype.PullRequest {
+		labelSelector += fmt.Sprintf(",%s in (pull_request, %s)", keys.EventType, opscomments.AnyOpsKubeLabelInSelector())
+	}
+	p.run.Clients.Log.Infof("cancel-in-progress: selecting pipelineRuns to cancel with labels: %v", labelSelector)
+	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(matchPR.GetNamespace()).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list pipelineRuns : %w", err)
+	}
 
-			return pr.GetName() != matchPR.GetName()
-		})
+	p.cancelPipelineRuns(ctx, prs, repo, func(pr tektonv1.PipelineRun) bool {
+		// skip our own for cancellation
+		if sourceBranch, ok := pr.GetAnnotations()[keys.SourceBranch]; ok {
+			// NOTE(chmouel): Every PR has their own branch and so is every push to different branch
+			// it means we only cancel pipelinerun of the same name that runs to
+			// the unique branch. Note: HeadBranch is the branch from where the PR
+			// comes from in git jargon.
+			if sourceBranch != p.event.HeadBranch {
+				p.logger.Infof("cancel-in-progress: skipping pipelinerun %v/%v as it is not from the same branch, annotation source-branch: %s event headbranch: %s", pr.GetNamespace(), pr.GetName(), sourceBranch, p.event.HeadBranch)
+				return false
+			}
+		}
+
+		return pr.GetName() != matchPR.GetName()
+	})
+	return nil
 }
 
 // cancelPipelineRunsOpsComment cancels all PipelineRuns associated with a given repository and pull request.
 // when the user issue a cancel comment.
 func (p *PacRun) cancelPipelineRunsOpsComment(ctx context.Context, repo *v1alpha1.Repository) error {
-	labelMap := map[string]string{
-		keys.SHA: formatting.CleanValueKubernetes(p.event.SHA),
-	}
+	labelSelector := getLabelSelector(map[string]string{
+		keys.URLRepository: formatting.CleanValueKubernetes(p.event.Repository),
+		keys.SHA:           formatting.CleanValueKubernetes(p.event.SHA),
+	})
 
 	if p.event.TriggerTarget == triggertype.PullRequest {
-		labelMap = map[string]string{
+		labelSelector = getLabelSelector(map[string]string{
 			keys.PullRequest: strconv.Itoa(p.event.PullRequestNumber),
-		}
+		})
 	}
 
-	return p.cancelInProgressPipelineRunsForRepository(ctx, repo, labelMap, func(pr tektonv1.PipelineRun) bool {
+	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(repo.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list pipelineRuns : %w", err)
+	}
+
+	if len(prs.Items) == 0 {
+		msg := fmt.Sprintf("no pipelinerun found for repository: %v , sha: %v and pulRequest %v",
+			p.event.Repository, p.event.SHA, p.event.PullRequestNumber)
+		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryPipelineRun", msg)
+		return nil
+	}
+
+	p.cancelPipelineRuns(ctx, prs, repo, func(pr tektonv1.PipelineRun) bool {
 		if p.event.TargetCancelPipelineRun != "" {
 			if prName, ok := pr.GetAnnotations()[keys.OriginalPRName]; !ok || prName != p.event.TargetCancelPipelineRun {
 				return false
@@ -136,6 +152,8 @@ func (p *PacRun) cancelPipelineRunsOpsComment(ctx context.Context, repo *v1alpha
 		}
 		return true
 	})
+
+	return nil
 }
 
 func (p *PacRun) cancelPipelineRuns(ctx context.Context, prs *tektonv1.PipelineRunList, repo *v1alpha1.Repository, condition matchingCond) {
