@@ -1,0 +1,100 @@
+apiVersion: tekton.dev/v1beta1
+kind: StepAction
+metadata:
+  name: cache-fetch
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.56.0"
+    tekton.dev/tags: "cache"
+spec:
+  params:
+    - name: patterns
+      description: |
+        Regular expression to select files to include to compute the hash.
+        For example, in the case of a Go project, you can use `go.mod` for this, so the value would be "**/go.sum" (to work with possible sub go modules as well).
+      type: array
+    - name: source
+      description: |
+        The source from where the cache should be fetched. It's a URI with the scheme defining the "provider". In addition, one can add a {{hash}} variable to use the computed hash in the reference (oci image tags, path in s3, …)
+        Currently supported:
+        - oci:// (e.g. oci://quay.io/vdemeester/go-cache:{{hash}}
+        - s3:// (e.g. s3://
+      type: string
+    - name: cachePath
+      description: |
+        Path where to extract the cache content.
+        It can refer any folder, backed by a workspace or a volume, or nothing.
+      type: string
+    - name: workingdir
+      description: |
+        The working dir from where the files patterns needs to be taken
+      type: string
+    - name: insecure
+      description: |
+        Whether to use insecure mode for fetching the cache
+      type: string
+      default: "false"
+    - name: googleCredentialsPath
+      description: |
+        The path where to find the google credentials. If left empty, it is ignored.
+      type: string
+      default: ""
+    - name: awsConfigFile
+      description: |
+        The path to the aws config file. If left empty, it is ignored.
+      type: string
+      default: ""
+    - name: awsCredentialFile
+      description: |
+        The path to find the aws credentials file. If left empty, it is ignored.
+      type: string
+      default: ""
+    - name: blobQueryParams
+      description: |
+        Blob Query Params to support configure s3, gcs and azure. This is optional unless some additional features of storage providers are required like s3 acceleration, fips, pathstyle,etc
+      type: string
+      default: ""
+  results:
+    - name: fetched
+      description: |
+        Whether a cache was fetched or not (true/false). This step won't fail if it didn't manage to fetch cache. This results allows the next step to act whether something was fetched or not.
+  env:
+    - name: PARAM_SOURCE
+      value: $(params.source)
+    - name: PARAM_CACHE_PATH
+      value: $(params.cachePath)
+    - name: PARAM_WORKINGDIR
+      value: $(params.workingdir)
+    - name: PARAM_INSECURE
+      value: $(params.insecure)
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: $(params.googleCredentialsPath)
+    - name: AWS_CONFIG_FILE
+      value: $(params.awsConfigFile)
+    - name: AWS_SHARED_CREDENTIALS_FILE
+      value: $(params.awsCredentialFile)
+    - name: BLOB_QUERY_PARAMS
+      value: $(params.blobQueryParams)
+  image: ghcr.io/chmouel/tekton-caches/cache@sha256:7b543966be2c4ef9bc439c0a6d262dd0f284216c7c292ba35c15b9ef5bca84c6
+  args: ["$(params.patterns[*])"]
+  script: |
+    #!/bin/sh
+
+    PATTERN_FLAGS=""
+    echo "Patterns: $*"
+    for p in $*; do
+      PATTERN_FLAGS="${PATTERN_FLAGS} --pattern ${p}"
+    done
+
+    set -x
+    /ko-app/cache fetch ${PATTERN_FLAGS} \
+                        --source ${PARAM_SOURCE} \
+                        --folder ${PARAM_CACHE_PATH} \
+                        --insecure ${PARAM_INSECURE} \
+                        --workingdir ${PARAM_WORKINGDIR}
+    if [ $? -eq 0 ]; then
+      echo -n true > $(step.results.fetched.path)
+    else
+      echo -n false > $(step.results.fetched.path)
+    fi
+
+    exit 0
