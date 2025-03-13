@@ -193,7 +193,7 @@ func TestCreateStatus(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
-			client, _, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient(ctx)
+			_, client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient(ctx)
 			defer tearDown()
 			if tt.nilClient {
 				client = nil
@@ -203,7 +203,7 @@ func TestCreateStatus(t *testing.T) {
 			event.Provider.Token = "token"
 			v := &Provider{
 				baseURL:           tURL,
-				Client:            client,
+				ScmClient:         client,
 				pullRequestNumber: pullRequestNumber,
 				projectKey:        event.Organization,
 				run:               &params.Run{},
