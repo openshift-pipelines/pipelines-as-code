@@ -128,7 +128,7 @@ func (l listener) handleEvent(ctx context.Context) http.HandlerFunc {
 			return
 		}
 
-		var event map[string]interface{}
+		var event map[string]any
 		if string(payload) != "" {
 			if err := json.Unmarshal(payload, &event); err != nil {
 				l.logger.Errorf("Invalid event body format format: %s", err)
@@ -232,7 +232,7 @@ func (l listener) detectProvider(req *http.Request, reqBody string) (provider.In
 	log := *l.logger
 
 	// payload validation
-	var event map[string]interface{}
+	var event map[string]any
 	if err := json.Unmarshal([]byte(reqBody), &event); err != nil {
 		return nil, &log, fmt.Errorf("invalid event body format: %w", err)
 	}

@@ -9,7 +9,7 @@ import (
 func TestParseIncomingPayload(t *testing.T) {
 	// Test case where payload is valid JSON
 	payload := []byte(`{"params": {"key": "value"}}`)
-	expected := Payload{map[string]interface{}{"key": "value"}}
+	expected := Payload{map[string]any{"key": "value"}}
 	actual, err := ParseIncomingPayload(payload)
 	assert.NilError(t, err)
 	assert.DeepEqual(t, expected, actual)

@@ -669,7 +669,7 @@ func TestGetLogURLMergePatch(t *testing.T) {
 		},
 	}
 	result := getLogURLMergePatch(clients, pr)
-	m, ok := result["metadata"].(map[string]interface{})
+	m, ok := result["metadata"].(map[string]any)
 	assert.Assert(t, ok)
 	a, ok := m["annotations"].(map[string]string)
 	assert.Assert(t, ok)

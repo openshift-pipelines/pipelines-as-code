@@ -267,9 +267,9 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	return pr, nil
 }
 
-func getLogURLMergePatch(clients clients.Clients, pr *tektonv1.PipelineRun) map[string]interface{} {
-	return map[string]interface{}{
-		"metadata": map[string]interface{}{
+func getLogURLMergePatch(clients clients.Clients, pr *tektonv1.PipelineRun) map[string]any {
+	return map[string]any{
+		"metadata": map[string]any{
 			"annotations": map[string]string{
 				keys.LogURL: clients.ConsoleUI().DetailURL(pr),
 			},
@@ -277,9 +277,9 @@ func getLogURLMergePatch(clients clients.Clients, pr *tektonv1.PipelineRun) map[
 	}
 }
 
-func getExecutionOrderPatch(order string) map[string]interface{} {
-	return map[string]interface{}{
-		"metadata": map[string]interface{}{
+func getExecutionOrderPatch(order string) map[string]any {
+	return map[string]any{
+		"metadata": map[string]any{
 			"annotations": map[string]string{
 				keys.ExecutionOrder: order,
 			},

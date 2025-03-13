@@ -3,7 +3,7 @@ package incoming
 import "encoding/json"
 
 type (
-	Params  map[string]interface{}
+	Params  map[string]any
 	Payload struct {
 		Params Params `json:"params"`
 	}

@@ -203,7 +203,7 @@ func resolveFilenames(ctx context.Context, cs *params.Run, filenames []string, p
 	}
 
 	// TODO: flags
-	allTheYamls = templates.ReplacePlaceHoldersVariables(allTheYamls, params, nil, http.Header{}, map[string]interface{}{})
+	allTheYamls = templates.ReplacePlaceHoldersVariables(allTheYamls, params, nil, http.Header{}, map[string]any{})
 	// We use github here but since we don't do remotetask we would not care
 	providerintf := github.New()
 	event := info.NewEvent()

@@ -20,7 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 )
 
-func Send(ctx context.Context, cs *params.Run, elURL, elWebHookSecret, githubURL, installationID string, event interface{}, eventType string) error {
+func Send(ctx context.Context, cs *params.Run, elURL, elWebHookSecret, githubURL, installationID string, event any, eventType string) error {
 	jeez, err := json.Marshal(event)
 	if err != nil {
 		return err

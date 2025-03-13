@@ -25,7 +25,7 @@ func (p *CustomParams) getChangedFiles(ctx context.Context) changedfiles.Changed
 }
 
 // makeStandardParamsFromEvent will create a map of standard params out of the event.
-func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[string]string, map[string]interface{}) {
+func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[string]string, map[string]any) {
 	repoURL := p.event.URL
 	// On bitbucket data center you are have a special url for checking it out, they
 	// seemed to fix it in 2.0 but i guess we have to live with this until then.
@@ -49,7 +49,7 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 			"event_type":          opscomments.EventTypeBackwardCompat(p.eventEmitter, p.repo, p.event.EventType),
 			"trigger_comment":     triggerCommentAsSingleLine,
 			"pull_request_labels": pullRequestLabels,
-		}, map[string]interface{}{
+		}, map[string]any{
 			"all":      changedFiles.All,
 			"added":    changedFiles.Added,
 			"deleted":  changedFiles.Deleted,
