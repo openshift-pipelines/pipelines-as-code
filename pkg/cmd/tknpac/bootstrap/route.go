@@ -32,7 +32,7 @@ func DetectOpenShiftRoute(ctx context.Context, run *params.Run, targetNamespace 
 	}
 	route := routes.Items[0]
 
-	spec, ok := route.Object["spec"].(map[string]interface{})
+	spec, ok := route.Object["spec"].(map[string]any)
 	if !ok {
 		return "", fmt.Errorf("couldn't find spec in the PAC Controller route")
 	}

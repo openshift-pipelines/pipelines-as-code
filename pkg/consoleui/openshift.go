@@ -62,7 +62,7 @@ func (o *OpenshiftConsole) UI(ctx context.Context, kdyn dynamic.Interface) error
 		return err
 	}
 
-	spec, ok := route.Object["spec"].(map[string]interface{})
+	spec, ok := route.Object["spec"].(map[string]any)
 	if !ok {
 		// this condition is satisfied if there's no metadata at all in the provided CR
 		return fmt.Errorf("couldn't find spec in the OpenShift Console route")

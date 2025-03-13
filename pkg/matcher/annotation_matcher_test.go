@@ -193,7 +193,7 @@ func TestMatchPipelinerunAnnotationAndRepositories(t *testing.T) {
 					EventType:     "pull_request",
 					BaseBranch:    mainBranch,
 					HeadBranch:    "unittests",
-					Event: map[string]interface{}{
+					Event: map[string]any{
 						"foo": "bar",
 					},
 				},

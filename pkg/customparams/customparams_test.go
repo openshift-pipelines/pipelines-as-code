@@ -35,7 +35,7 @@ func TestApplyIncomingParams(t *testing.T) {
 				"key1": "value1",
 			},
 			payload: &incoming.Payload{
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"key2": "value2",
 				},
 			},
@@ -49,7 +49,7 @@ func TestApplyIncomingParams(t *testing.T) {
 				"key1": "value1",
 			},
 			payload: &incoming.Payload{
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"key1": "value2",
 				},
 			},
@@ -72,7 +72,7 @@ func TestApplyIncomingParams(t *testing.T) {
 				"key1": "value1",
 			},
 			payload: &incoming.Payload{
-				Params: map[string]interface{}{
+				Params: map[string]any{
 					"key2": 1,
 				},
 			},

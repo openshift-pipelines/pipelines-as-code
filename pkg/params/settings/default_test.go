@@ -126,7 +126,7 @@ func TestGetCatalogHub(t *testing.T) {
 			}
 			catalogs := getHubCatalogs(fakelogger, tt.hubCatalogs, tt.config)
 			length := 0
-			catalogs.Range(func(_, _ interface{}) bool {
+			catalogs.Range(func(_, _ any) bool {
 				length++
 				return true
 			})

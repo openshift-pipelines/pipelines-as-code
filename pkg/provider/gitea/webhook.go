@@ -32,7 +32,7 @@ const (
 	EventTypePullRequestSync     whEventType = "pull_request_sync"
 )
 
-func parseWebhook(eventType whEventType, payload []byte) (event interface{}, err error) {
+func parseWebhook(eventType whEventType, payload []byte) (event any, err error) {
 	switch eventType {
 	case EventTypePush:
 		event = &giteaStructs.PushPayload{}

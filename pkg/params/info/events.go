@@ -8,7 +8,7 @@ import (
 
 type Event struct {
 	State
-	Event interface{}
+	Event any
 
 	// EventType is what coming from the provider header, i.e:
 	// GitHub -> pull_request

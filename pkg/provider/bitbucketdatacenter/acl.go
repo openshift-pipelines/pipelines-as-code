@@ -47,7 +47,7 @@ func (v *Provider) IsAllowedOwnersFile(ctx context.Context, event *info.Event) (
 
 func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, event *info.Event) (bool, error) {
 	allPages, err := paginate(func(nextPage int) (*bbv1.APIResponse, error) {
-		localVarOptionals := map[string]interface{}{
+		localVarOptionals := map[string]any{
 			"fromType": "COMMENT",
 		}
 		if nextPage > 0 {
@@ -94,7 +94,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 	return false, nil
 }
 
-func (v *Provider) checkMemberShipResults(results []interface{}, event *info.Event) (bool, error) {
+func (v *Provider) checkMemberShipResults(results []any, event *info.Event) (bool, error) {
 	accountintid, err := strconv.Atoi(event.AccountID)
 	if err != nil {
 		return false, err
@@ -116,7 +116,7 @@ func (v *Provider) checkMemberShipResults(results []interface{}, event *info.Eve
 func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool, error) {
 	// Get permissions from project
 	allValues, err := paginate(func(nextPage int) (*bbv1.APIResponse, error) {
-		localVarOptionals := map[string]interface{}{}
+		localVarOptionals := map[string]any{}
 		if nextPage > 0 {
 			localVarOptionals["start"] = int(nextPage)
 		}
@@ -135,7 +135,7 @@ func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool
 
 	// Get permissions from repo
 	allValues, err = paginate(func(nextPage int) (*bbv1.APIResponse, error) {
-		localVarOptionals := map[string]interface{}{}
+		localVarOptionals := map[string]any{}
 		if nextPage > 0 {
 			localVarOptionals["start"] = int(nextPage)
 		}

@@ -19,7 +19,7 @@ import (
 func TestParsePayload(t *testing.T) {
 	tests := []struct {
 		name                      string
-		payloadEvent              interface{}
+		payloadEvent              any
 		wantErr                   bool
 		expectedSender            string
 		expectedEventType         string

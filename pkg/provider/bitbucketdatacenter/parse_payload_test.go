@@ -568,7 +568,7 @@ func TestParsePayload(t *testing.T) {
 
 	tests := []struct {
 		name                    string
-		payloadEvent            interface{}
+		payloadEvent            any
 		expEvent                *info.Event
 		eventType               string
 		wantErrSubstr           string

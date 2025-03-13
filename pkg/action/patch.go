@@ -30,7 +30,7 @@ import (
 //
 // The function doubles the default retry parameters (steps, duration, factor, jitter) to handle conflicts more robustly.
 // If the patch operation fails after retries, the original PipelineRun is returned along with the error.
-func PatchPipelineRun(ctx context.Context, logger *zap.SugaredLogger, whatPatching string, tekton versioned.Interface, pr *tektonv1.PipelineRun, mergePatch map[string]interface{}) (*tektonv1.PipelineRun, error) {
+func PatchPipelineRun(ctx context.Context, logger *zap.SugaredLogger, whatPatching string, tekton versioned.Interface, pr *tektonv1.PipelineRun, mergePatch map[string]any) (*tektonv1.PipelineRun, error) {
 	if pr == nil {
 		return nil, nil
 	}

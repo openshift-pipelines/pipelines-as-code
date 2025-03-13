@@ -284,9 +284,9 @@ func isPipelineRunCancelledOrStopped(run *tektonv1.PipelineRun) bool {
 	return false
 }
 
-func metadataPatch(checkRunID *int64, logURL string) map[string]interface{} {
-	return map[string]interface{}{
-		"metadata": map[string]interface{}{
+func metadataPatch(checkRunID *int64, logURL string) map[string]any {
+	return map[string]any{
+		"metadata": map[string]any{
 			"labels": map[string]string{
 				keys.CheckRunID: strconv.FormatInt(*checkRunID, 10),
 			},

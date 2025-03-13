@@ -45,10 +45,10 @@ var (
 //     placeholders with keys that have a prefix of "body", "headers", or "files".
 //   - headers (http.Header): The HTTP headers that may be used to retrieve
 //     values for placeholders with keys that have a prefix of "headers".
-//   - changedFiles (map[string]interface{}): A map of changed files that may be
+//   - changedFiles (map[string]any): A map of changed files that may be
 //     used to retrieve values for placeholders with keys that have a prefix of
 //     "files".
-func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEvent any, headers http.Header, changedFiles map[string]interface{}) string {
+func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEvent any, headers http.Header, changedFiles map[string]any) string {
 	return keys.ParamsRe.ReplaceAllStringFunc(template, func(s string) string {
 		parts := keys.ParamsRe.FindStringSubmatch(s)
 		key := strings.TrimSpace(parts[1])
@@ -63,7 +63,7 @@ func ReplacePlaceHoldersVariables(template string, dico map[string]string, rawEv
 				if err != nil {
 					return s
 				}
-				var raw interface{}
+				var raw any
 				var b []byte
 
 				switch val.(type) {

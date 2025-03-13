@@ -208,7 +208,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	return processedEvent, nil
 }
 
-func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt interface{}) (*info.Event, error) {
+func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt any) (*info.Event, error) {
 	var processedEvent *info.Event
 	var err error
 

@@ -9,10 +9,10 @@ import (
 type apiResultfunc func(int) (*bbv1.APIResponse, error)
 
 // paginate go over an API call and fetch next results.
-func paginate(apiResultfunc apiResultfunc) ([]interface{}, error) {
+func paginate(apiResultfunc apiResultfunc) ([]any, error) {
 	var nextPageStart int
 
-	allValues := []interface{}{}
+	allValues := []any{}
 	for {
 		result, err := apiResultfunc(nextPageStart)
 		if err != nil {
@@ -27,7 +27,7 @@ func paginate(apiResultfunc apiResultfunc) ([]interface{}, error) {
 			if result.Values["values"] == nil {
 				return nil, fmt.Errorf("key \"values\" not found in result")
 			}
-			values, ok := result.Values["values"].([]interface{})
+			values, ok := result.Values["values"].([]any)
 			if !ok {
 				return nil, fmt.Errorf("key \"values\" is not an array")
 			}
