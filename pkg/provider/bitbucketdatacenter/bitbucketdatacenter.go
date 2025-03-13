@@ -75,7 +75,7 @@ func sanitizeTitle(s string) string {
 	return strings.Split(s, "\n")[0]
 }
 
-func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts provider.StatusOpts) error {
+func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOpts provider.StatusOpts) error {
 	detailsURL := event.Provider.URL
 	switch statusOpts.Conclusion {
 	case "skipped":
@@ -100,7 +100,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	if statusOpts.DetailsURL != "" {
 		detailsURL = statusOpts.DetailsURL
 	}
-	if v.Client == nil {
+	if v.ScmClient == nil {
 		return fmt.Errorf("no token has been set, cannot set status")
 	}
 
@@ -109,16 +109,18 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 		key = statusOpts.Conclusion
 	}
 
-	_, err := v.Client.DefaultApi.SetCommitStatus(
-		event.SHA,
-		bbv1.BuildStatus{
-			State:       statusOpts.Conclusion,
-			Name:        v.pacInfo.ApplicationName,
-			Key:         key,
-			Description: statusOpts.Title,
-			Url:         detailsURL,
-		},
-	)
+	if v.pacInfo.ApplicationName != "" {
+		key = fmt.Sprintf("%s/%s", v.pacInfo.ApplicationName, key)
+	}
+
+	OrgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
+	opts := &scm.StatusInput{
+		State: convertState(statusOpts.Conclusion),
+		Label: key,
+		Desc:  statusOpts.Title,
+		Link:  detailsURL,
+	}
+	_, _, err := v.ScmClient.Repositories.CreateStatus(ctx, OrgAndRepo, event.SHA, opts)
 	if err != nil {
 		return err
 	}
@@ -127,16 +129,14 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	if statusOpts.OriginalPipelineRunName != "" {
 		onPr = "/" + statusOpts.OriginalPipelineRunName
 	}
-	bbcomment := bbv1.Comment{
-		Text: fmt.Sprintf("**%s%s** - %s\n\n%s", v.pacInfo.ApplicationName, onPr,
-			statusOpts.Title, statusOpts.Text),
-	}
+	bbComment := fmt.Sprintf("**%s%s** - %s\n\n%s", v.pacInfo.ApplicationName, onPr, statusOpts.Title, statusOpts.Text)
 
 	if statusOpts.Conclusion == "SUCCESSFUL" && statusOpts.Status == "completed" &&
-		statusOpts.Text != "" && event.EventType == triggertype.PullRequest.String() && v.pullRequestNumber > 0 {
-		_, err := v.Client.DefaultApi.CreatePullRequestComment(
-			v.projectKey, event.Repository, v.pullRequestNumber,
-			bbcomment, []string{"application/json"})
+		statusOpts.Text != "" && event.TriggerTarget == triggertype.PullRequest && event.PullRequestNumber > 0 {
+		input := &scm.CommentInput{
+			Body: bbComment,
+		}
+		_, _, err := v.ScmClient.PullRequests.CreateComment(ctx, OrgAndRepo, event.PullRequestNumber, input)
 		if err != nil {
 			return err
 		}
@@ -144,6 +144,19 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 
 	// TODO: Completed status
 	return nil
+}
+
+func convertState(from string) scm.State {
+	switch from {
+	case "FAILED":
+		return scm.StateFailure
+	case "INPROGRESS":
+		return scm.StatePending
+	case "SUCCESSFUL":
+		return scm.StateSuccess
+	default:
+		return scm.StateUnknown
+	}
 }
 
 func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []string, sha string, runevent *info.Event) (string, error) {
