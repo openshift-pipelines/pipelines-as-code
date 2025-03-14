@@ -68,6 +68,9 @@ means the status check is silently ignored for bots unless they have been
 explicitly authorized (using [OWNERS](#owners-file) file,
 [Policy]({{< relref "/docs/guide/policy" >}}) or other means).
 
+Welcome to the jungle where you can run your pipelines with the power of the
+`/ok-to-test` command!
+
 ## OWNERS file
 
 The `OWNERS` file follows a specific format similar to the Prow `OWNERS` file
