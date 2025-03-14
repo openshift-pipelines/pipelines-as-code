@@ -315,7 +315,7 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 }
 
 func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
-	localVarOptionals := map[string]interface{}{}
+	localVarOptionals := map[string]any{}
 	resp, err := v.Client.DefaultApi.GetCommit(v.projectKey, event.Repository, event.SHA, localVarOptionals)
 	if err != nil {
 		return err

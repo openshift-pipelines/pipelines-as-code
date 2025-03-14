@@ -22,8 +22,8 @@ import (
 
 type matchingCond func(pr tektonv1.PipelineRun) bool
 
-var cancelMergePatch = map[string]interface{}{
-	"spec": map[string]interface{}{
+var cancelMergePatch = map[string]any{
+	"spec": map[string]any{
 		"status": tektonv1.PipelineRunSpecStatusCancelledRunFinally,
 	},
 }

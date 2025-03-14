@@ -43,9 +43,9 @@ func TestPatchPipelineRun(t *testing.T) {
 	assert.Equal(t, patchedPR.Annotations[filepath.Join(apipac.GroupName, "log-url")], "https://localhost.console/#/namespaces/namespace/pipelineruns/force-me")
 }
 
-func getLogURLMergePatch(clients clients.Clients, pr *pipelinev1.PipelineRun) map[string]interface{} {
-	return map[string]interface{}{
-		"metadata": map[string]interface{}{
+func getLogURLMergePatch(clients clients.Clients, pr *pipelinev1.PipelineRun) map[string]any {
+	return map[string]any{
+		"metadata": map[string]any{
 			"annotations": map[string]string{
 				keys.LogURL: clients.ConsoleUI().DetailURL(pr),
 			},

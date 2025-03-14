@@ -203,11 +203,11 @@ func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	if err != nil {
 		return err
 	}
-	commitMap, ok := response.(map[string]interface{})
+	commitMap, ok := response.(map[string]any)
 	if !ok {
 		return fmt.Errorf("cannot convert")
 	}
-	values, ok := commitMap["values"].([]interface{})
+	values, ok := commitMap["values"].([]any)
 	if !ok {
 		return fmt.Errorf("cannot convert")
 	}

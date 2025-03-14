@@ -17,7 +17,7 @@ func TestProvider_Detect(t *testing.T) {
 		wantErrString  string
 		isBC           bool
 		processReq     bool
-		event          interface{}
+		event          any
 		eventType      string
 		wantReason     string
 		wantLogSnippet string

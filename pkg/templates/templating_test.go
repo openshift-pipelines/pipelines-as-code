@@ -14,7 +14,7 @@ func TestReplacePlaceHoldersVariables(t *testing.T) {
 		expected     string
 		dicto        map[string]string
 		headers      http.Header
-		changedFiles map[string]interface{}
+		changedFiles map[string]any
 		rawEvent     any
 	}{
 		{
@@ -25,14 +25,14 @@ func TestReplacePlaceHoldersVariables(t *testing.T) {
 				"revision": "master",
 				"url":      "https://chmouel.com",
 			},
-			changedFiles: map[string]interface{}{},
+			changedFiles: map[string]any{},
 		},
 		{
 			name:         "Test Replace with CEL body",
 			template:     `hello: {{ body.hello }}`,
 			expected:     `hello: world`,
 			dicto:        map[string]string{},
-			changedFiles: map[string]interface{}{},
+			changedFiles: map[string]any{},
 			headers:      http.Header{},
 			rawEvent: map[string]string{
 				"hello": "world",
@@ -43,7 +43,7 @@ func TestReplacePlaceHoldersVariables(t *testing.T) {
 			template:     `Is this {{ body.hello == 'world' }}`,
 			expected:     `Is this true`,
 			dicto:        map[string]string{},
-			changedFiles: map[string]interface{}{},
+			changedFiles: map[string]any{},
 			headers:      http.Header{},
 			rawEvent: map[string]string{
 				"hello": "world",
@@ -54,7 +54,7 @@ func TestReplacePlaceHoldersVariables(t *testing.T) {
 			template:     `header: {{ headers["X-Hello"] }}`,
 			expected:     `header: World`,
 			dicto:        map[string]string{},
-			changedFiles: map[string]interface{}{},
+			changedFiles: map[string]any{},
 			headers: http.Header{
 				"X-Hello": []string{"World"},
 			},
@@ -65,7 +65,7 @@ func TestReplacePlaceHoldersVariables(t *testing.T) {
 			template: `changed: {{ files.all[0] }}`,
 			expected: `changed: changed.txt`,
 			dicto:    map[string]string{},
-			changedFiles: map[string]interface{}{
+			changedFiles: map[string]any{
 				"all": []string{"changed.txt"},
 			},
 			headers:  http.Header{},

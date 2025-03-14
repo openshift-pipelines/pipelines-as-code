@@ -191,7 +191,7 @@ func MuxListDir(t *testing.T, mux *http.ServeMux, event *info.Event, path string
 
 		// as pagination of jenkins-x/go-scm is not like previous one
 		// it doesn't work as it did with previous lib.
-		resp := map[string]interface{}{
+		resp := map[string]any{
 			"start":         0,
 			"isLastPage":    true,
 			"values":        files,
@@ -230,7 +230,7 @@ func MuxProjectMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, u
 		if userperms == nil {
 			fmt.Fprintf(rw, "{\"values\": []}")
 		}
-		resp := map[string]interface{}{
+		resp := map[string]any{
 			"values": userperms,
 		}
 		b, err := json.Marshal(resp)
@@ -246,7 +246,7 @@ func MuxRepoMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, user
 		if userperms == nil {
 			fmt.Fprintf(rw, "{\"values\": []}")
 		}
-		resp := map[string]interface{}{
+		resp := map[string]any{
 			"values": userperms,
 		}
 		b, err := json.Marshal(resp)
@@ -258,7 +258,7 @@ func MuxRepoMemberShip(t *testing.T, mux *http.ServeMux, event *info.Event, user
 func MuxPullRequestActivities(t *testing.T, mux *http.ServeMux, event *info.Event, prNumber int, activities []*bbv1.Activity) {
 	path := fmt.Sprintf("/projects/%s/repos/%s/pull-requests/%d/activities", event.Organization, event.Repository, prNumber)
 	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
-		resp := map[string]interface{}{
+		resp := map[string]any{
 			"values": activities,
 		}
 		b, err := json.Marshal(resp)

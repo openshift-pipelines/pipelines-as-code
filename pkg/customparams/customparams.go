@@ -62,7 +62,7 @@ func (p *CustomParams) applyIncomingParams(ret map[string]string) map[string]str
 // we let the user specify a cel filter. If false then we skip the parameters.
 // if multiple params name has a filter we pick up the first one that has
 // matched true.
-func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, map[string]interface{}, error) {
+func (p *CustomParams) GetParams(ctx context.Context) (map[string]string, map[string]any, error) {
 	stdParams, changedFiles := p.makeStandardParamsFromEvent(ctx)
 	resolvedParams, mapFilters, parsedFromComment := map[string]string{}, map[string]string{}, map[string]string{}
 	if p.event.TriggerComment != "" {

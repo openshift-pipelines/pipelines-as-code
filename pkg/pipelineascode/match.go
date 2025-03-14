@@ -370,7 +370,7 @@ func changeSecret(prs []*tektonv1.PipelineRun) error {
 		name := secrets.GenerateBasicAuthSecretName()
 		processed := templates.ReplacePlaceHoldersVariables(string(b), map[string]string{
 			"git_auth_secret": name,
-		}, nil, nil, map[string]interface{}{})
+		}, nil, nil, map[string]any{})
 
 		var np *tektonv1.PipelineRun
 		err = json.Unmarshal([]byte(processed), &np)

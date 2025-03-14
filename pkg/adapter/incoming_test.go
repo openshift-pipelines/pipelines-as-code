@@ -898,7 +898,7 @@ func TestApplyIncomingParams(t *testing.T) {
 			contentType: "application/json",
 			payloadBody: []byte(`{"params": {"key": "value", "other": "value"}}`),
 			params:      []string{"key", "other"},
-			expected:    apincoming.Payload{Params: map[string]interface{}{"key": "value", "other": "value"}},
+			expected:    apincoming.Payload{Params: map[string]any{"key": "value", "other": "value"}},
 		},
 	}
 

@@ -14,42 +14,42 @@ import (
 
 func TestOpenshiftConsoleUI(t *testing.T) {
 	fakeroute := &unstructured.Unstructured{}
-	fakeroute.SetUnstructuredContent(map[string]interface{}{
+	fakeroute.SetUnstructuredContent(map[string]any{
 		"apiVersion": "route.openshift.io/v1",
 		"kind":       "Route",
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"name":      "console",
 			"namespace": "openshift-console",
 		},
-		"spec": map[string]interface{}{
+		"spec": map[string]any{
 			"host": "http://fakeconsole",
 		},
 	})
 	emptys := &unstructured.Unstructured{}
-	emptys.SetUnstructuredContent(map[string]interface{}{
+	emptys.SetUnstructuredContent(map[string]any{
 		"apiVersion": "route.openshift.io/v1",
 		"kind":       "Route",
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"name":      "not",
 			"namespace": "console",
 		},
 	})
 	nospeccontent := &unstructured.Unstructured{}
-	nospeccontent.SetUnstructuredContent(map[string]interface{}{
+	nospeccontent.SetUnstructuredContent(map[string]any{
 		"apiVersion": "route.openshift.io/v1",
 		"kind":       "Route",
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"name":      "console",
 			"namespace": "openshift-console",
 		},
-		"spec": map[string]interface{}{},
+		"spec": map[string]any{},
 	})
 
 	nohost := &unstructured.Unstructured{}
-	nohost.SetUnstructuredContent(map[string]interface{}{
+	nohost.SetUnstructuredContent(map[string]any{
 		"apiVersion": "route.openshift.io/v1",
 		"kind":       "Route",
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"name":      "console",
 			"namespace": "openshift-console",
 		},

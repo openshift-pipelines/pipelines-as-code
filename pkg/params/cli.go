@@ -27,6 +27,6 @@ func NewCliOptions() *PacCliOpts {
 	}
 }
 
-func (c *PacCliOpts) Ask(qss []*survey.Question, answer interface{}) error {
+func (c *PacCliOpts) Ask(qss []*survey.Question, answer any) error {
 	return survey.Ask(qss, answer, c.AskOpts)
 }

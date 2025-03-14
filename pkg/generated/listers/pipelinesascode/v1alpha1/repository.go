@@ -48,7 +48,7 @@ func NewRepositoryLister(indexer cache.Indexer) RepositoryLister {
 
 // List lists all Repositories in the indexer.
 func (s *repositoryLister) List(selector labels.Selector) (ret []*v1alpha1.Repository, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+	err = cache.ListAll(s.indexer, selector, func(m any) {
 		ret = append(ret, m.(*v1alpha1.Repository))
 	})
 	return ret, err
@@ -80,7 +80,7 @@ type repositoryNamespaceLister struct {
 
 // List lists all Repositories in the indexer for a given namespace.
 func (s repositoryNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.Repository, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
+	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m any) {
 		ret = append(ret, m.(*v1alpha1.Repository))
 	})
 	return ret, err

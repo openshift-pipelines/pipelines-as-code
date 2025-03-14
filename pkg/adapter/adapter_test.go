@@ -48,10 +48,10 @@ func TestHandleEvent(t *testing.T) {
 	ctx = info.StoreNS(ctx, "default")
 
 	emptys := &unstructured.Unstructured{}
-	emptys.SetUnstructuredContent(map[string]interface{}{
+	emptys.SetUnstructuredContent(map[string]any{
 		"apiVersion": "route.openshift.io/v1",
 		"kind":       "Route",
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"name":      "not",
 			"namespace": "console",
 		},
@@ -218,7 +218,7 @@ func TestWhichProvider(t *testing.T) {
 	}
 	tests := []struct {
 		name          string
-		event         interface{}
+		event         any
 		header        http.Header
 		wantErrString string
 	}{
