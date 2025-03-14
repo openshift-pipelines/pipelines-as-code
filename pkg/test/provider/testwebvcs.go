@@ -48,6 +48,10 @@ func (v *TestProviderImp) IsAllowedOwnersFile(_ context.Context, _ *info.Event) 
 	return v.AllowedInOwnersFile, nil
 }
 
+func (v *TestProviderImp) CreateComment(_ context.Context, _ *info.Event, _, _ string) error {
+	return nil
+}
+
 func (v *TestProviderImp) SetLogger(_ *zap.SugaredLogger) {
 }
 
