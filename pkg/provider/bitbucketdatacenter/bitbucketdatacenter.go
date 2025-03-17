@@ -13,7 +13,6 @@ import (
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/stash"
 	"github.com/jenkins-x/go-scm/scm/transport/oauth2"
-	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
@@ -315,31 +314,21 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 }
 
 func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
-	localVarOptionals := map[string]any{}
-	resp, err := v.Client.DefaultApi.GetCommit(v.projectKey, event.Repository, event.SHA, localVarOptionals)
+	OrgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
+	commit, _, err := v.ScmClient.Git.FindCommit(context.Background(), OrgAndRepo, event.SHA)
 	if err != nil {
 		return err
 	}
-	commitInfo := bbv1.Commit{}
-	err = mapstructure.Decode(resp.Values, &commitInfo)
-	if err != nil {
-		return err
-	}
-	event.SHATitle = sanitizeTitle(commitInfo.Message)
+	event.SHATitle = sanitizeTitle(commit.Message)
 	event.SHAURL = fmt.Sprintf("%s/projects/%s/repos/%s/commits/%s", v.baseURL, v.projectKey, event.Repository, event.SHA)
 
-	resp, err = v.Client.DefaultApi.GetDefaultBranch(v.projectKey, event.Repository)
-	if err != nil {
-		return err
-	}
-	branchInfo := &bbv1.Branch{}
-	err = mapstructure.Decode(resp.Values, branchInfo)
+	ref, _, err := v.ScmClient.Git.GetDefaultBranch(context.Background(), OrgAndRepo)
 	if err != nil {
 		return err
 	}
 
-	v.defaultBranchLatestCommit = branchInfo.LatestCommit
-	event.DefaultBranch = branchInfo.DisplayID
+	v.defaultBranchLatestCommit = ref.Sha
+	event.DefaultBranch = ref.Name
 	return nil
 }
 

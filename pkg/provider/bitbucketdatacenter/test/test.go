@@ -141,7 +141,7 @@ func MuxDirContent(t *testing.T, mux *http.ServeMux, event *info.Event, testDir,
 	MuxFiles(t, mux, event, event.HeadBranch, targetDirName, filecontents, wantFilesErr)
 }
 
-func MuxCommitInfo(t *testing.T, mux *http.ServeMux, event *info.Event, commit bbv1.Commit) {
+func MuxCommitInfo(t *testing.T, mux *http.ServeMux, event *info.Event, commit scm.Commit) {
 	path := fmt.Sprintf("/projects/%s/repos/%s/commits/%s", event.Organization, event.Repository, event.SHA)
 
 	mux.HandleFunc(path, func(rw http.ResponseWriter, _ *http.Request) {
