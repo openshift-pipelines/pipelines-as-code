@@ -18,6 +18,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// detectProvider detects the git provider for the given PipelineRun and
+// initializes the corresponding provider interface. It returns the provider
+// interface, event information, and an error if any occurs during detection or
+// initialization.
+//
+// Supported providers: github, gitlab, bitbucket-cloud, bitbucket-datacenter, gitea
+// any new provider should be added to the switch case below.
 func (r *Reconciler) detectProvider(ctx context.Context, logger *zap.SugaredLogger, pr *tektonv1.PipelineRun) (provider.Interface, *info.Event, error) {
 	gitProvider, ok := pr.GetAnnotations()[keys.GitProvider]
 	if !ok {

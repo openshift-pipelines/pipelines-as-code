@@ -78,7 +78,7 @@ This will let your git platform provider (e.g., GitHub) reach the controller wit
 
 ### Tekton Dashboard
 
-If you have the [Tekton Dashboard](https://github.com/tekton/dashboard)
+If you have the [Tekton Dashboard](https://github.com/tektoncd/dashboard)
 installed and if you want to use it for the links to show the logs or
 description of the PipelineRun. If you are running on `OpenShift` it will
 automatically detect the OpenShift console Route and use it.
@@ -263,7 +263,7 @@ been triggered and run on your Pull Request:
 
 You can click on the "Details" link to see the details of the running of the
 PipelineRun. `Pipelines-as-Code` will let you know that you can follow the logs
-on your Dashboard like [Tekton Dashboard](https://github.com/tekton/dashboard)
+on your Dashboard like [Tekton Dashboard](https://github.com/tektoncd/dashboard)
 or the OpenShift Pipelines
 [Console](https://docs.openshift.com/container-platform/latest/web_console/web-console.html)
 or if you prefer you can use [tekton CLI](https://tekton.dev/docs/cli/) to

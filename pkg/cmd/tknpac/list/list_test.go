@@ -20,6 +20,7 @@ import (
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	tektontest "github.com/openshift-pipelines/pipelines-as-code/pkg/test/tekton"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"gotest.tools/v3/assert"
 	"gotest.tools/v3/golden"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -120,8 +121,17 @@ func TestList(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		wantErr bool
+		wantErr string
 	}{
+		{
+			name: "Test list when there are no repositories in the namespace",
+			args: args{
+				opts: &cli.PacCliOpts{
+					Namespace: "default",
+				},
+			},
+			wantErr: "no repo found",
+		},
 		{
 			name: "Test list repositories only",
 			args: args{
@@ -197,8 +207,8 @@ func TestList(t *testing.T) {
 			cs.Clients.SetConsoleUI(consoleui.FallBackConsole{})
 			io, out := newIOStream()
 			if err := list(ctx, cs, tt.args.opts, io,
-				cw, tt.args.selectors); (err != nil) != tt.wantErr {
-				t.Errorf("describe() error = %v, wantErr %v", err, tt.wantErr)
+				cw, tt.args.selectors); err != nil && tt.wantErr != "" {
+				assert.Equal(t, err.Error(), tt.wantErr)
 			} else {
 				golden.Assert(t, out.String(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
 			}

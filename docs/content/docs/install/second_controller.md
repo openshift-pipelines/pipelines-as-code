@@ -13,7 +13,7 @@ Enterprise).
 
 ## Running a second controller with a different GitHub application
 
-Each new installs for different GitHub applications have their own controller
+Each new install for different GitHub applications have their own controller
 with a Service and a
 [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) or
 a [OpenShift Route](https://docs.openshift.com/container-platform/latest/networking/routes/route-configuration.html)
@@ -70,7 +70,7 @@ This will output the generated yaml on the standard output, if you are happy
 with the output you can apply it on your cluster with `kubectl`:
 
 ```shell
-python3 ./hack/second-controller.py LABEL|kubectl -f-
+python3 ./hack/second-controller.py LABEL|kubectl apply -f -
 ```
 
 There is multiple flags you can use to fine grain the output of this script, use
