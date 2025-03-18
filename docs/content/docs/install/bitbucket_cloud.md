@@ -120,7 +120,6 @@ $ tkn pac create repo
     namespace: target-namespace
   spec:
     url: "https://bitbucket.com/workspace/repo"
-    branch: "main"
     git_provider:
       user: "yourbitbucketusername"
       secret:
@@ -129,13 +128,17 @@ $ tkn pac create repo
         # key: “provider.token“
 ```
 
+Please note that the workspace name is different from your username. To view your username in the Bitbucket UI, click on the settings icon, navigate to the
+Personal Bitbucket Settings, and there you will find your username there, as shown in image below `zakisk-admin` is username:
+![GitOps Commits For Comments](/images/bitbucket-cloud-username-settings.png)
+
 ## Bitbucket Cloud Notes
 
 - The `git_provider.secret` key cannot reference to a secret in another namespace.
   Pipelines as code always assumes that it will be in the same namespace where the
   `Repository` has been created.
 
-- The `tkn pac create` and `tkn pac bootstrap` commands are not supported on Bitbucket Data Center.
+- The `tkn pac create` and `tkn pac bootstrap` commands are not supported on Bitbucket Cloud.
 
 {{< hint info >}}
 You can only reference a user by the `ACCOUNT_ID` in a owner file. For reason see here:
