@@ -1,6 +1,8 @@
 package acl
 
 import (
+	"fmt"
+
 	"sigs.k8s.io/yaml"
 )
 
@@ -28,15 +30,15 @@ func UserInOwnerFile(ownersContent, ownersAliasesContent, sender string) (bool, 
 	ac := aliasesConfig{}
 	err := yaml.Unmarshal([]byte(ownersContent), &sc)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("cannot parse OWNERS file Approvers and Reviewers: %w", err)
 	}
 	err = yaml.Unmarshal([]byte(ownersContent), &fc)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("cannot parse OWNERS file Filters: %w", err)
 	}
 	err = yaml.Unmarshal([]byte(ownersAliasesContent), &ac)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("cannot parse OWNERS_ALIASES: %w", err)
 	}
 
 	var approvers, reviewers []string

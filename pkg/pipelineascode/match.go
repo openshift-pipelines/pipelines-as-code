@@ -47,7 +47,7 @@ func (p *PacRun) verifyRepoAndUser(ctx context.Context) (*v1alpha1.Repository, e
 	// Match the Event URL to a Repository URL,
 	repo, err := matcher.MatchEventURLRepo(ctx, p.run, p.event, "")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error matching Repository for event: %w", err)
 	}
 
 	if repo == nil {
@@ -405,7 +405,7 @@ func (p *PacRun) checkNeedUpdate(_ string) (string, bool) {
 func (p *PacRun) checkAccessOrErrror(ctx context.Context, repo *v1alpha1.Repository, status provider.StatusOpts, viamsg string) (bool, error) {
 	allowed, err := p.vcx.IsAllowed(ctx, p.event)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("unable to verify event authorization: %w", err)
 	}
 	if allowed {
 		return true, nil
