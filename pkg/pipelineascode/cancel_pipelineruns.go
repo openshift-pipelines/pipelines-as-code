@@ -88,7 +88,8 @@ func (p *PacRun) cancelInProgressMatchingPR(ctx context.Context, matchPR *tekton
 	}
 	labelSelector := getLabelSelector(labelMap)
 	if p.event.TriggerTarget == triggertype.PullRequest {
-		labelSelector += fmt.Sprintf(",%s in (pull_request, %s)", keys.EventType, opscomments.AnyOpsKubeLabelInSelector())
+		// "Merge_Request" included since EventType is not normalized to "Pull Request" like TriggerTarget
+		labelSelector += fmt.Sprintf(",%s in (pull_request, Merge_Request, %s)", keys.EventType, opscomments.AnyOpsKubeLabelInSelector())
 	}
 	p.run.Clients.Log.Infof("cancel-in-progress: selecting pipelineRuns to cancel with labels: %v", labelSelector)
 	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(matchPR.GetNamespace()).List(ctx, metav1.ListOptions{
