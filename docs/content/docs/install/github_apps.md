@@ -42,7 +42,6 @@ Alternatively, you could set up manually by following the steps [here](./#setup-
 
 * Select the following organization permissions:
   * **Members**: `Readonly`
-  * **Plan**: `Readonly`
 
 * Subscribe to following events:
   * Check run

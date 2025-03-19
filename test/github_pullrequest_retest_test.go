@@ -18,6 +18,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// TestGithubSecondPullRequestGitopsCommentRetest will test the retest
+// functionality of a GitHub pull request.
 func TestGithubSecondPullRequestGitopsCommentRetest(t *testing.T) {
 	if os.Getenv("NIGHTLY_E2E_TEST") != "true" {
 		t.Skip("Skipping test since only enabled for nightly")
