@@ -97,3 +97,118 @@ and maybe add to the test-e2e-nightly Makefile target to the -run argument :
 ```bash
 -run '(TestGithub|TestOtherPrefixOfTest)'
 ```
+
+## Continuous Integration (CI) with GitHub Actions
+
+Our E2E tests are automatically run as part of our CI pipeline using GitHub Actions. This section explains how the CI process works, the components involved, and how to troubleshoot or extend it.
+
+### Overview
+
+The E2E test CI pipeline runs on GitHub Actions using a Kind (Kubernetes in Docker) cluster. The workflow is defined in `.github/workflows/kind-e2e-tests.yaml` and uses helper scripts in `hack/gh-workflow-ci.sh`. Tests are executed against multiple provider categories to validate functionality across different Git providers.
+
+The CI flow generally follows these steps:
+
+1. Set up a Kind cluster
+2. Install Pipelines as Code (PAC)
+3. Configure necessary secrets
+4. Run tests against different provider groups
+5. Collect and store logs
+
+### When Tests Run
+
+Tests run on:
+
+- Every Pull Request (PR) that modifies Go files
+- As a nightly job at 05:00 UTC to detect regressions
+- Manually via workflow dispatch (with optional debug capabilities)
+
+### Test Categories
+
+The tests are separated into two main categories (matrix strategy):
+
+- `providers` - Tests for GitHub, GitLab, and Bitbucket
+- `gitea_others` - Tests for Gitea and other non-provider specific functionality
+
+This split helps reduce the load on external APIs during testing and provides more focused test results.
+
+### Environment Variables
+
+Tests rely heavily on environment variables for configuration. These are set at the job level in the workflow file and supplemented with secrets where needed. Some key variables include:
+
+- Basic configuration: `KO_DOCKER_REPO`, `CONTROLLER_DOMAIN_URL`, etc.
+- Provider-specific endpoints and credentials
+- Test repository information
+- Webhook configurations
+
+Secrets are stored in GitHub Secrets and made available to the workflow via `${{ secrets.SECRET_NAME }}`.
+
+### Helper Script
+
+The `hack/gh-workflow-ci.sh` script contains several functions that assist in the CI process:
+
+1. `create_pac_github_app_secret` - Creates the required secrets for GitHub app authentication
+2. `create_second_github_app_controller_on_ghe` - Sets up a second controller for GitHub Enterprise
+3. `run_e2e_tests` - Executes the E2E tests with proper filters
+4. `collect_logs` - Gathers logs and diagnostic information
+
+The script filters tests by category using pattern matching on test function names.
+
+### Test Execution Flow
+
+1. **Setup**:
+   - Checkout code
+   - Setup Go, ko, and gosmee client
+   - Start Kind cluster
+   - Install PAC controller
+
+2. **Configuration**:
+   - Create GitHub App secrets
+   - Configure GHE environment (if needed)
+   - Setup test environment variables
+
+3. **Test Execution**:
+   - Run selected tests against the specified provider category
+   - For nightly runs, additional tests are included
+
+4. **Artifacts Collection**:
+   - Collect logs regardless of test outcome
+   - Detect any panic in the controller logs
+   - Upload artifacts to GitHub Actions
+
+### Debugging CI
+
+If a test fails in CI, you can:
+
+1. Examine the workflow logs in GitHub Actions
+2. Download the artifacts (logs) for detailed investigation
+3. Use the "debug_enabled" option when manually triggering the workflow to get a tmate session
+
+For local debugging, you can:
+
+1. Set the same environment variables locally
+2. Run `make test-e2e` with specific test filters
+
+### Notifications
+
+Failed nightly runs trigger Slack notifications to alert the team of potential regressions.
+
+### Extending the CI
+
+To add new provider tests:
+
+1. Create test files following the existing patterns
+2. Ensure proper naming convention to match the test category filters
+3. Update environment variables if needed
+4. For nightly-only tests, include the check for `NIGHTLY_E2E_TEST`
+
+For infrastructure changes:
+
+1. Modify the `kind-e2e-tests.yaml` workflow file
+2. Update the `gh-workflow-ci.sh` helper script as needed
+3. Test changes using workflow dispatch before merging
+
+### Performance Considerations
+
+1. Tests are configured with concurrency limits to prevent overlapping runs
+2. The matrix strategy allows parallelization across provider categories
+3. Rate limiting is managed by separating frequently-run tests from nightly tests
