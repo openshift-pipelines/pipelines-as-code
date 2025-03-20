@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC2038
+# shellcheck disable=SC2038,SC2153
 # Helper script for GitHub Actions CI, used from e2e tests.
 set -exufo pipefail
 
 create_pac_github_app_secret() {
-  local app_private_key="${1}"
-  local application_id="${2}"
-  local webhook_secret="${3}"
+  # Read from environment variables instead of arguments
+  local app_private_key="${PAC_GITHUB_PRIVATE_KEY}"
+  local application_id="${PAC_GITHUB_APPLICATION_ID}"
+  local webhook_secret="${PAC_WEBHOOK_SECRET}"
+
   kubectl delete secret -n pipelines-as-code pipelines-as-code-secret || true
   kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
     --from-literal github-private-key="${app_private_key}" \
@@ -32,9 +34,10 @@ create_pac_github_app_secret() {
 }
 
 create_second_github_app_controller_on_ghe() {
-  local test_github_second_smee_url="${1}"
-  local test_github_second_private_key="${2}"
-  local test_github_second_webhook_secret="${3}"
+  # Read from environment variables instead of arguments
+  local test_github_second_smee_url="${TEST_GITHUB_SECOND_SMEE_URL}"
+  local test_github_second_private_key="${TEST_GITHUB_SECOND_PRIVATE_KEY}"
+  local test_github_second_webhook_secret="${TEST_GITHUB_SECOND_WEBHOOK_SECRET}"
 
   if [[ -n "$(type -p apt)" ]]; then
     sudo apt update &&
@@ -80,62 +83,7 @@ get_tests() {
 
 run_e2e_tests() {
   set +x
-  target="${1}"
-  bitbucket_cloud_token="${2}"
-  webhook_secret="${3}"
-  test_gitea_smeeurl="${4}"
-  installation_id="${5}"
-  gh_apps_token="${6}"
-  test_github_second_token="${7}"
-  gitlab_token="${8}"
-  bitbucket_server_token="${9}"
-  bitbucket_server_api_url="${10}"
-  bitbucket_server_webhook_secret="${11}"
-
-  # Nothing specific to webhook here it  just that repo is private in that org and that's what we want to test
-  export TEST_GITHUB_PRIVATE_TASK_URL="https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml"
-  export TEST_GITHUB_PRIVATE_TASK_NAME="task-remote"
-
-  export TEST_BITBUCKET_CLOUD_API_URL=https://api.bitbucket.org/2.0
-  export TEST_BITBUCKET_CLOUD_E2E_REPOSITORY=cboudjna/pac-e2e-tests
-  export TEST_BITBUCKET_CLOUD_TOKEN=${bitbucket_cloud_token}
-  export TEST_BITBUCKET_CLOUD_USER=cboudjna
-
-  export TEST_EL_URL="http://${CONTROLLER_DOMAIN_URL}"
-  export TEST_EL_WEBHOOK_SECRET="${webhook_secret}"
-
-  export TEST_GITEA_API_URL="http://localhost:3000"
-  ## This is the URL used to forward requests from the webhook to the paac controller
-  ## badly named!
-  export TEST_GITEA_SMEEURL="${test_gitea_smeeurl}"
-  export TEST_GITEA_USERNAME=pac
-  export TEST_GITEA_PASSWORD=pac
-  export TEST_GITEA_REPO_OWNER=pac/pac
-
-  export TEST_GITHUB_API_URL=api.github.com
-  export TEST_GITHUB_REPO_INSTALLATION_ID="${installation_id}"
-  export TEST_GITHUB_REPO_OWNER_GITHUBAPP=openshift-pipelines/pipelines-as-code-e2e-tests
-  export TEST_GITHUB_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
-  export TEST_GITHUB_TOKEN="${gh_apps_token}"
-
-  export TEST_GITHUB_SECOND_API_URL=ghe.pipelinesascode.com
-  export TEST_GITHUB_SECOND_EL_URL=http://ghe.paac-127-0-0-1.nip.io
-  export TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP=pipelines-as-code/e2e
-  # TODO: webhook repo for second github
-  # export TEST_GITHUB_SECOND_REPO_OWNER_WEBHOOK=openshift-pipelines/pipelines-as-code-e2e-tests-webhook
-  export TEST_GITHUB_SECOND_REPO_INSTALLATION_ID=1
-  export TEST_GITHUB_SECOND_TOKEN="${test_github_second_token}"
-
-  export TEST_GITLAB_API_URL="https://gitlab.com"
-  export TEST_GITLAB_PROJECT_ID="34405323"
-  export TEST_GITLAB_TOKEN=${gitlab_token}
-  # https://gitlab.com/gitlab-com/alliances/ibm-red-hat/sandbox/openshift-pipelines/pac-e2e-tests
-
-  export TEST_BITBUCKET_SERVER_TOKEN="${bitbucket_server_token}"
-  export TEST_BITBUCKET_SERVER_API_URL="${bitbucket_server_api_url}"
-  export TEST_BITBUCKET_SERVER_WEBHOOK_SECRET="${bitbucket_server_webhook_secret}"
-  export TEST_BITBUCKET_SERVER_USER="pipelines"
-  export TEST_BITBUCKET_SERVER_E2E_REPOSITORY="PAC/pac-e2e-tests"
+  target="${TEST_PROVIDER}"
 
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
@@ -144,8 +92,10 @@ run_e2e_tests() {
 }
 
 collect_logs() {
-  test_gitea_smee_url="${1}"
-  github_ghe_smee_url="${2}"
+  # Read from environment variables
+  local test_gitea_smee_url="${TEST_GITEA_SMEEURL}"
+  local github_ghe_smee_url="${TEST_GITHUB_SECOND_SMEE_URL}"
+
   mkdir -p /tmp/logs
   kind export logs /tmp/logs
   [[ -d /tmp/gosmee-replay ]] && cp -a /tmp/gosmee-replay /tmp/logs/
@@ -186,36 +136,42 @@ detect_panic() {
 
 help() {
   cat <<EOF
-  Usage: $0 <command> [args]
+  Usage: $0 <command>
 
   Shell script to run e2e tests from GitHub Actions CI
 
-  create_pac_github_app_secret <application_id> <app_private_key> <webhook_secret>
+  Required environment variables depend on the command being executed.
+
+  create_pac_github_app_secret
     Create the secret for the github app
+    Required env vars: PAC_GITHUB_PRIVATE_KEY, PAC_GITHUB_APPLICATION_ID, PAC_WEBHOOK_SECRET
 
-  create_second_github_app_controller_on_ghe <test_github_second_smee_url> <test_github_second_private_key> <test_github_second_webhook_secret>
+  create_second_github_app_controller_on_ghe
     Create the second controller on GHE
+    Required env vars: TEST_GITHUB_SECOND_SMEE_URL, TEST_GITHUB_SECOND_PRIVATE_KEY, TEST_GITHUB_SECOND_WEBHOOK_SECRET
 
-  run_e2e_tests <target> <bitbucket_cloud_token> <webhook_secret> <test_gitea_smeeurl> <installation_id> <gh_apps_token> <test_github_second_token> <gitlab_token> <bitbucket_datacenter_token> <bitbucket_datacenter_api_url> <bitbucket_datacenter_webhook_secret>
+  run_e2e_tests
     Run the e2e tests
+    Required env vars: TEST_PROVIDER plus many test-specific environment variables
 
   collect_logs
     Collect logs from the cluster
+    Required env vars: TEST_GITEA_SMEEURL, TEST_GITHUB_SECOND_SMEE_URL
 EOF
 }
 
 case ${1-""} in
 create_pac_github_app_secret)
-  create_pac_github_app_secret "${2}" "${3}" "${4}"
+  create_pac_github_app_secret
   ;;
 create_second_github_app_controller_on_ghe)
-  create_second_github_app_controller_on_ghe "${2}" "${3}" "${4}"
+  create_second_github_app_controller_on_ghe
   ;;
 run_e2e_tests)
-  run_e2e_tests "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}"
+  run_e2e_tests
   ;;
 collect_logs)
-  collect_logs "${2}" "${3}"
+  collect_logs
   ;;
 help)
   help
