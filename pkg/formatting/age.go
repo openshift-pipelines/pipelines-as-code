@@ -11,18 +11,14 @@ func Age(t *metav1.Time, c clockwork.Clock) string {
 	if t.IsZero() {
 		return nonAttributedStr
 	}
-
-	dur := c.Since(t.Time)
-	return durafmt.ParseShort(dur).String() + " ago"
+	return durafmt.ParseShort(c.Since(t.Time)).String() + " ago"
 }
 
 func Duration(t1, t2 *metav1.Time) string {
 	if t1.IsZero() || t2.IsZero() {
 		return nonAttributedStr
 	}
-
-	dur := t2.Sub(t1.Time)
-	return durafmt.ParseShort(dur).String()
+	return durafmt.ParseShort(t2.Sub(t1.Time)).String()
 }
 
 // PRDuration calculates the duration of a repository run, given its status.
@@ -35,11 +31,10 @@ func PRDuration(runStatus v1alpha1.RepositoryRunStatus) string {
 
 	lasttime := runStatus.CompletionTime
 	if lasttime == nil {
-		if len(runStatus.Conditions) > 0 {
-			lasttime = &runStatus.Conditions[0].LastTransitionTime.Inner
-		} else {
+		if len(runStatus.Conditions) == 0 {
 			return nonAttributedStr
 		}
+		lasttime = &runStatus.Conditions[0].LastTransitionTime.Inner
 	}
 
 	return Duration(runStatus.StartTime, lasttime)
@@ -49,6 +44,5 @@ func Timeout(t *metav1.Duration) string {
 	if t == nil {
 		return nonAttributedStr
 	}
-
 	return durafmt.Parse(t.Duration).String()
 }
