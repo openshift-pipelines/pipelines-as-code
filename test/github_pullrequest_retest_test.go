@@ -35,7 +35,7 @@ func TestGithubSecondPullRequestGitopsCommentRetest(t *testing.T) {
 	defer g.TearDown(ctx, t)
 
 	g.Cnx.Clients.Log.Infof("Creating /retest in PullRequest")
-	_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
+	_, _, err := g.Provider.Client().Issues.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.PRNumber,
 		&github.IssueComment{Body: github.Ptr("/retest")})
@@ -76,7 +76,7 @@ func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
 	assert.Equal(t, len(pruns.Items), 2)
 
 	g.Cnx.Clients.Log.Info("/test pr-gitops-comment on Pull Request before canceling")
-	_, _, err = g.Provider.Client.Issues.CreateComment(ctx,
+	_, _, err = g.Provider.Client().Issues.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo,
 		g.PRNumber,
@@ -94,7 +94,7 @@ func TestGithubSecondPullRequestGitopsCommentCancel(t *testing.T) {
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("/cancel pr-gitops-comment on Pull Request")
-	_, _, err = g.Provider.Client.Issues.CreateComment(ctx,
+	_, _, err = g.Provider.Client().Issues.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.PRNumber,
 		&github.IssueComment{Body: github.Ptr("/cancel pr-gitops-comment")})

@@ -16,6 +16,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/changedfiles"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -40,7 +41,8 @@ const (
 var _ provider.Interface = (*Provider)(nil)
 
 type Provider struct {
-	Client        *github.Client
+	ghClient      *github.Client
+	metrics       *metrics.Recorder
 	Logger        *zap.SugaredLogger
 	Run           *params.Run
 	pacInfo       *info.PacOpts
@@ -54,6 +56,7 @@ type Provider struct {
 	PaginedNumber int
 	userType      string // The type of user i.e bot or not
 	skippedRun
+	triggerEvent string
 }
 
 type skippedRun struct {
@@ -71,8 +74,39 @@ func New() *Provider {
 	}
 }
 
+func (v *Provider) Client() *github.Client {
+	v.recordAPIUsageMetrics()
+	return v.ghClient
+}
+
+func (v *Provider) SetGithubClient(client *github.Client) {
+	v.ghClient = client
+}
+
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
+}
+
+func (v *Provider) recordAPIUsageMetrics() {
+	if v.metrics == nil {
+		m, err := metrics.NewRecorder()
+		if err != nil {
+			v.Logger.Errorf("Error initializing github metrics recorder: %v", err)
+			return
+		}
+		v.metrics = m
+	}
+
+	name := ""
+	namespace := ""
+	if v.repo != nil {
+		name = v.repo.Name
+		namespace = v.repo.Namespace
+	}
+
+	if err := v.metrics.ReportGitProviderAPIUsage(v.providerName, v.triggerEvent, namespace, name); err != nil {
+		v.Logger.Errorf("Error reporting git API usage metrics: %v", err)
+	}
 }
 
 // detectGHERawURL Detect if we have a raw URL in GHE.
@@ -240,7 +274,7 @@ func parseTS(headerTS string) (time.Time, error) {
 // but this gives a nice hint to the user into their namespace event of where
 // the issue was.
 func (v *Provider) checkWebhookSecretValidity(ctx context.Context, cw clockwork.Clock) error {
-	rl, resp, err := v.Client.RateLimit.Get(ctx)
+	rl, resp, err := v.Client().RateLimit.Get(ctx)
 	if resp.StatusCode == http.StatusNotFound {
 		v.Logger.Info("skipping checking if token has expired, rate_limit api is not enabled on token")
 		return nil
@@ -273,13 +307,14 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	v.Run = run
 	v.repo = repo
 	v.eventEmitter = eventsEmitter
+	v.triggerEvent = event.EventType
 
 	// check that the Client is not already set, so we don't override our fakeclient
 	// from unittesting.
-	if v.Client == nil {
-		v.Client = client
+	if v.ghClient == nil {
+		v.ghClient = client
 	}
-	if v.Client == nil {
+	if v.ghClient == nil {
 		return fmt.Errorf("no github client has been initialized")
 	}
 
@@ -309,7 +344,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 		v.Logger.Infof("Using PipelineRun definition from source pull request %s/%s#%d SHA on %s", runevent.Organization, runevent.Repository, runevent.PullRequestNumber, runevent.SHA)
 	}
 
-	rootobjects, _, err := v.Client.Git.GetTree(ctx, runevent.Organization, runevent.Repository, revision, false)
+	rootobjects, _, err := v.Client().Git.GetTree(ctx, runevent.Organization, runevent.Repository, revision, false)
 	if err != nil {
 		return "", err
 	}
@@ -331,7 +366,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 	// there is a limit on this recursive calls to 500 entries, as documented here:
 	// https://docs.github.com/en/rest/reference/git#get-a-tree
 	// so we may need to address it in the future.
-	tektonDirObjects, _, err := v.Client.Git.GetTree(ctx, runevent.Organization, runevent.Repository, tektonDirSha,
+	tektonDirObjects, _, err := v.Client().Git.GetTree(ctx, runevent.Organization, runevent.Repository, tektonDirSha,
 		true)
 	if err != nil {
 		return "", err
@@ -342,7 +377,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, runevent *info.Event, path,
 // GetCommitInfo get info (url and title) on a commit in runevent, this needs to
 // be run after sewebhook while we already matched a token.
 func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) error {
-	if v.Client == nil {
+	if v.ghClient == nil {
 		return fmt.Errorf("no github client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
@@ -352,14 +387,14 @@ func (v *Provider) GetCommitInfo(ctx context.Context, runevent *info.Event) erro
 	var commit *github.Commit
 	sha := runevent.SHA
 	if runevent.SHA == "" && runevent.HeadBranch != "" {
-		branchinfo, _, err := v.Client.Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, runevent.HeadBranch, 1)
+		branchinfo, _, err := v.Client().Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, runevent.HeadBranch, 1)
 		if err != nil {
 			return err
 		}
 		sha = branchinfo.Commit.GetSHA()
 	}
 	var err error
-	commit, _, err = v.Client.Git.GetCommit(ctx, runevent.Organization, runevent.Repository, sha)
+	commit, _, err = v.Client().Git.GetCommit(ctx, runevent.Organization, runevent.Repository, sha)
 	if err != nil {
 		return err
 	}
@@ -382,7 +417,7 @@ func (v *Provider) GetFileInsideRepo(ctx context.Context, runevent *info.Event, 
 		ref = runevent.DefaultBranch
 	}
 
-	fp, objects, _, err := v.Client.Repositories.GetContents(ctx, runevent.Organization,
+	fp, objects, _, err := v.Client().Repositories.GetContents(ctx, runevent.Organization,
 		runevent.Repository, path, &github.RepositoryContentGetOptions{Ref: ref})
 	if err != nil {
 		return "", err
@@ -424,7 +459,7 @@ func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []*github.Tre
 
 // getPullRequest get a pull request details.
 func (v *Provider) getPullRequest(ctx context.Context, runevent *info.Event) (*info.Event, error) {
-	pr, _, err := v.Client.PullRequests.Get(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
+	pr, _, err := v.Client().PullRequests.Get(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber)
 	if err != nil {
 		return runevent, err
 	}
@@ -463,7 +498,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 		opt := &github.ListOptions{PerPage: v.PaginedNumber}
 		changedFiles := changedfiles.ChangedFiles{}
 		for {
-			repoCommit, resp, err := v.Client.PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, opt)
+			repoCommit, resp, err := v.Client().PullRequests.ListFiles(ctx, runevent.Organization, runevent.Repository, runevent.PullRequestNumber, opt)
 			if err != nil {
 				return changedfiles.ChangedFiles{}, err
 			}
@@ -492,7 +527,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 
 	if runevent.TriggerTarget == "push" {
 		changedFiles := changedfiles.ChangedFiles{}
-		rC, _, err := v.Client.Repositories.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA, &github.ListOptions{})
+		rC, _, err := v.Client().Repositories.GetCommit(ctx, runevent.Organization, runevent.Repository, runevent.SHA, &github.ListOptions{})
 		if err != nil {
 			return changedfiles.ChangedFiles{}, err
 		}
@@ -518,7 +553,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 
 // getObject Get an object from a repository.
 func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Event) ([]byte, error) {
-	blob, _, err := v.Client.Git.GetBlob(ctx, runevent.Organization, runevent.Repository, sha)
+	blob, _, err := v.Client().Git.GetBlob(ctx, runevent.Organization, runevent.Repository, sha)
 	if err != nil {
 		return nil, err
 	}
@@ -532,7 +567,7 @@ func (v *Provider) getObject(ctx context.Context, sha string, runevent *info.Eve
 
 // ListRepos lists all the repos for a particular token.
 func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
-	if v.Client == nil {
+	if v.ghClient == nil {
 		return []string{}, fmt.Errorf("no github client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
@@ -540,7 +575,7 @@ func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 	opt := &github.ListOptions{PerPage: v.PaginedNumber}
 	repoURLs := []string{}
 	for {
-		repoList, resp, err := v.Client.Apps.ListRepos(ctx, opt)
+		repoList, resp, err := v.Client().Apps.ListRepos(ctx, opt)
 		if err != nil {
 			return []string{}, err
 		}
@@ -558,7 +593,7 @@ func ListRepos(ctx context.Context, v *Provider) ([]string, error) {
 func (v *Provider) CreateToken(ctx context.Context, repository []string, event *info.Event) (string, error) {
 	for _, r := range repository {
 		split := strings.Split(r, "/")
-		infoData, _, err := v.Client.Repositories.Get(ctx, split[0], split[1])
+		infoData, _, err := v.Client().Repositories.Get(ctx, split[0], split[1])
 		if err != nil {
 			v.Logger.Warn("we have an invalid repository: `%s` or no access to it: %v", r, err)
 			continue
@@ -589,12 +624,12 @@ func uniqueRepositoryID(repoIDs []int64, id int64) []int64 {
 
 // isHeadCommitOfBranch checks whether provided branch is valid or not and SHA is HEAD commit of the branch.
 func (v *Provider) isHeadCommitOfBranch(ctx context.Context, runevent *info.Event, branchName string) error {
-	if v.Client == nil {
+	if v.ghClient == nil {
 		return fmt.Errorf("no github client has been initialized, " +
 			"exiting... (hint: did you forget setting a secret on your repo?)")
 	}
 
-	branchInfo, _, err := v.Client.Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, branchName, 1)
+	branchInfo, _, err := v.Client().Repositories.GetBranch(ctx, runevent.Organization, runevent.Repository, branchName, 1)
 	if err != nil {
 		return err
 	}

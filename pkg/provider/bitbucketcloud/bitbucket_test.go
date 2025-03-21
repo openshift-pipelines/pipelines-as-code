@@ -75,7 +75,7 @@ func TestGetTektonDir(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
-			v := &Provider{Logger: fakelogger, Client: bbclient}
+			v := &Provider{Logger: fakelogger, bbClient: bbclient}
 			bbcloudtest.MuxDirContent(t, mux, tt.event, tt.testDirPath, tt.provenance)
 			content, err := v.GetTektonDir(ctx, tt.event, ".tekton", tt.provenance)
 			if tt.wantErr != "" {
@@ -202,7 +202,7 @@ func TestGetCommitInfo(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
-			v := &Provider{Client: bbclient}
+			v := &Provider{bbClient: bbclient}
 			bbcloudtest.MuxCommits(t, mux, tt.event, []types.Commit{
 				tt.commitinfo,
 			})
@@ -295,8 +295,8 @@ func TestCreateStatus(t *testing.T) {
 			bbclient, mux, tearDown := bbcloudtest.SetupBBCloudClient(t)
 			defer tearDown()
 			v := &Provider{
-				Client: bbclient,
-				run:    params.New(),
+				bbClient: bbclient,
+				run:      params.New(),
 				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{
 						ApplicationName: settings.PACApplicationNameDefaultValue,

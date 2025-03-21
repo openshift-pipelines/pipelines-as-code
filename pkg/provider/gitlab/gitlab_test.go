@@ -228,7 +228,7 @@ func TestCreateStatus(t *testing.T) {
 
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.Client = client
+				v.SetGitlabClient(client)
 				defer tearDown()
 				thelp.MuxNotePost(t, mux, v.targetProjectID, tt.args.event.PullRequestNumber, tt.args.postStr)
 			}
@@ -243,7 +243,7 @@ func TestCreateStatus(t *testing.T) {
 func TestGetCommitInfo(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	client, _, tearDown := thelp.Setup(t)
-	v := &Provider{Client: client}
+	v := &Provider{gitlabClient: client}
 
 	defer tearDown()
 	assert.NilError(t, v.GetCommitInfo(ctx, info.NewEvent()))
@@ -265,7 +265,7 @@ func TestSetClient(t *testing.T) {
 
 	client, _, tearDown := thelp.Setup(t)
 	defer tearDown()
-	vv := &Provider{Client: client}
+	vv := &Provider{gitlabClient: client}
 	err := vv.SetClient(ctx, nil, &info.Event{
 		Provider: &info.Provider{
 			Token: "hello",
@@ -280,7 +280,7 @@ func TestSetClientDetectAPIURL(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	client, _, tearDown := thelp.Setup(t)
 	defer tearDown()
-	v := &Provider{Client: client}
+	v := &Provider{gitlabClient: client}
 	event := info.NewEvent()
 	err := v.SetClient(ctx, nil, event, nil, nil)
 	assert.ErrorContains(t, err, "no git_provider.secret has been set")
@@ -446,7 +446,7 @@ func TestGetTektonDir(t *testing.T) {
 			}
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.Client = client
+				v.SetGitlabClient(client)
 				muxbranch := tt.args.event.HeadBranch
 				if tt.args.provenance == "default_branch" {
 					muxbranch = tt.args.event.DefaultBranch
@@ -485,7 +485,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 	}
 	v := Provider{
 		sourceProjectID: 10,
-		Client:          client,
+		gitlabClient:    client,
 	}
 	thelp.MuxListTektonDir(t, mux, v.sourceProjectID, event.HeadBranch, content, false, false)
 	got, err := v.GetFileInsideRepo(ctx, event, "pr.yaml", "")
@@ -714,7 +714,7 @@ func TestGetFiles(t *testing.T) {
 					})
 			}
 
-			providerInfo := &Provider{Client: fakeclient, sourceProjectID: tt.sourceProjectID, targetProjectID: tt.targetProjectID}
+			providerInfo := &Provider{gitlabClient: fakeclient, sourceProjectID: tt.sourceProjectID, targetProjectID: tt.targetProjectID}
 			changedFiles, err := providerInfo.GetFiles(ctx, tt.event)
 			if tt.wantError != true {
 				assert.NilError(t, err, nil)
@@ -788,7 +788,7 @@ func TestIsHeadCommitOfBranch(t *testing.T) {
 			defer teardown()
 			glProvider := &Provider{sourceProjectID: 1}
 			if tt.wantClient {
-				glProvider.Client = fakeclient
+				glProvider.SetGitlabClient(fakeclient)
 				mux.HandleFunc("/projects/1/repository/branches/cool-branch",
 					func(rw http.ResponseWriter, _ *http.Request) {
 						if tt.errStatusCode != 0 {

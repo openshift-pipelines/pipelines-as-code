@@ -86,9 +86,9 @@ func TestCheckPolicyAllowing(t *testing.T) {
 				},
 			}
 			gprovider := Provider{
-				Client: fakeclient,
-				repo:   repo,
-				Logger: logger,
+				giteaClient: fakeclient,
+				repo:        repo,
+				Logger:      logger,
 			}
 
 			gotAllowed, gotReason := gprovider.CheckPolicyAllowing(ctx, event, tt.allowedTeams)
@@ -285,9 +285,9 @@ func TestOkToTestComment(t *testing.T) {
 			})
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gprovider := Provider{
-				Client: fakeclient,
-				Logger: logger,
-				run:    &params.Run{},
+				giteaClient: fakeclient,
+				Logger:      logger,
+				run:         &params.Run{},
 				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{
 						RememberOKToTest: tt.rememberOkToTest,
@@ -361,8 +361,8 @@ func TestAclCheckAll(t *testing.T) {
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gprovider := Provider{
-				Client: fakeclient,
-				Logger: logger,
+				giteaClient: fakeclient,
+				Logger:      logger,
 			}
 
 			if tt.allowedRules.collabo {

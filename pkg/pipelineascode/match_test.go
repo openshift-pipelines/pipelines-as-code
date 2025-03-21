@@ -254,10 +254,10 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 				ConsoleURL: "https://console.url",
 			}
 			vcx := &ghprovider.Provider{
-				Client: fakeclient,
 				Token:  github.Ptr("None"),
 				Logger: logger,
 			}
+			vcx.SetGithubClient(fakeclient)
 			pacInfo := &info.PacOpts{
 				Settings: settings.Settings{
 					ApplicationName:    "Pipelines as Code CI",
