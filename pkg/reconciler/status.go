@@ -138,7 +138,11 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		}
 	}
 	var tmplStatusText string
-	if tmplStatusText, err = mt.MakeTemplate(formatting.PipelineRunStatusText); err != nil {
+	template := formatting.PipelineRunStatusHTML
+	if strings.Contains(pr.GetAnnotations()[apipac.GitProvider], "bitbucket") {
+		template = formatting.PipelineRunStatusMarkDown
+	}
+	if tmplStatusText, err = mt.MakeTemplate(template); err != nil {
 		return nil, fmt.Errorf("cannot create message template: %w", err)
 	}
 

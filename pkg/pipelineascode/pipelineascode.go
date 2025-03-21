@@ -3,6 +3,7 @@ package pipelineascode
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/action"
@@ -226,7 +227,11 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		TknBinary:       settings.TknBinaryName,
 		TknBinaryURL:    settings.TknBinaryURL,
 	}
-	msg, err := mt.MakeTemplate(formatting.StartingPipelineRunText)
+	template := formatting.StartingPipelineRunHTML
+	if strings.Contains(pr.GetAnnotations()[keys.GitProvider], "bitbucket") {
+		template = formatting.StartingPipelineRunMarkdown
+	}
+	msg, err := mt.MakeTemplate(template)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create message template: %w", err)
 	}
@@ -243,7 +248,11 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	// if pipelineRun is in pending state then report status as queued
 	if pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
 		status.Status = queuedStatus
-		if status.Text, err = mt.MakeTemplate(formatting.QueuingPipelineRunText); err != nil {
+		template := formatting.QueuingPipelineRunHTML
+		if strings.Contains(pr.GetAnnotations()[keys.GitProvider], "bitbucket") {
+			template = formatting.QueuingPipelineRunMarkdown
+		}
+		if status.Text, err = mt.MakeTemplate(template); err != nil {
 			return nil, fmt.Errorf("cannot create message template: %w", err)
 		}
 	}

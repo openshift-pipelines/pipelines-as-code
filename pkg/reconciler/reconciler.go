@@ -276,7 +276,12 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		TknBinary:       settings.TknBinaryName,
 		TknBinaryURL:    settings.TknBinaryURL,
 	}
-	msg, err := mt.MakeTemplate(formatting.StartingPipelineRunText)
+
+	template := formatting.StartingPipelineRunHTML
+	if strings.Contains(pr.GetAnnotations()[keys.GitProvider], "bitbucket") {
+		template = formatting.StartingPipelineRunMarkdown
+	}
+	msg, err := mt.MakeTemplate(template)
 	if err != nil {
 		return fmt.Errorf("cannot create message template: %w", err)
 	}
