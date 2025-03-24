@@ -22,13 +22,24 @@ import (
 	"time"
 )
 
-// IssueLinksService handles communication with the issue relations related methods
-// of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/issue_links.html
-type IssueLinksService struct {
-	client *Client
-}
+type (
+	IssueLinksServiceInterface interface {
+		ListIssueRelations(pid interface{}, issue int, options ...RequestOptionFunc) ([]*IssueRelation, *Response, error)
+		GetIssueLink(pid interface{}, issue, issueLink int, options ...RequestOptionFunc) (*IssueLink, *Response, error)
+		CreateIssueLink(pid interface{}, issue int, opt *CreateIssueLinkOptions, options ...RequestOptionFunc) (*IssueLink, *Response, error)
+		DeleteIssueLink(pid interface{}, issue, issueLink int, options ...RequestOptionFunc) (*IssueLink, *Response, error)
+	}
+
+	// IssueLinksService handles communication with the issue relations related methods
+	// of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/issue_links.html
+	IssueLinksService struct {
+		client *Client
+	}
+)
+
+var _ IssueLinksServiceInterface = (*IssueLinksService)(nil)
 
 // IssueLink represents a two-way relation between two issues.
 //

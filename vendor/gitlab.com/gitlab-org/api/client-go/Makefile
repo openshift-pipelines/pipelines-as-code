@@ -6,19 +6,36 @@ help: ## Display this help
 
 ##@ Development
 
-reviewable: setup fmt lint test ## Run before committing.
+reviewable: setup generate fmt lint test ## Run before committing.
 
-fmt: ## Format code
-	@gofumpt -l -w .
+fmt: install-gofumpt ## Format code
+	@gofumpt -l -w *.go testing/*.go examples/*.go
 
-lint: ## Run linter
+lint: install-golangci-lint ## Run linter
 	@golangci-lint run
 
-setup: ## Setup your local environment
-	go mod tidy
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	@go install mvdan.cc/gofumpt@latest
 .PHONY: setup
+setup: install-golangci-lint install-gofumpt ## Setup your local environment
+	go mod tidy
+
+install-golangci-lint:
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+install-gofumpt:
+	@go install mvdan.cc/gofumpt@latest
+
+.PHONY: generate
+generate: install-gofumpt ## Generate files
+	./scripts/generate_testing_client.sh
+	./scripts/generate_service_interface_map.sh
+	./scripts/generate_mock_api.sh
+
+.PHONY: clean
+clean: ## Remove generated files
+	rm -f \
+		testing/*_mock.go \
+		testing/*_generated.go \
+		*_generated_test.go
 
 test: ## Run tests
 	go test ./... -race

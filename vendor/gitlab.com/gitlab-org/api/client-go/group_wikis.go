@@ -21,13 +21,26 @@ import (
 	"net/url"
 )
 
-// GroupWikisService handles communication with the group wikis related methods of
-// the Gitlab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/group_wikis.html
-type GroupWikisService struct {
-	client *Client
-}
+type (
+	// GroupWikisServiceInterface defines methods for the GroupWikisService.
+	GroupWikisServiceInterface interface {
+		ListGroupWikis(gid interface{}, opt *ListGroupWikisOptions, options ...RequestOptionFunc) ([]*GroupWiki, *Response, error)
+		GetGroupWikiPage(gid interface{}, slug string, opt *GetGroupWikiPageOptions, options ...RequestOptionFunc) (*GroupWiki, *Response, error)
+		CreateGroupWikiPage(gid interface{}, opt *CreateGroupWikiPageOptions, options ...RequestOptionFunc) (*GroupWiki, *Response, error)
+		EditGroupWikiPage(gid interface{}, slug string, opt *EditGroupWikiPageOptions, options ...RequestOptionFunc) (*GroupWiki, *Response, error)
+		DeleteGroupWikiPage(gid interface{}, slug string, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupWikisService handles communication with the group wikis related methods of
+	// the Gitlab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/group_wikis.html
+	GroupWikisService struct {
+		client *Client
+	}
+)
+
+var _ GroupWikisServiceInterface = (*GroupWikisService)(nil)
 
 // GroupWiki represents a GitLab groups wiki.
 //

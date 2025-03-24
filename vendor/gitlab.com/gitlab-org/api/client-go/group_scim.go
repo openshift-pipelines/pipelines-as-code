@@ -18,14 +18,23 @@ import (
 	"net/http"
 )
 
-// GroupSCIMService handles communication with the Group SCIM
-// related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/scim.html
-type GroupSCIMService struct {
-	client *Client
-}
+type (
+	GroupSCIMServiceInterface interface {
+		GetSCIMIdentitiesForGroup(gid interface{}, options ...RequestOptionFunc) ([]*GroupSCIMIdentity, *Response, error)
+		GetSCIMIdentity(gid interface{}, uid string, options ...RequestOptionFunc) (*GroupSCIMIdentity, *Response, error)
+		UpdateSCIMIdentity(gid interface{}, uid string, opt *UpdateSCIMIdentityOptions, options ...RequestOptionFunc) (*Response, error)
+		DeleteSCIMIdentity(gid interface{}, uid string, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupSCIMService handles communication with the Group SCIM
+	// related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/scim.html
+	GroupSCIMService struct {
+		client *Client
+	}
+)
 
 // GroupSCIMIdentity represents a GitLab Group SCIM identity.
 //

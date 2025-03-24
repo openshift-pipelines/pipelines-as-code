@@ -21,14 +21,31 @@ import (
 	"net/http"
 )
 
-// GroupIssueBoardsService handles communication with the group issue board
-// related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_boards.html
-type GroupIssueBoardsService struct {
-	client *Client
-}
+type (
+	GroupIssueBoardsServiceInterface interface {
+		ListGroupIssueBoards(gid interface{}, opt *ListGroupIssueBoardsOptions, options ...RequestOptionFunc) ([]*GroupIssueBoard, *Response, error)
+		CreateGroupIssueBoard(gid interface{}, opt *CreateGroupIssueBoardOptions, options ...RequestOptionFunc) (*GroupIssueBoard, *Response, error)
+		GetGroupIssueBoard(gid interface{}, board int, options ...RequestOptionFunc) (*GroupIssueBoard, *Response, error)
+		UpdateIssueBoard(gid interface{}, board int, opt *UpdateGroupIssueBoardOptions, options ...RequestOptionFunc) (*GroupIssueBoard, *Response, error)
+		DeleteIssueBoard(gid interface{}, board int, options ...RequestOptionFunc) (*Response, error)
+		ListGroupIssueBoardLists(gid interface{}, board int, opt *ListGroupIssueBoardListsOptions, options ...RequestOptionFunc) ([]*BoardList, *Response, error)
+		GetGroupIssueBoardList(gid interface{}, board, list int, options ...RequestOptionFunc) (*BoardList, *Response, error)
+		CreateGroupIssueBoardList(gid interface{}, board int, opt *CreateGroupIssueBoardListOptions, options ...RequestOptionFunc) (*BoardList, *Response, error)
+		UpdateIssueBoardList(gid interface{}, board, list int, opt *UpdateGroupIssueBoardListOptions, options ...RequestOptionFunc) ([]*BoardList, *Response, error)
+		DeleteGroupIssueBoardList(gid interface{}, board, list int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupIssueBoardsService handles communication with the group issue board
+	// related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/group_boards.html
+	GroupIssueBoardsService struct {
+		client *Client
+	}
+)
+
+var _ GroupIssueBoardsServiceInterface = (*GroupIssueBoardsService)(nil)
 
 // GroupIssueBoard represents a GitLab group issue board.
 //

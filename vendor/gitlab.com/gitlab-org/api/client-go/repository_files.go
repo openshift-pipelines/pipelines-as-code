@@ -24,13 +24,27 @@ import (
 	"time"
 )
 
-// RepositoryFilesService handles communication with the repository files
-// related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/repository_files.html
-type RepositoryFilesService struct {
-	client *Client
-}
+type (
+	RepositoryFilesServiceInterface interface {
+		GetFile(pid interface{}, fileName string, opt *GetFileOptions, options ...RequestOptionFunc) (*File, *Response, error)
+		GetFileMetaData(pid interface{}, fileName string, opt *GetFileMetaDataOptions, options ...RequestOptionFunc) (*File, *Response, error)
+		GetFileBlame(pid interface{}, file string, opt *GetFileBlameOptions, options ...RequestOptionFunc) ([]*FileBlameRange, *Response, error)
+		GetRawFile(pid interface{}, fileName string, opt *GetRawFileOptions, options ...RequestOptionFunc) ([]byte, *Response, error)
+		CreateFile(pid interface{}, fileName string, opt *CreateFileOptions, options ...RequestOptionFunc) (*FileInfo, *Response, error)
+		UpdateFile(pid interface{}, fileName string, opt *UpdateFileOptions, options ...RequestOptionFunc) (*FileInfo, *Response, error)
+		DeleteFile(pid interface{}, fileName string, opt *DeleteFileOptions, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// RepositoryFilesService handles communication with the repository files
+	// related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/repository_files.html
+	RepositoryFilesService struct {
+		client *Client
+	}
+)
+
+var _ RepositoryFilesServiceInterface = (*RepositoryFilesService)(nil)
 
 // File represents a GitLab repository file.
 //

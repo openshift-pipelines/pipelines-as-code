@@ -22,14 +22,41 @@ import (
 	"time"
 )
 
-// NotesService handles communication with the notes related methods
-// of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/api/notes/
-type NotesService struct {
-	client *Client
-}
+type (
+	NotesServiceInterface interface {
+		ListIssueNotes(pid interface{}, issue int, opt *ListIssueNotesOptions, options ...RequestOptionFunc) ([]*Note, *Response, error)
+		GetIssueNote(pid interface{}, issue, note int, options ...RequestOptionFunc) (*Note, *Response, error)
+		CreateIssueNote(pid interface{}, issue int, opt *CreateIssueNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error)
+		UpdateIssueNote(pid interface{}, issue, note int, opt *UpdateIssueNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error)
+		DeleteIssueNote(pid interface{}, issue, note int, options ...RequestOptionFunc) (*Response, error)
+		ListSnippetNotes(pid interface{}, snippet int, opt *ListSnippetNotesOptions, options ...RequestOptionFunc) ([]*Note, *Response, error)
+		GetSnippetNote(pid interface{}, snippet, note int, options ...RequestOptionFunc) (*Note, *Response, error)
+		CreateSnippetNote(pid interface{}, snippet int, opt *CreateSnippetNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error)
+		UpdateSnippetNote(pid interface{}, snippet, note int, opt *UpdateSnippetNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error)
+		DeleteSnippetNote(pid interface{}, snippet, note int, options ...RequestOptionFunc) (*Response, error)
+		ListMergeRequestNotes(pid interface{}, mergeRequest int, opt *ListMergeRequestNotesOptions, options ...RequestOptionFunc) ([]*Note, *Response, error)
+		GetMergeRequestNote(pid interface{}, mergeRequest, note int, options ...RequestOptionFunc) (*Note, *Response, error)
+		CreateMergeRequestNote(pid interface{}, mergeRequest int, opt *CreateMergeRequestNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error)
+		UpdateMergeRequestNote(pid interface{}, mergeRequest, note int, opt *UpdateMergeRequestNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error)
+		DeleteMergeRequestNote(pid interface{}, mergeRequest, note int, options ...RequestOptionFunc) (*Response, error)
+		ListEpicNotes(gid interface{}, epic int, opt *ListEpicNotesOptions, options ...RequestOptionFunc) ([]*Note, *Response, error)
+		GetEpicNote(gid interface{}, epic, note int, options ...RequestOptionFunc) (*Note, *Response, error)
+		CreateEpicNote(gid interface{}, epic int, opt *CreateEpicNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error)
+		UpdateEpicNote(gid interface{}, epic, note int, opt *UpdateEpicNoteOptions, options ...RequestOptionFunc) (*Note, *Response, error)
+		DeleteEpicNote(gid interface{}, epic, note int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// NotesService handles communication with the notes related methods
+	// of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/api/notes/
+	NotesService struct {
+		client *Client
+	}
+)
+
+var _ NotesServiceInterface = (*NotesService)(nil)
 
 // Note represents a GitLab note.
 //

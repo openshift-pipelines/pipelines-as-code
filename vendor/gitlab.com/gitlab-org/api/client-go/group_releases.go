@@ -18,14 +18,22 @@ import (
 	"net/http"
 )
 
-// GroupReleasesService handles communication with the group
-// releases related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/api/group_releases.html
-type GroupReleasesService struct {
-	client *Client
-}
+type (
+	GroupReleasesServiceInterface interface {
+		ListGroupReleases(gid interface{}, opts *ListGroupReleasesOptions, options ...RequestOptionFunc) ([]*Release, *Response, error)
+	}
+
+	// GroupReleasesService handles communication with the group
+	// releases related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/api/group_releases.html
+	GroupReleasesService struct {
+		client *Client
+	}
+)
+
+var _ GroupReleasesServiceInterface = (*GroupReleasesService)(nil)
 
 // ListGroupReleasesOptions represents the available ListGroupReleases() options.
 //

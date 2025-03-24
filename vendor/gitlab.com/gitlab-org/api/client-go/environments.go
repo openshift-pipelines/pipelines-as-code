@@ -22,13 +22,27 @@ import (
 	"time"
 )
 
-// EnvironmentsService handles communication with the environment related methods
-// of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/environments.html
-type EnvironmentsService struct {
-	client *Client
-}
+type (
+	// EnvironmentsServiceInterface defines all the API methods for the EnvironmentsService
+	EnvironmentsServiceInterface interface {
+		ListEnvironments(pid interface{}, opts *ListEnvironmentsOptions, options ...RequestOptionFunc) ([]*Environment, *Response, error)
+		GetEnvironment(pid interface{}, environment int, options ...RequestOptionFunc) (*Environment, *Response, error)
+		CreateEnvironment(pid interface{}, opt *CreateEnvironmentOptions, options ...RequestOptionFunc) (*Environment, *Response, error)
+		EditEnvironment(pid interface{}, environment int, opt *EditEnvironmentOptions, options ...RequestOptionFunc) (*Environment, *Response, error)
+		DeleteEnvironment(pid interface{}, environment int, options ...RequestOptionFunc) (*Response, error)
+		StopEnvironment(pid interface{}, environmentID int, opt *StopEnvironmentOptions, options ...RequestOptionFunc) (*Environment, *Response, error)
+	}
+
+	// EnvironmentsService handles communication with the environment related methods
+	// of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/environments.html
+	EnvironmentsService struct {
+		client *Client
+	}
+)
+
+var _ EnvironmentsServiceInterface = (*EnvironmentsService)(nil)
 
 // Environment represents a GitLab environment.
 //

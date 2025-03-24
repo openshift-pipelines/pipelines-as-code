@@ -21,13 +21,27 @@ import (
 	"net/http"
 )
 
-// GroupLabelsService handles communication with the label related methods of the
-// GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/group_labels.html
-type GroupLabelsService struct {
-	client *Client
-}
+type (
+	GroupLabelsServiceInterface interface {
+		ListGroupLabels(gid interface{}, opt *ListGroupLabelsOptions, options ...RequestOptionFunc) ([]*GroupLabel, *Response, error)
+		GetGroupLabel(gid interface{}, lid interface{}, options ...RequestOptionFunc) (*GroupLabel, *Response, error)
+		CreateGroupLabel(gid interface{}, opt *CreateGroupLabelOptions, options ...RequestOptionFunc) (*GroupLabel, *Response, error)
+		DeleteGroupLabel(gid interface{}, lid interface{}, opt *DeleteGroupLabelOptions, options ...RequestOptionFunc) (*Response, error)
+		UpdateGroupLabel(gid interface{}, lid interface{}, opt *UpdateGroupLabelOptions, options ...RequestOptionFunc) (*GroupLabel, *Response, error)
+		SubscribeToGroupLabel(gid interface{}, lid interface{}, options ...RequestOptionFunc) (*GroupLabel, *Response, error)
+		UnsubscribeFromGroupLabel(gid interface{}, lid interface{}, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupLabelsService handles communication with the label related methods of the
+	// GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/group_labels.html
+	GroupLabelsService struct {
+		client *Client
+	}
+)
+
+var _ GroupLabelsServiceInterface = (*GroupLabelsService)(nil)
 
 // GroupLabel represents a GitLab group label.
 //

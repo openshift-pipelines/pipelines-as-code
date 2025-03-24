@@ -22,14 +22,25 @@ import (
 	"time"
 )
 
-// GroupRepositoryStorageMoveService handles communication with the
-// group repositories related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_repository_storage_moves.html
-type GroupRepositoryStorageMoveService struct {
-	client *Client
-}
+type (
+	GroupRepositoryStorageMoveServiceInterface interface {
+		RetrieveAllStorageMoves(opts RetrieveAllGroupStorageMovesOptions, options ...RequestOptionFunc) ([]*GroupRepositoryStorageMove, *Response, error)
+		RetrieveAllStorageMovesForGroup(group int, opts RetrieveAllGroupStorageMovesOptions, options ...RequestOptionFunc) ([]*GroupRepositoryStorageMove, *Response, error)
+		GetStorageMove(repositoryStorage int, options ...RequestOptionFunc) (*GroupRepositoryStorageMove, *Response, error)
+		GetStorageMoveForGroup(group int, repositoryStorage int, options ...RequestOptionFunc) (*GroupRepositoryStorageMove, *Response, error)
+		ScheduleStorageMoveForGroup(group int, opts ScheduleStorageMoveForGroupOptions, options ...RequestOptionFunc) (*GroupRepositoryStorageMove, *Response, error)
+		ScheduleAllStorageMoves(opts ScheduleAllGroupStorageMovesOptions, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupRepositoryStorageMoveService handles communication with the
+	// group repositories related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/group_repository_storage_moves.html
+	GroupRepositoryStorageMoveService struct {
+		client *Client
+	}
+)
 
 // GroupRepositoryStorageMove represents the status of a repository move.
 //

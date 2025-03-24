@@ -21,14 +21,26 @@ import (
 	"net/http"
 )
 
-// GroupProtectedEnvironmentsService handles communication with the group-level
-// protected environment methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_protected_environments.html
-type GroupProtectedEnvironmentsService struct {
-	client *Client
-}
+type (
+	GroupProtectedEnvironmentsServiceInterface interface {
+		ListGroupProtectedEnvironments(gid interface{}, opt *ListGroupProtectedEnvironmentsOptions, options ...RequestOptionFunc) ([]*GroupProtectedEnvironment, *Response, error)
+		GetGroupProtectedEnvironment(gid interface{}, environment string, options ...RequestOptionFunc) (*GroupProtectedEnvironment, *Response, error)
+		ProtectGroupEnvironment(gid interface{}, opt *ProtectGroupEnvironmentOptions, options ...RequestOptionFunc) (*GroupProtectedEnvironment, *Response, error)
+		UpdateGroupProtectedEnvironment(gid interface{}, environment string, opt *UpdateGroupProtectedEnvironmentOptions, options ...RequestOptionFunc) (*GroupProtectedEnvironment, *Response, error)
+		UnprotectGroupEnvironment(gid interface{}, environment string, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupProtectedEnvironmentsService handles communication with the group-level
+	// protected environment methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/group_protected_environments.html
+	GroupProtectedEnvironmentsService struct {
+		client *Client
+	}
+)
+
+var _ GroupProtectedEnvironmentsServiceInterface = (*GroupProtectedEnvironmentsService)(nil)
 
 // GroupProtectedEnvironment represents a group-level protected environment.
 //

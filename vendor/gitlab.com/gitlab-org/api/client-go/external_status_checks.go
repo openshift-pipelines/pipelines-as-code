@@ -6,13 +6,28 @@ import (
 	"time"
 )
 
-// ExternalStatusChecksService handles communication with the external
-// status check related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/status_checks.html
-type ExternalStatusChecksService struct {
-	client *Client
-}
+type (
+	// ExternalStatusChecksServiceInterface defines all the API methods for the ExternalStatusChecksService
+	ExternalStatusChecksServiceInterface interface {
+		ListMergeStatusChecks(pid interface{}, mr int, opt *ListOptions, options ...RequestOptionFunc) ([]*MergeStatusCheck, *Response, error)
+		SetExternalStatusCheckStatus(pid interface{}, mergeRequest int, opt *SetExternalStatusCheckStatusOptions, options ...RequestOptionFunc) (*Response, error)
+		ListProjectStatusChecks(pid interface{}, opt *ListOptions, options ...RequestOptionFunc) ([]*ProjectStatusCheck, *Response, error)
+		CreateExternalStatusCheck(pid interface{}, opt *CreateExternalStatusCheckOptions, options ...RequestOptionFunc) (*Response, error)
+		DeleteExternalStatusCheck(pid interface{}, check int, options ...RequestOptionFunc) (*Response, error)
+		UpdateExternalStatusCheck(pid interface{}, check int, opt *UpdateExternalStatusCheckOptions, options ...RequestOptionFunc) (*Response, error)
+		RetryFailedStatusCheckForAMergeRequest(pid interface{}, mergeRequest int, externalStatusCheck int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// ExternalStatusChecksService handles communication with the external
+	// status check related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/status_checks.html
+	ExternalStatusChecksService struct {
+		client *Client
+	}
+)
+
+var _ ExternalStatusChecksServiceInterface = (*ExternalStatusChecksService)(nil)
 
 type MergeStatusCheck struct {
 	ID          int    `json:"id"`

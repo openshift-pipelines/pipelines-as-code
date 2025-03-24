@@ -21,14 +21,23 @@ import (
 	"net/http"
 )
 
-// GroupEpicBoardsService handles communication with the group epic board
-// related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_epic_boards.html
-type GroupEpicBoardsService struct {
-	client *Client
-}
+type (
+	GroupEpicBoardsServiceInterface interface {
+		ListGroupEpicBoards(gid interface{}, opt *ListGroupEpicBoardsOptions, options ...RequestOptionFunc) ([]*GroupEpicBoard, *Response, error)
+		GetGroupEpicBoard(gid interface{}, board int, options ...RequestOptionFunc) (*GroupEpicBoard, *Response, error)
+	}
+
+	// GroupEpicBoardsService handles communication with the group epic board
+	// related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/group_epic_boards.html
+	GroupEpicBoardsService struct {
+		client *Client
+	}
+)
+
+var _ GroupEpicBoardsServiceInterface = (*GroupEpicBoardsService)(nil)
 
 // GroupEpicBoard represents a GitLab group epic board.
 //

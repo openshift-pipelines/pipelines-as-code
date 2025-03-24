@@ -22,13 +22,23 @@ import (
 	"net/url"
 )
 
-// FeaturesService handles the communication with the application FeaturesService
-// related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/features.html
-type FeaturesService struct {
-	client *Client
-}
+type (
+	// FeaturesServiceInterface defines all the API methods for the FeaturesService
+	FeaturesServiceInterface interface {
+		ListFeatures(options ...RequestOptionFunc) ([]*Feature, *Response, error)
+		SetFeatureFlag(name string, value interface{}, options ...RequestOptionFunc) (*Feature, *Response, error)
+	}
+
+	// FeaturesService handles the communication with the application FeaturesService
+	// related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/features.html
+	FeaturesService struct {
+		client *Client
+	}
+)
+
+var _ FeaturesServiceInterface = (*FeaturesService)(nil)
 
 // Feature represents a GitLab feature flag.
 //

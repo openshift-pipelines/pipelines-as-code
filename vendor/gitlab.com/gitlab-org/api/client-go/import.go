@@ -20,14 +20,26 @@ import (
 	"net/http"
 )
 
-// ImportService handles communication with the import
-// related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/import.html
-type ImportService struct {
-	client *Client
-}
+type (
+	ImportServiceInterface interface {
+		ImportRepositoryFromGitHub(opt *ImportRepositoryFromGitHubOptions, options ...RequestOptionFunc) (*GitHubImport, *Response, error)
+		CancelGitHubProjectImport(opt *CancelGitHubProjectImportOptions, options ...RequestOptionFunc) (*CancelledGitHubImport, *Response, error)
+		ImportGitHubGistsIntoGitLabSnippets(opt *ImportGitHubGistsIntoGitLabSnippetsOptions, options ...RequestOptionFunc) (*Response, error)
+		ImportRepositoryFromBitbucketServer(opt *ImportRepositoryFromBitbucketServerOptions, options ...RequestOptionFunc) (*BitbucketServerImport, *Response, error)
+		ImportRepositoryFromBitbucketCloud(opt *ImportRepositoryFromBitbucketCloudOptions, options ...RequestOptionFunc) (*BitbucketCloudImport, *Response, error)
+	}
+
+	// ImportService handles communication with the import
+	// related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/import.html
+	ImportService struct {
+		client *Client
+	}
+)
+
+var _ ImportServiceInterface = (*ImportService)(nil)
 
 // GitHubImport represents the response from an import from GitHub.
 //

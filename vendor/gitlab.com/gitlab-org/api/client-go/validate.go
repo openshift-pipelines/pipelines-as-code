@@ -21,13 +21,23 @@ import (
 	"net/http"
 )
 
-// ValidateService handles communication with the validation related methods of
-// the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/lint.html
-type ValidateService struct {
-	client *Client
-}
+type (
+	ValidateServiceInterface interface {
+		Lint(opts *LintOptions, options ...RequestOptionFunc) (*LintResult, *Response, error)
+		ProjectNamespaceLint(pid interface{}, opt *ProjectNamespaceLintOptions, options ...RequestOptionFunc) (*ProjectLintResult, *Response, error)
+		ProjectLint(pid interface{}, opt *ProjectLintOptions, options ...RequestOptionFunc) (*ProjectLintResult, *Response, error)
+	}
+
+	// ValidateService handles communication with the validation related methods of
+	// the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/lint.html
+	ValidateService struct {
+		client *Client
+	}
+)
+
+var _ ValidateServiceInterface = (*ValidateService)(nil)
 
 // LintResult represents the linting results.
 //

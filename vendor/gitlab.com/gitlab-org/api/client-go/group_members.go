@@ -22,13 +22,27 @@ import (
 	"time"
 )
 
-// GroupMembersService handles communication with the group members
-// related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/members.html
-type GroupMembersService struct {
-	client *Client
-}
+type (
+	GroupMembersServiceInterface interface {
+		GetGroupMember(gid interface{}, user int, options ...RequestOptionFunc) (*GroupMember, *Response, error)
+		GetInheritedGroupMember(gid interface{}, user int, options ...RequestOptionFunc) (*GroupMember, *Response, error)
+		AddGroupMember(gid interface{}, opt *AddGroupMemberOptions, options ...RequestOptionFunc) (*GroupMember, *Response, error)
+		ShareWithGroup(gid interface{}, opt *ShareWithGroupOptions, options ...RequestOptionFunc) (*Group, *Response, error)
+		DeleteShareWithGroup(gid interface{}, groupID int, options ...RequestOptionFunc) (*Response, error)
+		EditGroupMember(gid interface{}, user int, opt *EditGroupMemberOptions, options ...RequestOptionFunc) (*GroupMember, *Response, error)
+		RemoveGroupMember(gid interface{}, user int, opt *RemoveGroupMemberOptions, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupMembersService handles communication with the group members
+	// related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/members.html
+	GroupMembersService struct {
+		client *Client
+	}
+)
+
+var _ GroupMembersServiceInterface = (*GroupMembersService)(nil)
 
 // GroupMember represents a GitLab group member.
 //

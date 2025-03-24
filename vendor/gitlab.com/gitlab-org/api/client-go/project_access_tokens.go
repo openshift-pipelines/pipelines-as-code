@@ -19,36 +19,34 @@ package gitlab
 import (
 	"fmt"
 	"net/http"
-	"time"
 )
 
-// ProjectAccessTokensService handles communication with the
-// project access tokens related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/api/project_access_tokens/
-type ProjectAccessTokensService struct {
-	client *Client
-}
+type (
+	ProjectAccessTokensServiceInterface interface {
+		ListProjectAccessTokens(pid interface{}, opt *ListProjectAccessTokensOptions, options ...RequestOptionFunc) ([]*ProjectAccessToken, *Response, error)
+		GetProjectAccessToken(pid interface{}, id int, options ...RequestOptionFunc) (*ProjectAccessToken, *Response, error)
+		CreateProjectAccessToken(pid interface{}, opt *CreateProjectAccessTokenOptions, options ...RequestOptionFunc) (*ProjectAccessToken, *Response, error)
+		RotateProjectAccessToken(pid interface{}, id int, opt *RotateProjectAccessTokenOptions, options ...RequestOptionFunc) (*ProjectAccessToken, *Response, error)
+		RevokeProjectAccessToken(pid interface{}, id int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// ProjectAccessTokensService handles communication with the
+	// project access tokens related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/api/project_access_tokens/
+	ProjectAccessTokensService struct {
+		client *Client
+	}
+)
+
+var _ ProjectAccessTokensServiceInterface = (*ProjectAccessTokensService)(nil)
 
 // ProjectAccessToken represents a GitLab project access token.
 //
 // GitLab API docs:
 // https://docs.gitlab.com/api/project_access_tokens/
-type ProjectAccessToken struct {
-	ID          int              `json:"id"`
-	UserID      int              `json:"user_id"`
-	Name        string           `json:"name"`
-	Description string           `json:"description"`
-	Scopes      []string         `json:"scopes"`
-	CreatedAt   *time.Time       `json:"created_at"`
-	LastUsedAt  *time.Time       `json:"last_used_at"`
-	ExpiresAt   *ISOTime         `json:"expires_at"`
-	Active      bool             `json:"active"`
-	Revoked     bool             `json:"revoked"`
-	Token       string           `json:"token"`
-	AccessLevel AccessLevelValue `json:"access_level"`
-}
+type ProjectAccessToken resourceAccessToken
 
 func (v ProjectAccessToken) String() string {
 	return Stringify(v)

@@ -22,14 +22,26 @@ import (
 	"time"
 )
 
-// GroupClustersService handles communication with the
-// group clusters related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_clusters.html
-type GroupClustersService struct {
-	client *Client
-}
+type (
+	GroupClustersServiceInterface interface {
+		ListClusters(pid interface{}, options ...RequestOptionFunc) ([]*GroupCluster, *Response, error)
+		GetCluster(pid interface{}, cluster int, options ...RequestOptionFunc) (*GroupCluster, *Response, error)
+		AddCluster(pid interface{}, opt *AddGroupClusterOptions, options ...RequestOptionFunc) (*GroupCluster, *Response, error)
+		EditCluster(pid interface{}, cluster int, opt *EditGroupClusterOptions, options ...RequestOptionFunc) (*GroupCluster, *Response, error)
+		DeleteCluster(pid interface{}, cluster int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupClustersService handles communication with the
+	// group clusters related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/group_clusters.html
+	GroupClustersService struct {
+		client *Client
+	}
+)
+
+var _ GroupClustersServiceInterface = (*GroupClustersService)(nil)
 
 // GroupCluster represents a GitLab Group Cluster.
 //

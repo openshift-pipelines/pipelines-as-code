@@ -22,14 +22,27 @@ import (
 	"net/url"
 )
 
-// GroupVariablesService handles communication with the
-// group variables related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/api/group_level_variables/
-type GroupVariablesService struct {
-	client *Client
-}
+type (
+	// GroupVariablesServiceInterface defines methods for the GroupVariablesService.
+	GroupVariablesServiceInterface interface {
+		ListVariables(gid interface{}, opt *ListGroupVariablesOptions, options ...RequestOptionFunc) ([]*GroupVariable, *Response, error)
+		GetVariable(gid interface{}, key string, opt *GetGroupVariableOptions, options ...RequestOptionFunc) (*GroupVariable, *Response, error)
+		CreateVariable(gid interface{}, opt *CreateGroupVariableOptions, options ...RequestOptionFunc) (*GroupVariable, *Response, error)
+		UpdateVariable(gid interface{}, key string, opt *UpdateGroupVariableOptions, options ...RequestOptionFunc) (*GroupVariable, *Response, error)
+		RemoveVariable(gid interface{}, key string, opt *RemoveGroupVariableOptions, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupVariablesService handles communication with the
+	// group variables related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/api/group_level_variables/
+	GroupVariablesService struct {
+		client *Client
+	}
+)
+
+var _ GroupVariablesServiceInterface = (*GroupVariablesService)(nil)
 
 // GroupVariable represents a GitLab group Variable.
 //

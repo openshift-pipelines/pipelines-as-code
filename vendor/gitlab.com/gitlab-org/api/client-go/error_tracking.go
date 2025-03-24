@@ -21,13 +21,26 @@ import (
 	"net/http"
 )
 
-// ErrorTrackingService handles communication with the error tracking
-// methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/error_tracking.html
-type ErrorTrackingService struct {
-	client *Client
-}
+type (
+	// ErrorTrackingServiceInterface defines all the API methods for the ErrorTrackingService
+	ErrorTrackingServiceInterface interface {
+		GetErrorTrackingSettings(pid interface{}, options ...RequestOptionFunc) (*ErrorTrackingSettings, *Response, error)
+		EnableDisableErrorTracking(pid interface{}, opt *EnableDisableErrorTrackingOptions, options ...RequestOptionFunc) (*ErrorTrackingSettings, *Response, error)
+		ListClientKeys(pid interface{}, opt *ListClientKeysOptions, options ...RequestOptionFunc) ([]*ErrorTrackingClientKey, *Response, error)
+		CreateClientKey(pid interface{}, options ...RequestOptionFunc) (*ErrorTrackingClientKey, *Response, error)
+		DeleteClientKey(pid interface{}, keyID int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// ErrorTrackingService handles communication with the error tracking
+	// methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/error_tracking.html
+	ErrorTrackingService struct {
+		client *Client
+	}
+)
+
+var _ ErrorTrackingServiceInterface = (*ErrorTrackingService)(nil)
 
 // ErrorTrackingClientKey represents an error tracking client key.
 //
