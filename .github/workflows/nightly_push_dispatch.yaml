@@ -1,4 +1,4 @@
-name: E2E Tests on Kind
+name: E2E Tests for push, schedule and dispatch
 
 on:
   schedule:
@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.sha }}
 
       - uses: actions/setup-go@v5
         with:
@@ -101,7 +101,7 @@ jobs:
         run: |
           ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe
 
-      - name: Run E2E Tests on pull_request
+      - name: Run E2E Tests
         if: ${{ github.event_name != 'schedule' }}
         env:
           TEST_PROVIDER: ${{ matrix.provider }}
