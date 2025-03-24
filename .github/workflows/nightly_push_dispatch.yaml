@@ -10,11 +10,10 @@ on:
         description: "Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)"
         required: false
         default: false
-  pull_request_target:
-    types: [opened, synchronize, reopened]
-    paths:
-      - "**.go"
-
+      sha:
+        description: "The commit SHA to checkout"
+        required: false
+        default: "main"
 jobs:
   e2e-tests:
     concurrency:
@@ -55,7 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.sha || github.sha }}
 
       - uses: actions/setup-go@v5
         with:

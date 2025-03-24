@@ -5,7 +5,6 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - "**.go"
-
 jobs:
   e2e-tests:
     concurrency:
@@ -90,13 +89,6 @@ jobs:
       - name: Run gosmee
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "http://${CONTROLLER_DOMAIN_URL}" &
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
-        with:
-          detached: true
-          limit-access-to-actor: true
 
       - name: Start installing cluster
         run: |
