@@ -32,7 +32,7 @@
 
 {{ $.ColorScheme.Underline "Other Runs:" }}
 
-{{ $.ColorScheme.Bold "STATUS:" }}	{{ $.ColorScheme.Bold "Event" }}	{{ $.ColorScheme.Bold "Branch" }}	 {{ $.ColorScheme.Bold "SHA" }}	 {{ $.ColorScheme.Bold "STARTED TIME" }}	{{ $.ColorScheme.Bold "DURATION" }}		{{ $.ColorScheme.Bold "PIPELINERUN" }}
+{{ $.ColorScheme.Bold "STATUS" }}	{{ $.ColorScheme.Bold "Event" }}	{{ $.ColorScheme.Bold "Branch" }}	{{ $.ColorScheme.Bold "SHA" }}	{{ $.ColorScheme.Bold "STARTED TIME" }}	{{ $.ColorScheme.Bold "DURATION" }}	{{ $.ColorScheme.Bold "PIPELINERUN" }}
 {{- range $i, $st := (slice .Statuses 1 (len .Statuses)) }}
 {{ formatStatus $st $.ColorScheme $.Clock }}
 {{- end }}
