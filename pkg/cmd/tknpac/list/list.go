@@ -123,8 +123,8 @@ func formatStatus(status *v1alpha1.RepositoryRunStatus, cs *cli.ColorScheme, c c
 	}
 
 	reason := "UNKNOWN"
-	if len(status.Status.Conditions) > 0 {
-		reason = status.Status.Conditions[0].Reason
+	if len(status.Conditions) > 0 {
+		reason = status.Conditions[0].Reason
 	}
 	return fmt.Sprintf("%s\t%s", s, cs.HyperLink(cs.ColorStatus(reason), *status.LogURL))
 }
