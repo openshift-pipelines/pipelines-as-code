@@ -14,6 +14,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
@@ -1414,9 +1415,10 @@ func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.
 		Info:    info.Info{},
 	}
 
+	eventEmitter := events.NewEventEmitter(cs.Kube, logger)
 	matches, err := MatchPipelinerunByAnnotation(ctx, logger,
 		tt.args.pruns,
-		client, &tt.args.runevent, vcx,
+		client, &tt.args.runevent, vcx, eventEmitter, nil,
 	)
 
 	if tt.wantLog != "" {
@@ -1883,7 +1885,9 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				Clients: clients.Clients{},
 				Info:    info.Info{},
 			}
-			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent, &ghprovider.Provider{})
+
+			eventEmitter := events.NewEventEmitter(cs.Clients.Kube, logger)
+			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent, &ghprovider.Provider{}, eventEmitter, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return
