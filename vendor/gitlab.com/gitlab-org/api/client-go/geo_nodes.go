@@ -21,6 +21,29 @@ import (
 	"net/http"
 )
 
+type (
+	GeoNodesServiceInterface interface {
+		CreateGeoNode(*CreateGeoNodesOptions, ...RequestOptionFunc) (*GeoNode, *Response, error)
+		ListGeoNodes(*ListGeoNodesOptions, ...RequestOptionFunc) ([]*GeoNode, *Response, error)
+		GetGeoNode(int, ...RequestOptionFunc) (*GeoNode, *Response, error)
+		EditGeoNode(int, *UpdateGeoNodesOptions, ...RequestOptionFunc) (*GeoNode, *Response, error)
+		DeleteGeoNode(int, ...RequestOptionFunc) (*Response, error)
+		RepairGeoNode(int, ...RequestOptionFunc) (*GeoNode, *Response, error)
+		RetrieveStatusOfAllGeoNodes(...RequestOptionFunc) ([]*GeoNodeStatus, *Response, error)
+		RetrieveStatusOfGeoNode(int, ...RequestOptionFunc) (*GeoNodeStatus, *Response, error)
+	}
+
+	// GeoNodesService handles communication with Geo Nodes related methods
+	// of GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/geo_nodes.html
+	GeoNodesService struct {
+		client *Client
+	}
+)
+
+var _ GeoNodesServiceInterface = (*GeoNodesService)(nil)
+
 // GeoNode represents a GitLab Geo Node.
 //
 // GitLab API docs: https://docs.gitlab.com/ee/api/geo_nodes.html
@@ -54,14 +77,6 @@ type GeoNodeLinks struct {
 	Self   string `json:"self"`
 	Status string `json:"status"`
 	Repair string `json:"repair"`
-}
-
-// GeoNodesService handles communication with Geo Nodes related methods
-// of GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/geo_nodes.html
-type GeoNodesService struct {
-	client *Client
 }
 
 // CreateGeoNodesOptions represents the available CreateGeoNode() options.

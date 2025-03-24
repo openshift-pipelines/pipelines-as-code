@@ -1,0 +1,152 @@
+name: E2E Tests on Kind for trusted users
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "**.go"
+
+jobs:
+  e2e-tests:
+    concurrency:
+      group: ${{ github.workflow }}-${{ matrix.provider }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    name: e2e tests
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'pull_request_target' || github.event_name == 'pull_request') &&
+      contains(fromJson('["chmouel", "zakisk", "savitaashture", "aThorp96", "vdemeester"]'), github.event.pull_request.user.login)
+    strategy:
+      matrix:
+        provider: [providers, gitea_others]
+    env:
+      KO_DOCKER_REPO: localhost:5000
+      CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
+      TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
+      KUBECONFIG: /home/runner/.kube/config.kind
+      # Configure test environment variables
+      TEST_BITBUCKET_CLOUD_API_URL: https://api.bitbucket.org/2.0
+      TEST_BITBUCKET_CLOUD_E2E_REPOSITORY: cboudjna/pac-e2e-tests
+      TEST_BITBUCKET_CLOUD_USER: cboudjna
+      TEST_EL_URL: http://controller.paac-127-0-0-1.nip.io
+      TEST_GITEA_API_URL: http://localhost:3000
+      TEST_GITEA_USERNAME: pac
+      TEST_GITEA_PASSWORD: pac
+      TEST_GITEA_REPO_OWNER: pac/pac
+      TEST_GITHUB_API_URL: api.github.com
+      TEST_GITHUB_REPO_OWNER_WEBHOOK: openshift-pipelines/pipelines-as-code-e2e-tests-webhook
+      TEST_GITHUB_PRIVATE_TASK_URL: https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml
+      TEST_GITHUB_PRIVATE_TASK_NAME: task-remote
+      TEST_GITHUB_SECOND_API_URL: ghe.pipelinesascode.com
+      TEST_GITHUB_SECOND_EL_URL: http://ghe.paac-127-0-0-1.nip.io
+      TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
+      TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
+      TEST_GITLAB_API_URL: https://gitlab.com
+      TEST_GITLAB_PROJECT_ID: 34405323
+      TEST_BITBUCKET_SERVER_USER: pipelines
+      TEST_BITBUCKET_SERVER_E2E_REPOSITORY: PAC/pac-e2e-tests
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Check if user is an admin
+        id: check-permissions
+        run: |
+          set -x
+          USER_LOGIN="${{ github.event.pull_request.user.login }}"
+          REPO_FULL_NAME="${{ github.repository }}"
+          echo "Checking permissions for user: $USER_LOGIN in repo: $REPO_FULL_NAME"
+
+          # Fetch user permissions using GitHub API
+          PERMISSIONS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$REPO_FULL_NAME/collaborators/$USER_LOGIN/permission")
+
+          # Extract the permission level
+          PERMISSION_LEVEL=$(echo "$PERMISSIONS" | jq -r '.permission')
+
+          # Set output variable to indicate if the user is an admin
+          if [[ "$PERMISSION_LEVEL" == "admin" ]]; then
+            echo "User is an admin."
+            echo "is-admin=true" >> $GITHUB_OUTPUT
+          else
+            echo "User is not an admin."
+            echo "is-admin=false" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - uses: ko-build/setup-ko@v0.8
+
+      - name: Install gosmee
+        uses: jaxxstorm/action-install-gh-release@v2.0.0
+        with:
+          repo: chmouel/gosmee
+
+      - name: Run gosmee
+        run: |
+          nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "http://${CONTROLLER_DOMAIN_URL}" &
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+        with:
+          detached: true
+          limit-access-to-actor: true
+
+      - name: Start installing cluster
+        run: |
+          export PAC_DIR=${PWD}
+          export TEST_GITEA_SMEEURL="${{ secrets.TEST_GITEA_SMEEURL }}"
+          bash -x ./hack/dev/kind/install.sh
+
+      - name: Create PAC github-app-secret
+        env:
+          PAC_GITHUB_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          PAC_GITHUB_APPLICATION_ID: ${{ secrets.APPLICATION_ID }}
+          PAC_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        run: |
+          ./hack/gh-workflow-ci.sh create_pac_github_app_secret
+
+      - name: Create second Github APP Controller on GHE
+        env:
+          TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+          TEST_GITHUB_SECOND_PRIVATE_KEY: ${{ secrets.TEST_GITHUB_SECOND_PRIVATE_KEY }}
+          TEST_GITHUB_SECOND_WEBHOOK_SECRET: ${{ secrets.TEST_GITHUB_SECOND_WEBHOOK_SECRET }}
+        run: |
+          ./hack/gh-workflow-ci.sh create_second_github_app_controller_on_ghe
+
+      - name: Run E2E Tests on pull_request
+        env:
+          TEST_PROVIDER: ${{ matrix.provider }}
+          TEST_BITBUCKET_CLOUD_TOKEN: ${{ secrets.BITBUCKET_CLOUD_TOKEN }}
+          TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
+          TEST_GITHUB_REPO_INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
+          TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
+          TEST_GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          TEST_BITBUCKET_SERVER_TOKEN: ${{ secrets.BITBUCKET_SERVER_TOKEN }}
+          TEST_BITBUCKET_SERVER_API_URL: ${{ secrets.BITBUCKET_SERVER_API_URL }}
+          TEST_BITBUCKET_SERVER_WEBHOOK_SECRET: ${{ secrets.BITBUCKET_SERVER_WEBHOOK_SECRET }}
+        run: |
+          ./hack/gh-workflow-ci.sh run_e2e_tests
+
+      - name: Collect logs
+        if: ${{ always() }}
+        env:
+          TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
+          TEST_GITHUB_SECOND_SMEE_URL: ${{ secrets.TEST_GITHUB_SECOND_SMEE_URL }}
+        run: |
+          ./hack/gh-workflow-ci.sh collect_logs
+
+      - name: Upload artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-e2e-tests-${{ matrix.provider }}
+          path: /tmp/logs

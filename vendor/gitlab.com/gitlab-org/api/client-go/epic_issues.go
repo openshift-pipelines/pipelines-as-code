@@ -21,13 +21,25 @@ import (
 	"net/http"
 )
 
-// EpicIssuesService handles communication with the epic issue related methods
-// of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/epic_issues.html
-type EpicIssuesService struct {
-	client *Client
-}
+type (
+	// EpicIssuesServiceInterface defines all the API methods for the EpicIssuesService
+	EpicIssuesServiceInterface interface {
+		ListEpicIssues(gid interface{}, epic int, opt *ListOptions, options ...RequestOptionFunc) ([]*Issue, *Response, error)
+		AssignEpicIssue(gid interface{}, epic, issue int, options ...RequestOptionFunc) (*EpicIssueAssignment, *Response, error)
+		RemoveEpicIssue(gid interface{}, epic, epicIssue int, options ...RequestOptionFunc) (*EpicIssueAssignment, *Response, error)
+		UpdateEpicIssueAssignment(gid interface{}, epic, epicIssue int, opt *UpdateEpicIsssueAssignmentOptions, options ...RequestOptionFunc) ([]*Issue, *Response, error)
+	}
+
+	// EpicIssuesService handles communication with the epic issue related methods
+	// of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/epic_issues.html
+	EpicIssuesService struct {
+		client *Client
+	}
+)
+
+var _ EpicIssuesServiceInterface = (*EpicIssuesService)(nil)
 
 // EpicIssueAssignment contains both the epic and issue objects returned from
 // Gitlab with the assignment ID.

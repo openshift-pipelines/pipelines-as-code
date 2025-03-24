@@ -22,13 +22,26 @@ import (
 	"net/url"
 )
 
-// TagsService handles communication with the tags related methods
-// of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/tags.html
-type TagsService struct {
-	client *Client
-}
+type (
+	TagsServiceInterface interface {
+		ListTags(pid interface{}, opt *ListTagsOptions, options ...RequestOptionFunc) ([]*Tag, *Response, error)
+		GetTag(pid interface{}, tag string, options ...RequestOptionFunc) (*Tag, *Response, error)
+		CreateTag(pid interface{}, opt *CreateTagOptions, options ...RequestOptionFunc) (*Tag, *Response, error)
+		DeleteTag(pid interface{}, tag string, options ...RequestOptionFunc) (*Response, error)
+		CreateReleaseNote(pid interface{}, tag string, opt *CreateReleaseNoteOptions, options ...RequestOptionFunc) (*ReleaseNote, *Response, error)
+		UpdateReleaseNote(pid interface{}, tag string, opt *UpdateReleaseNoteOptions, options ...RequestOptionFunc) (*ReleaseNote, *Response, error)
+	}
+
+	// TagsService handles communication with the tags related methods
+	// of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/tags.html
+	TagsService struct {
+		client *Client
+	}
+)
+
+var _ TagsServiceInterface = (*TagsService)(nil)
 
 // Tag represents a GitLab tag.
 //

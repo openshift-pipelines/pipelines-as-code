@@ -22,13 +22,21 @@ import (
 	"time"
 )
 
-// IterationsAPI handles communication with the iterations related methods
-// of the GitLab API
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/group_iterations.html
-type GroupIterationsService struct {
-	client *Client
-}
+type (
+	GroupIterationsServiceInterface interface {
+		ListGroupIterations(gid interface{}, opt *ListGroupIterationsOptions, options ...RequestOptionFunc) ([]*GroupIteration, *Response, error)
+	}
+
+	// IterationsAPI handles communication with the iterations related methods
+	// of the GitLab API
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/group_iterations.html
+	GroupIterationsService struct {
+		client *Client
+	}
+)
+
+var _ GroupIterationsServiceInterface = (*GroupIterationsService)(nil)
 
 // GroupInteration represents a GitLab iteration.
 //

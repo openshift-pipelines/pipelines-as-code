@@ -20,13 +20,21 @@ import (
 	"net/http"
 )
 
-// AvatarRequestsService handles communication with the avatar related methods
-// of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/avatar.html
-type AvatarRequestsService struct {
-	client *Client
-}
+type (
+	AvatarRequestsServiceInterface interface {
+		GetAvatar(opt *GetAvatarOptions, options ...RequestOptionFunc) (*Avatar, *Response, error)
+	}
+
+	// AvatarRequestsService handles communication with the avatar related methods
+	// of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/avatar.html
+	AvatarRequestsService struct {
+		client *Client
+	}
+)
+
+var _ AvatarRequestsServiceInterface = (*AvatarRequestsService)(nil)
 
 // Avatar represents a GitLab avatar.
 //

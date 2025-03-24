@@ -22,14 +22,27 @@ import (
 	"net/url"
 )
 
-// WikisService handles communication with the wikis related methods of
-// the Gitlab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/api/wikis/
-type WikisService struct {
-	client *Client
-}
+type (
+	WikisServiceInterface interface {
+		ListWikis(pid interface{}, opt *ListWikisOptions, options ...RequestOptionFunc) ([]*Wiki, *Response, error)
+		GetWikiPage(pid interface{}, slug string, opt *GetWikiPageOptions, options ...RequestOptionFunc) (*Wiki, *Response, error)
+		CreateWikiPage(pid interface{}, opt *CreateWikiPageOptions, options ...RequestOptionFunc) (*Wiki, *Response, error)
+		EditWikiPage(pid interface{}, slug string, opt *EditWikiPageOptions, options ...RequestOptionFunc) (*Wiki, *Response, error)
+		DeleteWikiPage(pid interface{}, slug string, options ...RequestOptionFunc) (*Response, error)
+		UploadWikiAttachment(pid interface{}, content io.Reader, filename string, opt *UploadWikiAttachmentOptions, options ...RequestOptionFunc) (*WikiAttachment, *Response, error)
+	}
+
+	// WikisService handles communication with the wikis related methods of
+	// the Gitlab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/api/wikis/
+	WikisService struct {
+		client *Client
+	}
+)
+
+var _ WikisServiceInterface = (*WikisService)(nil)
 
 // Wiki represents a GitLab wiki.
 //

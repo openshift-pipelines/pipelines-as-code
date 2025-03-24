@@ -5,14 +5,27 @@ import (
 	"net/http"
 )
 
-// MemberRolesService handles communication with the member roles related
-// methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/api/member_roles/#list-all-member-roles-of-a-group
-type MemberRolesService struct {
-	client *Client
-}
+type (
+	MemberRolesServiceInterface interface {
+		ListInstanceMemberRoles(options ...RequestOptionFunc) ([]*MemberRole, *Response, error)
+		CreateInstanceMemberRole(opt *CreateMemberRoleOptions, options ...RequestOptionFunc) (*MemberRole, *Response, error)
+		DeleteInstanceMemberRole(memberRoleID int, options ...RequestOptionFunc) (*Response, error)
+		ListMemberRoles(gid interface{}, options ...RequestOptionFunc) ([]*MemberRole, *Response, error)
+		CreateMemberRole(gid interface{}, opt *CreateMemberRoleOptions, options ...RequestOptionFunc) (*MemberRole, *Response, error)
+		DeleteMemberRole(gid interface{}, memberRole int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// MemberRolesService handles communication with the member roles related
+	// methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/api/member_roles/#list-all-member-roles-of-a-group
+	MemberRolesService struct {
+		client *Client
+	}
+)
+
+var _ MemberRolesServiceInterface = (*MemberRolesService)(nil)
 
 // MemberRole represents a GitLab member role.
 //

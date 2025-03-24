@@ -21,13 +21,27 @@ import (
 	"net/http"
 )
 
-// GroupBadgesService handles communication with the group badges
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_badges.html
-type GroupBadgesService struct {
-	client *Client
-}
+type (
+	// GroupBadgesServiceInterface defines all the API methods for the GroupBadgesService
+	GroupBadgesServiceInterface interface {
+		ListGroupBadges(gid interface{}, opt *ListGroupBadgesOptions, options ...RequestOptionFunc) ([]*GroupBadge, *Response, error)
+		GetGroupBadge(gid interface{}, badge int, options ...RequestOptionFunc) (*GroupBadge, *Response, error)
+		AddGroupBadge(gid interface{}, opt *AddGroupBadgeOptions, options ...RequestOptionFunc) (*GroupBadge, *Response, error)
+		EditGroupBadge(gid interface{}, badge int, opt *EditGroupBadgeOptions, options ...RequestOptionFunc) (*GroupBadge, *Response, error)
+		DeleteGroupBadge(gid interface{}, badge int, options ...RequestOptionFunc) (*Response, error)
+		PreviewGroupBadge(gid interface{}, opt *GroupBadgePreviewOptions, options ...RequestOptionFunc) (*GroupBadge, *Response, error)
+	}
+
+	// GroupBadgesService handles communication with the group badges
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/group_badges.html
+	GroupBadgesService struct {
+		client *Client
+	}
+)
+
+var _ GroupBadgesServiceInterface = (*GroupBadgesService)(nil)
 
 // BadgeKind represents a GitLab Badge Kind
 type BadgeKind string

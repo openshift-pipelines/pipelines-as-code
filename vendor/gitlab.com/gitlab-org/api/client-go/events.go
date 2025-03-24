@@ -22,13 +22,23 @@ import (
 	"time"
 )
 
-// EventsService handles communication with the event related methods of
-// the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/events.html
-type EventsService struct {
-	client *Client
-}
+type (
+	// EventsServiceInterface defines all the API methods for the EventsService
+	EventsServiceInterface interface {
+		ListCurrentUserContributionEvents(opt *ListContributionEventsOptions, options ...RequestOptionFunc) ([]*ContributionEvent, *Response, error)
+		ListProjectVisibleEvents(pid interface{}, opt *ListProjectVisibleEventsOptions, options ...RequestOptionFunc) ([]*ProjectEvent, *Response, error)
+	}
+
+	// EventsService handles communication with the event related methods of
+	// the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/events.html
+	EventsService struct {
+		client *Client
+	}
+)
+
+var _ EventsServiceInterface = (*EventsService)(nil)
 
 // ContributionEvent represents a user's contribution
 //

@@ -21,6 +21,30 @@ import (
 	"net/http"
 )
 
+type (
+	// DraftNotesServiceInterface defines all the API methods for the DraftNotesService
+	DraftNotesServiceInterface interface {
+		ListDraftNotes(pid interface{}, mergeRequest int, opt *ListDraftNotesOptions, options ...RequestOptionFunc) ([]*DraftNote, *Response, error)
+		GetDraftNote(pid interface{}, mergeRequest int, note int, options ...RequestOptionFunc) (*DraftNote, *Response, error)
+		CreateDraftNote(pid interface{}, mergeRequest int, opt *CreateDraftNoteOptions, options ...RequestOptionFunc) (*DraftNote, *Response, error)
+		UpdateDraftNote(pid interface{}, mergeRequest int, note int, opt *UpdateDraftNoteOptions, options ...RequestOptionFunc) (*DraftNote, *Response, error)
+		DeleteDraftNote(pid interface{}, mergeRequest int, note int, options ...RequestOptionFunc) (*Response, error)
+		PublishDraftNote(pid interface{}, mergeRequest int, note int, options ...RequestOptionFunc) (*Response, error)
+		PublishAllDraftNotes(pid interface{}, mergeRequest int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// DraftNotesService handles communication with the draft notes related methods
+	// of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/draft_notes.html#list-all-merge-request-draft-notes
+	DraftNotesService struct {
+		client *Client
+	}
+)
+
+var _ DraftNotesServiceInterface = (*DraftNotesService)(nil)
+
 type DraftNote struct {
 	ID                int           `json:"id"`
 	AuthorID          int           `json:"author_id"`
@@ -31,15 +55,6 @@ type DraftNote struct {
 	CommitID          string        `json:"commit_id"`
 	LineCode          string        `json:"line_code"`
 	Position          *NotePosition `json:"position"`
-}
-
-// DraftNotesService handles communication with the draft notes related methods
-// of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/draft_notes.html#list-all-merge-request-draft-notes
-type DraftNotesService struct {
-	client *Client
 }
 
 // ListDraftNotesOptions represents the available ListDraftNotes()

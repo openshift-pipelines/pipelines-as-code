@@ -22,14 +22,26 @@ import (
 	"net/url"
 )
 
-// InstanceVariablesService handles communication with the
-// instance level CI variables related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/instance_level_ci_variables.html
-type InstanceVariablesService struct {
-	client *Client
-}
+type (
+	InstanceVariablesServiceInterface interface {
+		ListVariables(opt *ListInstanceVariablesOptions, options ...RequestOptionFunc) ([]*InstanceVariable, *Response, error)
+		GetVariable(key string, options ...RequestOptionFunc) (*InstanceVariable, *Response, error)
+		CreateVariable(opt *CreateInstanceVariableOptions, options ...RequestOptionFunc) (*InstanceVariable, *Response, error)
+		UpdateVariable(key string, opt *UpdateInstanceVariableOptions, options ...RequestOptionFunc) (*InstanceVariable, *Response, error)
+		RemoveVariable(key string, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// InstanceVariablesService handles communication with the
+	// instance level CI variables related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/instance_level_ci_variables.html
+	InstanceVariablesService struct {
+		client *Client
+	}
+)
+
+var _ InstanceVariablesServiceInterface = (*InstanceVariablesService)(nil)
 
 // InstanceVariable represents a GitLab instance level CI Variable.
 //

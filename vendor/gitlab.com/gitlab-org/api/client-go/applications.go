@@ -21,13 +21,23 @@ import (
 	"net/http"
 )
 
-// ApplicationsService handles communication with administrables applications
-// of the Gitlab API.
-//
-// Gitlab API docs : https://docs.gitlab.com/ee/api/applications.html
-type ApplicationsService struct {
-	client *Client
-}
+type (
+	ApplicationsServiceInterface interface {
+		CreateApplication(opt *CreateApplicationOptions, options ...RequestOptionFunc) (*Application, *Response, error)
+		ListApplications(opt *ListApplicationsOptions, options ...RequestOptionFunc) ([]*Application, *Response, error)
+		DeleteApplication(application int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// ApplicationsService handles communication with administrables applications
+	// of the Gitlab API.
+	//
+	// Gitlab API docs : https://docs.gitlab.com/ee/api/applications.html
+	ApplicationsService struct {
+		client *Client
+	}
+)
+
+var _ ApplicationsServiceInterface = (*ApplicationsService)(nil)
 
 // Application represents a GitLab application
 type Application struct {

@@ -22,14 +22,26 @@ import (
 	"time"
 )
 
-// InstanceClustersService handles communication with the
-// instance clusters related methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/instance_clusters.html
-type InstanceClustersService struct {
-	client *Client
-}
+type (
+	InstanceClustersServiceInterface interface {
+		ListClusters(options ...RequestOptionFunc) ([]*InstanceCluster, *Response, error)
+		GetCluster(cluster int, options ...RequestOptionFunc) (*InstanceCluster, *Response, error)
+		AddCluster(opt *AddClusterOptions, options ...RequestOptionFunc) (*InstanceCluster, *Response, error)
+		EditCluster(cluster int, opt *EditClusterOptions, options ...RequestOptionFunc) (*InstanceCluster, *Response, error)
+		DeleteCluster(cluster int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// InstanceClustersService handles communication with the
+	// instance clusters related methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/ee/api/instance_clusters.html
+	InstanceClustersService struct {
+		client *Client
+	}
+)
+
+var _ InstanceClustersServiceInterface = (*InstanceClustersService)(nil)
 
 // InstanceCluster represents a GitLab Instance Cluster.
 //
