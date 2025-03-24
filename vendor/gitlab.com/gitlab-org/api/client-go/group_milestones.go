@@ -22,13 +22,28 @@ import (
 	"time"
 )
 
-// GroupMilestonesService handles communication with the milestone related
-// methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/group_milestones.html
-type GroupMilestonesService struct {
-	client *Client
-}
+type (
+	GroupMilestonesServiceInterface interface {
+		ListGroupMilestones(gid interface{}, opt *ListGroupMilestonesOptions, options ...RequestOptionFunc) ([]*GroupMilestone, *Response, error)
+		GetGroupMilestone(gid interface{}, milestone int, options ...RequestOptionFunc) (*GroupMilestone, *Response, error)
+		CreateGroupMilestone(gid interface{}, opt *CreateGroupMilestoneOptions, options ...RequestOptionFunc) (*GroupMilestone, *Response, error)
+		UpdateGroupMilestone(gid interface{}, milestone int, opt *UpdateGroupMilestoneOptions, options ...RequestOptionFunc) (*GroupMilestone, *Response, error)
+		DeleteGroupMilestone(pid interface{}, milestone int, options ...RequestOptionFunc) (*Response, error)
+		GetGroupMilestoneIssues(gid interface{}, milestone int, opt *GetGroupMilestoneIssuesOptions, options ...RequestOptionFunc) ([]*Issue, *Response, error)
+		GetGroupMilestoneMergeRequests(gid interface{}, milestone int, opt *GetGroupMilestoneMergeRequestsOptions, options ...RequestOptionFunc) ([]*BasicMergeRequest, *Response, error)
+		GetGroupMilestoneBurndownChartEvents(gid interface{}, milestone int, opt *GetGroupMilestoneBurndownChartEventsOptions, options ...RequestOptionFunc) ([]*BurndownChartEvent, *Response, error)
+	}
+
+	// GroupMilestonesService handles communication with the milestone related
+	// methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/group_milestones.html
+	GroupMilestonesService struct {
+		client *Client
+	}
+)
+
+var _ GroupMilestonesServiceInterface = (*GroupMilestonesService)(nil)
 
 // GroupMilestone represents a GitLab milestone.
 //

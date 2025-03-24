@@ -22,13 +22,24 @@ import (
 	"time"
 )
 
-// InvitesService handles communication with the invitation related
-// methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/invitations.html
-type InvitesService struct {
-	client *Client
-}
+type (
+	InvitesServiceInterface interface {
+		ListPendingGroupInvitations(gid interface{}, opt *ListPendingInvitationsOptions, options ...RequestOptionFunc) ([]*PendingInvite, *Response, error)
+		ListPendingProjectInvitations(pid interface{}, opt *ListPendingInvitationsOptions, options ...RequestOptionFunc) ([]*PendingInvite, *Response, error)
+		GroupInvites(gid interface{}, opt *InvitesOptions, options ...RequestOptionFunc) (*InvitesResult, *Response, error)
+		ProjectInvites(pid interface{}, opt *InvitesOptions, options ...RequestOptionFunc) (*InvitesResult, *Response, error)
+	}
+
+	// InvitesService handles communication with the invitation related
+	// methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/invitations.html
+	InvitesService struct {
+		client *Client
+	}
+)
+
+var _ InvitesServiceInterface = (*InvitesService)(nil)
 
 // PendingInvite represents a pending invite.
 //

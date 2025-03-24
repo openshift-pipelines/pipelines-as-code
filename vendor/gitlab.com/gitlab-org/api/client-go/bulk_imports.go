@@ -5,12 +5,20 @@ import (
 	"time"
 )
 
-// BulkImportsService handles communication with GitLab's direct transfer API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/bulk_imports.html
-type BulkImportsService struct {
-	client *Client
-}
+type (
+	BulkImportsServiceInterface interface {
+		StartMigration(startMigrationOptions *BulkImportStartMigrationOptions, options ...RequestOptionFunc) (*BulkImportStartMigrationResponse, *Response, error)
+	}
+
+	// BulkImportsService handles communication with GitLab's direct transfer API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/bulk_imports.html
+	BulkImportsService struct {
+		client *Client
+	}
+)
+
+var _ BulkImportsServiceInterface = (*BulkImportsService)(nil)
 
 // BulkImportStartMigrationConfiguration represents the available configuration options to start a migration.
 //

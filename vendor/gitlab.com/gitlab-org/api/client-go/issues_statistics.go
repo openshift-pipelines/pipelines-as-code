@@ -22,13 +22,23 @@ import (
 	"time"
 )
 
-// IssuesStatisticsService handles communication with the issues statistics
-// related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/issues_statistics.html
-type IssuesStatisticsService struct {
-	client *Client
-}
+type (
+	IssuesStatisticsServiceInterface interface {
+		GetIssuesStatistics(opt *GetIssuesStatisticsOptions, options ...RequestOptionFunc) (*IssuesStatistics, *Response, error)
+		GetGroupIssuesStatistics(gid interface{}, opt *GetGroupIssuesStatisticsOptions, options ...RequestOptionFunc) (*IssuesStatistics, *Response, error)
+		GetProjectIssuesStatistics(pid interface{}, opt *GetProjectIssuesStatisticsOptions, options ...RequestOptionFunc) (*IssuesStatistics, *Response, error)
+	}
+
+	// IssuesStatisticsService handles communication with the issues statistics
+	// related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/issues_statistics.html
+	IssuesStatisticsService struct {
+		client *Client
+	}
+)
+
+var _ IssuesStatisticsServiceInterface = (*IssuesStatisticsService)(nil)
 
 // IssuesStatistics represents a GitLab issues statistic.
 //

@@ -22,13 +22,23 @@ import (
 	"net/url"
 )
 
-// DockerfileTemplatesService handles communication with the Dockerfile
-// templates related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/templates/dockerfiles.html
-type DockerfileTemplatesService struct {
-	client *Client
-}
+type (
+	// DockerfileTemplatesServiceInterface defines all the API methods for the DockerfileTemplatesService
+	DockerfileTemplatesServiceInterface interface {
+		ListTemplates(opt *ListDockerfileTemplatesOptions, options ...RequestOptionFunc) ([]*DockerfileTemplateListItem, *Response, error)
+		GetTemplate(key string, options ...RequestOptionFunc) (*DockerfileTemplate, *Response, error)
+	}
+
+	// DockerfileTemplatesService handles communication with the Dockerfile
+	// templates related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/templates/dockerfiles.html
+	DockerfileTemplatesService struct {
+		client *Client
+	}
+)
+
+var _ DockerfileTemplatesServiceInterface = (*DockerfileTemplatesService)(nil)
 
 // DockerfileTemplate represents a GitLab Dockerfile template.
 //

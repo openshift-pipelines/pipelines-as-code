@@ -21,13 +21,23 @@ import (
 	"net/http"
 )
 
-// DORAMetricsService handles communication with the DORA metrics related methods
-// of the GitLab API.
-//
-// Gitlab API docs: https://docs.gitlab.com/ee/api/dora/metrics.html
-type DORAMetricsService struct {
-	client *Client
-}
+type (
+	// DORAMetricsServiceInterface defines all the API methods for the DORAMetricsService
+	DORAMetricsServiceInterface interface {
+		GetProjectDORAMetrics(pid interface{}, opt GetDORAMetricsOptions, options ...RequestOptionFunc) ([]DORAMetric, *Response, error)
+		GetGroupDORAMetrics(gid interface{}, opt GetDORAMetricsOptions, options ...RequestOptionFunc) ([]DORAMetric, *Response, error)
+	}
+
+	// DORAMetricsService handles communication with the DORA metrics related methods
+	// of the GitLab API.
+	//
+	// Gitlab API docs: https://docs.gitlab.com/ee/api/dora/metrics.html
+	DORAMetricsService struct {
+		client *Client
+	}
+)
+
+var _ DORAMetricsServiceInterface = (*DORAMetricsService)(nil)
 
 // DORAMetric represents a single DORA metric data point.
 //

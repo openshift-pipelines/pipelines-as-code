@@ -22,13 +22,23 @@ import (
 	"net/url"
 )
 
-// GitIgnoreTemplatesService handles communication with the gitignore
-// templates related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/templates/gitignores.html
-type GitIgnoreTemplatesService struct {
-	client *Client
-}
+type (
+	// GitIgnoreTemplatesServiceInterface defines all the API methods for the GitIgnoreTemplatesService
+	GitIgnoreTemplatesServiceInterface interface {
+		ListTemplates(*ListTemplatesOptions, ...RequestOptionFunc) ([]*GitIgnoreTemplateListItem, *Response, error)
+		GetTemplate(string, ...RequestOptionFunc) (*GitIgnoreTemplate, *Response, error)
+	}
+
+	// GitIgnoreTemplatesService handles communication with the gitignore
+	// templates related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/templates/gitignores.html
+	GitIgnoreTemplatesService struct {
+		client *Client
+	}
+)
+
+var _ GitIgnoreTemplatesServiceInterface = (*GitIgnoreTemplatesService)(nil)
 
 // GitIgnoreTemplate represents a GitLab gitignore template.
 //

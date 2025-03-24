@@ -27,13 +27,78 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
-// GroupsService handles communication with the group related methods of
-// the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/groups.html
-type GroupsService struct {
-	client *Client
-}
+type (
+	GroupsServiceInterface interface {
+		ListGroups(opt *ListGroupsOptions, options ...RequestOptionFunc) ([]*Group, *Response, error)
+		ListSubGroups(gid interface{}, opt *ListSubGroupsOptions, options ...RequestOptionFunc) ([]*Group, *Response, error)
+		ListDescendantGroups(gid interface{}, opt *ListDescendantGroupsOptions, options ...RequestOptionFunc) ([]*Group, *Response, error)
+		ListGroupProjects(gid interface{}, opt *ListGroupProjectsOptions, options ...RequestOptionFunc) ([]*Project, *Response, error)
+		GetGroup(gid interface{}, opt *GetGroupOptions, options ...RequestOptionFunc) (*Group, *Response, error)
+		DownloadAvatar(gid interface{}, options ...RequestOptionFunc) (*bytes.Reader, *Response, error)
+		CreateGroup(opt *CreateGroupOptions, options ...RequestOptionFunc) (*Group, *Response, error)
+		TransferGroup(gid interface{}, pid interface{}, options ...RequestOptionFunc) (*Group, *Response, error)
+		TransferSubGroup(gid interface{}, opt *TransferSubGroupOptions, options ...RequestOptionFunc) (*Group, *Response, error)
+		UpdateGroup(gid interface{}, opt *UpdateGroupOptions, options ...RequestOptionFunc) (*Group, *Response, error)
+		UploadAvatar(gid interface{}, avatar io.Reader, filename string, options ...RequestOptionFunc) (*Group, *Response, error)
+		DeleteGroup(gid interface{}, opt *DeleteGroupOptions, options ...RequestOptionFunc) (*Response, error)
+		RestoreGroup(gid interface{}, options ...RequestOptionFunc) (*Group, *Response, error)
+		SearchGroup(query string, options ...RequestOptionFunc) ([]*Group, *Response, error)
+		ListProvisionedUsers(gid interface{}, opt *ListProvisionedUsersOptions, options ...RequestOptionFunc) ([]*User, *Response, error)
+		ListGroupLDAPLinks(gid interface{}, options ...RequestOptionFunc) ([]*LDAPGroupLink, *Response, error)
+		AddGroupLDAPLink(gid interface{}, opt *AddGroupLDAPLinkOptions, options ...RequestOptionFunc) (*LDAPGroupLink, *Response, error)
+		DeleteGroupLDAPLink(gid interface{}, cn string, options ...RequestOptionFunc) (*Response, error)
+		DeleteGroupLDAPLinkWithCNOrFilter(gid interface{}, opts *DeleteGroupLDAPLinkWithCNOrFilterOptions, options ...RequestOptionFunc) (*Response, error)
+		DeleteGroupLDAPLinkForProvider(gid interface{}, provider, cn string, options ...RequestOptionFunc) (*Response, error)
+		ListGroupSAMLLinks(gid interface{}, options ...RequestOptionFunc) ([]*SAMLGroupLink, *Response, error)
+		ListGroupSharedProjects(gid interface{}, opt *ListGroupSharedProjectsOptions, options ...RequestOptionFunc) ([]*Project, *Response, error)
+		GetGroupSAMLLink(gid interface{}, samlGroupName string, options ...RequestOptionFunc) (*SAMLGroupLink, *Response, error)
+		AddGroupSAMLLink(gid interface{}, opt *AddGroupSAMLLinkOptions, options ...RequestOptionFunc) (*SAMLGroupLink, *Response, error)
+		DeleteGroupSAMLLink(gid interface{}, samlGroupName string, options ...RequestOptionFunc) (*Response, error)
+		ShareGroupWithGroup(gid interface{}, opt *ShareGroupWithGroupOptions, options ...RequestOptionFunc) (*Group, *Response, error)
+		UnshareGroupFromGroup(gid interface{}, groupID int, options ...RequestOptionFunc) (*Response, error)
+		GetGroupPushRules(gid interface{}, options ...RequestOptionFunc) (*GroupPushRules, *Response, error)
+		AddGroupPushRule(gid interface{}, opt *AddGroupPushRuleOptions, options ...RequestOptionFunc) (*GroupPushRules, *Response, error)
+		EditGroupPushRule(gid interface{}, opt *EditGroupPushRuleOptions, options ...RequestOptionFunc) (*GroupPushRules, *Response, error)
+		DeleteGroupPushRule(gid interface{}, options ...RequestOptionFunc) (*Response, error)
+
+		// group_hooks.go
+		ListGroupHooks(gid interface{}, opt *ListGroupHooksOptions, options ...RequestOptionFunc) ([]*GroupHook, *Response, error)
+		GetGroupHook(gid interface{}, hook int, options ...RequestOptionFunc) (*GroupHook, *Response, error)
+		ResendGroupHookEvent(gid interface{}, hook int, hookEventID int, options ...RequestOptionFunc) (*Response, error)
+		AddGroupHook(gid interface{}, opt *AddGroupHookOptions, options ...RequestOptionFunc) (*GroupHook, *Response, error)
+		EditGroupHook(gid interface{}, hook int, opt *EditGroupHookOptions, options ...RequestOptionFunc) (*GroupHook, *Response, error)
+		DeleteGroupHook(gid interface{}, hook int, options ...RequestOptionFunc) (*Response, error)
+		TriggerTestGroupHook(pid interface{}, hook int, trigger GroupHookTrigger, options ...RequestOptionFunc) (*Response, error)
+		SetGroupCustomHeader(gid interface{}, hook int, key string, opt *SetHookCustomHeaderOptions, options ...RequestOptionFunc) (*Response, error)
+		DeleteGroupCustomHeader(gid interface{}, hook int, key string, options ...RequestOptionFunc) (*Response, error)
+		SetGroupHookURLVariable(gid interface{}, hook int, key string, opt *SetHookURLVariableOptions, options ...RequestOptionFunc) (*Response, error)
+		DeleteGroupHookURLVariable(gid interface{}, hook int, key string, options ...RequestOptionFunc) (*Response, error)
+
+		// group_serviceaccounts.go
+		ListServiceAccounts(gid interface{}, opt *ListServiceAccountsOptions, options ...RequestOptionFunc) ([]*GroupServiceAccount, *Response, error)
+		CreateServiceAccount(gid interface{}, opt *CreateServiceAccountOptions, options ...RequestOptionFunc) (*GroupServiceAccount, *Response, error)
+		DeleteServiceAccount(gid interface{}, serviceAccount int, opt *DeleteServiceAccountOptions, options ...RequestOptionFunc) (*Response, error)
+		CreateServiceAccountPersonalAccessToken(gid interface{}, serviceAccount int, opt *CreateServiceAccountPersonalAccessTokenOptions, options ...RequestOptionFunc) (*PersonalAccessToken, *Response, error)
+		RotateServiceAccountPersonalAccessToken(gid interface{}, serviceAccount, token int, opt *RotateServiceAccountPersonalAccessTokenOptions, options ...RequestOptionFunc) (*PersonalAccessToken, *Response, error)
+
+		// group_members.go
+		ListGroupMembers(gid interface{}, opt *ListGroupMembersOptions, options ...RequestOptionFunc) ([]*GroupMember, *Response, error)
+		ListAllGroupMembers(gid interface{}, opt *ListGroupMembersOptions, options ...RequestOptionFunc) ([]*GroupMember, *Response, error)
+		ListBillableGroupMembers(gid interface{}, opt *ListBillableGroupMembersOptions, options ...RequestOptionFunc) ([]*BillableGroupMember, *Response, error)
+		ListMembershipsForBillableGroupMember(gid interface{}, user int, opt *ListMembershipsForBillableGroupMemberOptions, options ...RequestOptionFunc) ([]*BillableUserMembership, *Response, error)
+		RemoveBillableGroupMember(gid interface{}, user int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupsService handles communication with the group related methods of
+	// the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/groups.html
+	GroupsService struct {
+		client *Client
+	}
+)
+
+var _ GroupsServiceInterface = (*GroupsService)(nil)
 
 // Group represents a GitLab group.
 //
@@ -141,12 +206,14 @@ func (a *GroupAvatar) MarshalJSON() ([]byte, error) {
 
 // LDAPGroupLink represents a GitLab LDAP group link.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/groups.html#ldap-group-links
+// GitLab API docs:
+// https://docs.gitlab.com/api/group_ldap_links/
 type LDAPGroupLink struct {
-	CN          string           `json:"cn"`
-	Filter      string           `json:"filter"`
-	GroupAccess AccessLevelValue `json:"group_access"`
-	Provider    string           `json:"provider"`
+	CN           string           `json:"cn"`
+	Filter       string           `json:"filter"`
+	GroupAccess  AccessLevelValue `json:"group_access"`
+	Provider     string           `json:"provider"`
+	MemberRoleID int64            `json:"member_role_id"`
 }
 
 // SAMLGroupLink represents a GitLab SAML group link.
@@ -738,7 +805,7 @@ func (s *GroupsService) ListProvisionedUsers(gid interface{}, opt *ListProvision
 // can edit groups.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/groups.html#list-ldap-group-links
+// https://docs.gitlab.com/api/group_ldap_links/#list-ldap-group-links
 func (s *GroupsService) ListGroupLDAPLinks(gid interface{}, options ...RequestOptionFunc) ([]*LDAPGroupLink, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -763,29 +830,20 @@ func (s *GroupsService) ListGroupLDAPLinks(gid interface{}, options ...RequestOp
 // AddGroupLDAPLinkOptions represents the available AddGroupLDAPLink() options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/groups.html#add-ldap-group-link-with-cn-or-filter
+// https://docs.gitlab.com/api/group_ldap_links/#add-an-ldap-group-link-with-cn-or-filter
 type AddGroupLDAPLinkOptions struct {
-	CN          *string           `url:"cn,omitempty" json:"cn,omitempty"`
-	Filter      *string           `url:"filter,omitempty" json:"filter,omitempty"`
-	GroupAccess *AccessLevelValue `url:"group_access,omitempty" json:"group_access,omitempty"`
-	Provider    *string           `url:"provider,omitempty" json:"provider,omitempty"`
-}
-
-// DeleteGroupLDAPLinkWithCNOrFilterOptions represents the available DeleteGroupLDAPLinkWithCNOrFilter() options.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/ee/api/groups.html#delete-ldap-group-link-with-cn-or-filter
-type DeleteGroupLDAPLinkWithCNOrFilterOptions struct {
-	CN       *string `url:"cn,omitempty" json:"cn,omitempty"`
-	Filter   *string `url:"filter,omitempty" json:"filter,omitempty"`
-	Provider *string `url:"provider,omitempty" json:"provider,omitempty"`
+	CN           *string           `url:"cn,omitempty" json:"cn,omitempty"`
+	Filter       *string           `url:"filter,omitempty" json:"filter,omitempty"`
+	GroupAccess  *AccessLevelValue `url:"group_access,omitempty" json:"group_access,omitempty"`
+	Provider     *string           `url:"provider,omitempty" json:"provider,omitempty"`
+	MemberRoleID *int64            `url:"member_role_id,omitempty" json:"member_role_id,omitempty"`
 }
 
 // AddGroupLDAPLink creates a new group LDAP link. Available only for users who
 // can edit groups.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/groups.html#add-ldap-group-link-with-cn-or-filter
+// https://docs.gitlab.com/api/group_ldap_links/#add-an-ldap-group-link-with-cn-or-filter
 func (s *GroupsService) AddGroupLDAPLink(gid interface{}, opt *AddGroupLDAPLinkOptions, options ...RequestOptionFunc) (*LDAPGroupLink, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -809,9 +867,10 @@ func (s *GroupsService) AddGroupLDAPLink(gid interface{}, opt *AddGroupLDAPLinkO
 
 // DeleteGroupLDAPLink deletes a group LDAP link. Available only for users who
 // can edit groups.
+// Deprecated as upstream API is deprecated. Use DeleteGroupLDAPLinkWithCNOrFilter() instead.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/groups.html#delete-ldap-group-link
+// https://docs.gitlab.com/api/group_ldap_links/#delete-an-ldap-group-link-deprecated
 func (s *GroupsService) DeleteGroupLDAPLink(gid interface{}, cn string, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -825,6 +884,16 @@ func (s *GroupsService) DeleteGroupLDAPLink(gid interface{}, cn string, options 
 	}
 
 	return s.client.Do(req, nil)
+}
+
+// DeleteGroupLDAPLinkWithCNOrFilterOptions represents the available DeleteGroupLDAPLinkWithCNOrFilter() options.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/api/group_ldap_links/#delete-an-ldap-group-link-with-cn-or-filter
+type DeleteGroupLDAPLinkWithCNOrFilterOptions struct {
+	CN       *string `url:"cn,omitempty" json:"cn,omitempty"`
+	Filter   *string `url:"filter,omitempty" json:"filter,omitempty"`
+	Provider *string `url:"provider,omitempty" json:"provider,omitempty"`
 }
 
 // DeleteGroupLDAPLinkWithCNOrFilter deletes a group LDAP link. Available only for users who
@@ -896,6 +965,50 @@ func (s *GroupsService) ListGroupSAMLLinks(gid interface{}, options ...RequestOp
 	}
 
 	return gl, resp, nil
+}
+
+// ListGroupSharedProjectsOptions represents the available ListGroupSharedProjects() options.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/api/groups/#list-shared-projects
+type ListGroupSharedProjectsOptions struct {
+	ListOptions
+	Archived                 *bool             `url:"archived,omitempty" json:"archived,omitempty"`
+	MinAccessLevel           *AccessLevelValue `url:"min_access_level,omitempty" json:"min_access_level,omitempty"`
+	OrderBy                  *string           `url:"order_by,omitempty" json:"order_by,omitempty"`
+	Search                   *string           `url:"search,omitempty" json:"search,omitempty"`
+	Simple                   *bool             `url:"simple,omitempty" json:"simple,omitempty"`
+	Sort                     *string           `url:"sort,omitempty" json:"sort,omitempty"`
+	Starred                  *bool             `url:"starred,omitempty" json:"starred,omitempty"`
+	Visibility               *VisibilityValue  `url:"visibility,omitempty" json:"visibility,omitempty"`
+	WithCustomAttributes     *bool             `url:"with_custom_attributes,omitempty" json:"with_custom_attributes,omitempty"`
+	WithIssuesEnabled        *bool             `url:"with_issues_enabled,omitempty" json:"with_issues_enabled,omitempty"`
+	WithMergeRequestsEnabled *bool             `url:"with_merge_requests_enabled,omitempty" json:"with_merge_requests_enabled,omitempty"`
+}
+
+// ListGroupSharedProjects gets a list of projects shared to this group.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/api/groups/#list-shared-projects
+func (s *GroupsService) ListGroupSharedProjects(gid interface{}, opt *ListGroupSharedProjectsOptions, options ...RequestOptionFunc) ([]*Project, *Response, error) {
+	group, err := parseID(gid)
+	if err != nil {
+		return nil, nil, err
+	}
+	u := fmt.Sprintf("groups/%s/projects/shared", PathEscape(group))
+
+	req, err := s.client.NewRequest(http.MethodGet, u, opt, options)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var p []*Project
+	resp, err := s.client.Do(req, &p)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return p, resp, nil
 }
 
 // GetGroupSAMLLink get a specific group SAML link. Available only for users who

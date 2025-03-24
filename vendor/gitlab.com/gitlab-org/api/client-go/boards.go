@@ -21,13 +21,30 @@ import (
 	"net/http"
 )
 
-// IssueBoardsService handles communication with the issue board related
-// methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/boards.html
-type IssueBoardsService struct {
-	client *Client
-}
+type (
+	IssueBoardsServiceInterface interface {
+		CreateIssueBoard(pid interface{}, opt *CreateIssueBoardOptions, options ...RequestOptionFunc) (*IssueBoard, *Response, error)
+		UpdateIssueBoard(pid interface{}, board int, opt *UpdateIssueBoardOptions, options ...RequestOptionFunc) (*IssueBoard, *Response, error)
+		DeleteIssueBoard(pid interface{}, board int, options ...RequestOptionFunc) (*Response, error)
+		ListIssueBoards(pid interface{}, opt *ListIssueBoardsOptions, options ...RequestOptionFunc) ([]*IssueBoard, *Response, error)
+		GetIssueBoard(pid interface{}, board int, options ...RequestOptionFunc) (*IssueBoard, *Response, error)
+		GetIssueBoardLists(pid interface{}, board int, opt *GetIssueBoardListsOptions, options ...RequestOptionFunc) ([]*BoardList, *Response, error)
+		GetIssueBoardList(pid interface{}, board, list int, options ...RequestOptionFunc) (*BoardList, *Response, error)
+		CreateIssueBoardList(pid interface{}, board int, opt *CreateIssueBoardListOptions, options ...RequestOptionFunc) (*BoardList, *Response, error)
+		UpdateIssueBoardList(pid interface{}, board, list int, opt *UpdateIssueBoardListOptions, options ...RequestOptionFunc) (*BoardList, *Response, error)
+		DeleteIssueBoardList(pid interface{}, board, list int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// IssueBoardsService handles communication with the issue board related
+	// methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/boards.html
+	IssueBoardsService struct {
+		client *Client
+	}
+)
+
+var _ IssueBoardsServiceInterface = (*IssueBoardsService)(nil)
 
 // IssueBoard represents a GitLab issue board.
 //
