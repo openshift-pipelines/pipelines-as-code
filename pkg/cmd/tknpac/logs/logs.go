@@ -191,7 +191,7 @@ func getPipelineRunsToRepo(ctx context.Context, lopt *logOption, repoName string
 		if lopt.limit > -1 && i > lopt.limit {
 			continue
 		}
-		ret = append(ret, fmt.Sprintf("%s %s %s", run.ObjectMeta.Name, label, formatting.Age(date, lopt.cw)))
+		ret = append(ret, fmt.Sprintf("%s %s %s", run.Name, label, formatting.Age(date, lopt.cw)))
 	}
 	return ret, nil
 }

@@ -329,7 +329,7 @@ func (v *Provider) getObject(fname, branch string, pid int) ([]byte, *gitlab.Res
 	if err != nil {
 		return []byte{}, resp, fmt.Errorf("failed to get filename from api %s dir: %w", fname, err)
 	}
-	if resp != nil && resp.Response.StatusCode == http.StatusNotFound {
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		return []byte{}, resp, nil
 	}
 	return file, resp, nil

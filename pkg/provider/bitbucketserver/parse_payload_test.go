@@ -598,9 +598,8 @@ func TestParsePayload(t *testing.T) {
 					Sender:       "sender",
 					Organization: "PROJ",
 					Repository:   "repo",
-					//nolint: stylecheck
-					URL: "💢",
-					SHA: "abcd",
+					URL:          "\x03💢\x16",
+					SHA:          "abcd",
 				}, ""),
 			wantErrSubstr: "invalid control character",
 		},
