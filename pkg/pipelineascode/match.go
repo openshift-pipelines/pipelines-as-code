@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
@@ -19,6 +20,12 @@ import (
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 )
+
+const validationErrorTemplate = `> [!CAUTION]
+> There are some errors in your PipelineRun template.
+
+| PipelineRun | Error |
+|------|-------|`
 
 func (p *PacRun) matchRepoPR(ctx context.Context) ([]matcher.Match, *v1alpha1.Repository, error) {
 	repo, err := p.verifyRepoAndUser(ctx)
@@ -172,12 +179,18 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		provenance = repo.Spec.Settings.PipelineRunProvenance
 	}
 	rawTemplates, err := p.vcx.GetTektonDir(ctx, p.event, tektonDir, provenance)
-	if err != nil && strings.Contains(err.Error(), "error unmarshalling yaml file") {
+	if err != nil && p.event.TriggerTarget == triggertype.PullRequest && strings.Contains(err.Error(), "error unmarshalling yaml file") {
 		// make the error a bit more friendly for users who don't know what marshalling or intricacies of the yaml parser works
-		errmsg := err.Error()
-		errmsg = strings.ReplaceAll(errmsg, " error converting YAML to JSON: yaml:", "")
-		errmsg = strings.ReplaceAll(errmsg, "unmarshalling", "while parsing the")
-		return nil, fmt.Errorf("%s", errmsg)
+		// format is "error unmarshalling yaml file pr-bad-format.yaml: yaml: line 3: could not find expected ':'"
+		// get the filename with a regexp
+		reg := regexp.MustCompile(`error unmarshalling yaml file\s([^:]*):\s*(yaml:\s*)?(.*)`)
+		matches := reg.FindStringSubmatch(err.Error())
+		if len(matches) == 4 {
+			p.reportValidationErrors(ctx, repo, map[string]string{matches[1]: matches[3]})
+			return nil, nil
+		}
+
+		return nil, err
 	}
 	if err != nil || rawTemplates == "" {
 		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
@@ -227,15 +240,12 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 		return nil, err
 	}
 
-	if types.ValidationErrors != nil {
-		for k, v := range types.ValidationErrors {
-			kv := fmt.Sprintf("prun: %s tekton validation error: %s", k, v)
-			p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "PipelineRunValidationErrors", kv)
-		}
+	if len(types.ValidationErrors) > 0 && p.event.TriggerTarget == triggertype.PullRequest {
+		p.reportValidationErrors(ctx, repo, types.ValidationErrors)
 	}
 	pipelineRuns := types.PipelineRuns
 	if len(pipelineRuns) == 0 {
-		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
+		msg := fmt.Sprintf("cannot locate valid templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
 		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryCannotLocatePipelineRun", msg)
 		return nil, nil
 	}
@@ -436,4 +446,23 @@ func (p *PacRun) createNeutralStatus(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// reportValidationErrors reports validation errors found in PipelineRuns by:
+// 1. Creating error messages for each validation error
+// 2. Emitting error messages to the event system
+// 3. Creating a markdown formatted comment on the repository with all errors.
+func (p *PacRun) reportValidationErrors(ctx context.Context, repo *v1alpha1.Repository, validationErrors map[string]string) {
+	errorRows := make([]string, 0, len(validationErrors))
+	for name, err := range validationErrors {
+		errorRows = append(errorRows, fmt.Sprintf("| %s | `%s` |", name, err))
+		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "PipelineRunValidationErrors",
+			fmt.Sprintf("cannot read the PipelineRun: %s, error: %s", name, err))
+	}
+	markdownErrMessage := fmt.Sprintf(`%s
+%s`, validationErrorTemplate, strings.Join(errorRows, "\n"))
+	if err := p.vcx.CreateComment(ctx, p.event, markdownErrMessage, validationErrorTemplate); err != nil {
+		p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "PipelineRunCommentCreationError",
+			fmt.Sprintf("failed to create comment: %s", err.Error()))
+	}
 }

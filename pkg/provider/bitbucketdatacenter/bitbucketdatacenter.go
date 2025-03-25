@@ -44,6 +44,10 @@ type Provider struct {
 	projectKey                string
 }
 
+func (v *Provider) CreateComment(_ context.Context, _ *info.Event, _, _ string) error {
+	return nil
+}
+
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
