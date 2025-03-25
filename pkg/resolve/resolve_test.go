@@ -85,11 +85,11 @@ func TestPipelineRunPipelineMiddle(t *testing.T) {
 func TestGenerateName(t *testing.T) {
 	resolved, _, err := readTDfile(t, "pipelinerun-pipeline-task", true, true)
 	assert.NilError(t, err)
-	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
+	assert.Assert(t, resolved.GenerateName != "")
 
 	resolved, _, err = readTDfile(t, "with-generatename", true, true)
 	assert.NilError(t, err)
-	assert.Assert(t, resolved.ObjectMeta.GenerateName != "")
+	assert.Assert(t, resolved.GenerateName != "")
 }
 
 // TestPipelineBundlesSkipped effectively test conversion from beta1 to v1.
