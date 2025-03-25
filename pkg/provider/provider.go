@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
+
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"gopkg.in/yaml.v2"
 )
@@ -27,6 +29,34 @@ const (
 const (
 	GitHubApp = "GitHubApp"
 )
+
+type CommentType int
+
+const (
+	StartingPipelineType CommentType = iota
+	PipelineRunStatusType
+	QueueingPipelineType
+)
+
+var htmlCommentTemplates = map[CommentType]string{
+	StartingPipelineType:  formatting.StartingPipelineRunHTML,
+	PipelineRunStatusType: formatting.PipelineRunStatusHTML,
+	QueueingPipelineType:  formatting.QueuingPipelineRunHTML,
+}
+
+var markdownCommentTemplates = map[CommentType]string{
+	StartingPipelineType:  formatting.StartingPipelineRunMarkdown,
+	PipelineRunStatusType: formatting.PipelineRunStatusHTML,
+	QueueingPipelineType:  formatting.QueuingPipelineRunMarkdown,
+}
+
+func GetCommentTemplate(gitProvider string, commentType CommentType) string {
+	templates := htmlCommentTemplates
+	if strings.Contains(gitProvider, "bitbucket") {
+		templates = markdownCommentTemplates
+	}
+	return templates[commentType]
+}
 
 func Valid(value string, validValues []string) bool {
 	for _, v := range validValues {
