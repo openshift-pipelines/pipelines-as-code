@@ -1,0 +1,73 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: e2e-label.yaml
+  annotations:
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/cancel-in-progress: "true"
+    pipelinesascode.tekton.dev/on-event: "pull_request"
+    pipelinesascode.tekton.dev/on-target-branch: "main"
+    pipelinesascode.tekton.dev/on-path-change: "[***/*.go, .github/workflows/*l]"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: label-pr
+        taskSpec:
+          steps:
+            - name: label-pr
+              # it has curl and we already pulled it
+              image: registry.access.redhat.com/ubi9/ubi
+              env:
+                - name: HUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "nightly-ci-github-hub-token"
+                      key: "hub-token"
+              script: |
+                #!/usr/bin/env python3
+
+                import os
+                import sys
+                import requests
+
+                PR_NUMBER = "{{ pull_request_number }}"
+                REPO_OWNER = "{{ repo_owner }}"
+                REPO_NAME = "{{ repo_name }}"
+                LABEL = "e2e"
+                HUB_TOKEN = os.getenv("HUB_TOKEN")
+
+                headers = {
+                    "Accept": "application/vnd.github.v3+json",
+                    "Authorization": f"token {HUB_TOKEN}",
+                    "User-Agent": "PAC"
+                }
+
+                # Check if the PR already has the label
+                response = requests.get(
+                    f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{PR_NUMBER}/labels",
+                    headers=headers
+                )
+
+                if response.status_code != 200:
+                    print(f"Failed to get labels, response code: {response.status_code}")
+                    sys.exit(1)
+
+                labels = [label['name'] for label in response.json()]
+
+                if LABEL in labels:
+                    print(f"Pull request already has the label '{LABEL}'")
+                    sys.exit(0)
+
+                # Add the label to the PR
+                response = requests.post(
+                    f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/issues/{PR_NUMBER}/labels",
+                    headers=headers,
+                    json={"labels": [LABEL]}
+                )
+
+                if response.status_code != 200:
+                    print(f"Failed to add label, response code: {response.status_code}")
+                    sys.exit(1)
+
+                print(f"Label '{LABEL}' added to pull request #{PR_NUMBER} successfully")
