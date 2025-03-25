@@ -4,7 +4,6 @@ kind: PipelineRun
 metadata:
   name: go-testing
   annotations:
-    pipelinesascode.tekton.dev/task: "[git-clone]"
     pipelinesascode.tekton.dev/max-keep-runs: "2"
     pipelinesascode.tekton.dev/cancel-in-progress: "true"
     pipelinesascode.tekton.dev/on-event: "pull_request"
