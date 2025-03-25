@@ -40,12 +40,26 @@ jobs:
       CONTROLLER_DOMAIN_URL: controller.paac-127-0-0-1.nip.io
       TEST_GITHUB_REPO_OWNER_GITHUBAPP: openshift-pipelines/pipelines-as-code-e2e-tests
       KUBECONFIG: /home/runner/.kube/config.kind
-      # [Rest of the environment variables remain the same as in the original workflow]
       TEST_BITBUCKET_CLOUD_API_URL: https://api.bitbucket.org/2.0
       TEST_BITBUCKET_CLOUD_E2E_REPOSITORY: cboudjna/pac-e2e-tests
       TEST_BITBUCKET_CLOUD_USER: cboudjna
-      # ... [other environment variables from the original workflow]
-
+      TEST_EL_URL: http://controller.paac-127-0-0-1.nip.io
+      TEST_GITEA_API_URL: http://localhost:3000
+      TEST_GITEA_USERNAME: pac
+      TEST_GITEA_PASSWORD: pac
+      TEST_GITEA_REPO_OWNER: pac/pac
+      TEST_GITHUB_API_URL: api.github.com
+      TEST_GITHUB_REPO_OWNER_WEBHOOK: openshift-pipelines/pipelines-as-code-e2e-tests-webhook
+      TEST_GITHUB_PRIVATE_TASK_URL: https://github.com/openshift-pipelines/pipelines-as-code-e2e-tests-private/blob/main/remote_task.yaml
+      TEST_GITHUB_PRIVATE_TASK_NAME: task-remote
+      TEST_GITHUB_SECOND_API_URL: ghe.pipelinesascode.com
+      TEST_GITHUB_SECOND_EL_URL: http://ghe.paac-127-0-0-1.nip.io
+      TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
+      TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
+      TEST_GITLAB_API_URL: https://gitlab.com
+      TEST_GITLAB_PROJECT_ID: 34405323
+      TEST_BITBUCKET_SERVER_USER: pipelines
+      TEST_BITBUCKET_SERVER_E2E_REPOSITORY: PAC/pac-e2e-tests
     steps:
       - uses: actions/checkout@v4
         with:
