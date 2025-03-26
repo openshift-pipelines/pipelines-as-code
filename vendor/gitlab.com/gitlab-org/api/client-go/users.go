@@ -28,6 +28,79 @@ import (
 	"github.com/hashicorp/go-retryablehttp"
 )
 
+type (
+	UsersServiceInterface interface {
+		ListUsers(opt *ListUsersOptions, options ...RequestOptionFunc) ([]*User, *Response, error)
+		GetUser(user int, opt GetUsersOptions, options ...RequestOptionFunc) (*User, *Response, error)
+		CreateUser(opt *CreateUserOptions, options ...RequestOptionFunc) (*User, *Response, error)
+		ModifyUser(user int, opt *ModifyUserOptions, options ...RequestOptionFunc) (*User, *Response, error)
+		DeleteUser(user int, options ...RequestOptionFunc) (*Response, error)
+		CurrentUser(options ...RequestOptionFunc) (*User, *Response, error)
+		CurrentUserStatus(options ...RequestOptionFunc) (*UserStatus, *Response, error)
+		GetUserStatus(user int, options ...RequestOptionFunc) (*UserStatus, *Response, error)
+		SetUserStatus(opt *UserStatusOptions, options ...RequestOptionFunc) (*UserStatus, *Response, error)
+		GetUserAssociationsCount(user int, options ...RequestOptionFunc) (*UserAssociationsCount, *Response, error)
+		ListSSHKeys(opt *ListSSHKeysOptions, options ...RequestOptionFunc) ([]*SSHKey, *Response, error)
+		ListSSHKeysForUser(uid interface{}, opt *ListSSHKeysForUserOptions, options ...RequestOptionFunc) ([]*SSHKey, *Response, error)
+		GetSSHKey(key int, options ...RequestOptionFunc) (*SSHKey, *Response, error)
+		GetSSHKeyForUser(user int, key int, options ...RequestOptionFunc) (*SSHKey, *Response, error)
+		AddSSHKey(opt *AddSSHKeyOptions, options ...RequestOptionFunc) (*SSHKey, *Response, error)
+		AddSSHKeyForUser(user int, opt *AddSSHKeyOptions, options ...RequestOptionFunc) (*SSHKey, *Response, error)
+		DeleteSSHKey(key int, options ...RequestOptionFunc) (*Response, error)
+		DeleteSSHKeyForUser(user, key int, options ...RequestOptionFunc) (*Response, error)
+		ListGPGKeys(options ...RequestOptionFunc) ([]*GPGKey, *Response, error)
+		GetGPGKey(key int, options ...RequestOptionFunc) (*GPGKey, *Response, error)
+		AddGPGKey(opt *AddGPGKeyOptions, options ...RequestOptionFunc) (*GPGKey, *Response, error)
+		DeleteGPGKey(key int, options ...RequestOptionFunc) (*Response, error)
+		ListGPGKeysForUser(user int, options ...RequestOptionFunc) ([]*GPGKey, *Response, error)
+		GetGPGKeyForUser(user, key int, options ...RequestOptionFunc) (*GPGKey, *Response, error)
+		AddGPGKeyForUser(user int, opt *AddGPGKeyOptions, options ...RequestOptionFunc) (*GPGKey, *Response, error)
+		DeleteGPGKeyForUser(user, key int, options ...RequestOptionFunc) (*Response, error)
+		ListEmails(options ...RequestOptionFunc) ([]*Email, *Response, error)
+		ListEmailsForUser(user int, opt *ListEmailsForUserOptions, options ...RequestOptionFunc) ([]*Email, *Response, error)
+		GetEmail(email int, options ...RequestOptionFunc) (*Email, *Response, error)
+		AddEmail(opt *AddEmailOptions, options ...RequestOptionFunc) (*Email, *Response, error)
+		AddEmailForUser(user int, opt *AddEmailOptions, options ...RequestOptionFunc) (*Email, *Response, error)
+		DeleteEmail(email int, options ...RequestOptionFunc) (*Response, error)
+		DeleteEmailForUser(user, email int, options ...RequestOptionFunc) (*Response, error)
+		BlockUser(user int, options ...RequestOptionFunc) error
+		UnblockUser(user int, options ...RequestOptionFunc) error
+		BanUser(user int, options ...RequestOptionFunc) error
+		UnbanUser(user int, options ...RequestOptionFunc) error
+		DeactivateUser(user int, options ...RequestOptionFunc) error
+		ActivateUser(user int, options ...RequestOptionFunc) error
+		ApproveUser(user int, options ...RequestOptionFunc) error
+		RejectUser(user int, options ...RequestOptionFunc) error
+		GetAllImpersonationTokens(user int, opt *GetAllImpersonationTokensOptions, options ...RequestOptionFunc) ([]*ImpersonationToken, *Response, error)
+		GetImpersonationToken(user, token int, options ...RequestOptionFunc) (*ImpersonationToken, *Response, error)
+		CreateImpersonationToken(user int, opt *CreateImpersonationTokenOptions, options ...RequestOptionFunc) (*ImpersonationToken, *Response, error)
+		RevokeImpersonationToken(user, token int, options ...RequestOptionFunc) (*Response, error)
+		CreatePersonalAccessToken(user int, opt *CreatePersonalAccessTokenOptions, options ...RequestOptionFunc) (*PersonalAccessToken, *Response, error)
+		CreatePersonalAccessTokenForCurrentUser(opt *CreatePersonalAccessTokenForCurrentUserOptions, options ...RequestOptionFunc) (*PersonalAccessToken, *Response, error)
+		GetUserActivities(opt *GetUserActivitiesOptions, options ...RequestOptionFunc) ([]*UserActivity, *Response, error)
+		GetUserMemberships(user int, opt *GetUserMembershipOptions, options ...RequestOptionFunc) ([]*UserMembership, *Response, error)
+		DisableTwoFactor(user int, options ...RequestOptionFunc) error
+		CreateUserRunner(opts *CreateUserRunnerOptions, options ...RequestOptionFunc) (*UserRunner, *Response, error)
+		CreateServiceAccountUser(opts *CreateServiceAccountUserOptions, options ...RequestOptionFunc) (*User, *Response, error)
+		ListServiceAccounts(opt *ListServiceAccountsOptions, options ...RequestOptionFunc) ([]*ServiceAccount, *Response, error)
+		UploadAvatar(avatar io.Reader, filename string, options ...RequestOptionFunc) (*User, *Response, error)
+		DeleteUserIdentity(user int, provider string, options ...RequestOptionFunc) (*Response, error)
+
+		// events.go
+		ListUserContributionEvents(uid interface{}, opt *ListContributionEventsOptions, options ...RequestOptionFunc) ([]*ContributionEvent, *Response, error)
+	}
+
+	// UsersService handles communication with the user related methods of
+	// the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/users.html
+	UsersService struct {
+		client *Client
+	}
+)
+
+var _ UsersServiceInterface = (*UsersService)(nil)
+
 // List a couple of standard errors.
 var (
 	ErrUserActivatePrevented         = errors.New("Cannot activate a user that is blocked by admin or by LDAP synchronization")
@@ -41,14 +114,6 @@ var (
 	ErrUserTwoFactorNotEnabled       = errors.New("Cannot disable two factor authentication if not enabled")
 	ErrUserUnblockPrevented          = errors.New("Cannot unblock a user that is blocked by LDAP synchronization")
 )
-
-// UsersService handles communication with the user related methods of
-// the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/users.html
-type UsersService struct {
-	client *Client
-}
 
 // BasicUser included in other service responses (such as merge requests, pipelines, etc).
 type BasicUser struct {
@@ -153,8 +218,11 @@ type ListUsersOptions struct {
 	ListOptions
 	Active          *bool `url:"active,omitempty" json:"active,omitempty"`
 	Blocked         *bool `url:"blocked,omitempty" json:"blocked,omitempty"`
+	Humans          *bool `url:"humans,omitempty" json:"humans,omitempty"`
 	ExcludeInternal *bool `url:"exclude_internal,omitempty" json:"exclude_internal,omitempty"`
+	ExcludeActive   *bool `url:"exclude_active,omitempty" json:"exclude_active,omitempty"`
 	ExcludeExternal *bool `url:"exclude_external,omitempty" json:"exclude_external,omitempty"`
+	ExcludeHumans   *bool `url:"exclude_humans,omitempty" json:"exclude_humans,omitempty"`
 
 	// The options below are only available for admins.
 	Search               *string    `url:"search,omitempty" json:"search,omitempty"`
@@ -1633,4 +1701,20 @@ func (s *UsersService) UploadAvatar(avatar io.Reader, filename string, options .
 	}
 
 	return usr, resp, nil
+}
+
+// DeleteUserIdentity deletes a user's authentication identity using the provider
+// name associated with that identity. Only available for administrators.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/api/users/#delete-authentication-identity-from-a-user
+func (s *UsersService) DeleteUserIdentity(user int, provider string, options ...RequestOptionFunc) (*Response, error) {
+	u := fmt.Sprintf("users/%d/identities/%s", user, provider)
+
+	req, err := s.client.NewRequest(http.MethodDelete, u, nil, options)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.client.Do(req, nil)
 }

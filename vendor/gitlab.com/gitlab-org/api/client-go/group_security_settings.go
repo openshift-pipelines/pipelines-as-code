@@ -20,14 +20,22 @@ import (
 	"net/http"
 )
 
-// GroupSecuritySettingsService handles communication with the Group Security Settings
-// related methods of the GitLab API.
-//
-// Gitlab API docs:
-// https://docs.gitlab.com/ee/api/group_security_settings.html
-type GroupSecuritySettingsService struct {
-	client *Client
-}
+type (
+	GroupSecuritySettingsServiceInterface interface {
+		UpdateSecretPushProtectionEnabledSetting(gid interface{}, opt UpdateGroupSecuritySettingsOptions, options ...RequestOptionFunc) (*GroupSecuritySettings, *Response, error)
+	}
+
+	// GroupSecuritySettingsService handles communication with the Group Security Settings
+	// related methods of the GitLab API.
+	//
+	// Gitlab API docs:
+	// https://docs.gitlab.com/ee/api/group_security_settings.html
+	GroupSecuritySettingsService struct {
+		client *Client
+	}
+)
+
+var _ GroupSecuritySettingsServiceInterface = (*GroupSecuritySettingsService)(nil)
 
 // GroupSecuritySettings represents the group security settings data.
 //

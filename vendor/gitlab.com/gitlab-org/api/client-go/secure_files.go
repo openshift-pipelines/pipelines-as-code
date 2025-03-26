@@ -21,14 +21,26 @@ import (
 	"time"
 )
 
-// SecureFilesService handles communication with the secure files related
-// methods of the GitLab API.
-//
-// GitLab API docs:
-// https://docs.gitlab.com/api/secure_files/
-type SecureFilesService struct {
-	client *Client
-}
+type (
+	SecureFilesServiceInterface interface {
+		ListProjectSecureFiles(pid interface{}, opt *ListProjectSecureFilesOptions, options ...RequestOptionFunc) ([]*SecureFile, *Response, error)
+		ShowSecureFileDetails(pid interface{}, id int, options ...RequestOptionFunc) (*SecureFile, *Response, error)
+		CreateSecureFile(pid interface{}, content io.Reader, filename string, options ...RequestOptionFunc) (*SecureFile, *Response, error)
+		DownloadSecureFile(pid interface{}, id int, options ...RequestOptionFunc) (io.Reader, *Response, error)
+		RemoveSecureFile(pid interface{}, id int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// SecureFilesService handles communication with the secure files related
+	// methods of the GitLab API.
+	//
+	// GitLab API docs:
+	// https://docs.gitlab.com/api/secure_files/
+	SecureFilesService struct {
+		client *Client
+	}
+)
+
+var _ SecureFilesServiceInterface = (*SecureFilesService)(nil)
 
 // SecureFile represents a single secure file.
 //

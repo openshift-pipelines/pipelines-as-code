@@ -27,13 +27,23 @@ import (
 	"strconv"
 )
 
-// GroupImportExportService handles communication with the group import export
-// related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/group_import_export.html
-type GroupImportExportService struct {
-	client *Client
-}
+type (
+	GroupImportExportServiceInterface interface {
+		ScheduleExport(gid interface{}, options ...RequestOptionFunc) (*Response, error)
+		ExportDownload(gid interface{}, options ...RequestOptionFunc) (*bytes.Reader, *Response, error)
+		ImportFile(opt *GroupImportFileOptions, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupImportExportService handles communication with the group import export
+	// related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/group_import_export.html
+	GroupImportExportService struct {
+		client *Client
+	}
+)
+
+var _ GroupImportExportServiceInterface = (*GroupImportExportService)(nil)
 
 // ScheduleExport starts a new group export.
 //

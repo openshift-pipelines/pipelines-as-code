@@ -6,13 +6,24 @@ import (
 	"time"
 )
 
-// GroupSSHCertificatesService handles communication with the group
-// SSH certificate related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/group_ssh_certificates.html
-type GroupSSHCertificatesService struct {
-	client *Client
-}
+type (
+	// GroupSSHCertificatesServiceInterface defines methods for the GroupSSHCertificatesService.
+	GroupSSHCertificatesServiceInterface interface {
+		ListGroupSSHCertificates(gid interface{}, options ...RequestOptionFunc) ([]*GroupSSHCertificate, *Response, error)
+		CreateGroupSSHCertificate(gid interface{}, opt *CreateGroupSSHCertificateOptions, options ...RequestOptionFunc) (*GroupSSHCertificate, *Response, error)
+		DeleteGroupSSHCertificate(gid interface{}, cert int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// GroupSSHCertificatesService handles communication with the group
+	// SSH certificate related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/group_ssh_certificates.html
+	GroupSSHCertificatesService struct {
+		client *Client
+	}
+)
+
+var _ GroupSSHCertificatesServiceInterface = (*GroupSSHCertificatesService)(nil)
 
 // GroupSSHCertificate represents a GitLab Group SSH certificate.
 //

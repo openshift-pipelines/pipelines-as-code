@@ -6,6 +6,27 @@ import (
 	"time"
 )
 
+type (
+	AuditEventsServiceInterface interface {
+		ListInstanceAuditEvents(opt *ListAuditEventsOptions, options ...RequestOptionFunc) ([]*AuditEvent, *Response, error)
+		GetInstanceAuditEvent(event int, options ...RequestOptionFunc) (*AuditEvent, *Response, error)
+		ListGroupAuditEvents(gid interface{}, opt *ListAuditEventsOptions, options ...RequestOptionFunc) ([]*AuditEvent, *Response, error)
+		GetGroupAuditEvent(gid interface{}, event int, options ...RequestOptionFunc) (*AuditEvent, *Response, error)
+		ListProjectAuditEvents(pid interface{}, opt *ListAuditEventsOptions, options ...RequestOptionFunc) ([]*AuditEvent, *Response, error)
+		GetProjectAuditEvent(pid interface{}, event int, options ...RequestOptionFunc) (*AuditEvent, *Response, error)
+	}
+
+	// AuditEventsService handles communication with the project/group/instance
+	// audit event related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/audit_events.html
+	AuditEventsService struct {
+		client *Client
+	}
+)
+
+var _ AuditEventsServiceInterface = (*AuditEventsService)(nil)
+
 // AuditEvent represents an audit event for a group, a project or the instance.
 //
 // GitLab API docs: https://docs.gitlab.com/ee/api/audit_events.html
@@ -44,14 +65,6 @@ type AuditEventDetails struct {
 	EntityPath    string      `json:"entity_path"`
 	FailedLogin   string      `json:"failed_login"`
 	EventName     string      `json:"event_name"`
-}
-
-// AuditEventsService handles communication with the project/group/instance
-// audit event related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/audit_events.html
-type AuditEventsService struct {
-	client *Client
 }
 
 // ListAuditEventsOptions represents the available ListProjectAuditEvents(),

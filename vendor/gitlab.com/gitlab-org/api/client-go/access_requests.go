@@ -22,6 +22,29 @@ import (
 	"time"
 )
 
+type (
+	AccessRequestsServiceInterface interface {
+		ListProjectAccessRequests(pid interface{}, opt *ListAccessRequestsOptions, options ...RequestOptionFunc) ([]*AccessRequest, *Response, error)
+		ListGroupAccessRequests(gid interface{}, opt *ListAccessRequestsOptions, options ...RequestOptionFunc) ([]*AccessRequest, *Response, error)
+		RequestProjectAccess(pid interface{}, options ...RequestOptionFunc) (*AccessRequest, *Response, error)
+		RequestGroupAccess(gid interface{}, options ...RequestOptionFunc) (*AccessRequest, *Response, error)
+		ApproveProjectAccessRequest(pid interface{}, user int, opt *ApproveAccessRequestOptions, options ...RequestOptionFunc) (*AccessRequest, *Response, error)
+		ApproveGroupAccessRequest(gid interface{}, user int, opt *ApproveAccessRequestOptions, options ...RequestOptionFunc) (*AccessRequest, *Response, error)
+		DenyProjectAccessRequest(pid interface{}, user int, options ...RequestOptionFunc) (*Response, error)
+		DenyGroupAccessRequest(gid interface{}, user int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// AccessRequestsService handles communication with the project/group
+	// access requests related methods of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/access_requests.html
+	AccessRequestsService struct {
+		client *Client
+	}
+)
+
+var _ AccessRequestsServiceInterface = (*AccessRequestsService)(nil)
+
 // AccessRequest represents a access request for a group or project.
 //
 // GitLab API docs:
@@ -34,14 +57,6 @@ type AccessRequest struct {
 	CreatedAt   *time.Time       `json:"created_at"`
 	RequestedAt *time.Time       `json:"requested_at"`
 	AccessLevel AccessLevelValue `json:"access_level"`
-}
-
-// AccessRequestsService handles communication with the project/group
-// access requests related methods of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/access_requests.html
-type AccessRequestsService struct {
-	client *Client
 }
 
 // ListAccessRequestsOptions represents the available

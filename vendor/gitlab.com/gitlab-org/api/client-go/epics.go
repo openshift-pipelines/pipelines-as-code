@@ -22,13 +22,27 @@ import (
 	"time"
 )
 
-// EpicsService handles communication with the epic related methods
-// of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/epics.html
-type EpicsService struct {
-	client *Client
-}
+type (
+	// EpicsServiceInterface defines all the API methods for the EpicsService
+	EpicsServiceInterface interface {
+		ListGroupEpics(gid interface{}, opt *ListGroupEpicsOptions, options ...RequestOptionFunc) ([]*Epic, *Response, error)
+		GetEpic(gid interface{}, epic int, options ...RequestOptionFunc) (*Epic, *Response, error)
+		GetEpicLinks(gid interface{}, epic int, options ...RequestOptionFunc) ([]*Epic, *Response, error)
+		CreateEpic(gid interface{}, opt *CreateEpicOptions, options ...RequestOptionFunc) (*Epic, *Response, error)
+		UpdateEpic(gid interface{}, epic int, opt *UpdateEpicOptions, options ...RequestOptionFunc) (*Epic, *Response, error)
+		DeleteEpic(gid interface{}, epic int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// EpicsService handles communication with the epic related methods
+	// of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/epics.html
+	EpicsService struct {
+		client *Client
+	}
+)
+
+var _ EpicsServiceInterface = (*EpicsService)(nil)
 
 // EpicAuthor represents a author of the epic.
 type EpicAuthor struct {

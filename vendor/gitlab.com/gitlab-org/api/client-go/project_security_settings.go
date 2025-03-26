@@ -21,14 +21,23 @@ import (
 	"time"
 )
 
-// ProjectSecuritySettingsService handles communication with the Project Security Settings
-// related methods of the GitLab API.
-//
-// Gitlab API docs:
-// https://docs.gitlab.com/ee/api/project_security_settings.html
-type ProjectSecuritySettingsService struct {
-	client *Client
-}
+type (
+	ProjectSecuritySettingsServiceInterface interface {
+		ListProjectSecuritySettings(pid interface{}, options ...RequestOptionFunc) (*ProjectSecuritySettings, *Response, error)
+		UpdateSecretPushProtectionEnabledSetting(pid interface{}, opt UpdateProjectSecuritySettingsOptions, options ...RequestOptionFunc) (*ProjectSecuritySettings, *Response, error)
+	}
+
+	// ProjectSecuritySettingsService handles communication with the Project Security Settings
+	// related methods of the GitLab API.
+	//
+	// Gitlab API docs:
+	// https://docs.gitlab.com/ee/api/project_security_settings.html
+	ProjectSecuritySettingsService struct {
+		client *Client
+	}
+)
+
+var _ ProjectSecuritySettingsServiceInterface = (*ProjectSecuritySettingsService)(nil)
 
 // ProjectSecuritySettings represents the project security settings data.
 //

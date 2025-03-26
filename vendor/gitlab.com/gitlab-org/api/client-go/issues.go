@@ -24,14 +24,42 @@ import (
 	"time"
 )
 
-// IssuesService handles communication with the issue related methods
-// of the GitLab API.
-//
-// GitLab API docs: https://docs.gitlab.com/ee/api/issues.html
-type IssuesService struct {
-	client    *Client
-	timeStats *timeStatsService
-}
+type (
+	IssuesServiceInterface interface {
+		ListIssues(opt *ListIssuesOptions, options ...RequestOptionFunc) ([]*Issue, *Response, error)
+		ListGroupIssues(pid interface{}, opt *ListGroupIssuesOptions, options ...RequestOptionFunc) ([]*Issue, *Response, error)
+		ListProjectIssues(pid interface{}, opt *ListProjectIssuesOptions, options ...RequestOptionFunc) ([]*Issue, *Response, error)
+		GetIssueByID(issue int, options ...RequestOptionFunc) (*Issue, *Response, error)
+		GetIssue(pid interface{}, issue int, options ...RequestOptionFunc) (*Issue, *Response, error)
+		CreateIssue(pid interface{}, opt *CreateIssueOptions, options ...RequestOptionFunc) (*Issue, *Response, error)
+		UpdateIssue(pid interface{}, issue int, opt *UpdateIssueOptions, options ...RequestOptionFunc) (*Issue, *Response, error)
+		DeleteIssue(pid interface{}, issue int, options ...RequestOptionFunc) (*Response, error)
+		ReorderIssue(pid interface{}, issue int, opt *ReorderIssueOptions, options ...RequestOptionFunc) (*Issue, *Response, error)
+		MoveIssue(pid interface{}, issue int, opt *MoveIssueOptions, options ...RequestOptionFunc) (*Issue, *Response, error)
+		SubscribeToIssue(pid interface{}, issue int, options ...RequestOptionFunc) (*Issue, *Response, error)
+		UnsubscribeFromIssue(pid interface{}, issue int, options ...RequestOptionFunc) (*Issue, *Response, error)
+		CreateTodo(pid interface{}, issue int, options ...RequestOptionFunc) (*Todo, *Response, error)
+		ListMergeRequestsClosingIssue(pid interface{}, issue int, opt *ListMergeRequestsClosingIssueOptions, options ...RequestOptionFunc) ([]*BasicMergeRequest, *Response, error)
+		ListMergeRequestsRelatedToIssue(pid interface{}, issue int, opt *ListMergeRequestsRelatedToIssueOptions, options ...RequestOptionFunc) ([]*BasicMergeRequest, *Response, error)
+		SetTimeEstimate(pid interface{}, issue int, opt *SetTimeEstimateOptions, options ...RequestOptionFunc) (*TimeStats, *Response, error)
+		ResetTimeEstimate(pid interface{}, issue int, options ...RequestOptionFunc) (*TimeStats, *Response, error)
+		AddSpentTime(pid interface{}, issue int, opt *AddSpentTimeOptions, options ...RequestOptionFunc) (*TimeStats, *Response, error)
+		ResetSpentTime(pid interface{}, issue int, options ...RequestOptionFunc) (*TimeStats, *Response, error)
+		GetTimeSpent(pid interface{}, issue int, options ...RequestOptionFunc) (*TimeStats, *Response, error)
+		GetParticipants(pid interface{}, issue int, options ...RequestOptionFunc) ([]*BasicUser, *Response, error)
+	}
+
+	// IssuesService handles communication with the issue related methods
+	// of the GitLab API.
+	//
+	// GitLab API docs: https://docs.gitlab.com/ee/api/issues.html
+	IssuesService struct {
+		client    *Client
+		timeStats *timeStatsService
+	}
+)
+
+var _ IssuesServiceInterface = (*IssuesService)(nil)
 
 // IssueAuthor represents a author of the issue.
 type IssueAuthor struct {

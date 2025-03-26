@@ -18,12 +18,21 @@ package gitlab
 
 import "net/http"
 
-// AppearanceService handles communication with appearance of the Gitlab API.
-//
-// Gitlab API docs : https://docs.gitlab.com/ee/api/appearance.html
-type AppearanceService struct {
-	client *Client
-}
+type (
+	AppearanceServiceInterface interface {
+		GetAppearance(options ...RequestOptionFunc) (*Appearance, *Response, error)
+		ChangeAppearance(opt *ChangeAppearanceOptions, options ...RequestOptionFunc) (*Appearance, *Response, error)
+	}
+
+	// AppearanceService handles communication with appearance of the Gitlab API.
+	//
+	// Gitlab API docs : https://docs.gitlab.com/ee/api/appearance.html
+	AppearanceService struct {
+		client *Client
+	}
+)
+
+var _ AppearanceServiceInterface = (*AppearanceService)(nil)
 
 // Appearance represents a GitLab appearance.
 //

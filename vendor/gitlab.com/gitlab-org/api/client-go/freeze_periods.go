@@ -26,9 +26,26 @@ import (
 // related methods of the GitLab API.
 //
 // https://docs.gitlab.com/ee/api/freeze_periods.html
-type FreezePeriodsService struct {
-	client *Client
-}
+type (
+	// FreezePeriodsServiceInterface defines all the API methods for the FreezePeriodsService
+	FreezePeriodsServiceInterface interface {
+		ListFreezePeriods(pid interface{}, opt *ListFreezePeriodsOptions, options ...RequestOptionFunc) ([]*FreezePeriod, *Response, error)
+		GetFreezePeriod(pid interface{}, freezePeriod int, options ...RequestOptionFunc) (*FreezePeriod, *Response, error)
+		CreateFreezePeriodOptions(pid interface{}, opt *CreateFreezePeriodOptions, options ...RequestOptionFunc) (*FreezePeriod, *Response, error)
+		UpdateFreezePeriodOptions(pid interface{}, freezePeriod int, opt *UpdateFreezePeriodOptions, options ...RequestOptionFunc) (*FreezePeriod, *Response, error)
+		DeleteFreezePeriod(pid interface{}, freezePeriod int, options ...RequestOptionFunc) (*Response, error)
+	}
+
+	// FreezePeriodsService handles the communication with the freeze periods
+	// related methods of the GitLab API.
+	//
+	// https://docs.gitlab.com/ee/api/freeze_periods.html
+	FreezePeriodsService struct {
+		client *Client
+	}
+)
+
+var _ FreezePeriodsServiceInterface = (*FreezePeriodsService)(nil)
 
 // FreezePeriod represents a freeze period object.
 //
