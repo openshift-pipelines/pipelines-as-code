@@ -11,6 +11,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -149,7 +150,16 @@ func getName(prun *tektonv1.PipelineRun) string {
 	return name
 }
 
-func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger, pruns []*tektonv1.PipelineRun, cs *params.Run, event *info.Event, vcx provider.Interface) ([]Match, error) {
+func appendAnnotationIfNotEmpty(annotationKey, annotationValue string) []string {
+	annotations := []string{}
+	if annotationValue != "" {
+		annotations = append(annotations, annotationKey)
+		return annotations
+	}
+	return nil
+}
+
+func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger, pruns []*tektonv1.PipelineRun, cs *params.Run, event *info.Event, vcx provider.Interface, eventEmitter *events.EventEmitter, repo *apipac.Repository) ([]Match, error) {
 	matchedPRs := []Match{}
 	infomsg := fmt.Sprintf("matching pipelineruns to event: URL=%s, target-branch=%s, source-branch=%s, target-event=%s",
 		event.URL,
@@ -226,7 +236,21 @@ func MatchPipelinerunByAnnotation(ctx context.Context, logger *zap.SugaredLogger
 		if event.EventType == opscomments.NoOpsCommentEventType.String() || event.EventType == opscomments.OnCommentEventType.String() {
 			continue
 		}
+
 		if celExpr, ok := prun.GetObjectMeta().GetAnnotations()[keys.OnCelExpression]; ok {
+			// Checks if the Pipelinerun has `on-event`/`on-target-branch annotations` with `on-cel-expression`
+			// and if present then warns the user that `on-cel-expression` will take precedence
+			annotations := []string{}
+			annotations = append(annotations, appendAnnotationIfNotEmpty("on-event", prun.GetObjectMeta().GetAnnotations()[keys.OnEvent])...)
+			annotations = append(annotations, appendAnnotationIfNotEmpty("on-target-branch", prun.GetObjectMeta().GetAnnotations()[keys.OnTargetBranch])...)
+
+			if len(annotations) > 0 {
+				ignoredAnnotations := strings.Join(annotations, ", ")
+				msg := fmt.Sprintf("Warning: The Pipelinerun '%s' has 'on-cel-expression' defined along with [%s] annotation(s). The `on-cel-expression` will take precedence and these annotations will be ignored", prun.Name, ignoredAnnotations)
+				logger.Warnf(msg)
+				eventEmitter.EmitMessage(repo, zap.WarnLevel, "RespositoryTakesOnCelExpressionPrecedence", msg)
+			}
+
 			out, err := celEvaluate(ctx, celExpr, event, vcx)
 			if err != nil {
 				logger.Errorf("there was an error evaluating the CEL expression, skipping: %v", err)
