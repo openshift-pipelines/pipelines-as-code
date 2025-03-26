@@ -129,7 +129,7 @@ data:
   # pull request if ok-to-test is done once
   #
   # you may want to disable this if ok-to-test should be done on each iteration
-  remember-ok-to-test: "true"
+  remember-ok-to-test: "false"
 
   # Configure a custom console here, the driver support custom parameters from
   # Repo CR along a few other template variable, see documentation for more

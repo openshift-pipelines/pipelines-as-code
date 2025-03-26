@@ -43,7 +43,7 @@ func TestSyncConfig(t *testing.T) {
 				CustomConsolePRdetail:              "",
 				CustomConsolePRTaskLog:             "",
 				CustomConsoleNamespaceURL:          "",
-				RememberOKToTest:                   true,
+				RememberOKToTest:                   false,
 			},
 		},
 		{

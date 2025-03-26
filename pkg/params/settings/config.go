@@ -69,7 +69,7 @@ type Settings struct {
 	CustomConsolePRTaskLog    string `json:"custom-console-url-pr-tasklog"`
 	CustomConsoleNamespaceURL string `json:"custom-console-url-namespace"`
 
-	RememberOKToTest bool `default:"true" json:"remember-ok-to-test"`
+	RememberOKToTest bool `json:"remember-ok-to-test"`
 }
 
 func (s *Settings) DeepCopy(out *Settings) {
