@@ -603,3 +603,7 @@ func (v *Provider) isHeadCommitOfBranch(ctx context.Context, runevent *info.Even
 	}
 	return fmt.Errorf("provided SHA %s is not the HEAD commit of the branch %s", runevent.SHA, branchName)
 }
+
+func (v *Provider) GetTemplate(commentType provider.CommentType) string {
+	return provider.GetHTMLTemplate(commentType)
+}

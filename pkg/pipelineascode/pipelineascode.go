@@ -226,7 +226,8 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		TknBinary:       settings.TknBinaryName,
 		TknBinaryURL:    settings.TknBinaryURL,
 	}
-	msg, err := mt.MakeTemplate(formatting.StartingPipelineRunText)
+
+	msg, err := mt.MakeTemplate(p.vcx.GetTemplate(provider.StartingPipelineType))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create message template: %w", err)
 	}
@@ -243,7 +244,7 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	// if pipelineRun is in pending state then report status as queued
 	if pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
 		status.Status = queuedStatus
-		if status.Text, err = mt.MakeTemplate(formatting.QueuingPipelineRunText); err != nil {
+		if status.Text, err = mt.MakeTemplate(p.vcx.GetTemplate(provider.QueueingPipelineType)); err != nil {
 			return nil, fmt.Errorf("cannot create message template: %w", err)
 		}
 	}

@@ -403,3 +403,7 @@ func (v *Provider) GetFiles(_ context.Context, runevent *info.Event) (changedfil
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
 }
+
+func (v *Provider) GetTemplate(commentType provider.CommentType) string {
+	return provider.GetHTMLTemplate(commentType)
+}
