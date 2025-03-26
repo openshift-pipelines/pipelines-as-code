@@ -276,7 +276,8 @@ func (r *Reconciler) updatePipelineRunToInProgress(ctx context.Context, logger *
 		TknBinary:       settings.TknBinaryName,
 		TknBinaryURL:    settings.TknBinaryURL,
 	}
-	msg, err := mt.MakeTemplate(formatting.StartingPipelineRunText)
+	template := provider.GetCommentTemplate(pr.GetAnnotations()[keys.GitProvider], provider.StartingPipelineType)
+	msg, err := mt.MakeTemplate(template)
 	if err != nil {
 		return fmt.Errorf("cannot create message template: %w", err)
 	}
