@@ -30,8 +30,8 @@ func TestGithubProviderCreateCheckRun(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	cnx := Provider{
-		Client: fakeclient,
-		Run:    params.New(),
+		ghClient: fakeclient,
+		Run:      params.New(),
 		pacInfo: &info.PacOpts{
 			Settings: settings.Settings{
 				ApplicationName: settings.PACApplicationNameDefaultValue,
@@ -64,9 +64,9 @@ func TestGetOrUpdateCheckRunStatusForMultipleFailedPipelineRun(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
 	fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 	cnx := Provider{
-		Client:  fakeclient,
-		Run:     params.New(),
-		pacInfo: &info.PacOpts{},
+		ghClient: fakeclient,
+		Run:      params.New(),
+		pacInfo:  &info.PacOpts{},
 	}
 	defer teardown()
 	statusOptionData := []provider.StatusOpts{{
@@ -104,7 +104,7 @@ func TestGetExistingCheckRunIDFromMultiple(t *testing.T) {
 	defer teardown()
 
 	cnx := &Provider{
-		Client:        client,
+		ghClient:      client,
 		PaginedNumber: 1,
 	}
 	event := &info.Event{
@@ -151,7 +151,7 @@ func TestGetExistingPendingApprovalCheckRunID(t *testing.T) {
 	defer teardown()
 
 	cnx := New()
-	cnx.Client = client
+	cnx.SetGithubClient(client)
 
 	event := &info.Event{
 		Organization: "owner",
@@ -190,7 +190,7 @@ func TestGetExistingFailedCheckRunID(t *testing.T) {
 	defer teardown()
 
 	cnx := New()
-	cnx.Client = client
+	cnx.SetGithubClient(client)
 
 	event := &info.Event{
 		Organization: "owner",
@@ -407,7 +407,7 @@ func TestGithubProviderCreateStatus(t *testing.T) {
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gcvs := New()
-			gcvs.Client = fakeclient
+			gcvs.SetGithubClient(fakeclient)
 			gcvs.Logger, _ = logger.GetLogger()
 			gcvs.Run = params.New()
 			if tt.args.isBot {
@@ -591,8 +591,8 @@ func TestGithubProvidercreateStatusCommit(t *testing.T) {
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			provider := &Provider{
-				Client: fakeclient,
-				Run:    params.New(),
+				ghClient: fakeclient,
+				Run:      params.New(),
 				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{
 						ApplicationName: settings.PACApplicationNameDefaultValue,
@@ -653,7 +653,7 @@ func TestProviderGetExistingCheckRunID(t *testing.T) {
 				SHA:          "sha",
 			}
 			v := &Provider{
-				Client: client,
+				ghClient: client,
 			}
 			mux.HandleFunc(fmt.Sprintf("/repos/%v/%v/commits/%v/check-runs", event.Organization, event.Repository, event.SHA), func(w http.ResponseWriter, _ *http.Request) {
 				_, _ = fmt.Fprintf(w, "%s", tt.jsonret)

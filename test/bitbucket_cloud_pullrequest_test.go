@@ -95,7 +95,7 @@ func TestBitbucketCloudPullRequestCancelInProgressMerged(t *testing.T) {
 		Owner:    opts.Organization,
 		ID:       fmt.Sprintf("%d", pr.ID),
 	}
-	_, err = bprovider.Client.Repositories.PullRequests.Decline(po)
+	_, err = bprovider.Client().Repositories.PullRequests.Decline(po)
 	assert.NilError(t, err)
 
 	runcnx.Clients.Log.Info("Waiting 10 seconds to check things has been canceled")

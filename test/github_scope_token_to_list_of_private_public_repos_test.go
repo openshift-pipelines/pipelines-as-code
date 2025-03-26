@@ -105,7 +105,7 @@ func verifyGHTokenScope(t *testing.T, remoteTaskURL, remoteTaskName string, data
 	})
 	assert.NilError(t, err)
 
-	repoinfo, resp, err := ghcnx.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
+	repoinfo, resp, err := ghcnx.Client().Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -150,7 +150,7 @@ func verifyGHTokenScope(t *testing.T, remoteTaskURL, remoteTaskName string, data
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, vref, err := tgithub.PushFilesToRef(ctx, ghcnx.Client, "TestPullRequestRemoteAnnotations - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
+	sha, vref, err := tgithub.PushFilesToRef(ctx, ghcnx.Client(), "TestPullRequestRemoteAnnotations - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
 

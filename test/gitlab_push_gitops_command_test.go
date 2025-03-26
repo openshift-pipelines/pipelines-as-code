@@ -31,7 +31,7 @@ func TestGitlabGitOpsCommandTestOnPush(t *testing.T) {
 	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Info("Testing with Gitlab")
-	projectinfo, resp, err := glprovider.Client.Projects.GetProject(opts.ProjectID, nil)
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -60,7 +60,7 @@ func TestGitlabGitOpsCommandTestOnPush(t *testing.T) {
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetNs)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, -1, targetNs, targetNs, opts.ProjectID)
 
-	branch, _, err := glprovider.Client.Branches.GetBranch(opts.ProjectID, targetNs)
+	branch, _, err := glprovider.Client().Branches.GetBranch(opts.ProjectID, targetNs)
 	assert.NilError(t, err)
 
 	waitOpts := wait.Opts{
@@ -77,7 +77,7 @@ func TestGitlabGitOpsCommandTestOnPush(t *testing.T) {
 	commentOpts := &gitlab.PostCommitCommentOptions{
 		Note: gitlab.Ptr("/test branch:" + targetNs),
 	}
-	cc, _, err := glprovider.Client.Commits.PostCommitComment(opts.ProjectID, branch.Commit.ID, commentOpts)
+	cc, _, err := glprovider.Client().Commits.PostCommitComment(opts.ProjectID, branch.Commit.ID, commentOpts)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit comment %s has been created", cc.Note)
 
@@ -101,7 +101,7 @@ func TestGitlabGitOpsCommandCancelOnPush(t *testing.T) {
 	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Info("Testing with Gitlab")
-	projectinfo, resp, err := glprovider.Client.Projects.GetProject(opts.ProjectID, nil)
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -130,13 +130,13 @@ func TestGitlabGitOpsCommandCancelOnPush(t *testing.T) {
 	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetNs)
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, -1, targetNs, targetNs, opts.ProjectID)
 
-	branch, _, err := glprovider.Client.Branches.GetBranch(opts.ProjectID, targetNs)
+	branch, _, err := glprovider.Client().Branches.GetBranch(opts.ProjectID, targetNs)
 	assert.NilError(t, err)
 
 	commentOpts := &gitlab.PostCommitCommentOptions{
 		Note: gitlab.Ptr("/test branch:" + targetNs),
 	}
-	cc, _, err := glprovider.Client.Commits.PostCommitComment(opts.ProjectID, branch.Commit.ID, commentOpts)
+	cc, _, err := glprovider.Client().Commits.PostCommitComment(opts.ProjectID, branch.Commit.ID, commentOpts)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit comment %s has been created", cc.Note)
 
@@ -159,7 +159,7 @@ func TestGitlabGitOpsCommandCancelOnPush(t *testing.T) {
 	commentOpts = &gitlab.PostCommitCommentOptions{
 		Note: gitlab.Ptr("/cancel pipelinerun-on-push branch:" + targetNs),
 	}
-	cc, _, err = glprovider.Client.Commits.PostCommitComment(opts.ProjectID, branch.Commit.ID, commentOpts)
+	cc, _, err = glprovider.Client().Commits.PostCommitComment(opts.ProjectID, branch.Commit.ID, commentOpts)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit comment %s has been created", cc.Note)
 
