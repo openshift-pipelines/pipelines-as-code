@@ -1,0 +1,17 @@
+- **Namespace**: [{{ .Mt.Namespace }}]({{ .Mt.NamespaceURL }})
+- **PipelineRun**: [{{ .Mt.PipelineRunName }}]({{ .Mt.ConsoleURL }})
+
+---
+
+### Task Statuses:
+
+| **Status** | **Name** | **Duration** |
+|------------|----------|--------------|
+{{ .Mt.TaskStatus }}
+
+{{- if not (eq .Mt.FailureSnippet "")}}
+---
+
+### Failure snippet:
+{{ .Mt.FailureSnippet }}
+{{- end }}

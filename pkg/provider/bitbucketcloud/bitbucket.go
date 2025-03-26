@@ -29,6 +29,8 @@ type Provider struct {
 	Token, APIURL *string
 	Username      *string
 	provenance    string
+	eventEmitter  *events.EventEmitter
+	repo          *v1alpha1.Repository
 }
 
 // CheckPolicyAllowing TODO: Implement ME.
@@ -45,9 +47,7 @@ func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
 }
 
-const taskStatusTemplate = `| **Status** | **Duration** | **Name** |
-| --- | --- | --- |
-{{range $taskrun := .TaskRunList }}|{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}|{{ formatDuration $taskrun.PipelineRunTaskRunStatus.Status.StartTime $taskrun.PipelineRunTaskRunStatus.Status.CompletionTime }}|{{ $taskrun.ConsoleLogURL }}|
+const taskStatusTemplate = `{{range $taskrun := .TaskRunList }} | **{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}** | {{ $taskrun.ConsoleLogURL }} | *{{ formatDuration $taskrun.PipelineRunTaskRunStatus.Status.StartTime $taskrun.PipelineRunTaskRunStatus.Status.CompletionTime }}* |
 {{ end }}`
 
 func (v *Provider) Validate(_ context.Context, _ *params.Run, _ *info.Event) error {
@@ -110,7 +110,10 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts
 
 	_, err := v.Client.Repositories.Commits.CreateCommitStatus(cmo, cso)
 	if err != nil {
-		return err
+		// Only emit an event to notify the user that something went wrong with the commit status API,
+		// and proceed with creating the comment (if applicable).
+		v.eventEmitter.EmitMessage(v.repo, zap.ErrorLevel, "FailedToSetCommitStatus",
+			"cannot set status with the Bitbucket Cloud token because of: "+err.Error())
 	}
 
 	eventType := triggertype.IsPullRequestType(event.EventType)
@@ -176,7 +179,7 @@ func (v *Provider) GetFileInsideRepo(_ context.Context, event *info.Event, path,
 	return v.getBlob(event, revision, path)
 }
 
-func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
+func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Event, repo *v1alpha1.Repository, eventEmitter *events.EventEmitter) error {
 	if event.Provider.Token == "" {
 		return fmt.Errorf("no git_provider.secret has been set in the repo crd")
 	}
@@ -187,6 +190,8 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 	v.Token = &event.Provider.Token
 	v.Username = &event.Provider.User
 	v.run = run
+	v.eventEmitter = eventEmitter
+	v.repo = repo
 	return nil
 }
 
@@ -296,4 +301,8 @@ func (v *Provider) GetFiles(_ context.Context, _ *info.Event) (changedfiles.Chan
 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
+}
+
+func (v *Provider) GetTemplate(commentType provider.CommentType) string {
+	return provider.GetMarkdownTemplate(commentType)
 }
