@@ -130,7 +130,13 @@ There is a few things you can configure through the config map
   case of push event on pull request either through new commit or amend, then CI will
   re-run automatically
 
-  You can disable by setting false if you want to provide `ok-to-test` on every iteration
+  By default, the `remember-ok-to-test` setting is set to false in Pipelines-as-Code to mitigate serious security risks.
+  An attacker could submit a seemingly harmless PR to gain the repository owner's trust, and later
+  inject malicious code designed to compromise the build system, such as exfiltrating secrets.
+
+  Enabling this feature increases the risk of unauthorized access and is therefore strongly discouraged
+  unless absolutely necessary. If you choose to enable it you can set it to true, you do so at your own
+  risk and should be aware of the potential security vulnerabilities.
   (only GitHub and Gitea is supported at the moment).
 
 ### Tekton Hub support
