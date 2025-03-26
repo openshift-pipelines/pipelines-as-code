@@ -354,7 +354,7 @@ func TestCancelInProgressMatchingPR(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pr-foo",
 						Namespace: "foo",
-						Labels:    fooRepoLabels,
+						Labels:    map[string]string{},
 						Annotations: map[string]string{
 							keys.CancelInProgress: "true",
 						},
@@ -889,7 +889,7 @@ func TestCancelAllInProgressBelongingToPullRequest(t *testing.T) {
 				},
 			}
 			pac := NewPacs(tt.event, nil, cs, &info.PacOpts{}, nil, logger, nil)
-			err := pac.cancelAllInProgressBelongingToPullRequest(ctx, tt.repo)
+			err := pac.cancelAllInProgressBelongingToClosedPullRequest(ctx, tt.repo)
 			assert.NilError(t, err)
 
 			got, err := cs.Clients.Tekton.TektonV1().PipelineRuns("foo").List(ctx, metav1.ListOptions{})
