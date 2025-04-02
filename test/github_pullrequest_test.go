@@ -89,7 +89,7 @@ func TestGithubPullRequestOnLabel(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	g.Cnx.Clients.Log.Infof("Creating a label bug on PullRequest")
-	_, _, err := g.Provider.Client.Issues.AddLabelsToIssue(ctx,
+	_, _, err := g.Provider.Client().Issues.AddLabelsToIssue(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.PRNumber,
 		[]string{"bug"})
@@ -109,7 +109,7 @@ func TestGithubPullRequestOnLabel(t *testing.T) {
 	resp := &github.Response{}
 	counter := 0
 	for {
-		res, resp, err = g.Provider.Client.Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
+		res, resp, err = g.Provider.Client().Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
 			AppID:       g.Provider.ApplicationID,
 			ListOptions: opt,
 		})
@@ -177,7 +177,7 @@ func TestGithubPullRequestSecondBadYaml(t *testing.T) {
 	var err error
 	counter := 0
 	for {
-		res, resp, err = g.Provider.Client.Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
+		res, resp, err = g.Provider.Client().Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
 			AppID:       g.Provider.ApplicationID,
 			ListOptions: opt,
 		})
@@ -222,7 +222,7 @@ func TestGithubPullRequestInvalidSpecValues(t *testing.T) {
 	var err error
 	counter := 0
 	for {
-		res, resp, err = g.Provider.Client.Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
+		res, resp, err = g.Provider.Client().Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
 			AppID:       g.Provider.ApplicationID,
 			Status:      github.Ptr("completed"),
 			ListOptions: opt,
@@ -260,7 +260,7 @@ func TestGithubSecondTestExplicitelyNoMatchedPipelineRun(t *testing.T) {
 	defer g.TearDown(ctx, t)
 
 	g.Cnx.Clients.Log.Infof("Creating /test no-match on PullRequest")
-	_, _, err := g.Provider.Client.Issues.CreateComment(ctx,
+	_, _, err := g.Provider.Client().Issues.CreateComment(ctx,
 		g.Options.Organization,
 		g.Options.Repo, g.PRNumber,
 		&github.IssueComment{Body: github.Ptr("/test no-match")})
@@ -298,7 +298,7 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 	time.Sleep(10 * time.Second)
 
 	g.Cnx.Clients.Log.Infof("Creating /retest on PullRequest")
-	_, _, err = g.Provider.Client.Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
+	_, _, err = g.Provider.Client().Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
 		&github.IssueComment{Body: github.Ptr("/retest")})
 	assert.NilError(t, err)
 
@@ -369,7 +369,7 @@ func TestGithubSecondCancelInProgressPRClosed(t *testing.T) {
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Closing the PullRequest")
-	_, _, err = g.Provider.Client.PullRequests.Edit(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber, &github.PullRequest{
+	_, _, err = g.Provider.Client().PullRequests.Edit(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber, &github.PullRequest{
 		State: github.Ptr("closed"),
 	})
 	assert.NilError(t, err)
@@ -385,7 +385,7 @@ func TestGithubSecondCancelInProgressPRClosed(t *testing.T) {
 
 	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been canceled")
 
-	res, resp, err := g.Provider.Client.Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
+	res, resp, err := g.Provider.Client().Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
 		AppID:       g.Provider.ApplicationID,
 		ListOptions: github.ListOptions{},
 	})

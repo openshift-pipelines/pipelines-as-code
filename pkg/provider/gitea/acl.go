@@ -18,7 +18,7 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, all
 		return true, ""
 	}
 	// TODO: caching
-	orgTeams, resp, err := v.Client.ListOrgTeams(event.Organization, gitea.ListTeamsOptions{})
+	orgTeams, resp, err := v.Client().ListOrgTeams(event.Organization, gitea.ListTeamsOptions{})
 	if resp.StatusCode == http.StatusNotFound {
 		// we explicitly disallow the policy when there is no team on org
 		return false, fmt.Sprintf("no teams on org %s", event.Organization)
@@ -30,7 +30,7 @@ func (v *Provider) CheckPolicyAllowing(_ context.Context, event *info.Event, all
 	for _, allowedTeam := range allowedTeams {
 		for _, orgTeam := range orgTeams {
 			if orgTeam.Name == allowedTeam {
-				teamMember, _, err := v.Client.GetTeamMember(orgTeam.ID, event.Sender)
+				teamMember, _, err := v.Client().GetTeamMember(orgTeam.ID, event.Sender)
 				if err != nil {
 					v.Logger.Infof("error while getting team member: %s, error: %s", event.Sender, err.Error())
 					continue
@@ -144,7 +144,7 @@ func (v *Provider) aclAllowedOkToTestFromAnOwner(ctx context.Context, event *inf
 // aclAllowedOkToTestCurrentEvent only check if this is issue comment event
 // have /ok-to-test regex and sender is allowed.
 func (v *Provider) aclAllowedOkToTestCurrentComment(ctx context.Context, revent *info.Event, id int64) (bool, error) {
-	comment, _, err := v.Client.GetIssueComment(revent.Organization, revent.Repository, id)
+	comment, _, err := v.Client().GetIssueComment(revent.Organization, revent.Repository, id)
 	if err != nil {
 		return false, err
 	}
@@ -204,7 +204,7 @@ func (v *Provider) IsAllowedOwnersFile(ctx context.Context, rev *info.Event) (bo
 }
 
 func (v *Provider) checkSenderRepoMembership(_ context.Context, runevent *info.Event) (bool, error) {
-	ret, _, err := v.Client.IsCollaborator(runevent.Organization, runevent.Repository, runevent.Sender)
+	ret, _, err := v.Client().IsCollaborator(runevent.Organization, runevent.Repository, runevent.Sender)
 	return ret, err
 }
 
@@ -227,7 +227,7 @@ func (v *Provider) GetStringPullRequestComment(_ context.Context, runevent *info
 		return nil, err
 	}
 
-	comments, _, err := v.Client.ListIssueComments(runevent.Organization, runevent.Repository, int64(prNumber), gitea.ListIssueCommentOptions{})
+	comments, _, err := v.Client().ListIssueComments(runevent.Organization, runevent.Repository, int64(prNumber), gitea.ListIssueCommentOptions{})
 	if err != nil {
 		return nil, err
 	}
