@@ -15,5 +15,5 @@ Duration:       ---
 
 Other Runs:
 
-STATUS:   Event               Branch          SHA    STARTED TIME    DURATION      PIPELINERUN
-Success   propseryouplaboun   TargetBranch   SHA    16 minutes ago   1 minute   pipelinerun1
+STATUS    Event               Branch         SHA   STARTED TIME     DURATION   PIPELINERUN
+Success   propseryouplaboun   TargetBranch   SHA   16 minutes ago   1 minute   pipelinerun1
