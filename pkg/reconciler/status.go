@@ -138,7 +138,7 @@ func (r *Reconciler) postFinalStatus(ctx context.Context, logger *zap.SugaredLog
 		}
 	}
 	var tmplStatusText string
-	if tmplStatusText, err = mt.MakeTemplate(formatting.PipelineRunStatusText); err != nil {
+	if tmplStatusText, err = mt.MakeTemplate(vcx.GetTemplate(provider.PipelineRunStatusType)); err != nil {
 		return nil, fmt.Errorf("cannot create message template: %w", err)
 	}
 

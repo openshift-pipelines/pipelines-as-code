@@ -23,8 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const taskStatusTemplate = `
-{{range $taskrun := .TaskRunList }}* **{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}**  {{ $taskrun.ConsoleLogURL }} *{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}*
+const taskStatusTemplate = `{{range $taskrun := .TaskRunList }}| **{{ formatCondition $taskrun.PipelineRunTaskRunStatus.Status.Conditions }}** | {{ $taskrun.ConsoleLogURL }} | *{{ formatDuration $taskrun.Status.StartTime $taskrun.Status.CompletionTime }}* |
 {{ end }}`
 const apiResponseLimit = 100
 
@@ -417,4 +416,8 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 
 func (v *Provider) CreateToken(_ context.Context, _ []string, _ *info.Event) (string, error) {
 	return "", nil
+}
+
+func (v *Provider) GetTemplate(commentType provider.CommentType) string {
+	return provider.GetMarkdownTemplate(commentType)
 }
