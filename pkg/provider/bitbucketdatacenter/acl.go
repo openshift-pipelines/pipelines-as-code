@@ -4,11 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
-	"github.com/mitchellh/mapstructure"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 )
@@ -53,6 +51,8 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 		if nextPage > 0 {
 			localVarOptionals["start"] = int(nextPage)
 		}
+		// will replace this API call with jenkins-x/go-scm after my PR on go-scm is merged
+		// https://github.com/jenkins-x/go-scm/pull/494
 		return v.Client.DefaultApi.GetActivities(v.projectKey, event.Repository, v.pullRequestNumber, localVarOptionals)
 	})
 	if err != nil {
@@ -94,38 +94,9 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 	return false, nil
 }
 
-func (v *Provider) checkMemberShipResults(results []any, event *info.Event) (bool, error) {
-	accountintid, err := strconv.Atoi(event.AccountID)
-	if err != nil {
-		return false, err
-	}
-	for _, row := range results {
-		user := &bbv1.UserPermission{}
-		err := mapstructure.Decode(row, user)
-		if err != nil {
-			return false, err
-		}
-
-		if user.User.ID == accountintid {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool, error) {
 	// Get permissions from project
-	allValues, err := paginate(func(nextPage int) (*bbv1.APIResponse, error) {
-		localVarOptionals := map[string]any{}
-		if nextPage > 0 {
-			localVarOptionals["start"] = int(nextPage)
-		}
-		return v.Client.DefaultApi.GetUsersWithAnyPermission_23(v.projectKey, localVarOptionals)
-	})
-	if err != nil {
-		return false, err
-	}
-	allowed, err := v.checkMemberShipResults(allValues, event)
+	allowed, _, err := v.ScmClient.Organizations.IsMember(ctx, event.Organization, event.Sender)
 	if err != nil {
 		return false, err
 	}
@@ -133,19 +104,9 @@ func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool
 		return true, nil
 	}
 
+	orgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
 	// Get permissions from repo
-	allValues, err = paginate(func(nextPage int) (*bbv1.APIResponse, error) {
-		localVarOptionals := map[string]any{}
-		if nextPage > 0 {
-			localVarOptionals["start"] = int(nextPage)
-		}
-		return v.Client.DefaultApi.GetUsersWithAnyPermission_24(v.projectKey, event.Repository, localVarOptionals)
-	})
-	if err != nil {
-		return false, err
-	}
-
-	allowed, err = v.checkMemberShipResults(allValues, event)
+	allowed, _, err = v.ScmClient.Repositories.IsCollaborator(ctx, orgAndRepo, event.Sender)
 	if err != nil {
 		return false, err
 	}
@@ -153,7 +114,7 @@ func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool
 		return true, nil
 	}
 
-	// Check if sender (which in bitbucket-datacenter mean the accountID) is inside the Owner file
+	// Check if sender is inside the Owner file
 	// in the 'main' branch Silently ignore error, which should be fine it
 	// probably means the OWNERS file is not created. If we had another error
 	// (ie: like API) we probably would have hit it already.
