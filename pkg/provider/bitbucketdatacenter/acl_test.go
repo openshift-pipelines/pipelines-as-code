@@ -33,6 +33,7 @@ func TestIsAllowed(t *testing.T) {
 	type fields struct {
 		projectMembers            []*bbv1.UserPermission
 		repoMembers               []*bbv1.UserPermission
+		projGroups                []*bbv1test.ProjGroup
 		activities                []*bbv1.Activity
 		filescontents             map[string]string
 		defaultBranchLatestCommit string
@@ -52,7 +53,7 @@ func TestIsAllowed(t *testing.T) {
 				projectMembers: []*bbv1.UserPermission{
 					{
 						User: bbv1.User{
-							ID: ownerAccountID,
+							Slug: "member",
 						},
 					},
 				},
@@ -70,7 +71,7 @@ func TestIsAllowed(t *testing.T) {
 				projectMembers: []*bbv1.UserPermission{
 					{
 						User: bbv1.User{
-							ID: ownerAccountID,
+							Slug: "member",
 						},
 					},
 				},
@@ -79,7 +80,7 @@ func TestIsAllowed(t *testing.T) {
 						Comment: bbv1.ActivityComment{
 							Text: "/ok-to-test",
 							Author: bbv1.User{
-								ID: ownerAccountID,
+								Slug: "member",
 							},
 						},
 					},
@@ -207,6 +208,7 @@ func TestIsAllowed(t *testing.T) {
 			defer tearDown()
 			bbv1test.MuxProjectMemberShip(t, mux, tt.event, tt.fields.projectMembers)
 			bbv1test.MuxRepoMemberShip(t, mux, tt.event, tt.fields.repoMembers)
+			bbv1test.MuxProjectGroupMembership(t, mux, tt.event, tt.fields.projGroups)
 			bbv1test.MuxPullRequestActivities(t, mux, tt.event, tt.fields.pullRequestNumber, tt.fields.activities)
 			bbv1test.MuxFiles(t, mux, tt.event, tt.fields.defaultBranchLatestCommit, "", tt.fields.filescontents, false)
 

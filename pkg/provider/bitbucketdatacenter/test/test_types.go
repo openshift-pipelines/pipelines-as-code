@@ -22,3 +22,12 @@ type DiffStats struct {
 	Pagination
 	Values []*DiffStat
 }
+
+type ProjGroup struct {
+	Group      Group  `json:"group"`
+	Permission string `json:"permission"`
+}
+
+type Group struct {
+	Name string `json:"name"`
+}
