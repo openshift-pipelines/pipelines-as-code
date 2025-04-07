@@ -65,7 +65,7 @@ A PipelineRun is then annotated to target the incoming event and the main branch
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
-  name: target_pipelinerun
+  name: target-pipelinerun
   annotations:
     pipelinesascode.tekton.dev/on-event: "[incoming]"
     pipelinesascode.tekton.dev/on-target-branch: "[main]"
@@ -95,7 +95,7 @@ You can use the `generateName` field as the PipelineRun name but you will need t
 As an example here is a curl snippet starting the PipelineRun:
 
 ```shell
-curl -X POST 'https://control.pac.url/incoming?secret=very-secure-shared-secret&repository=repo&branch=main&pipelinerun=target_pipelinerun'
+curl -X POST 'https://control.pac.url/incoming?secret=very-secure-shared-secret&repository=repo&branch=main&pipelinerun=target-pipelinerun'
 ```
 
 in this snippet, note two things the `"/incoming"` path to the controller URL
@@ -144,7 +144,7 @@ spec:
 and here is a curl snippet passing the `pull_request_number` value:
 
 ```shell
-curl -H "Content-Type: application/json" -X POST "https://control.pac.url/incoming?repository=repo&branch=main&secret=very-secure-shared-secret&pipelinerun=target_pipelinerun" -d '{"params": {"pull_request_number": "12345"}}'
+curl -H "Content-Type: application/json" -X POST "https://control.pac.url/incoming?repository=repo&branch=main&secret=very-secure-shared-secret&pipelinerun=target-pipelinerun" -d '{"params": {"pull_request_number": "12345"}}'
 ```
 
 The parameter value of `pull_request_number` will be set to `12345` when using the variable `{{pull_request_number}}` in your PipelineRun.
@@ -156,7 +156,7 @@ specify the `X-GitHub-Enterprise-Host` header when making the incoming webhook
 request. For example when using curl:
 
 ```shell
-curl -H "X-GitHub-Enterprise-Host: github.example.com" -X POST "https://control.pac.url/incoming?repository=repo&branch=main&secret=very-secure-shared-secret&pipelinerun=target_pipelinerun"
+curl -H "X-GitHub-Enterprise-Host: github.example.com" -X POST "https://control.pac.url/incoming?repository=repo&branch=main&secret=very-secure-shared-secret&pipelinerun=target-pipelinerun"
 ```
 
 ### Using incoming webhook with webhook based providers
