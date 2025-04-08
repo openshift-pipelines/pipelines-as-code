@@ -74,10 +74,10 @@ func (v *Provider) GetAppToken(ctx context.Context, kube kubernetes.Interface, g
 			gheURL = "https://" + gheURL
 		}
 		uploadURL := gheURL + "/api/uploads"
-		v.Client, _ = github.NewClient(&http.Client{Transport: itr}).WithEnterpriseURLs(gheURL, uploadURL)
-		itr.BaseURL = strings.TrimSuffix(v.Client.BaseURL.String(), "/")
+		v.ghClient, _ = github.NewClient(&http.Client{Transport: itr}).WithEnterpriseURLs(gheURL, uploadURL)
+		itr.BaseURL = strings.TrimSuffix(v.Client().BaseURL.String(), "/")
 	} else {
-		v.Client = github.NewClient(&http.Client{Transport: itr})
+		v.ghClient = github.NewClient(&http.Client{Transport: itr})
 	}
 
 	// Get a token ASAP because we need it for setting private repos
@@ -217,7 +217,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 
 	switch gitEvent := eventInt.(type) {
 	case *github.CheckRunEvent:
-		if v.Client == nil {
+		if v.ghClient == nil {
 			return nil, fmt.Errorf("check run rerequest is only supported with github apps integration")
 		}
 
@@ -226,7 +226,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		}
 		return v.handleReRequestEvent(ctx, gitEvent)
 	case *github.CheckSuiteEvent:
-		if v.Client == nil {
+		if v.ghClient == nil {
 			return nil, fmt.Errorf("check suite rerequest is only supported with github apps integration")
 		}
 
@@ -235,7 +235,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		}
 		return v.handleCheckSuites(ctx, gitEvent)
 	case *github.IssueCommentEvent:
-		if v.Client == nil {
+		if v.ghClient == nil {
 			return nil, fmt.Errorf("no github client has been initialized, " +
 				"exiting... (hint: did you forget setting a secret on your repo?)")
 		}
@@ -247,7 +247,7 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 			return nil, err
 		}
 	case *github.CommitCommentEvent:
-		if v.Client == nil {
+		if v.ghClient == nil {
 			return nil, fmt.Errorf("no github client has been initialized, " +
 				"exiting... (hint: did you forget setting a secret on your repo?)")
 		}

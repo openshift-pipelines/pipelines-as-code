@@ -61,7 +61,7 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, bprovider b
 		return
 	}
 	runcnx.Clients.Log.Infof("Closing PR #%d", prNumber)
-	_, err := bprovider.Client.Repositories.PullRequests.Decline(&bitbucket.PullRequestsOptions{
+	_, err := bprovider.Client().Repositories.PullRequests.Decline(&bitbucket.PullRequestsOptions{
 		ID:       fmt.Sprintf("%d", prNumber),
 		Owner:    opts.Organization,
 		RepoSlug: opts.Repo,
@@ -72,7 +72,7 @@ func TearDown(ctx context.Context, t *testing.T, runcnx *params.Run, bprovider b
 		assert.NilError(t, err)
 	}
 	runcnx.Clients.Log.Infof("Deleting ref %s", ref)
-	err = bprovider.Client.Repositories.Repository.DeleteBranch(
+	err = bprovider.Client().Repositories.Repository.DeleteBranch(
 		&bitbucket.RepositoryBranchDeleteOptions{
 			Owner:    opts.Organization,
 			RepoSlug: opts.Repo,

@@ -101,7 +101,7 @@ func TestIsAllowed(t *testing.T) {
 			}
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.Client = client
+				v.gitlabClient = client
 				if tt.allowMemberID != 0 {
 					thelp.MuxAllowUserID(mux, tt.fields.targetProjectID, tt.allowMemberID)
 				} else {

@@ -80,7 +80,7 @@ func TearDown(ctx context.Context, t *testing.T, topts *TestOpts) {
 		return
 	}
 	repository.NSTearDown(ctx, t, topts.ParamsRun, topts.TargetNS)
-	_, err := topts.GiteaCNX.Client.DeleteRepo(topts.Opts.Organization, topts.TargetNS)
+	_, err := topts.GiteaCNX.Client().DeleteRepo(topts.Opts.Organization, topts.TargetNS)
 	if err != nil {
 		t.Logf("Error deleting gitea repo %s/%s: %s", topts.Opts.Organization, topts.TargetNS, err)
 	} else {

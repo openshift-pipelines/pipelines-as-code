@@ -13,7 +13,7 @@ import (
 
 // CreateToken creates gitea token with all scopes.
 func CreateToken(topts *TestOpts) (string, error) {
-	token, _, err := topts.GiteaCNX.Client.CreateAccessToken(gitea.CreateAccessTokenOption{
+	token, _, err := topts.GiteaCNX.Client().CreateAccessToken(gitea.CreateAccessTokenOption{
 		Name:   topts.TargetNS,
 		Scopes: []gitea.AccessTokenScope{gitea.AccessTokenScopeAll},
 	})

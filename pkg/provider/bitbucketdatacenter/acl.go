@@ -53,7 +53,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 		if nextPage > 0 {
 			localVarOptionals["start"] = int(nextPage)
 		}
-		return v.Client.DefaultApi.GetActivities(v.projectKey, event.Repository, v.pullRequestNumber, localVarOptionals)
+		return v.Client().DefaultApi.GetActivities(v.projectKey, event.Repository, v.pullRequestNumber, localVarOptionals)
 	})
 	if err != nil {
 		return false, err
@@ -120,7 +120,7 @@ func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool
 		if nextPage > 0 {
 			localVarOptionals["start"] = int(nextPage)
 		}
-		return v.Client.DefaultApi.GetUsersWithAnyPermission_23(v.projectKey, localVarOptionals)
+		return v.Client().DefaultApi.GetUsersWithAnyPermission_23(v.projectKey, localVarOptionals)
 	})
 	if err != nil {
 		return false, err
@@ -139,7 +139,7 @@ func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool
 		if nextPage > 0 {
 			localVarOptionals["start"] = int(nextPage)
 		}
-		return v.Client.DefaultApi.GetUsersWithAnyPermission_24(v.projectKey, event.Repository, localVarOptionals)
+		return v.Client().DefaultApi.GetUsersWithAnyPermission_24(v.projectKey, event.Repository, localVarOptionals)
 	})
 	if err != nil {
 		return false, err

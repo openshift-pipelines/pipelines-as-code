@@ -445,7 +445,7 @@ func TestGiteaConfigCancelInProgress(t *testing.T) {
 	}
 	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
-	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, topts.Opts.Repo, gitea.CreatePullRequestOption{
+	pr, _, err := topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, topts.Opts.Repo, gitea.CreatePullRequestOption{
 		Title: "Test Pull Request - " + targetRef,
 		Head:  targetRef,
 		Base:  topts.DefaultBranch,
@@ -508,7 +508,7 @@ func TestGiteaConfigCancelInProgressAfterPRClosed(t *testing.T) {
 	assert.NilError(t, err)
 
 	closed := gitea.StateClosed
-	_, _, err = topts.GiteaCNX.Client.EditPullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index, gitea.EditPullRequestOption{
+	_, _, err = topts.GiteaCNX.Client().EditPullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index, gitea.EditPullRequestOption{
 		State: &closed,
 	})
 	assert.NilError(t, err)
@@ -535,7 +535,7 @@ func TestGiteaPush(t *testing.T) {
 	}
 	_, f := tgitea.TestPR(t, topts)
 	defer f()
-	merged, resp, err := topts.GiteaCNX.Client.MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
+	merged, resp, err := topts.GiteaCNX.Client().MergePullRequest(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index,
 		gitea.MergePullRequestOption{
 			Title: "Merged with Panache",
 			Style: "merge",
@@ -1059,7 +1059,7 @@ func verifyProvenance(t *testing.T, topts *tgitea.TestOpts, expectedOutput, cNam
 	scmOpts.TargetRefName = targetRef
 	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
 
-	pr, _, err := topts.GiteaCNX.Client.CreatePullRequest(topts.Opts.Organization, targetRef, gitea.CreatePullRequestOption{
+	pr, _, err := topts.GiteaCNX.Client().CreatePullRequest(topts.Opts.Organization, targetRef, gitea.CreatePullRequestOption{
 		Title: "Test Pull Request - " + targetRef,
 		Head:  targetRef,
 		Base:  options.MainBranch,
