@@ -354,7 +354,7 @@ func TestCancelInProgressMatchingPR(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "pr-foo",
 						Namespace: "foo",
-						Labels:    fooRepoLabels,
+						Labels:    map[string]string{},
 						Annotations: map[string]string{
 							keys.CancelInProgress: "true",
 						},
@@ -523,9 +523,10 @@ func TestCancelInProgressMatchingPR(t *testing.T) {
 						Namespace: "foo",
 						Labels:    fooRepoLabels,
 						Annotations: map[string]string{
-							keys.CancelInProgress: "true", keys.OriginalPRName: "pr-foo",
-							keys.Repository:   "foo",
-							keys.SourceBranch: "head",
+							keys.CancelInProgress: "true",
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "head",
 						},
 					},
 					Spec: pipelinev1.PipelineRunSpec{},
@@ -536,6 +537,54 @@ func TestCancelInProgressMatchingPR(t *testing.T) {
 				"pr-foo-1": true,
 			},
 			wantLog: "cancel-in-progress: cancelling pipelinerun foo/",
+		},
+		{
+			name: "match/cancel in progress on PipelineRun generateName",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				HeadBranch:        "head",
+				EventType:         string(triggertype.PullRequest),
+				TriggerTarget:     triggertype.PullRequest,
+				PullRequestNumber: pullReqNumber,
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pr-foo-",
+						Name:         "pr-foo-1",
+						Namespace:    "foo",
+						Labels:       fooRepoLabels,
+						Annotations: map[string]string{
+							keys.CancelInProgress: "true",
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "pr-foo-",
+						Name:         "pr-foo-2",
+						Namespace:    "foo",
+						Labels:       fooRepoLabels,
+						Annotations: map[string]string{
+							keys.CancelInProgress: "true",
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			repo: fooRepo,
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-2": true,
+			},
+			wantLog: "cancel-in-progress: cancelling pipelinerun foo/pr-foo-2",
 		},
 		{
 			name: "match/cancel in progress from /retest",
@@ -889,7 +938,7 @@ func TestCancelAllInProgressBelongingToPullRequest(t *testing.T) {
 				},
 			}
 			pac := NewPacs(tt.event, nil, cs, &info.PacOpts{}, nil, logger, nil)
-			err := pac.cancelAllInProgressBelongingToPullRequest(ctx, tt.repo)
+			err := pac.cancelAllInProgressBelongingToClosedPullRequest(ctx, tt.repo)
 			assert.NilError(t, err)
 
 			got, err := cs.Clients.Tekton.TektonV1().PipelineRuns("foo").List(ctx, metav1.ListOptions{})
