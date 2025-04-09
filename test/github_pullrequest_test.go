@@ -395,6 +395,32 @@ func TestGithubSecondCancelInProgressPRClosed(t *testing.T) {
 	assert.Equal(t, res.CheckRuns[0].GetConclusion(), "cancelled")
 }
 
+func TestGithubPullRequestNoOnLabelAnnotation(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:     "Github PullRequest",
+		YamlFiles: []string{"testdata/pipelinerun-pr-cel-expression.yaml"},
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	g.Cnx.Clients.Log.Infof("Creating a label bug on PullRequest")
+	_, _, err := g.Provider.Client.Issues.AddLabelsToIssue(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.PRNumber,
+		[]string{"bug"})
+	assert.NilError(t, err)
+
+	// let's wait 10 secs and check every second that a PipelineRun is created or not.
+	for i := 0; i < 10; i++ {
+		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+		assert.NilError(t, err)
+		// after adding a label on the PR we need to make sure that it doesn't trigger another PipelineRun.
+		assert.Equal(t, len(prs.Items), 1)
+		time.Sleep(1 * time.Second)
+	}
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -info TestGithubPullRequest$ ."
 // End:
