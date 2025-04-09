@@ -1686,6 +1686,37 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 		},
 		{
+			name: "no-on-label-annotation-on-pr",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "pipeline-label",
+							Annotations: map[string]string{
+								keys.OnEvent:        "[pull_request]",
+								keys.OnTargetBranch: "[main]",
+							},
+						},
+					},
+					pipelineGood,
+				},
+				runevent: info.Event{
+					URL:               "https://hello/moto",
+					TriggerTarget:     triggertype.PullRequest,
+					EventType:         string(triggertype.LabelUpdate),
+					HeadBranch:        "source",
+					BaseBranch:        "main",
+					PullRequestNumber: 10,
+					PullRequestLabel:  []string{"documentation"},
+				},
+			},
+			wantErr: true,
+			wantLog: []string{
+				"label update event, PipelineRun pipeline-label does not have a on-label for any of those labels: documentation",
+				"label update event, PipelineRun pipeline-good does not have a on-label for any of those labels: documentation",
+			},
+		},
+		{
 			name: "match-on-comment",
 			args: args{
 				pruns: []*tektonv1.PipelineRun{pipelineGood, pipelineOnComment},
