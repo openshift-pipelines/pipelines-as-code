@@ -252,6 +252,39 @@ need to go to this URL:
 There is a drop-down at the bottom of the page to let you change the older
 major version.
 
+### Documentation shortcode
+
+The hugo-book theme has several shortcodes that are used to do different things
+for the documentation.
+
+See the demo site of hugo-book on how to use them here <https://github.com/alex-shpak/hugo-book#shortcodes>
+
+And the demo on how to use them here:
+
+<https://hugo-book-demo.netlify.app/>
+
+We have as well some custom ones, you can see them in this directory:
+
+<https://github.com/openshift-pipelines/pipelines-as-code/tree/main/docs/layouts/shortcodes>
+
+See below on how to use them, feel free to grep around the documentation to see how they are actually used.
+
+#### tech_preview
+
+```markdown
+{ {< tech_preview "Feature Name" >}}
+```
+
+This shortcode creates a red warning blockquote indicating that a feature is in Technology Preview status. It takes one parameter - the name of the feature. The output shows a warning message that the specified feature is not supported for production use and is provided for early testing and feedback.
+
+#### support_matrix
+
+```markdown
+  { {< support_matrix github_app="true" github_webhook="true|false" gitea="true|false" gitlab="true|false" bitbucket_cloud="true|false" bitbucket_datacenter="true|false" >}}
+```
+
+This shortcode generates a compatibility table showing which Git providers support a particular feature. Each parameter accepts "true" or "false" values, displaying checkmarks (✅) or cross marks (❌) accordingly. The table lists all major Git providers (GitHub App, GitHub Webhook, Gitea, GitLab, Bitbucket Cloud, and Bitbucket Data Center) with their support status for the feature.
+
 ## Documentation when we are doing the Release Process
 
 - See here [release-process]({{< relref "/docs/dev/release-process.md" >}})
