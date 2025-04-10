@@ -464,3 +464,7 @@ func (v *Provider) isHeadCommitOfBranch(runevent *info.Event, branchName string)
 
 	return fmt.Errorf("provided SHA %s is not the HEAD commit of the branch %s", runevent.SHA, branchName)
 }
+
+func (v *Provider) GetTemplate(commentType provider.CommentType) string {
+	return provider.GetHTMLTemplate(commentType)
+}
