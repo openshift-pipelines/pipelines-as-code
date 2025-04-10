@@ -28,9 +28,9 @@ var cancelMergePatch = map[string]any{
 	},
 }
 
-// cancelAllInProgressBelongingToPullRequest cancels all in-progress PipelineRuns
+// cancelAllInProgressBelongingToClosedPullRequest cancels all in-progress PipelineRuns
 // that belong to a specific pull request in the given repository.
-func (p *PacRun) cancelAllInProgressBelongingToPullRequest(ctx context.Context, repo *v1alpha1.Repository) error {
+func (p *PacRun) cancelAllInProgressBelongingToClosedPullRequest(ctx context.Context, repo *v1alpha1.Repository) error {
 	labelSelector := getLabelSelector(map[string]string{
 		keys.URLRepository: formatting.CleanValueKubernetes(p.event.Repository),
 		keys.PullRequest:   strconv.Itoa(int(p.event.PullRequestNumber)),
@@ -70,7 +70,9 @@ func (p *PacRun) cancelInProgressMatchingPR(ctx context.Context, matchPR *tekton
 		return nil
 	}
 
-	prName, ok := matchPR.GetAnnotations()[keys.OriginalPRName]
+	// As PipelineRuns are filtered by name, OriginalPRName should be taken from
+	// labels instead of annotations because of constraints imposed by kube API.
+	prName, ok := matchPR.GetLabels()[keys.OriginalPRName]
 	if !ok {
 		return nil
 	}
