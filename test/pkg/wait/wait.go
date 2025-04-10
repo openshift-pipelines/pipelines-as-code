@@ -14,12 +14,13 @@ import (
 )
 
 type Opts struct {
-	RepoName        string
-	Namespace       string
-	MinNumberStatus int
-	PollTimeout     time.Duration
-	AdminNS         string
-	TargetSHA       string
+	RepoName            string
+	Namespace           string
+	MinNumberStatus     int
+	PollTimeout         time.Duration
+	AdminNS             string
+	TargetSHA           string
+	FailOnRepoCondition corev1.ConditionStatus
 }
 
 func UntilMinPRAppeared(ctx context.Context, clients clients.Clients, opts Opts, minNumber int) error {
@@ -56,7 +57,11 @@ func UntilRepositoryUpdated(ctx context.Context, clients clients.Clients, opts O
 		}
 		if len(prs.Items) > 0 {
 			prConditions := prs.Items[0].Status.Conditions
-			if len(prConditions) != 0 && prConditions[0].Status == corev1.ConditionFalse {
+			if opts.FailOnRepoCondition == "" {
+				opts.FailOnRepoCondition = corev1.ConditionFalse
+			}
+
+			if len(prConditions) != 0 && prConditions[0].Status == opts.FailOnRepoCondition {
 				return true, fmt.Errorf("pipelinerun has failed")
 			}
 		}
