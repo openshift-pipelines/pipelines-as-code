@@ -83,6 +83,10 @@ func AddLabelsAndAnnotations(event *info.Event, pipelineRun *tektonv1.PipelineRu
 		annotations[keys.TargetProjectID] = strconv.Itoa(event.TargetProjectID)
 	}
 
+	if value, ok := pipelineRun.GetObjectMeta().GetAnnotations()[keys.CancelInProgress]; ok {
+		labels[keys.CancelInProgress] = value
+	}
+
 	for k, v := range labels {
 		pipelineRun.Labels[k] = v
 	}
