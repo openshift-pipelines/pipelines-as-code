@@ -32,8 +32,9 @@ var cancelMergePatch = map[string]interface{}{
 // that belong to a specific pull request in the given repository.
 func (p *PacRun) cancelAllInProgressBelongingToClosedPullRequest(ctx context.Context, repo *v1alpha1.Repository) error {
 	labelSelector := getLabelSelector(map[string]string{
-		keys.URLRepository: formatting.CleanValueKubernetes(p.event.Repository),
-		keys.PullRequest:   strconv.Itoa(int(p.event.PullRequestNumber)),
+		keys.URLRepository:    formatting.CleanValueKubernetes(p.event.Repository),
+		keys.PullRequest:      strconv.Itoa(p.event.PullRequestNumber),
+		keys.CancelInProgress: "true",
 	})
 	prs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(repo.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
@@ -173,10 +174,6 @@ func (p *PacRun) cancelPipelineRuns(ctx context.Context, prs *tektonv1.PipelineR
 		if pr.IsDone() {
 			p.logger.Infof("cancel-in-progress: skipping cancelling pipelinerun %v/%v, already done", pr.GetNamespace(), pr.GetName())
 			continue
-		}
-
-		if pr.IsPending() {
-			p.logger.Infof("cancel-in-progress: skipping cancelling pipelinerun %v/%v in pending state", pr.GetNamespace(), pr.GetName())
 		}
 
 		p.logger.Infof("cancel-in-progress: cancelling pipelinerun %v/%v", pr.GetNamespace(), pr.GetName())
