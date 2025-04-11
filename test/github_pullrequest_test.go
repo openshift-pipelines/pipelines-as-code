@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/v70/github"
+	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 	"gotest.tools/v3/golden"
@@ -417,6 +418,45 @@ func TestGithubPullRequestNoOnLabelAnnotation(t *testing.T) {
 		assert.NilError(t, err)
 		// after adding a label on the PR we need to make sure that it doesn't trigger another PipelineRun.
 		assert.Equal(t, len(prs.Items), 1)
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func TestGithubPullRequestNoPipelineRunCancelledOnPRClosed(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:         "Github PullRequest",
+		YamlFiles:     []string{"testdata/pipelinerun-gitops.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 1,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
+	}
+	err := twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Closing the PullRequest")
+	_, _, err = g.Provider.Client.PullRequests.Edit(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber, &github.PullRequest{
+		State: github.Ptr("closed"),
+	})
+	assert.NilError(t, err)
+
+	for i := 0; i < 10; i++ {
+		prs, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+		assert.NilError(t, err)
+		// after adding a label on the PR we need to make sure that it doesn't trigger another PipelineRun.
+		assert.Equal(t, len(prs.Items), 1)
+		prReason := prs.Items[0].Status.GetConditions()[0].Reason
+		assert.Equal(t, prReason, string(tektonv1.PipelineRunReasonRunning), "Wanted PipelineRun to be running but it is ", prReason)
+		g.Cnx.Clients.Log.Infof("pipelinerun has desired reason %s till now", prReason)
 		time.Sleep(1 * time.Second)
 	}
 }

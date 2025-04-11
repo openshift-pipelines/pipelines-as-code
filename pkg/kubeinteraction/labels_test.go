@@ -41,8 +41,10 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 				event: event,
 				pipelineRun: &tektonv1.PipelineRun{
 					ObjectMeta: metav1.ObjectMeta{
-						Labels:      map[string]string{},
-						Annotations: map[string]string{},
+						Labels: map[string]string{},
+						Annotations: map[string]string{
+							keys.CancelInProgress: "true",
+						},
 					},
 				},
 				repo: &apipac.Repository{
@@ -70,6 +72,8 @@ func TestAddLabelsAndAnnotations(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Equal(t, tt.args.pipelineRun.Labels[keys.URLOrg], tt.args.event.Organization, "'%s' != %s",
 				tt.args.pipelineRun.Labels[keys.URLOrg], tt.args.event.Organization)
+			assert.Equal(t, tt.args.pipelineRun.Labels[keys.CancelInProgress], tt.args.pipelineRun.Annotations[keys.CancelInProgress], "'%s' != %s",
+				tt.args.pipelineRun.Labels[keys.CancelInProgress], tt.args.pipelineRun.Annotations[keys.CancelInProgress])
 			assert.Equal(t, tt.args.pipelineRun.Annotations[keys.URLOrg], tt.args.event.Organization, "'%s' != %s",
 				tt.args.pipelineRun.Annotations[keys.URLOrg], tt.args.event.Organization)
 			assert.Equal(t, tt.args.pipelineRun.Annotations[keys.ShaURL], tt.args.event.SHAURL)
