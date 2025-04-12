@@ -19,11 +19,12 @@ func TestReplacePlaceHoldersVariables(t *testing.T) {
 	}{
 		{
 			name:     "Test Replace standard",
-			template: `revision: {{ revision }}} url: {{ url }} bar: {{ bar}}`,
-			expected: `revision: master} url: https://chmouel.com bar: {{ bar}}`,
+			template: `revision: {{ revision }}} url: {{ url }} bar: {{ bar}} tag: {{ git_tag }}`,
+			expected: `revision: master} url: https://chmouel.com bar: {{ bar}} tag: v1.0`,
 			dicto: map[string]string{
 				"revision": "master",
 				"url":      "https://chmouel.com",
+				"git_tag":  "v1.0",
 			},
 			changedFiles: map[string]any{},
 		},
