@@ -153,6 +153,7 @@ func TestProcessTemplates(t *testing.T) {
 				"sender":                "",
 				"source_branch":         "",
 				"source_url":            "",
+				"git_tag":               "",
 				"target_branch":         "",
 				"target_namespace":      "",
 				"trigger_comment":       "",

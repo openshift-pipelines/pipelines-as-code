@@ -87,6 +87,14 @@ func TestProcessTemplates(t *testing.T) {
 			expected: "https://cloneurl",
 		},
 		{
+			name: "test git_tag variable",
+			event: &info.Event{
+				BaseBranch: "refs/tags/v1.0",
+			},
+			template: `{{ git_tag }}`,
+			expected: "v1.0",
+		},
+		{
 			name:     "replace target_namespace",
 			template: `ns {{ target_namespace }}`,
 			expected: fmt.Sprintf("ns %s", ns),

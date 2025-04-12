@@ -36,6 +36,11 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 	triggerCommentAsSingleLine := strings.ReplaceAll(strings.ReplaceAll(p.event.TriggerComment, "\r\n", "\\n"), "\n", "\\n")
 	pullRequestLabels := strings.Join(p.event.PullRequestLabel, "\\n")
 
+	gitTag := ""
+	if strings.HasPrefix(p.event.BaseBranch, "refs/tags/") {
+		gitTag = strings.TrimPrefix(p.event.BaseBranch, "refs/tags/")
+	}
+
 	return map[string]string{
 			"revision":            p.event.SHA,
 			"repo_url":            repoURL,
@@ -43,6 +48,7 @@ func (p *CustomParams) makeStandardParamsFromEvent(ctx context.Context) (map[str
 			"repo_name":           strings.ToLower(p.event.Repository),
 			"target_branch":       formatting.SanitizeBranch(p.event.BaseBranch),
 			"source_branch":       formatting.SanitizeBranch(p.event.HeadBranch),
+			"git_tag":             gitTag,
 			"source_url":          p.event.HeadURL,
 			"sender":              strings.ToLower(p.event.Sender),
 			"target_namespace":    p.repo.GetNamespace(),
