@@ -205,6 +205,20 @@ func TestParsePayLoad(t *testing.T) {
 			wantErrString:      "error parsing payload the repository should not be nil",
 		},
 		{
+			name:          "branch/deleted",
+			eventType:     "push",
+			triggerTarget: triggertype.Push.String(),
+			payloadEventStruct: github.PushEvent{
+				Repo: &github.PushEventRepository{
+					Owner: &github.User{Login: github.Ptr("foo")},
+					Name:  github.Ptr("pushRepo"),
+				},
+				Ref:   github.Ptr("test"),
+				After: github.Ptr("0000000000000000000000000000000000000000"),
+			},
+			wantErrString: "branch test has been deleted, exiting",
+		},
+		{
 			// specific run from a check_suite
 			name:          "good/rerequest check_run on pull request",
 			eventType:     "check_run",
