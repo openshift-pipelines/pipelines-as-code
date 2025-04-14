@@ -20,6 +20,10 @@ on:
       - opened
       - reopened
       - synchronize
+    paths:
+      - "**.go"
+      - ".github/**"
+      - "test/testdata/**"
 
 jobs:
   e2e-tests:
