@@ -19,9 +19,10 @@ import (
 	"fmt"
 	"testing"
 
-	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	bbv1test "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/test"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
+
 	"gotest.tools/v3/assert"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -31,10 +32,10 @@ func TestIsAllowed(t *testing.T) {
 	otherAccountID := 6666
 
 	type fields struct {
-		projectMembers            []*bbv1.UserPermission
-		repoMembers               []*bbv1.UserPermission
+		projectMembers            []*bbv1test.UserPermission
+		repoMembers               []*bbv1test.UserPermission
 		projGroups                []*bbv1test.ProjGroup
-		activities                []*bbv1.Activity
+		activities                []*bbv1test.Activity
 		filescontents             map[string]string
 		defaultBranchLatestCommit string
 		pullRequestNumber         int
@@ -50,9 +51,9 @@ func TestIsAllowed(t *testing.T) {
 			name:  "allowed/user is owner",
 			event: bbv1test.MakeEvent(&info.Event{Sender: "member", AccountID: fmt.Sprintf("%d", ownerAccountID)}),
 			fields: fields{
-				projectMembers: []*bbv1.UserPermission{
+				projectMembers: []*bbv1test.UserPermission{
 					{
-						User: bbv1.User{
+						User: types.User{
 							Slug: "member",
 						},
 					},
@@ -68,18 +69,18 @@ func TestIsAllowed(t *testing.T) {
 				Sender:    "NotAllowedAtFirst",
 			}),
 			fields: fields{
-				projectMembers: []*bbv1.UserPermission{
+				projectMembers: []*bbv1test.UserPermission{
 					{
-						User: bbv1.User{
+						User: types.User{
 							Slug: "member",
 						},
 					},
 				},
-				activities: []*bbv1.Activity{
+				activities: []*bbv1test.Activity{
 					{
-						Comment: bbv1.ActivityComment{
+						Comment: types.ActivityComment{
 							Text: "/ok-to-test",
-							Author: bbv1.User{
+							Author: types.User{
 								Slug: "member",
 							},
 						},
@@ -97,11 +98,11 @@ func TestIsAllowed(t *testing.T) {
 			}),
 			fields: fields{
 				defaultBranchLatestCommit: "defaultlatestcommit",
-				activities: []*bbv1.Activity{
+				activities: []*bbv1test.Activity{
 					{
-						Comment: bbv1.ActivityComment{
+						Comment: types.ActivityComment{
 							Text: "/ok-to-test",
-							Author: bbv1.User{
+							Author: types.User{
 								ID: 15551,
 							},
 						},
@@ -121,9 +122,9 @@ func TestIsAllowed(t *testing.T) {
 					Sender:    "NotAllowed",
 				}),
 			fields: fields{
-				projectMembers: []*bbv1.UserPermission{
+				projectMembers: []*bbv1test.UserPermission{
 					{
-						User: bbv1.User{
+						User: types.User{
 							ID: 1234,
 						},
 					},
@@ -138,9 +139,9 @@ func TestIsAllowed(t *testing.T) {
 			name:  "disallowed/same nickname different account id",
 			event: bbv1test.MakeEvent(&info.Event{Sender: "Bouffon", AccountID: "6666"}),
 			fields: fields{
-				projectMembers: []*bbv1.UserPermission{
+				projectMembers: []*bbv1test.UserPermission{
 					{
-						User: bbv1.User{
+						User: types.User{
 							DisplayName: "Bouffon",
 							ID:          7777,
 						},
@@ -153,18 +154,18 @@ func TestIsAllowed(t *testing.T) {
 			name:  "disallowed/not a valid ok-to-test comment",
 			event: bbv1test.MakeEvent(&info.Event{Sender: "Bouffon", AccountID: "6666"}),
 			fields: fields{
-				projectMembers: []*bbv1.UserPermission{
+				projectMembers: []*bbv1test.UserPermission{
 					{
-						User: bbv1.User{
+						User: types.User{
 							ID: ownerAccountID,
 						},
 					},
 				},
-				activities: []*bbv1.Activity{
+				activities: []*bbv1test.Activity{
 					{
-						Comment: bbv1.ActivityComment{
+						Comment: types.ActivityComment{
 							Text: "not a valid\n /ok-to-test",
-							Author: bbv1.User{
+							Author: types.User{
 								ID: ownerAccountID,
 							},
 						},
@@ -180,18 +181,18 @@ func TestIsAllowed(t *testing.T) {
 				Sender:    "NotAllowedAtFirst",
 			}),
 			fields: fields{
-				projectMembers: []*bbv1.UserPermission{
+				projectMembers: []*bbv1test.UserPermission{
 					{
-						User: bbv1.User{
+						User: types.User{
 							ID: ownerAccountID,
 						},
 					},
 				},
-				activities: []*bbv1.Activity{
+				activities: []*bbv1test.Activity{
 					{
-						Comment: bbv1.ActivityComment{
+						Comment: types.ActivityComment{
 							Text: "this is a valid\n/ok-to-test",
-							Author: bbv1.User{
+							Author: types.User{
 								ID: ownerAccountID,
 							},
 						},
