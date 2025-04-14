@@ -69,7 +69,7 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - uses: ko-build/setup-ko@v0.8
+      - uses: ko-build/setup-ko@v0.9
 
       - name: Install gosmee
         uses: jaxxstorm/action-install-gh-release@v2.0.0
