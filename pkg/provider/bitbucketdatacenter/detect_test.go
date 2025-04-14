@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
 	"gotest.tools/v3/assert"
@@ -37,10 +36,10 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "push event",
 			event: types.PushRequestEvent{
-				Actor: bbv1.UserWithLinks{
+				Actor: types.UserWithLinks{
 					ID: 111,
 				},
-				Repository: bbv1.Repository{},
+				Repository: types.Repository{},
 				Changes: []types.PushRequestEventChange{
 					{
 						ToHash: "test",
@@ -69,7 +68,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "retest comment",
 			event: types.PullRequestEvent{
-				Comment: bbv1.ActivityComment{Text: "/retest"},
+				Comment: types.ActivityComment{Text: "/retest"},
 			},
 			eventType:  "pr:comment:added",
 			isBS:       true,
@@ -78,7 +77,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "random comment",
 			event: types.PullRequestEvent{
-				Comment: bbv1.ActivityComment{Text: "random string, ignore me :)"},
+				Comment: types.ActivityComment{Text: "random string, ignore me :)"},
 			},
 			eventType:  "pr:comment:added",
 			isBS:       true,
@@ -87,7 +86,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "ok-to-test comment",
 			event: types.PullRequestEvent{
-				Comment: bbv1.ActivityComment{Text: "/ok-to-test"},
+				Comment: types.ActivityComment{Text: "/ok-to-test"},
 			},
 			eventType:  "pr:comment:added",
 			isBS:       true,
@@ -96,7 +95,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "cancel comment",
 			event: types.PullRequestEvent{
-				Comment: bbv1.ActivityComment{Text: "/cancel"},
+				Comment: types.ActivityComment{Text: "/cancel"},
 			},
 			eventType:  "pr:comment:added",
 			isBS:       true,
@@ -105,7 +104,7 @@ func TestProvider_Detect(t *testing.T) {
 		{
 			name: "cancel a pipelinerun comment",
 			event: types.PullRequestEvent{
-				Comment: bbv1.ActivityComment{Text: "/cancel dummy"},
+				Comment: types.ActivityComment{Text: "/cancel dummy"},
 			},
 			eventType:  "pr:comment:added",
 			isBS:       true,
