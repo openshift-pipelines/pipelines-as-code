@@ -2,7 +2,9 @@ package github
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +15,10 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/setup"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (context.Context, *params.Run, options.E2E, *github.Provider, error) {
@@ -105,4 +111,59 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 	}
 
 	return ctx, run, e2eoptions, gprovider, nil
+}
+
+func PatchPACConfigMap(ctx context.Context, run *params.Run, patch map[string]interface{}) (*corev1.ConfigMap, error) {
+	ns, _, err := params.GetInstallLocation(ctx, run)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Pipelines as Code namespace: %w", err)
+	}
+
+	patchBytes, err := json.Marshal(patch)
+	if err != nil {
+		log.Fatalf("Failed to marshal patch data: %v", err)
+	}
+
+	cm, err := run.Clients.Kube.CoreV1().ConfigMaps(ns).Patch(ctx,
+		run.Info.Controller.Configmap,
+		types.StrategicMergePatchType,
+		patchBytes,
+		metav1.PatchOptions{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch Pipelines-as-Code config map: %w", err)
+	}
+
+	return cm, nil
+}
+
+func SetCancelInProgressToDefaults(ctx context.Context, run *params.Run) error {
+	ns, _, err := params.GetInstallLocation(ctx, run)
+	if err != nil {
+		return fmt.Errorf("failed to get Pipelines as Code namespace: %w", err)
+	}
+
+	patch := map[string]interface{}{
+		"data": map[string]string{
+			"enable-cancel-in-progress-on-pull-requests": "false",
+			"enable-cancel-in-progress-on-push":          "false",
+		},
+	}
+
+	patchBytes, err := json.Marshal(patch)
+	if err != nil {
+		log.Fatalf("Failed to marshal patch data: %v", err)
+	}
+
+	_, err = run.Clients.Kube.CoreV1().ConfigMaps(ns).Patch(ctx,
+		run.Info.Controller.Configmap,
+		types.StrategicMergePatchType,
+		patchBytes,
+		metav1.PatchOptions{},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to patch Pipelines-as-Code config map: %w", err)
+	}
+
+	return nil
 }
