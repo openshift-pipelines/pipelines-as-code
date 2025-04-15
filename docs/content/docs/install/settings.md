@@ -139,6 +139,32 @@ There is a few things you can configure through the config map
   risk and should be aware of the potential security vulnerabilities.
   (only GitHub and Gitea is supported at the moment).
 
+### Global Cancel In Progress Settings
+
+* `enable-cancel-in-progress-on-pull-requests`
+
+  If the `enable-cancel-in-progress-on-pull-requests` setting is enabled (true), Pipelines-as-Code will automatically cancel
+  any in-progress PipelineRuns associated with a pull request when a new update (such as a new commit) is pushed to that pull request.
+  This ensures that only the latest commit is processed, helping conserve compute resources and avoid running outdated PipelineRuns
+  tied to previous commits.
+
+  It's important to note that if this global setting is disabled (false), Pipelines-as-Code will still honor the cancel-in-progress annotation
+  at the individual PipelineRun level. In such cases, if a PipelineRun includes this annotation, it will take precedence over the global setting,
+  and Pipelines-as-Code will cancel any matching in-progress runs when the pull request is updated.
+
+  This is disabled by default.
+
+* `enable-cancel-in-progress-on-push`
+
+  If the `enable-cancel-in-progress-on-push` setting is enabled (true), Pipelines-as-Code will automatically cancel any in-progress PipelineRuns
+  triggered by a push event when a new push is made to the same branch. This helps ensure that only the most recent commit is processed, preventing unnecessary execution of outdated PipelineRuns and optimizing resource usage.
+
+  Additionally, if this global setting is disabled (false), Pipelines-as-Code will still respect the cancel-in-progress annotation
+  on individual PipelineRuns. In such cases, the annotation will override the global configuration, and Pipelines-as-Code will
+  cancel any in-progress runs for that specific PipelineRun when a new push occurs on the same branch.
+
+  This is disabled by default.
+
 ### Tekton Hub support
 
 Pipelines-as-Code supports fetching task with its remote annotations feature, by default it will fetch it from the [public tekton hub](https://hub.tekton.dev/) but you can configure it to point to your own with these settings:
