@@ -46,7 +46,7 @@ func (p *PacRun) cancelAllInProgressBelongingToClosedPullRequest(ctx context.Con
 	if len(prs.Items) == 0 {
 		msg := fmt.Sprintf("no pipelinerun found for repository: %v and pullRequest %v",
 			p.event.Repository, p.event.PullRequestNumber)
-		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryPipelineRun", msg)
+		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "CancelInProgress", msg)
 		return nil
 	}
 
@@ -144,7 +144,7 @@ func (p *PacRun) cancelPipelineRunsOpsComment(ctx context.Context, repo *v1alpha
 	if len(prs.Items) == 0 {
 		msg := fmt.Sprintf("no pipelinerun found for repository: %v , sha: %v and pulRequest %v",
 			p.event.Repository, p.event.SHA, p.event.PullRequestNumber)
-		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "RepositoryPipelineRun", msg)
+		p.eventEmitter.EmitMessage(repo, zap.InfoLevel, "CancelInProgress", msg)
 		return nil
 	}
 
@@ -183,7 +183,7 @@ func (p *PacRun) cancelPipelineRuns(ctx context.Context, prs *tektonv1.PipelineR
 			defer wg.Done()
 			if _, err := action.PatchPipelineRun(ctx, p.logger, "cancel patch", p.run.Clients.Tekton, &pr, cancelMergePatch); err != nil {
 				errMsg := fmt.Sprintf("failed to cancel pipelineRun %s/%s: %s", pr.GetNamespace(), pr.GetName(), err.Error())
-				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "RepositoryPipelineRun", errMsg)
+				p.eventEmitter.EmitMessage(repo, zap.ErrorLevel, "CancelInProgress", errMsg)
 			}
 		}(ctx, pr)
 	}
