@@ -18,6 +18,11 @@ repos:
     hooks:
       - id: codespell
         files: "^(docs/content|pkg|test)/.*"
+        args:
+          - -L
+          - NotIn
+          - -L
+          - notin
   - repo: local
     hooks:
       - id: test
