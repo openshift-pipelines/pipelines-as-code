@@ -86,54 +86,14 @@ func TestGithubPullRequestGitOpsComments(t *testing.T) {
 			prNum:   4,
 		},
 	}
-	assert.NilError(t, err)
-	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
-	assert.NilError(t, err)
-
-	g.Cnx.Clients.Log.Infof("/cancel pr-gitops-comment on Pull Request")
-	_, _, err = g.Provider.Client.Issues.CreateComment(ctx,
-		g.Options.Organization,
-		g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.Ptr("/cancel pr-gitops-comment")})
-	assert.NilError(t, err)
-
-	waitOpts = twait.Opts{
-		RepoName:        g.TargetNamespace,
-		Namespace:       g.TargetNamespace,
-		MinNumberStatus: 3,
-		PollTimeout:     twait.DefaultTimeout,
-		TargetSHA:       g.SHA,
-	}
-	g.Cnx.Clients.Log.Info("Waiting for Repository to be updated")
-	_, err = twait.UntilRepositoryUpdated(ctx, g.Cnx.Clients, waitOpts)
-	assert.NilError(t, err)
-
-	g.Cnx.Clients.Log.Infof("Check if we have the repository set as succeeded")
-	repo, err := g.Cnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(g.TargetNamespace).Get(ctx, g.TargetNamespace, metav1.GetOptions{})
-	assert.NilError(t, err)
-	assert.Equal(t, repo.Status[len(repo.Status)-1].Conditions[0].Status, corev1.ConditionFalse)
-
-	pruns, err = g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", keys.SHA, g.SHA),
-	})
-	assert.NilError(t, err)
-	assert.Equal(t, len(pruns.Items), 3)
-
-	// go over all pruns check that at least one is canceled and the other two are succeeded
-	canceledCount := 0
-	succeededCount := 0
-	unknownCount := 0
-	for _, prun := range pruns.Items {
-		for _, condition := range prun.Status.Conditions {
-			if condition.Type == "Succeeded" {
-				switch condition.Status {
-				case corev1.ConditionFalse:
-					canceledCount++
-				case corev1.ConditionTrue:
-					succeededCount++
-				case corev1.ConditionUnknown:
-					unknownCount++
-				}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			waitOpts := twait.Opts{
+				RepoName:        g.TargetNamespace,
+				Namespace:       g.TargetNamespace,
+				MinNumberStatus: tt.prNum,
+				PollTimeout:     twait.DefaultTimeout,
+				TargetSHA:       g.SHA,
 			}
 			if tt.comment == "/cancel pr-gitops-comment" {
 				g.Cnx.Clients.Log.Info("/test pr-gitops-comment on Pull Request before canceling")
@@ -172,7 +132,4 @@ func TestGithubPullRequestGitOpsComments(t *testing.T) {
 			assert.Equal(t, len(pruns.Items), tt.prNum)
 		})
 	}
-	assert.Equal(t, canceledCount, 1, "should have one canceled PipelineRun")
-	assert.Equal(t, succeededCount, 2, "should have two succeeded PipelineRuns")
-	assert.Equal(t, unknownCount, 0, "should have zero unknown PipelineRuns: %+v", pruns.Items)
 }

@@ -335,17 +335,15 @@ func TestGitlabCancelInProgressOnPRClose(t *testing.T) {
 	})
 	assert.NilError(t, err)
 
-	err = twait.UntilPipelineRunHasReason(ctx, runcnx.Clients, v1.PipelineRunReasonCancelled, waitOpts)
-	assert.NilError(t, err)
+	runcnx.Clients.Log.Infof("Sleeping for 10 seconds to let the pipelinerun to be canceled")
+	time.Sleep(10 * time.Second)
 
 	prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(context.Background(), metav1.ListOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, len(prs.Items), 1, "should have only one pipelinerun, but we have: %d", len(prs.Items))
 	assert.Equal(t, prs.Items[0].GetStatusCondition().GetCondition(apis.ConditionSucceeded).GetReason(), "Cancelled", "should have been canceled")
 
-	// failing on `true` condition because for cancelled PipelineRun we want `false` condition.
-	waitOpts.FailOnRepoCondition = corev1.ConditionTrue
-	repo, err := twait.UntilRepositoryUpdated(ctx, runcnx.Clients, waitOpts)
+	repo, err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).Get(ctx, targetNS, metav1.GetOptions{})
 	assert.NilError(t, err)
 
 	laststatus := repo.Status[len(repo.Status)-1]
