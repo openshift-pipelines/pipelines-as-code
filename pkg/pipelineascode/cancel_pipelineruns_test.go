@@ -1034,6 +1034,62 @@ func TestCancelInProgressMatchingPipelineRun(t *testing.T) {
 			wantLog: "cancel-in-progress for event push is enabled via PipelineRun annotation",
 		},
 		{
+			name: "matching PipelineRun when source branch annotation is having full path refs/heads/",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				HeadBranch:        "head",
+				EventType:         string(triggertype.Push),
+				TriggerTarget:     triggertype.Push,
+				PullRequestNumber: pullReqNumber,
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-1",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.EventType:      string(triggertype.Push),
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+						},
+						Annotations: map[string]string{
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "refs/heads/head",
+							keys.CancelInProgress: "true",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-2",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.EventType:      string(triggertype.Push),
+						},
+						Annotations: map[string]string{
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "head",
+							keys.CancelInProgress: "true",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			repo: fooRepo,
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-2": true,
+			},
+			wantLog: "cancel-in-progress for event push is enabled via PipelineRun annotation",
+		},
+		{
 			name: "skip/cancel in progress with concurrency limit",
 			event: &info.Event{
 				Repository: "foo",
@@ -1466,8 +1522,8 @@ func TestGetLabelSelector(t *testing.T) {
 			labelsMap: map[string]string{
 				keys.CancelInProgress: "false",
 			},
-			operator: selection.NotIn,
-			want:     "pipelinesascode.tekton.dev/cancel-in-progress notin (false)",
+			operator: selection.NotIn,                                               //codespell:ignore 'NotIn'
+			want:     "pipelinesascode.tekton.dev/cancel-in-progress notin (false)", //codespell:ignore 'NotIn'
 		},
 	}
 
