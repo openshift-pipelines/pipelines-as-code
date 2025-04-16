@@ -4,6 +4,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+
 type aliases = map[string][]string
 
 type simpleConfig struct {
