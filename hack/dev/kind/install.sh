@@ -46,7 +46,7 @@ if ! builtin type -p gosmee &>/dev/null; then
 fi
 
 TMPD=$(mktemp -d /tmp/.GITXXXX)
-REG_PORT='5000'
+REG_PORT=${REG_PORT:-'5000'}
 REG_NAME='kind-registry'
 INSTALL_FROM_RELEASE=
 PAC_PASS_SECRET_FOLDER=${PAC_PASS_SECRET_FOLDER:-""}
@@ -173,7 +173,7 @@ function install_pac() {
     if [[ -n ${PAC_DEPLOY_SCRIPT:-""} ]]; then
       ${PAC_DEPLOY_SCRIPT}
     else
-      env KO_DOCKER_REPO=localhost:5000 $ko apply -f config --sbom=none -B >/dev/null
+      env KO_DOCKER_REPO=localhost:${REG_PORT} $ko apply -f config --sbom=none -B >/dev/null
     fi
     cd ${oldPwd}
   fi
@@ -243,6 +243,7 @@ main() {
   install_pac
   [[ -z ${DISABLE_GITEA} ]] && install_gitea
   echo "And we are done :): "
+  echo "Using registry on localhost:${REG_PORT}"
 }
 
 function usage() {
