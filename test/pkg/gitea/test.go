@@ -27,6 +27,7 @@ import (
 	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"github.com/tektoncd/pipeline/pkg/names"
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -70,6 +71,26 @@ func PostCommentOnPullRequest(t *testing.T, topt *TestOpts, body string) {
 		gitea.CreateIssueCommentOption{Body: body})
 	topt.ParamsRun.Clients.Log.Infof("Posted comment \"%s\" in %s", body, topt.PullRequest.HTMLURL)
 	assert.NilError(t, err)
+}
+
+func checkEvents(t *testing.T, events *corev1.EventList, topts *TestOpts) {
+	t.Helper()
+	newEvents := make([]corev1.Event, 0)
+	// filter out events that are not related to the test like checking for cancelled pipelineruns
+	for i := len(events.Items) - 1; i >= 0; i-- {
+		topts.ParamsRun.Clients.Log.Infof("Reason is %s", events.Items[i].Reason)
+		if events.Items[i].Reason == "CancelInProgress" {
+			continue
+		}
+		newEvents = append(newEvents, events.Items[i])
+	}
+	if len(newEvents) > 0 {
+		topts.ParamsRun.Clients.Log.Infof("0 events expected in case of failure but got %d", len(newEvents))
+		for _, em := range newEvents {
+			topts.ParamsRun.Clients.Log.Infof("Event: Reason: %s Type: %s ReportingInstance: %s Message: %s", em.Reason, em.Type, em.ReportingInstance, em.Message)
+		}
+		t.FailNow()
+	}
 }
 
 func AddLabelToIssue(t *testing.T, topt *TestOpts, label string) {
@@ -249,7 +270,7 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 		}
 		assert.Assert(t, len(events.Items) != 0, "events expected in case of failure but got 0")
 	} else if !topts.SkipEventsCheck {
-		assert.Assert(t, len(events.Items) == 0, fmt.Sprintf("no events expected but got %v in %v ns, items: %+v", len(events.Items), topts.TargetNS, events.Items))
+		checkEvents(t, events, topts)
 	}
 	return ctx, cleanup
 }
@@ -369,7 +390,7 @@ func NewPR(t *testing.T, topts *TestOpts) func() {
 		}
 		assert.Assert(t, len(events.Items) != 0, "events expected in case of failure but got 0")
 	} else if !topts.SkipEventsCheck {
-		assert.Assert(t, len(events.Items) == 0, fmt.Sprintf("no events expected but got %v in %v ns, items: %+v", len(events.Items), topts.TargetNS, events.Items))
+		checkEvents(t, events, topts)
 	}
 	return cleanup
 }
