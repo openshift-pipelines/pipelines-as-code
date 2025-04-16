@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -52,7 +53,7 @@ func (p *PacRun) cancelAllInProgressBelongingToClosedPullRequest(ctx context.Con
 		// Note: The 'selection.NotIn' operator is used to exclude PipelineRuns that have the
 		// 'cancel-in-progress' annotation explicitly set to 'false', effectively opting them out of cancellation.
 		labelsMap = map[string]string{keys.CancelInProgress: "false"}
-		operator = selection.NotIn
+		operator = selection.NotIn //codespell:ignore 'NotIn'
 	} else {
 		// When the 'cancel-in-progress' setting is disabled globally via the Pipelines-as-Code ConfigMap,
 		// filter and list only those PipelineRuns that explicitly override the global setting by having the
@@ -153,7 +154,7 @@ func (p *PacRun) cancelInProgressMatchingPipelineRun(ctx context.Context, matchP
 			// it means we only cancel pipelinerun of the same name that runs to
 			// the unique branch. Note: HeadBranch is the branch from where the PR
 			// comes from in git jargon.
-			if sourceBranch != p.event.HeadBranch {
+			if strings.TrimPrefix(sourceBranch, "refs/heads/") != strings.TrimPrefix(p.event.HeadBranch, "refs/heads/") {
 				p.logger.Infof("cancel-in-progress: skipping pipelinerun %v/%v as it is not from the same branch, annotation source-branch: %s event headbranch: %s", pr.GetNamespace(), pr.GetName(), sourceBranch, p.event.HeadBranch)
 				return false
 			}

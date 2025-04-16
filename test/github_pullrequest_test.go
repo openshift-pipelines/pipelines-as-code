@@ -9,6 +9,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
+	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
+	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+
 	"github.com/google/go-github/v70/github"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
@@ -16,14 +25,6 @@ import (
 	"gotest.tools/v3/golden"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
-
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
-	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
-	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 )
 
 func TestGithubPullRequest(t *testing.T) {
@@ -483,15 +484,12 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPR(t *testing.T) {
 	ctx, runcnx, _, _, err := tgithub.Setup(ctx, false, false)
 	assert.NilError(t, err)
 
-	patchData := map[string]interface{}{
-		"data": map[string]string{
-			"enable-cancel-in-progress-on-pull-requests": "true",
-		},
+	patchData := map[string]string{
+		"enable-cancel-in-progress-on-pull-requests": "true",
 	}
 
-	cm, err := tgithub.PatchPACConfigMap(ctx, runcnx, patchData)
-	assert.NilError(t, err)
-	assert.Equal(t, cm.Data["enable-cancel-in-progress-on-pull-requests"], "true")
+	configMapTearDown := configmap.ChangeGlobalConfig(ctx, t, runcnx, patchData)
+	defer configMapTearDown()
 
 	g := &tgithub.PRTest{
 		Label:         "Github PullRequest",
@@ -524,13 +522,6 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPR(t *testing.T) {
 
 	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonCancelled, waitOpts)
 	assert.NilError(t, err)
-
-	// patch again settings to false so that it shouldn't disturb other tests
-	// and fail on error.
-	defer func() {
-		err = tgithub.SetCancelInProgressToDefaults(ctx, runcnx)
-		assert.NilError(t, err)
-	}()
 }
 
 func TestGithubCancelInProgressSettingFromConfigMapOnPush(t *testing.T) {
@@ -538,15 +529,12 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPush(t *testing.T) {
 	ctx, runcnx, _, _, err := tgithub.Setup(ctx, false, false)
 	assert.NilError(t, err)
 
-	patchData := map[string]interface{}{
-		"data": map[string]string{
-			"enable-cancel-in-progress-on-push": "true",
-		},
+	patchData := map[string]string{
+		"enable-cancel-in-progress-on-push": "true",
 	}
 
-	cm, err := tgithub.PatchPACConfigMap(ctx, runcnx, patchData)
-	assert.NilError(t, err)
-	assert.Equal(t, cm.Data["enable-cancel-in-progress-on-push"], "true")
+	configMapTearDown := configmap.ChangeGlobalConfig(ctx, t, runcnx, patchData)
+	defer configMapTearDown()
 
 	g := &tgithub.PRTest{
 		Label:         "Github PullRequest",
@@ -580,13 +568,6 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPush(t *testing.T) {
 
 	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonCancelled, waitOpts)
 	assert.NilError(t, err)
-
-	// patch again settings to false so that it shouldn't disturb other tests
-	// and fail on error.
-	defer func() {
-		err = tgithub.SetCancelInProgressToDefaults(ctx, runcnx)
-		assert.NilError(t, err)
-	}()
 }
 
 // Local Variables:
