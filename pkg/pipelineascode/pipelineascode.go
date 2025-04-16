@@ -13,6 +13,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -23,6 +24,7 @@ import (
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 const (
@@ -185,6 +187,32 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		// pac state as queued
 		match.PipelineRun.Labels[keys.State] = kubeinteraction.StateQueued
 		match.PipelineRun.Annotations[keys.State] = kubeinteraction.StateQueued
+	}
+
+	// check for existing pipelineruns with the same SHA for ok-to-test or retest events
+	if (p.event.EventType == opscomments.RetestAllCommentEventType.String() ||
+		p.event.EventType == opscomments.OkToTestCommentEventType.String()) &&
+		p.event.SHA != "" {
+		labelSelector := fmt.Sprintf("%s=%s", keys.SHA, formatting.CleanValueKubernetes(p.event.SHA))
+		existingPRs, err := p.run.Clients.Tekton.TektonV1().PipelineRuns(match.Repo.GetNamespace()).List(ctx, metav1.ListOptions{
+			LabelSelector: labelSelector,
+		})
+		if err == nil && len(existingPRs.Items) > 0 {
+			var lastRun tektonv1.PipelineRun
+			lastRun = existingPRs.Items[0]
+
+			for _, pr := range existingPRs.Items {
+				if pr.CreationTimestamp.After(lastRun.CreationTimestamp.Time) {
+					lastRun = pr
+				}
+			}
+
+			if lastRun.Status.GetCondition(apis.ConditionSucceeded).IsTrue() {
+				p.logger.Infof("skipping creation of new pipelinerun for sha %s as the last pipelinerun '%s' has already succeeded",
+					p.event.SHA, lastRun.Name)
+				return &lastRun, nil
+			}
+		}
 	}
 
 	// Create the actual pipelineRun

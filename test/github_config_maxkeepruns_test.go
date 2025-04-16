@@ -26,9 +26,27 @@ func TestGithubMaxKeepRuns(t *testing.T) {
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 
-	g.Cnx.Clients.Log.Infof("Creating /retest in PullRequest")
-	_, _, err := g.Provider.Client.Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
-		&ghlib.IssueComment{Body: ghlib.Ptr("/retest")})
+	// Wait for the first pipeline run to be created
+	time.Sleep(5 * time.Second)
+
+	// Get the name of the PipelineRun to retest specifically
+	prList, err := g.Cnx.Clients.Tekton.TektonV1().PipelineRuns(g.TargetNamespace).List(ctx, metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(prList.Items) > 0, "Expected at least one PipelineRun to be created")
+
+	pipelineRunName := ""
+	for _, pr := range prList.Items {
+		if originalName, ok := pr.GetAnnotations()[keys.OriginalPRName]; ok {
+			pipelineRunName = originalName
+			break
+		}
+	}
+	assert.Assert(t, pipelineRunName != "", "Could not find the original PipelineRun name")
+
+	// Use retest with specific PipelineRun name
+	g.Cnx.Clients.Log.Infof("Creating /retest %s in PullRequest", pipelineRunName)
+	_, _, err = g.Provider.Client.Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
+		&ghlib.IssueComment{Body: ghlib.Ptr("/retest " + pipelineRunName)})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Wait for the second repository update to be updated")
