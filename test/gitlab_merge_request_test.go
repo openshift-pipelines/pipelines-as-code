@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+
 	"github.com/google/go-github/v70/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
@@ -18,6 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/cctx"
 	tgitlab "github.com/openshift-pipelines/pipelines-as-code/test/pkg/gitlab"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/payload"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/repository"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/scm"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 	v1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
@@ -44,7 +47,7 @@ func TestGitlabMergeRequest(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS, nil)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNS, nil)
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -145,7 +148,7 @@ func TestGitlabOnLabel(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS, nil)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNS, nil)
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -215,7 +218,7 @@ func TestGitlabOnComment(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS, nil)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNS, nil)
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -292,7 +295,7 @@ func TestGitlabCancelInProgressOnChange(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS, nil)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNS, nil)
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -377,7 +380,7 @@ func TestGitlabCancelInProgressOnPRClose(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS, nil)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNS, nil)
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -452,7 +455,7 @@ func TestGitlabIssueGitopsComment(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS, nil)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNS, nil)
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -495,6 +498,122 @@ func TestGitlabIssueGitopsComment(t *testing.T) {
 		NumberofPRMatch: 1,
 	}
 	twait.Succeeded(ctx, t, runcnx, opts, sopt)
+}
+
+func TestGitlabDisableCommentsOnMR(t *testing.T) {
+	targetNS := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-ns")
+	ctx := context.Background()
+	runcnx, opts, glprovider, err := tgitlab.Setup(ctx)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Info("Testing with Gitlab")
+
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
+	assert.NilError(t, err)
+	if resp != nil && resp.StatusCode == http.StatusNotFound {
+		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
+	}
+
+	settings := v1alpha1.Settings{
+		Gitlab: &v1alpha1.GitlabSettings{
+			CommentStrategy: "disable_all",
+		},
+	}
+	opts.Settings = settings
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNS, nil)
+	assert.NilError(t, err)
+
+	entries, err := payload.GetEntries(map[string]string{
+		".tekton/pipelinerun.yaml": "testdata/pipelinerun.yaml",
+	}, targetNS, projectinfo.DefaultBranch,
+		triggertype.PullRequest.String(), map[string]string{})
+	assert.NilError(t, err)
+
+	targetRefName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
+
+	gitCloneURL, err := scm.MakeGitCloneURL(projectinfo.WebURL, opts.UserName, opts.Password)
+	assert.NilError(t, err)
+	commitTitle := "Committing files from test on " + targetRefName
+	scmOpts := &scm.Opts{
+		GitURL:        gitCloneURL,
+		CommitTitle:   commitTitle,
+		Log:           runcnx.Clients.Log,
+		WebURL:        projectinfo.WebURL,
+		TargetRefName: targetRefName,
+		BaseRefName:   projectinfo.DefaultBranch,
+	}
+	_ = scm.PushFilesToRefGit(t, scmOpts, entries)
+
+	runcnx.Clients.Log.Infof("Branch %s has been created and pushed with files", targetRefName)
+	mrTitle := "TestMergeRequest - " + targetRefName
+	mrID, err := tgitlab.CreateMR(glprovider.Client(), opts.ProjectID, targetRefName, projectinfo.DefaultBranch, mrTitle)
+	assert.NilError(t, err)
+	runcnx.Clients.Log.Infof("MergeRequest %s/-/merge_requests/%d has been created", projectinfo.WebURL, mrID)
+	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, mrID, targetRefName, targetNS, opts.ProjectID)
+
+	sopt := twait.SuccessOpt{
+		Title:           commitTitle,
+		OnEvent:         "Merge Request",
+		TargetNS:        targetNS,
+		NumberofPRMatch: 1,
+		SHA:             "",
+	}
+	twait.Succeeded(ctx, t, runcnx, opts, sopt)
+	prsNew, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(prsNew.Items) == 1)
+
+	// No comments will be added related to pipelineruns info
+	notes, _, err := glprovider.Client().Notes.ListMergeRequestNotes(opts.ProjectID, mrID, nil)
+
+	commentRegexp := regexp.MustCompile(`.*Pipelines as Code CI/*`)
+	assert.NilError(t, err)
+	successCommentsPost := 0
+	for _, n := range notes {
+		if commentRegexp.MatchString(n.Body) {
+			successCommentsPost++
+		}
+	}
+	// Since Gitlab comment strategy is disabled,
+	// no comments will be posted related to pipelineruns
+	assert.Equal(t, 0, successCommentsPost)
+
+	// Update the repo setting to nil, and comment /retest to restart the pipelinerun
+	// and now comments will be added on the MR
+	waitOpts := twait.Opts{
+		RepoName:  targetNS,
+		Namespace: targetNS,
+		TargetSHA: "",
+	}
+
+	runcnx.Clients.Log.Info("Updating Gitlab Comment Strategy to nil...")
+	err = repository.UpdateRepo(ctx, waitOpts.Namespace, waitOpts.RepoName, runcnx.Clients)
+	assert.NilError(t, err)
+
+	runcnx.Clients.Log.Infof("Sending /retest comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
+	_, _, err = glprovider.Client().Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
+		Body: clientGitlab.Ptr("/retest"),
+	})
+	assert.NilError(t, err)
+
+	sopt = twait.SuccessOpt{
+		Title:           commitTitle,
+		OnEvent:         opscomments.RetestAllCommentEventType.String(),
+		TargetNS:        targetNS,
+		NumberofPRMatch: 2, // this is the max we get in repos status
+		SHA:             "",
+	}
+	runcnx.Clients.Log.Info("Checking that PAC has posted successful comments for all PR that has been tested")
+	twait.Succeeded(ctx, t, runcnx, opts, sopt)
+
+	notes, _, err = glprovider.Client().Notes.ListMergeRequestNotes(opts.ProjectID, mrID, nil)
+	assert.NilError(t, err)
+	successCommentsPost = 0
+	for _, n := range notes {
+		if commentRegexp.MatchString(n.Body) {
+			successCommentsPost++
+		}
+	}
+	assert.Equal(t, 2, successCommentsPost)
 }
 
 // Local Variables:
