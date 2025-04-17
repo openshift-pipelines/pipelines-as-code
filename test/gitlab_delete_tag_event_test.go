@@ -33,7 +33,7 @@ func TestGitlabDeleteTagEvent(t *testing.T) {
 	}
 	defer tgitlab.TearDown(ctx, t, runcnx, glprovider, -1, "", targetNS, opts.ProjectID)
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNS, nil)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNS, nil)
 	assert.NilError(t, err)
 
 	tagName := names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("v1.0")

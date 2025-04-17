@@ -84,6 +84,11 @@ spec:
                           items:
                             description: list of teams allowed to have ci run on pull/merge requests.
                             type: string
+                    gitlab:
+                      type: object
+                      properties:
+                        comment_strategy:
+                          type: string
                     github_app_token_scope_repos:
                       type: array
                       items:

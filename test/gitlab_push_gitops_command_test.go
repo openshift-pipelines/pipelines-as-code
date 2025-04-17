@@ -37,7 +37,7 @@ func TestGitlabGitOpsCommandTestOnPush(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNs, nil)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNs, nil)
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
@@ -107,7 +107,7 @@ func TestGitlabGitOpsCommandCancelOnPush(t *testing.T) {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
 	}
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, targetNs, nil)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, targetNs, nil)
 	assert.NilError(t, err)
 
 	entries, err := payload.GetEntries(map[string]string{
