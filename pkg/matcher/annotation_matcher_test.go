@@ -14,6 +14,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
@@ -1414,9 +1415,10 @@ func runTest(ctx context.Context, t *testing.T, tt annotationTest, vcx provider.
 		Info:    info.Info{},
 	}
 
+	eventEmitter := events.NewEventEmitter(cs.Kube, logger)
 	matches, err := MatchPipelinerunByAnnotation(ctx, logger,
 		tt.args.pruns,
-		client, &tt.args.runevent, vcx,
+		client, &tt.args.runevent, vcx, eventEmitter, nil,
 	)
 
 	if tt.wantLog != "" {
@@ -1533,6 +1535,7 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 		wantErr    bool
 		wantPrName string
 		wantLog    []string
+		logLevel   int
 	}{
 		{
 			name: "good-match-with-only-one",
@@ -1608,6 +1611,38 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 			},
 			wantErr:    false,
 			wantPrName: pipelineCel.GetName(),
+		},
+		{
+			name: "cel-expression-takes-precedence-over-annotations",
+			args: args{
+				pruns: []*tektonv1.PipelineRun{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "pipeline-on-cel-test",
+							Annotations: map[string]string{
+								keys.OnEvent:         "[pull_request]",
+								keys.OnTargetBranch:  "[main]",
+								keys.OnCelExpression: `event == "pull_request" && target_branch == "main" && source_branch == "warn-for-cel"`,
+							},
+						},
+					},
+				},
+				runevent: info.Event{
+					URL:               "https://hello/moto",
+					TriggerTarget:     "pull_request",
+					EventType:         "pull_request",
+					BaseBranch:        "main",
+					HeadBranch:        "warn-for-cel",
+					PullRequestNumber: 10,
+					Request: &info.Request{
+						Header: http.Header{},
+					},
+				},
+			},
+			wantErr: false,
+			wantLog: []string{
+				`Warning: The Pipelinerun 'pipeline-on-cel-test' has 'on-cel-expression' defined along with [on-event, on-target-branch] annotation(s). The 'on-cel-expression' will take precedence and these annotations will be ignored`,
+			},
 		},
 		{
 			name: "no-match-on-label",
@@ -1914,7 +1949,9 @@ func TestMatchPipelinerunByAnnotation(t *testing.T) {
 				Clients: clients.Clients{},
 				Info:    info.Info{},
 			}
-			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent, &ghprovider.Provider{})
+
+			eventEmitter := events.NewEventEmitter(cs.Clients.Kube, logger)
+			matches, err := MatchPipelinerunByAnnotation(ctx, logger, tt.args.pruns, cs, &tt.args.runevent, &ghprovider.Provider{}, eventEmitter, nil)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MatchPipelinerunByAnnotation() error = %v, wantErr %v", err, tt.wantErr)
 				return
