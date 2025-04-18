@@ -478,6 +478,117 @@ func TestGithubPullRequestNoPipelineRunCancelledOnPRClosed(t *testing.T) {
 	assert.Equal(t, false, isCancelled, fmt.Sprintf("PipelineRun got cancelled while we wanted it `Running`, last reason: %v", prReason))
 }
 
+func TestGithubCancelInProgressSettingFromConfigMapOnPR(t *testing.T) {
+	ctx := context.Background()
+	ctx, runcnx, _, _, err := tgithub.Setup(ctx, false, false)
+	assert.NilError(t, err)
+
+	patchData := map[string]interface{}{
+		"data": map[string]string{
+			"enable-cancel-in-progress-on-pull-requests": "true",
+		},
+	}
+
+	cm, err := tgithub.PatchPACConfigMap(ctx, runcnx, patchData)
+	assert.NilError(t, err)
+	assert.Equal(t, cm.Data["enable-cancel-in-progress-on-pull-requests"], "true")
+
+	g := &tgithub.PRTest{
+		Label:         "Github PullRequest",
+		YamlFiles:     []string{"testdata/pipelinerun-gitops.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	_, _, err = g.Provider.Client.Issues.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.PRNumber,
+		&github.IssueComment{Body: github.Ptr("/retest")})
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
+	}
+
+	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	// we want one PipelineRun to be cancelled
+	waitOpts.MinNumberStatus = 1
+
+	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonCancelled, waitOpts)
+	assert.NilError(t, err)
+
+	// patch again settings to false so that it shouldn't disturb other tests
+	// and fail on error.
+	defer func() {
+		err = tgithub.SetCancelInProgressToDefaults(ctx, runcnx)
+		assert.NilError(t, err)
+	}()
+}
+
+func TestGithubCancelInProgressSettingFromConfigMapOnPush(t *testing.T) {
+	ctx := context.Background()
+	ctx, runcnx, _, _, err := tgithub.Setup(ctx, false, false)
+	assert.NilError(t, err)
+
+	patchData := map[string]interface{}{
+		"data": map[string]string{
+			"enable-cancel-in-progress-on-push": "true",
+		},
+	}
+
+	cm, err := tgithub.PatchPACConfigMap(ctx, runcnx, patchData)
+	assert.NilError(t, err)
+	assert.Equal(t, cm.Data["enable-cancel-in-progress-on-push"], "true")
+
+	g := &tgithub.PRTest{
+		Label:         "Github PullRequest",
+		YamlFiles:     []string{"testdata/pipelinerun-gitops.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPushRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	comment := fmt.Sprintf("/retest branch:%s", g.TargetNamespace)
+	_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.SHA,
+		&github.RepositoryComment{Body: github.Ptr(comment)})
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
+	}
+
+	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	// we want one PipelineRun to be cancelled
+	waitOpts.MinNumberStatus = 1
+
+	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonCancelled, waitOpts)
+	assert.NilError(t, err)
+
+	// patch again settings to false so that it shouldn't disturb other tests
+	// and fail on error.
+	defer func() {
+		err = tgithub.SetCancelInProgressToDefaults(ctx, runcnx)
+		assert.NilError(t, err)
+	}()
+}
+
 // Local Variables:
 // compile-command: "go test -tags=e2e -v -info TestGithubPullRequest$ ."
 // End:

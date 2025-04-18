@@ -5,17 +5,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/google/go-github/v70/github"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
-	"go.uber.org/zap"
-	zapobserver "go.uber.org/zap/zaptest/observer"
-	"gotest.tools/v3/assert"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
-	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
-	rtesting "knative.dev/pkg/reconciler/testing"
-
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/formatting"
@@ -23,8 +12,21 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
+
+	"github.com/google/go-github/v70/github"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
+	"go.uber.org/zap"
+	zapobserver "go.uber.org/zap/zaptest/observer"
+	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/selection"
+	"knative.dev/pkg/apis"
+	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
+	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 var (
@@ -318,18 +320,20 @@ func TestCancelPipelinerunOpsComment(t *testing.T) {
 	}
 }
 
-func TestCancelInProgressMatchingPR(t *testing.T) {
+func TestCancelInProgressMatchingPipelineRun(t *testing.T) {
 	observer, catcher := zapobserver.New(zap.InfoLevel)
 	logger := zap.New(observer).Sugar()
 	tests := []struct {
-		name                  string
-		nocancelcheck         bool
-		event                 *info.Event
-		repo                  *v1alpha1.Repository
-		pipelineRuns          []*pipelinev1.PipelineRun
-		cancelledPipelineRuns map[string]bool
-		wantErrString         string
-		wantLog               string
+		name                   string
+		nocancelcheck          bool
+		event                  *info.Event
+		repo                   *v1alpha1.Repository
+		pipelineRuns           []*pipelinev1.PipelineRun
+		cancelInProgressOnPR   bool
+		cancelInProgressOnPush bool
+		cancelledPipelineRuns  map[string]bool
+		wantErrString          string
+		wantLog                string
 	}{
 		{
 			name:         "skipped/no pr",
@@ -337,6 +341,14 @@ func TestCancelInProgressMatchingPR(t *testing.T) {
 		},
 		{
 			name: "skipped/no cancel in progress annotations",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				HeadBranch:        "head",
+				EventType:         string(triggertype.PullRequest),
+				TriggerTarget:     triggertype.PullRequest,
+				PullRequestNumber: pullReqNumber,
+			},
 			pipelineRuns: []*pipelinev1.PipelineRun{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -349,6 +361,14 @@ func TestCancelInProgressMatchingPR(t *testing.T) {
 		},
 		{
 			name: "skipped/no original pr name",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				HeadBranch:        "head",
+				EventType:         string(triggertype.PullRequest),
+				TriggerTarget:     triggertype.PullRequest,
+				PullRequestNumber: pullReqNumber,
+			},
 			pipelineRuns: []*pipelinev1.PipelineRun{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -786,6 +806,290 @@ func TestCancelInProgressMatchingPR(t *testing.T) {
 			wantLog: "cancel-in-progress: cancelling pipelinerun foo/",
 		},
 		{
+			name: "match/cancel in progress on PR is enable via ConfigMap",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				HeadBranch:        "head",
+				EventType:         string(triggertype.PullRequest),
+				TriggerTarget:     triggertype.PullRequest,
+				PullRequestNumber: pullReqNumber,
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:    strconv.Itoa(pullReqNumber),
+							keys.EventType:      string(triggertype.PullRequest),
+						},
+						Annotations: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.Repository:     "foo",
+							keys.SourceBranch:   "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-2",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:    strconv.Itoa(pullReqNumber),
+							keys.EventType:      string(triggertype.PullRequest),
+						},
+						Annotations: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.Repository:     "foo",
+							keys.SourceBranch:   "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			repo:                 fooRepo,
+			cancelInProgressOnPR: true,
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-2": true,
+			},
+			wantLog: "cancel-in-progress for event pull_request is enabled globally via Pipelines-as-Code ConfigMap",
+		},
+		{
+			name: "match/cancel in progress on push is enable via ConfigMap",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				HeadBranch:        "head",
+				EventType:         string(triggertype.Push),
+				TriggerTarget:     triggertype.Push,
+				PullRequestNumber: pullReqNumber,
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.EventType:      string(triggertype.Push),
+						},
+						Annotations: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.Repository:     "foo",
+							keys.SourceBranch:   "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-2",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.EventType:      string(triggertype.Push),
+						},
+						Annotations: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.Repository:     "foo",
+							keys.SourceBranch:   "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			repo:                   fooRepo,
+			cancelInProgressOnPush: true,
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-2": true,
+			},
+			wantLog: "cancel-in-progress for event push is enabled globally via Pipelines-as-Code ConfigMap",
+		},
+		{
+			name: "match/cancel in progress settings on PR is overridden by PR annotation",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				HeadBranch:        "head",
+				EventType:         string(triggertype.PullRequest),
+				TriggerTarget:     triggertype.PullRequest,
+				PullRequestNumber: pullReqNumber,
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:    strconv.Itoa(pullReqNumber),
+							keys.EventType:      string(triggertype.PullRequest),
+						},
+						Annotations: map[string]string{
+							keys.CancelInProgress: "true",
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-2",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:    strconv.Itoa(pullReqNumber),
+							keys.EventType:      string(triggertype.PullRequest),
+						},
+						Annotations: map[string]string{
+							keys.CancelInProgress: "true",
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			repo:                 fooRepo,
+			cancelInProgressOnPR: false, // make it explicitly false
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-2": true,
+			},
+			wantLog: "cancel-in-progress for event pull_request is enabled via PipelineRun annotation",
+		},
+		{
+			name: "match/cancel in progress settings on push is overridden by PR annotation",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				HeadBranch:        "head",
+				EventType:         string(triggertype.Push),
+				TriggerTarget:     triggertype.Push,
+				PullRequestNumber: pullReqNumber,
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.EventType:      string(triggertype.Push),
+						},
+						Annotations: map[string]string{
+							keys.CancelInProgress: "true",
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-2",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.EventType:      string(triggertype.Push),
+						},
+						Annotations: map[string]string{
+							keys.CancelInProgress: "true",
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "head",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			repo:                   fooRepo,
+			cancelInProgressOnPush: false, // make it explicitly false
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-2": true,
+			},
+			wantLog: "cancel-in-progress for event push is enabled via PipelineRun annotation",
+		},
+		{
+			name: "matching PipelineRun when source branch annotation is having full path refs/heads/",
+			event: &info.Event{
+				Repository:        "foo",
+				SHA:               "foosha",
+				HeadBranch:        "head",
+				EventType:         string(triggertype.Push),
+				TriggerTarget:     triggertype.Push,
+				PullRequestNumber: pullReqNumber,
+			},
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-1",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.EventType:      string(triggertype.Push),
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+						},
+						Annotations: map[string]string{
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "refs/heads/head",
+							keys.CancelInProgress: "true",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-2",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.EventType:      string(triggertype.Push),
+						},
+						Annotations: map[string]string{
+							keys.OriginalPRName:   "pr-foo",
+							keys.Repository:       "foo",
+							keys.SourceBranch:     "head",
+							keys.CancelInProgress: "true",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			repo: fooRepo,
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-2": true,
+			},
+			wantLog: "cancel-in-progress for event push is enabled via PipelineRun annotation",
+		},
+		{
 			name: "skip/cancel in progress with concurrency limit",
 			event: &info.Event{
 				Repository: "foo",
@@ -833,12 +1137,18 @@ func TestCancelInProgressMatchingPR(t *testing.T) {
 					Kube:   stdata.Kube,
 				},
 			}
-			pac := NewPacs(tt.event, nil, cs, &info.PacOpts{}, nil, logger, nil)
+			pacInfo := &info.PacOpts{
+				Settings: settings.Settings{
+					EnableCancelInProgressOnPullRequests: tt.cancelInProgressOnPR,
+					EnableCancelInProgressOnPush:         tt.cancelInProgressOnPush,
+				},
+			}
+			pac := NewPacs(tt.event, nil, cs, pacInfo, nil, logger, nil)
 			var firstPr *pipelinev1.PipelineRun
 			if len(tt.pipelineRuns) > 0 {
 				firstPr = tt.pipelineRuns[0]
 			}
-			err := pac.cancelInProgressMatchingPR(ctx, firstPr, tt.repo)
+			err := pac.cancelInProgressMatchingPipelineRun(ctx, firstPr, tt.repo)
 			if tt.wantErrString != "" {
 				assert.ErrorContains(t, err, tt.wantErrString)
 				return
@@ -876,6 +1186,7 @@ func TestCancelAllInProgressBelongingToClosedPullRequest(t *testing.T) {
 		event                 *info.Event
 		repo                  *v1alpha1.Repository
 		pipelineRuns          []*pipelinev1.PipelineRun
+		cancelInProgressOnPR  bool
 		cancelledPipelineRuns map[string]bool
 	}{
 		{
@@ -1006,6 +1317,129 @@ func TestCancelAllInProgressBelongingToClosedPullRequest(t *testing.T) {
 			cancelledPipelineRuns: map[string]bool{},
 		},
 		{
+			name: "exclude PipelineRun having cancel-in-progress set to false when global setting is true",
+			event: &info.Event{
+				Repository:        "foo",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: pullReqNumber,
+			},
+			repo: fooRepo,
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-1",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName:   "pr-foo-1",
+							keys.URLRepository:    formatting.CleanValueKubernetes("foo"),
+							keys.SHA:              formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:      strconv.Itoa(pullReqNumber),
+							keys.EventType:        string(triggertype.PullRequest),
+							keys.CancelInProgress: "true",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-2",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo-2",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:    strconv.Itoa(pullReqNumber),
+							keys.EventType:      string(triggertype.PullRequest),
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				// this must not be cancelled as it has 'cancel-in-progress' annotation set to false
+				// overriding global setting.
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-3",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName:   "pr-foo-3",
+							keys.URLRepository:    formatting.CleanValueKubernetes("foo"),
+							keys.SHA:              formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:      strconv.Itoa(pullReqNumber),
+							keys.EventType:        string(triggertype.PullRequest),
+							keys.CancelInProgress: "false",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			cancelInProgressOnPR: true,
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-1": true,
+				"pr-foo-2": true,
+			},
+		},
+		{
+			name: "include only PipelineRuns having cancel-in-progress set to true when global setting is false",
+			event: &info.Event{
+				Repository:        "foo",
+				TriggerTarget:     "pull_request",
+				PullRequestNumber: pullReqNumber,
+			},
+			repo: fooRepo,
+			pipelineRuns: []*pipelinev1.PipelineRun{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-1",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName:   "pr-foo-1",
+							keys.URLRepository:    formatting.CleanValueKubernetes("foo"),
+							keys.SHA:              formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:      strconv.Itoa(pullReqNumber),
+							keys.EventType:        string(triggertype.PullRequest),
+							keys.CancelInProgress: "true",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				// this must not be included as it has 'cancel-in-progress' annotation set to false.
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-2",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName:   "pr-foo-2",
+							keys.URLRepository:    formatting.CleanValueKubernetes("foo"),
+							keys.SHA:              formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:      strconv.Itoa(pullReqNumber),
+							keys.EventType:        string(triggertype.PullRequest),
+							keys.CancelInProgress: "false",
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+				// this must not be included as it doesn't have 'cancel-in-progress' annotation
+				// and global setting is disabled as well.
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pr-foo-3",
+						Namespace: "foo",
+						Labels: map[string]string{
+							keys.OriginalPRName: "pr-foo-3",
+							keys.URLRepository:  formatting.CleanValueKubernetes("foo"),
+							keys.SHA:            formatting.CleanValueKubernetes("foosha"),
+							keys.PullRequest:    strconv.Itoa(pullReqNumber),
+							keys.EventType:      string(triggertype.PullRequest),
+						},
+					},
+					Spec: pipelinev1.PipelineRunSpec{},
+				},
+			},
+			cancelledPipelineRuns: map[string]bool{
+				"pr-foo-1": true,
+			},
+		},
+		{
 			name: "no PipelineRuns to cancel",
 			event: &info.Event{
 				Repository:        "foo",
@@ -1033,7 +1467,12 @@ func TestCancelAllInProgressBelongingToClosedPullRequest(t *testing.T) {
 					Kube:   stdata.Kube,
 				},
 			}
-			pac := NewPacs(tt.event, nil, cs, &info.PacOpts{}, nil, logger, nil)
+			pacInfo := &info.PacOpts{
+				Settings: settings.Settings{
+					EnableCancelInProgressOnPullRequests: tt.cancelInProgressOnPR,
+				},
+			}
+			pac := NewPacs(tt.event, nil, cs, pacInfo, nil, logger, nil)
 			err := pac.cancelAllInProgressBelongingToClosedPullRequest(ctx, tt.repo)
 			assert.NilError(t, err)
 
@@ -1056,6 +1495,7 @@ func TestGetLabelSelector(t *testing.T) {
 		name      string
 		labelsMap map[string]string
 		want      string
+		operator  selection.Operator
 	}{
 		{
 			name: "single label",
@@ -1077,11 +1517,22 @@ func TestGetLabelSelector(t *testing.T) {
 			labelsMap: map[string]string{},
 			want:      "",
 		},
+		{
+			name: "not in operator",
+			labelsMap: map[string]string{
+				keys.CancelInProgress: "false",
+			},
+			operator: selection.NotIn,                                               //codespell:ignore 'NotIn'
+			want:     "pipelinesascode.tekton.dev/cancel-in-progress notin (false)", //codespell:ignore 'NotIn'
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getLabelSelector(tt.labelsMap); got != tt.want {
+			if tt.operator == "" {
+				tt.operator = selection.Equals
+			}
+			if got := getLabelSelector(tt.labelsMap, tt.operator); got != tt.want {
 				t.Errorf("getLabelSelector() = %v, want %v", got, tt.want)
 			}
 		})

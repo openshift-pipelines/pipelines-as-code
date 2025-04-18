@@ -63,6 +63,9 @@ type Settings struct {
 	ErrorDetectionNumberOfLines int    `default:"50"                                                                            json:"error-detection-max-number-of-lines"`
 	ErrorDetectionSimpleRegexp  string `default:"^(?P<filename>[^:]*):(?P<line>[0-9]+):(?P<column>[0-9]+)?([ ]*)?(?P<error>.*)" json:"error-detection-simple-regexp"`
 
+	EnableCancelInProgressOnPullRequests bool `json:"enable-cancel-in-progress-on-pull-requests"`
+	EnableCancelInProgressOnPush         bool `json:"enable-cancel-in-progress-on-push"`
+
 	CustomConsoleName         string `json:"custom-console-name"`
 	CustomConsoleURL          string `json:"custom-console-url"`
 	CustomConsolePRdetail     string `json:"custom-console-url-pr-details"`
