@@ -101,15 +101,32 @@ func TestGitlabMergeRequest(t *testing.T) {
 		assert.Equal(t, "Merge Request", prsNew.Items[i].Annotations[keys.EventType])
 	}
 
-	runcnx.Clients.Log.Infof("Sending /retest comment on MergeRequest %s/-/merge_requests/%d", projectinfo.WebURL, mrID)
+	// Wait a moment to ensure all PipelineRuns are fully created
+	time.Sleep(5 * time.Second)
+
+	// Query for an existing PipelineRun to retest specifically
+	prList, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+	assert.NilError(t, err)
+	assert.Assert(t, len(prList.Items) > 0, "Expected at least one PipelineRun to be created")
+
+	pipelineRunName := ""
+	for _, pr := range prList.Items {
+		if originalName, ok := pr.GetAnnotations()[keys.OriginalPRName]; ok {
+			pipelineRunName = originalName
+			break
+		}
+	}
+	assert.Assert(t, pipelineRunName != "", "Could not find the original PipelineRun name")
+
+	runcnx.Clients.Log.Infof("Sending /retest %s comment on MergeRequest %s/-/merge_requests/%d", pipelineRunName, projectinfo.WebURL, mrID)
 	_, _, err = glprovider.Client.Notes.CreateMergeRequestNote(opts.ProjectID, mrID, &clientGitlab.CreateMergeRequestNoteOptions{
-		Body: clientGitlab.Ptr("/retest"),
+		Body: clientGitlab.Ptr("/retest " + pipelineRunName),
 	})
 	assert.NilError(t, err)
 
 	sopt = twait.SuccessOpt{
 		Title:           commitTitle,
-		OnEvent:         opscomments.RetestAllCommentEventType.String(),
+		OnEvent:         opscomments.RetestSingleCommentEventType.String(),
 		TargetNS:        targetNS,
 		NumberofPRMatch: 5, // this is the max we get in repos status
 		SHA:             "",
