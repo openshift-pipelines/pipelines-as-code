@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2038,SC2153
 # Helper script for GitHub Actions CI, used from e2e tests.
-set -exufo pipefail
+set -eufo pipefail
 
 get_tests() {
   target=$1
@@ -58,7 +58,8 @@ EOF
   (
     cd ${HOME}/startpaac
     if [[ ${TEST_PROVIDER} == "providers" ]]; then
-      ./startpaac --all-github-second-no-forgejo
+      ./startpaac --all
+      ./startpaac --github-second-ctrl
     else
       ./startpaac --all
     fi
