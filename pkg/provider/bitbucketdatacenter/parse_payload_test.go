@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"testing"
 
-	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	bbv1test "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/test"
@@ -23,9 +22,9 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "missing toRef.project",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{},
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{},
 					},
 				},
 			},
@@ -34,10 +33,10 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "empty toRef.project.key",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
-							Project: &bbv1.Project{},
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
+							Project: &types.Project{},
 						},
 					},
 				},
@@ -47,10 +46,10 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "empty toRef.repositoryName",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
-							Project: &bbv1.Project{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
+							Project: &types.Project{
 								Key: "PROJ",
 							},
 						},
@@ -62,12 +61,12 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "missing toRef.latestCommit",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					FromRef: bbv1.PullRequestRef{},
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					FromRef: types.PullRequestRef{},
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
@@ -80,19 +79,19 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "missing fromRef.project",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 						},
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{},
+					FromRef: types.PullRequestRef{
+						Repository: types.Repository{},
 					},
 				},
 			},
@@ -101,20 +100,20 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "empty fromRef.projectKey",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 						},
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
-							Project: &bbv1.Project{},
+					FromRef: types.PullRequestRef{
+						Repository: types.Repository{
+							Project: &types.Project{},
 						},
 					},
 				},
@@ -124,20 +123,20 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "empty fromRef.repositoryName",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 						},
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
-							Project: &bbv1.Project{
+					FromRef: types.PullRequestRef{
+						Repository: types.Repository{
+							Project: &types.Project{
 								Key: "PROJ",
 							},
 						},
@@ -149,21 +148,21 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "missing fromRef.latestCommit",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 						},
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+					FromRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
@@ -176,21 +175,21 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "zero pull request ID",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 						},
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+					FromRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
@@ -204,21 +203,21 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "missing repository links",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 						},
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+					FromRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
@@ -233,28 +232,28 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "empty toRef display ID",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
-								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+								Clone: []types.CloneLink{{Href: "http://example.com"}},
+								Self:  []types.SelfLink{{Href: "http://example.com"}},
 							},
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 						},
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+					FromRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
@@ -269,32 +268,32 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "empty fromRef display ID",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
-								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+								Clone: []types.CloneLink{{Href: "http://example.com"}},
+								Self:  []types.SelfLink{{Href: "http://example.com"}},
 							},
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
-								Links: bbv1.Links{
-									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								Links: types.Links{
+									Self: []types.SelfLink{{Href: "http://example.com"}},
 								},
 							},
 						},
 						DisplayID:    "main",
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+					FromRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
@@ -309,32 +308,32 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "missing fromRef repository links",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
-								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+								Clone: []types.CloneLink{{Href: "http://example.com"}},
+								Self:  []types.SelfLink{{Href: "http://example.com"}},
 							},
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
-								Links: bbv1.Links{
-									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								Links: types.Links{
+									Self: []types.SelfLink{{Href: "http://example.com"}},
 								},
 							},
 						},
 						DisplayID:    "main",
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+					FromRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
@@ -350,193 +349,193 @@ func TestCheckValidPayload(t *testing.T) {
 		{
 			name: "empty toRef repository clone links",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								Self: []types.SelfLink{{Href: "http://example.com"}},
 							},
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key: "PROJ",
 
-								Links: bbv1.Links{
-									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								Links: types.Links{
+									Self: []types.SelfLink{{Href: "http://example.com"}},
 								},
 							},
 						},
 						DisplayID:    "main",
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
+					FromRef: types.PullRequestRef{
 						DisplayID:    "feature",
 						LatestCommit: "abcd",
-						Repository: bbv1.Repository{
-							Project: &bbv1.Project{
+						Repository: types.Repository{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								Self: []types.SelfLink{{Href: "http://example.com"}},
 							},
 							Name: "dest",
 						},
 					},
 					ID: 1,
 				},
-				Actor: bbv1.UserWithLinks{},
+				Actor: types.UserWithLinks{},
 			},
 			wantErrString: "bitbucket toRef repository clone links are empty",
 		},
 		{
 			name: "empty fromRef repository clone links",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
-								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+								Clone: []types.CloneLink{{Href: "http://example.com"}},
+								Self:  []types.SelfLink{{Href: "http://example.com"}},
 							},
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key: "PROJ",
 
-								Links: bbv1.Links{
-									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								Links: types.Links{
+									Self: []types.SelfLink{{Href: "http://example.com"}},
 								},
 							},
 						},
 						DisplayID:    "main",
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
+					FromRef: types.PullRequestRef{
 						DisplayID:    "feature",
 						LatestCommit: "abcd",
-						Repository: bbv1.Repository{
-							Project: &bbv1.Project{
+						Repository: types.Repository{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								Self: []types.SelfLink{{Href: "http://example.com"}},
 							},
 							Name: "dest",
 						},
 					},
 					ID: 1,
 				},
-				Actor: bbv1.UserWithLinks{},
+				Actor: types.UserWithLinks{},
 			},
 			wantErrString: "bitbucket fromRef repository clone links are empty",
 		},
 		{
 			name: "zero actor ID",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
-								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+								Clone: []types.CloneLink{{Href: "http://example.com"}},
+								Self:  []types.SelfLink{{Href: "http://example.com"}},
 							},
 							Name: "repo",
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key: "PROJ",
 
-								Links: bbv1.Links{
-									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								Links: types.Links{
+									Self: []types.SelfLink{{Href: "http://example.com"}},
 								},
 							},
 						},
 						DisplayID:    "main",
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
+					FromRef: types.PullRequestRef{
 						DisplayID:    "feature",
 						LatestCommit: "abcd",
-						Repository: bbv1.Repository{
-							Project: &bbv1.Project{
+						Repository: types.Repository{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
-								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+								Clone: []types.CloneLink{{Href: "http://example.com"}},
+								Self:  []types.SelfLink{{Href: "http://example.com"}},
 							},
 							Name: "dest",
 						},
 					},
 					ID: 1,
 				},
-				Actor: bbv1.UserWithLinks{},
+				Actor: types.UserWithLinks{},
 			},
 			wantErrString: "bitbucket actor ID is zero",
 		},
 		{
 			name: "empty actor name",
 			payloadEvent: types.PullRequestEvent{
-				PullRequest: bbv1.PullRequest{
-					ToRef: bbv1.PullRequestRef{
-						Repository: bbv1.Repository{
+				PullRequest: types.PullRequest{
+					ToRef: types.PullRequestRef{
+						Repository: types.Repository{
 							Name: "repo",
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
-								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+								Clone: []types.CloneLink{{Href: "http://example.com"}},
+								Self:  []types.SelfLink{{Href: "http://example.com"}},
 							},
-							Project: &bbv1.Project{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
-								Links: bbv1.Links{
-									Self: []bbv1.SelfLink{{Href: "http://example.com"}},
+								Links: types.Links{
+									Self: []types.SelfLink{{Href: "http://example.com"}},
 								},
 							},
 						},
 						DisplayID:    "main",
 						LatestCommit: "abcd",
 					},
-					FromRef: bbv1.PullRequestRef{
+					FromRef: types.PullRequestRef{
 						DisplayID:    "feature",
 						LatestCommit: "abcd",
-						Repository: bbv1.Repository{
-							Project: &bbv1.Project{
+						Repository: types.Repository{
+							Project: &types.Project{
 								Key:  "PROJ",
 								Name: "repo",
 							},
 							Links: &struct {
-								Clone []bbv1.CloneLink `json:"clone,omitempty"`
-								Self  []bbv1.SelfLink  `json:"self,omitempty"`
+								Clone []types.CloneLink `json:"clone,omitempty"`
+								Self  []types.SelfLink  `json:"self,omitempty"`
 							}{
-								Clone: []bbv1.CloneLink{{Href: "http://example.com"}},
-								Self:  []bbv1.SelfLink{{Href: "http://example.com"}},
+								Clone: []types.CloneLink{{Href: "http://example.com"}},
+								Self:  []types.SelfLink{{Href: "http://example.com"}},
 							},
 							Name: "dest",
 						},
 					},
 					ID: 1,
 				},
-				Actor: bbv1.UserWithLinks{
+				Actor: types.UserWithLinks{
 					ID: 1,
 				},
 			},
@@ -579,13 +578,13 @@ func TestParsePayload(t *testing.T) {
 		{
 			name:          "bad/invalid event type",
 			eventType:     "pr:nono",
-			payloadEvent:  bbv1.PullRequest{},
+			payloadEvent:  types.PullRequest{},
 			wantErrSubstr: "event \"pr:nono\" is not supported",
 		},
 		{
 			name:          "bad/bad json",
 			eventType:     "pr:opened",
-			payloadEvent:  bbv1.PullRequest{},
+			payloadEvent:  types.PullRequest{},
 			rawStr:        "rageAgainst",
 			wantErrSubstr: "invalid character",
 		},
