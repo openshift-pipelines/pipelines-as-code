@@ -3,70 +3,6 @@
 # Helper script for GitHub Actions CI, used from e2e tests.
 set -exufo pipefail
 
-create_pac_github_app_secret() {
-  # Read from environment variables instead of arguments
-  local app_private_key="${PAC_GITHUB_PRIVATE_KEY}"
-  local application_id="${PAC_GITHUB_APPLICATION_ID}"
-  local webhook_secret="${PAC_WEBHOOK_SECRET}"
-
-  kubectl delete secret -n pipelines-as-code pipelines-as-code-secret || true
-  kubectl -n pipelines-as-code create secret generic pipelines-as-code-secret \
-    --from-literal github-private-key="${app_private_key}" \
-    --from-literal github-application-id="${application_id}" \
-    --from-literal webhook.secret="${webhook_secret}"
-  kubectl patch configmap -n pipelines-as-code -p "{\"data\":{\"bitbucket-cloud-check-source-ip\": \"false\"}}" \
-    --type merge pipelines-as-code
-
-  # restart controller
-  kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=controller
-
-  echo -n "Waiting for controller to restart"
-  i=0
-  while true; do
-    [[ ${i} == 120 ]] && exit 1
-    ep=$(kubectl get ep -n pipelines-as-code pipelines-as-code-controller -o jsonpath='{.subsets[*].addresses[*].ip}')
-    [[ -n ${ep} ]] && break
-    sleep 2
-    echo -n "."
-    i=$((i + 1))
-  done
-  echo
-}
-
-create_second_github_app_controller_on_ghe() {
-  # Read from environment variables instead of arguments
-  local test_github_second_smee_url="${TEST_GITHUB_SECOND_SMEE_URL}"
-  local test_github_second_private_key="${TEST_GITHUB_SECOND_PRIVATE_KEY}"
-  local test_github_second_webhook_secret="${TEST_GITHUB_SECOND_WEBHOOK_SECRET}"
-
-  if [[ -n "$(type -p apt)" ]]; then
-    sudo apt update &&
-      sudo apt install -y python3-yaml
-  elif [[ -n "$(type -p dnf)" ]]; then
-    dnf install -y python3-pyyaml
-  else
-    # TODO(chmouel): setup a virtualenvironment instead
-    python3 -m pip install --break-system-packages PyYAML
-  fi
-
-  ./hack/second-controller.py \
-    --controller-image="ko" \
-    --smee-url="${test_github_second_smee_url}" \
-    --ingress-domain="paac-127-0-0-1.nip.io" \
-    --namespace="pipelines-as-code" \
-    ghe | tee /tmp/generated.yaml
-
-  ko apply -f /tmp/generated.yaml
-  kubectl delete secret -n pipelines-as-code ghe-secret || true
-  kubectl -n pipelines-as-code create secret generic ghe-secret \
-    --from-literal github-private-key="${test_github_second_private_key}" \
-    --from-literal github-application-id="2" \
-    --from-literal webhook.secret="${test_github_second_webhook_secret}"
-  sed "s/name: pipelines-as-code/name: ghe-configmap/" <config/302-pac-configmap.yaml | kubectl apply -n pipelines-as-code -f-
-  kubectl patch configmap -n pipelines-as-code ghe-configmap -p '{"data":{"application-name": "Pipelines as Code GHE"}}'
-  kubectl -n pipelines-as-code delete pod -l app.kubernetes.io/name=ghe-controller
-}
-
 get_tests() {
   target=$1
   mapfile -t testfiles < <(find test/ -maxdepth 1 -name '*.go')
@@ -89,6 +25,50 @@ run_e2e_tests() {
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
   # shellcheck disable=SC2001
   make test-e2e GO_TEST_FLAGS="-run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
+}
+
+startpaac() {
+  echo "**********************************************************************"
+  echo "                       Installing startpaac"
+  echo "**********************************************************************"
+  [[ -d ~/startpaac ]] ||
+    git clone --depth=1 https://github.com/chmouel/startpaac ~/startpaac
+
+  mkdir -p ~/second ~/pass $HOME/.config/startpaac
+
+  cat <<EOF >$HOME/.config/startpaac/config
+PAC_DIR=$HOME/work/pipelines-as-code/pipelines-as-code/
+PAC_SECRET_FOLDER=$HOME/pass
+PAC_SECOND_SECRET_FOLDER=${HOME}/second
+TARGET_HOST=local
+EOF
+
+  echo "${PAC_GITHUB_PRIVATE_KEY}" >~/pass/github-private-key
+  echo "${PAC_GITHUB_APPLICATION_ID}" >~/pass/github-application-id
+  echo "${PAC_WEBHOOK_SECRET}" >~/pass/webhook.secret
+  echo "${PAC_SMEE_URL}" >~/pass/smee
+
+  echo "${TEST_GITHUB_SECOND_PRIVATE_KEY}" >~/second/github-private-key
+  echo "${TEST_GITHUB_SECOND_APPLICATION_ID}" >~/second/github-application-id
+  echo "${TEST_GITHUB_SECOND_WEBHOOK_SECRET}" >~/second/webhook.secret
+  echo "${TEST_GITHUB_SECOND_SMEE_URL}" >~/second/smee
+
+  go install github.com/jsha/minica@latest
+
+  (
+    cd ${HOME}/startpaac
+    if [[ ${TEST_PROVIDER} == "providers" ]]; then
+      ./startpaac --all-github-second-no-forgejo
+    else
+      ./startpaac --all
+    fi
+  )
+
+  echo "**********************************************************************"
+  echo "Copying minica CA certs to /usr/local/share/ca-certificates/minica.crt"
+  echo "**********************************************************************"
+  sudo cp -v /tmp/certs/minica.pem /usr/local/share/ca-certificates/minica.crt
+  sudo update-ca-certificates
 }
 
 collect_logs() {
@@ -157,21 +137,22 @@ help() {
   collect_logs
     Collect logs from the cluster
     Required env vars: TEST_GITEA_SMEEURL, TEST_GITHUB_SECOND_SMEE_URL
+
+  startpaac
+    Install startpaac and setup the config
+    Required env vars: PAC_GITHUB_PRIVATE_KEY, PAC_GITHUB_APPLICATION_ID, PAC_WEBHOOK_SECRET, PAC_SMEE_URL
 EOF
 }
 
 case ${1-""} in
-create_pac_github_app_secret)
-  create_pac_github_app_secret
-  ;;
-create_second_github_app_controller_on_ghe)
-  create_second_github_app_controller_on_ghe
-  ;;
 run_e2e_tests)
   run_e2e_tests
   ;;
 collect_logs)
   collect_logs
+  ;;
+startpaac)
+  startpaac
   ;;
 help)
   help

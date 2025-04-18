@@ -128,7 +128,8 @@ func TestPR(t *testing.T, topts *TestOpts) (context.Context, func()) {
 	hookURL := os.Getenv("TEST_GITEA_SMEEURL")
 	topts.InternalGiteaURL = os.Getenv("TEST_GITEA_INTERNAL_URL")
 	if topts.InternalGiteaURL == "" {
-		topts.InternalGiteaURL = "http://gitea.gitea:3000"
+		// default to internal forgejo as deployed by the helm
+		topts.InternalGiteaURL = "http://forgejo-http.forgejo.svc.cluster.local:3000"
 	}
 	if topts.ExtraArgs == nil {
 		topts.ExtraArgs = map[string]string{}
