@@ -13,6 +13,7 @@ import (
 
 type activitiesTypes struct{ Values []*bbv1.Activity }
 
+// IsAllowed check if the user is allowed to trigger the pipeline.
 func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 	allowed, err := v.checkMemberShip(ctx, event)
 	if err != nil {
