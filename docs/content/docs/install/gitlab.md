@@ -30,7 +30,7 @@ There are two ways to create the `Repository` and configure the webhook:
 * Use the [`tkn pac create repo`](/docs/guide/cli) command to
 configure a webhook and create the `Repository` CR.
 
-  You need to have a personal access token created with `admin:repo_hook` scope. `tkn pac` will use this token to configure the webhook, and add it in a secret
+  You need to have a personal access token created with `api` scope. `tkn pac` will use this token to configure the webhook, and add it in a secret
 in the cluster which will be used by Pipelines-As-Code controller for accessing the `Repository`.
 
 Below is the sample format for `tkn pac create repo`
