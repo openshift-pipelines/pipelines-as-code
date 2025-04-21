@@ -12,7 +12,7 @@ on:
       - '*.*'
     branches:
       - main
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - "**.go"
