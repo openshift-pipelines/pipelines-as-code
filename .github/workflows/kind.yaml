@@ -2,7 +2,7 @@ name: E2E Tests
 on:
   workflow_dispatch: # yamllint disable-line
   push: # yamllint disable-line
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
 jobs:
   e2e-tests:
