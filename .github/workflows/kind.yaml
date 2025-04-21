@@ -8,7 +8,7 @@ on:
       - "go.mod"
       - "go.sum"
       - "!docs/**"
-  pull_request_target:
+  pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - "**.go"
