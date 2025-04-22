@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// NSTearDown deletes the namespace and all resources in it.
 func NSTearDown(ctx context.Context, t *testing.T, runcnx *params.Run, targetNS string) {
 	runcnx.Clients.Log.Infof("Deleting Repository in %s", targetNS)
 	err := runcnx.Clients.PipelineAsCode.PipelinesascodeV1alpha1().Repositories(targetNS).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{})
