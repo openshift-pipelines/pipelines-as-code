@@ -67,7 +67,7 @@ func TestGetTektonDir(t *testing.T) {
 			path:          ".tekton",
 			testDirPath:   "../../pipelineascode/testdata/pull_request/.tekton",
 			wantDirAPIErr: true,
-			wantErr:       "cannot list content of .tekton directory: not Authorized",
+			wantErr:       "cannot list content of .tekton directory: No message available",
 		},
 		{
 			name:            "bad/get files api error",
@@ -75,7 +75,7 @@ func TestGetTektonDir(t *testing.T) {
 			path:            ".tekton",
 			testDirPath:     "../../pipelineascode/testdata/pull_request/.tekton",
 			wantFilesAPIErr: true,
-			wantErr:         "cannot find .tekton/pipeline.yaml inside the repo repository: not Authorized",
+			wantErr:         "cannot find .tekton/pipeline.yaml inside the repo repository: No message available",
 		},
 	}
 	for _, tt := range tests {
@@ -260,7 +260,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 				"foo/file.txt": "hello moto",
 			},
 			targetbranch: "yolo",
-			wantErr:      "cannot find foo/file.txt inside the repo repository: not Authorized",
+			wantErr:      "cannot find foo/file.txt inside the repo repository: No message available",
 		},
 	}
 	for _, tt := range tests {
@@ -658,7 +658,7 @@ func TestGetFiles(t *testing.T) {
 			wantModifiedFilesCount: 0,
 			wantRenamedFilesCount:  0,
 			wantError:              true,
-			errMsg:                 "failed to list changes for commit IAMSHA123: not Authorized",
+			errMsg:                 "failed to list changes for commit IAMSHA123: No message available",
 		},
 		{
 			name:                   "good/pull_request event",
@@ -677,7 +677,7 @@ func TestGetFiles(t *testing.T) {
 			wantModifiedFilesCount: 0,
 			wantRenamedFilesCount:  0,
 			wantError:              true,
-			errMsg:                 "failed to list changes for pull request: not Authorized",
+			errMsg:                 "failed to list changes for pull request: No message available",
 		},
 	}
 	for _, tt := range tests {
