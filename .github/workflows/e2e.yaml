@@ -10,6 +10,10 @@ on:
         description: "Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)"
         required: false
         default: false
+      target_ref:
+        type: string
+        description: "Target ref to run the tests against"
+        required: false
   pull_request_target:
     types:
       - labeled
@@ -22,7 +26,7 @@ jobs:
     # Only run if it's a scheduled run, manual dispatch, or has e2e label
     if: >
       github.event_name == 'schedule' || 
-      (github.event_name == 'workflow_dispatch') || 
+      github.event_name == 'workflow_dispatch' || 
       (github.event_name == 'pull_request_target' && (github.event.label.name == 'e2e' || contains(github.event.pull_request.labels.*.name, 'e2e')))
 
     concurrency:
@@ -57,13 +61,13 @@ jobs:
       TEST_GITHUB_SECOND_REPO_OWNER_GITHUBAPP: pipelines-as-code/e2e
       TEST_GITHUB_SECOND_REPO_INSTALLATION_ID: 1
       TEST_GITLAB_API_URL: https://gitlab.com
-      TEST_GITLAB_PROJECT_ID: 34405323
+      TEST_GITLAB_PROJECT_ID: ${{ vars.TEST_GITLAB_PROJECT_ID }}
       TEST_BITBUCKET_SERVER_USER: pipelines
       TEST_BITBUCKET_SERVER_E2E_REPOSITORY: PAC/pac-e2e-tests
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ inputs.target_ref || github.event.pull_request.head.sha || github.sha }}
 
       - uses: actions/setup-go@v5
         with:
@@ -96,7 +100,7 @@ jobs:
       - name: Create PAC github-app-secret
         env:
           PAC_GITHUB_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
-          PAC_GITHUB_APPLICATION_ID: ${{ secrets.APPLICATION_ID }}
+          PAC_GITHUB_APPLICATION_ID: ${{ vars.APPLICATION_ID }}
           PAC_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
         run: |
           ./hack/gh-workflow-ci.sh create_pac_github_app_secret
@@ -116,7 +120,7 @@ jobs:
           TEST_BITBUCKET_CLOUD_TOKEN: ${{ secrets.BITBUCKET_CLOUD_TOKEN }}
           TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
-          TEST_GITHUB_REPO_INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
           TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
           TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
           TEST_GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
@@ -134,7 +138,7 @@ jobs:
           TEST_BITBUCKET_CLOUD_TOKEN: ${{ secrets.BITBUCKET_CLOUD_TOKEN }}
           TEST_EL_WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
           TEST_GITEA_SMEEURL: ${{ secrets.TEST_GITEA_SMEEURL }}
-          TEST_GITHUB_REPO_INSTALLATION_ID: ${{ secrets.INSTALLATION_ID }}
+          TEST_GITHUB_REPO_INSTALLATION_ID: ${{ vars.INSTALLATION_ID }}
           TEST_GITHUB_TOKEN: ${{ secrets.GH_APPS_TOKEN }}
           TEST_GITHUB_SECOND_TOKEN: ${{ secrets.TEST_GITHUB_SECOND_TOKEN }}
           TEST_GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}

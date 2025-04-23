@@ -26,6 +26,16 @@ When it finishes, you will have the following installed in your kind cluster:
 - Pipelines as code deployed from your repo with ko.
 - Gitea service running locally so you can run the E2E tests against it (Gitea has the most comprehensive set of tests).
 
+### Configuring the Kind Registry Port
+
+By default, the Kind registry runs on port 5000. To use a different port, set the `REG_PORT` environment variable:
+
+```shell
+# Set a custom registry port
+export REG_PORT=5001
+make dev
+```
+
 By default, it will try to install from
 $GOPATH/src/github.com/openshift-pipelines/pipelines-as-code. To override it,
 set the `PAC_DIRS` environment variable.
