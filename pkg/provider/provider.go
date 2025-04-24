@@ -186,3 +186,7 @@ func GetCheckName(status StatusOpts, pacopts *info.PacOpts) string {
 	}
 	return status.OriginalPipelineRunName
 }
+
+func IsZeroSHA(sha string) bool {
+	return sha == "0000000000000000000000000000000000000000"
+}

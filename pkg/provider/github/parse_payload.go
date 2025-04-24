@@ -259,6 +259,16 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 		if gitEvent.GetRepo() == nil {
 			return nil, errors.New("error parsing payload the repository should not be nil")
 		}
+
+		// When a branch is deleted via repository UI, it triggers a push event.
+		// However, Pipelines as Code does not support handling branch delete events,
+		// so we return an error here to indicate this unsupported operation.
+		if gitEvent.After != nil {
+			if provider.IsZeroSHA(*gitEvent.After) {
+				return nil, fmt.Errorf("branch %s has been deleted, exiting", gitEvent.GetRef())
+			}
+		}
+
 		processedEvent.Organization = gitEvent.GetRepo().GetOwner().GetLogin()
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
 		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
