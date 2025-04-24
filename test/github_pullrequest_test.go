@@ -9,6 +9,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
+	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
+	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
+	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
+
 	"github.com/google/go-github/v70/github"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
@@ -16,14 +25,6 @@ import (
 	"gotest.tools/v3/golden"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
-
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
-	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
-	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
-	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 )
 
 func TestGithubPullRequest(t *testing.T) {
@@ -476,6 +477,97 @@ func TestGithubPullRequestNoPipelineRunCancelledOnPRClosed(t *testing.T) {
 		time.Sleep(1 * time.Second)
 	}
 	assert.Equal(t, false, isCancelled, fmt.Sprintf("PipelineRun got cancelled while we wanted it `Running`, last reason: %v", prReason))
+}
+
+func TestGithubCancelInProgressSettingFromConfigMapOnPR(t *testing.T) {
+	ctx := context.Background()
+	ctx, runcnx, _, _, err := tgithub.Setup(ctx, false, false)
+	assert.NilError(t, err)
+
+	patchData := map[string]string{
+		"enable-cancel-in-progress-on-pull-requests": "true",
+	}
+
+	configMapTearDown := configmap.ChangeGlobalConfig(ctx, t, runcnx, patchData)
+	defer configMapTearDown()
+
+	g := &tgithub.PRTest{
+		Label:         "Github PullRequest",
+		YamlFiles:     []string{"testdata/pipelinerun-gitops.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	_, _, err = g.Provider.Client.Issues.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.PRNumber,
+		&github.IssueComment{Body: github.Ptr("/retest")})
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
+	}
+
+	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	// we want one PipelineRun to be cancelled
+	waitOpts.MinNumberStatus = 1
+
+	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonCancelled, waitOpts)
+	assert.NilError(t, err)
+}
+
+func TestGithubCancelInProgressSettingFromConfigMapOnPush(t *testing.T) {
+	ctx := context.Background()
+	ctx, runcnx, _, _, err := tgithub.Setup(ctx, false, false)
+	assert.NilError(t, err)
+
+	patchData := map[string]string{
+		"enable-cancel-in-progress-on-push": "true",
+	}
+
+	configMapTearDown := configmap.ChangeGlobalConfig(ctx, t, runcnx, patchData)
+	defer configMapTearDown()
+
+	g := &tgithub.PRTest{
+		Label:         "Github PullRequest",
+		YamlFiles:     []string{"testdata/pipelinerun-gitops.yaml"},
+		NoStatusCheck: true,
+	}
+	g.RunPushRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	comment := fmt.Sprintf("/retest branch:%s", g.TargetNamespace)
+	_, _, err = g.Provider.Client.Repositories.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.SHA,
+		&github.RepositoryComment{Body: github.Ptr(comment)})
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
+	waitOpts := twait.Opts{
+		RepoName:        g.TargetNamespace,
+		Namespace:       g.TargetNamespace,
+		MinNumberStatus: 2,
+		PollTimeout:     twait.DefaultTimeout,
+		TargetSHA:       g.SHA,
+	}
+
+	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	// we want one PipelineRun to be cancelled
+	waitOpts.MinNumberStatus = 1
+
+	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonCancelled, waitOpts)
+	assert.NilError(t, err)
 }
 
 // Local Variables:
