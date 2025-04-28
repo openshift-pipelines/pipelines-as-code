@@ -135,30 +135,32 @@ func TestGithubSecondPullRequestConcurrencyMultiplePR(t *testing.T) {
 		t.Errorf("we didn't get %d pipelineruns as successful, some of them are still pending or it's abnormally slow to process the Q", allPipelinesRunsCnt)
 	}
 
-	prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
-	assert.NilError(t, err)
+	maxWaitLoopRun := 10
+	success := false
 	allPipelineRunsNamesAndStatus := []string{}
-	for _, pr := range prs.Items {
-		allPipelineRunsNamesAndStatus = append(allPipelineRunsNamesAndStatus, fmt.Sprintf("%s %s", pr.Name, pr.Status.GetConditions()))
-	}
-	// Filter out PipelineRuns that don't match our pattern
-	matchingPRs := []tektonv1.PipelineRun{}
-	for _, pr := range prs.Items {
-		if strings.HasPrefix(pr.Name, "prlongrunnning-") {
-			matchingPRs = append(matchingPRs, pr)
+	for i := range maxWaitLoopRun {
+		prs, err := runcnx.Clients.Tekton.TektonV1().PipelineRuns(targetNS).List(ctx, metav1.ListOptions{})
+		assert.NilError(t, err)
+		for _, pr := range prs.Items {
+			allPipelineRunsNamesAndStatus = append(allPipelineRunsNamesAndStatus, fmt.Sprintf("%s %s", pr.Name, pr.Status.GetConditions()))
 		}
-	}
+		// Filter out PipelineRuns that don't match our pattern
+		matchingPRs := []tektonv1.PipelineRun{}
+		for _, pr := range prs.Items {
+			if strings.HasPrefix(pr.Name, "prlongrunnning-") {
+				matchingPRs = append(matchingPRs, pr)
+			}
+		}
+		if len(matchingPRs) == allPipelinesRunAfterCleanUp {
+			runcnx.Clients.Log.Infof("we have the expected number of pipelineruns %d/%d, %d/%d", len(matchingPRs), allPipelinesRunAfterCleanUp, i, maxWaitLoopRun)
+			success = true
+			break
+		}
 
-	// NOTE(chmouel): Sometime it's 8 sometime it's 9, it's a bit flaky but we
-	// are mostly okay if its one of those. Maybe one day we will get to the
-	// bottom of it.
-	//
-	// See discussion here:
-	// https://github.com/openshift-pipelines/pipelines-as-code/pull/1978#issue-2897418926
-	if len(matchingPRs) != allPipelinesRunAfterCleanUp && len(matchingPRs) != allPipelinesRunsCnt+1 {
-		t.Fatalf("number of cleaned PR is %d we expected to have %d after the cleanup: PipelineRun and its statuses: %+v", len(matchingPRs), allPipelinesRunAfterCleanUp, allPipelineRunsNamesAndStatus)
-		return
+		runcnx.Clients.Log.Infof("we are still waiting for pipelineruns to be cleaned up, we have %d/%d, sleeping 10s, %d/%d", len(matchingPRs), allPipelinesRunsCnt, i, maxWaitLoopRun)
+		time.Sleep(10 * time.Second)
 	}
+	assert.Assert(t, success, "we didn't get %d pipelineruns as successful, some of them are still pending or it's abnormally slow to process the Q: %s", allPipelinesRunsCnt, allPipelineRunsNamesAndStatus)
 
 	if os.Getenv("TEST_NOCLEANUP") != "true" {
 		repository.NSTearDown(ctx, t, runcnx, targetNS)
