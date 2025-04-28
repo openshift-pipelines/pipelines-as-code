@@ -84,6 +84,11 @@ jobs:
         with:
           repo: chmouel/gosmee
 
+      - name: Install Snazy
+        uses: jaxxstorm/action-install-gh-release@v2.0.0
+        with:
+          repo: chmouel/snazy
+
       - name: Run gosmee
         run: |
           nohup gosmee client --saveDir /tmp/gosmee-replay ${{ secrets.PYSMEE_URL }} "http://${CONTROLLER_DOMAIN_URL}" &
