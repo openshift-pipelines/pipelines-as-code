@@ -140,9 +140,16 @@ You can use following command to update the envs on the controller
 
 ## Proxy service for PAC controller
 
-Pipelines-as-Code requires an externally accessible URL to receive events from Git providers.
-If you're developing locally (such as on kind or Minikube) or don't want to set up an ingress on your cluster,
-you can also use a proxy service to expose the `pipelines-as-code-controller` service and allow it to receive events.
+Pipelines-as-Code requires an externally accessible URL to receive events from
+Git providers. If you're developing locally (such as on kind or Minikube) or
+cannot set up an ingress on your cluster, you can also use a proxy service to
+expose the `pipelines-as-code-controller` service and allow it to receive
+events.
+
+This is useful for testing and development purposes, but not recommended for
+production, since gosmee and the platform running
+<https://hook.pipelinesascode.com>
+have no support or security guarantees.
 
 ### Proxying with hook.pipelinesascode.com
 

@@ -66,7 +66,8 @@ not running on OpenShift.
 
 This is not required, but considering the need to have GitHub reach our
 Pipelines-as-Code controller from the internet, using `gosmee` is the most
-straightforward way to do it.
+straightforward way to do it. Note that while gosmee lets you get started
+quickly, it is not intended for production use.
 
 ```console
 Pipelines-as-Code does not install an Ingress object to allow the controller to be accessed from the internet.

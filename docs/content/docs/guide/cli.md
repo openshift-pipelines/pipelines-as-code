@@ -128,6 +128,9 @@ internet connection. In this scenario, it will set up a forwarding URL on
 will not prompt you unless you explicitly specify the `--force-gosmee` flag
 (which can be useful if you are running [OpenShift Local](https://developers.redhat.com/products/openshift-local/overview) for instance).
 
+gosmee is by no means to be used in production, but it can be useful for
+testing.
+
 {{< /details >}}
 
 {{< details "tkn pac bootstrap github-app" >}}
@@ -164,7 +167,8 @@ questions if you want to configure a webhook for your provider of choice.
 `tkn pac delete repo` -- will delete a Pipelines-as-Code Repository definition.
 
 You can specify the flag `--cascade` to optionally delete the attached secrets
-(ie: webhook or provider secret) to the Pipelines-as-Code Repository definition.
+(i.e. webhook or provider secret) to the Pipelines-as-Code Repository
+definition.
 
 {{< /details >}}
 
