@@ -330,7 +330,7 @@ func MakePREvent(event *info.Event, comment string) *types.PullRequestEvent {
 	return pr
 }
 
-func MakePushEvent(event *info.Event) *types.PushRequestEvent {
+func MakePushEvent(event *info.Event, changes []types.PushRequestEventChange) *types.PushRequestEvent {
 	iii, _ := strconv.Atoi(event.AccountID)
 
 	return &types.PushRequestEvent{
@@ -357,11 +357,6 @@ func MakePushEvent(event *info.Event) *types.PushRequestEvent {
 				},
 			},
 		},
-		Changes: []types.PushRequestEventChange{
-			{
-				ToHash: event.SHA,
-				RefID:  "base",
-			},
-		},
+		Changes: changes,
 	}
 }
