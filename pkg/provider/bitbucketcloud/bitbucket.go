@@ -16,13 +16,14 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
 	"go.uber.org/zap"
 )
 
 var _ provider.Interface = (*Provider)(nil)
 
 type Provider struct {
-	Client        *bitbucket.Client
+	bbClient      *bitbucket.Client
 	Logger        *zap.SugaredLogger
 	run           *params.Run
 	pacInfo       *info.PacOpts
@@ -31,6 +32,17 @@ type Provider struct {
 	provenance    string
 	eventEmitter  *events.EventEmitter
 	repo          *v1alpha1.Repository
+	triggerEvent  string
+}
+
+func (v *Provider) Client() *bitbucket.Client {
+	providerMetrics.RecordAPIUsage(
+		v.Logger,
+		"bitbucketcloud",
+		v.triggerEvent,
+		v.repo,
+	)
+	return v.bbClient
 }
 
 // CheckPolicyAllowing TODO: Implement ME.
@@ -104,11 +116,11 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts
 		Revision: event.SHA,
 	}
 
-	if v.Client == nil {
+	if v.bbClient == nil {
 		return fmt.Errorf("no token has been set, cannot set status")
 	}
 
-	_, err := v.Client.Repositories.Commits.CreateCommitStatus(cmo, cso)
+	_, err := v.Client().Repositories.Commits.CreateCommitStatus(cmo, cso)
 	if err != nil {
 		// Only emit an event to notify the user that something went wrong with the commit status API,
 		// and proceed with creating the comment (if applicable).
@@ -124,7 +136,7 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusopts
 		if statusopts.OriginalPipelineRunName != "" {
 			onPr = "/" + statusopts.OriginalPipelineRunName
 		}
-		_, err = v.Client.Repositories.PullRequests.AddComment(
+		_, err = v.Client().Repositories.PullRequests.AddComment(
 			&bitbucket.PullRequestCommentOptions{
 				Owner:         event.Organization,
 				RepoSlug:      event.Repository,
@@ -164,7 +176,7 @@ func (v *Provider) getDir(event *info.Event, path string) ([]bitbucket.Repositor
 		Path:     path,
 	}
 
-	repositoryFiles, err := v.Client.Repositories.Repository.ListFiles(repoFileOpts)
+	repositoryFiles, err := v.Client().Repositories.Repository.ListFiles(repoFileOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -186,12 +198,13 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, event *info.Eve
 	if event.Provider.User == "" {
 		return fmt.Errorf("no git_provider.user has been in repo crd")
 	}
-	v.Client = bitbucket.NewBasicAuth(event.Provider.User, event.Provider.Token)
+	v.bbClient = bitbucket.NewBasicAuth(event.Provider.User, event.Provider.Token)
 	v.Token = &event.Provider.Token
 	v.Username = &event.Provider.User
 	v.run = run
 	v.eventEmitter = eventEmitter
 	v.repo = repo
+	v.triggerEvent = event.EventType
 	return nil
 }
 
@@ -200,7 +213,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	if branchortag == "" {
 		branchortag = event.HeadBranch
 	}
-	response, err := v.Client.Repositories.Commits.GetCommits(&bitbucket.CommitsOptions{
+	response, err := v.Client().Repositories.Commits.GetCommits(&bitbucket.CommitsOptions{
 		Owner:       event.Organization,
 		RepoSlug:    event.Repository,
 		Branchortag: branchortag,
@@ -231,7 +244,7 @@ func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	event.SHA = commitinfo.Hash
 
 	// now to get the default branch from repository.Get
-	repo, err := v.Client.Repositories.Repository.Get(&bitbucket.RepositoryOptions{
+	repo, err := v.Client().Repositories.Repository.Get(&bitbucket.RepositoryOptions{
 		Owner:    event.Organization,
 		RepoSlug: event.Repository,
 	})
@@ -283,7 +296,7 @@ func (v *Provider) concatAllYamlFiles(objects []bitbucket.RepositoryFile, event 
 }
 
 func (v *Provider) getBlob(runevent *info.Event, ref, path string) (string, error) {
-	blob, err := v.Client.Repositories.Repository.GetFileBlob(&bitbucket.RepositoryBlobOptions{
+	blob, err := v.Client().Repositories.Repository.GetFileBlob(&bitbucket.RepositoryBlobOptions{
 		Owner:    runevent.Organization,
 		RepoSlug: runevent.Repository,
 		Ref:      ref,

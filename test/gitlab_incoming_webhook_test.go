@@ -36,7 +36,7 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 	ctx, err = cctx.GetControllerCtxInfo(ctx, runcnx)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Info("Testing with Gitlab")
-	projectinfo, resp, err := glprovider.Client.Projects.GetProject(opts.ProjectID, nil)
+	projectinfo, resp, err := glprovider.Client().Projects.GetProject(opts.ProjectID, nil)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)

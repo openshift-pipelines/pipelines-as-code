@@ -62,7 +62,7 @@ func PushFilesToRefAPI(t *testing.T, topts *TestOpts, entries map[string]string)
 				Author:        gitea.Identity{Name: commitAuthor, Email: commitEmail},
 			},
 		}
-		fr, _, err := topts.GiteaCNX.Client.CreateFile(topts.Opts.Organization, topts.Opts.Repo, filename, fOpts)
+		fr, _, err := topts.GiteaCNX.Client().CreateFile(topts.Opts.Organization, topts.Opts.Repo, filename, fOpts)
 		sha = fr.Commit.SHA
 		assert.NilError(t, err)
 	}
@@ -166,7 +166,7 @@ func GetGiteaRepo(giteaClient *gitea.Client, user, name string, _ *zap.SugaredLo
 }
 
 func CreateTeam(topts *TestOpts, orgName, teamName string) (*gitea.Team, error) {
-	team, _, err := topts.GiteaCNX.Client.CreateTeam(orgName, gitea.CreateTeamOption{
+	team, _, err := topts.GiteaCNX.Client().CreateTeam(orgName, gitea.CreateTeamOption{
 		Permission: gitea.AccessModeWrite,
 		Units: []gitea.RepoUnitType{
 			gitea.RepoUnitPulls,
@@ -178,14 +178,14 @@ func CreateTeam(topts *TestOpts, orgName, teamName string) (*gitea.Team, error) 
 }
 
 func RemoveCommentMatching(topts *TestOpts, commentString *regexp.Regexp) error {
-	comments, _, err := topts.GiteaCNX.Client.ListIssueComments(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index, gitea.ListIssueCommentOptions{})
+	comments, _, err := topts.GiteaCNX.Client().ListIssueComments(topts.Opts.Organization, topts.Opts.Repo, topts.PullRequest.Index, gitea.ListIssueCommentOptions{})
 	if err != nil {
 		return err
 	}
 	for _, c := range comments {
 		if commentString.MatchString(c.Body) {
 			topts.ParamsRun.Clients.Log.Infof("Removing comment %d matching %s", c.ID, commentString.String())
-			_, err := topts.GiteaCNX.Client.DeleteIssueComment(topts.Opts.Organization, topts.Opts.Repo, c.ID)
+			_, err := topts.GiteaCNX.Client().DeleteIssueComment(topts.Opts.Organization, topts.Opts.Repo, c.ID)
 			return err
 		}
 	}
@@ -211,7 +211,7 @@ func CreateGiteaUser(giteaClient *gitea.Client, username, password string) (*git
 
 // CreateGiteaUserSecondCnx creates a new user and a new provider for this user.
 func CreateGiteaUserSecondCnx(topts *TestOpts, username, password string) (pgitea.Provider, *gitea.User, error) {
-	newuser, err := CreateGiteaUser(topts.GiteaCNX.Client, username, password)
+	newuser, err := CreateGiteaUser(topts.GiteaCNX.Client(), username, password)
 	if err != nil {
 		return pgitea.Provider{}, newuser, fmt.Errorf("failed to create user: %w", err)
 	}
@@ -223,7 +223,7 @@ func CreateGiteaUserSecondCnx(topts *TestOpts, username, password string) (pgite
 }
 
 func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider, accessMode string) *gitea.PullRequest {
-	forkrepo, _, err := secondcnx.Client.CreateFork(topts.Opts.Organization, topts.TargetRefName,
+	forkrepo, _, err := secondcnx.Client().CreateFork(topts.Opts.Organization, topts.TargetRefName,
 		gitea.CreateForkOption{})
 	assert.NilError(t, err)
 	topts.ParamsRun.Clients.Log.Infof("Forked repository %s has been created", forkrepo.CloneURL)
@@ -232,7 +232,7 @@ func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provi
 		assert.NilError(t, CreateAccess(topts, topts.TargetRefName, accessMode))
 	}
 
-	pr, _, err := secondcnx.Client.CreatePullRequest(topts.Opts.Organization, topts.TargetRefName,
+	pr, _, err := secondcnx.Client().CreatePullRequest(topts.Opts.Organization, topts.TargetRefName,
 		gitea.CreatePullRequestOption{
 			Base:  topts.DefaultBranch,
 			Head:  fmt.Sprintf("%s:%s", forkrepo.Owner.UserName, topts.TargetRefName),
@@ -244,7 +244,7 @@ func CreateForkPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provi
 }
 
 func PushToPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider, command string) {
-	forkuserinfo, _, err := secondcnx.Client.GetMyUserInfo()
+	forkuserinfo, _, err := secondcnx.Client().GetMyUserInfo()
 	assert.NilError(t, err)
 	cloneURL, err := scm.MakeGitCloneURL(topts.PullRequest.Head.Repository.HTMLURL, forkuserinfo.UserName, secondcnx.Password)
 	assert.NilError(t, err)
@@ -269,7 +269,7 @@ func PushToPullRequest(t *testing.T, topts *TestOpts, secondcnx pgitea.Provider,
 
 func CreateAccess(topts *TestOpts, touser, accessMode string) error {
 	accessmode := gitea.AccessMode(accessMode)
-	_, err := topts.GiteaCNX.Client.AddCollaborator(topts.Opts.Organization, topts.Opts.Repo, touser,
+	_, err := topts.GiteaCNX.Client().AddCollaborator(topts.Opts.Organization, topts.Opts.Repo, touser,
 		gitea.AddCollaboratorOption{
 			Permission: &accessmode,
 		})

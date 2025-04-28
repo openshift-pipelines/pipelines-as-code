@@ -631,8 +631,8 @@ func TestParsePayLoad(t *testing.T) {
 			}
 			logger, _ := logger.GetLogger()
 			gprovider := Provider{
-				Client: ghClient,
-				Logger: logger,
+				ghClient: ghClient,
+				Logger:   logger,
 				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{},
 				},
@@ -815,8 +815,8 @@ func TestAppTokenGeneration(t *testing.T) {
 			jeez, _ := json.Marshal(samplePRevent)
 			logger, _ := logger.GetLogger()
 			gprovider := Provider{
-				Logger: logger,
-				Client: fakeghclient,
+				Logger:   logger,
+				ghClient: fakeghclient,
 				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{},
 				},
@@ -870,7 +870,7 @@ func TestAppTokenGeneration(t *testing.T) {
 			}
 			assert.NilError(t, err)
 			if tt.nilClient {
-				assert.Assert(t, gprovider.Client == nil)
+				assert.Assert(t, gprovider.Client() == nil)
 				return
 			}
 
@@ -892,9 +892,9 @@ func TestAppTokenGeneration(t *testing.T) {
 				assert.Assert(t, found, "Could not find %s in %s", extraIDInt, tt.extraRepoInstallIDs)
 			}
 
-			assert.Assert(t, gprovider.Client != nil)
+			assert.Assert(t, gprovider.Client() != nil)
 			if tt.resultBaseURL != "" {
-				assert.Equal(t, gprovider.Client.BaseURL.String(), tt.resultBaseURL)
+				assert.Equal(t, gprovider.Client().BaseURL.String(), tt.resultBaseURL)
 			}
 		})
 	}

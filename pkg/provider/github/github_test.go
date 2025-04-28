@@ -20,6 +20,7 @@ import (
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/metrics"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -31,6 +32,8 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/metrics/metricstest"
+	_ "knative.dev/pkg/metrics/testing"
 	"knative.dev/pkg/ptr"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
@@ -72,7 +75,7 @@ func TestGetTaskURI(t *testing.T) {
 			ctx, _ := rtesting.SetupFakeContext(t)
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
-			provider := &Provider{Client: fakeclient}
+			provider := &Provider{ghClient: fakeclient}
 			event := info.NewEvent()
 			event.HeadBranch = "main"
 			event.URL = tt.eventURL
@@ -232,6 +235,7 @@ func TestGetTektonDir(t *testing.T) {
 		provenance           string
 		filterMessageSnippet string
 		wantErr              string
+		expectedGHApiCalls   int64
 	}{
 		{
 			name: "test no subtree",
@@ -243,6 +247,10 @@ func TestGetTektonDir(t *testing.T) {
 			expectedString:       "PipelineRun",
 			treepath:             "testdata/tree/simple",
 			filterMessageSnippet: "Using PipelineRun definition from source pull request tekton/cat#0",
+			// 1. Get Repo root objects
+			// 2. Get Tekton Dir objects
+			// 3/4. Get object content for each object (pipelinerun.yaml, pipeline.yaml)
+			expectedGHApiCalls: 4,
 		},
 		{
 			name: "test provenance default_branch ",
@@ -255,6 +263,10 @@ func TestGetTektonDir(t *testing.T) {
 			treepath:             "testdata/tree/defaultbranch",
 			provenance:           "default_branch",
 			filterMessageSnippet: "Using PipelineRun definition from default_branch: main",
+			// 1. Get Repo root objects
+			// 2. Get Tekton Dir objects
+			// 3/4. Get object content for each object (pipelinerun.yaml, pipeline.yaml)
+			expectedGHApiCalls: 4,
 		},
 		{
 			name: "test with subtree",
@@ -265,6 +277,10 @@ func TestGetTektonDir(t *testing.T) {
 			},
 			expectedString: "FROMSUBTREE",
 			treepath:       "testdata/tree/subdir",
+			// 1. Get Repo root objects
+			// 2. Get Tekton Dir objects
+			// 3-5. Get object content for each object (foo/bar/pipeline.yaml)
+			expectedGHApiCalls: 3,
 		},
 		{
 			name: "test with badly formatted yaml",
@@ -276,19 +292,64 @@ func TestGetTektonDir(t *testing.T) {
 			expectedString: "FROMSUBTREE",
 			treepath:       "testdata/tree/badyaml",
 			wantErr:        "error unmarshalling yaml file badyaml.yaml: yaml: line 2: did not find expected key",
+			// 1. Get Repo root objects
+			// 2. Get Tekton Dir objects
+			// 3. Get object content for object (badyaml.yaml)
+			expectedGHApiCalls: 3,
+		},
+		{
+			name: "test no tekton directory",
+			event: &info.Event{
+				Organization: "tekton",
+				Repository:   "cat",
+				SHA:          "123",
+			},
+			expectedString:       "",
+			treepath:             "testdata/tree/notektondir",
+			filterMessageSnippet: "Using PipelineRun definition from source pull request tekton/cat#0",
+			// 1. Get Repo root objects
+			// _. No tekton dir to fetch
+			expectedGHApiCalls: 1,
+		},
+		{
+			name: "test tekton directory path is file",
+			event: &info.Event{
+				Organization: "tekton",
+				Repository:   "cat",
+				SHA:          "123",
+			},
+			treepath: "testdata/tree/tektondirisfile",
+			wantErr:  ".tekton has been found but is not a directory",
+			// 1. Get Repo root objects
+			// _. Tekton dir is file, no directory to fetch
+			expectedGHApiCalls: 1,
 		},
 	}
 	for _, tt := range testGetTektonDir {
 		t.Run(tt.name, func(t *testing.T) {
+			resetMetrics()
 			observer, exporter := zapobserver.New(zap.InfoLevel)
 			fakelogger := zap.New(observer).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			gvcs := Provider{
-				Client: fakeclient,
-				Logger: fakelogger,
+				ghClient:     fakeclient,
+				providerName: "github",
+				Logger:       fakelogger,
 			}
+
+			defer func() {
+				if !t.Failed() {
+					metricstest.CheckCountData(
+						t,
+						"pipelines_as_code_git_provider_api_request_count",
+						map[string]string{"provider": "github"},
+						tt.expectedGHApiCalls,
+					)
+				}
+			}()
+
 			if tt.provenance == "default_branch" {
 				tt.event.SHA = tt.event.DefaultBranch
 			} else {
@@ -304,7 +365,15 @@ func TestGetTektonDir(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
-			assert.Assert(t, strings.Contains(got, tt.expectedString), "expected %s, got %s", tt.expectedString, got)
+
+			var gotMatch bool
+			if tt.expectedString == "" {
+				gotMatch = got == tt.expectedString
+			} else {
+				gotMatch = strings.Contains(got, tt.expectedString)
+			}
+
+			assert.Assert(t, gotMatch, "expected %s, got %s", tt.expectedString, got)
 			if tt.filterMessageSnippet != "" {
 				gotcha := exporter.FilterMessageSnippet(tt.filterMessageSnippet)
 				assert.Assert(t, gotcha.Len() > 0, "expected to find %s in logs, found %v", tt.filterMessageSnippet, exporter.All())
@@ -374,7 +443,7 @@ func TestGetFileInsideRepo(t *testing.T) {
 			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
 			defer teardown()
 			gvcs := Provider{
-				Client: fakeclient,
+				ghClient: fakeclient,
 			}
 			for s, f := range tt.rets {
 				mux.HandleFunc(s, f)
@@ -438,7 +507,7 @@ func TestCheckSenderOrgMembership(t *testing.T) {
 			defer teardown()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gprovider := Provider{
-				Client: fakeclient,
+				ghClient: fakeclient,
 			}
 			mux.HandleFunc(fmt.Sprintf("/orgs/%s/members", tt.runevent.Organization), func(rw http.ResponseWriter, _ *http.Request) {
 				fmt.Fprint(rw, tt.apiReturn)
@@ -483,7 +552,7 @@ func TestGetStringPullRequestComment(t *testing.T) {
 			defer teardown()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			gprovider := Provider{
-				Client: fakeclient,
+				ghClient: fakeclient,
 			}
 			mux.HandleFunc(fmt.Sprintf("/repos/issues/%s/comments", filepath.Base(tt.runevent.URL)), func(rw http.ResponseWriter, _ *http.Request) {
 				fmt.Fprint(rw, tt.apiReturn)
@@ -551,7 +620,7 @@ func TestGithubGetCommitInfo(t *testing.T) {
 				fmt.Fprintf(rw, `{"html_url": "%s", "message": "%s"}`, tt.shaurl, tt.shatitle)
 			})
 			ctx, _ := rtesting.SetupFakeContext(t)
-			provider := &Provider{Client: fakeclient}
+			provider := &Provider{ghClient: fakeclient}
 			if tt.noclient {
 				provider = &Provider{}
 			}
@@ -596,11 +665,11 @@ func TestGithubSetClient(t *testing.T) {
 			err := v.SetClient(ctx, nil, tt.event, nil, nil)
 			assert.NilError(t, err)
 			assert.Equal(t, tt.expectedURL, *v.APIURL)
-			assert.Equal(t, "https", v.Client.BaseURL.Scheme)
+			assert.Equal(t, "https", v.Client().BaseURL.Scheme)
 			if tt.isGHE {
-				assert.Equal(t, "/api/v3/", v.Client.BaseURL.Path)
+				assert.Equal(t, "/api/v3/", v.Client().BaseURL.Path)
 			} else {
-				assert.Equal(t, "/", v.Client.BaseURL.Path)
+				assert.Equal(t, "/", v.Client().BaseURL.Path)
 			}
 		})
 	}
@@ -801,7 +870,7 @@ func TestGetFiles(t *testing.T) {
 
 			ctx, _ := rtesting.SetupFakeContext(t)
 			provider := &Provider{
-				Client:        fakeclient,
+				ghClient:      fakeclient,
 				PaginedNumber: 1,
 			}
 			changedFiles, err := provider.GetFiles(ctx, tt.event)
@@ -908,8 +977,8 @@ func TestProvider_checkWebhookSecretValidity(t *testing.T) {
 			}
 			defer teardown()
 			v := &Provider{
-				Client: fakeclient,
-				Logger: logger,
+				ghClient: fakeclient,
+				Logger:   logger,
 			}
 			err := v.checkWebhookSecretValidity(ctx, cw)
 			if tt.wantSubErr != "" {
@@ -983,7 +1052,7 @@ func TestListRepos(t *testing.T) {
 	})
 
 	ctx, _ := rtesting.SetupFakeContext(t)
-	provider := &Provider{Client: fakeclient, PaginedNumber: 1}
+	provider := &Provider{ghClient: fakeclient, PaginedNumber: 1}
 	data, err := ListRepos(ctx, provider)
 	assert.NilError(t, err)
 	assert.Equal(t, data[0], "https://matched/by/incoming")
@@ -1078,7 +1147,7 @@ func TestCreateToken(t *testing.T) {
 		})
 	}
 
-	provider := &Provider{Client: fakeclient}
+	provider := &Provider{ghClient: fakeclient}
 	provider.Run = run
 	_, err := provider.CreateToken(ctx, urlData, info)
 	assert.Assert(t, len(provider.RepositoryIDs) == 2, "found repositoryIDs are %d which is less than expected", len(provider.RepositoryIDs))
@@ -1124,9 +1193,21 @@ func TestIsHeadCommitOfBranch(t *testing.T) {
 			})
 
 			ctx, _ := rtesting.SetupFakeContext(t)
-			provider := &Provider{Client: fakeclient}
+			provider := &Provider{ghClient: fakeclient}
 			err := provider.isHeadCommitOfBranch(ctx, runEvent, "test1")
 			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}
+}
+
+func resetMetrics() {
+	metricstest.Unregister(
+		"pipelines_as_code_pipelinerun_count",
+		"pipelines_as_code_pipelinerun_duration_seconds_sum",
+		"pipelines_as_code_running_pipelineruns_count",
+		"pipelines_as_code_git_provider_api_request_count",
+	)
+
+	// have to reset sync.Once to allow recreation of Recorder.
+	metrics.ResetRecorder()
 }

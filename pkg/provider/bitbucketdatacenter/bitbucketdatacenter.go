@@ -20,6 +20,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
+	providerMetrics "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/metrics"
 	"go.uber.org/zap"
 )
 
@@ -30,8 +31,8 @@ const apiResponseLimit = 100
 var _ provider.Interface = (*Provider)(nil)
 
 type Provider struct {
-	Client                    *bbv1.APIClient // temporarily keeping it after the refactor finishes, will be removed
-	ScmClient                 *scm.Client
+	bbClient                  *bbv1.APIClient // temporarily keeping it after the refactor finishes, will be removed
+	scmClient                 *scm.Client
 	Logger                    *zap.SugaredLogger
 	run                       *params.Run
 	pacInfo                   *info.PacOpts
@@ -41,6 +42,36 @@ type Provider struct {
 	apiURL                    string
 	provenance                string
 	projectKey                string
+	repo                      *v1alpha1.Repository
+	triggerEvent              string
+}
+
+func (v *Provider) Client() *bbv1.APIClient {
+	providerMetrics.RecordAPIUsage(
+		v.Logger,
+		"bitbucketcloud",
+		v.triggerEvent,
+		v.repo,
+	)
+	return v.bbClient
+}
+
+func (v *Provider) SetBitBucketClient(client *bbv1.APIClient) {
+	v.bbClient = client
+}
+
+func (v Provider) ScmClient() *scm.Client {
+	providerMetrics.RecordAPIUsage(
+		v.Logger,
+		"bitbucketcloud",
+		v.triggerEvent,
+		v.repo,
+	)
+	return v.scmClient
+}
+
+func (v *Provider) SetScmClient(client *scm.Client) {
+	v.scmClient = client
 }
 
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
@@ -98,7 +129,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 	if statusOpts.DetailsURL != "" {
 		detailsURL = statusOpts.DetailsURL
 	}
-	if v.ScmClient == nil {
+	if v.scmClient == nil {
 		return fmt.Errorf("no token has been set, cannot set status")
 	}
 
@@ -118,7 +149,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 		Desc:  statusOpts.Title,
 		Link:  detailsURL,
 	}
-	_, _, err := v.ScmClient.Repositories.CreateStatus(ctx, OrgAndRepo, event.SHA, opts)
+	_, _, err := v.ScmClient().Repositories.CreateStatus(ctx, OrgAndRepo, event.SHA, opts)
 	if err != nil {
 		return err
 	}
@@ -134,7 +165,7 @@ func (v *Provider) CreateStatus(ctx context.Context, event *info.Event, statusOp
 		input := &scm.CommentInput{
 			Body: bbComment,
 		}
-		_, _, err := v.ScmClient.PullRequests.CreateComment(ctx, OrgAndRepo, event.PullRequestNumber, input)
+		_, _, err := v.ScmClient().PullRequests.CreateComment(ctx, OrgAndRepo, event.PullRequestNumber, input)
 		if err != nil {
 			return err
 		}
@@ -184,7 +215,7 @@ func (v *Provider) concatAllYamlFiles(ctx context.Context, objects []string, sha
 
 func (v *Provider) getRaw(ctx context.Context, runevent *info.Event, revision, path string) (string, error) {
 	repo := fmt.Sprintf("%s/%s", runevent.Organization, runevent.Repository)
-	content, _, err := v.ScmClient.Contents.Find(ctx, repo, path, revision)
+	content, _, err := v.ScmClient().Contents.Find(ctx, repo, path, revision)
 	if err != nil {
 		return "", fmt.Errorf("cannot find %s inside the %s repository: %w", path, runevent.Repository, err)
 	}
@@ -205,7 +236,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path, pr
 	var fileEntries []*scm.FileEntry
 	opts := &scm.ListOptions{Page: 1, Size: apiResponseLimit}
 	for {
-		entries, _, err := v.ScmClient.Contents.List(ctx, orgAndRepo, path, at, opts)
+		entries, _, err := v.ScmClient().Contents.List(ctx, orgAndRepo, path, at, opts)
 		if err != nil {
 			return "", fmt.Errorf("cannot list content of %s directory: %w", path, err)
 		}
@@ -256,7 +287,7 @@ func removeLastSegment(urlStr string) string {
 	return u.String()
 }
 
-func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, _ *v1alpha1.Repository, _ *events.EventEmitter) error {
+func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.Event, repo *v1alpha1.Repository, _ *events.EventEmitter) error {
 	if event.Provider.User == "" {
 		return fmt.Errorf("no spec.git_provider.user has been set in the repo crd")
 	}
@@ -280,11 +311,11 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 
 	ctx = context.WithValue(ctx, bbv1.ContextBasicAuth, basicAuth)
 	cfg := bbv1.NewConfiguration(event.Provider.URL)
-	if v.Client == nil {
-		v.Client = bbv1.NewAPIClient(ctx, cfg)
+	if v.bbClient == nil {
+		v.bbClient = bbv1.NewAPIClient(ctx, cfg)
 	}
 
-	if v.ScmClient == nil {
+	if v.scmClient == nil {
 		client, err := stash.New(removeLastSegment(event.Provider.URL)) // remove `/rest` from url
 		if err != nil {
 			return err
@@ -298,10 +329,12 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 				),
 			},
 		}
-		v.ScmClient = client
+		v.scmClient = client
 	}
 	v.run = run
-	_, resp, err := v.ScmClient.Users.FindLogin(ctx, event.Provider.User)
+	v.repo = repo
+	v.triggerEvent = event.EventType
+	_, resp, err := v.ScmClient().Users.FindLogin(ctx, event.Provider.User)
 	if resp != nil && resp.Status == http.StatusUnauthorized {
 		return fmt.Errorf("cannot get user %s with token: %w", event.Provider.User, err)
 	}
@@ -314,14 +347,14 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 
 func (v *Provider) GetCommitInfo(_ context.Context, event *info.Event) error {
 	OrgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
-	commit, _, err := v.ScmClient.Git.FindCommit(context.Background(), OrgAndRepo, event.SHA)
+	commit, _, err := v.ScmClient().Git.FindCommit(context.Background(), OrgAndRepo, event.SHA)
 	if err != nil {
 		return err
 	}
 	event.SHATitle = sanitizeTitle(commit.Message)
 	event.SHAURL = fmt.Sprintf("%s/projects/%s/repos/%s/commits/%s", v.baseURL, v.projectKey, event.Repository, event.SHA)
 
-	ref, _, err := v.ScmClient.Git.GetDefaultBranch(context.Background(), OrgAndRepo)
+	ref, _, err := v.ScmClient().Git.GetDefaultBranch(context.Background(), OrgAndRepo)
 	if err != nil {
 		return err
 	}
@@ -344,7 +377,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 		opts := &scm.ListOptions{Page: 1, Size: apiResponseLimit}
 		changedFiles := changedfiles.ChangedFiles{}
 		for {
-			changes, _, err := v.ScmClient.PullRequests.ListChanges(ctx, OrgAndRepo, runevent.PullRequestNumber, opts)
+			changes, _, err := v.ScmClient().PullRequests.ListChanges(ctx, OrgAndRepo, runevent.PullRequestNumber, opts)
 			if err != nil {
 				return changedfiles.ChangedFiles{}, fmt.Errorf("failed to list changes for pull request: %w", err)
 			}
@@ -382,7 +415,7 @@ func (v *Provider) GetFiles(ctx context.Context, runevent *info.Event) (changedf
 		opts := &scm.ListOptions{Page: 1, Size: apiResponseLimit}
 		changedFiles := changedfiles.ChangedFiles{}
 		for {
-			changes, _, err := v.ScmClient.Git.ListChanges(ctx, OrgAndRepo, runevent.SHA, opts)
+			changes, _, err := v.ScmClient().Git.ListChanges(ctx, OrgAndRepo, runevent.SHA, opts)
 			if err != nil {
 				return changedfiles.ChangedFiles{}, fmt.Errorf("failed to list changes for commit %s: %w", runevent.SHA, err)
 			}

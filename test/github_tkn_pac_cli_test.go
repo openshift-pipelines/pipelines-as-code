@@ -53,7 +53,7 @@ spec:
 `, targetNS, options.MainBranch, triggertype.PullRequest.String()),
 	}
 
-	repoinfo, resp, err := ghprovider.Client.Repositories.Get(ctx, opts.Organization, opts.Repo)
+	repoinfo, resp, err := ghprovider.Client().Repositories.Get(ctx, opts.Organization, opts.Repo)
 	assert.NilError(t, err)
 	if resp != nil && resp.StatusCode == http.StatusNotFound {
 		t.Errorf("Repository %s not found in %s", opts.Organization, opts.Repo)
@@ -85,7 +85,7 @@ spec:
 	targetRefName := fmt.Sprintf("refs/heads/%s",
 		names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test"))
 
-	sha, vref, err := tgithub.PushFilesToRef(ctx, ghprovider.Client, "TestPacCli - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
+	sha, vref, err := tgithub.PushFilesToRef(ctx, ghprovider.Client(), "TestPacCli - "+targetRefName, repoinfo.GetDefaultBranch(), targetRefName, opts.Organization, opts.Repo, entries)
 	assert.NilError(t, err)
 	runcnx.Clients.Log.Infof("Commit %s has been created and pushed to %s", sha, vref.GetURL())
 

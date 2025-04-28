@@ -27,7 +27,7 @@ func TestGithubMaxKeepRuns(t *testing.T) {
 	defer g.TearDown(ctx, t)
 
 	g.Cnx.Clients.Log.Infof("Creating /retest in PullRequest")
-	_, _, err := g.Provider.Client.Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
+	_, _, err := g.Provider.Client().Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
 		&ghlib.IssueComment{Body: ghlib.Ptr("/retest")})
 	assert.NilError(t, err)
 

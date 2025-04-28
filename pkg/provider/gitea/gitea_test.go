@@ -139,8 +139,8 @@ func TestProvider_CreateStatus(t *testing.T) {
 			defer teardown()
 			run := params.New()
 			p := &Provider{
-				Client: fakeclient, // Set this to a valid client for the tests where wantErr is false
-				run:    run,
+				giteaClient: fakeclient, // Set this to a valid client for the tests where wantErr is false
+				run:         run,
 				pacInfo: &info.PacOpts{
 					Settings: settings.Settings{
 						ApplicationName: settings.PACApplicationNameDefaultValue,
@@ -247,9 +247,9 @@ func TestProvider_GetFiles(t *testing.T) {
 				Settings: &v1alpha1.Settings{},
 			}}
 			gprovider := Provider{
-				Client: fakeclient,
-				repo:   repo,
-				Logger: logger,
+				giteaClient: fakeclient,
+				repo:        repo,
+				Logger:      logger,
 			}
 
 			got, err := gprovider.GetFiles(ctx, tt.args.runevent)
@@ -464,7 +464,7 @@ func TestProvider_CreateStatusCommit(t *testing.T) {
 			})
 
 			v := &Provider{
-				Client: fakeclient,
+				giteaClient: fakeclient,
 			}
 
 			if err := v.createStatusCommit(tt.args.event, tt.args.pacopts, tt.args.status); (err != nil) != tt.wantErr {
@@ -503,8 +503,8 @@ func TestGetTektonDir(t *testing.T) {
 			fakeclient, mux, teardown := tgitea.Setup(t)
 			defer teardown()
 			gvcs := Provider{
-				Client: fakeclient,
-				Logger: fakelogger,
+				giteaClient: fakeclient,
+				Logger:      fakelogger,
 			}
 			if tt.provenance == "default_branch" {
 				tt.event.SHA = tt.event.DefaultBranch

@@ -215,8 +215,8 @@ func TestIsAllowed(t *testing.T) {
 
 			v := &Provider{
 				baseURL:                   tURL,
-				Client:                    bbclient,
-				ScmClient:                 scmClient,
+				bbClient:                  bbclient,
+				scmClient:                 scmClient,
 				defaultBranchLatestCommit: tt.fields.defaultBranchLatestCommit,
 				pullRequestNumber:         tt.fields.pullRequestNumber,
 				projectKey:                tt.event.Organization,
