@@ -612,8 +612,15 @@ func TestParsePayload(t *testing.T) {
 		{
 			name:         "good/push",
 			eventType:    "repo:refs_changed",
-			payloadEvent: bbv1test.MakePushEvent(ev1),
+			payloadEvent: bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{{ToHash: ev1.SHA, RefID: "base"}}),
 			expEvent:     ev1,
+		},
+		{
+			name:          "bad/changes are empty in push",
+			eventType:     "repo:refs_changed",
+			payloadEvent:  bbv1test.MakePushEvent(ev1, []types.PushRequestEventChange{}),
+			expEvent:      ev1,
+			wantErrSubstr: "push event contains no commits under 'changes'; cannot proceed",
 		},
 		{
 			name:         "good/comment ok-to-test",
