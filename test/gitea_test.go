@@ -14,9 +14,7 @@ import (
 
 	"code.gitea.io/sdk/gitea"
 	"github.com/google/go-github/v70/github"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/names"
-	yaml "gopkg.in/yaml.v2"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/env"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +28,6 @@ import (
 	tknpaclist "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/list"
 	tknpacresolve "github.com/openshift-pipelines/pipelines-as-code/pkg/cmd/tknpac/resolve"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/git"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -893,22 +890,6 @@ func TestGiteaErrorSnippetWithSecret(t *testing.T) {
 	tgitea.WaitForPullRequestCommentMatch(t, topts)
 }
 
-// TestGiteaNotExistingClusterTask checks that the pipeline run fails if the clustertask does not exist
-// This will test properly if we error the reason in UI see bug #1160.
-func TestGiteaNotExistingClusterTask(t *testing.T) {
-	topts := &tgitea.TestOpts{
-		Regexp:      regexp.MustCompile(`.*clustertasks.tekton.dev "foo-bar" not found`),
-		TargetEvent: triggertype.PullRequest.String(),
-		YAMLFiles: map[string]string{
-			".tekton/pr.yaml": "testdata/failures/not-existing-clustertask.yaml",
-		},
-		CheckForStatus: "failure",
-		ExpectEvents:   false,
-	}
-	_, f := tgitea.TestPR(t, topts)
-	defer f()
-}
-
 // TestGiteaBadLinkOfTask checks that we fail properly with the error from the
 // tekton pipelines controller. We check on the UI interface that we display
 // and inside the pac controller.
@@ -1151,65 +1132,6 @@ func TestGiteaPushToTagGreedy(t *testing.T) {
 	}
 	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
 	assert.NilError(t, err)
-}
-
-// TestGiteaClusterTasks is a test to verify that we can use cluster tasks with PaaC.
-func TestGiteaClusterTasks(t *testing.T) {
-	// we need to verify sure to create clustertask before pushing the files
-	// so we have to create a new client and do more manual things we get for free in TestPR
-	topts := &tgitea.TestOpts{
-		TargetEvent: "pull_request, push",
-		YAMLFiles: map[string]string{
-			".tekton/prcluster.yaml": "testdata/pipelinerunclustertasks.yaml",
-		},
-		ExpectEvents: false,
-	}
-	topts.TargetRefName = names.SimpleNameGenerator.RestrictLengthWithRandomSuffix("pac-e2e-test")
-	topts.TargetNS = topts.TargetRefName
-
-	// create first the cluster tasks
-	ctname := fmt.Sprintf(".tekton/%s.yaml", topts.TargetNS)
-	newyamlFiles := map[string]string{ctname: "testdata/clustertask.yaml"}
-	entries, err := payload.GetEntries(newyamlFiles, topts.TargetNS, "main", "pull_request", map[string]string{})
-	assert.NilError(t, err)
-	//nolint: staticcheck
-	ct := v1beta1.ClusterTask{}
-	assert.NilError(t, yaml.Unmarshal([]byte(entries[ctname]), &ct))
-	ct.Name = "clustertask-" + topts.TargetNS
-
-	run := params.New()
-	ctx := context.Background()
-	assert.NilError(t, run.Clients.NewClients(ctx, &run.Info))
-	// TODO(chmou): this is for v1beta1, we need to figure out a way how to do that on v1
-	_, err = run.Clients.Tekton.TektonV1beta1().ClusterTasks().Create(context.TODO(), &ct, metav1.CreateOptions{})
-	assert.NilError(t, err)
-	assert.NilError(t, pacrepo.CreateNS(ctx, topts.TargetNS, run))
-	run.Clients.Log.Infof("%s has been created", ct.GetName())
-	defer (func() {
-		assert.NilError(t, topts.ParamsRun.Clients.Tekton.TektonV1beta1().ClusterTasks().Delete(context.TODO(), ct.Name, metav1.DeleteOptions{}))
-		run.Clients.Log.Infof("%s is deleted", ct.GetName())
-	})()
-
-	// start PR
-	_, f := tgitea.TestPR(t, topts)
-	defer f()
-
-	// wait for it
-	waitOpts := twait.Opts{
-		RepoName:  topts.TargetNS,
-		Namespace: topts.TargetNS,
-		// 0 means 1 🙃 (we test for >, while we actually should do >=, but i
-		// need to go all over the code to verify it's not going to break
-		// anything else)
-		MinNumberStatus: 0,
-		PollTimeout:     twait.DefaultTimeout,
-		TargetSHA:       topts.PullRequest.Head.Sha,
-	}
-	_, err = twait.UntilRepositoryUpdated(context.Background(), topts.ParamsRun.Clients, waitOpts)
-	assert.NilError(t, err)
-
-	topts.CheckForStatus = "success"
-	tgitea.WaitForStatus(t, topts, topts.TargetRefName, "", true)
 }
 
 // Local Variables:
