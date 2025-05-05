@@ -171,7 +171,7 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	return processedEvent, nil
 }
 
-func (v *Provider) initGitlabClient(ctx context.Context, event *info.Event) (*info.Event, error) {
+func (v *Provider) initGitLabClient(ctx context.Context, event *info.Event) (*info.Event, error) {
 	// This is to ensure the base URL of the client is not reinitialized during tests.
 	if v.gitlabClient != nil {
 		return event, nil
@@ -284,7 +284,7 @@ func (v *Provider) handleCommitCommentEvent(ctx context.Context, event *gitlab.C
 
 	// since we're going to make an API call to ensure that the commit is HEAD of the branch
 	// therefore we need to initialize GitLab client here
-	processedEvent, err = v.initGitlabClient(ctx, processedEvent)
+	processedEvent, err = v.initGitLabClient(ctx, processedEvent)
 	if err != nil {
 		return processedEvent, err
 	}

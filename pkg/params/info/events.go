@@ -20,7 +20,7 @@ type Event struct {
 	// Full request
 	Request *Request
 
-	// TriggerTarget stable field across providers, ie: on Gitlab, Github and
+	// TriggerTarget stable field across providers, ie: on GitLab, Github and
 	// others it would be always be pull_request we can rely on to know if it's
 	// a push or a pull_request
 	TriggerTarget triggertype.Trigger
@@ -60,7 +60,7 @@ type Event struct {
 	CloneURL string // bitbucket data center has a different url for cloning the repo than normal public html url
 	Provider *Provider
 
-	// Gitlab
+	// GitLab
 	SourceProjectID int
 	TargetProjectID int
 }

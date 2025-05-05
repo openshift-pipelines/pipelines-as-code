@@ -9,13 +9,14 @@ action:
   name: replace
 swap:
   "(?<!, | in | on | at | to | for | from | of | with | without | against )which": "that|, which"
-  ", that": "that|, which"
   "(?<!.-)jar": compress|archive
+  ", that": "that|, which"
   "[Nn]avigate": click|select|browse|go to
   "bottom(?:-)?left": lower left|lower-left
   "bottom(?:-)?right": lower right|lower-right
   "shell(?! prompt| script)": shell prompt
   "x64|x86-64|(?<!64-bit )x86": 64-bit x86|x86_64
+  '(?<!-)\bk8s\b(?!-)': Kubernetes
   '(?<!.*-|program )operator': Operator
   '(?<!.*-|program )operators': Operators
   '(?<![\.\-])(?:zip|gzip|tar)(?! file| archive)': compress
@@ -42,8 +43,8 @@ swap:
   information on: information about
   launch: start|open
   legacy: existing|traditional|established|classic|earlier|previous
-  once: after|when
   on-premise: on-site|in-house
+  once: after|when
   refer to: see
   segfault: segmentation fault
   spawn: create
