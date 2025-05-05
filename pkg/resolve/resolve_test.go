@@ -120,13 +120,6 @@ func TestPipelineResolverSkipped(t *testing.T) {
 	assert.Equal(t, resolved.Spec.PipelineRef.Params[0].Value.StringVal, "task")
 }
 
-func TestClusterTasksSkipped(t *testing.T) {
-	resolved, _, err := readTDfile(t, "pipelinerun-with-a-clustertasks", false, true)
-	assert.NilError(t, err)
-	assert.Equal(t, resolved.Spec.PipelineSpec.Tasks[0].Name, "clustertask")
-	assert.Equal(t, string(resolved.Spec.PipelineSpec.Tasks[0].TaskRef.Kind), "ClusterTask")
-}
-
 func TestCustomTasksSkipped(t *testing.T) {
 	resolved, _, err := readTDfile(t, "pipelinerun-with-a-customtask", false, true)
 	assert.NilError(t, err)

@@ -1,7 +1,6 @@
 package generate
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,7 +15,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var eventTypes = map[string]string{triggertype.PullRequest.String(): "Pull Request", "push": "Push to a Branch or a Tag"}
@@ -51,7 +49,7 @@ func MakeOpts() *Opts {
 	}
 }
 
-func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
+func Command(_ *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 	gopt := MakeOpts()
 	gopt.IOStreams = ioStreams
 	cmd := &cobra.Command{
@@ -59,26 +57,11 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		Aliases: []string{"gen"},
 		Short:   "Generate PipelineRun",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			ctx := context.Background()
 			gopt.CLIOpts = cli.NewCliOptions()
 			gopt.IOStreams.SetColorEnabled(!gopt.CLIOpts.NoColoring)
 
 			if gopt.generateWithClusterTask {
-				if err := run.Clients.NewClients(ctx, &run.Info); err != nil {
-					// if we don't have access to the cluster we can't do much about it
-					gopt.generateWithClusterTask = false
-				} else {
-					// NOTE(chmou): This is for v1beta1, we need to figure out how to do this for v1.
-					// Trying to find resolver with that same name?
-					_, err := run.Clients.Tekton.TektonV1beta1().ClusterTasks().Get(ctx,
-						gitCloneClusterTaskName,
-						metav1.GetOptions{})
-					if err == nil {
-						gopt.generateWithClusterTask = true
-					} else {
-						gopt.generateWithClusterTask = false
-					}
-				}
+				return fmt.Errorf("ClusterTasks is deprecated and not available anymore")
 			}
 			cwd, err := os.Getwd()
 			if err != nil {
@@ -103,8 +86,9 @@ func Command(run *params.Run, ioStreams *cli.IOStreams) *cobra.Command {
 		"Whether to overwrite the file if it exist")
 	cmd.PersistentFlags().StringVarP(&gopt.language, "language", "l", "",
 		"Generate for this programming language")
-	cmd.PersistentFlags().BoolVarP(&gopt.generateWithClusterTask, "use-clustertasks", "", true,
-		"By default we try to use the clustertasks unless not available")
+	cmd.PersistentFlags().BoolVarP(&gopt.generateWithClusterTask, "use-clustertasks", "", false,
+		"Deprecated, not available anymore")
+	_ = cmd.PersistentFlags().MarkDeprecated("use-clustertasks", "This flag will be removed in a future release")
 	return cmd
 }
 
