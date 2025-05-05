@@ -223,7 +223,11 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 	}
 
 	tektonDirSha := ""
-	rootobjects, _, err := v.Client().GetTrees(event.Organization, event.Repository, revision, false)
+	opt := gitea.ListTreeOptions{
+		Ref:       revision,
+		Recursive: false,
+	}
+	rootobjects, _, err := v.Client().GetTrees(event.Organization, event.Repository, opt)
 	if err != nil {
 		return "", err
 	}
@@ -242,7 +246,8 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 	}
 	// Get all files in the .tekton directory recursively
 	// TODO: figure out if there is a object limit we need to handle here
-	tektonDirObjects, _, err := v.Client().GetTrees(event.Organization, event.Repository, tektonDirSha, true)
+	opts := gitea.ListTreeOptions{Recursive: false, Ref: tektonDirSha}
+	tektonDirObjects, _, err := v.Client().GetTrees(event.Organization, event.Repository, opts)
 	if err != nil {
 		return "", err
 	}
