@@ -85,7 +85,7 @@ jobs:
           repo: chmouel/gosmee
 
       - name: Install Snazy
-        uses: jaxxstorm/action-install-gh-release@v2.0.0
+        uses: jaxxstorm/action-install-gh-release@v2.1.0
         with:
           repo: chmouel/snazy
 
