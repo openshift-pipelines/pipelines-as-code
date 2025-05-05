@@ -26,9 +26,17 @@ func TestGithubMaxKeepRuns(t *testing.T) {
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 
-	g.Cnx.Clients.Log.Infof("Creating /retest in PullRequest")
-	_, _, err := g.Provider.Client().Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
-		&ghlib.IssueComment{Body: ghlib.Ptr("/retest")})
+	// Wait for the first pipeline run to be created
+	time.Sleep(5 * time.Second)
+
+	// Get the original PipelineRun name for specific retest
+	pipelineRunName, err := twait.GetOriginalPipelineRunName(ctx, g.Cnx.Clients, g.TargetNamespace, g.SHA)
+	assert.NilError(t, err)
+
+	// Use /retest with specific name to force new PipelineRun creation for max-keep-runs test
+	g.Cnx.Clients.Log.Infof("Creating /retest %s in PullRequest", pipelineRunName)
+	_, _, err = g.Provider.Client().Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
+		&ghlib.IssueComment{Body: ghlib.Ptr("/retest " + pipelineRunName)})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Wait for the second repository update to be updated")

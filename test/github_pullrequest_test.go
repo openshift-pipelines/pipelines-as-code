@@ -323,9 +323,13 @@ func TestGithubSecondCancelInProgress(t *testing.T) {
 	assert.NilError(t, err)
 	time.Sleep(10 * time.Second)
 
-	g.Cnx.Clients.Log.Infof("Creating /retest on PullRequest")
+	// Get the PipelineRun name to retest specifically (since plain /retest won't rerun successful PRs)
+	pipelineRunName, err := twait.GetOriginalPipelineRunName(ctx, g.Cnx.Clients, g.TargetNamespace, g.SHA)
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Creating /retest %s on PullRequest", pipelineRunName)
 	_, _, err = g.Provider.Client().Issues.CreateComment(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.Ptr("/retest")})
+		&github.IssueComment{Body: github.Ptr("/retest " + pipelineRunName)})
 	assert.NilError(t, err)
 
 	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
@@ -526,20 +530,29 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPR(t *testing.T) {
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 
-	_, _, err = g.Provider.Client().Issues.CreateComment(ctx,
-		g.Options.Organization,
-		g.Options.Repo, g.PRNumber,
-		&github.IssueComment{Body: github.Ptr("/retest")})
-	assert.NilError(t, err)
-
-	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
+	// Wait for initial PipelineRun to be created
 	waitOpts := twait.Opts{
 		RepoName:        g.TargetNamespace,
 		Namespace:       g.TargetNamespace,
-		MinNumberStatus: 2,
+		MinNumberStatus: 1,
 		PollTimeout:     twait.DefaultTimeout,
 		TargetSHA:       g.SHA,
 	}
+	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
+	assert.NilError(t, err)
+
+	// Get the PipelineRun name to retest specifically (since plain /retest won't rerun successful PRs)
+	pipelineRunName, err := twait.GetOriginalPipelineRunName(ctx, g.Cnx.Clients, g.TargetNamespace, g.SHA)
+	assert.NilError(t, err)
+
+	_, _, err = g.Provider.Client().Issues.CreateComment(ctx,
+		g.Options.Organization,
+		g.Options.Repo, g.PRNumber,
+		&github.IssueComment{Body: github.Ptr("/retest " + pipelineRunName)})
+	assert.NilError(t, err)
+
+	g.Cnx.Clients.Log.Infof("Waiting for the two pipelinerun to be created")
+	waitOpts.MinNumberStatus = 2 // Now expecting 2 PipelineRuns total
 
 	err = twait.UntilPipelineRunCreated(ctx, g.Cnx.Clients, waitOpts)
 	assert.NilError(t, err)
