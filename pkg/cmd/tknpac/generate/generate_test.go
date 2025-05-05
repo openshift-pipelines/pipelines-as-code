@@ -52,23 +52,6 @@ func TestGenerateTemplate(t *testing.T) {
 			regenerateTemplate: true,
 		},
 		{
-			name: "pull request with clustertasks",
-			askStubs: func(as *prompt.AskStubber) {
-				as.StubOneDefault() // pull_request
-				as.StubOne("")      // default as main
-				as.StubOne(true)    // pipelinerun generation
-			},
-			checkGeneratedFile: ".tekton/pull-request.yaml",
-			checkRegInGeneratedFile: []*regexp.Regexp{
-				regexp.MustCompile("kind: ClusterTask"),
-			},
-			gitinfo: git.Info{
-				URL: "https://hello/moto",
-			},
-			regenerateTemplate: true,
-			useClusterTask:     true,
-		},
-		{
 			name: "pull request already exist don't overwrite",
 			askStubs: func(as *prompt.AskStubber) {
 				as.StubOneDefault() // pull_request
