@@ -257,8 +257,8 @@ func (l listener) detectProvider(req *http.Request, reqBody string) (provider.In
 	}
 
 	gitLab := &gitlab.Provider{}
-	isGitlab, processReq, logger, reason, err := gitLab.Detect(req, reqBody, &log)
-	if isGitlab {
+	isGitLab, processReq, logger, reason, err := gitLab.Detect(req, reqBody, &log)
+	if isGitLab {
 		return l.processRes(processReq, gitLab, logger, reason, err)
 	}
 

@@ -228,7 +228,7 @@ func TestCreateStatus(t *testing.T) {
 
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.SetGitlabClient(client)
+				v.SetGitLabClient(client)
 				defer tearDown()
 				thelp.MuxNotePost(t, mux, v.targetProjectID, tt.args.event.PullRequestNumber, tt.args.postStr)
 			}
@@ -336,7 +336,7 @@ func TestSetClientDetectAPIURL(t *testing.T) {
 			expectedError:  "",
 		},
 		{
-			name:              "Success: Default URL when repoURL is public Gitlab",
+			name:              "Success: Default URL when repoURL is public GitLab",
 			providerToken:     "token",
 			providerURL:       "",
 			repoURL:           apiPublicURL + "/public/repo", // Starts with public URL, so skipped
@@ -553,7 +553,7 @@ func TestGetTektonDir(t *testing.T) {
 			}
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.SetGitlabClient(client)
+				v.SetGitLabClient(client)
 				muxbranch := tt.args.event.HeadBranch
 				if tt.args.provenance == "default_branch" {
 					muxbranch = tt.args.event.DefaultBranch
@@ -895,7 +895,7 @@ func TestIsHeadCommitOfBranch(t *testing.T) {
 			defer teardown()
 			glProvider := &Provider{sourceProjectID: 1}
 			if tt.wantClient {
-				glProvider.SetGitlabClient(fakeclient)
+				glProvider.SetGitLabClient(fakeclient)
 				mux.HandleFunc("/projects/1/repository/branches/cool-branch",
 					func(rw http.ResponseWriter, _ *http.Request) {
 						if tt.errStatusCode != 0 {

@@ -22,15 +22,14 @@ filters:
   - "[bB]indable"
   - "[bB]oolean"
   - "[bB]ootable"
-  - "[bB]reakpoint"
-  - "[bB]reakpoints"
-  - "[cC]he"
+  - "[bB]reakpoint(s)?"
+  - '\b[cC]he\b'
   - "[cC]hrony"
   - "[cC]lassloading"
   - "[cC]lasspath"
   - "[cC]olocate"
   - "[cC]olocation"
-  - "[cC]onfig"
+  - '\b[cC]onfig\b'
   - "[cC]ontainerd"
   - "[cC]orequisite"
   - "[cC]ustomizer"
@@ -42,11 +41,9 @@ filters:
   - "[dD]ecompiler"
   - "[dD]efragmentation"
   - "[dD]eserialization"
-  - "[dD]eserialize"
-  - "[dD]eserialized"
-  - "[dD]esynchronize"
-  - "[dD]esynchronized"
-  - "[dD]ev"
+  - "[dD]eserialize(d)?"
+  - "[dD]esynchronize(d)?"
+  - '\b[dD]ev\b'
   - "[dD]ev[wW]orkspace"
   - "[dD]evfile"
   - "[dD]istro"
@@ -61,7 +58,7 @@ filters:
   - "[fF]indability"
   - "[gG]bps"
   - "[gG]ibibyte"
-  - "[gG]it"
+  - '\b[gG]it\b'
   - "[gG]lock"
   - "[gG]radle"
   - "[gG]rafana"
@@ -75,7 +72,7 @@ filters:
   - "[iI]ntrarecord"
   - "[iI]ntrasystem"
   - "[iI]nvocable"
-  - "[iI]tem"
+  - '\b[iI]tem\b'
   - "[jJ]et[bB]rains"
   - "[jJ]ournald"
   - "[jJ]ournaling"
@@ -143,7 +140,7 @@ filters:
   - "[pP]ostoperation"
   - "[pP]ostrequisite"
   - "[pP]recompile"
-  - "[pP]reconfigured"
+  - "[pP]reconfigure(d)?"
   - "[pP]reenrollment"
   - "[pP]reformatted"
   - "[pP]regenerated"
@@ -197,25 +194,17 @@ filters:
   - "[sS]ervlet"
   - "[sS]etter"
   - "[sS]harding"
-  - "[Ss]u"
-  - "[sS]ubcommand"
-  - "[sS]ubcommands"
-  - "[sS]ubmenu"
-  - "[sS]ubmenus"
-  - "[sS]ubnetwork"
-  - "[sS]ubnetworks"
-  - "[sS]ubpackage"
-  - "[sS]ubpackages"
-  - "[sS]ubpath"
-  - "[sS]ubpaths"
-  - "[sS]ubstep"
-  - "[sS]ubsteps"
-  - "[sS]ubtest"
-  - "[sS]ubtests"
-  - "[sS]ubuser"
-  - "[sS]ubusers"
-  - "[sS]ubvolume"
-  - "[sS]ubvolumes"
+  - '\b[Ss]u\b'
+  - "[sS]ubcommand(s)?"
+  - "[sS]ubmenu(s)?"
+  - "[sS]ubnet(s)?"
+  - "[sS]ubnetwork(s)?"
+  - "[sS]ubpackage(s)?"
+  - "[sS]ubpath(s)?"
+  - "[sS]ubstep(s)?"
+  - "[sS]ubtest(s)?"
+  - "[sS]ubuser(s)?"
+  - "[sS]ubvolume(s)?"
   - "[sS]ysctl"
   - "[sS]yslog"
   - "[sS]ystemd"
@@ -254,6 +243,7 @@ filters:
   - Applixware
   - Asciidoctor
   - AssertJ
+  - autoconfigure
   - autolink
   - aws
   - AWS
@@ -406,6 +396,7 @@ filters:
   - Mirantis
   - Mockito
   - MongoDB
+  - multischema
   - MySQL
   - Nagios
   - Narayana
@@ -443,8 +434,10 @@ filters:
   - Podman
   - PostgreSQL
   - PowerShell
+  - precache
   - Prometheus
   - proxied
+  - PVCs
   - Pytorch
   - qdmanage
   - qdstat
@@ -479,6 +472,10 @@ filters:
   - startx
   - STMicroelectronics
   - Stratis
+  - subaddress
+  - subcapacity
+  - subtab
+  - superobject
   - Suchow
   - SVG
   - Symfony

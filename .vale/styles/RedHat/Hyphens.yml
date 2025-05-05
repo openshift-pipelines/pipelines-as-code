@@ -8,16 +8,18 @@ action:
   name: replace
 # swap maps tokens in the form "bad: good"
 swap:
-  "(?<!.-)addon": add-on
+  '(?<!.-)addon\b': add-on
+  "(?<!.-)addons": add-ons
   "broad cast|broad-cast": broadcast
-  "call out|call-out": callout
+  'call out\b|call-out\b': callout
+  "call outs|call-outs": callouts
   "comma delimited|commadelimited": comma-delimited
   "command driven|commanddriven": command-driven
   "meta-data|meta data": metadata
   "open-source|OpenSource|opensource": open source
   "over-ride|over ride": override
   "plug-ins|plug ins": plugins
-  "plug-in|plug in": plugin
+  'plug-in\b|plug in\b': plugin
   "super-user|super user": superuser
   "timeframe|time-frame": time frame
   "up-grade|up grade": upgrade

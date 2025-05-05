@@ -99,7 +99,7 @@ lint-md: ## runs markdownlint and vale on all markdown files
 	@echo "Linting markdown files..."
 	@markdownlint $(MD_FILES)
 	@echo "Grammar check with vale of documentation..."
-	@vale docs/content *.md --minAlertLevel=error --output=line
+	@vale docs/content --output=line --glob='*.md'
 	@echo "CodeSpell on docs content"
 	@codespell docs/content
 

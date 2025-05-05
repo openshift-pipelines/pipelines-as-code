@@ -66,7 +66,7 @@ func (v *Provider) Client() *gitlab.Client {
 	providerMetrics.RecordAPIUsage(
 		v.Logger,
 		// URL used instead of "gitlab" to differentiate in the case of a CI cluster which
-		// serves multiple Gitlab instances
+		// serves multiple GitLab instances
 		v.apiURL,
 		v.triggerEvent,
 		v.repo,
@@ -74,7 +74,7 @@ func (v *Provider) Client() *gitlab.Client {
 	return v.gitlabClient
 }
 
-func (v *Provider) SetGitlabClient(client *gitlab.Client) {
+func (v *Provider) SetGitLabClient(client *gitlab.Client) {
 	v.gitlabClient = client
 }
 

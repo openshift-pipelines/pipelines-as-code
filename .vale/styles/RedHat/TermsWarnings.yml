@@ -42,6 +42,7 @@ swap:
   execute: run|issue|start|enter
   find out: discover
   hamburger|kebab menu|kebab|vertical ellipsis: more options icon|options icon
+  hashbang: shebang|interpreter directive
   he|she: you
   host name: hostname
   illegal: invalid|not allowed|incorrect
@@ -56,6 +57,8 @@ swap:
   may: might|can
   on-premises|on-prem|on premise: on-premise|on-site|in-house
   opt into|opting into: opt in
+  police: policy
+  polices: policies
   preload: preinstall
   preloaded: preinstalled
   print out: print

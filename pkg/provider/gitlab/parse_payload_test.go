@@ -364,7 +364,7 @@ func TestParsePayload(t *testing.T) {
 			}
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.SetGitlabClient(client)
+				v.SetGitLabClient(client)
 				branchName := "main"
 				if tt.wantBranch != "" {
 					branchName = tt.wantBranch

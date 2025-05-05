@@ -47,7 +47,7 @@ All three deployments should have all pods ready before moving on to ingress set
 You will need a
 [`Ingress`](https://kubernetes.io/docs/concepts/services-networking/ingress/)
 setup to point to make your pipelines-as-code controller available to `Github`,
-`Gitlab` or other `Git` providers.
+`GitLab` or other `Git` providers.
 
 The ingress configuration depends on your Kubernetes provider. See below for
 some examples.
