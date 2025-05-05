@@ -23,29 +23,38 @@ import (
 )
 
 type (
+	// Deprecated: in GitLab 14.5
 	InstanceClustersServiceInterface interface {
+		// Deprecated: in GitLab 14.5
 		ListClusters(options ...RequestOptionFunc) ([]*InstanceCluster, *Response, error)
+		// Deprecated: in GitLab 14.5
 		GetCluster(cluster int, options ...RequestOptionFunc) (*InstanceCluster, *Response, error)
+		// Deprecated: in GitLab 14.5
 		AddCluster(opt *AddClusterOptions, options ...RequestOptionFunc) (*InstanceCluster, *Response, error)
+		// Deprecated: in GitLab 14.5
 		EditCluster(cluster int, opt *EditClusterOptions, options ...RequestOptionFunc) (*InstanceCluster, *Response, error)
+		// Deprecated: in GitLab 14.5
 		DeleteCluster(cluster int, options ...RequestOptionFunc) (*Response, error)
 	}
 
 	// InstanceClustersService handles communication with the
 	// instance clusters related methods of the GitLab API.
+	// Deprecated: in GitLab 14.5
 	//
 	// GitLab API docs:
-	// https://docs.gitlab.com/ee/api/instance_clusters.html
+	// https://docs.gitlab.com/api/instance_clusters/
 	InstanceClustersService struct {
 		client *Client
 	}
 )
 
+// Deprecated: in GitLab 14.5
 var _ InstanceClustersServiceInterface = (*InstanceClustersService)(nil)
 
 // InstanceCluster represents a GitLab Instance Cluster.
+// Deprecated: in GitLab 14.5
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/instance_clusters.html
+// GitLab API docs: https://docs.gitlab.com/api/instance_clusters/
 type InstanceCluster struct {
 	ID                 int                 `json:"id"`
 	Name               string              `json:"name"`
@@ -61,14 +70,16 @@ type InstanceCluster struct {
 	ManagementProject  *ManagementProject  `json:"management_project"`
 }
 
+// Deprecated: in GitLab 14.5
 func (v InstanceCluster) String() string {
 	return Stringify(v)
 }
 
 // ListClusters gets a list of all instance clusters.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/instance_clusters.html#list-instance-clusters
+// https://docs.gitlab.com/api/instance_clusters/#list-instance-clusters
 func (s *InstanceClustersService) ListClusters(options ...RequestOptionFunc) ([]*InstanceCluster, *Response, error) {
 	u := "admin/clusters"
 
@@ -87,9 +98,10 @@ func (s *InstanceClustersService) ListClusters(options ...RequestOptionFunc) ([]
 }
 
 // GetCluster gets an instance cluster.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/instance_clusters.html#get-a-single-instance-cluster
+// https://docs.gitlab.com/api/instance_clusters/#get-a-single-instance-cluster
 func (s *InstanceClustersService) GetCluster(cluster int, options ...RequestOptionFunc) (*InstanceCluster, *Response, error) {
 	u := fmt.Sprintf("admin/clusters/%d", cluster)
 
@@ -108,9 +120,10 @@ func (s *InstanceClustersService) GetCluster(cluster int, options ...RequestOpti
 }
 
 // AddCluster adds an existing cluster to the instance.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/instance_clusters.html#add-existing-instance-cluster
+// https://docs.gitlab.com/api/instance_clusters/#add-existing-instance-cluster
 func (s *InstanceClustersService) AddCluster(opt *AddClusterOptions, options ...RequestOptionFunc) (*InstanceCluster, *Response, error) {
 	u := "admin/clusters/add"
 
@@ -129,9 +142,10 @@ func (s *InstanceClustersService) AddCluster(opt *AddClusterOptions, options ...
 }
 
 // EditCluster updates an existing instance cluster.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/instance_clusters.html#edit-instance-cluster
+// https://docs.gitlab.com/api/instance_clusters/#edit-instance-cluster
 func (s *InstanceClustersService) EditCluster(cluster int, opt *EditClusterOptions, options ...RequestOptionFunc) (*InstanceCluster, *Response, error) {
 	u := fmt.Sprintf("admin/clusters/%d", cluster)
 
@@ -150,9 +164,10 @@ func (s *InstanceClustersService) EditCluster(cluster int, opt *EditClusterOptio
 }
 
 // DeleteCluster deletes an existing instance cluster.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/instance_clusters.html#delete-instance-cluster
+// https://docs.gitlab.com/api/instance_clusters/#delete-instance-cluster
 func (s *InstanceClustersService) DeleteCluster(cluster int, options ...RequestOptionFunc) (*Response, error) {
 	u := fmt.Sprintf("admin/clusters/%d", cluster)
 

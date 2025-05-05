@@ -34,7 +34,7 @@ type (
 	// BroadcastMessagesService handles communication with the broadcast
 	// messages methods of the GitLab API.
 	//
-	// GitLab API docs: https://docs.gitlab.com/ee/api/broadcast_messages.html
+	// GitLab API docs: https://docs.gitlab.com/api/broadcast_messages/
 	BroadcastMessagesService struct {
 		client *Client
 	}
@@ -45,7 +45,7 @@ var _ BroadcastMessagesServiceInterface = (*BroadcastMessagesService)(nil)
 // BroadcastMessage represents a GitLab broadcast message.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/broadcast_messages.html#get-all-broadcast-messages
+// https://docs.gitlab.com/api/broadcast_messages/#get-all-broadcast-messages
 type BroadcastMessage struct {
 	Message            string             `json:"message"`
 	StartsAt           *time.Time         `json:"starts_at"`
@@ -58,22 +58,19 @@ type BroadcastMessage struct {
 	BroadcastType      string             `json:"broadcast_type"`
 	Dismissable        bool               `json:"dismissable"`
 	Theme              string             `json:"theme"`
-
-	// Deprecated: This parameter was removed in GitLab 15.6.
-	Color string `json:"color"`
 }
 
 // ListBroadcastMessagesOptions represents the available ListBroadcastMessages()
 // options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/broadcast_messages.html#get-all-broadcast-messages
+// https://docs.gitlab.com/api/broadcast_messages/#get-all-broadcast-messages
 type ListBroadcastMessagesOptions ListOptions
 
 // ListBroadcastMessages gets a list of all broadcasted messages.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/broadcast_messages.html#get-all-broadcast-messages
+// https://docs.gitlab.com/api/broadcast_messages/#get-all-broadcast-messages
 func (s *BroadcastMessagesService) ListBroadcastMessages(opt *ListBroadcastMessagesOptions, options ...RequestOptionFunc) ([]*BroadcastMessage, *Response, error) {
 	req, err := s.client.NewRequest(http.MethodGet, "broadcast_messages", opt, options)
 	if err != nil {
@@ -92,7 +89,7 @@ func (s *BroadcastMessagesService) ListBroadcastMessages(opt *ListBroadcastMessa
 // GetBroadcastMessage gets a single broadcast message.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/broadcast_messages.html#get-a-specific-broadcast-message
+// https://docs.gitlab.com/api/broadcast_messages/#get-a-specific-broadcast-message
 func (s *BroadcastMessagesService) GetBroadcastMessage(broadcast int, options ...RequestOptionFunc) (*BroadcastMessage, *Response, error) {
 	u := fmt.Sprintf("broadcast_messages/%d", broadcast)
 
@@ -114,7 +111,7 @@ func (s *BroadcastMessagesService) GetBroadcastMessage(broadcast int, options ..
 // options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/broadcast_messages.html#create-a-broadcast-message
+// https://docs.gitlab.com/api/broadcast_messages/#create-a-broadcast-message
 type CreateBroadcastMessageOptions struct {
 	Message            *string            `url:"message" json:"message"`
 	StartsAt           *time.Time         `url:"starts_at,omitempty" json:"starts_at,omitempty"`
@@ -125,15 +122,12 @@ type CreateBroadcastMessageOptions struct {
 	BroadcastType      *string            `url:"broadcast_type,omitempty" json:"broadcast_type,omitempty"`
 	Dismissable        *bool              `url:"dismissable,omitempty" json:"dismissable,omitempty"`
 	Theme              *string            `url:"theme,omitempty" json:"theme,omitempty"`
-
-	// Deprecated: This parameter was removed in GitLab 15.6.
-	Color *string `url:"color,omitempty" json:"color,omitempty"`
 }
 
 // CreateBroadcastMessage creates a message to broadcast.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/broadcast_messages.html#create-a-broadcast-message
+// https://docs.gitlab.com/api/broadcast_messages/#create-a-broadcast-message
 func (s *BroadcastMessagesService) CreateBroadcastMessage(opt *CreateBroadcastMessageOptions, options ...RequestOptionFunc) (*BroadcastMessage, *Response, error) {
 	req, err := s.client.NewRequest(http.MethodPost, "broadcast_messages", opt, options)
 	if err != nil {
@@ -153,7 +147,7 @@ func (s *BroadcastMessagesService) CreateBroadcastMessage(opt *CreateBroadcastMe
 // options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/broadcast_messages.html#update-a-broadcast-message
+// https://docs.gitlab.com/api/broadcast_messages/#update-a-broadcast-message
 type UpdateBroadcastMessageOptions struct {
 	Message            *string            `url:"message,omitempty" json:"message,omitempty"`
 	StartsAt           *time.Time         `url:"starts_at,omitempty" json:"starts_at,omitempty"`
@@ -164,15 +158,12 @@ type UpdateBroadcastMessageOptions struct {
 	BroadcastType      *string            `url:"broadcast_type,omitempty" json:"broadcast_type,omitempty"`
 	Dismissable        *bool              `url:"dismissable,omitempty" json:"dismissable,omitempty"`
 	Theme              *string            `url:"theme,omitempty" json:"theme,omitempty"`
-
-	// Deprecated: This parameter was removed in GitLab 15.6.
-	Color *string `url:"color,omitempty" json:"color,omitempty"`
 }
 
 // UpdateBroadcastMessage update a broadcasted message.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/broadcast_messages.html#update-a-broadcast-message
+// https://docs.gitlab.com/api/broadcast_messages/#update-a-broadcast-message
 func (s *BroadcastMessagesService) UpdateBroadcastMessage(broadcast int, opt *UpdateBroadcastMessageOptions, options ...RequestOptionFunc) (*BroadcastMessage, *Response, error) {
 	u := fmt.Sprintf("broadcast_messages/%d", broadcast)
 
@@ -193,7 +184,7 @@ func (s *BroadcastMessagesService) UpdateBroadcastMessage(broadcast int, opt *Up
 // DeleteBroadcastMessage deletes a broadcasted message.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/broadcast_messages.html#delete-a-broadcast-message
+// https://docs.gitlab.com/api/broadcast_messages/#delete-a-broadcast-message
 func (s *BroadcastMessagesService) DeleteBroadcastMessage(broadcast int, options ...RequestOptionFunc) (*Response, error) {
 	u := fmt.Sprintf("broadcast_messages/%d", broadcast)
 

@@ -54,12 +54,12 @@ const (
 
 // AuthType represents an authentication type within GitLab.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/
+// GitLab API docs: https://docs.gitlab.com/api/
 type AuthType int
 
 // List of available authentication types.
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/
+// GitLab API docs: https://docs.gitlab.com/api/
 const (
 	BasicAuth AuthType = iota
 	JobToken
@@ -107,141 +107,154 @@ type Client struct {
 	// User agent used when communicating with the GitLab API.
 	UserAgent string
 
+	// GraphQL interface
+	GraphQL GraphQLInterface
+
 	// Services used for talking to different parts of the GitLab API.
-	AccessRequests               AccessRequestsServiceInterface
-	Appearance                   AppearanceServiceInterface
-	Applications                 ApplicationsServiceInterface
-	AuditEvents                  AuditEventsServiceInterface
-	Avatar                       AvatarRequestsServiceInterface
-	AwardEmoji                   AwardEmojiServiceInterface
-	Boards                       IssueBoardsServiceInterface
-	Branches                     BranchesServiceInterface
-	BroadcastMessage             BroadcastMessagesServiceInterface
-	BulkImports                  BulkImportsServiceInterface
-	CIYMLTemplate                CIYMLTemplatesServiceInterface
-	ClusterAgents                ClusterAgentsServiceInterface
-	Commits                      CommitsServiceInterface
-	ContainerRegistry            ContainerRegistryServiceInterface
-	CustomAttribute              CustomAttributesServiceInterface
-	DependencyListExport         DependencyListExportServiceInterface
-	DeployKeys                   DeployKeysServiceInterface
-	DeployTokens                 DeployTokensServiceInterface
-	DeploymentMergeRequests      DeploymentMergeRequestsServiceInterface
-	Deployments                  DeploymentsServiceInterface
-	Discussions                  DiscussionsServiceInterface
-	DockerfileTemplate           DockerfileTemplatesServiceInterface
-	DORAMetrics                  DORAMetricsServiceInterface
-	DraftNotes                   DraftNotesServiceInterface
-	Environments                 EnvironmentsServiceInterface
-	EpicIssues                   EpicIssuesServiceInterface
-	Epics                        EpicsServiceInterface
-	ErrorTracking                ErrorTrackingServiceInterface
-	Events                       EventsServiceInterface
-	ExternalStatusChecks         ExternalStatusChecksServiceInterface
-	Features                     FeaturesServiceInterface
-	FreezePeriods                FreezePeriodsServiceInterface
-	GenericPackages              GenericPackagesServiceInterface
-	GeoNodes                     GeoNodesServiceInterface
-	GitIgnoreTemplates           GitIgnoreTemplatesServiceInterface
-	GroupAccessTokens            GroupAccessTokensServiceInterface
-	GroupBadges                  GroupBadgesServiceInterface
-	GroupCluster                 GroupClustersServiceInterface
-	GroupEpicBoards              GroupEpicBoardsServiceInterface
-	GroupImportExport            GroupImportExportServiceInterface
-	GroupIssueBoards             GroupIssueBoardsServiceInterface
-	GroupIterations              GroupIterationsServiceInterface
-	GroupLabels                  GroupLabelsServiceInterface
-	GroupMembers                 GroupMembersServiceInterface
-	GroupMilestones              GroupMilestonesServiceInterface
-	GroupProtectedEnvironments   GroupProtectedEnvironmentsServiceInterface
-	GroupReleases                GroupReleasesServiceInterface
-	GroupRepositoryStorageMove   GroupRepositoryStorageMoveServiceInterface
-	GroupSCIM                    GroupSCIMServiceInterface
-	GroupSecuritySettings        GroupSecuritySettingsServiceInterface
-	GroupSSHCertificates         GroupSSHCertificatesServiceInterface
-	GroupVariables               GroupVariablesServiceInterface
-	GroupWikis                   GroupWikisServiceInterface
-	Groups                       GroupsServiceInterface
-	Import                       ImportServiceInterface
-	InstanceCluster              InstanceClustersServiceInterface
-	InstanceVariables            InstanceVariablesServiceInterface
-	Invites                      InvitesServiceInterface
-	IssueLinks                   IssueLinksServiceInterface
-	Issues                       IssuesServiceInterface
-	IssuesStatistics             IssuesStatisticsServiceInterface
-	Jobs                         JobsServiceInterface
-	JobTokenScope                JobTokenScopeServiceInterface
-	Keys                         KeysServiceInterface
-	Labels                       LabelsServiceInterface
-	License                      LicenseServiceInterface
-	LicenseTemplates             LicenseTemplatesServiceInterface
-	ManagedLicenses              ManagedLicensesServiceInterface
-	Markdown                     MarkdownServiceInterface
-	MemberRolesService           MemberRolesServiceInterface
-	MergeRequestApprovals        MergeRequestApprovalsServiceInterface
-	MergeRequestApprovalSettings MergeRequestApprovalSettingsServiceInterface
-	MergeRequests                MergeRequestsServiceInterface
-	MergeTrains                  MergeTrainsServiceInterface
-	Metadata                     MetadataServiceInterface
-	Milestones                   MilestonesServiceInterface
-	Namespaces                   NamespacesServiceInterface
-	Notes                        NotesServiceInterface
-	NotificationSettings         NotificationSettingsServiceInterface
-	Packages                     PackagesServiceInterface
-	Pages                        PagesServiceInterface
-	PagesDomains                 PagesDomainsServiceInterface
-	PersonalAccessTokens         PersonalAccessTokensServiceInterface
-	PipelineSchedules            PipelineSchedulesServiceInterface
-	PipelineTriggers             PipelineTriggersServiceInterface
-	Pipelines                    PipelinesServiceInterface
-	PlanLimits                   PlanLimitsServiceInterface
-	ProjectAccessTokens          ProjectAccessTokensServiceInterface
-	ProjectBadges                ProjectBadgesServiceInterface
-	ProjectCluster               ProjectClustersServiceInterface
-	ProjectFeatureFlags          ProjectFeatureFlagServiceInterface
-	ProjectImportExport          ProjectImportExportServiceInterface
-	ProjectIterations            ProjectIterationsServiceInterface
-	ProjectMarkdownUploads       ProjectMarkdownUploadsServiceInterface
-	ProjectMembers               ProjectMembersServiceInterface
-	ProjectMirrors               ProjectMirrorServiceInterface
-	ProjectRepositoryStorageMove ProjectRepositoryStorageMoveServiceInterface
-	ProjectSecuritySettings      ProjectSecuritySettingsServiceInterface
-	ProjectSnippets              ProjectSnippetsServiceInterface
-	ProjectTemplates             ProjectTemplatesServiceInterface
-	ProjectVariables             ProjectVariablesServiceInterface
-	ProjectVulnerabilities       ProjectVulnerabilitiesServiceInterface
-	Projects                     ProjectsServiceInterface
-	ProtectedBranches            ProtectedBranchesServiceInterface
-	ProtectedEnvironments        ProtectedEnvironmentsServiceInterface
-	ProtectedTags                ProtectedTagsServiceInterface
-	ReleaseLinks                 ReleaseLinksServiceInterface
-	Releases                     ReleasesServiceInterface
-	Repositories                 RepositoriesServiceInterface
-	RepositoryFiles              RepositoryFilesServiceInterface
-	RepositorySubmodules         RepositorySubmodulesServiceInterface
-	ResourceGroup                ResourceGroupServiceInterface
-	ResourceIterationEvents      ResourceIterationEventsServiceInterface
-	ResourceLabelEvents          ResourceLabelEventsServiceInterface
-	ResourceMilestoneEvents      ResourceMilestoneEventsServiceInterface
-	ResourceStateEvents          ResourceStateEventsServiceInterface
-	ResourceWeightEvents         ResourceWeightEventsServiceInterface
-	Runners                      RunnersServiceInterface
-	Search                       SearchServiceInterface
-	SecureFiles                  SecureFilesServiceInterface
-	Services                     ServicesServiceInterface
-	Settings                     SettingsServiceInterface
-	Sidekiq                      SidekiqServiceInterface
-	SnippetRepositoryStorageMove SnippetRepositoryStorageMoveServiceInterface
-	Snippets                     SnippetsServiceInterface
-	SystemHooks                  SystemHooksServiceInterface
-	Tags                         TagsServiceInterface
-	Todos                        TodosServiceInterface
-	Topics                       TopicsServiceInterface
-	UsageData                    UsageDataServiceInterface
-	Users                        UsersServiceInterface
-	Validate                     ValidateServiceInterface
-	Version                      VersionServiceInterface
-	Wikis                        WikisServiceInterface
+	AccessRequests                   AccessRequestsServiceInterface
+	AlertManagement                  AlertManagementServiceInterface
+	Appearance                       AppearanceServiceInterface
+	Applications                     ApplicationsServiceInterface
+	ApplicationStatistics            ApplicationStatisticsServiceInterface
+	AuditEvents                      AuditEventsServiceInterface
+	Avatar                           AvatarRequestsServiceInterface
+	AwardEmoji                       AwardEmojiServiceInterface
+	Boards                           IssueBoardsServiceInterface
+	Branches                         BranchesServiceInterface
+	BroadcastMessage                 BroadcastMessagesServiceInterface
+	BulkImports                      BulkImportsServiceInterface
+	CIYMLTemplate                    CIYMLTemplatesServiceInterface
+	ClusterAgents                    ClusterAgentsServiceInterface
+	Commits                          CommitsServiceInterface
+	ContainerRegistry                ContainerRegistryServiceInterface
+	ContainerRegistryProtectionRules ContainerRegistryProtectionRulesServiceInterface
+	CustomAttribute                  CustomAttributesServiceInterface
+	DatabaseMigrations               DatabaseMigrationsServiceInterface
+	Dependencies                     DependenciesServiceInterface
+	DependencyListExport             DependencyListExportServiceInterface
+	DependencyProxy                  DependencyProxyServiceInterface
+	DeployKeys                       DeployKeysServiceInterface
+	DeployTokens                     DeployTokensServiceInterface
+	DeploymentMergeRequests          DeploymentMergeRequestsServiceInterface
+	Deployments                      DeploymentsServiceInterface
+	Discussions                      DiscussionsServiceInterface
+	DockerfileTemplate               DockerfileTemplatesServiceInterface
+	DORAMetrics                      DORAMetricsServiceInterface
+	DraftNotes                       DraftNotesServiceInterface
+	EnterpriseUsers                  EnterpriseUsersServiceInterface
+	Environments                     EnvironmentsServiceInterface
+	EpicIssues                       EpicIssuesServiceInterface
+	Epics                            EpicsServiceInterface
+	ErrorTracking                    ErrorTrackingServiceInterface
+	Events                           EventsServiceInterface
+	ExternalStatusChecks             ExternalStatusChecksServiceInterface
+	FeatureFlagUserLists             FeatureFlagUserListsServiceInterface
+	Features                         FeaturesServiceInterface
+	FreezePeriods                    FreezePeriodsServiceInterface
+	GenericPackages                  GenericPackagesServiceInterface
+	GeoNodes                         GeoNodesServiceInterface
+	GeoSites                         GeoSitesServiceInterface
+	GitIgnoreTemplates               GitIgnoreTemplatesServiceInterface
+	GroupAccessTokens                GroupAccessTokensServiceInterface
+	GroupActivityAnalytics           GroupActivityAnalyticsServiceInterface
+	GroupBadges                      GroupBadgesServiceInterface
+	GroupCluster                     GroupClustersServiceInterface
+	GroupEpicBoards                  GroupEpicBoardsServiceInterface
+	GroupImportExport                GroupImportExportServiceInterface
+	GroupIssueBoards                 GroupIssueBoardsServiceInterface
+	GroupIterations                  GroupIterationsServiceInterface
+	GroupLabels                      GroupLabelsServiceInterface
+	GroupMembers                     GroupMembersServiceInterface
+	GroupMilestones                  GroupMilestonesServiceInterface
+	GroupProtectedEnvironments       GroupProtectedEnvironmentsServiceInterface
+	GroupReleases                    GroupReleasesServiceInterface
+	GroupRepositoryStorageMove       GroupRepositoryStorageMoveServiceInterface
+	GroupSCIM                        GroupSCIMServiceInterface
+	GroupSecuritySettings            GroupSecuritySettingsServiceInterface
+	GroupSSHCertificates             GroupSSHCertificatesServiceInterface
+	GroupVariables                   GroupVariablesServiceInterface
+	GroupWikis                       GroupWikisServiceInterface
+	Groups                           GroupsServiceInterface
+	Import                           ImportServiceInterface
+	InstanceCluster                  InstanceClustersServiceInterface
+	InstanceVariables                InstanceVariablesServiceInterface
+	Invites                          InvitesServiceInterface
+	IssueLinks                       IssueLinksServiceInterface
+	Issues                           IssuesServiceInterface
+	IssuesStatistics                 IssuesStatisticsServiceInterface
+	Jobs                             JobsServiceInterface
+	JobTokenScope                    JobTokenScopeServiceInterface
+	Keys                             KeysServiceInterface
+	Labels                           LabelsServiceInterface
+	License                          LicenseServiceInterface
+	LicenseTemplates                 LicenseTemplatesServiceInterface
+	ManagedLicenses                  ManagedLicensesServiceInterface
+	Markdown                         MarkdownServiceInterface
+	MemberRolesService               MemberRolesServiceInterface
+	MergeRequestApprovals            MergeRequestApprovalsServiceInterface
+	MergeRequestApprovalSettings     MergeRequestApprovalSettingsServiceInterface
+	MergeRequests                    MergeRequestsServiceInterface
+	MergeTrains                      MergeTrainsServiceInterface
+	Metadata                         MetadataServiceInterface
+	Milestones                       MilestonesServiceInterface
+	Namespaces                       NamespacesServiceInterface
+	Notes                            NotesServiceInterface
+	NotificationSettings             NotificationSettingsServiceInterface
+	Packages                         PackagesServiceInterface
+	Pages                            PagesServiceInterface
+	PagesDomains                     PagesDomainsServiceInterface
+	PersonalAccessTokens             PersonalAccessTokensServiceInterface
+	PipelineSchedules                PipelineSchedulesServiceInterface
+	PipelineTriggers                 PipelineTriggersServiceInterface
+	Pipelines                        PipelinesServiceInterface
+	PlanLimits                       PlanLimitsServiceInterface
+	ProjectAccessTokens              ProjectAccessTokensServiceInterface
+	ProjectBadges                    ProjectBadgesServiceInterface
+	ProjectCluster                   ProjectClustersServiceInterface
+	ProjectFeatureFlags              ProjectFeatureFlagServiceInterface
+	ProjectImportExport              ProjectImportExportServiceInterface
+	ProjectIterations                ProjectIterationsServiceInterface
+	ProjectMarkdownUploads           ProjectMarkdownUploadsServiceInterface
+	ProjectMembers                   ProjectMembersServiceInterface
+	ProjectMirrors                   ProjectMirrorServiceInterface
+	ProjectRepositoryStorageMove     ProjectRepositoryStorageMoveServiceInterface
+	ProjectSecuritySettings          ProjectSecuritySettingsServiceInterface
+	ProjectSnippets                  ProjectSnippetsServiceInterface
+	ProjectTemplates                 ProjectTemplatesServiceInterface
+	ProjectVariables                 ProjectVariablesServiceInterface
+	ProjectVulnerabilities           ProjectVulnerabilitiesServiceInterface
+	Projects                         ProjectsServiceInterface
+	ProtectedBranches                ProtectedBranchesServiceInterface
+	ProtectedEnvironments            ProtectedEnvironmentsServiceInterface
+	ProtectedTags                    ProtectedTagsServiceInterface
+	ReleaseLinks                     ReleaseLinksServiceInterface
+	Releases                         ReleasesServiceInterface
+	Repositories                     RepositoriesServiceInterface
+	RepositoryFiles                  RepositoryFilesServiceInterface
+	RepositorySubmodules             RepositorySubmodulesServiceInterface
+	ResourceGroup                    ResourceGroupServiceInterface
+	ResourceIterationEvents          ResourceIterationEventsServiceInterface
+	ResourceLabelEvents              ResourceLabelEventsServiceInterface
+	ResourceMilestoneEvents          ResourceMilestoneEventsServiceInterface
+	ResourceStateEvents              ResourceStateEventsServiceInterface
+	ResourceWeightEvents             ResourceWeightEventsServiceInterface
+	Runners                          RunnersServiceInterface
+	Search                           SearchServiceInterface
+	SecureFiles                      SecureFilesServiceInterface
+	Services                         ServicesServiceInterface
+	Settings                         SettingsServiceInterface
+	Sidekiq                          SidekiqServiceInterface
+	SnippetRepositoryStorageMove     SnippetRepositoryStorageMoveServiceInterface
+	Snippets                         SnippetsServiceInterface
+	SystemHooks                      SystemHooksServiceInterface
+	Tags                             TagsServiceInterface
+	Todos                            TodosServiceInterface
+	Topics                           TopicsServiceInterface
+	UsageData                        UsageDataServiceInterface
+	Users                            UsersServiceInterface
+	Validate                         ValidateServiceInterface
+	Version                          VersionServiceInterface
+	Wikis                            WikisServiceInterface
 }
 
 // ListOptions specifies the optional parameters to various List methods that
@@ -355,10 +368,15 @@ func newClient(options ...ClientOptionFunc) (*Client, error) {
 	// Create the internal timeStats service.
 	timeStats := &timeStatsService{client: c}
 
+	// GraphQL interface
+	c.GraphQL = &GraphQL{client: c}
+
 	// Create all the public services.
 	c.AccessRequests = &AccessRequestsService{client: c}
+	c.AlertManagement = &AlertManagementService{client: c}
 	c.Appearance = &AppearanceService{client: c}
 	c.Applications = &ApplicationsService{client: c}
+	c.ApplicationStatistics = &ApplicationStatisticsService{client: c}
 	c.AuditEvents = &AuditEventsService{client: c}
 	c.Avatar = &AvatarRequestsService{client: c}
 	c.AwardEmoji = &AwardEmojiService{client: c}
@@ -370,8 +388,12 @@ func newClient(options ...ClientOptionFunc) (*Client, error) {
 	c.ClusterAgents = &ClusterAgentsService{client: c}
 	c.Commits = &CommitsService{client: c}
 	c.ContainerRegistry = &ContainerRegistryService{client: c}
+	c.ContainerRegistryProtectionRules = &ContainerRegistryProtectionRulesService{client: c}
 	c.CustomAttribute = &CustomAttributesService{client: c}
+	c.DatabaseMigrations = &DatabaseMigrationsService{client: c}
+	c.Dependencies = &DependenciesService{client: c}
 	c.DependencyListExport = &DependencyListExportService{client: c}
+	c.DependencyProxy = &DependencyProxyService{client: c}
 	c.DeployKeys = &DeployKeysService{client: c}
 	c.DeployTokens = &DeployTokensService{client: c}
 	c.DeploymentMergeRequests = &DeploymentMergeRequestsService{client: c}
@@ -380,18 +402,22 @@ func newClient(options ...ClientOptionFunc) (*Client, error) {
 	c.DockerfileTemplate = &DockerfileTemplatesService{client: c}
 	c.DORAMetrics = &DORAMetricsService{client: c}
 	c.DraftNotes = &DraftNotesService{client: c}
+	c.EnterpriseUsers = &EnterpriseUsersService{client: c}
 	c.Environments = &EnvironmentsService{client: c}
 	c.EpicIssues = &EpicIssuesService{client: c}
 	c.Epics = &EpicsService{client: c}
 	c.ErrorTracking = &ErrorTrackingService{client: c}
 	c.Events = &EventsService{client: c}
 	c.ExternalStatusChecks = &ExternalStatusChecksService{client: c}
+	c.FeatureFlagUserLists = &FeatureFlagUserListsService{client: c}
 	c.Features = &FeaturesService{client: c}
 	c.FreezePeriods = &FreezePeriodsService{client: c}
 	c.GenericPackages = &GenericPackagesService{client: c}
 	c.GeoNodes = &GeoNodesService{client: c}
+	c.GeoSites = &GeoSitesService{client: c}
 	c.GitIgnoreTemplates = &GitIgnoreTemplatesService{client: c}
 	c.GroupAccessTokens = &GroupAccessTokensService{client: c}
+	c.GroupActivityAnalytics = &GroupActivityAnalyticsService{client: c}
 	c.GroupBadges = &GroupBadgesService{client: c}
 	c.GroupCluster = &GroupClustersService{client: c}
 	c.GroupEpicBoards = &GroupEpicBoardsService{client: c}
@@ -980,7 +1006,7 @@ func PathEscape(s string) string {
 // An ErrorResponse reports one or more errors caused by an API request.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/index.html#data-validation-and-error-reporting
+// https://docs.gitlab.com/api/rest/troubleshooting/
 type ErrorResponse struct {
 	Body     []byte
 	Response *http.Response
@@ -988,7 +1014,10 @@ type ErrorResponse struct {
 }
 
 func (e *ErrorResponse) Error() string {
-	path, _ := url.QueryUnescape(e.Response.Request.URL.Path)
+	path := e.Response.Request.URL.RawPath
+	if path == "" {
+		path = e.Response.Request.URL.Path
+	}
 	url := fmt.Sprintf("%s://%s%s", e.Response.Request.URL.Scheme, e.Response.Request.URL.Host, path)
 
 	if e.Message == "" {

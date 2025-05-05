@@ -30,7 +30,7 @@ type (
 	// related methods of the GitLab API.
 	//
 	// GitLab API docs:
-	// https://docs.gitlab.com/ee/api/scim.html
+	// https://docs.gitlab.com/api/scim/
 	GroupSCIMService struct {
 		client *Client
 	}
@@ -39,7 +39,7 @@ type (
 // GroupSCIMIdentity represents a GitLab Group SCIM identity.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/scim.html
+// https://docs.gitlab.com/api/scim/
 type GroupSCIMIdentity struct {
 	ExternalUID string `json:"external_uid"`
 	UserID      int64  `json:"user_id"`
@@ -49,7 +49,7 @@ type GroupSCIMIdentity struct {
 // GetSCIMIdentitiesForGroup gets all SCIM identities for a group.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/scim.html#get-scim-identities-for-a-group
+// https://docs.gitlab.com/api/scim/#get-scim-identities-for-a-group
 func (s *GroupSCIMService) GetSCIMIdentitiesForGroup(gid interface{}, options ...RequestOptionFunc) ([]*GroupSCIMIdentity, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -73,7 +73,7 @@ func (s *GroupSCIMService) GetSCIMIdentitiesForGroup(gid interface{}, options ..
 // GetSCIMIdentity gets a SCIM identity for a group.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/scim.html#get-a-single-scim-identity
+// https://docs.gitlab.com/api/scim/#get-a-single-scim-identity
 func (s *GroupSCIMService) GetSCIMIdentity(gid interface{}, uid string, options ...RequestOptionFunc) (*GroupSCIMIdentity, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -98,7 +98,7 @@ func (s *GroupSCIMService) GetSCIMIdentity(gid interface{}, uid string, options 
 // updating a SCIM Identity.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/scim.html#update-extern_uid-field-for-a-scim-identity
+// https://docs.gitlab.com/api/scim/#update-extern_uid-field-for-a-scim-identity
 type UpdateSCIMIdentityOptions struct {
 	ExternUID *string `url:"extern_uid,omitempty" json:"extern_uid,omitempty"`
 }
@@ -106,7 +106,7 @@ type UpdateSCIMIdentityOptions struct {
 // UpdateSCIMIdentity updates a SCIM identity.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/scim.html#update-extern_uid-field-for-a-scim-identity
+// https://docs.gitlab.com/api/scim/#update-extern_uid-field-for-a-scim-identity
 func (s *GroupSCIMService) UpdateSCIMIdentity(gid interface{}, uid string, opt *UpdateSCIMIdentityOptions, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -125,7 +125,7 @@ func (s *GroupSCIMService) UpdateSCIMIdentity(gid interface{}, uid string, opt *
 // DeleteSCIMIdentity deletes a SCIM identity.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/scim.html#delete-a-single-scim-identity
+// https://docs.gitlab.com/api/scim/#delete-a-single-scim-identity
 func (s *GroupSCIMService) DeleteSCIMIdentity(gid interface{}, uid string, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(gid)
 	if err != nil {

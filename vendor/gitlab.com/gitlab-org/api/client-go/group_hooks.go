@@ -25,7 +25,7 @@ import (
 // GroupHook represents a GitLab group hook.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html
+// https://docs.gitlab.com/api/group_webhooks/
 type GroupHook struct {
 	ID                        int                 `json:"id"`
 	URL                       string              `json:"url"`
@@ -62,13 +62,13 @@ type GroupHook struct {
 // ListGroupHooksOptions represents the available ListGroupHooks() options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#list-group-hooks
+// https://docs.gitlab.com/api/group_webhooks/#list-group-hooks
 type ListGroupHooksOptions ListOptions
 
 // ListGroupHooks gets a list of group hooks.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#list-group-hooks
+// https://docs.gitlab.com/api/group_webhooks/#list-group-hooks
 func (s *GroupsService) ListGroupHooks(gid interface{}, opt *ListGroupHooksOptions, options ...RequestOptionFunc) ([]*GroupHook, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -92,7 +92,7 @@ func (s *GroupsService) ListGroupHooks(gid interface{}, opt *ListGroupHooksOptio
 // GetGroupHook gets a specific hook for a group.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#get-a-group-hook
+// https://docs.gitlab.com/api/group_webhooks/#get-a-group-hook
 func (s *GroupsService) GetGroupHook(gid interface{}, hook int, options ...RequestOptionFunc) (*GroupHook, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -117,7 +117,7 @@ func (s *GroupsService) GetGroupHook(gid interface{}, hook int, options ...Reque
 // ResendGroupHookEvent resends a specific hook event.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#resend-group-hook-event
+// https://docs.gitlab.com/api/group_webhooks/#resend-group-hook-event
 func (s *GroupsService) ResendGroupHookEvent(gid interface{}, hook int, hookEventID int, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -136,7 +136,7 @@ func (s *GroupsService) ResendGroupHookEvent(gid interface{}, hook int, hookEven
 // AddGroupHookOptions represents the available AddGroupHook() options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#add-a-group-hook
+// https://docs.gitlab.com/api/group_webhooks/#add-a-group-hook
 type AddGroupHookOptions struct {
 	URL                       *string              `url:"url,omitempty" json:"url,omitempty"`
 	Name                      *string              `url:"name,omitempty" json:"name,omitempty"`
@@ -168,7 +168,7 @@ type AddGroupHookOptions struct {
 // AddGroupHook creates a new group scoped webhook.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#add-a-group-hook
+// https://docs.gitlab.com/api/group_webhooks/#add-a-group-hook
 func (s *GroupsService) AddGroupHook(gid interface{}, opt *AddGroupHookOptions, options ...RequestOptionFunc) (*GroupHook, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -193,7 +193,7 @@ func (s *GroupsService) AddGroupHook(gid interface{}, opt *AddGroupHookOptions, 
 // EditGroupHookOptions represents the available EditGroupHook() options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#edit-group-hook
+// https://docs.gitlab.com/api/group_webhooks/#edit-group-hook
 type EditGroupHookOptions struct {
 	URL                                   *string              `url:"url,omitempty" json:"url,omitempty"`
 	Name                                  *string              `url:"name,omitempty" json:"name,omitempty"`
@@ -226,7 +226,7 @@ type EditGroupHookOptions struct {
 // EditGroupHook edits a hook for a specified group.
 //
 // Gitlab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#edit-group-hook
+// https://docs.gitlab.com/api/group_webhooks/#edit-group-hook
 func (s *GroupsService) EditGroupHook(gid interface{}, hook int, opt *EditGroupHookOptions, options ...RequestOptionFunc) (*GroupHook, *Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -252,7 +252,7 @@ func (s *GroupsService) EditGroupHook(gid interface{}, hook int, opt *EditGroupH
 // method and can be called multiple times.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#delete-a-group-hook
+// https://docs.gitlab.com/api/group_webhooks/#delete-a-group-hook
 func (s *GroupsService) DeleteGroupHook(gid interface{}, hook int, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -271,7 +271,7 @@ func (s *GroupsService) DeleteGroupHook(gid interface{}, hook int, options ...Re
 // TriggerTestGroupHook triggers a test hook for a specified group.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#trigger-a-test-group-hook
+// https://docs.gitlab.com/api/group_webhooks/#trigger-a-test-group-hook
 func (s *GroupsService) TriggerTestGroupHook(pid interface{}, hook int, trigger GroupHookTrigger, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(pid)
 	if err != nil {
@@ -290,7 +290,7 @@ func (s *GroupsService) TriggerTestGroupHook(pid interface{}, hook int, trigger 
 // SetGroupCustomHeader creates or updates a group custom webhook header.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#set-a-custom-header
+// https://docs.gitlab.com/api/group_webhooks/#set-a-custom-header
 func (s *GroupsService) SetGroupCustomHeader(gid interface{}, hook int, key string, opt *SetHookCustomHeaderOptions, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -309,7 +309,7 @@ func (s *GroupsService) SetGroupCustomHeader(gid interface{}, hook int, key stri
 // DeleteGroupCustomHeader deletes a group custom webhook header.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#delete-a-custom-header
+// https://docs.gitlab.com/api/group_webhooks/#delete-a-custom-header
 func (s *GroupsService) DeleteGroupCustomHeader(gid interface{}, hook int, key string, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -329,7 +329,7 @@ func (s *GroupsService) DeleteGroupCustomHeader(gid interface{}, hook int, key s
 // options.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#set-a-url-variable
+// https://docs.gitlab.com/api/group_webhooks/#set-a-url-variable
 type SetHookURLVariableOptions struct {
 	Value *string `json:"value,omitempty"`
 }
@@ -337,7 +337,7 @@ type SetHookURLVariableOptions struct {
 // SetGroupHookURLVariable sets a group hook URL variable.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#set-a-url-variable
+// https://docs.gitlab.com/api/group_webhooks/#set-a-url-variable
 func (s *GroupsService) SetGroupHookURLVariable(gid interface{}, hook int, key string, opt *SetHookURLVariableOptions, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(gid)
 	if err != nil {
@@ -356,7 +356,7 @@ func (s *GroupsService) SetGroupHookURLVariable(gid interface{}, hook int, key s
 // DeleteGroupHookURLVariable sets a group hook URL variable.
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_webhooks.html#delete-a-url-variable
+// https://docs.gitlab.com/api/group_webhooks/#delete-a-url-variable
 func (s *GroupsService) DeleteGroupHookURLVariable(gid interface{}, hook int, key string, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(gid)
 	if err != nil {

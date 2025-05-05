@@ -25,7 +25,7 @@ type (
 	SecureFilesServiceInterface interface {
 		ListProjectSecureFiles(pid interface{}, opt *ListProjectSecureFilesOptions, options ...RequestOptionFunc) ([]*SecureFile, *Response, error)
 		ShowSecureFileDetails(pid interface{}, id int, options ...RequestOptionFunc) (*SecureFile, *Response, error)
-		CreateSecureFile(pid interface{}, content io.Reader, filename string, options ...RequestOptionFunc) (*SecureFile, *Response, error)
+		CreateSecureFile(pid interface{}, content io.Reader, opt *CreateSecureFileOptions, options ...RequestOptionFunc) (*SecureFile, *Response, error)
 		DownloadSecureFile(pid interface{}, id int, options ...RequestOptionFunc) (io.Reader, *Response, error)
 		RemoveSecureFile(pid interface{}, id int, options ...RequestOptionFunc) (*Response, error)
 	}
@@ -154,18 +154,27 @@ func (s SecureFilesService) ShowSecureFileDetails(pid interface{}, id int, optio
 	return file, resp, nil
 }
 
+// CreateSecureFileOptions represents the available
+// CreateSecureFile() options.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/api/secure_files/#create-secure-file
+type CreateSecureFileOptions struct {
+	Name *string `url:"name,omitempty" json:"name,omitempty"`
+}
+
 // CreateSecureFile creates a new secure file.
 //
 // GitLab API docs:
 // https://docs.gitlab.com/api/secure_files/#create-secure-file
-func (s SecureFilesService) CreateSecureFile(pid interface{}, content io.Reader, filename string, options ...RequestOptionFunc) (*SecureFile, *Response, error) {
+func (s SecureFilesService) CreateSecureFile(pid interface{}, content io.Reader, opt *CreateSecureFileOptions, options ...RequestOptionFunc) (*SecureFile, *Response, error) {
 	project, err := parseID(pid)
 	if err != nil {
 		return nil, nil, err
 	}
 	u := fmt.Sprintf("projects/%s/secure_files", PathEscape(project))
 
-	req, err := s.client.UploadRequest(http.MethodPost, u, content, filename, UploadFile, nil, options)
+	req, err := s.client.UploadRequest(http.MethodPost, u, content, *opt.Name, UploadFile, opt, options)
 	if err != nil {
 		return nil, nil, err
 	}
