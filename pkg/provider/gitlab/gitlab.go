@@ -256,12 +256,24 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	if event.TriggerTarget == triggertype.PullRequest && opscomments.IsAnyOpsEventType(event.EventType) {
 		eventType = triggertype.PullRequest
 	}
-	// only add a note when we are on a MR
-	if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
-		mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
-		_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
-		return err
+
+	var commentStrategy string
+
+	if v.repo != nil && v.repo.Spec.Settings != nil && v.repo.Spec.Settings.Gitlab != nil {
+		commentStrategy = v.repo.Spec.Settings.Gitlab.CommentStrategy
 	}
+	switch commentStrategy {
+	case "disable_all":
+		v.Logger.Warn("Comments related to PipelineRuns status have been disabled for GitLab merge requests")
+		return nil
+	default:
+		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
+			mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
+			_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
+			return err
+		}
+	}
+
 	return nil
 }
 

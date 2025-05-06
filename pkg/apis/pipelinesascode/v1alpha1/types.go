@@ -101,9 +101,14 @@ func (r *RepositorySpec) Merge(newRepo RepositorySpec) {
 }
 
 type Settings struct {
-	GithubAppTokenScopeRepos []string `json:"github_app_token_scope_repos,omitempty"`
-	PipelineRunProvenance    string   `json:"pipelinerun_provenance,omitempty"`
-	Policy                   *Policy  `json:"policy,omitempty"`
+	GithubAppTokenScopeRepos []string        `json:"github_app_token_scope_repos,omitempty"`
+	PipelineRunProvenance    string          `json:"pipelinerun_provenance,omitempty"`
+	Policy                   *Policy         `json:"policy,omitempty"`
+	Gitlab                   *GitlabSettings `json:"gitlab,omitempty"`
+}
+
+type GitlabSettings struct {
+	CommentStrategy string `json:"comment_strategy,omitempty"`
 }
 
 func (s *Settings) Merge(newSettings *Settings) {
