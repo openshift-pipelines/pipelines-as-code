@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -71,6 +72,40 @@ func (v *Provider) Client() *gitea.Client {
 
 func (v *Provider) SetGiteaClient(client *gitea.Client) {
 	v.giteaClient = client
+}
+
+func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, updateMarker string) error {
+	if v.giteaClient == nil {
+		return fmt.Errorf("no gitea client has been initialized")
+	}
+
+	if event.PullRequestNumber == 0 {
+		return fmt.Errorf("create comment only works on pull requests")
+	}
+
+	// List comments of the PR
+	if updateMarker != "" {
+		comments, _, err := v.Client().ListIssueComments(event.Organization, event.Repository, int64(event.PullRequestNumber), gitea.ListIssueCommentOptions{})
+		if err != nil {
+			return err
+		}
+
+		re := regexp.MustCompile(updateMarker)
+		for _, comment := range comments {
+			if re.MatchString(comment.Body) {
+				_, _, err := v.Client().EditIssueComment(event.Organization, event.Repository, comment.ID, gitea.EditIssueCommentOption{
+					Body: commit,
+				})
+				return err
+			}
+		}
+	}
+
+	_, _, err := v.Client().CreateIssueComment(event.Organization, event.Repository, int64(event.PullRequestNumber), gitea.CreateIssueCommentOption{
+		Body: commit,
+	})
+
+	return err
 }
 
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
@@ -223,7 +258,11 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 	}
 
 	tektonDirSha := ""
-	rootobjects, _, err := v.Client().GetTrees(event.Organization, event.Repository, revision, false)
+	opt := gitea.ListTreeOptions{
+		Ref:       revision,
+		Recursive: false,
+	}
+	rootobjects, _, err := v.Client().GetTrees(event.Organization, event.Repository, opt)
 	if err != nil {
 		return "", err
 	}
@@ -242,7 +281,8 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 	}
 	// Get all files in the .tekton directory recursively
 	// TODO: figure out if there is a object limit we need to handle here
-	tektonDirObjects, _, err := v.Client().GetTrees(event.Organization, event.Repository, tektonDirSha, true)
+	opts := gitea.ListTreeOptions{Recursive: false, Ref: tektonDirSha}
+	tektonDirObjects, _, err := v.Client().GetTrees(event.Organization, event.Repository, opts)
 	if err != nil {
 		return "", err
 	}

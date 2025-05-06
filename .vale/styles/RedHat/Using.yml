@@ -11,4 +11,4 @@ action:
     - "$1 by using" # replace
 tokens:
   - tag: NN|NNP|NNPS|NNS
-  - pattern: using
+  - pattern: \busing\b

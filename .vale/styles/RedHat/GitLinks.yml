@@ -3,10 +3,11 @@ extends: existence
 message: Do not include a link to %s unless it is explicitly approved.
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/gitlinks/
 ignorecase: true
+nonword: true
 level: warning
 scope: raw
 action:
   name: remove
 tokens:
-  - 'https:\/\/gitlab\.com'
+  - 'https:\/\/gitlab\.com\/\w+'
   - 'https:\/\/github\.com(?!\/openshift|\/redhat-developer)'

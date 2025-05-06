@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 	apipac "github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/consoleui"
@@ -179,7 +179,7 @@ func TestGetPipelineRunsFromRepo(t *testing.T) {
 			},
 			tektondir:  "testdata/invalid_tekton_yaml",
 			event:      pullRequestEvent,
-			logSnippet: `prun: bad-tekton-yaml tekton validation error: json: cannot unmarshal object into Go struct field PipelineSpec.spec.pipelineSpec.tasks of type []v1beta1.PipelineTask`,
+			logSnippet: `json: cannot unmarshal object into Go struct field PipelineSpec.spec.pipelineSpec.tasks of type []v1beta1.PipelineTask`,
 		},
 		{
 			name: "no-match pipelineruns in .tekton dir, only matched should be returned",

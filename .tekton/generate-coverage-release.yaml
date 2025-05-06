@@ -46,7 +46,7 @@ spec:
                 resolver: http
                 params:
                   - name: url
-                    value: https://raw.githubusercontent.com/openshift-pipelines/tekton-caches/main/tekton/cache-fetch.yaml
+                    value: https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/refs/heads/main/.tekton/tasks/cache-fetch.yaml
               params:
                 - name: patterns
                   value: ["**go.mod", "**go.sum"]
@@ -122,6 +122,25 @@ spec:
                 git push --force https://git:$HUB_TOKEN@github.com/{{ repo_owner }}/{{ repo_name }}/ nightly:nightly
                 set -x
                 git checkout -
+            - name: cache-upload
+              ref:
+                resolver: http
+                params:
+                  - name: url
+                    value: https://raw.githubusercontent.com/openshift-pipelines/pipelines-as-code/refs/heads/main/.tekton/tasks/cache-upload.yaml
+              params:
+                - name: patterns
+                  value: ["**go.mod", "**go.sum"]
+                - name: target
+                  value: oci://image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/cache-go:{{hash}}
+                - name: fetched
+                  value: $(tasks.cached-fetch.results.fetched)
+                - name: cachePath
+                  value: $(workspaces.source.path)/go-build-cache
+                - name: workingdir
+                  value: $(workspaces.source.path)
+                - name: force-cache-upload
+                  value: "false"
     workspaces:
       - name: source
     finally:

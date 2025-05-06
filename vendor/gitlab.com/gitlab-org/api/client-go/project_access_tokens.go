@@ -27,6 +27,7 @@ type (
 		GetProjectAccessToken(pid interface{}, id int, options ...RequestOptionFunc) (*ProjectAccessToken, *Response, error)
 		CreateProjectAccessToken(pid interface{}, opt *CreateProjectAccessTokenOptions, options ...RequestOptionFunc) (*ProjectAccessToken, *Response, error)
 		RotateProjectAccessToken(pid interface{}, id int, opt *RotateProjectAccessTokenOptions, options ...RequestOptionFunc) (*ProjectAccessToken, *Response, error)
+		RotateProjectAccessTokenSelf(pid interface{}, opt *RotateProjectAccessTokenOptions, options ...RequestOptionFunc) (*ProjectAccessToken, *Response, error)
 		RevokeProjectAccessToken(pid interface{}, id int, options ...RequestOptionFunc) (*Response, error)
 	}
 
@@ -171,6 +172,31 @@ func (s *ProjectAccessTokensService) RotateProjectAccessToken(pid interface{}, i
 		return nil, nil, err
 	}
 	u := fmt.Sprintf("projects/%s/access_tokens/%d/rotate", PathEscape(projects), id)
+	req, err := s.client.NewRequest(http.MethodPost, u, opt, options)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pat := new(ProjectAccessToken)
+	resp, err := s.client.Do(req, pat)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return pat, resp, nil
+}
+
+// RotateProjectAccessTokenSelf revokes the project access token used for the request
+// and returns a new project access token that expires in one week per default.
+//
+// GitLab API docs:
+// https://docs.gitlab.com/api/project_access_tokens/#self-rotate
+func (s *ProjectAccessTokensService) RotateProjectAccessTokenSelf(pid interface{}, opt *RotateProjectAccessTokenOptions, options ...RequestOptionFunc) (*ProjectAccessToken, *Response, error) {
+	projects, err := parseID(pid)
+	if err != nil {
+		return nil, nil, err
+	}
+	u := fmt.Sprintf("projects/%s/access_tokens/self/rotate", PathEscape(projects))
 	req, err := s.client.NewRequest(http.MethodPost, u, opt, options)
 	if err != nil {
 		return nil, nil, err

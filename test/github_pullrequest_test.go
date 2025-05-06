@@ -18,7 +18,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/options"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"
 
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
@@ -159,10 +159,10 @@ func TestGithubPullRequestWebhook(t *testing.T) {
 	defer g.TearDown(ctx, t)
 }
 
-func TestGithubPullRequestSecondBadYaml(t *testing.T) {
+func TestGithubSecondPullRequestBadYaml(t *testing.T) {
 	ctx := context.Background()
 	g := &tgithub.PRTest{
-		Label:            "Github Rerequest",
+		Label:            "Github PullRequest Bad Yaml",
 		YamlFiles:        []string{"testdata/failures/bad-yaml.yaml"},
 		SecondController: true,
 		NoStatusCheck:    true,
@@ -170,33 +170,24 @@ func TestGithubPullRequestSecondBadYaml(t *testing.T) {
 	g.RunPullRequest(ctx, t)
 	defer g.TearDown(ctx, t)
 
-	opt := github.ListOptions{}
-	res := &github.ListCheckRunsResults{}
-	resp := &github.Response{}
-	var err error
-	counter := 0
-	for {
-		res, resp, err = g.Provider.Client().Checks.ListCheckRunsForRef(ctx, g.Options.Organization, g.Options.Repo, g.SHA, &github.ListCheckRunsOptions{
-			AppID:       g.Provider.ApplicationID,
-			ListOptions: opt,
-		})
+	maxLoop := 10
+	for i := 0; i < maxLoop; i++ {
+		comments, _, err := g.Provider.Client().Issues.ListComments(
+			ctx, g.Options.Organization, g.Options.Repo, g.PRNumber,
+			&github.IssueListCommentsOptions{})
 		assert.NilError(t, err)
-		assert.Equal(t, resp.StatusCode, 200)
-		if len(res.CheckRuns) > 0 {
-			break
+
+		if len(comments) > 0 {
+			assert.Assert(t, len(comments) == 1, "Should have only one comment created we got way too many: %+v", comments)
+			golden.Assert(t, comments[0].GetBody(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
+			return
 		}
-		g.Cnx.Clients.Log.Infof("Waiting for the check run to be created")
-		if counter > 10 {
-			t.Errorf("Check run not created after 10 tries")
-			break
-		}
-		time.Sleep(5 * time.Second)
+
+		g.Cnx.Clients.Log.Infof("Looping %d/%d waiting for a comment to appear", i, maxLoop)
+		time.Sleep(6 * time.Second)
 	}
-	assert.Equal(t, len(res.CheckRuns), 1)
-	assert.Equal(t, res.CheckRuns[0].GetOutput().GetTitle(), "pipelinerun start failure")
-	// may be fragile if we change the application name, but life goes on if it fails and we fix the name if that happen
-	assert.Equal(t, res.CheckRuns[0].GetOutput().GetSummary(), "Pipelines as Code GHE has <b>failed</b>.")
-	golden.Assert(t, res.CheckRuns[0].GetOutput().GetText(), strings.ReplaceAll(fmt.Sprintf("%s.golden", t.Name()), "/", "-"))
+
+	t.Fatal("No comments with the pipelinerun error found on the pull request")
 }
 
 // TestGithubPullRequestInvalidSpecValues tests invalid field values of a PipelinRun and

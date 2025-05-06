@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/events"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
@@ -364,7 +364,7 @@ func TestParsePayload(t *testing.T) {
 			}
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.SetGitlabClient(client)
+				v.SetGitLabClient(client)
 				branchName := "main"
 				if tt.wantBranch != "" {
 					branchName = tt.wantBranch

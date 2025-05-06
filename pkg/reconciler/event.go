@@ -91,7 +91,7 @@ func buildEventFromPipelineRun(pr *tektonv1.PipelineRun) *info.Event {
 		event.GHEURL = gheURL
 	}
 
-	// Gitlab
+	// GitLab
 	if projectID, ok := prAnno[keys.SourceProjectID]; ok {
 		event.SourceProjectID, _ = strconv.Atoi(projectID)
 	}

@@ -23,29 +23,38 @@ import (
 )
 
 type (
+	// Deprecated: in GitLab 14.5
 	GroupClustersServiceInterface interface {
+		// Deprecated: in GitLab 14.5
 		ListClusters(pid interface{}, options ...RequestOptionFunc) ([]*GroupCluster, *Response, error)
+		// Deprecated: in GitLab 14.5
 		GetCluster(pid interface{}, cluster int, options ...RequestOptionFunc) (*GroupCluster, *Response, error)
+		// Deprecated: in GitLab 14.5
 		AddCluster(pid interface{}, opt *AddGroupClusterOptions, options ...RequestOptionFunc) (*GroupCluster, *Response, error)
+		// Deprecated: in GitLab 14.5
 		EditCluster(pid interface{}, cluster int, opt *EditGroupClusterOptions, options ...RequestOptionFunc) (*GroupCluster, *Response, error)
+		// Deprecated: in GitLab 14.5
 		DeleteCluster(pid interface{}, cluster int, options ...RequestOptionFunc) (*Response, error)
 	}
 
 	// GroupClustersService handles communication with the
 	// group clusters related methods of the GitLab API.
+	// Deprecated: in GitLab 14.5
 	//
 	// GitLab API docs:
-	// https://docs.gitlab.com/ee/api/group_clusters.html
+	// https://docs.gitlab.com/api/group_clusters/
 	GroupClustersService struct {
 		client *Client
 	}
 )
 
+// Deprecated: in GitLab 14.5
 var _ GroupClustersServiceInterface = (*GroupClustersService)(nil)
 
 // GroupCluster represents a GitLab Group Cluster.
+// Deprecated: in GitLab 14.5
 //
-// GitLab API docs: https://docs.gitlab.com/ee/api/group_clusters.html
+// GitLab API docs: https://docs.gitlab.com/api/group_clusters/
 type GroupCluster struct {
 	ID                 int                 `json:"id"`
 	Name               string              `json:"name"`
@@ -63,14 +72,16 @@ type GroupCluster struct {
 	Group              *Group              `json:"group"`
 }
 
+// Deprecated: in GitLab 14.5
 func (v GroupCluster) String() string {
 	return Stringify(v)
 }
 
 // ListClusters gets a list of all clusters in a group.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_clusters.html#list-group-clusters
+// https://docs.gitlab.com/api/group_clusters/#list-group-clusters
 func (s *GroupClustersService) ListClusters(pid interface{}, options ...RequestOptionFunc) ([]*GroupCluster, *Response, error) {
 	group, err := parseID(pid)
 	if err != nil {
@@ -93,9 +104,10 @@ func (s *GroupClustersService) ListClusters(pid interface{}, options ...RequestO
 }
 
 // GetCluster gets a cluster.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_clusters.html#get-a-single-group-cluster
+// https://docs.gitlab.com/api/group_clusters/#get-a-single-group-cluster
 func (s *GroupClustersService) GetCluster(pid interface{}, cluster int, options ...RequestOptionFunc) (*GroupCluster, *Response, error) {
 	group, err := parseID(pid)
 	if err != nil {
@@ -118,9 +130,10 @@ func (s *GroupClustersService) GetCluster(pid interface{}, cluster int, options 
 }
 
 // AddGroupClusterOptions represents the available AddCluster() options.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_clusters.html#add-existing-cluster-to-group
+// https://docs.gitlab.com/api/group_clusters/#add-existing-cluster-to-group
 type AddGroupClusterOptions struct {
 	Name                *string                            `url:"name,omitempty" json:"name,omitempty"`
 	Domain              *string                            `url:"domain,omitempty" json:"domain,omitempty"`
@@ -132,6 +145,7 @@ type AddGroupClusterOptions struct {
 }
 
 // AddGroupPlatformKubernetesOptions represents the available PlatformKubernetes options for adding.
+// Deprecated: in GitLab 14.5
 type AddGroupPlatformKubernetesOptions struct {
 	APIURL            *string `url:"api_url,omitempty" json:"api_url,omitempty"`
 	Token             *string `url:"token,omitempty" json:"token,omitempty"`
@@ -141,9 +155,10 @@ type AddGroupPlatformKubernetesOptions struct {
 }
 
 // AddCluster adds an existing cluster to the group.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_clusters.html#add-existing-cluster-to-group
+// https://docs.gitlab.com/api/group_clusters/#add-existing-cluster-to-group
 func (s *GroupClustersService) AddCluster(pid interface{}, opt *AddGroupClusterOptions, options ...RequestOptionFunc) (*GroupCluster, *Response, error) {
 	group, err := parseID(pid)
 	if err != nil {
@@ -166,9 +181,10 @@ func (s *GroupClustersService) AddCluster(pid interface{}, opt *AddGroupClusterO
 }
 
 // EditGroupClusterOptions represents the available EditCluster() options.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_clusters.html#edit-group-cluster
+// https://docs.gitlab.com/api/group_clusters/#edit-group-cluster
 type EditGroupClusterOptions struct {
 	Name                *string                             `url:"name,omitempty" json:"name,omitempty"`
 	Domain              *string                             `url:"domain,omitempty" json:"domain,omitempty"`
@@ -178,6 +194,7 @@ type EditGroupClusterOptions struct {
 }
 
 // EditGroupPlatformKubernetesOptions represents the available PlatformKubernetes options for editing.
+// Deprecated: in GitLab 14.5
 type EditGroupPlatformKubernetesOptions struct {
 	APIURL *string `url:"api_url,omitempty" json:"api_url,omitempty"`
 	Token  *string `url:"token,omitempty" json:"token,omitempty"`
@@ -185,9 +202,10 @@ type EditGroupPlatformKubernetesOptions struct {
 }
 
 // EditCluster updates an existing group cluster.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_clusters.html#edit-group-cluster
+// https://docs.gitlab.com/api/group_clusters/#edit-group-cluster
 func (s *GroupClustersService) EditCluster(pid interface{}, cluster int, opt *EditGroupClusterOptions, options ...RequestOptionFunc) (*GroupCluster, *Response, error) {
 	group, err := parseID(pid)
 	if err != nil {
@@ -210,9 +228,10 @@ func (s *GroupClustersService) EditCluster(pid interface{}, cluster int, opt *Ed
 }
 
 // DeleteCluster deletes an existing group cluster.
+// Deprecated: in GitLab 14.5
 //
 // GitLab API docs:
-// https://docs.gitlab.com/ee/api/group_clusters.html#delete-group-cluster
+// https://docs.gitlab.com/api/group_clusters/#delete-group-cluster
 func (s *GroupClustersService) DeleteCluster(pid interface{}, cluster int, options ...RequestOptionFunc) (*Response, error) {
 	group, err := parseID(pid)
 	if err != nil {

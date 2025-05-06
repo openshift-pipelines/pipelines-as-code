@@ -79,7 +79,7 @@ If the `OWNERS` file uses `filters` instead of a simple configuration, we only
 consider the `.*` filter and extract the `approvers` and `reviewers` lists from
 it. Any other filters targeting specific files or directories are ignored.
 
-Additionally, `OWNERS_ALIASES` is supported and allows mapping alias names to
+Additionally, `OWNERS_ALIASES` is supported and allows mapping alias names to a
 lists of usernames.
 
 Including contributors in the `approvers` or `reviewers` lists within your
@@ -121,6 +121,29 @@ If you have set-up Pipelines-as-Code with the [Tekton Dashboard](https://github.
 or on OpenShift using the OpenShift Console.
 Pipelines-as-Code will post a URL in the Checks tab for GitHub apps to let you
 click on it and follow the pipeline execution directly there.
+
+## Errors When Parsing PipelineRun YAML
+
+When Pipelines-As-Code encounters an issue with the YAML formatting in the
+repository, it will log the error in the user namespace events log and
+the Pipelines-as-Code controller log.
+
+Despite the error, Pipelines-As-Code will continue to run other correctly parsed
+and matched PipelineRuns.
+
+{{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
+
+When an event is triggered from a Pull Request, a new comment will be created on
+the Pull Request detailing the error.
+
+Subsequent iterations on the Pull Request will update the comment with any new
+errors.
+
+If no new errors are detected, the comment will remain and will not be deleted.
+
+Here is an example of a YAML error being reported as a comment to a Pull Request:
+
+![report yaml error as comments](/images/report-error-comment-on-bad-yaml.png)
 
 ## Cancelling
 

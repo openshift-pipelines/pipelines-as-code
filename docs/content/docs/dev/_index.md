@@ -189,11 +189,13 @@ For example, to test and lint the go files:
 make test lint-go
 ```
 
-If you add a CLI command with help, you will need to regenerate the golden files:
+We use [golden](https://pkg.go.dev/gotest.tools/v3/golden) files in our tests, for instance, to compare the output of CLI commands or other detailed tests. Occasionally, you may need to regenerate the golden files if you modify the output of a command. For unit tests, you can use this Makefile target:
 
 ```shell
 make update-golden
 ```
+
+Head over to the [./test/README.md](./test/README.md) for more information on how to update the golden files on the E2E tests.
 
 ## Configuring the Pre Push Git checks
 

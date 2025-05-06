@@ -45,6 +45,10 @@ func (v *Provider) Client() *bitbucket.Client {
 	return v.bbClient
 }
 
+func (v *Provider) CreateComment(_ context.Context, _ *info.Event, _, _ string) error {
+	return nil
+}
+
 // CheckPolicyAllowing TODO: Implement ME.
 func (v *Provider) CheckPolicyAllowing(_ context.Context, _ *info.Event, _ []string) (bool, string) {
 	return false, ""

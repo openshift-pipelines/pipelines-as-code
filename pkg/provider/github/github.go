@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -623,4 +624,43 @@ func (v *Provider) isHeadCommitOfBranch(ctx context.Context, runevent *info.Even
 
 func (v *Provider) GetTemplate(commentType provider.CommentType) string {
 	return provider.GetHTMLTemplate(commentType)
+}
+
+// CreateComment creates a comment on a Pull Request.
+func (v *Provider) CreateComment(ctx context.Context, event *info.Event, commit, updateMarker string) error {
+	if v.ghClient == nil {
+		return fmt.Errorf("no github client has been initialized")
+	}
+
+	if event.PullRequestNumber == 0 {
+		return fmt.Errorf("create comment only works on pull requests")
+	}
+
+	// List last page of the comments of the PR
+	if updateMarker != "" {
+		comments, _, err := v.Client().Issues.ListComments(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueListCommentsOptions{
+			ListOptions: github.ListOptions{
+				Page:    1,
+				PerPage: 100,
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		re := regexp.MustCompile(regexp.QuoteMeta(updateMarker))
+		for _, comment := range comments {
+			if re.MatchString(comment.GetBody()) {
+				_, _, err := v.Client().Issues.EditComment(ctx, event.Organization, event.Repository, comment.GetID(), &github.IssueComment{
+					Body: &commit,
+				})
+				return err
+			}
+		}
+	}
+
+	_, _, err := v.Client().Issues.CreateComment(ctx, event.Organization, event.Repository, event.PullRequestNumber, &github.IssueComment{
+		Body: &commit,
+	})
+	return err
 }

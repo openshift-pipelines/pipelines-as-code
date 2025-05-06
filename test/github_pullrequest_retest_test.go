@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	tgithub "github.com/openshift-pipelines/pipelines-as-code/test/pkg/github"
 	twait "github.com/openshift-pipelines/pipelines-as-code/test/pkg/wait"

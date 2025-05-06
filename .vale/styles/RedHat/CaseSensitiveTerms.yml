@@ -1,7 +1,7 @@
 ---
 extends: substitution
 ignorecase: false
-level: error
+level: warning
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/casesensitiveterms/
 message: "Use '%s' rather than '%s'."
 action:
@@ -177,7 +177,7 @@ swap:
   knowledgebase: Knowledgebase
   ksession|knowledge session: KIE session
   Kubelet(?! Stats Receiver): kubelet
-  kubernetes|k8s: Kubernetes
+  kubernetes: Kubernetes
   kvm: KVM
   Lan|lan: LAN
   Librados|LIBRADOS: librados

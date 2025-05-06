@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/policy"

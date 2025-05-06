@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -66,7 +67,7 @@ func (v *Provider) Client() *gitlab.Client {
 	providerMetrics.RecordAPIUsage(
 		v.Logger,
 		// URL used instead of "gitlab" to differentiate in the case of a CI cluster which
-		// serves multiple Gitlab instances
+		// serves multiple GitLab instances
 		v.apiURL,
 		v.triggerEvent,
 		v.repo,
@@ -74,12 +75,51 @@ func (v *Provider) Client() *gitlab.Client {
 	return v.gitlabClient
 }
 
-func (v *Provider) SetGitlabClient(client *gitlab.Client) {
+func (v *Provider) SetGitLabClient(client *gitlab.Client) {
 	v.gitlabClient = client
 }
 
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {
 	v.pacInfo = pacInfo
+}
+
+func (v *Provider) CreateComment(_ context.Context, event *info.Event, commit, updateMarker string) error {
+	if v.gitlabClient == nil {
+		return fmt.Errorf("no gitlab client has been initialized")
+	}
+
+	if event.PullRequestNumber == 0 {
+		return fmt.Errorf("create comment only works on merge requests")
+	}
+
+	// List comments of the merge request
+	if updateMarker != "" {
+		comments, _, err := v.Client().Notes.ListMergeRequestNotes(v.sourceProjectID, event.PullRequestNumber, &gitlab.ListMergeRequestNotesOptions{
+			ListOptions: gitlab.ListOptions{
+				Page:    1,
+				PerPage: 100,
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		re := regexp.MustCompile(updateMarker)
+		for _, comment := range comments {
+			if re.MatchString(comment.Body) {
+				_, _, err := v.Client().Notes.UpdateMergeRequestNote(v.sourceProjectID, event.PullRequestNumber, comment.ID, &gitlab.UpdateMergeRequestNoteOptions{
+					Body: &commit,
+				})
+				return err
+			}
+		}
+	}
+
+	_, _, err := v.Client().Notes.CreateMergeRequestNote(v.sourceProjectID, event.PullRequestNumber, &gitlab.CreateMergeRequestNoteOptions{
+		Body: &commit,
+	})
+
+	return err
 }
 
 // CheckPolicyAllowing TODO: Implement ME.
@@ -256,12 +296,24 @@ func (v *Provider) CreateStatus(_ context.Context, event *info.Event, statusOpts
 	if event.TriggerTarget == triggertype.PullRequest && opscomments.IsAnyOpsEventType(event.EventType) {
 		eventType = triggertype.PullRequest
 	}
-	// only add a note when we are on a MR
-	if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
-		mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
-		_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
-		return err
+
+	var commentStrategy string
+
+	if v.repo != nil && v.repo.Spec.Settings != nil && v.repo.Spec.Settings.Gitlab != nil {
+		commentStrategy = v.repo.Spec.Settings.Gitlab.CommentStrategy
 	}
+	switch commentStrategy {
+	case "disable_all":
+		v.Logger.Warn("Comments related to PipelineRuns status have been disabled for GitLab merge requests")
+		return nil
+	default:
+		if eventType == triggertype.PullRequest || provider.Valid(event.EventType, anyMergeRequestEventType) {
+			mopt := &gitlab.CreateMergeRequestNoteOptions{Body: gitlab.Ptr(body)}
+			_, _, err := v.Client().Notes.CreateMergeRequestNote(event.TargetProjectID, event.PullRequestNumber, mopt)
+			return err
+		}
+	}
+
 	return nil
 }
 

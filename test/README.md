@@ -76,6 +76,8 @@ You can specify only a subsets of test to run with :
 
 same goes for `TestGitlab` or other methods.
 
+If you need to update the golden files in the end-to-end test, add the `-update` flag to the [go test](https://pkg.go.dev/cmd/go#hdr-Test_packages) command to refresh those files. First, run it if you expect the test output to change (or for a new test), then run it again without the flag to ensure everything is correct.
+
 ## Running nightly tests
 
 Some tests are set as nightly which mean not run on every PR, because exposing rate limitation often.

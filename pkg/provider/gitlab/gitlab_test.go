@@ -228,7 +228,7 @@ func TestCreateStatus(t *testing.T) {
 
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.SetGitlabClient(client)
+				v.SetGitLabClient(client)
 				defer tearDown()
 				thelp.MuxNotePost(t, mux, v.targetProjectID, tt.args.event.PullRequestNumber, tt.args.postStr)
 			}
@@ -336,7 +336,7 @@ func TestSetClientDetectAPIURL(t *testing.T) {
 			expectedError:  "",
 		},
 		{
-			name:              "Success: Default URL when repoURL is public Gitlab",
+			name:              "Success: Default URL when repoURL is public GitLab",
 			providerToken:     "token",
 			providerURL:       "",
 			repoURL:           apiPublicURL + "/public/repo", // Starts with public URL, so skipped
@@ -553,7 +553,7 @@ func TestGetTektonDir(t *testing.T) {
 			}
 			if tt.wantClient {
 				client, mux, tearDown := thelp.Setup(t)
-				v.SetGitlabClient(client)
+				v.SetGitLabClient(client)
 				muxbranch := tt.args.event.HeadBranch
 				if tt.args.provenance == "default_branch" {
 					muxbranch = tt.args.event.DefaultBranch
@@ -895,7 +895,7 @@ func TestIsHeadCommitOfBranch(t *testing.T) {
 			defer teardown()
 			glProvider := &Provider{sourceProjectID: 1}
 			if tt.wantClient {
-				glProvider.SetGitlabClient(fakeclient)
+				glProvider.SetGitLabClient(fakeclient)
 				mux.HandleFunc("/projects/1/repository/branches/cool-branch",
 					func(rw http.ResponseWriter, _ *http.Request) {
 						if tt.errStatusCode != 0 {
@@ -913,6 +913,110 @@ func TestIsHeadCommitOfBranch(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
+		})
+	}
+}
+
+func TestGitLabCreateComment(t *testing.T) {
+	tests := []struct {
+		name          string
+		event         *info.Event
+		commit        string
+		updateMarker  string
+		mockResponses map[string]func(rw http.ResponseWriter, _ *http.Request)
+		wantErr       string
+		clientNil     bool
+	}{
+		{
+			name:      "nil client error",
+			clientNil: true,
+			event:     &info.Event{PullRequestNumber: 123},
+			wantErr:   "no gitlab client has been initialized",
+		},
+		{
+			name:    "not a merge request error",
+			event:   &info.Event{PullRequestNumber: 0},
+			wantErr: "create comment only works on merge requests",
+		},
+		{
+			name:         "create new comment",
+			event:        &info.Event{PullRequestNumber: 123},
+			commit:       "New Comment",
+			updateMarker: "",
+			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/projects/666/merge_requests/123/notes": func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodPost)
+					rw.WriteHeader(http.StatusCreated)
+					fmt.Fprint(rw, `{}`)
+				},
+			},
+		},
+		{
+			name:         "update existing comment",
+			event:        &info.Event{PullRequestNumber: 123},
+			commit:       "Updated Comment",
+			updateMarker: "MARKER",
+			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/projects/666/merge_requests/123/notes": func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						fmt.Fprint(rw, `[{"id": 555, "body": "MARKER"}]`)
+						return
+					}
+				},
+				"/projects/666/merge_requests/123/notes/555": func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, "PUT")
+					rw.WriteHeader(http.StatusOK)
+					fmt.Fprint(rw, `{}`)
+				},
+			},
+		},
+		{
+			name:         "no matching comment creates new",
+			event:        &info.Event{PullRequestNumber: 123},
+			commit:       "New Comment",
+			updateMarker: "MARKER",
+			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/projects/666/merge_requests/123/notes": func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						fmt.Fprint(rw, `[{"id": 555, "body": "NO_MATCH"}]`)
+						return
+					}
+					assert.Equal(t, r.Method, http.MethodPost)
+					rw.WriteHeader(http.StatusCreated)
+					fmt.Fprint(rw, `{}`)
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeclient, mux, teardown := thelp.Setup(t)
+			defer teardown()
+
+			if tt.clientNil {
+				p := &Provider{
+					sourceProjectID: 666,
+				}
+				err := p.CreateComment(context.Background(), tt.event, tt.commit, tt.updateMarker)
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+
+			for endpoint, handler := range tt.mockResponses {
+				mux.HandleFunc(endpoint, handler)
+			}
+
+			p := &Provider{
+				sourceProjectID: 666,
+				gitlabClient:    fakeclient,
+			}
+			err := p.CreateComment(context.Background(), tt.event, tt.commit, tt.updateMarker)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+			} else {
+				assert.NilError(t, err)
+			}
 		})
 	}
 }

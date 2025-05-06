@@ -53,7 +53,7 @@ func TestGitlabIncomingWebhook(t *testing.T) {
 		},
 	}
 
-	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, randomedString, incoming)
+	err = tgitlab.CreateCRD(ctx, projectinfo, runcnx, opts, randomedString, incoming)
 	assert.NilError(t, err)
 
 	err = secret.Create(ctx, runcnx, map[string]string{"incoming": incomingSecreteValue}, randomedString, incomingSecretName)

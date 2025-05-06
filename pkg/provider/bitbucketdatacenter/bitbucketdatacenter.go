@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	bbv1 "github.com/gfleury/go-bitbucket-v1"
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/stash"
 	"github.com/jenkins-x/go-scm/scm/transport/oauth2"
@@ -72,6 +72,10 @@ func (v Provider) ScmClient() *scm.Client {
 
 func (v *Provider) SetScmClient(client *scm.Client) {
 	v.scmClient = client
+}
+
+func (v *Provider) CreateComment(_ context.Context, _ *info.Event, _, _ string) error {
+	return nil
 }
 
 func (v *Provider) SetPacInfo(pacInfo *info.PacOpts) {

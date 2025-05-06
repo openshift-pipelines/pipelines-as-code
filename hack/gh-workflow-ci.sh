@@ -91,6 +91,16 @@ run_e2e_tests() {
   make test-e2e GO_TEST_FLAGS="-run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
 }
 
+output_logs() {
+  if command -v "snazy" >/dev/null 2>&1; then
+    snazy --skip-line-regexp="^(Reconcile (succeeded|error)|Updating webhook)" /tmp/logs/pac-pods.log
+  else
+    # snazy for the poors
+    python -c "import sys,json,datetime; [print(f'• { (lambda t: datetime.datetime.fromisoformat(t.rstrip(\"Z\")).strftime(\"%H:%M:%S\") if isinstance(t,str) else datetime.datetime.fromtimestamp(t).strftime(\"%H:%M:%S\"))(json.loads(l.strip())[\"ts\"] )} {json.loads(l.strip()).get(\"msg\",\"\")}') if l.strip().startswith('{') else print(l.strip()) for l in sys.stdin]" \
+      </tmp/logs/pac-pods.log
+  fi
+}
+
 collect_logs() {
   # Read from environment variables
   local test_gitea_smee_url="${TEST_GITEA_SMEEURL}"
@@ -100,14 +110,6 @@ collect_logs() {
   # Output logs to stdout so we can see via the web interface directly
   kubectl logs -n pipelines-as-code -l app.kubernetes.io/part-of=pipelines-as-code \
     --all-containers=true --tail=1000 >/tmp/logs/pac-pods.log
-  if command -v "snazy" >/dev/null 2>&1; then
-    snazy --skip-line-regexp="^(Reconcile (succeeded|error)|Updating webhook)" /tmp/logs/pac-pods.log
-  else
-    # snazy for the poors
-    python -c "import sys,json,datetime; [print(f'• { (lambda t: datetime.datetime.fromisoformat(t.rstrip(\"Z\")).strftime(\"%H:%M:%S\") if isinstance(t,str) else datetime.datetime.fromtimestamp(t).strftime(\"%H:%M:%S\"))(json.loads(l.strip())[\"ts\"] )} {json.loads(l.strip()).get(\"msg\",\"\")}') if l.strip().startswith('{') else print(l.strip()) for l in sys.stdin]" \
-      </tmp/logs/pac-pods.log
-  fi
-
   kind export logs /tmp/logs
   [[ -d /tmp/gosmee-replay ]] && cp -a /tmp/gosmee-replay /tmp/logs/
 
@@ -168,6 +170,10 @@ help() {
   collect_logs
     Collect logs from the cluster
     Required env vars: TEST_GITEA_SMEEURL, TEST_GITHUB_SECOND_SMEE_URL
+
+  output_logs
+    Will output logs using snazzy formatting when available or otherwise through a simple
+    python formatter. This makes debugging easier from the GitHub Actions interface.
 EOF
 }
 
@@ -183,6 +189,9 @@ run_e2e_tests)
   ;;
 collect_logs)
   collect_logs
+  ;;
+output_logs)
+  output_logs
   ;;
 help)
   help

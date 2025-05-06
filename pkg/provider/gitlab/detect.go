@@ -20,7 +20,7 @@ func (v *Provider) Detect(req *http.Request, payload string, logger *zap.Sugared
 		return false, false, logger, "no gitlab event", nil
 	}
 
-	// it is a Gitlab event
+	// it is a GitLab event
 	isGL = true
 
 	setLoggerAndProceed := func(processEvent bool, reason string, err error) (bool, bool, *zap.SugaredLogger,

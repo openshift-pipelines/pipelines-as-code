@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/jonboulle/clockwork"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
@@ -1210,4 +1210,97 @@ func resetMetrics() {
 
 	// have to reset sync.Once to allow recreation of Recorder.
 	metrics.ResetRecorder()
+}
+
+func TestCreateComment(t *testing.T) {
+	tests := []struct {
+		name          string
+		event         *info.Event
+		updateMarker  string
+		mockResponses map[string]func(rw http.ResponseWriter, _ *http.Request)
+		wantErr       string
+		clientNil     bool
+	}{
+		{
+			name:      "nil client error",
+			clientNil: true,
+			event:     &info.Event{PullRequestNumber: 123},
+			wantErr:   "no github client has been initialized",
+		},
+		{
+			name:    "not a pull request error",
+			event:   &info.Event{PullRequestNumber: 0},
+			wantErr: "create comment only works on pull requests",
+		},
+		{
+			name:         "create new comment",
+			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
+			updateMarker: "",
+			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodPost)
+					rw.WriteHeader(http.StatusCreated)
+				},
+			},
+		},
+		{
+			name:         "update existing comment",
+			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
+			updateMarker: "MARKER",
+			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						fmt.Fprint(rw, `[{"id": 555, "body": "MARKER"}]`)
+						return
+					}
+				},
+				"/repos/org/repo/issues/comments/555": func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodPatch)
+					rw.WriteHeader(http.StatusOK)
+				},
+			},
+		},
+		{
+			name:         "no matching comment creates new",
+			event:        &info.Event{Organization: "org", Repository: "repo", PullRequestNumber: 123},
+			updateMarker: "MARKER",
+			mockResponses: map[string]func(rw http.ResponseWriter, _ *http.Request){
+				"/repos/org/repo/issues/123/comments": func(rw http.ResponseWriter, r *http.Request) {
+					if r.Method == http.MethodGet {
+						fmt.Fprint(rw, `[{"id": 555, "body": "NO_MATCH"}]`)
+						return
+					}
+					assert.Equal(t, r.Method, http.MethodPost)
+					rw.WriteHeader(http.StatusCreated)
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+
+			var provider *Provider
+			if !tt.clientNil {
+				fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+				defer teardown()
+				provider = &Provider{ghClient: fakeclient}
+
+				for pattern, handler := range tt.mockResponses {
+					mux.HandleFunc(pattern, handler)
+				}
+			} else {
+				provider = &Provider{} // nil client
+			}
+
+			err := provider.CreateComment(ctx, tt.event, "comment body", tt.updateMarker)
+
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			assert.NilError(t, err)
+		})
+	}
 }

@@ -11,10 +11,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/webhook"
 )
 
 var universalDeserializer = serializer.NewCodecFactory(runtime.NewScheme()).UniversalDeserializer()
+
+var allowedGitlabDisableCommentStrategyOnMr = sets.NewString("", "disable_all")
 
 // Path implements AdmissionController.
 func (ac *reconciler) Path() string {
@@ -56,6 +59,12 @@ func (ac *reconciler) Admit(_ context.Context, request *v1.AdmissionRequest) *v1
 
 	if repo.Spec.ConcurrencyLimit != nil && *repo.Spec.ConcurrencyLimit == 0 {
 		return webhook.MakeErrorStatus("concurrency limit must be greater than 0")
+	}
+
+	if repo.Spec.Settings != nil && repo.Spec.Settings.Gitlab != nil {
+		if !allowedGitlabDisableCommentStrategyOnMr.Has(repo.Spec.Settings.Gitlab.CommentStrategy) {
+			return webhook.MakeErrorStatus("comment strategy '%s' is not supported for Gitlab MRs", repo.Spec.Settings.Gitlab.CommentStrategy)
+		}
 	}
 
 	return &v1.AdmissionResponse{Allowed: true}

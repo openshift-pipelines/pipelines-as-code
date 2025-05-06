@@ -3,6 +3,5 @@ set -euf
 
 kubectl get ns -o name | grep pac-e2e | sed 's/.*\///' | xargs -I"{}" -rP4 kubectl delete repo --all -n "{}"
 (
-	kubectl get clustertasks | grep pac- | awk '{print $1}' | xargs -rP4 kubectl delete clustertask
-	kubectl get ns -o name | grep pac-e2e | sed 's/.*\///' | xargs -rP4 kubectl delete ns
+  kubectl get ns -o name | grep pac-e2e | sed 's/.*\///' | xargs -rP4 kubectl delete ns
 ) &
