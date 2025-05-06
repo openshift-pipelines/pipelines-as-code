@@ -165,6 +165,10 @@ jobs:
         run: |
           ./hack/gh-workflow-ci.sh collect_logs
 
+      - name: Show controllers/watcher logs with Snazy
+        run: |
+          ./hack/gh-workflow-ci output-logs
+
       - name: Upload artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
