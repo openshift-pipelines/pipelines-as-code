@@ -1,0 +1,93 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: trigger-e2e-tests
+  annotations:
+    # Trigger this PipelineRun when a comment starts with /e2e
+    pipelinesascode.tekton.dev/on-comment: "^/e2e"
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: trigger-e2e-tests
+        taskSpec:
+          steps:
+            - name: trigger-workflow
+              image: registry.access.redhat.com/ubi9/ubi
+              env:
+                - name: GH_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "nightly-ci-github-hub-token"
+                      key: "hub-token"
+                - name: REPO_OWNER
+                  value: "{{ repo_owner }}"
+                - name: REPO_NAME
+                  value: "{{ repo_name }}"
+                - name: PR_REVISION
+                  value: "{{ revision }}"
+                - name: DEFAULT_BRANCH
+                  value: "main"
+                - name: WORKFLOW_FILE
+                  value: "e2e.yaml"
+              script: |
+                #!/usr/bin/env python3
+
+                import os
+                import sys
+                import requests
+                import json # Import json for payload
+
+                GH_TOKEN = os.getenv("GH_TOKEN")
+                REPO_OWNER = os.getenv("REPO_OWNER")
+                REPO_NAME = os.getenv("REPO_NAME")
+                PR_REVISION = os.getenv("PR_REVISION")
+                DEFAULT_BRANCH = os.getenv("DEFAULT_BRANCH")
+                WORKFLOW_FILE = os.getenv("WORKFLOW_FILE")
+
+                if not all([GH_TOKEN, REPO_OWNER, REPO_NAME, PR_REVISION, DEFAULT_BRANCH, WORKFLOW_FILE]):
+                    print("Error: Missing environment variables!")
+                    sys.exit(1)
+
+                # GitHub API endpoint for workflow dispatches
+                # https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event
+                url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/actions/workflows/{WORKFLOW_FILE}/dispatches"
+
+                headers = {
+                    "Accept": "application/vnd.github.v3+json",
+                    "Authorization": f"token {GH_TOKEN}",
+                    "User-Agent": "Tekton-Pipeline-as-Code",
+                    "Content-Type": "application/json"
+                }
+
+                payload = {
+                    "ref": DEFAULT_BRANCH,
+                    "inputs": {
+                        "target_ref": PR_REVISION
+                    }
+                }
+
+                print(f"Attempting to trigger workflow '{WORKFLOW_FILE}' on branch '{DEFAULT_BRANCH}' with target_ref '{PR_REVISION}'...")
+
+                try:
+                    response = requests.post(url, headers=headers, data=json.dumps(payload)) # Use json.dumps for the payload
+
+                    if response.status_code == 204: # 204 No Content is the expected success code for dispatch
+                        print(f"Successfully triggered GitHub Actions workflow '{WORKFLOW_FILE}'!")
+                    elif response.status_code == 404:
+                         print(f"Error: Workflow file '{WORKFLOW_FILE}' not found or is not configured for workflow_dispatch.")
+                         print(f"Response: {response.text}")
+                         sys.exit(1)
+                    elif response.status_code == 422:
+                         print(f"Error: Validation failed for workflow dispatch (e.g., branch '{DEFAULT_BRANCH}' might not exist, or inputs are incorrect).")
+                         print(f"Response: {response.text}")
+                         sys.exit(1)
+                    else:
+                        print(f"Failed to trigger GitHub Actions workflow. Status code: {response.status_code}")
+                        print(f"Response: {response.text}")
+                        sys.exit(1)
+
+                except requests.exceptions.RequestException as e:
+                    print(f"An error occurred while making the API request: {e}")
+                    sys.exit(1)
