@@ -11,7 +11,7 @@ const (
 )
 
 // AlphaString returns a random alphanumeric string of the requested length
-// https://stackoverflow.com/a/35615565/145125
+// see https://stackoverflow.com/a/35615565/145125.
 func AlphaString(length int) string {
 	result := make([]byte, length)
 	bufferSize := int(float64(length) * 1.3)
