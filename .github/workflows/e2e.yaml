@@ -31,7 +31,7 @@ jobs:
     if: >
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request_target' && (github.actor == github.triggering_actor && (github.event.repository.permissions.write == true || github.event.repository.permissions.admin == true)))
+      (github.event_name == 'pull_request_target' && github.event.repository.permissions.write == true)
 
     concurrency:
       group: ${{ github.workflow }}-${{ matrix.provider }}-${{ github.event.pull_request.number || github.ref_name }}
