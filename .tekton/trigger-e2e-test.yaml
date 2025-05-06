@@ -62,13 +62,12 @@ spec:
                 }
 
                 payload = {
-                    "ref": DEFAULT_BRANCH,
                     "inputs": {
                         "target_ref": PR_REVISION
                     }
                 }
 
-                print(f"Attempting to trigger workflow '{WORKFLOW_FILE}' on branch '{DEFAULT_BRANCH}' with target_ref '{PR_REVISION}'...")
+                print(f"Attempting to trigger workflow '{WORKFLOW_FILE}'  with target_ref '{PR_REVISION}'...")
 
                 try:
                     response = requests.post(url, headers=headers, data=json.dumps(payload)) # Use json.dumps for the payload
