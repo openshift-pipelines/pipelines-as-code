@@ -5,10 +5,7 @@ metadata:
   name: e2e-label.yaml
   annotations:
     pipelinesascode.tekton.dev/max-keep-runs: "2"
-    pipelinesascode.tekton.dev/cancel-in-progress: "true"
-    pipelinesascode.tekton.dev/on-event: "pull_request"
-    pipelinesascode.tekton.dev/on-target-branch: "main"
-    pipelinesascode.tekton.dev/on-path-change: "[**/*.go, .github/workflows/*l, test/**]"
+    pipelinesascode.tekton.dev/on-comment: "^/e2e"
 spec:
   pipelineSpec:
     tasks:
