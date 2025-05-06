@@ -37,11 +37,13 @@ spec:
                   value: "$(params.repo_url)"
                 - name: revision
                   value: "$(params.revision)"
+                - name: depth
+                  value: 1000
             - name: generate-release-yaml
               image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
               script: |
-                set -x
+                set -euxo pipefail
                 mkdir -p bin/ # ignored in .gitignore
                 ./hack/generate-releaseyaml.sh  > bin/release.yaml
             - name: codespell
@@ -61,7 +63,7 @@ spec:
               image: registry.access.redhat.com/ubi9/python-312
               workingDir: $(workspaces.source.path)
               script: |
-                set -x
+                set -euxo pipefail
                 if [[ "{{ headers['X-Github-Event'] }}" == "" ]]; then
                   echo "Not a GitHub event, skipping gitlint"
                   exit 0
@@ -75,14 +77,62 @@ spec:
                 git config --global --add safe.directory $(workspaces.source.path)
                 git log -1 --format=format:%s |grep -E -q '^Merge branch' && exit 0
                 pip3 install gitlint
-                gitlint --commit "$(git log --format=format:%H --no-merges -1)" --ignore "Merge branch"
+
+                # Check all commits between base_sha and HEAD
+                base_sha="{{ body.pull_request.base.sha }}"
+                failed=0
+                while read -r commit_hash; do
+                  echo "Checking commit: $commit_hash"
+                  if ! gitlint --commit "$commit_hash" --ignore "Merge branch"; then
+                    failed=1
+                  fi
+                done < <(git log "${base_sha}..HEAD" --format=format:%H --no-merges)
+
+                exit $failed
+
+            - name: conventional-commits
+              displayName: "conventional commit check"
+              image: registry.access.redhat.com/ubi9/python-312
+              workingDir: $(workspaces.source.path)
+              script: |
+                set -euxo pipefail
+                git config --global --add safe.directory /workspace/source
+
+                if [[ "{{ headers['X-Github-Event'] }}" == "" ]]; then
+                  echo "Not a GitHub event, skipping gitlint"
+                  exit 0
+                fi
+
+                if [[ "{{ headers['X-Github-Event'] }}" != "pull_request" ]]; then
+                  echo "Not a pull request, skipping gitlint"
+                  exit 0
+                fi
+                base_sha="{{ body.pull_request.base.sha }}"
+
+                # make sure we have a conventional commit
+                invalid_commits=0
+                while read -r commit_msg; do
+                  if ! echo "$commit_msg" | grep -E -q '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?:'; then
+                    echo "ERROR: Found commit message that does not follow conventional commit format:"
+                    echo "$commit_msg"
+                    invalid_commits=$((invalid_commits + 1))
+                  fi
+                done < <(git log "${base_sha}..HEAD" --format=format:%s --no-merges)
+
+                if [ $invalid_commits -gt 0 ]; then
+                  echo "ERROR: $invalid_commits commit(s) do not follow conventional commit format."
+                  echo "Expected format: type(scope): description"
+                  echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
+                  echo "See: https://www.conventionalcommits.org/en/v1.0.0/#summary"
+                  exit 1
+                fi
 
             - name: yamllint
               displayName: "YAML Linter"
               image: cytopia/yamllint
               workingDir: $(workspaces.source.path)
               script: |
-                set -x
+                set -euxo pipefail
                 yamllint -f parsable -c .yamllint $(find . -type f -regex ".*y[a]ml" -print)
 
             - name: ruff-lint
