@@ -119,6 +119,7 @@ $ tkn pac create repo
     url: "https://gitlab.com/group/project"
     git_provider:
       # url: "https://gitlab.example.com/ # Set this if you are using a private GitLab instance
+      type: "gitlab"
       secret:
         name: "gitlab-webhook-config"
         # Set this if you have a different key in your secret

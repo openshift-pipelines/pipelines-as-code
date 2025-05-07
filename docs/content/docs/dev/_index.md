@@ -195,7 +195,25 @@ We use [golden](https://pkg.go.dev/gotest.tools/v3/golden) files in our tests, f
 make update-golden
 ```
 
-Head over to the [./test/README.md](./test/README.md) for more information on how to update the golden files on the E2E tests.
+Head over to the
+[./test/README.md](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/README.md)
+for more information on how to update the golden files on the E2E tests.
+
+## Update OpenAPI Schemas
+
+The CRD schemas are automatically generated from the Go code (generally
+`pkg/apis/pipelinesascode/v1alpha1/types.go`). After modifying
+any type definitions, you'll need to regenerate these schemas to update the CRD
+in `config/300-repositories.yaml`.
+
+When modifying types, ensure the validation logic is appropriate, then run:
+
+```shell
+make update-schemas
+```
+
+There is a PAC CI check that will ensure that the CRD is up to date with the go
+code.
 
 ## Configuring the Pre Push Git checks
 
