@@ -46,171 +46,359 @@ spec:
       storage: true
       schema:
         openAPIV3Schema:
-          x-kubernetes-preserve-unknown-fields: true
-          description: Schema for the repository API
+          description: Repository is the representation of a Git repository from a Git provider platform.
           properties:
             apiVersion:
-              description:
-                "APIVersion defines the versioned schema of this representation
-                of an object. Servers should convert recognized schemas to the latest
-                internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/  api-conventions.md#resources"
+              description: |-
+                APIVersion defines the versioned schema of this representation of an object.
+                Servers should convert recognized schemas to the latest internal value, and
+                may reject unrecognized values.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
               type: string
             kind:
-              description:
-                "Kind is a string value representing the REST resource this
-                object represents. Servers may infer this from the endpoint the client
-                submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds"
+              description: |-
+                Kind is a string value representing the REST resource this object represents.
+                Servers may infer this from the endpoint the client submits requests to.
+                Cannot be updated.
+                In CamelCase.
+                More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
               type: string
             metadata:
               type: object
-            spec:
-              description: Spec defines the desired state of Repository
-              properties:
-                settings:
-                  description: Settings relative to the Repository
-                  type: object
-                  properties:
-                    policy:
-                      type: object
-                      description: Set policy on actions allowing only some teams
+            pipelinerun_status:
+              items:
+                properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Annotations is additional Status fields for the Resource to save some
+                      additional State as well as convey more information to the user. This is
+                      roughly akin to Annotations on any k8s resource, just the reconciler conveying
+                      richer information outwards.
+                    type: object
+                  completionTime:
+                    description: CompletionTime is the time the PipelineRun completed.
+                    format: date-time
+                    type: string
+                  conditions:
+                    description: Conditions the latest available observations of a resource's current state.
+                    items:
+                      description: |-
+                        Condition defines a readiness condition for a Knative resource.
+                        See: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#typical-status-properties
                       properties:
-                        ok_to_test:
-                          type: array
-                          items:
-                            description: list of teams allowed to run /ok-to-test
-                            type: string
-                        pull_request:
-                          type: array
-                          items:
-                            description: list of teams allowed to have ci run on pull/merge requests.
-                            type: string
-                    gitlab:
+                        lastTransitionTime:
+                          description: |-
+                            LastTransitionTime is the last time the condition transitioned from one status to another.
+                            We use VolatileTime in place of metav1.Time to exclude this from creating equality.Semantic
+                            differences (all other things held constant).
+                          type: string
+                        message:
+                          description: A human readable message indicating details about the transition.
+                          type: string
+                        reason:
+                          description: The reason for the condition's last transition.
+                          type: string
+                        severity:
+                          description: |-
+                            Severity with which to treat failures of this type of condition.
+                            When this is not specified, it defaults to Error.
+                          type: string
+                        status:
+                          description: Status of the condition, one of True, False, Unknown.
+                          type: string
+                        type:
+                          description: Type of condition.
+                          type: string
+                      required:
+                        - status
+                        - type
                       type: object
+                    type: array
+                  event_type:
+                    description: EventType is the event type of that run
+                    type: string
+                  failure_reason:
+                    additionalProperties:
+                      description: TaskInfos contains information about a task.
+                      properties:
+                        completion_time:
+                          format: date-time
+                          type: string
+                        display_name:
+                          type: string
+                        log_snippet:
+                          type: string
+                        message:
+                          type: string
+                        name:
+                          type: string
+                        reason:
+                          type: string
+                      required:
+                        - name
+                      type: object
+                    description: CollectedTaskInfos is the information about tasks
+                    type: object
+                  logurl:
+                    description: LogURL is the full URL to the log for this run.
+                    type: string
+                  observedGeneration:
+                    description: |-
+                      ObservedGeneration is the 'Generation' of the Service that
+                      was last processed by the controller.
+                    format: int64
+                    type: integer
+                  pipelineRunName:
+                    description: PipelineRunName is the name of the PipelineRun
+                    type: string
+                  sha:
+                    description: SHA is the name of the SHA that has been tested
+                    type: string
+                  sha_url:
+                    description: SHA the URL of the SHA to view it
+                    type: string
+                  startTime:
+                    description: StartTime is the time the PipelineRun is actually started.
+                    format: date-time
+                    type: string
+                  target_branch:
+                    description: TargetBranch is the target branch of that run
+                    type: string
+                  title:
+                    description: Title is the title of the commit SHA that has been tested
+                    type: string
+                type: object
+              type: array
+            spec:
+              description: |-
+                RepositorySpec defines the desired state of a Repository, including its URL,
+                Git provider configuration, and operational settings.
+              properties:
+                concurrency_limit:
+                  description: |-
+                    ConcurrencyLimit defines the maximum number of concurrent pipelineruns that can
+                    run for this repository. This helps prevent resource exhaustion when many events trigger
+                    pipelines simultaneously.
+                  minimum: 1
+                  type: integer
+                git_provider:
+                  description: |-
+                    GitProvider details specific to a git provider configuration. Contains authentication,
+                    API endpoints, and provider type information needed to interact with the Git service.
+                  properties:
+                    secret:
+                      description: |-
+                        Secret reference for authentication with the Git provider. Contains the token,
+                        password, or private key used to authenticate requests to the Git provider API.
+                      properties:
+                        key:
+                          description: Key in the secret
+                          type: string
+                        name:
+                          description: Name of the secret
+                          type: string
+                      required:
+                        - name
+                      type: object
+                    type:
+                      description: |-
+                        Type of git provider. Determines which Git provider API and authentication flow to use.
+                        Supported values:
+                        - 'github': GitHub.com or GitHub Enterprise
+                        - 'gitlab': GitLab.com or self-hosted GitLab
+                        - 'bitbucket-datacenter': Bitbucket Data Center (self-hosted)
+                        - 'bitbucket-cloud': Bitbucket Cloud (bitbucket.org)
+                        - 'gitea': Gitea instances
+                      enum:
+                        - github
+                        - gitlab
+                        - bitbucket-datacenter
+                        - bitbucket-cloud
+                        - gitea
+                      type: string
+                    url:
+                      description: |-
+                        URL of the git provider API endpoint. This is the base URL for API requests to the
+                        Git provider (e.g., 'https://api.github.com' for GitHub or a custom GitLab instance URL).
+                      type: string
+                    user:
+                      description: |-
+                        User of the git provider. Username to use for authentication when using basic auth
+                        or token-based authentication methods. Not used for GitHub Apps authentication.
+                      type: string
+                    webhook_secret:
+                      description: |-
+                        WebhookSecret reference for webhook validation. Contains the shared secret used to
+                        validate that incoming webhooks are legitimate and coming from the Git provider.
+                      properties:
+                        key:
+                          description: Key in the secret
+                          type: string
+                        name:
+                          description: Name of the secret
+                          type: string
+                      required:
+                        - name
+                      type: object
+                  type: object
+                incoming:
+                  description: |-
+                    Incomings defines incoming webhook configurations. Each configuration specifies how to
+                    handle external webhook requests that don't come directly from the primary Git provider.
+                  items:
+                    properties:
+                      params:
+                        description: |-
+                          Params defines parameter names to extract from the webhook payload. These parameters
+                          will be made available to the PipelineRuns triggered by this webhook.
+                        items:
+                          type: string
+                        type: array
+                      secret:
+                        description: |-
+                          Secret for the incoming webhook authentication. This secret is used to validate
+                          that webhook requests are coming from authorized sources.
+                        properties:
+                          key:
+                            description: Key in the secret
+                            type: string
+                          name:
+                            description: Name of the secret
+                            type: string
+                        required:
+                          - name
+                        type: object
+                      targets:
+                        description: |-
+                          Targets defines target branches for this webhook. When specified, only webhook
+                          events targeting these branches will trigger PipelineRuns.
+                        items:
+                          type: string
+                        type: array
+                      type:
+                        description: |-
+                          Type of the incoming webhook. Currently only 'webhook-url' is supported, which allows
+                          external systems to trigger PipelineRuns via generic webhook requests.
+                        enum:
+                          - webhook-url
+                        type: string
+                    required:
+                      - secret
+                      - type
+                    type: object
+                  type: array
+                params:
+                  description: |-
+                    Params defines repository level parameters that can be referenced in PipelineRuns.
+                    These parameters can be used as default values or configured for specific events.
+                  items:
+                    properties:
+                      filter:
+                        description: |-
+                          Filter defines when this parameter applies. It can be used to conditionally
+                          apply parameters based on the event type, branch name, or other attributes.
+                        type: string
+                      name:
+                        description: |-
+                          Name of the parameter. This is the key that will be used to reference this parameter
+                          in PipelineRun definitions through via the {{ name }} syntax.
+                        type: string
+                      secret_ref:
+                        description: |-
+                          SecretRef references a secret for the parameter value. Use this when the parameter
+                          contains sensitive information that should not be stored directly in the Repository CR.
+                          This field is mutually exclusive with Value.
+                        properties:
+                          key:
+                            description: Key in the secret
+                            type: string
+                          name:
+                            description: Name of the secret
+                            type: string
+                        required:
+                          - name
+                        type: object
+                      value:
+                        description: |-
+                          Value of the parameter. The literal value to be provided to the PipelineRun.
+                          This field is mutually exclusive with SecretRef.
+                        type: string
+                    required:
+                      - name
+                    type: object
+                  type: array
+                settings:
+                  description: |-
+                    Settings contains the configuration settings for the repository, including
+                    authorization policies, provider-specific configuration, and provenance settings.
+                  properties:
+                    github_app_token_scope_repos:
+                      description: |-
+                        GithubAppTokenScopeRepos lists repositories that can access the GitHub App token when using the
+                        GitHub App authentication method. This allows specific repositories to use tokens generated for
+                        the GitHub App installation, useful for cross-repository access.
+                      items:
+                        type: string
+                      type: array
+                    gitlab:
+                      description: Gitlab contains GitLab-specific settings for repositories hosted on GitLab.
                       properties:
                         comment_strategy:
+                          description: |-
+                            CommentStrategy defines how GitLab comments are handled for pipeline results.
+                            Options:
+                            - 'status-comment': Posts a single comment and updates it with pipeline results
+                            - 'pipeline-runs-comment': Creates a new comment for each PipelineRun
+                            - 'disable_all': Disables all comments on merge requests
+                          enum:
+                            - status-comment
+                            - pipeline-runs-comment
+                            - disable_all
                           type: string
-                    github_app_token_scope_repos:
-                      type: array
-                      items:
-                        description: list of repositories where Github token can be scoped
-                        type: string
+                      type: object
                     pipelinerun_provenance:
-                      description: From where the PipelineRun definitions will be coming from
-                      type: string
+                      description: |-
+                        PipelineRunProvenance configures how PipelineRun definitions are fetched.
+                        Options:
+                        - 'source': Fetch definitions from the event source branch/SHA (default)
+                        - 'default_branch': Fetch definitions from the repository default branch
                       enum:
                         - source
                         - default_branch
-                concurrency_limit:
-                  description: Number of maximum pipelinerun running at any moment
-                  type: integer
-                url:
-                  description: Repository URL
-                  type: string
-                type:
-                  description: Git repository provider
-                  type: string
-                  enum:
-                    - github
-                    - gitea
-                    - bitbucket
-                    - gitlab
-                    - bitbucket-enteprise
-                params:
-                  type: array
-                  items:
-                    type: object
-                    required:
-                      - name
-                    properties:
-                      name:
-                        description: The name of the params for the pipelinerun variable
-                        type: string
-                      value:
-                        description: The value of the params as injected into pipelinerun
-                        type: string
-                      filter:
-                        description: A CEL filter to set condition on param
-                        type: string
-                      secret_ref:
-                        description: The value as coming from secret
-                        type: object
-                        required:
-                          - name
-                          - key
-                        properties:
-                          key:
-                            description: Key of the secret
+                      type: string
+                    policy:
+                      description: |-
+                        Policy defines authorization policies for the repository, controlling who can
+                        trigger PipelineRuns under different conditions.
+                      properties:
+                        ok_to_test:
+                          description: |-
+                            OkToTest defines a list of usernames that are allowed to trigger pipeline runs on pull requests
+                            from external contributors by commenting "/ok-to-test" on the PR. These users are typically
+                            repository maintainers or trusted contributors who can vouch for external contributions.
+                          items:
                             type: string
-                            default: "secret"
-                          name:
-                            description: Name of the secret
+                          type: array
+                        pull_request:
+                          description: |-
+                            PullRequest defines a list of usernames that are explicitly allowed to execute
+                            pipelines on their pull requests, even if they wouldn't normally have permission.
+                            This is useful for allowing specific external contributors to trigger pipeline runs.
+                          items:
                             type: string
-                incoming:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      type:
-                        description: Type of webhook
-                        type: string
-                        enum:
-                          - webhook-url
-                      params:
-                        description: Parameters accepted to be overwritten when posting to the webhook
-                        type: array
-                        items:
-                          description: Parameter
-                          type: string
-                      targets:
-                        description: List of target branches or ref to trigger webhooks on
-                        type: array
-                        items:
-                          description: Branch name
-                          type: string
-                      secret:
-                        description: Secret to use for the webhook
-                        type: object
-                        properties:
-                          key:
-                            description: Key of the secret
-                            type: string
-                            default: "secret"
-                          name:
-                            description: Name of the secret
-                            type: string
-                git_provider:
+                          type: array
+                      type: object
                   type: object
-                  properties:
-                    url:
-                      description: The Git provider api url
-                      type: string
-                    user:
-                      description: The Git provider api user
-                      type: string
-                    type:
-                      description: The Git provider type
-                      type: string
-                    secret:
-                      type: object
-                      properties:
-                        key:
-                          type: string
-                          description: "Key inside the secret"
-                          default: "provider.token"
-                        name:
-                          type: string
-                          description: "The secret name"
-                    webhook_secret:
-                      type: object
-                      properties:
-                        key:
-                          type: string
-                          description: "Key inside the secret"
-                          default: "webhook.secret"
-                        name:
-                          type: string
-                          description: "The secret name"
+                url:
+                  description: |-
+                    URL of the repository we are building. Must be a valid HTTP/HTTPS Git repository URL
+                    that PAC will use to clone and fetch pipeline definitions from.
+                  type: string
               type: object
+          required:
+            - spec
           type: object
   scope: Namespaced
   names:

@@ -181,6 +181,11 @@ update-golden: ## run unit tests (updating golden files)
 	@echo "Running unit tests to update golden files..."
 	@./hack/update-golden.sh
 
+.PHONY: update-schemas
+update-schemas: ## update openapi schemas
+	@echo "Running update schemas..."
+	@./hack/update-schemas.sh
+
 .PHONY: generated
 generated: update-golden fumpt ## generate all files that needs to be generated
 

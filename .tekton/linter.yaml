@@ -90,6 +90,38 @@ spec:
 
                 exit $failed
 
+            - name: check-generated-schemas
+              displayName: "Check generated OpenAPI schemas"
+              image: golang:1.23
+              workingDir: $(workspaces.source.path)
+              env:
+                - name: HUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: "nightly-ci-github-hub-token"
+                      key: "hub-token"
+              script: |
+                set -eu
+                git config --global --add safe.directory $(workspaces.source.path)
+
+                if uname -m | grep -q aarch64; then
+                  arch=arm64
+                else
+                  arch=amd64
+                fi
+
+                # version=$(curl -H "Authorization: Bearer ${HUB_TOKEN}" -L -s https://api.github.com/repos/mikefarah/yq/releases/latest|python3 -c 'import sys, json;dico=json.load(sys.stdin);print(dico["tag_name"])')
+                version=v4.45.2
+                curl -sH "Authorization: Bearer ${HUB_TOKEN}" -L https://github.com/mikefarah/yq/releases/download/${version}/yq_linux_${arch} -o /usr/bin/yq && \
+                  chmod +x /usr/bin/yq
+
+                curl -L -o/usr/bin/kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${arch}/kubectl" && \
+                  chmod +x /usr/bin/kubectl
+
+                make update-schemas
+                # check now that the is no changes in config with git
+                git diff --exit-code config/ || { echo "Error: you need to run 'make update-schemas' and commit it."; exit 1; }
+
             - name: conventional-commits
               displayName: "conventional commit check"
               image: registry.access.redhat.com/ubi9/python-312
