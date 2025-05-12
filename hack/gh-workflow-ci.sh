@@ -88,7 +88,7 @@ run_e2e_tests() {
   mapfile -t tests < <(get_tests "${target}")
   echo "About to run ${#tests[@]} tests: ${tests[*]}"
   # shellcheck disable=SC2001
-  make test-e2e GO_TEST_FLAGS="-run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
+  make test-e2e GO_TEST_FLAGS="-v -run \"$(echo "${tests[*]}" | sed 's/ /|/g')\""
 }
 
 output_logs() {
