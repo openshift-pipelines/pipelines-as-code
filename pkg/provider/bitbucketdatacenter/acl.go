@@ -2,16 +2,14 @@ package bitbucketdatacenter
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
-	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/acl"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
-)
 
-type activitiesTypes struct{ Values []*bbv1.Activity }
+	"github.com/jenkins-x/go-scm/scm"
+)
 
 func (v *Provider) IsAllowed(ctx context.Context, event *info.Event) (bool, error) {
 	allowed, err := v.checkMemberShip(ctx, event)
@@ -44,50 +42,42 @@ func (v *Provider) IsAllowedOwnersFile(ctx context.Context, event *info.Event) (
 }
 
 func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, event *info.Event) (bool, error) {
-	allPages, err := paginate(func(nextPage int) (*bbv1.APIResponse, error) {
-		localVarOptionals := map[string]any{
-			"fromType": "COMMENT",
-		}
-		if nextPage > 0 {
-			localVarOptionals["start"] = int(nextPage)
-		}
-		// will replace this API call with jenkins-x/go-scm after my PR on go-scm is merged
-		// https://github.com/jenkins-x/go-scm/pull/494
-		return v.Client().DefaultApi.GetActivities(v.projectKey, event.Repository, v.pullRequestNumber, localVarOptionals)
-	})
-	if err != nil {
-		return false, err
-	}
-
-	for _, comment := range allPages {
-		activities := &activitiesTypes{}
-		cbyte, ok := comment.([]byte)
-		if !ok {
-			return false, fmt.Errorf("cannot convert comment to bytes")
-		}
-		err := json.Unmarshal(cbyte, activities)
+	allComments := []*scm.Comment{}
+	OrgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
+	opts := &scm.ListOptions{Page: 1, Size: apiResponseLimit}
+	for {
+		comments, _, err := v.ScmClient().PullRequests.ListComments(ctx, OrgAndRepo, v.pullRequestNumber, opts)
 		if err != nil {
 			return false, err
 		}
-		for _, activity := range activities.Values {
-			if acl.MatchRegexp(acl.OKToTestCommentRegexp, activity.Comment.Text) {
-				commenterEvent := info.NewEvent()
-				commenterEvent.Sender = activity.Comment.Author.Slug
-				commenterEvent.AccountID = fmt.Sprintf("%d", activity.Comment.Author.ID)
-				commenterEvent.Event = event.Event
-				commenterEvent.BaseBranch = event.BaseBranch
-				commenterEvent.HeadBranch = event.HeadBranch
-				commenterEvent.Repository = event.Repository
-				commenterEvent.Organization = v.projectKey
-				commenterEvent.DefaultBranch = event.DefaultBranch
-				allowed, err := v.checkMemberShip(ctx, commenterEvent)
-				if err != nil {
-					return false, err
-				}
-				if allowed {
-					// TODO: show a log how come this has been allowed
-					return true, nil
-				}
+
+		allComments = append(allComments, comments...)
+
+		if len(comments) < apiResponseLimit {
+			break
+		}
+
+		opts.Page++
+	}
+
+	for _, comment := range allComments {
+		if acl.MatchRegexp(acl.OKToTestCommentRegexp, comment.Body) {
+			commenterEvent := info.NewEvent()
+			commenterEvent.Sender = comment.Author.Login
+			commenterEvent.AccountID = fmt.Sprintf("%d", comment.Author.ID)
+			commenterEvent.Event = event.Event
+			commenterEvent.BaseBranch = event.BaseBranch
+			commenterEvent.HeadBranch = event.HeadBranch
+			commenterEvent.Repository = event.Repository
+			commenterEvent.Organization = v.projectKey
+			commenterEvent.DefaultBranch = event.DefaultBranch
+			allowed, err := v.checkMemberShip(ctx, commenterEvent)
+			if err != nil {
+				return false, err
+			}
+			if allowed {
+				// TODO: show a log how come this has been allowed
+				return true, nil
 			}
 		}
 	}

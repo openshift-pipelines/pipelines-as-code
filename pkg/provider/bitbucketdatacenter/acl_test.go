@@ -78,6 +78,7 @@ func TestIsAllowed(t *testing.T) {
 				},
 				activities: []*bbv1test.Activity{
 					{
+						Action: "COMMENTED",
 						Comment: types.ActivityComment{
 							Text: "/ok-to-test",
 							Author: types.User{
@@ -100,6 +101,7 @@ func TestIsAllowed(t *testing.T) {
 				defaultBranchLatestCommit: "defaultlatestcommit",
 				activities: []*bbv1test.Activity{
 					{
+						Action: "COMMENTED",
 						Comment: types.ActivityComment{
 							Text: "/ok-to-test",
 							Author: types.User{
@@ -190,6 +192,7 @@ func TestIsAllowed(t *testing.T) {
 				},
 				activities: []*bbv1test.Activity{
 					{
+						Action: "COMMENTED",
 						Comment: types.ActivityComment{
 							Text: "this is a valid\n/ok-to-test",
 							Author: types.User{

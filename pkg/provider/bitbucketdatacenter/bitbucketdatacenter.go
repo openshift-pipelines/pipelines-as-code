@@ -228,6 +228,7 @@ func (v *Provider) getRaw(ctx context.Context, runevent *info.Event, revision, p
 
 func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path, provenance string) (string, error) {
 	v.provenance = provenance
+	// If "at" is empty string "" then default branch will be used as source
 	at := ""
 	if v.provenance == "source" {
 		at = event.SHA
