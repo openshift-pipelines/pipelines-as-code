@@ -72,7 +72,7 @@ type ActivityComment struct {
 }
 
 type Properties struct {
-	Key string `json:"key"`
+	RepositoryID int `json:"repositoryId"`
 }
 
 type PermittedOperations struct {
