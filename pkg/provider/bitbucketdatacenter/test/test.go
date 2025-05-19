@@ -1,7 +1,6 @@
 package test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,7 +12,6 @@ import (
 	"strings"
 	"testing"
 
-	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/stash"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -27,7 +25,7 @@ var (
 	buildAPIURL   = "/rest/build-status/1.0"
 )
 
-func SetupBBDataCenterClient(ctx context.Context) (*bbv1.APIClient, *scm.Client, *http.ServeMux, func(), string) {
+func SetupBBDataCenterClient() (*scm.Client, *http.ServeMux, func(), string) {
 	mux := http.NewServeMux()
 	apiHandler := http.NewServeMux()
 	apiHandler.Handle(defaultAPIURL+"/", http.StripPrefix(defaultAPIURL, mux))
@@ -48,13 +46,9 @@ func SetupBBDataCenterClient(ctx context.Context) (*bbv1.APIClient, *scm.Client,
 		server.Close()
 	}
 
-	cfg := bbv1.NewConfiguration(server.URL + "/rest")
-	cfg.HTTPClient = server.Client()
-	client := bbv1.NewAPIClient(ctx, cfg)
-
 	scmClient, _ := stash.New(server.URL)
 	scmClient.Client = server.Client()
-	return client, scmClient, mux, tearDown, server.URL
+	return scmClient, mux, tearDown, server.URL
 }
 
 func MuxCreateComment(t *testing.T, mux *http.ServeMux, event *info.Event, expectedCommentSubstr string, prID int) {

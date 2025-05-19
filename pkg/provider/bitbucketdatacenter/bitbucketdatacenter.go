@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	bbv1 "github.com/gfleury/go-bitbucket-v1"
 	"github.com/google/go-github/v71/github"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/stash"
@@ -31,7 +30,6 @@ const apiResponseLimit = 100
 var _ provider.Interface = (*Provider)(nil)
 
 type Provider struct {
-	bbClient                  *bbv1.APIClient // temporarily keeping it after the refactor finishes, will be removed
 	scmClient                 *scm.Client
 	Logger                    *zap.SugaredLogger
 	run                       *params.Run
@@ -44,20 +42,6 @@ type Provider struct {
 	projectKey                string
 	repo                      *v1alpha1.Repository
 	triggerEvent              string
-}
-
-func (v *Provider) Client() *bbv1.APIClient {
-	providerMetrics.RecordAPIUsage(
-		v.Logger,
-		"bitbucketcloud",
-		v.triggerEvent,
-		v.repo,
-	)
-	return v.bbClient
-}
-
-func (v *Provider) SetBitBucketClient(client *bbv1.APIClient) {
-	v.bbClient = client
 }
 
 func (v Provider) ScmClient() *scm.Client {
@@ -311,14 +295,6 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 	// make sure we strip slashes from the end of the URL
 	event.Provider.URL = strings.TrimSuffix(event.Provider.URL, "/")
 	v.apiURL = event.Provider.URL
-
-	basicAuth := bbv1.BasicAuth{UserName: event.Provider.User, Password: event.Provider.Token}
-
-	ctx = context.WithValue(ctx, bbv1.ContextBasicAuth, basicAuth)
-	cfg := bbv1.NewConfiguration(event.Provider.URL)
-	if v.bbClient == nil {
-		v.bbClient = bbv1.NewAPIClient(ctx, cfg)
-	}
 
 	if v.scmClient == nil {
 		client, err := stash.New(removeLastSegment(event.Provider.URL)) // remove `/rest` from url
