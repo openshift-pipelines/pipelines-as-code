@@ -208,6 +208,57 @@ func (v *Provider) ParsePayload(ctx context.Context, run *params.Run, request *h
 	return processedEvent, nil
 }
 
+// isCommitPartOfPullRequest checks if the commit from a push event is part of an open pull request
+// If it is, it returns true and the PR number.
+func (v *Provider) isCommitPartOfPullRequest(ctx context.Context, sha, org, repo string) (bool, int, error) {
+	if v.ghClient == nil {
+		return false, 0, fmt.Errorf("github client is not initialized")
+	}
+
+	// Validate input parameters
+	if sha == "" {
+		return false, 0, fmt.Errorf("sha cannot be empty")
+	}
+	if org == "" {
+		return false, 0, fmt.Errorf("organization cannot be empty")
+	}
+	if repo == "" {
+		return false, 0, fmt.Errorf("repository cannot be empty")
+	}
+
+	// Use pagination to handle repositories with many PRs
+	opts := &github.ListOptions{
+		PerPage: 100, // GitHub's maximum per page
+	}
+
+	for {
+		// Use the "List pull requests associated with a commit" API to check if the commit is part of any open PR
+		prs, resp, err := v.ghClient.PullRequests.ListPullRequestsWithCommit(ctx, org, repo, sha, opts)
+		if err != nil {
+			// Log the error for debugging purposes
+			v.Logger.Debugf("Failed to list pull requests for commit %s in %s/%s: %v", sha, org, repo, err)
+			return false, 0, fmt.Errorf("failed to list pull requests for commit %s: %w", sha, err)
+		}
+
+		// Check if any of the returned PRs are open
+		for _, pr := range prs {
+			if pr.GetState() == "open" {
+				v.Logger.Debugf("Commit %s is part of open PR #%d in %s/%s", sha, pr.GetNumber(), org, repo)
+				return true, pr.GetNumber(), nil
+			}
+		}
+
+		// Check if there are more pages
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+
+	v.Logger.Debugf("Commit %s is not part of any open pull request in %s/%s", sha, org, repo)
+	return false, 0, nil
+}
+
 func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt any) (*info.Event, error) {
 	var processedEvent *info.Event
 	var err error
@@ -268,16 +319,34 @@ func (v *Provider) processEvent(ctx context.Context, event *info.Event, eventInt
 			}
 		}
 
+		// Check if this push commit is part of an open pull request
+		sha := gitEvent.GetHeadCommit().GetID()
+		if sha == "" {
+			sha = gitEvent.GetBefore()
+		}
+		org := gitEvent.GetRepo().GetOwner().GetLogin()
+		repoName := gitEvent.GetRepo().GetName()
+
+		// Only check if the flag is enabled
+		if v.pacInfo.SkipPushEventForPRCommits {
+			isPartOfPR, prNumber, err := v.isCommitPartOfPullRequest(ctx, sha, org, repoName)
+			if err != nil {
+				v.Logger.Warnf("Error checking if push commit is part of PR: %v", err)
+			}
+
+			// If the commit is part of a PR, skip processing the push event
+			if isPartOfPR {
+				v.Logger.Infof("Skipping push event for commit %s as it belongs to pull request #%d", sha, prNumber)
+				return nil, fmt.Errorf("commit %s is part of pull request #%d, skipping push event", sha, prNumber)
+			}
+		}
+
 		processedEvent.Organization = gitEvent.GetRepo().GetOwner().GetLogin()
 		processedEvent.Repository = gitEvent.GetRepo().GetName()
 		processedEvent.DefaultBranch = gitEvent.GetRepo().GetDefaultBranch()
 		processedEvent.URL = gitEvent.GetRepo().GetHTMLURL()
 		v.RepositoryIDs = []int64{gitEvent.GetRepo().GetID()}
-		processedEvent.SHA = gitEvent.GetHeadCommit().GetID()
-		// on push event we may not get a head commit but only
-		if processedEvent.SHA == "" {
-			processedEvent.SHA = gitEvent.GetBefore()
-		}
+		processedEvent.SHA = sha
 		processedEvent.SHAURL = gitEvent.GetHeadCommit().GetURL()
 		processedEvent.SHATitle = gitEvent.GetHeadCommit().GetMessage()
 		processedEvent.Sender = gitEvent.GetSender().GetLogin()

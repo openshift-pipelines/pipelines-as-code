@@ -139,6 +139,20 @@ There is a few things you can configure through the config map
   risk and should be aware of the potential security vulnerabilities.
   (only GitHub and Gitea is supported at the moment).
 
+* `skip-push-event-for-pr-commits`
+
+  When enabled, this option prevents duplicate pipeline runs when a commit appears in
+  both a push event and a pull request. If a push event comes from a commit that is
+  part of an open pull request, the push event will be skipped as it would create
+  a duplicate pipeline run.
+  
+  This feature works by checking if a pushed commit SHA exists in any open pull request,
+  and if so, skipping the push event processing.
+  
+  Default: `true`
+  
+{{< support_matrix github_app="true" github_webhook="true" gitea="false" gitlab="false" bitbucket_cloud="false" bitbucket_datacenter="false" >}}
+
 ### Global Cancel In Progress Settings
 
 * `enable-cancel-in-progress-on-pull-requests`
@@ -429,28 +443,28 @@ A few settings are available to configure this feature:
       }
   ```
 
-  The `loglevel.*` fields define the log level for the controllers:
+The `loglevel.*` fields define the log level for the controllers:
 
 * loglevel.pipelinesascode - the log level for the pipelines-as-code-controller component
 * loglevel.pipelines-as-code-webhook - the log level for the pipelines-as-code-webhook component
 * loglevel.pac-watcher - the log level for the pipelines-as-code-watcher component
 
-  You can change the log level from `info` to `debug` or any other supported values. For example, select the `debug` log level for the pipelines-as-code-watcher component:
+You can change the log level from `info` to `debug` or any other supported values. For example, select the `debug` log level for the pipelines-as-code-watcher component:
 
-  ```bash
-  kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[{"op": "replace", "path": "/data/loglevel.pac-watcher", "value":"debug"}]'
-  ```
+```bash
+kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[{"op": "replace", "path": "/data/loglevel.pac-watcher", "value":"debug"}]'
+```
 
-  After this command, the controller gets a new log level value.
-  If you want to use the same log level for all Pipelines-as-Code components, delete `level.*` values from configmap:
+After this command, the controller gets a new log level value.
+If you want to use the same log level for all Pipelines-as-Code components, delete `level.*` values from configmap:
 
-  ```bash
-  kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[  {"op": "remove", "path": "/data/loglevel.pac-watcher"},  {"op": "remove", "path": "/data/loglevel.pipelines-as-code-webhook"},  {"op": "remove", "path": "/data/loglevel.pipelinesascode"}]'
-  ```
+```bash
+kubectl patch configmap pac-config-logging -n pipelines-as-code --type json -p '[  {"op": "remove", "path": "/data/loglevel.pac-watcher"},  {"op": "remove", "path": "/data/loglevel.pipelines-as-code-webhook"},  {"op": "remove", "path": "/data/loglevel.pipelinesascode"}]'
+```
 
-  In this case, all Pipelines-as-Code components get a common log level from `zap-logger-config` - `level` field from the json.
+In this case, all Pipelines-as-Code components get a common log level from `zap-logger-config` - `level` field from the json.
 
-  `zap-logger-config` supports the following log levels:
+`zap-logger-config` supports the following log levels:
 
 * debug - fine-grained debugging
 * info - normal logging
@@ -460,4 +474,4 @@ A few settings are available to configure this feature:
 * panic - trigger a panic (crash)
 * fatal - immediately exit with exit status 1 (failure)
 
-  See more: <https://knative.dev/docs/serving/observability/logging/config-logging>
+See more: <https://knative.dev/docs/serving/observability/logging/config-logging>

@@ -1,0 +1,19 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: "\\ .PipelineName //"
+  annotations:
+    pipelinesascode.tekton.dev/target-namespace: "\\ .TargetNamespace //"
+    pipelinesascode.tekton.dev/on-target-branch: "[*]"
+    pipelinesascode.tekton.dev/on-event: "[pull_request, push]"
+spec:
+  pipelineSpec:
+    tasks:
+      - name: task
+        taskSpec:
+          steps:
+            - name: success
+              image: registry.access.redhat.com/ubi9/ubi-micro
+              script: |
+                echo {{ event_type }}

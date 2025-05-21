@@ -24,6 +24,8 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
 	ghtesthelper "github.com/openshift-pipelines/pipelines-as-code/pkg/test/github"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/test/logger"
@@ -1301,6 +1303,190 @@ func TestCreateComment(t *testing.T) {
 				return
 			}
 			assert.NilError(t, err)
+		})
+	}
+}
+
+func TestSkipPushEventForPRCommits(t *testing.T) {
+	iid := int64(1234)
+	tests := []struct {
+		name                string
+		pacInfoEnabled      bool
+		pushEvent           *github.PushEvent
+		mockAPIs            map[string]func(rw http.ResponseWriter, r *http.Request)
+		isPartOfPR          bool
+		wantErr             bool
+		wantErrContains     string
+		skipWarnLogContains string
+	}{
+		{
+			name:           "skip push event when commit is part of an open PR",
+			pacInfoEnabled: true,
+			pushEvent: &github.PushEvent{
+				Repo: &github.PushEventRepository{
+					Name:  github.Ptr("testRepo"),
+					Owner: &github.User{Login: github.Ptr("testOrg")},
+				},
+				HeadCommit: &github.HeadCommit{
+					ID: github.Ptr("abc123"),
+				},
+			},
+			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
+				"/repos/testOrg/testRepo/commits/abc123/pulls": func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodGet)
+					fmt.Fprint(rw, `[{"number": 42, "state": "open"}]`)
+				},
+			},
+			isPartOfPR:      true,
+			wantErr:         true,
+			wantErrContains: "commit abc123 is part of pull request #42, skipping push event",
+		},
+		{
+			name:           "continue processing push event when commit is not part of PR",
+			pacInfoEnabled: true,
+			pushEvent: &github.PushEvent{
+				Repo: &github.PushEventRepository{
+					Name:          github.Ptr("testRepo"),
+					Owner:         &github.User{Login: github.Ptr("testOrg")},
+					DefaultBranch: github.Ptr("main"),
+					HTMLURL:       github.Ptr("https://github.com/testOrg/testRepo"),
+					ID:            github.Ptr(iid),
+				},
+				HeadCommit: &github.HeadCommit{
+					ID:      github.Ptr("abc123"),
+					URL:     github.Ptr("https://github.com/testOrg/testRepo/commit/abc123"),
+					Message: github.Ptr("Test commit message"),
+				},
+				Ref:    github.Ptr("refs/heads/main"),
+				Sender: &github.User{Login: github.Ptr("testUser")},
+			},
+			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
+				"/repos/testOrg/testRepo/pulls": func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodGet)
+					assert.Equal(t, r.URL.Query().Get("state"), "open")
+					fmt.Fprint(rw, `[{"number": 42}]`)
+				},
+				"/repos/testOrg/testRepo/pulls/42/commits": func(rw http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, r.Method, http.MethodGet)
+					fmt.Fprint(rw, `[{"sha": "def456"}, {"sha": "xyz789"}]`)
+				},
+			},
+			isPartOfPR: false,
+			wantErr:    false,
+		},
+		{
+			name:           "continue when skip feature is disabled",
+			pacInfoEnabled: false,
+			pushEvent: &github.PushEvent{
+				Repo: &github.PushEventRepository{
+					Name:          github.Ptr("testRepo"),
+					Owner:         &github.User{Login: github.Ptr("testOrg")},
+					DefaultBranch: github.Ptr("main"),
+					HTMLURL:       github.Ptr("https://github.com/testOrg/testRepo"),
+					ID:            github.Ptr(iid),
+				},
+				HeadCommit: &github.HeadCommit{
+					ID:      github.Ptr("abc123"),
+					URL:     github.Ptr("https://github.com/testOrg/testRepo/commit/abc123"),
+					Message: github.Ptr("Test commit message"),
+				},
+				Ref:    github.Ptr("refs/heads/main"),
+				Sender: &github.User{Login: github.Ptr("testUser")},
+			},
+			isPartOfPR: false, // This should not be checked when feature is disabled
+			wantErr:    false,
+		},
+		{
+			name:           "log warning when API error occurs",
+			pacInfoEnabled: true,
+			pushEvent: &github.PushEvent{
+				Repo: &github.PushEventRepository{
+					Name:  github.Ptr("testRepo"),
+					Owner: &github.User{Login: github.Ptr("testOrg")},
+				},
+				HeadCommit: &github.HeadCommit{
+					ID: github.Ptr("1234"),
+				},
+			},
+			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
+				"/repos/testOrg/testRepo/pulls": func(rw http.ResponseWriter, _ *http.Request) {
+					rw.WriteHeader(http.StatusInternalServerError)
+					fmt.Fprint(rw, `{"message": "API error"}`)
+				},
+			},
+			isPartOfPR:          false,
+			wantErr:             false,
+			skipWarnLogContains: "Error checking if push commit is part of PR",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, _ := rtesting.SetupFakeContext(t)
+			fakeclient, mux, _, teardown := ghtesthelper.SetupGH()
+			defer teardown()
+
+			// Register API endpoints
+			for pattern, handler := range tt.mockAPIs {
+				mux.HandleFunc(pattern, handler)
+			}
+
+			// Create a logger that captures logs
+			observer, logs := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+
+			// Create provider with the test configuration
+			provider := &Provider{
+				ghClient: fakeclient,
+				Logger:   logger,
+				pacInfo: &info.PacOpts{
+					Settings: settings.Settings{
+						SkipPushEventForPRCommits: tt.pacInfoEnabled,
+					},
+				},
+			}
+
+			// Create event with the right trigger type
+			event := info.NewEvent()
+			event.TriggerTarget = triggertype.Push
+
+			// Process the event
+			result, err := provider.processEvent(ctx, event, tt.pushEvent)
+
+			// Check errors if expected
+			if tt.wantErr {
+				assert.Assert(t, err != nil)
+				if tt.wantErrContains != "" {
+					assert.ErrorContains(t, err, tt.wantErrContains)
+				}
+				assert.Assert(t, result == nil, "Expected nil result when error occurs")
+				return
+			}
+
+			// If no error expected, check the result
+			assert.NilError(t, err)
+			assert.Assert(t, result != nil, "Expected non-nil result when no error occurs")
+
+			// Check event fields were properly processed
+			if !tt.pacInfoEnabled || !tt.isPartOfPR {
+				assert.Equal(t, result.Organization, tt.pushEvent.GetRepo().GetOwner().GetLogin())
+				assert.Equal(t, result.Repository, tt.pushEvent.GetRepo().GetName())
+				assert.Equal(t, result.SHA, tt.pushEvent.GetHeadCommit().GetID())
+				assert.Equal(t, result.Sender, tt.pushEvent.GetSender().GetLogin())
+			}
+
+			// Check for warning logs if applicable
+			if tt.skipWarnLogContains != "" {
+				// Look for warning logs
+				found := false
+				for _, logEntry := range logs.All() {
+					if strings.Contains(logEntry.Message, tt.skipWarnLogContains) {
+						found = true
+						break
+					}
+				}
+				assert.Assert(t, found, "Expected warning log containing: %s", tt.skipWarnLogContains)
+			}
 		})
 	}
 }
