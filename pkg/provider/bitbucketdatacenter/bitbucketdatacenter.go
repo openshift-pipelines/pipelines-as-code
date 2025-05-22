@@ -47,7 +47,7 @@ type Provider struct {
 func (v Provider) ScmClient() *scm.Client {
 	providerMetrics.RecordAPIUsage(
 		v.Logger,
-		"bitbucketcloud",
+		v.GetConfig().Name,
 		v.triggerEvent,
 		v.repo,
 	)
