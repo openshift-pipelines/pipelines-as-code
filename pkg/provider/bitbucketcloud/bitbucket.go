@@ -38,7 +38,7 @@ type Provider struct {
 func (v *Provider) Client() *bitbucket.Client {
 	providerMetrics.RecordAPIUsage(
 		v.Logger,
-		"bitbucketcloud",
+		v.GetConfig().Name,
 		v.triggerEvent,
 		v.repo,
 	)
