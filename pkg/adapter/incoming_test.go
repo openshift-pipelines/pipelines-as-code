@@ -182,7 +182,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 						},
 					},
 				},
-				method:           "POST",
+				method:           http.MethodPost,
 				queryURL:         "/incoming",
 				queryRepository:  "test-good",
 				querySecret:      "verysecrete",
@@ -223,7 +223,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 						},
 					},
 				},
-				method:           "POST",
+				method:           http.MethodPost,
 				queryURL:         "/incoming",
 				queryRepository:  "test-good",
 				querySecret:      "verysecrete",
@@ -235,7 +235,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 		{
 			name: "invalid incoming body",
 			args: args{
-				method:           "POST",
+				method:           http.MethodPost,
 				queryURL:         "/incoming",
 				queryRepository:  "test-good",
 				querySecret:      "verysecrete",
@@ -563,7 +563,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 						},
 					},
 				},
-				method:           "POST",
+				method:           http.MethodPost,
 				queryURL:         "/incoming",
 				queryRepository:  "test-good",
 				querySecret:      "verysecrete",
@@ -600,7 +600,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 						},
 					},
 				},
-				method:           "POST",
+				method:           http.MethodPost,
 				queryURL:         "/incoming",
 				queryRepository:  "test-good",
 				querySecret:      "verysecrete",
@@ -641,7 +641,7 @@ func Test_listener_detectIncoming(t *testing.T) {
 						},
 					},
 				},
-				method:           "POST",
+				method:           http.MethodPost,
 				queryURL:         "/incoming",
 				queryRepository:  "test-good",
 				querySecret:      "verysecrete",
@@ -912,4 +912,160 @@ func TestApplyIncomingParams(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_detectIncoming_legacy_warning(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	testNamespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pipelinesascode",
+		},
+	}
+	ctx = info.StoreCurrentControllerName(ctx, "default")
+	ctx = info.StoreNS(ctx, testNamespace.GetName())
+	cs, _ := testclient.SeedTestData(t, ctx, testclient.Data{
+		Repositories: []*v1alpha1.Repository{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-good"},
+				Spec: v1alpha1.RepositorySpec{
+					URL: "https://matched/by/incoming",
+					Incomings: &[]v1alpha1.Incoming{{
+						Targets: []string{"main"},
+						Secret:  v1alpha1.Secret{Name: "good-secret"},
+						Params:  []string{"foo", "bar"},
+					}},
+					GitProvider: &v1alpha1.GitProvider{Type: "github"},
+				},
+			},
+		},
+	})
+	client := &params.Run{
+		Clients: clients.Clients{
+			PipelineAsCode: cs.PipelineAsCode,
+			Kube:           cs.Kube,
+		},
+		Info: info.Info{
+			Controller: &info.ControllerInfo{Secret: info.DefaultPipelinesAscodeSecretName},
+		},
+	}
+	tests := []struct {
+		name          string
+		req           *http.Request
+		body          []byte
+		expectWarning bool
+	}{
+		{
+			name: "legacy mode - params in URL",
+			req: httptest.NewRequest(http.MethodPost,
+				"http://localhost/incoming?repository=test-good&secret=verysecrete&pipelinerun=pipelinerun1&branch=main",
+				strings.NewReader("")),
+			body:          nil,
+			expectWarning: true,
+		},
+		{
+			name: "new mode - params in JSON body",
+			req: func() *http.Request {
+				payload := `{
+					"repository": "test-good",
+					"branch": "main",
+					"pipelinerun": "pipelinerun2",
+					"secret": "verysecrete",
+					"params": {"foo": "bar"}
+				}`
+				r := httptest.NewRequest(http.MethodPost,
+					"http://localhost/incoming",
+					strings.NewReader(payload))
+				r.Header.Set("Content-Type", "application/json")
+				return r
+			}(),
+			body:          []byte(`{"repository":"test-good","branch":"main","pipelinerun":"pipelinerun2","secret":"verysecrete","params":{"foo":"bar"}}`),
+			expectWarning: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observer, observedLogs := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
+			kint := &kubernetestint.KinterfaceTest{GetSecretResult: map[string]string{"good-secret": "verysecrete"}}
+			l := &listener{
+				run:    client,
+				logger: logger,
+				kint:   kint,
+				event:  info.NewEvent(),
+			}
+			got, _, err := l.detectIncoming(ctx, tt.req, tt.body)
+			assert.NilError(t, err)
+			assert.Assert(t, got)
+			found := false
+			for _, entry := range observedLogs.All() {
+				if strings.Contains(entry.Message, "[SECURITY] Incoming webhook used legacy URL-based secret passing") {
+					found = true
+					break
+				}
+			}
+			if tt.expectWarning {
+				assert.Assert(t, found, "expected security warning log for legacy URL-based secret passing")
+			} else {
+				assert.Assert(t, !found, "did not expect security warning log for new mode")
+			}
+		})
+	}
+}
+
+func Test_detectIncoming_body_params_are_parsed(t *testing.T) {
+	ctx, _ := rtesting.SetupFakeContext(t)
+	testNamespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "pipelinesascode",
+		},
+	}
+	ctx = info.StoreCurrentControllerName(ctx, "default")
+	ctx = info.StoreNS(ctx, testNamespace.GetName())
+	cs, _ := testclient.SeedTestData(t, ctx, testclient.Data{
+		Repositories: []*v1alpha1.Repository{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-good"},
+				Spec: v1alpha1.RepositorySpec{
+					URL: "https://matched/by/incoming",
+					Incomings: &[]v1alpha1.Incoming{{
+						Targets: []string{"main"},
+						Secret:  v1alpha1.Secret{Name: "good-secret"},
+						Params:  []string{"foo", "bar"},
+					}},
+					GitProvider: &v1alpha1.GitProvider{Type: "github"},
+				},
+			},
+		},
+	})
+	client := &params.Run{
+		Clients: clients.Clients{
+			PipelineAsCode: cs.PipelineAsCode,
+			Kube:           cs.Kube,
+		},
+		Info: info.Info{
+			Controller: &info.ControllerInfo{Secret: info.DefaultPipelinesAscodeSecretName},
+		},
+	}
+	payload := `{
+		"repository": "test-good",
+		"branch": "main",
+		"pipelinerun": "pipelinerun2",
+		"secret": "verysecrete",
+		"params": {"foo": "bar", "bar": "baz"}
+	}`
+	req := httptest.NewRequest(http.MethodPost,
+		"http://localhost/incoming",
+		strings.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	kint := &kubernetestint.KinterfaceTest{GetSecretResult: map[string]string{"good-secret": "verysecrete"}}
+	l := &listener{
+		run:    client,
+		logger: zap.NewNop().Sugar(),
+		kint:   kint,
+		event:  info.NewEvent(),
+	}
+	got, _, err := l.detectIncoming(ctx, req, []byte(payload))
+	assert.NilError(t, err)
+	assert.Assert(t, got)
 }
