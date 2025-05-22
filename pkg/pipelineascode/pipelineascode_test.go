@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strings"
 	"sync"
@@ -667,7 +667,7 @@ func TestRun(t *testing.T) {
 					if pr.GetName() == "force-me" {
 						continue
 					}
-					logURL, ok := pr.Annotations[filepath.Join(apipac.GroupName, "log-url")]
+					logURL, ok := pr.Annotations[path.Join(apipac.GroupName, "log-url")]
 					assert.Assert(t, ok, "failed to find log-url label on pipelinerun: %s/%s", pr.GetNamespace(), pr.GetGenerateName())
 					assert.Equal(t, logURL, cs.Clients.ConsoleUI().DetailURL(&pr))
 
@@ -700,5 +700,5 @@ func TestGetLogURLMergePatch(t *testing.T) {
 	assert.Assert(t, ok)
 	a, ok := m["annotations"].(map[string]string)
 	assert.Assert(t, ok)
-	assert.Equal(t, a[filepath.Join(apipac.GroupName, "log-url")], con.URL())
+	assert.Equal(t, a[path.Join(apipac.GroupName, "log-url")], con.URL())
 }
