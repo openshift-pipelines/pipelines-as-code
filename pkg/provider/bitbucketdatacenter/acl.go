@@ -46,7 +46,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 	OrgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
 	opts := &scm.ListOptions{Page: 1, Size: apiResponseLimit}
 	for {
-		comments, _, err := v.ScmClient().PullRequests.ListComments(ctx, OrgAndRepo, v.pullRequestNumber, opts)
+		comments, _, err := v.Client().PullRequests.ListComments(ctx, OrgAndRepo, v.pullRequestNumber, opts)
 		if err != nil {
 			return false, err
 		}
@@ -86,7 +86,7 @@ func (v *Provider) checkOkToTestCommentFromApprovedMember(ctx context.Context, e
 
 func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool, error) {
 	// Get permissions from project
-	allowed, _, err := v.ScmClient().Organizations.IsMember(ctx, event.Organization, event.Sender)
+	allowed, _, err := v.Client().Organizations.IsMember(ctx, event.Organization, event.Sender)
 	if err != nil {
 		return false, err
 	}
@@ -96,7 +96,7 @@ func (v *Provider) checkMemberShip(ctx context.Context, event *info.Event) (bool
 
 	orgAndRepo := fmt.Sprintf("%s/%s", event.Organization, event.Repository)
 	// Get permissions from repo
-	allowed, _, err = v.ScmClient().Repositories.IsCollaborator(ctx, orgAndRepo, event.Sender)
+	allowed, _, err = v.Client().Repositories.IsCollaborator(ctx, orgAndRepo, event.Sender)
 	if err != nil {
 		return false, err
 	}
