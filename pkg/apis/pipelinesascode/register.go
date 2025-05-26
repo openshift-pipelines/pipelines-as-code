@@ -21,4 +21,5 @@ const (
 	GroupName       = "pipelinesascode.tekton.dev"
 	RepositoryKind  = "Repository"
 	V1alpha1Version = "v1alpha1"
+	FinalizerName   = "finalizer"
 )
