@@ -11,6 +11,8 @@ import (
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/test/pkg/configmap"
@@ -558,6 +560,25 @@ func TestGithubCancelInProgressSettingFromConfigMapOnPush(t *testing.T) {
 	waitOpts.MinNumberStatus = 1
 
 	err = twait.UntilPipelineRunHasReason(ctx, g.Cnx.Clients, tektonv1.PipelineRunReasonCancelled, waitOpts)
+	assert.NilError(t, err)
+}
+
+func TestGithubPullandPushMatchTriggerOnlyPull(t *testing.T) {
+	ctx := context.Background()
+	g := &tgithub.PRTest{
+		Label:     "Github PullRequest",
+		YamlFiles: []string{"testdata/pipelinerun-match-push-pullr.yaml"},
+	}
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	globalNs, _, err := params.GetInstallLocation(ctx, g.Cnx)
+	assert.NilError(t, err)
+	ctx = info.StoreNS(ctx, globalNs)
+
+	reg := regexp.MustCompile(fmt.Sprintf("commit.*is part of pull request #%d.*skipping push event", g.PRNumber))
+	maxLines := int64(100)
+	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)
 }
 
