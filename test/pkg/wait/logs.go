@@ -19,7 +19,7 @@ func RegexpMatchingInControllerLog(ctx context.Context, clients *params.Run, reg
 	labelselector := fmt.Sprintf("app.kubernetes.io/name=%s", controllerName)
 	containerName := "pac-controller"
 	ns := info.GetNS(ctx)
-	clients.Clients.Log.Infof("looking for regexp %s in %s for label %s container %s", reg.String(), ns, labelselector, containerName)
+	clients.Clients.Log.Infof(`looking for regexp "%s" in %s for label "%s" container "%s" namespace "%s"`, reg.String(), ns, labelselector, containerName, ns)
 	for i := 0; i <= maxNumberOfLoop; i++ {
 		output, err := tlogs.GetPodLog(ctx, clients.Clients.Kube.CoreV1(), ns, labelselector, containerName, lines)
 		if err != nil {
