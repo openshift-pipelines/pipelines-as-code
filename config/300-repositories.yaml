@@ -349,12 +349,9 @@ spec:
                           description: |-
                             CommentStrategy defines how GitLab comments are handled for pipeline results.
                             Options:
-                            - 'status-comment': Posts a single comment and updates it with pipeline results
-                            - 'pipeline-runs-comment': Creates a new comment for each PipelineRun
                             - 'disable_all': Disables all comments on merge requests
                           enum:
-                            - status-comment
-                            - pipeline-runs-comment
+                            - ""
                             - disable_all
                           type: string
                       type: object
