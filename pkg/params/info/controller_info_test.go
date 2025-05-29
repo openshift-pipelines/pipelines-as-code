@@ -94,7 +94,48 @@ func TestGetCurrentControllerName(t *testing.T) {
 		args args
 		want string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Controller name present in context",
+			args: args{
+				ctx: context.WithValue(context.Background(), currentControllerName, "MyTestController"),
+			},
+			want: "MyTestController",
+		},
+		{
+			name: "Controller name not present in context",
+			args: args{
+				ctx: context.Background(), // Empty context
+			},
+			want: "",
+		},
+		{
+			name: "Value present but not a string",
+			args: args{
+				ctx: context.WithValue(context.Background(), currentControllerName, 12345), // Value is an int
+			},
+			want: "", // Expect empty string as per GetCurrentControllerName logic
+		},
+		{
+			name: "Context with a different key (should not find ours)",
+			args: args{
+				ctx: context.WithValue(context.Background(), contextKey("otherKey"), "SomeOtherValue"),
+			},
+			want: "",
+		},
+		{
+			name: "Context with our key and another key",
+			args: args{
+				ctx: context.WithValue(context.WithValue(context.Background(), contextKey("otherKey"), "SomeOtherValue"), currentControllerName, "PrimaryController"),
+			},
+			want: "PrimaryController",
+		},
+		{
+			name: "Empty string as controller name",
+			args: args{
+				ctx: context.WithValue(context.Background(), currentControllerName, ""),
+			},
+			want: "", // If an empty string is stored, it should be retrieved as such.
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
