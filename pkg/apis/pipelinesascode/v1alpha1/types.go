@@ -158,9 +158,20 @@ type Settings struct {
 	// Gitlab contains GitLab-specific settings for repositories hosted on GitLab.
 	// +optional
 	Gitlab *GitlabSettings `json:"gitlab,omitempty"`
+
+	Github *GithubSettings `json:"github,omitempty"`
 }
 
 type GitlabSettings struct {
+	// CommentStrategy defines how GitLab comments are handled for pipeline results.
+	// Options:
+	// - 'disable_all': Disables all comments on merge requests
+	// +optional
+	// +kubebuilder:validation:Enum="";disable_all
+	CommentStrategy string `json:"comment_strategy,omitempty"`
+}
+
+type GithubSettings struct {
 	// CommentStrategy defines how GitLab comments are handled for pipeline results.
 	// Options:
 	// - 'disable_all': Disables all comments on merge requests

@@ -134,6 +134,19 @@ spec:
 
 When you set the value of `comment_strategy` to `disable_all` it will not add any comment on the merge request for the start and the end of pipelinerun
 
+## Disabling all comments for Pipelineruns in GitHub Pull Requests on GitHub Webhook Setup
+
+`comment_strategy` allows you to disable the comments on GitHub PR for a Repository
+
+```yaml
+spec:
+  settings:
+    github:
+      comment_strategy: "disable_all"
+```
+
+When `comment_strategy` is set to `disable_all` Pipelines as Code will not create any comment on the pull request for PipelineRun Status
+
 ## Concurrency
 
 `concurrency_limit` allows you to define the maximum number of PipelineRuns running at any time for a Repository.
