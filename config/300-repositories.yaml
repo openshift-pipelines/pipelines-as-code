@@ -334,6 +334,18 @@ spec:
                     Settings contains the configuration settings for the repository, including
                     authorization policies, provider-specific configuration, and provenance settings.
                   properties:
+                    github:
+                      properties:
+                        comment_strategy:
+                          description: |-
+                            CommentStrategy defines how GitLab comments are handled for pipeline results.
+                            Options:
+                            - 'disable_all': Disables all comments on merge requests
+                          enum:
+                            - ""
+                            - disable_all
+                          type: string
+                      type: object
                     github_app_token_scope_repos:
                       description: |-
                         GithubAppTokenScopeRepos lists repositories that can access the GitHub App token when using the
