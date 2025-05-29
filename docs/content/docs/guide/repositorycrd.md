@@ -127,8 +127,9 @@ access to the infrastructure.
 
 ```yaml
 spec:
-  gitlab:
-    comment_strategy: "disable_all"
+  settings:
+    gitlab:
+      comment_strategy: "disable_all"
 ```
 
 When you set the value of `comment_strategy` to `disable_all` it will not add any comment on the merge request for the start and the end of pipelinerun
