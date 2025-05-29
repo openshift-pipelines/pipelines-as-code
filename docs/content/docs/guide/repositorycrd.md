@@ -134,6 +134,19 @@ spec:
 
 When you set the value of `comment_strategy` to `disable_all` it will not add any comment on the merge request for the start and the end of pipelinerun
 
+## Disabling all comments for Pipelineruns on Github PR
+
+`comment_strategy` allows you to disable the comments on Github PR for a Repository
+
+```yaml
+spec:
+  settings:
+    github:
+      comment_strategy: "disable_all"
+```
+
+When you set the value of `comment_strategy` to `disable_all` it will not add any comment on the pull request for the start and the end of pipelinerun
+
 ## Concurrency
 
 `concurrency_limit` allows you to define the maximum number of PipelineRuns running at any time for a Repository.

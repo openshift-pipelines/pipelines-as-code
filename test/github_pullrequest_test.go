@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/keys"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/apis/pipelinesascode/v1alpha1"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/opscomments"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
@@ -580,6 +581,40 @@ func TestGithubPullandPushMatchTriggerOnlyPull(t *testing.T) {
 	maxLines := int64(100)
 	err = twait.RegexpMatchingInControllerLog(ctx, g.Cnx, *reg, 20, "controller", &maxLines)
 	assert.NilError(t, err)
+}
+
+func TestGithubDisableCommentsOnPR(t *testing.T) {
+	if os.Getenv("TEST_GITHUB_REPO_OWNER_WEBHOOK") == "" {
+		t.Skip("TEST_GITHUB_REPO_OWNER_WEBHOOK is not set")
+		return
+	}
+	ctx := context.Background()
+
+	g := &tgithub.PRTest{
+		Label:     "Github PullRequest onWebhook",
+		YamlFiles: []string{"testdata/pipelinerun.yaml"},
+		Webhook:   true,
+	}
+
+	commentStrategy := v1alpha1.Settings{
+		Github: &v1alpha1.GithubSettings{
+			CommentStrategy: "disable_all",
+		},
+	}
+
+	g.Options.Settings = commentStrategy
+	g.RunPullRequest(ctx, t)
+	defer g.TearDown(ctx, t)
+
+	comments, _, _ := g.Provider.Client().Issues.ListComments(ctx, g.Options.Organization, g.Options.Repo, g.PRNumber, nil)
+	commentRegexp := regexp.MustCompile(`.*Pipelines as Code CI/*`)
+	successCommentsPost := 0
+	for _, n := range comments {
+		if commentRegexp.MatchString(*n.Body) {
+			successCommentsPost++
+		}
+	}
+	assert.Equal(t, 0, successCommentsPost)
 }
 
 // Local Variables:
