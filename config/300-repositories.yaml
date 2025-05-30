@@ -355,6 +355,19 @@ spec:
                             - disable_all
                           type: string
                       type: object
+                    github:
+                      description: Github contains Github-specific settings for repositories hosted on Github.
+                      properties:
+                        comment_strategy:
+                          description: |-
+                            CommentStrategy defines how Github comments are handled for pipeline results.
+                            Options:
+                            - 'disable_all': Disables all comments on pull requests
+                          enum:
+                            - ""
+                            - disable_all
+                          type: string
+                      type: object
                     pipelinerun_provenance:
                       description: |-
                         PipelineRunProvenance configures how PipelineRun definitions are fetched.
