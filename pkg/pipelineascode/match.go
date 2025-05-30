@@ -192,12 +192,23 @@ func (p *PacRun) getPipelineRunsFromRepo(ctx context.Context, repo *v1alpha1.Rep
 
 		return nil, err
 	}
+
+	// This is for push event error logging because we can't create comment for yaml validation errors on push
 	if err != nil || rawTemplates == "" {
-		msg := fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
+		msg := ""
+		reason := "RepositoryPipelineRunNotFound"
+		logLevel := zap.InfoLevel
 		if err != nil {
+			reason = "RepositoryInvalidPipelineRunTemplate"
+			logLevel = zap.ErrorLevel
+			if strings.Contains(err.Error(), "error unmarshalling yaml file") {
+				msg = "PipelineRun YAML validation"
+			}
 			msg += fmt.Sprintf(" err: %s", err.Error())
+		} else {
+			msg = fmt.Sprintf("cannot locate templates in %s/ directory for this repository in %s", tektonDir, p.event.HeadBranch)
 		}
-		p.eventEmitter.EmitMessage(nil, zap.InfoLevel, "RepositoryPipelineRunNotFound", msg)
+		p.eventEmitter.EmitMessage(nil, logLevel, reason, msg)
 		return nil, nil
 	}
 
