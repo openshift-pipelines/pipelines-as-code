@@ -119,7 +119,7 @@ spec:
                   chmod +x /usr/bin/kubectl
 
                 make update-schemas
-                # check now that the is no changes in config with git
+                # check now that there are no changes in config with git
                 git diff --exit-code config/ || { echo "Error: you need to run 'make update-schemas' and commit it."; exit 1; }
 
             - name: conventional-commits
