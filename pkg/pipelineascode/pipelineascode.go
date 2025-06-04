@@ -59,7 +59,7 @@ func (p *PacRun) Run(ctx context.Context) error {
 	matchedPRs, repo, err := p.matchRepoPR(ctx)
 	if repo != nil && p.event.TriggerTarget == triggertype.PullRequestClosed {
 		if err := p.cancelAllInProgressBelongingToClosedPullRequest(ctx, repo); err != nil {
-			return fmt.Errorf("error cancelling in progress pipelineRuns belonging to pull request %d: %w", p.event.PullRequestNumber, err)
+			return fmt.Errorf("error cancelling in progress PipelineRuns belonging to pull request %d: %w", p.event.PullRequestNumber, err)
 		}
 		return nil
 	}
