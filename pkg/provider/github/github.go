@@ -301,6 +301,9 @@ func (v *Provider) SetClient(ctx context.Context, run *params.Run, event *info.E
 		return fmt.Errorf("no github client has been initialized")
 	}
 
+	// Added log for security audit purposes to log client access when a token is used
+	v.Logger.Infof("github: initialized OAuth2 client with provided token for providerName=%s providerURL=%s", v.providerName, event.Provider.URL)
+
 	v.APIURL = apiURL
 
 	if event.Provider.WebhookSecretFromRepo {

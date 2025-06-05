@@ -362,13 +362,15 @@ func TestSetClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			logger := zap.New(observer).Sugar()
 			ctx, _ := rtesting.SetupFakeContext(t)
 			client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient()
 			defer tearDown()
 			if tt.muxUser != nil {
 				mux.HandleFunc("/users/foo", tt.muxUser)
 			}
-			v := &Provider{client: client, baseURL: tURL}
+			v := &Provider{client: client, baseURL: tURL, Logger: logger}
 			err := v.SetClient(ctx, nil, tt.opts, nil, nil)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
