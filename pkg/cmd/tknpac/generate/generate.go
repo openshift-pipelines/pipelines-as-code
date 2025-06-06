@@ -195,7 +195,7 @@ func (o *Opts) samplePipeline(recreateTemplate bool) error {
 	}
 
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(dirPath, 0o755); err != nil {
+		if err := os.MkdirAll(dirPath, 0o750); err != nil {
 			return err
 		}
 		fmt.Fprintf(o.IOStreams.Out, "%s Directory %s has been created.\n",
@@ -226,8 +226,7 @@ func (o *Opts) samplePipeline(recreateTemplate bool) error {
 		return err
 	}
 
-	//nolint: gosec
-	err = os.WriteFile(fpath, tmpl.Bytes(), 0o644)
+	err = os.WriteFile(fpath, tmpl.Bytes(), 0o600)
 	if err != nil {
 		return fmt.Errorf("cannot write template to %s: %w", fpath, err)
 	}
