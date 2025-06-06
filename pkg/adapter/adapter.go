@@ -93,11 +93,13 @@ func (l *listener) Start(ctx context.Context) error {
 
 	mux.HandleFunc("/", l.handleEvent(ctx))
 
-	//nolint: gosec
 	srv := &http.Server{
 		Addr: ":" + adapterPort,
 		Handler: http.TimeoutHandler(mux,
 			httpTimeoutHandler, "Listener Timeout!\n"),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		IdleTimeout:       30 * time.Second,
 	}
 
 	enabled, tlsCertFile, tlsKeyFile := l.isTLSEnabled()
