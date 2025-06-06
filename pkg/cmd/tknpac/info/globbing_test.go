@@ -67,7 +67,7 @@ func TestGlobbing(t *testing.T) {
 			tmpdir := fs.NewDir(t, t.Name())
 			defer tmpdir.Remove()
 			for _, file := range tt.files {
-				assert.NilError(t, os.MkdirAll(filepath.Dir(filepath.Join(tmpdir.Path(), file)), 0o755))
+				assert.NilError(t, os.MkdirAll(filepath.Dir(filepath.Join(tmpdir.Path(), file)), 0o750))
 				f, err := os.Create(filepath.Join(tmpdir.Path(), file))
 				assert.NilError(t, err)
 				_, _ = f.WriteString("")
