@@ -188,6 +188,5 @@ func list(ctx context.Context, cs *params.Run, opts *cli.PacCliOpts, ioStreams *
 	if err := t.Execute(w, data); err != nil {
 		return err
 	}
-	w.Flush()
-	return nil
+	return w.Flush()
 }
