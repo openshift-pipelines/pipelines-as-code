@@ -1416,7 +1416,7 @@ func TestSkipPushEventForPRCommits(t *testing.T) {
 			},
 			isPartOfPR:          false,
 			wantErr:             false,
-			skipWarnLogContains: "Error checking if push commit is part of PR",
+			skipWarnLogContains: "Error getting pull requests associated with the commit in this push event",
 		},
 	}
 
