@@ -74,25 +74,26 @@ release:
 
     https://release-{{ replace .Tag "." "-" }}.pipelines-as-code.pages.dev
 
-brews:
+homebrew_casks:
   - name: tektoncd-pac
     repository:
       owner: openshift-pipelines
       name: homebrew-pipelines-as-code
     directory: Formula
     dependencies:
-      - name: tektoncd-cli
-        type: optional
-      - name: git
+      - formula: tektoncd-cli
+      - formula: git
     homepage: "https://pipelinesascode.com"
     description: tkn-pac - A command line interface for interacting with Pipelines as Code
-    install: |
-      bin.install "tkn-pac" => "tkn-pac"
-      output = Utils.popen_read("SHELL=bash #{bin}/tkn-pac completion bash")
-      (bash_completion/"tkn-pac").write output
-      output = Utils.popen_read("SHELL=zsh #{bin}/tkn-pac completion zsh")
-      (zsh_completion/"_tkn-pac").write output
-      prefix.install_metafiles
+    hooks:
+      pre:
+        install: |
+          bin.install "tkn-pac" => "tkn-pac"
+          output = Utils.popen_read("SHELL=bash #{bin}/tkn-pac completion bash")
+          (bash_completion/"tkn-pac").write output
+          output = Utils.popen_read("SHELL=zsh #{bin}/tkn-pac completion zsh")
+          (zsh_completion/"_tkn-pac").write output
+          prefix.install_metafiles
 nfpms:
   - file_name_template: >-
       tkn-pac-
