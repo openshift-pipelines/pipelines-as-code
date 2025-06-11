@@ -73,6 +73,20 @@ func TestProvider_Detect(t *testing.T) {
 			processReq: true,
 		},
 		{
+			name:       "good/mergeRequest update Event with title",
+			event:      sample.MREventAsJSON("update", `"title": "test"`),
+			eventType:  gitlab.EventTypeMergeRequest,
+			isGL:       true,
+			processReq: false,
+		},
+		{
+			name:       "good/mergeRequest update Event with description",
+			event:      sample.MREventAsJSON("update", `"description": "test pac"`),
+			eventType:  gitlab.EventTypeMergeRequest,
+			isGL:       true,
+			processReq: false,
+		},
+		{
 			name:       "good/note event",
 			event:      sample.NoteEventAsJSON("abc"),
 			eventType:  gitlab.EventTypeNote,
