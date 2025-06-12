@@ -66,8 +66,7 @@ func TestReconciler_ReconcileKind(t *testing.T) {
 	defer teardown()
 
 	vcx := &ghprovider.Provider{
-		Token:  github.Ptr("None"),
-		Logger: fakelogger,
+		Token: github.Ptr("None"),
 	}
 
 	vcx.SetGithubClient(fakeclient)
