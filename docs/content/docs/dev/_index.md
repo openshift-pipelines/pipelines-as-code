@@ -432,6 +432,43 @@ for arm64.
 - A GitHub action is using [ko](https://ko.build/) to build the amd64 and arm64 images whenever there is
 a push to a branch or for a release.
 
+## Testing External contributor Pull Requests for E2E Testing
+
+When an external contributor submits a pull request (PR), E2E tests may not run
+automatically due to security restrictions. To work around this, maintainers
+can use a script to mirror the external PR to their own fork, allowing E2E
+tests to run safely.
+
+### Usage
+
+1. Ensure you have the [GitHub CLI (`gh`)](https://cli.github.com/) installed and authenticated and fzf installed.
+2. Fork the repository and configure your fork as a git remote.
+3. Run the script:
+
+   ```bash
+   ./hack/mirror-pr.sh <PR_NUMBER> <YOUR_FORK_REMOTE>
+   ```
+
+   If you omit the PR number, you'll be prompted to select one interactively.
+   Same for the fork remote, if you omit it, it will get asked with fzf.
+
+### What the Script Does
+
+- Checks out the external PR locally.
+- Pushes the branch to your fork with a unique name.
+- Creates a draft pull request on the upstream repository with a `[MIRRORED] DO NOT MERGE` title and a `do-not-merge` label.
+- Comments on the original PR with a link to the mirrored PR.
+
+This process allows E2E tests to run on the mirrored PR, while preventing accidental merges. Once the original PR is merged, the mirrored PR can be closed.
+
+See the script (`./hack/mirror-pr.sh`) in the repository for details.
+
+### When all is green in the mirrored PR pull request
+
+- You can merge the external contributor original PR.
+- Close the mirrored PR.
+- Cleanup the branches on your fork or on your local repo
+
 # Links
 
 - [Jira Backlog](https://issues.redhat.com/browse/SRVKP-2144?jql=component%20%3D%20%22Pipeline%20as%20Code%22%20%20AND%20status%20!%3D%20Done)
