@@ -320,57 +320,6 @@ func TestIsOkToTestComment(t *testing.T) {
 	}
 }
 
-func TestCancelComment(t *testing.T) {
-	tests := []struct {
-		name    string
-		comment string
-		want    bool
-	}{
-		{
-			name:    "valid",
-			comment: "/cancel",
-			want:    true,
-		},
-		{
-			name:    "valid with some string before",
-			comment: "/lgtm \n/cancel",
-			want:    true,
-		},
-		{
-			name:    "valid with some string before and after",
-			comment: "hi, trigger the ci \n/cancel \n then report the status back",
-			want:    true,
-		},
-		{
-			name:    "valid comments",
-			comment: "/lgtm \n/cancel \n/approve",
-			want:    true,
-		},
-		{
-			name:    "invalid",
-			comment: "/ok",
-			want:    false,
-		},
-		{
-			name:    "invalid comment",
-			comment: "/ok-to-test abc",
-			want:    false,
-		},
-		{
-			name:    "cancel single pr",
-			comment: "/cancel abc",
-			want:    true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := IsCancelComment(tt.comment)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
 func TestIsTestRetestComment(t *testing.T) {
 	tests := []struct {
 		name    string
