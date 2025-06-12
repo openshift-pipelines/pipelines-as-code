@@ -260,14 +260,12 @@ func TestGetConfig(t *testing.T) {
 
 func TestSetClient(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	observer, _ := zapobserver.New(zap.InfoLevel)
-	fakelogger := zap.New(observer).Sugar()
 	v := &Provider{}
 	assert.Assert(t, v.SetClient(ctx, nil, info.NewEvent(), nil, nil) != nil)
 
 	client, _, tearDown := thelp.Setup(t)
 	defer tearDown()
-	vv := &Provider{gitlabClient: client, Logger: fakelogger}
+	vv := &Provider{gitlabClient: client}
 	err := vv.SetClient(ctx, nil, &info.Event{
 		Provider: &info.Provider{
 			Token: "hello",
@@ -279,8 +277,6 @@ func TestSetClient(t *testing.T) {
 
 func TestSetClientDetectAPIURL(t *testing.T) {
 	ctx, _ := rtesting.SetupFakeContext(t)
-	observer, _ := zapobserver.New(zap.InfoLevel)
-	fakelogger := zap.New(observer).Sugar()
 	mockClient, _, tearDown := thelp.Setup(t)
 	defer tearDown()
 
@@ -385,7 +381,6 @@ func TestSetClientDetectAPIURL(t *testing.T) {
 				gitlabClient:      mockClient, // Use the shared mock client
 				repoURL:           tc.repoURL,
 				pathWithNamespace: tc.pathWithNamespace,
-				Logger:            fakelogger,
 			}
 			event := info.NewEvent()
 			event.Provider.Token = tc.providerToken
