@@ -15,8 +15,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketdatacenter/types"
 )
 
-// checkValidPayload checks if the payload is valid.
-func checkValidPayload(e *types.PullRequestEvent) error {
+func checkValidPullRequestPayload(e *types.PullRequestEvent) error {
 	if e.PullRequest.ToRef.Repository.Project == nil {
 		return fmt.Errorf("bitbucket toRef project is nil")
 	}
@@ -132,7 +131,7 @@ func (v *Provider) ParsePayload(_ context.Context, run *params.Run, request *htt
 			processedEvent.TriggerComment = e.Comment.Text
 		}
 
-		if err := checkValidPayload(e); err != nil {
+		if err := checkValidPullRequestPayload(e); err != nil {
 			return nil, err
 		}
 
@@ -162,6 +161,13 @@ func (v *Provider) ParsePayload(_ context.Context, run *params.Run, request *htt
 
 		if len(e.Changes) == 0 {
 			return nil, fmt.Errorf("push event contains no commits under 'changes'; cannot proceed")
+		}
+
+		// Check for branch deletion - if any change is a DELETE type with zero hash, skip processing
+		for _, change := range e.Changes {
+			if provider.IsZeroSHA(change.ToHash) && change.Type == "DELETE" {
+				return nil, nil
+			}
 		}
 
 		if len(e.Commits) == 0 {
