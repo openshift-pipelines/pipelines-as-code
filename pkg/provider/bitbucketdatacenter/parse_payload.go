@@ -155,6 +155,11 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 		}
 		v.pullRequestNumber = e.PullRequest.ID
 	case *types.PushRequestEvent:
+		for _, change := range e.Changes {
+			if change.ToHash == "0000000000000000000000000000000000000000" && change.Type == "DELETE" {
+				return nil, nil
+			}
+		}
 		processedEvent.TriggerTarget = triggertype.Push
 		processedEvent.EventType = triggertype.Push.String()
 		processedEvent.Organization = e.Repository.Project.Key
