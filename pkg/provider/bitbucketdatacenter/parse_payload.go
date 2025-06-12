@@ -164,6 +164,13 @@ func (v *Provider) ParsePayload(_ context.Context, run *params.Run, request *htt
 			return nil, fmt.Errorf("push event contains no commits under 'changes'; cannot proceed")
 		}
 
+		// Check for branch deletion - if any change is a DELETE type with zero hash, skip processing
+		for _, change := range e.Changes {
+			if provider.IsZeroSHA(change.ToHash) && change.Type == "DELETE" {
+				return nil, fmt.Errorf("branch delete event is not supported; cannot proceed")
+			}
+		}
+
 		if len(e.Commits) == 0 {
 			return nil, fmt.Errorf("push event contains no commits; cannot proceed")
 		}
