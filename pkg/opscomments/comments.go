@@ -88,10 +88,6 @@ func IsOkToTestComment(comment string) bool {
 	return oktotestRegex.MatchString(comment)
 }
 
-func IsCancelComment(comment string) bool {
-	return cancelAllRegex.MatchString(comment) || cancelSingleRegex.MatchString(comment)
-}
-
 // EventTypeBackwardCompat handle the backward compatibility we need to keep until
 // we have done the deprecated notice
 //
