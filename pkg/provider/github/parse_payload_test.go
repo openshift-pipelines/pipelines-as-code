@@ -88,17 +88,16 @@ var samplePRAnother = github.PullRequest{
 	},
 }
 
-func TestIsCommitPartOfPullRequest(t *testing.T) {
+func TestGetPullRequestsWithCommit(t *testing.T) {
 	tests := []struct {
-		name      string
-		sha       string
-		org       string
-		repo      string
-		hasClient bool
-		mockAPIs  map[string]func(rw http.ResponseWriter, r *http.Request)
-		wantFound bool
-		wantPRNum int
-		wantErr   bool
+		name         string
+		sha          string
+		org          string
+		repo         string
+		hasClient    bool
+		mockAPIs     map[string]func(rw http.ResponseWriter, r *http.Request)
+		wantPRsCount int
+		wantErr      bool
 	}{
 		{
 			name:      "nil client returns error",
@@ -106,8 +105,6 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 			org:       "testorg",
 			repo:      "testrepo",
 			hasClient: false,
-			wantFound: false,
-			wantPRNum: 0,
 			wantErr:   true,
 		},
 		{
@@ -116,8 +113,6 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 			org:       "testorg",
 			repo:      "testrepo",
 			hasClient: true,
-			wantFound: false,
-			wantPRNum: 0,
 			wantErr:   true,
 		},
 		{
@@ -126,8 +121,6 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 			org:       "",
 			repo:      "testrepo",
 			hasClient: true,
-			wantFound: false,
-			wantPRNum: 0,
 			wantErr:   true,
 		},
 		{
@@ -136,12 +129,10 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 			org:       "testorg",
 			repo:      "",
 			hasClient: true,
-			wantFound: false,
-			wantPRNum: 0,
 			wantErr:   true,
 		},
 		{
-			name:      "commit is part of an open PR",
+			name:      "api error unauthorized",
 			sha:       "abc123",
 			org:       "testorg",
 			repo:      "testrepo",
@@ -149,15 +140,14 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
 				"/repos/testorg/testrepo/commits/abc123/pulls": func(rw http.ResponseWriter, r *http.Request) {
 					assert.Equal(t, r.Method, http.MethodGet)
-					fmt.Fprint(rw, `[{"number": 42, "state": "open"}]`)
+					fmt.Fprint(rw, http.StatusUnauthorized)
+					fmt.Fprint(rw, `{"message": "Unauthorized"}`)
 				},
 			},
-			wantFound: true,
-			wantPRNum: 42,
-			wantErr:   false,
+			wantErr: true,
 		},
 		{
-			name:      "commit is part of closed PR only",
+			name:      "commit is part of one PR only",
 			sha:       "abc123",
 			org:       "testorg",
 			repo:      "testrepo",
@@ -168,9 +158,8 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 					fmt.Fprint(rw, `[{"number": 42, "state": "closed"}]`)
 				},
 			},
-			wantFound: false,
-			wantPRNum: 0,
-			wantErr:   false,
+			wantPRsCount: 1,
+			wantErr:      false,
 		},
 		{
 			name:      "commit is not part of any PR",
@@ -184,12 +173,10 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 					fmt.Fprint(rw, `[]`)
 				},
 			},
-			wantFound: false,
-			wantPRNum: 0,
-			wantErr:   false,
+			wantErr: false,
 		},
 		{
-			name:      "multiple PRs but only one is open",
+			name:      "commit is included in multiple PRs",
 			sha:       "abc123",
 			org:       "testorg",
 			repo:      "testrepo",
@@ -200,12 +187,11 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 					fmt.Fprint(rw, `[{"number": 41, "state": "closed"}, {"number": 42, "state": "open"}]`)
 				},
 			},
-			wantFound: true,
-			wantPRNum: 42,
-			wantErr:   false,
+			wantPRsCount: 2,
+			wantErr:      false,
 		},
 		{
-			name:      "pagination with multiple pages",
+			name:      "commit is included in multiple PRs with pagination",
 			sha:       "abc123",
 			org:       "testorg",
 			repo:      "testrepo",
@@ -225,25 +211,8 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 					}
 				},
 			},
-			wantFound: true,
-			wantPRNum: 42,
-			wantErr:   false,
-		},
-		{
-			name:      "error when listing pull requests for commit",
-			sha:       "abc123",
-			org:       "testorg",
-			repo:      "testrepo",
-			hasClient: true,
-			mockAPIs: map[string]func(rw http.ResponseWriter, r *http.Request){
-				"/repos/testorg/testrepo/commits/abc123/pulls": func(rw http.ResponseWriter, _ *http.Request) {
-					rw.WriteHeader(http.StatusInternalServerError)
-					fmt.Fprint(rw, `{"message": "API error"}`)
-				},
-			},
-			wantFound: false,
-			wantPRNum: 0,
-			wantErr:   true,
+			wantPRsCount: 2,
+			wantErr:      false,
 		},
 	}
 
@@ -273,12 +242,9 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 				}
 			}
 
-			found, prNum, err := provider.isCommitPartOfPullRequest(ctx, tt.sha, tt.org, tt.repo)
-
-			// Verify results
-			assert.Equal(t, found, tt.wantFound)
-			assert.Equal(t, prNum, tt.wantPRNum)
+			prs, err := provider.getPullRequestsWithCommit(ctx, tt.sha, tt.org, tt.repo)
 			assert.Equal(t, err != nil, tt.wantErr)
+			assert.Equal(t, len(prs), tt.wantPRsCount)
 
 			if tt.wantErr && err != nil {
 				// Verify error messages for validation cases
@@ -293,6 +259,94 @@ func TestIsCommitPartOfPullRequest(t *testing.T) {
 					assert.ErrorContains(t, err, "github client is not initialized")
 				}
 			}
+		})
+	}
+}
+
+func TestIsCommitPartOfPullRequest(t *testing.T) {
+	tests := []struct {
+		name      string
+		sha       string
+		org       string
+		repo      string
+		prs       []*github.PullRequest
+		wantFound bool
+		wantPRNum int
+	}{
+		{
+			name: "commit is part of an open PR",
+			sha:  "abc123",
+			org:  "testorg",
+			repo: "testrepo",
+			prs: []*github.PullRequest{
+				{
+					Number: github.Ptr(42),
+					State:  github.Ptr("open"),
+				},
+			},
+			wantFound: true,
+			wantPRNum: 42,
+		},
+		{
+			name: "commit is part of closed PR only",
+			sha:  "abc123",
+			org:  "testorg",
+			repo: "testrepo",
+			prs: []*github.PullRequest{
+				{
+					Number: github.Ptr(42),
+					State:  github.Ptr("closed"),
+				},
+			},
+			wantFound: false,
+			wantPRNum: 0,
+		},
+		{
+			name:      "commit is not part of any PR",
+			sha:       "xyz789",
+			org:       "testorg",
+			repo:      "testrepo",
+			prs:       []*github.PullRequest{},
+			wantFound: false,
+			wantPRNum: 0,
+		},
+		{
+			name: "multiple PRs but only one is open",
+			sha:  "abc123",
+			org:  "testorg",
+			repo: "testrepo",
+			prs: []*github.PullRequest{
+				{
+					Number: github.Ptr(41),
+					State:  github.Ptr("closed"),
+				},
+				{
+					Number: github.Ptr(42),
+					State:  github.Ptr("open"),
+				},
+				{
+					Number: github.Ptr(43),
+					State:  github.Ptr("closed"),
+				},
+			},
+			wantFound: true,
+			wantPRNum: 42,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var provider *Provider
+			logger, _ := logger.GetLogger()
+			provider = &Provider{
+				Logger: logger,
+			}
+
+			found, prNum := provider.isCommitPartOfPullRequest(tt.sha, tt.org, tt.repo, tt.prs)
+
+			// Verify results
+			assert.Equal(t, found, tt.wantFound)
+			assert.Equal(t, prNum, tt.wantPRNum)
 		})
 	}
 }
