@@ -14,7 +14,6 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/kubeinteraction"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/matcher"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
-	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -241,12 +240,23 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 		OriginalPipelineRunName: pr.GetAnnotations()[keys.OriginalPRName],
 	}
 
+	patchAnnotations := map[string]string{}
+	patchLabels := map[string]string{}
+	whatPatching := ""
 	// if pipelineRun is in pending state then report status as queued
 	if pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
 		status.Status = queuedStatus
 		if status.Text, err = mt.MakeTemplate(p.vcx.GetTemplate(provider.QueueingPipelineType)); err != nil {
 			return nil, fmt.Errorf("cannot create message template: %w", err)
 		}
+		// If the PipelineRun is in the "queued" state, add the appropriate label and annotation.
+		// These are later used by the watcher to determine whether the PipelineRun status
+		// should be reported back to the Git provider. We do add the `state` annotations and label when
+		// concurrency is enabled but this would happen when PipelineRun's status has been changed by
+		// the other controller and PaC is not aware of that change.
+		whatPatching = "annotations.state and labels.state"
+		patchAnnotations[keys.State] = kubeinteraction.StateQueued
+		patchLabels[keys.State] = kubeinteraction.StateQueued
 	}
 
 	if err := p.vcx.CreateStatus(ctx, p.event, status); err != nil {
@@ -257,7 +267,12 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 
 	// Patch pipelineRun with logURL annotation, skips for GitHub App as we patch logURL while patching CheckrunID
 	if _, ok := pr.Annotations[keys.InstallationID]; !ok {
-		pr, err = action.PatchPipelineRun(ctx, p.logger, "logURL", p.run.Clients.Tekton, pr, getLogURLMergePatch(p.run.Clients, pr))
+		patchAnnotations[keys.LogURL] = p.run.Clients.ConsoleUI().DetailURL(pr)
+		whatPatching = "annotations.logURL, " + whatPatching
+	}
+
+	if len(patchAnnotations) > 0 || len(patchLabels) > 0 {
+		pr, err = action.PatchPipelineRun(ctx, p.logger, whatPatching, p.run.Clients.Tekton, pr, getMergePatch(patchAnnotations, patchLabels))
 		if err != nil {
 			// we still return the created PR with error, and allow caller to decide what to do with the PR, and avoid
 			// unneeded SIGSEGV's
@@ -268,12 +283,11 @@ func (p *PacRun) startPR(ctx context.Context, match matcher.Match) (*tektonv1.Pi
 	return pr, nil
 }
 
-func getLogURLMergePatch(clients clients.Clients, pr *tektonv1.PipelineRun) map[string]any {
+func getMergePatch(annotations, labels map[string]string) map[string]any {
 	return map[string]any{
 		"metadata": map[string]any{
-			"annotations": map[string]string{
-				keys.LogURL: clients.ConsoleUI().DetailURL(pr),
-			},
+			"annotations": annotations,
+			"labels":      labels,
 		},
 	}
 }
