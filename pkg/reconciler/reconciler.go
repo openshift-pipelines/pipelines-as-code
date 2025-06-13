@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"knative.dev/pkg/apis"
+
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1/pipelinerun"
 	tektonv1lister "github.com/tektoncd/pipeline/pkg/client/listers/pipeline/v1"
@@ -71,6 +73,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pr *tektonv1.PipelineRun
 	// if status is not pending, it could be canceled so let it be reported, even if state is queued
 	if state == kubeinteraction.StateQueued && pr.Spec.Status == tektonv1.PipelineRunSpecStatusPending {
 		return r.queuePipelineRun(ctx, logger, pr)
+	}
+
+	if pr.Status.GetCondition(apis.ConditionSucceeded).Reason == tektonv1.PipelineRunReasonRunning.String() {
+		repoName := pr.GetAnnotations()[keys.Repository]
+		repo, err := r.repoLister.Repositories(pr.Namespace).Get(repoName)
+		if err != nil {
+			return err
+		}
+		return r.updatePipelineRunToInProgress(ctx, logger, repo, pr)
 	}
 
 	if !pr.IsDone() && !pr.IsCancelled() {
