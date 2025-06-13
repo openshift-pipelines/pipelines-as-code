@@ -17,24 +17,35 @@
 
 set -eo pipefail
 
-# --- Prerequisite Check ---
-
 if ! command -v gh &>/dev/null; then
-  echo "Error: GitHub CLI ('gh') is not installed. Please install it to continue."
+  echo "Error: GitHub CLI ('gh') is not installed. ❌ Please install it to continue."
   echo "See: https://cli.github.com/"
   exit 1
 fi
 
 echo "✅ GitHub CLI is installed."
-# --- Configuration and Argument Parsing ---
 
-PR_NUMBER=$1
+PR_NUMBER=${1:-}
 FORK_REMOTE=${GH_FORK_REMOTE:-$2}
-UPSTREAM_REPO=${GH_UPSTREAM_REPO:-openshift-pipelines/pipelines-as-code}
+UPSTREAM_REPO=${GH_UPSTREAM_REPO:-"openshift-pipelines/pipelines-as-code"}
+
+# Check if there is any changes in the current branch or bail out
+if ! git diff-index --quiet HEAD --; then
+  echo "❌ Error: There are uncommitted changes in the current branch. Please commit or stash them before running this script."
+  exit 1
+fi
+
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+resetgitbranch() {
+  new_branch_name=$(git rev-parse --abbrev-ref HEAD)
+  echo "🔄 Resetting to original branch ${CURRENT_BRANCH} from ${new_branch_name}"
+  git checkout "$CURRENT_BRANCH" || true
+}
+trap resetgitbranch EXIT
 
 if [[ -z ${PR_NUMBER} ]]; then
   PR_SELECTION=$(gh pr list --repo "$UPSTREAM_REPO" --json number,title,author --template '{{range .}}{{.number}}: {{.title}} (by {{.author.login}})
-{{end}}' | fzf --prompt="Select PR: ")
+{{end}}' | grep -v "\[MIRRORED\]" | fzf --prompt="Select PR: ")
   PR_NUMBER=$(echo "$PR_SELECTION" | awk -F: '{print $1}' | xargs)
 fi
 
@@ -44,7 +55,8 @@ fi
 
 if [[ -z "$PR_NUMBER" || -z "$FORK_REMOTE" ]]; then
   echo "Usage: $0 <PR_NUMBER> <YOUR_REMOTE_FORK>"
-  echo "Example: $0 1234 openshift-pipelines/pipelines-as-code my-github-user"
+  echo "Example: $0 1234 my-github-user"
+  echo "UPSTREAM_REPO is ${UPSTREAM_REPO} unless you configure the env variable GH_UPSTREAM_REPO."
   exit 1
 fi
 
@@ -67,17 +79,27 @@ echo "  - Author: $PR_AUTHOR"
 
 # 1. Checkout the PR locally
 echo "🔄 Checking out PR #${PR_NUMBER} locally..."
-gh pr checkout "$PR_NUMBER" --repo "$UPSTREAM_REPO"
+gh pr checkout --force "$PR_NUMBER" --repo "$UPSTREAM_REPO"
 
 # 2. Push the branch to your fork
 NEW_BRANCH_NAME="test-pr-${PR_NUMBER}-${PR_AUTHOR}"
 
 echo "🔄 Pushing changes to a new branch '${NEW_BRANCH_NAME}' on your fork (${FORK_REMOTE})..."
 # Force push in case the branch already exists from a previous test run
-git push "$FORK_REMOTE" "HEAD:${NEW_BRANCH_NAME}" -f
+git push "$FORK_REMOTE" "HEAD:${NEW_BRANCH_NAME}" --force
+
+# check if we didn't already have a pull request open for this branch
+already_opened_pr=$(
+  gh pr list --repo "$UPSTREAM_REPO" --head \
+    "${FORK_REMOTE}:${NEW_BRANCH_NAME}" --json url --jq '.[0].url'
+)
+if [[ -n ${already_opened_pr} ]]; then
+  echo "🔗 A pull request already exists for this branch: ${already_opened_pr}"
+  exit 0
+fi
 
 # 3. Create a new Pull Request from the fork to the upstream repo
-MIRRORED_PR_TITLE="[MIRRORED] DO NOT MERGE: ${PR_TITLE}"
+MIRRORED_PR_TITLE="[MIRRORED] ${PR_TITLE}"
 MIRRORED_PR_BODY="Mirrors ${PR_URL} to run E2E tests. Original author: @${PR_AUTHOR}"
 DO_NOT_MERGE_LABEL="do-not-merge" # You might need to create this label in your repo if it doesn't exist
 
@@ -99,7 +121,11 @@ if [[ -z "$CREATED_PR_URL" ]]; then
   exit 1
 fi
 
-gh pr comment "$PR_NUMBER" --repo "$UPSTREAM_REPO" --body "A mirrored PR has been created for E2E testing: ${CREATED_PR_URL}"
+gh pr comment "$PR_NUMBER" --repo "$UPSTREAM_REPO" --body \
+  ":rocket: **Mirrored PR Created for E2E Testing**<br><br>\
+A mirrored PR has been opened for end-to-end testing: [View PR](${CREATED_PR_URL})<br><br>\
+:hourglass_flowing_sand: Follow progress there for E2E results.<br>\
+If you need to update the PR with new changes, please ask a maintainer to rerun \`hack/mirror-pr.sh\`."
 
 echo "✅ Successfully created mirrored pull request!"
 echo "   ${CREATED_PR_URL}"
