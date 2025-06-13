@@ -159,6 +159,10 @@ func (v *Provider) SetClient(_ context.Context, run *params.Run, runevent *info.
 	if err != nil {
 		return err
 	}
+
+	// Added log for security audit purposes to log client access when a token is used
+	run.Clients.Log.Infof("gitea: initialized API client with provided credentials user=%s providerURL=%s", runevent.Provider.User, apiURL)
+
 	v.giteaInstanceURL = runevent.Provider.URL
 	v.eventEmitter = emitter
 	v.repo = repo

@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
@@ -362,6 +363,13 @@ func TestSetClient(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			observer, _ := zapobserver.New(zap.InfoLevel)
+			testLog := zap.New(observer).Sugar()
+			fakeRun := &params.Run{
+				Clients: clients.Clients{
+					Log: testLog,
+				},
+			}
 			ctx, _ := rtesting.SetupFakeContext(t)
 			client, mux, tearDown, tURL := bbtest.SetupBBDataCenterClient()
 			defer tearDown()
@@ -369,7 +377,7 @@ func TestSetClient(t *testing.T) {
 				mux.HandleFunc("/users/foo", tt.muxUser)
 			}
 			v := &Provider{client: client, baseURL: tURL}
-			err := v.SetClient(ctx, nil, tt.opts, nil, nil)
+			err := v.SetClient(ctx, fakeRun, tt.opts, nil, nil)
 			if tt.wantErrSubstr != "" {
 				assert.ErrorContains(t, err, tt.wantErrSubstr)
 				return

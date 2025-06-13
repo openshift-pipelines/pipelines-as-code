@@ -100,7 +100,7 @@ func Setup(ctx context.Context, onSecondController, viaDirectWebhook bool) (cont
 	}
 	gprovider.Token = &githubToken
 	// TODO: before PR
-	if err := gprovider.SetClient(ctx, nil, event, nil, nil); err != nil {
+	if err := gprovider.SetClient(ctx, run, event, nil, nil); err != nil {
 		return ctx, nil, options.E2E{}, github.New(), err
 	}
 
