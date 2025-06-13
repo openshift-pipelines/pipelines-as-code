@@ -376,7 +376,7 @@ A few settings are available to configure this feature:
   The controller URL as set by the `tkn pac bootstrap` command while setting up
   the GitHub App or if Pipelines as code is installed
 
-  The OpenShift Pipelines Operator will automatically set the the route created
+  The OpenShift Pipelines Operator will automatically set the route created
   for the controller.
 
   This field is also used to detect the controller URL when using the `tkn pac webhook add`
