@@ -657,10 +657,11 @@ func TestGithubGetCommitInfo(t *testing.T) {
 
 func TestGithubSetClient(t *testing.T) {
 	tests := []struct {
-		name        string
-		event       *info.Event
-		expectedURL string
-		isGHE       bool
+		name           string
+		event          *info.Event
+		expectedURL    string
+		isGHE          bool
+		installationID int64
 	}{
 		{
 			name: "api url set",
@@ -669,20 +670,30 @@ func TestGithubSetClient(t *testing.T) {
 					URL: "foo.com",
 				},
 			},
-			expectedURL: "https://foo.com",
-			isGHE:       true,
+			expectedURL:    "https://foo.com",
+			isGHE:          true,
+			installationID: 0,
 		},
 		{
-			name:        "default to public github",
-			expectedURL: fmt.Sprintf("%s/", keys.PublicGithubAPIURL),
-			event:       info.NewEvent(),
+			name:           "default to public github",
+			expectedURL:    fmt.Sprintf("%s/", keys.PublicGithubAPIURL),
+			event:          info.NewEvent(),
+			installationID: 12345,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.event.InstallationID = tt.installationID
 			ctx, _ := rtesting.SetupFakeContext(t)
+			core, observer := zapobserver.New(zap.InfoLevel)
+			testLog := zap.New(core).Sugar()
+			fakeRun := &params.Run{
+				Clients: clients.Clients{
+					Log: testLog,
+				},
+			}
 			v := Provider{}
-			err := v.SetClient(ctx, nil, tt.event, nil, nil)
+			err := v.SetClient(ctx, fakeRun, tt.event, nil, nil)
 			assert.NilError(t, err)
 			assert.Equal(t, tt.expectedURL, *v.APIURL)
 			assert.Equal(t, "https", v.Client().BaseURL.Scheme)
@@ -691,6 +702,33 @@ func TestGithubSetClient(t *testing.T) {
 			} else {
 				assert.Equal(t, "/", v.Client().BaseURL.Path)
 			}
+
+			logs := observer.TakeAll()
+			assert.Assert(t, len(logs) == 1, "expected exactly one log entry, got %d", len(logs))
+
+			prefix := "github-webhook"
+			if tt.installationID != 0 {
+				prefix = "github-app"
+			}
+			wantStart := fmt.Sprintf("%s: initialized OAuth2 client", prefix)
+			got := logs[0].Message
+			assert.Assert(t, strings.HasPrefix(got, wantStart), "log entry should start with %q, got %q", wantStart, got)
+
+			// Determine expected providerName based on whether it's GHE or public GitHub.
+			expectedProviderName := "github"
+			if tt.isGHE {
+				expectedProviderName = "github-enterprise"
+			}
+
+			// Build the full expected log message.
+			fullExpected := fmt.Sprintf(
+				"%s: initialized OAuth2 client for providerName=%s providerURL=%s",
+				prefix,
+				expectedProviderName,
+				tt.event.Provider.URL,
+			)
+
+			assert.Equal(t, fullExpected, logs[0].Message)
 		})
 	}
 }
