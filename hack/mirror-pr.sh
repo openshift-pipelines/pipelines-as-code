@@ -84,17 +84,28 @@ gh pr checkout --force "$PR_NUMBER" --repo "$UPSTREAM_REPO"
 # 2. Push the branch to your fork
 NEW_BRANCH_NAME="test-pr-${PR_NUMBER}-${PR_AUTHOR}"
 
-echo "🔄 Pushing changes to a new branch '${NEW_BRANCH_NAME}' on your fork (${FORK_REMOTE})..."
-# Force push in case the branch already exists from a previous test run
-git push "$FORK_REMOTE" "HEAD:${NEW_BRANCH_NAME}" --force
-
 # check if we didn't already have a pull request open for this branch
 already_opened_pr=$(
   gh pr list --repo "$UPSTREAM_REPO" --head \
-    "${FORK_REMOTE}:${NEW_BRANCH_NAME}" --json url --jq '.[0].url'
+    "${NEW_BRANCH_NAME}" --json url --jq '.[0].url'
 )
+
 if [[ -n ${already_opened_pr} ]]; then
-  echo "🔗 A pull request already exists for this branch: ${already_opened_pr}"
+  echo "🔄 A pull request already exists for this branch, pushing to the pull request target: ${already_opened_pr}"
+  FORK_REMOTE=git@github.com:"$(
+    gh pr list --repo openshift-pipelines/pipelines-as-code --head ${NEW_BRANCH_NAME} --json headRepositoryOwner,headRepository --jq '.[0].headRepositoryOwner.login + "/" + .[0].headRepository.name'
+  )"
+  echo "🔨 Pushing changes to existing pull request branch '${NEW_BRANCH_NAME}' fork (${FORK_REMOTE})..."
+else
+
+  echo "🔨 Pushing changes to a new branch '${NEW_BRANCH_NAME}' on your fork (${FORK_REMOTE})..."
+fi
+
+# Force push in case the branch already exists from a previous test run
+git push "$FORK_REMOTE" "HEAD:${NEW_BRANCH_NAME}" --force
+
+if [[ -n ${already_opened_pr} ]]; then
+  echo "🔗 Pull request has successfully been synched ${already_opened_pr}"
   exit 0
 fi
 
