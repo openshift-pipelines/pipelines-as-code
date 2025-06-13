@@ -64,6 +64,8 @@ spec:
               workingDir: $(workspaces.source.path)
               script: |
                 set -euxo pipefail
+                git config --global user.name "Git Linter"
+                git config --global user.email "pac@tekton.dev"
                 if [[ "{{ headers['X-Github-Event'] }}" == "" ]]; then
                   echo "Not a GitHub event, skipping gitlint"
                   exit 0
@@ -83,7 +85,7 @@ spec:
                 failed=0
                 while read -r commit_hash; do
                   echo "Checking commit: $commit_hash"
-                  if ! gitlint --commit "$commit_hash" --ignore "Merge branch"; then
+                  if ! git log -n1 --pretty=format:"%B" "$commit_hash"|gitlint --staged;then
                     failed=1
                   fi
                 done < <(git log "${base_sha}..HEAD" --format=format:%H --no-merges)
@@ -129,6 +131,7 @@ spec:
               script: |
                 set -euxo pipefail
                 git config --global --add safe.directory /workspace/source
+                conv_regexp='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?: .+'
 
                 if [[ "{{ headers['X-Github-Event'] }}" == "" ]]; then
                   echo "Not a GitHub event, skipping gitlint"
@@ -141,21 +144,30 @@ spec:
                 fi
                 base_sha="{{ body.pull_request.base.sha }}"
 
-                # make sure we have a conventional commit
                 invalid_commits=0
-                while read -r commit_msg; do
-                  if ! echo "$commit_msg" | grep -E -q '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?:'; then
+                commit_messages=$(git log "${base_sha}..HEAD" --format=format:%s --no-merges)
+                echo "$commit_messages" | while read -r commit_msg; do
+                  if [ -n "$commit_msg" ] && ! echo "$commit_msg" | grep -E -q "${conv_regexp}"; then
                     echo "ERROR: Found commit message that does not follow conventional commit format:"
                     echo "$commit_msg"
                     invalid_commits=$((invalid_commits + 1))
                   fi
-                done < <(git log "${base_sha}..HEAD" --format=format:%s --no-merges)
+                done
 
                 if [ $invalid_commits -gt 0 ]; then
                   echo "ERROR: $invalid_commits commit(s) do not follow conventional commit format."
                   echo "Expected format: type(scope): description"
                   echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
                   echo "See: https://www.conventionalcommits.org/en/v1.0.0/#summary"
+                  exit 1
+                fi
+
+                pull_request_title="{{ body.pull_request.title }}"
+                if [ -n "$pull_request_title" ] && ! echo "$pull_request_title" | grep -E -q "${conv_regexp}"; then
+                  echo "ERROR: Pull request title does not follow conventional commit format:"
+                  echo "$pull_request_title"
+                  echo "Expected format: type(scope): description"
+                  echo "Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
                   exit 1
                 fi
 

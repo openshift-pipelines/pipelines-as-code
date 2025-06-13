@@ -1,30 +1,49 @@
-# Changes <!-- 🎉🎉🎉 Thank you for the PR!!! 🎉🎉🎉 -->
+## 📝 Change Description
 
-<!-- Describe your changes here- ideally you can get that description straight from your descriptive commit message(s)! -->
+<!-- (this should be a clear and concise description of all changes in this PR) -->
 
-# Submitter Checklist
+## 🔗 Linked GitHub Issue
 
-- [ ] 📝 Ensure your commit message is clear and informative. Refer to the How to write a git commit message guide. Include the commit message in the PR body rather than linking to an external site (e.g., Jira ticket).
+Closes #
 
-- [ ] ♽ Run make test lint before submitting a PR to avoid unnecessary CI processing. Consider installing [pre-commit](https://pre-commit.com/) and running pre-commit install in the repository root for an efficient workflow.
+## 👨🏻‍ Linked Jira
 
-- [ ] ✨ We use linters to maintain clean and consistent code. Run make lint before submitting a PR. Some linters offer a --fix mode, executable with make fix-linters (ensure [markdownlint](https://github.com/DavidAnson/markdownlint) and [golangci-lint](https://github.com/golangci/golangci-lint) are installed).
+<!-- This is optional, but if you have a Jira ticket related to this PR, please link it here. -->
+## 🚀 Type of Change
 
-- [ ] 📖 Document any user-facing features or changes in behavior.
+<!-- (update the title of the Pull Request accordingly) -->
 
-- [ ] 🧪 While 100% coverage isn't required, we encourage unit tests for code changes where possible.
+- [ ] 🐛 Bug fix (`fix:`)
+- [ ] ✨ New feature (`feat:`)
+- [ ] 💥 Breaking change (`feat!:`, `fix!:`)
+- [ ] 📚 Documentation update (`docs:`)
+- [ ] ⚙️ Chore (`chore:`)
+- [ ] 💅 Refactor (`refactor:`)
 
-- [ ] 🎁 If feasible, add an end-to-end test. See [README](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/README.md) for details.
+## 🧪 Testing Strategy
 
-- [ ] 🔎 Address any CI test flakiness before merging, or provide a valid reason to bypass it (e.g., token rate limitations).
+- [ ] Unit tests
+- [ ] Integration tests
+- [ ] End-to-end tests
+- [ ] Manual testing
+- [ ] Note Applicable
 
-- If adding a provider feature, fill in the following details:
+## ✅ Submitter Checklist
 
+- [ ] 📝 My commit messages are clear, informative, and follow the project's [How to write a git commit message guide](https://developers.google.com/blockly/guides/contribute/get-started/commits). **The [Gitlint](https://jorisroovers.com/gitlint/latest) linter ensures in CI it's properly validated**
+- [ ] ✨ I have ensured my commit message prefix (e.g., `fix:`, `feat:`) matches the "Type of Change" I selected above.
+- [ ] ♽ I have run `make test` and `make lint` locally to check for and fix any
+      issues. For an efficient workflow, I have considered installing
+      [pre-commit](https://pre-commit.com/) and running `pre-commit install` to
+      automate these checks.
+- [ ] 📖 I have added or updated documentation for any user-facing changes.
+- [ ] 🧪 I have added sufficient unit tests for my code changes.
+- [ ] 🎁 I have added end-to-end tests where feasible. See [README](https://github.com/openshift-pipelines/pipelines-as-code/blob/main/test/README.md) for more details.
+- [ ] 🔎 I have addressed any CI test flakiness or provided a clear reason to bypass it.
+- [ ] If adding a provider feature, I have filled in the following and updated the provider documentation:
   - [ ] GitHub App
   - [ ] GitHub Webhook
   - [ ] Gitea/Forgejo
   - [ ] GitLab
   - [ ] Bitbucket Cloud
   - [ ] Bitbucket Data Center
-
-  (update the provider documentation accordingly)
