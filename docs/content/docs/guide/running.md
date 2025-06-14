@@ -128,9 +128,6 @@ When Pipelines-As-Code encounters an issue with the YAML formatting in the
 repository, it will log the error in the user namespace events log and
 the Pipelines-as-Code controller log.
 
-Despite the error, Pipelines-As-Code will continue to run other correctly parsed
-and matched PipelineRuns.
-
 {{< support_matrix github_app="true" github_webhook="true" gitea="true" gitlab="true" bitbucket_cloud="false" bitbucket_server="false" >}}
 
 When an event is triggered from a Pull Request, a new comment will be created on
