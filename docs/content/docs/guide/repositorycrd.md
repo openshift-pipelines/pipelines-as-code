@@ -147,6 +147,9 @@ spec:
 
 When `comment_strategy` is set to `disable_all` Pipelines as Code will not create any comment on the pull request for PipelineRun Status
 
+Note: The disable_all strategy applies only to comments about a PipelineRun's status (e.g., "started," "succeeded").
+If your PipelineRun YAML definition fails validation, a comment detailing the error will always be posted to the pull request. [see docs](../running/#errors-when-parsing-pipelinerun-yaml)
+
 ## Concurrency
 
 `concurrency_limit` allows you to define the maximum number of PipelineRuns running at any time for a Repository.
