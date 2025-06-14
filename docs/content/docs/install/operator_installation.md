@@ -35,6 +35,7 @@ spec:
           error-detection-from-container-logs: 'false'
           enable-cancel-in-progress-on-pull-requests: 'false'
           enable-cancel-in-progress-on-push: 'false'
+          skip-push-event-for-pr-commits: 'true'
           hub-url: 'https://api.hub.tekton.dev/v1'
           hub-catalog-name: tekton
           error-detection-max-number-of-lines: '50'
