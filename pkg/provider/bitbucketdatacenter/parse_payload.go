@@ -164,6 +164,10 @@ func (v *Provider) ParsePayload(_ context.Context, _ *params.Run, request *http.
 			return nil, fmt.Errorf("push event contains no commits under 'changes'; cannot proceed")
 		}
 
+		if len(e.Commits) == 0 {
+			return nil, fmt.Errorf("push event contains no commits; cannot proceed")
+		}
+
 		processedEvent.SHA = e.Changes[0].ToHash
 		processedEvent.URL = e.Repository.Links.Self[0].Href
 		processedEvent.BaseBranch = e.Changes[0].RefID
