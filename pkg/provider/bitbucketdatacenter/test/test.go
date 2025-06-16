@@ -338,7 +338,7 @@ func MakePREvent(event *info.Event, comment string) *types.PullRequestEvent {
 	return pr
 }
 
-func MakePushEvent(event *info.Event, changes []types.PushRequestEventChange) *types.PushRequestEvent {
+func MakePushEvent(event *info.Event, changes []types.PushRequestEventChange, commits []types.Commit) *types.PushRequestEvent {
 	iii, _ := strconv.Atoi(event.AccountID)
 
 	return &types.PushRequestEvent{
@@ -366,5 +366,6 @@ func MakePushEvent(event *info.Event, changes []types.PushRequestEventChange) *t
 			},
 		},
 		Changes: changes,
+		Commits: commits,
 	}
 }
