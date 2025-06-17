@@ -1,0 +1,31 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    pipelinesascode.tekton.dev/pipeline: http://remote/remote-pipeline
+  generateName: pipelinerun-abc-
+spec:
+  pipelineSpec:
+    tasks:
+    - name: remote-task-a
+      taskSpec:
+        steps:
+        - name: step1
+          image: scratch
+          command:
+          - "true"
+    - name: remote-task-b
+      taskSpec:
+        steps:
+        - name: step1
+          image: scratch
+          command:
+          - "true"
+    - name: remote-task-c
+      taskSpec:
+        steps:
+        - name: step1
+          image: scratch
+          command:
+          - "true"
+    finally: []

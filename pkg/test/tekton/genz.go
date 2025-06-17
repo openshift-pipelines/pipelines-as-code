@@ -9,6 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	knativeapi "knative.dev/pkg/apis"
 	knativeduckv1 "knative.dev/pkg/apis/duck/v1"
+	"sigs.k8s.io/yaml"
 )
 
 func MakePrTrStatus(ptaskname, displayName string, completionmn int) *tektonv1.PipelineRunTaskRunStatus {
@@ -147,6 +148,14 @@ func MakeTask(name string, taskSpec tektonv1.TaskSpec) *tektonv1.Task {
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Spec:       taskSpec,
 	}
+}
+
+func MakeTaskB(name string, taskSpec tektonv1.TaskSpec) ([]byte, error) {
+	objB, err := yaml.Marshal(MakeTask(name, taskSpec))
+	if err != nil {
+		return nil, err
+	}
+	return objB, nil
 }
 
 func MakeTaskRunCompletion(clock *clockwork.FakeClock, name, namespace, runstatus string, annotation map[string]string, taskStatus tektonv1.TaskRunStatusFields, conditions knativeduckv1.Conditions, timeshift int) *tektonv1.TaskRun {
