@@ -171,7 +171,7 @@ func (v *Provider) getDir(event *info.Event, path string) ([]bitbucket.Repositor
 		revision = event.DefaultBranch
 		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
 	} else {
-		v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", event.SHA)
+		v.Logger.Infof("Using PipelineRun definition from source %s commit SHA: %s", event.TriggerTarget.String(), event.SHA)
 	}
 	repoFileOpts := &bitbucket.RepositoryFilesOptions{
 		Owner:    event.Organization,

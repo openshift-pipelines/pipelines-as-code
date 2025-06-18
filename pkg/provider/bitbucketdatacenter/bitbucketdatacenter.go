@@ -216,7 +216,7 @@ func (v *Provider) GetTektonDir(ctx context.Context, event *info.Event, path, pr
 	at := ""
 	if v.provenance == "source" {
 		at = event.SHA
-		v.Logger.Infof("Using PipelineRun definition from source pull request SHA: %s", event.SHA)
+		v.Logger.Infof("Using PipelineRun definition from source %s commit SHA: %s", event.TriggerTarget.String(), event.SHA)
 	} else {
 		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
 	}
