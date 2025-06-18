@@ -240,15 +240,32 @@ func TestGetTektonDir(t *testing.T) {
 		expectedGHApiCalls   int64
 	}{
 		{
-			name: "test no subtree",
+			name: "test no subtree on pull request",
 			event: &info.Event{
-				Organization: "tekton",
-				Repository:   "cat",
-				SHA:          "123",
+				Organization:  "tekton",
+				Repository:    "cat",
+				SHA:           "123",
+				TriggerTarget: triggertype.PullRequest,
 			},
 			expectedString:       "PipelineRun",
 			treepath:             "testdata/tree/simple",
-			filterMessageSnippet: "Using PipelineRun definition from source pull request tekton/cat#0",
+			filterMessageSnippet: "Using PipelineRun definition from source pull_request tekton/cat#0",
+			// 1. Get Repo root objects
+			// 2. Get Tekton Dir objects
+			// 3/4. Get object content for each object (pipelinerun.yaml, pipeline.yaml)
+			expectedGHApiCalls: 4,
+		},
+		{
+			name: "test no subtree on push",
+			event: &info.Event{
+				Organization:  "tekton",
+				Repository:    "cat",
+				SHA:           "123",
+				TriggerTarget: triggertype.Push,
+			},
+			expectedString:       "PipelineRun",
+			treepath:             "testdata/tree/simple",
+			filterMessageSnippet: "Using PipelineRun definition from source push",
 			// 1. Get Repo root objects
 			// 2. Get Tekton Dir objects
 			// 3/4. Get object content for each object (pipelinerun.yaml, pipeline.yaml)
@@ -302,13 +319,14 @@ func TestGetTektonDir(t *testing.T) {
 		{
 			name: "test no tekton directory",
 			event: &info.Event{
-				Organization: "tekton",
-				Repository:   "cat",
-				SHA:          "123",
+				Organization:  "tekton",
+				Repository:    "cat",
+				SHA:           "123",
+				TriggerTarget: triggertype.PullRequest,
 			},
 			expectedString:       "",
 			treepath:             "testdata/tree/notektondir",
-			filterMessageSnippet: "Using PipelineRun definition from source pull request tekton/cat#0",
+			filterMessageSnippet: "Using PipelineRun definition from source pull_request tekton/cat#0",
 			// 1. Get Repo root objects
 			// _. No tekton dir to fetch
 			expectedGHApiCalls: 1,

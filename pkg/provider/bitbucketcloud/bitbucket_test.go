@@ -8,6 +8,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	bbcloudtest "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/test"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider/bitbucketcloud/types"
@@ -35,11 +36,18 @@ func TestGetTektonDir(t *testing.T) {
 		filterMessageSnippet string
 	}{
 		{
-			name:                 "Get Tekton Directory",
-			event:                bbcloudtest.MakeEvent(nil),
+			name:                 "Get Tekton Directory on pull request",
+			event:                bbcloudtest.MakeEvent(&info.Event{TriggerTarget: triggertype.PullRequest}),
 			testDirPath:          "../../pipelineascode/testdata/pull_request/.tekton",
 			contentContains:      "kind: PipelineRun",
-			filterMessageSnippet: "Using PipelineRun definition from source pull request SHA",
+			filterMessageSnippet: "Using PipelineRun definition from source pull_request commit SHA",
+		},
+		{
+			name:                 "Get Tekton Directory on push",
+			event:                bbcloudtest.MakeEvent(&info.Event{TriggerTarget: triggertype.Push}),
+			testDirPath:          "../../pipelineascode/testdata/pull_request/.tekton",
+			contentContains:      "kind: PipelineRun",
+			filterMessageSnippet: "Using PipelineRun definition from source push commit SHA",
 		},
 		{
 			name:                 "Get Tekton Directory Mainbranch",
