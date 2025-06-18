@@ -15,6 +15,7 @@ import (
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/clients"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/info"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/settings"
+	"github.com/openshift-pipelines/pipelines-as-code/pkg/params/triggertype"
 	"github.com/openshift-pipelines/pipelines-as-code/pkg/provider"
 	thelp "github.com/openshift-pipelines/pipelines-as-code/pkg/provider/gitlab/test"
 	testclient "github.com/openshift-pipelines/pipelines-as-code/pkg/test/clients"
@@ -460,12 +461,13 @@ func TestGetTektonDir(t *testing.T) {
 			wantErr:   "error unmarshalling yaml file pr.yaml: yaml: line 4: could not find expected ':'",
 		},
 		{
-			name:      "list tekton dir",
+			name:      "list tekton dir on pull request",
 			prcontent: string(samplePR),
 			args: args{
 				path: ".tekton",
 				event: &info.Event{
-					HeadBranch: "main",
+					HeadBranch:    "main",
+					TriggerTarget: triggertype.PullRequest,
 				},
 			},
 			fields: fields{
@@ -473,7 +475,24 @@ func TestGetTektonDir(t *testing.T) {
 			},
 			wantClient:           true,
 			wantStr:              "kind: PipelineRun",
-			filterMessageSnippet: `Using PipelineRun definition from source merge request SHA`,
+			filterMessageSnippet: `Using PipelineRun definition from source merge request on commit SHA`,
+		},
+		{
+			name:      "list tekton dir on push",
+			prcontent: string(samplePR),
+			args: args{
+				path: ".tekton",
+				event: &info.Event{
+					HeadBranch:    "main",
+					TriggerTarget: triggertype.Push,
+				},
+			},
+			fields: fields{
+				sourceProjectID: 100,
+			},
+			wantClient:           true,
+			wantStr:              "kind: PipelineRun",
+			filterMessageSnippet: `Using PipelineRun definition from source push on commit SHA`,
 		},
 		{
 			name:      "list tekton dir on default_branch",

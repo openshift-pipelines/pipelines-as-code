@@ -329,7 +329,11 @@ func (v *Provider) GetTektonDir(_ context.Context, event *info.Event, path, prov
 		revision = event.DefaultBranch
 		v.Logger.Infof("Using PipelineRun definition from default_branch: %s", event.DefaultBranch)
 	} else {
-		v.Logger.Infof("Using PipelineRun definition from source merge request SHA: %s", event.SHA)
+		trigger := event.TriggerTarget.String()
+		if event.TriggerTarget == triggertype.PullRequest {
+			trigger = "merge request"
+		}
+		v.Logger.Infof("Using PipelineRun definition from source %s on commit SHA: %s", trigger, event.SHA)
 	}
 
 	opt := &gitlab.ListTreeOptions{
